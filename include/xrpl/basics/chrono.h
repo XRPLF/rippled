@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <ratio>
 #include <string>
+#include <type_traits>
 
 namespace xrpl {
 
@@ -20,15 +21,16 @@ using days =
 
 using weeks = std::chrono::duration<int, std::ratio_multiply<days::period, std::ratio<7>>>;
 
-/** Clock for measuring the network time.
-
-    The epoch is January 1, 2000
-
-    epoch_offset
-    = date(2000-01-01) - date(1970-0-01)
-    = days(10957)
-    = seconds(946684800)
-*/
+/**
+ * Clock for measuring the network time.
+ *
+ * The epoch is January 1, 2000
+ *
+ * epoch_offset
+ * = date(2000-01-01) - date(1970-0-01)
+ * = days(10957)
+ * = seconds(946684800)
+ */
 
 static constexpr std::chrono::seconds kEpochOffset =
     date::sys_days{date::year{2000} / 1 / 1} - date::sys_days{date::year{1970} / 1 / 1};
@@ -80,16 +82,21 @@ toStringIso(NetClock::time_point tp)
     return toStringIso(date::sys_time<NetClock::duration>{tp.time_since_epoch() + kEpochOffset});
 }
 
-/** A clock for measuring elapsed time.
-
-    The epoch is unspecified.
-*/
+/**
+ * A clock for measuring elapsed time.
+ *
+ * The epoch is unspecified.
+ */
 using Stopwatch = beast::AbstractClock<std::chrono::steady_clock>;
 
-/** A manual Stopwatch for unit tests. */
+/**
+ * A manual Stopwatch for unit tests.
+ */
 using TestStopwatch = beast::ManualClock<std::chrono::steady_clock>;
 
-/** Returns an instance of a wall clock. */
+/**
+ * Returns an instance of a wall clock.
+ */
 inline Stopwatch&
 stopwatch()
 {

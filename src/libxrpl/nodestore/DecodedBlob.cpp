@@ -10,9 +10,9 @@
 #include <memory>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
-DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
+DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes) : key_(key)
 {
     /*  Data format:
 
@@ -23,17 +23,13 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
         9...end                     The body of the object data
     */
 
-    success_ = false;
-    key_ = key;
-    objectType_ = NodeObjectType::Unknown;
-    objectData_ = nullptr;
     dataBytes_ = std::max(0, valueBytes - 9);
 
     // VFALCO NOTE What about bytes 4 through 7 inclusive?
 
     if (valueBytes > 8)
     {
-        unsigned char const* byte = static_cast<unsigned char const*>(value);
+        auto const* byte = static_cast<unsigned char const*>(value);
         objectType_ = safeCast<NodeObjectType>(byte[8]);
     }
 
@@ -59,7 +55,7 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
 std::shared_ptr<NodeObject>
 DecodedBlob::createObject()
 {
-    XRPL_ASSERT(success_, "xrpl::NodeStore::DecodedBlob::createObject : valid object type");
+    XRPL_ASSERT(success_, "xrpl::node_store::DecodedBlob::createObject : valid object type");
 
     std::shared_ptr<NodeObject> object;
 
@@ -73,4 +69,4 @@ DecodedBlob::createObject()
     return object;
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

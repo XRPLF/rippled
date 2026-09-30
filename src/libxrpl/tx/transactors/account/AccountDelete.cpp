@@ -35,7 +35,6 @@
 #include <utility>
 
 namespace xrpl {
-
 bool
 AccountDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
@@ -51,7 +50,7 @@ AccountDelete::preflight(PreflightContext const& ctx)
         return temDST_IS_SRC;
     }
 
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;
@@ -242,6 +241,8 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
         // Check whether the destination account requires deposit authorization.
+        // This also checks if destination is a pseudo-account, since pseudo-accounts have the
+        // lsfDepositAuth flag set by default
         if (sleDst->isFlag(lsfDepositAuth))
         {
             if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
@@ -260,12 +261,21 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         return tecHAS_OBLIGATIONS;
 
     // If the account owns any NFTs it cannot be deleted.
-    Keylet const first = keylet::nftpageMin(account);
-    Keylet const last = keylet::nftpageMax(account);
+    Keylet const first = keylet::nftokenPageMin(account);
+    Keylet const last = keylet::nftokenPageMax(account);
 
     auto const cp = ctx.view.read(
         Keylet(ltNFTOKEN_PAGE, ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
     if (cp)
+        return tecHAS_OBLIGATIONS;
+
+    if (sleAccount->isFieldPresent(sfSponsor))
+    {
+        if (dst != sleAccount->getAccountID(sfSponsor))
+            return tecNO_SPONSOR_PERMISSION;
+    }
+    if (sleAccount->isFieldPresent(sfSponsoringOwnerCount) ||
+        sleAccount->isFieldPresent(sfSponsoringAccountCount))
         return tecHAS_OBLIGATIONS;
 
     // We don't allow an account to be deleted if its sequence number
@@ -393,6 +403,35 @@ AccountDelete::doApply()
     (*dst)[sfBalance] = (*dst)[sfBalance] + remainingBalance;
     (*src)[sfBalance] = (*src)[sfBalance] - remainingBalance;
     ctx_.deliver(remainingBalance);
+
+    if (src->isFieldPresent(sfSponsor))
+    {
+        auto const sponsorID = src->getAccountID(sfSponsor);
+        auto sponsorSle = view().peek(keylet::account(sponsorID));
+
+        if (!sponsorSle)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        auto const sponsoringAccountCount = sponsorSle->getFieldU32(sfSponsoringAccountCount);
+
+        XRPL_ASSERT(
+            sponsoringAccountCount != 0,
+            "xrpl::AccountDelete::doApply : sponsoring account count is present");
+        if (sponsoringAccountCount == 0)
+        {
+            // sanity check
+            // Since sfSponsoringAccountCount is set to soeDEFAULT, the field will not be
+            // present with a value of 0.
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        }
+        sponsorSle->at(sfSponsoringAccountCount) = sponsoringAccountCount - 1;
+        view().update(sponsorSle);
+
+        // Following line might look redundant, but without it, sfSponsor
+        // would end up remaining in after-ltAccountRoot during the
+        // InvariantCheck.
+        src->makeFieldAbsent(sfSponsor);
+    }
 
     XRPL_ASSERT(
         (*src)[sfBalance] == XRPAmount(0), "xrpl::AccountDelete::doApply : source balance is zero");

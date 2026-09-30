@@ -33,10 +33,11 @@
 
 namespace xrpl {
 
-/** Mix-in to track when all pending I/O is complete.
-    Derived classes must be callable with this signature:
-        void asyncHandlersComplete()
-*/
+/**
+ * Mix-in to track when all pending I/O is complete.
+ * Derived classes must be callable with this signature:
+ *     void asyncHandlersComplete()
+ */
 template <class Derived>
 class AsyncObject
 {
@@ -51,10 +52,11 @@ public:
         XRPL_ASSERT(pending_.load() == 0, "xrpl::AsyncObject::~AsyncObject : nothing pending");
     }
 
-    /** RAII container that maintains the count of pending I/O.
-        Bind this into the argument list of every handler passed
-        to an initiating function.
-    */
+    /**
+     * RAII container that maintains the count of pending I/O.
+     * Bind this into the argument list of every handler passed
+     * to an initiating function.
+     */
     class CompletionCounter
     {
     public:
@@ -192,7 +194,7 @@ public:
             boost::asio::dispatch(
                 ioContext,
                 boost::asio::bind_executor(
-                    strand, std::bind(&ResolverAsioImpl::doStop, this, CompletionCounter(this))));
+                    strand, [this, counter = CompletionCounter(this)] { doStop(counter); }));
 
             JLOG(journal.debug()) << "Queued a stop request";
         }
@@ -221,9 +223,9 @@ public:
         boost::asio::dispatch(
             ioContext,
             boost::asio::bind_executor(
-                strand,
-                std::bind(
-                    &ResolverAsioImpl::doResolve, this, names, handler, CompletionCounter(this))));
+                strand, [this, names, handler, counter = CompletionCounter(this)] {
+                    doResolve(names, handler, counter);
+                }));
     }
 
     //-------------------------------------------------------------------------
@@ -253,7 +255,7 @@ public:
         if (ec == boost::asio::error::operation_aborted)
             return;
 
-        std::vector<beast::IP::Endpoint> addresses;
+        std::vector<beast::ip::Endpoint> addresses;
         auto iter = results.begin();
 
         // If we get an error message back, we don't return any
@@ -272,7 +274,7 @@ public:
         boost::asio::post(
             ioContext,
             boost::asio::bind_executor(
-                strand, std::bind(&ResolverAsioImpl::doWork, this, CompletionCounter(this))));
+                strand, [this, counter = CompletionCounter(this)] { doWork(counter); }));
     }
 
     static HostAndPort
@@ -281,7 +283,7 @@ public:
         // first attempt to parse as an endpoint (IP addr + port).
         // If that doesn't succeed, fall back to generic name + port parsing
 
-        if (auto const result = beast::IP::Endpoint::fromStringChecked(str))
+        if (auto const result = beast::ip::Endpoint::fromStringChecked(str))
         {
             return make_pair(result->address().to_string(), std::to_string(result->port()));
         }
@@ -291,8 +293,10 @@ public:
         // a port separator
 
         // Attempt to find the first and last non-whitespace
-        auto const findWhitespace =
-            std::bind(&std::isspace<std::string::value_type>, std::placeholders::_1, std::locale());
+        std::locale const loc;
+        auto const findWhitespace = [&loc](std::string::value_type c) {
+            return std::isspace<std::string::value_type>(c, loc);
+        };
 
         auto hostFirst = std::ranges::find_if_not(str, findWhitespace);
 
@@ -348,7 +352,7 @@ public:
             boost::asio::post(
                 ioContext,
                 boost::asio::bind_executor(
-                    strand, std::bind(&ResolverAsioImpl::doWork, this, CompletionCounter(this))));
+                    strand, [this, counter = CompletionCounter(this)] { doWork(counter); }));
 
             return;
         }
@@ -356,14 +360,11 @@ public:
         resolver.async_resolve(
             host,
             port,
-            std::bind(
-                &ResolverAsioImpl::doFinish,
-                this,
-                name,
-                std::placeholders::_1,
-                handler,
-                std::placeholders::_2,
-                CompletionCounter(this)));
+            [this, name, handler, counter = CompletionCounter(this)](
+                boost::system::error_code const& ec,
+                boost::asio::ip::tcp::resolver::results_type results) {
+                doFinish(name, ec, handler, results, counter);
+            });
     }
 
     void
@@ -383,8 +384,7 @@ public:
                 boost::asio::post(
                     ioContext,
                     boost::asio::bind_executor(
-                        strand,
-                        std::bind(&ResolverAsioImpl::doWork, this, CompletionCounter(this))));
+                        strand, [this, counter = CompletionCounter(this)] { doWork(counter); }));
             }
         }
     }

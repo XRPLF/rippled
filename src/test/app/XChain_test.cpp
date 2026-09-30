@@ -141,7 +141,7 @@ struct SEnv
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return env.current()->fees().accountReserve(count);
+        return env.current()->fees().accountReserve(count, 1);
     }
 
     XRPAmount
@@ -245,9 +245,9 @@ struct Balance
     T& env;
     STAmount startAmount;
 
-    Balance(T& env, jtx::Account const& account) : account(account), env(env)
+    Balance(T& env, jtx::Account const& account)
+        : account(account), env(env), startAmount(env.balance(account))
     {
-        startAmount = env.balance(account);
     }
 
     [[nodiscard]] STAmount
@@ -306,9 +306,8 @@ struct BalanceTransfer
     [[nodiscard]] bool
     payeesReceived(STAmount const& reward) const
     {
-        return std::all_of(rewardAccounts.begin(), rewardAccounts.end(), [&](balance const& b) {
-            return b.diff() == reward;
-        });
+        return std::ranges::all_of(
+            rewardAccounts, [&](balance const& b) { return b.diff() == reward; });
     }
 
     bool
@@ -371,7 +370,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return XEnv(*this).env.current()->fees().accountReserve(count);
+        return XEnv(*this).env.current()->fees().accountReserve(count, 1);
     }
 
     XRPAmount
@@ -2164,14 +2163,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                     scAttester, jvb, mcAlice, amt, payees[i], true, claimID, dst, signers[i]);
 
                 TER const expectedTER = i < quorum ? tesSUCCESS : TER{tecXCHAIN_NO_CLAIM_ID};
-                if (i + 1 == quorum)
-                {
-                    scEnv.tx(att, Ter(expectedTER)).close();
-                }
-                else
-                {
-                    scEnv.tx(att, Ter(expectedTER)).close();
-                }
+                scEnv.tx(att, Ter(expectedTER)).close();
 
                 if (i + 1 < quorum)
                 {
@@ -3931,12 +3923,10 @@ private:
         [[nodiscard]] bool
         verify() const
         {
-            for (auto const& [acct, state] : accounts)
-            {
-                if (!state.verify(env, acct))
-                    return false;
-            }
-            return true;
+            return std::ranges::all_of(accounts, [&](auto const& entry) {
+                auto const& [acct, state] = entry;
+                return state.verify(env, acct);
+            });
         }
 
         struct BridgeCounters
@@ -4375,6 +4365,7 @@ public:
     {
         using namespace jtx;
         uint64_t time = 0;
+        // NOLINTNEXTLINE(bugprone-random-generator-seed): fixed seed for reproducible test
         std::mt19937 gen(27);  // Standard mersenne_twister_engine
         std::uniform_int_distribution<uint32_t> distrib(0, 9);
 

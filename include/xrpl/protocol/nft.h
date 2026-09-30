@@ -52,7 +52,7 @@ getTransferFee(uint256 const& id)
 }
 
 inline std::uint32_t
-getSerial(uint256 const& id)
+getSequence(uint256 const& id)
 {
     std::uint32_t seq = 0;
     memcpy(&seq, id.begin() + 28, 4);
@@ -92,7 +92,7 @@ getTaxon(uint256 const& id)
 
     // The taxon cipher is just an XOR, so it is reversible by applying the
     // XOR a second time.
-    return cipheredTaxon(getSerial(id), toTaxon(taxon));
+    return cipheredTaxon(getSequence(id), toTaxon(taxon));
 }
 
 inline AccountID

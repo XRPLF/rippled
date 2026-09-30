@@ -4,11 +4,17 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
 
-// VFALCO NOTE Intentionally not in the NodeStore namespace
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+
+// VFALCO NOTE Intentionally not in the node_store namespace
 
 namespace xrpl {
 
-/** The types of node objects. */
+/**
+ * The types of node objects.
+ */
 enum class NodeObjectType : std::uint32_t {
     Unknown = 0,
     Ledger = 1,
@@ -17,15 +23,16 @@ enum class NodeObjectType : std::uint32_t {
     Dummy = 512  // an invalid or missing object
 };
 
-/** A simple object that the Ledger uses to store entries.
-    NodeObjects are comprised of a type, a hash, and a blob.
-    They can be uniquely identified by the hash, which is a half-SHA512 of
-    the blob. The blob is a variable length block of serialized data. The
-    type identifies what the blob contains.
-
-    @note No checking is performed to make sure the hash matches the data.
-    @see SHAMap
-*/
+/**
+ * A simple object that the Ledger uses to store entries.
+ * NodeObjects are comprised of a type, a hash, and a blob.
+ * They can be uniquely identified by the hash, which is a half-SHA512 of
+ * the blob. The blob is a variable length block of serialized data. The
+ * type identifies what the blob contains.
+ *
+ * @note No checking is performed to make sure the hash matches the data.
+ * @see SHAMap
+ */
 class NodeObject : public CountedObject<NodeObject>
 {
 public:
@@ -44,29 +51,36 @@ public:
     // This constructor is private, use createObject instead.
     NodeObject(NodeObjectType type, Blob&& data, uint256 const& hash, PrivateAccess);
 
-    /** Create an object from fields.
-
-        The caller's variable is modified during this call. The
-        underlying storage for the Blob is taken over by the NodeObject.
-
-        @param type The type of object.
-        @param ledgerIndex The ledger in which this object appears.
-        @param data A buffer containing the payload. The caller's variable
-                    is overwritten.
-        @param hash The 256-bit hash of the payload data.
-    */
+    /**
+     * Create an object from fields.
+     *
+     * The caller's variable is modified during this call. The
+     * underlying storage for the Blob is taken over by the NodeObject.
+     *
+     * @param type The type of object.
+     * @param ledgerIndex The ledger in which this object appears.
+     * @param data A buffer containing the payload. The caller's variable
+     *             is overwritten.
+     * @param hash The 256-bit hash of the payload data.
+     */
     static std::shared_ptr<NodeObject>
     createObject(NodeObjectType type, Blob&& data, uint256 const& hash);
 
-    /** Returns the type of this object. */
+    /**
+     * Returns the type of this object.
+     */
     [[nodiscard]] NodeObjectType
     getType() const;
 
-    /** Returns the hash of the data. */
+    /**
+     * Returns the hash of the data.
+     */
     [[nodiscard]] uint256 const&
     getHash() const;
 
-    /** Returns the underlying data. */
+    /**
+     * Returns the underlying data.
+     */
     [[nodiscard]] Blob const&
     getData() const;
 

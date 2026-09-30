@@ -448,6 +448,78 @@ public:
     }
 
     /**
+     * @brief Get sfSponsoredOwnerCount (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getSponsoredOwnerCount() const
+    {
+        if (hasSponsoredOwnerCount())
+            return this->sle_->at(sfSponsoredOwnerCount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfSponsoredOwnerCount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasSponsoredOwnerCount() const
+    {
+        return this->sle_->isFieldPresent(sfSponsoredOwnerCount);
+    }
+
+    /**
+     * @brief Get sfSponsoringOwnerCount (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getSponsoringOwnerCount() const
+    {
+        if (hasSponsoringOwnerCount())
+            return this->sle_->at(sfSponsoringOwnerCount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfSponsoringOwnerCount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasSponsoringOwnerCount() const
+    {
+        return this->sle_->isFieldPresent(sfSponsoringOwnerCount);
+    }
+
+    /**
+     * @brief Get sfSponsoringAccountCount (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getSponsoringAccountCount() const
+    {
+        if (hasSponsoringAccountCount())
+            return this->sle_->at(sfSponsoringAccountCount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfSponsoringAccountCount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasSponsoringAccountCount() const
+    {
+        return this->sle_->isFieldPresent(sfSponsoringAccountCount);
+    }
+
+    /**
      * @brief Get sfAMMID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -564,7 +636,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfAccount (SoeRequired)
@@ -783,6 +857,39 @@ public:
     setFirstNFTokenSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfFirstNFTokenSequence] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfSponsoredOwnerCount (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    AccountRootBuilder&
+    setSponsoredOwnerCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfSponsoredOwnerCount] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfSponsoringOwnerCount (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    AccountRootBuilder&
+    setSponsoringOwnerCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfSponsoringOwnerCount] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfSponsoringAccountCount (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    AccountRootBuilder&
+    setSponsoringAccountCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfSponsoringAccountCount] = value;
         return *this;
     }
 

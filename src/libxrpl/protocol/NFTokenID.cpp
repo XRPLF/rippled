@@ -72,8 +72,7 @@ getNFTokenIDFromPage(TxMeta const& transactionMeta)
             // However, there will always be NFTs listed in the final fields,
             // as xrpld outputs all fields in final fields even if they were
             // not changed.
-            STObject const& previousFields =
-                node.peekAtField(sfPreviousFields).downcast<STObject>();
+            auto const& previousFields = node.peekAtField(sfPreviousFields).downcast<STObject>();
             if (!previousFields.isFieldPresent(sfNFTokens))
                 continue;
 

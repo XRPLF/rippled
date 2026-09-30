@@ -1,22 +1,33 @@
 #pragma once
 
-#include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/STLedgerEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <cstdint>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
 class ReadView;
 
-namespace RPC {
+namespace rpc {
 
 struct JsonContext;
 
@@ -74,7 +85,7 @@ parseAccountIds(json::Value const& jvArray);
  * std::nullopt on success.
  */
 std::optional<json::Value>
-readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext const& context);
+readLimitField(unsigned int& limit, tuning::LimitRange const& range, JsonContext const& context);
 
 /**
  * @brief Extracts a Seed from RPC parameters.
@@ -112,7 +123,7 @@ parseXrplLibSeed(json::Value const& params);
  * @param params The JSON value containing RPC parameters.
  * @return A pair consisting of the RPC status and the chosen LedgerEntryType.
  */
-std::pair<RPC::Status, LedgerEntryType>
+std::pair<rpc::Status, LedgerEntryType>
 chooseLedgerEntryType(json::Value const& params);
 
 /**
@@ -151,7 +162,8 @@ keypairForSignature(
     json::Value& error,
     unsigned int apiVersion = kApiVersionIfUnspecified);
 
-/** Parse subscribe/unsubscribe parameters
+/**
+ * Parse subscribe/unsubscribe parameters
  */
 ErrorCodeI
 parseSubUnsubJson(
@@ -160,6 +172,6 @@ parseSubUnsubJson(
     json::StaticString const& name,
     beast::Journal j);
 
-}  // namespace RPC
+}  // namespace rpc
 
 }  // namespace xrpl

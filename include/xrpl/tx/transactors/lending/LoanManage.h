@@ -1,6 +1,17 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -25,7 +36,8 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     static TER
     defaultLoan(
@@ -36,7 +48,8 @@ public:
         Asset const& vaultAsset,
         beast::Journal j);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     static TER
     impairLoan(
@@ -46,7 +59,8 @@ public:
         Asset const& vaultAsset,
         beast::Journal j);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     [[nodiscard]] static TER
     unimpairLoan(

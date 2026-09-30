@@ -127,15 +127,11 @@ Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
     {
         Worker const* const worker = stack.popFront();
 
-        if (worker != nullptr)
-        {
-            // This call blocks until the thread orderly exits
-            delete worker;
-        }
-        else
-        {
+        if (worker == nullptr)
             break;
-        }
+
+        // This call blocks until the thread orderly exits
+        delete worker;
     }
 }
 

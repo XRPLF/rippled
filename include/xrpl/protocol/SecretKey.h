@@ -2,18 +2,24 @@
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/tokens.h>
 
 #include <array>
+#include <cstdint>
 #include <cstring>
+#include <optional>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
-/** A secret key. */
+/**
+ * A secret key.
+ */
 class SecretKey
 {
 public:
@@ -52,11 +58,12 @@ public:
         return sizeof(buf_);
     }
 
-    /** Convert the secret key to a hexadecimal string.
-
-        @note The operator<< function is deliberately omitted
-        to avoid accidental exposure of secret key material.
-    */
+    /**
+     * Convert the secret key to a hexadecimal string.
+     *
+     * @note The operator<< function is deliberately omitted
+     * to avoid accidental exposure of secret key material.
+     */
     [[nodiscard]] std::string
     toString() const;
 
@@ -93,7 +100,9 @@ operator!=(SecretKey const& lhs, SecretKey const& rhs) = delete;
 
 //------------------------------------------------------------------------------
 
-/** Parse a secret key */
+/**
+ * Parse a secret key
+ */
 template <>
 std::optional<SecretKey>
 parseBase58(TokenType type, std::string const& s);
@@ -104,38 +113,48 @@ toBase58(TokenType type, SecretKey const& sk)
     return encodeBase58Token(type, sk.data(), sk.size());
 }
 
-/** Create a secret key using secure random numbers. */
+/**
+ * Create a secret key using secure random numbers.
+ */
 SecretKey
 randomSecretKey();
 
-/** Generate a new secret key deterministically. */
+/**
+ * Generate a new secret key deterministically.
+ */
 SecretKey
 generateSecretKey(KeyType type, Seed const& seed);
 
-/** Derive the public key from a secret key. */
+/**
+ * Derive the public key from a secret key.
+ */
 PublicKey
 derivePublicKey(KeyType type, SecretKey const& sk);
 
-/** Generate a key pair deterministically.
-
-    This algorithm is specific to the XRPL:
-
-    For secp256k1 key pairs, the seed is converted
-    to a Generator and used to compute the key pair
-    corresponding to ordinal 0 for the generator.
-*/
+/**
+ * Generate a key pair deterministically.
+ *
+ * This algorithm is specific to the XRPL:
+ *
+ * For secp256k1 key pairs, the seed is converted
+ * to a Generator and used to compute the key pair
+ * corresponding to ordinal 0 for the generator.
+ */
 std::pair<PublicKey, SecretKey>
 generateKeyPair(KeyType type, Seed const& seed);
 
-/** Create a key pair using secure random numbers. */
+/**
+ * Create a key pair using secure random numbers.
+ */
 std::pair<PublicKey, SecretKey>
 randomKeyPair(KeyType type);
 
-/** Generate a signature for a message digest.
-    This can only be used with secp256k1 since Ed25519's
-    security properties come, in part, from how the message
-    is hashed.
-*/
+/**
+ * Generate a signature for a message digest.
+ * This can only be used with secp256k1 since Ed25519's
+ * security properties come, in part, from how the message
+ * is hashed.
+ */
 /** @{ */
 Buffer
 signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& digest);
@@ -147,10 +166,11 @@ signDigest(KeyType type, SecretKey const& sk, uint256 const& digest)
 }
 /** @} */
 
-/** Generate a signature for a message.
-    With secp256k1 signatures, the data is first hashed with
-    SHA512-Half, and the resulting digest is signed.
-*/
+/**
+ * Generate a signature for a message.
+ * With secp256k1 signatures, the data is first hashed with
+ * SHA512-Half, and the resulting digest is signed.
+ */
 /** @{ */
 Buffer
 sign(PublicKey const& pk, SecretKey const& sk, Slice const& message);

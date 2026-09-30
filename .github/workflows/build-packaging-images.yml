@@ -1,4 +1,4 @@
-name: Build packaging Docker images
+name: Build `packaging` Docker images
 
 on:
   push:
@@ -6,13 +6,13 @@ on:
       - develop
     paths:
       - ".github/workflows/build-packaging-images.yml"
-      - "package/Dockerfile"
-      - "package/install-packaging-tools.sh"
+      - "bin/install-packaging-tools.sh"
+      - "package/docker/**"
   pull_request:
     paths:
       - ".github/workflows/build-packaging-images.yml"
-      - "package/Dockerfile"
-      - "package/install-packaging-tools.sh"
+      - "bin/install-packaging-tools.sh"
+      - "package/docker/**"
   workflow_dispatch:
 
 concurrency:
@@ -26,21 +26,24 @@ defaults:
 
 jobs:
   build-merge:
-    name: Build and push packaging-${{ matrix.distro.name }}
+    name: Build and push `packaging-${{ matrix.distro.name }}` image
     permissions:
       contents: read
       packages: write
     strategy:
       fail-fast: false
       matrix:
+        # Newest of each distro: these images only wrap pre-built binaries, so
+        # they set no floor for consumers. build_pkg.py pins the RPM dist tag.
         distro:
           - name: debian
-            base_image: debian:bookworm
+            base_image: debian:trixie
+          # AlmaLinux rather than UBI, which does not ship rpm-sign.
           - name: rhel
-            base_image: registry.access.redhat.com/ubi9/ubi:latest
-    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@c1b480188519e0cad040e6aa70db1cbc5a797e07
+            base_image: almalinux:10
+    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@696384b292577293292daed06af0306d1b83bd7d
     with:
-      image_name: ghcr.io/xrplf/xrpld/packaging-${{ matrix.distro.name }}
-      dockerfile: package/Dockerfile
+      image_name: xrpld/packaging-${{ matrix.distro.name }}
+      dockerfile: package/docker/Dockerfile
       base_image: ${{ matrix.distro.base_image }}
-      push: ${{ github.repository == 'XRPLF/rippled' && github.event_name == 'push' }}
+      push: ${{ github.event_name == 'push' }}

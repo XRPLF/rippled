@@ -21,7 +21,7 @@ class AccountSetBuilder;
  * Type: ttACCOUNT_SET (3)
  * Delegable: Delegation::NotDelegable
  * Amendment: uint256{}
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AccountSetBuilder to construct new transactions.
@@ -346,7 +346,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfEmailHash (SoeOptional)

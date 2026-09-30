@@ -13,7 +13,9 @@ using http_request_type = boost::beast::http::request<boost::beast::http::dynami
 
 using http_response_type = boost::beast::http::response<boost::beast::http::dynamic_body>;
 
-/** Used to indicate the result of a server connection handoff. */
+/**
+ * Used to indicate the result of a server connection handoff.
+ */
 struct Handoff
 {
     // When `true`, the Session will close the socket. The

@@ -7,13 +7,13 @@
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <xrpl.pb.h>
 
@@ -171,7 +171,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
 
 SHAMapAddNode
 TransactionAcquire::takeNodes(
-    std::vector<std::pair<SHAMapNodeID, Slice>> const& data,
+    std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
     std::shared_ptr<Peer> const& peer)
 {
     ScopedLockType const sl(mtx_);
@@ -195,7 +195,7 @@ TransactionAcquire::takeNodes(
 
         ConsensusTransSetSF sf(app_, app_.getTempNodeCache());
 
-        for (auto const& d : data)
+        for (auto& d : data)
         {
             if (d.first.isRoot())
             {
@@ -203,18 +203,22 @@ TransactionAcquire::takeNodes(
                 {
                     JLOG(journal_.debug()) << "Got root TXS node, already have it";
                 }
-                else if (!map_->addRootNode(SHAMapHash{hash_}, d.second, nullptr).isGood())
+                else if (!map_->addRootNode(SHAMapHash{hash_}, std::move(d.second), nullptr)
+                              .isGood())
                 {
-                    JLOG(journal_.warn()) << "TX acquire got bad root node";
+                    JLOG(journal_.warn()) << "TX acquire got bad root node for TX set " << hash_
+                                          << " from peer " << peer->id();
+                    return SHAMapAddNode::invalid();
                 }
                 else
                 {
                     haveRoot_ = true;
                 }
             }
-            else if (!map_->addKnownNode(d.first, d.second, &sf).isGood())
+            else if (!map_->addKnownNode(d.first, std::move(d.second), &sf).isGood())
             {
-                JLOG(journal_.warn()) << "TX acquire got bad non-root node";
+                JLOG(journal_.warn()) << "TX acquire got bad non-root node " << d.first
+                                      << " for TX set " << hash_ << " from peer " << peer->id();
                 return SHAMapAddNode::invalid();
             }
         }

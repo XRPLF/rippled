@@ -144,20 +144,6 @@ public:
                             Quality(Amounts{tweakedTakerPays, reducedTakerGets}).rate();
                         BEAST_EXPECT(tweakedRate > initialRate);
                     }
-#if 0
-                    std::cout << "Placed rate: " << initialRate
-                              << "; in-ledger rate: " << inLedgerRate
-                              << "; TakerPays: " << reducedTakerPays
-                              << "; TakerGets: " << reducedTakerGets
-                              << "; bob already got: " << bobGot << std::endl;
-// #else
-                    std::string_view filler =
-                        inLedgerRate > initialRate ? "**" : "  ";
-                    std::cout << "| `" << reducedTakerGets << "` | `"
-                              << reducedTakerPays << "` | `" << initialRate
-                              << "` | " << filler << "`" << inLedgerRate << "`"
-                              << filler << " |`" << std::endl;
-#endif
                 }
 
                 // In preparation for the next iteration make sure the two
@@ -275,21 +261,6 @@ public:
                             Quality(Amounts{tweakedTakerPays, reducedTakerGets}).rate();
                         BEAST_EXPECT(tweakedRate > initialRate);
                     }
-#if 0
-                    std::cout << "Placed rate: " << initialRate
-                              << "; in-ledger rate: " << inLedgerRate
-                              << "; TakerPays: " << reducedTakerPays
-                              << "; TakerGets: " << reducedTakerGets
-                              << "; alice already got: " << aliceGot
-                              << std::endl;
-// #else
-                    std::string_view filler = badRate ? "**" : "  ";
-                    std::cout << "| `" << reducedTakerGets << "` | `"
-                              << reducedTakerPays << "` | `" << initialRate
-                              << "` | " << filler << "`" << inLedgerRate << "`"
-                              << filler << " | `" << aliceGot << "` |"
-                              << std::endl;
-#endif
                 }
 
                 // In preparation for the next iteration make sure the two
@@ -463,13 +434,6 @@ public:
                 {
                     bool const bobOfferGone = !offerInLedger(env, bob, bobOfferSeq);
                     STAmount const aliceBalanceUSD = env.balance(alice, usd);
-#if 0
-                    std::cout
-                        << "bob initial: " << initialBobUSD
-                        << "; alice final: " << aliceBalanceUSD
-                        << "; bob offer: " << bobOfferJson.toStyledString()
-                        << std::endl;
-#endif
                     // Sanity check the ledger if alice got USD.
                     if (aliceBalanceUSD.signum() > 0)
                     {
@@ -619,19 +583,6 @@ public:
                             Quality(Amounts{aliceReducedOffer.in, tweakedTakerGets}).rate();
                         BEAST_EXPECT(tweakedRate > initialRate);
                     }
-#if 0
-                    std::cout << "Placed rate: " << initialRate
-                              << "; in-ledger rate: " << inLedgerRate
-                              << "; TakerPays: " << aliceReducedOffer.in
-                              << "; TakerGets: " << aliceReducedOffer.out
-                              << std::endl;
-// #else
-                    std::string_view filler = badRate ? "**" : "  ";
-                    std::cout << "| " << aliceReducedOffer.in << "` | `"
-                              << aliceReducedOffer.out << "` | `" << initialRate
-                              << "` | " << filler << "`" << inLedgerRate << "`"
-                              << filler << std::endl;
-#endif
                 }
 
                 // In preparation for the next iteration make sure all three

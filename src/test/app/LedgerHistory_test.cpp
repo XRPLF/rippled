@@ -29,13 +29,13 @@ namespace xrpl::test {
 class LedgerHistory_test : public beast::unit_test::Suite
 {
 public:
-    /** Generate a new ledger by hand, applying a specific close time offset
-        and optionally inserting a transaction.
-
-        If prev is nullptr, then the genesis ledger is made and no offset or
-        transaction is applied.
-
-    */
+    /**
+     * Generate a new ledger by hand, applying a specific close time offset
+     * and optionally inserting a transaction.
+     *
+     * If prev is nullptr, then the genesis ledger is made and no offset or
+     * transaction is applied.
+     */
     static std::shared_ptr<Ledger>
     makeLedger(
         std::shared_ptr<Ledger const> const& prev,

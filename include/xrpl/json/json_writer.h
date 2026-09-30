@@ -3,14 +3,18 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 
+#include <cstddef>
 #include <ostream>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace json {
 
 class Value;
 
-/** \brief Abstract class for writers.
+/**
+ * @brief Abstract class for writers.
  */
 class WriterBase
 {
@@ -20,12 +24,13 @@ public:
     write(Value const& root) = 0;
 };
 
-/** \brief Outputs a Value in <a HREF="http://www.json.org">JSON</a> format
+/**
+ * @brief Outputs a Value in <a HREF="http://www.json.org">JSON</a> format
  * without formatting (not human friendly).
  *
  * The JSON document is written in a single line. It is not intended for 'human'
  * consumption, but may be useful to support feature such as RPC where bandwidth
- * is limited. \sa Reader, Value
+ * is limited. @see Reader, Value
  */
 
 class FastWriter : public WriterBase
@@ -45,7 +50,8 @@ private:
     std::string document_;
 };
 
-/** \brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a
+/**
+ * @brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a
  * human friendly way.
  *
  * The rules for line break and indent are as follow:
@@ -61,7 +67,7 @@ private:
  *     - otherwise, it the values do not fit on one line, or the array contains
  *       object or non empty array, then print one value per line.
  *
- * \sa Reader, Value
+ * @see Reader, Value
  */
 class StyledWriter : public WriterBase
 {
@@ -70,8 +76,9 @@ public:
     ~StyledWriter() override = default;
 
 public:  // overridden from Writer
-    /** \brief Serialize a Value in <a HREF="http://www.json.org">JSON</a>
-     * format. \param root Value to serialize. \return String containing the
+    /**
+     * @brief Serialize a Value in <a HREF="http://www.json.org">JSON</a>
+     * format. @param root Value to serialize. @return String containing the
      * JSON document that represents the root value.
      */
     std::string
@@ -105,26 +112,27 @@ private:
     bool addChildValues_{};
 };
 
-/** \brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a
- human friendly way, to a stream rather than to a string.
+/**
+ * @brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a
+ * human friendly way, to a stream rather than to a string.
  *
  * The rules for line break and indent are as follow:
  * - Object value:
  *     - if empty then print {} without indent and line break
  *     - if not empty the print '{', line break & indent, print one value per
- line
+ * line
  *       and then unindent and line break and print '}'.
  * - Array value:
  *     - if empty then print [] without indent and line break
  *     - if the array contains no object value, empty array or some other value
- types,
+ * types,
  *       and all the values fit on one lines, then print the array on a single
- line.
+ * line.
  *     - otherwise, it the values do not fit on one line, or the array contains
  *       object or non empty array, then print one value per line.
  *
- * \param indentation Each level will be indented by this amount extra.
- * \sa Reader, Value
+ * @param indentation Each level will be indented by this amount extra.
+ * @see Reader, Value
  */
 class StyledStreamWriter
 {
@@ -133,10 +141,11 @@ public:
     ~StyledStreamWriter() = default;
 
 public:
-    /** \brief Serialize a Value in <a HREF="http://www.json.org">JSON</a>
-     * format. \param out Stream to write to. (Can be ostringstream, e.g.)
-     * \param root Value to serialize.
-     * \note There is no point in deriving from Writer, since write() should not
+    /**
+     * @brief Serialize a Value in <a HREF="http://www.json.org">JSON</a>
+     * format. @param out Stream to write to. (Can be ostringstream, e.g.)
+     * @param root Value to serialize.
+     * @note There is no point in deriving from Writer, since write() should not
      * return a value.
      */
     void
@@ -181,8 +190,10 @@ valueToString(bool value);
 std::string
 valueToQuotedString(char const* value);
 
-/// \brief Output using the StyledStreamWriter.
-/// \see json::operator>>()
+/**
+ * @brief Output using the StyledStreamWriter.
+ * @see json::operator>>()
+ */
 std::ostream&
 operator<<(std::ostream&, Value const& root);
 
@@ -262,12 +273,13 @@ writeValue(Write const& write, Value const& value)
 
 }  // namespace detail
 
-/** Stream compact JSON to the specified function.
-
-    @param jv The json::Value to write
-    @param write Invocable with signature void(void const*, std::size_t) that
-                 is called when output should be written to the stream.
-*/
+/**
+ * Stream compact JSON to the specified function.
+ *
+ * @param jv The json::Value to write
+ * @param write Invocable with signature void(void const*, std::size_t) that
+ *              is called when output should be written to the stream.
+ */
 template <class Write>
 void
 stream(json::Value const& jv, Write const& write)
@@ -276,29 +288,31 @@ stream(json::Value const& jv, Write const& write)
     write("\n", 1);
 }
 
-/** Decorator for streaming out compact json
-
-    Use
-
-        json::Value jv;
-        out << json::Compact{jv}
-
-    to write a single-line, compact version of `jv` to the stream, rather
-    than the styled format that comes from undecorated streaming.
-*/
+/**
+ * Decorator for streaming out compact json
+ *
+ * Use
+ *
+ *     json::Value jv;
+ *     out << json::Compact{jv}
+ *
+ * to write a single-line, compact version of `jv` to the stream, rather
+ * than the styled format that comes from undecorated streaming.
+ */
 class Compact
 {
     json::Value jv_;
 
 public:
-    /** Wrap a json::Value for compact streaming
-
-        @param jv The json::Value to stream
-
-        @note For now, we do not support wrapping lvalues to avoid
-              potentially costly copies. If we find a need, we can consider
-              adding support for compact lvalue streaming in the future.
-    */
+    /**
+     * Wrap a json::Value for compact streaming
+     *
+     * @param jv The json::Value to stream
+     *
+     * @note For now, we do not support wrapping lvalues to avoid
+     *       potentially costly copies. If we find a need, we can consider
+     *       adding support for compact lvalue streaming in the future.
+     */
     Compact(json::Value&& jv) : jv_{std::move(jv)}
     {
     }

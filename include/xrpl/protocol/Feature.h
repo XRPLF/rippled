@@ -1,10 +1,12 @@
 #pragma once
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/container/flat_map.hpp>
 
 #include <bitset>
+#include <cstddef>
 #include <map>
 #include <optional>
 #include <string>
@@ -110,7 +112,9 @@ validFeatureName(auto fn) -> bool
 enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes = 1 };
 enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported = 1 };
 
-/** All amendments libxrpl knows about. */
+/**
+ * All amendments libxrpl knows about.
+ */
 std::map<std::string, AmendmentSupport> const&
 allAmendments();
 
@@ -150,23 +154,27 @@ static constexpr std::size_t kNumFeatures =
 #undef XRPL_FEATURE
 #pragma pop_macro("XRPL_FEATURE")
 
-/** Amendments that this server supports and the default voting behavior.
-   Whether they are enabled depends on the Rules defined in the validated
-   ledger */
+/**
+ * Amendments that this server supports and the default voting behavior.
+ * Whether they are enabled depends on the Rules defined in the validated
+ * ledger
+ */
 std::map<std::string, VoteBehavior> const&
 supportedAmendments();
 
-/** Amendments that this server won't vote for by default.
-
-    This function is only used in unit tests.
-*/
+/**
+ * Amendments that this server won't vote for by default.
+ *
+ * This function is only used in unit tests.
+ */
 std::size_t
 numDownVotedAmendments();
 
-/** Amendments that this server will vote for by default.
-
-    This function is only used in unit tests.
-*/
+/**
+ * Amendments that this server will vote for by default.
+ *
+ * This function is only used in unit tests.
+ */
 std::size_t
 numUpVotedAmendments();
 

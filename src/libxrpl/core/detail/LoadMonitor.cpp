@@ -101,10 +101,11 @@ LoadMonitor::addLoadSample(LoadEvent const& s)
     addSamples(1, latency);
 }
 
-/* Add multiple samples
-   @param count The number of samples to add
-   @param latencyMS The total number of milliseconds
-*/
+/**
+ * Add multiple samples
+ * @param count The number of samples to add
+ * @param latencyMS The total number of milliseconds
+ */
 void
 LoadMonitor::addSamples(int count, std::chrono::milliseconds latency)
 {

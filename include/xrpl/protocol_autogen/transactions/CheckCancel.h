@@ -21,7 +21,7 @@ class CheckCancelBuilder;
  * Type: ttCHECK_CANCEL (18)
  * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use CheckCancelBuilder to construct new transactions.
@@ -99,7 +99,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfCheckID (SoeRequired)

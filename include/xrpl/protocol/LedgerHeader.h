@@ -3,13 +3,18 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
-/** Information about the notional ledger backing the view. */
+/**
+ * Information about the notional ledger backing the view.
+ */
 struct LedgerHeader
 {
     explicit LedgerHeader() = default;
@@ -64,15 +69,21 @@ getCloseAgree(LedgerHeader const& info)
 void
 addRaw(LedgerHeader const&, Serializer&, bool includeHash = false);
 
-/** Deserialize a ledger header from a byte array. */
+/**
+ * Deserialize a ledger header from a byte array.
+ */
 LedgerHeader
 deserializeHeader(Slice data, bool hasHash = false);
 
-/** Deserialize a ledger header (prefixed with 4 bytes) from a byte array. */
+/**
+ * Deserialize a ledger header (prefixed with 4 bytes) from a byte array.
+ */
 LedgerHeader
 deserializePrefixedHeader(Slice data, bool hasHash = false);
 
-/** Calculate the hash of a ledger header. */
+/**
+ * Calculate the hash of a ledger header.
+ */
 uint256
 calculateLedgerHash(LedgerHeader const& info);
 

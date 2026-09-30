@@ -7,14 +7,15 @@ namespace xrpl {
 
 class STLedgerEntry;
 
-/** A pair of SHAMap key and LedgerEntryType.
-
-    A Keylet identifies both a key in the state map
-    and its ledger entry type.
-
-    @note Keylet is a portmanteau of the words key
-          and LET, an acronym for LedgerEntryType.
-*/
+/**
+ * A pair of SHAMap key and LedgerEntryType.
+ *
+ * A Keylet identifies both a key in the state map
+ * and its ledger entry type.
+ *
+ * @note Keylet is a portmanteau of the words key
+ *       and LET, an acronym for LedgerEntryType.
+ */
 struct Keylet
 {
     uint256 key;
@@ -24,7 +25,9 @@ struct Keylet
     {
     }
 
-    /** Returns true if the SLE matches the type */
+    /**
+     * Returns true if the SLE matches the type
+     */
     [[nodiscard]] bool
     check(STLedgerEntry const&) const;
 };

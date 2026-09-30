@@ -1,18 +1,23 @@
 #pragma once
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
-#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/protocol_autogen/ledger_entries/AccountRoot.h>
@@ -24,6 +29,7 @@
 
 #include <cmath>
 #include <concepts>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -151,10 +157,10 @@ allFeatures();
  */
 struct TxResult
 {
-    TER ter;                        /**< The transaction engine result code. */
-    bool applied;                   /**< Whether the transaction was applied to the ledger. */
-    std::optional<TxMeta> metadata; /**< Transaction metadata, if available. */
-    std::shared_ptr<STTx const> tx; /**< Pointer to the submitted transaction. */
+    TER ter;                         ///< The transaction engine result code.
+    bool applied;                    ///< Whether the transaction was applied to the ledger.
+    std::optional<TxMeta> metadata;  ///< Transaction metadata, if available.
+    std::shared_ptr<STTx const> tx;  ///< Pointer to the submitted transaction.
 };
 
 /**
@@ -354,10 +360,14 @@ private:
     std::shared_ptr<Ledger const> closedLedger_;
     std::shared_ptr<OpenView> openLedger_;
 
-    /** Transactions submitted to the open ledger, for canonical reordering on close. */
+    /**
+     * Transactions submitted to the open ledger, for canonical reordering on close.
+     */
     std::vector<std::shared_ptr<STTx const>> pendingTxs_;
 
-    /** Current time (can be advanced arbitrarily for testing). */
+    /**
+     * Current time (can be advanced arbitrarily for testing).
+     */
     NetClock::time_point now_;
 };
 

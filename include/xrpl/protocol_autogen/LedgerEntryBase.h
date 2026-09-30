@@ -158,7 +158,9 @@ public:
     }
 
 protected:
-    /** @brief The underlying serialized ledger entry being wrapped. */
+    /**
+     * @brief The underlying serialized ledger entry being wrapped.
+     */
     SLE::const_pointer sle_;
 };
 

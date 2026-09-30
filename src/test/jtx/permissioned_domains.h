@@ -4,6 +4,18 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/deposit.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/STObject.h>
+
+#include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 namespace xrpl::test::jtx::pdomain {
 
 // Helpers for PermissionedDomains testing

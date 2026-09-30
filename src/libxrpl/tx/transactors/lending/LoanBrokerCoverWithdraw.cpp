@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -25,7 +26,11 @@ namespace xrpl {
 bool
 LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
+    if (!checkLendingProtocolDependencies(ctx.rules, ctx.tx))
+        return false;
+
+    return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
+        (ctx.rules.enabled(featureCredentials) && ctx.rules.enabled(fixCleanup3_4_0));
 }
 
 NotTEC
@@ -49,12 +54,18 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
         }
     }
 
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
+        return err;
+
     return tesSUCCESS;
 }
 
 TER
 LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 {
+    auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
+    auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
+    auto const fix340Enabled = ctx.view.rules().enabled(fixCleanup3_4_0);
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
@@ -68,7 +79,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Trying to withdraw into a pseudo-account.";
         return tecPSEUDO_ACCOUNT;
     }
-    auto const sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
+    auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -103,10 +114,15 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // the lsfMPTCanTransfer flag check, so an issuer cannot trap a broker's
     // first-loss capital. Other transferability checks (IOU NoRipple, freeze,
     // requireAuth) still apply.
-    auto const waive = ctx.view.rules().enabled(fixCleanup3_2_0) ? WaiveMPTCanTransfer::Yes
-                                                                 : WaiveMPTCanTransfer::No;
+    auto const waive = fix320Enabled ? WaiveMPTCanTransfer::Yes : WaiveMPTCanTransfer::No;
     if (auto const ret = canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct, waive))
         return ret;
+
+    // Validate credentials (if any) before canWithdraw, since canWithdraw may
+    // call credentials::authorizedDepositPreauth which assumes credentials
+    // already exist.
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j); !isTesSuccess(err))
+        return err;
 
     // Withdrawal to a 3rd party destination account is essentially a transfer.
     // Enforce all the usual asset transfer checks.
@@ -125,22 +141,36 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType))
         return ter;
 
-    // Check for freezes, unless sending directly to the issuer
-    if (dstAcct != vaultAsset.getIssuer())
+    if (fix340Enabled && account == dstAcct && !holdingExists(ctx.view, dstAcct, vaultAsset))
     {
-        // Cannot send a frozen Asset
-        if (auto const ret = checkFrozen(ctx.view, pseudoAccountID, vaultAsset))
+        if (auto const ter = canAddHolding(ctx.view, vaultAsset); !isTesSuccess(ter))
+            return ter;
+    }
+
+    if (fix330Enabled)
+    {
+        if (auto const ret =
+                checkWithdrawFreeze(ctx.view, pseudoAccountID, account, dstAcct, vaultAsset))
             return ret;
-        // Destination account cannot receive if asset is deep frozen
-        if (auto const ret = checkDeepFrozen(ctx.view, dstAcct, vaultAsset))
-            return ret;
+    }
+    else
+    {  // Check for freezes, unless sending directly to the issuer
+        if (dstAcct != vaultAsset.getIssuer())
+        {
+            // Cannot send a frozen Asset
+            if (auto const ret = checkFrozen(ctx.view, pseudoAccountID, vaultAsset))
+                return ret;
+            // Destination account cannot receive if asset is deep frozen
+            if (auto const ret = checkDeepFrozen(ctx.view, dstAcct, vaultAsset))
+                return ret;
+        }
     }
 
     auto const coverAvail = sleBroker->at(sfCoverAvailable);
     // Cover Rate is in 1/10 bips units
     auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
     auto const minimumCover = [&]() {
-        if (ctx.view.rules().enabled(fixCleanup3_2_0))
+        if (fix320Enabled)
         {
             return minimumBrokerCover(
                 currentDebtTotal, TenthBips32{sleBroker->at(sfCoverRateMinimum)}, vault);
@@ -159,11 +189,15 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if ((coverAvail - amount) < minimumCover)
         return tecINSUFFICIENT_FUNDS;
 
+    auto const freezeHandling = fix330Enabled && dstAcct == vaultAsset.getIssuer()
+        ? FreezeHandling::IgnoreFreeze
+        : FreezeHandling::ZeroIfFrozen;
+
     if (accountHolds(
             ctx.view,
             pseudoAccountID,
             vaultAsset,
-            FreezeHandling::ZeroIfFrozen,
+            freezeHandling,
             AuthHandling::ZeroIfUnauthorized,
             ctx.j) < amount)
         return tecINSUFFICIENT_FUNDS;
@@ -180,7 +214,7 @@ LoanBrokerCoverWithdraw::doApply()
     auto const amount = tx[sfAmount];
     auto const dstAcct = tx[~sfDestination].value_or(accountID_);
 
-    auto broker = view().peek(keylet::loanbroker(brokerID));
+    auto broker = view().peek(keylet::loanBroker(brokerID));
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -198,7 +232,14 @@ LoanBrokerCoverWithdraw::doApply()
 
     associateAsset(*broker, vaultAsset);
 
-    return doWithdraw(view(), tx, accountID_, dstAcct, brokerPseudoID, preFeeBalance_, amount, j_);
+    return doWithdraw(
+        ctx_.getApplyViewContext(),
+        accountID_,
+        dstAcct,
+        brokerPseudoID,
+        preFeeBalance_,
+        amount,
+        j_);
 }
 
 void

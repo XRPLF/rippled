@@ -2,6 +2,9 @@
 
 #include <xrpld/app/misc/detail/WorkBase.h>
 
+#include <memory>
+#include <string>
+
 namespace xrpl::detail {
 
 // Work over TCP/IP

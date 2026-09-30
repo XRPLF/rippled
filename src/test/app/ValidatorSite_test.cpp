@@ -15,13 +15,12 @@
 #include <xrpl/protocol/jss.h>
 
 #include <boost/algorithm/string/join.hpp>
-#include <boost/filesystem/directory.hpp>
-#include <boost/filesystem/operations.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 
 #include <date/date.h>
 
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <ostream>
@@ -239,7 +238,7 @@ private:
             json::Value myStatus;
             for (auto const& vs : jv[jss::validator_sites])
             {
-                if (vs[jss::uri].asString().find(u.uri) != std::string::npos)
+                if (vs[jss::uri].asString().contains(u.uri))
                     myStatus = vs;
             }
             BEAST_EXPECTS(
@@ -248,9 +247,7 @@ private:
 
             if (!u.cfg.msg.empty())
             {
-                BEAST_EXPECTS(
-                    sink.messages().str().find(u.cfg.msg) != std::string::npos,
-                    sink.messages().str());
+                BEAST_EXPECTS(sink.messages().str().contains(u.cfg.msg), sink.messages().str());
             }
 
             if (u.cfg.expectedRefreshMin != 0)
@@ -324,7 +321,7 @@ private:
             json::Value myStatus;
             for (auto const& vs : jv[jss::validator_sites])
             {
-                if (vs[jss::uri].asString().find(u.uri) != std::string::npos)
+                if (vs[jss::uri].asString().contains(u.uri))
                     myStatus = vs;
             }
             BEAST_EXPECTS(
@@ -332,9 +329,7 @@ private:
                 to_string(myStatus));
             if (u.shouldFail)
             {
-                BEAST_EXPECTS(
-                    sink.messages().str().find(u.expectMsg) != std::string::npos,
-                    sink.messages().str());
+                BEAST_EXPECTS(sink.messages().str().contains(u.expectMsg), sink.messages().str());
             }
         }
     }
@@ -708,7 +703,7 @@ public:
                   .effectiveOverlap = detail::kDefaultEffectiveOverlap,
                   .expectedRefreshMin = 60 * 24}});  // max of 24 hours
         }
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         for (auto const& file : directory_iterator(good.subdir()))
         {
             remove_all(file);

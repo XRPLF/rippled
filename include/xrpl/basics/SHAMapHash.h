@@ -3,7 +3,9 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/partitioned_unordered_map.h>
 
+#include <cstddef>
 #include <ostream>
+#include <string>
 
 namespace xrpl {
 
@@ -82,12 +84,6 @@ public:
         hash_append(h, x.hash_);
     }
 };
-
-inline bool
-operator!=(SHAMapHash const& x, SHAMapHash const& y)
-{
-    return !(x == y);
-}
 
 template <>
 inline std::size_t

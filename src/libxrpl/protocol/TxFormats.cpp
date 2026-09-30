@@ -30,6 +30,9 @@ TxFormats::getCommonFields()
         {sfSigners, SoeOptional},  // submit_multisigned
         {sfNetworkID, SoeOptional},
         {sfDelegate, SoeOptional},
+        {sfSponsor, SoeOptional},
+        {sfSponsorFlags, SoeOptional},
+        {sfSponsorSignature, SoeOptional},
     };
     return kCommonFields;
 }
@@ -42,7 +45,7 @@ TxFormats::TxFormats()
 #undef TRANSACTION
 
 #define UNWRAP(...) __VA_ARGS__
-#define TRANSACTION(tag, value, name, delegable, amendment, privileges, fields) \
+#define TRANSACTION(tag, value, name, settings, fields) \
     add(jss::name, tag, UNWRAP fields, getCommonFields());
 
 #include <xrpl/protocol/detail/transactions.macro>

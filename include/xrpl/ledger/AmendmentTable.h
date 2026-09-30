@@ -1,23 +1,47 @@
 #pragma once
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <chrono>
+#include <cstdint>
+#include <map>
+#include <memory>
 #include <optional>
+#include <set>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
 class ServiceRegistry;
 
-/** The amendment table stores the list of enabled and potential amendments.
-    Individuals amendments are voted on by validators during the consensus
-    process.
-*/
+/**
+ * The amendment table stores the list of enabled and potential amendments.
+ * Individuals amendments are voted on by validators during the consensus
+ * process.
+ */
 class AmendmentTable
 {
 public:
@@ -67,11 +91,15 @@ public:
     [[nodiscard]] virtual json::Value
     getJson(bool isAdmin) const = 0;
 
-    /** Returns a json::ValueType::Object. */
+    /**
+     * Returns a json::ValueType::Object.
+     */
     [[nodiscard]] virtual json::Value
     getJson(uint256 const& amendment, bool isAdmin) const = 0;
 
-    /** Called when a new fully-validated ledger is accepted. */
+    /**
+     * Called when a new fully-validated ledger is accepted.
+     */
     void
     doValidatedLedger(std::shared_ptr<ReadView const> const& lastValidatedLedger)
     {
@@ -84,9 +112,10 @@ public:
         }
     }
 
-    /** Called to determine whether the amendment logic needs to process
-        a new validated ledger. (If it could have changed things.)
-    */
+    /**
+     * Called to determine whether the amendment logic needs to process
+     * a new validated ledger. (If it could have changed things.)
+     */
     [[nodiscard]] virtual bool
     needValidatedLedger(LedgerIndex seq) const = 0;
 

@@ -1,16 +1,21 @@
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/Serializer.h>
@@ -24,6 +29,7 @@
 #include <string>
 #include <type_traits>
 #include <typeinfo>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -537,51 +543,6 @@ public:
     {
         // VFALCO TODO There are no actual tests here, just printed output?
         //             Change this to actually do something.
-
-#if 0
-        beginTestCase ("rounding ");
-
-        std::uint64_t value = 25000000000000000ull;
-        int offset = -14;
-        canonicalizeRound (false, value, offset, true);
-
-        STAmount one (noIssue(), 1);
-        STAmount two (noIssue(), 2);
-        STAmount three (noIssue(), 3);
-
-        STAmount oneThird1 = divRound (one, three, noIssue(), false);
-        STAmount oneThird2 = divide (one, three, noIssue());
-        STAmount oneThird3 = divRound (one, three, noIssue(), true);
-        log << oneThird1;
-        log << oneThird2;
-        log << oneThird3;
-
-        STAmount twoThird1 = divRound (two, three, noIssue(), false);
-        STAmount twoThird2 = divide (two, three, noIssue());
-        STAmount twoThird3 = divRound (two, three, noIssue(), true);
-        log << twoThird1;
-        log << twoThird2;
-        log << twoThird3;
-
-        STAmount oneA = mulRound (oneThird1, three, noIssue(), false);
-        STAmount oneB = multiply (oneThird2, three, noIssue());
-        STAmount oneC = mulRound (oneThird3, three, noIssue(), true);
-        log << oneA;
-        log << oneB;
-        log << oneC;
-
-        STAmount fourThirdsB = twoThird2 + twoThird2;
-        log << fourThirdsA;
-        log << fourThirdsB;
-        log << fourThirdsC;
-
-        STAmount dripTest1 = mulRound (twoThird2, two, xrpIssue (), false);
-        STAmount dripTest2 = multiply (twoThird2, two, xrpIssue ());
-        STAmount dripTest3 = mulRound (twoThird2, two, xrpIssue (), true);
-        log << dripTest1;
-        log << dripTest2;
-        log << dripTest3;
-#endif
     }
 
     void
@@ -1036,6 +997,84 @@ public:
     }
 
     void
+    testMPTRateRounding()
+    {
+        testcase("MPT transfer rate rounding uses Number arithmetic");
+
+        MPTIssue const asset{makeMptID(1, AccountID(0x4985601))};
+        Rate const transferRate{1'500'000'000};
+        STAmount const largeAmount{asset, UINT64_C(1'230'000'000'000'000'000)};
+        STAmount const scaledAmount{asset, UINT64_C(1'845'000'000'000'000'000)};
+
+        auto rules = [](bool const mptV2) {
+            // Rules keeps a reference to the presets set, so use static
+            // storage here rather than a local temporary.
+            static std::unordered_set<uint256, beast::Uhash<>> const kNoFeatures;
+            static std::unordered_set<uint256, beast::Uhash<>> const kMptV2Features{
+                featureMPTokensV2};
+            return Rules{mptV2 ? kMptV2Features : kNoFeatures};
+        };
+
+        auto throwsOverflow = [&](auto&& f, bool expected = true) {
+            bool threw = false;
+            try
+            {
+                f();
+            }
+            catch (std::overflow_error const&)
+            {
+                threw = true;
+            }
+            BEAST_EXPECT(threw == expected);
+        };
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(false));
+
+            throwsOverflow([&] { (void)multiplyRound(largeAmount, transferRate, asset, true); });
+            throwsOverflow([&] { (void)divideRound(scaledAmount, transferRate, asset, true); });
+        }
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(true));
+
+            throwsOverflow(
+                [&] { (void)multiplyRound(largeAmount, transferRate, asset, true); }, false);
+            throwsOverflow(
+                [&] { (void)divideRound(scaledAmount, transferRate, asset, true); }, false);
+        }
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(true));
+            STAmount const one{asset, 1};
+            STAmount const two{asset, 2};
+
+            BEAST_EXPECT(multiplyRound(one, transferRate, asset, true) == two);
+            BEAST_EXPECT(multiplyRound(one, transferRate, asset, false) == one);
+            BEAST_EXPECT(divideRound(two, transferRate, asset, true) == two);
+            BEAST_EXPECT(divideRound(two, transferRate, asset, false) == one);
+
+            BEAST_EXPECT(multiplyRound(largeAmount, transferRate, asset, true) == scaledAmount);
+            BEAST_EXPECT(divideRound(scaledAmount, transferRate, asset, true) == largeAmount);
+        }
+
+        {
+            // mulRound with an integral (XRP) operand whose mantissa is below
+            // kMinValue exercises the legacy value-scaling loop that normalizes
+            // the mantissa before multiply. The MPTokensV2 Number path is
+            // not taken here because the target asset is an IOU.
+            Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+            STAmount const iouVal{usd, 5};
+            STAmount const xrpVal{XRPAmount{7}};  // integral, mantissa < kMinValue
+
+            auto const up = mulRound(iouVal, xrpVal, usd, /*roundUp*/ true);
+            auto const down = mulRound(iouVal, xrpVal, usd, /*roundUp*/ false);
+            BEAST_EXPECT(down.signum() > 0);
+            BEAST_EXPECT(up >= down);
+        }
+    }
+
+    void
     testCanSubtractXRP()
     {
         testcase("can subtract xrp");
@@ -1312,6 +1351,7 @@ public:
         testCanAddXRP();
         testCanAddIOU();
         testCanAddMPT();
+        testMPTRateRounding();
         testCanSubtractXRP();
         testCanSubtractIOU();
         testCanSubtractMPT();

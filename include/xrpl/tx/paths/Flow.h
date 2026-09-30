@@ -1,8 +1,15 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STPathSet.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 #include <xrpl/tx/paths/detail/Steps.h>
+
+#include <optional>
 
 namespace xrpl {
 
@@ -11,25 +18,25 @@ struct FlowDebugInfo;
 }  // namespace path::detail
 
 /**
-  Make a payment from the src account to the dst account
-
-  @param view Trust lines and balances
-  @param deliver Amount to deliver to the dst account
-  @param src Account providing input funds for the payment
-  @param dst Account receiving the payment
-  @param paths Set of paths to explore for liquidity
-  @param defaultPaths Include defaultPaths in the path set
-  @param partialPayment If the payment cannot deliver the entire
-           requested amount, deliver as much as possible, given the constraints
-  @param ownerPaysTransferFee If true then owner, not sender, pays fee
-  @param offerCrossing If Yes or Sell then flow is executing offer crossing, not
-  payments
-  @param limitQuality Do not use liquidity below this quality threshold
-  @param sendMax Do not spend more than this amount
-  @param j Journal to write journal messages to
-  @param flowDebugInfo If non-null a pointer to FlowDebugInfo for debugging
-  @return Actual amount in and out, and the result code
-*/
+ * Make a payment from the src account to the dst account
+ *
+ * @param view Trust lines and balances
+ * @param deliver Amount to deliver to the dst account
+ * @param src Account providing input funds for the payment
+ * @param dst Account receiving the payment
+ * @param paths Set of paths to explore for liquidity
+ * @param defaultPaths Include defaultPaths in the path set
+ * @param partialPayment If the payment cannot deliver the entire
+ *          requested amount, deliver as much as possible, given the constraints
+ * @param ownerPaysTransferFee If true then owner, not sender, pays fee
+ * @param offerCrossing If Yes or Sell then flow is executing offer crossing, not
+ * payments
+ * @param limitQuality Do not use liquidity below this quality threshold
+ * @param sendMax Do not spend more than this amount
+ * @param j Journal to write journal messages to
+ * @param flowDebugInfo If non-null a pointer to FlowDebugInfo for debugging
+ * @return Actual amount in and out, and the result code
+ */
 path::RippleCalc::Output
 flow(
     PaymentSandbox& view,

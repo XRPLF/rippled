@@ -60,7 +60,9 @@ class PerfLog;
 class Workers
 {
 public:
-    /** Called to perform tasks as needed. */
+    /**
+     * Called to perform tasks as needed.
+     */
     struct Callback
     {
         virtual ~Callback() = default;
@@ -69,27 +71,29 @@ public:
         Callback&
         operator=(Callback const&) = delete;
 
-        /** Perform a task.
-
-            The call is made on a thread owned by Workers. It is important
-            that you only process one task from inside your callback. Each
-            call to addTask will result in exactly one call to processTask.
-
-            @param instance The worker thread instance.
-
-            @see Workers::addTask
-        */
+        /**
+         * Perform a task.
+         *
+         * The call is made on a thread owned by Workers. It is important
+         * that you only process one task from inside your callback. Each
+         * call to addTask will result in exactly one call to processTask.
+         *
+         * @param instance The worker thread instance.
+         *
+         * @see Workers::addTask
+         */
         virtual void
         processTask(int instance) = 0;
     };
 
-    /** Create the object.
-
-        A number of initial threads may be optionally specified. The
-        default is to create one thread per CPU.
-
-        @param threadNames The name given to each created worker thread.
-    */
+    /**
+     * Create the object.
+     *
+     * A number of initial threads may be optionally specified. The
+     * default is to create one thread per CPU.
+     *
+     * @param threadNames The name given to each created worker thread.
+     */
     explicit Workers(
         Callback& callback,
         perf::PerfLog* perfLog,
@@ -98,49 +102,54 @@ public:
 
     ~Workers();
 
-    /** Retrieve the desired number of threads.
-
-        This just returns the number of active threads that were requested. If
-        there was a recent call to setNumberOfThreads, the actual number of
-       active threads may be temporarily different from what was last requested.
-
-        @note This function is not thread-safe.
-    */
+    /**
+     * Retrieve the desired number of threads.
+     *
+     * This just returns the number of active threads that were requested. If
+     * there was a recent call to setNumberOfThreads, the actual number of
+     * active threads may be temporarily different from what was last requested.
+     *
+     * @note This function is not thread-safe.
+     */
     [[nodiscard]] int
     getNumberOfThreads() const noexcept;
 
-    /** Set the desired number of threads.
-        @note This function is not thread-safe.
-    */
+    /**
+     * Set the desired number of threads.
+     * @note This function is not thread-safe.
+     */
     void
     setNumberOfThreads(int numberOfThreads);
 
-    /** Pause all threads and wait until they are paused.
-
-        If a thread is processing a task it will pause as soon as the task
-        completes. There may still be tasks signaled even after all threads
-        have paused.
-
-        @note This function is not thread-safe.
-    */
+    /**
+     * Pause all threads and wait until they are paused.
+     *
+     * If a thread is processing a task it will pause as soon as the task
+     * completes. There may still be tasks signaled even after all threads
+     * have paused.
+     *
+     * @note This function is not thread-safe.
+     */
     void
     stop();
 
-    /** Add a task to be performed.
-
-        Every call to addTask will eventually result in a call to
-        Callback::processTask unless the Workers object is destroyed or
-        the number of threads is never set above zero.
-
-        @note This function is thread-safe.
-    */
+    /**
+     * Add a task to be performed.
+     *
+     * Every call to addTask will eventually result in a call to
+     * Callback::processTask unless the Workers object is destroyed or
+     * the number of threads is never set above zero.
+     *
+     * @note This function is thread-safe.
+     */
     void
     addTask();
 
-    /** Get the number of currently executing calls of Callback::processTask.
-        While this function is thread-safe, the value may not stay
-        accurate for very long. It's mainly for diagnostic purposes.
-    */
+    /**
+     * Get the number of currently executing calls of Callback::processTask.
+     * While this function is thread-safe, the value may not stay
+     * accurate for very long. It's mainly for diagnostic purposes.
+     */
     [[nodiscard]] int
     numberOfCurrentlyRunningTasks() const noexcept;
 

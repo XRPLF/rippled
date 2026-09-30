@@ -1,10 +1,11 @@
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
@@ -15,8 +16,6 @@
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 #include <xrpl/nodestore/detail/codec.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/system/detail/errc.hpp>
 
 #include <nudb/context.hpp>
@@ -35,15 +34,17 @@
 #include <cstdint>
 #include <cstdio>
 #include <exception>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 class NuDBBackend : public Backend
 {
@@ -72,7 +73,7 @@ public:
         : j(journal)
         , keyBytes(keyBytes)
         , burstSize(burstSize)
-        , name(get(keyValues, "path"))
+        , name(get(keyValues, Keys::kPath))
         , blockSize(parseBlockSize(name, keyValues, journal))
         , deletePath(false)
         , scheduler(scheduler)
@@ -91,7 +92,7 @@ public:
         : j(journal)
         , keyBytes(keyBytes)
         , burstSize(burstSize)
-        , name(get(keyValues, "path"))
+        , name(get(keyValues, Keys::kPath))
         , blockSize(parseBlockSize(name, keyValues, journal))
         , db(context)
         , deletePath(false)
@@ -130,12 +131,12 @@ public:
     void
     open(bool createIfMissing, uint64_t appType, uint64_t uid, uint64_t salt) override
     {
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         if (db.is_open())
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "xrpl::NodeStore::NuDBBackend::open : database is already "
+                "xrpl::node_store::NuDBBackend::open : database is already "
                 "open");
             JLOG(j.error()) << "database is already open";
             return;
@@ -193,11 +194,12 @@ public:
 
             if (deletePath)
             {
-                boost::filesystem::remove_all(name, ec);
-                if (ec)
+                std::error_code fsec;
+                std::filesystem::remove_all(name, fsec);
+                if (fsec)
                 {
-                    JLOG(j.fatal())
-                        << "Filesystem remove_all of " << name << " failed with: " << ec.message();
+                    JLOG(j.fatal()) << "Filesystem remove_all of " << name
+                                    << " failed with: " << fsec.message();
                 }
             }
         }
@@ -351,7 +353,7 @@ private:
     static std::size_t
     parseBlockSize(std::string const& name, Section const& keyValues, beast::Journal journal)
     {
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         auto const folder = path(name);
         auto const kp = (folder / "nudb.key").string();
 
@@ -359,14 +361,14 @@ private:
         std::size_t const blockSize = defaultSize;
         std::string blockSizeStr;
 
-        if (!getIfExists(keyValues, "nudb_block_size", blockSizeStr))
+        if (!getIfExists(keyValues, Keys::kNudbBlockSize, blockSizeStr))
         {
             return blockSize;  // Early return with default
         }
 
         try
         {
-            std::size_t const parsedBlockSize = beast::lexicalCastThrow<std::size_t>(blockSizeStr);
+            auto const parsedBlockSize = beast::lexicalCastThrow<std::size_t>(blockSizeStr);
 
             // Validate: must be power of 2 between 4K and 32K
             if (parsedBlockSize < 4096 || parsedBlockSize > 32768 ||
@@ -440,4 +442,4 @@ registerNuDBFactory(Manager& manager)
     static NuDBFactory const kInstance{manager};
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

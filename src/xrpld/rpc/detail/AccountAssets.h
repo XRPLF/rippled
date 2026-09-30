@@ -2,7 +2,11 @@
 
 #include <xrpld/rpc/detail/AssetCache.h>
 
-#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/PathAsset.h>
+
+#include <memory>
 
 namespace xrpl {
 

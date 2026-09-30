@@ -1,9 +1,15 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STBitString.h>
-#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstddef>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -17,8 +23,8 @@ public:
     STVector256() = default;
 
     explicit STVector256(SField const& n);
-    explicit STVector256(std::vector<uint256> const& vector);
-    STVector256(SField const& n, std::vector<uint256> const& vector);
+    explicit STVector256(std::vector<uint256> vector);
+    STVector256(SField const& n, std::vector<uint256> vector);
     STVector256(SerialIter& sit, SField const& name);
 
     [[nodiscard]] SerializedTypeID
@@ -44,7 +50,9 @@ public:
     void
     setValue(STVector256 const& v);
 
-    /** Retrieve a copy of the vector we contain */
+    /**
+     * Retrieve a copy of the vector we contain
+     */
     explicit
     operator std::vector<uint256>() const;
 
@@ -103,12 +111,12 @@ inline STVector256::STVector256(SField const& n) : STBase(n)
 {
 }
 
-inline STVector256::STVector256(std::vector<uint256> const& vector) : value_(vector)
+inline STVector256::STVector256(std::vector<uint256> vector) : value_(std::move(vector))
 {
 }
 
-inline STVector256::STVector256(SField const& n, std::vector<uint256> const& vector)
-    : STBase(n), value_(vector)
+inline STVector256::STVector256(SField const& n, std::vector<uint256> vector)
+    : STBase(n), value_(std::move(vector))
 {
 }
 
@@ -132,7 +140,9 @@ STVector256::setValue(STVector256 const& v)
     value_ = v.value_;
 }
 
-/** Retrieve a copy of the vector we contain */
+/**
+ * Retrieve a copy of the vector we contain
+ */
 inline STVector256::
 operator std::vector<uint256>() const
 {

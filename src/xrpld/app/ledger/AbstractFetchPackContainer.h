@@ -7,20 +7,22 @@
 
 namespace xrpl {
 
-/** An interface facilitating retrieval of fetch packs without
-    an application or ledgermaster object.
-*/
+/**
+ * An interface facilitating retrieval of fetch packs without
+ * an application or ledgermaster object.
+ */
 class AbstractFetchPackContainer
 {
 public:
     virtual ~AbstractFetchPackContainer() = default;
 
-    /** Retrieves partial ledger data of the corresponding hash from peers.`
-
-        @param nodeHash The 256-bit hash of the data to fetch.
-        @return `std::nullopt` if the hash isn't cached,
-            otherwise, the hash associated data.
-    */
+    /**
+     * Retrieves partial ledger data of the corresponding hash from peers.`
+     *
+     * @param nodeHash The 256-bit hash of the data to fetch.
+     * @return `std::nullopt` if the hash isn't cached,
+     *     otherwise, the hash associated data.
+     */
     virtual std::optional<Blob>
     getFetchPack(uint256 const& nodeHash) = 0;
 };

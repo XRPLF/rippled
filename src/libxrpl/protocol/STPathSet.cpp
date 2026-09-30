@@ -1,6 +1,8 @@
 #include <xrpl/protocol/STPathSet.h>
 
+#include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -11,9 +13,12 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/detail/STVar.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
 #include <cstddef>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -30,6 +35,11 @@ STPathElement::getHash(STPathElement const& element)
     // NIKB NOTE: This doesn't have to be a secure hash as speed is more
     //            important. We don't even really need to fully hash the whole
     //            base_uint here, as a few bytes would do for our use.
+    //
+    // The note above is only true because the result of this function reaches
+    // nothing but STPathElement::operator==, where it is a fast-reject
+    // prefilter ahead of the field comparisons that decide the answer.  Do not
+    // use it to key a container.
 
     for (auto const x : element.getAccountID())
         hashAccount += (hashAccount * 257) ^ x;
@@ -50,6 +60,51 @@ STPathElement::getHash(STPathElement const& element)
     return (hashAccount ^ hashCurrency ^ hashIssuer);
 }
 
+// For guidance on deciding which option to pursue:
+// 1. Try to decrease the size of the STPathSet first.  For instance, if a std::optional was
+//    injected into the type, could you get the same functionality using a std::unique_ptr instead?
+// 2. If the size of the STPathSet is already as small as it can be, then consider what the cost
+//    of increasing STVar::kMaxSize would be on all the other STVar types.  Each of those types
+//    will carry the additional cost of accommodating the larger STPathSet in their SBO.
+// 3. If the cost of increasing STVar::kMaxSize is too high, then heap allocate the STPathSet and
+//    remove this static_assert.
+static_assert(
+    sizeof(STPathSet) <= detail::STVar::kMaxSize,
+    "STPathSet is too large to fit in STVar's small object optimization. Please verify if it "
+    "should, if the kMaxSize should be increased, or if STPathSet should be stored on the heap "
+    "instead of in STVar.");
+
+STPathSet::STPathSet(DeduplicationTag) : seen_{std::make_unique<hardened_hash_set<STPath>>()}
+{
+}
+
+STPathSet::STPathSet(STPathSet const& other)
+    : STBase{other}
+    , CountedObject<STPathSet>{other}
+    , value_{other.value_}
+    , seen_{
+          other.seen_ != nullptr ? std::make_unique<hardened_hash_set<STPath>>(*other.seen_)
+                                 : nullptr}
+{
+}
+
+STPathSet&
+STPathSet::operator=(STPathSet const& other)
+{
+    if (this == &other)
+    {
+        return *this;
+    }
+    auto newSeen = other.seen_ != nullptr
+        ? std::make_unique<hardened_hash_set<STPath>>(*other.seen_)
+        : nullptr;
+    STBase::operator=(other);
+    CountedObject<STPathSet>::operator=(other);
+    value_ = other.value_;
+    seen_ = std::move(newSeen);
+    return *this;
+}
+
 STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
 {
     std::vector<STPathElement> path;
@@ -65,7 +120,8 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
                 Throw<std::runtime_error>("empty path");
             }
 
-            pushBack(path);
+            // Move rather than converting the vector to an STPath by copy.
+            value_.emplace_back(std::move(path));
             path.clear();
 
             if (iType == STPathElement::TypeNone)
@@ -125,28 +181,16 @@ STPathSet::move(std::size_t n, void* buf)
 bool
 STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 {  // assemble base+tail and add it to the set if it's not a duplicate
-    value_.push_back(base);
-
-    std::vector<STPath>::reverse_iterator it = value_.rbegin();
-
-    STPath& newPath = *it;
-    newPath.pushBack(tail);
-
-    while (++it != value_.rend())
-    {
-        if (*it == newPath)
-        {
-            value_.pop_back();
-            return false;
-        }
-    }
-    return true;
+    XRPL_ASSERT(seen_ != nullptr, "xrpl::STPathSet::assembleAdd : DeduplicationTag");
+    STPath combined = base;
+    combined.pushBack(tail);
+    return appendUnique([&](auto& value) { value.push_back(std::move(combined)); });
 }
 
 bool
 STPathSet::isEquivalent(STBase const& t) const
 {
-    STPathSet const* v = dynamic_cast<STPathSet const*>(&t);
+    auto const* v = dynamic_cast<STPathSet const*>(&t);
     return (v != nullptr) && (value_ == v->value_);
 }
 
@@ -159,13 +203,10 @@ STPathSet::isDefault() const
 bool
 STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const
 {
-    for (auto& p : path_)
-    {
-        if (p.getAccountID() == account && p.getPathAsset() == asset && p.getIssuerID() == issuer)
-            return true;
-    }
-
-    return false;
+    return std::ranges::any_of(path_, [&](auto& p) {
+        return p.getAccountID() == account && p.getPathAsset() == asset &&
+            p.getIssuerID() == issuer;
+    });
 }
 
 json::Value

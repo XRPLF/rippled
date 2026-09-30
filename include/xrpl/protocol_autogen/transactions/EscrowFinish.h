@@ -21,7 +21,7 @@ class EscrowFinishBuilder;
  * Type: ttESCROW_FINISH (2)
  * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use EscrowFinishBuilder to construct new transactions.
@@ -146,6 +146,32 @@ public:
     {
         return this->tx_->isFieldPresent(sfCredentialIDs);
     }
+
+    /**
+     * @brief Get sfGas (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getGas() const
+    {
+        if (hasGas())
+        {
+            return this->tx_->at(sfGas);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfGas is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasGas() const
+    {
+        return this->tx_->isFieldPresent(sfGas);
+    }
 };
 
 /**
@@ -190,7 +216,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfOwner (SoeRequired)
@@ -244,6 +272,17 @@ public:
     setCredentialIDs(std::decay_t<typename SF_VECTOR256::type::value_type> const& value)
     {
         object_[sfCredentialIDs] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfGas (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    EscrowFinishBuilder&
+    setGas(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfGas] = value;
         return *this;
     }
 

@@ -1,17 +1,33 @@
 #pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DatabaseRotating.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/State.h>
 #include <xrpl/shamap/FullBelowCache.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/shamap/TreeNodeCache.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <string>
 #include <thread>
 
 namespace xrpl {
@@ -65,13 +81,20 @@ private:
     // minimum ledger to maintain online.
     std::atomic<LedgerIndex> minimumOnline_;
 
-    NodeStore::Scheduler& scheduler_;
+    node_store::Scheduler& scheduler_;
     beast::Journal const journal_;
-    NodeStore::DatabaseRotating* dbRotating_ = nullptr;
+    node_store::DatabaseRotating* dbRotating_ = nullptr;
     SavedStateDB stateDb_;
     std::thread thread_;
     bool stop_ = false;
     bool healthy_ = true;
+    // Used to prevent ledger gaps from forming during online deletion. Keeps
+    // track of the last validated ledger that was processed without gaps. There
+    // are no guarantees about gaps while online delete is not running. For
+    // that, use advisory_delete and check for gaps externally.
+    LedgerIndex lastGoodValidatedLedger_ = 0;
+    // Used to prevent the circuit breaker from tripping too quickly.
+    LedgerIndex lastSuccessfulHealthCheck_ = 0;
     mutable std::condition_variable cond_;
     mutable std::condition_variable rendezvous_;
     mutable std::mutex mutex_;
@@ -85,11 +108,19 @@ private:
     std::uint32_t deleteBatch_ = 100;
     std::chrono::milliseconds backOff_{100};
     std::chrono::seconds ageThreshold_{60};
-    /// If  the node is out of sync during an online_delete healthWait()
-    /// call, sleep the thread for this time, and continue checking until
-    /// recovery.
-    /// See also: "recovery_wait_seconds" in xrpld-example.cfg
-    std::chrono::seconds recoveryWaitTime_{5};
+    /**
+     * If the node is out of sync, or any recent ledgers are not
+     * available during an online_delete healthWait() call, sleep
+     * the thread for this time, and continue checking until recovery.
+     * See also: "recovery_wait_seconds" in xrpld-example.cfg
+     */
+    std::chrono::seconds recoveryWaitTime_{2};
+    /**
+     * If the rotation stays "unhealthy" for a very long time, the process is aborted, and tried
+     * again later. This value represents the number of ledgers that must be validated without
+     * making rotation progress before the process is aborted.
+     */
+    std::uint32_t maxWaitingLedgers_ = deleteBatch_;
 
     // these do not exist upon SHAMapStore creation, but do exist
     // as of run() or before
@@ -101,7 +132,7 @@ private:
     static constexpr auto kNodeStoreName = "NodeStore";
 
 public:
-    SHAMapStoreImp(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
+    SHAMapStoreImp(Application& app, node_store::Scheduler& scheduler, beast::Journal journal);
 
     std::uint32_t
     clampFetchDepth(std::uint32_t fetchDepth) const override
@@ -109,7 +140,7 @@ public:
         return (deleteInterval_ != 0u) ? std::min(fetchDepth, deleteInterval_) : fetchDepth;
     }
 
-    std::unique_ptr<NodeStore::Database>
+    std::unique_ptr<node_store::Database>
     makeNodeStore(int readThreads) override;
 
     LedgerIndex
@@ -145,8 +176,9 @@ public:
     void
     onLedgerClosed(std::shared_ptr<Ledger const> const& ledger) override;
 
-    void
-    rendezvous() const override;
+    [[nodiscard]]
+    bool
+    rendezvous(std::optional<std::chrono::milliseconds> const& timeout = {}) const override;
     int
     fdRequired() const override;
 
@@ -162,7 +194,7 @@ private:
     void
     dbPaths();
 
-    std::unique_ptr<NodeStore::Backend>
+    std::unique_ptr<node_store::Backend>
     makeBackendRotating(std::string path = std::string());
 
     template <class CacheInstance>
@@ -173,15 +205,16 @@ private:
 
         for (auto const& key : cache.getKeys())
         {
-            dbRotating_->fetchNodeObject(key, 0, NodeStore::FetchType::Synchronous, true);
-            if (!(++check % checkHealthInterval_) && healthWait() == HealthResult::Stopping)
+            dbRotating_->fetchNodeObject(key, 0, node_store::FetchType::Synchronous, true);
+            if (!(++check % checkHealthInterval_) && healthWait() != HealthResult::KeepGoing)
                 return true;
         }
 
         return false;
     }
 
-    /** delete from sqlite table in batches to not lock the db excessively.
+    /**
+     * delete from sqlite table in batches to not lock the db excessively.
      *  Pause briefly to extend access time to other users.
      *  Call with mutex object unlocked.
      */
@@ -201,11 +234,11 @@ private:
     /**
      * This is a health check for online deletion that waits until xrpld is
      * stable before returning. It returns an indication of whether the server
-     * is stopping.
+     * is stopping, or if this attempt should be abandoned.
      *
      * @return Whether the server is stopping.
      */
-    enum class HealthResult { Stopping, KeepGoing };
+    enum class HealthResult { Stopping, Expired, KeepGoing };
     [[nodiscard]] HealthResult
     healthWait();
 

@@ -1,5 +1,9 @@
 #pragma once
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Port.h>
+#include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/BaseHTTPPeer.h>
 #include <xrpl/server/detail/SSLWSPeer.h>
 
@@ -10,6 +14,7 @@
 #include <boost/beast/ssl/ssl_stream.hpp>
 
 #include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -93,14 +98,15 @@ SSLHTTPPeer<Handler>::run()
 {
     if (!this->handler_.onAccept(this->session(), this->remoteAddress_))
     {
-        util::spawn(this->strand_, std::bind(&SSLHTTPPeer::doClose, this->shared_from_this()));
+        util::spawn(
+            this->strand_, [self = this->shared_from_this()](yield_context) { self->doClose(); });
         return;
     }
     if (!socket_.is_open())
         return;
-    util::spawn(
-        this->strand_,
-        std::bind(&SSLHTTPPeer::doHandshake, this->shared_from_this(), std::placeholders::_1));
+    util::spawn(this->strand_, [self = this->shared_from_this()](yield_context doYield) {
+        self->doHandshake(doYield);
+    });
 }
 
 template <class Handler>
@@ -136,9 +142,9 @@ SSLHTTPPeer<Handler>::doHandshake(yield_context doYield)
         this->port().protocol.count("https") > 0;
     if (http)
     {
-        util::spawn(
-            this->strand_,
-            std::bind(&SSLHTTPPeer::doRead, this->shared_from_this(), std::placeholders::_1));
+        util::spawn(this->strand_, [self = this->shared_from_this()](yield_context doYield) {
+            self->doRead(doYield);
+        });
         return;
     }
     // `this` will be destroyed
@@ -166,7 +172,7 @@ SSLHTTPPeer<Handler>::doClose()
     this->startTimer();
     stream_.async_shutdown(bind_executor(
         this->strand_,
-        std::bind(&SSLHTTPPeer::onShutdown, this->shared_from_this(), std::placeholders::_1)));
+        [self = this->shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
 }
 
 template <class Handler>

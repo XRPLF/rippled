@@ -5,11 +5,16 @@
 #include <xrpl/protocol/tokens.h>
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <optional>
+#include <string>
 
 namespace xrpl {
 
-/** Seeds are used to generate deterministic secret keys. */
+/**
+ * Seeds are used to generate deterministic secret keys.
+ */
 class Seed
 {
 private:
@@ -24,12 +29,15 @@ public:
     Seed&
     operator=(Seed const&) = default;
 
-    /** Destroy the seed.
-        The buffer will first be securely erased.
-    */
+    /**
+     * Destroy the seed.
+     * The buffer will first be securely erased.
+     */
     ~Seed();
 
-    /** Construct a seed */
+    /**
+     * Construct a seed
+     */
     /** @{ */
     explicit Seed(Slice const& slice);
     explicit Seed(uint128 const& seed);
@@ -74,42 +82,52 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** Create a seed using secure random numbers. */
+/**
+ * Create a seed using secure random numbers.
+ */
 Seed
 randomSeed();
 
-/** Generate a seed deterministically.
-
-    The algorithm is specific to the XRPL:
-
-        The seed is calculated as the first 128 bits
-        of the SHA512-Half of the string text excluding
-        any terminating null.
-
-    @note This will not attempt to determine the format of
-          the string (e.g. hex or base58).
-*/
+/**
+ * Generate a seed deterministically.
+ *
+ * The algorithm is specific to the XRPL:
+ *
+ *     The seed is calculated as the first 128 bits
+ *     of the SHA512-Half of the string text excluding
+ *     any terminating null.
+ *
+ * @note This will not attempt to determine the format of
+ *       the string (e.g. hex or base58).
+ */
 Seed
 generateSeed(std::string const& passPhrase);
 
-/** Parse a Base58 encoded string into a seed */
+/**
+ * Parse a Base58 encoded string into a seed
+ */
 template <>
 std::optional<Seed>
 parseBase58(std::string const& s);
 
-/** Attempt to parse a string as a seed.
-
-    @param str the string to parse
-    @param rfc1751 true if we should attempt RFC1751 style parsing (deprecated)
- * */
+/**
+ * Attempt to parse a string as a seed.
+ *
+ * @param str the string to parse
+ * @param rfc1751 true if we should attempt RFC1751 style parsing (deprecated)
+ */
 std::optional<Seed>
 parseGenericSeed(std::string const& str, bool rfc1751 = true);
 
-/** Encode a Seed in RFC1751 format */
+/**
+ * Encode a Seed in RFC1751 format
+ */
 std::string
 seedAs1751(Seed const& seed);
 
-/** Format a seed as a Base58 string */
+/**
+ * Format a seed as a Base58 string
+ */
 inline std::string
 toBase58(Seed const& seed)
 {

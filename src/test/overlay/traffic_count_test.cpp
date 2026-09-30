@@ -25,6 +25,16 @@ public:
         auto const known = TrafficCount::categorize(message, protocol::mtPING, false);
         BEAST_EXPECT(known == TrafficCount::Category::Base);
 
+        // cluster messages have a category of their own, in both directions; the same lookup
+        // serves outbound traffic, so a missing entry would hide them from a node's report
+        // whichever way they traveled
+        BEAST_EXPECT(
+            TrafficCount::categorize(message, protocol::mtCLUSTER, true) ==
+            TrafficCount::Category::Cluster);
+        BEAST_EXPECT(
+            TrafficCount::categorize(message, protocol::mtCLUSTER, false) ==
+            TrafficCount::Category::Cluster);
+
         // an unknown message type is categorized as unknown
         auto const unknown =
             TrafficCount::categorize(message, static_cast<protocol::MessageType>(99), false);

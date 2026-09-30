@@ -6,10 +6,11 @@
 
 namespace beast::unit_test::detail {
 
-/** Adapter to constrain a container interface.
-    The interface allows for limited read only operations. Derived classes
-    provide additional behavior.
-*/
+/**
+ * Adapter to constrain a container interface.
+ * The interface allows for limited read only operations. Derived classes
+ * provide additional behavior.
+ */
 template <class Container>
 class ConstContainer
 {
@@ -32,27 +33,33 @@ protected:
     }
 
 public:
-    using value_type = typename cont_type::value_type;
-    using size_type = typename cont_type::size_type;
-    using difference_type = typename cont_type::difference_type;
-    using iterator = typename cont_type::const_iterator;
-    using const_iterator = typename cont_type::const_iterator;
+    using value_type = cont_type::value_type;
+    using size_type = cont_type::size_type;
+    using difference_type = cont_type::difference_type;
+    using iterator = cont_type::const_iterator;
+    using const_iterator = cont_type::const_iterator;
 
-    /** Returns `true` if the container is empty. */
+    /**
+     * Returns `true` if the container is empty.
+     */
     [[nodiscard]] bool
     empty() const
     {
         return cont_.empty();
     }
 
-    /** Returns the number of items in the container. */
+    /**
+     * Returns the number of items in the container.
+     */
     [[nodiscard]] size_type
     size() const
     {
         return cont_.size();
     }
 
-    /** Returns forward iterators for traversal. */
+    /**
+     * Returns forward iterators for traversal.
+     */
     /** @{ */
     [[nodiscard]] const_iterator
     begin() const

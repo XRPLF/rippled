@@ -2,11 +2,19 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/beast/core/bind_handler.hpp>
+
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 // Socket wrapper that supports both SSL and non-SSL connections.
 // Generally, handle it as you would an SSL connection.
@@ -59,16 +67,16 @@ public:
         return socket_->next_layer();
     }
 
-    beast::IP::Endpoint
+    beast::ip::Endpoint
     localEndpoint()
     {
-        return beast::IP::fromAsio(lowestLayer().local_endpoint());
+        return beast::ip::fromAsio(lowestLayer().local_endpoint());
     }
 
-    beast::IP::Endpoint
+    beast::ip::Endpoint
     remoteEndpoint()
     {
-        return beast::IP::fromAsio(lowestLayer().remote_endpoint());
+        return beast::ip::fromAsio(lowestLayer().remote_endpoint());
     }
 
     lowest_layer_type&
@@ -112,12 +120,9 @@ public:
             socket_->next_layer().async_receive(
                 boost::asio::buffer(buffer_),
                 boost::asio::socket_base::message_peek,
-                std::bind(
-                    &AutoSocket::handleAutodetect,
-                    this,
-                    cbFunc,
-                    std::placeholders::_1,
-                    std::placeholders::_2));
+                [this, cbFunc](error_code const& ec, size_t bytesTransferred) {
+                    handleAutodetect(cbFunc, ec, bytesTransferred);
+                });
         }
     }
 
