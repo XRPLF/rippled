@@ -157,7 +157,7 @@ public:
 
     std::string startLedger;
 
-    std::optional<uint256> trapTxHash;
+    std::optional<UInt256> trapTxHash;
 
     // Network parameters
     uint32_t networkId = 0;
@@ -285,7 +285,7 @@ public:
     // These override the command line client settings
     std::optional<beast::ip::Endpoint> rpcIp;
 
-    std::unordered_set<uint256, beast::Uhash<>> features;
+    std::unordered_set<UInt256, beast::Uhash<>> features;
 
     std::string serverDomain;
 

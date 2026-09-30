@@ -274,7 +274,7 @@ private:
 
             return loan["index"].asString();
         }();
-        auto const loanKeylet{keylet::loan(uint256{std::string_view(loanID)})};
+        auto const loanKeylet{keylet::loan(UInt256{std::string_view(loanID)})};
 
         env.close(startDate);
 
