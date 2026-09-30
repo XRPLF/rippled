@@ -82,7 +82,7 @@ struct FinishFailures : testing::Test
     }
 };
 
-TEST_F(FinishFailures, FinishIsRefusedWhileSmartEscrowIsDisabled)
+TEST_F(FinishFailures, finish_is_refused_while_smart_escrow_is_disabled)
 {
     auto disabled = TxTest{allFeatures() - featureSmartEscrow};
     createAccounts(disabled, XRP(5'000), alice, carol);
@@ -96,7 +96,7 @@ TEST_F(FinishFailures, FinishIsRefusedWhileSmartEscrowIsDisabled)
 // The protocol ceiling is bounded in `preflight`, which has no view: no escrow is looked up,
 // so a nonexistent one still reports the allowance problem rather than tecNO_TARGET. That is
 // what separates the ceiling from the voted limit, which is checked in `preclaim`.
-TEST_F(FinishFailures, AnAllowancePastTheProtocolCeilingIsRefusedWithoutAnEscrow)
+TEST_F(FinishFailures, an_allowance_past_the_protocol_ceiling_is_refused_without_an_escrow)
 {
     auto builder = transactions::EscrowFinishBuilder{carol, alice, 1};
     builder.setGas(kMaxGasLimit + 1);
@@ -105,7 +105,7 @@ TEST_F(FinishFailures, AnAllowancePastTheProtocolCeilingIsRefusedWithoutAnEscrow
 }
 
 // Execution cannot be bought unbounded just by asking for it.
-TEST_F(FinishFailures, AnAllowancePastTheGasLimitIsRefused)
+TEST_F(FinishFailures, an_allowance_past_the_gas_limit_is_refused)
 {
     // The escrow has to exist: the voted limit is checked in `preclaim`, which
     // reads the escrow first and would otherwise report tecNO_TARGET.
@@ -123,7 +123,7 @@ TEST_F(FinishFailures, AnAllowancePastTheGasLimitIsRefused)
 }
 
 // A zero gas limit turns the runtime off.
-TEST_F(FinishFailures, AZeroGasLimitDisablesFinishing)
+TEST_F(FinishFailures, a_zero_gas_limit_disables_finishing)
 {
     auto const seq = createEscrow(kReadsLedgerSqn);
 
@@ -141,7 +141,7 @@ TEST_F(FinishFailures, AZeroGasLimitDisablesFinishing)
 // The other rung: zeroing the size limit stops new uploads but must leave an existing escrow
 // finishable, so the feature can be wound down without stranding holders until CancelAfter.
 // Folding the two limits into one predicate would leave every other test here passing.
-TEST_F(FinishFailures, AZeroSizeLimitStillAllowsFinishing)
+TEST_F(FinishFailures, a_zero_size_limit_still_allows_finishing)
 {
     auto const seq = createEscrow(kReadsLedgerSqn);
 
@@ -156,14 +156,14 @@ TEST_F(FinishFailures, AZeroSizeLimitStillAllowsFinishing)
     EXPECT_EQ(env.submit(builder, carol, XRPAmount{10'000'000}).ter, tesSUCCESS);
 }
 
-TEST_F(FinishFailures, AFinishWithoutAGasFieldIsRefused)
+TEST_F(FinishFailures, a_finish_without_a_gas_field_is_refused)
 {
     auto const seq = createEscrow(kReadsLedgerSqn);
 
     EXPECT_EQ(finish(seq, std::nullopt, XRPAmount{100'000}).ter, tefBYTECODE_NOT_INCLUDED);
 }
 
-TEST_F(FinishFailures, AZeroAllowanceIsRefused)
+TEST_F(FinishFailures, a_zero_allowance_is_refused)
 {
     auto const seq = createEscrow(kReadsLedgerSqn);
 
@@ -174,7 +174,7 @@ TEST_F(FinishFailures, AZeroAllowanceIsRefused)
 }
 
 // The allowance is paid up front, so under-paying is caught before anything runs.
-TEST_F(FinishFailures, AFeeThatDoesNotCoverTheAllowanceIsRefused)
+TEST_F(FinishFailures, a_fee_that_does_not_cover_the_allowance_is_refused)
 {
     auto const seq = createEscrow(kReadsLedgerSqn);
     constexpr std::uint32_t kAllowance = 1'000;
@@ -183,7 +183,7 @@ TEST_F(FinishFailures, AFeeThatDoesNotCoverTheAllowanceIsRefused)
     EXPECT_EQ(finish(seq, kAllowance, fee).ter, telINSUF_FEE_P);
 }
 
-TEST_F(FinishFailures, GasAgainstAnEscrowWithoutBytecodeIsRefused)
+TEST_F(FinishFailures, gas_against_an_escrow_without_bytecode_is_refused)
 {
     auto const seq = createPlainEscrow();
     constexpr std::uint32_t kAllowance = 100;
@@ -194,7 +194,9 @@ TEST_F(FinishFailures, GasAgainstAnEscrowWithoutBytecodeIsRefused)
 // A band rather than an equality: the meter stops at the last instruction it could afford,
 // leaving a few units unspent. That band is what separates this from a trap, which stops
 // early and reports a small fraction.
-TEST_F(FinishFailures, RunningOutOfGasConsumesEssentiallyTheWholeAllowanceAndReportsNoReturnCode)
+TEST_F(
+    FinishFailures,
+    running_out_of_gas_consumes_essentially_the_whole_allowance_and_reports_no_return_code)
 {
     auto const seq = createEscrow(kLoopsForever);
     constexpr std::uint32_t kAllowance = 10'000;
@@ -214,7 +216,7 @@ TEST_F(FinishFailures, RunningOutOfGasConsumesEssentiallyTheWholeAllowanceAndRep
 }
 
 // A trap is a fault, not a rejection: gas actually burned, and no return code.
-TEST_F(FinishFailures, ATrapReportsPartialGasAndNoReturnCode)
+TEST_F(FinishFailures, a_trap_reports_partial_gas_and_no_return_code)
 {
     auto const seq = createEscrow(kTraps);
     constexpr std::uint32_t kAllowance = 1'000;

@@ -19,7 +19,7 @@ struct IsAmendmentEnabledCall : HostContextTest
     uint256 const id = uint256::fromVoid(idBytes.data());
 };
 
-TEST_F(IsAmendmentEnabledCall, ThirtyTwoByteEnabledIdAnswersOneWithoutNameLookup)
+TEST_F(IsAmendmentEnabledCall, thirty_two_byte_enabled_id_answers_one_without_name_lookup)
 {
     EXPECT_CALL(host, isAmendmentEnabled(testing::Matcher<uint256 const&>(testing::Eq(id))))
         .WillOnce(testing::Return(1));
@@ -30,7 +30,9 @@ TEST_F(IsAmendmentEnabledCall, ThirtyTwoByteEnabledIdAnswersOneWithoutNameLookup
 }
 
 // The same 32 bytes, read first as an id and, once that is not an enabled one, as a name.
-TEST_F(IsAmendmentEnabledCall, ThirtyTwoByteDisabledIdFallsThroughToNameLookupWithSameBytes)
+TEST_F(
+    IsAmendmentEnabledCall,
+    thirty_two_byte_disabled_id_falls_through_to_name_lookup_with_same_bytes)
 {
     std::string_view const nameFromBytes{
         reinterpret_cast<char const*>(idBytes.data()), idBytes.size()};
@@ -46,7 +48,7 @@ TEST_F(IsAmendmentEnabledCall, ThirtyTwoByteDisabledIdFallsThroughToNameLookupWi
 
 // An id lookup that errors is treated the same as one that says no: both fall through to the
 // name lookup rather than surfacing the error.
-TEST_F(IsAmendmentEnabledCall, ThirtyTwoByteIdLookupErrorFallsThroughToNameLookup)
+TEST_F(IsAmendmentEnabledCall, thirty_two_byte_id_lookup_error_falls_through_to_name_lookup)
 {
     EXPECT_CALL(host, isAmendmentEnabled(testing::Matcher<uint256 const&>(testing::Eq(id))))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::Unimplemented)));
@@ -58,7 +60,7 @@ TEST_F(IsAmendmentEnabledCall, ThirtyTwoByteIdLookupErrorFallsThroughToNameLooku
 
 // Over 64 bytes cannot be a 32-byte id nor a name short enough to matter, so it is refused
 // before either overload runs.
-TEST_F(IsAmendmentEnabledCall, InputOverSixtyFourBytesIsRefusedWithoutAskingHost)
+TEST_F(IsAmendmentEnabledCall, input_over_sixty_four_bytes_is_refused_without_asking_host)
 {
     Bytes const tooLong(65, 0x22);
     EXPECT_CALL(host, isAmendmentEnabled(testing::Matcher<uint256 const&>(testing::_))).Times(0);
@@ -70,7 +72,7 @@ TEST_F(IsAmendmentEnabledCall, InputOverSixtyFourBytesIsRefusedWithoutAskingHost
         hfErrorToInt(HostFunctionError::DataFieldTooLarge));
 }
 
-TEST_F(IsAmendmentEnabledCall, HostErrorBecomesContractReturnValue)
+TEST_F(IsAmendmentEnabledCall, host_error_becomes_contract_return_value)
 {
     Bytes const name{'F', 'e', 'a', 't', 'u', 'r', 'e'};
     EXPECT_CALL(host, isAmendmentEnabled(testing::Matcher<std::string_view const&>(testing::_)))
@@ -81,7 +83,7 @@ TEST_F(IsAmendmentEnabledCall, HostErrorBecomesContractReturnValue)
         hfErrorToInt(HostFunctionError::FieldNotFound));
 }
 
-TEST_F(IsAmendmentEnabledCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(IsAmendmentEnabledCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     Bytes const name{'F', 'e', 'a', 't', 'u', 'r', 'e'};
     EXPECT_CALL(host, isAmendmentEnabled(testing::Matcher<std::string_view const&>(testing::_)))
@@ -94,7 +96,7 @@ TEST_F(IsAmendmentEnabledCall, HostExceptionBecomesInternalFatalAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("isAmendmentEnabled"));
 }
 
-TEST_F(IsAmendmentEnabledCall, NameBytesForwardedVerbatimToNameLookup)
+TEST_F(IsAmendmentEnabledCall, name_bytes_forwarded_verbatim_to_name_lookup)
 {
     std::string_view const name{"MyAmendment"};
     Bytes const nameBytes{name.begin(), name.end()};

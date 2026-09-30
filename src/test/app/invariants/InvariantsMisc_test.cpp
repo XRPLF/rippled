@@ -4,6 +4,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/escrow.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
@@ -1284,6 +1285,51 @@ class InvariantsMisc_test : public InvariantsBase
                 [&checkID](Account const& a1, Account const& a2, Env& env) {
                     checkID = keylet::check(a1.id(), SeqProxy::rawSequence(env.seq(a1))).key;
                     env(check::create(a1, a2, XRP(1)));
+                    return true;
+                });
+
+            // An escrow's owner count scales with its Bytecode size, so
+            // sponsoring one has to move that whole weight. Counting it as a
+            // single unit leaves the sponsored counters short of the object's
+            // real weight, which is what this check exists to catch.
+            uint256 escrowID;
+
+            doInvariantCheck(
+                {{expectMessage}},
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const escrow = ac.view().peek(keylet::unchecked(escrowID));
+                    if (!escrow)
+                    {
+                        return false;
+                    }
+                    // ceil(1200 / 500) == 3 owner counts
+                    escrow->setFieldVL(sfBytecode, Blob(1200, 0x00));
+                    escrow->setAccountID(sfSponsor, a2.id());
+                    ac.view().update(escrow);
+
+                    // Move the counters by a single unit, as a sponsorship
+                    // blind to the Bytecode weight would.
+                    auto const sle1 = ac.view().peek(keylet::account(a1.id()));
+                    auto const sle2 = ac.view().peek(keylet::account(a2.id()));
+                    if (!sle1 || !sle2)
+                    {
+                        return false;
+                    }
+                    sle1->setFieldU32(sfSponsoredOwnerCount, 1);
+                    sle2->setFieldU32(sfSponsoringOwnerCount, 1);
+                    ac.view().update(sle1);
+                    ac.view().update(sle2);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&escrowID](Account const& a1, Account const& a2, Env& env) {
+                    using namespace std::chrono_literals;
+                    escrowID = keylet::escrow(a1.id(), SeqProxy::rawSequence(env.seq(a1))).key;
+                    env(escrow::create(a1, a2, XRP(1)),
+                        escrow::kCondition(escrow::kCb1),
+                        escrow::kCancelTime(env.now() + 100s));
                     return true;
                 });
         }

@@ -18,7 +18,7 @@ struct ParentLedgerTimeCall : HostContextTest
     Bytes const expectedBytes = bytesOfScalar(kParentLedgerTime);
 };
 
-TEST_F(ParentLedgerTimeCall, HostValueIsWrittenAsLittleEndianBytes)
+TEST_F(ParentLedgerTimeCall, host_value_is_written_as_little_endian_bytes)
 {
     EXPECT_CALL(host, getParentLedgerTime()).WillOnce(testing::Return(kParentLedgerTime));
 
@@ -27,7 +27,7 @@ TEST_F(ParentLedgerTimeCall, HostValueIsWrittenAsLittleEndianBytes)
     EXPECT_TRUE(out.holds(bytesOf(expectedBytes)));
 }
 
-TEST_F(ParentLedgerTimeCall, HostErrorBecomesContractReturnValue)
+TEST_F(ParentLedgerTimeCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getParentLedgerTime())
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::Unimplemented)));
@@ -39,7 +39,7 @@ TEST_F(ParentLedgerTimeCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(ParentLedgerTimeCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(ParentLedgerTimeCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getParentLedgerTime())
         .WillOnce(testing::Throw(std::runtime_error{"parent ledger time came apart"}));
@@ -54,7 +54,7 @@ TEST_F(ParentLedgerTimeCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(ParentLedgerTimeCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(ParentLedgerTimeCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     EXPECT_CALL(host, getParentLedgerTime()).WillOnce(testing::Return(kParentLedgerTime));
 
@@ -63,7 +63,7 @@ TEST_F(ParentLedgerTimeCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(ParentLedgerTimeCall, OutRegionOfExactSizeIsWritten)
+TEST_F(ParentLedgerTimeCall, out_region_of_exact_size_is_written)
 {
     EXPECT_CALL(host, getParentLedgerTime()).WillOnce(testing::Return(kParentLedgerTime));
 

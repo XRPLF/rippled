@@ -12,20 +12,20 @@ struct AccountKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(AccountKeyletImpl, MatchesAccountKeyletFunction)
+TEST_F(AccountKeyletImpl, matches_account_keylet_function)
 {
     auto const owner = fund("owner");
 
     expectKeyletMatches(makeHost()->accountKeylet(owner), keylet::account(owner.id()));
 }
 
-TEST_F(AccountKeyletImpl, NonExistentAccountStillComputesKeylet)
+TEST_F(AccountKeyletImpl, non_existent_account_still_computes_keylet)
 {
     auto const nobody = Account{"nobody"};
     expectKeyletMatches(makeHost()->accountKeylet(nobody), keylet::account(nobody.id()));
 }
 
-TEST_F(AccountKeyletImpl, UnsetAccountIsInvalidAccount)
+TEST_F(AccountKeyletImpl, unset_account_is_invalid_account)
 {
     expectError(makeHost()->accountKeylet(AccountID{}), HostFunctionError::InvalidAccount);
 }

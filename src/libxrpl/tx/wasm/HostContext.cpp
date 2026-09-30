@@ -1,6 +1,7 @@
 #include <xrpl/tx/wasm/HostContext.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
@@ -1128,6 +1129,10 @@ HostContext::floatFromSTAmount(
         {
             return hfErrorToInt(parsed.error());
         }
+        if (!isLegalMPT(*parsed) || !isLegalNet(*parsed))
+        {
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
         return invoke<false>(out, [&] { return hostFunctions_.floatFromSTAmount(*parsed, mode); });
     });
 }
@@ -1139,6 +1144,14 @@ HostContext::floatFromSTNumber(
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        // The rounding mode has to be installed *before* the bytes are decoded, not
+        // only around the encode the host does afterwards.
+        auto rounding = std::optional<NumberRoundModeGuard>{};
+        if (auto const rm = Number::checkedRoundingMode(mode))
+        {
+            rounding.emplace(*rm);
+        }
+
         auto const parsed = parseST<STNumber>(number);
         if (!parsed)
         {

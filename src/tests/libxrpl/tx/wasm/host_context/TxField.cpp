@@ -19,7 +19,7 @@ struct TxFieldCall : HostContextTest
     std::int32_t fieldCode = sfBalance.getCode();
 };
 
-TEST_F(TxFieldCall, FieldCodeBecomesSFieldHostIsAskedFor)
+TEST_F(TxFieldCall, field_code_becomes_sfield_host_is_asked_for)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getTxField(testing::Ref(sfBalance))).WillOnce(testing::Return(value));
@@ -30,7 +30,7 @@ TEST_F(TxFieldCall, FieldCodeBecomesSFieldHostIsAskedFor)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(TxFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(TxFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getTxField(testing::Ref(sfBalance)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::FieldNotFound)));
@@ -42,7 +42,7 @@ TEST_F(TxFieldCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(TxFieldCall, UnknownFieldCodeIsRefusedWithoutAskingHost)
+TEST_F(TxFieldCall, unknown_field_code_is_refused_without_asking_host)
 {
     fieldCode = 0x7fff'0000;  // a code nothing is registered under
     EXPECT_CALL(host, getTxField).Times(0);
@@ -53,7 +53,7 @@ TEST_F(TxFieldCall, UnknownFieldCodeIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidField));
 }
 
-TEST_F(TxFieldCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(TxFieldCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getTxField(testing::Ref(sfBalance)))
         .WillOnce(testing::Throw(std::runtime_error{"balance field came apart"}));
@@ -67,7 +67,7 @@ TEST_F(TxFieldCall, HostExceptionBecomesInternalFatalAndIsLogged)
 }
 
 // `guarded`'s `catch (...)` arm, for a thrown value that is not a `std::exception`.
-TEST_F(TxFieldCall, NonStandardThrowBecomesInternalFatalAndIsLogged)
+TEST_F(TxFieldCall, non_standard_throw_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getTxField(testing::Ref(sfBalance))).WillOnce(testing::Throw(42));
 
@@ -80,7 +80,7 @@ TEST_F(TxFieldCall, NonStandardThrowBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(TxFieldCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(TxFieldCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getTxField(testing::Ref(sfBalance))).WillOnce(testing::Return(value));
@@ -91,7 +91,7 @@ TEST_F(TxFieldCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(TxFieldCall, OutRegionOfExactSizeIsWritten)
+TEST_F(TxFieldCall, out_region_of_exact_size_is_written)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getTxField(testing::Ref(sfBalance))).WillOnce(testing::Return(value));
@@ -104,7 +104,7 @@ TEST_F(TxFieldCall, OutRegionOfExactSizeIsWritten)
 
 // `kMaxWasmDataLength` is the engine's cap, not `HostContext`'s: a length past it crosses
 // unchanged here, where the sibling engine test sees `DataFieldTooLarge` instead.
-TEST_F(TxFieldCall, LengthPastProtocolCapCrossesUnchanged)
+TEST_F(TxFieldCall, length_past_protocol_cap_crosses_unchanged)
 {
     Bytes const value(kMaxWasmDataLength + 1, 0xab);
     EXPECT_CALL(host, getTxField(testing::Ref(sfBalance))).WillOnce(testing::Return(value));
@@ -114,7 +114,7 @@ TEST_F(TxFieldCall, LengthPastProtocolCapCrossesUnchanged)
         hostContext.getTxField(fieldCode, out.slice()), static_cast<std::int32_t>(value.size()));
 }
 
-TEST_F(TxFieldCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(TxFieldCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, getTxField(testing::Ref(sfBalance))).WillOnce(testing::Return(Bytes{}));
 

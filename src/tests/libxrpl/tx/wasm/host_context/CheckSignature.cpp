@@ -20,7 +20,7 @@ struct CheckSignatureCall : HostContextTest
     Bytes const pubkey{'k', 'e', 'y'};
 };
 
-TEST_F(CheckSignatureCall, MessageSignatureAndPubkeyForwardedVerbatim)
+TEST_F(CheckSignatureCall, message_signature_and_pubkey_forwarded_verbatim)
 {
     EXPECT_CALL(host, checkSignature(BytesAre("msg"), BytesAre("sig"), BytesAre("key")))
         .WillOnce(testing::Return(1));
@@ -30,7 +30,7 @@ TEST_F(CheckSignatureCall, MessageSignatureAndPubkeyForwardedVerbatim)
 
 // The absence of any length check is a decision, not an oversight: empty slices are not a
 // malformed shape here, they reach the host like any other.
-TEST_F(CheckSignatureCall, EmptySlicesReachHostUnvalidated)
+TEST_F(CheckSignatureCall, empty_slices_reach_host_unvalidated)
 {
     auto const isEmpty = testing::Property(&Slice::empty, true);
     EXPECT_CALL(host, checkSignature(isEmpty, isEmpty, isEmpty)).WillOnce(testing::Return(0));
@@ -38,7 +38,7 @@ TEST_F(CheckSignatureCall, EmptySlicesReachHostUnvalidated)
     EXPECT_EQ(hostContext.checkSignature(bytesOf(Bytes{}), bytesOf(Bytes{}), bytesOf(Bytes{})), 0);
 }
 
-TEST_F(CheckSignatureCall, HostErrorBecomesContractReturnValue)
+TEST_F(CheckSignatureCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, checkSignature(BytesAre("msg"), BytesAre("sig"), BytesAre("key")))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::InvalidParams)));
@@ -48,7 +48,7 @@ TEST_F(CheckSignatureCall, HostErrorBecomesContractReturnValue)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(CheckSignatureCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(CheckSignatureCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, checkSignature(BytesAre("msg"), BytesAre("sig"), BytesAre("key")))
         .WillOnce(testing::Throw(std::runtime_error{"signature check came apart"}));

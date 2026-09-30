@@ -11,7 +11,7 @@ struct FloatCompareImpl : FloatTest
 {
 };
 
-TEST_F(FloatCompareImpl, MalformedInputs)
+TEST_F(FloatCompareImpl, malformed_inputs)
 {
     // A wrong-size (here empty) buffer is malformed; the impl normalizes any well-formed
     // 12-byte buffer, so size is the only rejection.
@@ -21,21 +21,21 @@ TEST_F(FloatCompareImpl, MalformedInputs)
         h->floatCompare(slice(FloatTest::kOne), Slice{}), HostFunctionError::FloatInputMalformed);
 }
 
-TEST_F(FloatCompareImpl, Less)
+TEST_F(FloatCompareImpl, less)
 {
     expectValue(
         makeHost()->floatCompare(slice(FloatTest::kIntMin), slice(FloatTest::kIntZero)),
         FloatOrdering::Less);
 }
 
-TEST_F(FloatCompareImpl, Greater)
+TEST_F(FloatCompareImpl, greater)
 {
     expectValue(
         makeHost()->floatCompare(slice(FloatTest::kIntMax), slice(FloatTest::kIntZero)),
         FloatOrdering::Greater);
 }
 
-TEST_F(FloatCompareImpl, Equal)
+TEST_F(FloatCompareImpl, equal)
 {
     expectValue(
         makeHost()->floatCompare(slice(FloatTest::kOne), slice(FloatTest::kOne)),
@@ -46,7 +46,7 @@ TEST_F(FloatCompareImpl, Equal)
 // compiles against — `FloatOrdering` is declared twice, so each side pins its own numbers
 // as `HostFunctionError` already does. Non-negativity is the invariant, not an accident of
 // the numbering: `Less` is `2`, not `memcmp`'s `-1`, which is `Unimplemented`.
-TEST_F(FloatCompareImpl, VerdictCodesAreTheOnesTheGuestReads)
+TEST_F(FloatCompareImpl, verdict_codes_are_the_ones_the_guest_reads)
 {
     EXPECT_EQ(floatOrderingToInt(FloatOrdering::Equal), 0);
     EXPECT_EQ(floatOrderingToInt(FloatOrdering::Greater), 1);
@@ -61,7 +61,7 @@ TEST_F(FloatCompareImpl, VerdictCodesAreTheOnesTheGuestReads)
 
 // A non-canonical encoding of 10 (mantissa 100000, exponent -4) is normalized on decode, so
 // it compares equal to the canonical 10 — the impl accepts any well-formed 12-byte buffer.
-TEST_F(FloatCompareImpl, NonCanonicalNormalizes)
+TEST_F(FloatCompareImpl, non_canonical_normalizes)
 {
     Bytes const nonCanonicalTen{
         0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x86, 0xA0, 0xFF, 0xFF, 0xFF, 0xFC};

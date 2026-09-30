@@ -19,7 +19,7 @@ struct FloatToIntCall : HostContextTest
     std::int32_t const mode = 3;
 };
 
-TEST_F(FloatToIntCall, OperandAndModeAreForwardedResultWrittenAsLittleEndianBytes)
+TEST_F(FloatToIntCall, operand_and_mode_are_forwarded_result_written_as_little_endian_bytes)
 {
     std::int64_t const value = -123456789;
     EXPECT_CALL(host, floatToInt(BytesAre("toint"), mode)).WillOnce(testing::Return(value));
@@ -29,7 +29,7 @@ TEST_F(FloatToIntCall, OperandAndModeAreForwardedResultWrittenAsLittleEndianByte
     EXPECT_TRUE(out.holds(bytesOf(bytesOfScalar(value))));
 }
 
-TEST_F(FloatToIntCall, HostErrorBecomesContractReturnValue)
+TEST_F(FloatToIntCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatToInt(BytesAre("toint"), mode))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -41,7 +41,7 @@ TEST_F(FloatToIntCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(FloatToIntCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(FloatToIntCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, floatToInt(BytesAre("toint"), mode))
         .WillOnce(testing::Throw(std::runtime_error{"float to int came apart"}));
@@ -56,7 +56,7 @@ TEST_F(FloatToIntCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(FloatToIntCall, SevenByteOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(FloatToIntCall, seven_byte_out_region_writes_nothing_and_returns_true_length)
 {
     std::int64_t const value = 42;
     EXPECT_CALL(host, floatToInt(BytesAre("toint"), mode)).WillOnce(testing::Return(value));
@@ -68,7 +68,7 @@ TEST_F(FloatToIntCall, SevenByteOutRegionWritesNothingAndReturnsTrueLength)
 
 // No length rule exists at this layer: a differently sized operand still reaches the host
 // rather than being refused.
-TEST_F(FloatToIntCall, OddSizedOperandReachesHostUnchanged)
+TEST_F(FloatToIntCall, odd_sized_operand_reaches_host_unchanged)
 {
     Bytes const oddX{0x2a};
     EXPECT_CALL(host, floatToInt(testing::_, mode)).WillOnce(testing::Return(std::int64_t{7}));

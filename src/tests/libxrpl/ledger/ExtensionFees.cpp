@@ -75,7 +75,7 @@ protected:
 // test how Ledger::setup decides the three extension fee fields
 
 // Genesis is the one place local configuration legitimately reaches the ledger.
-TEST_F(ExtensionFees, GenesisWritesTheConfiguredValues)
+TEST_F(ExtensionFees, genesis_writes_the_configured_values)
 {
     auto const ledger = makeGenesis({featureSmartEscrow});
 
@@ -86,7 +86,7 @@ TEST_F(ExtensionFees, GenesisWritesTheConfiguredValues)
 
 // Absent must resolve to the protocol constant, never to the constructed Fees,
 // which every caller builds from local configuration.
-TEST_F(ExtensionFees, AbsentFieldsResolveToTheProtocolConstants)
+TEST_F(ExtensionFees, absent_fields_resolve_to_the_protocol_constants)
 {
     auto const genesis = makeGenesis({featureSmartEscrow});
 
@@ -108,7 +108,7 @@ TEST_F(ExtensionFees, AbsentFieldsResolveToTheProtocolConstants)
 }
 
 // The fallback only fills gaps; a present field still governs.
-TEST_F(ExtensionFees, PresentFieldsAreTakenFromTheLedger)
+TEST_F(ExtensionFees, present_fields_are_taken_from_the_ledger)
 {
     constexpr std::uint32_t kVotedGasLimit{987'654};
     constexpr std::uint32_t kVotedBytecodeSizeLimit{87'654};
@@ -128,7 +128,7 @@ TEST_F(ExtensionFees, PresentFieldsAreTakenFromTheLedger)
 }
 
 // An explicit zero is the kill switch, not absence.
-TEST_F(ExtensionFees, AnExplicitZeroIsNotTreatedAsAbsent)
+TEST_F(ExtensionFees, an_explicit_zero_is_not_treated_as_absent)
 {
     auto const genesis = makeGenesis({featureSmartEscrow});
 

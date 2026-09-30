@@ -25,7 +25,7 @@ struct DepositPreauthKeyletCall : HostContextTest
     AccountID const authorize = AccountID::fromVoid(authorizeBytes.data());
 };
 
-TEST_F(DepositPreauthKeyletCall, AccountAndAuthorizeAreForwardedInOrderKeyletIsWritten)
+TEST_F(DepositPreauthKeyletCall, account_and_authorize_are_forwarded_in_order_keylet_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, depositPreauthKeylet(account, authorize)).WillOnce(testing::Return(keylet));
@@ -38,7 +38,7 @@ TEST_F(DepositPreauthKeyletCall, AccountAndAuthorizeAreForwardedInOrderKeyletIsW
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(DepositPreauthKeyletCall, HostErrorBecomesContractReturnValue)
+TEST_F(DepositPreauthKeyletCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, depositPreauthKeylet(account, authorize))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -51,7 +51,7 @@ TEST_F(DepositPreauthKeyletCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(DepositPreauthKeyletCall, MalformedAccountIsRefusedWithoutAskingHost)
+TEST_F(DepositPreauthKeyletCall, malformed_account_is_refused_without_asking_host)
 {
     Bytes const malformedAccount(AccountID::size() - 1, 0x01);
     EXPECT_CALL(host, depositPreauthKeylet).Times(0);
@@ -63,7 +63,7 @@ TEST_F(DepositPreauthKeyletCall, MalformedAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(DepositPreauthKeyletCall, MalformedAuthorizeIsRefusedWithoutAskingHost)
+TEST_F(DepositPreauthKeyletCall, malformed_authorize_is_refused_without_asking_host)
 {
     Bytes const malformedAuthorize(AccountID::size() + 1, 0x91);
     EXPECT_CALL(host, depositPreauthKeylet).Times(0);
@@ -77,7 +77,7 @@ TEST_F(DepositPreauthKeyletCall, MalformedAuthorizeIsRefusedWithoutAskingHost)
 
 // Both ids fail one combined length check, so a call malformed in both places answers the
 // same `InvalidParams` as either alone; what's observable is that the host is never asked.
-TEST_F(DepositPreauthKeyletCall, BothAccountsMalformedIsRefusedWithoutAskingHost)
+TEST_F(DepositPreauthKeyletCall, both_accounts_malformed_is_refused_without_asking_host)
 {
     Bytes const malformedAccount(AccountID::size() - 1, 0x01);
     Bytes const malformedAuthorize(AccountID::size() - 1, 0x91);
@@ -90,7 +90,7 @@ TEST_F(DepositPreauthKeyletCall, BothAccountsMalformedIsRefusedWithoutAskingHost
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(DepositPreauthKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(DepositPreauthKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, depositPreauthKeylet(account, authorize))
         .WillOnce(testing::Throw(std::runtime_error{"deposit preauth keylet came apart"}));
@@ -106,7 +106,7 @@ TEST_F(DepositPreauthKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(DepositPreauthKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(DepositPreauthKeyletCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, depositPreauthKeylet(account, authorize)).WillOnce(testing::Return(keylet));
@@ -119,7 +119,7 @@ TEST_F(DepositPreauthKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(DepositPreauthKeyletCall, OutRegionOfExactSizeIsWritten)
+TEST_F(DepositPreauthKeyletCall, out_region_of_exact_size_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, depositPreauthKeylet(account, authorize)).WillOnce(testing::Return(keylet));
@@ -132,7 +132,7 @@ TEST_F(DepositPreauthKeyletCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(DepositPreauthKeyletCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(DepositPreauthKeyletCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, depositPreauthKeylet(account, authorize)).WillOnce(testing::Return(Bytes{}));
 

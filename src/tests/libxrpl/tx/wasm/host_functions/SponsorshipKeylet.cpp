@@ -12,7 +12,7 @@ struct SponsorshipKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(SponsorshipKeyletImpl, MatchesSponsorshipKeyletFunction)
+TEST_F(SponsorshipKeyletImpl, matches_sponsorship_keylet_function)
 {
     auto const sponsor = fund("sponsor");
     auto const sponsee = fund("sponsee");
@@ -22,7 +22,7 @@ TEST_F(SponsorshipKeyletImpl, MatchesSponsorshipKeyletFunction)
         keylet::sponsorship(sponsor.id(), sponsee.id()));
 }
 
-TEST_F(SponsorshipKeyletImpl, CantSponsorSelf)
+TEST_F(SponsorshipKeyletImpl, cant_sponsor_self)
 {
     auto const sponsor = fund("sponsor");
 
@@ -31,7 +31,7 @@ TEST_F(SponsorshipKeyletImpl, CantSponsorSelf)
         HostFunctionError::InvalidParams);
 }
 
-TEST_F(SponsorshipKeyletImpl, InvalidAccount)
+TEST_F(SponsorshipKeyletImpl, invalid_account)
 {
     auto const sponsor = fund("sponsor");
 

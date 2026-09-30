@@ -19,7 +19,7 @@ struct FloatFromMantExpCall : HostContextTest
     std::int32_t const mode = 1;
 };
 
-TEST_F(FloatFromMantExpCall, MantissaExponentAndModeAreForwardedResultIsWritten)
+TEST_F(FloatFromMantExpCall, mantissa_exponent_and_mode_are_forwarded_result_is_written)
 {
     Bytes const result{1, 2, 3};
     EXPECT_CALL(host, floatFromMantExp(mantissa, exponent, mode)).WillOnce(testing::Return(result));
@@ -31,7 +31,7 @@ TEST_F(FloatFromMantExpCall, MantissaExponentAndModeAreForwardedResultIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(result)));
 }
 
-TEST_F(FloatFromMantExpCall, HostErrorBecomesContractReturnValue)
+TEST_F(FloatFromMantExpCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatFromMantExp(mantissa, exponent, mode))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -43,7 +43,7 @@ TEST_F(FloatFromMantExpCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(FloatFromMantExpCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(FloatFromMantExpCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, floatFromMantExp(mantissa, exponent, mode))
         .WillOnce(testing::Throw(std::runtime_error{"float from mant exp came apart"}));
@@ -58,7 +58,7 @@ TEST_F(FloatFromMantExpCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(FloatFromMantExpCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(FloatFromMantExpCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const result{1, 2, 3};
     EXPECT_CALL(host, floatFromMantExp(mantissa, exponent, mode)).WillOnce(testing::Return(result));

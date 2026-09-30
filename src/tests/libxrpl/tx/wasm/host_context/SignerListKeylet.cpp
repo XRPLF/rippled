@@ -19,7 +19,7 @@ struct SignerListKeyletCall : HostContextTest
     AccountID const account = AccountID::fromVoid(accountBytes.data());
 };
 
-TEST_F(SignerListKeyletCall, AccountIsForwardedKeyletIsWritten)
+TEST_F(SignerListKeyletCall, account_is_forwarded_keylet_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, signerListKeylet(account)).WillOnce(testing::Return(keylet));
@@ -31,7 +31,7 @@ TEST_F(SignerListKeyletCall, AccountIsForwardedKeyletIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(SignerListKeyletCall, HostErrorBecomesContractReturnValue)
+TEST_F(SignerListKeyletCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, signerListKeylet(account))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -43,7 +43,7 @@ TEST_F(SignerListKeyletCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(SignerListKeyletCall, ShortAccountIsRefusedWithoutAskingHost)
+TEST_F(SignerListKeyletCall, short_account_is_refused_without_asking_host)
 {
     Bytes const shortAccount(AccountID::size() - 1, 0x01);
     EXPECT_CALL(host, signerListKeylet).Times(0);
@@ -54,7 +54,7 @@ TEST_F(SignerListKeyletCall, ShortAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(SignerListKeyletCall, LongAccountIsRefusedWithoutAskingHost)
+TEST_F(SignerListKeyletCall, long_account_is_refused_without_asking_host)
 {
     Bytes const longAccount(AccountID::size() + 1, 0x01);
     EXPECT_CALL(host, signerListKeylet).Times(0);
@@ -65,7 +65,7 @@ TEST_F(SignerListKeyletCall, LongAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(SignerListKeyletCall, EmptyAccountIsRefusedWithoutAskingHost)
+TEST_F(SignerListKeyletCall, empty_account_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, signerListKeylet).Times(0);
 
@@ -75,7 +75,7 @@ TEST_F(SignerListKeyletCall, EmptyAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(SignerListKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(SignerListKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, signerListKeylet(account))
         .WillOnce(testing::Throw(std::runtime_error{"signer list keylet came apart"}));
@@ -90,7 +90,7 @@ TEST_F(SignerListKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(SignerListKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(SignerListKeyletCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, signerListKeylet(account)).WillOnce(testing::Return(keylet));
@@ -102,7 +102,7 @@ TEST_F(SignerListKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(SignerListKeyletCall, OutRegionOfExactSizeIsWritten)
+TEST_F(SignerListKeyletCall, out_region_of_exact_size_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, signerListKeylet(account)).WillOnce(testing::Return(keylet));
@@ -114,7 +114,7 @@ TEST_F(SignerListKeyletCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(SignerListKeyletCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(SignerListKeyletCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, signerListKeylet(account)).WillOnce(testing::Return(Bytes{}));
 
