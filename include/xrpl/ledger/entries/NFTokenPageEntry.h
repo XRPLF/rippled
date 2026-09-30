@@ -9,6 +9,7 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STObject.h>
 
 #include <optional>
@@ -51,6 +52,17 @@ public:
 
         return std::nullopt;
     }
+
+    /**
+     * Adds @p nft to this page's NFTokens array, keeps the array sorted, and
+     * updates the page.
+     *
+     * The caller must make sure that the token belongs on this page and that
+     * the page has space for it.
+     */
+    void
+    insertToken(STObject&& nft)
+        requires Base::kIsWritable;
 };
 
 using NFTokenPageEntryR = NFTokenPageEntry<ReadView>;
