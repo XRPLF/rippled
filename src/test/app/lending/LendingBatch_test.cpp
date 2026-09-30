@@ -434,8 +434,8 @@ private:
         if (auto const loanSle = env.le(loanKeylet); BEAST_EXPECT(loanSle))
             BEAST_EXPECT(loanSle->at(sfPrincipalOutstanding) == 0);
         BEAST_EXPECT(env.balance(borrower, iou) == iou(8));
-        env.require(offers(setup.mm1, 0));
-        env.require(offers(mm2, 0));
+        env.require(Offers(setup.mm1, 0));
+        env.require(Offers(mm2, 0));
         if (auto const brokerSle = env.le(broker.brokerKeylet()); BEAST_EXPECT(brokerSle))
             BEAST_EXPECT(brokerSle->at(sfDebtTotal) == 0);
         if (auto const vaultSle = env.le(broker.vaultKeylet()); BEAST_EXPECT(vaultSle))
@@ -501,7 +501,7 @@ private:
         }
         BEAST_EXPECT(env.balance(borrower, iou) == iou(0));
         BEAST_EXPECT(env.balance(borrower) == borrowerBalanceBefore - batchFee);
-        env.require(offers(setup.mm1, 1));
+        env.require(Offers(setup.mm1, 1));
         if (auto const vaultSle = env.le(broker.vaultKeylet()); BEAST_EXPECT(vaultSle))
             BEAST_EXPECT(vaultSle->at(sfAssetsAvailable) == assetsAvailableBefore);
     }
@@ -560,9 +560,9 @@ private:
             return;
 
         // Advance past NextPaymentDueDate so the payment is late.
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
-        env.close(tp{d{loanSleBefore->at(sfNextPaymentDueDate) + 1}});
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
+        env.close(Tp{D{loanSleBefore->at(sfNextPaymentDueDate) + 1}});
 
         auto const brokerSleBefore = env.le(broker.brokerKeylet());
         auto const vaultSleBefore = env.le(broker.vaultKeylet());
@@ -628,9 +628,9 @@ private:
         // longer refused with tecTOO_SOON.
         auto const dueDate = loanSleBefore->at(sfNextPaymentDueDate);
         auto const gracePeriod = loanSleBefore->at(sfGracePeriod);
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
-        env.close(tp{d{dueDate + gracePeriod + 1}});
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
+        env.close(Tp{D{dueDate + gracePeriod + 1}});
 
         auto const brokerSleBefore = env.le(broker.brokerKeylet());
         auto const vaultSleBefore = env.le(broker.vaultKeylet());
