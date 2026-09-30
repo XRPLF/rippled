@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -16,6 +17,9 @@
 #include <expected>
 
 namespace xrpl {
+
+// Defined in VaultHelpers.h, which includes this header.
+enum class WaiveUnrealizedLoss : bool;
 
 template <typename ViewT>
 class VaultEntry : public SLEBase<ViewT, ltVAULT>
@@ -99,6 +103,18 @@ public:
      */
     [[nodiscard]] std::expected<STAmount, TER>
     clampToAssetsTotalScale(STAmount const& delta) const;
+
+    /**
+     * Returns the assets backing outstanding shares for a withdrawal:
+     * sfAssetsTotal minus sfLossUnrealized, or sfAssetsTotal alone when the
+     * unrealized loss is waived. Used by assetsToSharesWithdraw and
+     * sharesToAssetsWithdraw as the numerator of the share/asset exchange
+     * rate.
+     *
+     * @param waive Whether to skip subtracting the unrealized loss.
+     */
+    [[nodiscard]] Number
+    assetsTotalForWithdrawal(WaiveUnrealizedLoss waive) const;
 };
 
 using VaultEntryR = VaultEntry<ReadView>;
