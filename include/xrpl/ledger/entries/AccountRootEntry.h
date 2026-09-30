@@ -8,6 +8,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -141,6 +142,19 @@ public:
     isGlobalFrozen() const
     {
         return (*this)->isFlag(lsfGlobalFreeze);
+    }
+
+    /**
+     * Returns this account's IOU transfer fee as Rate, or kParityRate if it
+     * sets none. Rate specifies the fee as fractions of 1 billion. For
+     * example, 1% transfer rate is represented as 1,010,000,000.
+     */
+    [[nodiscard]] Rate
+    transferRate() const
+    {
+        if ((*this)->isFieldPresent(sfTransferRate))
+            return Rate{(*this)->getFieldU32(sfTransferRate)};
+        return kParityRate;
     }
 
     /**
