@@ -484,7 +484,7 @@ MPTEndpointStep<TDerived>::maxPaymentFlow(ReadView const& sb) const
         // the previous step may issue or redeem. Allow OutstandingAmount
         // to temporarily overflow. Let the previous step figure out how
         // to limit the flow.
-        std::int64_t const maxAmount = maxMPTAmount(*sle);
+        std::int64_t const maxAmount = sle.maxAmount();
         return {MPTAmount{maxAmount}, DebtDirection::Issues};
     }
 
