@@ -21,6 +21,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/entries/PermissionedDomainEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -1146,7 +1147,8 @@ struct Credentials_test : public beast::unit_test::Suite
         auto sleCredAfter = av.read(credKeylet);
         BEAST_EXPECT(sleCredAfter && sleCredAfter->isFlag(lsfAccepted));
 
-        auto const domTer = xrpl::verifyValidDomain(av, subject.id(), domain, j);
+        xrpl::PermissionedDomainEntryR const domainEntry(domain, av);
+        auto const domTer = xrpl::verifyValidDomain(av, subject.id(), domainEntry, j);
         sleCredAfter = av.read(credKeylet);
         BEAST_EXPECT(sleCredAfter && sleCredAfter->isFlag(lsfAccepted));
 
