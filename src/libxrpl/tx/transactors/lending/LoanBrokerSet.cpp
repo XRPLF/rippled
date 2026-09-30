@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -116,7 +117,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     {
         // Updating an existing Broker
 
-        auto const sleBroker = ctx.view.read(keylet::loanBroker(*brokerID));
+        LoanBrokerEntryR const sleBroker(*brokerID, ctx.view);
         if (!sleBroker)
         {
             JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -194,7 +195,7 @@ LoanBrokerSet::doApply()
     if (auto const brokerID = tx[~sfLoanBrokerID])
     {
         // Modify an existing LoanBroker
-        auto broker = view.peek(keylet::loanBroker(*brokerID));
+        LoanBrokerEntryW broker(*brokerID, view);
         if (!broker)
         {
             // This should be impossible
@@ -215,7 +216,7 @@ LoanBrokerSet::doApply()
         if (auto const debtMax = tx[~sfDebtMaximum])
             broker->at(sfDebtMaximum) = *debtMax;
 
-        view.update(broker);
+        broker.update();
 
         associateAsset(*broker, vaultAsset);
     }
@@ -245,11 +246,14 @@ LoanBrokerSet::doApply()
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
-        auto broker = std::make_shared<SLE>(keylet::loanBroker(accountID_, sequence));
+        LoanBrokerEntryW broker(accountID_, sequence, view);
+        broker.newSLE();
 
-        if (auto const ter = dirLink(view, accountID_, broker))
+        // dirLink takes a non-const SLE::pointer&, so pass it a copy of the handle.
+        SLE::pointer brokerSle = broker.mutableRawSle();
+        if (auto const ter = dirLink(view, accountID_, brokerSle))
             return ter;  // LCOV_EXCL_LINE
-        if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
+        if (auto const ter = dirLink(view, vaultPseudoID, brokerSle, sfVaultNode))
             return ter;  // LCOV_EXCL_LINE
 
         // Increases the owner count by two: one for the LoanBroker object, and
@@ -286,7 +290,7 @@ LoanBrokerSet::doApply()
         if (auto const coverLiq = tx[~sfCoverRateLiquidation])
             broker->at(sfCoverRateLiquidation) = *coverLiq;
 
-        view.insert(broker);
+        broker.insert();
 
         associateAsset(*broker, vaultAsset);
     }

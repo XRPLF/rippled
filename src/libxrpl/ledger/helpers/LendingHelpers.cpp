@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -38,7 +39,7 @@ namespace xrpl {
 [[nodiscard]] TER
 canApplyToBrokerCover(
     ReadView const& view,
-    SLE::ConstRef sleBroker,
+    LoanBrokerEntryR const& sleBroker,
     Asset const& vaultAsset,
     STAmount const& amount,
     beast::Journal j,
@@ -99,7 +100,7 @@ getLoanDefaultFreezeExemptAccounts(ReadView const& view, STTx const& tx)
     // rejects deletion while DebtTotal != 0), and a LoanBroker can't outlive
     // its Vault (VaultDelete's preclaim has the equivalent guard) -- so these
     // two lookups are structurally guaranteed to succeed here.
-    auto const brokerSle = view.read(keylet::loanBroker(loanSle->at(sfLoanBrokerID)));
+    LoanBrokerEntryR const brokerSle(loanSle->at(sfLoanBrokerID), view);
     if (!brokerSle)
         return std::nullopt;  // LCOV_EXCL_LINE
 
@@ -1587,7 +1588,7 @@ computeOverpaymentComponents(
  * interest rate.
  */
 std::pair<TenthBips16, Number>
-loanRatesFor(SLE::ConstRef loan, SLE::ConstRef brokerSle)
+loanRatesFor(SLE::ConstRef loan, LoanBrokerEntryR const& brokerSle)
 {
     TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
     TenthBips32 const interestRate{loan->at(sfInterestRate)};
@@ -1605,7 +1606,7 @@ makeFullPayment(
     Asset const& asset,
     ApplyView& view,
     SLE::Ref loan,
-    SLE::ConstRef brokerSle,
+    LoanBrokerEntryR const& brokerSle,
     STAmount const& amount,
     beast::Journal j)
 {
@@ -1630,7 +1631,7 @@ makeLatePayment(
     Asset const& asset,
     ApplyView const& view,
     SLE::Ref loan,
-    SLE::ConstRef brokerSle,
+    LoanBrokerEntryR const& brokerSle,
     STAmount const& amount,
     beast::Journal j)
 {
@@ -1664,7 +1665,7 @@ makeRegularPayment(
     Asset const& asset,
     ApplyView const& view,
     SLE::Ref loan,
-    SLE::ConstRef brokerSle,
+    LoanBrokerEntryR const& brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
     beast::Journal j)
@@ -2255,7 +2256,7 @@ loanMakePayment(
     Asset const& asset,
     ApplyView& view,
     SLE::Ref loan,
-    SLE::ConstRef brokerSle,
+    LoanBrokerEntryR const& brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
     beast::Journal j)

@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Rate.h>
@@ -325,7 +326,7 @@ decreaseOwnerCountForObject(
 void
 adjustLoanBrokerOwnerCount(
     ApplyView& view,
-    SLE::Ref brokerSle,
+    LoanBrokerEntryW& brokerSle,
     std::int32_t delta,
     beast::Journal j);
 

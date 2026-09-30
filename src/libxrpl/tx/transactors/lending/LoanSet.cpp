@@ -6,7 +6,9 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -169,7 +171,7 @@ LoanSet::checkSign(PreclaimContext const& ctx)
         if (auto const c = ctx.tx.at(~sfCounterparty))
             return c;
 
-        if (auto const broker = ctx.view.read(keylet::loanBroker(ctx.tx[sfLoanBrokerID])))
+        if (auto const broker = LoanBrokerEntryR(ctx.tx[sfLoanBrokerID], ctx.view))
             return broker->at(sfOwner);
         return std::nullopt;
     }();
@@ -286,7 +288,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     auto const account = tx[sfAccount];
     auto const brokerID = tx[sfLoanBrokerID];
 
-    auto const brokerSle = ctx.view.read(keylet::loanBroker(brokerID));
+    LoanBrokerEntryR const brokerSle(brokerID, ctx.view);
     if (!brokerSle)
     {
         // This can only be hit if there's a counterparty specified, otherwise
@@ -439,7 +441,7 @@ LoanSet::doApply()
 
     auto const brokerID = tx[sfLoanBrokerID];
 
-    auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
+    LoanBrokerEntryW brokerSle(brokerID, view);
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerOwner = brokerSle->at(sfOwner);
@@ -712,7 +714,7 @@ LoanSet::doApply()
     // does
     if (loanSequenceProxy == 0)
         return tecMAX_SEQUENCE_REACHED;
-    view.update(brokerSle);
+    brokerSle.update();
 
     // Put the loan into the pseudo-account's directory
     if (auto const ter = dirLink(view, brokerPseudo, loan, sfLoanBrokerNode))

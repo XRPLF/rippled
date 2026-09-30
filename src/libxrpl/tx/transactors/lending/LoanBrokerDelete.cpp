@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -42,7 +43,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     auto const account = tx[sfAccount];
     auto const brokerID = tx[sfLoanBrokerID];
 
-    auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
+    LoanBrokerEntryR const sleBroker(brokerID, ctx.view);
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -128,7 +129,7 @@ LoanBrokerDelete::doApply()
     auto const brokerID = tx[sfLoanBrokerID];
 
     // Delete the loan broker
-    auto broker = view().peek(keylet::loanBroker(brokerID));
+    LoanBrokerEntryW broker(brokerID, view());
     if (!broker)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultID = broker->at(sfVaultID);
@@ -192,10 +193,10 @@ LoanBrokerDelete::doApply()
 
         // Decreases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        decreaseOwnerCountForObject(view(), owner, broker, 2, j_);
+        decreaseOwnerCountForObject(view(), owner, broker.mutableRawSle(), 2, j_);
     }
 
-    view().erase(broker);
+    broker.erase();
 
     return tesSUCCESS;
 }
