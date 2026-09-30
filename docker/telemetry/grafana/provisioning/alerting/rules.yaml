@@ -568,17 +568,14 @@ groups:
                 type: __expr__
                 uid: __expr__
 
-      # Node-store read/write latency. Sustained high IO latency is the usual
-      # upstream cause of state flapping and sync stalls, so this often fires
-      # first and explains the others. Measured p99-of-p95 is 37-49ms on
-      # healthy nodes and 488-566ms on nodes that are actively flapping, so
-      # 1000ms flags genuine degradation rather than the current baseline.
-      #
-      # Still valid after the millisecond ladder was extended: that change only
-      # ADDED edges above 5s (2s/3s/4s/10s/30s/60s/120s) and removed none, so
-      # every edge bracketing this threshold -- 25/50/100/250/500/1000ms -- is
-      # unchanged and the measurements above still hold. ios_latency's own mean
-      # is 12.9ms, far below the threshold.
+      # Wait of work posted to the main I/O event loop (the asio io_context
+      # that runs peer networking, the RPC servers and timers). This is not
+      # NodeStore latency: NodeStore reads and writes run on other threads.
+      # Only probes of 10ms or more are recorded, so the p95 covers slow
+      # probes only and has no value most of the time on a healthy node.
+      # Over 1000ms for 10m means the loop keeps stalling for a second or
+      # more, not a single spike. The millisecond ladder has edges at 500ms
+      # and 1000ms, so the threshold sits on a bucket edge.
       - uid: xrpld-nodestore-io-latency-high
         title: NodeStoreIOLatencyHigh
         condition: is_io_slow
@@ -590,12 +587,14 @@ groups:
           severity: warning
           category: jobqueue
         annotations:
-          summary: "Node store IO latency high on {{ $labels.service_instance_id }}"
+          summary: "I/O event loop latency high on {{ $labels.service_instance_id }}"
           description: >-
-            p95 node-store IO latency on {{ $labels.service_instance_id }} over 10m: {{
+            p95 I/O event loop wait on {{ $labels.service_instance_id }} over 10m: {{
             printf "%.0f" $values.io_p95_ms_now.Value }}ms (threshold: over 1000ms).
           action: >-
-            Check disk utilisation and whether the store is on a slow volume.
+            Look for work that blocks the io_context threads: CPU saturation, or a
+            slow peer, RPC or timer handler. The log shows an "io_context latency"
+            warning for each probe of 500ms or more.
         data:
           - refId: io_p95_ms_10m
             relativeTimeRange:
