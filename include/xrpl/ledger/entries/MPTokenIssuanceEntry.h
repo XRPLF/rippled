@@ -191,6 +191,17 @@ public:
         AccountID const& to,
         WaiveMPTCanTransfer waive = WaiveMPTCanTransfer::No,
         std::uint8_t depth = 0) const;
+
+    /**
+     * Check whether this MPT may be traded on the DEX.
+     *
+     * Returns tecOBJECT_NOT_FOUND if the issuance does not exist and
+     * tecNO_PERMISSION if lsfMPTCanTrade is not set. Vault shares recurse
+     * into the underlying asset's tradability via sfReferenceHolding;
+     * @p depth is bounded at kMaxAssetCheckDepth.
+     */
+    [[nodiscard]] TER
+    canTrade(std::uint8_t depth = 0) const;
 };
 
 using MPTokenIssuanceEntryR = MPTokenIssuanceEntry<ReadView>;
