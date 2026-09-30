@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -103,7 +104,7 @@ getLoanDefaultFreezeExemptAccounts(ReadView const& view, STTx const& tx)
     if (!brokerSle)
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID)));
+    VaultEntryR const vaultSle(brokerSle->at(sfVaultID), view);
     if (!vaultSle)
         return std::nullopt;  // LCOV_EXCL_LINE
 
@@ -253,7 +254,7 @@ namespace {
 // VaultVersion::CashBasis). Vaults created before activation keep instant
 // interest recognition forever, even after the amendment later turns on.
 bool
-cashBasisEnabled(SLE::ConstRef vaultSle)
+cashBasisEnabled(VaultEntryR const& vaultSle)
 {
     return getVaultVersion(vaultSle) == VaultVersion::CashBasis;
 }
@@ -262,7 +263,7 @@ cashBasisEnabled(SLE::ConstRef vaultSle)
 
 AccountingDeltas
 loanOriginationDeltas(
-    SLE::ConstRef vaultSle,
+    VaultEntryR const& vaultSle,
     Number const& principalRequested,
     Number const& interestDue)
 {
@@ -273,7 +274,7 @@ loanOriginationDeltas(
 
 bool
 loanOriginationExceedsVaultMaximum(
-    SLE::ConstRef vaultSle,
+    VaultEntryR const& vaultSle,
     Number const& vaultTotal,
     Number const& interestDue)
 {
@@ -288,14 +289,14 @@ loanOriginationExceedsVaultMaximum(
 }
 
 Number
-loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle)
+loanVaultExposure(VaultEntryR const& vaultSle, SLE::ConstRef loanSle)
 {
     return cashBasisEnabled(vaultSle) ? cash_basis::loanVaultExposure(loanSle)
                                       : instant_recognition::loanVaultExposure(loanSle);
 }
 
 AccountingDeltas
-loanPaymentDeltas(SLE::ConstRef vaultSle, LoanPaymentParts const& parts)
+loanPaymentDeltas(VaultEntryR const& vaultSle, LoanPaymentParts const& parts)
 {
     return cashBasisEnabled(vaultSle) ? cash_basis::loanPaymentDeltas(parts)
                                       : instant_recognition::loanPaymentDeltas(parts);

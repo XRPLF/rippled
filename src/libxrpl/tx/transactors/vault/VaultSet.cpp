@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -63,7 +64,7 @@ VaultSet::preflight(PreflightContext const& ctx)
 TER
 VaultSet::preclaim(PreclaimContext const& ctx)
 {
-    auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
+    VaultEntryR const vault(ctx.tx[sfVaultID], ctx.view);
     if (!vault)
         return tecNO_ENTRY;
 
@@ -123,7 +124,7 @@ VaultSet::doApply()
     auto const& tx = ctx_.tx;
 
     // Update existing object.
-    auto vault = view().peek(keylet::vault(tx[sfVaultID]));
+    VaultEntryW vault(tx[sfVaultID], view());
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -170,7 +171,7 @@ VaultSet::doApply()
     // Note, we must update Vault object even if only DomainID is being updated
     // in Issuance object. Otherwise it's really difficult for Vault invariants
     // to verify the operation.
-    view().update(vault);
+    vault.update();
 
     associateAsset(*vault, vaultAsset);
 

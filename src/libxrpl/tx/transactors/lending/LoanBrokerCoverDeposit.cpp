@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -62,7 +63,7 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
         return tecNO_PERMISSION;
     }
-    auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
+    VaultEntryR const vault(sleBroker->at(sfVaultID), ctx.view);
     if (!vault)
     {
         // LCOV_EXCL_START
@@ -143,7 +144,7 @@ LoanBrokerCoverDeposit::doApply()
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const vault = view().read(keylet::vault(broker->at(sfVaultID)));
+    VaultEntryR const vault(broker->at(sfVaultID), view());
     if (!vault)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

@@ -26,6 +26,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -190,7 +191,7 @@ protected:
             using namespace jtx;
 
             auto const vaultSle = env.le(keylet::vault(vaultID));
-            return getAssetsTotalScale(vaultSle);
+            return getAssetsTotalScale(VaultEntryR(vaultSle, *env.current()));
         }
     };
 
@@ -346,7 +347,8 @@ protected:
                 {
                     auto const expectedDebt =
                         env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                            getVaultVersion(vaultSle) == VaultVersion::CashBasis
+                            getVaultVersion(VaultEntryR(vaultSle, *env.current())) ==
+                                VaultVersion::CashBasis
                         ? principalOutstanding
                         : principalOutstanding + interestOwed;
                     env.test.BEAST_EXPECT(brokerDebt == expectedDebt);
@@ -451,7 +453,8 @@ protected:
                             env.test.BEAST_EXPECT(
                                 vaultSle->at(sfLossUnrealized) ==
                                 (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                                         getVaultVersion(vaultSle) == VaultVersion::CashBasis
+                                         getVaultVersion(VaultEntryR(vaultSle, *env.current())) ==
+                                             VaultVersion::CashBasis
                                      ? principalOutstanding
                                      : totalValue - managementFeeOutstanding));
                         }
@@ -666,7 +669,8 @@ protected:
                     vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable);
                 auto const unrealizedLoss = vaultSle->at(sfLossUnrealized) +
                     (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                             getVaultVersion(vaultSle) == VaultVersion::CashBasis
+                             getVaultVersion(VaultEntryR(vaultSle, *env.current())) ==
+                                 VaultVersion::CashBasis
                          ? state.principalOutstanding
                          : state.totalValue - state.managementFeeOutstanding);
 

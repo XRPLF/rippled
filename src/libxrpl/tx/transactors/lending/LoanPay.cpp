@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -167,7 +168,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         // Let preclaim worry about the error for this
         return normalCost;
     }
-    auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID)));
+    VaultEntryR const vaultSle(brokerSle->at(sfVaultID), view);
     if (!vaultSle)
     {
         // Let preclaim worry about the error for this
@@ -273,7 +274,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
     auto const vaultID = loanBrokerSle->at(sfVaultID);
-    auto const vaultSle = ctx.view.read(keylet::vault(vaultID));
+    VaultEntryR const vaultSle(vaultID, ctx.view);
     if (!vaultSle)
     {
         // This should be impossible
@@ -349,7 +350,7 @@ LoanPay::doApply()
     auto const brokerOwner = brokerSle->at(sfOwner);
     auto const brokerPseudoAccount = brokerSle->at(sfAccount);
     auto const vaultID = brokerSle->at(sfVaultID);
-    auto const vaultSle = view.peek(keylet::vault(vaultID));
+    VaultEntryW vaultSle(vaultID, view);
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultPseudoAccount = vaultSle->at(sfAccount);
@@ -514,7 +515,7 @@ LoanPay::doApply()
 
     //------------------------------------------------------
     // Vault object state changes
-    view.update(vaultSle);
+    vaultSle.update();
 
     Number const assetsAvailableBefore = *assetsAvailableProxy;
     Number const assetsTotalBefore = *assetsTotalProxy;

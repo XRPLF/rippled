@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
@@ -255,7 +256,7 @@ adjustImpreciseNumber(
 }
 
 inline int
-getAssetsTotalScale(SLE::ConstRef vaultSle)
+getAssetsTotalScale(VaultEntryR const& vaultSle)
 {
     if (!vaultSle)
         return Number::kMinExponent - 1;  // LCOV_EXCL_LINE
@@ -266,7 +267,10 @@ getAssetsTotalScale(SLE::ConstRef vaultSle)
 // DebtTotal is a broker-level aggregate maintained at vault scale, so the
 // rounding must also use vault scale — never an individual loan's scale.
 inline Number
-minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::ConstRef vaultSle)
+minimumBrokerCover(
+    Number const& debtTotal,
+    TenthBips32 coverRateMinimum,
+    VaultEntryR const& vaultSle)
 {
     XRPL_ASSERT(
         vaultSle && vaultSle->getType() == ltVAULT, "xrpl::minimumBrokerCover : valid Vault sle");
@@ -385,21 +389,21 @@ loanPaymentDeltas(LoanPaymentParts const& parts);
 // transactors call.
 AccountingDeltas
 loanOriginationDeltas(
-    SLE::ConstRef vaultSle,
+    VaultEntryR const& vaultSle,
     Number const& principalRequested,
     Number const& interestDue);
 
 bool
 loanOriginationExceedsVaultMaximum(
-    SLE::ConstRef vaultSle,
+    VaultEntryR const& vaultSle,
     Number const& vaultTotal,
     Number const& interestDue);
 
 Number
-loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle);
+loanVaultExposure(VaultEntryR const& vaultSle, SLE::ConstRef loanSle);
 
 AccountingDeltas
-loanPaymentDeltas(SLE::ConstRef vaultSle, LoanPaymentParts const& parts);
+loanPaymentDeltas(VaultEntryR const& vaultSle, LoanPaymentParts const& parts);
 
 namespace detail {
 // These classes and functions should only be accessed by LendingHelper

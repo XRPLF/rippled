@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -161,7 +162,7 @@ determineClawAmount(
     SLE const& sleBroker,
     Asset const& vaultAsset,
     std::optional<STAmount> const& amount,
-    SLE::ConstRef vaultSle,
+    VaultEntryR const& vaultSle,
     Rules const& rules)
 {
     auto const maxClawAmount = [&]() {
@@ -254,7 +255,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
 
     auto const brokerPseudoAccountID = sleBroker->at(sfAccount);
 
-    auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
+    VaultEntryR const vault(sleBroker->at(sfVaultID), ctx.view);
     if (!vault)
     {
         // LCOV_EXCL_START
@@ -350,7 +351,7 @@ LoanBrokerCoverClawback::doApply()
 
     auto const brokerPseudoID = *sleBroker->at(sfAccount);
 
-    auto const vault = view().read(keylet::vault(sleBroker->at(sfVaultID)));
+    VaultEntryR const vault(sleBroker->at(sfVaultID), view());
     if (!vault)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
