@@ -107,6 +107,7 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/TreeNodeCache.h>
 #include <xrpl/telemetry/MetricsRegistry.h>
+#include <xrpl/telemetry/PreRegisteredCounters.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/Telemetry.h>
 #include <xrpl/tx/apply.h>
@@ -1518,6 +1519,11 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     // Only the observable instruments wait for their subsystems; they are
     // registered by startTelemetryGauges() once overlay_ exists.
     startTelemetry();
+
+    // Create the get-object refusal counter at 0 for each reason. Refusals come
+    // from peers, and no peer can connect before overlay_ is built, further
+    // down, so this precedes every refusal.
+    telemetry::preRegisterGetObjectCounters(*this);
 
     if (validatorKeys_.keys)
         setMaxDisallowedLedger();
