@@ -791,33 +791,4 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
     return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
 }
 
-std::expected<bool, TER>
-verifyAndAdjustLPTokenBalance(
-    Sandbox& sb,
-    STAmount const& lpTokens,
-    AMMEntryW& ammSle,
-    AccountID const& account)
-{
-    auto const res = isOnlyLiquidityProvider(sb, lpTokens.get<Issue>(), account);
-    if (!res.has_value())
-    {
-        return std::unexpected<TER>(res.error());
-    }
-
-    if (res.value())
-    {
-        if (withinRelativeDistance(
-                lpTokens, ammSle->getFieldAmount(sfLPTokenBalance), Number{1, -3}))
-        {
-            ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
-            ammSle.update();
-        }
-        else
-        {
-            return std::unexpected<TER>(tecAMM_INVALID_TOKENS);
-        }
-    }
-    return true;
-}
-
 }  // namespace xrpl
