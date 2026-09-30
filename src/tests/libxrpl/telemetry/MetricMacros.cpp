@@ -4,17 +4,17 @@
  *
  * Compiled only when XRPL_ENABLE_TELEMETRY is defined -- the macros expand
  * to no-ops otherwise and have nothing to test beyond "it compiles", which
- * MetricsRegistry.cpp's own no-op build already proves.
+ * the telemetry-off build of each file that uses them already proves.
  *
  * These tests exercise the macros against a bare SDK MeterProvider (no
  * OTLP exporter, no network, no background thread), the same technique
  * GetMeter.cpp uses. The macros are duck-typed: they only ever call
  * app.getMetricsRegistry(), then recording() and meter() on the result.
  * The tests therefore drive them through a tiny FakeApp/FakeMetricsRegistry
- * pair instead of the real telemetry::MetricsRegistry, whose enabled-path
- * .cpp drags xrpld link dependencies (LedgerMaster, TxQ, NetworkOPs, ...)
- * that the standalone xrpl_tests binary cannot satisfy -- the same reason
- * MetricsRegistry.cpp is only compiled into this binary on the no-op path.
+ * pair instead of the real telemetry::MetricsRegistry. The real one links
+ * into this binary too (the MetricsRegistry tests build an enabled one), but
+ * an enabled registry builds an OTLP exporter with its own reader thread,
+ * and it cannot count the meter() calls the gating tests assert on.
  */
 
 #ifdef XRPL_ENABLE_TELEMETRY
@@ -33,6 +33,7 @@
 #include <xrpl/telemetry/MetricsRegistry.h>
 
 #include <gtest/gtest.h>
+#include <helpers/CollectedCounters.h>
 #include <opentelemetry/metrics/meter.h>
 #include <opentelemetry/metrics/meter_provider.h>
 #include <opentelemetry/metrics/noop.h>
@@ -70,8 +71,8 @@ namespace {
 /**
  * Duck-typed stand-in for telemetry::MetricsRegistry. The macros only
  * ever call recording() and meter() on the registry pointer, so this
- * minimal type is all they need -- and it links without pulling in the
- * real MetricsRegistry.cpp's xrpld dependencies.
+ * minimal type is all they need. Unlike the real one, it starts no exporter
+ * and counts its meter() calls.
  */
 class FakeMetricsRegistry
 {
@@ -368,29 +369,6 @@ public:
     }
 
     /**
-     * Pull one collection and count the exported streams per metric name.
-     *
-     * Two instruments that share a name but not a description export as two
-     * streams. collect() keys points by name alone, so it would merge them.
-     *
-     * @return Metric name -> number of streams exported under that name.
-     */
-    [[nodiscard]] std::map<std::string, std::size_t>
-    streamCounts()
-    {
-        std::map<std::string, std::size_t> out;
-        Collect([&out](otel_sdk::ResourceMetrics& resourceMetrics) {
-            for (auto const& scope : resourceMetrics.scope_metric_data_)
-            {
-                for (auto const& metric : scope.metric_data_)
-                    ++out[metric.instrument_descriptor.name_];
-            }
-            return true;
-        });
-        return out;
-    }
-
-    /**
      * Cumulative so counter totals are absolute, not per-interval deltas.
      */
     [[nodiscard]] otel_sdk::AggregationTemporality
@@ -475,13 +453,23 @@ public:
     }
 
     /**
-     * @return Streams per metric name from one synchronous collection. See
-     * CollectOnDemandReader::streamCounts().
+     * Collect once through xrpl::test::collectCounters().
+     *
+     * Two instruments that share a name but not a description export as two
+     * streams. collect() keys points by name alone, so it would merge them;
+     * this keeps the stream count.
+     *
+     * @return Each counter from one synchronous collection, by name, with its
+     * stream count and points.
+     *
+     * @note collectCounters() fails the running test for any point that is
+     * not an integer sum with string labels, so call this only where every
+     * instrument on the provider is a counter.
      */
-    [[nodiscard]] std::map<std::string, std::size_t>
-    streamCounts() const
+    [[nodiscard]] std::map<std::string, xrpl::test::CollectedCounter>
+    counters() const
     {
-        return reader_->streamCounts();
+        return xrpl::test::collectCounters(*reader_);
     }
 
 private:
@@ -803,12 +791,12 @@ TEST(MetricMacros, disabled_registry_is_noop)
 //   overlay_dial_latency_ms                    (same)
 //   handshake_negotiation_fail_total{reason}   Handshake throwNegotiationFailure
 //   unl_fetch_total{site,outcome}              ValidatorSite::reportFetchOutcome
-//   unl_quorum{metric}                         MetricsRegistry::registerUnlQuorumGauge
-//   clock_close_offset_seconds{metric}         MetricsRegistry::registerClockSkewGauge
+//   unl_quorum{metric}                         AppMetricGauges::registerUnlQuorumGauge
+//   clock_close_offset_seconds{metric}         AppMetricGauges::registerClockSkewGauge
 //
 // The two observable gauges are registered directly on the SDK meter, mirroring
-// the production callback shape, because the real MetricsRegistry's enabled path
-// cannot be linked into this standalone binary (see the file header).
+// the production callback shape: the production registrations are
+// AppMetricGauges methods in xrpld, and this binary links only xrpl.libxrpl.
 // -----------------------------------------------------------------
 
 // dns_resolve_total must tally each outcome separately and dns_resolve_latency_ms
@@ -1020,10 +1008,12 @@ TEST(MetricMacros, unl_fetch_total_keys_series_on_site_and_outcome_pair)
     }
 }
 
-// unl_quorum observes two series from ONE callback, mirroring
-// MetricsRegistry::registerUnlQuorumGauge(): trusted_keys and quorum under the
-// `metric` label. Registered on the SDK meter directly because that production
-// method cannot be linked here (see the file header).
+// unl_quorum observes its series from ONE callback. This mirrors two of the
+// three that AppMetricGauges::registerUnlQuorumGauge() observes under the
+// `metric` label, trusted_keys and quorum; production also observes
+// quorum_disabled, and skips quorum while it is disabled. Registered on the SDK
+// meter directly because that production method is in xrpld, which this binary
+// does not link.
 TEST(MetricMacros, unl_quorum_gauge_observes_exact_trusted_keys_and_quorum)
 {
     CollectingProvider const provider;
@@ -1072,7 +1062,7 @@ TEST(MetricMacros, unl_quorum_gauge_observes_exact_trusted_keys_and_quorum)
 // clock_close_offset_seconds must carry a NEGATIVE offset through unchanged --
 // that is the real-world case (local clock ahead of the network) and the reason
 // the production gauge is an Int64ObservableGauge rather than an unsigned
-// counter. Mirrors MetricsRegistry::registerClockSkewGauge().
+// counter. Mirrors AppMetricGauges::registerClockSkewGauge().
 TEST(MetricMacros, clock_skew_gauge_observes_exact_negative_offset)
 {
     CollectingProvider const provider;
@@ -1174,17 +1164,17 @@ TEST(MetricMacros, sync_diagnostics_metrics_emit_nothing_when_registry_disabled)
 //
 // Asserts the EXACT values and label shapes of the five sync-state signals:
 //   state_changes_total{from,to}    NetworkOPsImp::setMode
-//   sync_state{metric}             MetricsRegistry::registerSyncStateGauge
+//   sync_state{metric}             AppMetricGauges::registerSyncStateGauge
 //                                    initial_full_duration_us
 //                                    network_ledger_gate
 //                                    server_stall_seconds
 //                                    ledgers_behind
-//   server_stall_events_total      MetricsRegistry::registerStallEventsCounter
+//   server_stall_events_total      AppMetricGauges::registerStallEventsCounter
 //
 // The counter goes through the same macro production uses. The two observable
 // instruments are registered directly on the SDK meter, mirroring the
-// production callback shape, because the real MetricsRegistry's enabled path
-// cannot be linked into this standalone binary (see the file header).
+// production callback shape: the production registrations are AppMetricGauges
+// methods in xrpld, and this binary links only xrpl.libxrpl.
 // -----------------------------------------------------------------
 
 // state_changes_total is keyed on the (from, to) PAIR, so a transition edge is
@@ -1259,7 +1249,7 @@ TEST(MetricMacros, state_changes_total_keys_series_on_from_to_pair)
 }
 
 // sync_state fans four independent signals out of ONE callback under the
-// `metric` label, mirroring MetricsRegistry::registerSyncStateGauge(). The
+// `metric` label, mirroring AppMetricGauges::registerSyncStateGauge(). The
 // values chosen are the diagnostically interesting combination: never reached
 // FULL (0 duration) while the gate is still closed, the loop is stalled, and
 // the node trails the network.
@@ -1346,7 +1336,7 @@ TEST(MetricMacros, sync_state_gauge_observes_exact_stuck_node_values)
 
 // server_stall_events_total is a cumulative ObservableCounter, not a gauge
 // series. It must aggregate as a Sum (so rate() is meaningful) and be
-// unlabelled, mirroring MetricsRegistry::registerStallEventsCounter().
+// unlabelled, mirroring AppMetricGauges::registerStallEventsCounter().
 TEST(MetricMacros, stall_events_counter_observes_exact_cumulative_count)
 {
     CollectingProvider const provider;
@@ -1418,17 +1408,17 @@ TEST(MetricMacros, state_changes_total_emits_nothing_when_registry_disabled)
 //   sync_acquire_source_total{source}      InboundLedger::init
 //   sync_acquire_no_progress_total         InboundLedger::onTimer
 //   sync_addnode_total{outcome}            InboundLedger::recordBatchOutcome
-//   sync_acquire{metric}                   MetricsRegistry::registerSyncAcquireGauge
+//   sync_acquire{metric}                   AppMetricGauges::registerSyncAcquireGauge
 //                                            missing_state_nodes_max
 //                                            missing_tx_nodes_max
 //                                            received_data_depth
 //                                            in_flight
-//   shamap_cache_hit_rate{metric}          MetricsRegistry::registerCacheHitRateDetailGauge
+//   shamap_cache_hit_rate{metric}          AppMetricGauges::registerCacheHitRateDetailGauge
 //
 // The counters go through the same macros production uses. The two observable
 // instruments are registered directly on the SDK meter, mirroring the production
-// callback shape, because the real MetricsRegistry's enabled path cannot be
-// linked into this standalone binary (see the file header).
+// callback shape: the production registrations are AppMetricGauges methods in
+// xrpld, and this binary links only xrpl.libxrpl.
 // -----------------------------------------------------------------
 
 // sync_acquire_source_total splits acquires by whether the local node store
@@ -1582,7 +1572,7 @@ TEST(MetricMacros, addnode_outcomes_record_exact_batch_tallies)
 }
 
 // sync_acquire fans four values out of ONE aggregated snapshot, mirroring
-// MetricsRegistry::registerSyncAcquireGauge(). The values chosen are the
+// AppMetricGauges::registerSyncAcquireGauge(). The values chosen are the
 // headline stuck-sync reading: two acquires in flight, the state tree still
 // missing nodes, a backed-up stash.
 TEST(MetricMacros, sync_acquire_gauge_observes_exact_stuck_acquire_values)
@@ -1662,7 +1652,7 @@ TEST(MetricMacros, sync_acquire_gauge_observes_exact_stuck_acquire_values)
 }
 
 // shamap_cache_hit_rate reports the tree-node cache rate normalized to 0.0-1.0,
-// mirroring MetricsRegistry::registerCacheHitRateDetailGauge(). The scaling is
+// mirroring AppMetricGauges::registerCacheHitRateDetailGauge(). The scaling is
 // the part worth pinning: TaggedCache::getHitRate() returns 0-100, and the
 // dashboard panel uses percentunit, so an unnormalized value would render as
 // 9000% instead of 90%.
@@ -1766,13 +1756,13 @@ TEST(MetricMacros, acquire_counters_emit_nothing_when_registry_disabled)
 // JobQueue saturation diagnostics.
 //
 // Asserts the EXACT values and label shapes of the pool-wide gauge:
-//   jobq_saturation{metric}         MetricsRegistry::registerJobQueueSaturationGauge
+//   jobq_saturation{metric}         AppMetricGauges::registerJobQueueSaturationGauge
 //                                     running_tasks / worker_threads / total_waiting
 //
 // It is an observable instrument registered directly on the SDK meter,
-// mirroring the production callback shape, because the real MetricsRegistry's
-// enabled path cannot be linked into this standalone binary (see the file
-// header). The reading type is the REAL JobQueue::WorkerSaturation, so a
+// mirroring the production callback shape: the production registration is an
+// AppMetricGauges method in xrpld, and this binary links only xrpl.libxrpl.
+// The reading type is the REAL JobQueue::WorkerSaturation, so a
 // rename or reorder on either side breaks this test instead of silently
 // drifting from production.
 //
@@ -1852,18 +1842,18 @@ TEST(MetricMacros, jobq_saturation_gauge_observes_exact_pool_exhaustion_values)
 //
 // Asserts the EXACT values and label shapes of the three gauges and the four
 // counters:
-//   peer_ledger_supply{metric}      MetricsRegistry::registerPeerLedgerSupplyGauge
-//   peerfinder_slot_census{metric}  MetricsRegistry::registerSlotCensusGauge
-//   amendment_block{metric}         MetricsRegistry::registerAmendmentBlockGauge
+//   peer_ledger_supply{metric}      AppMetricGauges::registerPeerLedgerSupplyGauge
+//   peerfinder_slot_census{metric}  AppMetricGauges::registerSlotCensusGauge
+//   amendment_block{metric}         AppMetricGauges::registerAmendmentBlockGauge
 //   peer_disconnect_total{reason,direction}       PeerImp::close
 //   peer_accept_total{outcome}                    OverlayImpl::reportAcceptOutcome
 //   serve_refused_total{request,reason}           PeerImp::reportServeRefusal
 //   ledger_jump_total (unlabelled)                NetworkOPsImp::switchLastClosedLedger
 //
 // The three gauges are observable instruments registered directly on the SDK
-// meter, mirroring the production callback shape, because the real
-// MetricsRegistry's enabled path cannot be linked into this standalone binary
-// (see the file header). The snapshot types are the REAL xrpl::PeerLedgerSupply
+// meter, mirroring the production callback shape: the production
+// registrations are AppMetricGauges methods in xrpld, and this binary links
+// only xrpl.libxrpl. The snapshot types are the REAL xrpl::PeerLedgerSupply
 // and xrpl::peer_finder::SlotCensus aggregates, so a field rename or a reorder on
 // either side breaks these tests instead of silently drifting from production.
 // Both are plain header-only aggregates with no out-of-line members, so using
@@ -2867,12 +2857,11 @@ TEST(MetricMacros, ledger_replay_counters_emit_nothing_when_disabled)
 
 // The nodestore_state gauge derives its two mean latencies from cumulative
 // totals the node store already keeps. This mirrors the production callback in
-// MetricsRegistry::observeNodeStoreTotals, whose enabled path cannot be linked
-// into this binary (MetricsRegistry.cpp is excluded from xrpl_tests when
-// telemetry is ON -- see src/tests/libxrpl/CMakeLists.txt), so the derivation
-// is asserted here against the same inputs. The division itself is the real
-// MetricsRegistry::scaledMean, a public constexpr inline that IS linkable, so
-// this test exercises production arithmetic rather than a copy of it.
+// AppMetricGauges::observeNodeStoreTotals, which is in xrpld, and this binary
+// links only xrpl.libxrpl, so the derivation is asserted here against the same
+// inputs. The division itself is the real MetricsRegistry::scaledMean, a
+// public constexpr inline that IS linkable, so this test exercises production
+// arithmetic rather than a copy of it.
 TEST(MetricMacros, nodestore_state_gauge_observes_exact_derived_means)
 {
     // Each scenario gets a FRESH provider. The reader reports cumulative
@@ -3288,10 +3277,10 @@ TEST(MetricMacros, sweep_malloc_trim_skips_reclaim_when_rss_grew)
     EXPECT_EQ(data.size(), 2u);
 }
 
-// rotation_state is polled from the node store, so the production callback in
-// MetricsRegistry::registerRotationStateGauge cannot be linked into this
-// binary. The derivation it performs is asserted here against the same two
-// inputs, mirroring how nodestore_state is tested above.
+// rotation_state is polled from the node store. Its production callback, in
+// AppMetricGauges::registerRotationStateGauge, is in xrpld, which this binary
+// does not link, so the derivation it performs is asserted here against the
+// same two inputs, mirroring how nodestore_state is tested above.
 TEST(MetricMacros, rotation_state_gauge_observes_in_flight_window_and_copy_forward_total)
 {
     // Each scenario gets a FRESH provider: the reader is cumulative, so a
@@ -4171,7 +4160,7 @@ TEST(MetricMacros, counter_preregister_then_increment_reads_one_on_the_same_seri
     EXPECT_EQ(counterValue(data, "prereg_shared_total", attrs("outcome", "late")), 1);
     EXPECT_EQ(counterValue(data, "prereg_shared_total", attrs("outcome", "ok")), 0);
     EXPECT_EQ(counterValue(data, "prereg_shared_total", attrs("outcome", "lost")), 0);
-    EXPECT_EQ(provider.streamCounts().at("prereg_shared_total"), 1u);
+    EXPECT_EQ(provider.counters().at("prereg_shared_total").streams, 1u);
 }
 
 // The control for the stream counts in these tests, and the reason each
@@ -4187,7 +4176,7 @@ TEST(MetricMacros, counter_preregister_with_another_description_opens_a_second_s
     XRPL_METRIC_COUNTER_PREREGISTER(app, "prereg_split_total", "Description A");
     XRPL_METRIC_COUNTER_INC(app, "prereg_split_total", "Description B");
 
-    EXPECT_EQ(provider.streamCounts().at("prereg_split_total"), 2u);
+    EXPECT_EQ(provider.counters().at("prereg_split_total").streams, 2u);
 }
 
 // Pre-registration obeys the same gate as recording: with the registry
@@ -4299,12 +4288,12 @@ TEST(MetricMacros, macro_counters_record_into_their_preregistered_series)
     }
 
     auto const data = provider.collect();
-    auto const streams = provider.streamCounts();
+    auto const collected = provider.counters();
     for (auto const& [name, counter] : expected)
     {
         ASSERT_EQ(data.count(name), 1u) << name;
         EXPECT_EQ(data.at(name).size(), counter.labelSets.size()) << name << ": series added";
-        EXPECT_EQ(streams.at(name), 1u) << name << ": second stream";
+        EXPECT_EQ(collected.at(name).streams, 1u) << name << ": second stream";
         EXPECT_EQ(counterValue(data, name, toAttrs(counter.labelSets.front())), 1) << name;
         for (auto const& labels : counter.labelSets | std::views::drop(1))
         {
@@ -4345,7 +4334,7 @@ TEST(MetricMacros, recording_macros_land_on_preregistered_series)
          {label::to, ops.strOperatingMode(OperatingMode::SYNCING, false)}});
 
     auto const data = provider.collect();
-    auto const streams = provider.streamCounts();
+    auto const collected = provider.counters();
     auto const expected = expectedPreRegisteredCounters(app);
 
     EXPECT_EQ(counterValue(data, metric::ledgerJumpTotal, otel_sdk::PointAttributes{}), 1);
@@ -4374,7 +4363,7 @@ TEST(MetricMacros, recording_macros_land_on_preregistered_series)
           metric::stateChangesTotal})
     {
         EXPECT_EQ(data.at(name).size(), expected.at(name).labelSets.size()) << name;
-        EXPECT_EQ(streams.at(name), 1u) << name;
+        EXPECT_EQ(collected.at(name).streams, 1u) << name;
     }
 }
 
