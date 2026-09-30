@@ -20,7 +20,7 @@ class AMMCreateBuilder;
  *
  * Type: ttAMM_CREATE (35)
  * Delegable: Delegation::Delegable
- * Amendment: featureAMM
+ * Amendment: uint256{}
  * Privileges: Privilege::CreatePseudoAcct | Privilege::MayCreateMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.

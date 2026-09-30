@@ -20,6 +20,8 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpld/core/Config.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -3260,16 +3262,6 @@ private:
 
             {
                 auto jtx = env.jt(tx, Seq(1), Fee(baseFee));
-                env.app().config().features.erase(featureAMM);
-                PreflightContext const pfCtx(
-                    env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
-                auto pf = Transactor::invokePreflight<AMMBid>(pfCtx);
-                BEAST_EXPECT(pf == temDISABLED);
-                env.app().config().features.insert(featureAMM);
-            }
-
-            {
-                auto jtx = env.jt(tx, Seq(1), Fee(baseFee));
                 jtx.jv["TxnSignature"] = "deadbeef";
                 jtx.stx = env.ust(jtx);
                 PreflightContext const pfCtx(
@@ -4452,27 +4444,6 @@ private:
                 ammAlice.expectLPTokens(alice_, IOUAmount{10'000'000, 0}) &&
                 ammAlice.expectLPTokens(carol_, IOUAmount{1'000'000, 0}));
         });
-    }
-
-    void
-    testAmendment()
-    {
-        testcase("Amendment");
-        using namespace jtx;
-        Env env{*this, testableAmendments() - featureAMM};
-
-        {
-            fund(env, gw_, {alice_}, {USD(1'000)}, Fund::All);
-            AMM amm(env, alice_, XRP(1'000), USD(1'000), Ter(temDISABLED));
-
-            env(amm.bid({.bidMax = 1000}), Ter(temMALFORMED));
-            env(amm.bid({}), Ter(temDISABLED));
-            amm.vote(VoteArg{.tfee = 100, .err = Ter(temDISABLED)});
-            amm.withdraw(WithdrawArg{.tokens = 100, .err = Ter(temMALFORMED)});
-            amm.withdraw(WithdrawArg{.err = Ter(temDISABLED)});
-            amm.deposit(DepositArg{.asset1In = USD(100), .err = Ter(temDISABLED)});
-            amm.ammDelete(alice_, Ter(temDISABLED));
-        }
     }
 
     void
@@ -6095,10 +6066,6 @@ private:
             double const poolUsdGH;
             Sendmax const sendMaxUsdBIT;
             STAmount const sendUsdGH;
-            STAmount const failUsdGH;
-            STAmount const failUsdGHr;
-            STAmount const failUsdBIT;
-            STAmount const failUsdBITr;
             STAmount const goodUsdGH;
             STAmount const goodUsdGHr;
             STAmount const goodUsdBIT;
@@ -6121,10 +6088,6 @@ private:
                      .poolUsdGH = 273,                                        //
                      .sendMaxUsdBIT{usdBIT(50)},                              //
                      .sendUsdGH{usdGH, uint64_t(272'455089820359), -12},      //
-                     .failUsdGH = STAmount{0},                                //
-                     .failUsdGHr = STAmount{0},                               //
-                     .failUsdBIT{usdBIT, uint64_t(46'47826086956522), -14},   //
-                     .failUsdBITr{usdBIT, uint64_t(46'47826086956521), -14},  //
                      .goodUsdGH{usdGH, uint64_t(96'7543114220382), -13},      //
                      .goodUsdGHr{usdGH, uint64_t(96'7543114222965), -13},     //
                      .goodUsdBIT{usdBIT, uint64_t(8'464739069120721), -15},   //
@@ -6143,10 +6106,6 @@ private:
                      .poolUsdGH = 100,                                      //
                      .sendMaxUsdBIT{usdBIT(0.111)},                         //
                      .sendUsdGH{usdGH, 100},                                //
-                     .failUsdGH = STAmount{0},                              //
-                     .failUsdGHr = STAmount{0},                             //
-                     .failUsdBIT{usdBIT, uint64_t(1'111), -3},              //
-                     .failUsdBITr{usdBIT, uint64_t(1'111), -3},             //
                      .goodUsdGH{usdGH, uint64_t(90'04347888284115), -14},   //
                      .goodUsdGHr{usdGH, uint64_t(90'04347888284201), -14},  //
                      .goodUsdBIT{usdBIT, uint64_t(1'111), -3},              //
@@ -6164,10 +6123,6 @@ private:
                      .poolUsdGH = 100,                                      //
                      .sendMaxUsdBIT{usdBIT(1.00)},                          //
                      .sendUsdGH{usdGH, 100},                                //
-                     .failUsdGH = STAmount{0},                              //
-                     .failUsdGHr = STAmount{0},                             //
-                     .failUsdBIT{usdBIT, uint64_t(2), 0},                   //
-                     .failUsdBITr{usdBIT, uint64_t(2), 0},                  //
                      .goodUsdGH{usdGH, uint64_t(52'94379354424079), -14},   //
                      .goodUsdGHr{usdGH, uint64_t(52'94379354424135), -14},  //
                      .goodUsdBIT{usdBIT, uint64_t(2), 0},                   //
@@ -6185,10 +6140,6 @@ private:
                      .poolUsdGH = 100,                                        //
                      .sendMaxUsdBIT{usdBIT(4.6432)},                          //
                      .sendUsdGH{usdGH, 100},                                  //
-                     .failUsdGH = STAmount{0},                                //
-                     .failUsdGHr = STAmount{0},                               //
-                     .failUsdBIT{usdBIT, uint64_t(5'6432), -4},               //
-                     .failUsdBITr{usdBIT, uint64_t(5'6432), -4},              //
                      .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},     //
                      .goodUsdGHr{usdGH, uint64_t(35'44113971506987), -14},    //
                      .goodUsdBIT{usdBIT, uint64_t(2'821579689703915), -15},   //
@@ -6206,10 +6157,6 @@ private:
                      .poolUsdGH = 100,                                        //
                      .sendMaxUsdBIT{usdBIT(10)},                              //
                      .sendUsdGH{usdGH, 100},                                  //
-                     .failUsdGH = STAmount{0},                                //
-                     .failUsdGHr = STAmount{0},                               //
-                     .failUsdBIT{usdBIT, uint64_t(11), 0},                    //
-                     .failUsdBITr{usdBIT, uint64_t(11), 0},                   //
                      .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},     //
                      .goodUsdGHr{usdGH, uint64_t(35'44113971506987), -14},    //
                      .goodUsdBIT{usdBIT, uint64_t(2'821579689703915), -15},   //
@@ -6227,10 +6174,6 @@ private:
                      .poolUsdGH = 100,                                     //
                      .sendMaxUsdBIT{usdBIT(5.55)},                         //
                      .sendUsdGH{usdGH, 100},                               //
-                     .failUsdGH = STAmount{0},                             //
-                     .failUsdGHr = STAmount{0},                            //
-                     .failUsdBIT{usdBIT, uint64_t(55'55), -2},             //
-                     .failUsdBITr{usdBIT, uint64_t(55'55), -2},            //
                      .goodUsdGH{usdGH, uint64_t(90'04347888284113), -14},  //
                      .goodUsdGHr{usdGH, uint64_t(90'0434788828413), -13},  //
                      .goodUsdBIT{usdBIT, uint64_t(55'55), -2},             //
@@ -6248,10 +6191,6 @@ private:
                      .poolUsdGH = 100,                                      //
                      .sendMaxUsdBIT{usdBIT(50.00)},                         //
                      .sendUsdGH{usdGH, 100},                                //
-                     .failUsdGH{usdGH, uint64_t(52'94379354424081), -14},   //
-                     .failUsdGHr{usdGH, uint64_t(52'94379354424092), -14},  //
-                     .failUsdBIT{usdBIT, uint64_t(100), 0},                 //
-                     .failUsdBITr{usdBIT, uint64_t(100), 0},                //
                      .goodUsdGH{usdGH, uint64_t(52'94379354424081), -14},   //
                      .goodUsdGHr{usdGH, uint64_t(52'94379354424092), -14},  //
                      .goodUsdBIT{usdBIT, uint64_t(100), 0},                 //
@@ -6269,10 +6208,6 @@ private:
                      .poolUsdGH = 100,                                        //
                      .sendMaxUsdBIT{usdBIT(232.16)},                          //
                      .sendUsdGH{usdGH, 100},                                  //
-                     .failUsdGH = STAmount{0},                                //
-                     .failUsdGHr = STAmount{0},                               //
-                     .failUsdBIT{usdBIT, uint64_t(282'16), -2},               //
-                     .failUsdBITr{usdBIT, uint64_t(282'16), -2},              //
                      .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},     //
                      .goodUsdGHr{usdGH, uint64_t(35'44113971506987), -14},    //
                      .goodUsdBIT{usdBIT, uint64_t(141'0789844851958), -13},   //
@@ -6290,10 +6225,6 @@ private:
                      .poolUsdGH = 100,                                        //
                      .sendMaxUsdBIT{usdBIT(500)},                             //
                      .sendUsdGH{usdGH, 100},                                  //
-                     .failUsdGH = STAmount{0},                                //
-                     .failUsdGHr = STAmount{0},                               //
-                     .failUsdBIT{usdBIT, uint64_t(550), 0},                   //
-                     .failUsdBITr{usdBIT, uint64_t(550), 0},                  //
                      .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},     //
                      .goodUsdGHr{usdGH, uint64_t(35'44113971506987), -14},    //
                      .goodUsdBIT{usdBIT, uint64_t(141'0789844851958), -13},   //
@@ -6346,8 +6277,6 @@ private:
                     Txflags(tfPartialPayment));
                 env.close();
 
-                auto const failUsdGH = features[fixAMMv1_1] ? input.failUsdGHr : input.failUsdGH;
-                auto const failUsdBIT = features[fixAMMv1_1] ? input.failUsdBITr : input.failUsdBIT;
                 auto const goodUsdGH = features[fixAMMv1_1] ? input.goodUsdGHr : input.goodUsdGH;
                 auto const goodUsdBIT = features[fixAMMv1_1] ? input.goodUsdBITr : input.goodUsdBIT;
                 auto const lpTokenBalance = [&] {
@@ -6357,27 +6286,25 @@ private:
                     return input.lpTokenBalanceAlt.value_or(input.lpTokenBalance);
                 }();
 
-                {
-                    BEAST_EXPECT(amm.expectBalances(goodUsdGH, goodUsdBIT, lpTokenBalance));
+                BEAST_EXPECT(amm.expectBalances(goodUsdGH, goodUsdBIT, lpTokenBalance));
 
-                    // Invariant: LPToken balance must not change in a
-                    // payment or a swap transaction
-                    BEAST_EXPECT(amm.getLPTokensBalance() == preSwapLPTokenBalance);
+                // Invariant: LPToken balance must not change in a
+                // payment or a swap transaction
+                BEAST_EXPECT(amm.getLPTokensBalance() == preSwapLPTokenBalance);
 
-                    // Invariant: The square root of (product of the pool
-                    // balances) must be at least the LPTokenBalance
-                    Number const sqrtPoolProduct = root2(goodUsdGH * goodUsdBIT);
+                // Invariant: The square root of (product of the pool
+                // balances) must be at least the LPTokenBalance
+                Number const sqrtPoolProduct = root2(goodUsdGH * goodUsdBIT);
 
-                    // Include a tiny tolerance for the test cases using
-                    //   .goodUsdGH{usdGH, uint64_t(35'44113971506987),
-                    //   -14}, .goodUsdBIT{usdBIT,
-                    //   uint64_t(2'821579689703915), -15},
-                    // These two values multiply
-                    // to 99.99999999999994227040383754105 which gets
-                    // internally rounded to 100, due to representation
-                    // error.
-                    BEAST_EXPECT((sqrtPoolProduct + Number{1, -14} >= input.lpTokenBalance));
-                }
+                // Include a tiny tolerance for the test cases using
+                //   .goodUsdGH{usdGH, uint64_t(35'44113971506987),
+                //   -14}, .goodUsdBIT{usdBIT,
+                //   uint64_t(2'821579689703915), -15},
+                // These two values multiply
+                // to 99.99999999999994227040383754105 which gets
+                // internally rounded to 100, due to representation
+                // error.
+                BEAST_EXPECT((sqrtPoolProduct + Number{1, -14} >= lpTokenBalance));
             }
         }
     }
@@ -7477,7 +7404,6 @@ private:
         testBasicPaymentEngine(all - fixReducedOffersV2);
         testBasicPaymentEngine(all - fixAMMv1_1 - fixAMMv1_3 - fixReducedOffersV2);
         testAMMTokens();
-        testAmendment();
         testFlags();
         testRippling();
         testAMMAndCLOB(all);
