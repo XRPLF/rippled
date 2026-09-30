@@ -118,7 +118,8 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecNO_ENTRY;
 
-    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1) &&
+        !isVaultDonate(ctx.view.rules(), ctx.tx))
     {
         auto const phase = getVaultPhase(ctx.view, vault);
         if (phase == VaultPhase::Investment || phase == VaultPhase::Redemption)

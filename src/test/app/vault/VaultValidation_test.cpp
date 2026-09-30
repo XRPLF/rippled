@@ -35,6 +35,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
+#include <chrono>
 #include <functional>
 #include <string>
 #include <tuple>
@@ -1380,6 +1381,51 @@ private:
             BEAST_EXPECT(vaultShareBalance(vk) == 0);
             BEAST_EXPECT(vaultAssetBalance(vk).first == 0);
             BEAST_EXPECT(vaultAssetBalance(vk).second == 0);
+        }
+
+        {
+            testcase(prefix + " succeeds in closed-ended investment phase");
+
+            auto const [createTx, vk, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner,
+                 .asset = xrpIssue(),
+                 .subscriptionOffset = std::chrono::seconds{60}});
+            env(createTx, Ter(tesSUCCESS));
+            env.close();
+
+            env(vault.deposit({
+                    .depositor = depositor,
+                    .id = vk.key,
+                    .amount = depositAmount,
+                }),
+                Ter(tesSUCCESS));
+            env.close();
+
+            vault.closePastSubscription(subscriptionDate);
+
+            env(vault.deposit({
+                    .depositor = depositor,
+                    .id = vk.key,
+                    .amount = depositAmount,
+                }),
+                Ter(tecEXPIRED));
+
+            auto const shareBalance = vaultShareBalance(vk);
+            auto const [assetsAvailable, assetsTotal] = vaultAssetBalance(vk);
+
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = vk.key,
+                    .amount = depositAmount,
+                    .flags = tfVaultDonate,
+                }),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const [assetsAvailableAfter, assetsTotalAfter] = vaultAssetBalance(vk);
+            BEAST_EXPECT(vaultShareBalance(vk) == shareBalance);
+            BEAST_EXPECT(assetsAvailable + depositAmount.number() == assetsAvailableAfter);
+            BEAST_EXPECT(assetsTotal + depositAmount.number() == assetsTotalAfter);
         }
     }
 
