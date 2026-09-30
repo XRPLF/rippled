@@ -10,7 +10,6 @@
 #include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -951,35 +950,6 @@ unlockEscrowMPT(
 }
 
 TER
-createMPToken(
-    ApplyView& view,
-    MPTID const& mptIssuanceID,
-    AccountID const& account,
-    SLE::Ref sponsorSle,
-    std::uint32_t const flags)
-{
-    MPTokenEntryW mptoken(mptIssuanceID, account, view);
-
-    auto const ownerNode =
-        view.dirInsert(keylet::ownerDir(account), mptoken.keylet(), describeOwnerDir(account));
-
-    if (!ownerNode)
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-    mptoken.newSLE();
-    (*mptoken)[sfAccount] = account;
-    (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
-    (*mptoken)[sfFlags] = flags;
-    (*mptoken)[sfOwnerNode] = *ownerNode;
-
-    addSponsorToLedgerEntry(mptoken.mutableRawSle(), sponsorSle);
-
-    mptoken.insert();
-
-    return tesSUCCESS;
-}
-
-TER
 checkCreateMPT(
     xrpl::ApplyView& view,
     xrpl::MPTIssue const& mptIssue,
@@ -995,7 +965,8 @@ checkCreateMPT(
     auto const mptokenID = keylet::mptoken(mptIssuanceID.key, holder);
     if (!view.exists(mptokenID))
     {
-        if (auto const err = createMPToken(view, mptIssue.getMptID(), holder, sponsorSle, flags);
+        if (auto const err =
+                MPTokenEntryW::create(view, mptIssue.getMptID(), holder, sponsorSle, flags);
             !isTesSuccess(err))
         {
             return err;
