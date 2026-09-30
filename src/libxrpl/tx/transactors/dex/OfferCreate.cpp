@@ -9,6 +9,7 @@
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -307,7 +308,7 @@ OfferCreate::checkAcceptAsset(
     return asset.visit(
         [&](Issue const& issue) -> TER {
             auto const& issuer = issue.getIssuer();
-            auto const trustLine = view.read(keylet::trustLine(id, issuer, issue.currency));
+            RippleStateEntryR const trustLine(id, issuer, issue.currency, view);
 
             // Check if the issuer has lsfDisallowIncomingTrustline set.
             // If so, the account must already have a trustline to receive tokens.

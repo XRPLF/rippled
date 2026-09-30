@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -108,8 +109,8 @@ preclaimHelper<Issue>(
     if (!sleIssuer.isFlag(lsfAllowTrustLineClawback) || sleIssuer.isFlag(lsfNoFreeze))
         return tecNO_PERMISSION;
 
-    auto const sleRippleState =
-        ctx.view.read(keylet::trustLine(holder, issuer, clawAmount.get<Issue>().currency));
+    RippleStateEntryR const sleRippleState(
+        holder, issuer, clawAmount.get<Issue>().currency, ctx.view);
     if (!sleRippleState)
         return tecNO_LINE;
 

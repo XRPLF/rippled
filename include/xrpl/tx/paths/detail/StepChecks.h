@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -33,7 +34,7 @@ checkFreeze(
         }
     }
 
-    if (auto sle = view.read(keylet::trustLine(src, dst, currency)))
+    if (RippleStateEntryR const sle(src, dst, currency, view); sle)
     {
         if (sle->isFlag((dst > src) ? lsfHighFreeze : lsfLowFreeze))
         {
@@ -77,8 +78,8 @@ checkNoRipple(
     beast::Journal j)
 {
     // fetch the ripple lines into and out of this node
-    auto sleIn = view.read(keylet::trustLine(prev, cur, currency));
-    auto sleOut = view.read(keylet::trustLine(cur, next, currency));
+    RippleStateEntryR const sleIn(prev, cur, currency, view);
+    RippleStateEntryR const sleOut(cur, next, currency, view);
 
     if (!sleIn || !sleOut)
         return terNO_LINE;

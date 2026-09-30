@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -48,7 +49,7 @@ creditLimit(
 {
     STAmount result(Issue{currency, account});
 
-    auto sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
+    RippleStateEntryR const sleRippleState(account, issuer, currency, view);
 
     if (sleRippleState)
     {
@@ -79,7 +80,7 @@ creditBalance(
 {
     STAmount result(Issue{currency, account});
 
-    auto sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
+    RippleStateEntryR const sleRippleState(account, issuer, currency, view);
 
     if (sleRippleState)
     {
@@ -115,7 +116,7 @@ isIndividualFrozen(
     if (issuer != account)
     {
         // Check if the issuer froze the line
-        auto const sle = view.read(keylet::trustLine(account, issuer, currency));
+        RippleStateEntryR const sle(account, issuer, currency, view);
         if (sle && sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
     }
@@ -139,8 +140,8 @@ isFrozen(
     if (issuer != account)
     {
         // Check if the issuer froze the line
-        sle = view.read(keylet::trustLine(account, issuer, currency));
-        if (sle && sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
+        RippleStateEntryR const sleLine(account, issuer, currency, view);
+        if (sleLine && sleLine->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
     }
     return false;
@@ -163,7 +164,7 @@ isDeepFrozen(
         return false;
     }
 
-    auto const sle = view.read(keylet::trustLine(account, issuer, currency));
+    RippleStateEntryR const sle(account, issuer, currency, view);
     if (!sle)
     {
         return false;
@@ -213,8 +214,9 @@ trustCreate(
         // LCOV_EXCL_STOP
     }
 
-    auto const sleRippleState = std::make_shared<SLE>(ltRIPPLE_STATE, uIndex);
-    view.insert(sleRippleState);
+    RippleStateEntryW sleRippleState(Keylet(ltRIPPLE_STATE, uIndex), view, j);
+    sleRippleState.newSLE();
+    sleRippleState.insert();
 
     auto lowNode = view.dirInsert(
         keylet::ownerDir(uLowAccountID), sleRippleState->key(), describeOwnerDir(uLowAccountID));
@@ -285,7 +287,8 @@ trustCreate(
     sleRippleState->setFieldU32(sfFlags, uFlags);
     increaseOwnerCount(view, sleAccount, sponsorSle, 1, j);
 
-    addSponsorToLedgerEntry(sleRippleState, sponsorSle, bSetHigh ? sfHighSponsor : sfLowSponsor);
+    addSponsorToLedgerEntry(
+        sleRippleState.mutableRawSle(), sponsorSle, bSetHigh ? sfHighSponsor : sfLowSponsor);
 
     // ONLY: Create ripple balance.
     sleRippleState->setFieldAmount(sfBalance, bSetHigh ? -saBalance : saBalance);
@@ -298,7 +301,7 @@ trustCreate(
 TER
 trustDelete(
     ApplyView& view,
-    SLE::Ref sleRippleState,
+    RippleStateEntryW& sleRippleState,
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j)
@@ -321,11 +324,11 @@ trustDelete(
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
-    removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsor);
-    removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsor);
+    removeSponsorFromLedgerEntry(sleRippleState.mutableRawSle(), sfHighSponsor);
+    removeSponsorFromLedgerEntry(sleRippleState.mutableRawSle(), sfLowSponsor);
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: state";
-    view.erase(sleRippleState);
+    sleRippleState.erase();
 
     return tesSUCCESS;
 }
@@ -339,7 +342,7 @@ trustDelete(
 static bool
 updateTrustLine(
     ApplyView& view,
-    SLE::pointer state,
+    RippleStateEntryW& state,
     bool bSenderHigh,
     AccountID const& sender,
     STAmount const& before,
@@ -376,14 +379,15 @@ updateTrustLine(
     {
         // VFALCO Where is the line being deleted?
         // Clear the reserve of the sender, possibly delete the line!
-        auto const currentSponsor =
-            getLedgerEntryReserveSponsor(view, state, bSenderHigh ? sfHighSponsor : sfLowSponsor);
+        auto const currentSponsor = getLedgerEntryReserveSponsor(
+            view, state.rawSle(), bSenderHigh ? sfHighSponsor : sfLowSponsor);
         decreaseOwnerCount(view, sle, currentSponsor, 1, j);
 
         // Clear reserve flag.
         state->clearFlag(senderReserveFlag);
 
-        removeSponsorFromLedgerEntry(state, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
+        removeSponsorFromLedgerEntry(
+            state.mutableRawSle(), !bSenderHigh ? sfLowSponsor : sfHighSponsor);
 
         // Balance is zero, receiver reserve is clear.
         if (!after && !state->isFlag(receiverReserveFlag))
@@ -418,7 +422,7 @@ issueIOU(
 
     auto const index = keylet::trustLine(issue.account, account, issue.currency);
 
-    if (auto state = view.peek(index))
+    if (RippleStateEntryW state(index, view, j); state)
     {
         STAmount finalBalance = state->getFieldAmount(sfBalance);
 
@@ -451,7 +455,7 @@ issueIOU(
                 j);
         }
 
-        view.update(state);
+        state.update();
 
         return tesSUCCESS;
     }
@@ -511,7 +515,7 @@ redeemIOU(
 
     bool const bSenderHigh = account > issue.account;
 
-    if (auto state = view.peek(keylet::trustLine(account, issue.account, issue.currency)))
+    if (RippleStateEntryW state(account, issue.account, issue.currency, view, j); state)
     {
         STAmount finalBalance = state->getFieldAmount(sfBalance);
 
@@ -545,7 +549,7 @@ redeemIOU(
                 j);
         }
 
-        view.update(state);
+        state.update();
         return tesSUCCESS;
     }
 
@@ -572,7 +576,7 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     if (isXRP(issue) || issue.account == account)
         return tesSUCCESS;
 
-    auto const trustLine = view.read(keylet::trustLine(account, issue.account, issue.currency));
+    RippleStateEntryR const trustLine(account, issue.account, issue.currency, view);
     // If account has no line, and this is a strong check, fail
     if (!trustLine && authType == AuthType::StrongAuth)
         return tecNO_LINE;
@@ -616,7 +620,7 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
     auto const isRippleDisabled = [&](AccountID account) -> bool {
         // Line might not exist, but some transfers can create it. If this
         // is the case, just check the default ripple on the issuer account.
-        auto const line = view.read(keylet::trustLine(account, issue));
+        RippleStateEntryR const line(account, issue, view);
         if (line)
         {
             bool const issuerHigh = issuerId > account;
@@ -743,7 +747,7 @@ removeEmptyHolding(
     // If the account is the issuer, then no line should exist. Check anyway.
     // If a line does exist, it will get deleted. If not, return success.
     bool const accountIsIssuer = accountID == issue.account;
-    auto const line = ctx.view.peek(keylet::trustLine(accountID, issue));
+    RippleStateEntryW line(accountID, issue, ctx.view, journal);
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
     if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZero)
@@ -757,14 +761,15 @@ removeEmptyHolding(
         if (!sleLowAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const currentLowSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfLowSponsor);
+        auto const currentLowSponsor =
+            getLedgerEntryReserveSponsor(ctx.view, line.rawSle(), sfLowSponsor);
 
         decreaseOwnerCount(ctx.view, sleLowAccount, currentLowSponsor, 1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
         line->clearFlag(lsfLowReserve);
-        removeSponsorFromLedgerEntry(line, sfLowSponsor);
+        removeSponsorFromLedgerEntry(line.mutableRawSle(), sfLowSponsor);
     }
 
     if (line->isFlag(lsfHighReserve))
@@ -774,14 +779,15 @@ removeEmptyHolding(
         if (!sleHighAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const currentHighSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfHighSponsor);
+        auto const currentHighSponsor =
+            getLedgerEntryReserveSponsor(ctx.view, line.rawSle(), sfHighSponsor);
 
         decreaseOwnerCount(ctx.view, sleHighAccount, currentHighSponsor, 1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
         line->clearFlag(lsfHighReserve);
-        removeSponsorFromLedgerEntry(line, sfHighSponsor);
+        removeSponsorFromLedgerEntry(line.mutableRawSle(), sfHighSponsor);
     }
 
     return trustDelete(
@@ -795,7 +801,7 @@ removeEmptyHolding(
 TER
 deleteAMMTrustLine(
     ApplyView& view,
-    SLE::pointer sleState,
+    RippleStateEntryW& sleState,
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j)
 {
@@ -825,8 +831,13 @@ deleteAMMTrustLine(
     if (ammAccountID && (low != *ammAccountID && high != *ammAccountID))
         return terNO_AMM;
 
-    auto const sponsorSle =
-        getLedgerEntryReserveSponsor(view, sleState, !ammLow ? sfLowSponsor : sfHighSponsor);
+    auto const sponsorSle = getLedgerEntryReserveSponsor(
+        view, sleState.rawSle(), !ammLow ? sfLowSponsor : sfHighSponsor);
+
+    // trustDelete() drops the entry's SLE, so read the reserve flag first.
+    // trustDelete() does not change the flags.
+    auto const uFlags = !ammLow ? lsfLowReserve : lsfHighReserve;
+    bool const hasReserve = sleState->isFlag(uFlags);
 
     if (auto const ter = trustDelete(view, sleState, low, high, j); !isTesSuccess(ter))
     {
@@ -834,8 +845,7 @@ deleteAMMTrustLine(
         return ter;
     }
 
-    auto const uFlags = !ammLow ? lsfLowReserve : lsfHighReserve;
-    if (!sleState->isFlag(uFlags))
+    if (!hasReserve)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     decreaseOwnerCount(view, !ammLow ? sleLow : sleHigh, sponsorSle, 1, j);

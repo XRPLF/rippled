@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -126,8 +127,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                     if (issuerId != srcId)
                     {
                         // Check if the issuer froze the line
-                        auto const sleTrust =
-                            ctx.view.read(keylet::trustLine(srcId, issuerId, issue.currency));
+                        RippleStateEntryR const sleTrust(srcId, issuerId, issue.currency, ctx.view);
                         if (sleTrust &&
                             sleTrust->isFlag((issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
                         {
@@ -138,8 +138,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                     if (issuerId != dstId)
                     {
                         // Check if dst froze the line.
-                        auto const sleTrust =
-                            ctx.view.read(keylet::trustLine(issuerId, dstId, issue.currency));
+                        RippleStateEntryR const sleTrust(issuerId, dstId, issue.currency, ctx.view);
                         if (sleTrust &&
                             sleTrust->isFlag((dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))
                         {

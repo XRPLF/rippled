@@ -6,6 +6,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -329,7 +330,7 @@ Payment::checkGranularSemantics(
             if (issue.getIssuer() != account && issue.getIssuer() != destination)
                 return terNO_DELEGATE_PERMISSION;
 
-            auto const sle = view.read(keylet::trustLine(account, destination, issue.currency));
+            RippleStateEntryR const sle(account, destination, issue.currency, view);
             if (!sle)
                 return terNO_DELEGATE_PERMISSION;
 

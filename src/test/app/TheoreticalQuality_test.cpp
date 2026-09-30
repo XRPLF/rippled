@@ -252,7 +252,10 @@ class TheoreticalQuality_test : public beast::unit_test::Suite
         std::shared_ptr<ReadView const> closed,
         std::optional<Quality> const& expectedQ = {})
     {
-        PaymentSandbox const sb(closed.get(), TapNone);
+        // Not const: read-only ledger entries peek() through an ApplyView, which
+        // is undefined behavior on a const object (see SLEBase.h).
+        // NOLINTNEXTLINE(misc-const-correctness)
+        PaymentSandbox sb(closed.get(), TapNone);
         AMMContext ammContext(rcp.srcAccount, false);
 
         auto const sendMaxIssue = [&rcp]() -> std::optional<Asset> {
