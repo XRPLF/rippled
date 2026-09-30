@@ -256,7 +256,7 @@ namespace {
 bool
 cashBasisEnabled(VaultEntryR const& vaultSle)
 {
-    return getVaultVersion(vaultSle) == VaultVersion::CashBasis;
+    return vaultSle.version() == VaultVersion::CashBasis;
 }
 
 }  // namespace
