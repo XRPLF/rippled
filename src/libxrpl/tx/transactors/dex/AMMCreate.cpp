@@ -264,7 +264,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     auto const ammKeylet = keylet::amm(amount.asset(), amount2.asset());
 
     // Mitigate same account exists possibility
-    auto const maybeAccount = createPseudoAccount(sb, ammKeylet.key, sfAMMID);
+    auto const maybeAccount = AccountRootEntryW::createPseudoAccount(sb, ammKeylet.key, sfAMMID);
     // AMM account already exists (should not happen)
     if (!maybeAccount)
     {

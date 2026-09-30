@@ -1,6 +1,8 @@
 #include <xrpl/ledger/entries/AccountRootEntry.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OwnerCounts.h>
@@ -18,6 +20,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <expected>
 #include <limits>
 #include <optional>
 #include <utility>
@@ -327,6 +330,54 @@ AccountRootEntry<ViewT>::decreaseOwnerCount(
         return;  // LCOV_EXCL_LINE
 
     adjustOwnerCountSigned(sponsorSle, -static_cast<std::int32_t>(count));
+}
+
+template <typename ViewT>
+std::expected<AccountRootEntry<ApplyView>, TER>
+AccountRootEntry<ViewT>::createPseudoAccount(
+    ApplyView& view,
+    UInt256 const& pseudoOwnerKey,
+    SField const& ownerField)
+    requires Base::kIsWritable
+{
+    [[maybe_unused]]
+    auto const& fields = getPseudoAccountFields();
+    XRPL_ASSERT(
+        std::count_if(
+            fields.begin(),
+            fields.end(),
+            [&ownerField](SField const* sf) -> bool { return *sf == ownerField; }) == 1,
+        "xrpl::createPseudoAccount : valid owner field");
+
+    auto const accountId = pseudoAccountAddress(view, pseudoOwnerKey);
+    if (accountId == beast::kZero)
+        return std::unexpected(tecDUPLICATE);
+
+    // Create pseudo-account.
+    AccountRootEntry<ApplyView> account(accountId, view);
+    account.newSLE();
+    account->setAccountID(sfAccount, accountId);
+    account->setFieldAmount(sfBalance, STAmount{});
+
+    // Pseudo-accounts can't submit transactions, so set the sequence number
+    // to 0 to make them easier to spot and verify, and add an extra level
+    // of protection.
+    std::uint32_t const seqno =                           //
+        view.rules().enabled(featureSingleAssetVault) ||  //
+            view.rules().enabled(featureLendingProtocol)  //
+        ? 0                                               //
+        : view.seq();
+    account->setFieldU32(sfSequence, seqno);
+    // Ignore reserves requirement, disable the master key, allow default
+    // rippling, and enable deposit authorization to prevent payments into
+    // pseudo-account.
+    account->setFieldU32(sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+    // Link the pseudo-account with its owner object.
+    account->setFieldH256(ownerField, pseudoOwnerKey);
+
+    account.insert();
+
+    return account;
 }
 
 template class AccountRootEntry<ReadView>;
