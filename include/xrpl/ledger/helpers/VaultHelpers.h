@@ -207,23 +207,11 @@ isValidVaultKind(STTx const& tx);
 isValidClosedEndedGap(std::uint32_t sub, std::uint32_t red);
 
 /**
- * Returns the current lifecycle phase of a vault. Open-ended
- * vaults are always NoPhase. For closed-ended vaults the phase is derived
- * from the parent ledger close time and the vault's immutable
- * SubscriptionDate and RedemptionDate.
- *
- * @param view The ledger view whose parent close time is used as the clock.
- * @param vault The vault SLE.
- */
-[[nodiscard]] VaultPhase
-getVaultPhase(ReadView const& view, VaultEntryR const& vault);
-
-/**
- * Raw-fields overload of getVaultPhase. Derives the phase from an already
+ * Raw-fields variant of VaultEntry::phase(). Derives the phase from an already
  * decomposed vault snapshot: an absent or non-ClosedEnded @p vaultKind
  * resolves to VaultPhase::NoPhase; otherwise the phase is computed from
  * @p subscriptionDate and @p redemptionDate against the view's parent
- * close time using the same boundary semantics as the SLE overload
+ * close time using the same boundary semantics as VaultEntry::phase()
  * (Subscription is inclusive of now == SubscriptionDate; Investment starts
  * strictly after).
  *

@@ -16,7 +16,6 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/entries/VaultEntry.h>
-#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -474,9 +473,7 @@ private:
             auto const sle = env.le(keylet);
             if (!BEAST_EXPECT(sle))
                 return;
-            BEAST_EXPECT(
-                getVaultPhase(*env.current(), VaultEntryR(sle, *env.current())) ==
-                VaultPhase::NoPhase);
+            BEAST_EXPECT(VaultEntryR(sle, *env.current()).phase() == VaultPhase::NoPhase);
         };
 
         // Advance the clock through a wide range of ledger times: an open-ended vault's phase
