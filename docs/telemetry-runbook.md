@@ -4241,7 +4241,8 @@ panel it reads.
       time-shaped view — which reason spiked, and whether it coincides with a
       stall — use _Peer Disconnect Rate_ and _Peer Disconnects By Reason &
       Direction_ on the **Peer Quality** dashboard, which read the same
-      counter as a rate and as a per-interval increase.
+      counter as a per-minute rate, one summed per node and one split by
+      reason and direction.
       Finally, the mirror-image question: _Ledger/Object Serve Refusals_
       (`serve_refused_total`, by `request` and `reason`) is what **this node
       refuses to serve OTHERS**. It does not explain this node's own sync, but
