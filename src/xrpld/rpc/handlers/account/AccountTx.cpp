@@ -83,7 +83,7 @@ parseDelegateFilter(json::Value const& delegateNode)
 
 using TxnsData = RelationalDatabase::AccountTxs;
 using TxnsDataBinary = RelationalDatabase::MetaTxsList;
-using TxnDataBinary = RelationalDatabase::txnMetaLedgerType;
+using TxnDataBinary = RelationalDatabase::TxnMetaLedgerType;
 using AccountTxResult = RelationalDatabase::AccountTxResult;
 
 // Moved here from RelationalDatabase, where nothing but this handler used them, so that
@@ -369,9 +369,9 @@ populateJsonResponse(
                     if (context.apiVersion > 1)
                     {
                         jvObj[jsonTx] = txn->getJson(
-                            static_cast<JsonOptions::underlying_t>(
+                            static_cast<JsonOptions::UnderlyingT>(
                                 JsonOptions::Values::IncludeDate) |
-                                static_cast<JsonOptions::underlying_t>(
+                                static_cast<JsonOptions::UnderlyingT>(
                                     JsonOptions::Values::DisableApiPriorV2),
                             false);
                         jvObj[jss::hash] = to_string(txn->getID());
