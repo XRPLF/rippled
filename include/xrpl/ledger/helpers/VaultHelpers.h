@@ -11,7 +11,6 @@
 #include <xrpl/protocol/TER.h>
 
 #include <cstdint>
-#include <expected>
 #include <optional>
 
 namespace xrpl {
@@ -45,32 +44,6 @@ assetsToSharesDeposit(VaultEntryR const& vault, SLE::ConstRef issuance, STAmount
  */
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsDeposit(VaultEntryR const& vault, SLE::ConstRef issuance, STAmount const& shares);
-
-/**
- * Adjusts a requested asset change (`delta`) to match the decimal scale of the
- * updated total vault assets. This ensures `sfAssetsTotal`, `sfAssetsAvailable`,
- * and the actual asset transfer change by the exact same representable amount.
- *
- * Rounding strategy:
- * - Debits (withdrawals): Rounds down `|delta|` on the new scale to prevent
- *   paying out more than requested.
- * - Credits (deposits): Floors the resulting total asset balance and returns the
- *   difference from the current total. This prevents crediting the vault with
- *   more assets than the user deposited.
- *
- * Key rules:
- * - The returned magnitude never exceeds `|delta|`.
- * - Returns `tecPRECISION_LOSS` if the change is smaller than 1 ULP of the target scale
- *   (prevents share operations when totals cannot change).
- * - For integer assets (XRP, MPT), rounding is a no-op.
- *
- * @param vault The vault ledger entry.
- * @param delta The requested signed change to sfAssetsTotal.
- * @return The rounded, positive magnitude, or `tecPRECISION_LOSS` if the
- *         change is below representable precision.
- */
-[[nodiscard]] std::expected<STAmount, TER>
-clampToAssetsTotalScale(VaultEntryR const& vault, STAmount const& delta);
 
 /**
  * Controls whether to truncate shares instead of rounding.
