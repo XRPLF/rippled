@@ -671,12 +671,6 @@ public:
         return *perfLog_;
     }
 
-    telemetry::Telemetry&
-    getTelemetry() override
-    {
-        return *telemetry_;
-    }
-
     NodeCache&
     getTempNodeCache() override
     {
