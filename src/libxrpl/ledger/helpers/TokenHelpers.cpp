@@ -739,7 +739,7 @@ directSendNoFeeIOU(
         auto const senderFreezeFlag = bSenderHigh ? lsfHighFreeze : lsfLowFreeze;
         auto const receiverReserveFlag = bSenderHigh ? lsfLowReserve : lsfHighReserve;
 
-        AccountRootEntryW senderSle(uSenderID, view);
+        AccountRootEntryW senderSle(uSenderID, view, j);
 
         // FIXME This NEEDS to be cleaned up and simplified. It's impossible
         //       for anyone to understand.
@@ -762,7 +762,7 @@ directSendNoFeeIOU(
             // Clear the reserve of the sender, possibly delete the line!
             auto currentSponsor = getLedgerEntryReserveSponsor(
                 view, sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
-            decreaseOwnerCount(view, senderSle, currentSponsor, 1, j);
+            senderSle.decreaseOwnerCount(currentSponsor, 1);
 
             removeSponsorFromLedgerEntry(
                 sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);

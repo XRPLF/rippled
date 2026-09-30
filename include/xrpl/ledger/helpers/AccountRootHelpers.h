@@ -137,28 +137,6 @@ increaseOwnerCount(
 }
 
 /**
- * Decrease owner-count fields when the caller supplies the sponsor.
- *
- * This helper does not delete a ledger object. It updates reserve accounting
- * after the caller has removed an owner-counted reserve, or for special
- * owner-count changes whose sponsor cannot be derived from an object's
- * sfSponsor field.
- *
- * @param view The apply view for making changes
- * @param accountSle The account's ledger entry
- * @param sponsorSle The sponsor's ledger entry (if applicable)
- * @param count Amount to remove from the owner count
- * @param j Journal for logging
- */
-void
-decreaseOwnerCount(
-    ApplyView& view,
-    AccountRootEntryW& accountSle,
-    std::optional<AccountRootEntryW>& sponsorSle,
-    std::uint32_t count,
-    beast::Journal j);
-
-/**
  * Convenience overload that accepts AccountID instead of SLE references.
  *
  * @param view The apply view for making changes
@@ -175,11 +153,11 @@ decreaseOwnerCount(
     std::uint32_t count,
     beast::Journal j)
 {
-    AccountRootEntryW accountSle(account, view);
+    AccountRootEntryW accountSle(account, view, j);
     std::optional<AccountRootEntryW> sponsorSle;
     if (sponsor)
         sponsorSle.emplace(*sponsor, view);
-    decreaseOwnerCount(view, accountSle, sponsorSle, count, j);
+    accountSle.decreaseOwnerCount(sponsorSle, count);
 }
 
 /**
