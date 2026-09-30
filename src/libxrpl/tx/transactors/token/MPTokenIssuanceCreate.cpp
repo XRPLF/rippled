@@ -5,6 +5,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -125,15 +126,15 @@ MPTokenIssuanceCreate::create(
     beast::Journal journal,
     MPTCreateArgs const& args)
 {
-    auto const acct = ctx.view.peek(keylet::account(args.account));
+    auto acct = AccountRootEntryW(args.account, ctx.view);
     if (!acct)
         return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
     // A reserve sponsor only covers tx.Account's own objects.
-    auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, acct);
+    auto sponsorExp = getEffectiveTxReserveSponsor(ctx, acct);
     if (!sponsorExp)
         return std::unexpected(sponsorExp.error());  // LCOV_EXCL_LINE
-    auto const sponsorSle = *sponsorExp;
+    auto& sponsorSle = *sponsorExp;
 
     if (args.priorBalance)
     {
@@ -195,7 +196,8 @@ MPTokenIssuanceCreate::create(
             (*mptIssuance)[sfReferenceHolding] = *args.referenceHolding;
         }
 
-        addSponsorToLedgerEntry(mptIssuance, sponsorSle);
+        if (sponsorSle)
+            addSponsorToLedgerEntry(mptIssuance, sponsorSle->rawSle());
 
         ctx.view.insert(mptIssuance);
     }

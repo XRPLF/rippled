@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -376,7 +377,7 @@ NFTokenAcceptOffer::transferNFToken(
         !isTesSuccess(ret))
         return ret;
 
-    auto const sleBuyer = view().read(keylet::account(buyer));
+    auto const sleBuyer = AccountRootEntryW(buyer, view());
     if (!sleBuyer)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

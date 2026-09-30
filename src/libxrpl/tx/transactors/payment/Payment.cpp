@@ -6,6 +6,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -386,7 +387,7 @@ Payment::preclaim(PreclaimContext const& ctx)
     STAmount const dstAmount(ctx.tx[sfAmount]);
 
     auto const k = keylet::account(dstAccountID);
-    auto const sleDst = ctx.view.read(k);
+    auto const sleDst = AccountRootEntryR(k, ctx.view);
 
     if (!sleDst)
     {
@@ -564,19 +565,19 @@ Payment::doApply()
 
     // Open a ledger for editing.
     auto const k = keylet::account(dstAccountID);
-    SLE::pointer sleDst = view().peek(k);
+    AccountRootEntryW sleDst(k, view());
 
     if (!sleDst)
     {
         // Create the account.
-        sleDst = std::make_shared<SLE>(k);
+        sleDst.newSLE();
         sleDst->setAccountID(sfAccount, dstAccountID);
         sleDst->setFieldU32(sfSequence, view().seq());
         sleDst->setFieldAmount(sfBalance, XRPAmount(beast::kZero));
 
         if (ctx_.tx.isFlag(tfSponsorCreatedAccount))
         {
-            auto const sponsor = view().peek(keylet::account(accountID_));
+            auto sponsor = AccountRootEntryW(accountID_, view());
             if (!sponsor)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
             auto const currentSponsoringAccountCount =
@@ -591,18 +592,18 @@ Payment::doApply()
             }
             sponsor->setFieldU32(sfSponsoringAccountCount, currentSponsoringAccountCount + 1);
 
-            addSponsorToLedgerEntry(sleDst, sponsor);
-            view().update(sponsor);
+            addSponsorToLedgerEntry(sleDst.mutableRawSle(), sponsor.rawSle());
+            sponsor.update();
         }
 
-        view().insert(sleDst);
+        sleDst.insert();
     }
     else
     {
         // Tell the engine that we are intending to change the destination
         // account.  The source account gets always charged a fee so it's always
         // marked as modified.
-        view().update(sleDst);
+        sleDst.update();
     }
 
     bool const mpTokensV2 = view().rules().enabled(featureMPTokensV2);
@@ -621,7 +622,12 @@ Payment::doApply()
         //  2. If Account is deposit preauthorized by destination.
 
         if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst, ctx_.journal);
+                ctx_.tx,
+                ctx_.view(),
+                accountID_,
+                dstAccountID,
+                sleDst.mutableRawSle(),
+                ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -691,7 +697,12 @@ Payment::doApply()
             return ter;
 
         if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst, ctx_.journal);
+                ctx_.tx,
+                ctx_.view(),
+                accountID_,
+                dstAccountID,
+                sleDst.mutableRawSle(),
+                ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -757,7 +768,7 @@ Payment::doApply()
 
     // Direct XRP payment.
 
-    auto const sleSrc = view().peek(keylet::account(accountID_));
+    auto sleSrc = AccountRootEntryW(accountID_, view());
     if (!sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -820,7 +831,12 @@ Payment::doApply()
     if (dstAmount > dstReserve || sleDst->getFieldAmount(sfBalance) > dstReserve)
     {
         if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst, ctx_.journal);
+                ctx_.tx,
+                ctx_.view(),
+                accountID_,
+                dstAccountID,
+                sleDst.mutableRawSle(),
+                ctx_.journal);
             !isTesSuccess(err))
             return err;
     }

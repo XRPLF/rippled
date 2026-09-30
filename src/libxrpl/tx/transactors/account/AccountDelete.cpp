@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
@@ -224,7 +225,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dst{ctx.tx[sfDestination]};
 
-    auto sleDst = ctx.view.read(keylet::account(dst));
+    auto sleDst = AccountRootEntryR(dst, ctx.view);
 
     if (!sleDst)
         return tecNO_DST;
@@ -250,7 +251,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto sleAccount = ctx.view.read(keylet::account(account));
+    auto sleAccount = AccountRootEntryR(account, ctx.view);
     XRPL_ASSERT(sleAccount, "xrpl::AccountDelete::preclaim : non-null account");
     if (!sleAccount)
         return terNO_ACCOUNT;
@@ -353,11 +354,11 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 TER
 AccountDelete::doApply()
 {
-    auto src = view().peek(keylet::account(accountID_));
+    auto src = AccountRootEntryW(accountID_, view());
     XRPL_ASSERT(src, "xrpl::AccountDelete::doApply : non-null source account");
 
     auto const dstID = ctx_.tx[sfDestination];
-    auto dst = view().peek(keylet::account(dstID));
+    auto dst = AccountRootEntryW(dstID, view());
     XRPL_ASSERT(dst, "xrpl::AccountDelete::doApply : non-null destination account");
 
     if (!src || !dst)
@@ -365,8 +366,8 @@ AccountDelete::doApply()
 
     if (ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
-        if (auto err =
-                verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, dstID, dst, ctx_.journal);
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), accountID_, dstID, dst.rawSle(), ctx_.journal);
             !isTesSuccess(err))
             return err;
     }
@@ -407,7 +408,7 @@ AccountDelete::doApply()
     if (src->isFieldPresent(sfSponsor))
     {
         auto const sponsorID = src->getAccountID(sfSponsor);
-        auto sponsorSle = view().peek(keylet::account(sponsorID));
+        auto sponsorSle = AccountRootEntryW(sponsorID, view());
 
         if (!sponsorSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -425,7 +426,7 @@ AccountDelete::doApply()
             return tefINTERNAL;  // LCOV_EXCL_LINE
         }
         sponsorSle->at(sfSponsoringAccountCount) = sponsoringAccountCount - 1;
-        view().update(sponsorSle);
+        sponsorSle.update();
 
         // Following line might look redundant, but without it, sfSponsor
         // would end up remaining in after-ltAccountRoot during the
@@ -448,8 +449,8 @@ AccountDelete::doApply()
     if (remainingBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
         dst->clearFlag(lsfPasswordSpent);
 
-    view().update(dst);
-    view().erase(src);
+    dst.update();
+    src.erase();
 
     return tesSUCCESS;
 }

@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -12,6 +13,7 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <optional>
 
 namespace xrpl {
 
@@ -56,8 +58,8 @@ private:
         Keylet const& sponsorshipKeylet,
         AccountID const& sponsorID,
         AccountID const& sponseeID,
-        SLE::Ref sponsorAccSle,
-        SLE::Ref reserveSponsorAccSle);
+        AccountRootEntryW& sponsorAccSle,
+        std::optional<AccountRootEntryW>& reserveSponsorAccSle);
 };
 
 }  // namespace xrpl

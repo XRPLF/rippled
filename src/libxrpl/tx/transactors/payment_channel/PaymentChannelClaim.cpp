@@ -3,11 +3,11 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PayChan.h>
@@ -159,12 +159,12 @@ PaymentChannelClaim::doApply()
             return tecUNFUNDED_PAYMENT;
         }
 
-        auto const sled = ctx_.view().peek(keylet::account(dst));
+        auto sled = AccountRootEntryW(dst, ctx_.view());
         if (!sled)
             return tecNO_DST;
 
-        if (auto err =
-                verifyDepositPreauth(ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), txAccount, dst, sled.rawSle(), ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -173,7 +173,7 @@ PaymentChannelClaim::doApply()
         XRPL_ASSERT(
             reqDelta >= beast::kZero, "xrpl::PaymentChannelClaim::doApply : minimum balance delta");
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
-        ctx_.view().update(sled);
+        sled.update();
         ctx_.view().update(slep);
     }
 

@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -865,7 +866,7 @@ MPTEndpointStep<TDerived>::check(StrandContext const& ctx) const
         return temBAD_PATH;
     }
 
-    auto const sleSrc = ctx.view.read(keylet::account(src_));
+    auto const sleSrc = AccountRootEntryR(src_, ctx.view);
     if (!sleSrc)
     {
         JLOG(j_.warn()) << "MPTEndpointStep: can't receive MPT from non-existent issuer: " << src_;
@@ -928,7 +929,7 @@ MPTEndpointStep<TDerived>::check(StrandContext const& ctx) const
         return temBAD_PATH;
     }
 
-    return static_cast<TDerived const*>(this)->check(ctx, sleSrc);
+    return static_cast<TDerived const*>(this)->check(ctx, sleSrc.rawSle());
 }
 
 template <class TDerived>

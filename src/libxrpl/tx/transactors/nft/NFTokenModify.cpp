@@ -2,9 +2,10 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -47,7 +48,7 @@ NFTokenModify::preclaim(PreclaimContext const& ctx)
     // Verify permissions for the issuer
     if (AccountID const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]); issuer != account)
     {
-        auto const sle = ctx.view.read(keylet::account(issuer));
+        auto const sle = AccountRootEntryR(issuer, ctx.view);
         if (!sle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
         if (auto const minter = (*sle)[~sfNFTokenMinter]; minter != account)

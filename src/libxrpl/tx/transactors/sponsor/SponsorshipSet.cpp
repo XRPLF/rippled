@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -164,11 +165,11 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
     if (sponseeID == sponsorID)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsorAccSle = ctx.view.read(keylet::account(sponsorID));
+    auto const sponsorAccSle = AccountRootEntryR(sponsorID, ctx.view);
     if (!sponsorAccSle)
         return tecNO_DST;
 
-    auto const sponseeSle = ctx.view.read(keylet::account(sponseeID));
+    auto const sponseeSle = AccountRootEntryR(sponseeID, ctx.view);
     if (!sponseeSle)
         return tecNO_DST;
 
@@ -212,7 +213,7 @@ deleteSponsorship(ApplyView& view, SLE::Ref sle, beast::Journal j)
 
     // The sponsor owns the Sponsorship object, so deletion releases the
     // sponsor's owner reserve.
-    auto sponsorAccSle = view.peek(keylet::account(sponsorID));
+    auto sponsorAccSle = AccountRootEntryW(sponsorID, view);
     if (!sponsorAccSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -237,7 +238,7 @@ deleteSponsorship(ApplyView& view, SLE::Ref sle, beast::Journal j)
     if (sle->isFieldPresent(sfFeeAmount))
     {
         (*sponsorAccSle)[sfBalance] += sle->getFieldAmount(sfFeeAmount);
-        view.update(sponsorAccSle);
+        sponsorAccSle.update();
     }
 
     view.erase(sle);
@@ -250,8 +251,8 @@ SponsorshipSet::createSponsorship(
     Keylet const& sponsorshipKeylet,
     AccountID const& sponsorID,
     AccountID const& sponseeID,
-    SLE::Ref sponsorAccSle,
-    SLE::Ref reserveSponsorAccSle)
+    AccountRootEntryW& sponsorAccSle,
+    std::optional<AccountRootEntryW>& reserveSponsorAccSle)
 {
     auto const feeAmountDelta = ctx_.tx[~sfFeeAmountDelta];
     auto const maxFee = ctx_.tx[~sfMaxFee];
@@ -324,7 +325,8 @@ SponsorshipSet::createSponsorship(
 
     // NOLINTNEXTLINE(readability-suspicious-call-argument)
     increaseOwnerCount(view(), sponsorAccSle, reserveSponsorAccSle, 1, ctx_.journal);
-    addSponsorToLedgerEntry(newSle, reserveSponsorAccSle);
+    if (reserveSponsorAccSle.has_value())
+        addSponsorToLedgerEntry(newSle, reserveSponsorAccSle->rawSle());
 
     ctx_.view().insert(newSle);
     return tesSUCCESS;
@@ -339,7 +341,7 @@ SponsorshipSet::doApply()
     if (sponseeID == sponsorID)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsorAccSle = ctx_.view().peek(keylet::account(sponsorID));
+    auto sponsorAccSle = AccountRootEntryW(sponsorID, ctx_.view());
     if (!sponsorAccSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -413,7 +415,7 @@ SponsorshipSet::doApply()
         {
             (*sponsorshipSle)[sfFeeAmount] = newFee;
         }
-        ctx_.view().update(sponsorAccSle);
+        sponsorAccSle.update();
     }
 
     if (maxFee)

@@ -29,6 +29,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -450,7 +451,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // here and the end of the test all the effort will be lost.
         env.app().getOpenLedger().modify([&alice](OpenView& view, beast::Journal j) {
             // Get the account root we want to hijack.
-            auto const sle = view.read(keylet::account(alice.id()));
+            auto const sle = AccountRootEntryR(alice.id(), view);
             if (!sle)
                 return false;  // This would be really surprising!
 
