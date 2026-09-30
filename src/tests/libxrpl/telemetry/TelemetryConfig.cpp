@@ -6,6 +6,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <array>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
@@ -147,6 +148,77 @@ constexpr char const* batchDelayMs = "batch_delay_ms";
 constexpr char const* maxQueueSize = "max_queue_size";
 constexpr char const* consensusTraceStrategy = "consensus_trace_strategy";
 }  // namespace key
+
+using Setup = telemetry::Telemetry::Setup;
+
+/**
+ * An on/off key of the [telemetry] section and the Setup field it sets.
+ *
+ * @code
+ *   name=<text>  -->  setup.*field holds the parsed value
+ *   name absent  -->  setup.*field == absentValue
+ * @endcode
+ *
+ * absentValue is the default that cfg/xrpld-example.cfg documents.
+ */
+struct FlagKey
+{
+    /**
+     * Key name, as written in the config file.
+     */
+    char const* name;
+
+    /**
+     * Setup field the key sets.
+     */
+    bool Setup::* field;
+
+    /**
+     * Value the field takes when the key is absent.
+     */
+    bool absentValue;
+};
+
+/**
+ * The on/off keys the parser reads, with the field each one sets.
+ *
+ * The names repeat the parser's own constants, which are private to
+ * TelemetryConfig.cpp. With a misspelled name, at least one accepting case
+ * fails, and so does every rejecting case.
+ *
+ * @note The rows pair keys with fields by hand. A new on/off key needs its
+ * own row, or these tests do not cover it.
+ */
+constexpr auto kFlagKeys = std::to_array<FlagKey>({
+    {.name = "enabled", .field = &Setup::enabled, .absentValue = false},
+    {.name = "use_tls", .field = &Setup::useTls, .absentValue = false},
+    {.name = "trace_transactions", .field = &Setup::traceTransactions, .absentValue = true},
+    {.name = "trace_consensus", .field = &Setup::traceConsensus, .absentValue = true},
+    {.name = "trace_rpc", .field = &Setup::traceRpc, .absentValue = true},
+    {.name = "trace_peer", .field = &Setup::tracePeer, .absentValue = true},
+    {.name = "trace_ledger", .field = &Setup::traceLedger, .absentValue = true},
+});
+
+/**
+ * Values an on/off key accepts, each with the bool it means.
+ *
+ * TRUE and False check that case is ignored.
+ */
+constexpr auto kAcceptedFlagValues = std::to_array<std::pair<char const*, bool>>({
+    {"0", false},
+    {"1", true},
+    {"true", true},
+    {"false", false},
+    {"TRUE", true},
+    {"False", false},
+});
+
+/**
+ * Values an on/off key rejects.
+ *
+ * They are other numbers and other words for true. None may turn a key on.
+ */
+constexpr auto kRejectedFlagValues = std::to_array<char const*>({"yes", "2", "-1", "on"});
 
 /**
  * The upper bound quoted in the expected messages below.
@@ -885,4 +957,49 @@ TEST(TelemetryConfig, null_telemetry_factory)
     // start/stop should be no-ops without crashing
     tel->start();
     tel->stop();
+}
+
+TEST(TelemetryConfig, on_off_keys_accept_0_1_true_and_false_ignoring_case)
+{
+    for (auto const& flag : kFlagKeys)
+    {
+        for (auto const& [text, expected] : kAcceptedFlagValues)
+        {
+            SCOPED_TRACE(std::string(flag.name) + "=" + text);
+            auto const setup = parseBatch({{flag.name, text}});
+
+            // Only the key that was set may leave its default, so a key
+            // wired to the wrong field fails here.
+            for (auto const& other : kFlagKeys)
+            {
+                SCOPED_TRACE(other.name);
+                bool const want = other.field == flag.field ? expected : other.absentValue;
+                EXPECT_EQ(setup.*other.field, want);
+            }
+        }
+    }
+}
+
+TEST(TelemetryConfig, on_off_keys_reject_other_values_naming_the_key)
+{
+    for (auto const& flag : kFlagKeys)
+    {
+        std::string const message = std::string("Invalid value '") + flag.name +
+            "' in [telemetry]: must be 0, 1, true or false.";
+        for (auto const* text : kRejectedFlagValues)
+        {
+            SCOPED_TRACE(std::string(flag.name) + "=" + text);
+            EXPECT_EQ(batchRejection({{flag.name, text}}), message);
+        }
+    }
+}
+
+TEST(TelemetryConfig, absent_on_off_keys_take_their_defaults)
+{
+    auto const setup = parseBatch({});
+    for (auto const& flag : kFlagKeys)
+    {
+        SCOPED_TRACE(flag.name);
+        EXPECT_EQ(setup.*flag.field, flag.absentValue);
+    }
 }
