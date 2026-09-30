@@ -114,11 +114,6 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
             {
                 if (auto const ret = canAddHolding(ctx.view, asset); !isTesSuccess(ret))
                     return ret;
-
-                // The payout cannot recreate a deleted MPToken, because this transaction already
-                // deletes the pseudo-account's one. The owner has to authorize the MPT again.
-                if (asset.holds<MPTIssue>())
-                    return tecNO_AUTH;
             }
         }
 
@@ -172,8 +167,34 @@ LoanBrokerDelete::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
+    auto owner = view().peek(keylet::account(accountID_));
+    if (!owner)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    // Pre-fixCleanup3_5_0: the owner count drops after the pseudo-account is erased.
+    // Post-fixCleanup3_5_0: it drops first, so the owner's MPToken below can use the
+    // reserve that the broker frees.
+    bool const fix350Enabled = view().rules().enabled(fixCleanup3_5_0);
+    if (fix350Enabled)
+    {
+        // Decreases the owner count by two: one for the LoanBroker object, and one
+        // for the pseudo-account.
+        decreaseOwnerCountForObject(view(), owner, broker, 2, j_);
+    }
+
     {
         auto const coverAvailable = STAmount{vaultAsset, broker->at(sfCoverAvailable)};
+
+        // Pre-fixCleanup3_5_0: an MPT payout to an owner with no MPToken fails with tecNO_AUTH.
+        // Post-fixCleanup3_5_0: the owner's MPToken is created first, as a withdrawal to self does.
+        if (fix350Enabled && coverAvailable > beast::kZero && vaultAsset.holds<MPTIssue>())
+        {
+            if (auto const ter = addEmptyHolding(
+                    ctx_.getApplyViewContext(), accountID_, preFeeBalance_, vaultAsset, j_);
+                !isTesSuccess(ter) && ter != tecDUPLICATE)
+                return ter;
+        }
+
         if (auto const ter = accountSend(
                 view(), brokerPseudoID, accountID_, coverAvailable, j_, {}, WaiveTransferFee::Yes))
             return ter;
@@ -206,15 +227,8 @@ LoanBrokerDelete::doApply()
 
     view().erase(brokerPseudoSLE);
 
-    {
-        auto owner = view().peek(keylet::account(accountID_));
-        if (!owner)
-            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-
-        // Decreases the owner count by two: one for the LoanBroker object, and
-        // one for the pseudo-account.
+    if (!fix350Enabled)
         decreaseOwnerCountForObject(view(), owner, broker, 2, j_);
-    }
 
     view().erase(broker);
 

@@ -11,6 +11,7 @@
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
@@ -1985,6 +1986,112 @@ class LoanBroker_test : public beast::unit_test::Suite
         }
     }
 
+    // The issuer requires authorization. Alice funds a broker with 5'000 of cover from an
+    // authorized line, then deletes the emptied line, which drops its authorization as well.
+    static Keylet
+    createCoveredBrokerRequireAuthIOU(
+        jtx::Env& env,
+        jtx::Account const& issuer,
+        jtx::Account const& alice,
+        jtx::IOU const& iou)
+    {
+        using namespace jtx;
+        using namespace loan_broker;
+
+        // With DefaultRipple set, canTransfer passes and only authorization decides the result.
+        env(fset(issuer, asfRequireAuth));
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+        env(trust(issuer, iou(0), alice, tfSetfAuth));
+        env.close();
+
+        auto const brokerKeylet = createBrokerIOU(env, alice, iou);
+        env(coverDeposit(alice, brokerKeylet.key, iou(5'000)));
+        env.close();
+
+        env(trust(alice, iou(0)));
+        env.close();
+        return brokerKeylet;
+    }
+
+    void
+    testLoanBrokerDeleteUnauthorizedOwnerIOU(FeatureBitset features)
+    {
+        testcase << "LoanBrokerDelete - IOU owner line unauthorized after cover deposit, "
+                 << (features[fixCleanup3_5_0] ? "post-Cleanup3.5" : "pre-Cleanup3.5");
+        using namespace jtx;
+        using namespace loan_broker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+
+        Env env(*this, features);
+        env.fund(XRP(100'000), issuer, alice);
+        env.close();
+
+        auto const iou = issuer["IOU"];
+        auto const brokerKeylet = createCoveredBrokerRequireAuthIOU(env, issuer, alice, iou);
+
+        // The issuer cannot revoke IOU authorization, but a recreated line starts unauthorized.
+        env(trust(alice, iou(10'000)));
+        env.close();
+        auto const line = env.le(keylet::trustLine(alice.id(), iou.issue()));
+        if (!BEAST_EXPECT(line))
+            return;
+        BEAST_EXPECT(!line->isFlag(alice.id() > issuer.id() ? lsfLowAuth : lsfHighAuth));
+
+        TER const expected = features[fixCleanup3_5_0] ? TER{tecNO_AUTH} : tesSUCCESS;
+        env(del(alice, brokerKeylet.key), Ter(expected));
+        env.close();
+
+        if (isTesSuccess(expected))
+        {
+            BEAST_EXPECT(env.le(brokerKeylet) == nullptr);
+            BEAST_EXPECT(env.balance(alice, iou) == iou(5'000));
+        }
+        else
+        {
+            BEAST_EXPECT(env.le(brokerKeylet) != nullptr);
+            BEAST_EXPECT(env.balance(alice, iou) == beast::kZero);
+        }
+    }
+
+    void
+    testLoanBrokerDeleteDeletedLineRequireAuthIOU(FeatureBitset features)
+    {
+        testcase << "LoanBrokerDelete - IOU line deleted before payout, issuer with RequireAuth, "
+                 << (features[fixCleanup3_5_0] ? "post-Cleanup3.5" : "pre-Cleanup3.5");
+        using namespace jtx;
+        using namespace loan_broker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+
+        Env env(*this, features);
+        env.fund(XRP(100'000), issuer, alice);
+        env.close();
+
+        auto const iou = issuer["IOU"];
+        auto const brokerKeylet = createCoveredBrokerRequireAuthIOU(env, issuer, alice, iou);
+        BEAST_EXPECT(!env.le(keylet::trustLine(alice.id(), iou.issue())));
+
+        // Before Cleanup3.5, the payout recreates the line without authorization.
+        TER const expected = features[fixCleanup3_5_0] ? TER{tecNO_LINE} : tesSUCCESS;
+        env(del(alice, brokerKeylet.key), Ter(expected));
+        env.close();
+
+        if (isTesSuccess(expected))
+        {
+            BEAST_EXPECT(env.le(brokerKeylet) == nullptr);
+            BEAST_EXPECT(env.balance(alice, iou) == iou(5'000));
+        }
+        else
+        {
+            BEAST_EXPECT(env.le(brokerKeylet) != nullptr);
+            BEAST_EXPECT(!env.le(keylet::trustLine(alice.id(), iou.issue())));
+        }
+    }
+
     void
     testLoanBrokerDeleteRequireAuthMPT(FeatureBitset features)
     {
@@ -2224,17 +2331,103 @@ class LoanBroker_test : public beast::unit_test::Suite
         tester.authorize({.account = alice, .flags = tfMPTUnauthorize});
         BEAST_EXPECT(!env.le(aliceMptKey));
 
-        // Post-Cleanup3.5 preclaim rejects the deletion. Before it, the payout fails the same way.
-        env(del(alice, brokerKeylet.key), Ter(tecNO_AUTH));
+        // Pre-Cleanup3.5: the payout fails, and alice has to authorize the MPT again first.
+        // Post-Cleanup3.5: the payout creates her MPToken.
+        auto const ownerCountBefore = env.ownerCount(alice);
+        if (!features[fixCleanup3_5_0])
+        {
+            env(del(alice, brokerKeylet.key), Ter(tecNO_AUTH));
+            env.close();
+            BEAST_EXPECT(env.le(brokerKeylet) != nullptr);
+            tester.authorize({.account = alice});
+        }
+        env(del(alice, brokerKeylet.key));
         env.close();
-        BEAST_EXPECT(env.le(brokerKeylet) != nullptr);
+        BEAST_EXPECT(env.le(brokerKeylet) == nullptr);
+        BEAST_EXPECT(env.le(aliceMptKey) != nullptr);
+        BEAST_EXPECT(env.balance(alice, mpt) == mpt(5'000));
+        // The broker and its pseudo-account are released and the MPToken is counted.
+        BEAST_EXPECT(env.ownerCount(alice) == ownerCountBefore - 1);
+    }
 
-        // Once alice holds the MPT again, the cover is paid out.
-        tester.authorize({.account = alice});
+    void
+    testLoanBrokerDeleteMissingOwnerMPTokenAtReserve(FeatureBitset features)
+    {
+        testcase("LoanBrokerDelete - owner at its reserve gets its MPToken back");
+        using namespace jtx;
+        using namespace loan_broker;
+
+        Account const issuer("issuer");
+        Account const alice("alice");
+
+        Env env(*this, features);
+        env.fund(XRP(100'000), issuer, alice);
+        env.close();
+
+        auto tester = MPTTester(
+            {.env = env,
+             .issuer = issuer,
+             .holders = {alice},
+             .pay = 15'000,
+             .flags = tfMPTCanTransfer});
+        PrettyAsset const mpt{tester.issuanceID()};
+
+        auto const brokerKeylet = createCoveredBrokerMPT(env, alice, mpt);
+        tester.authorize({.account = alice, .flags = tfMPTUnauthorize});
+
+        // Leave alice exactly her current reserve. The new MPToken fits only because the
+        // broker's reserve is released before it is created.
+        auto const fee = env.current()->fees().base;
+        env(pay(
+            alice,
+            issuer,
+            env.balance(alice) - accountReserve(*env.current(), alice.id(), env.journal) - fee));
+        env.close();
+
         env(del(alice, brokerKeylet.key));
         env.close();
         BEAST_EXPECT(env.le(brokerKeylet) == nullptr);
         BEAST_EXPECT(env.balance(alice, mpt) == mpt(5'000));
+    }
+
+    void
+    testLoanBrokerDeleteMissingOwnerMPTokenBelowReserve(FeatureBitset features)
+    {
+        testcase("LoanBrokerDelete - owner below its reserve can't get its MPToken back");
+        using namespace jtx;
+        using namespace loan_broker;
+
+        Account const issuer("issuer");
+        Account const alice("alice");
+
+        Env env(*this, features);
+        env.fund(XRP(100'000), issuer, alice);
+        env.close();
+
+        auto tester = MPTTester(
+            {.env = env,
+             .issuer = issuer,
+             .holders = {alice},
+             .pay = 15'000,
+             .flags = tfMPTCanTransfer});
+        PrettyAsset const mpt{tester.issuanceID()};
+
+        auto const brokerKeylet = createCoveredBrokerMPT(env, alice, mpt);
+        tester.authorize({.account = alice, .flags = tfMPTUnauthorize});
+
+        // Fees can be paid out of the reserve. Leave alice two reserve increments short of
+        // her current reserve, which is still short after the broker's reserve is released.
+        auto const fee = env.current()->fees().base;
+        env(pay(
+            alice,
+            issuer,
+            env.balance(alice) - accountReserve(*env.current(), alice.id(), env.journal) - fee));
+        env(noop(alice), Fee(env.current()->fees().increment * 2));
+        env.close();
+
+        env(del(alice, brokerKeylet.key), Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        BEAST_EXPECT(env.le(brokerKeylet) != nullptr);
     }
 
     void
@@ -3308,6 +3501,12 @@ public:
         testLoanBrokerDeleteDeletedLineIOU(all_);
         testLoanBrokerDeleteDeletedLineIOU(all_ - fixCleanup3_5_0);
 
+        testLoanBrokerDeleteUnauthorizedOwnerIOU(all_);
+        testLoanBrokerDeleteUnauthorizedOwnerIOU(all_ - fixCleanup3_5_0);
+
+        testLoanBrokerDeleteDeletedLineRequireAuthIOU(all_);
+        testLoanBrokerDeleteDeletedLineRequireAuthIOU(all_ - fixCleanup3_5_0);
+
         // featureMPTokensV2 independently makes ValidMPTTransfer enforcing,
         // but it is not enabled on real networks. Exclude it so Cleanup3.4
         // alone determines whether the invariant rejects the transfer.
@@ -3324,6 +3523,8 @@ public:
 
         testLoanBrokerDeleteMissingOwnerMPToken(all_);
         testLoanBrokerDeleteMissingOwnerMPToken(all_ - fixCleanup3_5_0);
+        testLoanBrokerDeleteMissingOwnerMPTokenAtReserve(all_);
+        testLoanBrokerDeleteMissingOwnerMPTokenBelowReserve(all_);
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.
