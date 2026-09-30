@@ -175,14 +175,14 @@ Controlled by `trace_rpc=1` in `[telemetry]` config (pathfinding spans fire with
 
 Controlled by `trace_transactions=1` in `[telemetry]` config.
 
-| Span Name          | Parent                                                      | Source File | Description                                                                                                                                             |
-| ------------------ | ----------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `txq.enqueue`      | `tx.process` (submission path; root on open-ledger rebuild) | TxQ.cpp     | Queue admission decision (apply/queue/reject). Parents to `tx.process` via explicit context on submit; correlates via `current_ledger_seq` on all paths |
-| `txq.apply_direct` | `txq.enqueue`                                               | TxQ.cpp     | Direct application attempt (bypassing queue)                                                                                                            |
-| `txq.batch_clear`  | `txq.enqueue`                                               | TxQ.cpp     | Batch clear of account's queued transactions                                                                                                            |
-| `txq.accept`       | —                                                           | TxQ.cpp     | Ledger-close accept loop (drain queued transactions)                                                                                                    |
-| `txq.accept.tx`    | `txq.accept`                                                | TxQ.cpp     | Per-transaction apply within accept loop                                                                                                                |
-| `txq.cleanup`      | —                                                           | TxQ.cpp     | Post-close cleanup (expire old transactions)                                                                                                            |
+| Span Name          | Parent                                                    | Source File | Description                                                                                                                                    |
+| ------------------ | --------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `txq.enqueue`      | `tx.process` (submit); `consensus.accept.apply` (rebuild) | TxQ.cpp     | Queue admission decision (apply/queue/reject) on every `TxQ::apply`; a root on a rebuild outside `doAccept`; `current_ledger_seq` on all paths |
+| `txq.apply_direct` | `txq.enqueue`                                             | TxQ.cpp     | Direct application attempt (bypassing queue)                                                                                                   |
+| `txq.batch_clear`  | `txq.enqueue`                                             | TxQ.cpp     | Batch clear of account's queued transactions                                                                                                   |
+| `txq.accept`       | —                                                         | TxQ.cpp     | Ledger-close accept loop (drain queued transactions)                                                                                           |
+| `txq.accept.tx`    | `txq.accept`                                              | TxQ.cpp     | Per-transaction apply within accept loop                                                                                                       |
+| `txq.cleanup`      | —                                                         | TxQ.cpp     | Post-close cleanup (expire old transactions)                                                                                                   |
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"txq.*"}`
 
