@@ -2554,13 +2554,15 @@ peer connectivity, and whether the node is keeping up with ledger close.
 
 > **Why this is a ratio gated on `validations_sent_total`, not
 > `rate(validation_missed_total) > 0`:** `ValidationTracker` classifies a ledger
-> as a miss whenever `weValidated && networkValidated` is not _both_ true. A node
-> that does not validate never sets `weValidated`, so **every** reconciled ledger
-> counts as a miss and the raw rate is permanently nonzero — the measured miss
-> ratio is exactly `1.0` on non-validating nodes. No threshold can separate "not
-> a validator" from "validator disagreeing", so the rule gates on
-> `validations_sent_total > 0` to exclude non-validators entirely, and then
-> measures the ratio among nodes that genuinely do validate.
+> as a miss whenever `weValidated && networkValidated` is not _both_ true, so a
+> node that never validates would count **every** ledger as a miss. xrpld
+> therefore publishes neither lifetime counter, and no `validation_agreement`
+> series, on a node without a validator key; such a node shows no data on the
+> Validator Health board rather than 0% agreement. The
+> `validations_sent_total > 0` gate is a second guard: it keeps any node that
+> sends no validations out of the ratio. It also means this rule stays silent
+> for a validator that has stopped validating altogether; the _Validation Rate_
+> panel shows that case.
 
 **ValidationsNotChecked** — The node has stopped checking incoming validations
 from peers. Likely causes: overlay/peer disconnection or a stalled validation

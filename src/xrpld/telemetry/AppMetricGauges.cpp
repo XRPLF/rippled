@@ -1166,6 +1166,24 @@ AppMetricGauges::registerStorageDetailGauge()
         this);
 }
 
+namespace {
+
+/**
+ * Whether this node holds a validator key, the fact that lets consensus sign a
+ * validation at all. Setup gives the key to the validator list before any
+ * gauge starts.
+ *
+ * @param app Services of the running node.
+ * @return true when the node has a validator key.
+ */
+[[nodiscard]] bool
+hasValidatorKey(ServiceRegistry& app)
+{
+    return app.getValidators().localPublicKey().has_value();
+}
+
+}  // namespace
+
 void
 AppMetricGauges::registerValidationAgreementGauge()
 {
@@ -1187,6 +1205,12 @@ AppMetricGauges::registerValidationAgreementGauge()
             {
                 // Reconcile pending events before reading window data.
                 self->core_.getValidationTracker().reconcile();
+
+                // Without a validator key this node never signs a ledger, so
+                // every window would read 0% agreed and all missed. Publish
+                // nothing instead.
+                if (!hasValidatorKey(self->app_))
+                    return;
 
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
@@ -1253,6 +1277,8 @@ AppMetricGauges::registerValidationTotalsCounters()
             try
             {
                 self->core_.getValidationTracker().reconcile();
+                if (!hasValidatorKey(self->app_))
+                    return;
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
                     ->Observe(
@@ -1276,6 +1302,8 @@ AppMetricGauges::registerValidationTotalsCounters()
             try
             {
                 self->core_.getValidationTracker().reconcile();
+                if (!hasValidatorKey(self->app_))
+                    return;
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
                     ->Observe(

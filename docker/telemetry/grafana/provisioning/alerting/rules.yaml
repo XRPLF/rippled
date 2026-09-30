@@ -279,13 +279,13 @@ groups:
       # IMPORTANT — why this is a ratio gated on validations_sent_total, and
       # not `rate(validation_missed_total) > 0`:
       # ValidationTracker classifies a ledger as a miss whenever
-      # (weValidated && networkValidated) is not both true. A node that does
-      # not validate never sets weValidated, so EVERY reconciled ledger counts
-      # as a miss and the raw rate is permanently nonzero — measured ratio is
-      # exactly 1.0 on non-validating nodes. No threshold can separate "not a
-      # validator" from "validator disagreeing"; the `and on(...)` gate
-      # excludes non-validators entirely, and the ratio then measures real
-      # disagreement among nodes that do validate.
+      # (weValidated && networkValidated) is not both true, so a node that
+      # never validates would miss every ledger. xrpld therefore publishes
+      # neither counter on a node without a validator key. The `and on(...)`
+      # gate is a second guard: it keeps any node that sends no validations
+      # out of the ratio, so the ratio measures real disagreement among nodes
+      # that do validate. It also keeps this rule silent for a validator that
+      # has stopped validating altogether.
       - uid: xrpld-validations-missed
         title: ValidationsMissed
         condition: is_missing_validations

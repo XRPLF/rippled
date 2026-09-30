@@ -1825,7 +1825,7 @@ These metrics fill gaps identified by comparing xrpld's internal observability w
 | `validation_agreement{metric="agreements_7d"}`     | Double | `metric` | Agreed validations in the 7-day window  |
 | `validation_agreement{metric="missed_7d"}`         | Double | `metric` | Missed validations in the 7-day window  |
 
-Data source: `ValidationTracker` class with 8s grace period and 5m late repair window.
+Data source: `ValidationTracker` class with 8s grace period and 5m late repair window. Published only on a node with a validator key: a node without one never signs a validation, so it would read 0% agreed with every ledger missed, and it publishes none of these series instead.
 
 > **Every value on this instrument is a double.** The family is one
 > `CreateDoubleObservableGauge` (in `AppMetricGauges::registerValidationAgreementGauge()`),
@@ -1945,6 +1945,10 @@ counters), observed from an existing cumulative source each collection cycle:
 > **not** move either counter — keeping both strictly monotonic (a Prometheus `_total` must never
 > decrease) and additive (`agreements_total + missed_total` = ledgers reconciled). The
 > repair-aware, windowed view remains on `validation_agreement{metric="…"}`.
+>
+> **Validators only:** like the windowed gauge, both counters are observed only on a node
+> with a validator key, so a node without one publishes neither rather than a miss count that
+> grows by one per ledger.
 
 #### Span Attribute Enrichments (Phases 2-4): REMOVED
 
