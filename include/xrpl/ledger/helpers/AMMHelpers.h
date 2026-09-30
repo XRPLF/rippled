@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
@@ -739,7 +740,7 @@ checkAMMPrecisionLoss(
 std::expected<std::tuple<STAmount, STAmount, STAmount>, TER>
 ammHolds(
     ReadView const& view,
-    SLE const& ammSle,
+    AMMEntryR const& ammSle,
     std::optional<Asset> const& optAsset1,
     std::optional<Asset> const& optAsset2,
     FreezeHandling freezeHandling,
@@ -761,7 +762,7 @@ ammLPHolds(
 STAmount
 ammLPHolds(
     ReadView const& view,
-    SLE const& ammSle,
+    AMMEntryR const& ammSle,
     AccountID const& lpAccount,
     beast::Journal const j);
 
@@ -771,7 +772,7 @@ ammLPHolds(
  * accounts.
  */
 std::uint16_t
-getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account);
+getTradingFee(ReadView const& view, AMMEntryR const& ammSle, AccountID const& account);
 
 /**
  * Returns total amount held by AMM for the given token.
@@ -792,7 +793,7 @@ deleteAMMAccount(Sandbox& view, Asset const& asset, Asset const& asset2, beast::
 void
 initializeFeeAuctionVote(
     ApplyView const& view,
-    SLE::pointer const& ammSle,
+    AMMEntryW& ammSle,
     AccountID const& account,
     Asset const& lptAsset,
     std::uint16_t tfee);
@@ -814,7 +815,7 @@ std::expected<bool, TER>
 verifyAndAdjustLPTokenBalance(
     Sandbox& sb,
     STAmount const& lpTokens,
-    SLE::pointer const& ammSle,
+    AMMEntryW& ammSle,
     AccountID const& account);
 
 }  // namespace xrpl
