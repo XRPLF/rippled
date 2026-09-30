@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/LoanEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
@@ -305,7 +306,7 @@ constructLoanState(
 // directly from a Loan ledger object, which always holds rounded values,
 // rather than taking them as separate Number arguments.
 LoanState
-constructLoanState(SLE::ConstRef loan);
+constructLoanState(LoanEntryR const& loan);
 
 Number
 computeManagementFee(
@@ -328,7 +329,7 @@ computeFullPaymentInterest(
 // boundary is amendment-gated: with fixCleanup3_4_0 the due date must be
 // strictly in the past, otherwise the exact due-date instant counts as late.
 [[nodiscard]] bool
-isPaymentLate(ReadView const& view, SLE::ConstRef loanSle);
+isPaymentLate(ReadView const& view, LoanEntryR const& loanSle);
 
 // Deltas applied to Vault.AssetsTotal and LoanBroker.DebtTotal at a single
 // accounting touch point (origination, payment, impair/unimpair/default).
@@ -356,7 +357,7 @@ loanOriginationExceedsVaultMaximum(
 
 // LoanManage impair/unimpair/default: the vault's exposure to this loan
 Number
-loanVaultExposure(SLE::ConstRef loanSle);
+loanVaultExposure(LoanEntryR const& loanSle);
 
 // LoanPay: what's added to Vault.AssetsTotal and subtracted from LoanBroker.DebtTotal for a payment
 AccountingDeltas
@@ -372,7 +373,7 @@ AccountingDeltas
 loanOriginationDeltas(Number const& principalRequested);
 
 Number
-loanVaultExposure(SLE::ConstRef loanSle);
+loanVaultExposure(LoanEntryR const& loanSle);
 
 AccountingDeltas
 loanPaymentDeltas(LoanPaymentParts const& parts);
@@ -396,7 +397,7 @@ loanOriginationExceedsVaultMaximum(
     Number const& interestDue);
 
 Number
-loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle);
+loanVaultExposure(SLE::ConstRef vaultSle, LoanEntryR const& loanSle);
 
 AccountingDeltas
 loanPaymentDeltas(SLE::ConstRef vaultSle, LoanPaymentParts const& parts);
@@ -667,7 +668,7 @@ std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
     ApplyView& view,
-    SLE::Ref loan,
+    LoanEntryW& loan,
     SLE::ConstRef brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
