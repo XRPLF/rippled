@@ -237,6 +237,12 @@ ValidLoanBroker::finalize(
                 JLOG(j.fatal()) << "Invariant failed: Loan Broker DomainID is zero";
                 return false;
             }
+
+            if ((after->getFlags() & ~lsfLoanBrokerPrivate) != 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan Broker contains an unknown flag";
+                return false;
+            }
         }
 
         // If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most

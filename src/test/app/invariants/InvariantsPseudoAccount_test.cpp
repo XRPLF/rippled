@@ -37,6 +37,7 @@
 #include <xrpl/tx/applySteps.h>
 
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <initializer_list>
 #include <memory>
@@ -484,6 +485,47 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                     // Private broker with a zero DomainID
                     sleBroker->setFlag(lsfLoanBrokerPrivate);
                     sleBroker->at(sfDomainID) = uint256{};
+                    ac.view().update(sleBroker);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+
+            // Use the highest bit, which is the least likely to be given to a
+            // LoanBroker flag in future
+            std::uint32_t constexpr unknownFlag = 0x80000000;
+
+            doInvariantCheck(
+                {{"Loan Broker contains an unknown flag"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    if (loanBrokerKeylet.type != ltLOAN_BROKER)
+                        return false;
+                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    if (!sleBroker)
+                        return false;
+                    // Public broker with an unknown flag
+                    sleBroker->setFlag(unknownFlag);
+                    ac.view().update(sleBroker);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+
+            doInvariantCheck(
+                {{"Loan Broker contains an unknown flag"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    if (loanBrokerKeylet.type != ltLOAN_BROKER)
+                        return false;
+                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    if (!sleBroker)
+                        return false;
+                    // Private broker with a valid DomainID and an unknown flag
+                    sleBroker->setFlag(lsfLoanBrokerPrivate | unknownFlag);
+                    sleBroker->at(sfDomainID) = uint256(42);
                     ac.view().update(sleBroker);
                     return true;
                 },

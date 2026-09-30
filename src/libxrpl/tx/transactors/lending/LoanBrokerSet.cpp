@@ -80,7 +80,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
         // We're creating a new LoanBroker.
         if (ctx.rules.enabled(featureLendingProtocolV1_2))
         {
-            auto const domainID = tx.at(~sfDomainID);
+            auto const domainID = tx[~sfDomainID];
             if (domainID)
             {
                 if (*domainID == beast::kZero)
@@ -156,20 +156,6 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
-    if (ctx.view.rules().enabled(featureLendingProtocolV1_2))
-    {
-        auto const domainID = tx[~sfDomainID];
-        if (domainID && *domainID != beast::kZero)
-        {
-            auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domainID));
-            if (!sleDomain)
-            {
-                JLOG(ctx.j.warn()) << "Domain does not exist.";
-                return tecOBJECT_NOT_FOUND;
-            }
-        }
-    }
-
     if (auto const brokerID = tx[~sfLoanBrokerID])
     {
         // Updating an existing Broker
@@ -232,6 +218,20 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
         {
             JLOG(ctx.j.warn()) << "Vault pseudo-account is frozen.";
             return ter;
+        }
+    }
+
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_2))
+    {
+        auto const domainID = tx[~sfDomainID];
+        if (domainID && *domainID != beast::kZero)
+        {
+            auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domainID));
+            if (!sleDomain)
+            {
+                JLOG(ctx.j.warn()) << "Domain does not exist.";
+                return tecOBJECT_NOT_FOUND;
+            }
         }
     }
 
