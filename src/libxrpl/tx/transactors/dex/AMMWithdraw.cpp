@@ -357,7 +357,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
             return {res.error(), false};
     }
 
-    auto const tfee = getTradingFee(ctx_.view(), ammSle, accountID_);
+    auto const tfee = ammSle.tradingFee(accountID_);
 
     auto const freezeHandling = issuerFreezeHandling();
 

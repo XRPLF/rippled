@@ -8,7 +8,6 @@
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/entries/AMMEntry.h>
-#include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -113,7 +112,7 @@ private:
             ammLiquidity_.emplace(
                 ctx.view,
                 (*ammSle)[sfAccount],
-                getTradingFee(ctx.view, ammSle, ctx.ammContext.account()),
+                ammSle.tradingFee(ctx.ammContext.account()),
                 in,
                 out,
                 ctx.ammContext,

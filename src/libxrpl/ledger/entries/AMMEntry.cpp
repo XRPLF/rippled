@@ -1,6 +1,8 @@
 #include <xrpl/ledger/entries/AMMEntry.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
@@ -10,8 +12,11 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 
+#include <chrono>
+#include <cstdint>
 #include <expected>
 #include <optional>
 #include <tuple>
@@ -97,6 +102,38 @@ AMMEntry<ViewT>::lpHolds(AccountID const& lpAccount) const
         Base::operator*()[sfAccount],
         lpAccount,
         this->journal());
+}
+
+template <typename ViewT>
+std::uint16_t
+AMMEntry<ViewT>::tradingFee(AccountID const& account) const
+{
+    using namespace std::chrono;
+    XRPL_ASSERT(
+        Base::operator->()->isFieldPresent(sfAuctionSlot),
+        "xrpl::AMMEntry::tradingFee : auction present");
+    if (Base::operator->()->isFieldPresent(sfAuctionSlot))
+    {
+        auto const& auctionSlot =
+            safeDowncast<STObject const&>(Base::operator->()->peekAtField(sfAuctionSlot));
+        // Not expired
+        if (auto const expiration = auctionSlot[~sfExpiration];
+            duration_cast<seconds>(this->readView().header().parentCloseTime.time_since_epoch())
+                .count() < expiration)
+        {
+            if (auctionSlot[~sfAccount] == account)
+                return auctionSlot[sfDiscountedFee];
+            if (auctionSlot.isFieldPresent(sfAuthAccounts))
+            {
+                for (auto const& acct : auctionSlot.getFieldArray(sfAuthAccounts))
+                {
+                    if (acct[~sfAccount] == account)
+                        return auctionSlot[sfDiscountedFee];
+                }
+            }
+        }
+    }
+    return Base::operator*()[sfTradingFee];
 }
 
 template class AMMEntry<ReadView>;
