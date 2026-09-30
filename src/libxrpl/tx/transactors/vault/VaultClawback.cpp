@@ -275,8 +275,7 @@ VaultClawback::assetsToClawback(
     {
         // Do not discount a sole holder's shares: clawing back AssetsAvailable
         // at the discounted rate can burn every share while loan assets remain.
-        auto const waiveUnrealizedLoss =
-            fix340Enabled && isSoleShareholder(view(), holder, sleShareIssuance)
+        auto const waiveUnrealizedLoss = fix340Enabled && sleShareIssuance.isSoleShareholder(holder)
             ? WaiveUnrealizedLoss::Yes
             : WaiveUnrealizedLoss::No;
 
