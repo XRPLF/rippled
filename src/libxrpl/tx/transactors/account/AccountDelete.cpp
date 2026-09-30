@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/OracleEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
@@ -28,7 +29,6 @@
 #include <xrpl/tx/transactors/account/SignerListSet.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
-#include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
 #include <cstdint>
@@ -154,11 +154,11 @@ removeOracleFromLedger(
     ServiceRegistry&,
     ApplyView& view,
     AccountID const& account,
-    UInt256 const&,
-    SLE::Ref sleDel,
+    UInt256 const& delIndex,
+    SLE::Ref,
     beast::Journal j)
 {
-    return OracleDelete::deleteOracle(view, sleDel, account, j);
+    return OracleEntryW(Keylet(ltORACLE, delIndex), view, j).removeFromLedger(account);
 }
 
 TER
