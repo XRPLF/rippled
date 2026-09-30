@@ -118,7 +118,8 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecNO_ENTRY;
 
-    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1) &&
+        !isVaultDonate(ctx.view.rules(), ctx.tx))
     {
         auto const phase = getVaultPhase(ctx.view, vault);
         if (phase == VaultPhase::Investment || phase == VaultPhase::Redemption)
@@ -187,8 +188,6 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
 
     if (ctx.view.rules().enabled(featureLendingProtocolV1_2))
     {
-        // Perform these checks early to avoid unnecessary processing
-
         // Regular deposits into an insolvent vault are undefined. A donation
         // credits assets without minting shares, so it can recapitalize.
         if (isVaultInsolvent(vault, sleShareIssuance) && !isVaultDonate(ctx.view.rules(), ctx.tx))
@@ -200,7 +199,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         if (vault->isFlag(lsfVaultDepositBlocked))
         {
             JLOG(ctx.j.debug()) << "VaultDeposit: Vault deposits are blocked";
-            return tecNO_PERMISSION;
+            return tecLOCKED;
         }
     }
 

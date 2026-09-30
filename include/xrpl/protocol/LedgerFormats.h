@@ -201,7 +201,7 @@ enum LedgerEntryType : std::uint16_t {
     LEDGER_OBJECT(Vault,                                                                                                           \
         LSF_FLAG(lsfVaultPrivate, 0x00010000)                                                                                      \
         LSF_FLAG(lsfVaultDepositBlocked, 0x00020000)             /* True, vault deposit is blocked */                               \
-        LSF_FLAG(lsfVaultOwnerCanBlockDeposit, 0x00040000))      /* True, vault owner can block deposit */                                                                                     \
+        LSF_FLAG(lsfVaultOwnerCanBlockDeposit, 0x00040000))      /* True, vault owner can block deposit */                                 \
                                                                                                                                    \
     LEDGER_OBJECT(Loan,                                                                                                            \
         LSF_FLAG(lsfLoanDefault, 0x00010000)                                                                                       \

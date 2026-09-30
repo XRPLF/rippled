@@ -151,18 +151,6 @@ VaultSet::preclaim(PreclaimContext const& ctx)
             JLOG(ctx.j.debug()) << "VaultSet: vault does not support blocking deposits";
             return tecNO_PERMISSION;
         }
-
-        if (vault->isFlag(lsfVaultDepositBlocked) && ctx.tx.isFlag(tfVaultDepositBlock))
-        {
-            JLOG(ctx.j.debug()) << "VaultSet: vault deposit is already blocked";
-            return tecNO_PERMISSION;
-        }
-
-        if (!vault->isFlag(lsfVaultDepositBlocked) && ctx.tx.isFlag(tfVaultDepositUnblock))
-        {
-            JLOG(ctx.j.debug()) << "VaultSet: vault deposit is already unblocked";
-            return tecNO_PERMISSION;
-        }
     }
 
     return tesSUCCESS;

@@ -846,19 +846,23 @@ ValidVault::finalize(
                     !beforeVault_.empty(), "xrpl::ValidVault::finalize : deposit updated a vault");
                 auto const& beforeVault = beforeVault_[0];
 
-                // Deposit is only allowed while the vault is in NoPhase or
-                // Subscription.
-                auto const depositPhase = getVaultPhase(
-                    view,
-                    afterVault.vaultKind,
-                    afterVault.subscriptionDate,
-                    afterVault.redemptionDate);
-                if (depositPhase != VaultPhase::NoPhase && depositPhase != VaultPhase::Subscription)
+                // Ordinary deposits are only allowed in NoPhase or Subscription.
+                // A donation mints no shares, so it is allowed in any phase.
+                if (!isDonate)
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: deposit only allowed in "
-                        "Subscription or NoPhase";
-                    result = false;
+                    auto const depositPhase = getVaultPhase(
+                        view,
+                        afterVault.vaultKind,
+                        afterVault.subscriptionDate,
+                        afterVault.redemptionDate);
+                    if (depositPhase != VaultPhase::NoPhase &&
+                        depositPhase != VaultPhase::Subscription)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: deposit only allowed in "
+                            "Subscription or NoPhase";
+                        result = false;
+                    }
                 }
 
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);

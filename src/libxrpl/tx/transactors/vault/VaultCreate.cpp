@@ -56,9 +56,9 @@ std::uint32_t
 VaultCreate::getFlagsMask(PreflightContext const& ctx)
 {
     if (ctx.rules.enabled(featureLendingProtocolV1_2))
-        return tfVaultCreateMask;
+        return tfVaultCreateMaskLP1_2;
 
-    return tfVaultCreateMask | tfVaultOwnerCanBlockDeposit;
+    return tfVaultCreateMask;
 }
 
 NotTEC
@@ -215,7 +215,6 @@ VaultCreate::doApply()
     std::uint32_t mptFlags = 0;
     if (!tx.isFlag(tfVaultShareNonTransferable))
         mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
-
     if (tx.isFlag(tfVaultPrivate))
         mptFlags |= lsfMPTRequireAuth;
 

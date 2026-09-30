@@ -197,7 +197,7 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfVaultPrivate, lsfVaultPrivate)                                                                                                               \
         TF_FLAG(tfVaultShareNonTransferable, 0x00020000)                                                                                                       \
         TF_FLAG(tfVaultOwnerCanBlockDeposit, lsfVaultOwnerCanBlockDeposit),                                                                                    \
-        MASK_ADJ(0))                                                                                                                                           \
+        MASK_ADJ(tfVaultOwnerCanBlockDeposit))                                                                                                                 \
                                                                                                                                                                \
     TRANSACTION(VaultSet,                                                                                                                                      \
         TF_FLAG(tfVaultDepositBlock, 0x00010000)                                                                                                               \
@@ -368,6 +368,11 @@ getAllTxFlags()
 #pragma pop_macro("MASK_ADJ_TO_MASK")
 
 // Additional transaction masks and combos
+// tfVaultCreateMask rejects tfVaultOwnerCanBlockDeposit. With featureLendingProtocolV1_2 enabled
+// VaultCreate uses this mask instead, which accepts it.
+inline constexpr FlagValue tfVaultCreateMaskLP1_2 =
+    tfVaultCreateMask & ~tfVaultOwnerCanBlockDeposit;
+
 inline constexpr FlagValue tfMPTPaymentMask = ~(tfUniversal | tfPartialPayment);
 inline constexpr FlagValue tfTrustSetPermissionMask =
     ~(tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze);
