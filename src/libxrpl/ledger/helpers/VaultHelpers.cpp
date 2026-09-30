@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -25,7 +26,7 @@
 namespace xrpl {
 
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& assets)
+assetsToSharesDeposit(VaultEntryR const& vault, SLE::ConstRef issuance, STAmount const& assets)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
@@ -49,7 +50,7 @@ assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount cons
 }
 
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& shares)
+sharesToAssetsDeposit(VaultEntryR const& vault, SLE::ConstRef issuance, STAmount const& shares)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
     XRPL_ASSERT(
@@ -72,7 +73,7 @@ sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount cons
 }
 
 [[nodiscard]] std::expected<STAmount, TER>
-clampToAssetsTotalScale(SLE::ConstRef vault, STAmount const& delta)
+clampToAssetsTotalScale(VaultEntryR const& vault, STAmount const& delta)
 {
     XRPL_ASSERT(
         delta.asset() == vault->at(sfAsset),
@@ -131,7 +132,7 @@ clampToAssetsTotalScale(SLE::ConstRef vault, STAmount const& delta)
 }
 
 [[nodiscard]] Number
-assetsTotalForWithdrawal(SLE::ConstRef vault, WaiveUnrealizedLoss waive)
+assetsTotalForWithdrawal(VaultEntryR const& vault, WaiveUnrealizedLoss waive)
 {
     Number assetTotal = vault->at(sfAssetsTotal);
     if (waive == WaiveUnrealizedLoss::No)
@@ -149,7 +150,7 @@ debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount
 
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
-    SLE::ConstRef vault,
+    VaultEntryR const& vault,
     SLE::ConstRef issuance,
     STAmount const& assets,
     TruncateShares truncate,
@@ -176,7 +177,7 @@ assetsToSharesWithdraw(
 
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
-    SLE::ConstRef vault,
+    VaultEntryR const& vault,
     SLE::ConstRef issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive)
@@ -218,7 +219,7 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::ConstRef 
 }
 
 [[nodiscard]] VaultVersion
-getVaultVersion(SLE::ConstRef vault)
+getVaultVersion(VaultEntryR const& vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultVersion : valid Vault sle");
     if (!vault->isFieldPresent(sfLEVersion))
@@ -248,7 +249,7 @@ decodeVaultKind(std::optional<std::uint8_t> vaultKind)
 }  // namespace
 
 [[nodiscard]] VaultKind
-getVaultKind(SLE::ConstRef vault)
+getVaultKind(VaultEntryR const& vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultKind : valid Vault sle");
     return decodeVaultKind(vault->at(~sfVaultKind));
@@ -279,7 +280,7 @@ isValidClosedEndedGap(std::uint32_t sub, std::uint32_t red)
 }
 
 [[nodiscard]] VaultPhase
-getVaultPhase(ReadView const& view, SLE::ConstRef vault)
+getVaultPhase(ReadView const& view, VaultEntryR const& vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultPhase : valid Vault sle");
     return getVaultPhase(

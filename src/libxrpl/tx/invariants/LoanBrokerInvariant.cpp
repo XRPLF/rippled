@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
@@ -160,7 +161,7 @@ ValidLoanBroker::finalize(
                     roundToAsset(
                         Asset{vault->at(sfAsset)},
                         debtTotal,
-                        getAssetsTotalScale(vault),
+                        getAssetsTotalScale(VaultEntryR(vault, view)),
                         Number::RoundingMode::TowardsZero) != beast::kZero)
                 {
                     JLOG(j.fatal())
