@@ -15,6 +15,9 @@ doNFTBuyOffers(rpc::JsonContext& context)
     if (!context.params.isMember(jss::nft_id))
         return rpc::missingFieldError(jss::nft_id);
 
+    if (!context.params[jss::nft_id].isString())
+        return RPC::expected_field_error(jss::nft_id, "string");
+
     uint256 nftId;
 
     if (!nftId.parseHex(context.params[jss::nft_id].asString()))
