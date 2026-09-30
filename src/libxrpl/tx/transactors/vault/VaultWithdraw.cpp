@@ -18,8 +18,10 @@
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
@@ -191,7 +193,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
             auto const rate = withdrawalTransferRate(ctx.view, account, dstAcct, vaultAsset);
-            auto const amountToReceive = subtractTransferFee(*maybeAssets, rate);
+            auto const amountToReceive = mulRatio(*maybeAssets, QUALITY_ONE, rate.value, false);
             if (auto const ret = canWithdraw(
                     ctx.view,
                     account,
@@ -354,7 +356,7 @@ VaultWithdraw::doApply()
                 view().rules().enabled(fixCleanup3_4_0) ? TruncateShares::Yes : TruncateShares::No;
             {
                 auto const sourceAmount =
-                    rate == kParityRate ? amount : multiplyRound(amount, rate, vaultAsset, true);
+                    rate == kParityRate ? amount : mulRatio(amount, rate.value, QUALITY_ONE, true);
                 auto const maybeShares = assetsToSharesWithdraw(
                     vault, sleIssuance, sourceAmount, truncate, waiveUnrealizedLoss);
                 if (!maybeShares)
@@ -559,7 +561,7 @@ VaultWithdraw::doApply()
         assetsWithdrawn = allAvailable;
     }
 
-    auto const assetsDelivered = subtractTransferFee(assetsWithdrawn, rate);
+    auto const assetsDelivered = mulRatio(assetsWithdrawn, QUALITY_ONE, rate.value, false);
     if (assetsWithdrawn > beast::kZero && assetsDelivered == beast::kZero)
     {
         JLOG(j_.debug()) << "VaultWithdraw: transfer fee reduces the payout to zero";

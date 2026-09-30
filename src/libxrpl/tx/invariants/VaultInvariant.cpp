@@ -14,6 +14,8 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -1146,15 +1148,18 @@ ValidVault::finalize(
 
                         auto const localPseudoDeltaAssets =
                             roundToAsset(vaultAsset, vaultPseudoDeltaAssets, localMinScale);
-                        bool const feeAdjustedWithdrawal =
-                            fix350Enabled && distinctDestination && !vaultAsset.native();
+                        auto const rate = transferRate(view, vaultAsset);
+                        bool const feeAdjustedWithdrawal = fix350Enabled && distinctDestination &&
+                            !vaultAsset.native() && rate != kParityRate;
                         auto expectedDestinationDelta = localPseudoDeltaAssets * -1;
                         if (feeAdjustedWithdrawal)
                         {
                             expectedDestinationDelta =
-                                subtractTransferFee(
+                                mulRatio(
                                     STAmount{vaultAsset, expectedDestinationDelta},
-                                    transferRate(view, vaultAsset))
+                                    QUALITY_ONE,
+                                    rate.value,
+                                    false)
                                     .value();
                         }
                         // For IOU assets near a precision boundary the destination's STAmount

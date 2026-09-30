@@ -316,13 +316,6 @@ transferRate(ReadView const& view, Asset const& asset);
 [[nodiscard]] Rate
 transferRate(ReadView const& view, STAmount const& amount);
 
-/**
- * Returns the amount delivered when the transfer fee is deducted from a fixed
- * source amount.
- */
-[[nodiscard]] STAmount
-subtractTransferFee(STAmount const& sourceAmount, Rate const& rate);
-
 //------------------------------------------------------------------------------
 //
 // Holding operations (Asset-based dispatchers)

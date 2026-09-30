@@ -836,38 +836,51 @@ private:
             },
             feeArgs);
 
-        testCase(
-            [this](
-                Env& env,
-                Account const&,
-                Account const& owner,
-                Account const& depositor,
-                PrettyAsset const& asset,
-                Vault& vault,
-                MPTTester& mptt) {
-                testcase("MPT transfer fee rounds the payout down to zero");
+        // The payout rounds down whether or not MPTokensV2 is enabled.
+        auto const testTransferFeeRoundsDown = [&](FeatureBitset const& features) {
+            testCase(
+                [this, features](
+                    Env& env,
+                    Account const&,
+                    Account const& owner,
+                    Account const& depositor,
+                    PrettyAsset const& asset,
+                    Vault& vault,
+                    MPTTester& mptt) {
+                    testcase(
+                        features[featureMPTokensV2]
+                            ? "MPT transfer fee rounds the payout down to zero"
+                            : "MPT transfer fee rounds the payout down to zero without "
+                              "MPTokensV2");
 
-                auto const funded = createFundedVault(env, vault, owner, depositor, asset(1));
-                auto const mptIssue = asset.raw().get<MPTIssue>();
+                    auto const funded = createFundedVault(env, vault, owner, depositor, asset(1));
+                    auto const mptIssue = asset.raw().get<MPTIssue>();
 
-                auto tx = vault.withdraw(
-                    {.depositor = depositor, .id = funded.keylet.key, .amount = funded.shares(1)});
-                tx[sfDestination] = owner.human();
-                env(tx, Ter{tecPRECISION_LOSS});
-                env.close();
+                    auto tx = vault.withdraw(
+                        {.depositor = depositor,
+                         .id = funded.keylet.key,
+                         .amount = funded.shares(1)});
+                    tx[sfDestination] = owner.human();
+                    env(tx, Ter{tecPRECISION_LOSS});
+                    env.close();
 
-                // A self-withdrawal pays no fee, so the same share still redeems.
-                env(vault.withdraw(
-                    {.depositor = depositor, .id = funded.keylet.key, .amount = funded.shares(1)}));
-                env.close();
+                    // A self-withdrawal pays no fee, so the same share still redeems.
+                    env(vault.withdraw(
+                        {.depositor = depositor,
+                         .id = funded.keylet.key,
+                         .amount = funded.shares(1)}));
+                    env.close();
 
-                BEAST_EXPECT(mptt.checkMPTokenAmount(depositor, 1000));
-                BEAST_EXPECT(env.balance(funded.account, mptIssue) == asset(0));
+                    BEAST_EXPECT(mptt.checkMPTokenAmount(depositor, 1000));
+                    BEAST_EXPECT(env.balance(funded.account, mptIssue) == asset(0));
 
-                env(vault.del({.owner = owner, .id = funded.keylet.key}));
-                env.close();
-            },
-            feeArgs);
+                    env(vault.del({.owner = owner, .id = funded.keylet.key}));
+                    env.close();
+                },
+                CaseArgs{.transferFee = 25'000, .features = features});
+        };
+        testTransferFeeRoundsDown(testableAmendments());
+        testTransferFeeRoundsDown(testableAmendments() - featureMPTokensV2);
 
         testCase([this](
                      Env& env,
