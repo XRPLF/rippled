@@ -1873,30 +1873,6 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg, std::source_loca
     }
 }
 
-void
-MPTTester::holderKeyUpdate(MPTHolderKeyUpdate const& arg, std::source_location const& loc)
-{
-    json::Value jv;
-    jv[jss::TransactionType] = jss::ConfidentialMPTHolderKeyUpdate;
-
-    setAccountField(jv, arg.account);
-    setIssuanceIdField(jv, arg.id);
-
-    if (arg.holderPubKey)
-        jv[sfHolderEncryptionKey.jsonName] = strHex(*arg.holderPubKey);
-
-    if (arg.spendingCiphertext)
-        jv[sfConfidentialBalanceSpending.jsonName] = strHex(*arg.spendingCiphertext);
-
-    if (arg.inboxCiphertext)
-        jv[sfConfidentialBalanceInbox.jsonName] = strHex(*arg.inboxCiphertext);
-
-    if (arg.proof)
-        jv[sfZKProof.jsonName] = strHex(*arg.proof);
-
-    submit(arg, {jv, loc});
-}
-
 std::uint32_t
 MPTTester::generateKeyPair(Account const& account)
 {
@@ -2311,6 +2287,27 @@ MPTTester::mirrorUpdate(MPTMirrorUpdate const& arg, std::source_location const& 
     {
         jv[sfZKProof] = strHex(gMakeZeroBuffer(kEcEqualityProofLength));
     }
+
+    submit(arg, {jv, loc});
+}
+
+void
+MPTTester::holderKeyUpdate(MPTHolderKeyUpdate const& arg, std::source_location const& loc)
+{
+    json::Value jv;
+    jv[jss::TransactionType] = jss::ConfidentialMPTHolderKeyUpdate;
+
+    setAccountField(jv, arg.account);
+    setIssuanceIdField(jv, arg.id);
+
+    if (arg.holderPubKey)
+        jv[sfHolderEncryptionKey.jsonName] = strHex(*arg.holderPubKey);
+    if (arg.spendingCiphertext)
+        jv[sfConfidentialBalanceSpending.jsonName] = strHex(*arg.spendingCiphertext);
+    if (arg.inboxCiphertext)
+        jv[sfConfidentialBalanceInbox.jsonName] = strHex(*arg.inboxCiphertext);
+    if (arg.proof)
+        jv[sfZKProof.jsonName] = strHex(*arg.proof);
 
     submit(arg, {jv, loc});
 }

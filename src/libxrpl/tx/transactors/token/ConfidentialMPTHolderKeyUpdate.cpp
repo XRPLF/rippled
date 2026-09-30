@@ -140,7 +140,7 @@ ConfidentialMPTHolderKeyUpdate::preclaim(PreclaimContext const& ctx)
         return tecDUPLICATE;
 
     // Recovery mode: reject if a recovery is already pending
-    if (!ctx.tx.isFlag(tfHolderKeyRotation) && sleMptoken->isFieldPresent(sfRecoveryKey))
+    if (ctx.tx.isFlag(tfHolderKeyRecovery) && sleMptoken->isFieldPresent(sfRecoveryKey))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -174,26 +174,27 @@ ConfidentialMPTHolderKeyUpdate::doApply()
 
     if (ctx_.tx.isFlag(tfHolderKeyRotation))
     {
-        // The holder still controls the current private key: re-encrypted
-        // balances are provided directly and take effect immediately. This
-        // also supersedes any recovery that was pending, since the holder has
-        // just proven they still hold the key recovery would have replaced.
+        // Replace the key and balances in rotation mode. Rotation proves the
+        // holder still has the old key, so any pending recovery is cancelled.
         (*sleMptoken)[sfHolderEncryptionKey] = newPubKey;
         (*sleMptoken)[sfConfidentialBalanceSpending] = ctx_.tx[sfConfidentialBalanceSpending];
         (*sleMptoken)[sfConfidentialBalanceInbox] = ctx_.tx[sfConfidentialBalanceInbox];
         sleMptoken->makeFieldAbsent(sfRecoveryKey);
         incrementConfidentialVersion(*sleMptoken);
     }
-    else
+    else if (ctx_.tx.isFlag(tfHolderKeyRecovery))
     {
-        XRPL_ASSERT(
-            ctx_.tx.isFlag(tfHolderKeyRecovery),
-            "xrpl::ConfidentialMPTHolderKeyUpdate::doApply : recovery mode");
-
         // Recovery mode: the holder cannot decrypt their current balances,
         // so only the pending recovery key is recorded. The balances are
         // rewritten separately by the issuer via ConfidentialMPTRecoverBalance.
         (*sleMptoken)[sfRecoveryKey] = newPubKey;
+    }
+    else
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::ConfidentialMPTHolderKeyUpdate::doApply : invalid mode");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     view().update(sleMptoken);

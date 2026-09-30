@@ -372,34 +372,6 @@ struct MPTConvertBack
 };
 
 /**
- * @brief Arguments for building a ConfidentialMPTHolderKeyUpdate test transaction.
- *
- * Select the mode via flags = tfHolderKeyRotation, flags = tfHolderKeyRecovery,
- * or flags = tfCancelRecovery. holderPubKey, ciphertexts,
- * and proof are serialized only if explicitly set. To exercise a working
- * Rotation-mode call, callers must decrypt the account's current balances
- * themselves (e.g. via decryptAmount) and pass the re-encrypted ciphertexts
- * (via encryptAmount) explicitly - see testConfidentialMPTHolderKeyUpdateDoApply
- * for the pattern.
- */
-struct MPTHolderKeyUpdate
-{
-    std::optional<Account> account = std::nullopt;
-    std::optional<MPTID> id = std::nullopt;
-    std::optional<Buffer> holderPubKey = std::nullopt;
-    std::optional<Buffer> spendingCiphertext = std::nullopt;
-    std::optional<Buffer> inboxCiphertext = std::nullopt;
-    std::optional<Buffer> proof = std::nullopt;
-    std::optional<Account> delegate = std::nullopt;
-    std::optional<std::uint32_t> ticketSeq = std::nullopt;
-    std::optional<std::uint32_t> ownerCount = std::nullopt;
-    std::optional<std::uint32_t> holderCount = std::nullopt;
-    std::optional<std::uint32_t> flags = std::nullopt;
-    std::optional<XRPAmount> fee = std::nullopt;
-    std::optional<TER> err = std::nullopt;
-};
-
-/**
  * @brief Arguments for building a ConfidentialMPTClawback test transaction.
  */
 struct MPTConfidentialClawback
@@ -433,6 +405,24 @@ struct MPTMirrorUpdate
     std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+/**
+ * @brief Arguments for building a ConfidentialMPTHolderKeyUpdate test transaction.
+ */
+struct MPTHolderKeyUpdate
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<Buffer> holderPubKey = std::nullopt;
+    std::optional<Buffer> spendingCiphertext = std::nullopt;
+    std::optional<Buffer> inboxCiphertext = std::nullopt;
+    std::optional<Buffer> proof = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
