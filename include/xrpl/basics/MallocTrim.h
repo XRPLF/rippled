@@ -2,11 +2,32 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
+#include <boost/predef.h>
+
 #include <chrono>
 #include <cstdint>
 #include <string_view>
 
+/**
+ * 1 where mallocTrim() trims and measures, glibc on Linux, and 0 elsewhere.
+ *
+ * A macro because MallocTrim.cpp must also keep the glibc-only headers and
+ * calls out of other builds. C++ code reads kMallocTrimSupported instead.
+ */
+#if defined(__GLIBC__) && BOOST_OS_LINUX
+#define XRPL_MALLOC_TRIM_SUPPORTED 1
+#else
+#define XRPL_MALLOC_TRIM_SUPPORTED 0
+#endif
+
 namespace xrpl {
+
+/**
+ * True where mallocTrim() trims and measures. Every report mallocTrim()
+ * returns holds this value in `supported`, so a caller can tell an unmeasured
+ * trim from a free one before any trim has run.
+ */
+inline constexpr bool kMallocTrimSupported = XRPL_MALLOC_TRIM_SUPPORTED != 0;
 
 // cSpell:ignore ptmalloc statm
 // "statm" is the /proc/self/statm filename the RSS readings come from; it is a

@@ -242,7 +242,7 @@ LedgerReplayTask::recordOutcome(char const* outcome) const
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
         telemetry::metric::ledgerReplayOutcomeTotal,
-        "Ledger replay tasks by terminal outcome",
+        telemetry::ledgerReplayOutcomeTotalDesc,
         {{telemetry::label::outcome, std::string(outcome)}});
 }
 // NOLINTEND(readability-convert-member-functions-to-static)

@@ -651,7 +651,7 @@ OverlayImpl::reportDnsResolve(std::chrono::steady_clock::time_point start, bool 
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
         telemetry::metric::dnsResolveTotal,
-        "Peer hostname resolutions, by outcome",
+        telemetry::dnsResolveTotalDesc,
         {{telemetry::label::outcome,
           std::string(
               resolved ? telemetry::lval::dns_resolve::resolved
@@ -669,7 +669,7 @@ OverlayImpl::reportAcceptOutcome(char const* outcome)
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
         telemetry::metric::peerAcceptTotal,
-        "Inbound peer connection attempts, by terminal outcome",
+        telemetry::peerAcceptTotalDesc,
         {{telemetry::label::outcome, std::string(outcome)}});
 }
 // NOLINTEND(readability-convert-member-functions-to-static)

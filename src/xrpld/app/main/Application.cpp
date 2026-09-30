@@ -42,6 +42,7 @@
 #include <xrpld/rpc/detail/RpcSpanNames.h>
 #include <xrpld/shamap/NodeFamily.h>
 #include <xrpld/telemetry/AppMetricGauges.h>
+#include <xrpld/telemetry/MacroCounterPreRegistration.h>
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
@@ -113,6 +114,7 @@
 #include <xrpl/telemetry/MetricNames.h>
 #endif
 #include <xrpl/telemetry/MetricsRegistry.h>
+#include <xrpl/telemetry/PreRegisteredCounters.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/Telemetry.h>
 #include <xrpl/tx/apply.h>
@@ -1378,7 +1380,7 @@ public:
             XRPL_METRIC_COUNTER_ADD(
                 *this,
                 telemetry::metric::sweepMallocTrimMinorFaultsTotal,
-                "Minor page faults taken inside the sweep's malloc_trim call",
+                telemetry::sweepMallocTrimMinorFaultsTotalDesc,
                 static_cast<std::uint64_t>(report.minfltDelta));
         }
 
@@ -1392,7 +1394,7 @@ public:
             XRPL_METRIC_COUNTER_ADD(
                 *this,
                 telemetry::metric::sweepMallocTrimReclaimedKbTotal,
-                "Resident kilobytes returned to the OS by the sweep's malloc_trim",
+                telemetry::sweepMallocTrimReclaimedKbTotalDesc,
                 static_cast<std::uint64_t>(-deltaKB));
         }
     }
@@ -1599,8 +1601,22 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     // registered by startTelemetryGauges() once overlay_ exists.
     startTelemetry();
 
+    // Create the get-object refusal counter at 0 for each reason. Refusals come
+    // from peers, and no peer can connect before overlay_ is built, further
+    // down, so this precedes every refusal.
+    telemetry::preRegisterGetObjectCounters(*this);
+
     if (validatorKeys_.keys)
         setMaxDisallowedLedger();
+
+    // Create the closed-domain call-site counters at 0 on every label set. An
+    // event after the first export then has an earlier sample to be counted
+    // against; one before that export still reads as 0. This must come before
+    // anything can record, and the ledger start below already can: outside
+    // standalone mode, switchLCL() calls checkAccept(), which counts quorum
+    // shortfalls. It reads only metricsRegistry_ and networkOPs_, both built
+    // in the constructor.
+    telemetry::preRegisterMacroCounters(*this);
 
     // Configure the amendments the server supports
     {

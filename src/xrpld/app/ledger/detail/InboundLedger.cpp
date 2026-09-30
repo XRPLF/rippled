@@ -169,7 +169,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
         telemetry::metric::syncAcquireSourceTotal,
-        "Ledger acquires by where the data came from",
+        telemetry::syncAcquireSourceTotalDesc,
         {{telemetry::label::source,
           std::string(
               complete_ ? telemetry::lval::acquire_source::local
@@ -540,7 +540,7 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
         XRPL_METRIC_COUNTER_INC(
             app_,
             telemetry::metric::syncAcquireNoProgressTotal,
-            "Ledger-acquire timeouts where no new node arrived");
+            telemetry::syncAcquireNoProgressTotalDesc);
 
         // addPeers triggers if the reason is not HISTORY
         // So if the reason IS HISTORY, need to trigger after we add
@@ -1647,7 +1647,7 @@ InboundLedger::recordBatchOutcome(SHAMapAddNode const& san)
         XRPL_METRIC_COUNTER_ADD_LABELED(
             app_,
             telemetry::metric::syncAddnodeTotal,
-            "SHAMap nodes received during ledger acquire, by outcome",
+            telemetry::syncAddnodeTotalDesc,
             static_cast<std::uint64_t>(count),
             {{telemetry::label::outcome, std::string(outcome)}});
     };

@@ -361,7 +361,7 @@ RCLConsensus::Adaptor::getPrevLedger(
             XRPL_METRIC_COUNTER_INC_LABELED(
                 app_,
                 telemetry::metric::consensusViewChangeTotal,
-                "Consensus rounds whose preferred ledger diverged from the local one",
+                telemetry::consensusViewChangeTotalDesc,
                 {{telemetry::label::consensusMode, std::string(toDisplayString(mode))}});
             if (roundSpan_ && *roundSpan_)
             {

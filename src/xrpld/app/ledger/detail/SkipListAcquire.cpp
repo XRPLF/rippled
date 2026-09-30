@@ -117,7 +117,7 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                         XRPL_METRIC_COUNTER_INC_LABELED(
                             app_,
                             telemetry::metric::ledgerReplayFallbackTotal,
-                            "Replay sub-acquires that fell back to a full ledger acquire",
+                            telemetry::ledgerReplayFallbackTotalDesc,
                             {{telemetry::label::stage,
                               std::string(telemetry::lval::replay_fallback::skiplist)}});
 

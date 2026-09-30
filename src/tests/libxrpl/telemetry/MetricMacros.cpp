@@ -22,10 +22,13 @@
 #include <xrpl/telemetry/MetricMacros.h>
 
 #include <xrpld/overlay/Overlay.h>
+#include <xrpld/telemetry/MacroCounterPreRegistration.h>
 
 #include <xrpl/basics/MallocTrim.h>
+#include <xrpl/consensus/ConsensusTypes.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/peerfinder/PeerfinderManager.h>
+#include <xrpl/server/NetworkOPs.h>
 #include <xrpl/telemetry/MetricNames.h>
 #include <xrpl/telemetry/MetricsRegistry.h>
 
@@ -54,8 +57,11 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <string>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 using namespace xrpl;
 
@@ -150,8 +156,45 @@ private:
 };
 
 /**
+ * Duck-typed stand-in for NetworkOPs. Counter pre-registration reads only
+ * strOperatingMode() from it, to name the state_changes_total labels.
+ *
+ * The names are made up, so a test checks the pairing over the enum, not a
+ * copy of the real names. The admin form gives a different name, which
+ * catches a caller that passes admin=true: the recording site passes false.
+ */
+class FakeOps
+{
+public:
+    /**
+     * @param mode  The operating mode to name.
+     * @param admin Whether the admin form is asked for.
+     * @return "mode_<n>", or "admin_mode_<n>" for the admin form, where n is
+     *         the mode's number.
+     */
+    [[nodiscard]] std::string
+    strOperatingMode(OperatingMode mode, bool admin) const
+    {
+        return std::string(admin ? adminPrefix_ : prefix_) +
+            std::to_string(std::to_underlying(mode));
+    }
+
+private:
+    /**
+     * Name prefix for the form the recording site uses.
+     */
+    std::string_view prefix_{"mode_"};
+
+    /**
+     * Name prefix for the admin form.
+     */
+    std::string_view adminPrefix_{"admin_mode_"};
+};
+
+/**
  * Duck-typed stand-in for ServiceRegistry. The macros only call
- * getMetricsRegistry() on the app object, so this is all they need.
+ * getMetricsRegistry() on the app object; counter pre-registration also calls
+ * getOPs(). So this is all they need.
  */
 class FakeApp
 {
@@ -160,6 +203,15 @@ public:
     getMetricsRegistry() noexcept
     {
         return &registry_;
+    }
+
+    /**
+     * @return The fake that names operating modes for pre-registration.
+     */
+    [[nodiscard]] FakeOps const&
+    getOPs() const noexcept
+    {
+        return ops_;
     }
 
     /**
@@ -177,6 +229,11 @@ private:
      * The macro-facing registry; tests configure it before use.
      */
     FakeMetricsRegistry registry_;
+
+    /**
+     * Names the operating modes; holds no state that changes.
+     */
+    FakeOps ops_;
 };
 
 /**
@@ -311,6 +368,29 @@ public:
     }
 
     /**
+     * Pull one collection and count the exported streams per metric name.
+     *
+     * Two instruments that share a name but not a description export as two
+     * streams. collect() keys points by name alone, so it would merge them.
+     *
+     * @return Metric name -> number of streams exported under that name.
+     */
+    [[nodiscard]] std::map<std::string, std::size_t>
+    streamCounts()
+    {
+        std::map<std::string, std::size_t> out;
+        Collect([&out](otel_sdk::ResourceMetrics& resourceMetrics) {
+            for (auto const& scope : resourceMetrics.scope_metric_data_)
+            {
+                for (auto const& metric : scope.metric_data_)
+                    ++out[metric.instrument_descriptor.name_];
+            }
+            return true;
+        });
+        return out;
+    }
+
+    /**
      * Cumulative so counter totals are absolute, not per-interval deltas.
      */
     [[nodiscard]] otel_sdk::AggregationTemporality
@@ -392,6 +472,16 @@ public:
     collect() const
     {
         return reader_->collect();
+    }
+
+    /**
+     * @return Streams per metric name from one synchronous collection. See
+     * CollectOnDemandReader::streamCounts().
+     */
+    [[nodiscard]] std::map<std::string, std::size_t>
+    streamCounts() const
+    {
+        return reader_->streamCounts();
     }
 
 private:
@@ -3756,6 +3846,537 @@ TEST(MetricMacros, histogram_record_labeled_site_real_and_noop_meter)
     // No-op branch: absorbed is empty by construction (see block header);
     // only meter() being read exactly once carries information here.
     EXPECT_EQ(absorbedReads, 1);
+}
+
+// -----------------------------------------------------------------
+// Startup pre-registration
+//
+// A series that its first event creates has no earlier sample, so increase()
+// and rate() read that event as 0. Pre-registration records 0 on every label
+// set of a closed domain at startup instead. The tests above show that the
+// recording macros alone create only the label sets they record; these show
+// that pre-registration creates exactly the domain, and that the recording
+// site then lands on the same series.
+//
+// Negative control: without the pre-registration call, each zero-series test
+// fails at its first ASSERT, because collect() has no entry for the counter.
+// The two record-into tests then fail their series count for every counter
+// with more than one label set, because only the recorded label set exists.
+// -----------------------------------------------------------------
+
+namespace {
+
+using telemetry::CounterLabelSet;
+
+/**
+ * The lookup key for one label set.
+ *
+ * @param labels The label set, as the pre-registration builders return it.
+ * @return The same labels as a key into PointsByAttrs.
+ */
+[[nodiscard]] otel_sdk::PointAttributes
+toAttrs(CounterLabelSet const& labels)
+{
+    otel_sdk::PointAttributes out;
+    for (auto const& [key, value] : labels)
+        out.SetAttribute(key, value);
+    return out;
+}
+
+/**
+ * Assert that a counter holds exactly the given series, each at 0.
+ *
+ * @param data      One collection.
+ * @param name      Instrument name.
+ * @param labelSets Every label set of the counter's domain.
+ */
+void
+expectZeroSeries(
+    CollectedMetrics const& data,
+    std::string const& name,
+    std::vector<CounterLabelSet> const& labelSets)
+{
+    ASSERT_EQ(data.count(name), 1u) << name << " has no series";
+    auto const& series = data.at(name);
+    EXPECT_EQ(series.size(), labelSets.size()) << name;
+    for (auto const& labels : labelSets)
+    {
+        auto const key = toAttrs(labels);
+        ASSERT_EQ(series.count(key), 1u) << name << ": a label set has no series";
+        EXPECT_EQ(counterValue(data, name, key), 0) << name;
+    }
+}
+
+/**
+ * One pre-registered counter, as its recording site defines it.
+ */
+struct PreRegistered
+{
+    /**
+     * The description the recording site passes.
+     */
+    char const* description = nullptr;
+
+    /**
+     * Every label set the recording site can write. One empty set for an
+     * unlabelled counter.
+     */
+    std::vector<CounterLabelSet> labelSets;
+};
+
+/**
+ * Counter name -> what pre-registration must create for it.
+ */
+using PreRegisteredMap = std::map<std::string, PreRegistered>;
+
+/**
+ * The overlay and peer counters, built from the value lists their recording
+ * sites draw from.
+ *
+ * @return Counter name -> description and label sets, for the seven peer
+ *         counters.
+ */
+[[nodiscard]] PreRegisteredMap
+expectedPeerCounters()
+{
+    using namespace telemetry;
+    return {
+        {metric::overlayConnectTotal,
+         {.description = overlayConnectTotalDesc,
+          .labelSets = labelSetsFor(label::outcome, lval::overlay_connect::all)}},
+        {metric::handshakeNegotiationFailTotal,
+         {.description = handshakeNegotiationFailTotalDesc,
+          .labelSets = labelSetsFor(label::reason, lval::handshake_fail::all)}},
+        {metric::dnsResolveTotal,
+         {.description = dnsResolveTotalDesc,
+          .labelSets = labelSetsFor(label::outcome, lval::dns_resolve::all)}},
+        {metric::peerAcceptTotal,
+         {.description = peerAcceptTotalDesc,
+          .labelSets = labelSetsFor(label::outcome, lval::peer_accept::all)}},
+        {metric::peerDisconnectTotal,
+         {.description = peerDisconnectTotalDesc,
+          .labelSets =
+              labelSetsForPairs(label::reason, label::direction, lval::disconnect::emittedPairs)}},
+        {metric::serveRefusedTotal,
+         {.description = serveRefusedTotalDesc,
+          .labelSets =
+              labelSetsForPairs(label::request, label::reason, lval::serve_refused::emittedPairs)}},
+        {metric::peerTxRejectedTotal,
+         {.description = peerTxRejectedTotalDesc,
+          .labelSets = labelSetsFor(label::reason, lval::tx_rejected::all)}}};
+}
+
+/**
+ * The ledger acquire, replay, validation, rotation and sweep counters.
+ *
+ * @return Counter name -> description and label sets. The two sweep counters
+ *         are present only where kMallocTrimSupported is true.
+ */
+[[nodiscard]] PreRegisteredMap
+expectedLedgerCounters()
+{
+    using namespace telemetry;
+    // An unlabelled counter has one series, with no labels.
+    std::vector<CounterLabelSet> const unlabelled{CounterLabelSet{}};
+    PreRegisteredMap out{
+        {metric::syncAcquireSourceTotal,
+         {.description = syncAcquireSourceTotalDesc,
+          .labelSets = labelSetsFor(label::source, lval::acquire_source::all)}},
+        {metric::syncAcquireNoProgressTotal,
+         {.description = syncAcquireNoProgressTotalDesc, .labelSets = unlabelled}},
+        {metric::syncAddnodeTotal,
+         {.description = syncAddnodeTotalDesc,
+          .labelSets = labelSetsFor(label::outcome, lval::addnode::all)}},
+        {metric::ledgerReplayFallbackTotal,
+         {.description = ledgerReplayFallbackTotalDesc,
+          .labelSets = labelSetsFor(label::stage, lval::replay_fallback::all)}},
+        {metric::ledgerReplayOutcomeTotal,
+         {.description = ledgerReplayOutcomeTotalDesc,
+          .labelSets = labelSetsFor(label::outcome, lval::replay_outcome::all)}},
+        {metric::ledgerQuorumShortfallTotal,
+         {.description = ledgerQuorumShortfallTotalDesc,
+          .labelSets = labelSetsFor(label::stage, lval::quorum_shortfall::all)}},
+        {metric::ledgerJumpTotal, {.description = ledgerJumpTotalDesc, .labelSets = unlabelled}},
+        {metric::rotationCopyNodeRestoreTotal,
+         {.description = rotationCopyNodeRestoreTotalDesc, .labelSets = unlabelled}}};
+
+    // The sweep publishes its trim counters only where the trim is measured.
+    if constexpr (kMallocTrimSupported)
+    {
+        out[metric::sweepMallocTrimMinorFaultsTotal] = {
+            .description = sweepMallocTrimMinorFaultsTotalDesc, .labelSets = unlabelled};
+        out[metric::sweepMallocTrimReclaimedKbTotal] = {
+            .description = sweepMallocTrimReclaimedKbTotalDesc, .labelSets = unlabelled};
+    }
+    return out;
+}
+
+/**
+ * The two mode-labelled counters, built by iterating the two enums.
+ *
+ * @param app Names the operating modes, through its FakeOps.
+ * @return Counter name -> description and label sets, for state_changes_total
+ *         and consensus_view_change_total.
+ */
+[[nodiscard]] PreRegisteredMap
+expectedModeCounters(FakeApp const& app)
+{
+    using namespace telemetry;
+    auto const lastMode = std::to_underlying(OperatingMode::FULL);
+    std::vector<CounterLabelSet> edges;
+    for (auto const from : std::views::iota(0, lastMode + 1))
+    {
+        for (auto const to : std::views::iota(0, lastMode + 1))
+        {
+            if (from == to)
+                continue;
+            edges.push_back(
+                CounterLabelSet{
+                    {label::from,
+                     app.getOPs().strOperatingMode(static_cast<OperatingMode>(from), false)},
+                    {label::to,
+                     app.getOPs().strOperatingMode(static_cast<OperatingMode>(to), false)}});
+        }
+    }
+
+    std::vector<std::string> leftModes;
+    for (auto const value :
+         std::views::iota(0, std::to_underlying(ConsensusMode::SwitchedLedger) + 1))
+    {
+        if (auto const mode = static_cast<ConsensusMode>(value); mode != ConsensusMode::WrongLedger)
+            leftModes.push_back(toDisplayString(mode));
+    }
+
+    return {
+        {metric::stateChangesTotal, {.description = stateChangesTotalDesc, .labelSets = edges}},
+        {metric::consensusViewChangeTotal,
+         {.description = consensusViewChangeTotalDesc,
+          .labelSets = labelSetsFor(label::consensusMode, leftModes)}}};
+}
+
+/**
+ * Every counter preRegisterMacroCounters() must create, and nothing else.
+ *
+ * @param app Names the operating modes, through its FakeOps.
+ * @return Counter name -> description and label sets, for every counter.
+ */
+[[nodiscard]] PreRegisteredMap
+expectedPreRegisteredCounters(FakeApp const& app)
+{
+    auto out = expectedPeerCounters();
+    out.merge(expectedLedgerCounters());
+    out.merge(expectedModeCounters(app));
+    return out;
+}
+
+}  // namespace
+
+// The builders turn a label domain into label sets and add nothing: one set
+// per value, and exactly the listed pairs for a two-label counter.
+TEST(MetricMacros, counter_label_set_builders_yield_exactly_the_domain)
+{
+    std::array const values{"x", "y"};
+    EXPECT_EQ(
+        telemetry::labelSetsFor("k", values),
+        (std::vector<CounterLabelSet>{{{"k", "x"}}, {{"k", "y"}}}));
+
+    std::array const pairs{std::pair{"a", "out"}, std::pair{"b", "in"}};
+    EXPECT_EQ(
+        telemetry::labelSetsForPairs("f", "s", pairs),
+        (std::vector<CounterLabelSet>{{{"f", "a"}, {"s", "out"}}, {{"f", "b"}, {"s", "in"}}}));
+
+    // Edge case: an empty domain gives no label set at all, not one empty set.
+    EXPECT_EQ(
+        telemetry::labelSetsFor("k", std::array<char const*, 0>{}), std::vector<CounterLabelSet>{});
+}
+
+// Pre-registration gives each label set a 0 point, and an unlabelled counter
+// its one 0 point. That is the whole fix: the series exists before the event.
+TEST(MetricMacros, counter_preregister_creates_one_zero_series_per_label_set)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    std::array const outcomes{"ok", "late", "lost"};
+    XRPL_METRIC_COUNTER_PREREGISTER_LABELED(
+        app,
+        "prereg_labeled_total",
+        "Pre-registration probe",
+        telemetry::labelSetsFor("outcome", outcomes));
+    XRPL_METRIC_COUNTER_PREREGISTER(app, "prereg_unlabeled_total", "Pre-registration probe");
+
+    auto const data = provider.collect();
+
+    ASSERT_EQ(data.count("prereg_labeled_total"), 1u);
+    ASSERT_EQ(data.at("prereg_labeled_total").size(), 3u);
+    EXPECT_EQ(counterValue(data, "prereg_labeled_total", attrs("outcome", "ok")), 0);
+    EXPECT_EQ(counterValue(data, "prereg_labeled_total", attrs("outcome", "late")), 0);
+    EXPECT_EQ(counterValue(data, "prereg_labeled_total", attrs("outcome", "lost")), 0);
+
+    ASSERT_EQ(data.count("prereg_unlabeled_total"), 1u);
+    ASSERT_EQ(data.at("prereg_unlabeled_total").size(), 1u);
+    EXPECT_EQ(counterValue(data, "prereg_unlabeled_total", otel_sdk::PointAttributes{}), 0);
+
+    // One meter() read per macro call.
+    EXPECT_EQ(app.registry().meterCalls(), 2);
+}
+
+// A pre-registration site keeps no static: run twice against two registries,
+// the one call site gives each registry its own zero series. A cached
+// instrument would stay on the first registry's meter, and the second
+// collection would have no entry for the counter.
+TEST(MetricMacros, counter_preregister_site_lands_on_each_registry_it_is_given)
+{
+    auto const preregister = [](FakeApp& app) {
+        XRPL_METRIC_COUNTER_PREREGISTER(app, "prereg_twice_total", "Pre-registration probe");
+    };
+
+    CollectingProvider const first;
+    FakeApp firstApp;
+    wire(firstApp, /*enabled=*/true, first.meter());
+    preregister(firstApp);
+
+    CollectingProvider const second;
+    FakeApp secondApp;
+    wire(secondApp, /*enabled=*/true, second.meter());
+    preregister(secondApp);
+
+    for (auto const* provider : {&first, &second})
+    {
+        auto const data = provider->collect();
+        ASSERT_EQ(data.count("prereg_twice_total"), 1u);
+        EXPECT_EQ(counterValue(data, "prereg_twice_total", otel_sdk::PointAttributes{}), 0);
+    }
+}
+
+// After pre-registration, one event through the recording macro reads 1 on the
+// pre-registered series. Nothing else moves, and no series or stream is added:
+// the macro's instrument shares the pre-registered storage because the name,
+// kind, unit and description all match.
+TEST(MetricMacros, counter_preregister_then_increment_reads_one_on_the_same_series)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    std::array const outcomes{"ok", "late", "lost"};
+    XRPL_METRIC_COUNTER_PREREGISTER_LABELED(
+        app, "prereg_shared_total", "Shared probe", telemetry::labelSetsFor("outcome", outcomes));
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app, "prereg_shared_total", "Shared probe", {{"outcome", std::string("late")}});
+
+    auto const data = provider.collect();
+
+    ASSERT_EQ(data.at("prereg_shared_total").size(), 3u);
+    EXPECT_EQ(counterValue(data, "prereg_shared_total", attrs("outcome", "late")), 1);
+    EXPECT_EQ(counterValue(data, "prereg_shared_total", attrs("outcome", "ok")), 0);
+    EXPECT_EQ(counterValue(data, "prereg_shared_total", attrs("outcome", "lost")), 0);
+    EXPECT_EQ(provider.streamCounts().at("prereg_shared_total"), 1u);
+}
+
+// The control for the stream counts in these tests, and the reason each
+// description is one shared constant: an instrument whose description differs
+// gets its own storage. The event then lands on a second stream, and the zero
+// stays on the first, where no query that sums both can tell them apart.
+TEST(MetricMacros, counter_preregister_with_another_description_opens_a_second_stream)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    XRPL_METRIC_COUNTER_PREREGISTER(app, "prereg_split_total", "Description A");
+    XRPL_METRIC_COUNTER_INC(app, "prereg_split_total", "Description B");
+
+    EXPECT_EQ(provider.streamCounts().at("prereg_split_total"), 2u);
+}
+
+// Pre-registration obeys the same gate as recording: with the registry
+// disabled, or stopped, it creates no instrument and no series.
+TEST(MetricMacros, counter_preregister_records_nothing_when_disabled_or_stopped)
+{
+    CollectingProvider const provider;
+
+    FakeApp disabled;
+    wire(disabled, /*enabled=*/false, provider.meter());
+    telemetry::preRegisterMacroCounters(disabled);
+
+    FakeApp stopped;
+    wire(stopped, /*enabled=*/true, provider.meter());
+    stopped.registry().stop();
+    telemetry::preRegisterMacroCounters(stopped);
+
+    EXPECT_EQ(provider.collect().size(), 0u);
+    EXPECT_EQ(disabled.registry().meterCalls(), 0);
+    EXPECT_EQ(stopped.registry().meterCalls(), 0);
+}
+
+// The production list. Every counter preRegisterMacroCounters() covers exists
+// at 0 for each label set its recording site can write, and no other series
+// exists.
+TEST(MetricMacros, macro_counters_preregister_every_closed_label_set_at_zero)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    telemetry::preRegisterMacroCounters(app);
+
+    auto const data = provider.collect();
+    auto const expected = expectedPreRegisteredCounters(app);
+    EXPECT_EQ(data.size(), expected.size());
+    for (auto const& [name, counter] : expected)
+        expectZeroSeries(data, name, counter.labelSets);
+
+    // Left out on purpose: its `site` label comes from [validator_list_sites].
+    EXPECT_EQ(data.count(telemetry::metric::unlFetchTotal), 0u);
+}
+
+// The two mode domains, pinned. Five operating modes give 20 ordered
+// transitions, and no mode changes to itself. The view-change label is every
+// consensus mode except WrongLedger, under its display name.
+TEST(MetricMacros, mode_counters_preregister_every_transition_and_left_mode)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+    telemetry::preRegisterMacroCounters(app);
+    auto const data = provider.collect();
+    auto const& ops = app.getOPs();
+    using namespace telemetry;
+
+    ASSERT_EQ(data.count(metric::stateChangesTotal), 1u);
+    auto const& edges = data.at(metric::stateChangesTotal);
+    EXPECT_EQ(edges.size(), 20u);
+    for (auto const value : std::views::iota(0, std::to_underlying(OperatingMode::FULL) + 1))
+    {
+        auto const mode = ops.strOperatingMode(static_cast<OperatingMode>(value), false);
+        EXPECT_EQ(edges.count(attrs(label::from, mode, label::to, mode)), 0u) << mode;
+    }
+    // The edge a node takes when it drops out of full.
+    EXPECT_EQ(
+        counterValue(
+            data,
+            metric::stateChangesTotal,
+            attrs(
+                label::from,
+                ops.strOperatingMode(OperatingMode::FULL, false),
+                label::to,
+                ops.strOperatingMode(OperatingMode::SYNCING, false))),
+        0);
+
+    ASSERT_EQ(data.count(metric::consensusViewChangeTotal), 1u);
+    auto const& left = data.at(metric::consensusViewChangeTotal);
+    EXPECT_EQ(left.size(), 3u);
+    // The display names are pinned: they are label values dashboards read.
+    for (char const* mode : {"Proposing", "Observing", "Switched Ledger"})
+    {
+        EXPECT_EQ(
+            counterValue(data, metric::consensusViewChangeTotal, attrs(label::consensusMode, mode)),
+            0)
+            << mode;
+    }
+    EXPECT_EQ(left.count(attrs(label::consensusMode, "Wrong Ledger")), 0u);
+}
+
+// Each recording site's instrument lands on its pre-registered series. The
+// loop creates the instrument as the recording macro does, with the same
+// meter, name and description, then adds 1 under the site's label key. The
+// event must read 1 on a series that already existed, and add no series and
+// no stream.
+TEST(MetricMacros, macro_counters_record_into_their_preregistered_series)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+    telemetry::preRegisterMacroCounters(app);
+
+    auto const expected = expectedPreRegisteredCounters(app);
+    auto const meter = provider.meter();
+    for (auto const& [name, counter] : expected)
+    {
+        ASSERT_FALSE(counter.labelSets.empty()) << name;
+        meter->CreateUInt64Counter(name, counter.description)->Add(1, counter.labelSets.front());
+    }
+
+    auto const data = provider.collect();
+    auto const streams = provider.streamCounts();
+    for (auto const& [name, counter] : expected)
+    {
+        ASSERT_EQ(data.count(name), 1u) << name;
+        EXPECT_EQ(data.at(name).size(), counter.labelSets.size()) << name << ": series added";
+        EXPECT_EQ(streams.at(name), 1u) << name << ": second stream";
+        EXPECT_EQ(counterValue(data, name, toAttrs(counter.labelSets.front())), 1) << name;
+        for (auto const& labels : counter.labelSets | std::views::drop(1))
+        {
+            EXPECT_EQ(counterValue(data, name, toAttrs(labels)), 0) << name;
+        }
+    }
+}
+
+// The recording macros themselves, shaped as at their production sites, land
+// on the pre-registered series: an unlabelled INC, a labelled ADD, and one- and
+// two-label INCs.
+TEST(MetricMacros, recording_macros_land_on_preregistered_series)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+    telemetry::preRegisterMacroCounters(app);
+
+    using namespace telemetry;
+    auto const& ops = app.getOPs();
+    XRPL_METRIC_COUNTER_INC(app, metric::ledgerJumpTotal, ledgerJumpTotalDesc);
+    XRPL_METRIC_COUNTER_ADD_LABELED(
+        app,
+        metric::syncAddnodeTotal,
+        syncAddnodeTotalDesc,
+        std::uint64_t{7},
+        {{label::outcome, std::string(lval::addnode::duplicate)}});
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app,
+        metric::peerAcceptTotal,
+        peerAcceptTotalDesc,
+        {{label::outcome, std::string(lval::peer_accept::noSlot)}});
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app,
+        metric::stateChangesTotal,
+        stateChangesTotalDesc,
+        {{label::from, ops.strOperatingMode(OperatingMode::FULL, false)},
+         {label::to, ops.strOperatingMode(OperatingMode::SYNCING, false)}});
+
+    auto const data = provider.collect();
+    auto const streams = provider.streamCounts();
+    auto const expected = expectedPreRegisteredCounters(app);
+
+    EXPECT_EQ(counterValue(data, metric::ledgerJumpTotal, otel_sdk::PointAttributes{}), 1);
+    EXPECT_EQ(
+        counterValue(
+            data, metric::syncAddnodeTotal, attrs(label::outcome, lval::addnode::duplicate)),
+        7);
+    EXPECT_EQ(
+        counterValue(
+            data, metric::peerAcceptTotal, attrs(label::outcome, lval::peer_accept::noSlot)),
+        1);
+    EXPECT_EQ(
+        counterValue(
+            data,
+            metric::stateChangesTotal,
+            attrs(
+                label::from,
+                ops.strOperatingMode(OperatingMode::FULL, false),
+                label::to,
+                ops.strOperatingMode(OperatingMode::SYNCING, false))),
+        1);
+    for (char const* name :
+         {metric::ledgerJumpTotal,
+          metric::syncAddnodeTotal,
+          metric::peerAcceptTotal,
+          metric::stateChangesTotal})
+    {
+        EXPECT_EQ(data.at(name).size(), expected.at(name).labelSets.size()) << name;
+        EXPECT_EQ(streams.at(name), 1u) << name;
+    }
 }
 
 #endif  // XRPL_ENABLE_TELEMETRY

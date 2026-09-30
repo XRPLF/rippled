@@ -7,14 +7,17 @@
  *  emitted string, so a rename is one edit and a typo is a compile error rather
  *  than a metric that silently never appears. Each instrument name, label key
  *  and bounded label value added by the sync-diagnostics work is declared here
- *  exactly once and referenced from every C++ user of it -- the emit site, the
- *  gauge registration in MetricsRegistry.cpp, and the unit test.
+ *  exactly once, so the emit site, the gauge registration in MetricsRegistry.cpp
+ *  and the startup pre-registration can share one spelling. So is the
+ *  description of each pre-registered counter, because its recording site and
+ *  the pre-registration must pass the same text.
  *
  *  Layer map -- who references these constants:
  *
+ * @code
  *      +-------------------------------------------------------------+
  *      |            MetricNames.h  (this file, L1-metrics)           |
- *      |   namespace metric  namespace label  namespace lval         |
+ *      |   namespace metric, *Desc, namespace label, namespace lval  |
  *      +-------------------------------------------------------------+
  *          ^                     ^                       ^
  *          |                     |                       |
@@ -24,6 +27,14 @@
  *   | macros under |   | AddCallback       |   |  telemetry/         |
  *   | src/xrpld/   |   | observe(...)      |   |  MetricMacros.cpp   |
  *   +--------------+   +-------------------+   +---------------------+
+ *          ^
+ *          |  same name, description and label values
+ *   +------------------------------------------+
+ *   | startup pre-registration                 |
+ *   | xrpld/telemetry/                         |
+ *   |   MacroCounterPreRegistration.h          |
+ *   +------------------------------------------+
+ * @endcode
  *
  *  Layers that CANNOT reference a C++ constant -- the collector config, the
  *  dashboard PromQL, `expected_metrics.json` and the runbook -- are held to
@@ -72,7 +83,7 @@
  * XRPL_METRIC_COUNTER_INC_LABELED(
  *     app_,
  *     metric::dnsResolveTotal,
- *     "Peer hostname resolutions, by outcome",
+ *     dnsResolveTotalDesc,
  *     {{label::outcome,
  *       std::string(
  *           resolved ? lval::dns_resolve::resolved : lval::dns_resolve::empty)}});
@@ -112,6 +123,9 @@
  * @note Every constant is a compile-time value with no mutable state, so all
  *       of them are safe to read concurrently from any thread.
  */
+
+#include <array>
+#include <utility>
 
 namespace xrpl::telemetry {
 
@@ -383,6 +397,55 @@ inline constexpr char stateTracking[] = "state_tracking";
 }  // namespace metric
 
 /**
+ * Descriptions of the call-site counters pre-registered at startup. Each is
+ * named after its counter in `namespace metric`, plus `Desc`.
+ *
+ * The recording site and the pre-registration must pass the same text. The
+ * SDK shares one storage only between instruments whose name, kind, unit and
+ * description all match. A second spelling would export a second stream, and
+ * the pre-registered zero would sit on the wrong one.
+ *
+ * They sit outside `namespace metric`, under names of their own, because the
+ * naming checker reads every `char[]` in that namespace as an instrument name,
+ * and maps constants to names by bare identifier.
+ */
+/** @{ */
+inline constexpr char dnsResolveTotalDesc[] = "Peer hostname resolutions, by outcome";
+inline constexpr char overlayConnectTotalDesc[] =
+    "Outbound peer connection attempts, by terminal outcome";
+inline constexpr char handshakeNegotiationFailTotalDesc[] =
+    "Peer handshake negotiations rejected, by reason";
+inline constexpr char stateChangesTotalDesc[] = "Total operating mode changes";
+inline constexpr char syncAcquireSourceTotalDesc[] = "Ledger acquires by where the data came from";
+inline constexpr char syncAcquireNoProgressTotalDesc[] =
+    "Ledger-acquire timeouts where no new node arrived";
+inline constexpr char syncAddnodeTotalDesc[] =
+    "SHAMap nodes received during ledger acquire, by outcome";
+inline constexpr char ledgerQuorumShortfallTotalDesc[] =
+    "Pre-accept gate rejections because trusted validations were below quorum";
+inline constexpr char ledgerReplayFallbackTotalDesc[] =
+    "Replay sub-acquires that fell back to a full ledger acquire";
+inline constexpr char ledgerReplayOutcomeTotalDesc[] = "Ledger replay tasks by terminal outcome";
+inline constexpr char ledgerJumpTotalDesc[] =
+    "Forced jumps of the last closed ledger to a divergent chain";
+inline constexpr char peerAcceptTotalDesc[] =
+    "Inbound peer connection attempts, by terminal outcome";
+inline constexpr char peerDisconnectTotalDesc[] =
+    "Peer disconnects, by cause and connection direction";
+inline constexpr char peerTxRejectedTotalDesc[] = "Relayed transactions not processed, by reason";
+inline constexpr char serveRefusedTotalDesc[] =
+    "Peer data requests this node declined to serve, by request kind and cause";
+inline constexpr char consensusViewChangeTotalDesc[] =
+    "Consensus rounds whose preferred ledger diverged from the local one";
+inline constexpr char sweepMallocTrimMinorFaultsTotalDesc[] =
+    "Minor page faults taken inside the sweep's malloc_trim call";
+inline constexpr char sweepMallocTrimReclaimedKbTotalDesc[] =
+    "Resident kilobytes returned to the OS by the sweep's malloc_trim";
+inline constexpr char rotationCopyNodeRestoreTotalDesc[] =
+    "Nodes re-stored during rotation because they were missing from both backends";
+/** @} */
+
+/**
  * Label keys -- the dimension names attached to a metric datapoint.
  *
  * Every key here is bounded by design: the values it can take are either a
@@ -466,6 +529,11 @@ inline constexpr char consensusMode[] = "consensus_mode";
  * word means different things in different sets and a flat namespace would let
  * two of them collide. A value is declared here only when the code chooses it
  * from a fixed list; anything derived from runtime data stays out.
+ *
+ * The value set of a counter that is pre-registered at startup also has a
+ * list beside it that pre-registration iterates: `all`, or `emittedPairs` for
+ * a two-label counter whose pairings cannot all occur. A value left out of its
+ * list gets no zero series, so its first event reads as 0 again.
  */
 namespace lval {
 
@@ -474,11 +542,50 @@ namespace lval {
 /**
  * Values shared by more than one instrument. Declared once so two instruments
  * that mean the same thing cannot spell it differently.
+ *
+ * `self_connection` is one such. A dial ends `overlay_connect_total` with it
+ * when PeerFinder finds the dial came back in to this node. The handshake
+ * labels `handshake_negotiation_fail_total` with it when the peer presents
+ * this node's own node key.
  */
 inline constexpr char timeout[] = "timeout";
 inline constexpr char notFound[] = "not_found";
 inline constexpr char inbound[] = "inbound";
 inline constexpr char outbound[] = "outbound";
+inline constexpr char selfConnection[] = "self_connection";
+
+/**
+ * `overlay_connect_total` outcomes: how an outbound dial ended. The `peer.dial`
+ * span's `outcome` attribute takes these same values, from
+ * `peer_span::val` in PeerSpanNames.h.
+ *
+ * - connected:       the peer was activated and added to the overlay.
+ * - tcp_fail:        the TCP connect or local-endpoint read failed.
+ * - tls_fail:        the TLS handshake failed, or a read taken just after it
+ *                    did: the local endpoint, or the shared value the HTTP
+ *                    upgrade needs.
+ * - self_connection: TLS succeeded and then PeerFinder found the dial had
+ *                    come back in to this node: it had dialled itself.
+ * - upgrade_fail:    TLS succeeded but the HTTP upgrade, protocol negotiation
+ *                    or activation was rejected.
+ * - timeout:         the attempt never reached any terminal state in time.
+ *
+ * `self_connection` is kept apart from `tls_fail` because no peer failed: the
+ * address was this node's own. It can come from [ips] or [ips_fixed], or from
+ * an address a peer sent. PeerFinder stores those without checking them
+ * against its own, and can check a dial only once it connects.
+ */
+namespace overlay_connect {
+inline constexpr char connected[] = "connected";
+inline constexpr char tcpFail[] = "tcp_fail";
+inline constexpr char tlsFail[] = "tls_fail";
+inline constexpr char upgradeFail[] = "upgrade_fail";
+/**
+ * All six outcomes, for pre-registration: the four above and the shared
+ * `self_connection` and `timeout`.
+ */
+inline constexpr std::array all{connected, tcpFail, tlsFail, selfConnection, upgradeFail, timeout};
+}  // namespace overlay_connect
 
 /**
  * `dns_resolve_total` outcomes: did the resolver return any address?
@@ -486,6 +593,10 @@ inline constexpr char outbound[] = "outbound";
 namespace dns_resolve {
 inline constexpr char resolved[] = "resolved";
 inline constexpr char empty[] = "empty";
+/**
+ * Every value above, for pre-registration.
+ */
+inline constexpr std::array all{resolved, empty};
 }  // namespace dns_resolve
 
 /**
@@ -504,16 +615,37 @@ inline constexpr char badCookie[] = "bad_cookie";
 inline constexpr char slotRefused[] = "slot_refused";
 inline constexpr char accepted[] = "accepted";
 inline constexpr char handshakeError[] = "handshake_error";
+/**
+ * Every value above, for pre-registration.
+ */
+inline constexpr std::array all{
+    localEndpointFail,
+    resourceLimit,
+    noSlot,
+    notPeerRequest,
+    protocolMismatch,
+    badCookie,
+    slotRefused,
+    accepted,
+    handshakeError};
 }  // namespace peer_accept
 
 /**
  * `handshake_negotiation_fail_total` reasons -- one per rejection point in
- * the handshake verifier.
+ * the handshake verifier, which checks the headers the peer sent.
  *
- * These separate a peer misconfiguration this node should tolerate
- * (`wrong_network`, `self_connection`) from a local misconfiguration an
- * operator must fix (`clock_skew`, `local_ip_mismatch`), which is the whole
- * point of splitting the counter by reason.
+ * Split by reason because the causes differ, and some point at this node
+ * rather than at the peer:
+ * - local_ip_mismatch:  the public IP the peer claims is not the address this
+ *                       node sees it at: the peer's public_ip, or a NAT.
+ * - remote_ip_mismatch: the peer sees this node at an address other than this
+ *                       node's public_ip: this node's setting, or a NAT.
+ * - clock_skew:         the two clocks differ by more than the tolerance. If
+ *                       most peers fail this way, this node's clock is the
+ *                       likely one.
+ * - self_connection:    the peer presented this node's own node key: the
+ *                       connection came back to this node, or another server
+ *                       uses the same key.
  */
 namespace handshake_fail {
 inline constexpr char invalidServerDomain[] = "invalid_server_domain";
@@ -525,11 +657,29 @@ inline constexpr char unsupportedKeyType[] = "unsupported_key_type";
 inline constexpr char badPublicKey[] = "bad_public_key";
 inline constexpr char noSessionSignature[] = "no_session_signature";
 inline constexpr char sessionVerifyFailed[] = "session_verify_failed";
-inline constexpr char selfConnection[] = "self_connection";
 inline constexpr char invalidLocalIp[] = "invalid_local_ip";
 inline constexpr char localIpMismatch[] = "local_ip_mismatch";
 inline constexpr char invalidRemoteIp[] = "invalid_remote_ip";
 inline constexpr char remoteIpMismatch[] = "remote_ip_mismatch";
+/**
+ * All 14 reasons, for pre-registration: the ones above and the shared
+ * `self_connection`.
+ */
+inline constexpr std::array all{
+    invalidServerDomain,
+    invalidNetworkId,
+    wrongNetwork,
+    invalidClockTimestamp,
+    clockSkew,
+    unsupportedKeyType,
+    badPublicKey,
+    noSessionSignature,
+    sessionVerifyFailed,
+    selfConnection,
+    invalidLocalIp,
+    localIpMismatch,
+    invalidRemoteIp,
+    remoteIpMismatch};
 }  // namespace handshake_fail
 
 /**
@@ -607,6 +757,10 @@ inline constexpr char treenode[] = "treenode";
 namespace acquire_source {
 inline constexpr char local[] = "local";
 inline constexpr char network[] = "network";
+/**
+ * Every value above, for pre-registration.
+ */
+inline constexpr std::array all{local, network};
 }  // namespace acquire_source
 
 /**
@@ -620,6 +774,10 @@ namespace addnode {
 inline constexpr char good[] = "good";
 inline constexpr char duplicate[] = "duplicate";
 inline constexpr char invalid[] = "invalid";
+/**
+ * Every value above, for pre-registration.
+ */
+inline constexpr std::array all{good, duplicate, invalid};
 }  // namespace addnode
 
 /**
@@ -721,6 +879,10 @@ inline constexpr char publishLag[] = "publish_lag";
  */
 namespace quorum_shortfall {
 inline constexpr char preAccept[] = "pre_accept";
+/**
+ * Every value above, for pre-registration.
+ */
+inline constexpr std::array all{preAccept};
 }  // namespace quorum_shortfall
 
 /**
@@ -729,6 +891,10 @@ inline constexpr char preAccept[] = "pre_accept";
 namespace replay_fallback {
 inline constexpr char skiplist[] = "skiplist";
 inline constexpr char delta[] = "delta";
+/**
+ * Every value above, for pre-registration.
+ */
+inline constexpr std::array all{skiplist, delta};
 }  // namespace replay_fallback
 
 /**
@@ -739,6 +905,11 @@ namespace replay_outcome {
 inline constexpr char success[] = "success";
 inline constexpr char buildFailed[] = "build_failed";
 inline constexpr char parameterFailed[] = "parameter_failed";
+/**
+ * All four outcomes, for pre-registration: the three above and the shared
+ * `timeout`.
+ */
+inline constexpr std::array all{success, buildFailed, parameterFailed, timeout};
 }  // namespace replay_outcome
 
 /**
@@ -764,6 +935,41 @@ inline constexpr char sharedValue[] = "shared_value";
 inline constexpr char writeError[] = "write_error";
 inline constexpr char graceful[] = "graceful";
 inline constexpr char readError[] = "read_error";
+/**
+ * Every (reason, direction) pair PeerImp::close() can report, for
+ * pre-registration.
+ *
+ * Every reason can end either kind of connection except two. `shared_value`
+ * is set only by doAccept(), so it only ends inbound connections.
+ * `not_useful` is set only for a peer this node dialled, so it only ends
+ * outbound ones. A new reason must add its pairs here, or its first
+ * disconnect reads as 0.
+ */
+inline constexpr std::array emittedPairs{
+    std::pair{unknown, inbound},
+    std::pair{unknown, outbound},
+    std::pair{malformedHandshake, inbound},
+    std::pair{malformedHandshake, outbound},
+    std::pair{stopping, inbound},
+    std::pair{stopping, outbound},
+    std::pair{chargeResources, inbound},
+    std::pair{chargeResources, outbound},
+    std::pair{timerError, inbound},
+    std::pair{timerError, outbound},
+    std::pair{largeSendq, inbound},
+    std::pair{largeSendq, outbound},
+    std::pair{notUseful, outbound},
+    std::pair{pingTimeout, inbound},
+    std::pair{pingTimeout, outbound},
+    std::pair{shutdown, inbound},
+    std::pair{shutdown, outbound},
+    std::pair{sharedValue, inbound},
+    std::pair{writeError, inbound},
+    std::pair{writeError, outbound},
+    std::pair{graceful, inbound},
+    std::pair{graceful, outbound},
+    std::pair{readError, inbound},
+    std::pair{readError, outbound}};
 }  // namespace disconnect
 
 /**
@@ -780,6 +986,10 @@ namespace tx_rejected {
 inline constexpr char duplicate[] = "duplicate";
 inline constexpr char knownBad[] = "known_bad";
 inline constexpr char innerBatch[] = "inner_batch";
+/**
+ * Every value above, for pre-registration.
+ */
+inline constexpr std::array all{duplicate, knownBad, innerBatch};
 }  // namespace tx_rejected
 
 /**
@@ -807,6 +1017,26 @@ inline constexpr char loadShed[] = "load_shed";
 inline constexpr char badType[] = "bad_type";
 inline constexpr char noMap[] = "no_map";
 inline constexpr char emptyReply[] = "empty_reply";
+/**
+ * Every (request, reason) pair that a PeerImp::reportServeRefusal() call
+ * passes, for pre-registration.
+ *
+ * Each call site picks the two values together, so most pairings of request
+ * and reason never occur, and the full cross product would create series no
+ * code can move. A new call site must add its pair here, or its first
+ * refusal reads as 0.
+ */
+inline constexpr std::array emittedPairs{
+    std::pair{serve_request::object, sendqFull},
+    std::pair{serve_request::fetchpack, loadShed},
+    std::pair{serve_request::txset, notFound},
+    std::pair{serve_request::txset, emptyReply},
+    std::pair{serve_request::ledger, sendqFull},
+    std::pair{serve_request::ledger, loadShed},
+    std::pair{serve_request::ledger, notFound},
+    std::pair{serve_request::ledger, badType},
+    std::pair{serve_request::ledger, noMap},
+    std::pair{serve_request::ledger, emptyReply}};
 }  // namespace serve_refused
 
 }  // namespace lval

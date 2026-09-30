@@ -4,36 +4,43 @@
  * Metric names, label keys, label values, and descriptions for the
  * `TMGetObjectByHash` request path.
  *
- * These constants are shared across two modules, which is why they live in a
- * header rather than in either translation unit's unnamed namespace:
+ * These constants are shared across modules, which is why they live in a
+ * header rather than in any one translation unit's unnamed namespace:
  *
+ * @code
  *   GetObjectMetricNames.h
  *          |
  *          +--> PeerImp.cpp          (XRPL_METRIC_* call sites: records the
  *          |                          instruments)
  *          |
  *          +--> MetricsRegistry.cpp  (addMicrosecondHistogramView: registers
- *                                     the explicit bucket boundaries for
- *                                     kGetObjectLookupUs)
+ *          |                          the explicit bucket boundaries for
+ *          |                          kGetObjectLookupUs)
+ *          |
+ *          +--> PreRegisteredCounters.h
+ *                                    (preRegisterGetObjectCounters(), which
+ *                                     ApplicationImp::setup() calls: creates
+ *                                     each kGetObjectRejectedTotal series at 0)
+ * @endcode
  *
- * `kGetObjectLookupUs` in particular is referenced from both sites. A
- * copy-pasted literal would let the two drift, and a drifted name silently
- * drops the bucket override -- the histogram would fall back to the SDK
- * default boundaries, which top out at 10,000 (10 ms), so every quantile
- * would saturate. This mirrors the reason the existing
+ * `kGetObjectLookupUs` in particular is referenced from both PeerImp.cpp and
+ * MetricsRegistry.cpp. A copy-pasted literal would let the two drift, and a
+ * drifted name silently drops the bucket override -- the histogram would fall
+ * back to the SDK default boundaries, which top out at 10,000 (10 ms), so
+ * every quantile would saturate. This mirrors the reason the existing
  * `kJobQueuedDurationUs` / `kJobRunningDurationUs` / `kRpcMethodDurationUs`
  * constants exist in MetricsRegistry.cpp; those three are referenced only
  * within that one file, so they stay file-local.
  *
- * Placed under `include/xrpl/telemetry/` because the two consumers sit in
- * different levelization modules: PeerImp.cpp is `xrpld.overlay` and
- * MetricsRegistry.cpp is `xrpld.telemetry`. Both are allowed to depend on
- * `xrpl.telemetry` (see `xrpld.overlay > xrpl.telemetry` and
- * `xrpld.telemetry > xrpl.telemetry` in the levelization ordering results), so
- * `include/xrpl/` is the one level both can reach. Keeping the constants in
- * `src/xrpld/telemetry/` would have required overlay to include a private
- * xrpld header from another module, flipping a levelization edge. Both sites
- * include this file as `<xrpl/telemetry/GetObjectMetricNames.h>`.
+ * Placed under `include/xrpl/telemetry/` because its consumers sit in
+ * different levelization modules: PeerImp.cpp is `xrpld.overlay`,
+ * MetricsRegistry.cpp is `libxrpl.telemetry` and PreRegisteredCounters.h is
+ * `xrpl.telemetry` itself. The first two may depend on `xrpl.telemetry` (see
+ * their `> xrpl.telemetry` edges in the levelization ordering results), so
+ * `include/xrpl/` is the one level all of them can reach. Under `src/xrpld/`
+ * the constants would be out of reach of libxrpl, which has no include path
+ * to it. Every consumer includes this file as
+ * `<xrpl/telemetry/GetObjectMetricNames.h>`.
  *
  * Example usage -- recording a histogram:
  * @code
@@ -65,6 +72,8 @@
  * @note Header-only constants with no runtime state, so there is nothing to
  * synchronize -- safe to include from any thread context.
  */
+
+#include <array>
 
 namespace xrpl::telemetry {
 
@@ -133,6 +142,12 @@ inline constexpr char kReasonOversize[] = "oversize";
  * `kLabelReason` value: the ledger hash was not uint256-sized.
  */
 inline constexpr char kReasonMalformedLedgerHash[] = "malformed_ledgerhash";
+
+/**
+ * Every `kLabelReason` value above, for pre-registering
+ * `kGetObjectRejectedTotal` at startup.
+ */
+inline constexpr std::array kGetObjectRejectedReasons{kReasonOversize, kReasonMalformedLedgerHash};
 
 // ===== Instrument descriptions ===============================================
 

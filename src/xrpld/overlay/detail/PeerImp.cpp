@@ -668,7 +668,7 @@ PeerImp::close()
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
         telemetry::metric::peerDisconnectTotal,
-        "Peer disconnects, by cause and connection direction",
+        telemetry::peerDisconnectTotalDesc,
         {{telemetry::label::reason, std::string(disconnectReason_)},
          {telemetry::label::direction,
           std::string(inbound_ ? telemetry::lval::inbound : telemetry::lval::outbound)}});
@@ -686,7 +686,7 @@ PeerImp::reportServeRefusal(char const* request, char const* reason)
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
         telemetry::metric::serveRefusedTotal,
-        "Peer data requests this node declined to serve, by request kind and cause",
+        telemetry::serveRefusedTotalDesc,
         {{telemetry::label::request, std::string(request)},
          {telemetry::label::reason, std::string(reason)}});
 }
@@ -1431,7 +1431,7 @@ PeerImp::handleTransaction(
             XRPL_METRIC_COUNTER_INC_LABELED(
                 app_,
                 telemetry::metric::peerTxRejectedTotal,
-                "Relayed transactions not processed, by reason",
+                telemetry::peerTxRejectedTotalDesc,
                 {{telemetry::label::reason,
                   std::string(telemetry::lval::tx_rejected::innerBatch)}});
             JLOG(pJournal_.warn()) << "Ignoring Network relayed Tx containing "
@@ -1452,7 +1452,7 @@ PeerImp::handleTransaction(
                 XRPL_METRIC_COUNTER_INC_LABELED(
                     app_,
                     telemetry::metric::peerTxRejectedTotal,
-                    "Relayed transactions not processed, by reason",
+                    telemetry::peerTxRejectedTotalDesc,
                     {{telemetry::label::reason,
                       std::string(telemetry::lval::tx_rejected::knownBad)}});
                 fee_.update(resource::kFeeUselessData, "known bad");
@@ -1463,7 +1463,7 @@ PeerImp::handleTransaction(
                 XRPL_METRIC_COUNTER_INC_LABELED(
                     app_,
                     telemetry::metric::peerTxRejectedTotal,
-                    "Relayed transactions not processed, by reason",
+                    telemetry::peerTxRejectedTotalDesc,
                     {{telemetry::label::reason,
                       std::string(telemetry::lval::tx_rejected::duplicate)}});
 

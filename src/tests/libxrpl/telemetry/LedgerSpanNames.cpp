@@ -688,8 +688,8 @@ TEST(LedgerSpanNames, peer_dial_outcome_values_match_the_counter_label_set)
     EXPECT_EQ(std::string_view(peer_span::val::upgradeFail), "upgrade_fail");
     EXPECT_EQ(std::string_view(peer_span::val::timeout), "timeout");
 
-    // Reuses the slug handshake_negotiation_fail_total already publishes for the
-    // same fault, so one misconfiguration reads identically on both signals.
+    // Reuses the self_connection slug handshake_negotiation_fail_total also
+    // publishes, so a self-connection reads the same on both signals.
     EXPECT_EQ(std::string_view(peer_span::val::selfConnection), "self_connection");
 }
 
