@@ -9,6 +9,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/TER.h>
 
 #include <set>
 #include <utility>
@@ -50,6 +51,17 @@ public:
         : Base(keylet::depositPreauth(preauthID), view, j)
     {
     }
+
+    /**
+     * Removes this DepositPreauth entry from the ledger: unlinks it from the
+     * owner's directory, decreases the owner's reserve count, and erases the
+     * entry.
+     *
+     * @param owner The account that owns this DepositPreauth entry.
+     */
+    TER
+    removeFromLedger(AccountID const& owner)
+        requires Base::kIsWritable;
 };
 
 using DepositPreauthEntryR = DepositPreauthEntry<ReadView>;
