@@ -29,6 +29,7 @@
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_factory.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_options.h>
 #include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/nostd/string_view.h>
 #include <opentelemetry/sdk/resource/resource.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_factory.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_options.h>
@@ -63,6 +64,21 @@ namespace trace_api = opentelemetry::trace;
 namespace trace_sdk = opentelemetry::sdk::trace;
 namespace otlp_http = opentelemetry::exporter::otlp;
 namespace resource = opentelemetry::sdk::resource;
+
+/**
+ * View a std::string_view as the SDK's string view, without a copy.
+ *
+ * Without the SDK's STL option, nostd::string_view is a separate type with
+ * no constructor from std::string_view.
+ *
+ * @param text Characters that must outlive the returned view.
+ * @return A view of the same characters.
+ */
+[[nodiscard]] opentelemetry::nostd::string_view
+toOtelView(std::string_view text) noexcept
+{
+    return {text.data(), text.size()};
+}
 
 /**
  * No-op implementation used when XRPL_ENABLE_TELEMETRY is defined but
@@ -188,6 +204,17 @@ class TelemetryImpl : public Telemetry
     std::shared_ptr<trace_sdk::TracerProvider> sdkProvider_;
 
     /**
+     * Tracer for kTracerName, cached so a span does not take the provider's
+     * lock.
+     *
+     * Starts as the global provider's tracer. start() sets it to the SDK
+     * tracer before setInstance() publishes this object, and stop() never
+     * writes it, so readers need no lock.
+     */
+    opentelemetry::nostd::shared_ptr<trace_api::Tracer> tracer_ =
+        trace_api::Provider::GetTracerProvider()->GetTracer(toOtelView(kTracerName));
+
+    /**
      * Coroutine-aware runtime-context storage, installed globally so the OTel
      * ambient context follows JobQueue coroutines. Held for the process
      * lifetime because it must outlive every span (SDK requirement).
@@ -275,6 +302,10 @@ public:
         trace_api::Provider::SetTracerProvider(
             opentelemetry::nostd::shared_ptr<trace_api::TracerProvider>(sdkProvider_));
 
+        // GetTracer() locks the provider, so fetch the tracer once here rather
+        // than per span. It must be set before setInstance() publishes it.
+        tracer_ = sdkProvider_->GetTracer(toOtelView(kTracerName));
+
         // Register as the global Telemetry instance so SpanGuard factory
         // methods can access it without callers passing a reference.
         Telemetry::setInstance(this);
@@ -299,13 +330,10 @@ public:
             // Force flush with timeout to avoid blocking indefinitely
             // when the OTLP endpoint is unreachable.
             sdkProvider_->ForceFlush(std::chrono::milliseconds(5000));
-            // TODO: sdkProvider_ is not thread-safe. This reset() races with
-            // getTracer() if any thread is still calling startSpan().
-            // Currently safe because Application::stop() shuts down
-            // serverHandler_, overlay_, and jobQueue_ before calling
-            // telemetry_->stop() — so no callers should remain. If the
-            // shutdown order ever changes, add an std::atomic<bool> stopped_
-            // flag checked in getTracer() to make this robust.
+            // startSpan() and getTracer() never read sdkProvider_, so this
+            // reset() cannot race with them. A span started after stop()
+            // still goes through tracer_, into the shut-down pipeline, and is
+            // dropped rather than exported.
             sdkProvider_.reset();
             trace_api::Provider::SetTracerProvider(
                 opentelemetry::nostd::shared_ptr<trace_api::TracerProvider>(
@@ -353,20 +381,17 @@ public:
     [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Tracer>
     getTracer(std::string_view name = kTracerName) override
     {
-        if (!sdkProvider_)
-        {
-            return trace_api::Provider::GetTracerProvider()->GetTracer(std::string(name));
-        }
-        return sdkProvider_->GetTracer(std::string(name));
+        if (name == kTracerName)
+            return tracer_;
+        return trace_api::Provider::GetTracerProvider()->GetTracer(toOtelView(name));
     }
 
     [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(std::string_view name, trace_api::SpanKind kind) override
     {
-        auto tracer = getTracer();
         trace_api::StartSpanOptions opts;
         opts.kind = kind;
-        return tracer->StartSpan(std::string(name), opts);
+        return tracer_->StartSpan(toOtelView(name), opts);
     }
 
     [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Span>
@@ -375,11 +400,10 @@ public:
         opentelemetry::context::Context const& parentContext,
         trace_api::SpanKind kind) override
     {
-        auto tracer = getTracer();
         trace_api::StartSpanOptions opts;
         opts.kind = kind;
         opts.parent = parentContext;
-        return tracer->StartSpan(std::string(name), opts);
+        return tracer_->StartSpan(toOtelView(name), opts);
     }
 };
 
