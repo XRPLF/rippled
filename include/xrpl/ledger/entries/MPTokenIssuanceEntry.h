@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/SLEBase.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -167,6 +168,24 @@ public:
      */
     [[nodiscard]] bool
     isSoleShareholder(AccountID const& account) const;
+
+    /**
+     * Check whether @p to may receive this MPT from @p from.
+     *
+     * Returns tecOBJECT_NOT_FOUND if the issuance does not exist. Otherwise
+     * the check passes when @p waive is WaiveMPTCanTransfer::Yes, @p from or
+     * @p to is the issuer, or lsfMPTCanTransfer is set. For vault shares
+     * (sfReferenceHolding present) it recurses into the underlying asset's
+     * transferability; @p depth is bounded at kMaxAssetCheckDepth.
+     *
+     * @return tesSUCCESS if the transfer is allowed, tecNO_AUTH otherwise.
+     */
+    [[nodiscard]] TER
+    canTransfer(
+        AccountID const& from,
+        AccountID const& to,
+        WaiveMPTCanTransfer waive = WaiveMPTCanTransfer::No,
+        std::uint8_t depth = 0) const;
 };
 
 using MPTokenIssuanceEntryR = MPTokenIssuanceEntry<ReadView>;
