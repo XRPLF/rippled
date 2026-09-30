@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "RPC Request Rate [$xrpl_network_type]",
-      "description": "**What:** Rate of RPC requests handled, counting every HTTP and WebSocket call.\n**How it's computed:** Per-second rate of the RPC-requests counter over 5 minutes.\n**Reading it:** Tracks client demand on the node.\n**Healthy range:** workload-dependent.\n**Watch for:** Sudden sustained spikes (client surge or abusive polling) or a drop to zero (endpoint unavailable).\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp ServerHandler ctor",
+      "description": "**What:** Rate of RPC requests handled, counting every HTTP and WebSocket call.\n**How it's computed:** Per-second rate of the RPC-requests counter over the dashboard's rate interval.\n**Reading it:** Tracks client demand on the node.\n**Healthy range:** workload-dependent.\n**Watch for:** Sudden sustained spikes (client surge or abusive polling) or a drop to zero (endpoint unavailable).\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp ServerHandler ctor",
       "type": "stat",
       "gridPos": {
         "h": 10,
@@ -261,7 +261,7 @@
     },
     {
       "title": "Resource Warnings Rate [$xrpl_network_type]",
-      "description": "**What:** Rate of resource-limit warnings raised when a peer or client exceeds its usage warning threshold.\n**How it's computed:** Per-second rate of the warn counter over 5 minutes.\n**Reading it:** Occasional warnings are normal under load; a rising rate flags aggressive clients.\n**Healthy range:** workload-dependent; low.\n**Watch for:** A climbing warning rate (clients approaching limits, a precursor to drops).\n**Source:** include/xrpl/resource/detail/Logic.h Logic::Stats ctor",
+      "description": "**What:** Rate of resource-limit warnings raised when a peer or client exceeds its usage warning threshold.\n**How it's computed:** Per-second rate of the warn counter over the dashboard's rate interval.\n**Reading it:** Occasional warnings are normal under load; a rising rate flags aggressive clients.\n**Healthy range:** workload-dependent; low.\n**Watch for:** A climbing warning rate (clients approaching limits, a precursor to drops).\n**Source:** include/xrpl/resource/detail/Logic.h Logic::Stats ctor",
       "type": "stat",
       "gridPos": {
         "h": 10,
@@ -315,7 +315,7 @@
     },
     {
       "title": "Resource Drops Rate [$xrpl_network_type]",
-      "description": "**What:** Rate of resource drops: consumers disconnected or blocked for excessive usage.\n**How it's computed:** Per-second rate of the drop counter over 5 minutes.\n**Reading it:** Non-zero means the node is actively rejecting abusive connections.\n**Healthy range:** at or near zero.\n**Watch for:** Sustained non-zero drops (ongoing abuse or a misbehaving client/peer being throttled).\n**Source:** include/xrpl/resource/detail/Logic.h Logic::Stats ctor",
+      "description": "**What:** Rate of resource drops: consumers disconnected or blocked for excessive usage.\n**How it's computed:** Per-second rate of the drop counter over the dashboard's rate interval.\n**Reading it:** Non-zero means the node is actively rejecting abusive connections.\n**Healthy range:** at or near zero.\n**Watch for:** Sustained non-zero drops (ongoing abuse or a misbehaving client/peer being throttled).\n**Source:** include/xrpl/resource/detail/Logic.h Logic::Stats ctor",
       "type": "stat",
       "gridPos": {
         "h": 10,

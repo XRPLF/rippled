@@ -1208,82 +1208,8 @@
       "id": 19
     },
     {
-      "title": "Ledger Close Rate",
-      "description": "###### What this is:\n*Rate at which the node closes ledgers, versus the ~0.25/s network cadence. A throughput deficit means it is not advancing in step with the network.*\n\n###### How it's computed:\n*rate(ledgers_closed_total[$__rate_interval]) per node.*\n\n###### Reading it:\n*Should track ~0.22-0.25 ledgers/s (one every ~4s). Near-zero while behind = stalled; a burst above network rate = catching up.*\n\n###### Healthy range:\n*~0.25/s steady on a synced node.*\n\n###### Watch for:\n*Near-zero close rate while Validated Ledger Age climbs = hard stall (e.g. genesis-flapping or disk-bound acquisition).*\n\n###### Source:\n[app/ledger/LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::closeLedger`",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 12,
-        "y": 91
-      },
-      "options": {
-        "annotations": {
-          "clustering": -1,
-          "multiLane": true
-        },
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(rate(ledgers_closed_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Ledgers Closed\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(rate(ledger_fetches_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Ledger Fetches\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "si: ledgers/s",
-          "decimals": 0,
-          "custom": {
-            "axisLabel": "Ledgers / Sec & Fetches / Sec",
-            "spanNulls": 1800000,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 5,
-            "lineWidth": 1,
-            "fillOpacity": 0,
-            "gradientMode": "none"
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^Ledger Fetches/"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "suffix: fetches/s"
-              },
-              {
-                "id": "custom.axisPlacement",
-                "value": "right"
-              }
-            ]
-          }
-        ]
-      },
-      "id": 20
-    },
-    {
       "title": "Job Queue Wait p95 By Type",
-      "description": "###### What this is:\n*95th-percentile time a job waits in the queue before a worker thread picks it up, for the sync-critical job types. This is the metric form of the 'ProcessLData wait: NNNNms' warnings in the debug log.*\n\n###### How it's computed:\n*histogram_quantile(0.95, rate(jobq_<type>_q_milliseconds_bucket[$__rate_interval])) for ledgerdata, acceptledger, fetchtxndata, transaction, advanceledger, ledgerrequest.*\n\n###### Reading it:\n*Queue wait should be single-digit to low-tens of ms. High ledgerdata/fetchtxndata wait = the node cannot process inbound ledger data fast enough.*\n\n###### Healthy range:\n*< ~50ms p95 per type on a healthy node.*\n\n###### Watch for:\n*ledgerdata or fetchtxndata q-wait spiking to seconds = worker threads are blocked (usually on NuDB reads - see the cause tier).*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::getJson (per-type queue timing)`",
+      "description": "###### What this is:\n*95th-percentile time a job waits in the queue before a worker thread picks it up, for the sync-critical job types. This is the metric form of the 'ProcessLData wait: NNNNms' warnings in the debug log.*\n\n###### How it's computed:\n*histogram_quantile(0.95, rate(jobq_<type>_q_milliseconds_bucket[$__rate_interval])) for ledgerdata, acceptledger, fetchtxndata, transaction, advanceledger, ledgerrequest.*\n\n###### Reading it:\n*Queue wait should be single-digit to low-tens of ms. High ledgerdata/fetchtxndata wait = the node cannot process inbound ledger data fast enough.*\n\n###### Healthy range:\n*< ~50ms p95 per type on a healthy node.*\n\n###### Watch for:\n*ledgerdata or fetchtxndata q-wait spiking to seconds = worker threads are blocked (usually on NuDB reads - see the cause tier).*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::processTask`",
       "type": "timeseries",
       "gridPos": {
         "h": 10,

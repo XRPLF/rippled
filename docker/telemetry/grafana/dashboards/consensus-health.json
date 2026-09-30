@@ -93,7 +93,7 @@
     },
     {
       "title": "Validation Send Rate [$xrpl_network_type]",
-      "description": "**What:** How often this node issues a validation confirming it has fully validated a ledger.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should closely track the ledger close rate on a healthy validator.\n**Healthy range:** About one per ledger (~0.25/s on mainnet).\n**Watch for:** Validations lagging closes suggests the node is falling behind on validation.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::createValidationSpan",
+      "description": "**What:** How often this node issues a validation confirming it has fully validated a ledger.\n**How it's computed:** Per-second rate over the dashboard's rate interval, per node.\n**Reading it:** Should closely track the ledger close rate on a healthy validator.\n**Healthy range:** About one per ledger (~0.25/s on mainnet).\n**Watch for:** Validations lagging closes suggests the node is falling behind on validation.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::createValidationSpan",
       "type": "stat",
       "gridPos": {
         "h": 10,
@@ -131,7 +131,7 @@
     },
     {
       "title": "Consensus Proposals Sent Rate",
-      "description": "**What:** How often this node broadcasts its own consensus proposal (its candidate transaction set) to the network.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** A proposing validator emits a steady stream, roughly one per consensus round; observing-only nodes emit none.\n**Healthy range:** About one proposal per round (~0.2-0.3/s on mainnet) for a proposing node.\n**Watch for:** A validator that drops to zero has stopped proposing and may be unhealthy or misconfigured.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::propose",
+      "description": "**What:** How often this node broadcasts its own consensus proposal (its candidate transaction set) to the network.\n**How it's computed:** Per-second rate over the dashboard's rate interval, per node.\n**Reading it:** A proposing validator emits a steady stream, roughly one per consensus round; observing-only nodes emit none.\n**Healthy range:** About one proposal per round (~0.2-0.3/s on mainnet) for a proposing node.\n**Watch for:** A validator that drops to zero has stopped proposing and may be unhealthy or misconfigured.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::propose",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -287,7 +287,7 @@
     },
     {
       "title": "Close Time Agreement",
-      "description": "**What:** Whether validators agreed on the ledger close time (agreed) or agreed to disagree and used a fallback (disagreed), per round.\n**How it's computed:** Per-second rate of rounds split by agreement outcome over a 5-minute window, per node.\n**Reading it:** Nearly all rounds should show agreement.\n**Healthy range:** Overwhelmingly agreement; occasional disagreement is tolerable.\n**Watch for:** A rising disagreement share signals clock drift or network latency across validators.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::doAccept",
+      "description": "**What:** Whether validators agreed on the ledger close time (agreed) or agreed to disagree and used a fallback (disagreed), per round.\n**How it's computed:** Per-second rate of rounds split by agreement outcome over the dashboard's rate interval, per node.\n**Reading it:** Nearly all rounds should show agreement.\n**Healthy range:** Overwhelmingly agreement; occasional disagreement is tolerable.\n**Watch for:** A rising disagreement share signals clock drift or network latency across validators.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::doAccept",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -337,7 +337,7 @@
     },
     {
       "title": "Consensus Mode Over Time",
-      "description": "**What:** Ledger close events split by the node's consensus mode: Proposing, Observing, Wrong Ledger, or Switched Ledger.\n**How it's computed:** Per-second rate per mode over a 5-minute window, per node.\n**Reading it:** A healthy validator stays predominantly in Proposing; a stock node stays in Observing.\n**Healthy range:** Mostly one dominant mode with negligible Wrong/Switched Ledger.\n**Watch for:** Frequent Wrong Ledger or Switched Ledger indicates the node is out of sync and at fork risk.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::onClose",
+      "description": "**What:** Ledger close events split by the node's consensus mode: Proposing, Observing, Wrong Ledger, or Switched Ledger.\n**How it's computed:** Per-second rate per mode over the dashboard's rate interval, per node.\n**Reading it:** A healthy validator stays predominantly in Proposing; a stock node stays in Observing.\n**Healthy range:** Mostly one dominant mode with negligible Wrong/Switched Ledger.\n**Watch for:** Frequent Wrong Ledger or Switched Ledger indicates the node is out of sync and at fork risk.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::onClose",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -387,7 +387,7 @@
     },
     {
       "title": "Accept vs Close Rate",
-      "description": "**What:** Rate of ledgers accepted after consensus versus ledger-close events initiated.\n**How it's computed:** Per-second rate of each over a 5-minute window, per node.\n**Reading it:** The two lines should overlap on a healthy network.\n**Healthy range:** Both near the ledger cadence (~0.25/s on mainnet) and tracking each other.\n**Watch for:** Divergence means some closes never complete the accept phase, hinting at consensus failures or timeouts.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::makeAcceptSpan, onClose",
+      "description": "**What:** Rate of ledgers accepted after consensus versus ledger-close events initiated.\n**How it's computed:** Per-second rate of each over the dashboard's rate interval, per node.\n**Reading it:** The two lines should overlap on a healthy network.\n**Healthy range:** Both near the ledger cadence (~0.25/s on mainnet) and tracking each other.\n**Watch for:** Divergence means some closes never complete the accept phase, hinting at consensus failures or timeouts.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::makeAcceptSpan, onClose",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -445,7 +445,7 @@
     },
     {
       "title": "Validation vs Close Rate",
-      "description": "**What:** Rate of validations sent versus ledger-close events.\n**How it's computed:** Per-second rate of each over a 5-minute window, per node.\n**Reading it:** Each validated ledger should yield one validation, so the lines should overlap.\n**Healthy range:** Both near the ledger cadence and tracking each other.\n**Watch for:** Validations trailing closes points to a stalled or slow validation pipeline.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::createValidationSpan, onClose",
+      "description": "**What:** Rate of validations sent versus ledger-close events.\n**How it's computed:** Per-second rate of each over the dashboard's rate interval, per node.\n**Reading it:** Each validated ledger should yield one validation, so the lines should overlap.\n**Healthy range:** Both near the ledger cadence and tracking each other.\n**Watch for:** Validations trailing closes points to a stalled or slow validation pipeline.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::createValidationSpan, onClose",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -882,7 +882,7 @@
     },
     {
       "title": "Consensus Outcome Distribution",
-      "description": "**What:** Share of consensus outcomes: normal agreement, moved on without full agreement, or expired (timed out).\n**How it's computed:** Total counts per outcome over a 5-minute window, shown as proportions.\n**Reading it:** The normal outcome should dominate overwhelmingly.\n**Healthy range:** Nearly all normal.\n**Watch for:** A growing moved-on or expired slice indicates network stress or instability.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::makeAcceptSpan",
+      "description": "**What:** Share of consensus outcomes: normal agreement, moved on without full agreement, or expired (timed out).\n**How it's computed:** Total counts per outcome over the dashboard's rate interval, shown as proportions.\n**Reading it:** The normal outcome should dominate overwhelmingly.\n**Healthy range:** Nearly all normal.\n**Watch for:** A growing moved-on or expired slice indicates network stress or instability.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::makeAcceptSpan",
       "type": "piechart",
       "gridPos": {
         "h": 10,
@@ -920,7 +920,7 @@
     },
     {
       "title": "Consensus Failures Over Time",
-      "description": "**What:** Rate of non-normal consensus outcomes (moved on plus expired) over time.\n**How it's computed:** Per-second rate of each failure outcome over a 5-minute window, per node.\n**Reading it:** Should sit at or near zero.\n**Healthy range:** Effectively zero on a stable network.\n**Watch for:** Spikes indicate consensus instability; sustained failures warrant investigation.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::makeAcceptSpan",
+      "description": "**What:** Rate of non-normal consensus outcomes (moved on plus expired) over time.\n**How it's computed:** Per-second rate of each failure outcome over the dashboard's rate interval, per node.\n**Reading it:** Should sit at or near zero.\n**Healthy range:** Effectively zero on a stable network.\n**Watch for:** Spikes indicate consensus instability; sustained failures warrant investigation.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::makeAcceptSpan",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -1162,7 +1162,7 @@
     },
     {
       "title": "Consensus Stall Rate",
-      "description": "**What:** Rate of consensus health checks reporting a stalled condition versus progressing normally.\n**How it's computed:** Per-second rate split by stalled flag over a 5-minute window, per node.\n**Reading it:** The stalled line should stay at zero.\n**Healthy range:** Zero stalled checks.\n**Watch for:** Any sustained stalled rate surfaces a stall before it becomes a validated-ledger-age alarm.\n**Source:** src/xrpld/consensus/Consensus.h:Consensus::haveConsensus",
+      "description": "**What:** Rate of consensus health checks reporting a stalled condition versus progressing normally.\n**How it's computed:** Per-second rate split by stalled flag over the dashboard's rate interval, per node.\n**Reading it:** The stalled line should stay at zero.\n**Healthy range:** Zero stalled checks.\n**Watch for:** Any sustained stalled rate surfaces a stall before it becomes a validated-ledger-age alarm.\n**Source:** src/xrpld/consensus/Consensus.h:Consensus::haveConsensus",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -1220,7 +1220,7 @@
     },
     {
       "title": "Consensus Mode-Change Rate by Target Mode",
-      "description": "**What:** Rate of consensus mode transitions, split by the mode the node switched into.\n**How it's computed:** Per-second rate per target mode over a 5-minute window, per node.\n**Reading it:** A stable node changes mode rarely; occasional switches around startup are normal.\n**Healthy range:** Near zero once synced.\n**Watch for:** Frequent switches into Wrong Ledger or Switched Ledger mark an unstable node at fork risk.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::onModeChange",
+      "description": "**What:** Rate of consensus mode transitions, split by the mode the node switched into.\n**How it's computed:** Per-second rate per target mode over the dashboard's rate interval, per node.\n**Reading it:** A stable node changes mode rarely; occasional switches around startup are normal.\n**Healthy range:** Near zero once synced.\n**Watch for:** Frequent switches into Wrong Ledger or Switched Ledger mark an unstable node at fork risk.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::onModeChange",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
