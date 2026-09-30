@@ -10,7 +10,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -472,7 +471,7 @@ canWithdraw(
     bool hasDestinationTag,
     std::optional<std::vector<UInt256>> const& credentialIDs)
 {
-    if (auto const ret = checkDestinationAndTag(toSle, hasDestinationTag))
+    if (auto const ret = toSle.checkDestinationAndTag(hasDestinationTag))
         return ret;
 
     if (from == to)
