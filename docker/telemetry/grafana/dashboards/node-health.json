@@ -115,7 +115,7 @@
     },
     {
       "title": "Ledger Fetch Rate [$xrpl_network_type]",
-      "description": "**What:** Rate at which the node requests ledgers from peers.\n**How it's computed:** Per-second rate of the ledger-fetches counter over 5 minutes.\n**Reading it:** Near zero when synced; rises when catching up or backfilling history.\n**Healthy range:** workload-dependent; low on a synced node.\n**Watch for:** Sustained high fetch rate on a node that should be current (repeatedly missing ledgers).\n**Source:** src/xrpld/app/ledger/detail/InboundLedgers.cpp InboundLedgersImp ctor",
+      "description": "**What:** Rate at which the node requests ledgers from peers.\n**How it's computed:** Per-second rate of the ledger-fetches counter over the dashboard's rate interval.\n**Reading it:** Near zero when synced; rises when catching up or backfilling history.\n**Healthy range:** workload-dependent; low on a synced node.\n**Watch for:** Sustained high fetch rate on a node that should be current (repeatedly missing ledgers).\n**Source:** src/xrpld/app/ledger/detail/InboundLedgers.cpp InboundLedgersImp ctor",
       "type": "stat",
       "gridPos": {
         "h": 10,
@@ -152,7 +152,7 @@
     },
     {
       "title": "Ledger History Mismatches [$xrpl_network_type]",
-      "description": "**What:** Rate of ledger-history hash mismatches: built ledgers whose hash disagrees with the validated hash.\n**How it's computed:** Per-second rate of the history-mismatch counter over 5 minutes.\n**Reading it:** Should be flat at zero.\n**Healthy range:** zero.\n**Watch for:** Any non-zero value (consensus divergence, corrupted history, or database issues).\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp incrementLedgerHistoryMismatch (caller LedgerHistory.cpp)",
+      "description": "**What:** Rate of ledger-history hash mismatches: built ledgers whose hash disagrees with the validated hash.\n**How it's computed:** Per-second rate of the history-mismatch counter over the dashboard's rate interval.\n**Reading it:** Should be flat at zero.\n**Healthy range:** zero.\n**Watch for:** Any non-zero value (consensus divergence, corrupted history, or database issues).\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp incrementLedgerHistoryMismatch (caller LedgerHistory.cpp)",
       "type": "stat",
       "gridPos": {
         "h": 10,
@@ -588,7 +588,7 @@
     },
     {
       "title": "Key Jobs Execution Time",
-      "description": "**What:** Execution time of the most important job types (accept/advance ledger, transaction, write objects, heartbeat, sweep, trusted validation/proposal, publish, client RPC, ledger data) at the selected quantile.\n**How it's computed:** Selected quantile of each job's execution-time histogram over 5 minutes.\n**Reading it:** Lower and stable is better; shows where consensus, transaction, and maintenance time goes.\n**Healthy range:** workload-dependent; most jobs in low tens of milliseconds.\n**Watch for:** One job type spiking (a specific bottleneck) or broad increases (overload).\n**Source:** include/xrpl/core/JobTypeData.h JobTypeData ctor",
+      "description": "**What:** Execution time of the most important job types (accept/advance ledger, transaction, write objects, heartbeat, sweep, trusted validation/proposal, publish, client RPC, ledger data) at the selected quantile.\n**How it's computed:** Selected quantile of each job's execution-time histogram over 5 minutes.\n**Reading it:** Lower and stable is better; shows where consensus, transaction, and maintenance time goes.\n**Healthy range:** workload-dependent; most jobs in low tens of milliseconds.\n**Watch for:** One job type spiking (a specific bottleneck) or broad increases (overload).",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -706,7 +706,7 @@
     },
     {
       "title": "Key Jobs Dequeue Wait Time",
-      "description": "**What:** Time key jobs wait in the queue before they start running, at the selected quantile.\n**How it's computed:** Selected quantile of each job's queue-wait histogram over 5 minutes.\n**Reading it:** Low wait means the scheduler keeps up; high wait means backlog.\n**Healthy range:** workload-dependent; short waits.\n**Watch for:** Rising wait across job types (queue congestion delaying consensus and transaction work).\n**Source:** include/xrpl/core/JobTypeData.h JobTypeData ctor",
+      "description": "**What:** Time key jobs wait in the queue before they start running, at the selected quantile.\n**How it's computed:** Selected quantile of each job's queue-wait histogram over 5 minutes.\n**Reading it:** Low wait means the scheduler keeps up; high wait means backlog.\n**Healthy range:** workload-dependent; short waits.\n**Watch for:** Rising wait across job types (queue congestion delaying consensus and transaction work).",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -927,7 +927,7 @@
     },
     {
       "title": "All Jobs Execution Time (Detail)",
-      "description": "**What:** Execution time for all non-special job types at the selected quantile.\n**How it's computed:** Selected quantile of each job's execution-time histogram over 5 minutes.\n**Reading it:** Full breakdown of job performance; use the Key Jobs panel for the focused view.\n**Healthy range:** workload-dependent.\n**Watch for:** Any job type with a persistent upward trend, or many rising together (systemic slowdown).\n**Source:** include/xrpl/core/JobTypeData.h JobTypeData ctor",
+      "description": "**What:** Execution time for all non-special job types at the selected quantile.\n**How it's computed:** Selected quantile of each job's execution-time histogram over 5 minutes.\n**Reading it:** Full breakdown of job performance; use the Key Jobs panel for the focused view.\n**Healthy range:** workload-dependent.\n**Watch for:** Any job type with a persistent upward trend, or many rising together (systemic slowdown).",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -975,7 +975,7 @@
     },
     {
       "title": "All Jobs Dequeue Wait (Detail)",
-      "description": "**What:** Queue wait time before execution for all non-special job types at the selected quantile.\n**How it's computed:** Selected quantile of each job's queue-wait histogram over 5 minutes.\n**Reading it:** Complete picture of scheduling delay across job types.\n**Healthy range:** workload-dependent; short waits.\n**Watch for:** High waits across many job types (systemic job-queue congestion).\n**Source:** include/xrpl/core/JobTypeData.h JobTypeData ctor",
+      "description": "**What:** Queue wait time before execution for all non-special job types at the selected quantile.\n**How it's computed:** Selected quantile of each job's queue-wait histogram over 5 minutes.\n**Reading it:** Complete picture of scheduling delay across job types.\n**Healthy range:** workload-dependent; short waits.\n**Watch for:** High waits across many job types (systemic job-queue congestion).",
       "type": "timeseries",
       "gridPos": {
         "h": 10,

@@ -65,7 +65,7 @@
     },
     {
       "title": "Transaction Processing Rate",
-      "description": "**What:** Rate of transactions entering the processing pipeline (submitted locally or relayed by peers) versus raw transaction messages arriving from peers before deduplication.\n**How it's computed:** Per-second rate of each over a 5-minute window, per node.\n**Reading it:** The received line sits above the processed line by the volume of duplicates filtered out.\n**Healthy range:** Workload-dependent; scales with network transaction volume.\n**Watch for:** A large and growing gap means heavy duplicate traffic; a processed-rate collapse means submissions are not being handled.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::processTransaction, src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::handleTransaction",
+      "description": "**What:** Rate of transactions entering the processing pipeline (submitted locally or relayed by peers) versus raw transaction messages arriving from peers before deduplication.\n**How it's computed:** Per-second rate of each over the dashboard's rate interval, per node.\n**Reading it:** The received line sits above the processed line by the volume of duplicates filtered out.\n**Healthy range:** Workload-dependent; scales with network transaction volume.\n**Watch for:** A large and growing gap means heavy duplicate traffic; a processed-rate collapse means submissions are not being handled.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::processTransaction, src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::handleTransaction",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -185,7 +185,7 @@
     },
     {
       "title": "Transaction Path Distribution",
-      "description": "**What:** Split of processed transactions by origin: submitted locally versus relayed from peers.\n**How it's computed:** Total counts split by origin over a 5-minute window, shown as proportions.\n**Reading it:** Most nodes see mostly relayed traffic; a submission endpoint sees more local.\n**Healthy range:** Workload-dependent.\n**Watch for:** A surge in local submissions on a node not meant to accept them can indicate misuse.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::processTransaction",
+      "description": "**What:** Split of processed transactions by origin: submitted locally versus relayed from peers.\n**How it's computed:** Total counts split by origin over the dashboard's rate interval, shown as proportions.\n**Reading it:** Most nodes see mostly relayed traffic; a submission endpoint sees more local.\n**Healthy range:** Workload-dependent.\n**Watch for:** A surge in local submissions on a node not meant to accept them can indicate misuse.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::processTransaction",
       "type": "piechart",
       "gridPos": {
         "h": 10,
@@ -219,7 +219,7 @@
     },
     {
       "title": "Transaction Receive Rate",
-      "description": "**What:** Transactions received from peers that this node went on to process.\n**How it's computed:** Per-second rate of the tx.receive span over a 5-minute window, per node.\n**Reading it:** Tracks the useful inbound transaction load. Copies dropped as duplicates are not counted here, because the span starts after the duplicate check; their volume is the transactions_duplicate traffic category.\n**Healthy range:** Workload-dependent.\n**Watch for:** A fall to zero while peers are connected means inbound relay has stopped.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::handleTransaction",
+      "description": "**What:** Transactions received from peers that this node went on to process.\n**How it's computed:** Per-second rate of the tx.receive span over the dashboard's rate interval, per node.\n**Reading it:** Tracks the useful inbound transaction load. Copies dropped as duplicates are not counted here, because the span starts after the duplicate check; their volume is the transactions_duplicate traffic category.\n**Healthy range:** Workload-dependent.\n**Watch for:** A fall to zero while peers are connected means inbound relay has stopped.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::handleTransaction",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -391,7 +391,7 @@
     },
     {
       "title": "Transaction Rate by Type",
-      "description": "**What:** Processing rate broken down by transaction type (Payment, OfferCreate, AMM operations, etc.).\n**How it's computed:** Per-second rate per type over a 5-minute window.\n**Reading it:** Shows the transaction mix and how it shifts over time.\n**Healthy range:** Workload-dependent; usually Payment-heavy.\n**Watch for:** A sudden burst of one type is a leading indicator of spam or fee escalation.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::processTransaction",
+      "description": "**What:** Processing rate broken down by transaction type (Payment, OfferCreate, AMM operations, etc.).\n**How it's computed:** Per-second rate per type over the dashboard's rate interval.\n**Reading it:** Shows the transaction mix and how it shifts over time.\n**Healthy range:** Workload-dependent; usually Payment-heavy.\n**Watch for:** A sudden burst of one type is a leading indicator of spam or fee escalation.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::processTransaction",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -446,7 +446,7 @@
     },
     {
       "title": "Transaction Results by Type",
-      "description": "**What:** Non-success result codes broken down by transaction type, showing which types fail and how.\n**How it's computed:** Per-second rate per type and result code over a 5-minute window (successes excluded).\n**Reading it:** Occasional failures are normal; watch which types and codes dominate.\n**Healthy range:** Low and workload-dependent.\n**Watch for:** A concentration of one failure code on one type can indicate a broken client or targeted spam.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::processTransaction",
+      "description": "**What:** Non-success result codes broken down by transaction type, showing which types fail and how.\n**How it's computed:** Per-second rate per type and result code over the dashboard's rate interval (successes excluded).\n**Reading it:** Occasional failures are normal; watch which types and codes dominate.\n**Healthy range:** Low and workload-dependent.\n**Watch for:** A concentration of one failure code on one type can indicate a broken client or targeted spam.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::processTransaction",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -501,7 +501,7 @@
     },
     {
       "title": "TxQ Accept: Applied Ratio per Node (State Timeline)",
-      "description": "**What:** Applied fraction of TxQ accepts per node over time: the share of queued transactions that were included in a ledger versus removed on failure.\n**How it's computed:** Per node, applied accepts divided by applied-plus-failed accepts over a 5-minute window.\n**Reading it:** Green (>=90% applied) is a healthy drain; yellow is degraded; red means accepts are mostly failing.\n**Healthy range:** At or near 100% applied when the queue is draining healthily; workload-dependent.\n**Watch for:** A node dropping into yellow or red, which signals queue pressure, under-bidding, or fee escalation on that node.\n**Source:** src/xrpld/app/misc/detail/TxQ.cpp:TxQ::accept",
+      "description": "**What:** Applied fraction of TxQ accepts per node over time: the share of queued transactions that were included in a ledger versus removed on failure.\n**How it's computed:** Per node, applied accepts divided by applied-plus-failed accepts over the dashboard's rate interval.\n**Reading it:** Green (>=90% applied) is a healthy drain; yellow is degraded; red means accepts are mostly failing.\n**Healthy range:** At or near 100% applied when the queue is draining healthily; workload-dependent.\n**Watch for:** A node dropping into yellow or red, which signals queue pressure, under-bidding, or fee escalation on that node.\n**Source:** src/xrpld/app/misc/detail/TxQ.cpp:TxQ::accept",
       "type": "state-timeline",
       "gridPos": {
         "h": 10,
@@ -635,7 +635,7 @@
     },
     {
       "title": "TxQ Enqueue Rate by Transaction Type",
-      "description": "**What:** Rate at which transactions are placed into the queue, split by transaction type.\n**How it's computed:** Per-second rate per type over a 5-minute window, per node.\n**Reading it:** Shows which types make up inbound demand and how the mix shifts as the queue fills.\n**Healthy range:** Workload-dependent.\n**Watch for:** A spam burst of one type here is a leading indicator of fee escalation.\n**Source:** src/xrpld/app/misc/detail/TxQ.cpp:TxQ::apply",
+      "description": "**What:** Rate at which transactions are placed into the queue, split by transaction type.\n**How it's computed:** Per-second rate per type over the dashboard's rate interval, per node.\n**Reading it:** Shows which types make up inbound demand and how the mix shifts as the queue fills.\n**Healthy range:** Workload-dependent.\n**Watch for:** A spam burst of one type here is a leading indicator of fee escalation.\n**Source:** src/xrpld/app/misc/detail/TxQ.cpp:TxQ::apply",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -742,7 +742,7 @@
     },
     {
       "title": "Queue Cleanup Rate (Expired Entries)",
-      "description": "**What:** Rate at which expired transactions are removed from the queue each ledger.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Normally low; entries expire when submitters underbid the current fee.\n**Healthy range:** Near zero in calm conditions.\n**Watch for:** A rising rate means submitters abandoned under-fee transactions, a demand-frustration signal distinct from throughput.\n**Source:** src/xrpld/app/misc/detail/TxQ.cpp:TxQ::processClosedLedger",
+      "description": "**What:** Rate at which expired transactions are removed from the queue each ledger.\n**How it's computed:** Per-second rate over the dashboard's rate interval, per node.\n**Reading it:** Normally low; entries expire when submitters underbid the current fee.\n**Healthy range:** Near zero in calm conditions.\n**Watch for:** A rising rate means submitters abandoned under-fee transactions, a demand-frustration signal distinct from throughput.\n**Source:** src/xrpld/app/misc/detail/TxQ.cpp:TxQ::processClosedLedger",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -792,7 +792,7 @@
     },
     {
       "title": "Tx Apply Pipeline Rate by Stage",
-      "description": "**What:** Throughput of each apply-pipeline stage (preflight, preclaim, apply), showing where transactions drop out.\n**How it's computed:** Per-second rate per stage over a 5-minute window, per node.\n**Reading it:** A decline from earlier to later stages shows where transactions are filtered.\n**Healthy range:** Workload-dependent; later stages sit at or below earlier ones.\n**Watch for:** A large early-stage drop means many transactions fail basic checks, consistent with malformed floods.\n**Source:** src/libxrpl/tx/Transactor.cpp:Transactor::operator()",
+      "description": "**What:** Throughput of each apply-pipeline stage (preflight, preclaim, apply), showing where transactions drop out.\n**How it's computed:** Per-second rate per stage over the dashboard's rate interval, per node.\n**Reading it:** A decline from earlier to later stages shows where transactions are filtered.\n**Healthy range:** Workload-dependent; later stages sit at or below earlier ones.\n**Watch for:** A large early-stage drop means many transactions fail basic checks, consistent with malformed floods.\n**Source:** src/libxrpl/tx/Transactor.cpp:Transactor::operator()",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -913,7 +913,7 @@
     },
     {
       "title": "Tx Apply Pipeline Failure Rate by Stage",
-      "description": "**What:** Rate of pipeline spans ending in a non-success result, split by stage (preflight, preclaim, apply).\n**How it's computed:** Per-second rate of non-success outcomes per stage over a 5-minute window, per node.\n**Reading it:** Shows whether failures concentrate early (basic checks) or late (application).\n**Healthy range:** Low and workload-dependent.\n**Watch for:** A surge of early-stage failures is consistent with malformed or spam transaction floods.\n**Source:** src/libxrpl/tx/Transactor.cpp:Transactor::operator()",
+      "description": "**What:** Rate of pipeline spans ending in a non-success result, split by stage (preflight, preclaim, apply).\n**How it's computed:** Per-second rate of non-success outcomes per stage over the dashboard's rate interval, per node.\n**Reading it:** Shows whether failures concentrate early (basic checks) or late (application).\n**Healthy range:** Low and workload-dependent.\n**Watch for:** A surge of early-stage failures is consistent with malformed or spam transaction floods.\n**Source:** src/libxrpl/tx/Transactor.cpp:Transactor::operator()",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
