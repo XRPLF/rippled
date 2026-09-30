@@ -734,7 +734,7 @@ public:
         BEAST_EXPECT(env.balance(issuer, usd) == usd(0));
         BEAST_EXPECT(env.balance(bob, usd) == bobMPTBefore);
         BEAST_EXPECT(env.balance(bob) == bobXRPBefore - fee);
-        env.require(offers(issuer, 0), offers(bob, 0));
+        env.require(Offers(issuer, 0), Offers(bob, 0));
     }
 
     // Same zero-output offer, but with funded liquidity behind it.
@@ -802,7 +802,7 @@ public:
             BEAST_EXPECT((*sle)[sfTakerPays] == XRP(100));
             BEAST_EXPECT((*sle)[sfTakerGets] == usd(50));
         }
-        env.require(offers(issuer, 0), offers(carol, 1), offers(bob, 0));
+        env.require(Offers(issuer, 0), Offers(carol, 1), Offers(bob, 0));
     }
 
     // Same tip-block as testMPTOfferFeeZeroOutUnblocksBook, but the unfillable
@@ -863,7 +863,7 @@ public:
             BEAST_EXPECT((*sle)[sfTakerPays] == XRP(100));
             BEAST_EXPECT((*sle)[sfTakerGets] == usd(50));
         }
-        env.require(offers(alice, 0), offers(carol, 1), offers(bob, 0));
+        env.require(Offers(alice, 0), Offers(carol, 1), Offers(bob, 0));
     }
 
     // The MaximumAmount limit on an MPT input can also clip an offer's output
@@ -999,7 +999,7 @@ public:
                     BEAST_EXPECT((*sle)[sfTakerPays] == eur(100));
                     BEAST_EXPECT((*sle)[sfTakerGets] == usd(50));
                 }
-                env.require(offers(alice, 0), offers(carol, 1), offers(dan, 0));
+                env.require(Offers(alice, 0), Offers(carol, 1), Offers(dan, 0));
             }
             else
             {
@@ -1016,7 +1016,7 @@ public:
                 BEAST_EXPECT(env.balance(dan, eur) == eur(1'000));
                 BEAST_EXPECT(env.balance(carol, usd) == usd(100));
                 BEAST_EXPECT(env.le(carolOffer) != nullptr);
-                env.require(offers(alice, 1), offers(carol, 1), offers(dan, 1));
+                env.require(Offers(alice, 1), Offers(carol, 1), Offers(dan, 1));
             }
 
             // Alice keeps her epsilon either way.
@@ -1082,7 +1082,7 @@ public:
             BEAST_EXPECT(env.balance(alice, out) == out(1'001));
             BEAST_EXPECT(env.balance(alice, bond) == bond(0));
             BEAST_EXPECT(env.balance(bondIssuer, out) == issuerOutBefore);
-            env.require(offers(alice, 0), offers(bondIssuer, 0));
+            env.require(Offers(alice, 0), Offers(bondIssuer, 0));
         };
 
         run([&](Env& env,
@@ -1171,7 +1171,7 @@ public:
             BEAST_EXPECT((*sle)[sfTakerPays] == bond(1));
             BEAST_EXPECT((*sle)[sfTakerGets] == usd(500));
         }
-        env.require(offers(alice, 0), offers(carol, 1), offers(bondIssuer, 0));
+        env.require(Offers(alice, 0), Offers(carol, 1), Offers(bondIssuer, 0));
     }
 
     // TakerPays = 2 in the same funds window must still fill: the clip
@@ -1219,7 +1219,7 @@ public:
         BEAST_EXPECT(env.balance(alice, usd) == usd(0));
         BEAST_EXPECT(env.balance(alice, bond) == bond(1));
         BEAST_EXPECT(env.balance(bondIssuer, usd) == usd(910));
-        env.require(offers(alice, 0), offers(bondIssuer, 0));
+        env.require(Offers(alice, 0), Offers(bondIssuer, 0));
     }
 
     // XRP twin of the zero-in fee clip. TakerPays of 1 drop truncates to 0
@@ -1284,7 +1284,7 @@ public:
                     BEAST_EXPECT((*sle)[sfTakerPays] == drops(1));
                     BEAST_EXPECT((*sle)[sfTakerGets] == usd(500));
                 }
-                env.require(offers(alice, 0), offers(carol, 1), offers(dan, 0));
+                env.require(Offers(alice, 0), Offers(carol, 1), Offers(dan, 0));
             }
             else
             {
@@ -1299,7 +1299,7 @@ public:
                 }
                 BEAST_EXPECT(env.balance(dan, usd) == usd(0));
                 BEAST_EXPECT(env.balance(carol, usd) == usd(2'000));
-                env.require(offers(alice, 1), offers(carol, 1), offers(dan, 1));
+                env.require(Offers(alice, 1), Offers(carol, 1), Offers(dan, 1));
             }
 
             // Alice keeps her USD either way.
