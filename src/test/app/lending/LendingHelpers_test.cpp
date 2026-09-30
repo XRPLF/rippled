@@ -11,6 +11,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -1864,8 +1865,13 @@ public:
             auto sle = std::make_shared<SLE>(ltLOAN_BROKER, UInt256{1u});
             sle->at(sfCoverAvailable) = tc.coverAvailable;
             BEAST_EXPECT(
-                canApplyToBrokerCover(*env.current(), sle, iou, tc.amount, env.journal, "test") ==
-                tc.expected);
+                canApplyToBrokerCover(
+                    *env.current(),
+                    LoanBrokerEntryR(sle, *env.current()),
+                    iou,
+                    tc.amount,
+                    env.journal,
+                    "test") == tc.expected);
         }
 
         // Amendment off → guard is bypassed regardless of amount.
@@ -1877,7 +1883,7 @@ public:
             BEAST_EXPECT(
                 canApplyToBrokerCover(
                     *envOff.current(),
-                    sle,
+                    LoanBrokerEntryR(sle, *envOff.current()),
                     iou,
                     STAmount{iou, Number{0}},
                     envOff.journal,

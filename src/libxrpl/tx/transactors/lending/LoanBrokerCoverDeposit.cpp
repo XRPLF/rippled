@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -51,7 +52,7 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     auto const brokerID = tx[sfLoanBrokerID];
     auto const amount = tx[sfAmount];
 
-    auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
+    LoanBrokerEntryR const sleBroker(brokerID, ctx.view);
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -139,7 +140,7 @@ LoanBrokerCoverDeposit::doApply()
     auto const& tx = ctx_.tx;
 
     auto const brokerID = tx[sfLoanBrokerID];
-    auto broker = view().peek(keylet::loanBroker(brokerID));
+    LoanBrokerEntryW broker(brokerID, view());
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -181,7 +182,7 @@ LoanBrokerCoverDeposit::doApply()
 
     // Increase the LoanBroker's CoverAvailable by Amount
     broker->at(sfCoverAvailable) += amount;
-    view().update(broker);
+    broker.update();
 
     associateAsset(*broker, vaultAsset);
 
