@@ -317,9 +317,6 @@ maxMPTAmount(SLE const& sleIssuance);
 // OutstandingAmount may overflow and available amount might be negative.
 // But available amount is always <= |MaximumAmount - OutstandingAmount|.
 std::int64_t
-availableMPTAmount(MPTokenIssuanceEntryR const& sleIssuance);
-
-std::int64_t
 availableMPTAmount(ReadView const& view, MPTID const& mptID);
 
 /**
