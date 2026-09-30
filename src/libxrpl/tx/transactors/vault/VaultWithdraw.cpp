@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -38,7 +39,10 @@ VaultWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 }
 
 static WaiveUnrealizedLoss
-shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::ConstRef issuance)
+shouldWaiveWithdrawal(
+    ReadView const& view,
+    AccountID const& account,
+    MPTokenIssuanceEntryR const& issuance)
 {
     XRPL_ASSERT(
         issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
@@ -150,7 +154,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // to the equivalent asset amount before checking withdrawal
         // limits. Pre-amendment the limit check was skipped for
         // share-denominated withdrawals.
-        auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(vaultShare));
+        MPTokenIssuanceEntryR const sleIssuance(vaultShare, ctx.view);
         if (!sleIssuance)
         {
             // LCOV_EXCL_START
@@ -227,7 +231,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (fix340Enabled && vault->isFlag(lsfVaultPrivate) && dstAcct != account &&
         dstAcct != vaultAsset.getIssuer())
     {
-        auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(vaultShare));
+        MPTokenIssuanceEntryR const sleIssuance(vaultShare, ctx.view);
         if (!sleIssuance)
         {
             // LCOV_EXCL_START
@@ -284,7 +288,7 @@ VaultWithdraw::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
-    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntryR const sleIssuance(mptIssuanceID, view());
     if (!sleIssuance)
     {
         // LCOV_EXCL_START

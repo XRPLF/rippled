@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -424,13 +425,13 @@ accountHolds(
     {
         // if the account is the issuer, and the issuance exists, their limit is
         // the issuance limit minus the outstanding value
-        auto const issuance = view.read(keylet::mptokenIssuance(mptIssue.getMptID()));
+        MPTokenIssuanceEntryR const issuance(mptIssue.getMptID(), view);
 
         if (!issuance)
         {
             return amount;
         }
-        auto const available = availableMPTAmount(*issuance);
+        auto const available = availableMPTAmount(issuance);
         if (!mptokensV2)
             return STAmount{mptIssue, available};
         return view.balanceHookMPT(issuer, mptIssue, available);
@@ -459,7 +460,7 @@ accountHolds(
         }
         else if (zeroIfUnauthorized == AuthHandling::ZeroIfUnauthorized)
         {
-            auto const sleIssuance = view.read(keylet::mptokenIssuance(mptIssue.getMptID()));
+            MPTokenIssuanceEntryR const sleIssuance(mptIssue.getMptID(), view);
 
             // if auth is enabled on the issuance and mpt is not authorized,
             // clear amount
@@ -1217,13 +1218,13 @@ directSendNoFeeMPT(
     // Do not check MPT authorization here - it must have been checked earlier
     auto const mptID = keylet::mptokenIssuance(saAmount.get<MPTIssue>().getMptID());
     auto const& issuer = saAmount.getIssuer();
-    auto sleIssuance = view.peek(mptID);
+    MPTokenIssuanceEntryW sleIssuance(mptID, view);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
     auto const maxAmount = maxMPTAmount(*sleIssuance);
     auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
-    auto const available = availableMPTAmount(*sleIssuance);
+    auto const available = availableMPTAmount(sleIssuance);
     auto const amt = saAmount.mpt().value();
 
     if (uSenderID == issuer)
@@ -1234,7 +1235,7 @@ directSendNoFeeMPT(
                 return tecPATH_DRY;
         }
         (*sleIssuance)[sfOutstandingAmount] += amt;
-        view.update(sleIssuance);
+        sleIssuance.update();
     }
     else
     {
@@ -1259,7 +1260,7 @@ directSendNoFeeMPT(
         if (outstanding >= amt)
         {
             sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - amt);
-            view.update(sleIssuance);
+            sleIssuance.update();
         }
         else
         {
@@ -1307,7 +1308,7 @@ directSendNoLimitMPT(
     // Safe to get MPT since directSendNoLimitMPT is only called by accountSendMPT
     auto const& issuer = saAmount.getIssuer();
 
-    auto const sle = view.read(keylet::mptokenIssuance(saAmount.get<MPTIssue>().getMptID()));
+    MPTokenIssuanceEntryR const sle(saAmount.get<MPTIssue>().getMptID(), view);
     if (!sle)
         return tecOBJECT_NOT_FOUND;
 
@@ -1364,7 +1365,7 @@ directSendNoLimitMultiMPT(
 {
     auto const& issuer = mptIssue.getIssuer();
 
-    auto const sle = view.read(keylet::mptokenIssuance(mptIssue.getMptID()));
+    MPTokenIssuanceEntryR const sle(mptIssue.getMptID(), view);
     if (!sle)
         return tecOBJECT_NOT_FOUND;
 
