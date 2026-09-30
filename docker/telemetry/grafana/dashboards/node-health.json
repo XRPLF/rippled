@@ -365,7 +365,7 @@
     },
     {
       "title": "I/O Latency",
-      "description": "**What:** P95 and P50 latency of the I/O service loop, i.e. how long a queued timer callback waits to run.\n**How it's computed:** 95th and 50th percentiles over a 5-minute window.\n**Reading it:** Low and flat is good; this reflects event-loop responsiveness.\n**Healthy range:** single-digit milliseconds; over ~10ms is notable, over ~500ms is bad.\n**Watch for:** Rising P95 (thread-pool saturation or blocking work on the I/O thread).\n**Source:** src/xrpld/app/main/Application.cpp ApplicationImp ctor",
+      "description": "**What:** P95 and P50 wait of work posted to the node's I/O event loop (the asio io_context that runs peer networking, the RPC servers and timers) before a thread runs it.\n**How it's computed:** The loop is probed about every 100 ms, but only probes that waited 10 ms or more are recorded, plus the first one after startup. The panel takes the 95th and 50th percentiles of the recorded probes over a 5-minute window.\n**Reading it:** Gaps are normal: a healthy loop almost never waits 10 ms, so most windows have nothing to plot.\n**Healthy range:** No data, or rare isolated points between 10 ms and a few tens of ms. After the first probe, values below 10 ms are never recorded.\n**Watch for:** Points in many consecutive windows, or values over ~500ms (thread-pool saturation or blocking work on the loop's threads).\n**Source:** src/xrpld/app/main/Application.cpp IOLatencySampler",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
