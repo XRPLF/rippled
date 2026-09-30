@@ -7,15 +7,19 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/SLEBase.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
 
 #include <expected>
+#include <optional>
 
 namespace xrpl {
 
@@ -142,6 +146,24 @@ public:
      */
     [[nodiscard]] Number
     minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum) const;
+
+    /**
+     * Returns the amount a VaultClawback claws back: @p maybeAmount if set;
+     * otherwise zero shares when @p account is the vault owner, or zero of
+     * the vault asset for anyone else.
+     */
+    [[nodiscard]] STAmount
+    clawbackAmount(std::optional<STAmount> const& maybeAmount, AccountID const& account) const
+    {
+        if (maybeAmount)
+            return *maybeAmount;
+
+        Asset const share = MPTIssue{(*this)->at(sfShareMPTID)};
+        if (account == (*this)->at(sfOwner))
+            return STAmount{share};
+
+        return STAmount{(*this)->at(sfAsset)};
+    }
 };
 
 using VaultEntryR = VaultEntry<ReadView>;
