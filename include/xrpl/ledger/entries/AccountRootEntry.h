@@ -121,6 +121,15 @@ public:
     isPseudoAccount() const;
 
     /**
+     * Returns true if this account has the global freeze flag set.
+     */
+    [[nodiscard]] bool
+    isGlobalFrozen() const
+    {
+        return (*this)->isFlag(lsfGlobalFreeze);
+    }
+
+    /**
      * Checks the destination and tag.
      *
      * - Checks that the entry exists.
