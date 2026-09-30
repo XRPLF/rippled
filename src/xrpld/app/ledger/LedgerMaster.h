@@ -49,6 +49,7 @@ class Transaction;
  *
  * Four ledgers are tracked, and they can all differ:
  *
+ * @code
  *   current    open ledger new transactions go into (owned by OpenLedger)
  *   closed     most recently closed ledger; may already be validated
  *   validated  highest ledger accepted as fully validated; standalone needs no quorum
@@ -63,10 +64,12 @@ class Transaction;
  *                                                  ├─> PathRequestManager
  *                                                  ├─> LedgerReplayer
  *                                                  └─> Application (everything else)
+ * @endcode
  *
  * Advancing the stream is a state machine run on a JobQueue thread. Callers
  * only ever poke it with tryAdvance(); the loop decides what to do next:
  *
+ * @code
  *   tryAdvance()
  *      │ (one AdvanceLedger job at a time)
  *      v
@@ -80,15 +83,17 @@ class Transaction;
  *      │                 │ yes
  *      │                 v
  *      │            fetchForHistory(newest gap below pubLedger) ──> tryFill()
- *      └──────── repeat while progress was made
+ *      └──────── repeat while progress was made or tryAdvance() was called
+ * @endcode
  *
  * @code
  * // Read the validated ledger, if the node has one yet.
  * if (auto const ledger = ledgerMaster.getValidatedLedger())
  *     JLOG(j.info()) << "validated " << ledger->header().seq;
  *
- * // After consensus builds a ledger: report it, then adopt it.
- * // switchLCL() moves the stream forward by itself.
+ * // After consensus builds a ledger: report it, then adopt it. No need to
+ * // call tryAdvance(): checkAccept() calls it once the ledger has a quorum;
+ * // in standalone, switchLCL() calls it at once.
  * ledgerMaster.consensusBuilt(built, txSetId, std::move(consensusJson));
  * ledgerMaster.switchLCL(built);
  *
@@ -98,11 +103,13 @@ class Transaction;
  * @endcode
  *
  * @note Thread-safe, except takeReplay() and releaseReplay(), which take no
- * lock: startup stores the replay before consensus reads it. Two recursive
- * mutexes guard the rest: mutex_ for the tracked ledgers and the job
- * bookkeeping, completeLock_ for completeLedgers_ only. When both are needed,
- * mutex_ is taken first. The sequence numbers are atomics and are read without
- * either lock.
+ * lock: startup stores the replay before consensus reads it. Also except the
+ * two age accessors, whose unlocked static only limits repeat log lines. The
+ * closed and validated ledgers lock themselves. Two recursive mutexes guard
+ * the rest: mutex_ for the published, path and last-valid ledgers, held
+ * transactions and job flags; completeLock_ for completeLedgers_ only. When
+ * both are needed, mutex_ is taken first. The sequence numbers are atomics
+ * and are read without either lock.
  * @note Several accessors can be slow: anything that reaches
  * InboundLedgers::acquire() may read the node store from disk, and anything
  * walking a skip list may throw SHAMapMissingNode. acquire() never waits for
@@ -479,8 +486,9 @@ public:
      * @param ledger Ledger to test; open ledgers are never validated.
      * @return true when the ledger is part of the validated chain. A true
      * answer is cached in the ledger header; a false one is recomputed on every
-     * call. When the SQL index names this ledger but the validated chain does
-     * not, the sequence is dropped from the resident set.
+     * call. When the validated chain names a different ledger at this sequence
+     * but the SQL index names this one, the sequence is dropped from the
+     * resident set.
      */
     bool
     isValidated(ReadView const& ledger);
@@ -494,7 +502,8 @@ public:
      *
      * @param minVal Set to the lowest usable sequence, or 0 if none remains.
      * Unchanged when the call returns false.
-     * @param maxVal Set to the highest usable sequence, or 0 if none remains.
+     * @param maxVal Set to the highest usable sequence, or 0 if none remains or
+     * the call returns false.
      * @return false when nothing has been published yet.
      */
     bool
@@ -527,7 +536,9 @@ public:
     /**
      * If the ledger passes canBeCurrent(), is newer than the validated ledger
      * and has a quorum, makes it the last fully validated ledger. Then sets the
-     * remote fee to the median its validators reported, and pokes the stream.
+     * remote fee to the median load fee of trusted full validations of this
+     * ledger and its parent (a missing load fee counts as the base fee; no
+     * validations give the base fee), and pokes the stream.
      *
      * @param ledger Candidate ledger.
      */
@@ -549,8 +560,9 @@ public:
      * Report that the consensus process built a particular ledger
      *
      * In standalone this only clears the building sequence. Otherwise it records
-     * the built ledger, then looks for the highest ledger with more than a
-     * quorum of current trusted validations - which may not be this one.
+     * the built ledger and tries to accept it. If that does not advance the
+     * validated ledger, it checks the highest newer ledger with more than a
+     * quorum of current trusted validations, which may not be this one.
      *
      * @param ledger Ledger consensus just built.
      * @param consensusHash Hash of the consensus transaction set.
@@ -878,22 +890,34 @@ private:
      */
     std::recursive_mutex mutable mutex_;
 
-    // The ledger that most recently closed.
+    /**
+     * The ledger that most recently closed.
+     */
     LedgerHolder closedLedger_;
 
-    // The highest-sequence ledger we have fully accepted.
+    /**
+     * The highest-sequence ledger we have fully accepted.
+     */
     LedgerHolder validLedger_;
 
-    // The last ledger we have published.
+    /**
+     * The last ledger we have published.
+     */
     std::shared_ptr<Ledger const> pubLedger_;
 
-    // The last ledger we did pathfinding against.
+    /**
+     * The last ledger we did pathfinding against.
+     */
     std::shared_ptr<Ledger const> pathLedger_;
 
-    // The last ledger we handled fetching history
+    /**
+     * The last ledger we handled fetching history.
+     */
     std::shared_ptr<Ledger const> histLedger_;
 
-    // Fully validated ledger, whether or not we have the ledger resident.
+    /**
+     * Fully validated ledger, whether or not we have the ledger resident.
+     */
     std::pair<uint256, LedgerIndex> lastValidLedger_{uint256(), 0};
 
     /**
@@ -907,7 +931,9 @@ private:
      */
     CanonicalTXSet heldTransactions_{uint256()};
 
-    // A set of transactions to replay during the next close
+    /**
+     * A set of transactions to replay during the next close.
+     */
     std::unique_ptr<LedgerReplay> replayData_;
 
     /**
@@ -922,10 +948,14 @@ private:
      */
     RangeSet<std::uint32_t> completeLedgers_;
 
-    // Publish thread is running.
+    /**
+     * Publish thread is running.
+     */
     bool advanceThread_{false};
 
-    // Publish thread has work to do.
+    /**
+     * Publish thread has work to do.
+     */
     bool advanceWork_{false};
 
     /**
@@ -935,9 +965,10 @@ private:
     int fillInProgress_{0};
 
     /**
-     * Never allowed above two, so pathfinding cannot starve other jobs.
+     * Pathfinding jobs queued or running. Never allowed above two, so
+     * pathfinding cannot starve other jobs.
      */
-    int pathFindThread_{0};  // Pathfinder jobs dispatched
+    int pathFindThread_{0};
 
     /**
      * A pathfinding request arrived and has not been picked up yet.
@@ -947,7 +978,7 @@ private:
     /**
      * Set while a GotFetchPack job is outstanding, so only one ever is.
      */
-    std::atomic_flag gotFetchPackThread_ = ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched
+    std::atomic_flag gotFetchPackThread_ = ATOMIC_FLAG_INIT;
 
     /**
      * Close time of pubLedger_, in seconds since the network epoch; 0 if none.
@@ -976,13 +1007,19 @@ private:
      */
     std::atomic<LedgerIndex> buildingLedgerSeq_{0};
 
-    // The server is in standalone mode
+    /**
+     * The server is in standalone mode.
+     */
     bool const standalone_;
 
-    // How many ledgers before the current ledger do we allow peers to request?
+    /**
+     * How many ledgers before the current ledger do we allow peers to request?
+     */
     std::uint32_t const fetchDepth_;
 
-    // How much history do we want to keep
+    /**
+     * How much history do we want to keep.
+     */
     std::uint32_t const ledgerHistorySize_;
 
     /**
@@ -1003,11 +1040,15 @@ private:
      */
     std::uint32_t fetchSeq_{0};
 
-    // Try to keep a validator from switching from test to live network
-    // without first wiping the database.
+    /**
+     * Try to keep a validator from switching from test to live network
+     * without first wiping the database.
+     */
     LedgerIndex const maxLedgerDifference_{1000000};
 
-    // Time that the previous upgrade warning was issued.
+    /**
+     * Time that the previous upgrade warning was issued.
+     */
     TimeKeeper::time_point upgradeWarningPrevTime_;
 
 private:
