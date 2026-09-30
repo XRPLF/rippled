@@ -50,9 +50,6 @@ public:
         XRPAmount fee,
         ReadView const& view,
         beast::Journal const& j) override;
-
-    static TER
-    deleteOracle(ApplyView& view, SLE::Ref sle, AccountID const& account, beast::Journal j);
 };
 
 }  // namespace xrpl
