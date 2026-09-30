@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -200,9 +201,20 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
     bool const isAccountReserveSponsorship =
         isCreateOrReassign && reserveSponsor && !ctx.tx.isFieldPresent(sfObjectID);
 
-    if (isAccountReserveSponsorship && !ctx.tx.isFieldPresent(sfSponsorSignature))
+    // A proposed SponsorshipTransfer is stored unsigned; its SponsorSignature
+    // is collected on-ledger afterward, so its absence here is expected, not
+    // an error (On-Chain Cosigner spec §5.3.1.2).
+    if (isAccountReserveSponsorship && !ctx.tx.isFieldPresent(sfSponsorSignature) &&
+        (ctx.flags & TapProposal) == 0)
     {
         JLOG(ctx.j.debug()) << "preflight: account sponsorship requires sfSponsorSignature";
+        return temMALFORMED;
+    }
+
+    if (auto const objectID = ctx.tx[~sfObjectID];
+        ctx.rules.enabled(fixCleanup3_5_0) && objectID && *objectID == beast::kZero)
+    {
+        JLOG(ctx.j.debug()) << "preflight: sfObjectID must not be zero";
         return temMALFORMED;
     }
 
