@@ -78,7 +78,7 @@ constexpr std::ratio<80, 100> kAmendmentMajorityCalcThreshold;
 /**
  * The minimum amount of time an amendment must hold a majority
  */
-constexpr std::chrono::seconds const kDefaultAmendmentMajorityTime = weeks{2};
+constexpr std::chrono::seconds const kDefaultAmendmentMajorityTime = Weeks{2};
 
 }  // namespace xrpl
 

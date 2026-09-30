@@ -97,14 +97,14 @@ public:
     revImp(
         PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         XRPAmount const& out);
 
     std::pair<XRPAmount, XRPAmount>
     fwdImp(
         PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         XRPAmount const& in);
 
     std::pair<bool, EitherAmount>
@@ -260,7 +260,7 @@ std::pair<XRPAmount, XRPAmount>
 XRPEndpointStep<TDerived>::revImp(
     PaymentSandbox& sb,
     ApplyView& afView,
-    boost::container::flat_set<uint256>& ofrsToRm,
+    boost::container::flat_set<UInt256>& ofrsToRm,
     XRPAmount const& out)
 {
     auto const balance = static_cast<TDerived const*>(this)->xrpLiquid(sb);
@@ -282,7 +282,7 @@ std::pair<XRPAmount, XRPAmount>
 XRPEndpointStep<TDerived>::fwdImp(
     PaymentSandbox& sb,
     ApplyView& afView,
-    boost::container::flat_set<uint256>& ofrsToRm,
+    boost::container::flat_set<UInt256>& ofrsToRm,
     XRPAmount const& in)
 {
     XRPL_ASSERT(cache_, "xrpl::XRPEndpointStep::fwdImp : cache is set");

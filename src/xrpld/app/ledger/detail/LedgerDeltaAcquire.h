@@ -41,7 +41,7 @@ public:
      * @param successful  if the ledger delta data was acquired successfully
      * @param hash  hash of the ledger to build
      */
-    using OnDeltaDataCB = std::function<void(bool successful, uint256 const& hash)>;
+    using OnDeltaDataCB = std::function<void(bool successful, UInt256 const& hash)>;
 
     /**
      * Constructor
@@ -54,7 +54,7 @@ public:
     LedgerDeltaAcquire(
         Application& app,
         InboundLedgers& inboundLedgers,
-        uint256 const& ledgerHash,
+        UInt256 const& ledgerHash,
         std::uint32_t ledgerSeq,
         std::unique_ptr<PeerSet> peerSet);
 
