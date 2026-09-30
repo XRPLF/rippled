@@ -207,7 +207,7 @@ public:
     /**
      * From the input - the batch identifier, if part of a batch
      */
-    std::optional<uint256 const> const parentBatchId;
+    std::optional<UInt256 const> const parentBatchId;
     /**
      * From the input - the rules
      */
@@ -274,7 +274,7 @@ public:
     /**
      * From the input - the batch identifier, if part of a batch
      */
-    std::optional<uint256 const> const parentBatchId;
+    std::optional<UInt256 const> const parentBatchId;
     /**
      * From the input - the flags
      */
@@ -348,7 +348,7 @@ PreflightResult
 preflight(
     ServiceRegistry& registry,
     Rules const& rules,
-    uint256 const& parentBatchId,
+    UInt256 const& parentBatchId,
     STTx const& tx,
     ApplyFlags flags,
     beast::Journal j);
@@ -385,6 +385,23 @@ preflight(
  */
 PreclaimResult
 preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, OpenView const& view);
+
+/**
+ * Type-erased overload of Transactor::invokeCheckPermission.
+ *
+ * Dispatches on the transaction type to Transactor::invokeCheckPermission<T>
+ * so a caller that only has an STTx still gets the same verdict submission
+ * uses: transaction-level permission, then granular permissions and
+ * checkGranularSandbox, then that type's checkGranularSemantics. Does not
+ * check SignerList or signing keys.
+ *
+ * An unknown transaction type (should not occur after a successful preflight)
+ * is treated as an internal invariant violation: UNREACHABLE is fired and the
+ * type-erased fallback return is temUNKNOWN, mirroring the sibling
+ * invokePreflight/invokePreclaim/invokeApply overloads in this header.
+ */
+NotTEC
+invokeCheckPermission(ReadView const& view, STTx const& tx);
 
 /**
  * Compute only the expected base fee for a transaction.

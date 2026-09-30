@@ -132,7 +132,7 @@ public:
     explicit LedgerMaster(
         Application& app,
         Stopwatch& stopwatch,
-        beast::insight::Collector::ptr const& collector,
+        beast::insight::Collector::Ptr const& collector,
         beast::Journal journal);
 
     /**
@@ -315,7 +315,7 @@ public:
      * @param hash Hash of that ledger, used to re-acquire it.
      */
     void
-    failedSave(std::uint32_t seq, uint256 const& hash);
+    failedSave(std::uint32_t seq, UInt256 const& hash);
 
     /**
      * @return Resident ledger sequences as ranges, e.g. "3-8,10", or "empty".
@@ -362,7 +362,7 @@ public:
      * @param index Ledger sequence to look up.
      * @return The hash, or zero when neither the cache nor the SQL index has it.
      */
-    uint256
+    UInt256
     getHashBySeq(std::uint32_t index);
 
     /**
@@ -415,7 +415,7 @@ public:
      * miss) or the closed ledger; null if neither has it.
      */
     std::shared_ptr<Ledger const>
-    getLedgerByHash(uint256 const& hash);
+    getLedgerByHash(UInt256 const& hash);
 
     /**
      * Records a closed range of sequences as resident.
@@ -554,7 +554,7 @@ public:
      * the staleness checks.
      */
     void
-    checkAccept(uint256 const& hash, std::uint32_t seq);
+    checkAccept(UInt256 const& hash, std::uint32_t seq);
 
     /**
      * Report that the consensus process built a particular ledger
@@ -572,7 +572,7 @@ public:
     void
     consensusBuilt(
         std::shared_ptr<Ledger const> const& ledger,
-        uint256 const& consensusHash,
+        UInt256 const& consensusHash,
         json::Value consensus);
 
     /**
@@ -679,7 +679,7 @@ public:
      * @param data Serialized node.
      */
     void
-    addFetchPack(uint256 const& hash, std::shared_ptr<Blob> data);
+    addFetchPack(UInt256 const& hash, std::shared_ptr<Blob> data);
 
     /**
      * Consumes one cached fetch-pack node.
@@ -690,7 +690,7 @@ public:
      * the same hash returns nothing.
      */
     std::optional<Blob>
-    getFetchPack(uint256 const& hash) override;
+    getFetchPack(UInt256 const& hash) override;
 
     /**
      * Builds a fetch pack of the ledgers preceding the one a peer says it has,
@@ -707,7 +707,7 @@ public:
     makeFetchPack(
         std::weak_ptr<Peer> const& wPeer,
         std::shared_ptr<protocol::TMGetObjectByHash> const& request,
-        uint256 haveLedgerHash,
+        UInt256 haveLedgerHash,
         UptimeClock::time_point uptime);
 
     /**
@@ -742,7 +742,7 @@ public:
      * @return The transaction ID, or nullopt when the ledger is unavailable or
      * holds no transaction at that position.
      */
-    std::optional<uint256>
+    std::optional<UInt256>
     txnIdFromIndex(uint32_t ledgerSeq, uint32_t txnIndex);
 
 private:
@@ -918,7 +918,7 @@ private:
     /**
      * Fully validated ledger, whether or not we have the ledger resident.
      */
-    std::pair<uint256, LedgerIndex> lastValidLedger_{uint256(), 0};
+    std::pair<UInt256, LedgerIndex> lastValidLedger_{UInt256(), 0};
 
     /**
      * Cache of ledgers by hash and of validated sequence-to-hash mappings.
@@ -929,7 +929,7 @@ private:
      * Transactions deferred to the next open ledger, in canonical order. One
      * can leave earlier, when the account's previous transaction applies.
      */
-    CanonicalTXSet heldTransactions_{uint256()};
+    CanonicalTXSet heldTransactions_{UInt256()};
 
     /**
      * A set of transactions to replay during the next close.
@@ -1032,7 +1032,7 @@ private:
      * nodes expire about 45 seconds after arrival, sooner when over 65536 are
      * held.
      */
-    TaggedCache<uint256, Blob> fetchPacks_;
+    TaggedCache<UInt256, Blob> fetchPacks_;
 
     /**
      * Sequence of the last fetch-pack attempt, so the same one is not tried
@@ -1065,7 +1065,7 @@ private:
          * @param collector Sink the gauges are reported to.
          */
         template <class Handler>
-        Stats(Handler const& handler, beast::insight::Collector::ptr const& collector)
+        Stats(Handler const& handler, beast::insight::Collector::Ptr const& collector)
             : hook(collector->makeHook(handler))
             , validatedLedgerAge(collector->makeGauge("LedgerMaster", "Validated_Ledger_Age"))
             , publishedLedgerAge(collector->makeGauge("LedgerMaster", "Published_Ledger_Age"))

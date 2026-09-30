@@ -15,6 +15,6 @@ template <
     class Clock = std::chrono::steady_clock,
     class Compare = std::less<Key>,
     class Allocator = std::allocator<std::pair<Key const, T>>>
-using aged_multimap = detail::AgedOrderedContainer<true, true, Key, T, Clock, Compare, Allocator>;
+using AgedMultimap = detail::AgedOrderedContainer<true, true, Key, T, Clock, Compare, Allocator>;
 
 }  // namespace beast
