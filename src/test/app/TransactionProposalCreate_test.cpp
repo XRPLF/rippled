@@ -315,7 +315,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             return proposal::unsignedPayload(env, tx, targetTicketSeq);
         };
         auto loanSet = [&]() {
-            json::Value tx = loan::set(target, uint256{1}, 1'000 + ++paid);
+            json::Value tx = loan::set(target, UInt256{1}, 1'000 + ++paid);
             tx[sfCounterparty.getJsonName()] = bob.human();
             return proposal::unsignedPayload(env, tx, targetTicketSeq);
         };
@@ -1224,7 +1224,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             std::uint32_t const ticketSeq = proposal::createTicket(env, borrower);
 
             json::Value const tx =
-                proposal::unsignedPayload(env, loan::set(borrower, uint256{1}, 1'000), ticketSeq);
+                proposal::unsignedPayload(env, loan::set(borrower, UInt256{1}, 1'000), ticketSeq);
 
             env(proposal::create(borrower, tx, expiration), proposal::verify::create());
             env.close();

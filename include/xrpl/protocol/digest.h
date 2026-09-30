@@ -98,9 +98,9 @@ private:
 
 //------------------------------------------------------------------------------
 
-using ripemd160_hasher = OpensslRipemd160Hasher;
-using sha256_hasher = OpensslSha256Hasher;
-using sha512_hasher = OpensslSha512Hasher;
+using Ripemd160Hasher = OpensslRipemd160Hasher;
+using Sha256Hasher = OpensslSha256Hasher;
+using Sha512Hasher = OpensslSha512Hasher;
 
 //------------------------------------------------------------------------------
 
@@ -123,7 +123,7 @@ using sha512_hasher = OpensslSha512Hasher;
 struct RipeshaHasher
 {
 private:
-    sha256_hasher h_;
+    Sha256Hasher h_;
 
 public:
     static constexpr auto kEndian = boost::endian::order::native;
@@ -139,10 +139,10 @@ public:
     explicit
     operator result_type() noexcept
     {
-        auto const d0 = sha256_hasher::result_type(h_);
-        ripemd160_hasher rh;
+        auto const d0 = Sha256Hasher::result_type(h_);
+        Ripemd160Hasher rh;
         rh(d0.data(), d0.size());
-        return ripemd160_hasher::result_type(rh);
+        return Ripemd160Hasher::result_type(rh);
     }
 };
 
@@ -160,12 +160,12 @@ template <bool Secure>
 struct BasicSha512HalfHasher
 {
 private:
-    sha512_hasher h_;
+    Sha512Hasher h_;
 
 public:
     static constexpr auto kEndian = boost::endian::order::big;
 
-    using result_type = uint256;
+    using result_type = UInt256;
 
     ~BasicSha512HalfHasher()
     {
@@ -181,7 +181,7 @@ public:
     explicit
     operator result_type() noexcept
     {
-        auto const digest = sha512_hasher::result_type(h_);
+        auto const digest = Sha512Hasher::result_type(h_);
         return result_type::fromVoid(digest.data());
     }
 
@@ -200,10 +200,10 @@ private:
 
 }  // namespace detail
 
-using sha512_half_hasher = detail::BasicSha512HalfHasher<false>;
+using Sha512HalfHasher = detail::BasicSha512HalfHasher<false>;
 
 // secure version
-using sha512_half_hasher_s = detail::BasicSha512HalfHasher<true>;
+using Sha512HalfHasherS = detail::BasicSha512HalfHasher<true>;
 
 //------------------------------------------------------------------------------
 
@@ -211,13 +211,13 @@ using sha512_half_hasher_s = detail::BasicSha512HalfHasher<true>;
  * Returns the SHA512-Half of a series of objects.
  */
 template <class... Args>
-sha512_half_hasher::result_type
+Sha512HalfHasher::result_type
 sha512Half(Args const&... args)
 {
-    sha512_half_hasher h;
+    Sha512HalfHasher h;
     using beast::hash_append;
     hash_append(h, args...);
-    return static_cast<sha512_half_hasher::result_type>(h);
+    return static_cast<Sha512HalfHasher::result_type>(h);
 }
 
 /**
@@ -228,13 +228,13 @@ sha512Half(Args const&... args)
  *     input messages will be cleared.
  */
 template <class... Args>
-sha512_half_hasher_s::result_type
+Sha512HalfHasherS::result_type
 sha512HalfS(Args const&... args)
 {
-    sha512_half_hasher_s h;
+    Sha512HalfHasherS h;
     using beast::hash_append;
     hash_append(h, args...);
-    return static_cast<sha512_half_hasher_s::result_type>(h);
+    return static_cast<Sha512HalfHasherS::result_type>(h);
 }
 
 }  // namespace xrpl

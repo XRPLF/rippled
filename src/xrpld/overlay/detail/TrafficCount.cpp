@@ -134,4 +134,13 @@ TrafficCount::categorize(
 
     return TrafficCount::Category::Unknown;
 }
+
+TrafficCount::Category
+TrafficCount::attribute(Category cat, IsFromCluster isFromCluster)
+{
+    if (cat != Category::Cluster)
+        return cat;
+
+    return (isFromCluster == IsFromCluster::Yes) ? Category::Cluster : Category::Unknown;
+}
 }  // namespace xrpl
