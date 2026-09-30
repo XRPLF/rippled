@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -176,6 +177,59 @@ RippleStateEntry<ViewT>::create(
     view.creditHookIOU(uSrcAccountID, uDstAccountID, saBalance, saBalance.zeroed());
 
     return tesSUCCESS;
+}
+
+template <typename ViewT>
+TER
+RippleStateEntry<ViewT>::removeIfEmpty(AccountID const& account, AccountID const& issuer)
+    requires Base::kIsWritable
+{
+    auto& view = this->applyView();
+    auto const j = this->journal();
+
+    bool const accountIsIssuer = account == issuer;
+    if (!accountIsIssuer && (*this)->at(sfBalance)->iou() != beast::kZero)
+        return tecHAS_OBLIGATIONS;
+
+    // Adjust the owner count(s)
+    if ((*this)->isFlag(lsfLowReserve))
+    {
+        // Clear reserve for low account.
+        auto sleLowAccount = view.peek(keylet::account((*this)->at(sfLowLimit)->getIssuer()));
+        if (!sleLowAccount)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        auto const currentLowSponsor =
+            getLedgerEntryReserveSponsor(view, this->rawSle(), sfLowSponsor);
+
+        decreaseOwnerCount(view, sleLowAccount, currentLowSponsor, 1, j);
+        // It's not really necessary to clear the reserve flag, since the line
+        // is about to be deleted, but this will make the metadata reflect an
+        // accurate state at the time of deletion.
+        (*this)->clearFlag(lsfLowReserve);
+        removeSponsorFromLedgerEntry(this->mutableRawSle(), sfLowSponsor);
+    }
+
+    if ((*this)->isFlag(lsfHighReserve))
+    {
+        // Clear reserve for high account.
+        auto sleHighAccount = view.peek(keylet::account((*this)->at(sfHighLimit)->getIssuer()));
+        if (!sleHighAccount)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        auto const currentHighSponsor =
+            getLedgerEntryReserveSponsor(view, this->rawSle(), sfHighSponsor);
+
+        decreaseOwnerCount(view, sleHighAccount, currentHighSponsor, 1, j);
+        // It's not really necessary to clear the reserve flag, since the line
+        // is about to be deleted, but this will make the metadata reflect an
+        // accurate state at the time of deletion.
+        (*this)->clearFlag(lsfHighReserve);
+        removeSponsorFromLedgerEntry(this->mutableRawSle(), sfHighSponsor);
+    }
+
+    return this->removeFromLedger(
+        (*this)->at(sfLowLimit)->getIssuer(), (*this)->at(sfHighLimit)->getIssuer());
 }
 
 template class RippleStateEntry<ReadView>;

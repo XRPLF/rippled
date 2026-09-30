@@ -572,48 +572,7 @@ removeEmptyHolding(
     RippleStateEntryW line(accountID, issue, ctx.view, journal);
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
-    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZero)
-        return tecHAS_OBLIGATIONS;
-
-    // Adjust the owner count(s)
-    if (line->isFlag(lsfLowReserve))
-    {
-        // Clear reserve for low account.
-        auto sleLowAccount = ctx.view.peek(keylet::account(line->at(sfLowLimit)->getIssuer()));
-        if (!sleLowAccount)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-
-        auto const currentLowSponsor =
-            getLedgerEntryReserveSponsor(ctx.view, line.rawSle(), sfLowSponsor);
-
-        decreaseOwnerCount(ctx.view, sleLowAccount, currentLowSponsor, 1, journal);
-        // It's not really necessary to clear the reserve flag, since the line
-        // is about to be deleted, but this will make the metadata reflect an
-        // accurate state at the time of deletion.
-        line->clearFlag(lsfLowReserve);
-        removeSponsorFromLedgerEntry(line.mutableRawSle(), sfLowSponsor);
-    }
-
-    if (line->isFlag(lsfHighReserve))
-    {
-        // Clear reserve for high account.
-        auto sleHighAccount = ctx.view.peek(keylet::account(line->at(sfHighLimit)->getIssuer()));
-        if (!sleHighAccount)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-
-        auto const currentHighSponsor =
-            getLedgerEntryReserveSponsor(ctx.view, line.rawSle(), sfHighSponsor);
-
-        decreaseOwnerCount(ctx.view, sleHighAccount, currentHighSponsor, 1, journal);
-        // It's not really necessary to clear the reserve flag, since the line
-        // is about to be deleted, but this will make the metadata reflect an
-        // accurate state at the time of deletion.
-        line->clearFlag(lsfHighReserve);
-        removeSponsorFromLedgerEntry(line.mutableRawSle(), sfHighSponsor);
-    }
-
-    return line.removeFromLedger(
-        line->at(sfLowLimit)->getIssuer(), line->at(sfHighLimit)->getIssuer());
+    return line.removeIfEmpty(accountID, issue.account);
 }
 
 TER
