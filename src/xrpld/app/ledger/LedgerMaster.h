@@ -52,7 +52,7 @@ class Transaction;
  *   current    open ledger new transactions go into (owned by OpenLedger)
  *   closed     most recently closed ledger; may already be validated
  *   validated  highest ledger accepted as fully validated; standalone needs no quorum
- *   published  highest ledger handed to subscribed clients; can lag validated
+ *   published  highest ledger publication has reached; can lag validated
  *
  *   RCLConsensus ──switchLCL/consensusBuilt──> LedgerMaster
  *   RCLValidations ─────────────checkAccept──>     │
@@ -486,9 +486,11 @@ public:
     isValidated(ReadView const& ledger);
 
     /**
-     * Returns Ledgers we have all the nodes for and are indexed: the largest
-     * contiguous part of getFullValidatedRange() with no ledger still being
-     * saved. Saved ledgers may be dropped to keep it contiguous.
+     * Returns Ledgers we have all the nodes for and are indexed: a contiguous
+     * part of getFullValidatedRange() with no ledger still being saved. Pending
+     * saves at either end are trimmed first. Each remaining one then drops the
+     * part between it and the nearer end, so this is a best effort and not always
+     * the largest such part.
      *
      * @param minVal Set to the lowest usable sequence, or 0 if none remains.
      * Unchanged when the call returns false.
