@@ -1389,20 +1389,19 @@ PeerImp::handleTransaction(
         //
         // SpanGuard is thread-free (holds no Scope), so it is safe to hand to
         // a job-queue worker and end on that thread — no detach step is needed.
-        // Left null when telemetry is compiled out: there is no span to own, so
-        // nothing is allocated for one. Every use below tests it, the job
-        // capture and activateIfLive() accept a null handle, and the transaction
-        // pipeline already takes a null span by default.
+        // The job closure must be copyable, because JobQueue stores it in a
+        // std::function, so the span sits behind a shared_ptr, not in an
+        // optional. The shared_ptr is made only for a live span, so a node with
+        // tracing off allocates nothing for it. Every use below accepts an empty
+        // one.
         std::shared_ptr<SpanGuard> span;
 #ifdef XRPL_ENABLE_TELEMETRY
-        span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
+        if (auto guard = txReceiveSpan(txID, *m))
+            span = std::make_shared<SpanGuard>(std::move(guard));
 #endif
-        // Guarded on the span being live because these values are not free: the
-        // hash string allocates, and the open-ledger index takes the ledger
-        // master's lock. With telemetry compiled out the span is null; with it
-        // compiled in the block is skipped when telemetry is disabled at runtime
-        // or the transaction category is off.
-        if (span && *span)
+        // Guarded because these values are not free: the hash string allocates,
+        // and the open-ledger index takes the open ledger's lock.
+        if (span)
         {
             span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
             span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
@@ -1417,8 +1416,8 @@ PeerImp::handleTransaction(
             if (auto const version = getVersion(); !version.empty())
                 span->setAttribute(tx_span::attr::peerVersion, version.c_str());
         }
-        // Note: txStatus is set once at each exit path below (not as a default
-        // here) to avoid OTel SDK attribute duplication.
+        // tx_status is set once, in whichever of the three branches below runs.
+        // It has no default here, so each span writes the key once.
 
         JLOG(pJournal_.debug()) << "Got tx " << txID;
 
@@ -1457,6 +1456,8 @@ PeerImp::handleTransaction(
         }
         else
         {
+            if (span)
+                span->setAttribute(tx_span::attr::txStatus, tx_span::val::queuedForCheck);
             app_.getJobQueue().addJob(
                 JtTransaction,
                 "RcvCheckTx",
