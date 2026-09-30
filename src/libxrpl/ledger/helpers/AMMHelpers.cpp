@@ -640,7 +640,7 @@ deleteAMMTrustLines(
         sb,
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
-            uint256 const&,
+            UInt256 const&,
             SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM and MPToken
             if (nodeType == ltAMM || nodeType == ltMPTOKEN)
@@ -676,7 +676,7 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
         sb,
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
-            uint256 const&,
+            UInt256 const&,
             SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM
             if (nodeType == ltAMM)

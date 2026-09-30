@@ -87,7 +87,7 @@ private:
 
     // Seed from the local testableAmendments() which strips SAV and Lending.
     static std::vector<FeatureBitset>
-    amendmentCombinations(std::initializer_list<uint256> features)
+    amendmentCombinations(std::initializer_list<UInt256> features)
     {
         return jtx::amendmentCombinations(features, testableAmendments());
     }
@@ -5612,7 +5612,7 @@ private:
             double const rateGH = 0.0;
         };
 
-        using uint64_t = std::uint64_t;
+        using Uint64T = std::uint64_t;
 
         for (auto const& input : {
                  InputSet{
@@ -5620,9 +5620,9 @@ private:
                      .poolUsdBIT = 3,                                         //
                      .poolUsdGH = 273,                                        //
                      .sendMaxUsdBIT{usdBIT(50)},                              //
-                     .sendUsdGH{usdGH, uint64_t(272'455089820359), -12},      //
-                     .goodUsdGH{usdGH, uint64_t(96'7543114222965), -13},      //
-                     .goodUsdBIT{usdBIT, uint64_t(8'464739069098152), -15},   //
+                     .sendUsdGH{usdGH, Uint64T(272'455089820359), -12},      //
+                     .goodUsdGH{usdGH, Uint64T(96'7543114222965), -13},      //
+                     .goodUsdBIT{usdBIT, Uint64T(8'464739069098152), -15},   //
                      .lpTokenBalance = {28'61817604250837, -14},              //
                      .lpTokenBalanceAlt = IOUAmount{28'61817604250836, -14},  //
                      .offer1BtcGH = 0.1,                                      //
@@ -5637,8 +5637,8 @@ private:
                      .poolUsdGH = 100,                                     //
                      .sendMaxUsdBIT{usdBIT(0.111)},                        //
                      .sendUsdGH{usdGH, 100},                               //
-                     .goodUsdGH{usdGH, uint64_t(90'04347888284201), -14},  //
-                     .goodUsdBIT{usdBIT, uint64_t(1'111), -3},             //
+                     .goodUsdGH{usdGH, Uint64T(90'04347888284201), -14},  //
+                     .goodUsdBIT{usdBIT, Uint64T(1'111), -3},             //
                      .lpTokenBalance{10, 0},                               //
                      .offer1BtcGH = 1e-5,                                  //
                      .offer2BtcGH = 1,                                     //
@@ -5652,8 +5652,8 @@ private:
                      .poolUsdGH = 100,                                     //
                      .sendMaxUsdBIT{usdBIT(1.00)},                         //
                      .sendUsdGH{usdGH, 100},                               //
-                     .goodUsdGH{usdGH, uint64_t(52'94379354424135), -14},  //
-                     .goodUsdBIT{usdBIT, uint64_t(2), 0},                  //
+                     .goodUsdGH{usdGH, Uint64T(52'94379354424135), -14},  //
+                     .goodUsdBIT{usdBIT, Uint64T(2), 0},                  //
                      .lpTokenBalance{10, 0},                               //
                      .offer1BtcGH = 1e-5,                                  //
                      .offer2BtcGH = 1,                                     //
@@ -5667,8 +5667,8 @@ private:
                      .poolUsdGH = 100,                                       //
                      .sendMaxUsdBIT{usdBIT(4.6432)},                         //
                      .sendUsdGH{usdGH, 100},                                 //
-                     .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},    //
-                     .goodUsdBIT{usdBIT, uint64_t(2'821579689703954), -15},  //
+                     .goodUsdGH{usdGH, Uint64T(35'44113971506987), -14},    //
+                     .goodUsdBIT{usdBIT, Uint64T(2'821579689703954), -15},  //
                      .lpTokenBalance{10, 0},                                 //
                      .offer1BtcGH = 1e-5,                                    //
                      .offer2BtcGH = 1,                                       //
@@ -5682,8 +5682,8 @@ private:
                      .poolUsdGH = 100,                                       //
                      .sendMaxUsdBIT{usdBIT(10)},                             //
                      .sendUsdGH{usdGH, 100},                                 //
-                     .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},    //
-                     .goodUsdBIT{usdBIT, uint64_t(2'821579689703954), -15},  //
+                     .goodUsdGH{usdGH, Uint64T(35'44113971506987), -14},    //
+                     .goodUsdBIT{usdBIT, Uint64T(2'821579689703954), -15},  //
                      .lpTokenBalance{10, 0},                                 //
                      .offer1BtcGH = 1e-5,                                    //
                      .offer2BtcGH = 1,                                       //
@@ -5697,9 +5697,9 @@ private:
                      .poolUsdGH = 100,                                    //
                      .sendMaxUsdBIT{usdBIT(5.55)},                        //
                      .sendUsdGH{usdGH, 100},                              //
-                     .goodUsdGH{usdGH, uint64_t(90'0434788828413), -13},  //
-                     .goodUsdBIT{usdBIT, uint64_t(55'55), -2},            //
-                     .lpTokenBalance{uint64_t(70'71067811865475), -14},   //
+                     .goodUsdGH{usdGH, Uint64T(90'0434788828413), -13},  //
+                     .goodUsdBIT{usdBIT, Uint64T(55'55), -2},            //
+                     .lpTokenBalance{Uint64T(70'71067811865475), -14},   //
                      .offer1BtcGH = 1e-5,                                 //
                      .offer2BtcGH = 1,                                    //
                      .offer2UsdGH = 1e-5,                                 //
@@ -5712,9 +5712,9 @@ private:
                      .poolUsdGH = 100,                                     //
                      .sendMaxUsdBIT{usdBIT(50.00)},                        //
                      .sendUsdGH{usdGH, 100},                               //
-                     .goodUsdGH{usdGH, uint64_t(52'94379354424092), -14},  //
-                     .goodUsdBIT{usdBIT, uint64_t(100), 0},                //
-                     .lpTokenBalance{uint64_t(70'71067811865475), -14},    //
+                     .goodUsdGH{usdGH, Uint64T(52'94379354424092), -14},  //
+                     .goodUsdBIT{usdBIT, Uint64T(100), 0},                //
+                     .lpTokenBalance{Uint64T(70'71067811865475), -14},    //
                      .offer1BtcGH = 1e-5,                                  //
                      .offer2BtcGH = 1,                                     //
                      .offer2UsdGH = 1e-5,                                  //
@@ -5727,8 +5727,8 @@ private:
                      .poolUsdGH = 100,                                       //
                      .sendMaxUsdBIT{usdBIT(232.16)},                         //
                      .sendUsdGH{usdGH, 100},                                 //
-                     .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},    //
-                     .goodUsdBIT{usdBIT, uint64_t(141'0789844851962), -13},  //
+                     .goodUsdGH{usdGH, Uint64T(35'44113971506987), -14},    //
+                     .goodUsdBIT{usdBIT, Uint64T(141'0789844851962), -13},  //
                      .lpTokenBalance{70'71067811865475, -14},                //
                      .offer1BtcGH = 1e-5,                                    //
                      .offer2BtcGH = 1,                                       //
@@ -5742,8 +5742,8 @@ private:
                      .poolUsdGH = 100,                                       //
                      .sendMaxUsdBIT{usdBIT(500)},                            //
                      .sendUsdGH{usdGH, 100},                                 //
-                     .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},    //
-                     .goodUsdBIT{usdBIT, uint64_t(141'0789844851962), -13},  //
+                     .goodUsdGH{usdGH, Uint64T(35'44113971506987), -14},    //
+                     .goodUsdBIT{usdBIT, Uint64T(141'0789844851962), -13},  //
                      .lpTokenBalance{70'71067811865475, -14},                //
                      .offer1BtcGH = 1e-5,                                    //
                      .offer2BtcGH = 1,                                       //
