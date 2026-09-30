@@ -1,5 +1,5 @@
 #include <test/jtx/Env.h>
-#include <test/jtx/fee.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
@@ -13,20 +13,22 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 
 #include <cstdint>
 #include <string>
 
 namespace xrpl {
 
-// A vault debit too small to change the stored total dies on an invariant, not a clean error.
+// A vault debit too small to change the stored total is rejected with tecPRECISION_LOSS.
 //
 // A clawback recovery or a withdrawal payout can be smaller than half a precision step of
-// sfAssetsTotal, so subtracting it rounds the balance back unchanged. No transactor check
-// rejects this, the shares move, and ValidVault then fails the transaction with "must
-// decrease vault balance": the user pays a fee and gets tecINVARIANT_FAILED plus a fatal
-// log, where an upfront tecPRECISION_LOSS is expected (as in the zero-share case).
+// sfAssetsTotal, so subtracting it would round the balance back unchanged. The transaction
+// must fail cleanly (as in the zero-share case) and leave balances and shares untouched,
+// rather than move shares and then trip the ValidVault "must decrease vault balance"
+// invariant.
 class VaultDustDebit_test : public beast::unit_test::Suite
 {
     struct VaultData
@@ -34,8 +36,8 @@ class VaultDustDebit_test : public beast::unit_test::Suite
         Number assetsTotal;
         Number assetsAvailable;
         Number pseudoLine;  // vault pseudo-account trust line
-        std::uint64_t sharesTotal;
-        std::uint64_t holderShares;
+        std::uint64_t sharesTotal{};
+        std::uint64_t holderShares{};
     };
 
     static VaultData
@@ -96,7 +98,7 @@ class VaultDustDebit_test : public beast::unit_test::Suite
         env(pay(issuer, owner, asset(donation)));
         env.close();
 
-        Vault vault{env};
+        Vault const vault{env};
         auto const [tx, keylet] = vault.create({.owner = owner, .asset = asset.raw()});
         env(tx);
         env.close();
@@ -123,7 +125,7 @@ class VaultDustDebit_test : public beast::unit_test::Suite
     }
 
     // Claw back an amount whose recovery cannot change the stored total. The clean outcome
-    // is tecPRECISION_LOSS, but C++ runs into the invariant.
+    // is tecPRECISION_LOSS.
     void
     runDustClawback(Number const& seed, Number const& donation, Number const& clawAmount)
     {
@@ -147,7 +149,7 @@ class VaultDustDebit_test : public beast::unit_test::Suite
     }
 
     // Redeem a share count whose payout cannot change the stored total. The clean outcome
-    // is tecPRECISION_LOSS, but C++ runs into the invariant.
+    // is tecPRECISION_LOSS.
     void
     runDustWithdraw(Number const& seed, Number const& donation, std::int64_t redeemShares)
     {
@@ -170,13 +172,13 @@ class VaultDustDebit_test : public beast::unit_test::Suite
         expectUnchanged(before, readVaultData(env, vaultKeylet));
     }
 
-    // Caught by the 16-digit STAmount round: the exact new total fits Number, then rounds
-    // back when the field is stored.
+    // The 16-digit STAmount round: the exact new total fits Number, then rounds back when
+    // the field is stored.
     //   vault    AssetsTotal 2e12 (seed 1e12 + donate 1e12), 1e18 shares -> 1 share = 2e-6
     //   debit    clawback 2e-6, or withdraw 1 share, both take 2e-6
     //   exact    2e12 - 2e-6 = 1999999999999.999998    (19 digits, fits Number)
     //   stored   2e12                                  (16-digit round brings it back)
-    //   result   tecINVARIANT_FAILED, should be tecPRECISION_LOSS
+    //   result   tecPRECISION_LOSS
     void
     testBelowStoredPrecision()
     {
@@ -184,12 +186,12 @@ class VaultDustDebit_test : public beast::unit_test::Suite
         runDustWithdraw(Number{1, 12}, Number{1, 12}, 1);
     }
 
-    // Caught one layer down, by the 19-digit Number subtraction itself.
+    // One layer down: the 19-digit Number subtraction itself.
     //   vault    AssetsTotal 1.5e13 (seed 9.2e12 + donate 5.8e12), 9.2e18 shares
     //   share    1 share = 1.63e-6
     //   debit    clawback 2e-6, or withdraw 1 share, both take ~1.63e-6
     //   exact    1.5e13 - 1.63e-6 needs 20 digits -> rounds back to 1.5e13 in Number
-    //   result   tecINVARIANT_FAILED, should be tecPRECISION_LOSS
+    //   result   tecPRECISION_LOSS
     void
     testBelowNumberPrecision()
     {

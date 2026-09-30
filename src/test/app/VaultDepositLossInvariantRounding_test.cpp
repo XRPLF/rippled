@@ -1,4 +1,6 @@
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
@@ -6,12 +8,14 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace xrpl {
@@ -28,7 +32,7 @@ namespace xrpl {
 // tecINVARIANT_FAILED. Present on develop too (the invariant and the two-field update are
 // identical), so not a regression.
 //
-// The test expects the donation to succeed and fails on tecINVARIANT_FAILED. Manual suite.
+// The test expects the donation to succeed, which is the current behavior. Manual suite.
 class VaultDepositLossInvariantRounding_test : public beast::unit_test::Suite
 {
     // Force a valid loan-written pre-state: loss == assetsTotal - assetsAvailable exactly.
@@ -63,7 +67,7 @@ class VaultDepositLossInvariantRounding_test : public beast::unit_test::Suite
     //   total      2.000000000000001 + 50 = 52.000000000000001 -> stores 52          (rounds down)
     //   available  1.000000000000006 + 50 = 51.000000000000006 -> stores 51.00000000000001 (up)
     //   diff       52 - 51.00000000000001 = 0.99999999999999  <  loss 0.999999999999995
-    //   result     tecINVARIANT_FAILED, should be tesSUCCESS
+    //   result     tesSUCCESS
     void
     testDonationBreaksLossInvariant()
     {
@@ -84,7 +88,7 @@ class VaultDepositLossInvariantRounding_test : public beast::unit_test::Suite
 
         // Seed so the vault has outstanding shares (a donation needs them), then force the
         // lawful loss pre-state.
-        Vault vault{env};
+        Vault const vault{env};
         auto const [tx, keylet] = vault.create({.owner = owner, .asset = asset.raw()});
         env(tx);
         env.close();
