@@ -294,7 +294,7 @@ LoanManage::impairLoan(
 {
     bool const fixEnabled340 = view.rules().enabled(fixCleanup3_4_0);
 
-    if (fixEnabled340 && !isPaymentLate(view, loanSle))
+    if (fixEnabled340 && !loanSle.isPaymentLate())
     {
         JLOG(j.warn()) << "Cannot impair a loan that is not late";
         return tecTOO_SOON;
@@ -325,7 +325,7 @@ LoanManage::impairLoan(
     if (!fixEnabled340)
     {
         auto loanNextDueProxy = loanSle->at(sfNextPaymentDueDate);
-        if (!isPaymentLate(view, loanSle))
+        if (!loanSle.isPaymentLate())
         {
             // loan payment is not yet late move the next payment due date to now
             loanNextDueProxy = view.parentCloseTime().time_since_epoch().count();
