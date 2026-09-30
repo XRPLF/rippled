@@ -12,6 +12,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
+#include <expected>
 #include <optional>
 #include <utility>
 
@@ -386,6 +387,23 @@ PreclaimResult
 preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, OpenView const& view);
 
 /**
+ * Type-erased overload of Transactor::invokeCheckPermission.
+ *
+ * Dispatches on the transaction type to Transactor::invokeCheckPermission<T>
+ * so a caller that only has an STTx still gets the same verdict submission
+ * uses: transaction-level permission, then granular permissions and
+ * checkGranularSandbox, then that type's checkGranularSemantics. Does not
+ * check SignerList or signing keys.
+ *
+ * An unknown transaction type (should not occur after a successful preflight)
+ * is treated as an internal invariant violation: UNREACHABLE is fired and the
+ * type-erased fallback return is temUNKNOWN, mirroring the sibling
+ * invokePreflight/invokePreclaim/invokeApply overloads in this header.
+ */
+NotTEC
+invokeCheckPermission(ReadView const& view, STTx const& tx);
+
+/**
  * Compute only the expected base fee for a transaction.
  *
  * Base fees are transaction specific, so any calculation
@@ -393,16 +411,21 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
  *
  * No validation is done or implied by this function.
  *
- * Caller is responsible for handling any exceptions.
- * Since none should be thrown, that will usually
- * mean terminating.
- *
+ * Callers do not expect this function to throw; exceptions from a transactor's
+ * `calculateBaseFee` are caught and reported as an error instead.
  * @param view The current open ledger.
  * @param tx The transaction to be checked.
  *
- * @return The base fee.
+ * @return The base fee on success. Returns `std::unexpected(temUNKNOWN)` if the transaction
+ * type is not recognized, and `std::unexpected(tefEXCEPTION)` if the transactor's
+ * `calculateBaseFee` threw.
+ *
+ * @note Failure is reported as an error rather than a fee of zero because a
+ * zero (or default) fee would pass checkFee and let the transaction be
+ * applied for less than it owes. Callers that only need a fee hint may fall
+ * back to a default; callers deciding whether to apply should reject.
  */
-XRPAmount
+[[nodiscard]] std::expected<XRPAmount, TER>
 calculateBaseFee(ReadView const& view, STTx const& tx);
 
 /**

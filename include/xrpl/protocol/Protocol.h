@@ -322,7 +322,7 @@ constexpr std::uint8_t kVaultMaximumIouScale = 18;
  * Vault ledger-entry schema versions. Assigned to newly created
  * Vaults once featureLendingProtocolV1_1 is enabled. Vaults created before
  * activation are left without LEVersion (implicit legacy version 0,
- * accrual-basis accounting).
+ * instant interest recognition).
  */
 enum class VaultVersion : uint8_t {
     Legacy = 0,
@@ -539,6 +539,11 @@ constexpr std::size_t kEcConvertBackProofLength =
  * Length of the ZKProof for ConfidentialMPTClawback.
  */
 constexpr std::size_t kEcClawbackProofLength = SECP256K1_COMPACT_CLAWBACK_PROOF_SIZE;
+
+/**
+ * Length of compact equality proof.
+ */
+constexpr std::size_t kEcEqualityProofLength = 128;
 
 /**
  * Extra base fee multiplier charged to confidential MPT transactions.

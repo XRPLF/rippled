@@ -32,6 +32,7 @@
 #include <cstring>
 #include <functional>
 #include <optional>
+#include <source_location>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -75,13 +76,19 @@ private:
     MPTTester& tester_;
     std::uint32_t flags_;
     std::optional<Account> holder_;
+    // Test call site (forwarded from the MPTTester method).
+    std::source_location testLoc_;
+    // The site where this check object was constructed (usually in mpt.cpp).
+    std::source_location checkLoc_;
 
 public:
     MptFlags(
         MPTTester& tester,
         std::uint32_t flags,
-        std::optional<Account> const& holder = std::nullopt)
-        : tester_(tester), flags_(flags), holder_(holder)
+        std::optional<Account> const& holder = std::nullopt,
+        std::source_location const& testLoc = std::source_location::current(),
+        std::source_location const& checkLoc = std::source_location::current())
+        : tester_(tester), flags_(flags), holder_(holder), testLoc_(testLoc), checkLoc_(checkLoc)
     {
     }
 
@@ -98,10 +105,23 @@ private:
     MPTTester const& tester_;
     Account const& account_;
     std::int64_t const amount_;
+    // Test call site (forwarded from the MPTTester method).
+    std::source_location testLoc_;
+    // The site where this check object was constructed (usually in mpt.cpp).
+    std::source_location checkLoc_;
 
 public:
-    MptBalance(MPTTester& tester, Account const& account, std::int64_t amount)
-        : tester_(tester), account_(account), amount_(amount)
+    MptBalance(
+        MPTTester& tester,
+        Account const& account,
+        std::int64_t amount,
+        std::source_location const& testLoc = std::source_location::current(),
+        std::source_location const& checkLoc = std::source_location::current())
+        : tester_(tester)
+        , account_(account)
+        , amount_(amount)
+        , testLoc_(testLoc)
+        , checkLoc_(checkLoc)
     {
     }
 
@@ -116,9 +136,17 @@ class RequireAny
 {
 private:
     std::function<bool()> cb_;
+    // Test call site (forwarded from the MPTTester method).
+    std::source_location testLoc_;
+    // The site where this check object was constructed (usually in mpt.cpp).
+    std::source_location checkLoc_;
 
 public:
-    RequireAny(std::function<bool()> const& cb) : cb_(cb)
+    RequireAny(
+        std::function<bool()> const& cb,
+        std::source_location const& testLoc = std::source_location::current(),
+        std::source_location const& checkLoc = std::source_location::current())
+        : cb_(cb), testLoc_(testLoc), checkLoc_(checkLoc)
     {
     }
 
@@ -363,6 +391,24 @@ struct MPTConfidentialClawback
 };
 
 /**
+ * @brief Arguments for building a ConfidentialMPTMirrorUpdate test transaction.
+ */
+struct MPTMirrorUpdate
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<Account> holder = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<Buffer> issuerEncryptedAmount = std::nullopt;
+    std::optional<Buffer> auditorEncryptedAmount = std::nullopt;
+    std::optional<Buffer> zkProof = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+/**
  * @brief Stores the parameters that are exclusively used to generate a
  * Pedersen linkage proof.
  */
@@ -470,8 +516,14 @@ public:
     static constexpr auto holderEncryptedSpending = EncryptedBalanceType::HolderEncryptedSpending;
     static constexpr auto auditorEncryptedBalance = EncryptedBalanceType::AuditorEncryptedBalance;
 
-    MPTTester(Env& env, Account issuer, MPTInit const& constr = {});
-    MPTTester(MPTInitDef const& constr);
+    MPTTester(
+        Env& env,
+        Account issuer,
+        MPTInit const& constr = {},
+        std::source_location const& loc = std::source_location::current());
+    MPTTester(
+        MPTInitDef const& constr,
+        std::source_location const& loc = std::source_location::current());
     MPTTester(
         Env& env,
         Account issuer,
@@ -481,34 +533,44 @@ public:
     operator MPT() const;
 
     void
-    create(MPTCreate const& arg = MPTCreate{});
+    create(
+        MPTCreate const& arg = MPTCreate{},
+        std::source_location const& loc = std::source_location::current());
 
     static json::Value
     createJV(MPTCreate const& arg = MPTCreate{});
 
     void
-    destroy(MPTDestroy const& arg = MPTDestroy{});
+    destroy(
+        MPTDestroy const& arg = MPTDestroy{},
+        std::source_location const& loc = std::source_location::current());
 
     static json::Value
     destroyJV(MPTDestroy const& arg = MPTDestroy{});
 
     void
-    authorize(MPTAuthorize const& arg = MPTAuthorize{});
+    authorize(
+        MPTAuthorize const& arg = MPTAuthorize{},
+        std::source_location const& loc = std::source_location::current());
 
     static json::Value
     authorizeJV(MPTAuthorize const& arg = MPTAuthorize{});
 
     void
-    authorizeHolders(Holders const& holders);
+    authorizeHolders(
+        Holders const& holders,
+        std::source_location const& loc = std::source_location::current());
 
     void
-    set(MPTSet const& set = {});
+    set(MPTSet const& set = {}, std::source_location const& loc = std::source_location::current());
 
     static json::Value
     setJV(MPTSet const& set = {});
 
     void
-    convert(MPTConvert const& arg = MPTConvert{});
+    convert(
+        MPTConvert const& arg = MPTConvert{},
+        std::source_location const& loc = std::source_location::current());
 
     /**
      * @brief Build a confidential convert JV without submitting it.
@@ -522,13 +584,17 @@ public:
     convertJV(MPTConvert const& arg, std::uint32_t seq);
 
     void
-    mergeInbox(MPTMergeInbox const& arg = MPTMergeInbox{});
+    mergeInbox(
+        MPTMergeInbox const& arg = MPTMergeInbox{},
+        std::source_location const& loc = std::source_location::current());
 
     [[nodiscard]] json::Value
     mergeInboxJV(MPTMergeInbox const& arg = MPTMergeInbox{}) const;
 
     void
-    send(MPTConfidentialSend const& arg = MPTConfidentialSend{});
+    send(
+        MPTConfidentialSend const& arg = MPTConfidentialSend{},
+        std::source_location const& loc = std::source_location::current());
 
     /**
      * @brief Build a confidential send JV.
@@ -566,7 +632,9 @@ public:
     chainAfterSend(Account const& sender, std::uint64_t sendAmt, json::Value const& jv) const;
 
     void
-    convertBack(MPTConvertBack const& arg = MPTConvertBack{});
+    convertBack(
+        MPTConvertBack const& arg = MPTConvertBack{},
+        std::source_location const& loc = std::source_location::current());
 
     /**
      * @brief Build a confidential convertBack JV without submitting it.
@@ -582,7 +650,14 @@ public:
     convertBackJV(MPTConvertBack const& arg, std::uint32_t seq);
 
     void
-    confidentialClaw(MPTConfidentialClawback const& arg = MPTConfidentialClawback{});
+    confidentialClaw(
+        MPTConfidentialClawback const& arg = MPTConfidentialClawback{},
+        std::source_location const& loc = std::source_location::current());
+
+    void
+    mirrorUpdate(
+        MPTMirrorUpdate const& arg = MPTMirrorUpdate{},
+        std::source_location const& loc = std::source_location::current());
 
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
@@ -652,14 +727,16 @@ public:
         Account const& dest,
         std::int64_t amount,
         std::optional<TER> err = std::nullopt,
-        std::optional<std::vector<std::string>> credentials = std::nullopt);
+        std::optional<std::vector<std::string>> credentials = std::nullopt,
+        std::source_location const& loc = std::source_location::current());
 
     void
     claw(
         Account const& issuer,
         Account const& holder,
         std::int64_t amount,
-        std::optional<TER> err = std::nullopt);
+        std::optional<TER> err = std::nullopt,
+        std::source_location const& loc = std::source_location::current());
 
     [[nodiscard]] PrettyAmount
     mpt(std::int64_t amount) const;
@@ -774,7 +851,7 @@ private:
 
     template <typename A>
     TER
-    submit(A const& arg, json::Value jv)
+    submit(A const& arg, WithSourceLocation<json::Value> jv)
     {
         auto const expectedFlags = Txflags(arg.flags.value_or(0));
         auto const expectedTer = Ter(arg.err.value_or(tesSUCCESS));
@@ -782,7 +859,7 @@ private:
         if constexpr (requires { arg.fee; })
         {
             if (arg.fee)
-                jv[jss::Fee] = to_string(*arg.fee);
+                jv.value[jss::Fee] = to_string(*arg.fee);
         }
 
         std::optional<std::uint32_t> ticketSeq;

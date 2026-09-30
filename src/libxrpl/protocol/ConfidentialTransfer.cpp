@@ -435,21 +435,41 @@ areMirrorsCurrent(SLE const& issuance, SLE const& mptoken)
 }
 
 void
-setMirrorEpochs(SLE const& issuance, SLE& mptoken)
+setIssuerMirrorEpoch(SLE const& issuance, SLE& mptoken)
 {
     XRPL_ASSERT(
         issuance.getType() == ltMPTOKEN_ISSUANCE,
-        "xrpl::setMirrorEpochs : issuance MPTokenIssuance object");
-    XRPL_ASSERT(mptoken.getType() == ltMPTOKEN, "xrpl::setMirrorEpochs : mptoken MPToken object");
+        "xrpl::setIssuerMirrorEpoch : issuance MPTokenIssuance object");
+    XRPL_ASSERT(
+        mptoken.getType() == ltMPTOKEN, "xrpl::setIssuerMirrorEpoch : mptoken MPToken object");
 
+    // Unlike the auditor mirror, the issuer mirror is not optional: every
+    // confidential MPToken carries one, so there is no existence check here.
     if (auto const epoch = issuance[~sfIssuerKeyEpoch].value_or(0); epoch != 0)
         mptoken[sfIssuerKeyMirrorEpoch] = epoch;
+}
 
-    if (mptoken.isFieldPresent(sfAuditorEncryptedBalance))
-    {
-        if (auto const epoch = issuance[~sfAuditorKeyEpoch].value_or(0); epoch != 0)
-            mptoken[sfAuditorKeyMirrorEpoch] = epoch;
-    }
+void
+setAuditorMirrorEpoch(SLE const& issuance, SLE& mptoken)
+{
+    XRPL_ASSERT(
+        issuance.getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::setAuditorMirrorEpoch : issuance MPTokenIssuance object");
+    XRPL_ASSERT(
+        mptoken.getType() == ltMPTOKEN, "xrpl::setAuditorMirrorEpoch : mptoken MPToken object");
+
+    if (!mptoken.isFieldPresent(sfAuditorEncryptedBalance))
+        return;
+
+    if (auto const epoch = issuance[~sfAuditorKeyEpoch].value_or(0); epoch != 0)
+        mptoken[sfAuditorKeyMirrorEpoch] = epoch;
+}
+
+void
+setMirrorEpochs(SLE const& issuance, SLE& mptoken)
+{
+    setIssuerMirrorEpoch(issuance, mptoken);
+    setAuditorMirrorEpoch(issuance, mptoken);
 }
 
 TER
