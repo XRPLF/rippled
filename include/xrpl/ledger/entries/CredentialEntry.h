@@ -11,6 +11,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
 
 #include <cstdint>
 #include <limits>
@@ -55,6 +56,13 @@ public:
         std::uint32_t const now = closed.time_since_epoch().count();
         return now > exp;
     }
+
+    // Remove this credential's SLE from the ledger: delete it from the
+    // issuer's (and, unless it is the same account, the subject's) owner
+    // directory, adjust owner counts, and erase the SLE.
+    [[nodiscard]] TER
+    removeFromLedger()
+        requires Base::kIsWritable;
 };
 
 using CredentialEntryR = CredentialEntry<ReadView>;

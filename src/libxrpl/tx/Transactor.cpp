@@ -13,7 +13,6 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/CredentialEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
@@ -1253,7 +1252,7 @@ removeExpiredCredentials(ApplyView& view, std::vector<UInt256> const& creds, bea
     {
         if (auto sle = CredentialEntryW(index, view, viewJ))
         {
-            if (auto const ter = credentials::deleteSLE(view, sle, viewJ); !isTesSuccess(ter))
+            if (auto const ter = sle.removeFromLedger(); !isTesSuccess(ter))
             {
                 JLOG(viewJ.error())
                     << "removeExpiredCredentials: failed to delete expired credential. Err: "
