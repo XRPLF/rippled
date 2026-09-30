@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -7,10 +8,12 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
+#include <expected>
 #include <optional>
 
 namespace xrpl {
@@ -161,6 +164,18 @@ public:
      */
     void
     decreaseOwnerCount(std::optional<AccountRootEntry<ApplyView>>& sponsorSle, std::uint32_t count)
+        requires Base::kIsWritable;
+
+    /**
+     * Create pseudo-account, storing pseudoOwnerKey into ownerField.
+     *
+     * The list of valid ownerField is maintained in AccountRootHelpers.cpp and
+     * the caller to this function must perform necessary amendment check(s)
+     * before using a field. The amendment check is **not** performed in
+     * createPseudoAccount.
+     */
+    [[nodiscard]] static std::expected<AccountRootEntry<ApplyView>, TER>
+    createPseudoAccount(ApplyView& view, UInt256 const& pseudoOwnerKey, SField const& ownerField)
         requires Base::kIsWritable;
 
 private:
