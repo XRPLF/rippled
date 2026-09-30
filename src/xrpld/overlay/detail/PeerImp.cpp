@@ -432,8 +432,8 @@ PeerImp::charge(resource::Charge const& fee, std::string const& context)
             {
                 self->overlay_.incPeerDisconnectCharges();
                 // Set inside the latch, so only the one worker that wins the
-                // exchange writes it. This is the node's own backpressure, not
-                // a peer or network fault.
+                // exchange writes it. The peer's own traffic used up its
+                // resource allowance, so the fault is the peer's.
                 self->setDisconnectReason(telemetry::lval::disconnect::chargeResources);
                 self->fail("charge: Resources");
             }
@@ -662,10 +662,10 @@ PeerImp::close()
     // Emitted right next to incPeerDisconnect() above, and behind the same
     // socket-already-closed early return, so this counter's total tracks that
     // existing tally rather than being a second, differently-scoped count.
-    // What it adds is the split: today every disconnect collapses into one
-    // number, so our-fault backpressure ("large_sendq", "charge_resources")
-    // cannot be told apart from a topology or network fault ("not_useful",
-    // "ping_timeout", "read_error"), and the two need opposite responses.
+    // What it adds is the split between a slow peer or path ("large_sendq"),
+    // a peer that used up its resource allowance ("charge_resources"), and a
+    // topology or network fault ("not_useful", "ping_timeout", "read_error");
+    // each calls for a different response.
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
         telemetry::metric::peerDisconnectTotal,
@@ -793,8 +793,9 @@ PeerImp::onTimer(error_code const& ec)
 
     if (largeSendq_++ >= tuning::kSendqIntervals)
     {
-        // Our own send queue never drained: this node could not keep up with
-        // what it owed the peer, so it is local backpressure, not a peer fault.
+        // The send queue to this peer stayed full for several timer ticks:
+        // the peer, or the path to it, is not taking data as fast as this
+        // node sends it.
         setDisconnectReason(telemetry::lval::disconnect::largeSendq);
         fail("Large send queue");
         return;

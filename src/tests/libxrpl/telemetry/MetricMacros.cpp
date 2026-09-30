@@ -2355,10 +2355,10 @@ TEST(MetricMacros, amendment_block_gauge_clamps_past_due_and_carries_no_amendmen
     EXPECT_EQ(boundary.at("amendment_block").count(attrs("metric", "amendment_id")), 0u);
 }
 
-// peer_disconnect_total is the signal that splits today's single unlabelled
-// disconnect tally by cause AND direction. The series identity is the (reason,
-// direction) PAIR: if it were not, a wave of our-fault backpressure on outbound
-// links would be masked by ordinary inbound peer churn.
+// peer_disconnect_total splits the single unlabelled disconnect tally by cause
+// AND direction. The series identity is the (reason, direction) PAIR: if it
+// were not, a wave of slow-peer drops on outbound links would be masked by
+// ordinary inbound peer churn.
 TEST(MetricMacros, peer_disconnect_total_keys_series_on_reason_and_direction_pair)
 {
     CollectingProvider const provider;
@@ -2375,8 +2375,8 @@ TEST(MetricMacros, peer_disconnect_total_keys_series_on_reason_and_direction_pai
              {telemetry::label::direction, std::string(direction)}});
     };
 
-    // Two OUR-FAULT reasons: this node could not keep up with what it owed the
-    // peer, or charged it off under its own resource pressure.
+    // Two reasons where this node drops the peer: its send queue stayed
+    // full, or its traffic used up its resource allowance.
     bump("large_sendq", "outbound");
     bump("charge_resources", "inbound");
     // Three NETWORK/TOPOLOGY reasons: the peer is on another chain, stopped
@@ -2387,13 +2387,12 @@ TEST(MetricMacros, peer_disconnect_total_keys_series_on_reason_and_direction_pai
 
     auto const data = provider.collect();
 
-    // Five distinct (reason, direction) pairs -> exactly five series. Today all
-    // five collapse into one number, which is the defect this fixes.
+    // Five distinct (reason, direction) pairs -> exactly five series.
     ASSERT_EQ(data.at("peer_disconnect_total").size(), 5u);
 
     // Exact value 1 per distinct labelset. These two are also the proof that the
     // labelsets do NOT collapse: each holds exactly 1 rather than one of them
-    // holding 2, so an our-fault outbound teardown and a network-fault inbound
+    // holding 2, so a slow-peer outbound teardown and a network-fault inbound
     // one stay two separate stories with two separate fixes. (counterValue()
     // looks the key up with std::map::at, so a merged series fails here.)
     EXPECT_EQ(
@@ -2405,8 +2404,8 @@ TEST(MetricMacros, peer_disconnect_total_keys_series_on_reason_and_direction_pai
             data, "peer_disconnect_total", attrs("reason", "read_error", "direction", "inbound")),
         1);
 
-    // Our-fault reasons are individually addressable, so "the node is shedding
-    // its own peers" is readable without reading logs.
+    // Each drop reason is individually addressable, so "the node is dropping
+    // peers for overuse" is readable without reading logs.
     EXPECT_EQ(
         counterValue(
             data,

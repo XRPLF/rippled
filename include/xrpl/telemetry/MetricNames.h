@@ -915,9 +915,10 @@ inline constexpr std::array all{success, buildFailed, parameterFailed, timeout};
 /**
  * `peer_disconnect_total` reasons -- why a peer connection closed.
  *
- * The split separates our-fault backpressure (`large_sendq`,
- * `charge_resources`) from a topology or network fault (`not_useful`,
- * `ping_timeout`, `read_error`); the two call for opposite responses.
+ * The split separates a slow peer or path (`large_sendq`), a peer that used
+ * up its resource allowance (`charge_resources`), and a topology or network
+ * fault (`not_useful`, `ping_timeout`, `read_error`); each calls for a
+ * different response.
  * `unknown` is the initial value and appears when a teardown path set no
  * cause, so an unattributed disconnect is visible rather than absent.
  */
