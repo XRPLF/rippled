@@ -8,6 +8,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
@@ -154,6 +155,26 @@ public:
     [[nodiscard]] TER
     unlockEscrow(STAmount const& grossAmount)
         requires Base::kIsWritable;
+
+    /**
+     * Removes this MPToken of an AMM pseudo-account from @p ammAccountID's
+     * owner directory and erases it. Does not change the owner count, which
+     * is irrelevant for an AMM.
+     *
+     * @return tesSUCCESS, or tefBAD_LEDGER if the directory removal fails
+     */
+    [[nodiscard]] TER
+    removeForAMM(AccountID const& ammAccountID)
+        requires Base::kIsWritable
+    {
+        if (!this->applyView().dirRemove(
+                keylet::ownerDir(ammAccountID), (**this)[sfOwnerNode], (*this)->key(), false))
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+        this->erase();
+
+        return tesSUCCESS;
+    }
 };
 
 using MPTokenEntryR = MPTokenEntry<ReadView>;
