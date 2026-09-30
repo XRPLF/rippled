@@ -38,6 +38,18 @@ public:
         : Base(keylet::nftokenOffer(offerID), view, j)
     {
     }
+
+    /**
+     * Deletes this offer from the ledger: unlinks it from the owner
+     * directory and from the token's buy/sell directory, and decreases the
+     * owner's reserve count.
+     *
+     * @return false if the entry does not exist or either directory unlink
+     *         fails; true on success.
+     */
+    bool
+    removeFromLedger()
+        requires Base::kIsWritable;
 };
 
 using NFTokenOfferEntryR = NFTokenOfferEntry<ReadView>;
