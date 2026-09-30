@@ -65,6 +65,12 @@ public:
     // the auction slot owner or one of the slot's authorized accounts.
     [[nodiscard]] std::uint16_t
     tradingFee(AccountID const& account) const;
+
+    // Initialize the auction and voting slots and set the trading and
+    // discounted fees. account gets the voting slot and the auction slot.
+    void
+    initializeFeeAuctionVote(AccountID const& account, Asset const& lptAsset, std::uint16_t tfee)
+        requires Base::kIsWritable;
 };
 
 using AMMEntryR = AMMEntry<ReadView>;

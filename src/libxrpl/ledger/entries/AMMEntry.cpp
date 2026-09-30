@@ -10,6 +10,7 @@
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
@@ -134,6 +135,63 @@ AMMEntry<ViewT>::tradingFee(AccountID const& account) const
         }
     }
     return Base::operator*()[sfTradingFee];
+}
+
+template <typename ViewT>
+void
+AMMEntry<ViewT>::initializeFeeAuctionVote(
+    AccountID const& account,
+    Asset const& lptAsset,
+    std::uint16_t tfee)
+    requires Base::kIsWritable
+{
+    auto const& rules = this->applyView().rules();
+    // AMM creator gets the voting slot.
+    STArray voteSlots;
+    STObject voteEntry = STObject::makeInnerObject(sfVoteEntry);
+    if (tfee != 0)
+        voteEntry.setFieldU16(sfTradingFee, tfee);
+    voteEntry.setFieldU32(sfVoteWeight, kVoteWeightScaleFactor);
+    voteEntry.setAccountID(sfAccount, account);
+    voteSlots.pushBack(voteEntry);
+    Base::operator->()->setFieldArray(sfVoteSlots, voteSlots);
+    // AMM creator gets the auction slot for free.
+    // AuctionSlot is created on AMMCreate and updated on AMMDeposit
+    // when AMM is in an empty state
+    if (!Base::operator->()->isFieldPresent(sfAuctionSlot))
+    {
+        STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot);
+        Base::operator->()->set(std::move(auctionSlot));
+    }
+    STObject& auctionSlot = Base::operator->()->peekFieldObject(sfAuctionSlot);
+    auctionSlot.setAccountID(sfAccount, account);
+    // current + sec in 24h
+    auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
+                                this->applyView().header().parentCloseTime.time_since_epoch())
+                                .count() +
+        kTotalTimeSlotSecs;
+    auctionSlot.setFieldU32(sfExpiration, expiration);
+    auctionSlot.setFieldAmount(sfPrice, STAmount{lptAsset, 0});
+    // Set the fee
+    if (tfee != 0)
+    {
+        Base::operator->()->setFieldU16(sfTradingFee, tfee);
+    }
+    else if (Base::operator->()->isFieldPresent(sfTradingFee))
+    {
+        Base::operator->()->makeFieldAbsent(sfTradingFee);  // LCOV_EXCL_LINE
+    }
+    if (auto const dfee = tfee / kAuctionSlotDiscountedFeeFraction)
+    {
+        auctionSlot.setFieldU16(sfDiscountedFee, dfee);
+    }
+    else if (auctionSlot.isFieldPresent(sfDiscountedFee))
+    {
+        auctionSlot.makeFieldAbsent(sfDiscountedFee);  // LCOV_EXCL_LINE
+    }
+    // Clear stale auth accounts from any previous auction slot holder.
+    if (rules.enabled(fixCleanup3_2_0) && auctionSlot.isFieldPresent(sfAuthAccounts))
+        auctionSlot.makeFieldAbsent(sfAuthAccounts);
 }
 
 template class AMMEntry<ReadView>;
