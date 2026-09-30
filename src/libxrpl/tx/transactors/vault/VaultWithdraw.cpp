@@ -48,7 +48,7 @@ shouldWaiveWithdrawal(
         issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
         "xrpl::shouldWaiveWithdrawal : valid issuance sle");
 
-    return view.rules().enabled(fixCleanup3_2_0) && isSoleShareholder(view, account, issuance)
+    return view.rules().enabled(fixCleanup3_2_0) && issuance.isSoleShareholder(account)
         ? WaiveUnrealizedLoss::Yes
         : WaiveUnrealizedLoss::No;
 }
