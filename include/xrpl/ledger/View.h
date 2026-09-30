@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Keylet.h>
@@ -83,7 +84,7 @@ isVaultPseudoAccountFrozen(
 isVaultPseudoAccountFrozen(
     ReadView const& view,
     AccountID const& account,
-    SLE const& issuanceSle,
+    MPTokenIssuanceEntryR const& issuanceSle,
     std::uint8_t depth);
 
 [[nodiscard]] bool

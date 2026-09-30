@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -37,7 +38,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
     auto const holderID = ctx.tx[~sfHolder];
-    auto const sleMptIssuance = ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    MPTokenIssuanceEntryR const sleMptIssuance(ctx.tx[sfMPTokenIssuanceID], ctx.view);
 
     // if non-issuer account submits this tx, then they are trying either:
     // 1. Unauthorize/delete MPToken

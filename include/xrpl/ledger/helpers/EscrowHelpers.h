@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -140,7 +141,7 @@ escrowLockPreclaimHelper<MPTIssue>(
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
     auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
-    auto const sleIssuance = view.read(issuanceKey);
+    MPTokenIssuanceEntryR const sleIssuance(issuanceKey, view);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -296,8 +297,7 @@ escrowUnlockPreclaimHelper<MPTIssue>(
         return tesSUCCESS;
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
-    auto const sleIssuance = view.read(issuanceKey);
+    MPTokenIssuanceEntryR const sleIssuance(amount.get<MPTIssue>().getMptID(), view);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
