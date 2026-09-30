@@ -2680,10 +2680,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 static_cast<int64_t>(val->getSignTime().time_since_epoch().count()));
         }
 
-        // validation_receive_status is set once on each exit below, not as a default
-        // here, to avoid OTel SDK attribute duplication. It is what separates
-        // the microsecond drop paths from the queued path, which also covers
-        // job wait and checkValidation.
+        // Each branch below sets validation_receive_status once. It separates
+        // the microsecond drop paths from the queued path, whose span also
+        // covers the job wait and checkValidation.
         if (!isTrusted && (tracking_.load() == Tracking::Diverged))
         {
             if (span && *span)
