@@ -93,9 +93,9 @@ class PerfLogImp : public PerfLog
         // rpc and jq do not need mutex protection because all
         // keys and values are created before more threads are started.
         //
-        // Every key views the characters of a name in labels below, which the caller
-        // guarantees outlive this object, so the map copies no name to store one and
-        // needs no string to look one up.
+        // Every key views the characters of a name from the methodNames constructor
+        // parameter below, which the caller guarantees outlive this object, so the
+        // map copies no name to store one and needs no string to look one up.
         std::unordered_map<std::string_view, Locked<Rpc>> rpc;
 
         // The same names, in the order the caller gave them, and still carrying the
@@ -112,7 +112,7 @@ class PerfLogImp : public PerfLog
         std::unordered_map<std::uint64_t, MethodStart> methods;
         mutable std::mutex methodsMutex;
 
-        Counters(std::span<NullTerminatedView const> labels, JobTypes const& jobTypes);
+        Counters(std::span<NullTerminatedView const> methodNames, JobTypes const& jobTypes);
         json::Value
         countersJson() const;
         json::Value
