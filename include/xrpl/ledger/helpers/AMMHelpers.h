@@ -825,13 +825,6 @@ ammLPHolds(
     AccountID const& lpAccount,
     beast::Journal const j);
 
-STAmount
-ammLPHolds(
-    ReadView const& view,
-    AMMEntryR const& ammSle,
-    AccountID const& lpAccount,
-    beast::Journal const j);
-
 /**
  * Get AMM trading fee for the given account. The fee is discounted
  * if the account is the auction slot owner or one of the slot's authorized

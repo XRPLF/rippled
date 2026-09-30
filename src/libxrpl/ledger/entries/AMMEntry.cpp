@@ -6,6 +6,7 @@
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -83,6 +84,19 @@ AMMEntry<ViewT>::holds(
         authHandling,
         j);
     return std::make_tuple(amount1, amount2, Base::operator*()[sfLPTokenBalance]);
+}
+
+template <typename ViewT>
+STAmount
+AMMEntry<ViewT>::lpHolds(AccountID const& lpAccount) const
+{
+    return ammLPHolds(
+        this->readView(),
+        Base::operator*()[sfAsset],
+        Base::operator*()[sfAsset2],
+        Base::operator*()[sfAccount],
+        lpAccount,
+        this->journal());
 }
 
 template class AMMEntry<ReadView>;

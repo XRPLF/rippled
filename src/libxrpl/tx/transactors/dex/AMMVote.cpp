@@ -7,7 +7,6 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/entries/AMMEntry.h>
-#include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -59,7 +58,7 @@ AMMVote::preflight(PreflightContext const& ctx)
 TER
 AMMVote::preclaim(PreclaimContext const& ctx)
 {
-    AMMEntryR const ammSle(ctx.tx[sfAsset], ctx.tx[sfAsset2], ctx.view);
+    AMMEntryR const ammSle(ctx.tx[sfAsset], ctx.tx[sfAsset2], ctx.view, ctx.j);
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid asset pair.";
@@ -69,8 +68,7 @@ AMMVote::preclaim(PreclaimContext const& ctx)
     {
         return tecAMM_EMPTY;
     }
-    if (auto const lpTokensNew = ammLPHolds(ctx.view, ammSle, ctx.tx[sfAccount], ctx.j);
-        lpTokensNew == beast::kZero)
+    if (auto const lpTokensNew = ammSle.lpHolds(ctx.tx[sfAccount]); lpTokensNew == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: account is not LP.";
         return tecAMM_INVALID_TOKENS;
@@ -87,7 +85,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountID, beast::Jou
     if (!ammSle)
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
-    auto const lpTokensNew = ammLPHolds(sb, ammSle, accountID, ctx.journal);
+    auto const lpTokensNew = ammSle.lpHolds(accountID);
     std::optional<STAmount> minTokens;
     std::size_t minPos{0};
     AccountID minAccount{0};
@@ -105,7 +103,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountID, beast::Jou
     for (auto const& entry : ammSle->getFieldArray(sfVoteSlots))
     {
         auto const entryAccount = entry[sfAccount];
-        auto lpTokens = ammLPHolds(sb, ammSle, entryAccount, ctx.journal);
+        auto lpTokens = ammSle.lpHolds(entryAccount);
         if (lpTokens == beast::kZero)
         {
             JLOG(j.debug()) << "AMMVote::applyVote, accountID " << entryAccount << " is not LP";
