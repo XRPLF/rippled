@@ -25,7 +25,7 @@
 namespace xrpl {
 
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets)
+assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& assets)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
@@ -49,7 +49,7 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
 }
 
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares)
+sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& shares)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
     XRPL_ASSERT(
@@ -72,7 +72,7 @@ sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
 }
 
 [[nodiscard]] std::expected<STAmount, TER>
-clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta)
+clampToAssetsTotalScale(SLE::ConstRef vault, STAmount const& delta)
 {
     XRPL_ASSERT(
         delta.asset() == vault->at(sfAsset),
@@ -131,7 +131,7 @@ clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta)
 }
 
 [[nodiscard]] Number
-assetsTotalForWithdrawal(SLE::const_ref vault, WaiveUnrealizedLoss waive)
+assetsTotalForWithdrawal(SLE::ConstRef vault, WaiveUnrealizedLoss waive)
 {
     Number assetTotal = vault->at(sfAssetsTotal);
     if (waive == WaiveUnrealizedLoss::No)
@@ -149,8 +149,8 @@ debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount
 
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
-    SLE::const_ref vault,
-    SLE::const_ref issuance,
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
     STAmount const& assets,
     TruncateShares truncate,
     WaiveUnrealizedLoss waive)
@@ -176,8 +176,8 @@ assetsToSharesWithdraw(
 
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
-    SLE::const_ref vault,
-    SLE::const_ref issuance,
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive)
 {
@@ -198,7 +198,7 @@ sharesToAssetsWithdraw(
 }
 
 [[nodiscard]] bool
-isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
+isSoleShareholder(ReadView const& view, AccountID const& account, SLE::ConstRef issuance)
 {
     XRPL_ASSERT(
         issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
@@ -218,7 +218,7 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
 }
 
 [[nodiscard]] VaultVersion
-getVaultVersion(SLE::const_ref vault)
+getVaultVersion(SLE::ConstRef vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultVersion : valid Vault sle");
     if (!vault->isFieldPresent(sfLEVersion))
@@ -248,7 +248,7 @@ decodeVaultKind(std::optional<std::uint8_t> vaultKind)
 }  // namespace
 
 [[nodiscard]] VaultKind
-getVaultKind(SLE::const_ref vault)
+getVaultKind(SLE::ConstRef vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultKind : valid Vault sle");
     return decodeVaultKind(vault->at(~sfVaultKind));
@@ -279,7 +279,7 @@ isValidClosedEndedGap(std::uint32_t sub, std::uint32_t red)
 }
 
 [[nodiscard]] VaultPhase
-getVaultPhase(ReadView const& view, SLE::const_ref vault)
+getVaultPhase(ReadView const& view, SLE::ConstRef vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultPhase : valid Vault sle");
     return getVaultPhase(
@@ -308,7 +308,7 @@ getVaultPhase(
 [[nodiscard]] TER
 checkVaultDomain(
     ReadView const& view,
-    SLE::const_ref issuance,
+    SLE::ConstRef issuance,
     AccountID const& subject,
     SuppressExpired suppressExpired)
 {

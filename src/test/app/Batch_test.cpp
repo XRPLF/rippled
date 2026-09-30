@@ -160,7 +160,7 @@ class Batch_test : public beast::unit_test::Suite
         return std::make_pair(txIDs, strHex(batchID));
     }
 
-    static uint256
+    static UInt256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
     {
         return keylet::check(account, SeqProxy::rawSequence(uSequence)).key;
@@ -458,7 +458,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             auto jtx = env.jt(pay(alice, bob, XRP(1)));
             PreflightContext const pfCtx(
-                env.app(), *jtx.stx, uint256{1}, env.current()->rules(), TapBatch, env.journal);
+                env.app(), *jtx.stx, UInt256{1}, env.current()->rules(), TapBatch, env.journal);
             auto const pf = Transactor::invokePreflight<Payment>(pfCtx);
             BEAST_EXPECT(pf == temINVALID_INNER_BATCH);
         }
@@ -3401,7 +3401,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const preBobUSD = env.balance(bob, usd.issue());
 
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            uint256 const chkID{getCheckIndex(bob, env.seq(bob))};
+            UInt256 const chkID{getCheckIndex(bob, env.seq(bob))};
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -3458,7 +3458,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const preBobUSD = env.balance(bob, usd.issue());
 
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            uint256 const chkID{getCheckIndex(bob, env.seq(bob))};
+            UInt256 const chkID{getCheckIndex(bob, env.seq(bob))};
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -3535,7 +3535,7 @@ class Batch_test : public beast::unit_test::Suite
         auto const preBobUSD = env.balance(bob, usd.issue());
 
         auto const batchFee = batch::calcBatchFee(env, 1, 3);
-        uint256 const chkID{getCheckIndex(bob, bobSeq + 1)};
+        UInt256 const chkID{getCheckIndex(bob, bobSeq + 1)};
         auto const [txIDs, batchID] = submitBatch(
             env,
             tesSUCCESS,
@@ -3612,7 +3612,7 @@ class Batch_test : public beast::unit_test::Suite
         auto const preBobUSD = env.balance(bob, usd.issue());
 
         auto const batchFee = batch::calcBatchFee(env, 2, 2);
-        uint256 const chkID{getCheckIndex(bob, env.seq(bob))};
+        UInt256 const chkID{getCheckIndex(bob, env.seq(bob))};
         auto const [txIDs, batchID] = submitBatch(
             env,
             tesSUCCESS,
@@ -4238,7 +4238,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const aliceSeq = env.seq(alice);
 
             // CheckCash Txn
-            uint256 const chkID{getCheckIndex(alice, aliceSeq)};
+            UInt256 const chkID{getCheckIndex(alice, aliceSeq)};
             auto const objTxn = env.jt(check::cash(bob, chkID, XRP(10)));
             auto const objTxnID = to_string(objTxn.stx->getTransactionID());
             env(objTxn, Ter(tecNO_ENTRY));
@@ -4302,7 +4302,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const bobSeq = env.seq(bob);
 
             // CheckCreate Txn
-            uint256 const chkID{getCheckIndex(alice, aliceSeq)};
+            UInt256 const chkID{getCheckIndex(alice, aliceSeq)};
             auto const objTxn = env.jt(check::create(alice, bob, XRP(10)));
             auto const objTxnID = to_string(objTxn.stx->getTransactionID());
             env(objTxn, Ter(tesSUCCESS));
@@ -4365,7 +4365,7 @@ class Batch_test : public beast::unit_test::Suite
 
             // Batch Txn
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            uint256 const chkID{getCheckIndex(alice, aliceSeq)};
+            UInt256 const chkID{getCheckIndex(alice, aliceSeq)};
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -4425,7 +4425,7 @@ class Batch_test : public beast::unit_test::Suite
 
         STTx const stx = STTx(ttAMENDMENT, [&](auto& obj) {
             obj.setAccountID(sfAccount, AccountID());
-            obj.setFieldH256(sfAmendment, uint256(2));
+            obj.setFieldH256(sfAmendment, UInt256(2));
             obj.setFieldU32(sfLedgerSequence, env.seq(alice));
             obj.setFieldU32(sfFlags, tfInnerBatchTxn);
         });
@@ -4706,7 +4706,7 @@ class Batch_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice, bob);
         env.close();
 
-        auto submitTx = [&](std::uint32_t flags) -> uint256 {
+        auto submitTx = [&](std::uint32_t flags) -> UInt256 {
             auto jt = env.jt(pay(alice, bob, XRP(1)), Txflags(flags));
             Serializer s;
             jt.stx->add(s);
@@ -4714,7 +4714,7 @@ class Batch_test : public beast::unit_test::Suite
             return jt.stx->getTransactionID();
         };
 
-        auto processTxn = [&](std::uint32_t flags) -> uint256 {
+        auto processTxn = [&](std::uint32_t flags) -> UInt256 {
             auto jt = env.jt(pay(alice, bob, XRP(1)), Txflags(flags));
             Serializer s;
             jt.stx->add(s);
@@ -4728,13 +4728,13 @@ class Batch_test : public beast::unit_test::Suite
         // Validate: NetworkOPs::submitTransaction()
         {
             // Submit a tx with tfInnerBatchTxn
-            uint256 const txBad = submitTx(tfInnerBatchTxn);
+            UInt256 const txBad = submitTx(tfInnerBatchTxn);
             BEAST_EXPECT(env.app().getHashRouter().getFlags(txBad) == HashRouterFlags::UNDEFINED);
         }
 
         // Validate: NetworkOPs::processTransaction()
         {
-            uint256 const txid = processTxn(tfInnerBatchTxn);
+            UInt256 const txid = processTxn(tfInnerBatchTxn);
             // HashRouter::getFlags() should return LedgerFlags::BAD
             BEAST_EXPECT(env.app().getHashRouter().getFlags(txid) == HashRouterFlags::BAD);
         }
