@@ -1,6 +1,7 @@
 #include <test/app/lending/LoanTestBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/batch.h>
@@ -19,6 +20,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Feature.h>
@@ -504,6 +506,95 @@ private:
             BEAST_EXPECT(vaultSle->at(sfAssetsAvailable) == assetsAvailableBefore);
     }
 
+    // Originates a loan outside any batch: one payment due in a day, a day of
+    // grace, zero interest. PaymentTotal 1 is fine because callers only
+    // impair or default the loan and never pay it off early.
+    static void
+    originateLoan(
+        jtx::Env& env,
+        BrokerInfo const& broker,
+        jtx::Account const& lender,
+        jtx::Account const& borrower,
+        STAmount const& principal)
+    {
+        using namespace jtx;
+        using namespace jtx::loan;
+
+        env(set(lender, broker.brokerID, principal),
+            kCounterparty(borrower.id()),
+            kPaymentTotal(1),
+            kPaymentInterval(86400),
+            kGracePeriod(86400),
+            Sig(sfCounterpartySignature, borrower),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+    }
+
+    void
+    testImpairAndCoverDeposit(FeatureBitset features)
+    {
+        // Impairing a loan records its exposure as the vault's unrealized
+        // loss; the broker tops up first-loss cover in the same batch. Under
+        // fixCleanup3_4_0 LoanManage refuses tfLoanImpair with tecTOO_SOON
+        // until a payment is late, so the impairment cannot share a batch
+        // with the LoanSet that creates the loan.
+        testcase("loan impairment and cover deposit in a batch");
+
+        using namespace jtx;
+
+        Env env(*this, features);
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(100'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1'000'000};
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        auto const loanKeylet = nextLoanKeylet(env, broker);
+        originateLoan(env, broker, lender, borrower, asset(1'000).value());
+
+        auto const loanSleBefore = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanSleBefore))
+            return;
+
+        // Advance past NextPaymentDueDate so the payment is late.
+        using d = NetClock::duration;
+        using tp = NetClock::time_point;
+        env.close(tp{d{loanSleBefore->at(sfNextPaymentDueDate) + 1}});
+
+        auto const brokerSleBefore = env.le(broker.brokerKeylet());
+        auto const vaultSleBefore = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(brokerSleBefore) || !BEAST_EXPECT(vaultSleBefore))
+            return;
+        auto const coverAvailableBefore = brokerSleBefore->at(sfCoverAvailable);
+        auto const lossUnrealizedBefore = vaultSleBefore->at(sfLossUnrealized);
+        auto const additionalCover = asset(500).value();
+
+        auto const lenderSeq = env.seq(lender);
+        auto const batchFee = batch::calcBatchFee(env, 0, 2);
+        env(batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
+            batch::Inner(loan::manage(lender, loanKeylet.key, tfLoanImpair), lenderSeq + 1),
+            batch::Inner(
+                loan_broker::coverDeposit(lender, broker.brokerID, additionalCover), lenderSeq + 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        if (auto const loanSle = env.le(loanKeylet); BEAST_EXPECT(loanSle))
+            BEAST_EXPECT(loanSle->isFlag(lsfLoanImpaired));
+        // Zero interest and fees make the exposure equal the outstanding
+        // principal under both accounting modes.
+        if (auto const vaultSle = env.le(broker.vaultKeylet()); BEAST_EXPECT(vaultSle))
+        {
+            BEAST_EXPECT(
+                vaultSle->at(sfLossUnrealized) ==
+                lossUnrealizedBefore + loanSleBefore->at(sfPrincipalOutstanding));
+        }
+        if (auto const brokerSle = env.le(broker.brokerKeylet()); BEAST_EXPECT(brokerSle))
+            BEAST_EXPECT(brokerSle->at(sfCoverAvailable) == coverAvailableBefore + additionalCover);
+    }
+
     void
     testDefaultAndCoverWithdraw(FeatureBitset features)
     {
@@ -527,22 +618,7 @@ private:
         auto const broker = createVaultAndBroker(env, asset, lender);
 
         auto const loanKeylet = nextLoanKeylet(env, broker);
-        auto const principal = asset(1'000);
-
-        {
-            using namespace loan;
-            // PaymentTotal 1 is fine: the loan is only ever defaulted here,
-            // never paid off early, so the tfLoanFullPayment restriction on
-            // the last remaining payment does not apply.
-            env(set(lender, broker.brokerID, principal.value()),
-                kCounterparty(borrower.id()),
-                kPaymentTotal(1),
-                kPaymentInterval(86400),
-                kGracePeriod(86400),
-                Sig(sfCounterpartySignature, borrower),
-                Fee(env.current()->fees().base * 2));
-        }
-        env.close();
+        originateLoan(env, broker, lender, borrower, asset(1'000).value());
 
         auto const loanSleBefore = env.le(loanKeylet);
         if (!BEAST_EXPECT(loanSleBefore))
@@ -626,8 +702,8 @@ private:
     testIndependentVaultChain(FeatureBitset features)
     {
         // tfIndependent runs every inner regardless of earlier failures.
-        // VaultWithdraw fails before anything is deposited (AssetsTotal is
-        // zero, so there are no shares to redeem yet) and VaultDelete fails
+        // VaultWithdraw fails before anything is deposited: the empty vault
+        // converts the amount to zero shares (tecPRECISION_LOSS). VaultDelete fails
         // once the vault holds a deposit (tecHAS_OBLIGATIONS); both are
         // tec-class results, so neither stops the inners that follow.
         testcase("independent batch runs every inner despite failing inners");
@@ -648,7 +724,8 @@ private:
         auto const amount = XRP(1'000);
 
         auto const batchFee = batch::calcBatchFee(env, 0, 4);
-        env(batch::outer(owner, seq, batchFee, tfIndependent),
+        auto const batchTx = env.jt(
+            batch::outer(owner, seq, batchFee, tfIndependent),
             batch::Inner(createTx, seq + 1),
             batch::Inner(
                 vault.withdraw({.depositor = owner, .id = vaultKeylet.key, .amount = amount}),
@@ -656,9 +733,20 @@ private:
             batch::Inner(
                 vault.deposit({.depositor = owner, .id = vaultKeylet.key, .amount = amount}),
                 seq + 3),
-            batch::Inner(vault.del({.owner = owner, .id = vaultKeylet.key}), seq + 4),
-            Ter(tesSUCCESS));
+            batch::Inner(vault.del({.owner = owner, .id = vaultKeylet.key}), seq + 4));
+        env(batchTx, Ter(tesSUCCESS));
         env.close();
+
+        auto const batchID = strHex(batchTx.stx->getTransactionID());
+        auto const& innerIDs = batchTx.stx->getBatchTransactionIDs();
+        if (!BEAST_EXPECT(innerIDs.size() == 4))
+            return;
+        batch::validateInnerTxn(env, batchID, strHex(innerIDs[0]), "VaultCreate", "tesSUCCESS");
+        batch::validateInnerTxn(
+            env, batchID, strHex(innerIDs[1]), "VaultWithdraw", "tecPRECISION_LOSS");
+        batch::validateInnerTxn(env, batchID, strHex(innerIDs[2]), "VaultDeposit", "tesSUCCESS");
+        batch::validateInnerTxn(
+            env, batchID, strHex(innerIDs[3]), "VaultDelete", "tecHAS_OBLIGATIONS");
 
         if (auto const vaultSle = env.le(vaultKeylet); BEAST_EXPECT(vaultSle))
             BEAST_EXPECT(vaultSle->at(sfAssetsTotal) == amount.value());
@@ -669,8 +757,8 @@ private:
     testIndependentLoanChain(FeatureBitset features)
     {
         // Same claim as testIndependentVaultChain, on a loan chain. The
-        // borrower starts with no IOU balance, so a LoanPay for twice the
-        // loan's principal fails preclaim's balance check
+        // LoanSet inner leaves the borrower holding only the 1,000 principal,
+        // so a LoanPay for 2,000 fails preclaim's balance check
         // (tecINSUFFICIENT_FUNDS); the cover deposit submitted after it
         // still lands.
         testcase("independent batch runs every loan inner despite a failing payment");
@@ -713,14 +801,25 @@ private:
         auto const additionalCover = iou(500);
 
         auto const batchFee = batch::calcBatchFee(env, 1, 3);
-        env(batch::outer(lender, lenderSeq, batchFee, tfIndependent),
+        auto const batchTx = env.jt(
+            batch::outer(lender, lenderSeq, batchFee, tfIndependent),
             batch::Inner(loanSetTx, lenderSeq + 1),
             batch::Inner(loanPayTx, borrowerSeq),
             batch::Inner(
                 loan_broker::coverDeposit(lender, broker.brokerID, additionalCover), lenderSeq + 2),
-            batch::Sig(borrower),
-            Ter(tesSUCCESS));
+            batch::Sig(borrower));
+        env(batchTx, Ter(tesSUCCESS));
         env.close();
+
+        auto const batchID = strHex(batchTx.stx->getTransactionID());
+        auto const& innerIDs = batchTx.stx->getBatchTransactionIDs();
+        if (!BEAST_EXPECT(innerIDs.size() == 3))
+            return;
+        batch::validateInnerTxn(env, batchID, strHex(innerIDs[0]), "LoanSet", "tesSUCCESS");
+        batch::validateInnerTxn(
+            env, batchID, strHex(innerIDs[1]), "LoanPay", "tecINSUFFICIENT_FUNDS");
+        batch::validateInnerTxn(
+            env, batchID, strHex(innerIDs[2]), "LoanBrokerCoverDeposit", "tesSUCCESS");
 
         if (auto const loanSle = env.le(loanKeylet); BEAST_EXPECT(loanSle))
             BEAST_EXPECT(loanSle->at(sfPrincipalOutstanding) == principal.value());
@@ -735,18 +834,21 @@ public:
     void
     run() override
     {
-        for (auto const& features : {all_, all_ | featureLendingProtocolV1_1})
+        // Batch rejects Vault and Lending inners before LendingProtocolV1_2.
+        FeatureBitset const lendingBatch{all_ | featureLendingProtocolV1_2};
+        for (auto const& features : {lendingBatch, lendingBatch | featureLendingProtocolV1_1})
         {
             testVaultLifecycle(features);
             testArbitrage(features);
             testArbitrageRollback(features);
+            testImpairAndCoverDeposit(features);
             testDefaultAndCoverWithdraw(features);
             testIndependentVaultChain(features);
             testIndependentLoanChain(features);
         }
-        testClosedEndedVaultLifecycle(all_ | featureLendingProtocolV1_1);
-        testLoanLifecycleOpenEndedVault(all_);
-        testLoanLifecycleClosedEndedVault(all_ | featureLendingProtocolV1_1);
+        testClosedEndedVaultLifecycle(lendingBatch | featureLendingProtocolV1_1);
+        testLoanLifecycleOpenEndedVault(lendingBatch);
+        testLoanLifecycleClosedEndedVault(lendingBatch | featureLendingProtocolV1_1);
     }
 };
 

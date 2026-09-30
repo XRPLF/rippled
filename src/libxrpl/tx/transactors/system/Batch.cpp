@@ -300,10 +300,10 @@ Batch::preflight(PreflightContext const& ctx)
         auto const txType = stx.getFieldU16(sfTransactionType);
         // Pre-LendingProtocolV1_2: SAV and Lending transactions cannot be Batch inners.
         // Post-LendingProtocolV1_2: they continue through the normal Batch checks.
-        bool const isDisabledTxType = !ctx.rules.enabled(featureLendingProtocolV1_2) &&
+        bool const rejectedPreV12 = !ctx.rules.enabled(featureLendingProtocolV1_2) &&
             std::ranges::any_of(
                 kDisabledTxTypes, [txType](auto const& disabled) { return txType == disabled; });
-        if (isDisabledTxType)
+        if (rejectedPreV12)
             return temINVALID_INNER_BATCH;
 
         if (!stx.isFlag(tfInnerBatchTxn))

@@ -119,15 +119,6 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
-    validateInnerTxn(jtx::Env& env, std::string const& batchID, TestLedgerData const& ledgerResult)
-    {
-        json::Value const jrr = env.rpc("tx", ledgerResult.txHash)[jss::result];
-        BEAST_EXPECT(jrr[sfTransactionType.jsonName] == ledgerResult.txType);
-        BEAST_EXPECT(jrr[jss::meta][sfTransactionResult.jsonName] == ledgerResult.result);
-        BEAST_EXPECT(jrr[jss::meta][sfParentBatchID.jsonName] == batchID);
-    }
-
-    void
     validateClosedLedger(jtx::Env& env, std::vector<TestLedgerData> const& ledgerResults)
     {
         auto const jrr = getLastLedger(env);
@@ -142,7 +133,14 @@ class Batch_test : public beast::unit_test::Suite
             BEAST_EXPECT(txn[sfTransactionType.jsonName] == ledgerResult.txType);
             BEAST_EXPECT(meta[sfTransactionResult.jsonName] == ledgerResult.result);
             if (ledgerResult.batchID)
-                validateInnerTxn(env, *ledgerResult.batchID, ledgerResult);
+            {
+                jtx::batch::validateInnerTxn(
+                    env,
+                    *ledgerResult.batchID,
+                    ledgerResult.txHash,
+                    ledgerResult.txType,
+                    ledgerResult.result);
+            }
         }
     }
 
@@ -3287,8 +3285,12 @@ class Batch_test : public beast::unit_test::Suite
                     batch::Sig(borrower));
             }
             env.close();
-            BEAST_EXPECT(env.le(brokerKeylet));
             BEAST_EXPECT(!env.le(loanKeylet));
+            auto const brokerSleBefore = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(brokerSleBefore))
+                return;
+            auto const coverAvailableBefore = brokerSleBefore->at(sfCoverAvailable);
+            auto const coverDepositAmount = asset(100).value();
             {
                 // LoanSet normally charges at least 2x base fee, but since the
                 // signature check is done by the batch, it only charges the
@@ -3308,13 +3310,19 @@ class Batch_test : public beast::unit_test::Suite
                             Seq(kNone)),
                         lenderSeq + 1),
                     batch::Inner(
-                        loan_broker::coverDeposit(lender, brokerKeylet.key, asset(100).value()),
+                        loan_broker::coverDeposit(lender, brokerKeylet.key, coverDepositAmount),
                         lenderSeq + 2),
                     batch::Sig(borrower));
             }
             env.close();
-            BEAST_EXPECT(env.le(brokerKeylet));
             BEAST_EXPECT(static_cast<bool>(env.le(loanKeylet)) == lendingBatchEnabled);
+            if (auto const brokerSle = env.le(brokerKeylet); BEAST_EXPECT(brokerSle))
+            {
+                auto const expectedCover = lendingBatchEnabled
+                    ? coverAvailableBefore + coverDepositAmount
+                    : coverAvailableBefore;
+                BEAST_EXPECT(brokerSle->at(sfCoverAvailable) == expectedCover);
+            }
         }
     }
 
