@@ -172,7 +172,7 @@ removeCredentialFromLedger(
     beast::Journal j)
 {
     CredentialEntryW sleDel(delIndex, view, j);
-    return credentials::deleteSLE(view, sleDel, j);
+    return sleDel.removeFromLedger();
 }
 
 TER
