@@ -6,7 +6,7 @@
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/Status.h>
+#include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -24,6 +24,7 @@
 #include <org/xrpl/rpc/v1/get_ledger_data.pb.h>   // IWYU pragma: keep
 #include <org/xrpl/rpc/v1/get_ledger_entry.pb.h>  // IWYU pragma: keep
 #include <org/xrpl/rpc/v1/ledger.pb.h>
+#include <rpcspec/Errors.hpp>
 #include <rpcspec/Ledger.hpp>
 
 #include <cstdint>
@@ -56,7 +57,7 @@ isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
 }
 
 template <class T>
-Status
+::rpc::Status
 ledgerFromHash(
     T& ledger,
     json::Value hash,
@@ -70,7 +71,7 @@ ledgerFromHash(
 }
 
 template <class T>
-Status
+::rpc::Status
 ledgerFromIndex(
     T& ledger,
     json::Value indexValue,
@@ -96,7 +97,7 @@ ledgerFromIndex(
 }
 
 template <class T>
-Status
+::rpc::Status
 ledgerFromRequest(T& ledger, JsonContext const& context)
 {
     ledger.reset();
@@ -163,7 +164,7 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
 }  // namespace
 
 template <class T, class R>
-Status
+::rpc::Status
 ledgerFromRequest(T& ledger, GRPCContext<R> const& context)
 {
     R const& request = context.params;
@@ -171,25 +172,25 @@ ledgerFromRequest(T& ledger, GRPCContext<R> const& context)
 }
 
 // explicit instantiation of above function
-template Status
+template ::rpc::Status
 ledgerFromRequest<>(
     std::shared_ptr<ReadView const>&,
     GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest> const&);
 
 // explicit instantiation of above function
-template Status
+template ::rpc::Status
 ledgerFromRequest<>(
     std::shared_ptr<ReadView const>&,
     GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest> const&);
 
 // explicit instantiation of above function
-template Status
+template ::rpc::Status
 ledgerFromRequest<>(
     std::shared_ptr<ReadView const>&,
     GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest> const&);
 
 template <class T>
-Status
+::rpc::Status
 ledgerFromSpecifier(
     T& ledger,
     org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
@@ -231,21 +232,21 @@ ledgerFromSpecifier(
         }
     }
 
-    return Status::kOK;
+    return ::rpc::Status::kOK;
 }
 
 template <class T>
-Status
+::rpc::Status
 getLedger(T& ledger, uint256 const& ledgerHash, Context const& context)
 {
     ledger = context.ledgerMaster.getLedgerByHash(ledgerHash);
     if (ledger == nullptr)
         return {RpcLgrNotFound, "ledgerNotFound"};
-    return Status::kOK;
+    return ::rpc::Status::kOK;
 }
 
 template <class T>
-Status
+::rpc::Status
 getLedger(T& ledger, uint32_t ledgerIndex, Context const& context)
 {
     ledger = context.ledgerMaster.getLedgerBySeq(ledgerIndex);
@@ -270,11 +271,11 @@ getLedger(T& ledger, uint32_t ledgerIndex, Context const& context)
         return {RpcNotSynced, "notSynced"};
     }
 
-    return Status::kOK;
+    return ::rpc::Status::kOK;
 }
 
 template <class T>
-Status
+::rpc::Status
 getLedger(T& ledger, ::rpc::spec::LedgerShortcut shortcut, Context const& context)
 {
     if (isValidatedOld(context.ledgerMaster, context.app.config().standalone()))
@@ -330,11 +331,11 @@ getLedger(T& ledger, ::rpc::spec::LedgerShortcut shortcut, Context const& contex
             return {RpcNotSynced, "notSynced"};
         }
     }
-    return Status::kOK;
+    return ::rpc::Status::kOK;
 }
 
 template <class T>
-Status
+::rpc::Status
 getLedger(T& ledger, ::rpc::spec::LedgerSpecifier const& specifier, Context const& context)
 {
     return std::visit(
@@ -348,20 +349,20 @@ getLedger(T& ledger, ::rpc::spec::LedgerSpecifier const& specifier, Context cons
 }
 
 // Explicit instantiation of above four functions
-template Status
+template ::rpc::Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint32_t, Context const&);
 
-template Status
+template ::rpc::Status
 getLedger<>(std::shared_ptr<ReadView const>&, ::rpc::spec::LedgerShortcut shortcut, Context const&);
 
-template Status
+template ::rpc::Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context const&);
 
-template Status
+template ::rpc::Status
 getLedger<>(std::shared_ptr<ReadView const>&, ::rpc::spec::LedgerSpecifier const&, Context const&);
 
 // explicit instantiation of ledgerFromSpecifier
-template Status
+template ::rpc::Status
 ledgerFromSpecifier<>(
     std::shared_ptr<ReadView const>&,
     org::xrpl::rpc::v1::LedgerSpecifier const&,
@@ -386,18 +387,12 @@ ledgerFromSpecifier<>(
 // return value.  Otherwise, the object contains the field "validated" and
 // optionally the fields "ledger_hash", "ledger_index" and
 // "ledger_current_index", if they are defined.
-Status
-lookupLedger(
-    std::shared_ptr<ReadView const>& ledger,
-    JsonContext const& context,
-    json::Value& result)
+void
+injectLedgerFields(ReadView const& ledger, Context const& context, json::Value& result)
 {
-    if (auto status = ledgerFromRequest(ledger, context))
-        return status;
+    auto const& info = ledger.header();
 
-    auto& info = ledger->header();
-
-    if (!ledger->open())
+    if (!ledger.open())
     {
         result[jss::ledger_hash] = to_string(info.hash);
         result[jss::ledger_index] = info.seq;
@@ -407,8 +402,20 @@ lookupLedger(
         result[jss::ledger_current_index] = info.seq;
     }
 
-    result[jss::validated] = context.ledgerMaster.isValidated(*ledger);
-    return Status::kOK;
+    result[jss::validated] = context.ledgerMaster.isValidated(ledger);
+}
+
+::rpc::Status
+lookupLedger(
+    std::shared_ptr<ReadView const>& ledger,
+    JsonContext const& context,
+    json::Value& result)
+{
+    if (auto status = ledgerFromRequest(ledger, context))
+        return status;
+
+    injectLedgerFields(*ledger, context, result);
+    return ::rpc::Status::kOK;
 }
 
 json::Value
@@ -416,7 +423,7 @@ lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext const& context
 {
     json::Value result;
     if (auto status = lookupLedger(ledger, context, result))
-        status.inject(result);
+        injectSpecError(result, status);
 
     return result;
 }

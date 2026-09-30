@@ -3,11 +3,12 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/MethodNames.h>
 #include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/handlers/Handlers.h>
 #include <xrpld/rpc/handlers/ledger/Ledger.h>
+#include <xrpld/rpc/handlers/orderbook/BookChanges.h>
 #include <xrpld/rpc/handlers/server_info/Version.h>
+#include <xrpld/rpc/handlers/transaction/TransactionEntry.h>
 
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -15,6 +16,7 @@
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 
+#include <rpcspec/Errors.hpp>
 #include <rpcspec/Types.hpp>
 
 #include <algorithm>
@@ -22,7 +24,6 @@
 #include <concepts>
 #include <cstddef>
 #include <expected>
-#include <iterator>
 #include <span>
 #include <string_view>
 #include <utility>
@@ -40,7 +41,7 @@ using Method = Handler::Method;
  * names a plain function instead of returning a closure over it.
  */
 template <json::Value (*Function)(JsonContext&)>
-Status
+::rpc::Status
 byRef(JsonContext& context, json::Value& result)
 {
     result = Function(context);
@@ -52,7 +53,7 @@ byRef(JsonContext& context, json::Value& result)
         // LCOV_EXCL_STOP
     }
 
-    return Status();
+    return ::rpc::Status::kOK;
 }
 
 template <typename HandlerImpl>
@@ -62,7 +63,7 @@ template <typename HandlerImpl>
 concept InputlessHandler = requires(HandlerImpl& handler) { handler.process(); };
 
 template <class HandlerImpl, class Output>
-Status
+::rpc::Status
 respond(
     HandlerImpl const& handler,
     json::Value& object,
@@ -72,32 +73,29 @@ respond(
     if (not output.has_value())
     {
         injectSpecError(object, output.error());
-        return std::get<ErrorCodeI>(output.error().code);
+        return output.error();
     }
 
-    handler.writeResult(object, *output);
-    injectSpecWarnings(object, warnings);
+    json::Value result;
+    handler.writeResult(result, *output);
+    injectSpecWarnings(result, warnings);
+    object = std::move(result);
 
-    return Status::kOK;
+    return ::rpc::Status::kOK;
 }
 
 template <class HandlerImpl>
-    requires SpecBasedHandler<HandlerImpl> or InputlessHandler<HandlerImpl>
-Status
+::rpc::Status
 handle(JsonContext& context, json::Value& object)
+    requires SpecBasedHandler<HandlerImpl> or InputlessHandler<HandlerImpl>
 {
-    XRPL_ASSERT(
-        context.apiVersion >= HandlerImpl::minApiVer &&
-            context.apiVersion <= HandlerImpl::maxApiVer,
-        "xrpl::rpc::handle : valid API version");
-
     if constexpr (SpecBasedHandler<HandlerImpl>)
     {
         auto const input = HandlerImpl::parseInput(context.params, context.apiVersion);
         if (not input.has_value())
         {
             injectSpecError(object, input.error());
-            return std::get<ErrorCodeI>(input.error().code);
+            return input.error();
         }
 
         HandlerImpl handler(context);
@@ -114,28 +112,7 @@ handle(JsonContext& context, json::Value& object)
     }
 }
 
-template <typename HandlerImpl>
-constexpr Handler
-handlerFrom()
-{
-    static_assert(HandlerImpl::minApiVer <= HandlerImpl::maxApiVer);
-    static_assert(HandlerImpl::maxApiVer <= rpc::kApiMaximumValidVersion);
-    static_assert(rpc::kApiMinimumSupportedVersion <= HandlerImpl::minApiVer);
-
-    return {
-        HandlerImpl::name,
-        Method::of<&handle<HandlerImpl>>(),
-        HandlerImpl::role,
-        HandlerImpl::condition,
-        HandlerImpl::minApiVer,
-        HandlerImpl::maxApiVer,
-    };
-}
-
-// The handlers that name the function they dispatch to. The order is free:
-// getHandler() searches kHandlers below, which is this array and the next one
-// sorted together.
-constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
+constexpr auto kHandlerArray = std::to_array<Handler>({
     // Request-response methods
     {
         .name = method::kAccountInfo,
@@ -200,7 +177,7 @@ constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kBookChanges,
-        .valueMethod = Method::of<&byRef<&doBookChanges>>(),
+        .valueMethod = Method::of<&handle<BookChangesHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -283,6 +260,12 @@ constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
         .role = Role::USER,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,
+    },
+    {
+        .name = method::kLedger,
+        .valueMethod = Method::of<&handle<LedgerHandler>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
     },
     {
         .name = method::kLedgerAccept,
@@ -491,7 +474,7 @@ constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kTransactionEntry,
-        .valueMethod = Method::of<&byRef<&doTransactionEntry>>(),
+        .valueMethod = Method::of<&handle<TransactionEntryHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -555,6 +538,12 @@ constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
         .condition = Condition::NoCondition,
     },
     {
+        .name = method::kVersion,
+        .valueMethod = Method::of<&handle<VersionHandler>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
         .name = method::kWalletPropose,
         .valueMethod = Method::of<&byRef<&doWalletPropose>>(),
         .role = Role::ADMIN,
@@ -575,39 +564,9 @@ constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
     },
 });
 
-// The class-based handlers, which carry their name and API range as static
-// members rather than as a table entry, so they cannot go in the array above.
-constexpr auto kClassHandlerArray = std::to_array<Handler>({
-    handlerFrom<LedgerHandler>(),
-    handlerFrom<VersionHandler>(),
-});
-
-/**
- * Join the two handler arrays above into one.
- *
- * Handler has no default constructor, so every entry is built in place from an
- * index pack rather than the array being sized and then copied into. The packs
- * come from the arrays themselves, so adding a handler to either needs no change
- * here.
- *
- * @return kFunctionHandlerArray followed by kClassHandlerArray.
- */
-constexpr auto
-joinHandlers()
-{
-    constexpr auto kFunctionIndices = std::make_index_sequence<std::size(kFunctionHandlerArray)>{};
-    constexpr auto kClassIndices = std::make_index_sequence<std::size(kClassHandlerArray)>{};
-
-    return []<std::size_t... Function, std::size_t... Class>(
-               std::index_sequence<Function...>, std::index_sequence<Class...>) {
-        return std::array<Handler, sizeof...(Function) + sizeof...(Class)>{
-            kFunctionHandlerArray[Function]..., kClassHandlerArray[Class]...};
-    }(kFunctionIndices, kClassIndices);
-}
-
 // The whole dispatch table.
 constexpr auto kHandlers = [] {
-    auto all = joinHandlers();
+    auto all = kHandlerArray;
 
     // Sorted by name, so a handler can be found by binary search.
     std::ranges::sort(all, {}, &Handler::name);

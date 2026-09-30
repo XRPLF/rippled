@@ -1,7 +1,6 @@
 #pragma once
 
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
@@ -18,6 +17,8 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/server/NetworkOPs.h>
+
+#include <rpcspec/Errors.hpp>
 
 #include <cstdint>
 #include <optional>
@@ -123,7 +124,7 @@ parseXrplLibSeed(json::Value const& params);
  * @param params The JSON value containing RPC parameters.
  * @return A pair consisting of the RPC status and the chosen LedgerEntryType.
  */
-std::pair<rpc::Status, LedgerEntryType>
+std::pair<::rpc::Status, LedgerEntryType>
 chooseLedgerEntryType(json::Value const& params);
 
 /**

@@ -1,42 +1,36 @@
 #pragma once
 
-#include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/TxQ.h>  // IWYU pragma: keep
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/SpecBridge.hpp>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 
 #include <rpcspec/Errors.hpp>
-#include <rpcspec/handlers/ledger/Types.hpp>
+#include <rpcspec/handlers/transaction_entry/Types.hpp>
 
 #include <expected>
 #include <functional>
 #include <memory>
-#include <vector>
+#include <optional>
+#include <string_view>
 
 namespace xrpl::rpc {
 
-struct JsonContext;
-
-// ledger [id|index|current|closed] [full]
-// {
-//    ledger: 'current' | 'closed' | <uint256> | <number>,  // optional
-//    full: true | false    // optional, defaults to false.
-// }
-
-class LedgerHandler : public HandlerFor<::rpc::spec::handlers::ledger::Input>
+class TransactionEntryHandler : public HandlerFor<::rpc::spec::handlers::transaction_entry::Input>
 {
 public:
     struct Output
     {
         std::shared_ptr<ReadView const> ledger;
-        std::vector<TxQ::TxDetails> queueTxs;
-        int options = 0;
+        std::optional<std::string_view> error;
+        std::shared_ptr<STTx const> tx;
+        std::shared_ptr<STObject const> meta;
     };
 
-    explicit LedgerHandler(JsonContext&);
+    explicit TransactionEntryHandler(JsonContext&);
 
     [[nodiscard]] std::expected<Output, ::rpc::Status>
     process(Input const& input) const;

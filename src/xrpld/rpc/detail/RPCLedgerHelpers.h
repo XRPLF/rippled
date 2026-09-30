@@ -1,7 +1,6 @@
 #pragma once
 
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -10,6 +9,7 @@
 #include <xrpl/server/NetworkOPs.h>
 
 #include <org/xrpl/rpc/v1/ledger.pb.h>
+#include <rpcspec/Errors.hpp>
 #include <rpcspec/Ledger.hpp>
 
 #include <cstdint>
@@ -39,7 +39,7 @@ struct JsonContext;
  * @return Status indicating success or failure of the operation.
  */
 template <class T>
-Status
+::rpc::Status
 getLedger(T& ledger, uint256 const& ledgerHash, Context const& context);
 
 /**
@@ -57,7 +57,7 @@ getLedger(T& ledger, uint256 const& ledgerHash, Context const& context);
  * @return Status indicating success or failure of the operation.
  */
 template <class T>
-Status
+::rpc::Status
 getLedger(T& ledger, uint32_t ledgerIndex, Context const& context);
 
 /**
@@ -75,7 +75,7 @@ getLedger(T& ledger, uint32_t ledgerIndex, Context const& context);
  * @return Status indicating success or failure of the operation.
  */
 template <class T>
-Status
+::rpc::Status
 getLedger(T& ledger, ::rpc::spec::LedgerShortcut shortcut, Context const& context);
 
 /**
@@ -90,8 +90,21 @@ getLedger(T& ledger, ::rpc::spec::LedgerShortcut shortcut, Context const& contex
  * @return Status indicating success or failure of the operation.
  */
 template <class T>
-Status
+::rpc::Status
 getLedger(T& ledger, ::rpc::spec::LedgerSpecifier const& specifier, Context const& context);
+
+/**
+ * @brief Writes the fields that identify a ledger into a result.
+ *
+ * A closed ledger gets `ledger_hash` and `ledger_index`, an open one
+ * `ledger_current_index`, and both get `validated`.
+ *
+ * @param ledger The ledger to describe.
+ * @param context The RPC context.
+ * @param result Reference to a json::Value to be filled with ledger data.
+ */
+void
+injectLedgerFields(ReadView const& ledger, Context const& context, json::Value& result);
 
 /**
  * @brief Looks up a ledger from a request and returns a json::Value with either
@@ -126,7 +139,7 @@ lookupLedger(std::shared_ptr<ReadView const>&, JsonContext const&);
  * @param result Reference to a json::Value to be filled with ledger data.
  * @return Status indicating success or failure of the operation.
  */
-Status
+::rpc::Status
 lookupLedger(std::shared_ptr<ReadView const>&, JsonContext const&, json::Value& result);
 
 /**
@@ -144,7 +157,7 @@ lookupLedger(std::shared_ptr<ReadView const>&, JsonContext const&, json::Value& 
  * @return Status indicating success or failure of the operation.
  */
 template <class T, class R>
-Status
+::rpc::Status
 ledgerFromRequest(T& ledger, GRPCContext<R> const& context);
 
 /**
@@ -160,7 +173,7 @@ ledgerFromRequest(T& ledger, GRPCContext<R> const& context);
  * @return Status indicating success or failure of the operation.
  */
 template <class T>
-Status
+::rpc::Status
 ledgerFromSpecifier(
     T& ledger,
     org::xrpl::rpc::v1::LedgerSpecifier const& specifier,

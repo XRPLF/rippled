@@ -3,7 +3,6 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
@@ -12,7 +11,6 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -342,10 +340,10 @@ keypairForSignature(json::Value const& params, json::Value& error, unsigned int 
     return generateKeyPair(*keyType, *seed);
 }
 
-std::pair<rpc::Status, LedgerEntryType>
+std::pair<::rpc::Status, LedgerEntryType>
 chooseLedgerEntryType(json::Value const& params)
 {
-    std::pair<rpc::Status, LedgerEntryType> result{rpc::Status::kOK, ltANY};
+    std::pair<::rpc::Status, LedgerEntryType> result{::rpc::Status::kOK, ltANY};
     if (params.isMember(jss::type))
     {
         static constexpr auto kTypes =
@@ -364,10 +362,7 @@ chooseLedgerEntryType(json::Value const& params)
         auto const& p = params[jss::type];
         if (!p.isString())
         {
-            result.first = rpc::Status{RpcInvalidParams, "Invalid field 'type', not string."};
-            XRPL_ASSERT(
-                result.first.type() == rpc::Status::Type::ErrorCodeI,
-                "xrpl::rpc::chooseLedgerEntryType : first valid result type");
+            result.first = ::rpc::Status{RpcInvalidParams, "Invalid field 'type', not string."};
             return result;
         }
 
@@ -380,11 +375,7 @@ chooseLedgerEntryType(json::Value const& params)
         });
         if (iter == kTypes.end())
         {
-            result.first = rpc::Status{RpcInvalidParams, "Invalid field 'type'."};
-            XRPL_ASSERT(
-                result.first.type() == rpc::Status::Type::ErrorCodeI,
-                "xrpl::rpc::chooseLedgerEntryType : second valid result "
-                "type");
+            result.first = ::rpc::Status{RpcInvalidParams, "Invalid field 'type'."};
             return result;
         }
         result.second = std::get<2>(*iter);

@@ -5,9 +5,9 @@
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/detail/SyntheticFields.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
@@ -26,6 +26,7 @@
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/resource/Fees.h>
 
+#include <rpcspec/Errors.hpp>
 #include <rpcspec/Ledger.hpp>
 
 #include <cstdint>
@@ -114,8 +115,8 @@ parseLedgerArgs(rpc::Context& context, json::Value const& params)
         if ((params.isMember(jss::ledger_index_min) || params.isMember(jss::ledger_index_max)) &&
             (params.isMember(jss::ledger_hash) || params.isMember(jss::ledger_index)))
         {
-            rpc::Status const status{RpcInvalidParams, "invalidParams"};
-            status.inject(response);
+            ::rpc::Status const status{RpcInvalidParams, "invalidParams"};
+            rpc::injectSpecError(response, status);
             return response;
         }
     }
@@ -137,16 +138,16 @@ parseLedgerArgs(rpc::Context& context, json::Value const& params)
         auto& hashValue = params[jss::ledger_hash];
         if (!hashValue.isString())
         {
-            rpc::Status const status{RpcInvalidParams, "ledgerHashNotString"};
-            status.inject(response);
+            ::rpc::Status const status{RpcInvalidParams, "ledgerHashNotString"};
+            rpc::injectSpecError(response, status);
             return response;
         }
 
         LedgerHash hash;
         if (!hash.parseHex(hashValue.asString()))
         {
-            rpc::Status const status{RpcInvalidParams, "ledgerHashMalformed"};
-            status.inject(response);
+            ::rpc::Status const status{RpcInvalidParams, "ledgerHashMalformed"};
+            rpc::injectSpecError(response, status);
             return response;
         }
         return hash;
@@ -176,8 +177,8 @@ parseLedgerArgs(rpc::Context& context, json::Value const& params)
             }
             else
             {
-                rpc::Status const status{RpcInvalidParams, "ledger_index string malformed"};
-                status.inject(response);
+                ::rpc::Status const status{RpcInvalidParams, "ledger_index string malformed"};
+                rpc::injectSpecError(response, status);
                 return response;
             }
         }
@@ -186,7 +187,7 @@ parseLedgerArgs(rpc::Context& context, json::Value const& params)
     return std::optional<LedgerSpecifier>{};
 }
 
-std::variant<LedgerRange, rpc::Status>
+std::variant<LedgerRange, ::rpc::Status>
 getLedgerRange(rpc::Context& context, std::optional<LedgerSpecifier> const& ledgerSpecifier)
 {
     std::uint32_t uValidatedMin = 0;
@@ -207,7 +208,7 @@ getLedgerRange(rpc::Context& context, std::optional<LedgerSpecifier> const& ledg
     if (ledgerSpecifier)
     {
         auto status = std::visit(
-            [&](auto const& ls) -> rpc::Status {
+            [&](auto const& ls) -> ::rpc::Status {
                 using T = std::decay_t<decltype(ls)>;
                 if constexpr (std::is_same_v<T, LedgerRange>)
                 {
@@ -255,7 +256,7 @@ getLedgerRange(rpc::Context& context, std::optional<LedgerSpecifier> const& ledg
                     }
                     uLedgerMin = uLedgerMax = ledgerView->header().seq;
                 }
-                return rpc::Status::kOK;
+                return ::rpc::Status::kOK;
             },
             *ledgerSpecifier);
 
@@ -265,7 +266,7 @@ getLedgerRange(rpc::Context& context, std::optional<LedgerSpecifier> const& ledg
     return LedgerRange{.min = uLedgerMin, .max = uLedgerMax};
 }
 
-std::pair<AccountTxResult, rpc::Status>
+std::pair<AccountTxResult, ::rpc::Status>
 doAccountTxHelp(rpc::Context& context, AccountTxArgs const& args)
 {
     context.loadType = resource::kFeeMediumBurdenRpc;
@@ -273,7 +274,7 @@ doAccountTxHelp(rpc::Context& context, AccountTxArgs const& args)
     AccountTxResult result;
 
     auto lgrRange = getLedgerRange(context, args.ledger);
-    if (auto stat = std::get_if<rpc::Status>(&lgrRange))
+    if (auto stat = std::get_if<::rpc::Status>(&lgrRange))
     {
         // An error occurred getting the requested ledger range
         return {result, *stat};
@@ -332,15 +333,15 @@ doAccountTxHelp(rpc::Context& context, AccountTxArgs const& args)
 
 json::Value
 populateJsonResponse(
-    std::pair<AccountTxResult, rpc::Status> const& res,
+    std::pair<AccountTxResult, ::rpc::Status> const& res,
     AccountTxArgs const& args,
     rpc::JsonContext const& context)
 {
     json::Value response;
-    rpc::Status const& error = res.second;
-    if (error.toErrorCode() != RpcSuccess)
+    ::rpc::Status const& error = res.second;
+    if (error != RpcSuccess)
     {
-        error.inject(response);
+        rpc::injectSpecError(response, error);
     }
     else
     {
@@ -512,11 +513,11 @@ doAccountTx(rpc::JsonContext& context)
             !token[jss::ledger].isConvertibleTo(json::ValueType::UInt) ||
             !token[jss::seq].isConvertibleTo(json::ValueType::UInt))
         {
-            rpc::Status const status{
+            ::rpc::Status const status{
                 RpcInvalidParams,
                 "invalid marker. Provide ledger index via ledger field, and "
                 "transaction sequence number via seq field"};
-            status.inject(response);
+            rpc::injectSpecError(response, status);
             return response;
         }
         args.marker = {
@@ -546,11 +547,11 @@ doAccountTx(rpc::JsonContext& context)
             params[jss::marker][jss::delegate].asBool();
         if (markerFromDelegate != args.delegate.has_value())
         {
-            rpc::Status const status{
+            ::rpc::Status const status{
                 RpcInvalidParams,
                 "Do not mix delegate and non-delegate pagination markers in account_tx; "
                 "repeat the same `delegate` object when using a delegate marker."};
-            status.inject(response);
+            rpc::injectSpecError(response, status);
             return response;
         }
     }
