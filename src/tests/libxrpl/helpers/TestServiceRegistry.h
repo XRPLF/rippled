@@ -9,7 +9,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/server/LoadFeeTrack.h>
-#include <xrpl/telemetry/Telemetry.h>
 
 #include <boost/asio/io_context.hpp>
 
@@ -336,12 +335,6 @@ public:
     getPerfLog() override
     {
         throw std::logic_error("TestServiceRegistry::getPerfLog() not implemented");
-    }
-
-    telemetry::Telemetry&
-    getTelemetry() override
-    {
-        throw std::logic_error("TestServiceRegistry::getTelemetry() not implemented");
     }
 
     // Configuration and state

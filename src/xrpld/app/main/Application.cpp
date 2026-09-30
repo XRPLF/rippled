@@ -509,6 +509,31 @@ public:
         add(ledgerCleaner_.get());
     }
 
+    /**
+     * Stop telemetry before the members are destroyed.
+     *
+     * setup() starts telemetry and run() stops it. This covers the paths that
+     * never reach run(): every `return false` in setup() after the start, and
+     * a caller that gives up after setup() succeeds. Without it the global
+     * Telemetry instance would point at a destroyed object. It acts only while
+     * this application's instance is still published, so a normal shutdown,
+     * where run() already stopped it, does nothing here.
+     */
+    ~ApplicationImp() override
+    {
+        // A destructor is implicitly noexcept, so a failure to stop must not
+        // escape and terminate the process.
+        try
+        {
+            if (telemetry::Telemetry::getInstance() == telemetry_.get())
+                telemetry_->stop();
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(journal_.error()) << "Error stopping telemetry: " << e.what();
+        }
+    }
+
     //--------------------------------------------------------------------------
 
     bool
@@ -1691,10 +1716,10 @@ ApplicationImp::run()
     ledgerCleaner_->stop();
     nodeStore_->stop();
     perfLog_->stop();
-    // Telemetry must stop last among trace-producing components.
-    // serverHandler_, overlay_, and jobQueue_ are already stopped above,
-    // so no threads should be calling startSpan() at this point.
-    // See TODO in TelemetryImpl::stop() re: thread-safety of sdkProvider_.
+    // Telemetry must stop last among trace-producing components: a span that
+    // ends after stop() is dropped, not exported. serverHandler_, overlay_,
+    // and jobQueue_ are already stopped above, so no threads should be
+    // calling startSpan() at this point.
     telemetry_->stop();
 
     JLOG(journal_.info()) << "Done.";
