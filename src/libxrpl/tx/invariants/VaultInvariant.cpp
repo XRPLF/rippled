@@ -957,6 +957,24 @@ ValidVault::finalize(
                 // If assets are donated, check share invariants
                 if (isDonate)
                 {
+                    if (afterVault.owner != tx[sfAccount])
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: donation must be made by the vault owner";
+                        result = false;
+                    }
+
+                    // A donation leaves the share issuance untouched, so it never shows up in
+                    // beforeMPTs_. Read the (unchanged) issuance from the view instead.
+                    auto const sleShares =
+                        view.read(keylet::mptokenIssuance(afterVault.shareMPTID));
+                    if (!sleShares || sleShares->getFieldU64(sfOutstandingAmount) == 0)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: donation requires outstanding shares";
+                        result = false;
+                    }
+
                     auto const accountDeltaShares = deltaShares(tx[sfAccount]);
                     if (accountDeltaShares)
                     {
