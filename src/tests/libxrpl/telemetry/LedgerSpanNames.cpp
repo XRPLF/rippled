@@ -16,12 +16,14 @@
  *
  *  2. `acquireOutcome()`, the rule behind "a ledger.acquire span always carries
  *     an outcome". InboundLedger has four exits -- done(), the local-store
- *     shortcut, the "can never be acquired" exit, and the destructor when the
- *     sweeper drops a fetch -- and every one derives its value from this
- *     function. Asserting the function over its whole input domain therefore
- *     asserts the outcome of every exit path, including the destructor path --
- *     the one exit with no explicit success or failure of its own, and so the
- *     one most easily left without an outcome.
+ *     shortcut, the "can never be acquired" exit, and the destructor, which
+ *     ends an acquire dropped by the sweep, shutdown or an admin fetch_info
+ *     clear, or one that failed in trigger() without reaching done() -- and
+ *     every one derives its value from this function. Asserting the function
+ *     over its whole input domain therefore asserts the outcome of every exit
+ *     path, including the destructor path -- the one exit with no explicit
+ *     success or failure of its own, and so the one most easily left without
+ *     an outcome.
  *     The rule is a pure constexpr function with no dependency on
  *     InboundLedger, so it is asserted directly here: no Application, no peer
  *     set, and no test-only hook added to production code to reach it.
@@ -140,23 +142,23 @@ TEST(LedgerSpanNames, acquire_outcome_normal_done_path_is_complete)
 TEST(LedgerSpanNames, acquire_outcome_local_complete_path_is_complete)
 {
     // The tryDB local-store shortcut in init() reaches the same flag state as
-    // done(), so it must produce the same outcome -- this is the exit that used
-    // to end the span with no outcome at all.
+    // done(), so it must produce the same outcome.
     EXPECT_EQ(ledger_span::acquireOutcome(/*failed=*/false, /*complete=*/true), "complete");
 }
 
 TEST(LedgerSpanNames, acquire_outcome_failed_path_is_failed)
 {
     // Terminal error: bad data, a zero account hash, or the retry budget ran
-    // out. Reached from done() and from the early-return in init().
+    // out. Reached from done(), from the early return in init(), and from the
+    // destructor when trigger() returns early on a tryDB() failure.
     EXPECT_EQ(ledger_span::acquireOutcome(/*failed=*/true, /*complete=*/false), "failed");
 }
 
 TEST(LedgerSpanNames, acquire_outcome_abort_path_is_abandoned)
 {
     // The destructor / sweep path: neither flag set, because the fetch never
-    // reached a result. This is the assertion the whole change exists for -- an
-    // acquire swept while stuck is still counted, with `abandoned` naming why.
+    // reached a result. An acquire swept while stuck is still counted, with
+    // `abandoned` naming why.
     EXPECT_EQ(ledger_span::acquireOutcome(/*failed=*/false, /*complete=*/false), "abandoned");
 }
 
@@ -208,10 +210,10 @@ TEST(LedgerSpanNames, inactive_guard_finalize_sequence_is_a_no_op)
     // Negative / disabled path. A default-constructed SpanGuard is the exact
     // state InboundLedger::acquireSpan_ holds when telemetry is off or the
     // ledger trace category is disabled: `operator bool()` is false and every
-    // setter is inert. Drive the whole finalize sequence against it -- the same
-    // calls, in the same order, that finalizeAcquireSpan() makes -- and assert
-    // the guard stays inactive and nothing crashes. This is what proves the
-    // added abort-path finalization emits nothing on a node with telemetry
+    // setter is inert. Drive init()'s attribute calls and then every call
+    // finalizeAcquireSpan() can make, in the same order, against it, and
+    // assert the guard stays inactive and nothing crashes. This proves the
+    // abort-path finalization emits nothing on a node with telemetry
     // disabled, including from the destructor.
     SpanGuard guard;
     ASSERT_FALSE(static_cast<bool>(guard));
@@ -224,6 +226,8 @@ TEST(LedgerSpanNames, inactive_guard_finalize_sequence_is_a_no_op)
         ledger_span::acquireOutcome(/*failed=*/false, /*complete=*/false));
     guard.setAttribute(ledger_span::attr::timeouts, static_cast<std::int64_t>(6));
     guard.setAttribute(ledger_span::attr::peerCount, static_cast<std::int64_t>(0));
+    guard.setAttribute(ledger_span::attr::ledgerSeq, static_cast<std::int64_t>(12345));
+    guard.setError();
 
     // Still inactive: no span was created, so none can be exported.
     EXPECT_FALSE(static_cast<bool>(guard));
