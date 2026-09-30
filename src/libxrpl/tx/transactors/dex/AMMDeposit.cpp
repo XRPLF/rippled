@@ -424,9 +424,8 @@ AMMDeposit::applyGuts(Sandbox& sb)
     if (!expected)
         return {expected.error(), false};  // LCOV_EXCL_LINE
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
-    auto const tfee = (lptAMMBalance == beast::kZero)
-        ? ctx_.tx[~sfTradingFee].value_or(0)
-        : getTradingFee(ctx_.view(), ammSle, accountID_);
+    auto const tfee = (lptAMMBalance == beast::kZero) ? ctx_.tx[~sfTradingFee].value_or(0)
+                                                      : ammSle.tradingFee(accountID_);
 
     auto const subTxType = ctx_.tx.getFlags() & tfDepositSubTx;
 
