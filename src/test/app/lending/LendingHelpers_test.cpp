@@ -1482,9 +1482,9 @@ class LendingHelpers_test : public beast::unit_test::Suite
     }
 
     void
-    testAccrualLoanOriginationDeltas()
+    testInstantRecognitionLoanOriginationDeltas()
     {
-        using namespace xrpl::accrual;
+        using namespace xrpl::instant_recognition;
 
         struct TestCase
         {
@@ -1504,7 +1504,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         for (auto const& tc : testCases)
         {
-            testcase("accrual::loanOriginationDeltas: " + tc.name);
+            testcase("instant_recognition::loanOriginationDeltas: " + tc.name);
 
             auto const deltas = loanOriginationDeltas(tc.principalRequested, tc.interestDue);
             BEAST_EXPECTS(
@@ -1540,9 +1540,9 @@ class LendingHelpers_test : public beast::unit_test::Suite
     }
 
     void
-    testAccrualLoanOriginationExceedsVaultMaximum()
+    testInstantRecognitionLoanOriginationExceedsVaultMaximum()
     {
-        using namespace xrpl::accrual;
+        using namespace xrpl::instant_recognition;
 
         struct TestCase
         {
@@ -1578,7 +1578,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         for (auto const& tc : testCases)
         {
-            testcase("accrual::loanOriginationExceedsVaultMaximum: " + tc.name);
+            testcase("instant_recognition::loanOriginationExceedsVaultMaximum: " + tc.name);
             BEAST_EXPECT(
                 loanOriginationExceedsVaultMaximum(
                     tc.vaultMaximum, tc.vaultTotal, tc.interestDue) == tc.expected);
@@ -1620,12 +1620,12 @@ class LendingHelpers_test : public beast::unit_test::Suite
     }
 
     void
-    testAccrualLoanVaultExposure()
+    testInstantRecognitionLoanVaultExposure()
     {
-        testcase("accrual::loanVaultExposure");
+        testcase("instant_recognition::loanVaultExposure");
 
         auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
-        BEAST_EXPECT(xrpl::accrual::loanVaultExposure(sle) == Number{950});
+        BEAST_EXPECT(xrpl::instant_recognition::loanVaultExposure(sle) == Number{950});
     }
 
     void
@@ -1642,7 +1642,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
     {
         // principalPaid, interestPaid, feePaid, valueChange are all distinct
         // and nonzero, with a nonzero valueChange simulating a late-payment
-        // penalty, so Accrual's formula is meaningfully exercised.
+        // penalty, so InstantRecognition's formula is meaningfully exercised.
         LoanPaymentParts const parts{
             .principalPaid = Number{100},
             .interestPaid = Number{20},
@@ -1650,8 +1650,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
             .feePaid = Number{3}};
 
         {
-            testcase("accrual::loanPaymentDeltas: nonzero valueChange");
-            auto const deltas = xrpl::accrual::loanPaymentDeltas(parts);
+            testcase("instant_recognition::loanPaymentDeltas: nonzero valueChange");
+            auto const deltas = xrpl::instant_recognition::loanPaymentDeltas(parts);
             BEAST_EXPECT(deltas.assetsTotalDelta == parts.valueChange);
             BEAST_EXPECT(
                 deltas.debtTotalDelta ==
@@ -1680,11 +1680,11 @@ class LendingHelpers_test : public beast::unit_test::Suite
         {
             testcase(
                 "loanOriginationDeltas dispatcher: amendment enabled, legacy vault picks "
-                "Accrual");
+                "InstantRecognition");
             Env const env{*this};
             auto const deltas = loanOriginationDeltas(legacyVault, principalRequested, interestDue);
             auto const expected =
-                xrpl::accrual::loanOriginationDeltas(principalRequested, interestDue);
+                xrpl::instant_recognition::loanOriginationDeltas(principalRequested, interestDue);
             BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
             BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
         }
@@ -1709,7 +1709,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         Number const vaultMaximum{1'000};
         Number const vaultTotal{900};
-        // Exceeds Accrual's headroom (100), but must never trip CashBasis.
+        // Exceeds InstantRecognition's headroom (100), but must never trip CashBasis.
         Number const interestDue{101};
 
         auto const legacyVault = makeVaultSle(std::nullopt, vaultMaximum, vaultTotal);
@@ -1718,11 +1718,11 @@ class LendingHelpers_test : public beast::unit_test::Suite
         {
             testcase(
                 "loanOriginationExceedsVaultMaximum dispatcher: amendment enabled, legacy vault "
-                "picks Accrual");
+                "picks InstantRecognition");
             Env const env{*this};
             BEAST_EXPECT(
                 loanOriginationExceedsVaultMaximum(legacyVault, vaultTotal, interestDue) ==
-                xrpl::accrual::loanOriginationExceedsVaultMaximum(
+                xrpl::instant_recognition::loanOriginationExceedsVaultMaximum(
                     vaultMaximum, vaultTotal, interestDue));
         }
 
@@ -1746,11 +1746,14 @@ class LendingHelpers_test : public beast::unit_test::Suite
         auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis);
 
         {
-            testcase("loanVaultExposure dispatcher: amendment enabled, legacy vault picks Accrual");
+            testcase(
+                "loanVaultExposure dispatcher: amendment enabled, legacy vault picks "
+                "InstantRecognition");
             Env const env{*this};
             auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
             BEAST_EXPECT(
-                loanVaultExposure(legacyVault, sle) == xrpl::accrual::loanVaultExposure(sle));
+                loanVaultExposure(legacyVault, sle) ==
+                xrpl::instant_recognition::loanVaultExposure(sle));
         }
 
         {
@@ -1780,10 +1783,12 @@ class LendingHelpers_test : public beast::unit_test::Suite
         auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis);
 
         {
-            testcase("loanPaymentDeltas dispatcher: amendment enabled, legacy vault picks Accrual");
+            testcase(
+                "loanPaymentDeltas dispatcher: amendment enabled, legacy vault picks "
+                "InstantRecognition");
             Env const env{*this};
             auto const deltas = loanPaymentDeltas(legacyVault, parts);
-            auto const expected = xrpl::accrual::loanPaymentDeltas(parts);
+            auto const expected = xrpl::instant_recognition::loanPaymentDeltas(parts);
             BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
             BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
         }
@@ -1999,10 +2004,10 @@ public:
         testComputeInterestAndFeeParts();
         testCanApplyToBrokerCover();
 
-        testAccrualLoanOriginationDeltas();
+        testInstantRecognitionLoanOriginationDeltas();
         testCashBasisLoanOriginationDeltas();
-        testAccrualLoanOriginationExceedsVaultMaximum();
-        testAccrualLoanVaultExposure();
+        testInstantRecognitionLoanOriginationExceedsVaultMaximum();
+        testInstantRecognitionLoanVaultExposure();
         testCashBasisLoanVaultExposure();
         testLoanPaymentDeltas();
         testLoanOriginationDeltasDispatcher();

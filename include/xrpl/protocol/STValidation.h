@@ -124,6 +124,13 @@ public:
     [[nodiscard]] NodeID const&
     getNodeID() const noexcept;
 
+    /**
+     * Whether this validation carries a good signature.
+     *
+     * Reports false if the signature cannot be checked at all, so a caller
+     * cannot tell that apart from a bad signature. Either way the validation is
+     * unusable, and the reason is logged. Only a computed answer is remembered.
+     */
     [[nodiscard]] bool
     isValid() const noexcept;
 

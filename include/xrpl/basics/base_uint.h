@@ -518,7 +518,7 @@ public:
      * The input must be precisely `2 * bytes` hexadecimal characters
      * long, with one exception: the value '0'.
      *
-     * @param sv A null-terminated string of hexadecimal characters
+     * @param sv A string of hexadecimal characters
      * @return true if the input was parsed properly; false otherwise.
      */
     [[nodiscard]] constexpr bool

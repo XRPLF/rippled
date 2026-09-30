@@ -11,6 +11,7 @@ namespace xrpl {
 std::unordered_map<protocol::MessageType, TrafficCount::Category> const kTypeLookup = {
     {protocol::mtPING, TrafficCount::Category::Base},
     {protocol::mtSTATUS_CHANGE, TrafficCount::Category::Base},
+    {protocol::mtCLUSTER, TrafficCount::Category::Cluster},
     {protocol::mtMANIFESTS, TrafficCount::Category::Manifests},
     {protocol::mtENDPOINTS, TrafficCount::Category::Overlay},
     {protocol::mtTRANSACTION, TrafficCount::Category::Transaction},
