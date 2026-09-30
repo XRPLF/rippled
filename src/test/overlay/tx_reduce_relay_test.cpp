@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
@@ -228,6 +229,50 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
         }
     }
 
+    /**
+     * Exercises the branch that only queues, reached when relay() is handed no transaction to
+     * send: a pseudo-transaction, or an explicit nullopt as here.
+     *
+     * A queued hash is announced later in a TMHaveTransactions, a type only a peer that negotiated
+     * tx reduce-relay recognizes, so a peer without it must not be queued. The relay branch below
+     * checks that; this one has to as well, since the check is only as good as its least-guarded
+     * send path.
+     *
+     * @param test Name of the case.
+     * @param txRREnabled Whether the server's tx reduce-relay is configured on.
+     * @param nPeers How many peers to attach.
+     * @param nDisabled How many of those did not negotiate the feature.
+     * @param expectQueue How many peers are expected to be queued.
+     */
+    void
+    testQueueOnly(
+        std::string const& test,
+        bool txRREnabled,
+        std::uint16_t nPeers,
+        std::uint16_t nDisabled,
+        std::uint16_t expectQueue)
+    {
+        testcase(test);
+        jtx::Env env(*this);
+        std::vector<std::shared_ptr<TxReducePeer>> peers;
+        // `PeerImp` decides `txReduceRelayEnabled()` in its constructor, from
+        // the config and the handshake header, so set this first.
+        env.app().config().txReduceRelayEnable = txRREnabled;
+        for (int i = 0; i < nPeers; i++)
+            addPeer(env, peers, nDisabled);
+
+        env.app().getOverlay().relay(uint256{0}, std::nullopt, {});
+
+        std::size_t sendTx = 0;
+        std::size_t queueTx = 0;
+        for (auto const& peer : peers)
+        {
+            sendTx += peer->sent().size();
+            queueTx += peer->queued();
+        }
+        BEAST_EXPECT(sendTx == 0 && queueTx == expectQueue);
+    }
+
     void
     run() override
     {
@@ -263,6 +308,14 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
         // - skip (10+2+0.25*(20-10-2)-14=0), queue the rest, skip counts
         // towards relayed (20-14=6)
         testRelay("disabled & skip, no relay", true, 20, 2, 10, 25, 0, 6, 14);
+        // nothing to send, so nothing is queued either
+        testQueueOnly("queue only, feature disabled", false, 10, 0, 0);
+        // queue every peer, since all of them negotiated the feature
+        testQueueOnly("queue only", true, 10, 0, 10);
+        // queue the 6 that negotiated it and none of the 4 that did not
+        testQueueOnly("queue only, some disabled", true, 10, 4, 6);
+        // queue nobody, since no peer would understand the announcement
+        testQueueOnly("queue only, all disabled", true, 10, 10, 0);
     }
 };
 

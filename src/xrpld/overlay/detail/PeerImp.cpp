@@ -1055,8 +1055,9 @@ PeerImp::onMessageBegin(
     loadEvent_ = app_.getJobQueue().makeLoadEvent(JtPeer, name);
     fee_ = {.fee = resource::kFeeTrivialPeer, .context = name};
 
-    auto const category =
-        TrafficCount::categorize(*m, static_cast<protocol::MessageType>(type), true);
+    auto const category = TrafficCount::attribute(
+        TrafficCount::categorize(*m, static_cast<protocol::MessageType>(type), true),
+        cluster() ? TrafficCount::IsFromCluster::Yes : TrafficCount::IsFromCluster::No);
 
     // report total incoming traffic
     overlay_.reportInboundTraffic(TrafficCount::Category::Total, static_cast<int>(size));

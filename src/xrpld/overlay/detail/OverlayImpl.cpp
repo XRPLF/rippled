@@ -1359,7 +1359,10 @@ OverlayImpl::relay(
         peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
         JLOG(journal_.trace()) << "not relaying tx, total peers " << peers.size();
         for (auto const& p : peers)
-            p->addTxQueue(hash);
+        {
+            if (p->txReduceRelayEnabled())
+                p->addTxQueue(hash);
+        }
         return;
     }
 

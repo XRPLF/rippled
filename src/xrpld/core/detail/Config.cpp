@@ -246,11 +246,6 @@ getSingleSection(
 //
 //------------------------------------------------------------------------------
 
-char const* const Config::kConfigFileName = "xrpld.cfg";
-char const* const Config::kConfigLegacyName = "rippled.cfg";
-char const* const Config::kDatabaseDirName = "db";
-char const* const Config::kValidatorsFileName = "validators.txt";
-
 [[nodiscard]] static std::string
 getEnvVar(char const* name)
 {
