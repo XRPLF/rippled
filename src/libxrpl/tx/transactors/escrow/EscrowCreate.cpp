@@ -448,7 +448,7 @@ EscrowCreate::doApply()
     // unsponsored this hits the source branch and validates the
     // source's pre-lock balance against base + (currentOC+1)*increment.
     if (auto const ret =
-            checkReserve(ctx_.getApplyViewContext(), sle, balance, {.ownerCountDelta = 1}, j_);
+            sle.checkReserve(ctx_.getApplyViewContext(), balance, {.ownerCountDelta = 1});
         !isTesSuccess(ret))
         return ret;
 

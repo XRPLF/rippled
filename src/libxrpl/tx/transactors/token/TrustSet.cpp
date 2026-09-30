@@ -353,7 +353,7 @@ TrustSet::doApply()
 
     auto viewJ = ctx_.registry.get().getJournal("View");
 
-    auto sleDst = AccountRootEntryW(uDstAccountID, view());
+    auto sleDst = AccountRootEntryW(uDstAccountID, view(), j_);
 
     if (!sleDst)
     {
@@ -536,13 +536,11 @@ TrustSet::doApply()
 
             if (view().rules().enabled(featureSponsor))
             {
-                if (auto const ret = checkReserve(
+                if (auto const ret = sleLowAccount.checkReserve(
                         ctx_.getApplyViewContext(),
-                        sleLowAccount,
                         preFeeBalance_,
                         lowSponsor,
                         {.ownerCountDelta = 1},
-                        j_,
                         tecINSUF_RESERVE_LINE);
                     lowSponsor && !isTesSuccess(ret))
                 {
@@ -579,13 +577,11 @@ TrustSet::doApply()
             // calling increaseOwnerCount().
             if (view().rules().enabled(featureSponsor))
             {
-                if (auto const ret = checkReserve(
+                if (auto const ret = sleHighAccount.checkReserve(
                         ctx_.getApplyViewContext(),
-                        sleHighAccount,
                         preFeeBalance_,
                         highSponsor,
                         {.ownerCountDelta = 1},
-                        j_,
                         tecINSUF_RESERVE_LINE);
                     highSponsor && !isTesSuccess(ret))
                 {
@@ -627,13 +623,11 @@ TrustSet::doApply()
             }
             // Reserve is not scaled by load
             else if (
-                auto const ret = checkReserve(
+                auto const ret = sle.checkReserve(
                     ctx_.getApplyViewContext(),
-                    sle,
                     preFeeBalance_,
                     sponsorSle,
                     {},
-                    j_,
                     tecINSUF_RESERVE_LINE);
                 !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
             {
@@ -701,13 +695,11 @@ TrustSet::doApply()
         terResult = tecNO_LINE_INSUF_RESERVE;
     }
     else if (
-        auto const ret = checkReserve(
+        auto const ret = sle.checkReserve(
             ctx_.getApplyViewContext(),
-            sle,
             preFeeBalance_,
             sponsorSle,
             {.ownerCountDelta = 1},
-            j_,
             tecNO_LINE_INSUF_RESERVE);
         view().rules().enabled(featureSponsor) && !freeTrustLine &&
         !isTesSuccess(ret))  // Reserve is not scaled by load.

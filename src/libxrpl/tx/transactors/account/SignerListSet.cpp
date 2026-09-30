@@ -311,7 +311,7 @@ SignerListSet::replaceSignerList()
             ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_))
         return ter;
 
-    auto sle = AccountRootEntryW(accountKeylet, view());
+    auto sle = AccountRootEntryW(accountKeylet, view(), ctx_.journal);
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -321,12 +321,8 @@ SignerListSet::replaceSignerList()
     // We check the reserve against the starting balance because we want to
     // allow dipping into the reserve to pay fees.  This behavior is consistent
     // with TicketCreate.
-    if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(),
-            sle,
-            preFeeBalance_,
-            {.ownerCountDelta = kAddedOwnerCount},
-            ctx_.journal);
+    if (auto const ret = sle.checkReserve(
+            ctx_.getApplyViewContext(), preFeeBalance_, {.ownerCountDelta = kAddedOwnerCount});
         !isTesSuccess(ret))
         return ret;
 

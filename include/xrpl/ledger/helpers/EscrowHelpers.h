@@ -99,21 +99,15 @@ escrowUnlockApplyHelper<Issue>(
         // Can the account cover the trust line's reserve?
         if (sleDest->getType() != ltACCOUNT_ROOT)
             return detail::escrowDestNotAccountResult(ctx, sleDest);
-        auto const destSle = AccountRootEntryR(sleDest, ctx.view);
+        auto const destSle = AccountRootEntryR(sleDest, ctx.view, journal);
         auto sponsorSle = getEffectiveTxReserveSponsor(ctx, destSle);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
         auto& sponsor = *sponsorSle;
 
-        if (auto const ret = checkReserve(
-                ctx,
-                destSle,
-                xrpBalance,
-                sponsor,
-                {.ownerCountDelta = 1},
-                journal,
-                tecNO_LINE_INSUF_RESERVE);
+        if (auto const ret = destSle.checkReserve(
+                ctx, xrpBalance, sponsor, {.ownerCountDelta = 1}, tecNO_LINE_INSUF_RESERVE);
             !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
@@ -238,15 +232,14 @@ escrowUnlockApplyHelper<MPTIssue>(
     {
         if (sleDest->getType() != ltACCOUNT_ROOT)
             return detail::escrowDestNotAccountResult(ctx, sleDest);
-        auto const destSle = AccountRootEntryR(sleDest, ctx.view);
+        auto const destSle = AccountRootEntryR(sleDest, ctx.view, journal);
         auto sponsorSle = getEffectiveTxReserveSponsor(ctx, destSle);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
         auto& sponsor = *sponsorSle;
 
-        if (auto const ret =
-                checkReserve(ctx, destSle, xrpBalance, sponsor, {.ownerCountDelta = 1}, journal);
+        if (auto const ret = destSle.checkReserve(ctx, xrpBalance, sponsor, {.ownerCountDelta = 1});
             !isTesSuccess(ret))
             return ret;
 

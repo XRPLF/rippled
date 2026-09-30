@@ -671,7 +671,7 @@ addEmptyHolding(
         return tecFROZEN;  // LCOV_EXCL_LINE
 
     auto const sleSrc = AccountRootEntryW(srcId, ctx.view);
-    auto sleDst = AccountRootEntryW(dstId, ctx.view);
+    auto sleDst = AccountRootEntryW(dstId, ctx.view, journal);
     if (!sleDst || !sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     // Create path: DefaultRipple is still required. terNO_RIPPLE is
@@ -692,14 +692,8 @@ addEmptyHolding(
     auto& sponsorSle = *sponsorExp;
 
     // Can the account cover the trust line reserve ?
-    if (auto const ret = checkReserve(
-            ctx,
-            sleDst,
-            priorBalance,
-            sponsorSle,
-            {.ownerCountDelta = 1},
-            journal,
-            tecNO_LINE_INSUF_RESERVE);
+    if (auto const ret = sleDst.checkReserve(
+            ctx, priorBalance, sponsorSle, {.ownerCountDelta = 1}, tecNO_LINE_INSUF_RESERVE);
         !isTesSuccess(ret))
     {
         return ret;

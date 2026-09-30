@@ -73,7 +73,7 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
 TER
 DelegateSet::doApply()
 {
-    auto sleOwner = AccountRootEntryW(accountID_, ctx_.view());
+    auto sleOwner = AccountRootEntryW(accountID_, ctx_.view(), ctx_.journal);
     if (!sleOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -99,12 +99,8 @@ DelegateSet::doApply()
     if (permissions.empty())
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(),
-            sleOwner,
-            preFeeBalance_,
-            {.ownerCountDelta = 1},
-            ctx_.journal);
+    if (auto const ret = sleOwner.checkReserve(
+            ctx_.getApplyViewContext(), preFeeBalance_, {.ownerCountDelta = 1});
         !isTesSuccess(ret))
         return ret;
 
