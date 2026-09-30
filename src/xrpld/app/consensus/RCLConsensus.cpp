@@ -529,20 +529,21 @@ std::shared_ptr<telemetry::SpanGuard>
 RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
 {
     // The whole body is telemetry: the guard, its attributes and the captured
-    // context serve the accept span only. With telemetry compiled out the handle
-    // stays empty, so accepting a ledger does not allocate a control block for a
-    // span that can never record. doAccept only hands the handle to
+    // context serve the accept span only. The handle is allocated only for a
+    // live span, so accepting a ledger allocates nothing for it when telemetry
+    // is compiled out or disabled. doAccept only hands the handle to
     // activateIfLive(), which tests it, so an empty handle is safe on both the
     // sync (onForceAccept) and async (onAccept) paths.
 #ifdef XRPL_ENABLE_TELEMETRY
     namespace cs = telemetry::consensus::span;
 
-    auto span = std::make_shared<telemetry::SpanGuard>(
-        telemetry::SpanGuard::childSpan(cs::accept, roundSpanContext_));
+    std::shared_ptr<telemetry::SpanGuard> span;
+    if (auto guard = telemetry::SpanGuard::childSpan(cs::accept, roundSpanContext_))
+        span = std::make_shared<telemetry::SpanGuard>(std::move(guard));
 
     // Every attribute below exists only for the span, so the whole block —
     // attributes and the context capture — is guarded on the span being live.
-    if (*span)
+    if (span && *span)
     {
         span->setAttribute(cs::attr::proposers, static_cast<int64_t>(result.proposers));
         span->setAttribute(
@@ -1427,8 +1428,8 @@ RCLConsensus::Adaptor::createValidationSpan()
     // Prefer linking to the accept span (matches the design diagram and
     // the "validation follows acceptance" causal model). Fall back to the
     // round span only if the accept context isn't yet captured (e.g.
-    // tracing started after onAccept, or makeAcceptSpan returned a null
-    // guard).
+    // tracing started after onAccept, or makeAcceptSpan returned an empty
+    // handle).
     if (acceptSpanContext_.isValid())
     {
         return telemetry::SpanGuard::linkedSpan(cs::validationSend, acceptSpanContext_);

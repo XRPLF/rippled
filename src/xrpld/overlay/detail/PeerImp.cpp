@@ -2061,13 +2061,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // Create a receive span that links to the sender's trace context
     // (if propagated). shared_ptr keeps it alive across the job boundary.
     // The receive span is a thread-free SpanGuard handed to the job worker;
-    // no scope to strip. The handle stays empty when telemetry is compiled
-    // out, so nothing is allocated on a path every inbound proposal takes.
-    // The job body only carries the handle to hold the span alive, so an
-    // empty handle is safe there.
+    // no scope to strip. The handle is allocated only for a live span, so an
+    // inbound proposal allocates nothing for it when telemetry is compiled out
+    // or disabled. The job body only carries the handle to hold the span
+    // alive, so an empty handle is safe there.
     std::shared_ptr<telemetry::SpanGuard> span;
 #ifdef XRPL_ENABLE_TELEMETRY
-    span = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
+    if (auto guard = telemetry::proposalReceiveSpan(set))
+        span = std::make_shared<telemetry::SpanGuard>(std::move(guard));
 #endif
     // Every attribute below exists only for the span, so the block is guarded
     // on the span being live. Unguarded, each inbound proposal — trusted or
@@ -2649,13 +2650,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // Create a receive span that links to the sender's trace context
         // (if propagated). shared_ptr keeps it alive across the job boundary.
         // The receive span is a thread-free SpanGuard handed to the job worker;
-        // no scope to strip. The handle stays empty when telemetry is compiled
-        // out, so nothing is allocated on a path every inbound validation
-        // takes. The job body only carries the handle to hold the span alive,
-        // so an empty handle is safe there.
+        // no scope to strip. The handle is allocated only for a live span, so
+        // an inbound validation allocates nothing for it when telemetry is
+        // compiled out or disabled. The job body only carries the handle to hold
+        // the span alive, so an empty handle is safe there.
         std::shared_ptr<telemetry::SpanGuard> span;
 #ifdef XRPL_ENABLE_TELEMETRY
-        span = std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
+        if (auto guard = telemetry::validationReceiveSpan(*m))
+            span = std::make_shared<telemetry::SpanGuard>(std::move(guard));
 #endif
         // Every attribute below exists only for the span, so the block is
         // guarded on the span being live. Unguarded, each inbound validation
