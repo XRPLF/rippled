@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -100,8 +101,8 @@ namespace detail {
 static TER
 verifySendProofs(
     PreclaimContext const& ctx,
-    std::shared_ptr<SLE const> const& sleSenderMPToken,
-    std::shared_ptr<SLE const> const& sleDestinationMPToken,
+    MPTokenEntryR const& sleSenderMPToken,
+    MPTokenEntryR const& sleDestinationMPToken,
     std::shared_ptr<SLE const> const& sleIssuance)
 {
     // Sanity check
@@ -222,7 +223,7 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
     }
 
     // Check sender's MPToken existence
-    auto const sleSenderMPToken = ctx.view.read(keylet::mptoken(mptIssuanceID, account));
+    MPTokenEntryR const sleSenderMPToken(mptIssuanceID, account, ctx.view);
     if (!sleSenderMPToken)
         return tecOBJECT_NOT_FOUND;
 
@@ -235,7 +236,7 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
     }
 
     // Check destination's MPToken existence
-    auto const sleDestinationMPToken = ctx.view.read(keylet::mptoken(mptIssuanceID, destination));
+    MPTokenEntryR const sleDestinationMPToken(mptIssuanceID, destination, ctx.view);
     if (!sleDestinationMPToken)
         return tecOBJECT_NOT_FOUND;
 
@@ -305,8 +306,8 @@ ConfidentialMPTSend::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const destination = ctx_.tx[sfDestination];
 
-    auto sleSenderMPToken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
-    auto sleDestinationMPToken = view().peek(keylet::mptoken(mptIssuanceID, destination));
+    MPTokenEntryW sleSenderMPToken(mptIssuanceID, accountID_, view(), j_);
+    MPTokenEntryW sleDestinationMPToken(mptIssuanceID, destination, view(), j_);
     auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
 
     auto const sleDestAcct = view().read(keylet::account(destination));
@@ -469,8 +470,8 @@ ConfidentialMPTSend::doApply()
     // increment sender version only; receiver version is not modified by incoming sends
     incrementConfidentialVersion(*sleSenderMPToken);
 
-    view().update(sleSenderMPToken);
-    view().update(sleDestinationMPToken);
+    sleSenderMPToken.update();
+    sleDestinationMPToken.update();
     return tesSUCCESS;
 }
 
