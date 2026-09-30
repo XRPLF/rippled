@@ -126,7 +126,7 @@ MPTokenIssuanceCreate::create(
     beast::Journal journal,
     MPTCreateArgs const& args)
 {
-    auto acct = AccountRootEntryW(args.account, ctx.view);
+    auto acct = AccountRootEntryW(args.account, ctx.view, journal);
     if (!acct)
         return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
@@ -138,8 +138,8 @@ MPTokenIssuanceCreate::create(
 
     if (args.priorBalance)
     {
-        if (auto const ret = checkReserve(
-                ctx, acct, *(args.priorBalance), sponsorSle, {.ownerCountDelta = 1}, journal);
+        if (auto const ret =
+                acct.checkReserve(ctx, *(args.priorBalance), sponsorSle, {.ownerCountDelta = 1});
             !isTesSuccess(ret))
             return std::unexpected(ret);
     }

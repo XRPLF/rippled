@@ -162,15 +162,15 @@ DepositPreauth::doApply()
     auto applyViewContext = ctx_.getApplyViewContext();
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
-        auto sleOwner = AccountRootEntryW(accountID_, view());
+        auto sleOwner = AccountRootEntryW(accountID_, view(), j_);
         if (!sleOwner)
             return {tefINTERNAL};
 
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        if (auto const ret = checkReserve(
-                applyViewContext, sleOwner, preFeeBalance_, {.ownerCountDelta = 1}, j_);
+        if (auto const ret =
+                sleOwner.checkReserve(applyViewContext, preFeeBalance_, {.ownerCountDelta = 1});
             !isTesSuccess(ret))
             return ret;
 
@@ -207,15 +207,15 @@ DepositPreauth::doApply()
     }
     else if (ctx_.tx.isFieldPresent(sfAuthorizeCredentials))
     {
-        auto sleOwner = AccountRootEntryW(accountID_, view());
+        auto sleOwner = AccountRootEntryW(accountID_, view(), j_);
         if (!sleOwner)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        if (auto const ret = checkReserve(
-                applyViewContext, sleOwner, preFeeBalance_, {.ownerCountDelta = 1}, j_);
+        if (auto const ret =
+                sleOwner.checkReserve(applyViewContext, preFeeBalance_, {.ownerCountDelta = 1});
             !isTesSuccess(ret))
             return ret;
 
