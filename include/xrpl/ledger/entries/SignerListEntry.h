@@ -1,7 +1,6 @@
 #pragma once
 
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/SLEBase.h>
@@ -65,15 +64,17 @@ public:
      * A no-op that returns tesSUCCESS if the signer list does not exist
      * (deletion has already succeeded).
      *
-     * @param registry Used to source the "View" journal partition for the
-     *        owner-count log message, matching the behavior of the
-     *        free function this replaced.
+     * The owner-count log message is written through this->journal(), so
+     * callers that need it tagged under the "View" journal partition (as the
+     * free function this replaced was) should construct the entry with that
+     * journal, e.g. SignerListEntryW(owner, view, registry.getJournal("View")).
+     *
      * @param owner The account that owns the signer list.
      * @return tesSUCCESS, or tefBAD_LEDGER if the owner directory entry
      *         cannot be unlinked.
      */
     [[nodiscard]] TER
-    removeFromLedger(ServiceRegistry& registry, AccountID const& owner)
+    removeFromLedger(AccountID const& owner)
         requires Base::kIsWritable;
 };
 

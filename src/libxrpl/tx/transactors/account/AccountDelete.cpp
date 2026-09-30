@@ -93,10 +93,10 @@ removeSignersFromLedger(
     AccountID const& account,
     UInt256 const& delIndex,
     SLE::Ref,
-    beast::Journal j)
+    beast::Journal)
 {
-    return SignerListEntryW(Keylet(ltSIGNER_LIST, delIndex), view, j)
-        .removeFromLedger(registry, account);
+    return SignerListEntryW(Keylet(ltSIGNER_LIST, delIndex), view, registry.getJournal("View"))
+        .removeFromLedger(account);
 }
 
 TER
