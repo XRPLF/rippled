@@ -72,10 +72,12 @@ public:
     /**
      * @brief called for each ledger entry in the current transaction.
      *
-     * @param entry validated, non-owning view of the modified ledger entry.
+     * @param entry validated before/after pair for the modified ledger entry.
+     * The entry holds shared pointers to the SLEs and keeps them alive for
+     * its own lifetime. It is passed by reference and is not copyable.
      *
-     * @note `entry.after()` IS NEVER NULL. `entry.isDelete()` is the only
-     * correct way to check for deletions.
+     * @note entry.after() is never null; construction throws otherwise.
+     * entry.isDelete() is the only correct way to check for deletions.
      */
     void
     visitEntry(InvariantEntry const& entry);

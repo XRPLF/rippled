@@ -66,7 +66,9 @@ public:
     /**
      * @brief Called for each ledger entry modified by the transaction.
      *
-     * @param entry a validated, non-owning view of the modified entry.
+     * @param entry validated before/after pair for the modified entry. It
+     *        holds shared pointers to the SLEs and keeps them alive for its
+     *        own lifetime. It is passed by reference and is not copyable.
      */
     virtual void
     visitEntry(InvariantEntry const& entry) = 0;

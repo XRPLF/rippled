@@ -9,7 +9,14 @@
 namespace xrpl {
 
 /**
- * A validated ledger entry visited by invariants.
+ * @brief Before/after pair for one ledger entry touched by a transaction.
+ *
+ * Construction throws std::logic_error if after is null, or if isDelete is
+ * true and before is null. visitEntry implementations may therefore
+ * dereference after() unconditionally and before() whenever isDelete() is
+ * true. before() is null for newly created entries. The entry holds shared
+ * pointers to the SLEs and keeps them alive for its own lifetime. It is
+ * passed by reference and is not copyable.
  */
 class InvariantEntry
 {
