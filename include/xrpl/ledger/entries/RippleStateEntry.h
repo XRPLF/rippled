@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -10,8 +11,11 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -129,6 +133,33 @@ public:
      */
     [[nodiscard]] TER
     removeFromLedger(AccountID const& lowAccount, AccountID const& highAccount)
+        requires Base::kIsWritable;
+
+    /**
+     * Create a trust line
+     *
+     * This can set an initial balance.
+     */
+    [[nodiscard]] static TER
+    create(
+        ApplyView& view,
+        bool const bSrcHigh,
+        AccountID const& uSrcAccountID,
+        AccountID const& uDstAccountID,
+        UInt256 const& uIndex,      // --> ripple state entry
+        SLE::Ref sleAccount,        // --> the account being set.
+        bool const bAuth,           // --> authorize account.
+        bool const bNoRipple,       // --> others cannot ripple through
+        bool const bFreeze,         // --> funds cannot leave
+        bool bDeepFreeze,           // --> can neither receive nor send funds
+        STAmount const& saBalance,  // --> balance of account being set.
+                                    // Issuer should be noAccount()
+        STAmount const& saLimit,    // --> limit for account being set.
+                                    // Issuer should be the account being set.
+        std::uint32_t uQualityIn,
+        std::uint32_t uQualityOut,
+        SLE::Ref sponsorSle,
+        beast::Journal j)
         requires Base::kIsWritable;
 };
 
