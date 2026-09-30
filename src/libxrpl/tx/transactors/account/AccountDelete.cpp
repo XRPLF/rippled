@@ -10,6 +10,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/DepositPreauthEntry.h>
+#include <xrpl/ledger/entries/NFTokenPageEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
@@ -265,8 +266,9 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     Keylet const first = keylet::nftokenPageMin(account);
     Keylet const last = keylet::nftokenPageMax(account);
 
-    auto const cp = ctx.view.read(
-        Keylet(ltNFTOKEN_PAGE, ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
+    NFTokenPageEntryR const cp(
+        Keylet(ltNFTOKEN_PAGE, ctx.view.succ(first.key, last.key.next()).value_or(last.key)),
+        ctx.view);
     if (cp)
         return tecHAS_OBLIGATIONS;
 
