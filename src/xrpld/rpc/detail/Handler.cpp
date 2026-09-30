@@ -15,6 +15,7 @@
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 
+#include <rpcspec/Errors.hpp>
 #include <rpcspec/Types.hpp>
 
 #include <algorithm>
