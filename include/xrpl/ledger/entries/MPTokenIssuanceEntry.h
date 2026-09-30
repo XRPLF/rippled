@@ -59,6 +59,13 @@ public:
     {
         return (*this)->isFlag(lsfMPTLocked);
     }
+
+    /**
+     * Returns the issuance's MaximumAmount, or the protocol maximum if the
+     * field is absent. Never exceeds 2**63-1.
+     */
+    [[nodiscard]] std::int64_t
+    maxAmount() const;
 };
 
 using MPTokenIssuanceEntryR = MPTokenIssuanceEntry<ReadView>;
