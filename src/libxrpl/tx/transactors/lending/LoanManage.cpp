@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/LoanEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -71,7 +72,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     auto const account = tx[sfAccount];
     auto const loanID = tx[sfLoanID];
 
-    auto const loanSle = ctx.view.read(keylet::loan(loanID));
+    LoanEntryR const loanSle(loanID, ctx.view);
     if (!loanSle)
     {
         JLOG(ctx.j.warn()) << "Loan does not exist.";
@@ -186,7 +187,7 @@ namespace {
 [[nodiscard]] TER
 defaultLoanFixedPrecision(
     ApplyView& view,
-    SLE::Ref loanSle,
+    LoanEntryW& loanSle,
     SLE::Ref brokerSle,
     SLE::Ref vaultSle,
     beast::Journal j)
@@ -195,7 +196,8 @@ defaultLoanFixedPrecision(
     Number const scheduledInterest = loanSle->at(sfTotalValueOutstanding) - principalOutstanding -
         loanSle->at(sfManagementFeeOutstanding);
 
-    STAmount const coverAmount = LoanManage::calculateDefaultCover(loanSle, brokerSle, vaultSle);
+    STAmount const coverAmount =
+        LoanManage::calculateDefaultCover(loanSle.mutableRawSle(), brokerSle, vaultSle);
 
     // The broker's CoverAvailable decrease and the broker-to-vault transfer
     // both use this amount. AssetsAvailable + cover is exact unless
@@ -228,7 +230,7 @@ defaultLoanFixedPrecision(
     loanSle->at(sfPrincipalOutstanding) = 0;
     loanSle->at(sfManagementFeeOutstanding) = 0;
     loanSle->at(sfNextPaymentDueDate) = 0;
-    view.update(loanSle);
+    loanSle.update();
 
     if (coverAmount == beast::kZero)
         return tesSUCCESS;
@@ -248,7 +250,7 @@ defaultLoanFixedPrecision(
 TER
 LoanManage::defaultLoan(
     ApplyView& view,
-    SLE::Ref loanSle,
+    LoanEntryW& loanSle,
     SLE::Ref brokerSle,
     SLE::Ref vaultSle,
     beast::Journal j)
@@ -386,7 +388,7 @@ LoanManage::defaultLoan(
     // Zero out the next due date. Since it's default, it'll be removed from
     // the object.
     loanSle->at(sfNextPaymentDueDate) = 0;
-    view.update(loanSle);
+    loanSle.update();
 
     // Return funds from the LoanBroker pseudo-account to the
     // Vault pseudo-account:
@@ -403,7 +405,7 @@ LoanManage::defaultLoan(
 TER
 LoanManage::impairLoan(
     ApplyView& view,
-    SLE::Ref loanSle,
+    LoanEntryW& loanSle,
     SLE::Ref vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
@@ -464,7 +466,7 @@ LoanManage::impairLoan(
             loanNextDueProxy = view.parentCloseTime().time_since_epoch().count();
         }
     }
-    view.update(loanSle);
+    loanSle.update();
 
     return tesSUCCESS;
 }
@@ -472,7 +474,7 @@ LoanManage::impairLoan(
 [[nodiscard]] TER
 LoanManage::unimpairLoan(
     ApplyView& view,
-    SLE::Ref loanSle,
+    LoanEntryW& loanSle,
     SLE::Ref vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
@@ -527,7 +529,7 @@ LoanManage::unimpairLoan(
                 view.parentCloseTime().time_since_epoch().count() + paymentInterval;
         }
     }
-    view.update(loanSle);
+    loanSle.update();
 
     return tesSUCCESS;
 }
@@ -539,7 +541,7 @@ LoanManage::doApply()
     auto& view = ctx_.view();
 
     auto const loanID = tx[sfLoanID];
-    auto const loanSle = view.peek(keylet::loan(loanID));
+    LoanEntryW loanSle(loanID, view);
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 

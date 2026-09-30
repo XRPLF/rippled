@@ -11,6 +11,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/ledger/entries/LoanEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -1646,8 +1647,11 @@ class LendingHelpers_test : public beast::unit_test::Suite
     {
         testcase("instant_recognition::loanVaultExposure");
 
+        jtx::Env const env{*this};
         auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
-        BEAST_EXPECT(xrpl::instant_recognition::loanVaultExposure(sle) == Number{950});
+        BEAST_EXPECT(
+            xrpl::instant_recognition::loanVaultExposure(LoanEntryR(sle, *env.current())) ==
+            Number{950});
     }
 
     void
@@ -1655,8 +1659,10 @@ class LendingHelpers_test : public beast::unit_test::Suite
     {
         testcase("cash_basis::loanVaultExposure");
 
+        jtx::Env const env{*this};
         auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
-        BEAST_EXPECT(xrpl::cash_basis::loanVaultExposure(sle) == Number{800});
+        BEAST_EXPECT(
+            xrpl::cash_basis::loanVaultExposure(LoanEntryR(sle, *env.current())) == Number{800});
     }
 
     void
@@ -1779,8 +1785,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
             Env const env{*this};
             auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
             BEAST_EXPECT(
-                loanVaultExposure(legacyVault, sle) ==
-                xrpl::instant_recognition::loanVaultExposure(sle));
+                loanVaultExposure(legacyVault, LoanEntryR(sle, *env.current())) ==
+                xrpl::instant_recognition::loanVaultExposure(LoanEntryR(sle, *env.current())));
         }
 
         {
@@ -1792,8 +1798,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
             for (auto const version : {VaultVersion::CashBasis, VaultVersion::FixedPrecision})
             {
                 BEAST_EXPECT(
-                    loanVaultExposure(makeVaultSle(version), sle) ==
-                    xrpl::cash_basis::loanVaultExposure(sle));
+                    loanVaultExposure(makeVaultSle(version), LoanEntryR(sle, *env.current())) ==
+                    xrpl::cash_basis::loanVaultExposure(LoanEntryR(sle, *env.current())));
             }
         }
     }
