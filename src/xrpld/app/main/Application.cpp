@@ -507,6 +507,31 @@ public:
         add(ledgerCleaner_.get());
     }
 
+    /**
+     * Stop telemetry before the members are destroyed.
+     *
+     * setup() starts telemetry and run() stops it. This covers the paths that
+     * never reach run(): every `return false` in setup() after the start, and
+     * a caller that gives up after setup() succeeds. Without it the global
+     * Telemetry instance would point at a destroyed object. It acts only while
+     * this application's instance is still published, so a normal shutdown,
+     * where run() already stopped it, does nothing here.
+     */
+    ~ApplicationImp() override
+    {
+        // A destructor is implicitly noexcept, so a failure to stop must not
+        // escape and terminate the process.
+        try
+        {
+            if (telemetry::Telemetry::getInstance() == telemetry_.get())
+                telemetry_->stop();
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(journal_.error()) << "Error stopping telemetry: " << e.what();
+        }
+    }
+
     //--------------------------------------------------------------------------
 
     bool
