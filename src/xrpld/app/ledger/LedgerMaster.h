@@ -1013,7 +1013,7 @@ private:
     bool const standalone_;
 
     /**
-     * How many ledgers before the current ledger do we allow peers to request?
+     * How many ledgers before the closed ledger do we allow peers to request?
      */
     std::uint32_t const fetchDepth_;
 
