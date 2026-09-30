@@ -70,7 +70,8 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
     }
 
     // Amendment-specific field presence rules
-    if (auto const vaultID = tx[~sfVaultID]; ctx.rules.enabled(featureLendingProtocolV1_2))
+    auto const vaultID = tx[~sfVaultID];
+    if (ctx.rules.enabled(featureLendingProtocolV1_2))
     {
         if (isLoanBrokerUpdate)
         {

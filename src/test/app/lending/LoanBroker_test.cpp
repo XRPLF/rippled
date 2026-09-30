@@ -3044,8 +3044,14 @@ class LoanBroker_test : public beast::unit_test::Suite
             // Create without VaultID → temINVALID
             env(set(alice), Ter(temINVALID));
 
-            // Create with zero VaultID → temINVALID
-            env(set(alice), kVaultId(uint256{}), Ter(temINVALID));
+            // Create with empty-string VaultID (parses to zero) → temINVALID
+            auto jv = env.json(set(alice));
+            jv[sfVaultID] = "";
+            env(jv, Ter(temINVALID));
+
+            // Create with zero VaultID → temINVALID. The flag distinguishes the
+            // parsed STTx from the prior one.
+            env(set(alice), kVaultId(uint256{}), Txflags(tfFullyCanonicalSig), Ter(temINVALID));
         }
 
         // Post-amendment: Update by wrong owner → tecNO_PERMISSION
@@ -3142,6 +3148,59 @@ class LoanBroker_test : public beast::unit_test::Suite
             env(set(alice), kVaultId(uint256{1}), kLoanBrokerId(brokerKL.key), Ter(tecNO_ENTRY));
         }
 
+        // Pre-amendment: update of non-existent broker → tecNO_ENTRY
+        {
+            testcase("LoanBrokerSet pre-amendment: non-existent broker on update");
+            Env env(*this, preV12);
+            auto const vaultID = setup(env).vaultID;
+
+            // Vault is valid, broker is missing
+            env(set(alice), kVaultId(vaultID), kLoanBrokerId(uint256{1}), Ter(tecNO_ENTRY));
+        }
+
+        // Pre-amendment: update by non-owner → tecNO_PERMISSION
+        {
+            testcase("LoanBrokerSet pre-amendment: wrong owner on update");
+            Env env(*this, preV12);
+            auto const [vaultID, brokerKL] = setup(env);
+
+            env(set(evan), kVaultId(vaultID), kLoanBrokerId(brokerKL.key), Ter(tecNO_PERMISSION));
+        }
+
+        // V1_1 and V1_2 both enabled: VaultID omitted on update succeeds
+        {
+            testcase("LoanBrokerSet V1_1 + V1_2: update without VaultID");
+            Env env(*this, all_ | featureLendingProtocolV1_1);
+            BEAST_EXPECT(env.enabled(featureLendingProtocolV1_1));
+            BEAST_EXPECT(env.enabled(featureLendingProtocolV1_2));
+
+            // V1_1 only allows brokers on closed-ended vaults
+            Vault const vault{env};
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(trust(alice, issuer["IOU"](1'000'000)));
+            env.close();
+            PrettyAsset const asset = issuer["IOU"];
+            env(pay(issuer, alice, asset(100'000)));
+            env.close();
+
+            auto [vaultTx, vaultKL, subscriptionDate] =
+                vault.createClosedEnded({.owner = alice, .asset = asset});
+            env(vaultTx);
+            env.close();
+            env(vault.deposit({.depositor = alice, .id = vaultKL.key, .amount = asset(50)}));
+            env.close();
+            vault.closePastSubscription(subscriptionDate);
+
+            auto const brokerKL =
+                keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+            env(set(alice), kVaultId(vaultKL.key));
+            env.close();
+
+            env(set(alice), kLoanBrokerId(brokerKL.key), kData("v1_1 update"), Ter(tesSUCCESS));
+            env.close();
+        }
+
         // Pre-amendment: Create without VaultID → temINVALID
         {
             testcase("LoanBrokerSet pre-amendment: create requires VaultID");
@@ -3151,8 +3210,14 @@ class LoanBroker_test : public beast::unit_test::Suite
 
             env(set(alice), Ter(temINVALID));
 
-            // Create with zero VaultID → temINVALID
-            env(set(alice), kVaultId(uint256{}), Ter(temINVALID));
+            // Create with empty-string VaultID (parses to zero) → temINVALID
+            auto jv = env.json(set(alice));
+            jv[sfVaultID] = "";
+            env(jv, Ter(temINVALID));
+
+            // Create with zero VaultID → temINVALID. The flag distinguishes the
+            // parsed STTx from the prior one.
+            env(set(alice), kVaultId(uint256{}), Txflags(tfFullyCanonicalSig), Ter(temINVALID));
         }
 
         // Pre-amendment: immutable fields still rejected on update

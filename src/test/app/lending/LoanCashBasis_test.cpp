@@ -198,23 +198,11 @@ private:
 
             BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
-            // Post-amendment, VaultID must be omitted on update;
-            // pre-amendment it is required.
-            if (features[featureLendingProtocolV1_2])
-            {
-                env(loan_broker::set(lender),
-                    loan_broker::kLoanBrokerId(broker.brokerID),
-                    loan_broker::kDebtMaximum(debtMaximum),
-                    Fee(env.current()->fees().base * 2));
-            }
-            else
-            {
-                env(loan_broker::set(lender),
-                    loan_broker::kVaultId(broker.vaultID),
-                    loan_broker::kLoanBrokerId(broker.brokerID),
-                    loan_broker::kDebtMaximum(debtMaximum),
-                    Fee(env.current()->fees().base * 2));
-            }
+            // VaultID must be omitted on update.
+            env(loan_broker::set(lender),
+                loan_broker::kLoanBrokerId(broker.brokerID),
+                loan_broker::kDebtMaximum(debtMaximum),
+                Fee(env.current()->fees().base * 2));
             env.close();
 
             env(set(borrower, broker.brokerID, xrpAsset(principalRequest).value()),
