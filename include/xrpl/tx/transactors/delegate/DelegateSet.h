@@ -40,10 +40,6 @@ public:
         XRPAmount fee,
         ReadView const& view,
         beast::Journal const& j) override;
-
-    // Interface used by AccountDelete
-    static TER
-    deleteDelegate(ApplyView& view, SLE::Ref sle, beast::Journal j);
 };
 
 }  // namespace xrpl
