@@ -196,7 +196,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        increaseOwnerCount(applyViewContext, sleOwner, 1, j_);
+        sleOwner.increaseOwnerCount(applyViewContext, 1);
         addSponsorToLedgerEntry(applyViewContext, slePreauth);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorize))
@@ -255,7 +255,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        increaseOwnerCount(applyViewContext, sleOwner, 1, j_);
+        sleOwner.increaseOwnerCount(applyViewContext, 1);
         addSponsorToLedgerEntry(applyViewContext, slePreauth);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorizeCredentials))

@@ -1145,9 +1145,9 @@ applyCreateAccountAttestations(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // Reserve was already checked
-        AccountRootEntryW doorSle(doorK, psb);
+        AccountRootEntryW doorSle(doorK, psb, j);
         std::optional<AccountRootEntryW> noSponsor;
-        increaseOwnerCount(psb, doorSle, noSponsor, 1, j);
+        doorSle.increaseOwnerCount(noSponsor, 1);
         psb.insert(createdSleClaimID);
         psb.update(sleDoor);
     }
@@ -1466,7 +1466,7 @@ XChainCreateBridge::doApply()
     auto const reward = ctx_.tx[sfSignatureReward];
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
 
-    auto sleAcct = AccountRootEntryW(account, ctx_.view());
+    auto sleAcct = AccountRootEntryW(account, ctx_.view(), ctx_.journal);
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -1495,7 +1495,7 @@ XChainCreateBridge::doApply()
     }
 
     std::optional<AccountRootEntryW> noSponsor;
-    increaseOwnerCount(ctx_.view(), sleAcct, noSponsor, 1, ctx_.journal);
+    sleAcct.increaseOwnerCount(noSponsor, 1);
 
     ctx_.view().insert(sleBridge);
     sleAcct.update();
@@ -2014,7 +2014,7 @@ XChainCreateClaimID::doApply()
     auto const reward = ctx_.tx[sfSignatureReward];
     auto const otherChainSrc = ctx_.tx[sfOtherChainSource];
 
-    auto sleAcct = AccountRootEntryW(account, ctx_.view());
+    auto sleAcct = AccountRootEntryW(account, ctx_.view(), ctx_.journal);
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -2057,7 +2057,7 @@ XChainCreateClaimID::doApply()
     }
 
     std::optional<AccountRootEntryW> noSponsor;
-    increaseOwnerCount(ctx_.view(), sleAcct, noSponsor, 1, ctx_.journal);
+    sleAcct.increaseOwnerCount(noSponsor, 1);
 
     ctx_.view().insert(sleClaimID);
     ctx_.view().update(sleBridge);
