@@ -218,24 +218,6 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::ConstRef 
     return sleToken->getFieldU64(sfMPTAmount) == outstanding;
 }
 
-[[nodiscard]] VaultVersion
-getVaultVersion(VaultEntryR const& vault)
-{
-    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultVersion : valid Vault sle");
-    if (!vault->isFieldPresent(sfLEVersion))
-        return VaultVersion::Legacy;
-
-    auto const version = vault->at(sfLEVersion);
-    if (version > std::to_underlying(VaultVersion::CashBasis))
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::getVaultVersion : invalid vault version");
-        return VaultVersion::Legacy;
-        // LCOV_EXCL_STOP
-    }
-    return static_cast<VaultVersion>(version);
-}
-
 namespace {
 
 [[nodiscard]] VaultKind
