@@ -596,22 +596,22 @@ dropped the `xrpld-` prefix).
 
 ## Task 9.14: Overlay Traffic Accounting Defects (Documentation Only)
 
-> **Status**: DOCUMENTED, NOT FIXED. Reference: [09 §6.0-§6.2](./09-data-collection-reference.md#6-known-issues)
+> **Status**: Defect 1 FIXED in `develop`. Defects 2-4 DOCUMENTED, NOT FIXED. Reference: [09 §6.0-§6.2](./09-data-collection-reference.md#6-known-issues)
 
 **Objective**: Record four pre-existing overlay traffic-accounting defects so
 dashboard readers are not misled. All four originate in `develop`-owned overlay
 files, so **no code fix lands on this branch**.
 
-| #   | Defect                                 | Effect                                                                                    | Fix location (NOT this branch)                   |
-| --- | -------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| 1   | `mtCLUSTER` missing from `kTypeLookup` | `overhead_cluster_*` always zero; 8 panels flatline; cluster traffic counted as `unknown` | `TrafficCount.cpp:11-27`                         |
-| 2   | Stale `Total` header comment           | Claims uncategorized traffic is excluded; it is included                                  | `TrafficCount.h:28-31`                           |
-| 3   | `SquelchIgnored` reported with size 0  | `squelch_ignored_bytes_*` always zero, inconsistent with `SquelchSuppressed`              | `OverlayImpl.cpp:1460,1489` (+ signature change) |
-| 4   | In/out byte-basis asymmetry            | `_bytes_in` vs `_bytes_out` not comparable under compression                              | `PeerImp.cpp:1079` vs `:313`                     |
+| #   | Defect                                 | Effect                                                                                            | Fix location (NOT this branch)                   |
+| --- | -------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| 1   | `mtCLUSTER` missing from `kTypeLookup` | **Fixed in `develop`.** Cluster messages from members count as cluster; others count as `unknown` | `TrafficCount.cpp`: `kTypeLookup`, `attribute()` |
+| 2   | Stale `Total` header comment           | Claims uncategorized traffic is excluded; it is included                                          | `TrafficCount.h:28-31`                           |
+| 3   | `SquelchIgnored` reported with size 0  | `squelch_ignored_bytes_*` always zero, inconsistent with `SquelchSuppressed`                      | `OverlayImpl.cpp:1460,1489` (+ signature change) |
+| 4   | In/out byte-basis asymmetry            | `_bytes_in` vs `_bytes_out` not comparable under compression                                      | `PeerImp.cpp:1079` vs `:313`                     |
 
 **Why deferred**: Defect 3 requires widening the two
 `OverlayImpl::updateSlotAndSquelch` overloads — a public signature change on
-shared overlay code. Defects 1 and 4 need `TrafficCount.cpp` and `PeerImp.cpp`
+shared overlay code. Defect 4 needs `PeerImp.cpp`
 edits that are not telemetry-owned. Routing them through the telemetry chain
 would hide overlay changes from overlay reviewers and couple them to a 12-PR
 merge timeline.
@@ -620,10 +620,10 @@ merge timeline.
 > `TrafficCount.{h,cpp}`" no longer holds for the header: the telemetry chain
 > already edits `TrafficCount.h` — Phase 6's `77f35c03db` fixed the
 > `Category::GetFetchPack` label from `"getobject_Fetch Pack_get"` to
-> `"getobject_Fetch_Pack_get"` at `TrafficCount.h:285`, the sole difference from
+> `"getobject_Fetch_Pack_get"` in its category-name table, the sole difference from
 > `develop`. Defect 2 (the stale `Total` header comment, `TrafficCount.h:28-31`)
-> is therefore **unblocked** and can land here. Defects **1, 3 and 4** stay
-> blocked: defect 1 needs `TrafficCount.cpp`'s `kTypeLookup`, defect 3 needs the
+> is therefore **unblocked** and can land here. Defect 1 is fixed in `develop`.
+> Defects **3 and 4** stay blocked: defect 3 needs the
 > `OverlayImpl` signature change, and defect 4 needs `PeerImp.cpp:1079` vs `:313`
 > to agree on a byte basis (compressed vs uncompressed) — a change to overlay
 > accounting semantics, not telemetry.
@@ -633,13 +633,13 @@ merge timeline.
 **Exit Criteria**:
 
 - [x] Each defect documented with file:line evidence in `09` §6
-- [x] `overhead_cluster_*` documented as "no data", not "no cluster traffic"
+- [x] Defect 1 fixed in `develop`'s `TrafficCount` code; `09` §6.0 says what `overhead_cluster_*` counts
 - [ ] Defect 2 (stale `Total` header comment, `TrafficCount.h:28-31`) fixed on
       this branch — it is **unblocked** (the chain already edits
       `TrafficCount.h`) but the comment is still uncorrected
-- [ ] Follow-up overlay-owned branch raised for the three still-blocked code
-      fixes (defects 1, 3, 4)
-- [ ] Re-baseline any threshold keyed on `unknown_bytes_in` when defect 1 lands
+- [ ] Follow-up overlay-owned branch raised for the two still-blocked code
+      fixes (defects 3, 4)
+- [x] No re-baseline needed for defect 1: no alert rule in this repo reads `unknown_*`
 
 ---
 
@@ -676,9 +676,7 @@ merge timeline.
   `MetricsRegistry.cpp` (see [09 § GetObject Request Path](./09-data-collection-reference.md#getobject-request-path-synchronous-countershistograms)).
 - `peer_id` as a label is unbounded cardinality — rejected. A bounded
   `peer_role`-style label is the alternative if per-peer attribution is needed.
-- Splitting `mtPING` out of `Category::Base` is a `TrafficCount.cpp` change and
-  therefore still blocked with Task 9.14 defect 1. (The `.h` half of that
-  constraint no longer applies — see Task 9.14.)
+- Splitting `mtPING` out of `Category::Base` is a `TrafficCount.cpp` change, so it needs its own overlay change, like the one in `develop` that fixed Task 9.14 defect 1. (The `.h` half of that constraint no longer applies — see Task 9.14.)
 - Per the runbook's "Adding a New Metric" contract, `_total` is reserved for
   monotonic counters; a histogram takes no suffix.
 
@@ -789,8 +787,8 @@ before commitment.
       "Ledger Economy" row)
 - [x] Provisioned Grafana alerting: 14 rules / 5 groups, 2 contact points,
       nested notification policy
-- [ ] Tasks 9.14-9.17 closed — **open by design**: 9.14 documented-not-fixed
-      (defects 1, 3 and 4 still blocked; defect 2 unblocked but not yet fixed),
+- [ ] Tasks 9.14-9.17 closed — **open by design**: 9.14 partly fixed
+      (defect 1 fixed in `develop`; defects 3 and 4 still blocked; defect 2 unblocked but not yet fixed),
       9.15 and 9.16 not implemented, 9.17 deferred pending approval and volume
       measurement
 
