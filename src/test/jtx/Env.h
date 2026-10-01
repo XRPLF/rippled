@@ -93,7 +93,7 @@ testableAmendments()
 {
     static FeatureBitset const kIds = [] {
         auto const& sa = allAmendments();
-        std::vector<uint256> feats;
+        std::vector<UInt256> feats;
         feats.reserve(sa.size());
         for (auto const& [s, vote] : sa)
         {
@@ -123,7 +123,7 @@ testableAmendments()
  * so that each case is exercised both with and without each feature.
  */
 inline std::vector<FeatureBitset>
-amendmentCombinations(std::initializer_list<uint256> features, FeatureBitset seed)
+amendmentCombinations(std::initializer_list<UInt256> features, FeatureBitset seed)
 {
     std::vector<FeatureBitset> result{seed};
     for (auto const& f : features)
@@ -237,7 +237,7 @@ public:
     {
         memoize(Account::kMaster);
         Pathfinder::initPathTable();
-        foreachFeature(features, [&appFeats = app().config().features](uint256 const& f) {
+        foreachFeature(features, [&appFeats = app().config().features](UInt256 const& f) {
             appFeats.insert(f);
         });
     }
@@ -705,6 +705,7 @@ public:
     /**
      * Return an account root.
      * @return empty if the account does not exist.
+     * @note "le" stands for "ledger entry".
      */
     [[nodiscard]] SLE::const_pointer
     le(Account const& account) const;
@@ -712,6 +713,7 @@ public:
     /**
      * Return a ledger entry.
      * @return empty if the ledger entry does not exist
+     * @note "le" stands for "ledger entry".
      */
     [[nodiscard]] SLE::const_pointer
     le(Keylet const& k) const;
@@ -878,13 +880,13 @@ public:
     tx() const;
 
     void
-    enableFeature(uint256 const feature);
+    enableFeature(UInt256 const feature);
 
     void
-    disableFeature(uint256 const feature);
+    disableFeature(UInt256 const feature);
 
     [[nodiscard]] bool
-    enabled(uint256 feature) const
+    enabled(UInt256 feature) const
     {
         return current()->rules().enabled(feature);
     }
@@ -1005,7 +1007,7 @@ public:
 protected:
     int trace_ = 0;
     TestStopwatch stopwatch_;
-    uint256 txid_;
+    UInt256 txid_;
     TER ter_ = tesSUCCESS;
     bool parseFailureExpected_ = false;
     unsigned retries_ = 5;

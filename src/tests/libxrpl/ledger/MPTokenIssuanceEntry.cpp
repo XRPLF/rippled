@@ -10,7 +10,7 @@
 
 namespace xrpl::test {
 
-TEST(MPTokenIssuanceEntryTests, Constructors)
+TEST(MPTokenIssuanceEntryTests, constructors)
 {
     EntryTestEnv e;
 
@@ -27,7 +27,7 @@ TEST(MPTokenIssuanceEntryTests, Constructors)
         e, keylet::mptokenIssuance(issuanceID), "mptokenIssuance(MPTID)", issuanceID);
 
     expectKeylet<MPTokenIssuanceEntry>(
-        e, keylet::mptokenIssuance(e.someID()), "mptokenIssuance(uint256)", e.someID());
+        e, keylet::mptokenIssuance(e.someID()), "mptokenIssuance(UInt256)", e.someID());
 }
 
 }  // namespace xrpl::test
