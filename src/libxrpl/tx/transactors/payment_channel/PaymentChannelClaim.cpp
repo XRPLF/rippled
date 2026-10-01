@@ -12,6 +12,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rate.h>
@@ -57,8 +58,18 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
     if (amt && *amt <= beast::kZero)
         return temBAD_AMOUNT;
 
-    if (((bal && !isXRP(*bal)) || (amt && !isXRP(*amt))) && !ctx.rules.enabled(featureTokenPaychan))
-        return temBAD_AMOUNT;
+    if ((bal && !isXRP(*bal)) || (amt && !isXRP(*amt)))
+    {
+        if (!ctx.rules.enabled(featureTokenPaychan))
+            return temBAD_AMOUNT;
+
+        // PaymentChannelCreate and PaymentChannelFund gate an MPT-denominated
+        // Amount on featureMPTokensV1 (payChanAmountPreflightHelper); apply
+        // the same gate here for sfBalance and sfAmount.
+        if (((bal && bal->holds<MPTIssue>()) || (amt && amt->holds<MPTIssue>())) &&
+            !ctx.rules.enabled(featureMPTokensV1))
+            return temDISABLED;
+    }
 
     // Both bal and amt must reference the same asset before comparing,
     // otherwise STAmount comparison throws.

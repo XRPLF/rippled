@@ -3435,6 +3435,38 @@ struct PayChanToken_test : public beast::unit_test::Suite
     }
 
     void
+    testMPTClaimPreflight(FeatureBitset features)
+    {
+        testcase("MPT Claim Preflight");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        // temDISABLED: an MPT-denominated Balance is rejected before any
+        // ledger lookup when featureMPTokensV1 is disabled. With the
+        // amendment enabled, the same transaction clears preflight and
+        // fails in preclaim instead, because the channel does not exist.
+        for (bool const withMPT : {true, false})
+        {
+            auto const amend = withMPT ? features : features - featureMPTokensV1;
+            Env env{*this, amend};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(1'000), alice, bob);
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            json::Value jv = paychan::claim(alice, chan, XRP(1));
+            jv.removeMember("Balance");
+            jv["Balance"][jss::mpt_issuance_id] =
+                "00000004A407AF5856CCF3C42619DAA925813FC955C72983";
+            jv["Balance"][jss::value] = "1";
+
+            auto const result = withMPT ? Ter(tecNO_TARGET) : Ter(temDISABLED);
+            env(jv, result);
+            env.close();
+        }
+    }
+
+    void
     testMPTClaimPreclaim(FeatureBitset features)
     {
         testcase("MPT Claim Preclaim");
@@ -4800,6 +4832,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         testMPTFundPreclaim(features);
         testMPTFundDoApply(features);
         testMPTFundIssuerControls(features);
+        testMPTClaimPreflight(features);
         testMPTClaimPreclaim(features);
         testMPTClaimDoApply(features);
         testMPTClaimClosePreclaim(features);
