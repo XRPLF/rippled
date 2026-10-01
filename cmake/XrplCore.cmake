@@ -296,7 +296,14 @@ if(xrpld)
         target_sources(xrpld PRIVATE ${sources})
     endif()
 
-    target_link_libraries(xrpld Xrpl::boost Xrpl::opts Xrpl::libs xrpl.libxrpl)
+    target_link_libraries(
+        xrpld
+        Xrpl::boost
+        Xrpl::opts
+        Xrpl::libs
+        xrpl.libxrpl
+        rpcspec::rpcspec
+    )
     exclude_if_included(xrpld)
     # define a macro for tests that might need to
     # be excluded or run differently in CI environment

@@ -527,6 +527,7 @@ AMMWithdraw::withdraw(
         tfee,
         issuerFreezeHandling(),
         AuthHandling::ZeroIfUnauthorized,
+        ReserveHandling::EnforceReserve,
         isWithdrawAll(ctx_.tx),
         preFeeBalance_,
         j_);
@@ -548,6 +549,7 @@ AMMWithdraw::withdraw(
     std::uint16_t tfee,
     FreezeHandling freezeHandling,
     AuthHandling authHandling,
+    ReserveHandling reserveHandling,
     WithdrawAll withdrawAll,
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
@@ -681,6 +683,14 @@ AMMWithdraw::withdraw(
             });
         if (assetNotExists)
         {
+            // Intentionally ignore the reserve check for AMMClawback, so the
+            // holder can not avoid clawback by deleting the trustline/MPToken
+            // and keeping a low spendable balance. AMMClawback has a higher
+            // priority than the reserve check.
+            if (view.rules().enabled(fixCleanup3_4_0) &&
+                reserveHandling == ReserveHandling::IgnoreReserve)
+                return tesSUCCESS;
+
             auto sleAccount = view.peek(keylet::account(account));
             if (!sleAccount)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -850,6 +860,7 @@ AMMWithdraw::equalWithdrawTokens(
         tfee,
         issuerFreezeHandling(),
         AuthHandling::ZeroIfUnauthorized,
+        ReserveHandling::EnforceReserve,
         isWithdrawAll(ctx_.tx),
         preFeeBalance_,
         ctx_.journal);
@@ -903,6 +914,7 @@ AMMWithdraw::equalWithdrawTokens(
     std::uint16_t tfee,
     FreezeHandling freezeHandling,
     AuthHandling authHandling,
+    ReserveHandling reserveHandling,
     WithdrawAll withdrawAll,
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
@@ -926,6 +938,7 @@ AMMWithdraw::equalWithdrawTokens(
                 tfee,
                 freezeHandling,
                 authHandling,
+                reserveHandling,
                 WithdrawAll::Yes,
                 priorBalance,
                 journal);
@@ -962,6 +975,7 @@ AMMWithdraw::equalWithdrawTokens(
             tfee,
             freezeHandling,
             authHandling,
+            reserveHandling,
             withdrawAll,
             priorBalance,
             journal);
@@ -1249,7 +1263,7 @@ AMMWithdraw::isWithdrawAll(STTx const& tx)
     return WithdrawAll::No;
 }
 void
-AMMWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMWithdraw::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
