@@ -90,6 +90,13 @@ CheckOptions:
   readability-identifier-naming.ClassCase: CamelCase
   readability-identifier-naming.StructCase: CamelCase
   readability-identifier-naming.UnionCase: CamelCase
+  readability-identifier-naming.TypeAliasCase: CamelCase
+  readability-identifier-naming.TypedefCase: CamelCase
+  # Member type names mandated by std/Boost concepts. Subtrees that need more
+  # than these carry their own .clang-tidy (include/xrpl/{beast,basics,protocol,
+  # peerfinder}, src/test/beast); one-off cases use an inline NOLINT.
+  readability-identifier-naming.TypeAliasIgnoredRegexp: "^(const_iterator|const_reference|difference_type|duration|iterator|iterator_category|key_type|mapped_type|period|pointer|reference|rep|result_type|size_type|time_point|value_type)$"
+  readability-identifier-naming.TypedefIgnoredRegexp: "^(const_iterator|const_reference|difference_type|duration|iterator|iterator_category|key_type|mapped_type|period|pointer|reference|rep|result_type|size_type|time_point|value_type)$"
   readability-identifier-naming.EnumCase: CamelCase
   readability-identifier-naming.EnumConstantCase: CamelCase
   readability-identifier-naming.ScopedEnumConstantCase: CamelCase
@@ -122,5 +129,5 @@ CheckOptions:
   readability-identifier-naming.GlobalFunctionIgnoredRegexp: "^(to_string|hash_append|tuple_hash)$"
 
 HeaderFilterRegex: '^.*/(tests?|xrpl|xrpld)/.*\.(h|hpp|ipp)$'
-ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$'
+ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$|^.*\.pb\.h$'
 WarningsAsErrors: "*"

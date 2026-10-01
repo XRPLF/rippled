@@ -18,7 +18,7 @@ TEST(NFTokenOfferEntryTests, constructors)
         e, keylet::nftokenOffer(e.alice.id(), seq), "nftokenOffer(owner, seq)", e.alice.id(), seq);
 
     expectKeylet<NFTokenOfferEntry>(
-        e, keylet::nftokenOffer(e.someID()), "nftokenOffer(uint256)", e.someID());
+        e, keylet::nftokenOffer(e.someID()), "nftokenOffer(UInt256)", e.someID());
 }
 
 }  // namespace xrpl::test

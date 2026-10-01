@@ -255,7 +255,7 @@ ConfidentialMPTMirrorUpdate::doApply()
 }
 
 void
-ConfidentialMPTMirrorUpdate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+ConfidentialMPTMirrorUpdate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
 }
 
