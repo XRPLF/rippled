@@ -82,7 +82,6 @@
 #include <exception>
 #include <functional>
 #include <iomanip>
-#include <limits>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -677,55 +676,19 @@ OverlayImpl::reportAcceptOutcome(char const* outcome)
 PeerLedgerSupply
 OverlayImpl::getPeerLedgerSupply(std::uint32_t validatedSeq) const
 {
-    PeerLedgerSupply supply;
-
-    // Tracked separately from supply.supplyMinSeq so the "nothing reported
-    // yet" case stays distinguishable: a peer set that genuinely serves from
-    // sequence 0 and a peer set that has said nothing must not both read 0.
-    // Only a peer that reported anything can lower this.
-    auto lowest = std::numeric_limits<std::uint32_t>::max();
-
-    // The next sequence this node must acquire. Widened before the increment
-    // so it cannot wrap to 0 at the top of the sequence space, which would
-    // silently turn "needs the next ledger" into "needs the genesis ledger".
-    // On a node with no validated ledger yet this is 1, which is correct.
-    auto const neededSeq = static_cast<std::uint64_t>(validatedSeq) + 1;
-
     // getActivePeers() takes the overlay lock, copies the list and releases
     // it, so the per-peer reads below hold no overlay lock.
-    for (auto const& peer : getActivePeers())
+    auto const peers = getActivePeers();
+
+    std::vector<PeerLedgerRange> ranges;
+    ranges.reserve(peers.size());
+    for (auto const& peer : peers)
     {
-        std::uint32_t minSeq = 0;
-        std::uint32_t maxSeq = 0;
-        peer->ledgerRange(minSeq, maxSeq);
-
-        // A peer that has not sent mtSTATUS_CHANGE yet reports [0, 0]. It
-        // supplies nothing, so it must not be counted as serving and must not
-        // pull the reported window down to zero.
-        if (maxSeq == 0)
-            continue;
-
-        ++supply.peersReporting;
-
-        if (validatedSeq >= minSeq && validatedSeq <= maxSeq)
-            ++supply.peersServingValidated;
-
-        if (neededSeq >= static_cast<std::uint64_t>(minSeq) &&
-            neededSeq <= static_cast<std::uint64_t>(maxSeq))
-        {
-            ++supply.peersServingNext;
-        }
-
-        lowest = std::min(lowest, minSeq);
-        supply.supplyMaxSeq = std::max(supply.supplyMaxSeq, static_cast<std::int64_t>(maxSeq));
+        PeerLedgerRange range;
+        peer->ledgerRange(range.minSeq, range.maxSeq);
+        ranges.push_back(range);
     }
-
-    // Convert the sentinel explicitly. Casting the unsigned max would produce
-    // 4294967295, which a dashboard would plot as a real sequence.
-    if (supply.peersReporting > 0)
-        supply.supplyMinSeq = static_cast<std::int64_t>(lowest);
-
-    return supply;
+    return tallyPeerLedgerSupply(ranges, validatedSeq);
 }
 
 void
