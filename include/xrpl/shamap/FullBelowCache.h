@@ -29,8 +29,8 @@ private:
 public:
     static constexpr auto kDefaultCacheTargetSize = 0;
 
-    using key_type = uint256;
-    using clock_type = CacheType::clock_type;
+    using key_type = UInt256;
+    using ClockType = CacheType::ClockType;
 
     /**
      * Construct the cache.
@@ -42,9 +42,9 @@ public:
      */
     BasicFullBelowCache(
         std::string const& name,
-        clock_type& clock,
+        ClockType& clock,
         beast::Journal j,
-        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make(),
+        beast::insight::Collector::Ptr const& collector = beast::insight::NullCollector::make(),
         std::size_t targetSize = kDefaultCacheTargetSize,
         std::chrono::seconds expiration = std::chrono::minutes{2})
         : cache_(name, targetSize, expiration, clock, j, collector), gen_(1)
@@ -54,7 +54,7 @@ public:
     /**
      * Return the clock associated with the cache.
      */
-    clock_type&
+    ClockType&
     clock()
     {
         return cache_.clock();

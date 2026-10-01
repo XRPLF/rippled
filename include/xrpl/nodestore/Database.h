@@ -110,7 +110,7 @@ public:
      * @return `true` if the object was stored?
      */
     virtual void
-    store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t ledgerSeq) = 0;
+    store(NodeObjectType type, Blob&& data, UInt256 const& hash, std::uint32_t ledgerSeq) = 0;
 
     /**
      * Check if two ledgers are in the same database
@@ -144,7 +144,7 @@ public:
      */
     std::shared_ptr<NodeObject>
     fetchNodeObject(
-        uint256 const& hash,
+        UInt256 const& hash,
         std::uint32_t ledgerSeq = 0,
         FetchType fetchType = FetchType::Synchronous,
         bool duplicate = false);
@@ -164,7 +164,7 @@ public:
      */
     virtual void
     asyncFetch(
-        uint256 const& hash,
+        UInt256 const& hash,
         std::uint32_t ledgerSeq,
         std::function<void(std::shared_ptr<NodeObject> const&)>&& callback);
 
@@ -449,7 +449,7 @@ private:
 
     // reads to do
     std::map<
-        uint256,
+        UInt256,
         std::vector<
             std::pair<std::uint32_t, std::function<void(std::shared_ptr<NodeObject> const&)>>>>
         read_;
@@ -460,7 +460,7 @@ private:
 
     virtual std::shared_ptr<NodeObject>
     fetchNodeObject(
-        uint256 const& hash,
+        UInt256 const& hash,
         std::uint32_t ledgerSeq,
         FetchReport& fetchReport,
         bool duplicate) = 0;

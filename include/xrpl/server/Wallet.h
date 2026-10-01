@@ -72,7 +72,7 @@ saveManifests(
     soci::session& session,
     std::string const& dbTable,
     std::function<bool(PublicKey const&)> const& isTrusted,
-    hash_map<PublicKey, Manifest> const& map,
+    HashMap<PublicKey, Manifest> const& map,
     beast::Journal j);
 
 /**
@@ -239,7 +239,7 @@ readAmendments(
 void
 voteAmendment(
     soci::session& session,
-    uint256 const& amendment,
+    UInt256 const& amendment,
     std::string const& name,
     AmendmentVote vote);
 
