@@ -59,7 +59,7 @@ public:
 
         if (cacheSize.has_value() || cacheAge.has_value())
         {
-            cache_ = std::make_shared<TaggedCache<uint256, NodeObject>>(
+            cache_ = std::make_shared<TaggedCache<UInt256, NodeObject>>(
                 "DatabaseNodeImp",
                 cacheSize.value_or(0),
                 std::chrono::minutes(cacheAge.value_or(0)),
@@ -103,7 +103,7 @@ public:
     }
 
     void
-    store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t) override;
+    store(NodeObjectType type, Blob&& data, UInt256 const& hash, std::uint32_t) override;
 
     bool
     isSameDB(std::uint32_t, std::uint32_t) override
@@ -120,7 +120,7 @@ public:
 
     void
     asyncFetch(
-        uint256 const& hash,
+        UInt256 const& hash,
         std::uint32_t ledgerSeq,
         std::function<void(std::shared_ptr<NodeObject> const&)>&& callback) override;
 
@@ -130,12 +130,12 @@ public:
 private:
     // Cache for database objects. This cache is not always initialized. Check
     // for null before using.
-    std::shared_ptr<TaggedCache<uint256, NodeObject>> cache_;
+    std::shared_ptr<TaggedCache<UInt256, NodeObject>> cache_;
     // Persistent key/value storage
     std::shared_ptr<Backend> backend_;
 
     std::shared_ptr<NodeObject>
-    fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)
+    fetchNodeObject(UInt256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)
         override;
 
     void

@@ -147,7 +147,7 @@ shouldAcquire(
 LedgerMaster::LedgerMaster(
     Application& app,
     Stopwatch& stopwatch,
-    beast::insight::Collector::ptr const& collector,
+    beast::insight::Collector::Ptr const& collector,
     beast::Journal journal)
     : app_(app)
     , journal_(journal)
@@ -237,7 +237,7 @@ LedgerMaster::getPublishedLedgerAge()
     if (pubClose == 0s)
     {
         JLOG(journal_.debug()) << "No published ledger";
-        return weeks{2};
+        return Weeks{2};
     }
 
     std::chrono::seconds ret = app_.getTimeKeeper().closeTime().time_since_epoch();
@@ -262,7 +262,7 @@ LedgerMaster::getValidatedLedgerAge()
     if (valClose == 0s)
     {
         JLOG(journal_.debug()) << "No validated ledger";
-        return weeks{2};
+        return Weeks{2};
     }
 
     std::chrono::seconds ret = app_.getTimeKeeper().closeTime().time_since_epoch();
@@ -307,7 +307,7 @@ void
 LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
 {
     std::vector<NetClock::time_point> times;
-    std::optional<uint256> consensusHash;
+    std::optional<UInt256> consensusHash;
 
     if (!standalone_)
     {
@@ -599,7 +599,7 @@ LedgerMaster::isValidated(ReadView const& ledger)
             if (hash)
             {
                 XRPL_ASSERT(hash->isNonZero(), "xrpl::LedgerMaster::isValidated : nonzero hash");
-                uint256 const valHash = app_.getRelationalDatabase().getHashByIndex(seq);
+                UInt256 const valHash = app_.getRelationalDatabase().getHashByIndex(seq);
                 if (valHash == ledger.header().hash)
                 {
                     // SQL database doesn't match ledger chain
@@ -717,7 +717,7 @@ void
 LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
 {
     std::uint32_t seq = ledger->header().seq;
-    uint256 prevHash = ledger->header().parentHash;
+    UInt256 prevHash = ledger->header().parentHash;
 
     std::map<std::uint32_t, LedgerHashPair> ledgerHashes;
 
@@ -838,7 +838,7 @@ void
 LedgerMaster::fixMismatch(ReadView const& ledger)
 {
     int invalidate = 0;
-    std::optional<uint256> hash;
+    std::optional<UInt256> hash;
 
     for (std::uint32_t lSeq = ledger.header().seq - 1; lSeq > 0; --lSeq)
     {
@@ -908,7 +908,7 @@ LedgerMaster::setFullLedger(
     {
         // Check the SQL database's entry for the sequence before this
         // ledger, if it's not this ledger's parent, invalidate it
-        uint256 const prevHash =
+        UInt256 const prevHash =
             app_.getRelationalDatabase().getHashByIndex(ledger->header().seq - 1);
         if (prevHash.isNonZero() && prevHash != ledger->header().parentHash)
             clearLedger(ledger->header().seq - 1);
@@ -948,7 +948,7 @@ LedgerMaster::setFullLedger(
 }
 
 void
-LedgerMaster::failedSave(std::uint32_t seq, uint256 const& hash)
+LedgerMaster::failedSave(std::uint32_t seq, UInt256 const& hash)
 {
     clearLedger(seq);
     app_.getInboundLedgers().acquire(hash, seq, InboundLedger::Reason::GENERIC);
@@ -957,7 +957,7 @@ LedgerMaster::failedSave(std::uint32_t seq, uint256 const& hash)
 // Check if the specified ledger can become the new last fully-validated
 // ledger.
 void
-LedgerMaster::checkAccept(uint256 const& hash, std::uint32_t seq)
+LedgerMaster::checkAccept(UInt256 const& hash, std::uint32_t seq)
 {
     std::size_t valCount = 0;
 
@@ -1201,7 +1201,7 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         }
         // To throttle the warning messages, instead of printing a warning
         // every flag ledger, we print every week.
-        else if (currentTime - upgradeWarningPrevTime_ >= weeks{1})
+        else if (currentTime - upgradeWarningPrevTime_ >= Weeks{1})
         {
             // Printed the warning before, and assuming most validators
             // do not downgrade, we keep printing the warning
@@ -1228,7 +1228,7 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
 void
 LedgerMaster::consensusBuilt(
     std::shared_ptr<Ledger const> const& ledger,
-    uint256 const& consensusHash,
+    UInt256 const& consensusHash,
     json::Value consensus)
 {
     // Because we just built a ledger, we are no longer building one
@@ -1285,7 +1285,7 @@ LedgerMaster::consensusBuilt(
     };
 
     // Count the number of current, trusted validations
-    hash_map<uint256, ValSeq> count;
+    HashMap<UInt256, ValSeq> count;
     for (auto const& v : validations)
     {
         ValSeq& vs = count[v->getLedgerHash()];
@@ -1748,7 +1748,7 @@ LedgerMaster::missingFromCompleteLedgerRange(LedgerIndex first, LedgerIndex last
 std::optional<NetClock::time_point>
 LedgerMaster::getCloseTimeBySeq(LedgerIndex ledgerIndex)
 {
-    uint256 const hash = getHashBySeq(ledgerIndex);
+    UInt256 const hash = getHashBySeq(ledgerIndex);
     return hash.isNonZero() ? getCloseTimeByHash(hash, ledgerIndex) : std::nullopt;
 }
 
@@ -1771,10 +1771,10 @@ LedgerMaster::getCloseTimeByHash(LedgerHash const& ledgerHash, std::uint32_t ind
     return std::nullopt;
 }
 
-uint256
+UInt256
 LedgerMaster::getHashBySeq(std::uint32_t index)
 {
-    uint256 hash = ledgerHistory_.getLedgerHash(index);
+    UInt256 hash = ledgerHistory_.getLedgerHash(index);
 
     if (hash.isNonZero())
         return hash;
@@ -1885,7 +1885,7 @@ LedgerMaster::getLedgerBySeq(std::uint32_t index)
 }
 
 std::shared_ptr<Ledger const>
-LedgerMaster::getLedgerByHash(uint256 const& hash)
+LedgerMaster::getLedgerByHash(UInt256 const& hash)
 {
     if (auto ret = ledgerHistory_.getLedgerByHash(hash))
         return ret;
@@ -2134,13 +2134,13 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
 }
 
 void
-LedgerMaster::addFetchPack(uint256 const& hash, std::shared_ptr<Blob> data)
+LedgerMaster::addFetchPack(UInt256 const& hash, std::shared_ptr<Blob> data)
 {
     fetchPacks_.canonicalizeReplaceClient(hash, data);
 }
 
 std::optional<Blob>
-LedgerMaster::getFetchPack(uint256 const& hash)
+LedgerMaster::getFetchPack(UInt256 const& hash)
 {
     Blob data;
     if (fetchPacks_.retrieve(hash, data))
@@ -2225,7 +2225,7 @@ void
 LedgerMaster::makeFetchPack(
     std::weak_ptr<Peer> const& wPeer,
     std::shared_ptr<protocol::TMGetObjectByHash> const& request,
-    uint256 haveLedgerHash,
+    UInt256 haveLedgerHash,
     UptimeClock::time_point uptime)
 {
     using namespace std::chrono_literals;
@@ -2355,7 +2355,7 @@ LedgerMaster::minSqlSeq()
     return app_.getRelationalDatabase().getMinLedgerSeq();
 }
 
-std::optional<uint256>
+std::optional<UInt256>
 LedgerMaster::txnIdFromIndex(uint32_t ledgerSeq, uint32_t txnIndex)
 {
     uint32_t first = 0, last = 0;

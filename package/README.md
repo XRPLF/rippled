@@ -13,6 +13,8 @@ package/
   docker/
     Dockerfile          Packaging image, built by `build-packaging-images.yml`; installs its tooling with `bin/install-packaging-tools.sh`
     publish_pkg.py      Uploads built packages to the XRPLF Nexus repositories (called by CI, and shipped in that image)
+  image/
+    Dockerfile          The xrpld Docker image, installing the built DEB on Ubuntu (see "Docker image")
   rpm/
     xrpld.spec      RPM spec
   debian/           Debian control files (control.in, lintian-overrides.in, rules, copyright, docs, links, source/format).
@@ -106,7 +108,7 @@ Operators switch between the flavours as described in
 ### Via CI
 
 Caller workflows (`on-pr.yml`, `on-tag.yml`, `on-trigger.yml`) call
-`reusable-package.yml`, which runs in three stages:
+`reusable-package.yml`, which runs in these stages:
 
 1. `package` fans out one job per config carrying a `package` map, building and
    signing in that config's container, and uploading `<config>-pkg` alongside
@@ -117,6 +119,8 @@ Caller workflows (`on-pr.yml`, `on-tag.yml`, `on-trigger.yml`) call
    in the container of every distro that format targets and running the binaries
    there, so one that cannot be installed never reaches Nexus.
 3. `publish` uploads both artifacts, or lists what it would upload.
+4. `docker` builds the [Docker image](#docker-image) from the tested DEB, and
+   pushes it when publishing.
 
 The packaging script derives the package version from the downloaded binary's
 `xrpld --version` output; no CMake configure or build step is needed inside the
@@ -210,6 +214,7 @@ The `release-info` action decides the channel from the event, and
 | tag                      | `X.Y.Z`           | `stable`  | `deb-stable`   | `rpm-stable-hosted`   |
 | tag                      | `X.Y.Z-rcN`       | `rc`      | `deb-rc`       | `rpm-rc-hosted`       |
 | tag                      | `X.Y.Z-bN`        | `beta`    | `deb-beta`     | `rpm-beta-hosted`     |
+| tag, any other           | `xrpld --version` | `custom`  | `deb-custom`   | `rpm-custom-hosted`   |
 | push to `develop`        | `xrpld --version` | `develop` | `deb-develop`  | `rpm-develop-hosted`  |
 | tag, non-public codebase | _any_             | `private` | `deb-private`  | `rpm-private-hosted`  |
 
@@ -220,6 +225,8 @@ Only a tag names a channel — do not extend that to `develop`, where
 `BuildInfo.cpp`'s `versionString` moves through `-bN`, `-rcN` and even the final
 version during a release cycle, which would send develop builds into `stable`.
 Versions sort in row order, so moving to a more mature channel never downgrades.
+A tag matching none of the release patterns, such as `X.Y.Z-hotfix1`, publishes
+to `custom`, which sits outside that order.
 
 The action decides the package release number on the same split: a tag's version
 is unique, so its packages are release 1, while develop repeats the same version
@@ -264,6 +271,15 @@ Nexus owns the repository metadata; nothing here indexes anything. Worth knowing
 installs it at `/usr/local/bin/publish_pkg.py` for other XRPLF repositories that
 build their packages elsewhere.
 
+## Docker image
+
+The `docker` job installs the tested `xrpld` DEB on `ubuntu:26.04` using
+[`image/Dockerfile`](image/Dockerfile), checks that the server starts, and,
+with `publish: true`, pushes it to `xrplf/xrpld` on Docker Hub using the
+`DOCKERHUB_TOKEN` secret, an organization access token for `xrplf`. A tag's
+image is tagged with the tag name, `xrplf/xrpld:<version>`, and a develop image
+as `xrplf/xrpld:develop`. Private builds are never pushed.
+
 ## How `build_pkg.py` works
 
 `build_pkg.py` derives the `xrpld` software version from
@@ -297,6 +313,7 @@ With `PKG_RELEASE=1`, the package metadata becomes:
 | `3.2.0-b0+abc1234` | `3.2.0~b0+abc1234-1%{?dist}` | `3.2.0~b0+abc1234-1` |
 | `3.2.0-b1`         | `3.2.0~b1-1%{?dist}`         | `3.2.0~b1-1`         |
 | `3.2.0-rc1`        | `3.2.0~rc1-1%{?dist}`        | `3.2.0~rc1-1`        |
+| `3.2.0-custom-1`   | `3.2.0~custom.1-1%{?dist}`   | `3.2.0~custom.1-1`   |
 
 `build_pkg.py` defines `dist` as `.el9` rather than letting rpmbuild take it
 from the build host, so the RHEL image can track a newer release without
@@ -306,7 +323,10 @@ The Debian changelog entry carries the channel passed as `--channel`, which
 only accepts the channels in the table above plus `UNRELEASED`, the Debian
 convention for a build that targets no channel at all — what local and CMake
 builds pass, since nothing publishes them. An unsupported pre-release, and
-build metadata on a final release such as `3.2.0+abc123`, are both rejected.
+build metadata on a final release such as `3.2.0+abc123`, are both rejected,
+except in the `custom` and `private` channels, which accept any version and
+switch each `-` inside the pre-release or build metadata to `.`, so
+`3.4.0-custom-1` packages as `3.4.0~custom.1`.
 
 The RPM path intentionally uses `~` in `Version`, matching the Debian
 pre-release ordering convention, so RPM filenames/NVRs begin with forms like

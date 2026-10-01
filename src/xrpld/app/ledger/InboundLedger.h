@@ -40,7 +40,7 @@ class InboundLedger final : public TimeoutCounter,
                             public CountedObject<InboundLedger>
 {
 public:
-    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
+    using ClockType = beast::AbstractClock<std::chrono::steady_clock>;
 
     // These are the reasons we might acquire a ledger
     enum class Reason {
@@ -51,10 +51,10 @@ public:
 
     InboundLedger(
         Application& app,
-        uint256 const& hash,
+        UInt256 const& hash,
         std::uint32_t seq,
         Reason reason,
-        clock_type&,
+        ClockType&,
         std::unique_ptr<PeerSet> peerSet);
 
     ~InboundLedger() override;
@@ -101,7 +101,7 @@ public:
     bool
     gotData(std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData> const&);
 
-    using neededHash_t = std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
+    using NeededHashT = std::pair<protocol::TMGetObjectByHash::ObjectType, UInt256>;
 
     /**
      * Return a json::ValueType::Object.
@@ -138,11 +138,11 @@ public:
      * @note Thread-safe and lock-free: a relaxed load. A value one tick stale is
      *       acceptable against a 60-second sweep interval.
      */
-    clock_type::time_point
+    ClockType::time_point
     getLastAction() const
     {
-        return clock_type::time_point{
-            clock_type::duration{lastAction_.load(std::memory_order_relaxed)}};
+        return ClockType::time_point{
+            ClockType::duration{lastAction_.load(std::memory_order_relaxed)}};
     }
 
     /**
@@ -186,12 +186,12 @@ private:
     enum class TriggerReason { Added, Reply, Timeout };
 
     void
-    filterNodes(std::vector<std::pair<SHAMapNodeID, uint256>>& nodes, TriggerReason reason);
+    filterNodes(std::vector<std::pair<SHAMapNodeID, UInt256>>& nodes, TriggerReason reason);
 
     void
     trigger(std::shared_ptr<Peer> const&, TriggerReason);
 
-    std::vector<neededHash_t>
+    std::vector<NeededHashT>
     getNeededHashes();
 
     void
@@ -245,10 +245,10 @@ private:
     bool
     takeAsRootNode(std::string_view data, SHAMapAddNode& san);
 
-    std::vector<uint256>
+    std::vector<UInt256>
     neededTxHashes(int max, SHAMapSyncFilter const* filter) const;
 
-    std::vector<uint256>
+    std::vector<UInt256>
     neededStateHashes(int max, SHAMapSyncFilter const* filter) const;
 
     /**
@@ -396,7 +396,7 @@ private:
         bool complete,
         std::optional<int> missingNodes) noexcept;
 
-    clock_type& clock_;
+    ClockType& clock_;
 
     /**
      * Tick count of the last action, as the clock's duration rep.
@@ -407,7 +407,7 @@ private:
      * compares against a 60-second threshold, so a value one tick out of date
      * cannot change its decision.
      */
-    std::atomic<clock_type::duration::rep> lastAction_;
+    std::atomic<ClockType::duration::rep> lastAction_;
 
     std::shared_ptr<Ledger> ledger_;
     bool haveHeader_{false};
@@ -428,7 +428,7 @@ private:
     std::uint32_t seq_;
     Reason const reason_;
 
-    std::set<uint256> recentNodes_;
+    std::set<UInt256> recentNodes_;
 
     SHAMapAddNode stats_;
 

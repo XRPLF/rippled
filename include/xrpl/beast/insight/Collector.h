@@ -31,7 +31,7 @@ namespace beast::insight {
 class Collector
 {
 public:
-    using ptr = std::shared_ptr<Collector>;
+    using Ptr = std::shared_ptr<Collector>;
 
     virtual ~Collector() = 0;
 
