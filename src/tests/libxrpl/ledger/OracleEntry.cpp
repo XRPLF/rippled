@@ -9,7 +9,7 @@
 
 namespace xrpl::test {
 
-TEST(OracleEntryTests, Constructors)
+TEST(OracleEntryTests, constructors)
 {
     EntryTestEnv e;
 

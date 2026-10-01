@@ -84,7 +84,7 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-std::expected<uint256, TER>
+std::expected<UInt256, TER>
 determineBrokerID(ReadView const& view, STTx const& tx)
 {
     // If the broker ID was provided in the transaction, that's all we
@@ -159,10 +159,10 @@ determineAsset(
 
 std::expected<STAmount, TER>
 determineClawAmount(
-    SLE::const_ref sleBroker,
+    SLE::ConstRef sleBroker,
     Asset const& vaultAsset,
     std::optional<STAmount> const& amount,
-    SLE::const_ref vaultSle,
+    SLE::ConstRef vaultSle,
     Rules const& rules)
 {
     auto const maxClawAmount = [&]() {
@@ -396,7 +396,7 @@ LoanBrokerCoverClawback::doApply()
 }
 
 void
-LoanBrokerCoverClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanBrokerCoverClawback::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

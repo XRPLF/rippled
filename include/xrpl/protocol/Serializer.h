@@ -265,7 +265,7 @@ public:
     }
 
     // DEPRECATED
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     getSHA512Half() const;
 
     // totality functions
@@ -319,22 +319,22 @@ public:
     chop(int num);
 
     // vector-like functions
-    Blob ::iterator
+    Blob::iterator
     begin()
     {
         return data_.begin();
     }
-    Blob ::iterator
+    Blob::iterator
     end()
     {
         return data_.end();
     }
-    [[nodiscard]] Blob ::const_iterator
+    [[nodiscard]] Blob::const_iterator
     begin() const
     {
         return data_.begin();
     }
-    [[nodiscard]] Blob ::const_iterator
+    [[nodiscard]] Blob::const_iterator
     end() const
     {
         return data_.end();
@@ -531,25 +531,25 @@ public:
     BaseUInt<Bits, Tag>
     getBitString();
 
-    uint128
+    UInt128
     get128()
     {
         return getBitString<128>();
     }
 
-    uint160
+    UInt160
     get160()
     {
         return getBitString<160>();
     }
 
-    uint192
+    UInt192
     get192()
     {
         return getBitString<192>();
     }
 
-    uint256
+    UInt256
     get256()
     {
         return getBitString<256>();

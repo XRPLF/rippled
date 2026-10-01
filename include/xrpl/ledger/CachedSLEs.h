@@ -5,5 +5,5 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 
 namespace xrpl {
-using CachedSLEs = TaggedCache<uint256, SLE const>;
+using CachedSLEs = TaggedCache<UInt256, SLE const>;
 }  // namespace xrpl

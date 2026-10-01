@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -56,6 +57,7 @@ isReserveSponsorAllowed(TxType txType)
         ttACCOUNT_SET,
         ttREGULAR_KEY_SET,
         ttSPONSORSHIP_TRANSFER,
+        ttTRANSACTION_PROPOSAL_CREATE,
     };
     return kReserveSponsorAllowed.contains(txType);
 }
@@ -113,7 +115,7 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx)
 }
 
 std::expected<SLE::pointer, TER>
-getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle)
+getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::ConstRef accountSle)
 {
     // A reserve sponsor only covers tx.Account's own objects.
     if (ctx.view.rules().enabled(fixCleanup3_2_0))
@@ -136,7 +138,7 @@ getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle)
 }
 
 std::optional<AccountID>
-getLedgerEntryReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field)
+getLedgerEntryReserveSponsorID(SLE::ConstRef sle, SF_ACCOUNT const& field)
 {
     XRPL_ASSERT(
         (sle &&
@@ -150,7 +152,7 @@ getLedgerEntryReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field)
 }
 
 SLE::pointer
-getLedgerEntryReserveSponsor(ApplyView& view, SLE::const_ref sle, SF_ACCOUNT const& field)
+getLedgerEntryReserveSponsor(ApplyView& view, SLE::ConstRef sle, SF_ACCOUNT const& field)
 {
     auto const sponsorID = getLedgerEntryReserveSponsorID(sle, field);
     if (sponsorID)
@@ -164,7 +166,7 @@ getLedgerEntryReserveSponsor(ApplyView& view, SLE::const_ref sle, SF_ACCOUNT con
 }
 
 void
-addSponsorToLedgerEntry(SLE::ref sle, SLE::const_ref sponsorSle, SF_ACCOUNT const& field)
+addSponsorToLedgerEntry(SLE::Ref sle, SLE::ConstRef sponsorSle, SF_ACCOUNT const& field)
 {
     XRPL_ASSERT(
         (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
@@ -181,7 +183,7 @@ addSponsorToLedgerEntry(SLE::ref sle, SLE::const_ref sponsorSle, SF_ACCOUNT cons
 }
 
 void
-addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& field)
+addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::Ref sle, SF_ACCOUNT const& field)
 {
     // getTxReserveSponsor yields a null pointer when the tx is not
     // reserve-sponsored, so addSponsorToLedgerEntry becomes a no-op then. The
@@ -197,7 +199,7 @@ addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& fi
 }
 
 void
-removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field)
+removeSponsorFromLedgerEntry(SLE::Ref sle, SF_ACCOUNT const& field)
 {
     XRPL_ASSERT(
         (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
@@ -255,6 +257,8 @@ isLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& accoun
             // to tecNO_PERMISSION.
             return false;
         }
+        case ltTRANSACTION_PROPOSAL:
+            return sle.getAccountID(sfOwner) == account;
         default:
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::isLedgerEntryOwner : object is not supported by sponsorship.");
@@ -278,6 +282,7 @@ isLedgerEntrySupportedBySponsorship(SLE const& sle)
         case ltSIGNER_LIST:
         case ltCREDENTIAL:
         case ltRIPPLE_STATE:
+        case ltTRANSACTION_PROPOSAL:
             return true;
         default:
             return false;
@@ -304,6 +309,11 @@ getLedgerEntryOwnerCount(SLE const& sle)
                 return 1;
             return 2 + static_cast<std::uint32_t>(sle.getFieldArray(sfSignerEntries).size());
         }
+        case ltTRANSACTION_PROPOSAL:
+            // Mirror TransactionProposalCreate's own reserve sizing so that
+            // creation and sponsorship accounting agree: a proposed Batch
+            // reserves more than an ordinary proposal.
+            return proposal::proposalOwnerCount(sle.getFieldObject(sfProposedTransaction));
         case ltACCOUNT_ROOT:
             // LCOV_EXCL_START
             UNREACHABLE("AccountRoots are not supported by object sponsorship.");

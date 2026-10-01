@@ -37,7 +37,7 @@ struct BalanceSnapshot
     Number total;
 
     static BalanceSnapshot
-    of(SLE::const_ref vault)
+    of(SLE::ConstRef vault)
     {
         return {
             .available = vault->at(sfAssetsAvailable),
@@ -126,7 +126,7 @@ protected:
 // getAssetsTotal
 // ---------------------------------------------------------------------------
 
-TEST_F(VaultBalance, GetAssetsTotalStoredForNonFixedPrecision)
+TEST_F(VaultBalance, get_assets_total_stored_for_non_fixed_precision)
 {
     struct Row
     {
@@ -153,7 +153,7 @@ TEST_F(VaultBalance, GetAssetsTotalStoredForNonFixedPrecision)
     }
 }
 
-TEST_F(VaultBalance, GetAssetsTotalFixedPrecisionDerivedSum)
+TEST_F(VaultBalance, get_assets_total_fixed_precision_derived_sum)
 {
     struct Row
     {
@@ -194,14 +194,14 @@ TEST_F(VaultBalance, GetAssetsTotalFixedPrecisionDerivedSum)
     }
 }
 
-TEST_F(VaultBalance, GetAssetsTotalFixedPrecisionIntegralExact)
+TEST_F(VaultBalance, get_assets_total_fixed_precision_integral_exact)
 {
     auto const vault = makeVault(
         xrpIssue(), Number{0}, VaultVersion::FixedPrecision, 0, Number{250}, Number{1'000});
     EXPECT_EQ(getAssetsTotal(vault), Number{1'250});
 }
 
-TEST_F(VaultBalance, GetAssetsTotalIgnoresStaleCache)
+TEST_F(VaultBalance, get_assets_total_ignores_stale_cache)
 {
     Number const available{4'000'000};
     Number const assetsDeployed{1'000'000};
@@ -212,7 +212,7 @@ TEST_F(VaultBalance, GetAssetsTotalIgnoresStaleCache)
 
 // The exact total, and the synced cache once Downward-rounded, must never
 // fall below AssetsAvailable even when assetsDeployed coarsens the scale.
-TEST_F(VaultBalance, GetAssetsTotalNeverBelowAvailable)
+TEST_F(VaultBalance, get_assets_total_never_below_available)
 {
     Number const available{9'999'999'999'999'999, -6};
     Number const assetsDeployed{5'000'000'000, -6};
@@ -228,7 +228,7 @@ TEST_F(VaultBalance, GetAssetsTotalNeverBelowAvailable)
 // alone. Their sum, 99999999999999995 at exponent -4, has a 17th digit (5)
 // that would round up under ToNearest and carry through the run of nines,
 // bumping the exponent. Downward truncation drops it without a bump.
-TEST_F(VaultBalance, LiveScaleDownwardKeepsLowerExponentAtCarryBoundary)
+TEST_F(VaultBalance, live_scale_downward_keeps_lower_exponent_at_carry_boundary)
 {
     auto vault = iouVault(Number{35, -4}, Number{9'999'999'999'999'996LL, -3});
 
@@ -248,7 +248,7 @@ TEST_F(VaultBalance, LiveScaleDownwardKeepsLowerExponentAtCarryBoundary)
     EXPECT_EQ(getVaultScale(vault), scale(vault->at(sfAssetsTotal), iou_));
 }
 
-TEST_F(VaultBalance, ScaleAndOpenIncludeAssetsDeployed)
+TEST_F(VaultBalance, scale_and_open_include_assets_deployed)
 {
     // Available alone stays at base scale; Available + AssetsDeployed coarsens.
     Number const available{1'000'000'000};
@@ -268,7 +268,7 @@ TEST_F(VaultBalance, ScaleAndOpenIncludeAssetsDeployed)
 // adjustVaultBalances
 // ---------------------------------------------------------------------------
 
-TEST_F(VaultBalance, FixedPrecisionAdjustBalances)
+TEST_F(VaultBalance, fixed_precision_adjust_balances)
 {
     Number const assetsDeployed{300};
     auto vault = iouVault(assetsDeployed, Number{100}, Number{99});
@@ -300,7 +300,7 @@ TEST_F(VaultBalance, FixedPrecisionAdjustBalances)
     EXPECT_EQ(getAssetsTotal(vault), Number{0});
 }
 
-TEST_F(VaultBalance, FixedPrecisionAddAboveCoarseningSyncs)
+TEST_F(VaultBalance, fixed_precision_add_above_coarsening_syncs)
 {
     Number const assetsDeployed{5, -6};
     auto vault = iouVault(assetsDeployed, Number{9'999'999'999'999'990, -6});
@@ -314,7 +314,7 @@ TEST_F(VaultBalance, FixedPrecisionAddAboveCoarseningSyncs)
 // For each (balance, delta), AssetsAvailable after adjustVaultBalances must
 // equal the plain STAmount sum, the arithmetic the ledger uses for the real
 // trust-line/MPT transfer.
-TEST_F(VaultBalance, TrustLineArithmeticMirror)
+TEST_F(VaultBalance, trust_line_arithmetic_mirror)
 {
     struct Row
     {
@@ -351,7 +351,7 @@ TEST_F(VaultBalance, TrustLineArithmeticMirror)
 }
 
 // Each row starts from assetsDeployed 500, available 100.
-TEST_F(VaultBalance, FieldsMove)
+TEST_F(VaultBalance, fields_move)
 {
     struct Row
     {
@@ -404,7 +404,7 @@ TEST_F(VaultBalance, FieldsMove)
 
 // A failing field rejects the whole change as a unit, including any valid
 // cash leg. Each row starts from assetsDeployed 500, available 100.
-TEST_F(VaultBalance, InvalidChangeFailsAtomically)
+TEST_F(VaultBalance, invalid_change_fails_atomically)
 {
     struct Row
     {
@@ -450,14 +450,14 @@ TEST_F(VaultBalance, InvalidChangeFailsAtomically)
     }
 }
 
-TEST_F(VaultBalance, LossAtAssetsDeployedBoundaryAllowed)
+TEST_F(VaultBalance, loss_at_assets_deployed_boundary_allowed)
 {
     auto vault = standardVault();
     EXPECT_EQ(adjustVaultBalances(vault, {.loss = Number{500}}, kNullJournal), tesSUCCESS);
     EXPECT_EQ(vault->at(sfLossUnrealized), Number{500});
 }
 
-TEST_F(VaultBalance, YieldUnrealizedClampsToZero)
+TEST_F(VaultBalance, yield_unrealized_clamps_to_zero)
 {
     auto vault = standardVault();
     vault->at(sfYieldUnrealized) = Number{5};
@@ -469,7 +469,7 @@ TEST_F(VaultBalance, YieldUnrealizedClampsToZero)
     EXPECT_EQ(vault->at(sfAssetsDeployed), Number{500});
 }
 
-TEST_F(VaultBalance, AssetsTotalEqualsFloor16OfAvailablePlusAssetsDeployed)
+TEST_F(VaultBalance, assets_total_equals_floor16_of_available_plus_assets_deployed)
 {
     Number const assetsDeployed{7, -9};
     auto vault = iouVault(assetsDeployed, Number{9'999'999'999'999'999, -9}, Number{0}, 9);
@@ -487,17 +487,17 @@ TEST_F(VaultBalance, AssetsTotalEqualsFloor16OfAvailablePlusAssetsDeployed)
 // Integral assets
 // ---------------------------------------------------------------------------
 
-TEST_F(VaultBalance, XrpControl)
+TEST_F(VaultBalance, xrp_control)
 {
     checkIntegralControl(xrpIssue());
 }
 
-TEST_F(VaultBalance, MptControl)
+TEST_F(VaultBalance, mpt_control)
 {
     checkIntegralControl(MPTIssue{makeMptID(1, issuer_.id())});
 }
 
-TEST_F(VaultBalance, CreditToPosteriorScaleIgnoresAmbientRoundingMode)
+TEST_F(VaultBalance, credit_to_posterior_scale_ignores_ambient_rounding_mode)
 {
     // reference is on a fine grid (scale -10); raw needs a coarser atScale once
     // reference + raw is floored, so flooredSum - reference needs more digits
