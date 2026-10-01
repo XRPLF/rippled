@@ -584,8 +584,9 @@ groups:
       # Wait of work posted to the main I/O event loop (the asio io_context
       # that runs peer networking, the RPC servers and timers). This is not
       # NodeStore latency: NodeStore reads and writes run on other threads.
-      # Only probes of 10ms or more are recorded, so the p95 covers slow
-      # probes only and has no value most of the time on a healthy node.
+      # The first probe is always recorded; after that, only probes of 10ms
+      # or more. So the p95 covers slow probes and has no value most of the
+      # time on a healthy node.
       # Over 1000ms for 10m means the loop keeps stalling for a second or
       # more, not a single spike. The millisecond ladder has edges at 500ms
       # and 1000ms, so the threshold sits on a bucket edge.
