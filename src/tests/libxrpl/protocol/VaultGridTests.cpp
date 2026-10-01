@@ -21,7 +21,7 @@
 namespace xrpl {
 namespace {
 
-TEST(VaultGrid, BaseAndLiveScale)
+TEST(VaultGrid, base_and_live_scale)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -43,7 +43,7 @@ TEST(VaultGrid, BaseAndLiveScale)
     EXPECT_EQ(getVaultBaseScale(coarsened), -6);
 }
 
-TEST(VaultGrid, PreV12BehaviorIsPreserved)
+TEST(VaultGrid, pre_v12_behavior_is_preserved)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -72,7 +72,7 @@ TEST(VaultGrid, PreV12BehaviorIsPreserved)
     }
 }
 
-TEST(VaultGrid, PreV12CreditClampFloorsPosteriorTotal)
+TEST(VaultGrid, pre_v12_credit_clamp_floors_posterior_total)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -91,7 +91,7 @@ TEST(VaultGrid, PreV12CreditClampFloorsPosteriorTotal)
     }
 }
 
-TEST(VaultGrid, IntegralScaleIsZero)
+TEST(VaultGrid, integral_scale_is_zero)
 {
     auto const vault = makeVault(xrpIssue(), Number{1'000}, VaultVersion::FixedPrecision, 0);
     STAmount const delta{xrpIssue(), 7};
@@ -102,7 +102,7 @@ TEST(VaultGrid, IntegralScaleIsZero)
     EXPECT_EQ(roundToPosteriorVaultScale(vault, delta, Number::RoundingMode::TowardsZero), delta);
 }
 
-TEST(VaultGrid, PosteriorScaleRoundsDelta)
+TEST(VaultGrid, posterior_scale_rounds_delta)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -117,7 +117,7 @@ TEST(VaultGrid, PosteriorScaleRoundsDelta)
         STAmount(iou, Number{20, -6}));
 }
 
-TEST(VaultGrid, PosteriorScaleRejectsDustAtCallSite)
+TEST(VaultGrid, posterior_scale_rejects_dust_at_call_site)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -128,7 +128,7 @@ TEST(VaultGrid, PosteriorScaleRejectsDustAtCallSite)
         roundToPosteriorVaultScale(vault, dust, Number::RoundingMode::TowardsZero), beast::kZero);
 }
 
-TEST(VaultGrid, PosteriorOutflowCanRefineScale)
+TEST(VaultGrid, posterior_outflow_can_refine_scale)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -141,7 +141,7 @@ TEST(VaultGrid, PosteriorOutflowCanRefineScale)
     EXPECT_EQ(roundToPosteriorVaultScale(vault, delta, Number::RoundingMode::TowardsZero), delta);
 }
 
-TEST(VaultGrid, OptionalInflowCapacityBoundaries)
+TEST(VaultGrid, optional_inflow_capacity_boundaries)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -167,7 +167,7 @@ TEST(VaultGrid, OptionalInflowCapacityBoundaries)
     EXPECT_EQ(checkOptionalVaultInflow(coarsening, coarseningDelta), tecLIMIT_EXCEEDED);
 }
 
-TEST(VaultGrid, OptionalInflowIncludesYieldUnrealized)
+TEST(VaultGrid, optional_inflow_includes_yield_unrealized)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
