@@ -73,7 +73,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 {
     auto event = app_.getJobQueue().makeLoadEvent(JtPathFind, "PathRequest::updateAll");
 
-    std::vector<PathRequest::wptr> requests;
+    std::vector<PathRequest::Wptr> requests;
     std::shared_ptr<AssetCache> cache;
 
     // Get the ledger and cache we should be using
@@ -100,8 +100,12 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
     std::optional<ScopedSpanGuard> span;
     if (!requests.empty())
     {
+        // Internal, not Server: a background job runs this, not a client request.
         span.emplace(
-            TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::updateAll);
+            TraceCategory::Rpc,
+            pathfind_span::prefix::pathfind,
+            pathfind_span::op::updateAll,
+            SpanRole::Internal);
         span->setAttribute(pathfind_span::attr::ledgerIndex, static_cast<int64_t>(inLedger->seq()));
         span->setAttribute(pathfind_span::attr::numRequests, static_cast<int64_t>(requests.size()));
     }

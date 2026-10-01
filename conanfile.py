@@ -37,6 +37,7 @@ class Xrpl(ConanFile):
         "nudb/2.0.9",
         "openssl/3.6.3",
         "soci/4.0.3",
+        "xrpl-rpc-spec/0.1.19",
         "zlib/1.3.2",
     ]
 
@@ -116,6 +117,7 @@ class Xrpl(ConanFile):
         "soci/*:shared": False,
         "soci/*:with_sqlite3": True,
         "soci/*:with_boost": True,
+        "xrpl-rpc-spec/*:server": "xrpld",
         "xxhash/*:shared": False,
     }
 
@@ -151,7 +153,7 @@ class Xrpl(ConanFile):
         # OpenTelemetry C++ SDK for distributed tracing (optional).
         # Provides OTLP/HTTP exporter, batch span processor, and trace API.
         if self.options.telemetry:
-            self.requires("opentelemetry-cpp/1.28.0")
+            self.requires("opentelemetry-cpp/1.28.0", transitive_headers=True)
         self.requires("xxhash/0.8.3", transitive_headers=True)
 
     exports_sources = (

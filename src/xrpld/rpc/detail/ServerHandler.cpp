@@ -70,6 +70,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -86,14 +87,14 @@ class ValidatorKeys;
 class CanonicalTXSet;
 
 static bool
-isStatusRequest(http_request_type const& request)
+isStatusRequest(HttpRequestType const& request)
 {
     return request.version() >= 11 && request.target() == "/" && request.body().size() == 0 &&
         request.method() == boost::beast::http::verb::get;
 }
 
 static Handoff
-statusRequestResponse(http_request_type const& request, boost::beast::http::status status)
+statusRequestResponse(HttpRequestType const& request, boost::beast::http::status status)
 {
     using namespace boost::beast::http;
     Handoff handoff;
@@ -253,8 +254,8 @@ ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoin
 Handoff
 ServerHandler::onHandoff(
     Session& session,
-    std::unique_ptr<stream_type>&& bundle,
-    http_request_type&& request,
+    std::unique_ptr<StreamType>&& bundle,
+    HttpRequestType&& request,
     boost::asio::ip::tcp::endpoint const& remoteAddress)
 {
     using namespace boost::beast;
@@ -727,10 +728,14 @@ ServerHandler::processRequest(
     // Marks the span as failed before sending an error reply, so the
     // early-return validation paths below are not later seen as successful
     // (the span would otherwise end UNSET, invisible to {status.code=error}).
-    auto httpReplyError = [&](int status, std::string const& message) {
+    // The span's error description is the reply text, unless spanDescription
+    // is given.
+    auto httpReplyError = [&](int status,
+                              std::string const& message,
+                              std::optional<std::string_view> spanDescription = std::nullopt) {
         spanHadError = true;
         span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
-        span.setError(message);
+        span.setError(spanDescription.value_or(message));
         httpReply(status, message, output, rpcJ);
     };
 
@@ -740,7 +745,12 @@ ServerHandler::processRequest(
         if ((request.size() > rpc::tuning::kMaxRequestSize) || !reader.parse(request, jsonOrig) ||
             !jsonOrig || !jsonOrig.isObject())
         {
-            httpReplyError(400, "Unable to parse request: " + reader.getFormattedErrorMessages());
+            // The parser's messages can quote parts of the request, so the
+            // span gets fixed text. The reply keeps the details.
+            httpReplyError(
+                400,
+                "Unable to parse request: " + reader.getFormattedErrorMessages(),
+                rpc_span::val::invalidJson);
             return;
         }
     }
@@ -1176,7 +1186,7 @@ ServerHandler::processRequest(
     is reported, meaning the server can accept more connections.
 */
 Handoff
-ServerHandler::statusResponse(http_request_type const& request) const
+ServerHandler::statusResponse(HttpRequestType const& request) const
 {
     using namespace boost::beast::http;
     Handoff handoff;

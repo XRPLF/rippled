@@ -249,7 +249,7 @@ public:
     std::unique_ptr<InboundLedgers> inboundLedgers_;
     std::unique_ptr<InboundTransactions> inboundTransactions_;
     std::unique_ptr<LedgerReplayer> ledgerReplayer_;
-    TaggedCache<uint256, AcceptedLedger> acceptedLedgerCache_;
+    TaggedCache<UInt256, AcceptedLedger> acceptedLedgerCache_;
     std::unique_ptr<NetworkOPs> networkOPs_;
     std::unique_ptr<Cluster> cluster_;
     std::unique_ptr<PeerReservationTable> peerReservations_;
@@ -271,7 +271,7 @@ public:
     std::optional<SQLiteDatabase> relationalDatabase_;
     std::unique_ptr<DatabaseCon> walletDB_;
     std::unique_ptr<Overlay> overlay_;
-    std::optional<uint256> trapTxID_;
+    std::optional<UInt256> trapTxID_;
 
     boost::asio::signal_set signals_;
 
@@ -509,6 +509,31 @@ public:
         add(ledgerCleaner_.get());
     }
 
+    /**
+     * Stop telemetry before the members are destroyed.
+     *
+     * setup() starts telemetry and run() stops it. This covers the paths that
+     * never reach run(): every `return false` in setup() after the start, and
+     * a caller that gives up after setup() succeeds. Without it the global
+     * Telemetry instance would point at a destroyed object. It acts only while
+     * this application's instance is still published, so a normal shutdown,
+     * where run() already stopped it, does nothing here.
+     */
+    ~ApplicationImp() override
+    {
+        // A destructor is implicitly noexcept, so a failure to stop must not
+        // escape and terminate the process.
+        try
+        {
+            if (telemetry::Telemetry::getInstance() == telemetry_.get())
+                telemetry_->stop();
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(journal_.error()) << "Error stopping telemetry: " << e.what();
+        }
+    }
+
     //--------------------------------------------------------------------------
 
     bool
@@ -648,7 +673,7 @@ public:
         return *inboundTransactions_;
     }
 
-    TaggedCache<uint256, AcceptedLedger>&
+    TaggedCache<UInt256, AcceptedLedger>&
     getAcceptedLedgerCache() override
     {
         return acceptedLedgerCache_;
@@ -671,12 +696,6 @@ public:
     getPerfLog() override
     {
         return *perfLog_;
-    }
-
-    telemetry::Telemetry&
-    getTelemetry() override
-    {
-        return *telemetry_;
     }
 
     NodeCache&
@@ -1020,7 +1039,7 @@ public:
                 << "; size after: " << treeNodeCache->size();
         }
         {
-            TaggedCache<uint256, Transaction> const& masterTxCache =
+            TaggedCache<UInt256, Transaction> const& masterTxCache =
                 getMasterTransaction().getCache();
 
             std::size_t const oldMasterTxSize = masterTxCache.size();
@@ -1132,7 +1151,7 @@ public:
         return maxDisallowedLedger_;
     }
 
-    std::optional<uint256> const&
+    std::optional<UInt256> const&
     getTrapTxID() const override
     {
         return trapTxID_;
@@ -1179,7 +1198,7 @@ private:
         std::string const& ledgerID,
         bool replay,
         bool isFilename,
-        std::optional<uint256> trapTxID);
+        std::optional<UInt256> trapTxID);
 
     void
     setMaxDisallowedLedger();
@@ -1456,7 +1475,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     {
         try
         {
-            auto logStream = beast::logstream{journal_.error()};
+            auto logStream = beast::LogStream{journal_.error()};
             auto setup = setupServerHandler(*config_, logStream);
             setup.makeContexts();
             serverHandler_->setup(setup, journal_);
@@ -1691,10 +1710,10 @@ ApplicationImp::run()
     ledgerCleaner_->stop();
     nodeStore_->stop();
     perfLog_->stop();
-    // Telemetry must stop last among trace-producing components.
-    // serverHandler_, overlay_, and jobQueue_ are already stopped above,
-    // so no threads should be calling startSpan() at this point.
-    // See TODO in TelemetryImpl::stop() re: thread-safety of sdkProvider_.
+    // Telemetry must stop last among trace-producing components: a span that
+    // ends after stop() is dropped, not exported. serverHandler_, overlay_,
+    // and jobQueue_ are already stopped above, so no threads should be
+    // calling startSpan() at this point.
     telemetry_->stop();
 
     JLOG(journal_.info()) << "Done.";
@@ -1764,9 +1783,9 @@ ApplicationImp::fdRequired() const
 void
 ApplicationImp::startGenesisLedger()
 {
-    std::vector<uint256> const initialAmendments = (config_->startUp == StartUpType::Fresh)
+    std::vector<UInt256> const initialAmendments = (config_->startUp == StartUpType::Fresh)
         ? amendmentTable_->getDesired()
-        : std::vector<uint256>{};
+        : std::vector<UInt256>{};
 
     std::shared_ptr<Ledger> const genesis = std::make_shared<Ledger>(
         kCreateGenesis,
@@ -1878,9 +1897,9 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
             if (ledger.get().isMember("close_time"))
             {
-                using tp = NetClock::time_point;
-                using d = tp::duration;
-                closeTime = tp{d{ledger.get()["close_time"].asUInt()}};
+                using Tp = NetClock::time_point;
+                using D = Tp::duration;
+                closeTime = Tp{D{ledger.get()["close_time"].asUInt()}};
             }
             if (ledger.get().isMember("close_time_resolution"))
             {
@@ -1920,7 +1939,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
                 return nullptr;
             }
 
-            uint256 uIndex;
+            UInt256 uIndex;
 
             if (!uIndex.parseHex(entry[jss::index].asString()))
             {
@@ -1971,7 +1990,7 @@ ApplicationImp::loadOldLedger(
     std::string const& ledgerID,
     bool replay,
     bool isFileName,
-    std::optional<uint256> trapTxID)
+    std::optional<UInt256> trapTxID)
 {
     try
     {
@@ -1984,7 +2003,7 @@ ApplicationImp::loadOldLedger(
         }
         else if (ledgerID.length() == 64)
         {
-            uint256 hash;
+            UInt256 hash;
 
             if (hash.parseHex(ledgerID))
             {

@@ -24,9 +24,6 @@ class Manager;
 namespace perf {
 class PerfLog;
 }  // namespace perf
-namespace telemetry {
-class Telemetry;
-}  // namespace telemetry
 
 // This is temporary until we migrate all code to use ServiceRegistry.
 class Application;
@@ -43,7 +40,7 @@ template <
 class TaggedCache;
 class STLedgerEntry;
 using SLE = STLedgerEntry;
-using CachedSLEs = TaggedCache<uint256, SLE const>;
+using CachedSLEs = TaggedCache<UInt256, SLE const>;
 
 // Forward declarations
 class AcceptedLedger;
@@ -183,7 +180,7 @@ public:
     virtual InboundTransactions&
     getInboundTransactions() = 0;
 
-    virtual TaggedCache<uint256, AcceptedLedger>&
+    virtual TaggedCache<UInt256, AcceptedLedger>&
     getAcceptedLedgerCache() = 0;
 
     virtual LedgerMaster&
@@ -227,9 +224,6 @@ public:
     virtual perf::PerfLog&
     getPerfLog() = 0;
 
-    virtual telemetry::Telemetry&
-    getTelemetry() = 0;
-
     // Configuration and state
     [[nodiscard]] virtual bool
     isStopping() const = 0;
@@ -243,7 +237,7 @@ public:
     virtual Logs&
     getLogs() = 0;
 
-    [[nodiscard]] virtual std::optional<uint256> const&
+    [[nodiscard]] virtual std::optional<UInt256> const&
     getTrapTxID() const = 0;
 
     /**

@@ -378,7 +378,7 @@ PathRequest::parseJson(json::Value const& jvParams)
             }
             else
             {
-                uint192 u;
+                UInt192 u;
                 if (!c[jss::mpt_issuance_id].isString() ||
                     !u.parseHex(c[jss::mpt_issuance_id].asString()))
                 {
@@ -473,7 +473,7 @@ PathRequest::parseJson(json::Value const& jvParams)
 
     if (jvParams.isMember(jss::domain))
     {
-        uint256 num;
+        UInt256 num;
         if (!jvParams[jss::domain].isString() || !num.parseHex(jvParams[jss::domain].asString()))
         {
             jvStatus_ = rpcError(RpcDomainMalformed);
@@ -512,7 +512,7 @@ PathRequest::doAborting() const
 std::unique_ptr<Pathfinder> const&
 PathRequest::getPathFinder(
     std::shared_ptr<AssetCache> const& cache,
-    hash_map<PathAsset, std::unique_ptr<Pathfinder>>& currencyMap,
+    HashMap<PathAsset, std::unique_ptr<Pathfinder>>& currencyMap,
     PathAsset const& currency,
     STAmount const& dstAmount,
     int const level,
@@ -590,7 +590,7 @@ PathRequest::findPaths(
     }
 
     auto const dstAmount = convertAmount(saDstAmount_, convertAll_);
-    hash_map<PathAsset, std::unique_ptr<Pathfinder>> currencyMap;
+    HashMap<PathAsset, std::unique_ptr<Pathfinder>> currencyMap;
 
     // One `pathfind.discover` span wraps the entire per-source-asset loop so
     // that a single RPC call produces one discover span instead of N (one per
@@ -603,9 +603,14 @@ PathRequest::findPaths(
     // spans inside the loop body therefore requires either making this a
     // ScopedSpanGuard or passing its context explicitly via childSpan(); a
     // child created here today would parent to this span's parent, not to it.
+    //
+    // Internal, not Server: this runs under pathfind.compute.
     using namespace telemetry;
     auto span = SpanGuard::span(
-        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::discover);
+        TraceCategory::Rpc,
+        pathfind_span::prefix::pathfind,
+        pathfind_span::op::discover,
+        SpanRole::Internal);
     span.setAttribute(pathfind_span::attr::searchLevel, static_cast<int64_t>(level));
     span.setAttribute(
         pathfind_span::attr::numSourceAssets, static_cast<int64_t>(sourceAssets.size()));
@@ -764,9 +769,13 @@ PathRequest::doUpdate(
     using namespace std::chrono;
     using namespace telemetry;
     // Scoped so pathfind.discover (created synchronously below via findPaths)
-    // nests under it. doUpdate does not yield, so scoping is safe.
+    // nests under it. doUpdate does not yield, so scoping is safe. Internal, not
+    // Server: this runs under pathfind.request or pathfind.update_all.
     auto span = ScopedSpanGuard(
-        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::compute);
+        TraceCategory::Rpc,
+        pathfind_span::prefix::pathfind,
+        pathfind_span::op::compute,
+        SpanRole::Internal);
     // Guarded on the span being live because setAttribute's arguments are
     // evaluated whatever the build, and doUpdate is hot: PathRequestManager
     // calls it once per active path_find subscription on every ledger close, so

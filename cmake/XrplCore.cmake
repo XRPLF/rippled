@@ -235,6 +235,14 @@ if(telemetry)
         xrpl.libxrpl.telemetry
         PUBLIC opentelemetry-cpp::opentelemetry-cpp
     )
+    # PUBLIC, so a parent project that adds this one with add_subdirectory()
+    # and links this module sees the same class layouts it was built with.
+    # CMakeLists.txt also sets the define for every target in this project.
+    # Conan consumers get it from conanfile.py instead.
+    target_compile_definitions(
+        xrpl.libxrpl.telemetry
+        PUBLIC XRPL_ENABLE_TELEMETRY
+    )
 endif()
 
 add_module(xrpl tx)
@@ -321,7 +329,14 @@ if(xrpld)
         target_sources(xrpld PRIVATE ${sources})
     endif()
 
-    target_link_libraries(xrpld Xrpl::boost Xrpl::opts Xrpl::libs xrpl.libxrpl)
+    target_link_libraries(
+        xrpld
+        Xrpl::boost
+        Xrpl::opts
+        Xrpl::libs
+        xrpl.libxrpl
+        rpcspec::rpcspec
+    )
     exclude_if_included(xrpld)
     # define a macro for tests that might need to
     # be excluded or run differently in CI environment

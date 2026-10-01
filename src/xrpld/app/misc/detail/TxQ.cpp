@@ -8,6 +8,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/mulDiv.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/config/BasicConfig.h>
@@ -50,6 +51,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -412,7 +414,7 @@ TxQ::canBeHeld(
     STTx const& tx,
     ApplyFlags const flags,
     OpenView const& view,
-    SLE::const_ref sleAccount,
+    SLE::ConstRef sleAccount,
     AccountMap::iterator const& accountIter,
     std::optional<TxQAccount::TxMap::iterator> const& replacementIter,
     std::scoped_lock<std::mutex> const& lock)
@@ -781,21 +783,28 @@ TxQ::apply(
     // is ambient, and this ScopedSpanGuard's scope is RAII-bounded to this fully
     // synchronous call (no coroutine yield), so no unrelated parent leaks in and
     // its scope cannot leak out onto a reused worker.
-    // On the open-ledger rebuild path parentCtx is null and this is a root; the
-    // current_ledger_seq attribute below correlates it to the ledger instead.
-    // A lambda (not a ternary) picks the factory: ScopedSpanGuard's move ctor is
-    // deleted, so guaranteed copy elision on each return is the only way to
-    // construct it conditionally.
+    // With no context it inherits the span active on the calling thread, or is
+    // a root if there is none. An RPC thread (simulate, a local submit that runs
+    // the batch, standalone ledger_accept) lends its rpc.command span; the batch
+    // job, the accept job and the consensus timer have none. current_ledger_seq
+    // below ties a root to its ledger.
+    // A lambda picks the factory. ScopedSpanGuard cannot move, so each branch
+    // returns a prvalue that initializes span in place.
     auto span = [&]() -> ScopedSpanGuard {
         if (parentCtx && parentCtx->isValid())
             return ScopedSpanGuard::childSpan(txq_span::enqueue, *parentCtx);
         return ScopedSpanGuard(
             TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::enqueue);
     }();
+    // txq_status is written once, when this function exits, not as a default
+    // that a later exit overwrites. Returns that set no outcome report rejected.
+    std::string_view outcome = txq_span::val::rejected;
+    ScopeExit const writeOutcome(
+        [&span, &outcome]() noexcept { span.setAttribute(txq_span::attr::txqStatus, outcome); });
     // Guarded on the span being recorded: this runs for every transaction and
-    // again for each one replayed on an open-ledger rebuild, and the two hash
-    // strings each allocate. The compiled-out guard's operator bool() is a
-    // literal false, so the block disappears in that build.
+    // again for each local transaction doAccept replays into the new open
+    // ledger, and the two hash strings each allocate. The compiled-out guard's
+    // operator bool() is a literal false, so the block disappears in that build.
     if (span)
     {
         span.setAttribute(txq_span::attr::txHash, to_string(tx->getTransactionID()).c_str());
@@ -807,9 +816,6 @@ TxQ::apply(
         span.setAttribute(txq_span::attr::currentLedgerSeq, static_cast<std::int64_t>(view.seq()));
         span.setAttribute(
             txq_span::attr::currentLedgerHash, to_string(view.header().parentHash).c_str());
-        // Default outcome; overridden below on the direct-apply and queued
-        // paths. Every other early return leaves the tx rejected from the queue.
-        span.setAttribute(txq_span::attr::txqStatus, txq_span::val::rejected);
     }
 
     // See if the transaction is valid, properly formed,
@@ -824,19 +830,17 @@ TxQ::apply(
     if (auto directApplied = tryDirectApply(app, view, tx, flags, j))
     {
         // A result comes back even when the apply failed, so branch on the outcome.
-        // transToken() builds a string, so the whole block is guarded.
-        if (span)
+        if (directApplied->applied)
         {
-            span.setAttribute(txq_span::attr::terCode, transToken(directApplied->ter).c_str());
-            if (directApplied->applied)
-            {
-                span.setAttribute(txq_span::attr::txqStatus, txq_span::val::appliedDirect);
-            }
-            else
-            {
-                span.setAttribute(txq_span::attr::txqStatus, txq_span::val::failed);
-            }
+            outcome = txq_span::val::appliedDirect;
         }
+        else
+        {
+            outcome = txq_span::val::failed;
+        }
+        // transToken() builds a string, so it runs only for a live span.
+        if (span)
+            span.setAttribute(txq_span::attr::terCode, transToken(directApplied->ter).c_str());
         return *directApplied;
     }
 
@@ -1309,7 +1313,7 @@ TxQ::apply(
             /* Can't erase (*replacedTxIter) here because success
                 implies that it has already been deleted.
             */
-            span.setAttribute(txq_span::attr::txqStatus, txq_span::val::applied);
+            outcome = txq_span::val::applied;
             return result;
         }
     }
@@ -1425,7 +1429,7 @@ TxQ::apply(
                      << " to queue."
                      << " Flags: " << flags;
 
-    span.setAttribute(txq_span::attr::txqStatus, txq_span::val::queued);
+    outcome = txq_span::val::queued;
     return {terQUEUED, false};
 }
 
@@ -1725,7 +1729,7 @@ TxQ::accept(Application& app, OpenView& view)
 //
 // Acquires a lock and calls the implementation.
 SeqProxy
-TxQ::nextQueuableSeq(SLE::const_ref sleAccount) const
+TxQ::nextQueuableSeq(SLE::ConstRef sleAccount) const
 {
     std::scoped_lock const lock(mutex_);
     return nextQueuableSeqImpl(sleAccount, lock);
@@ -1738,7 +1742,7 @@ TxQ::nextQueuableSeq(SLE::const_ref sleAccount) const
 // sequence number, that is not used by a transaction in the queue, must
 // be found and returned.
 SeqProxy
-TxQ::nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&) const
+TxQ::nextQueuableSeqImpl(SLE::ConstRef sleAccount, std::scoped_lock<std::mutex> const&) const
 {
     // If the account is not in the ledger or a non-account was passed
     // then return zero.  We have no idea.
@@ -1801,8 +1805,6 @@ TxQ::tryDirectApply(
     beast::Journal j)
 {
     using namespace telemetry;
-    [[maybe_unused]] ScopedSpanGuard const span(
-        TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::applyDirect);
 
     auto const account = (*tx)[sfAccount];
     auto const sleAccount = view.read(keylet::account(account));
@@ -1837,6 +1839,11 @@ TxQ::tryDirectApply(
 
     if (feeLevelPaid >= requiredFeeLevel)
     {
+        // Opened here so the span covers a real direct apply, not the checks
+        // above that return early.
+        [[maybe_unused]] ScopedSpanGuard const applyDirectSpan(
+            TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::applyDirect);
+
         // Attempt to apply the transaction directly.
         auto const transactionID = tx->getTransactionID();
         JLOG(j_.trace()) << "Applying transaction " << transactionID << " to open ledger.";

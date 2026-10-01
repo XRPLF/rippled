@@ -60,7 +60,7 @@ endpoint(std::string const& value)
 class MockStore : public Store
 {
 public:
-    MOCK_METHOD(std::size_t, load, (Store::load_callback const& cb), (override));
+    MOCK_METHOD(std::size_t, load, (Store::LoadCallback const& cb), (override));
     MOCK_METHOD(void, save, (std::vector<Store::Entry> const& entries), (override));
 };
 
@@ -71,7 +71,7 @@ public:
     std::vector<std::vector<Store::Entry>> saves;
 
     std::size_t
-    load(Store::load_callback const& cb) override
+    load(Store::LoadCallback const& cb) override
     {
         for (auto const& entry : entriesToLoad)
             cb(entry.endpoint, entry.valence);
