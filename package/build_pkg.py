@@ -21,9 +21,11 @@ SRC_DIR = Path(__file__).resolve().parents[1]
 
 PRE_RELEASE = re.compile(r"^(b|rc)(0|[1-9][0-9]*)$")
 
-# Channels that accept any version rather than only bN/rcN: a tag of any version
-# is published to custom or private, and develop takes 0.0.0-dev+<commit hash>.
-ANY_VERSION_CHANNELS = ("custom", "private", "develop")
+# Channels a tag of any version is published to, rather than only bN/rcN.
+ANY_VERSION_CHANNELS = ("custom", "private")
+
+# The version of any untagged build, which is all the develop channel publishes.
+DEV_VERSION = "0.0.0-dev"
 
 # The package name a variant suffixes, and the name every variant keeps for its
 # on-disk paths (/usr/bin/xrpld, /etc/xrpld, xrpld.service).
@@ -76,17 +78,22 @@ def package_version(reported: str, channel: str) -> str:
     """Normalise a reported version into one the package formats accept.
 
     A pre-release switches to '~' (3.2.0-b1 -> 3.2.0~b1), which also sorts before
-    the final 3.2.0; a no-op for a final release. The custom, private and
-    develop channels accept any pre-release and build metadata, with any '-'
-    inside either switched to '.' (3.4.0-custom-1 -> 3.4.0~custom.1). The
-    develop channel drops the build metadata (0.0.0-dev+abc1234 -> 0.0.0~dev):
-    its commit hash is already in the package release, and in the version it
-    would order the builds by hash, before the release is compared.
+    the final 3.2.0; a no-op for a final release. The custom and private
+    channels accept any pre-release and build metadata, with any '-' inside
+    either switched to '.' (3.4.0-custom-1 -> 3.4.0~custom.1). The develop
+    channel accepts only 0.0.0-dev and drops its build metadata
+    (0.0.0-dev+abc1234 -> 0.0.0~dev): its commit hash is already in the package
+    release, and in the version it would order the builds by hash, before the
+    release is compared.
     """
     # Metadata first, as it may contain '-' too.
     release, plus, metadata = reported.partition("+")
     if channel == "develop":
-        plus = metadata = ""
+        assert release == DEV_VERSION, (
+            f"unsupported version {reported!r}: "
+            f"the develop channel only accepts {DEV_VERSION}."
+        )
+        return DEV_VERSION.replace("-", "~")
     base, _, pre_release = release.partition("-")
     if channel in ANY_VERSION_CHANNELS:
         pre_release = pre_release.replace("-", ".")

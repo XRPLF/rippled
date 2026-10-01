@@ -223,7 +223,8 @@ A variant is published to the same channel under its own name, so
 
 Only a tag names a release version: any other build is `0.0.0-dev` with its
 short commit hash as build metadata, which the `develop` channel drops, so its
-packages are all `0.0.0~dev` and sort before every release. Versions sort in row order, so moving to a more mature channel never downgrades.
+packages are all `0.0.0~dev` and sort before every release. Versions sort in
+row order, so moving to a more mature channel never downgrades.
 A tag matching none of the release patterns, such as `X.Y.Z-hotfix1`, publishes
 to `custom`, which sits outside that order.
 
@@ -323,9 +324,10 @@ only accepts the channels in the table above plus `UNRELEASED`, the Debian
 convention for a build that targets no channel at all — what local and CMake
 builds pass, since nothing publishes them. An unsupported pre-release, and
 build metadata on a final release such as `3.2.0+abc123`, are both rejected,
-except in the `custom`, `private` and `develop` channels, which accept any version and
+except in the `custom` and `private` channels, which accept any version and
 switch each `-` inside the pre-release or build metadata to `.`, so
-`3.4.0-custom-1` packages as `3.4.0~custom.1`.
+`3.4.0-custom-1` packages as `3.4.0~custom.1`. The `develop` channel accepts
+only `0.0.0-dev`, whatever its build metadata, and packages it as `0.0.0~dev`.
 
 The RPM path intentionally uses `~` in `Version`, matching the Debian
 pre-release ordering convention, so RPM filenames/NVRs begin with forms like
