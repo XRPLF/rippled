@@ -1599,6 +1599,7 @@ COUNTERS_WITHOUT_MIN_VALUES = {
     "jq_trans_overflow_total": "observable counter: the check proves its callback runs; the value stays 0 on a healthy run",
     "validation_agreements_total": "observable counter: the check proves its callback runs",
     "validation_missed_total": "observable counter: the check proves its callback runs",
+    "server_stall_events_total": "observable counter: the check proves its callback runs",
 }
 
 
