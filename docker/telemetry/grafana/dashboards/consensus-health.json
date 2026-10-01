@@ -925,8 +925,7 @@
             "pointSize": 5,
             "lineWidth": 1,
             "fillOpacity": 0,
-            "gradientMode": "none",
-            "axisLabel": "NetClock Seconds (Ripple Epoch)"
+            "gradientMode": "none"
           }
         },
         "overrides": []
