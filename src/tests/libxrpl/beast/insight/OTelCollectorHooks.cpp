@@ -105,7 +105,7 @@ protected:
      * @brief Build a collector on the provider SetUp() installed.
      * @return A collector whose instruments reader_ collects.
      */
-    static Collector::ptr
+    static Collector::Ptr
     makeCollector()
     {
         return OTelCollector::New(
@@ -158,7 +158,7 @@ protected:
      * time of the last invocation, which starts unset, so the first collection
      * on a fresh collector always runs the hooks.
      */
-    static std::pair<Collector::ptr, Gauge>
+    static std::pair<Collector::Ptr, Gauge>
     makeArmedCollector()
     {
         auto collector = makeCollector();

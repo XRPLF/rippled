@@ -33,6 +33,7 @@
 #include <xrpl/ledger/entries/SignerListEntry.h>          // IWYU pragma: keep
 #include <xrpl/ledger/entries/SponsorshipEntry.h>         // IWYU pragma: keep
 #include <xrpl/ledger/entries/TicketEntry.h>
+#include <xrpl/ledger/entries/TransactionProposalEntry.h>              // IWYU pragma: keep
 #include <xrpl/ledger/entries/VaultEntry.h>                            // IWYU pragma: keep
 #include <xrpl/ledger/entries/XChainOwnedClaimIDEntry.h>               // IWYU pragma: keep
 #include <xrpl/ledger/entries/XChainOwnedCreateAccountClaimIDEntry.h>  // IWYU pragma: keep

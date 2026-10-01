@@ -108,12 +108,12 @@ Result
 split(FwdIt first, FwdIt last, Char delim)
 {
     using namespace detail;
-    using string = Result::value_type;
+    using String = Result::value_type;
 
     Result result;
 
     FwdIt iter = first;
-    string e;
+    String e;
     while (iter != last)
     {
         if (*iter == '"')
@@ -205,10 +205,10 @@ splitCommas(std::string_view s)
  */
 class ListIterator
 {
-    using iter_type = boost::string_ref::const_iterator;
+    using IterType = boost::string_ref::const_iterator;
 
-    iter_type it_;
-    iter_type end_;
+    IterType it_;
+    IterType end_;
     boost::string_ref value_;
 
 public:
@@ -218,7 +218,7 @@ public:
     using difference_type = std::ptrdiff_t;
     using iterator_category = std::forward_iterator_tag;
 
-    ListIterator(iter_type begin, iter_type end) : it_(begin), end_(end)
+    ListIterator(IterType begin, IterType end) : it_(begin), end_(end)
     {
         if (it_ != end_)
             increment();

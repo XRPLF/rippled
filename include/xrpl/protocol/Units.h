@@ -47,7 +47,7 @@ class TenthBipsTag;
 // namespace.
 
 template <class T>
-concept Valid = std::is_class_v<T> && std::is_object_v<typename T::unit_type> &&
+concept Valid = std::is_class_v<T> && std::is_object_v<typename T::UnitType> &&
     std::is_object_v<typename T::value_type>;
 
 /**
@@ -60,11 +60,11 @@ concept Valid = std::is_class_v<T> && std::is_object_v<typename T::unit_type> &&
  */
 template <class T>
 concept Usable = Valid<T> &&
-    (std::is_same_v<typename T::unit_type, feelevelTag> ||
-     std::is_same_v<typename T::unit_type, unitlessTag> ||
-     std::is_same_v<typename T::unit_type, dropTag> ||
-     std::is_same_v<typename T::unit_type, BipsTag> ||
-     std::is_same_v<typename T::unit_type, TenthBipsTag>);
+    (std::is_same_v<typename T::UnitType, feelevelTag> ||
+     std::is_same_v<typename T::UnitType, unitlessTag> ||
+     std::is_same_v<typename T::UnitType, dropTag> ||
+     std::is_same_v<typename T::UnitType, BipsTag> ||
+     std::is_same_v<typename T::UnitType, TenthBipsTag>);
 
 template <class Other, class VU>
 concept Compatible =
@@ -79,7 +79,7 @@ concept IntegralValue = Integral<typename VU::value_type>;
 
 template <class VU1, class VU2>
 concept CastableValue = IntegralValue<VU1> && IntegralValue<VU2> &&
-    std::is_same_v<typename VU1::unit_type, typename VU2::unit_type>;
+    std::is_same_v<typename VU1::UnitType, typename VU2::UnitType>;
 
 template <class UnitTag, class T>
 class ValueUnit : private boost::totally_ordered<ValueUnit<UnitTag, T>>,
@@ -90,7 +90,7 @@ class ValueUnit : private boost::totally_ordered<ValueUnit<UnitTag, T>>,
                   private boost::unit_steppable<ValueUnit<UnitTag, T>>
 {
 public:
-    using unit_type = UnitTag;
+    using UnitType = UnitTag;
     using value_type = T;
 
 private:
@@ -130,7 +130,7 @@ public:
      * implicitly
      */
     template <Compatible<ValueUnit> Other>
-    constexpr ValueUnit(ValueUnit<unit_type, Other> const& value)
+    constexpr ValueUnit(ValueUnit<UnitType, Other> const& value)
         requires SafeToCast<Other, value_type>
         : ValueUnit(safeCast<value_type>(value.value()))
     {
@@ -247,7 +247,7 @@ public:
 
     template <Compatible<ValueUnit> Other>
     constexpr bool
-    operator==(ValueUnit<unit_type, Other> const& other) const
+    operator==(ValueUnit<UnitType, Other> const& other) const
     {
         return value_ == other.value();
     }
@@ -296,7 +296,7 @@ public:
 
     template <class Other>
     [[nodiscard]] constexpr double
-    decimalFromReference(ValueUnit<unit_type, Other> reference) const
+    decimalFromReference(ValueUnit<UnitType, Other> reference) const
     {
         return static_cast<double>(value_) / reference.value();
     }
@@ -311,17 +311,17 @@ public:
     {
         if constexpr (std::is_integral_v<value_type>)
         {
-            using jsontype =
+            using JsonType =
                 std::conditional_t<std::is_signed_v<value_type>, json::Int, json::UInt>;
 
-            constexpr auto kMin = std::numeric_limits<jsontype>::min();
-            constexpr auto kMax = std::numeric_limits<jsontype>::max();
+            constexpr auto kMin = std::numeric_limits<JsonType>::min();
+            constexpr auto kMax = std::numeric_limits<JsonType>::max();
 
             if (value_ < kMin)
                 return kMin;
             if (value_ > kMax)
                 return kMax;
-            return static_cast<jsontype>(value_);
+            return static_cast<JsonType>(value_);
         }
         else
         {
@@ -374,7 +374,7 @@ concept muldivDest = muldivSource<Dest> &&  // Dest is also a source
 
 template <class Source2, class Source1>
 concept muldivSources = muldivSource<Source1> && muldivSource<Source2> &&
-    std::is_same_v<typename Source1::unit_type, typename Source2::unit_type>;
+    std::is_same_v<typename Source1::UnitType, typename Source2::UnitType>;
 
 template <class Dest, class Source1, class Source2>
 concept muldivable = muldivSources<Source1, Source2> && muldivDest<Dest>;
@@ -382,7 +382,7 @@ concept muldivable = muldivSources<Source1, Source2> && muldivDest<Dest>;
 
 template <class Dest, class Source1, class Source2>
 concept muldivCommutable = muldivable<Dest, Source1, Source2> &&
-    !std::is_same_v<typename Source1::unit_type, typename Dest::unit_type>;
+    !std::is_same_v<typename Source1::UnitType, typename Dest::UnitType>;
 
 template <class T>
 ValueUnit<unitlessTag, T>
@@ -406,8 +406,8 @@ mulDivU(Source1 value, Dest mul, Source2 div)
         return std::nullopt;
     }
 
-    using desttype = Dest::value_type;
-    constexpr auto kMax = std::numeric_limits<desttype>::max();
+    using DestType = Dest::value_type;
+    constexpr auto kMax = std::numeric_limits<DestType>::max();
 
     // Shortcuts, since these happen a lot in the real world
     if (value == div)
@@ -416,7 +416,7 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     {
         if (value.value() > kMax)
             return std::nullopt;
-        return Dest{static_cast<desttype>(value.value())};
+        return Dest{static_cast<DestType>(value.value())};
     }
 
     using namespace boost::multiprecision;
@@ -432,7 +432,7 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     if (quotient > kMax)
         return std::nullopt;
 
-    return Dest{static_cast<desttype>(quotient)};
+    return Dest{static_cast<DestType>(quotient)};
 }
 
 }  // namespace unit
