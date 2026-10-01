@@ -111,6 +111,7 @@
 #include <xrpl/beast/utility/Journal.h>
 
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <chrono>
 #include <cstdint>
@@ -127,9 +128,11 @@
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/unique_ptr.h>
 #include <opentelemetry/sdk/metrics/meter_provider.h>
+#include <opentelemetry/sdk/metrics/metric_reader.h>
 
 // These two serve only the telemetry-only members below, so they are guarded
-// like their uses: std::atomic by phase_, std::shared_ptr by provider_.
+// like their uses: std::atomic by phase_, std::shared_ptr by provider_ and
+// Options::extraReader.
 #include <atomic>
 #include <memory>
 #endif
@@ -206,25 +209,26 @@ public:
     /**
      * Everything the constructor needs from config: where to export, how to
      * secure the connection, and the process identity stamped on the OTel
-     * resource.
+     * resource. One field is not config: `extraReader`, which production
+     * leaves empty.
      *
      * The values come from the `[telemetry]` section plus `[network_id]`, read
      * by `makeMetricsRegistryOptions()` in `Application.cpp`. They must match
      * what `makeTelemetrySetup()` gives the trace pipeline, or one node reports
      * two identities and a dashboard filter shows half its series.
      *
-     * A struct rather than ten positional parameters: seven of them are
-     * strings, so a swapped pair would compile and silently stamp the wrong
-     * label. Designated initializers name every value at the call site.
+     * A struct rather than a long positional parameter list: eight of the
+     * fields are strings, so a swapped pair would compile and silently stamp
+     * the wrong label. Each call site sets the fields by name instead.
      *
      * @code
-     * MetricsRegistry::Options opts{
-     *     .endpoint = "http://localhost:4318/v1/metrics",
-     *     .serviceName = "xrpld",
-     *     .serviceVersion = build_info::getVersionString(),
-     *     .serviceInstanceId = nodePublicKey,
-     *     .nodeId = nodePublicKey,
-     *     .networkId = 2};
+     * MetricsRegistry::Options opts;
+     * opts.endpoint = "http://localhost:4318/v1/metrics";
+     * opts.serviceName = "xrpld";
+     * opts.serviceVersion = build_info::getVersionString();
+     * opts.serviceInstanceId = nodePublicKey;
+     * opts.nodeId = nodePublicKey;
+     * opts.networkId = 2;
      * MetricsRegistry registry(enabled, journal, opts);
      *
      * // Edge case: mutual TLS to a collector that requires it.
@@ -302,12 +306,28 @@ public:
          * Private key for @ref tlsClientCertPath.
          */
         std::string tlsClientKeyPath;
+
+#ifdef XRPL_ENABLE_TELEMETRY
+        /**
+         * A reader to attach beside the OTLP one, or empty for none. Tests set
+         * it to read back what the registry records.
+         *
+         * It is attached before any instrument exists, so it sees every point,
+         * including the zeros the constructor records. Collect through it only
+         * before stop(), which destroys the pipeline it reads from.
+         */
+        std::shared_ptr<opentelemetry::sdk::metrics::MetricReader> extraReader;
+#endif
     };
 
     /**
      * Construct the registry and, when enabled, build the whole metrics
      * pipeline: OTLP exporter, periodic reader, MeterProvider and every
      * SYNCHRONOUS instrument (counters and histograms).
+     *
+     * The parity counters it creates start at 0 for each label value, and
+     * jobq_stall_total at 0 for each job type the job queue can run, so a
+     * later event shows under increase(). See initSyncInstruments().
      *
      * Doing this in the constructor is what fixes the init order. The
      * Application declares its registry before every subsystem, so no
@@ -325,10 +345,15 @@ public:
      * owns those callbacks. This applies to observable COUNTERS as
      * well as gauges.
      *
+     * @note The zero start does not help an event that happens before the
+     * zero reaches the backend: the first sample stored already includes it.
+     * That window opens at construction and closes once the first export
+     * carrying the zero arrives. The reader exports every 10 s.
+     *
      * @param enabled  False makes every method a no-op (telemetry disabled).
      * @param journal  Log output.
-     * @param options  Endpoint, TLS settings and resource identity, all read
-     * from config by the caller. See @ref Options.
+     * @param options  Endpoint, TLS settings and resource identity, read from
+     * config by the caller, plus the optional extra reader. See @ref Options.
      */
     MetricsRegistry(bool enabled, beast::Journal journal, Options const& options);
 
@@ -741,11 +766,11 @@ public:
     /**
      * Increment the ledgers_closed_total counter.
      *
-     * @note Currently has no callers: the ledgers_closed_total counter is
-     * incremented at its consensus call site via the XRPL_METRIC_COUNTER_INC
-     * macro (see MetricMacros.h). This method and its eagerly-created
-     * counter are retained as a fallback and are slated for removal in a
-     * separate cleanup once the macro path has proven out.
+     * @note Has no production callers: RCLConsensus counts closed ledgers
+     * through XRPL_METRIC_COUNTER_INC (see MetricMacros.h). The registry
+     * still creates this counter, because its instrument is what starts the
+     * series at 0. Both sites pass kLedgersClosedTotal and
+     * kLedgersClosedTotalDesc, so the SDK gives them one stream.
      */
     void
     incrementLedgersClosed();
@@ -771,9 +796,8 @@ public:
      * Called from LedgerHistory::handleMismatch() once the mismatch has
      * been classified. The reason label turns fork diagnosis from a
      * log-grep into a queryable time series.
-     * @param reason Classified mismatch cause (e.g. "prior_ledger",
-     * "close_time", "consensus_txset", "same_txset_diff_result",
-     * "unknown").
+     * @param reason A value from ledger_mismatch_reason. Only those start at
+     * 0; any other value has no series until its first event.
      */
     void
     incrementLedgerHistoryMismatch(std::string_view reason);
@@ -792,7 +816,8 @@ public:
      * Called from TxQ::apply() when a transaction is refused admission to
      * the queue (e.g. the queue is full). Distinct from expiry (already
      * queued) and from jq_trans_overflow (job queue, not TxQ).
-     * @param reason Admission-control rejection cause (e.g. "queue_full").
+     * @param reason A value from txq_drop_reason. Only those start at 0; any
+     * other value has no series until its first event.
      */
     void
     incrementTxqDropped(std::string_view reason);
@@ -919,7 +944,8 @@ private:
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobFinishedCounter_;
     /**
      * Counter: jobq_stall_total{job_type="<name>"} — one per finished job
-     * whose run time reached kJobStallThresholdUs.
+     * whose run time reached kJobStallThresholdUs. Starts at 0 for each job
+     * type the job queue can run.
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobStallCounter_;
     /**
@@ -980,8 +1006,10 @@ private:
 
     /**
      * Create the synchronous instruments (RPC and job-queue counters and
-     * histograms, plus the external dashboard parity counters). Extracted
-     * from the constructor to keep each function under the 80-line limit.
+     * histograms, plus the synchronous parity counters), and start each of
+     * those parity counters at 0 for every label value, and jobq_stall_total
+     * at 0 for every job type the job queue can run. Extracted from the
+     * constructor to keep each function under the 80-line limit.
      */
     void
     initSyncInstruments();
@@ -997,5 +1025,92 @@ private:
     disablePipeline(std::string_view reason);
 #endif  // XRPL_ENABLE_TELEMETRY
 };
+
+/**
+ * Name of the ledgers-closed counter.
+ *
+ * Two sites create this counter: RCLConsensus records it through
+ * XRPL_METRIC_COUNTER_INC, and the registry creates it to start it at 0. The
+ * SDK gives both one stream only if they agree on the name and the
+ * description, so both sites read this constant and kLedgersClosedTotalDesc.
+ *
+ * A char array, not a std::string_view: the OTel API takes its own string
+ * view, which cannot be built from a std::string_view.
+ */
+inline constexpr char kLedgersClosedTotal[] = "ledgers_closed_total";
+
+/**
+ * Description of the ledgers-closed counter. It is part of the counter's
+ * identity, so both creation sites pass it. See kLedgersClosedTotal.
+ */
+inline constexpr char kLedgersClosedTotalDesc[] = "Total ledgers closed by consensus";
+
+/**
+ * The `reason` label values of ledger_history_mismatch_total: every reason
+ * LedgerHistory::handleMismatch() records.
+ *
+ * The registry starts each value in `all` at 0. A new value must go into
+ * `all` too, or its series appears only with its first event.
+ */
+namespace ledger_mismatch_reason {
+
+/**
+ * A ledger was not found, so the cause is unknown.
+ */
+inline constexpr std::string_view unknown{"unknown"};
+
+/**
+ * The ledgers have different parent hashes.
+ */
+inline constexpr std::string_view priorLedger{"prior_ledger"};
+
+/**
+ * Same parent, different close time.
+ */
+inline constexpr std::string_view closeTime{"close_time"};
+
+/**
+ * The consensus transaction set hashes differ.
+ */
+inline constexpr std::string_view consensusTxset{"consensus_txset"};
+
+/**
+ * Same transactions, yet the ledgers differ.
+ */
+inline constexpr std::string_view sameTxsetDiffResult{"same_txset_diff_result"};
+
+/**
+ * Different transactions.
+ */
+inline constexpr std::string_view differentTxset{"different_txset"};
+
+/**
+ * Every value above.
+ */
+inline constexpr std::array
+    all{unknown, priorLedger, closeTime, consensusTxset, sameTxsetDiffResult, differentTxset};
+
+}  // namespace ledger_mismatch_reason
+
+/**
+ * The `reason` label values of txq_dropped_total: every reason TxQ::apply()
+ * records.
+ *
+ * The registry starts each value in `all` at 0. A new value must go into
+ * `all` too, or its series appears only with its first event.
+ */
+namespace txq_drop_reason {
+
+/**
+ * The queue is full and the transaction cannot displace a queued one.
+ */
+inline constexpr std::string_view queueFull{"queue_full"};
+
+/**
+ * Every value above.
+ */
+inline constexpr std::array all{queueFull};
+
+}  // namespace txq_drop_reason
 
 }  // namespace xrpl::telemetry

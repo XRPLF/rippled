@@ -1350,7 +1350,7 @@ TxQ::apply(
                             << " would kick a transaction from the same account (" << account
                             << ") out of the queue.";
             if (auto* const metrics = app.getMetricsRegistry(); metrics != nullptr)
-                metrics->incrementTxqDropped("queue_full");
+                metrics->incrementTxqDropped(txq_drop_reason::queueFull);
             return {telCAN_NOT_QUEUE_FULL, false};
         }
         auto const& endAccount = byAccount_.at(lastRIter->account);
@@ -1395,7 +1395,7 @@ TxQ::apply(
             JLOG(j_.info()) << "Queue is full, and transaction " << transactionID
                             << " fee is lower than end item's account average fee";
             if (auto* const metrics = app.getMetricsRegistry(); metrics != nullptr)
-                metrics->incrementTxqDropped("queue_full");
+                metrics->incrementTxqDropped(txq_drop_reason::queueFull);
             return {telCAN_NOT_QUEUE_FULL, false};
         }
     }

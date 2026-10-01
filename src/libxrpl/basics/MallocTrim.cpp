@@ -3,11 +3,9 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 
-#include <boost/predef.h>
-
 #include <string_view>
 
-#if defined(__GLIBC__) && BOOST_OS_LINUX
+#if XRPL_MALLOC_TRIM_SUPPORTED
 #include <sys/resource.h>
 
 #include <malloc.h>
@@ -42,7 +40,7 @@ namespace detail {
 
 // cSpell:ignore statm
 
-#if defined(__GLIBC__) && BOOST_OS_LINUX
+#if XRPL_MALLOC_TRIM_SUPPORTED
 
 inline int
 mallocTrimWithPad(std::size_t padBytes)
@@ -135,7 +133,7 @@ measuredTrim(std::size_t padBytes)
     return report;
 }
 
-#endif  // __GLIBC__ && BOOST_OS_LINUX
+#endif  // XRPL_MALLOC_TRIM_SUPPORTED
 
 }  // namespace detail
 
@@ -146,7 +144,7 @@ mallocTrim(std::string_view tag, beast::Journal journal)
 
     MallocTrimReport report;
 
-#if !(defined(__GLIBC__) && BOOST_OS_LINUX)
+#if !XRPL_MALLOC_TRIM_SUPPORTED
     JLOG(journal.debug()) << "malloc_trim not supported on this platform (tag=" << tag << ")";
 #else
     // Keep glibc malloc_trim padding at 0 (default): 12h Mainnet tests across 0/256KB/1MB/16MB

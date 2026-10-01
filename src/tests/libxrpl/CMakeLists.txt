@@ -21,11 +21,19 @@ set_target_properties(
 )
 # Lets test sources include the shared helpers as <helpers/...>.
 target_include_directories(xrpl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-# Two tests reach a header under src/xrpld/ rather than in libxrpl:
-# ledger/AcquireStats.cpp includes <xrpld/app/ledger/AcquireStats.h> and
-# telemetry/RpcMetricNames.cpp includes <xrpld/rpc/detail/Tuning.h>. Put src/ on
-# the include path so both resolve as <xrpld/...>. This is unconditional because
-# those headers are header-only and testable in every build, telemetry or not.
+# Six tests reach a header under src/xrpld/ rather than in libxrpl:
+#   ledger/AcquireStats.cpp             <xrpld/app/ledger/AcquireStats.h>
+#   telemetry/LedgerSpanNames.cpp       <xrpld/app/ledger/detail/LedgerSpanNames.h>
+#                                       <xrpld/overlay/detail/PeerSpanNames.h>
+#   telemetry/MetricMacros.cpp          <xrpld/overlay/Overlay.h>
+#                                       <xrpld/telemetry/MacroCounterPreRegistration.h>
+#   telemetry/RpcMetricNames.cpp        <xrpld/rpc/detail/Tuning.h>
+#   telemetry/SHAMapStoreSpanNames.cpp  <xrpld/app/misc/SHAMapStoreSpanNames.h>
+#   telemetry/SyncStateSignals.cpp      <xrpld/app/main/LoadManager.h>
+# Put src/ on the include path so each resolves as <xrpld/...>. The tests use
+# only what those headers define inline, so the binary still links only
+# xrpl.libxrpl. This is unconditional because five of the six build with
+# telemetry off too.
 target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
 

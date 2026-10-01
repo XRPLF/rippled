@@ -169,7 +169,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
         telemetry::metric::syncAcquireSourceTotal,
-        "Ledger acquires by where the data came from",
+        telemetry::syncAcquireSourceTotalDesc,
         {{telemetry::label::source,
           std::string(
               complete_ ? telemetry::lval::acquire_source::local
@@ -325,13 +325,13 @@ InboundLedger::~InboundLedger()
                                << stats_.get();
     }
 
-    // Last exit. A fetch dropped here (swept for making no progress, or torn
-    // down at shutdown) reached no result, so this is what stamps
-    // outcome=abandoned instead of exporting a span with no outcome at all.
-    // Already-finalized acquires are untouched -- the helper is idempotent.
-    // The peer count is not read here: this destructor can run under the
-    // InboundLedgers collection lock, and getPeerCount() would take the Overlay
-    // lock underneath it.
+    // Last exit. A fetch dropped here with no result (swept after a minute
+    // idle, torn down at shutdown, or cleared by clearFailures() on an admin
+    // fetch_info clear) is stamped outcome=abandoned; one that failed in
+    // trigger() without reaching done() is stamped failed. The helper is
+    // idempotent. The peer count is not read here: this destructor can run
+    // under the InboundLedgers collection lock, and getPeerCount() would take
+    // the Overlay lock underneath it.
     finalizeAcquireSpan(/*mayReadPeerCount=*/false);
 }
 
@@ -540,7 +540,7 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
         XRPL_METRIC_COUNTER_INC(
             app_,
             telemetry::metric::syncAcquireNoProgressTotal,
-            "Ledger-acquire timeouts where no new node arrived");
+            telemetry::syncAcquireNoProgressTotalDesc);
 
         // addPeers triggers if the reason is not HISTORY
         // So if the reason IS HISTORY, need to trigger after we add
@@ -754,6 +754,11 @@ InboundLedger::finalizeAcquireSpan(bool mayReadPeerCount) noexcept
                 acquireSpan_->setAttribute(
                     ledger_span::attr::ledgerSeq, static_cast<int64_t>(seq_));
             }
+            // Only a failed acquire gets Error. Success stays Unset, since the
+            // spec keeps Ok for the application; abandoned stays Unset, since a
+            // clean shutdown drops every acquire in flight.
+            if (failed_)
+                acquireSpan_->setError("ledger acquisition gave up");
         }
     }
     catch (...)  // NOLINT(bugprone-empty-catch)
@@ -1503,13 +1508,10 @@ InboundLedger::gotData(
     // Mirror the depth for the telemetry gauge, which must not take this lock.
     receivedDataDepth_.store(receivedData_.size(), std::memory_order_relaxed);
 
-    // A peer just answered, so this acquire is making progress even if its turn
-    // to apply the data has not come up yet. Without this the sweeper's one
-    // minute idle test measures the wait for a JtLedgerData slot rather than
-    // real inactivity, and deletes fetches that are still being served: on a
-    // fresh mainnet sync that produced 490 abandoned acquires against zero
-    // expired retry budgets, because only the constructor, update() and done()
-    // ever refreshed the timestamp.
+    // A peer just answered, so this acquire is still being served even if its
+    // turn to apply the data has not come up yet. Without this the sweeper's
+    // one minute idle test would measure the wait for a JtLedgerData slot
+    // rather than real inactivity, and delete fetches that peers still serve.
     touch();
 
     if (receiveDispatched_)
@@ -1647,7 +1649,7 @@ InboundLedger::recordBatchOutcome(SHAMapAddNode const& san)
         XRPL_METRIC_COUNTER_ADD_LABELED(
             app_,
             telemetry::metric::syncAddnodeTotal,
-            "SHAMap nodes received during ledger acquire, by outcome",
+            telemetry::syncAddnodeTotalDesc,
             static_cast<std::uint64_t>(count),
             {{telemetry::label::outcome, std::string(outcome)}});
     };

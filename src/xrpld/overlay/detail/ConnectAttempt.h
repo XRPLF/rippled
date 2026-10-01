@@ -177,9 +177,9 @@ private:
      *           +-- PeerImp created + addActive ........ "connected"
      *
      * The slot branch is drawn separately from the TLS one because
-     * `Logic::onConnected` fails for exactly one reason -- the remote address is
-     * ours -- and that is a local misconfiguration rather than an unreachable
-     * peer.
+     * `Logic::onConnected` fails for exactly one reason -- the dial came back in
+     * to this node -- and that means this node dialled itself, not that a peer
+     * was unreachable.
      *
      * @param outcome One of the `peer_span::val` dial-outcome constants:
      *        `connected`, `tcpFail`, `tlsFail`, `selfConnection`, `upgradeFail`,

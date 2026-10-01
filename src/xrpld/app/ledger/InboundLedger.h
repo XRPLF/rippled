@@ -297,12 +297,15 @@ private:
      *
      * An acquire can leave through four exits: done(), the local-store
      * shortcut in init(), the "can never be acquired" exit in init(), and the
-     * destructor when the sweeper drops a fetch that never finished. Every one
-     * of them calls this, so the span always carries an `outcome` and its
-     * duration always ends at the real exit instead of stretching to whenever
-     * the object happened to be destroyed. Without that, the one case worth
-     * detecting -- an acquire that never completes -- was the one case with no
-     * span data.
+     * destructor. The destructor ends an acquire that the sweep dropped after
+     * a minute idle, that shutdown or an admin fetch_info clear dropped, or
+     * that failed in trigger() without reaching done(). Every exit calls this,
+     * so the span always carries an `outcome`. A span the destructor ends
+     * lasts until destruction, so its duration is not a fetch time.
+     *
+     * A `failed` acquire also gets span status Error. Success and `abandoned`
+     * stay Unset: instrumentation should not set Ok, and a clean shutdown
+     * drops every acquire in flight.
      *
      * The outcome is derived from the acquire's own flags rather than passed
      * in, so no call site can label an exit wrongly:

@@ -27,6 +27,7 @@
  *      onShutdown / processResponse
  */
 
+#include <xrpl/telemetry/MetricNames.h>
 #include <xrpl/telemetry/SpanNames.h>
 
 namespace xrpl::telemetry::peer_span {
@@ -85,38 +86,23 @@ inline constexpr auto outcome = makeStr("outcome");
 
 namespace val {
 /**
- * peer.dial outcome values.
+ * peer.dial outcome values: the `overlay_connect_total` label values from
+ * MetricNames.h, where each one is described. Four come from
+ * `lval::overlay_connect`, and `self_connection` and `timeout` from the
+ * shared `lval` slugs.
  *
- * The identical slugs `ConnectAttempt::reportOutcome` passes to the
- * `overlay_connect_total` counter, defined here so the span and the counter
- * cannot drift apart: the dial state machine names its outcome once and both
- * signals receive that same value.
- *
- * - connected:       the peer was activated and added to the overlay.
- * - tcp_fail:        the TCP connect or local-endpoint read failed.
- * - tls_fail:        the TLS handshake, or the shared-value read taken before
- *                    the HTTP upgrade, failed.
- * - self_connection: TLS succeeded and then PeerFinder recognised the remote
- *                    address as one of our own, so we had dialled ourselves.
- * - upgrade_fail:    TLS succeeded but the HTTP upgrade, protocol negotiation
- *                    or activation was rejected.
- * - timeout:         the attempt never reached any terminal state in time.
- *
- * `self_connection` is separate from `tls_fail` because it is a local
- * misconfiguration, not an unreachable peer: the node has its own address in
- * `[ips_fixed]` or behind its advertised endpoint, and every dial to it is
- * wasted. Counting it as a TLS failure made a rising `tls_fail` unreadable --
- * broken peers and a self-dial loop need completely different responses. The
- * slug matches `handshake_fail::selfConnection` on
- * `handshake_negotiation_fail_total`, so the same fault reads the same way
- * whichever signal surfaces it.
+ * Built from those constants rather than spelled again, so the span attribute
+ * and the counter label cannot drift apart: ConnectAttempt::reportOutcome()
+ * passes one value to both. `self_connection` is the shared slug that
+ * `handshake_negotiation_fail_total` also uses, so a self-dial reads the same
+ * on both counters.
  */
-inline constexpr auto connected = makeStr("connected");
-inline constexpr auto tcpFail = makeStr("tcp_fail");
-inline constexpr auto tlsFail = makeStr("tls_fail");
-inline constexpr auto selfConnection = makeStr("self_connection");
-inline constexpr auto upgradeFail = makeStr("upgrade_fail");
-inline constexpr auto timeout = makeStr("timeout");
+inline constexpr auto connected = makeStr(lval::overlay_connect::connected);
+inline constexpr auto tcpFail = makeStr(lval::overlay_connect::tcpFail);
+inline constexpr auto tlsFail = makeStr(lval::overlay_connect::tlsFail);
+inline constexpr auto selfConnection = makeStr(lval::selfConnection);
+inline constexpr auto upgradeFail = makeStr(lval::overlay_connect::upgradeFail);
+inline constexpr auto timeout = makeStr(lval::timeout);
 }  // namespace val
 
 }  // namespace xrpl::telemetry::peer_span
