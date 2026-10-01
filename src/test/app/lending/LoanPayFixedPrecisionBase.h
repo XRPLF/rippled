@@ -1,14 +1,12 @@
 #pragma once
 
 #include <test/app/lending/LoanFixedPrecisionBase.h>
-#include <test/app/lending/LoanTestBase.h>
+#include <test/app/vault/VaultFixedPrecisionBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
-#include <test/jtx/flags.h>
-#include <test/jtx/pay.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/vault.h>
 
@@ -16,7 +14,9 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
