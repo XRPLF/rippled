@@ -67,7 +67,7 @@ private:
     static constexpr auto kMinSize = 250;
     static constexpr auto kMaxSize = 1250;
 
-    beast::xor_shift_engine gen_;
+    beast::XorShiftEngine gen_;
     std::uint8_t prefix_;
     std::discrete_distribution<std::uint32_t> dType_;
     std::uniform_int_distribution<std::uint32_t> dSize_;
@@ -85,11 +85,11 @@ public:
     // Returns the n-th key. Used to generate keys that are never stored.
     // The layout mirrors obj()'s: prefix at byte 0, RNG over the rest, so the
     // two key spaces stay disjoint by construction (not by coincidence).
-    uint256
+    UInt256
     key(std::size_t n)
     {
         gen_.seed(n + 1);
-        uint256 result;
+        UInt256 result;
         auto const data = static_cast<std::uint8_t*>(&*result.begin());
         *data = prefix_;
         rngcpy(data + 1, result.size() - 1, gen_);
@@ -101,7 +101,7 @@ public:
     obj(std::size_t n)
     {
         gen_.seed(n + 1);
-        uint256 key;
+        UInt256 key;
         auto const data = static_cast<std::uint8_t*>(&*key.begin());
         *data = prefix_;
         rngcpy(data + 1, key.size() - 1, gen_);
@@ -148,11 +148,11 @@ makePool(std::uint8_t prefix, std::size_t count, std::size_t start = 0)
 
 // Pre-generate `count` keys disjoint from every `makePool(...)` object, for
 // measuring fetches that miss.
-inline std::vector<uint256>
+inline std::vector<UInt256>
 makeMissingKeys(std::size_t count)
 {
     Sequence seq(2);
-    std::vector<uint256> keys;
+    std::vector<UInt256> keys;
     keys.reserve(count);
     for (auto i = 0uz; i < count; ++i)
         keys.push_back(seq.key(i));
@@ -203,7 +203,7 @@ makeShuffle(std::size_t size, std::uint64_t seed)
 {
     std::vector<std::size_t> v(size);
     std::ranges::iota(v, 0uz);
-    beast::xor_shift_engine gen(seed);
+    beast::XorShiftEngine gen(seed);
     std::ranges::shuffle(v, gen);
     return v;
 }

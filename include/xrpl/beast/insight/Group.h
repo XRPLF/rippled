@@ -13,7 +13,7 @@ namespace beast::insight {
 class Group : public Collector
 {
 public:
-    using ptr = std::shared_ptr<Group>;
+    using Ptr = std::shared_ptr<Group>;
 
     /**
      * Returns the name of this group, for diagnostics.
