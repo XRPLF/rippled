@@ -1147,15 +1147,18 @@ ValidPseudoAccounts::finalize(
             }
             if (root->isFieldPresent(sfLoanBrokerID))
                 return std::set<LedgerEntryType>{ltLOAN, ltMPTOKEN, ltRIPPLE_STATE};
-            return std::nullopt;
+            return std::nullopt;  // LCOV_EXCL_LINE
         }();
 
         for (auto const& index : indexes)
         {
             auto const sle = view.read(keylet::unchecked(index));
-            // A dangling link has no object type to check.
             if (!sle)
-                continue;
+            {
+                JLOG(j.fatal()) << "Invariant failed: pseudo-account " << toBase58(owner)
+                                << " owner directory links a missing object " << to_string(index);
+                return false;
+            }
 
             if (!allowed || !allowed->contains(sle->getType()))
             {

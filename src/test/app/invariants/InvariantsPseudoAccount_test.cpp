@@ -754,12 +754,12 @@ class InvariantsPseudoAccount_test : public InvariantsBase
         return true;
     }
 
-    // Pin an object of the given type to a pseudo-account. The invariant
-    // rejects it only once fixCleanup3_5_0 is enabled.
+    // Pin an object to a pseudo-account. The invariant rejects it with
+    // `message` only once fixCleanup3_5_0 is enabled.
     void
     checkPinned(
         FeatureBitset features,
-        std::string const& typeName,
+        std::string const& message,
         Precheck const& pin,
         Preclose const& setup)
     {
@@ -767,7 +767,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
         {
             doInvariantCheck(
                 makeEnv(features),
-                {"may not own an object of type " + typeName},
+                {message},
                 pin,
                 XRPAmount{},
                 STTx{ttACCOUNT_SET, [](STObject&) {}},
@@ -820,7 +820,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
         testcase << "vault pseudo-account pinned by a credential, " << cleanupLabel(features);
         checkPinned(
             features,
-            "Credential",
+            "may not own an object of type Credential",
             [&](Account const&, Account const& a2, ApplyContext& ac) {
                 auto const pseudo = vaultPseudo(ac);
                 return pseudo && pinCredential(*pseudo, a2.id(), ac);
@@ -831,7 +831,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
         vaultKeylet.reset();
         checkPinned(
             features,
-            "Check",
+            "may not own an object of type Check",
             [&](Account const&, Account const& a2, ApplyContext& ac) {
                 auto const pseudo = vaultPseudo(ac);
                 if (!pseudo)
@@ -854,6 +854,24 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 return true;
             },
             createVault);
+
+        testcase << "vault pseudo-account links a missing object, " << cleanupLabel(features);
+        vaultKeylet.reset();
+        checkPinned(
+            features,
+            "owner directory links a missing object",
+            [&](Account const&, Account const& a2, ApplyContext& ac) {
+                auto const pseudo = vaultPseudo(ac);
+                if (!pseudo)
+                    return false;
+
+                // Link a key with no ledger entry behind it.
+                auto const missing = keylet::check(a2.id(), SeqProxy::rawSequence(0));
+                return ac.view()
+                    .dirInsert(keylet::ownerDir(*pseudo), missing.key, describeOwnerDir(*pseudo))
+                    .has_value();
+            },
+            createVault);
     }
 
     void
@@ -865,7 +883,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
         std::optional<Keylet> brokerKeylet;
         checkPinned(
             features,
-            "Credential",
+            "may not own an object of type Credential",
             [&](Account const&, Account const& a2, ApplyContext& ac) {
                 if (!brokerKeylet)
                     return false;
@@ -891,7 +909,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
         std::optional<AccountID> ammAccount;
         checkPinned(
             features,
-            "Credential",
+            "may not own an object of type Credential",
             [&](Account const&, Account const& a2, ApplyContext& ac) {
                 return ammAccount && pinCredential(*ammAccount, a2.id(), ac);
             },
