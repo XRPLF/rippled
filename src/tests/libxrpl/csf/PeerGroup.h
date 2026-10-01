@@ -28,14 +28,14 @@ namespace xrpl::test::csf {
  */
 class PeerGroup
 {
-    using peers_type = std::vector<Peer*>;
-    peers_type peers_;
+    using PeersType = std::vector<Peer*>;
+    PeersType peers_;
 
 public:
-    using iterator = peers_type::iterator;
-    using const_iterator = peers_type::const_iterator;
-    using reference = peers_type::reference;
-    using const_reference = peers_type::const_reference;
+    using iterator = PeersType::iterator;
+    using const_iterator = PeersType::const_iterator;
+    using reference = PeersType::reference;
+    using const_reference = PeersType::const_reference;
 
     PeerGroup() = default;
     PeerGroup(Peer* peer) : peers_{1, peer}

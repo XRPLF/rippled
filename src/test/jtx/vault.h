@@ -79,7 +79,7 @@ struct Vault
     struct SetArgs
     {
         Account owner;
-        uint256 id;
+        UInt256 id;
         std::optional<std::uint32_t> flags = std::nullopt;
     };
 
@@ -89,7 +89,7 @@ struct Vault
     struct DeleteArgs
     {
         Account owner;
-        uint256 id;
+        UInt256 id;
     };
 
     static json::Value
@@ -98,7 +98,7 @@ struct Vault
     struct DepositArgs
     {
         Account depositor;
-        uint256 id;
+        UInt256 id;
         STAmount amount;
         std::optional<std::uint32_t> flags = std::nullopt;
     };
@@ -109,7 +109,7 @@ struct Vault
     struct WithdrawArgs
     {
         Account depositor;
-        uint256 id;
+        UInt256 id;
         STAmount amount;
     };
 
@@ -119,7 +119,7 @@ struct Vault
     struct ClawbackArgs
     {
         Account issuer;
-        uint256 id;
+        UInt256 id;
         Account holder;
         std::optional<STAmount> amount = std::nullopt;  // NOLINT(readability-redundant-member-init)
     };
