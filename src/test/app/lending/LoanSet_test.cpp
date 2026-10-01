@@ -24,6 +24,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -699,6 +700,98 @@ private:
         }
     }
 
+    // Regression test: a Legacy Vault's broker DebtTotal must be rounded at
+    // the Vault scale captured *before* this origination's AssetsTotal
+    // update, not after. Origination credits AssetsTotal with the loan's
+    // InterestDue; when AssetsTotal is already at its 16-digit precision
+    // limit, adding InterestDue can carry into a new integer digit, which
+    // forces the stored value to drop a decimal digit to stay within 16
+    // significant digits (e.g. 999999.9999999999 at 10 decimal places plus
+    // a positive InterestDue becomes a value with only 9 decimal places).
+    // If DebtTotal were rounded at that *new*, coarser scale instead of the
+    // scale the Vault had before this transaction, it would disagree with
+    // develop by a unit of the old grid. This test deliberately engineers
+    // that crossing and checks DebtTotal against the pre-update scale.
+    void
+    testLegacyDebtTotalRoundsAtPreUpdateVaultScale()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        testcase("LoanSet: Legacy broker DebtTotal rounds at pre-update Vault scale");
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        // 999999.9999 is just below 1,000,000; an IOU STAmount this close to
+        // a power of ten always canonicalizes to a 16-digit mantissa at
+        // exponent -10, so adding any positive InterestDue forces
+        // AssetsTotal's integer part to grow past 1,000,000 and its stored
+        // scale to drop.
+        BrokerParameters const brokerParams{
+            .vaultDeposit = Number{9'999'999'999LL, -4},
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0}};
+        LoanParameters const loanParams{
+            .account = borrower,
+            .counter = lender,
+            .principalRequest = Number{1'000},
+            .interest = TenthBips32{percentageToTenthBips(10)},
+            .payTotal = std::uint32_t{1},
+            .payInterval = std::uint32_t{30 * 24 * 60 * 60}};
+
+        Env env{*this, all_};
+
+        auto const assetsTotalBefore = brokerParams.vaultDeposit;
+        auto const scaleBefore = scale(assetsTotalBefore, Asset{issuer["IOU"]});
+        // scale() returns the STAmount exponent, which is negative for a
+        // fractional value; -10 means 10 digits after the decimal point.
+        BEAST_EXPECT(scaleBefore == -10);
+
+        auto loanResult =
+            createLoan(env, AssetType::IOU, brokerParams, loanParams, issuer, lender, borrower);
+        if (!BEAST_EXPECT(loanResult.has_value()) || !loanResult)
+            return;
+        auto const& [broker, loanKeylet, pseudoAcct] = *loanResult;
+
+        auto const vaultSle = env.le(broker.vaultKeylet());
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        auto const loanSle = env.le(loanKeylet);
+        if (!BEAST_EXPECT(vaultSle && brokerSle && loanSle))
+            return;
+
+        Number const assetsTotalAfter = vaultSle->at(sfAssetsTotal);
+        auto const scaleAfter = scale(assetsTotalAfter, broker.asset.raw());
+        // The crossing actually happened: AssetsTotal's stored scale got
+        // coarser (its exponent moved toward zero, e.g. -10 -> -9), which is
+        // the precondition for this regression to be meaningful.
+        BEAST_EXPECT(assetsTotalAfter > Number{1'000'000});
+        BEAST_EXPECT(scaleAfter > scaleBefore);
+
+        // sfTotalValueOutstanding is stored at full precision (it is not
+        // rounded to the vault's asset scale), so it carries the exact
+        // interestDue the production code added to AssetsTotal -- unlike
+        // reading AssetsTotal back and subtracting, which would already have
+        // lost precision to the very rounding this test is checking.
+        Number const totalValueOutstanding = loanSle->at(sfTotalValueOutstanding);
+        Number const debtTotalDelta = totalValueOutstanding;
+        BEAST_EXPECT(debtTotalDelta > loanParams.principalRequest);
+
+        Number const expectedAtPreUpdateScale =
+            roundToAsset(broker.asset.raw(), debtTotalDelta, scaleBefore);
+        Number const wouldBeAtPostUpdateScale =
+            roundToAsset(broker.asset.raw(), debtTotalDelta, scaleAfter);
+
+        // The two roundings must actually disagree, or this test would pass
+        // even with the bug (reading the scale after the AssetsTotal update)
+        // reinstated.
+        BEAST_EXPECT(expectedAtPreUpdateScale != wouldBeAtPostUpdateScale);
+        BEAST_EXPECT(brokerSle->at(sfDebtTotal) == expectedAtPreUpdateScale);
+    }
+
     // LoanSet in a closed-ended vault — phase gating and maturity bound.
     void
     testLoanSetClosedEnded()
@@ -1036,6 +1129,8 @@ private:
                 BEAST_EXPECT(vaultSle->at(sfYieldUnrealized) == interestDue);
             }
         }
+        checkFixedPrecisionVaultAssetsDeployed(
+            *this, env, vaultKeylet, {brokerKeylet}, {loanKeylet}, "after LoanSet origination");
 
         // The first LoanSet puts AssetsTotal + YieldUnrealized exactly at the
         // Open-zone ceiling. A second loan's InterestDue is therefore rejected.
@@ -1055,6 +1150,7 @@ public:
         testLoanSetExistingLineAfterIssuerClearsDefaultRipple();
         testLoanSetOriginationFeeTwoMptCreates(all_);
         testLoanSetOriginationFeeTwoMptCreates(all_ - fixCleanup3_4_0);
+        testLegacyDebtTotalRoundsAtPreUpdateVaultScale();
     }
 };
 

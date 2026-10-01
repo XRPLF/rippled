@@ -815,7 +815,7 @@ private:
     }
 
     // Scale 15 seed + deposit 5: pre-fix credited > paid; post-fix credited <= paid.
-    // fixCleanup3_2_0 is off so roundToVaultScale does not shrink the deposit first.
+    // fixCleanup3_2_0 is off so the deposit is not rounded down to the live scale first.
     void
     testBugVaultDepositOvercreditsAcrossScaleBoundary()
     {

@@ -283,6 +283,11 @@ LoanPay::preclaim(PreclaimContext const& ctx)
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
+    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+    {
+        // FixedPrecision Vaults are not yet supported by LoanPay.
+        return tecNO_PERMISSION;
+    }
     auto const asset = vaultSle->at(sfAsset);
     auto const vaultPseudoAccount = vaultSle->at(sfAccount);
 
@@ -376,8 +381,7 @@ LoanPay::doApply()
         // DebtTotal) use vaultScale. The legacy path below intentionally retains
         // its pre-amendment loanScale behavior.
         auto const minCover = [&]() {
-            if (view.rules().enabled(fixCleanup3_2_0) ||
-                getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+            if (view.rules().enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(debtTotalProxy.value(), coverRateMinimum, vaultSle);
             }

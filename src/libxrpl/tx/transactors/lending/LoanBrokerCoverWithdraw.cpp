@@ -104,25 +104,24 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
-    auto const roundedAmount = [&] {
-        if (getVaultVersion(vault) != VaultVersion::FixedPrecision)
-            return STAmount{amount};
-        // Negate so the posterior is CoverAvailable minus amount.
-        return -roundToPosteriorBrokerCoverScale(
-            vault, sleBroker, -amount, Number::RoundingMode::TowardsZero);
-    }();
-    if (getVaultVersion(vault) == VaultVersion::FixedPrecision && roundedAmount == beast::kZero)
+    STAmount roundedAmount{amount};
+    if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
     {
-        JLOG(ctx.j.warn()) << "LoanBrokerCoverWithdraw: withdraw amount: " << amount
-                           << " is zero at loan broker scale";
-        return tecPRECISION_LOSS;
+        roundedAmount = debitToPosteriorBrokerCoverScale(
+            vault, sleBroker, amount, Number::RoundingMode::TowardsZero);
+        if (roundedAmount == beast::kZero)
+        {
+            JLOG(ctx.j.warn()) << "LoanBrokerCoverWithdraw: withdraw amount: " << amount
+                               << " is zero at loan broker scale";
+            return tecPRECISION_LOSS;
+        }
     }
-
-    // FixedPrecision outflows already rounded at the posterior exponent; the
-    // live CoverAvailable scale used by canApplyToBrokerCover would reject a
-    // re-fining withdrawal as sub-ULP.
-    if (getVaultVersion(vault) != VaultVersion::FixedPrecision)
+    else
     {
+        // FixedPrecision outflows are already rounded at the posterior
+        // exponent above; the live CoverAvailable scale used by
+        // canApplyToBrokerCover would reject a re-fining withdrawal as
+        // sub-ULP.
         if (auto const ret = canApplyToBrokerCover(
                 ctx.view, sleBroker, vaultAsset, roundedAmount, ctx.j, "LoanBrokerCoverWithdraw"))
             return ret;
@@ -190,7 +189,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // Cover Rate is in 1/10 bips units
     auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
     auto const minimumCover = [&]() {
-        if (fix320Enabled || getVaultVersion(vault) == VaultVersion::FixedPrecision)
+        if (fix320Enabled)
         {
             return minimumBrokerCover(
                 currentDebtTotal, TenthBips32{sleBroker->at(sfCoverRateMinimum)}, vault);
@@ -244,9 +243,8 @@ LoanBrokerCoverWithdraw::doApply()
 
     auto const vaultAsset = vault->at(sfAsset);
     auto const amount = getVaultVersion(vault) == VaultVersion::FixedPrecision
-        // Negate so the posterior is CoverAvailable minus amount.
-        ? -roundToPosteriorBrokerCoverScale(
-              vault, broker, -requestedAmount, Number::RoundingMode::TowardsZero)
+        ? debitToPosteriorBrokerCoverScale(
+              vault, broker, requestedAmount, Number::RoundingMode::TowardsZero)
         : requestedAmount;
 
     auto const brokerPseudoID = *broker->at(sfAccount);

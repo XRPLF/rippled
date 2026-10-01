@@ -108,8 +108,10 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     auto const roundedAmount = [&]() -> STAmount {
         if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
         {
-            return roundToPosteriorBrokerCoverScale(
-                vault, sleBroker, amount, Number::RoundingMode::TowardsZero);
+            // Cover deposit is an inflow to CoverAvailable, so it must floor
+            // the sum, not just the delta.
+            return creditToPosteriorBrokerCoverScale(
+                vault, sleBroker, amount, Number::RoundingMode::Downward);
         }
         if (!fix320Enabled)
             return STAmount{amount};
@@ -120,11 +122,12 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
             Number::RoundingMode::Downward);
     }();
 
-    if ((fix320Enabled || getVaultVersion(vault) == VaultVersion::FixedPrecision) &&
-        roundedAmount == beast::kZero)
+    // FixedPrecision vaults require fixCleanup3_2_0, so this always covers the
+    // FixedPrecision zero-credit case too.
+    if (fix320Enabled && roundedAmount <= beast::kZero)
     {
         JLOG(ctx.j.warn()) << "LoanBrokerCoverDeposit: deposit amount: " << amount
-                           << " is zero at loan broker scale";
+                           << " is zero or negative at loan broker scale";
         return tecPRECISION_LOSS;
     }
 
@@ -169,8 +172,10 @@ LoanBrokerCoverDeposit::doApply()
     auto const amount = [&]() -> STAmount {
         if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
         {
-            return roundToPosteriorBrokerCoverScale(
-                vault, broker, tx[sfAmount], Number::RoundingMode::TowardsZero);
+            // Cover deposit is an inflow to CoverAvailable, so it must floor
+            // the sum, not just the delta.
+            return creditToPosteriorBrokerCoverScale(
+                vault, broker, tx[sfAmount], Number::RoundingMode::Downward);
         }
         if (!fix320Enabled)
             return tx[sfAmount];
@@ -181,12 +186,12 @@ LoanBrokerCoverDeposit::doApply()
             Number::RoundingMode::Downward);
     }();
 
-    // We validated zero-amount in preclaim, if we ended up with zero now, fail hard.
-    if (amount == beast::kZero)
+    // We validated zero-or-negative amount in preclaim, if we ended up with one now, fail hard.
+    if (amount <= beast::kZero)
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "LoanBrokerCoverDeposit: deposit amount: " << tx[sfAmount]
-                         << " is zero";
+                         << " is zero or negative";
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
