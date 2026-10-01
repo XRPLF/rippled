@@ -146,14 +146,14 @@ rates without TraceQL attribute filters.
 
 Controlled by `trace_transactions=1` in `[telemetry]` config.
 
-| Span Name       | Parent         | Source File     | Description                                                       |
-| --------------- | -------------- | --------------- | ----------------------------------------------------------------- |
-| `tx.process`    | —              | NetworkOPs.cpp  | Transaction submission entry point (local or peer-relayed)        |
-| `tx.receive`    | —              | PeerImp.cpp     | Raw transaction received from peer overlay (before deduplication) |
-| `tx.apply`      | `ledger.build` | BuildLedger.cpp | Transaction set applied to new ledger during consensus            |
-| `tx.preflight`  | —              | applySteps.cpp  | Stateless checks stage (`stage=preflight`)                        |
-| `tx.preclaim`   | —              | applySteps.cpp  | Ledger-aware checks stage before fee claim (`stage=preclaim`)     |
-| `tx.transactor` | —              | Transactor.cpp  | Apply stage — the transactor runs (`stage=apply`)                 |
+| Span Name       | Parent         | Source File     | Description                                                   |
+| --------------- | -------------- | --------------- | ------------------------------------------------------------- |
+| `tx.process`    | —              | NetworkOPs.cpp  | Transaction submission entry point (local or peer-relayed)    |
+| `tx.receive`    | —              | PeerImp.cpp     | Transaction received from peer overlay (after deduplication)  |
+| `tx.apply`      | `ledger.build` | BuildLedger.cpp | Transaction set applied to new ledger during consensus        |
+| `tx.preflight`  | —              | applySteps.cpp  | Stateless checks stage (`stage=preflight`)                    |
+| `tx.preclaim`   | —              | applySteps.cpp  | Ledger-aware checks stage before fee claim (`stage=preclaim`) |
+| `tx.transactor` | —              | Transactor.cpp  | Apply stage — the transactor runs (`stage=apply`)             |
 
 The three apply-pipeline spans share a deterministic `trace_id` derived from
 `txID[0:16]`, so preflight, preclaim, and transactor for one transaction group
@@ -1901,6 +1901,18 @@ Single `CreateDoubleObservableGauge`, in `AppMetricGauges::registerValidatorHeal
 
 Single `CreateDoubleObservableGauge`, in `AppMetricGauges::registerPeerQualityGauge()`.
 
+#### Peer Validation Load (Observable Gauge — `peer_validation_load`)
+
+| Prometheus Metric                                 | Type   | Labels            | Description                                   |
+| ------------------------------------------------- | ------ | ----------------- | --------------------------------------------- |
+| `peer_validation_load{metric="top1_rate"}`        | Double | `metric`, `trust` | Validations/s from the busiest peer           |
+| `peer_validation_load{metric="top2_rate"}`        | Double | `metric`, `trust` | Validations/s from the second busiest peer    |
+| `peer_validation_load{metric="top3_rate"}`        | Double | `metric`, `trust` | Validations/s from the third busiest peer     |
+| `peer_validation_load{metric="top_share"}`        | Double | `metric`, `trust` | Busiest peer's share of the class total (0-1) |
+| `peer_validation_load{metric="peers_over_limit"}` | Double | `metric`, `trust` | Peers above the per-peer limit                |
+
+Single `CreateDoubleObservableGauge`, created by `createValidationLoadGauge()` in `src/xrpld/telemetry/PeerValidationLoad.h` and registered in `AppMetricGauges::registerPeerValidationLoadGauge()`. `trust` is `trusted` or `untrusted`, so a node exports exactly 10 series whatever its peer count. The node counts the validations each peer delivers once the signer's trust is known (`PeerImp::onMessage(TMValidation)`), so duplicates and dropped untrusted validations count too. A rate needs two collections, so the first collection after start reports zeros. No label value comes from a peer: the busiest untrusted peer is named only in a `WRN` log line, when it is over the per-peer limit. The throttle is per connection: one connection is named at most once every five minutes, and a reconnect gets a new id. Panels: the Validation Load row on _Peer Quality_ (`peer-quality`).
+
 #### Ledger Economy (Observable Gauge — `ledger_economy`)
 
 | Prometheus Metric                             | Type   | Labels   | Description                        |
@@ -2024,13 +2036,13 @@ query, an alert — matches nothing and should be pointed at the live keys above
 
 ### New Grafana Dashboards (Phase 9)
 
-| Dashboard                            | UID                | Data Source | Key Panels                                                                                                               |
-| ------------------------------------ | ------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Fee Market & TxQ                     | `fee-market`       | Prometheus  | TxQ depth/capacity, fee levels, load factor breakdown                                                                    |
-| Job Queue Analysis                   | `job-queue`        | Prometheus  | Per-job rates, queue wait times, execution times                                                                         |
-| RPC Performance (per-method section) | `rpc-performance`  | Prometheus  | Per-method call rates, error rates, latency distributions (added as a section to the existing RPC Performance dashboard) |
-| Validator Health                     | `validator-health` | Prometheus  | Agreement %, validation rate, amendment/UNL, state                                                                       |
-| Peer Quality                         | `peer-quality`     | Prometheus  | P90 latency, insane peers, version awareness, disconnects                                                                |
+| Dashboard                            | UID                | Data Source      | Key Panels                                                                                                               |
+| ------------------------------------ | ------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Fee Market & TxQ                     | `fee-market`       | Prometheus       | TxQ depth/capacity, fee levels, load factor breakdown                                                                    |
+| Job Queue Analysis                   | `job-queue`        | Prometheus       | Per-job rates, queue wait times, execution times                                                                         |
+| RPC Performance (per-method section) | `rpc-performance`  | Prometheus       | Per-method call rates, error rates, latency distributions (added as a section to the existing RPC Performance dashboard) |
+| Validator Health                     | `validator-health` | Prometheus       | Agreement %, validation rate, amendment/UNL, state                                                                       |
+| Peer Quality                         | `peer-quality`     | Prometheus, Loki | P90 latency, insane peers, version awareness, disconnects, per-peer validation load                                      |
 
 ### Updated Grafana Dashboards (Phase 9)
 

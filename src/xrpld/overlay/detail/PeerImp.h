@@ -189,6 +189,20 @@ private:
     // post duplicate fail() calls) when several queued requests cross
     // kDropThreshold before the first fail() lands on the strand.
     std::atomic<bool> chargeDisconnectFired_{false};
+
+    /**
+     * Validations from trusted signers this peer delivered, counted in
+     * onMessage(TMValidation) once the signer's trust is known. Relaxed: only
+     * telemetry reads it, as a rate.
+     */
+    std::atomic<std::uint64_t> validationsTrusted_{0};
+
+    /**
+     * Validations from every other signer, counted at the same point and with
+     * the same ordering as validationsTrusted_.
+     */
+    std::atomic<std::uint64_t> validationsUntrusted_{0};
+
     std::shared_ptr<peer_finder::Slot> const slot_;
     boost::beast::multi_buffer readBuffer_;
     HttpRequestType request_;
@@ -404,6 +418,20 @@ public:
 
     json::Value
     json() override;
+
+    /**
+     * Reads the two validation counters.
+     *
+     * @return The counts so far. Each counter is read on its own with relaxed
+     * ordering, so the pair is not taken at one instant.
+     */
+    [[nodiscard]] PeerValidationCounts
+    validationCounts() const override
+    {
+        return {
+            .trusted = validationsTrusted_.load(std::memory_order_relaxed),
+            .untrusted = validationsUntrusted_.load(std::memory_order_relaxed)};
+    }
 
     bool
     supportsFeature(ProtocolFeature f) const override;
