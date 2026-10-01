@@ -597,7 +597,7 @@ flowchart TB
     SUBMIT(["doSubmit<br/>(no span)"]):::plain
     TXP["tx.process<br/>(NetworkOPs::processTransaction)"]:::span
     RELAYOUT(["Overlay::relay fan-out to N peers<br/>(no span; if applied / terQUEUED,<br/>shouldRelay, not tfInnerBatchTxn)"]):::plain
-    PREDROP(["Diverged / needNetworkLedger<br/>(no span — dropped before tx.receive)"]):::drop
+    PREDROP(["dropped before tx.receive (no span)"]):::drop
     RCV["tx.receive<br/>(peer TMTransaction in)"]:::span
     RCVDROP["tx.receive<br/>tx_status = dropped_no_sync /<br/>dropped_queue_full"]:::drop
     CHK(["checkTransaction<br/>(JtTransaction worker, no span)"]):::plain
@@ -612,10 +612,10 @@ flowchart TB
     SUBMIT -->|processTransaction| TXP
     TXP -.->|relay applied / queued tx| RELAYOUT
 
-    PRELAY_IN -.->|tracking == Diverged / needNetworkLedger| PREDROP
+    PRELAY_IN -.->|Diverged / needNetworkLedger / malformed / inner-batch / dup| PREDROP
     PRELAY_IN -->|else| RCV
-    RCV -.->|inner-batch / dup / age>4min / JtTransaction full| RCVDROP
-    RCV -->|addJob JtTransaction| CHK
+    RCV -.->|age>4min / JtTransaction full| RCVDROP
+    RCV -->|tx_status = queued_for_check, addJob JtTransaction| CHK
     CHK -->|processTransaction, trusted=peer| TXP
 
     RELAYOUT -. "tx.process ⇢ tx.receive (span_id over TMTransaction)" .-> RCV
@@ -630,16 +630,23 @@ Ingress branches (all evidence in code):
 - `tx.process`: local RPC → `doTransactionSync`; peer → `doTransactionAsync`
   (JtBatch) ([NetworkOPs.cpp:1434](../src/xrpld/app/misc/NetworkOPs.cpp#L1434)).
 - **Pre-span peer drops** (no `tx.receive` created): `Diverged`
-  ([PeerImp.cpp:1299](../src/xrpld/overlay/detail/PeerImp.cpp#L1299)) /
-  `needNetworkLedger` ([1302](../src/xrpld/overlay/detail/PeerImp.cpp#L1302)),
-  before the span at ~1320.
+  ([PeerImp.cpp:1325](../src/xrpld/overlay/detail/PeerImp.cpp#L1325)) /
+  `needNetworkLedger` ([1328](../src/xrpld/overlay/detail/PeerImp.cpp#L1328)),
+  a transaction that does not parse (`STTx` throws at
+  [1340](../src/xrpld/overlay/detail/PeerImp.cpp#L1340), caught at
+  [1495](../src/xrpld/overlay/detail/PeerImp.cpp#L1495)), `tfInnerBatchTxn`
+  ([1361](../src/xrpld/overlay/detail/PeerImp.cpp#L1361)), and a HashRouter
+  duplicate: the same tx seen in the last 10 s, charged a fee if marked `BAD`
+  ([1373](../src/xrpld/overlay/detail/PeerImp.cpp#L1373)). All come before the
+  span at [1415](../src/xrpld/overlay/detail/PeerImp.cpp#L1415).
 - **Post-span peer drops** (span exists, `tx_status` set, no job enqueued):
-  `tfInnerBatchTxn` ([1348](../src/xrpld/overlay/detail/PeerImp.cpp#L1348)),
-  HashRouter dup/`BAD` ([1361](../src/xrpld/overlay/detail/PeerImp.cpp#L1361)),
   `dropped_no_sync` when validated-ledger age > 4 min
-  ([1416](../src/xrpld/overlay/detail/PeerImp.cpp#L1416)), `dropped_queue_full`
+  ([1460](../src/xrpld/overlay/detail/PeerImp.cpp#L1460)), `dropped_queue_full`
   when `JtTransaction` jobs > `maxTransactions`
-  ([1421](../src/xrpld/overlay/detail/PeerImp.cpp#L1421)).
+  ([1466](../src/xrpld/overlay/detail/PeerImp.cpp#L1466)).
+- **Queued** (span exists): otherwise `tx_status` is `queued_for_check` and
+  `addJob(JtTransaction)` is called
+  ([1476](../src/xrpld/overlay/detail/PeerImp.cpp#L1476)).
 - **Relay fan-out**: an accepted/queued `tx.process` relays to N peers via
   `Overlay::relay`, gated on `applied || (non-FULL local) || terQUEUED`,
   HashRouter `shouldRelay`, and not `tfInnerBatchTxn`; the span context is
@@ -1137,7 +1144,7 @@ call edge. Read a trace with these in mind:
 | `peer.*.receive` (fresh `kConsumer` root) and `consensus.*.receive` on the same message.                                              | Two **sequential stages of one synchronous handler**, not parent/child; on a duplicate/untrusted drop the `consensus.*.receive` is never created.                                                                                                                                                                                                                                          |
 | Receive spans adopt the sender's `trace_id` + `span_id` as a genuine cross-node parent.                                               | Deliberate: the receive span becomes a child of a **different node's** span (a cross-node context marker, not an in-process edge). `tx.receive` is asymmetric — it borrows only the sender's `span_id` and re-derives its own `trace_id` from `txID`.                                                                                                                                      |
 
-> **Known telemetry artifacts** (from live audits, memory `otel-span-hierarchy-audit`):
+> **Known telemetry artifacts**:
 > an RPC entry span's scope can leak across a reused coroutine worker, and the
 > `hashSpan` roots (`tx.*`) — along with `ledger.acquire` / `ledger.store` /
 > `ledger.validate` whenever they do come out parentless — can surface in Tempo
@@ -2083,8 +2090,7 @@ normally.
 ### Perf Run Annotations
 
 Perf load windows are drawn on the dashboards as shaded region annotations
-rather than single markers. perf-iac's
-`.github/scripts/post_grafana_annotation.sh` opens an annotation when a load
+rather than single markers. The perf-iac harness opens an annotation when a load
 phase starts and closes it with an end time when that phase finishes, so the
 shaded band covers exactly the interval over which the load was applied.
 
@@ -2109,15 +2115,13 @@ around the measured phase. Locust posts **one**, for the measured phase only,
 because it has no warm-up step — so a Locust leg shows a single band where a
 JMeter leg shows two.
 
-The driver tag is not something a run supplies. Each load workflow hardcodes it
-as a `LOAD_DRIVER` environment value (`reusable-jmeter-test.yml` sets `jmeter`,
-`reusable-locust-test.yml` sets `locust`), so it is never a dispatch input and no
-current workflow can omit it; the script warns in CI if one ever does. Alongside
-the driver, each region also carries the ticket (work item), the side (`test` or
-`baseline`), the ref, the commit, and the phase; blank values are dropped. The
-tooltip lists those, which is how one band is told from another when several runs
-overlap. The driver is carried only as a tag, not in the tooltip — which layer
-drew the band is what identifies it.
+The driver tag is not something a run supplies: each of the harness's load
+workflows sets its own driver, so a run cannot omit it. Alongside the driver,
+each region also carries the work item, the side (`test` or `baseline`), the
+ref, the commit, and the phase; blank values are dropped. The tooltip lists
+those, which is how one band is told from another when several runs overlap. The
+driver is carried only as a tag, not in the tooltip — which layer drew the band
+is what identifies it.
 
 Two rendering limits are worth knowing. Grafana draws annotations only on time
 series, state timeline and candlestick panels, so on a board of mostly stats and
@@ -2921,7 +2925,7 @@ after the selector and cannot be discovered by `label_values()`.
 
 # Error logs with trace context (log lines with ERR severity that have a trace_id).
 # Use the severity field, not `|= "ERR"`: a line filter also matches the literal
-# "ERR" anywhere in the message body (measured: 4 DBG lines per 6h on devnet).
+# "ERR" anywhere in the message body, so it picks up lines of other severities.
 {service_name="xrpld"} | severity = `ERR` | trace_id != ""
 
 # All logs from a specific partition that were emitted during a span.
@@ -2962,8 +2966,11 @@ timeseries, 2 table, 1 state-timeline, 1 logs, 1 text, across 35 queries.
 > **empty** on an unmodified node — and an empty panel means _not collecting_, not
 > _no problem_. Rows tagged `[DEFAULT OK]` work as shipped.
 >
-> Enable per partition rather than globally (`Resource` alone emits ~329k
-> lines/6h):
+> At `debug`, `Resource` logs a line for every charge of 100 or more
+> (`Logic::charge()` in `include/xrpl/resource/detail/Logic.h`). Routine peer
+> requests such as pings and ledger or object requests are charged 250, so this
+> one partition writes a line per request. Enable debug per partition rather
+> than globally:
 >
 > ```
 > log_level ManifestCache debug
@@ -3072,11 +3079,10 @@ Stream labels are only `service_name`, `service_instance_id`,
     `Connect Timeout`. When adding a log-derived panel, enumerate every producer
     of the string being captured rather than sampling one.
 
-Also worth knowing: the **Grafana Cloud image renderer cannot query Loki** in this
-stack. A minimal probe dashboard with a hardcoded datasource uid, a literal
-expression and no template variables still rendered "No data", while the identical
-expression returned 241 points through `/api/ds/query`. Verify LogQL panels with
-`/api/ds/query` per target, not with panel-image rendering.
+Also worth knowing: **do not verify a LogQL panel by rendering it as an image.**
+On Grafana Cloud, the image renderer can show "No data" for a Loki panel whose
+query returns data through `/api/ds/query`. Check each target with
+`/api/ds/query` instead.
 
 ## Troubleshooting
 
@@ -3226,8 +3232,8 @@ different bottlenecks look identical from outside: in both, the `ledgerData` job
 lane sits pinned at its concurrency cap of 3 with jobs waiting behind it.
 
 **Lane occupancy on its own distinguishes nothing.** It is true in both cases, so
-it is never a diagnosis. Two tuning experiments were spent before that was known —
-do not repeat them. Read the storage-side signals below instead.
+it is never a diagnosis, and it cannot tell you what to tune. Read the
+storage-side signals below instead.
 
 The two modes and the signal that separates them:
 
@@ -3285,16 +3291,8 @@ A ~100% "hit rate" at over 100 µs per read is therefore not a contradiction. It
 the cold-read signature: the data is on disk, found every time, and paid for every
 time.
 
-An incident report supplied to this project describes a devnet client-handler node
-that had not reached `full` after roughly 25 minutes while reading at 112.7 µs per
-fetch, against an otherwise-identical peer that reached `full` in 4.4 minutes at
-4.95 µs per fetch. Both reported a found rate of ~99.98%. Those figures come from
-that report, not from a run on our own hosts. Note that the found rate is identical
-on the healthy peer and the stalled one, which is exactly why the found rate is
-never a trigger on its own — see the decision rule below. Read this incident
-alongside [Honest limits of this diagnosis](#honest-limits-of-this-diagnosis)
-before concluding that cold reads caused the 25 minutes; on our own hardware they
-did not produce anything like it.
+A healthy node and a slow one can report the same found rate, so the found rate
+is never a trigger on its own — see [The decision rule](#the-decision-rule).
 
 A node configured with `online_delete` runs `DatabaseRotatingImp`, which has **no
 NodeObject cache** at all (0 `cache_` references in
@@ -3333,30 +3331,30 @@ Then read the answer off the pair:
 | Expensive | Depth ~1.00     | Split on the **found rate**. At 50% or above, **cold reads on data the node already has** — the walk pays disk latency on objects it holds. Below 50%, **genuinely disk-bound on real misses**, and storage hardware is the right thing to change.            |
 | Expensive | Depth over ~1.2 | **Both paths queueing.** Rarer, and neither fix on its own will be enough. Treat the larger of the two costs as the lead.                                                                                                                                     |
 
-**Why the rule is shaped this way.** Three points about the thresholds, each
-grounded in a measured dataset rather than a round number:
+**Why the rule is shaped this way.** Three points about the thresholds:
 
-- **Read cost is a relative judgement, so the band has a floor and a ceiling, not
-  one cut.** A cold read on our box measured 31.8 µs mean; a cold read on the
-  devnet node in the reported incident measured 112.7 µs. A single "over 100 µs"
-  cut would call our own cold-read run healthy. Cheap and expensive are set at
-  ~10 µs and ~20 µs with the peak breaking ties in between, because what matters
-  is whether reads cost several times a warm read, not whether they cross one
-  absolute number.
-- **The found rate is a splitter, never a trigger.** A high found rate on its own
-  is the normal, healthy state of a populated store — the healthy peer in the
-  reported incident read 99.98% found at 4.95 µs per read and was fine. Only ask
-  the found rate once reads are already known to be expensive; then it separates
-  "slow on data we have" from "slow because we are missing".
+- **Read cost is a relative judgement, so the band has a floor and a ceiling,
+  not one cut.** A warm read costs single-digit microseconds, so ~10 µs is the
+  top of the warm range and ~20 µs is already several times a typical warm read.
+  Between the two, the peak breaks the tie. A cold read's cost depends on the
+  storage device, and on fast storage it can stay under 100 µs. So a single
+  "over 100 µs" cut would call such a node healthy while its reads are already
+  expensive.
+- **The found rate is a splitter, never a trigger.** A high found rate on its
+  own is the normal, healthy state of a populated store, so a healthy node and a
+  slow one can read the same. Only ask the found rate once reads are already
+  known to be expensive; then it separates "slow on data we have" from "slow
+  because we are missing".
 - **Writer depth answers before the found rate.** Depth above 1 means the queue is
   at the insert mutex, which no amount of read-side tuning addresses. It is also
   the only signal that is unambiguous on a clean store, where the found rate is
   near zero and read cost is uninformative.
 
-Completions and sweeps do not pick the row. They say how **severe** the read case
-is once the row is picked: a populated store with cold pages can still finish (our
-reference run reached `full` in 260 s with 8 completions) or can fail to finish at
-all, which is what the reported incident describes. Same cause, different severity.
+Completions and sweeps do not pick the row. They show how far the sync is
+getting once the row is picked. If completions are advancing, it is getting
+there. If sweep evictions rise while completions stay flat, partial work is
+being thrown away and the sync may not finish. See
+[Honest limits of this diagnosis](#honest-limits-of-this-diagnosis).
 
 Queries, scoped to one node as everywhere else in this runbook:
 
@@ -3388,98 +3386,20 @@ increase(nodestore_state{metric="acquire_ledger_deferrals", service_instance_id=
 increase(nodestore_state{metric="acquire_ledger_timeouts", service_instance_id=~"$node"}[5m])
 ```
 
-#### Measured reference points
+**How to read queueing per insert.** No gauge reports it directly, but two
+gauges give an estimate. L is the mean depth (`nudb_writer_depth_x100 / 100`),
+which counts the arriving insert itself. W is the mean insert time
+(`nudb_insert_mean_us`). An insert that finds L − 1 others ahead of it waits for
+each in turn, so W ≈ L × S, where S is the service time. That gives
+`S ≈ W / L`, a queueing time of `W − S`, and a queueing share of
+`(W − S) / W = 1 − 1/L`. At a depth of 1.2, about a sixth of each insert is
+spent waiting. Because each insert counts itself, 1.00 is the lowest a depth
+can read, and a reading of 1.00 means almost no insert had to wait.
 
-**Provenance.** The two columns below are our own measurements: one mainnet node,
-same host and same binary for both runs, differing only in the state of the store. Use them as the shape to compare
-against, not as thresholds. The read figures below come from the `read_mean_us`
-gauge, the only read-latency signal exported; the "highest sample" row is the
-largest value that gauge reached over the run, not a read-latency percentile. The third dataset in this section — the 25-minute devnet stall and its
-healthy peer — is **not** ours; it comes from an incident report supplied to this
-project and is kept separate for that reason.
-
-**Three rows below were measured on a build that got them wrong.** Both runs
-predate the measurement fixes, so read those rows as bounds rather than values:
-
-- **Completions** were only counted in `InboundLedger::done()`, so an acquisition
-  satisfied entirely from the local store — `init()` sets `complete_` and returns
-  without ever calling `done()` — was never counted. Mode W's `0` is therefore not
-  evidence that the node completed nothing; it reached `full`, which it could not
-  have done without completing acquisitions. The count is now taken at both exits
-  behind an idempotent latch, so on a current build a zero means zero.
-- **Writer depth** was summed at insert entry but divided by a sample count that
-  only advanced at insert exit, so in-flight inserts — the deep, slow ones —
-  contributed depth to the numerator and nothing to the denominator. The mean was
-  biased **down**, worst exactly when queueing was worst. Mode W's 1.60 is a lower
-  bound on the true depth.
-- **Queueing per insert** is derived from that depth, so its 37 % is a lower bound
-  too. See the derivation below.
-
-| Signal                         | Mode W: clean store      | Mode R: populated store, cold pages |
-| ------------------------------ | ------------------------ | ----------------------------------- |
-| Time to `full`                 | 510 s                    | 260 s                               |
-| `read_mean_us`                 | 8.8 µs                   | 31.8 µs                             |
-| `read_mean_us`, highest sample | 9 µs                     | 223 µs                              |
-| Found rate                     | 0.00 %                   | 88.3 %                              |
-| Insert time, mean              | 20.0 µs                  | 15.9 µs                             |
-| Writer depth, mean             | ≥ 1.60 (biased low)      | 1.00                                |
-| Queueing per insert            | ≥ 37 % (derived from ↑)  | 0 %                                 |
-| Deferrals over run, all lanes  | +5441                    | +1845                               |
-| Timeouts over run, all lanes   | +687                     | +399                                |
-| Completions over run           | 0 (under-counted, see ↑) | 8 (under-counted, see ↑)            |
-| Sweep evictions                | +127                     | +38                                 |
-
-Applying the decision rule: Mode W reads cheap (8.8 µs) with depth 1.60, so it is
-the serialized write path. Mode R reads expensive (31.8 µs mean, 223 µs peak) with
-depth 1.00 and a found rate well above 50%, so it is cold reads on data the node
-holds. The rule reaches both answers without the found rate deciding either mode on
-its own — and both answers survive the corrected measurements, because a
-depth-1.60 lower bound is still above the 1.2 threshold and Mode R's 1.00 is a
-floor that cannot be biased below itself.
-
-The deferral and timeout rows are the **all-lane** counters, the only ones that
-existed when these runs were taken. They cannot be attributed to ledger
-acquisition; the eight-to-one ratio in Mode W is a whole-node figure. Re-measure
-with `acquire_ledger_deferrals` / `acquire_ledger_timeouts` before quoting a ratio
-as a ledger-acquisition fingerprint.
-
-**The reported incident, for contrast — not our measurement.** Figures from an
-incident report supplied to this project. No writer-depth data was captured, so the
-rule reaches its answer from question 1 alone.
-
-| Signal         | Stalled client handler | Healthy peer |
-| -------------- | ---------------------- | ------------ |
-| Time to `full` | not reached in ~25 min | 4.4 min      |
-| `read_mean_us` | 112.7 µs               | 4.95 µs      |
-| Found rate     | ~99.98 %               | ~99.98 %     |
-| Writer depth   | not captured           | not captured |
-
-The healthy peer is the reason the found rate is a splitter and not a trigger: it
-reported the same ~99.98% as the stalled node and was fine. What separates them is
-read cost — 4.95 µs is a warm read, 112.7 µs is not.
-
-What healthy looks like: read mean in the single-digit microseconds, writer depth
-at 1.00, queueing near 0%, and `acquire_completions` advancing. Any one of a read
-mean several times a warm read, a writer depth above ~1.2, or completions flat at
-zero is worth chasing.
-
-**Completions flat at zero only means something on a current build.** Until the
-counter was moved to cover both exits, an acquisition served from the local store
-was never counted, so a build predating that fix could read zero while completing
-steadily. Check the build before treating a zero on archived data as a symptom.
-
-**How the 37% is derived, and why it is a lower bound.** It is not measured
-directly — it comes from the two gauges by Little's Law. With mean queue depth L
-and mean insert time W, the service time is `S = W / L` and the queueing component
-is `W − S`. Mode W's 20.0 µs at depth 1.60 gives S = 12.5 µs, so 7.5 µs of every
-insert — 37% — was spent waiting for the mutex rather than writing.
-
-That 37% is **not exact**: the L it was computed from came from the biased
-estimator described above, which understated depth. A larger L gives a smaller S
-and a larger `W − S`, so the true queueing share of Mode W was **at least** 37%.
-Quote it as a floor. Mode R's depth of exactly 1.00 is unaffected — 1.00 is the
-minimum a depth can be, so no bias can have pushed it there — which is why its 0%
-stands as measured.
+What healthy looks like: read mean in the single-digit microseconds, writer
+depth at 1.00, queueing near 0%, and `acquire_completions` advancing. Any one of
+a read mean several times a warm read, a writer depth above ~1.2, or completions
+flat at zero is worth chasing.
 
 **Why the write path serializes.** NuDB takes one global mutex per insert
 (`nudb/impl/basic_store.ipp:288`). It is a Conan dependency and is not patched
@@ -3532,26 +3452,13 @@ Two more pairs from the same family:
 
 #### Honest limits of this diagnosis
 
-- **Our populated-store run was twice as fast, not slower** — 260 s against 510 s,
-  despite reads being roughly 4× more expensive. Reusing local data beats fetching
-  from peers even when every read is cold. Slow cold reads therefore do **not** on
-  their own explain the ~25-minute stall in the reported devnet incident. The
-  decision rule identifies the _mode_ correctly in both cases; it does not claim
-  that the mode alone accounts for that duration.
-- Something compounds it there, and we have not confirmed what. The most likely
-  candidate is a much larger store, where the walk takes long enough that the
-  1-minute sweep destroys partial work faster than it can complete — which is why
-  the sweep and completion counters are in the table. **This is an unconfirmed
-  hypothesis.** Treat it as the next thing to test, not as the answer. It was also
-  partly suggested by Mode W's zero completions, which we now know was a counting
-  defect rather than a stalled node, so the hypothesis has lost one of its
-  supports and needs re-testing on a current build before it is pursued.
-- **Three of the numbers above were measured with instruments that were since
-  corrected**: completions (missed local-store hits), writer depth (mean biased
-  low), and the deferral/timeout pair (pooled across five job lanes). The modes
-  and the decision rule are unaffected — each survives the correction, as noted
-  where it appears — but no figure in the reference table should be quoted as an
-  exact measurement without re-running on a build that has all three fixes.
+- **The rule names the mode, not the duration.** A populated store with cold
+  reads can still reach `full` sooner than a clean store, because reading local
+  data, even cold, can beat fetching it from peers. So cold reads alone may not
+  explain a very slow sync. When they do not, check next whether the sweep is
+  throwing away partial work: `acquire_sweep_evictions` rising while
+  `acquire_completions` stays flat, as described under
+  [The deferral/timeout pair](#the-deferraltimeout-pair).
 - The `nudb_*` label values are absent entirely on a non-NuDB writable backend.
   Absent is not zero — a missing series means "not applicable", so a panel showing
   a gap there is correct behaviour.
