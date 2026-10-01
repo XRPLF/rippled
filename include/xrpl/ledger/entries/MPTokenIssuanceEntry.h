@@ -42,7 +42,7 @@ public:
     }
 
     explicit MPTokenIssuanceEntry(
-        uint256 const& issuanceKey,
+        UInt256 const& issuanceKey,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::mptokenIssuance(issuanceKey), view, j)

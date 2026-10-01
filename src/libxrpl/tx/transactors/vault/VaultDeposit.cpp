@@ -33,7 +33,7 @@ namespace xrpl {
 
 [[nodiscard]]
 static STAmount
-roundToVaultScale(STAmount const& amount, SLE::const_ref vault)
+roundToVaultScale(STAmount const& amount, SLE::ConstRef vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::roundToVaultScale : valid vault sle");
     XRPL_ASSERT(
@@ -427,7 +427,7 @@ VaultDeposit::doApply()
 }
 
 void
-VaultDeposit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultDeposit::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

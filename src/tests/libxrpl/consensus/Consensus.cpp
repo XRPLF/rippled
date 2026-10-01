@@ -1171,7 +1171,7 @@ TEST(ConsensusTest, pause_for_laggards)
     PeerGroup const ahead = sim.createGroup(2);
     PeerGroup network = ahead + behind;
 
-    hash_set<Peer::NodeKey_t> trustedKeys;
+    HashSet<Peer::NodeKeyT> trustedKeys;
     for (Peer const* p : network)
         trustedKeys.insert(p->key);
     for (Peer* p : network)
