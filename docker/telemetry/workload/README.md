@@ -214,7 +214,7 @@ python3 tx_submitter.py --endpoint ws://localhost:6006 \
 Automated validation that all expected telemetry data exists. Every metric in `expected_metrics.json` is required — if it doesn't fire, the validation fails. Spans are required unless the entry carries `"optional": true`.
 
 - **Span validation**: All span types from `expected_spans.json` with required attributes and parent-child hierarchies. The 16 entries marked `"optional": true` are the ones the harness cannot guarantee: no gRPC client, no path-finding RPC (see [Pathfinding is not exercised](#pathfinding-is-not-exercised)), no missing-ledger fetch, no mode transition, no WebSocket handshake, and the six `txq.*` spans only when fee escalation puts something in the queue. `rpc.http_request` and `rpc.process` are marked optional because the generator drives WebSocket rather than HTTP. Their absence is recorded as a passing skip, not a failure.
-- **Metric validation**: All metrics from `expected_metrics.json` — SpanMetrics, `beast::insight` gauges/counters/histograms, `MetricsRegistry` OTLP metrics. Every listed metric must have > 0 series. Uses the Prometheus `/api/v1/series` endpoint (not instant queries), polled until the metric appears or the poll window elapses, so a late-populating or quiet series is not a false negative.
+- **Metric validation**: All metrics from `expected_metrics.json` — SpanMetrics, `beast::insight` gauges/counters/histograms, `MetricsRegistry` OTLP metrics. Every listed metric must have > 0 series. Uses the Prometheus `/api/v1/series` endpoint (not instant queries), polled until the metric appears or the poll window elapses, so a late-populating or quiet series is not a false negative. A counter that starts at 0 has a series before its first event, so existence cannot show that the event happened; a group's `min_values` entries check the value instead (see [expected_metrics.json Format](#expected_metricsjson-format)).
 - **Log-trace correlation**: trace_id/span_id in Loki logs (requires Loki). The two checks are `log.trace_id_present` and `log.trace_id_cross_reference`, and they exist only when `--skip-loki` is **not** passed — `run_validation()` builds them inside an `if not skip_loki` branch, so with the flag they are absent from the report rather than reported as skipped. The workflow passes no `--skip-loki`, so both checks are built and gated on every CI run — see [CI Integration](#ci-integration).
 - **Dashboard validation**: Every dashboard uid listed under `grafana_dashboards.uids` in `expected_metrics.json` loads with panels. That list currently covers **all 15** dashboards provisioned in `docker/telemetry/grafana/dashboards/`. Note the scope of this check: it asks the Grafana API whether the dashboard exists and returns a panel count — it does **not** run the panels' queries, so a dashboard can pass here while individual panels render empty.
 
@@ -428,7 +428,7 @@ log, dashboard and parity checks for the run.
 Categories:
 
 - **span**: Span type existence and attribute validation
-- **metric**: Prometheus metric existence
+- **metric**: Prometheus metric existence, required labels, and minimum values
 - **log**: Log-trace correlation checks
 - **dashboard**: Grafana dashboard accessibility
 - **parity**: Span attributes required by the external-parity dashboard panels (validator-health, peer-quality, and friends)
@@ -554,7 +554,10 @@ Re-run it after any change to log formatting, span activation, the collector's
   "category_name": {
     "description": "Human-readable description.",
     "metrics": ["metric_1", "metric_2"],
-    "required_labels": ["label_1"]
+    "required_labels": ["label_1"],
+    "min_values": [
+      { "metric": "metric_2", "min": 1, "by": "service_instance_id" }
+    ]
   },
   "grafana_dashboards": {
     "uids": ["rpc-performance", "node-health"]
@@ -576,6 +579,10 @@ Re-run it after any change to log formatting, span activation, the collector's
 Every metric listed under a `metrics` array must produce > 0 Prometheus series during the validation run. If a metric doesn't fire, the workload generators need to produce enough load to trigger it.
 
 `required_labels` is optional and read for every category that declares one. Each label becomes one additional check, named `metric.<category>.label.<label>`, that at least one of that category's series carries the label with a non-empty value. It is matched as `<label>!=""` rather than `<label>=~".*"` because Prometheus cannot tell an absent label from an empty one, so a regex match would pass on a node that lost the label entirely. The guarantee rule is the same as for `metrics`: list a label only where the workload guarantees it. Declaring `required_labels` on a category with no `metrics` fails the check rather than skipping it, so the key can never sit unenforced.
+
+`min_values` is optional and read for every category, including one whose existence checks another validator owns. Each entry becomes one check, named `metric.<category>.min.<metric>`. The validator runs `sum(<metric>)`, or `sum by (<by>) (<metric>)` when `by` is given, and fails unless every returned series reaches `min`. Use it for a counter that starts at 0: its series exists from startup, so its `metrics` entry passes even when the event never happened. With `min: 1` and no `by`, it asks what an existence check asks of a counter created by its first event: did any node record the event? Add `by: "service_instance_id"` only where the workload guarantees the event on every node. With `by`, every returned series must carry that label, so a misspelled label or a node that exports without it fails the check instead of turning it into a cluster-wide sum. The entry itself is checked first, and a bad one fails without a query: `min_values` must be a list of objects, `metric` must appear in the same category's `metrics`, `min` must be a number above 0, `by`, when set, must be a non-empty string, and no other key is allowed, so a misspelled `by` fails instead of being ignored.
+
+`test_validate_telemetry.py` holds the rule for which counters need an entry: every counter selector under a `metrics` list needs a `min_values` entry, or a reason in its `COUNTERS_WITHOUT_MIN_VALUES` list. A counter added to a `metrics` list fails that test until one of the two is written.
 
 Four top-level keys are not metric categories:
 
