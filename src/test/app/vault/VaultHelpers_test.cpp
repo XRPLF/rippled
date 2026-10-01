@@ -8,6 +8,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STIssue.h>
@@ -20,6 +21,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <memory>
 #include <optional>
@@ -28,7 +30,7 @@
 
 namespace xrpl {
 
-// True unit test of `clampToAssetsTotalScale`. The function under test reads
+// True unit test of clampToAssetsTotalScale. The function under test reads
 // only fields from the vault SLE and never touches a ledger view or Rules, so
 // a bare in-memory ltVAULT SLE is enough; there is no jtx::Env and no
 // transaction submitted anywhere in this file.
@@ -40,17 +42,17 @@ namespace xrpl {
 //   thread_local std::reference_wrapper<MantissaRange const> Number::kRange =
 //       MantissaRange::Access::mantissaRange(MantissaRange::MantissaScale::Large330);
 //
-// Unlike transaction processing, this test never constructs a ledger `Rules`
-// object, so `STAmount::operator=(Number const&)` always takes its
-// `!getCurrentTransactionRules()` branch and calls `fromNumber`, independent
+// Unlike transaction processing, this test never constructs a ledger Rules
+// object, so STAmount::operator=(Number const&) always takes its
+// !getCurrentTransactionRules() branch and calls fromNumber, independent
 // of amendment state. testProbeLarge330Regime() below asserts directly on a
 // value that only round-trips exactly under Large330, pinning the regime
 // rather than merely asserting it by comment.
 class VaultHelpers_test : public beast::unit_test::Suite
 {
 private:
-    // A single row of the clampToAssetsTotalScale table. `assetsTotal` and
-    // `delta` must already be genuine, on-grid STAmount values for `asset`.
+    // A single row of the clampToAssetsTotalScale table. assetsTotal and
+    // delta must already be genuine, on-grid STAmount values for asset.
     struct Case
     {
         char const* name = nullptr;
@@ -59,9 +61,9 @@ private:
         std::optional<Number> expected;  // nullopt means tecPRECISION_LOSS
     };
 
-    // Builds a bare ltVAULT SLE. With `fixedScale` absent, sfLEVersion stays
+    // Builds a bare ltVAULT SLE. With fixedScale absent, sfLEVersion stays
     // absent too, preserving the pre-V1.2 Legacy behavior exercised by the
-    // existing clamp table. With `fixedScale` set, the SLE is stamped
+    // existing clamp table. With fixedScale set, the SLE is stamped
     // FixedPrecision with that Scale, exercising clampToAssetsTotalScale's
     // roundToPosteriorVaultScale branch instead.
     static std::shared_ptr<SLE>
@@ -82,17 +84,18 @@ private:
         return vault;
     }
 
-    // Runs every case in `cases` against `asset`, once per ambient rounding
+    // Runs every case in cases against asset, once per ambient rounding
     // mode. The function must give the same answer under all four modes,
-    // and its answer must match the hand-derived `expected` value.
-    // `fixedScale`, when set, builds a FixedPrecision vault at that Scale
+    // and its answer must match the hand-derived expected value.
+    // fixedScale, when set, builds a FixedPrecision vault at that Scale
     // instead of the default Legacy vault.
     template <std::size_t N>
     void
     runCases(
         Asset const& asset,
         std::array<Case, N> const& cases,
-        std::optional<std::uint8_t> fixedScale = std::nullopt)
+        std::optional<std::uint8_t> fixedScale = std::nullopt,
+        bool viaClampVaultOutflow = false)
     {
         std::array<Number::RoundingMode, 4> const modes{
             Number::RoundingMode::ToNearest,
@@ -120,7 +123,8 @@ private:
             for (auto const mode : modes)
             {
                 NumberRoundModeGuard const rg(mode);
-                auto const result = clampToAssetsTotalScale(vault, delta);
+                auto const result = viaClampVaultOutflow ? clampVaultOutflow(vault, delta)
+                                                         : clampToAssetsTotalScale(vault, delta);
 
                 // The function must be insensitive to the caller's ambient
                 // rounding mode: every mode must agree with the first one
@@ -164,7 +168,10 @@ private:
                     continue;
                 }
 
-                STAmount const expected{asset, *c.expected};
+                // c.expected is guaranteed set here: the !c.expected case
+                // above always continues to the next loop iteration.
+                STAmount const expected{
+                    asset, *c.expected};  // NOLINT(bugprone-unchecked-optional-access)
                 if (!BEAST_EXPECTS(
                         result.has_value(),
                         std::string(c.name) + ": expected success (" + expected.getText() +
@@ -189,9 +196,9 @@ private:
                 // representable at that scale.
                 //
                 // For debits this holds directly at postScale, because the
-                // result IS `roundToScale(magnitude, postScale, Downward)` by
+                // result IS roundToScale(magnitude, postScale, Downward) by
                 // construction. For credits the result is
-                // `roundedPosterior - assetsTotal`, where roundedPosterior
+                // roundedPosterior - assetsTotal, where roundedPosterior
                 // sits exactly on the postScale grid but assetsTotal sits on
                 // its own (possibly finer) natural grid; the difference of a
                 // multiple of 10^postScale and a multiple of 10^assetsScale
@@ -360,7 +367,7 @@ private:
                 //             = 4.999999999999991.
                 // This mirrors testBugVaultDepositOvercreditsAcrossScaleBoundary
                 // in VaultBugs_test.cpp (same seed/deposit values), which
-                // asserts post-fix `credited <= paid` rather than an exact
+                // asserts post-fix credited <= paid rather than an exact
                 // number; this row pins the exact value.
                 .name = "IOU credit: overcredit fix across a scale boundary",
                 .assetsTotal = Number{9'999'999'999'999'999LL, -15},
@@ -477,31 +484,24 @@ private:
     }
 
     // -------------------------------------------------------------------
-    // FixedPrecision vaults: clampToAssetsTotalScale takes the
+    // FixedPrecision vaults, credits: clampToAssetsTotalScale takes the
     // roundToPosteriorVaultScale branch instead of the Legacy/CashBasis
-    // scale()-of-the-sum branch. All rows below use a Scale-6 vault
-    // (baseScale -6) with assetsTotal already sitting on that grid, so
-    // TowardsZero-truncating `delta` itself to scale -6 is the whole
-    // story: no case here forces liveScale to coarsen past baseScale
-    // (that scenario needs a non-unit share price and is exercised by
-    // VaultFixedPrecision_test.cpp's testPartialTowardZeroRounding /
-    // dust tests through real transactions instead).
+    // scale()-of-the-sum branch; it is FixedPrecision's only credit path
+    // (VaultDeposit). All rows below use a Scale-6 vault (baseScale -6)
+    // with assetsTotal already sitting on that grid, so TowardsZero-
+    // truncating delta itself to scale -6 is the whole story: no case
+    // here forces liveScale to coarsen past baseScale (that scenario needs
+    // a non-unit share price and is exercised by
+    // VaultFixedPrecision_test.cpp's testPartialTowardZeroRounding / dust
+    // tests through real transactions instead).
     // -------------------------------------------------------------------
     void
-    testFixedPrecisionClamp(Asset const& iou)
+    testFixedPrecisionCredit(Asset const& iou)
     {
         std::uint8_t const fixedScale = 6;
         Number const onGrid{3'234'567, -6};  // 3.234567, exact at scale -6.
 
-        std::array<Case, 6> const cases{
-            Case{
-                // delta already exact at the base grid: passes through
-                // unchanged, same as a Legacy on-grid debit.
-                .name = "FixedPrecision debit: exact on the base grid",
-                .assetsTotal = onGrid,
-                .delta = Number{-1, -6},
-                .expected = Number{1, -6},
-            },
+        std::array<Case, 3> const cases{
             Case{
                 // delta already exact at the base grid: passes through
                 // unchanged, same as a Legacy on-grid credit.
@@ -509,6 +509,49 @@ private:
                 .assetsTotal = onGrid,
                 .delta = Number{2, -6},
                 .expected = Number{2, -6},
+            },
+            Case{
+                // delta = +2.3 base units, truncates to 2 base units.
+                .name = "FixedPrecision credit: truncated toward zero on the base grid",
+                .assetsTotal = onGrid,
+                .delta = Number{23, -7},
+                .expected = Number{2, -6},
+            },
+            Case{
+                // delta = +0.4 base units: sub-ULP at the fixed grid, so
+                // TowardsZero truncates it entirely to zero.
+                .name = "FixedPrecision credit: sub-ULP dust rejected at the base grid",
+                .assetsTotal = onGrid,
+                .delta = Number{4, -7},
+                .expected = std::nullopt,
+            },
+        };
+
+        runCases(iou, cases, fixedScale);
+    }
+
+    // -------------------------------------------------------------------
+    // FixedPrecision vaults, debits: outflows (VaultWithdraw, VaultClawback)
+    // never reach clampToAssetsTotalScale's FixedPrecision branch, which
+    // only accepts non-negative deltas; they go through the public
+    // clampVaultOutflow dispatcher instead, which rounds at
+    // AssetsAvailable's own posterior scale (clampToAvailableScale). These
+    // rows pin the same truncation behavior through that entry point.
+    // -------------------------------------------------------------------
+    void
+    testFixedPrecisionDebit(Asset const& iou)
+    {
+        std::uint8_t const fixedScale = 6;
+        Number const onGrid{3'234'567, -6};  // 3.234567, exact at scale -6.
+
+        std::array<Case, 3> const cases{
+            Case{
+                // delta already exact at the base grid: passes through
+                // unchanged, same as a Legacy on-grid debit.
+                .name = "FixedPrecision debit: exact on the base grid",
+                .assetsTotal = onGrid,
+                .delta = Number{-1, -6},
+                .expected = Number{1, -6},
             },
             Case{
                 // delta = -1.7 base units. TowardsZero truncates the
@@ -522,14 +565,6 @@ private:
                 .expected = Number{1, -6},
             },
             Case{
-                // delta = +2.3 base units, truncates to 2 base units for
-                // the same reason as the row above.
-                .name = "FixedPrecision credit: truncated toward zero on the base grid",
-                .assetsTotal = onGrid,
-                .delta = Number{23, -7},
-                .expected = Number{2, -6},
-            },
-            Case{
                 // delta = -0.3 base units: sub-ULP at the fixed grid, so
                 // TowardsZero truncates it entirely to zero.
                 .name = "FixedPrecision debit: sub-ULP dust rejected at the base grid",
@@ -537,17 +572,9 @@ private:
                 .delta = Number{-3, -7},
                 .expected = std::nullopt,
             },
-            Case{
-                // delta = +0.4 base units: same sub-ULP rejection for a
-                // credit.
-                .name = "FixedPrecision credit: sub-ULP dust rejected at the base grid",
-                .assetsTotal = onGrid,
-                .delta = Number{4, -7},
-                .expected = std::nullopt,
-            },
         };
 
-        runCases(iou, cases, fixedScale);
+        runCases(iou, cases, fixedScale, /* viaClampVaultOutflow */ true);
     }
 
 public:
@@ -564,7 +591,8 @@ public:
         testIouDebits(iou);
         testIouCredits(iou);
         testIntegralAssets(mpt, xrp);
-        testFixedPrecisionClamp(iou);
+        testFixedPrecisionCredit(iou);
+        testFixedPrecisionDebit(iou);
     }
 };
 

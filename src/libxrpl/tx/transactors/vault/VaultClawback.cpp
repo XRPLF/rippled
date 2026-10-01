@@ -16,6 +16,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -254,8 +255,12 @@ VaultClawback::assetsToClawback(
     // Pre-fixCleanup3_1_3: zero-amount clawback returned early without
     // clamping to assetsAvailable, allowing more assets to be recovered
     // than available when there was an outstanding loan. Retained for
-    // ledger replay compatibility.
-    if (!ctx_.view().rules().enabled(fixCleanup3_1_3) && clawbackAmount == beast::kZero)
+    // ledger replay compatibility on Legacy/CashBasis. On FixedPrecision,
+    // always take the clamped path below regardless of fixCleanup3_1_3, so
+    // adjustVaultBalances never sees a negative AssetsAvailable from this
+    // transactor.
+    if (!ctx_.view().rules().enabled(fixCleanup3_1_3) && clawbackAmount == beast::kZero &&
+        getVaultVersion(vault) != VaultVersion::FixedPrecision)
     {
         auto const sharesDestroyed = accountHolds(
             view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
@@ -356,15 +361,16 @@ VaultClawback::assetsToClawback(
             }
         }
 
-        // Post-fixCleanup3_4_0: round the recovery down at the posterior sfAssetsTotal scale so all
-        // rails change by the same representable delta. sharesDestroyed is intentionally NOT
-        // re-derived here: the holder's shares are burned for their pre-clamp value, so any
-        // sub-ULP trimmed off stays in the vault for the remaining shareholders.
-        if ((ctx_.view().rules().enabled(fixCleanup3_4_0) ||
-             getVaultVersion(vault) == VaultVersion::FixedPrecision) &&
-            assetsRecovered > beast::kZero)
+        // Post-fixCleanup3_4_0: round the recovery down at the posterior scale of the balance
+        //  - AssetsAvailable on FixedPrecision Vault
+        //  - AssetsTotal cache on Legacy/CashBasis Vault
+        // All rails change by the same representable delta.
+        // sharesDestroyed is intentionally NOT re-derived here: the holder's shares are burned for
+        // their pre-clamp value, so any sub-ULP trimmed off stays in the vault for the remaining
+        // shareholders.
+        if (ctx_.view().rules().enabled(fixCleanup3_4_0) && assetsRecovered > beast::kZero)
         {
-            auto const maybeClamped = clampToAssetsTotalScale(vault, -assetsRecovered);
+            auto const maybeClamped = clampVaultOutflow(vault, -assetsRecovered);
             if (!maybeClamped)
                 return std::unexpected(maybeClamped.error());
             assetsRecovered = *maybeClamped;
@@ -410,8 +416,7 @@ VaultClawback::doApply()
     Asset const vaultAsset = vault->at(sfAsset);
     STAmount const amount = clawbackAmount(vault, tx[~sfAmount], accountID_);
 
-    auto assetsAvailable = vault->at(sfAssetsAvailable);
-    auto assetsTotal = vault->at(sfAssetsTotal);
+    Number const assetsTotal = getAssetsTotal(vault);
 
     AccountID const holder = tx[sfHolder];
     STAmount sharesDestroyed = {share};
@@ -440,14 +445,34 @@ VaultClawback::doApply()
     if (sharesDestroyed == beast::kZero)
         return tecPRECISION_LOSS;
 
+    // FixedPrecision: a final clawback must not leave AssetsDeployed behind
+    // with no shares to back it. Clawing back all of a sole holder's shares
+    // recovers AssetsAvailable + AssetsDeployed, rounded to 16 digits. A
+    // larger AssetsDeployed pushes that above AssetsAvailable, and the clamp
+    // in assetsToClawback leaves shares behind to back it; but on a
+    // coarsened vault, an AssetsDeployed below half a unit of
+    // AssetsAvailable's grid rounds away, the recovery equals
+    // AssetsAvailable exactly, and the clamp never runs.
+    if (getVaultVersion(vault) == VaultVersion::FixedPrecision &&
+        sharesDestroyed == STAmount{share, sleIssuance->at(sfOutstandingAmount)} &&
+        Number(vault->at(sfAssetsDeployed)) != beast::kZero)
+    {
+        JLOG(j_.debug())
+            << "VaultClawback: cannot burn all shares while AssetsDeployed is non-zero";
+        return tecHAS_OBLIGATIONS;
+    }
+
     // Number arithmetic can throw overflow_error when Scale and totals are large.
     if (view().rules().enabled(fixCleanup3_4_0))
     {
         try
         {
-            // A non-zero recovery can be too small to change the stored sfAssetsTotal at
+            // A non-zero recovery can be too small to change the stored balance at
             // STAmount's precision. Shares would still be burned, reject it instead.
-            if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsRecovered))
+            // FixedPrecision measures this against AssetsAvailable, the balance the
+            // cash actually leaves, not the derived AssetsTotal cache.
+            Number const dustReference = vaultDebitDustReference(vault, assetsTotal);
+            if (debitIsNonZeroDust(vaultAsset, dustReference, assetsRecovered))
             {
                 // LCOV_EXCL_START
                 JLOG(j_.debug())
@@ -475,8 +500,17 @@ VaultClawback::doApply()
         // LCOV_EXCL_STOP
     }
 
-    assetsTotal -= assetsRecovered;
-    assetsAvailable -= assetsRecovered;
+    if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+    {
+        if (auto const ter = adjustVaultBalances(vault, {.cash = -assetsRecovered}, j_);
+            !isTesSuccess(ter))
+            return ter;
+    }
+    else
+    {
+        vault->at(sfAssetsTotal) -= assetsRecovered;
+        vault->at(sfAssetsAvailable) -= assetsRecovered;
+    }
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);

@@ -3,11 +3,13 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -131,6 +133,150 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+namespace {
+
+// Defaults a Loan on a FixedPrecision Vault. Cover is the raw XLS-66
+// First-Loss Capital amount, capped at the LoanBroker's CoverAvailable and
+// rounded toward zero at the broker's posterior cover grid (a no-op for
+// integral assets). AssetsAvailable rises by cover through the cash writer;
+// AssetsDeployed drops by the Loan's full PrincipalOutstanding exactly, and
+// AssetsTotal is re-derived from AssetsAvailable + AssetsDeployed by the
+// writer's sync -- this function never touches sfAssetsTotal directly.
+TER
+defaultLoanFixedPrecision(
+    ApplyView& view,
+    SLE::ref loanSle,
+    SLE::ref brokerSle,
+    SLE::ref vaultSle,
+    Asset const& vaultAsset,
+    beast::Journal j)
+{
+    Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
+    Number const scheduledInterest = loanSle->at(sfTotalValueOutstanding) - principalOutstanding -
+        loanSle->at(sfManagementFeeOutstanding);
+
+    TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
+    TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
+    Number const rawCover = [&]() {
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+        Number const minimumCover =
+            tenthBipsOfValue(brokerSle->at(sfDebtTotal).value(), coverRateMinimum);
+        return std::min(tenthBipsOfValue(minimumCover, coverRateLiquidation), principalOutstanding);
+    }();
+
+    Number const coverAvailable = *brokerSle->at(sfCoverAvailable);
+    Number const cappedCover = std::min(rawCover, coverAvailable);
+    Number const brokerRoundedCover = [&] {
+        // rawCover is a product of tenth-bips multiplications and can carry
+        // more digits than STAmount's 16; fix the mode so the
+        // STAmount{vaultAsset, cappedCover} conversion below truncates
+        // instead of depending on whatever mode is ambient here.
+        NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
+        return Number{debitToPosteriorBrokerCoverScale(
+            vaultSle,
+            brokerSle,
+            STAmount{vaultAsset, cappedCover},
+            Number::RoundingMode::TowardsZero)};
+    }();
+    // Floor the sum at AssetsAvailable's own posterior grid too: rounding at
+    // the broker's cover grid above keeps CoverAvailable itself at 16
+    // digits, but crediting that same amount into AssetsAvailable can still
+    // need a 17th digit there.
+    STAmount coverAmount = creditToPosteriorAvailableScale(
+        vaultSle, STAmount{vaultAsset, brokerRoundedCover}, Number::RoundingMode::Downward);
+
+    // Defensive re-round: should never disagree with the vault-side floor
+    // above, but if it ever does, re-apply that floor so both rails settle on
+    // the same, doubly-representable value.
+    {
+        STAmount const brokerRoundedAgain = debitToPosteriorBrokerCoverScale(
+            vaultSle, brokerSle, coverAmount, Number::RoundingMode::TowardsZero);
+        if (brokerRoundedAgain != coverAmount)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE(
+                "xrpl::defaultLoanFixedPrecision : broker-grid re-round agrees with the vault "
+                "floor");
+            coverAmount = creditToPosteriorAvailableScale(
+                vaultSle, brokerRoundedAgain, Number::RoundingMode::Downward);
+            // LCOV_EXCL_STOP
+        }
+    }
+
+    // The broker's CoverAvailable decrease and the broker-to-vault transfer
+    // both use this final amount so all three rails move by the same
+    // representable delta.
+    XRPL_ASSERT(
+        (STAmount{vaultAsset, Number(vaultSle->at(sfAssetsAvailable)) + Number(coverAmount)} ==
+         Number(vaultSle->at(sfAssetsAvailable)) + Number(coverAmount)),
+        "xrpl::defaultLoanFixedPrecision : AssetsAvailable + cover is exactly 16-digit "
+        "representable");
+    XRPL_ASSERT(
+        (STAmount{vaultAsset, Number(brokerSle->at(sfCoverAvailable)) - Number(coverAmount)} ==
+         Number(brokerSle->at(sfCoverAvailable)) - Number(coverAmount)),
+        "xrpl::defaultLoanFixedPrecision : CoverAvailable - cover is exactly 16-digit "
+        "representable");
+
+    // Guard the LoanBroker-side fields before any writes, so a failure here
+    // leaves nothing written -- matching adjustVaultBalances's own
+    // atomicity for the Vault-side fields below.
+    if (brokerSle->at(sfDebtTotal) < principalOutstanding)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "LoanBroker DebtTotal is less than the defaulted Loan's "
+                           "outstanding principal. LoanBroker DebtTotal: "
+                        << Number(brokerSle->at(sfDebtTotal))
+                        << ", Principal: " << principalOutstanding;
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+    if (brokerSle->at(sfCoverAvailable) < Number(coverAmount))
+    {
+        // LCOV_EXCL_START
+        JLOG(j.warn()) << "LoanBroker cover available is less than amount covered";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+
+    Number const loss = loanSle->isFlag(lsfLoanImpaired) ? -principalOutstanding : Number{0};
+    if (auto const ter = adjustVaultBalances(
+            vaultSle,
+            {.cash = coverAmount,
+             .deployed = -principalOutstanding,
+             .yield = -scheduledInterest,
+             .loss = loss},
+            j);
+        !isTesSuccess(ter))
+        return ter;
+    view.update(vaultSle);
+
+    brokerSle->at(sfDebtTotal) -= principalOutstanding;
+    brokerSle->at(sfCoverAvailable) -= Number(coverAmount);
+    view.update(brokerSle);
+
+    loanSle->setFlag(lsfLoanDefault);
+    loanSle->at(sfTotalValueOutstanding) = 0;
+    loanSle->at(sfPaymentRemaining) = 0;
+    loanSle->at(sfPrincipalOutstanding) = 0;
+    loanSle->at(sfManagementFeeOutstanding) = 0;
+    loanSle->at(sfNextPaymentDueDate) = 0;
+    view.update(loanSle);
+
+    if (coverAmount == beast::kZero)
+        return tesSUCCESS;
+
+    return accountSend(
+        view,
+        brokerSle->at(sfAccount),
+        vaultSle->at(sfAccount),
+        coverAmount,
+        j,
+        {},
+        WaiveTransferFee::Yes);
+}
+
+}  // namespace
+
 TER
 LoanManage::defaultLoan(
     ApplyView& view,
@@ -140,6 +286,9 @@ LoanManage::defaultLoan(
     Asset const& vaultAsset,
     beast::Journal j)
 {
+    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+        return defaultLoanFixedPrecision(view, loanSle, brokerSle, vaultSle, vaultAsset, j);
+
     // Calculate the amount of the Default that First-Loss Capital covers:
 
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
@@ -176,7 +325,7 @@ LoanManage::defaultLoan(
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = getVaultScale(vaultSle);
 
     {
         // Decrease the Total Value of the Vault:
@@ -299,22 +448,37 @@ LoanManage::impairLoan(
         return tecTOO_SOON;
     }
 
+    bool const fixedPrecision = getVaultVersion(vaultSle) == VaultVersion::FixedPrecision;
     Number const lossUnrealized = loanVaultExposure(vaultSle, loanSle);
 
-    // The vault may be at a different scale than the loan. Reduce rounding
-    // errors during the accounting by rounding some of the values to that
-    // scale.
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
-
-    // Update the Vault object(set "paper loss")
-    auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
-    adjustImpreciseNumber(vaultLossUnrealizedProxy, lossUnrealized, vaultAsset, vaultScale);
-    if (vaultLossUnrealizedProxy > vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable))
+    // Update the Vault object (set "paper loss")
+    if (fixedPrecision)
     {
-        // Having a loss greater than the vault's unavailable assets
-        // will leave the vault in an invalid / inconsistent state.
-        JLOG(j.warn()) << "Vault unrealized loss is too large, and will corrupt the vault.";
-        return tecLIMIT_EXCEEDED;
+        // adjustVaultBalances's own LU' > AD' check covers the comparison
+        // against AssetsDeployed.
+        if (auto const ter = adjustVaultBalances(vaultSle, {.loss = lossUnrealized}, j);
+            !isTesSuccess(ter))
+        {
+            JLOG(j.warn()) << "Vault unrealized loss is too large, and will corrupt the vault.";
+            return ter;
+        }
+    }
+    else
+    {
+        auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+        // The vault may be at a different scale than the loan. Reduce rounding
+        // errors during the accounting by rounding some of the values to that
+        // scale.
+        auto const vaultScale = getVaultScale(vaultSle);
+        adjustImpreciseNumber(vaultLossUnrealizedProxy, lossUnrealized, vaultAsset, vaultScale);
+        if (vaultLossUnrealizedProxy >
+            vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable))
+        {
+            // Having a loss greater than the vault's unavailable assets
+            // will leave the vault in an invalid / inconsistent state.
+            JLOG(j.warn()) << "Vault unrealized loss is too large, and will corrupt the vault.";
+            return tecLIMIT_EXCEEDED;
+        }
     }
     view.update(vaultSle);
 
@@ -343,23 +507,32 @@ LoanManage::unimpairLoan(
     Asset const& vaultAsset,
     beast::Journal j)
 {
-    // The vault may be at a different scale than the loan. Reduce rounding
-    // errors during the accounting by rounding some of the values to that
-    // scale.
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
-
-    // Update the Vault object(clear "paper loss")
-    auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+    // Update the Vault object (clear "paper loss")
+    bool const fixedPrecision = getVaultVersion(vaultSle) == VaultVersion::FixedPrecision;
     Number const lossReversed = loanVaultExposure(vaultSle, loanSle);
-    if (vaultLossUnrealizedProxy < lossReversed)
+    if (fixedPrecision)
     {
-        // LCOV_EXCL_START
-        JLOG(j.warn()) << "Vault unrealized loss is less than the amount to be cleared";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
+        // adjustVaultBalances's own LU' < 0 check covers the comparison.
+        if (auto const ter = adjustVaultBalances(vaultSle, {.loss = -lossReversed}, j);
+            !isTesSuccess(ter))
+            return ter;
     }
-    // Reverse the "paper loss"
-    adjustImpreciseNumber(vaultLossUnrealizedProxy, -lossReversed, vaultAsset, vaultScale);
+    else
+    {
+        auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+        if (vaultLossUnrealizedProxy < lossReversed)
+        {
+            // LCOV_EXCL_START
+            JLOG(j.warn()) << "Vault unrealized loss is less than the amount to be cleared";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
+        // The vault may be at a different scale than the loan. Reduce rounding
+        // errors during the accounting by rounding some of the values to that
+        // scale.
+        auto const vaultScale = getVaultScale(vaultSle);
+        adjustImpreciseNumber(vaultLossUnrealizedProxy, -lossReversed, vaultAsset, vaultScale);
+    }
 
     view.update(vaultSle);
 
@@ -427,9 +600,27 @@ LoanManage::doApply()
     // path. Post-amendment, we call associateAsset on all successful paths.
     if (view.rules().enabled(fixCleanup3_1_3) && isTesSuccess(result))
     {
+        bool const fixedPrecision = getVaultVersion(vaultSle) == VaultVersion::FixedPrecision;
+        bool const assetsEqualBeforeStore =
+            fixedPrecision && vaultSle->at(sfAssetsAvailable) == vaultSle->at(sfAssetsTotal);
+
         associateAsset(*loanSle, vaultAsset);
         associateAsset(*brokerSle, vaultAsset);
         associateAsset(*vaultSle, vaultAsset);
+
+        if (fixedPrecision)
+        {
+            Number const assetsAvailableAfter = *vaultSle->at(sfAssetsAvailable);
+            Number const assetsTotalAfter = *vaultSle->at(sfAssetsTotal);
+            XRPL_ASSERT_PARTS(
+                assetsAvailableAfter <= assetsTotalAfter,
+                "xrpl::LoanManage::doApply",
+                "assets available must not be greater than assets outstanding");
+            XRPL_ASSERT_PARTS(
+                !assetsEqualBeforeStore || assetsAvailableAfter == assetsTotalAfter,
+                "xrpl::LoanManage::doApply",
+                "equal assets remain equal after storage");
+        }
     }
 
     return result;
