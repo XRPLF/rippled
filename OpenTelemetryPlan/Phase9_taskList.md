@@ -676,7 +676,7 @@ merge timeline.
   `MetricsRegistry.cpp` (see [09 § GetObject Request Path](./09-data-collection-reference.md#getobject-request-path-synchronous-countershistograms)).
 - `peer_id` as a label is unbounded cardinality — rejected. A bounded
   `peer_role`-style label is the alternative if per-peer attribution is needed.
-- Splitting `mtPING` out of `Category::Base` is a `TrafficCount.cpp` change, so it needs its own overlay change, like the one in `develop` that fixed Task 9.14 defect 1. (The `.h` half of that constraint no longer applies — see Task 9.14.)
+- Splitting `mtPING` out of `Category::Base` changes `TrafficCount.cpp`. It needs its own overlay change, like the `develop` change that fixed Task 9.14 defect 1. (The `.h` half of that constraint no longer applies — see Task 9.14.)
 - Per the runbook's "Adding a New Metric" contract, `_total` is reserved for
   monotonic counters; a histogram takes no suffix.
 
