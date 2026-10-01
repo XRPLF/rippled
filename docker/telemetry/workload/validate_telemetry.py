@@ -1498,7 +1498,7 @@ def _selector_metric_name(selector: str) -> str:
     """Strip any label matcher from a contract selector, leaving the name.
 
     Contract entries are usually bare names but some carry a matcher, e.g.
-    ``ledger_economy{metric="base_fee_xrp"}``. Reverse coverage compares family
+    ``ledger_economy{metric="base_fee_drops"}``. Reverse coverage compares family
     names, and Prometheus reports one ``__name__`` per family regardless of how
     many label combinations it has, so the matcher must come off first.
 
@@ -1756,7 +1756,7 @@ def _selector_with_label(metric_selector: str, label: str) -> str:
     entirely. ``!=""`` rejects both the absent and the blank case.
 
     Selectors in expected_metrics.json are usually bare names, but some already
-    carry a matcher (``ledger_economy{metric="base_fee_xrp"}``), so the matcher
+    carry a matcher (``ledger_economy{metric="base_fee_drops"}``), so the matcher
     is merged into an existing brace group rather than appended after it.
 
     Args:

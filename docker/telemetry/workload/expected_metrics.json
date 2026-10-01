@@ -167,9 +167,9 @@
     ]
   },
   "parity_ledger_economy": {
-    "description": "External dashboard parity: ledger economy metrics (MetricsRegistry.cpp:1401). transaction_rate is observed on every export, in both branches of the ledger-age test (MetricsRegistry.cpp:1444-1451). base_fee_xrp is observed only inside the 'if (ledger)' guard on getValidatedLedger() (MetricsRegistry.cpp:1418-1423), and that returns validLedger_ (LedgerMaster.cpp:1569-1572), which stays null until a ledger validates — the same precondition complete_ledgers has. Both are asserted because run-full-validation.sh waits for a validated ledger before running the workload. base_fee_xrp absent while transaction_rate is present is the signature of a cluster that never validated, not of a missing metric.",
+    "description": "External dashboard parity: ledger economy metrics (AppMetricGauges.cpp). transaction_rate is observed on every export, in both branches of the ledger-age test. base_fee_drops is observed only inside the 'if (ledger)' guard on getValidatedLedger(), and that returns validLedger_ (LedgerMaster::getValidatedLedger), which stays null until a ledger validates — the same precondition complete_ledgers has. Both are asserted because run-full-validation.sh waits for a validated ledger before running the workload. base_fee_drops absent while transaction_rate is present is the signature of a cluster that never validated, not of a missing metric.",
     "metrics": [
-      "ledger_economy{metric=\"base_fee_xrp\"}",
+      "ledger_economy{metric=\"base_fee_drops\"}",
       "ledger_economy{metric=\"transaction_rate\"}"
     ]
   },
