@@ -188,7 +188,7 @@ ValidVault::visitEntry(InvariantEntry const& entry)
         }
     }
 
-    uint256 const key = (before ? before->key() : after->key());
+    UInt256 const key = (before ? before->key() : after->key());
     // Append to deltas if sign is non-zero, i.e. an object of an interesting
     // type has been updated. A transaction may update an object even when
     // its balance has not changed, e.g. transaction fee equals the amount
@@ -206,7 +206,7 @@ std::optional<ValidVault::DeltaInfo>
 ValidVault::deltaAssets(AccountID const& id) const
 {
     auto const& vaultAsset = afterVault_[0].asset;
-    auto const lookup = [&](uint256 const& key) -> std::optional<DeltaInfo> {
+    auto const lookup = [&](UInt256 const& key) -> std::optional<DeltaInfo> {
         auto const it = deltas_.find(key);
         if (it == deltas_.end())
             return std::nullopt;

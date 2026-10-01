@@ -28,7 +28,7 @@ TEST(MPTokenEntryTests, constructors)
         e.someID(),
         e.bob.id());
 
-    expectKeylet<MPTokenEntry>(e, keylet::mptoken(e.someID()), "mptoken(uint256)", e.someID());
+    expectKeylet<MPTokenEntry>(e, keylet::mptoken(e.someID()), "mptoken(UInt256)", e.someID());
 }
 
 }  // namespace xrpl::test

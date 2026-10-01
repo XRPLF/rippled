@@ -586,7 +586,7 @@ AccountRootsDeletedClean::finalize(
             Keylet const first = keylet::nftokenPageMin(accountID);
             Keylet const last = keylet::nftokenPageMax(accountID);
 
-            std::optional<uint256> key = view.succ(first.key, last.key.next());
+            std::optional<UInt256> key = view.succ(first.key, last.key.next());
 
             // current page
             if (key && objectExists(Keylet{ltNFTOKEN_PAGE, *key}) && enforce)

@@ -14,7 +14,7 @@ namespace xrpl {
 class ValidBookDirectory
 {
     bool badBookDirectory_ = false;
-    hash_set<uint256> rootIndexes_;
+    HashSet<UInt256> rootIndexes_;
 
 public:
     void

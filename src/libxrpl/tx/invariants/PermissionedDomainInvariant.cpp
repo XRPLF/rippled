@@ -33,7 +33,7 @@ ValidPermissionedDomain::visitEntry(InvariantEntry const& entry)
     if (after->getType() != ltPERMISSIONED_DOMAIN)
         return;
 
-    auto check = [isDel](std::vector<SleStatus>& sleStatus, SLE::const_ref sle) {
+    auto check = [isDel](std::vector<SleStatus>& sleStatus, SLE::ConstRef sle) {
         auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
         auto const sorted = credentials::makeSorted(credentials);
 

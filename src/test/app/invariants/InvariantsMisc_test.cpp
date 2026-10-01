@@ -331,7 +331,7 @@ class InvariantsMisc_test : public InvariantsBase
 
         // AMM special cases
         AccountID ammAcctID;
-        uint256 ammKey;
+        UInt256 ammKey;
         Issue ammIssue;
         doInvariantCheck(
             {{"account deletion left behind a DirectoryNode object"}},
@@ -658,7 +658,7 @@ class InvariantsMisc_test : public InvariantsBase
                 Keylet const acctKeylet = keylet::account(a3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, 0);
-                sleNew->setFieldH256(sfAMMID, uint256(1));
+                sleNew->setFieldH256(sfAMMID, UInt256(1));
                 sleNew->setFieldU32(sfFlags, lsfDisableMaster | lsfDefaultRipple);
                 ac.view().insert(sleNew);
                 return true;
@@ -673,7 +673,7 @@ class InvariantsMisc_test : public InvariantsBase
                 Keylet const acctKeylet = keylet::account(a3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, ac.view().seq());
-                sleNew->setFieldH256(sfAMMID, uint256(1));
+                sleNew->setFieldH256(sfAMMID, UInt256(1));
                 sleNew->setFieldU32(sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
                 ac.view().insert(sleNew);
                 return true;
@@ -688,7 +688,7 @@ class InvariantsMisc_test : public InvariantsBase
                 Keylet const acctKeylet = keylet::account(a3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, 0);
-                sleNew->setFieldH256(sfAMMID, uint256(1));
+                sleNew->setFieldH256(sfAMMID, UInt256(1));
                 sleNew->setFieldU32(sfFlags, lsfDisableMaster | lsfDefaultRipple);
                 ac.view().insert(sleNew);
                 return true;
@@ -703,7 +703,7 @@ class InvariantsMisc_test : public InvariantsBase
                 Keylet const acctKeylet = keylet::account(a3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, 0);
-                sleNew->setFieldH256(sfAMMID, uint256(1));
+                sleNew->setFieldH256(sfAMMID, UInt256(1));
                 sleNew->setFieldU32(
                     sfFlags,
                     lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth | lsfRequireDestTag);
@@ -734,7 +734,7 @@ class InvariantsMisc_test : public InvariantsBase
                 [](SLE::pointer& sle) { sle->at(sfSequence) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfOwnerNode) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfVaultNode) += 1; },
-                [](SLE::pointer& sle) { sle->at(sfVaultID) = uint256(1u); },
+                [](SLE::pointer& sle) { sle->at(sfVaultID) = UInt256(1u); },
                 [](SLE::pointer& sle) { sle->at(sfAccount) = sle->at(sfOwner); },
                 [](SLE::pointer& sle) { sle->at(sfOwner) = sle->at(sfAccount); },
                 [](SLE::pointer& sle) { sle->at(sfManagementFeeRate) += 1; },
@@ -1064,7 +1064,7 @@ class InvariantsMisc_test : public InvariantsBase
         {
             auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
                 [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
-                [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = uint256(1u); },
+                [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = UInt256(1u); },
             });
 
             for (auto const& mod : mods)
@@ -1268,7 +1268,7 @@ class InvariantsMisc_test : public InvariantsBase
         {
             auto const expectMessage =
                 "SponsoredObjectOwnerCount does not equal SponsoredOwnerCount delta.";
-            uint256 checkID;
+            UInt256 checkID;
 
             doInvariantCheck(
                 {{expectMessage}},
@@ -1352,7 +1352,7 @@ class InvariantsMisc_test : public InvariantsBase
 
         // AMM: object deleted without its pseudo-account
         {
-            uint256 ammID{};
+            UInt256 ammID{};
             Account const gw{"gw"};
             doInvariantCheck(
                 Env{*this, amendments},
@@ -1451,8 +1451,8 @@ class InvariantsMisc_test : public InvariantsBase
         BEAST_EXPECT(created.after() == sle);
 
         auto const expectLogicError = [&](bool isDelete,
-                                          SLE::const_ref before,
-                                          SLE::const_ref after,
+                                          SLE::ConstRef before,
+                                          SLE::ConstRef after,
                                           std::string_view message) {
             try
             {

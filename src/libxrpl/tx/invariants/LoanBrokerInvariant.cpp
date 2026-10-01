@@ -75,10 +75,7 @@ ValidLoanBroker::visitEntry(InvariantEntry const& entry)
 }
 
 bool
-ValidLoanBroker::goodZeroDirectory(
-    ReadView const& view,
-    SLE::const_ref dir,
-    beast::Journal const& j)
+ValidLoanBroker::goodZeroDirectory(ReadView const& view, SLE::ConstRef dir, beast::Journal const& j)
 {
     auto const next = dir->at(~sfIndexNext);
     auto const prev = dir->at(~sfIndexPrevious);

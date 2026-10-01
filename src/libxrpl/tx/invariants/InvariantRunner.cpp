@@ -48,7 +48,7 @@ checkInvariantsHelper(
     {
         auto checkers = getInvariantChecks();
 
-        ctx.visit([&](uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
+        ctx.visit([&](UInt256 const&, bool isDelete, SLE::ConstRef before, SLE::ConstRef after) {
             InvariantEntry const entry{isDelete, before, after};
 
             if (txCheck)

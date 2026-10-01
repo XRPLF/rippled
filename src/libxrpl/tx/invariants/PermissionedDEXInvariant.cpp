@@ -25,7 +25,7 @@ ValidPermissionedDEX::visitEntry(InvariantEntry const& entry)
     auto const isDelete = entry.isDelete();
     auto const& after = entry.after();
 
-    auto trackDomain = [this, isDelete](uint256 const& domain) {
+    auto trackDomain = [this, isDelete](UInt256 const& domain) {
         domainsOld_.insert(domain);
         if (!isDelete)
             domains_.insert(domain);

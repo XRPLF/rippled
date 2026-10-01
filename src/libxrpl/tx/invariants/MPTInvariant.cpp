@@ -567,7 +567,7 @@ ValidConfidentialMPToken::visitEntry(InvariantEntry const& entry)
     auto const& after = entry.after();
 
     // Helper to get MPToken Issuance ID safely
-    auto const getMptID = [](std::shared_ptr<SLE const> const& sle) -> uint192 {
+    auto const getMptID = [](std::shared_ptr<SLE const> const& sle) -> UInt192 {
         if (!sle)
             return beast::kZero;
         if (sle->getType() == ltMPTOKEN)
@@ -579,7 +579,7 @@ ValidConfidentialMPToken::visitEntry(InvariantEntry const& entry)
 
     if (before && before->getType() == ltMPTOKEN)
     {
-        uint192 const id = getMptID(before);
+        UInt192 const id = getMptID(before);
         auto& change = changes_[id];
         change.mptAmountDelta =
             subtractMPTAmountDelta(change.mptAmountDelta, before->getFieldU64(sfMPTAmount));
@@ -600,7 +600,7 @@ ValidConfidentialMPToken::visitEntry(InvariantEntry const& entry)
 
     if (after->getType() == ltMPTOKEN)
     {
-        uint192 const id = getMptID(after);
+        UInt192 const id = getMptID(after);
         auto& change = changes_[id];
         change.mptAmountDelta =
             addMPTAmountDelta(change.mptAmountDelta, after->getFieldU64(sfMPTAmount));
@@ -639,7 +639,7 @@ ValidConfidentialMPToken::visitEntry(InvariantEntry const& entry)
 
     if (before && before->getType() == ltMPTOKEN_ISSUANCE)
     {
-        uint192 const id = getMptID(before);
+        UInt192 const id = getMptID(before);
         auto& change = changes_[id];
         if (before->isFieldPresent(sfConfidentialOutstandingAmount))
         {
@@ -652,7 +652,7 @@ ValidConfidentialMPToken::visitEntry(InvariantEntry const& entry)
 
     if (after->getType() == ltMPTOKEN_ISSUANCE)
     {
-        uint192 const id = getMptID(after);
+        UInt192 const id = getMptID(after);
         auto& change = changes_[id];
 
         bool const hasCOA = after->isFieldPresent(sfConfidentialOutstandingAmount);
@@ -672,7 +672,7 @@ ValidConfidentialMPToken::visitEntry(InvariantEntry const& entry)
 
     if (before && before->getType() == ltMPTOKEN && after->getType() == ltMPTOKEN)
     {
-        uint192 const id = getMptID(after);
+        UInt192 const id = getMptID(after);
 
         // sfConfidentialBalanceVersion must change when spending changes
         auto const spendingBefore = (*before)[~sfConfidentialBalanceSpending];

@@ -60,11 +60,11 @@ class ValidVault
 
     struct Vault final
     {
-        uint256 key = beast::kZero;
+        UInt256 key = beast::kZero;
         Asset asset;
         AccountID pseudoId;
         AccountID owner;
-        uint192 shareMPTID = beast::kZero;
+        UInt192 shareMPTID = beast::kZero;
         Number assetsTotal = 0;
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;
@@ -101,7 +101,7 @@ private:
     std::vector<Shares> afterMPTs_;
     std::vector<Vault> beforeVault_;
     std::vector<Shares> beforeMPTs_;
-    std::unordered_map<uint256, DeltaInfo> deltas_;
+    std::unordered_map<UInt256, DeltaInfo> deltas_;
 
     /**
      * @brief Compute the minimum STAmount scale for rounding invariant

@@ -44,13 +44,13 @@ public:
         return isDelete_;
     }
 
-    [[nodiscard]] SLE::const_ref
+    [[nodiscard]] SLE::ConstRef
     before() const
     {
         return before_;
     }
 
-    [[nodiscard]] SLE::const_ref
+    [[nodiscard]] SLE::ConstRef
     after() const
     {
         return after_;

@@ -32,16 +32,16 @@ ValidNFTokenPage::visitEntry(InvariantEntry const& entry)
     auto const& before = entry.before();
     auto const& after = entry.after();
 
-    static constexpr uint256 const& kPageBits = nft::kPageMask;
-    static constexpr uint256 kAccountBits = ~kPageBits;
+    static constexpr UInt256 const& kPageBits = nft::kPageMask;
+    static constexpr UInt256 kAccountBits = ~kPageBits;
 
     if ((before && before->getType() != ltNFTOKEN_PAGE) || after->getType() != ltNFTOKEN_PAGE)
         return;
 
-    auto check = [this, isDelete](SLE::const_ref sle) {
-        uint256 const account = sle->key() & kAccountBits;
-        uint256 const hiLimit = sle->key() & kPageBits;
-        std::optional<uint256> const prev = (*sle)[~sfPreviousPageMin];
+    auto check = [this, isDelete](SLE::ConstRef sle) {
+        UInt256 const account = sle->key() & kAccountBits;
+        UInt256 const hiLimit = sle->key() & kPageBits;
+        std::optional<UInt256> const prev = (*sle)[~sfPreviousPageMin];
 
         // Make sure that any page links...
         //  1. Are properly associated with the owning account and
@@ -74,20 +74,20 @@ ValidNFTokenPage::visitEntry(InvariantEntry const& entry)
 
             // If prev is valid, use it to establish a lower bound for
             // page entries.  If prev is not valid the lower bound is zero.
-            uint256 const loLimit = prev ? *prev & kPageBits : uint256(beast::kZero);
+            UInt256 const loLimit = prev ? *prev & kPageBits : UInt256(beast::kZero);
 
             // Also verify that all NFTokenIDs in the page are sorted.
-            uint256 loCmp = loLimit;
+            UInt256 loCmp = loLimit;
             for (auto const& obj : nftokens)
             {
-                uint256 const tokenID = obj[sfNFTokenID];
+                UInt256 const tokenID = obj[sfNFTokenID];
                 if (!nft::compareTokens(loCmp, tokenID))
                     badSort_ = true;
                 loCmp = tokenID;
 
                 // None of the NFTs on this page should belong on lower or
                 // higher pages.
-                if (uint256 const tokenPageBits = tokenID & kPageBits;
+                if (UInt256 const tokenPageBits = tokenID & kPageBits;
                     tokenPageBits < loLimit || tokenPageBits >= hiLimit)
                     badEntry_ = true;
 

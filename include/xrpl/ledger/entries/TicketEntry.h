@@ -32,7 +32,7 @@ public:
     }
 
     explicit TicketEntry(
-        uint256 const& ticketID,
+        UInt256 const& ticketID,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::ticket(ticketID), view, j)
