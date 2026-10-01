@@ -22,6 +22,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -35,6 +36,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -1017,6 +1019,29 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstR
         return;
     }
 
+    // Only owner directory pages carry sfOwner; book directories don't.
+    if (after && after->getType() == ltDIR_NODE && after->isFieldPresent(sfOwner))
+    {
+        auto const& afterIndexes = after->getFieldV256(sfIndexes);
+        if (afterIndexes.empty())
+            return;
+
+        auto& added = ownerDirAdditions_[after->getAccountID(sfOwner)];
+        if (!before)
+        {
+            added.insert(added.end(), afterIndexes.begin(), afterIndexes.end());
+            return;
+        }
+
+        auto const& beforeIndexes = before->getFieldV256(sfIndexes);
+        for (auto const& index : afterIndexes)
+        {
+            if (std::ranges::find(beforeIndexes, index) == beforeIndexes.end())
+                added.push_back(index);
+        }
+        return;
+    }
+
     if (after && after->getType() == ltACCOUNT_ROOT)
     {
         bool const isPseudo = [&]() {
@@ -1098,6 +1123,52 @@ ValidPseudoAccounts::finalize(
         if (enforce)
             return false;
     }
+
+    // Pre-fixCleanup3_5_0: what a pseudo-account owns is not checked.
+    // Post-fixCleanup3_5_0: it may own only the object types its kind expects.
+    if (!view.rules().enabled(fixCleanup3_5_0))
+        return true;
+
+    for (auto const& [owner, indexes] : ownerDirAdditions_)
+    {
+        auto const root = view.read(keylet::account(owner));
+        if (!root || !isPseudoAccount(root))
+            continue;
+
+        // A kind missing here fails the check: adding a pseudo-account kind
+        // must add its allowed set on purpose.
+        auto const allowed = [&root]() -> std::optional<std::set<LedgerEntryType>> {
+            if (root->isFieldPresent(sfAMMID))
+                return std::set<LedgerEntryType>{ltAMM, ltRIPPLE_STATE, ltMPTOKEN};
+            if (root->isFieldPresent(sfVaultID))
+            {
+                return std::set<LedgerEntryType>{
+                    ltMPTOKEN_ISSUANCE, ltMPTOKEN, ltRIPPLE_STATE, ltLOAN_BROKER};
+            }
+            if (root->isFieldPresent(sfLoanBrokerID))
+                return std::set<LedgerEntryType>{ltLOAN, ltMPTOKEN, ltRIPPLE_STATE};
+            return std::nullopt;
+        }();
+
+        for (auto const& index : indexes)
+        {
+            auto const sle = view.read(keylet::unchecked(index));
+            // A dangling link has no object type to check.
+            if (!sle)
+                continue;
+
+            if (!allowed || !allowed->contains(sle->getType()))
+            {
+                auto const item = LedgerFormats::getInstance().findByType(sle->getType());
+                JLOG(j.fatal()) << "Invariant failed: pseudo-account " << toBase58(owner)
+                                << " may not own an object of type "
+                                << (item != nullptr ? item->getName()
+                                                    : std::to_string(sle->getType()));
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 
