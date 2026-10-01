@@ -52,9 +52,10 @@ For a stable release, choose one of the [tagged
 releases](https://github.com/XRPLF/rippled/releases).
 
 A build reports `0.0.0-dev` with its short commit hash as build metadata, e.g.
-`0.0.0-dev+0123abc`. Only CI builds of a tag report the tag as the version. To
-use another version, set the `FORCE_XRPLD_VERSION` environment variable when
-running CMake, e.g. `FORCE_XRPLD_VERSION=3.4.0`.
+`0.0.0-dev+0123abc`. Only builds of a release, from a tag in CI or a versioned
+Conan reference, report a release version. To use another version, set the
+`FORCE_XRPLD_VERSION` environment variable when running CMake, e.g.
+`FORCE_XRPLD_VERSION=3.4.0`.
 
 ### Set Up Conan
 

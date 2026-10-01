@@ -201,7 +201,7 @@ jobs:
           #
           # We:
           # - explicitly provide branch name
-          # - use `github.head_ref` to get the SHA of last commit in the PR branch
+          # - use `github.event.pull_request.head.sha` to get the SHA of last commit in the PR branch
           #
           # This way it works both for PRs and pushes to branches.
           GITHUB_BRANCH_NAME: "${{ github.head_ref || github.ref_name }}"
