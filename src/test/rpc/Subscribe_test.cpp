@@ -1661,7 +1661,7 @@ public:
     // Build `count` distinct, valid MPT issuance id strings the same cheap way
     // as makeAccountStrings: by incrementing an MPTID. doSubscribe only parses
     // these (it does not require the issuances to exist in the ledger), and
-    // parseMPTIssuanceIDs dedups into a hash_set, so distinctness is what makes
+    // parseMPTIssuanceIDs dedups into a HashSet, so distinctness is what makes
     // the cap arithmetic exact.
     static std::vector<std::string>
     makeMPTIssuanceStrings(std::size_t count, std::uint32_t seed = 1)

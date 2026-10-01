@@ -78,9 +78,9 @@ parseAccountIds(json::Value const& jvArray);
  * Extracts and returns a set of MPTID objects from the provided JSON array.
  *
  * @param jvArray The JSON value containing an array of MPT issuance IDs.
- * @return A hash_set containing the parsed MPTID objects.
+ * @return A HashSet containing the parsed MPTID objects.
  */
-hash_set<MPTID>
+HashSet<MPTID>
 parseMPTIssuanceIDs(json::Value const& jvArray);
 
 /**

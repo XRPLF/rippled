@@ -116,19 +116,19 @@ parseAccountIds(json::Value const& jvArray)
     return result;
 }
 
-hash_set<MPTID>
+HashSet<MPTID>
 parseMPTIssuanceIDs(json::Value const& jvArray)
 {
-    hash_set<MPTID> result;
+    HashSet<MPTID> result;
     for (auto const& jv : jvArray)
     {
         if (!jv.isString())
-            return hash_set<MPTID>();
+            return HashSet<MPTID>();
 
         auto const mptIssuanceIdStr = jv.asString();
         MPTID mptIssuanceID;
         if (!mptIssuanceID.parseHex(mptIssuanceIdStr))
-            return hash_set<MPTID>();
+            return HashSet<MPTID>();
 
         result.insert(mptIssuanceID);
     }
