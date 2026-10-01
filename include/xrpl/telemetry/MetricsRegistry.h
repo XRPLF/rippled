@@ -38,7 +38,7 @@
  * |       +-- ledgers_closed_total
  * |       +-- validations_sent_total
  * |       +-- validations_checked_total
- * |       +-- ledger_history_mismatch_total{reason}
+ * |       +-- ledger_hash_mismatch_total{reason}
  * |       +-- txq_expired_total
  * |       +-- txq_dropped_total{reason}
  * |
@@ -370,7 +370,7 @@ public:
     operator=(MetricsRegistry const&) = delete;
 
     /**
-     * Flush pending metrics and shut down the pipeline.
+     * Shut down the export pipeline, dropping values not yet exported.
      *
      * Stores `Phase::Stopped` first so `recording()` reads false on every
      * later record call, then destroys the SDK provider. meter_ is not
@@ -792,7 +792,7 @@ public:
     incrementValidationsChecked();
 
     /**
-     * Increment the ledger_history_mismatch_total counter for a reason.
+     * Increment the ledger_hash_mismatch_total counter for a reason.
      * Called from LedgerHistory::handleMismatch() once the mismatch has
      * been classified. The reason label turns fork diagnosis from a
      * log-grep into a queryable time series.
@@ -977,7 +977,7 @@ private:
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         validationsCheckedCounter_;
     /**
-     * Counter: ledger_history_mismatch_total{reason} — incremented per classified
+     * Counter: ledger_hash_mismatch_total{reason} — incremented per classified
      * built-vs-validated ledger mismatch.
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
@@ -1046,7 +1046,7 @@ inline constexpr char kLedgersClosedTotal[] = "ledgers_closed_total";
 inline constexpr char kLedgersClosedTotalDesc[] = "Total ledgers closed by consensus";
 
 /**
- * The `reason` label values of ledger_history_mismatch_total: every reason
+ * The `reason` label values of ledger_hash_mismatch_total: every reason
  * LedgerHistory::handleMismatch() records.
  *
  * The registry starts each value in `all` at 0. A new value must go into

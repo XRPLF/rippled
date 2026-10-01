@@ -71,9 +71,6 @@ opentelemetry-cpp/*:tools.build:cxxflags+={{ otel_sanitizer_flags }}
 {# Scoped to boost/* since it is the only gap. #}
 boost/*:MACOSX_DEPLOYMENT_TARGET={{ min_macos_version }}
 {% endif %}
-{% if compiler == "gcc" and compiler_version < 13 %}
-tools.build:cxxflags+=['-Wno-restrict']
-{% endif %}
 {% if os == "Windows" %}
 # opentelemetry-cpp's recipe removes the `shared` option on Windows and never
 # sets BUILD_SHARED_LIBS, so its upstream CMake defaults the protobuf-generated

@@ -380,9 +380,11 @@ inline constexpr char rotationFreshenKeysTotal[] = "rotation_freshen_keys_total"
 // outstanding work stays visible rather than silently accepted.
 
 /**
- * Built-vs-validated ledger mismatches, by reason.
+ * Built-vs-validated ledger mismatches, by reason. Not
+ * ledger_history_mismatch_total: the beast::insight counter in LedgerHistory
+ * already exports that name for the same event.
  */
-inline constexpr char ledgerHistoryMismatchTotal[] = "ledger_history_mismatch_total";
+inline constexpr char ledgerHashMismatchTotal[] = "ledger_hash_mismatch_total";
 /**
  * Ledger fee and economy readings.
  */
