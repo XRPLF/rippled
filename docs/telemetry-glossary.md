@@ -719,6 +719,14 @@ Proposals and validations are trusted if they come from validators on this node'
 
 **See also:** [Trusted / untrusted / duplicate on xrpl.org](https://xrpl.org/docs/concepts/consensus-protocol/unl)
 
+<a id="validation-load"></a>
+
+### Validation load (per peer)
+
+How many validations each peer delivers per second, split by whether the signer is trusted. The `peer_validation_load` gauge reports only ranked values: the three busiest peers' rates, the busiest peer's share of the total, and how many peers are over the per-peer limit. A flood carried by one peer therefore shows as a share near 1 without any peer appearing in a metric label. The busiest untrusted peer is named in a warning log line instead, when it is over the per-peer limit, by connection id and node public key. The throttle is per connection: one connection is named at most once every five minutes, and a reconnect gets a new id.
+
+**Scope:** per node — measured on and specific to this individual server.
+
 <a id="validator-list"></a>
 
 ### Validator list
