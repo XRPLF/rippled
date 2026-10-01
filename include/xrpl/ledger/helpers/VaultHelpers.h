@@ -85,7 +85,8 @@ adjustVaultBalances(SLE::ref vault, VaultBalanceChange const& change, beast::Jou
  * Return the Vault's current live exponent.
  *
  * Legacy and CashBasis Vaults use the exponent of AssetsTotal. FixedPrecision
- * Vaults floor that exponent at their lifetime base exponent.
+ * Vaults use max(base exponent, exponent of AssetsTotal): the grid is never
+ * finer than -Scale and coarsens once AssetsTotal outgrows 16 digits there.
  */
 [[nodiscard]] int
 getVaultScale(SLE::const_ref vault);
