@@ -10,11 +10,12 @@ a build configured with `-Dvalidator_keys=ON`.
 package/
   build_pkg.py        Staging and build script (called by the CMake `package` target and CI)
   sign_rpm.py         Signs the built RPMs (called by CI when publishing)
-  docker/
-    Dockerfile          Packaging image, built by `build-packaging-images.yml`; installs its tooling with `bin/install-packaging-tools.sh`
-    publish_pkg.py      Uploads built packages to the XRPLF Nexus repositories (called by CI, and shipped in that image)
-  image/
-    Dockerfile          The xrpld Docker image, installing the built DEB on Ubuntu (see "Docker image")
+  images/
+    packaging/
+      Dockerfile        Packaging image, built by `build-packaging-images.yml`; installs its tooling with `bin/install-packaging-tools.sh`
+      publish_pkg.py    Uploads built packages to the XRPLF Nexus repositories (called by CI, and shipped in that image)
+    xrpld/
+      Dockerfile        The xrpld Docker images, installing the built DEB on Ubuntu (see "Docker images")
   rpm/
     xrpld.spec      RPM spec
   debian/           Debian control files (control.in, lintian-overrides.in, rules, copyright, docs, links, source/format).
@@ -119,8 +120,8 @@ Caller workflows (`on-pr.yml`, `on-tag.yml`, `on-trigger.yml`) call
    in the container of every distro that format targets and running the binaries
    there, so one that cannot be installed never reaches Nexus.
 3. `publish` uploads both artifacts, or lists what it would upload.
-4. `docker` builds the [Docker image](#docker-image) from the tested DEB, and
-   pushes it when publishing.
+4. `docker` builds the [Docker images](#docker-images) from the tested DEB, and
+   pushes them when publishing.
 
 The packaging script derives the package version from the downloaded binary's
 `xrpld --version` output; no CMake configure or build step is needed inside the
@@ -271,14 +272,22 @@ Nexus owns the repository metadata; nothing here indexes anything. Worth knowing
 installs it at `/usr/local/bin/publish_pkg.py` for other XRPLF repositories that
 build their packages elsewhere.
 
-## Docker image
+## Docker images
 
 The `docker` job installs the tested `xrpld` DEB on `ubuntu:26.04` using
-[`image/Dockerfile`](image/Dockerfile), checks that the server starts, and,
-with `publish: true`, pushes it to `xrplf/xrpld` on Docker Hub using the
-`DOCKERHUB_TOKEN` secret, an organization access token for `xrplf`. A tag's
-image is tagged with the tag name, `xrplf/xrpld:<version>`, and a develop image
-as `xrplf/xrpld:develop`. Private builds are never pushed.
+[`images/xrpld/Dockerfile`](images/xrpld/Dockerfile), once per target, and
+checks that the server starts in each image. A tag's images are tagged with the
+tag name, a develop image as `develop`. With `publish: true`:
+
+- `xrpld` is pushed to `xrplf/xrpld` on Docker Hub using the `DOCKERHUB_TOKEN`
+  secret, an organization access token for `xrplf`. Private builds are never
+  pushed there.
+- `voidstar` replaces `/usr/bin/xrpld` with the binary of the `voidstar` build
+  config, adds `libvoidstar.so` and links the binary into `/symbols`, as
+  Antithesis expects. It is pushed as `xrpld-voidstar` to the Antithesis
+  registry, `${ANTITHESIS_DOCKER_HOST}/${ANTITHESIS_DOCKER_PATH}`, logging in
+  with the `ANTITHESIS_DOCKER_CREDENTIALS` service account key. The registry is
+  private, so private builds are pushed too.
 
 ## How `build_pkg.py` works
 
