@@ -71,7 +71,7 @@ protected:
         params_.set("type", GetParam());
         params_.set("path", tempDir_.path());
 
-        beast::xor_shift_engine rng(kSeedValue);
+        beast::XorShiftEngine rng(kSeedValue);
         batch_ = createPredictableBatch(kNumObjects, rng());
     }
 
@@ -103,7 +103,7 @@ TEST_P(BackendTypeTest, store_and_fetch)
 
     {
         SCOPED_TRACE("read in shuffled order");
-        beast::xor_shift_engine rng(kSeedValue);
+        beast::XorShiftEngine rng(kSeedValue);
         std::shuffle(batch_.begin(), batch_.end(), rng);
         auto const copy = fetchCopyOfBatch(*backend, batch_);
         EXPECT_EQ(batch_, copy);
@@ -247,7 +247,7 @@ TEST(BackendWriteStats, non_measuring_backends_report_absence_not_zeros)
         // Still absent after real writes. Cause, not just state: the
         // backend has genuinely been used, so the absence is the base-class
         // default and not an unopened backend.
-        beast::xor_shift_engine rng(kSeedValue);
+        beast::XorShiftEngine rng(kSeedValue);
         auto const batch = createPredictableBatch(16, rng());
         storeBatch(*backend, batch);
         EXPECT_FALSE(backend->getWriteStats().has_value());

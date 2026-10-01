@@ -64,9 +64,9 @@
       "name": "tx.receive",
       "category": "transaction",
       "allowed_parents": ["ROOT"],
-      "required_attributes": ["tx_hash", "peer_id"],
+      "required_attributes": ["tx_hash", "peer_id", "tx_status"],
       "config_flag": "trace_transactions",
-      "note": "Cross-node span: parent context propagated from the sender's tx.process via protobuf. Also carries tx_type and peer_version. The span is created only after the node decides to process the transaction, so a relayed duplicate produces no span at all; how many were dropped is the transactions_duplicate traffic category. tx_status is set only on the paths that drop a transaction after that point, so it is not a required attribute."
+      "note": "Cross-node span: parent context propagated from the sender's tx.process via protobuf. Also carries current_ledger_seq, and tx_type and peer_version when known. The span is created only after the node decides to process the transaction, so a relayed duplicate produces no span at all; how many were dropped is the transactions_duplicate traffic category. tx_status is set once on every path after that point: dropped_no_sync, dropped_queue_full or queued_for_check."
     },
     {
       "name": "tx.apply",
@@ -112,7 +112,7 @@
       "required_attributes": ["tx_hash", "tx_type", "txq_status"],
       "config_flag": "trace_transactions",
       "optional": true,
-      "note": "Only fires when a tx is queued (fee below open-ledger level). Requires fee escalation — driven by the txq-burst workload phase. tx_hash/tx_type/txq_status are set on every code path; fee_level_paid/required_fee_level are conditional (TxQ.cpp ~895-898, after the rejected and applied_direct early exits), so they are NOT guaranteed on every txq.enqueue span and cannot be required. Four parents, because TxQ::apply (TxQ.cpp:770) takes an OPTIONAL parent context (:790-795): with a context it is an explicit childSpan, without one it is a plain ScopedSpanGuard that inherits whatever is ambient. tx.process comes from the submission path, which passes the captured context (NetworkOPs.cpp:1803-1810). consensus.accept.apply comes from the open-ledger rebuild, which passes none: OpenLedger.cpp:121 replays local transactions, and OpenLedger::accept is called from inside doAccept (RCLConsensus.cpp:871) where the consensus span is ambient. ROOT comes from that same rebuild reached by the switchLastClosedLedger jump path instead (NetworkOPs.cpp:2313), which has no ambient scope, and from the submission path when the tx.process context is invalid. rpc.command.* comes from the simulate RPC (Simulate.cpp:249), which passes no context and runs inside the command span's scope; the harness never issues simulate, so that parent is unreachable here but is still lawful."
+      "note": "Fires on every TxQ::apply call: each submitted tx, each local tx replayed on an open-ledger rebuild, and simulate. txq_status names the outcome (rejected, applied_direct, failed, applied, queued); only queued means the tx entered the queue. tx_hash/tx_type/txq_status are set on every code path; fee_level_paid/required_fee_level are conditional (TxQ.cpp ~895-898, after the rejected and applied_direct early exits), so they are NOT guaranteed on every txq.enqueue span and cannot be required. Four parents, because TxQ::apply (TxQ.cpp:770) takes an OPTIONAL parent context (:790-795): with a context it is an explicit childSpan, without one it is a plain ScopedSpanGuard that inherits whatever is ambient. tx.process comes from the submission path, which passes the captured context (NetworkOPs.cpp:1803-1810). consensus.accept.apply comes from the open-ledger rebuild, which passes none: OpenLedger.cpp:121 replays local transactions, and OpenLedger::accept is called from inside doAccept (RCLConsensus.cpp:871) where the consensus span is ambient. ROOT comes from that same rebuild reached by the switchLastClosedLedger jump path instead (NetworkOPs.cpp:2313), which has no ambient scope, and from the submission path when the tx.process context is invalid. rpc.command.* comes from the simulate RPC (Simulate.cpp:249), which passes no context and runs inside the command span's scope; the harness never issues simulate, so that parent is unreachable here but is still lawful."
     },
     {
       "name": "txq.apply_direct",
@@ -541,5 +541,5 @@
     }
   ],
   "total_span_types": 42,
-  "total_unique_attributes": 60
+  "total_unique_attributes": 61
 }

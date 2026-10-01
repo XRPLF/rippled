@@ -4,11 +4,10 @@
  * Compiled only when XRPL_ENABLE_TELEMETRY is defined (via CMake
  * telemetry=ON). Contains:
  *
- * - FilteringSpanProcessor: decorator that drops spans marked with
- * kDiscardedAttr before they enter the batch export queue.
  * - TelemetryImpl: configures the OTel SDK with an OTLP/HTTP exporter,
- * FilteringSpanProcessor wrapping a batch span processor,
- * trace-ID-ratio sampler, and resource attributes.
+ * FilteringSpanProcessor wrapping a batch span processor, the head
+ * sampler from makeHeadSampler(), and resource attributes.
+ * - makeHeadSampler(): builds the head sampler (see HeadSampler.h).
  * - NullTelemetryOtel: no-op fallback used when telemetry is compiled in
  * but disabled at runtime (enabled=0 in config).
  * - makeTelemetry(): factory that selects the appropriate implementation.
@@ -23,7 +22,8 @@
 #include <xrpl/beast/insight/Unit.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/telemetry/DeterministicIdGenerator.h>
-#include <xrpl/telemetry/DiscardFlag.h>
+#include <xrpl/telemetry/FilteringSpanProcessor.h>
+#include <xrpl/telemetry/HeadSampler.h>
 #include <xrpl/telemetry/HistogramBuckets.h>
 #include <xrpl/telemetry/SpanNames.h>
 
@@ -37,6 +37,7 @@
 #include <opentelemetry/metrics/noop.h>
 #include <opentelemetry/metrics/provider.h>
 #include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/nostd/string_view.h>
 #include <opentelemetry/sdk/metrics/aggregation/aggregation_config.h>
 #include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_factory.h>
 #include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_options.h>
@@ -50,8 +51,9 @@
 #include <opentelemetry/sdk/resource/resource.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_factory.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_options.h>
-#include <opentelemetry/sdk/trace/processor.h>
 #include <opentelemetry/sdk/trace/sampler.h>
+#include <opentelemetry/sdk/trace/samplers/always_off.h>
+#include <opentelemetry/sdk/trace/samplers/always_on.h>
 #include <opentelemetry/sdk/trace/samplers/parent_factory.h>
 #include <opentelemetry/sdk/trace/samplers/trace_id_ratio.h>
 #include <opentelemetry/sdk/trace/tracer_provider.h>
@@ -91,89 +93,19 @@ namespace otlp_http = opentelemetry::exporter::otlp;
 namespace resource = opentelemetry::sdk::resource;
 
 /**
- * SpanProcessor decorator that drops discarded spans.
+ * View a std::string_view as the SDK's string view, without a copy.
  *
- * Wraps a delegate processor (typically BatchSpanProcessor). In OnEnd(),
- * calls DiscardScope::isActive(). If the calling thread is inside a
- * DiscardScope (entered by SpanGuard::discard()), the span is silently
- * dropped — never entering the batch queue, never sent over the network,
- * never stored.
+ * Without the SDK's STL option, nostd::string_view is a separate type with
+ * no constructor from std::string_view.
  *
- * Uses a thread-local flag rather than inspecting Recordable attributes
- * because the Recordable type varies by exporter (SpanData for simple
- * exporters, OtlpRecordable for OTLP) and none expose a uniform getter.
- * The flag is safe because Span::End() calls OnEnd() synchronously on
- * the same thread.
- *
- * All other methods delegate directly to the wrapped processor.
- *
- * Dependency diagram:
- *
- * +---------------------------+
- * | FilteringSpanProcessor    |
- * +---------------------------+
- * | - delegate_ : unique_ptr  |
- * |   <SpanProcessor>         |
- * +---------------------------+
- * |  wraps
- * +---------+-----------+
- * | BatchSpanProcessor  |
- * +---------------------+
- *
- * @note Thread safety: OnEnd() may be called concurrently from multiple
- * threads. The discard flag behind DiscardScope is thread-local, so each
- * thread's discard state is independent — no synchronization needed.
+ * @param text Characters that must outlive the returned view.
+ * @return A view of the same characters.
  */
-class FilteringSpanProcessor : public trace_sdk::SpanProcessor
+[[nodiscard]] opentelemetry::nostd::string_view
+toOtelView(std::string_view text) noexcept
 {
-    std::unique_ptr<trace_sdk::SpanProcessor> delegate_;
-
-public:
-    explicit FilteringSpanProcessor(std::unique_ptr<trace_sdk::SpanProcessor> delegate)
-        : delegate_(std::move(delegate))
-    {
-    }
-
-    std::unique_ptr<trace_sdk::Recordable>
-    MakeRecordable() noexcept override
-    {
-        return delegate_->MakeRecordable();
-    }
-
-    void
-    OnStart(
-        trace_sdk::Recordable& span,
-        opentelemetry::trace::SpanContext const& parentContext) noexcept override
-    {
-        delegate_->OnStart(span, parentContext);
-    }
-
-    void
-    OnEnd(std::unique_ptr<trace_sdk::Recordable>&& span) noexcept override
-    {
-        if (DiscardScope::isActive())
-        {
-            // SpanGuard::discard() is inside a DiscardScope on this thread,
-            // which it entered just before calling Span::End() — and End()
-            // invokes OnEnd() synchronously. Drop the span.
-            return;
-        }
-        delegate_->OnEnd(std::move(span));
-    }
-
-    bool
-    ForceFlush(
-        std::chrono::microseconds timeout = std::chrono::microseconds::max()) noexcept override
-    {
-        return delegate_->ForceFlush(timeout);
-    }
-
-    bool
-    Shutdown(std::chrono::microseconds timeout = std::chrono::microseconds::max()) noexcept override
-    {
-        return delegate_->Shutdown(timeout);
-    }
-};
+    return {text.data(), text.size()};
+}
 
 /**
  * No-op implementation used when XRPL_ENABLE_TELEMETRY is defined but
@@ -312,6 +244,17 @@ class TelemetryImpl : public Telemetry
     std::shared_ptr<trace_sdk::TracerProvider> sdkProvider_;
 
     /**
+     * Tracer for kTracerName, cached so a span does not take the provider's
+     * lock.
+     *
+     * Starts as the global provider's tracer. start() sets it to the SDK
+     * tracer before setInstance() publishes this object, and stop() never
+     * writes it, so readers need no lock.
+     */
+    opentelemetry::nostd::shared_ptr<trace_api::Tracer> tracer_ =
+        trace_api::Provider::GetTracerProvider()->GetTracer(toOtelView(kTracerName));
+
+    /**
      * The SDK MeterProvider that owns the metric export pipeline.
      *
      * Symmetric with sdkProvider_ on the tracing side. Held as
@@ -401,22 +344,18 @@ public:
         auto batchProcessor =
             trace_sdk::BatchSpanProcessorFactory::Create(std::move(exporter), processorOpts);
 
-        // Wrap batch processor with filtering processor that drops spans
-        // marked with kDiscardedAttr (via SpanGuard::discard()).
+        // Wrap the batch processor. FilteringSpanProcessor drops discarded
+        // spans and exports each attribute key once, with its last value.
         auto processor = std::make_unique<FilteringSpanProcessor>(std::move(batchProcessor));
 
         // Configure resource attributes
         auto resourceAttrs = makeTracerResource();
 
-        // Configure sampler. Head sampling is fixed at 1.0 (sample everything);
-        // setup_.samplingRatio is not config-driven. Wrap the ratio sampler in a
-        // ParentBasedSampler so spans with a remote parent honor the upstream
-        // sampled flag — this keeps keep/drop decisions coherent for a single
-        // distributed trace spanning multiple nodes. Volume reduction is left to
-        // the collector's tail sampling.
-        auto rootSampler =
-            std::make_shared<trace_sdk::TraceIdRatioBasedSampler>(setup_.samplingRatio);
-        auto sampler = trace_sdk::ParentBasedSamplerFactory::Create(std::move(rootSampler));
+        // Head sampling is fixed at 1.0. Spans with no parent or a remote parent use the
+        // trace-id ratio sampler, so a peer's sampled flag cannot turn our spans off or on.
+        // Spans with a local parent follow it. The ratio sampler reads only the trace id,
+        // so nodes agree on every trace. Collector tail sampling reduces volume.
+        auto sampler = makeHeadSampler(setup_.samplingRatio);
 
         // Create TracerProvider with a DeterministicIdGenerator. It returns a
         // deterministic trace_id when a PendingTraceId is active on the thread,
@@ -436,6 +375,10 @@ public:
         // Set as global provider
         trace_api::Provider::SetTracerProvider(
             opentelemetry::nostd::shared_ptr<trace_api::TracerProvider>(sdkProvider_));
+
+        // GetTracer() locks the provider, so fetch the tracer once here rather
+        // than per span. It must be set before setInstance() publishes it.
+        tracer_ = sdkProvider_->GetTracer(toOtelView(kTracerName));
 
         // The metrics pipeline (meterProvider_) was already built and published
         // in the constructor via initMetrics(), before any subsystem could
@@ -611,13 +554,10 @@ public:
             // Force flush with timeout to avoid blocking indefinitely
             // when the OTLP endpoint is unreachable.
             sdkProvider_->ForceFlush(std::chrono::milliseconds(5000));
-            // TODO: sdkProvider_ is not thread-safe. This reset() races with
-            // getTracer() if any thread is still calling startSpan().
-            // Currently safe because Application::stop() shuts down
-            // serverHandler_, overlay_, and jobQueue_ before calling
-            // telemetry_->stop() — so no callers should remain. If the
-            // shutdown order ever changes, add an std::atomic<bool> stopped_
-            // flag checked in getTracer() to make this robust.
+            // startSpan() and getTracer() never read sdkProvider_, so this
+            // reset() cannot race with them. A span started after stop()
+            // still goes through tracer_, into the shut-down pipeline, and is
+            // dropped rather than exported.
             sdkProvider_.reset();
             trace_api::Provider::SetTracerProvider(
                 opentelemetry::nostd::shared_ptr<trace_api::TracerProvider>(
@@ -627,8 +567,9 @@ public:
         if (meterProvider_)
         {
             // Mirror the tracer teardown: bounded flush, drop our provider,
-            // then restore a noop global provider. Same shutdown-order
-            // caveat as sdkProvider_ above applies to getMeter() callers.
+            // then restore a noop global provider. getMeter() reads
+            // meterProvider_ with no lock, so stop() must run after every
+            // getMeter() caller has stopped.
             meterProvider_->ForceFlush(std::chrono::milliseconds(5000));
             meterProvider_.reset();
             metrics_api::Provider::SetMeterProvider(
@@ -683,11 +624,9 @@ public:
     [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Tracer>
     getTracer(std::string_view name = kTracerName) override
     {
-        if (!sdkProvider_)
-        {
-            return trace_api::Provider::GetTracerProvider()->GetTracer(std::string(name));
-        }
-        return sdkProvider_->GetTracer(std::string(name));
+        if (name == kTracerName)
+            return tracer_;
+        return trace_api::Provider::GetTracerProvider()->GetTracer(toOtelView(name));
     }
 
     [[nodiscard]] opentelemetry::nostd::shared_ptr<metrics_api::Meter>
@@ -704,10 +643,9 @@ public:
     [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(std::string_view name, trace_api::SpanKind kind) override
     {
-        auto tracer = getTracer();
         trace_api::StartSpanOptions opts;
         opts.kind = kind;
-        return tracer->StartSpan(std::string(name), opts);
+        return tracer_->StartSpan(toOtelView(name), opts);
     }
 
     [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Span>
@@ -716,11 +654,10 @@ public:
         opentelemetry::context::Context const& parentContext,
         trace_api::SpanKind kind) override
     {
-        auto tracer = getTracer();
         trace_api::StartSpanOptions opts;
         opts.kind = kind;
         opts.parent = parentContext;
-        return tracer->StartSpan(std::string(name), opts);
+        return tracer_->StartSpan(toOtelView(name), opts);
     }
 };
 
@@ -750,6 +687,20 @@ makeTraceExporterOptions(Telemetry::Setup const& setup)
         opts.ssl_client_key_path = setup.tlsClientKeyPath;
     }
     return opts;
+}
+
+std::unique_ptr<trace_sdk::Sampler>
+makeHeadSampler(double ratio)
+{
+    // One ratio sampler serves the root case and both remote-parent cases.
+    std::shared_ptr<trace_sdk::Sampler> const ratioSampler =
+        std::make_shared<trace_sdk::TraceIdRatioBasedSampler>(ratio);
+    return trace_sdk::ParentBasedSamplerFactory::Create(
+        ratioSampler,
+        ratioSampler,
+        ratioSampler,
+        std::make_shared<trace_sdk::AlwaysOnSampler>(),
+        std::make_shared<trace_sdk::AlwaysOffSampler>());
 }
 
 std::unique_ptr<Telemetry>

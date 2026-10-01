@@ -28,6 +28,10 @@ namespace perf {
 class PerfLog;
 }  // namespace perf
 
+namespace telemetry {
+class Telemetry;
+}  // namespace telemetry
+
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
 
@@ -43,7 +47,7 @@ template <
 class TaggedCache;
 class STLedgerEntry;
 using SLE = STLedgerEntry;
-using CachedSLEs = TaggedCache<uint256, SLE const>;
+using CachedSLEs = TaggedCache<UInt256, SLE const>;
 
 class CollectorManager;
 class Family;
@@ -166,6 +170,16 @@ public:
      */
     [[nodiscard]] virtual size_t
     getNumberOfThreads() const = 0;
+
+    /**
+     * Returns the telemetry service built from the [telemetry] config section.
+     *
+     * @return The application's telemetry instance. The reference stays valid
+     * for the life of the application, also when telemetry is disabled or
+     * compiled out.
+     */
+    virtual telemetry::Telemetry&
+    getTelemetry() = 0;
 };
 
 std::unique_ptr<Application>

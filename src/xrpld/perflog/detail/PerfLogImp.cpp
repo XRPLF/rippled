@@ -189,7 +189,7 @@ PerfLogImp::Counters::countersJson() const
 json::Value
 PerfLogImp::Counters::currentJson() const
 {
-    auto const present = steady_clock::now();
+    auto const present = SteadyClock::now();
 
     json::Value jobsArray(json::ValueType::Array);
     auto const jobs = [this] {
@@ -204,7 +204,7 @@ PerfLogImp::Counters::currentJson() const
         json::Value jobj(json::ValueType::Object);
         jobj[jss::job] = JobTypes::name(j.first);
         jobj[jss::duration_us] =
-            std::to_string(std::chrono::duration_cast<microseconds>(present - j.second).count());
+            std::to_string(std::chrono::duration_cast<Microseconds>(present - j.second).count());
         jobsArray.append(jobj);
     }
 
@@ -223,7 +223,7 @@ PerfLogImp::Counters::currentJson() const
         // NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
         methodobj[jss::method] = json::StaticString{m.first.data()};
         methodobj[jss::duration_us] =
-            std::to_string(std::chrono::duration_cast<microseconds>(present - m.second).count());
+            std::to_string(std::chrono::duration_cast<Microseconds>(present - m.second).count());
         methodsArray.append(methodobj);
     }
 
@@ -272,7 +272,7 @@ void
 PerfLogImp::run()
 {
     beast::setCurrentThreadName("perflog");
-    lastLog_ = system_clock::now();
+    lastLog_ = SystemClock::now();
 
     while (true)
     {
@@ -301,13 +301,13 @@ PerfLogImp::report()
         return;
     }
 
-    auto const present = system_clock::now();
+    auto const present = SystemClock::now();
     if (present < lastLog_ + setup_.logInterval)
         return;
     lastLog_ = present;
 
     json::Value report(json::ValueType::Object);
-    report[jss::time] = to_string(std::chrono::floor<microseconds>(present));
+    report[jss::time] = to_string(std::chrono::floor<Microseconds>(present));
     {
         std::scoped_lock const lock{counters_.jobsMutex};
         report[jss::workers] = static_cast<unsigned int>(counters_.jobs.size());
@@ -342,6 +342,25 @@ PerfLogImp::~PerfLogImp()
     stop();
 }
 
+namespace {
+
+/**
+ * Adds delta to the count of RPC requests currently executing. rpcStart()
+ * and rpcEnd() both call it, so they use one name and description and
+ * share one instrument.
+ *
+ * @param app The application, which holds the metrics registry.
+ * @param delta +1 when a request starts, -1 when it ends.
+ */
+void
+addRpcInFlight(Application& app, std::int64_t const delta)
+{
+    XRPL_METRIC_UPDOWN_ADD(
+        app, "rpc_in_flight_requests", "RPC requests currently executing", delta);
+}
+
+}  // namespace
+
 void
 PerfLogImp::rpcStart(std::string_view method, std::uint64_t const requestId)
 {
@@ -361,7 +380,7 @@ PerfLogImp::rpcStart(std::string_view method, std::uint64_t const requestId)
     {
         std::scoped_lock const lock(counters_.methodsMutex);
         // The key, not the method argument: what is stored has to outlive the call.
-        counters_.methods[requestId] = {counter->first, steady_clock::now()};
+        counters_.methods[requestId] = {counter->first, SteadyClock::now()};
     }
 
     // Record RPC start in OTel metrics pipeline. Recorded after the locks
@@ -373,11 +392,10 @@ PerfLogImp::rpcStart(std::string_view method, std::uint64_t const requestId)
         mr->recordRpcStarted(method);
 #endif
 
-    // A value that must be able to decrease (UpDownCounter), added at its
-    // call site with no MetricsRegistry member/init-line/method. Paired with
-    // the matching -1 in rpcEnd(). Runs on the same path as recordRpcStarted
-    // above, i.e. only after a methods-map entry exists for this request.
-    XRPL_METRIC_UPDOWN_ADD(app_, "rpc_in_flight_requests", "RPC requests currently executing", 1);
+    // Paired with the matching -1 in rpcEnd(). Runs on the same path as
+    // recordRpcStarted above, i.e. only after a methods-map entry exists for
+    // this request.
+    addRpcInFlight(app_, 1);
 }
 
 void
@@ -391,7 +409,7 @@ PerfLogImp::rpcEnd(std::string_view method, std::uint64_t const requestId, bool 
         return;
         // LCOV_EXCL_STOP
     }
-    steady_time_point startTime;
+    SteadyTimePoint startTime;
     {
         std::scoped_lock const lock(counters_.methodsMutex);
         auto const e = counters_.methods.find(requestId);
@@ -412,7 +430,7 @@ PerfLogImp::rpcEnd(std::string_view method, std::uint64_t const requestId, bool 
         }
     }
     auto const durationUs =
-        std::chrono::duration_cast<microseconds>(steady_clock::now() - startTime);
+        std::chrono::duration_cast<Microseconds>(SteadyClock::now() - startTime);
     {
         std::scoped_lock const lock(counter->second.mutex);
         if (finish)
@@ -446,7 +464,7 @@ PerfLogImp::rpcEnd(std::string_view method, std::uint64_t const requestId, bool 
     // Matching -1 for the +1 recorded in rpcStart(). Placed after the early
     // returns above so it runs only when this request's methods-map entry was
     // found (i.e. a +1 was recorded for it), keeping the in-flight count balanced.
-    XRPL_METRIC_UPDOWN_ADD(app_, "rpc_in_flight_requests", "RPC requests currently executing", -1);
+    addRpcInFlight(app_, -1);
 }
 
 void
@@ -482,8 +500,8 @@ void
 PerfLogImp::jobStart(
     JobType const type,
     std::string const& name,
-    microseconds dur,
-    steady_time_point startTime,
+    Microseconds dur,
+    SteadyTimePoint startTime,
     int instance)
 {
     auto counter = counters_.jq.find(type);
@@ -517,7 +535,7 @@ PerfLogImp::jobStart(
 }
 
 void
-PerfLogImp::jobFinish(JobType const type, std::string const& name, microseconds dur, int instance)
+PerfLogImp::jobFinish(JobType const type, std::string const& name, Microseconds dur, int instance)
 {
     auto counter = counters_.jq.find(type);
     if (counter == counters_.jq.end())
@@ -536,7 +554,7 @@ PerfLogImp::jobFinish(JobType const type, std::string const& name, microseconds 
     {
         std::scoped_lock const lock(counters_.jobsMutex);
         if (instance >= 0 && instance < counters_.jobs.size())
-            counters_.jobs[instance] = {JtInvalid, steady_time_point()};
+            counters_.jobs[instance] = {JtInvalid, SteadyTimePoint()};
     }
 
     // Record job finish in OTel metrics pipeline, after the locks above
@@ -552,7 +570,7 @@ PerfLogImp::resizeJobs(int const resize)
 {
     std::scoped_lock const lock(counters_.jobsMutex);
     if (resize > counters_.jobs.size())
-        counters_.jobs.resize(resize, {JtInvalid, steady_time_point()});
+        counters_.jobs.resize(resize, {JtInvalid, SteadyTimePoint()});
 }
 
 void

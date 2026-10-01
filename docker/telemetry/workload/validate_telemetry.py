@@ -9,8 +9,9 @@ Validation categories:
   1. Span validation     — Every required span type in expected_spans.json, each
                            carrying its required attributes
   2. Metric validation   — SpanMetrics, StatsD, and MetricsRegistry OTLP metrics
-                           are non-zero, and each group's required_labels reach
-                           Prometheus with non-empty values
+                           exist, each group's required_labels reach
+                           Prometheus with non-empty values, and each group's
+                           min_values reach their minimum
   3. Log-trace correlation — Loki logs contain trace_id/span_id fields
   4. Dashboard validation — Every dashboard uid in expected_metrics.json
                            provisions and loads (panel count only, not panel data)
@@ -32,12 +33,14 @@ Usage:
 import argparse
 import asyncio
 import collections
+import contextlib
 import fnmatch
 import json
 import logging
 import re
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -1495,7 +1498,7 @@ def _selector_metric_name(selector: str) -> str:
     """Strip any label matcher from a contract selector, leaving the name.
 
     Contract entries are usually bare names but some carry a matcher, e.g.
-    ``ledger_economy{metric="base_fee_xrp"}``. Reverse coverage compares family
+    ``ledger_economy{metric="base_fee_drops"}``. Reverse coverage compares family
     names, and Prometheus reports one ``__name__`` per family regardless of how
     many label combinations it has, so the matcher must come off first.
 
@@ -1660,12 +1663,13 @@ async def validate_metrics(
     prometheus_url: str,
     report: ValidationReport,
 ) -> None:
-    """Validate that expected metrics appear in Prometheus with non-zero values.
+    """Validate that expected metrics appear in Prometheus.
 
     Two kinds of check come out of expected_metrics.json: every name under a
     group's "metrics" must have at least one series, and every label under a
     group's "required_labels" must reach at least one of that group's series
-    with a non-empty value.
+    with a non-empty value. Neither reads a value; validate_metric_minimums()
+    checks each group's "min_values".
 
     Args:
         session:        aiohttp client session.
@@ -1752,7 +1756,7 @@ def _selector_with_label(metric_selector: str, label: str) -> str:
     entirely. ``!=""`` rejects both the absent and the blank case.
 
     Selectors in expected_metrics.json are usually bare names, but some already
-    carry a matcher (``ledger_economy{metric="base_fee_xrp"}``), so the matcher
+    carry a matcher (``ledger_economy{metric="base_fee_drops"}``), so the matcher
     is merged into an existing brace group rather than appended after it.
 
     Args:
@@ -2687,8 +2691,11 @@ async def _poll_instant_query(
     prometheus_url: str,
     query: str,
     deadline: float,
+    *,
+    sem: asyncio.Semaphore | None = None,
+    done: Callable[[list[dict[str, Any]]], bool] = bool,
 ) -> list[dict[str, Any]]:
-    """Run an instant query, retrying until it returns series or time runs out.
+    """Run an instant query, retrying until it is done or time runs out.
 
     A bounds check needs the sample value, so it cannot use the /api/v1/series
     endpoint the metric checks poll. An instant query answers from the last
@@ -2700,28 +2707,104 @@ async def _poll_instant_query(
         prometheus_url: Prometheus API base URL.
         query:          PromQL instant query.
         deadline:       Monotonic deadline. Never slept past.
+        sem:            Bounds how many requests reach Prometheus at once, for
+                        callers that poll many queries together. Held only
+                        across the request, never across the sleep.
+        done:           Says when the result is final. The default stops on
+                        the first non-empty result. A minimum-value check
+                        stops only once every series reaches the minimum,
+                        because a counter's last export can land late.
 
     Returns:
-        The result list, empty if nothing appeared before the deadline.
+        The last result list. It is empty, or not done, if the deadline passed
+        first.
     """
     while True:
-        async with session.get(
-            f"{prometheus_url}/api/v1/query", params={"query": query}
-        ) as resp:
-            data = await resp.json()
-            # An error is not "not yet": a bad query never becomes good, so
-            # retrying it only burns the whole deadline. Raise instead, and let
-            # the caller report it against the check's own name.
-            if data.get("status") != "success":
-                raise RuntimeError(
-                    "Prometheus rejected the query: "
-                    f"{data.get('error') or data.get('status')}"
-                )
-            results = data.get("data", {}).get("result", [])
+        async with sem if sem is not None else contextlib.nullcontext():
+            async with session.get(
+                f"{prometheus_url}/api/v1/query", params={"query": query}
+            ) as resp:
+                data = await resp.json()
+        # An error is not "not yet": a bad query never becomes good, so
+        # retrying it only burns the whole deadline. Raise instead, and let
+        # the caller report it against the check's own name.
+        if data.get("status") != "success":
+            raise RuntimeError(
+                "Prometheus rejected the query: "
+                f"{data.get('error') or data.get('status')}"
+            )
+        results = data.get("data", {}).get("result", [])
         remaining = deadline - time.monotonic()
-        if results or remaining <= 0:
+        if done(results) or remaining <= 0:
             return results
         await asyncio.sleep(min(METRIC_POLL_INTERVAL_SEC, remaining))
+
+
+def _bounds_check_result(
+    check_name: str,
+    category: str,
+    subject: str,
+    results: list[dict[str, Any]],
+    lo: float,
+    hi: float | None,
+    exclusive_lo: bool,
+) -> CheckResult:
+    """Grade every series of one instant query against a range.
+
+    Each series is graded on its own and each one out of range is named, so
+    one node out of range cannot hide behind the others.
+
+    Args:
+        check_name:   Report check name.
+        category:     Report category.
+        subject:      What the message calls the thing checked.
+        results:      The instant query's result list.
+        lo:           Lower bound.
+        hi:           Upper bound, or None when unbounded above.
+        exclusive_lo: True when the lower bound is exclusive.
+
+    Returns:
+        A CheckResult that fails when there is no series or any series is out
+        of range.
+    """
+    if not results:
+        return CheckResult(
+            name=check_name,
+            category=category,
+            passed=False,
+            message=(
+                f"{subject}: no data returned from Prometheus after "
+                f"{METRIC_POLL_TIMEOUT_SEC:g}s"
+            ),
+        )
+
+    values: list[float] = []
+    offenders: list[str] = []
+    for series in results:
+        value = float(series["value"][1])
+        values.append(value)
+        if not _value_in_bounds(value, lo, hi, exclusive_lo):
+            offenders.append(f"{_series_label(series)} value {value}")
+
+    bound_desc = _bounds_description(lo, hi, exclusive_lo)
+    return CheckResult(
+        name=check_name,
+        category=category,
+        passed=not offenders,
+        message=(
+            f"{subject}: all {len(values)} series within bounds ({bound_desc})"
+            if not offenders
+            else f"{subject}: {len(offenders)} of {len(values)} series out of "
+            f"bounds (expected {bound_desc}): " + "; ".join(offenders)
+        ),
+        details={
+            "values": values,
+            "series_count": len(values),
+            "out_of_bounds": offenders,
+            "lo": lo,
+            "hi": hi,
+        },
+    )
 
 
 async def _check_parity_value(
@@ -2751,44 +2834,8 @@ async def _check_parity_value(
         results = await _poll_instant_query(
             session, prometheus_url, entry["query"], deadline
         )
-
-        if not results:
-            return CheckResult(
-                name=check_name,
-                category="parity",
-                passed=False,
-                message=(
-                    f"{name}: no data returned from Prometheus after "
-                    f"{METRIC_POLL_TIMEOUT_SEC:g}s"
-                ),
-            )
-
-        values: list[float] = []
-        offenders: list[str] = []
-        for series in results:
-            value = float(series["value"][1])
-            values.append(value)
-            if not _value_in_bounds(value, lo, hi, exclusive_lo):
-                offenders.append(f"{_series_label(series)} value {value}")
-
-        bound_desc = _bounds_description(lo, hi, exclusive_lo)
-        return CheckResult(
-            name=check_name,
-            category="parity",
-            passed=not offenders,
-            message=(
-                f"{name}: all {len(values)} series within bounds ({bound_desc})"
-                if not offenders
-                else f"{name}: {len(offenders)} of {len(values)} series out of "
-                f"bounds (expected {bound_desc}): " + "; ".join(offenders)
-            ),
-            details={
-                "values": values,
-                "series_count": len(values),
-                "out_of_bounds": offenders,
-                "lo": lo,
-                "hi": hi,
-            },
+        return _bounds_check_result(
+            check_name, "parity", name, results, lo, hi, exclusive_lo
         )
     except Exception as exc:
         return CheckResult(
@@ -2824,6 +2871,255 @@ async def validate_parity_value_sanity(
 
 
 # ---------------------------------------------------------------------------
+# Metric minimum values (Prometheus API)
+# ---------------------------------------------------------------------------
+#
+# A counter that starts at 0 has a series from startup, so its existence check
+# passes whether or not its event ever happened. A group's "min_values" key
+# checks the value instead. Each entry names a selector from the same group's
+# "metrics" list and a minimum. The check sums the selector, so with a minimum
+# of 1 it asks what an existence check asks of a counter created by its first
+# event: did some node record a matching event? With "by", the sum is taken per
+# value of that label, and every value must reach the minimum.
+
+
+# The only keys a "min_values" entry may carry.
+_MIN_VALUE_KEYS = frozenset({"metric", "min", "by"})
+
+
+@dataclass
+class _NotAList:
+    """A group's "min_values" value that is not a list, kept whole.
+
+    Iterating it would split a string into characters or an object into its
+    keys, so it becomes one target that fails by name instead.
+    """
+
+    value: Any
+
+
+def _min_value_query(entry: dict[str, Any]) -> str:
+    """Build the PromQL instant query for one "min_values" entry.
+
+    Args:
+        entry: One "min_values" entry. "metric" is a selector from the group's
+               "metrics" list. "by", when present, names the label to sum by.
+
+    Returns:
+        ``sum(<metric>)``, or ``sum by (<by>) (<metric>)``.
+    """
+    selector = entry["metric"]
+    by = entry.get("by")
+    return f"sum by ({by}) ({selector})" if by else f"sum({selector})"
+
+
+def _min_value_targets(
+    expected: dict[str, Any],
+) -> list[tuple[str, Any, list[str]]]:
+    """Flatten every group's "min_values" into check targets.
+
+    Every group that is an object is read, whichever validator owns its
+    existence checks. No other walker reads this key, so each entry is checked
+    exactly once. A "min_values" value that is not a list becomes one
+    _NotAList target.
+
+    Args:
+        expected: The parsed expected_metrics.json contract.
+
+    Returns:
+        One (group, entry, that group's "metrics" selectors) tuple per entry,
+        in contract order. An entry is whatever the file holds; it is only
+        checked later, by _min_value_entry_error().
+    """
+    targets: list[tuple[str, Any, list[str]]] = []
+    for group_key, group in expected.items():
+        if not isinstance(group, dict):
+            continue
+        entries = group.get("min_values", [])
+        selectors = group.get("metrics", [])
+        if isinstance(entries, list):
+            targets.extend((group_key, entry, selectors) for entry in entries)
+        else:
+            targets.append((group_key, _NotAList(entries), selectors))
+    return targets
+
+
+def _min_value_entry_error(entry: Any, selectors: list[str]) -> str | None:
+    """Say what is wrong with one "min_values" entry, if anything.
+
+    The validator and the contract test apply this one rule.
+
+    Args:
+        entry:     One entry from _min_value_targets().
+        selectors: The same group's "metrics" selectors.
+
+    Returns:
+        None for a valid entry, else a message naming the problem.
+    """
+    if isinstance(entry, _NotAList):
+        return f"min_values is not a list: {entry.value!r}"
+    if not isinstance(entry, dict):
+        return f"entry is not an object: {entry!r}"
+    # Any other key is a typo the check would ignore: "By" instead of "by"
+    # leaves the entry summing cluster-wide.
+    unknown = sorted(str(key) for key in entry if key not in _MIN_VALUE_KEYS)
+    if unknown:
+        return f"entry has keys other than metric, min and by: {unknown}"
+    metric = entry.get("metric")
+    if not isinstance(metric, str) or not metric:
+        return f"entry needs a non-empty string metric: {entry!r}"
+    minimum = entry.get("min")
+    # bool is an int subclass, so a JSON true would otherwise pass as 1. A
+    # minimum of 0 or less can never fail, so it is refused as well.
+    if (
+        isinstance(minimum, bool)
+        or not isinstance(minimum, (int, float))
+        or not minimum > 0
+    ):
+        return f"entry needs a number min above 0: {entry!r}"
+    by = entry.get("by")
+    if "by" in entry and (not isinstance(by, str) or not by):
+        # An empty by would build sum(<metric>): a cluster-wide check under a
+        # per-node name.
+        return f"entry needs by to be a non-empty string when set: {entry!r}"
+    if metric not in selectors:
+        # Existence and reverse coverage both read "metrics". An entry for an
+        # unlisted name would be the only check on it, and could drift unseen.
+        return f"{metric} is not in this group's metrics"
+    return None
+
+
+def _min_value_result(
+    check_name: str,
+    entry: dict[str, Any],
+    query: str,
+    results: list[dict[str, Any]],
+) -> CheckResult:
+    """Grade one reading of a valid "min_values" entry.
+
+    With "by", every series must carry that label. A series without it means
+    the sum was not taken per value of the label: the label is misspelled, or
+    a node exports without it. Then every series must reach the minimum.
+
+    Args:
+        check_name: Report check name.
+        entry:      A valid "min_values" entry.
+        query:      The query that produced the results.
+        results:    The instant query's result list.
+
+    Returns:
+        The CheckResult for this reading.
+    """
+    by = entry.get("by")
+    if by:
+        unlabelled = [s for s in results if not s.get("metric", {}).get(by)]
+        if unlabelled:
+            return CheckResult(
+                name=check_name,
+                category="metric",
+                passed=False,
+                message=(
+                    f"{query}: {len(unlabelled)} of {len(results)} series have "
+                    f"no {by} label"
+                ),
+            )
+    return _bounds_check_result(
+        check_name,
+        "metric",
+        query,
+        results,
+        lo=entry["min"],
+        hi=None,
+        exclusive_lo=False,
+    )
+
+
+async def _check_min_value(
+    session: aiohttp.ClientSession,
+    prometheus_url: str,
+    target: tuple[str, Any, list[str]],
+    deadline: float,
+    sem: asyncio.Semaphore,
+) -> CheckResult:
+    """Check one "min_values" entry.
+
+    Args:
+        session:        aiohttp client session.
+        prometheus_url: Prometheus API base URL.
+        target:         One (group, entry, group selectors) tuple from
+                        _min_value_targets().
+        deadline:       Monotonic deadline shared by every entry.
+        sem:            Bounds how many requests reach Prometheus at once.
+
+    Returns:
+        The CheckResult. It fails, without querying, on any entry
+        _min_value_entry_error() rejects. After the query it fails when no
+        series comes back, when a per-node sum returns a series without its
+        by label, or when any series is below the minimum.
+    """
+    group, entry, selectors = target
+    metric = entry.get("metric") if isinstance(entry, dict) else None
+    shown = metric if isinstance(metric, str) and metric else "<malformed>"
+    check_name = f"metric.{group}.min.{shown}"
+
+    def failed(message: str) -> CheckResult:
+        return CheckResult(
+            name=check_name, category="metric", passed=False, message=message
+        )
+
+    error = _min_value_entry_error(entry, selectors)
+    if error is not None:
+        return failed(f"{group}.min_values: {error}")
+
+    query = _min_value_query(entry)
+    try:
+        results = await _poll_instant_query(
+            session,
+            prometheus_url,
+            query,
+            deadline,
+            sem=sem,
+            done=lambda r: _min_value_result(check_name, entry, query, r).passed,
+        )
+    except Exception as exc:
+        return failed(f"{query}: min_values check failed ({exc})")
+    return _min_value_result(check_name, entry, query, results)
+
+
+async def validate_metric_minimums(
+    session: aiohttp.ClientSession,
+    prometheus_url: str,
+    report: ValidationReport,
+) -> None:
+    """Check every "min_values" entry in expected_metrics.json.
+
+    All entries poll concurrently against ONE shared deadline, for the reason
+    validate_metrics() gives: deadlines of their own would add up.
+
+    Args:
+        session:        aiohttp client session.
+        prometheus_url: Prometheus API base URL.
+        report:         ValidationReport to accumulate results.
+    """
+    logger.info("--- Metric Minimum Values (Prometheus) ---")
+
+    with open(EXPECTED_METRICS_FILE) as f:
+        expected = json.load(f)
+
+    deadline = time.monotonic() + METRIC_POLL_TIMEOUT_SEC
+    sem = asyncio.Semaphore(METRIC_POLL_CONCURRENCY)
+    checks = await asyncio.gather(
+        *(
+            _check_min_value(session, prometheus_url, target, deadline, sem)
+            for target in _min_value_targets(expected)
+        )
+    )
+    # gather keeps input order, so the report follows the contract file.
+    for check in checks:
+        report.add(check)
+
+
+# ---------------------------------------------------------------------------
 # Main validation orchestrator
 # ---------------------------------------------------------------------------
 
@@ -2856,6 +3152,7 @@ async def run_validation(
         await validate_consensus_round_shape(session, tempo_url, report)
         await validate_span_durations(session, tempo_url, report)
         await validate_metrics(session, prometheus_url, report)
+        await validate_metric_minimums(session, prometheus_url, report)
         if not skip_loki:
             await validate_log_trace_correlation(session, loki_url, tempo_url, report)
         await validate_dashboards(session, grafana_url, report)

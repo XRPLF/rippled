@@ -115,6 +115,7 @@ find_package(secp256k1 REQUIRED)
 find_package(SOCI REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(xxHash REQUIRED)
+find_package(xrpl-rpc-spec REQUIRED)
 
 target_link_libraries(
     xrpl_libs
@@ -149,6 +150,10 @@ endif()
 # There is no CMake option. The one switch is `conan install -o telemetry=`,
 # which decides whether opentelemetry-cpp is fetched and sets the variable read
 # below through the generated toolchain.
+#
+# The define is set for every target in this project, and also PUBLIC on
+# xrpl.libxrpl.telemetry (cmake/XrplCore.cmake), so a parent project that
+# adds this one with add_subdirectory() and links that module gets it too.
 #
 # -DXRPL_ENABLE_TELEMETRY=OFF turns nothing off: that name is only a compile
 # definition added below, so CMake lists it as an unused variable at the end of
@@ -194,6 +199,7 @@ include(XrplPackaging)
 if(tests)
     include(CTest)
     add_subdirectory(src/tests/libxrpl)
+    add_subdirectory(src/tests/xrpld)
 endif()
 
 if(benchmark)

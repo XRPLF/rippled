@@ -325,6 +325,15 @@ public:
      * Add a new transaction to the open ledger, hold it in the queue,
      * or reject it.
      *
+     * @param app Application the transaction is applied for.
+     * @param view View to apply to: the open ledger, or a copy for a dry run.
+     * @param tx Transaction to apply.
+     * @param flags Apply flags, such as TapUnlimited for an admin submit.
+     * @param j Journal for this call's log lines.
+     * @param parentCtx Context of the caller's tx.process span, used as the
+     *        parent of the txq.enqueue span. Null, or an invalid context,
+     *        makes that span inherit the span active on this thread, or be a
+     *        root if there is none.
      * @return A pair with the `TER` and a `bool` indicating
      *         whether or not the transaction was applied to
      *         the open ledger. If the transaction is queued,
@@ -372,7 +381,7 @@ public:
      * Return the next sequence that would go in the TxQ for an account.
      */
     SeqProxy
-    nextQueuableSeq(SLE::const_ref sleAccount) const;
+    nextQueuableSeq(SLE::ConstRef sleAccount) const;
 
     /**
      * Returns fee metrics in reference fee level units.
@@ -430,7 +439,7 @@ public:
 private:
     // Implementation for nextQueuableSeq().  The passed lock must be held.
     SeqProxy
-    nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&) const;
+    nextQueuableSeqImpl(SLE::ConstRef sleAccount, std::scoped_lock<std::mutex> const&) const;
 
     /**
      * Track and use the fee escalation metrics of the
@@ -951,7 +960,7 @@ private:
         STTx const&,
         ApplyFlags const,
         OpenView const&,
-        SLE::const_ref sleAccount,
+        SLE::ConstRef sleAccount,
         AccountMap::iterator const&,
         std::optional<TxQAccount::TxMap::iterator> const&,
         std::scoped_lock<std::mutex> const& lock);

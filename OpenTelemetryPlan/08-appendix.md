@@ -170,7 +170,7 @@ This guide maps Phase 9–11 content to its location across the documentation.
 | New classes: `MetricsRegistry`, `AppMetricGauges` | `include/xrpl/telemetry/MetricsRegistry.h` + `src/libxrpl/telemetry/MetricsRegistry.cpp` (pipeline, counters, histograms) and `src/xrpld/telemetry/AppMetricGauges.h/.cpp` (observable gauges) — **shipped** |
 | New dashboards (4)                                | `fee-market`, `job-queue`, `peer-quality`, `validator-health` — **shipped**                                                                                                                                  |
 | Updated dashboards (2)                            | `node-health`, `rpc-performance`                                                                                                                                                                             |
-| Provisioned alert rules                           | `docker/telemetry/grafana/provisioning/alerting/rules.yaml` — 13 rules in 5 groups ([07 §7.6.2](./07-observability-backends.md))                                                                             |
+| Provisioned alert rules                           | `docker/telemetry/grafana/provisioning/alerting/rules.yaml` — 14 rules in 5 groups ([07 §7.6.2](./07-observability-backends.md))                                                                             |
 
 > **Task numbering**: `Phase9_taskList.md` carries 18 `## Task 9.x` headings —
 > 9.1 through 9.17 plus the inserted 9.7a (`push_metrics.py` parity). The "10

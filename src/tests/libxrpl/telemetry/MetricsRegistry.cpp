@@ -1,9 +1,9 @@
 /**
  * GTest unit tests for MetricsRegistry.
  *
- *  Five groups. The first four drive the pure static helpers, which are
+ *  Six groups. The first four drive the pure static helpers, which are
  *  constexpr inline in the header and so need nothing on the link line. The
- *  fifth drives a real registry object.
+ *  last two drive a real registry object.
  *
  *  1. sanitiseHandler() — the `handler` label sanitiser.
  *
@@ -26,6 +26,10 @@
  *     with telemetry on these tests drive a real OTel pipeline and with it
  *     off they drive the no-op stubs. An assertion that holds in only one
  *     build carries its own #ifdef and says which build it pins.
+ *
+ *  6. The zero start. The constructor puts every parity counter it creates
+ *     at 0 for each label value, so a later event shows under increase().
+ *     These tests read the exported points back, so they need telemetry on.
  *
  * What group 5 pins about stop(), and what it does not:
  *
@@ -742,6 +746,14 @@ TEST(MetricsRegistryDaysUntil, the_sentinel_is_the_one_the_validator_list_sets)
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/telemetry/ValidationTracker.h>
+
+#include <helpers/CollectedCounters.h>
+#include <helpers/ManualMetricReader.h>
+
+#include <functional>
+#include <map>
+#include <memory>
+#include <span>
 #endif
 
 namespace {
@@ -749,11 +761,11 @@ namespace {
 /**
  * OTLP/HTTP endpoint every registry below is given.
  *
- * Port 1 has no listener, so the one export attempt a test can provoke gets an
- * immediate connection refusal. The reader's interval is 10 s, so no periodic
- * export fires inside a test; stop() is what exports, because Shutdown()
- * performs a final collect-and-export drain. A routable-but-dead address would
- * make every test that calls stop() wait out the 5 s export timeout.
+ * Port 1 has no listener, so every export attempt gets an immediate connection
+ * refusal. The reader collects once when it starts and then every 10 s. A
+ * routable-but-dead address would leave each export waiting for the
+ * exporter's request timeout, and stop() joins the reader thread, so the test
+ * would wait with it.
  */
 constexpr std::string_view kTestEndpoint{"http://127.0.0.1:1/v1/metrics"};
 
@@ -782,8 +794,7 @@ constexpr std::string_view kTestNodeId{"metrics-registry-test-node"};
  * trip it again the next time a field is added to Options.
  *
  * networkId stays 0 and useTls false, so the three TLS paths stay empty: the
- * exporter reads them only over TLS. No test asserts on a resource attribute,
- * because nothing here reads exported points back.
+ * exporter reads them only over TLS. No test asserts on a resource attribute.
  */
 MetricsRegistry::Options
 testOptions()
@@ -1085,6 +1096,299 @@ TEST_F(MetricsRegistryTest, validation_tracker_is_owned_per_registry)
     // merged agreement figure.
     EXPECT_EQ(first.getValidationTracker().totalValidationsSent(), 1u);
     EXPECT_EQ(second.getValidationTracker().totalValidationsSent(), 0u);
+}
+
+// ---------------------------------------------------------------------------
+// 6. The zero start.
+//
+// A Prometheus series born by an event cannot show that event: increase()
+// needs an earlier sample to count from. The constructor therefore puts every
+// parity counter it creates at 0 for each label value. These tests hand in a
+// reader through Options::extraReader and read those points back.
+//
+// Instrument names and the `reason` key are written out, because they are what
+// the dashboards query: a rename should fail here. The label values come from
+// the constants the callers pass, never from a copy of their spelling.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+using xrpl::test::collectCounters;
+using xrpl::test::CollectedCounter;
+using xrpl::test::CounterLabels;
+using xrpl::test::ManualMetricReader;
+
+/**
+ * The label key the dashboards filter the reason counters on.
+ */
+constexpr std::string_view kReasonKey{"reason"};
+
+/**
+ * Count one closed ledger the way RCLConsensus does.
+ *
+ * RCLConsensus counts through XRPL_METRIC_COUNTER_INC, which creates its own
+ * instrument from the shared name and description on the registry's meter.
+ * This creates one the same way, so a test sees whether it lands on the
+ * series the registry started. It does not call the macro: the macro keeps
+ * its instrument in a function-local static, which would outlive this test's
+ * registry.
+ *
+ * @param registry The registry whose meter the instrument is created on.
+ */
+void
+recordLedgerClosed(MetricsRegistry& registry)
+{
+    registry.meter()
+        ->CreateUInt64Counter(
+            xrpl::telemetry::kLedgersClosedTotal, xrpl::telemetry::kLedgersClosedTotalDesc)
+        ->Add(1);
+}
+
+/**
+ * A parity counter with no labels.
+ *
+ * @note A plain aggregate. The table below is constexpr, so any thread may
+ * read it.
+ */
+struct UnlabelledCounter
+{
+    /**
+     * Instrument name.
+     */
+    std::string_view name;
+
+    /**
+     * Records one event the way production does.
+     */
+    void (*record)(MetricsRegistry&) = nullptr;
+};
+
+/**
+ * A parity counter labelled by `reason`.
+ *
+ * @note A plain aggregate. The table below is constexpr, so any thread may
+ * read it.
+ */
+struct ReasonCounter
+{
+    /**
+     * Instrument name.
+     */
+    std::string_view name;
+
+    /**
+     * The registry method that counts one event for a reason.
+     */
+    void (MetricsRegistry::*increment)(std::string_view) = nullptr;
+
+    /**
+     * Every reason the callers record: the constants they pass.
+     */
+    std::span<std::string_view const> reasons;
+};
+
+/**
+ * The unlabelled parity counters the constructor creates.
+ */
+constexpr std::array kUnlabelledCounters{
+    UnlabelledCounter{.name = "ledgers_closed_total", .record = recordLedgerClosed},
+    UnlabelledCounter{
+        .name = "validations_sent_total",
+        .record = [](MetricsRegistry& registry) { registry.incrementValidationsSent(); }},
+    UnlabelledCounter{
+        .name = "validations_checked_total",
+        .record = [](MetricsRegistry& registry) { registry.incrementValidationsChecked(); }},
+    UnlabelledCounter{
+        .name = "state_changes_total",
+        .record = [](MetricsRegistry& registry) { registry.incrementStateChanges(); }},
+    UnlabelledCounter{
+        .name = "txq_expired_total",
+        .record = [](MetricsRegistry& registry) { registry.incrementTxqExpired(); }},
+};
+
+/**
+ * The parity counters labelled by `reason` that the constructor creates.
+ */
+constexpr std::array kReasonCounters{
+    ReasonCounter{
+        .name = "ledger_hash_mismatch_total",
+        .increment = &MetricsRegistry::incrementLedgerHistoryMismatch,
+        .reasons = xrpl::telemetry::ledger_mismatch_reason::all},
+    ReasonCounter{
+        .name = "txq_dropped_total",
+        .increment = &MetricsRegistry::incrementTxqDropped,
+        .reasons = xrpl::telemetry::txq_drop_reason::all},
+};
+
+/**
+ * True when @p values holds no value twice.
+ *
+ * A value listed twice in an `all` list usually means another was left out.
+ * The tests below cannot see that, because they read the same list.
+ *
+ * @param values A copy of one `all` list.
+ * @return Whether every entry is distinct.
+ */
+template <std::size_t N>
+consteval bool
+allDistinct(std::array<std::string_view, N> values)
+{
+    std::ranges::sort(values);
+    return std::ranges::adjacent_find(values) == values.end();
+}
+
+static_assert(allDistinct(xrpl::telemetry::ledger_mismatch_reason::all));
+static_assert(allDistinct(xrpl::telemetry::txq_drop_reason::all));
+
+/**
+ * The labels of one point on a reason counter.
+ *
+ * @param reason The label value.
+ * @return The one-label set {reason = @p reason}.
+ */
+CounterLabels
+reasonLabels(std::string_view reason)
+{
+    return {{std::string{kReasonKey}, std::string{reason}}};
+}
+
+/**
+ * What one collection must show before any event: each counter in the two
+ * tables on one stream, at 0 for each label value, and no other instrument.
+ *
+ * @return The expected counters, by instrument name.
+ */
+std::map<std::string, CollectedCounter>
+expectedAtZero()
+{
+    std::map<std::string, CollectedCounter> expected;
+    for (auto const& counter : kUnlabelledCounters)
+    {
+        expected[std::string{counter.name}] =
+            CollectedCounter{.streams = 1, .points = {{CounterLabels{}, 0}}};
+    }
+
+    for (auto const& counter : kReasonCounters)
+    {
+        auto& entry = expected[std::string{counter.name}];
+        entry.streams = 1;
+        for (auto const reason : counter.reasons)
+            entry.points[reasonLabels(reason)] = 0;
+    }
+    return expected;
+}
+
+/**
+ * testOptions() with @p reader attached as the extra reader.
+ *
+ * @param reader The reader the test collects through.
+ * @return Options for a registry the test can read back.
+ */
+MetricsRegistry::Options
+optionsWithReader(std::shared_ptr<ManualMetricReader> reader)
+{
+    auto options = testOptions();
+    options.extraReader = std::move(reader);
+    return options;
+}
+
+/**
+ * Fixture for the zero-start tests: an enabled registry built with a reader
+ * the test collects through.
+ *
+ * The reader is attached before the constructor creates any instrument, so it
+ * sees each point the constructor records.
+ *
+ * @code
+ * // Primary use: read back what the constructor recorded.
+ * auto const counters = collectCounters(*reader_);
+ *
+ * // Edge case: stop() destroys the pipeline the reader reads from, so no
+ * // collection may follow it.
+ * registry_.stop();
+ * @endcode
+ *
+ * @note Not thread-safe: a test uses registry_ and reader_ from the gtest
+ * thread only. The registry's own OTLP reader collects on its own thread,
+ * and the SDK serialises those collections with reader_'s.
+ */
+class MetricsRegistryZeroStart : public MetricsRegistryTest
+{
+protected:
+    /**
+     * Collects on demand, on the test thread.
+     */
+    std::shared_ptr<ManualMetricReader> reader_ = std::make_shared<ManualMetricReader>();
+
+    /**
+     * The registry under test. Declared after reader_, so it is built after
+     * it and destroyed before it.
+     */
+    MetricsRegistry registry_{true, j_, optionsWithReader(reader_)};
+};
+
+}  // namespace
+
+TEST_F(MetricsRegistryZeroStart, parity_counters_export_zero_before_any_event)
+{
+    // Setup: the pipeline exists, so a missing point below is the zero start's
+    // doing and not the fixture's.
+    ASSERT_EQ(registry_.hasPipeline(), true);
+
+    // One comparison pins it all: each parity counter the constructor creates
+    // is present, on one stream, at 0 for every value its callers pass, and no
+    // other instrument has a point. The rpc and job counters are absent
+    // because they are not started.
+    //
+    // Mutation: delete the Add(0) calls from initSyncInstruments(). No
+    // instrument then has a point, so the collection comes back empty.
+    EXPECT_EQ(collectCounters(*reader_), expectedAtZero());
+}
+
+TEST_F(MetricsRegistryZeroStart, each_event_reads_one_on_its_started_series)
+{
+    auto expected = expectedAtZero();
+
+    // Setup: the zeros are there first, so each event below lands on a series
+    // that already exists instead of creating one.
+    ASSERT_EQ(collectCounters(*reader_), expected);
+
+    for (auto const& counter : kUnlabelledCounters)
+    {
+        counter.record(registry_);
+        expected[std::string{counter.name}].points[CounterLabels{}] = 1;
+    }
+    auto const afterUnlabelled = collectCounters(*reader_);
+    EXPECT_EQ(afterUnlabelled, expected) << "after one event on each unlabelled counter";
+
+    // The ledgers-closed event came through an instrument of its own, made
+    // from the shared constants the way RCLConsensus makes it. One stream
+    // reading 1 shows that instrument shares the series the registry started.
+    //
+    // Mutation: create the registry's counter with a description other than
+    // kLedgersClosedTotalDesc. The event then lands on a second stream.
+    ASSERT_TRUE(afterUnlabelled.contains("ledgers_closed_total"));
+    auto const& ledgersClosed = afterUnlabelled.at("ledgers_closed_total");
+    EXPECT_EQ(ledgersClosed.streams, 1u);
+    EXPECT_EQ(ledgersClosed.points, (std::map<CounterLabels, std::int64_t>{{CounterLabels{}, 1}}));
+
+    // One reason at a time, so each step shows that reason's series move to 1
+    // while the reasons not yet recorded stay at 0.
+    //
+    // Mutation: build a different label set in the increment path than in the
+    // startup path. The event then adds a second point instead of moving the
+    // first. Starting the counter through a second instrument with its own
+    // description shows up as streams == 2 instead.
+    for (auto const& counter : kReasonCounters)
+    {
+        for (auto const reason : counter.reasons)
+        {
+            std::invoke(counter.increment, registry_, reason);
+            expected[std::string{counter.name}].points[reasonLabels(reason)] = 1;
+            EXPECT_EQ(collectCounters(*reader_), expected)
+                << counter.name << " after one event for " << reason;
+        }
+    }
 }
 
 #endif  // XRPL_ENABLE_TELEMETRY

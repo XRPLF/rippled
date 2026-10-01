@@ -194,7 +194,7 @@ exists in this repo.** What ships is below.
 ```mermaid
 flowchart LR
     subgraph head["Head Sampling (Node) — fixed"]
-        hs["ParentBased(TraceIdRatio 1.0)<br/>samplingRatio is static constexpr<br/>no config key exists<br/>100% of spans exported"]
+        hs["TraceIdRatio 1.0 for root and remote-parent spans<br/>local-parent spans follow the parent<br/>samplingRatio is static constexpr<br/>no config key exists<br/>100% of spans exported"]
     end
 
     subgraph tail["Tail Sampling (Collector) — opt-in"]
@@ -221,8 +221,8 @@ flowchart LR
   `TelemetryConfig.cpp:139` records that there is nothing to parse. This is
   intentional: a per-node ratio would let different nodes make divergent
   keep/drop decisions for the same distributed trace, producing broken/partial
-  traces. The ratio sampler is wrapped in a `ParentBased` sampler so spans
-  inheriting a remote parent honour the upstream decision.
+  traces. A span inheriting a remote parent is decided by the same ratio
+  sampler, not by the peer's sampled flag.
 - **Tail Sampling (Collector)** — the base config
   (`docker/telemetry/otel-collector-config.yaml`) has **no** `tail_sampling`
   processor, so the local and CI stacks keep 100% of traces. The only shipped
@@ -302,7 +302,7 @@ the process be killed and losing every buffered trace.
 > shipped, and described three hypothetical boards (`xrpld-consensus-health`,
 > `xrpld-node-overview`, `xrpld-unified`) and three TraceQL alert rules in a
 > group called `xrpld-tracing-alerts`. **None of those uids or rule names exist
-> anywhere in the repo.** What actually ships is 15 dashboards and 13 alert
+> anywhere in the repo.** What actually ships is 15 dashboards and 14 alert
 > rules, and both are Prometheus-first rather than TraceQL-first. The
 > authoritative references are:
 >
@@ -338,25 +338,24 @@ used for trace _drill-down_; the time series come from span metrics.
 
 ### 7.6.2 Shipped Alert Rules
 
-`docker/telemetry/grafana/provisioning/alerting/rules.yaml` provisions **13
+`docker/telemetry/grafana/provisioning/alerting/rules.yaml` provisions **14
 rules in 5 groups**, all in folder `xrpld`, all `interval: 1m`, and all
 **PromQL** — there are zero TraceQL alert rules.
 
-| Group              | Rules                                                                       |
-| ------------------ | --------------------------------------------------------------------------- |
-| `xrpld-consensus`  | `LedgerHistoryMismatch`, `LedgerCloseStalled`, `ValidatedLedgerStale`       |
-| `xrpld-validator`  | `ValidationsMissed`, `ValidationsNotChecked`                                |
-| `xrpld-jobqueue`   | `JobQueueTxOverflow`, `JobQueueLatencyHigh`, `NodeStoreIOLatencyHigh`       |
-| `xrpld-node-state` | `NodeStateFlapping`, `NodeNotFull`                                          |
-| `xrpld-overlay`    | `ManifestJobQueueConvoy`, `ManifestFloodInbound`, `PeerResourceDisconnects` |
+| Group              | Rules                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------- |
+| `xrpld-consensus`  | `LedgerHistoryMismatch`, `LedgerCloseStalled`, `ValidatedLedgerStale`                                   |
+| `xrpld-validator`  | `ValidationsMissed`, `ValidationsNotChecked`                                                            |
+| `xrpld-jobqueue`   | `JobQueueTxOverflow`, `JobQueueLatencyHigh`, `IOEventLoopLatencyHigh`                                   |
+| `xrpld-node-state` | `NodeStateFlapping`, `NodeNotFull`                                                                      |
+| `xrpld-overlay`    | `ManifestJobQueueConvoy`, `ManifestFloodInbound`, `PeerResourceDisconnects`, `UntrustedValidationFlood` |
 
-> Two placements are worth noting because they are not what the rule name
-> suggests. `ValidatedLedgerStale` is grouped under `xrpld-consensus`, not
+> Two placements are worth noting because they are not what the rule names
+> suggest. `ValidatedLedgerStale` is grouped under `xrpld-consensus`, not
 > `xrpld-validator` — it fires on any node whose validated-ledger sequence stops
 > advancing, which is a chain-progress symptom rather than a validator-identity
-> one. `NodeStoreIOLatencyHigh` is grouped under `xrpld-jobqueue`, not
-> `xrpld-node-state` — slow NodeStore I/O manifests first as job-queue backlog,
-> so grouping it there keeps the cause and its effect in one notification.
+> one. `IOEventLoopLatencyHigh` sits in `xrpld-jobqueue` because, like
+> `JobQueueLatencyHigh`, it measures how long queued work waits before it runs.
 
 Thresholds, measured baselines and response procedures are in the runbook's
 alert catalogue, not here.
@@ -395,7 +394,7 @@ sum(rate(span_calls_total{service_name="xrpld", span_name=~"rpc.command.*"}[5m])
 > (`avg(duration)`, `rate()`) need Tempo 2.3+ with TraceQL metrics enabled, are
 > slower, and are distorted by any tail sampling in the path (§7.4.2). Span
 > metrics are computed pre-sampling and cost nothing extra to query. That is
-> why all 13 shipped rules are PromQL.
+> why all 14 shipped rules are PromQL.
 
 ---
 

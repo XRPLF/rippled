@@ -382,7 +382,7 @@ readTelemetrySetup(Config const& config, PublicKey const& nodeKey, beast::Journa
     try
     {
         return telemetry::makeTelemetrySetup(
-            config.section("telemetry"),
+            config.section(Sections::kTelemetry),
             toBase58(TokenType::NodePublic, nodeKey),
             build_info::getVersionString(),
             config.networkId);
@@ -706,7 +706,7 @@ run(int argc, char** argv)
             config->startUp = StartUpType::Replay;
             if (vm.contains("trap_tx_hash"))
             {
-                uint256 tmp = {};
+                UInt256 tmp = {};
                 auto hash = vm["trap_tx_hash"].as<std::string>();
                 if (tmp.parseHex(hash))
                 {

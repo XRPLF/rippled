@@ -105,7 +105,7 @@ RCLConsensus::RCLConsensus(
     LedgerMaster& ledgerMaster,
     LocalTxs& localTxs,
     InboundTransactions& inboundTransactions,
-    Consensus<Adaptor>::clock_type const& clock,
+    Consensus<Adaptor>::ClockType const& clock,
     ValidatorKeys const& validatorKeys,
     beast::Journal journal)
     : adaptor_(
@@ -227,7 +227,7 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
         msg.set_rawtransaction(slice.data(), slice.size());
         msg.set_status(protocol::tsNEW);
         msg.set_receivetimestamp(app_.getTimeKeeper().now().time_since_epoch().count());
-        static std::set<Peer::id_t> const kSkip{};
+        static std::set<Peer::ID> const kSkip{};
         app_.getOverlay().relay(tx.id(), msg, kSkip);
     }
     else
@@ -289,8 +289,8 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
     //
     // Injection writes only when the span is live, so a node with telemetry
     // compiled out, disabled by config, or simply not tracing this round sends
-    // no TraceContext at all rather than an empty one that makes every peer
-    // take its has_trace_context() branch for nothing.
+    // no TraceContext at all rather than an empty one that every peer would
+    // parse only to drop.
     telemetry::injectSpanContext(span, prop);
 
     app_.getOverlay().broadcast(prop);
@@ -331,14 +331,14 @@ RCLConsensus::Adaptor::proposersFinished(RCLCxLedger const& ledger, LedgerHash c
     return vals.getNodesAfter(RCLValidatedLedger(ledger.ledger, vals.adaptor().journal()), h);
 }
 
-uint256
+UInt256
 RCLConsensus::Adaptor::getPrevLedger(
-    uint256 ledgerID,
+    UInt256 ledgerID,
     RCLCxLedger const& ledger,
     ConsensusMode mode)
 {
     RCLValidations& vals = app_.getValidations();
-    uint256 netLgr = vals.getPreferred(
+    UInt256 netLgr = vals.getPreferred(
         RCLValidatedLedger{ledger.ledger, vals.adaptor().journal()},
         ledgerMaster_.getValidLedgerIndex());
 
@@ -531,20 +531,21 @@ std::shared_ptr<telemetry::SpanGuard>
 RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
 {
     // The whole body is telemetry: the guard, its attributes and the captured
-    // context serve the accept span only. With telemetry compiled out the handle
-    // stays empty, so accepting a ledger does not allocate a control block for a
-    // span that can never record. doAccept only hands the handle to
+    // context serve the accept span only. The handle is allocated only for a
+    // live span, so accepting a ledger allocates nothing for it when telemetry
+    // is compiled out or disabled. doAccept only hands the handle to
     // activateIfLive(), which tests it, so an empty handle is safe on both the
     // sync (onForceAccept) and async (onAccept) paths.
 #ifdef XRPL_ENABLE_TELEMETRY
     namespace cs = telemetry::consensus::span;
 
-    auto span = std::make_shared<telemetry::SpanGuard>(
-        telemetry::SpanGuard::childSpan(cs::accept, roundSpanContext_));
+    std::shared_ptr<telemetry::SpanGuard> span;
+    if (auto guard = telemetry::SpanGuard::childSpan(cs::accept, roundSpanContext_))
+        span = std::make_shared<telemetry::SpanGuard>(std::move(guard));
 
     // Every attribute below exists only for the span, so the whole block —
     // attributes and the context capture — is guarded on the span being live.
-    if (*span)
+    if (span && *span)
     {
         span->setAttribute(cs::attr::proposers, static_cast<int64_t>(result.proposers));
         span->setAttribute(
@@ -762,7 +763,7 @@ RCLConsensus::Adaptor::doAccept(
         censorshipDetector_.check(
             std::move(accepted),
             [curr = built.seq(), j = app_.getJournal("CensorshipDetector"), &failed](
-                uint256 const& id, LedgerIndex seq) {
+                UInt256 const& id, LedgerIndex seq) {
                 if (failed.contains(id))
                     return true;
 
@@ -800,8 +801,10 @@ RCLConsensus::Adaptor::doAccept(
 
     // Record ledger close for OTel dashboard parity counter. Uses the
     // call-site macro (see MetricMacros.h) rather than a MetricsRegistry
-    // member.
-    XRPL_METRIC_COUNTER_INC(app_, "ledgers_closed_total", "Total ledgers closed by consensus");
+    // member. The name and description are shared with the registry, which
+    // creates the same counter to start it at 0.
+    XRPL_METRIC_COUNTER_INC(
+        app_, telemetry::kLedgersClosedTotal, telemetry::kLedgersClosedTotalDesc);
 
     //-------------------------------------------------------------------------
     {
@@ -1259,7 +1262,7 @@ RCLConsensus::peerProposal(NetClock::time_point const& now, RCLCxPeerPos const& 
 }
 
 bool
-RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, hash_set<NodeID> const& nowTrusted)
+RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, HashSet<NodeID> const& nowTrusted)
 {
     // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
@@ -1319,7 +1322,7 @@ RCLConsensus::Adaptor::getValidLedgerIndex() const
     return ledgerMaster_.getValidLedgerIndex();
 }
 
-std::pair<std::size_t, hash_set<RCLConsensus::Adaptor::NodeKey_t>>
+std::pair<std::size_t, HashSet<RCLConsensus::Adaptor::NodeKeyT>>
 RCLConsensus::Adaptor::getQuorumKeys() const
 {
     return app_.getValidators().getQuorumKeys();
@@ -1327,8 +1330,8 @@ RCLConsensus::Adaptor::getQuorumKeys() const
 
 std::size_t
 RCLConsensus::Adaptor::laggards(
-    Ledger_t::Seq const seq,
-    hash_set<RCLConsensus::Adaptor::NodeKey_t>& trustedKeys) const
+    LedgerT::Seq const seq,
+    HashSet<RCLConsensus::Adaptor::NodeKeyT>& trustedKeys) const
 {
     return app_.getValidations().laggards(seq, trustedKeys);
 }
@@ -1450,8 +1453,8 @@ RCLConsensus::Adaptor::createValidationSpan()
     // Prefer linking to the accept span (matches the design diagram and
     // the "validation follows acceptance" causal model). Fall back to the
     // round span only if the accept context isn't yet captured (e.g.
-    // tracing started after onAccept, or makeAcceptSpan returned a null
-    // guard).
+    // tracing started after onAccept, or makeAcceptSpan returned an empty
+    // handle).
     if (acceptSpanContext_.isValid())
     {
         return telemetry::SpanGuard::linkedSpan(cs::validationSend, acceptSpanContext_);
@@ -1501,8 +1504,8 @@ RCLConsensus::startRound(
     NetClock::time_point const& now,
     RCLCxLedger::ID const& prevLgrId,
     RCLCxLedger const& prevLgr,
-    hash_set<NodeID> const& nowUntrusted,
-    hash_set<NodeID> const& nowTrusted,
+    HashSet<NodeID> const& nowUntrusted,
+    HashSet<NodeID> const& nowTrusted,
     std::unique_ptr<std::stringstream> const& clog)
 {
     std::scoped_lock const _{mutex_};

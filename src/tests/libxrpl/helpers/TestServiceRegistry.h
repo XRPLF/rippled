@@ -9,7 +9,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/server/LoadFeeTrack.h>
-#include <xrpl/telemetry/Telemetry.h>
 
 #include <boost/asio/io_context.hpp>
 
@@ -91,7 +90,7 @@ class TestServiceRegistry : public ServiceRegistry
         stopwatch(),
         logs_.journal("TaggedCache")};
     PendingSaves pendingSaves_;
-    std::optional<uint256> trapTxID_;
+    std::optional<UInt256> trapTxID_;
 
 public:
     TestServiceRegistry() = default;
@@ -252,7 +251,7 @@ public:
         throw std::logic_error("TestServiceRegistry::getInboundTransactions() not implemented");
     }
 
-    TaggedCache<uint256, AcceptedLedger>&
+    TaggedCache<UInt256, AcceptedLedger>&
     getAcceptedLedgerCache() override
     {
         throw std::logic_error("TestServiceRegistry::getAcceptedLedgerCache() not implemented");
@@ -347,12 +346,6 @@ public:
         throw std::logic_error("TestServiceRegistry::getPerfLog() not implemented");
     }
 
-    telemetry::Telemetry&
-    getTelemetry() override
-    {
-        throw std::logic_error("TestServiceRegistry::getTelemetry() not implemented");
-    }
-
     telemetry::MetricsRegistry*
     getMetricsRegistry() override
     {
@@ -384,7 +377,7 @@ public:
         return logs_;
     }
 
-    std::optional<uint256> const&
+    std::optional<UInt256> const&
     getTrapTxID() const override
     {
         return trapTxID_;

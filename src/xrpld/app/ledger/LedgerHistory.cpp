@@ -35,7 +35,7 @@ namespace xrpl {
 
 // FIXME: Need to clean up ledgers by index at some point
 
-LedgerHistory::LedgerHistory(beast::insight::Collector::ptr const& collector, Application& app)
+LedgerHistory::LedgerHistory(beast::insight::Collector::Ptr const& collector, Application& app)
     : app_(app)
     , collector_(collector)
     , mismatchCounter_(collector->makeCounter("ledger.history", "mismatch"))
@@ -91,7 +91,7 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 
         if (it != ledgersByIndex_.end())
         {
-            uint256 const hash = it->second;
+            UInt256 const hash = it->second;
             sl.unlock();
             return getLedgerByHash(hash);
         }
@@ -157,7 +157,7 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 }
 
 static void
-logOne(ReadView const& ledger, uint256 const& tx, char const* msg, beast::Journal& j)
+logOne(ReadView const& ledger, UInt256 const& tx, char const* msg, beast::Journal& j)
 {
     auto metaData = ledger.txRead(tx).second;
 
@@ -178,10 +178,10 @@ static void
 logMetadataDifference(
     ReadView const& builtLedger,
     ReadView const& validLedger,
-    uint256 const& tx,
+    UInt256 const& tx,
     beast::Journal j)
 {
-    auto getMeta = [](ReadView const& ledger, uint256 const& txID) {
+    auto getMeta = [](ReadView const& ledger, UInt256 const& txID) {
         std::optional<TxMeta> ret;
         if (auto meta = ledger.txRead(txID).second)
             ret.emplace(txID, ledger.seq(), *meta);
@@ -315,8 +315,8 @@ void
 LedgerHistory::handleMismatch(
     LedgerHash const& built,
     LedgerHash const& valid,
-    std::optional<uint256> const& builtConsensusHash,
-    std::optional<uint256> const& validatedConsensusHash,
+    std::optional<UInt256> const& builtConsensusHash,
+    std::optional<UInt256> const& validatedConsensusHash,
     json::Value const& consensus)
 {
     XRPL_ASSERT(built != valid, "xrpl::LedgerHistory::handleMismatch : unequal hashes");
@@ -337,7 +337,7 @@ LedgerHistory::handleMismatch(
         JLOG(j_.error()) << "MISMATCH cannot be analyzed:"
                          << " builtLedger: " << to_string(built) << " -> " << builtLedger
                          << " validLedger: " << to_string(valid) << " -> " << validLedger;
-        recordReason("unknown");
+        recordReason(telemetry::ledger_mismatch_reason::unknown);
         return;
     }
 
@@ -359,7 +359,7 @@ LedgerHistory::handleMismatch(
     if (builtLedger->header().parentHash != validLedger->header().parentHash)
     {
         JLOG(j_.error()) << "MISMATCH on prior ledger";
-        recordReason("prior_ledger");
+        recordReason(telemetry::ledger_mismatch_reason::priorLedger);
         return;
     }
 
@@ -367,7 +367,7 @@ LedgerHistory::handleMismatch(
     if (builtLedger->header().closeTime != validLedger->header().closeTime)
     {
         JLOG(j_.error()) << "MISMATCH on close time";
-        recordReason("close_time");
+        recordReason(telemetry::ledger_mismatch_reason::closeTime);
         return;
     }
 
@@ -384,7 +384,7 @@ LedgerHistory::handleMismatch(
             JLOG(j_.error()) << "MISMATCH on consensus transaction set "
                              << " built: " << to_string(*builtConsensusHash)
                              << " validated: " << to_string(*validatedConsensusHash);
-            recordReason("consensus_txset");
+            recordReason(telemetry::ledger_mismatch_reason::consensusTxset);
             reasonRecorded = true;
         }
         else
@@ -402,14 +402,14 @@ LedgerHistory::handleMismatch(
     {
         JLOG(j_.error()) << "MISMATCH with same " << builtTx.size() << " transactions";
         if (!reasonRecorded)
-            recordReason("same_txset_diff_result");
+            recordReason(telemetry::ledger_mismatch_reason::sameTxsetDiffResult);
     }
     else
     {
         JLOG(j_.error()) << "MISMATCH with " << builtTx.size() << " built and " << validTx.size()
                          << " valid transactions.";
         if (!reasonRecorded)
-            recordReason("different_txset");
+            recordReason(telemetry::ledger_mismatch_reason::differentTxset);
     }
 
     JLOG(j_.error()) << "built\n" << getJson({*builtLedger, {}});
@@ -450,7 +450,7 @@ LedgerHistory::handleMismatch(
 void
 LedgerHistory::builtLedger(
     std::shared_ptr<Ledger const> const& ledger,
-    uint256 const& consensusHash,
+    UInt256 const& consensusHash,
     json::Value consensus)
 {
     LedgerIndex const index = ledger->header().seq;
@@ -490,7 +490,7 @@ LedgerHistory::builtLedger(
 void
 LedgerHistory::validatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
-    std::optional<uint256> const& consensusHash)
+    std::optional<UInt256> const& consensusHash)
 {
     LedgerIndex const index = ledger->header().seq;
     LedgerHash const hash = ledger->header().hash;

@@ -439,9 +439,9 @@ validatorParticipationGauge_ = meter_->CreateInt64ObservableGauge(
 
 | Label `metric=`      | Type   | Source                                              |
 | -------------------- | ------ | --------------------------------------------------- |
-| `base_fee_xrp`       | double | Base fee from validated ledger fee settings (drops) |
-| `reserve_base_xrp`   | double | Account reserve from validated ledger (drops)       |
-| `reserve_inc_xrp`    | double | Owner reserve increment (drops)                     |
+| `base_fee_drops`     | double | Base fee from validated ledger fee settings (drops) |
+| `reserve_base_drops` | double | Account reserve from validated ledger (drops)       |
+| `reserve_inc_drops`  | double | Owner reserve increment (drops)                     |
 | `ledger_age_seconds` | double | `now - lastValidatedCloseTime`                      |
 | `transaction_rate`   | double | Derived: tx count delta / time delta (smoothed)     |
 
