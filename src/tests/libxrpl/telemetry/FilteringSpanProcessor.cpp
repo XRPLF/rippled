@@ -34,13 +34,11 @@
 #include <opentelemetry/sdk/trace/span_limits.h>
 #include <opentelemetry/sdk/trace/tracer_provider.h>
 #include <opentelemetry/sdk/trace/tracer_provider_factory.h>
-#include <opentelemetry/trace/span.h>
 #include <opentelemetry/trace/span_context.h>
 #include <opentelemetry/trace/span_id.h>
 #include <opentelemetry/trace/span_metadata.h>
 #include <opentelemetry/trace/trace_flags.h>
 #include <opentelemetry/trace/trace_id.h>
-#include <opentelemetry/trace/tracer.h>
 
 #include <algorithm>
 #include <array>
