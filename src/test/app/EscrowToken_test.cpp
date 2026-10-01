@@ -531,7 +531,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
 
             auto const sleGW = env.le(keylet::account(gw));
             BEAST_EXPECT(sleGW && sleGW->isFlag(lsfDisableMaster));
-            BEAST_EXPECT(env.le(keylet::signers(gw)));
+            BEAST_EXPECT(env.le(keylet::signerList(gw)));
             BEAST_EXPECT(sleGW && !sleGW->isFlag(lsfAllowTrustLineLocking));
         }
 

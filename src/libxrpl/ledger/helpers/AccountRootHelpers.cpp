@@ -577,7 +577,7 @@ isBlackholed(ReadView const& view, std::shared_ptr<SLE const> const& sle)
     }
 
     AccountID const account = sle->getAccountID(sfAccount);
-    return !view.exists(keylet::signers(account));
+    return !view.exists(keylet::signerList(account));
 }
 
 std::expected<SLE::pointer, TER>
