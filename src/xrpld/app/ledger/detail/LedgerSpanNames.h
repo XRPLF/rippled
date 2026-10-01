@@ -200,12 +200,11 @@ namespace val {
  * - complete:  all header, transaction and state data was assembled.
  * - failed:    the fetch reached a terminal error (bad data, or the retry
  *              budget ran out).
- * - abandoned: the InboundLedger was destroyed while still fetching, which
- *              happens when the sweeper drops an acquire that made no
- *              progress, or on shutdown. This is the outcome for a fetch
- *              that never reached a result at all -- the case that used to
- *              leave the span with no outcome and a duration stretched to
- *              the sweep interval instead of the real fetch time.
+ * - abandoned: the InboundLedger was destroyed with no result. The sweep
+ *              drops an acquire after a minute with no new request and no
+ *              peer reply; shutdown and an admin fetch_info clear
+ *              (clearFailures()) drop every acquire at once. The span still
+ *              ends at destruction, so its duration is not a fetch time.
  */
 inline constexpr auto complete = makeStr("complete");
 inline constexpr auto failed = makeStr("failed");
@@ -220,12 +219,6 @@ inline constexpr auto abandoned = makeStr("abandoned");
  */
 inline constexpr auto timeout = makeStr("timeout");
 
-/**
- * Set when the acquisition is abandoned before it finishes, i.e. the
- * InboundLedger is destroyed while !isDone(). Distinct from `failed`, which
- * means the fetch ran to its retry limit and gave up.
- */
-inline constexpr auto aborted = makeStr("aborted");
 /**
  * ledger.acquire reason values (mirror InboundLedger::Reason).
  */

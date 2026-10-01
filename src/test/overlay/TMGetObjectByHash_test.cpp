@@ -33,6 +33,7 @@
 
 #include <xrpl.pb.h>
 
+#include <chrono>
 #include <cstddef>
 #include <memory>
 #include <optional>
@@ -149,6 +150,31 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
             return lastChargeContext_;
         }
 
+        /**
+         * Capture the counts the handler hands to the metric record, then
+         * record for real. Same seam as charge(): the override sees the exact
+         * struct the handler built, so the split it chose is observable.
+         */
+        void
+        recordGetObjectMetrics(
+            GetObjectCounts const& counts,
+            std::chrono::microseconds const lookupElapsed,
+            resource::Charge const& fee) override
+        {
+            lastCounts_ = counts;
+            PeerImp::recordGetObjectMetrics(counts, lookupElapsed, fee);
+        }
+
+        /**
+         * The counts captured by the override above, or nullopt if the
+         * handler never reached the metric record.
+         */
+        [[nodiscard]] std::optional<GetObjectCounts> const&
+        getLastCounts() const
+        {
+            return lastCounts_;
+        }
+
         // Synchronous test access to the JobQueue-dispatched processor.
         // The production path runs this on JtLedgerReq; tests need a
         // synchronous entry point to inspect the reply via send().
@@ -212,6 +238,11 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
          * @see getLastChargeContext(). Same threading rules as above.
          */
         std::string lastChargeContext_;
+
+        /**
+         * @see getLastCounts(). Same threading rules as above.
+         */
+        std::optional<GetObjectCounts> lastCounts_;
     };
 
     shared_context context_{makeSslContext("")};
@@ -634,6 +665,36 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
     }
 
     /**
+     * Build a request of numStored stored hashes and numUnstored unstored
+     * hashes, then numMalformed entries the fetch loop must skip: every even
+     * one has no hash field, every odd one a hash one byte short.
+     *
+     * @param env           Environment whose NodeStore receives the writes.
+     * @param numStored     Hashes written to the NodeStore, i.e. hits.
+     * @param numUnstored   Hashes left absent, i.e. misses.
+     * @param numMalformed  Entries skipped before any NodeStore access.
+     * @return The assembled request.
+     */
+    std::shared_ptr<protocol::TMGetObjectByHash>
+    buildMixedRequest(Env& env, int const numStored, int const numUnstored, int const numMalformed)
+    {
+        std::set<uint256> storedHashes;
+        auto request = buildInterleavedRequest(env, numStored, numUnstored, storedHashes);
+        for (int i = 0; i < numMalformed; ++i)
+        {
+            auto* object = request->add_objects();
+            if (i % 2 == 1)
+            {
+                object->set_hash(std::string(uint256::size() - 1, 'x'));
+            }
+        }
+
+        // Setup assertion: the malformed entries were appended.
+        BEAST_EXPECT(request->objects_size() == numStored + numUnstored + numMalformed);
+        return request;
+    }
+
+    /**
      * Every replied object is a distinct hash drawn from @p storedHashes.
      *
      * Without the distinctness check a handler that returned the same hit
@@ -664,8 +725,9 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
      * A mixed request returns exactly the stored objects and nothing else.
      *
      * This is the split `getobject_lookups_total{result=hit|miss}` records:
-     * the handler derives the miss count as `requested - found`, so an
-     * exact reply size is exactly the hit count the metric would report.
+     * the handler derives the miss count as `attempted - found`, and with no
+     * malformed entries `attempted == requested`, so an exact reply size is
+     * exactly the hit count the metric would report.
      *
      * @param numStored    Hashes written to the NodeStore before the call.
      * @param numUnstored  Hashes that will miss.
@@ -719,6 +781,81 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         // `fee_` is untouched on this path: the handler charges through
         // charge(), never through fee_.update().
         BEAST_EXPECT(peer->peekFeeCharge().cost() == resource::kFeeTrivialPeer.cost());
+    }
+
+    /**
+     * Malformed entries are skipped before any NodeStore access, so they are
+     * neither hits nor misses. attempted counts only the entries that reached
+     * fetchNodeObject(); requested still counts the whole message.
+     *
+     * @param numStored     Hashes written to the NodeStore before the call.
+     * @param numUnstored   Hashes that will miss.
+     * @param numMalformed  Entries with no hash or a short hash.
+     */
+    void
+    testMalformedEntriesAreNotLookups(
+        int const numStored,
+        int const numUnstored,
+        int const numMalformed)
+    {
+        testcase(
+            "Malformed Entries Are Not Lookups: " + std::to_string(numStored) + "/" +
+            std::to_string(numUnstored) + "/" + std::to_string(numMalformed));
+
+        Env env(*this);
+        PeerTest::resetId();
+        auto peer = createPeer(env);
+
+        auto request = buildMixedRequest(env, numStored, numUnstored, numMalformed);
+
+        // Setup assertion: nothing has been recorded yet, so the counts below
+        // can only come from this call.
+        BEAST_EXPECT(!peer->getLastCounts().has_value());
+
+        peer->runProcessGetObjectByHash(request);
+
+        auto const& counts = peer->getLastCounts();
+        BEAST_EXPECT(counts.has_value());
+        if (!counts)
+        {
+            return;
+        }
+        BEAST_EXPECT(counts->requested == numStored + numUnstored + numMalformed);
+        BEAST_EXPECT(counts->attempted == numStored + numUnstored);
+        BEAST_EXPECT(counts->found == numStored);
+
+        // The miss count the metric records: only the unstored hashes.
+        BEAST_EXPECT(counts->attempted - counts->found == numUnstored);
+    }
+
+    /**
+     * Past the iteration cap nothing is looked up, so attempted is the cap,
+     * not the request size. Reachable only by direct call: onMessage()
+     * rejects an oversized request before dispatch.
+     */
+    void
+    testAttemptedIsCappedAtHardMax()
+    {
+        testcase("Attempted Is Capped At Hard Max");
+
+        Env env(*this);
+        PeerTest::resetId();
+        auto peer = createPeer(env);
+
+        BEAST_EXPECT(!peer->getLastCounts().has_value());
+
+        int const requested = static_cast<int>(tuning::kHardMaxReplyNodes) + 3;
+        peer->runProcessGetObjectByHash(createUnstoredRequest(requested));
+
+        auto const& counts = peer->getLastCounts();
+        BEAST_EXPECT(counts.has_value());
+        if (!counts)
+        {
+            return;
+        }
+        BEAST_EXPECT(counts->requested == requested);
+        BEAST_EXPECT(counts->attempted == static_cast<int>(tuning::kHardMaxReplyNodes));
+        BEAST_EXPECT(counts->found == 0);
     }
 
     /**
@@ -1008,8 +1145,8 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         // observable behaviour of each instrumented code path, which pins
         // the values the instruments are fed:
         //   getobject_request_objects  <- the request's objects_size()
-        //   getobject_lookups_total    <- reply size (hits) and the derived
-        //                                 miss count, per testHitMissSplit
+        //   getobject_lookups_total    <- the counts captured by
+        //                                 PeerTest::recordGetObjectMetrics()
         //   getobject_charge           <- the applied resource::Charge,
         //                                 captured by PeerTest::charge()
         //   getobject_rejected_total   <- the two gates' exact fee_ values
@@ -1033,6 +1170,11 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         testHitMissSplit(5, 3);
         testHitMissSplit(0, 4);
         testHitMissSplit(4, 0);
+
+        testMalformedEntriesAreNotLookups(3, 2, 4);
+        testMalformedEntriesAreNotLookups(0, 0, 6);
+        testMalformedEntriesAreNotLookups(5, 0, 0);
+        testAttemptedIsCappedAtHardMax();
 
         testComputeFeeExactValues();
         testChargeUsesRequestedCount();

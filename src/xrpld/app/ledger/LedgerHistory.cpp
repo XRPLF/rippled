@@ -337,7 +337,7 @@ LedgerHistory::handleMismatch(
         JLOG(j_.error()) << "MISMATCH cannot be analyzed:"
                          << " builtLedger: " << to_string(built) << " -> " << builtLedger
                          << " validLedger: " << to_string(valid) << " -> " << validLedger;
-        recordReason("unknown");
+        recordReason(telemetry::ledger_mismatch_reason::unknown);
         return;
     }
 
@@ -359,7 +359,7 @@ LedgerHistory::handleMismatch(
     if (builtLedger->header().parentHash != validLedger->header().parentHash)
     {
         JLOG(j_.error()) << "MISMATCH on prior ledger";
-        recordReason("prior_ledger");
+        recordReason(telemetry::ledger_mismatch_reason::priorLedger);
         return;
     }
 
@@ -367,7 +367,7 @@ LedgerHistory::handleMismatch(
     if (builtLedger->header().closeTime != validLedger->header().closeTime)
     {
         JLOG(j_.error()) << "MISMATCH on close time";
-        recordReason("close_time");
+        recordReason(telemetry::ledger_mismatch_reason::closeTime);
         return;
     }
 
@@ -384,7 +384,7 @@ LedgerHistory::handleMismatch(
             JLOG(j_.error()) << "MISMATCH on consensus transaction set "
                              << " built: " << to_string(*builtConsensusHash)
                              << " validated: " << to_string(*validatedConsensusHash);
-            recordReason("consensus_txset");
+            recordReason(telemetry::ledger_mismatch_reason::consensusTxset);
             reasonRecorded = true;
         }
         else
@@ -402,14 +402,14 @@ LedgerHistory::handleMismatch(
     {
         JLOG(j_.error()) << "MISMATCH with same " << builtTx.size() << " transactions";
         if (!reasonRecorded)
-            recordReason("same_txset_diff_result");
+            recordReason(telemetry::ledger_mismatch_reason::sameTxsetDiffResult);
     }
     else
     {
         JLOG(j_.error()) << "MISMATCH with " << builtTx.size() << " built and " << validTx.size()
                          << " valid transactions.";
         if (!reasonRecorded)
-            recordReason("different_txset");
+            recordReason(telemetry::ledger_mismatch_reason::differentTxset);
     }
 
     JLOG(j_.error()) << "built\n" << getJson({*builtLedger, {}});

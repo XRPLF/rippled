@@ -96,6 +96,7 @@
 #include <xrpl.pb.h>
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cstddef>
@@ -431,8 +432,8 @@ PeerImp::charge(resource::Charge const& fee, std::string const& context)
             {
                 self->overlay_.incPeerDisconnectCharges();
                 // Set inside the latch, so only the one worker that wins the
-                // exchange writes it. This is the node's own backpressure, not
-                // a peer or network fault.
+                // exchange writes it. The peer's own traffic used up its
+                // resource allowance, so the fault is the peer's.
                 self->setDisconnectReason(telemetry::lval::disconnect::chargeResources);
                 self->fail("charge: Resources");
             }
@@ -661,14 +662,14 @@ PeerImp::close()
     // Emitted right next to incPeerDisconnect() above, and behind the same
     // socket-already-closed early return, so this counter's total tracks that
     // existing tally rather than being a second, differently-scoped count.
-    // What it adds is the split: today every disconnect collapses into one
-    // number, so our-fault backpressure ("large_sendq", "charge_resources")
-    // cannot be told apart from a topology or network fault ("not_useful",
-    // "ping_timeout", "read_error"), and the two need opposite responses.
+    // What it adds is the split between a slow peer or path ("large_sendq"),
+    // a peer that used up its resource allowance ("charge_resources"), and a
+    // topology or network fault ("not_useful", "ping_timeout", "read_error");
+    // each calls for a different response.
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
         telemetry::metric::peerDisconnectTotal,
-        "Peer disconnects, by cause and connection direction",
+        telemetry::peerDisconnectTotalDesc,
         {{telemetry::label::reason, std::string(disconnectReason_)},
          {telemetry::label::direction,
           std::string(inbound_ ? telemetry::lval::inbound : telemetry::lval::outbound)}});
@@ -686,7 +687,7 @@ PeerImp::reportServeRefusal(char const* request, char const* reason)
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
         telemetry::metric::serveRefusedTotal,
-        "Peer data requests this node declined to serve, by request kind and cause",
+        telemetry::serveRefusedTotalDesc,
         {{telemetry::label::request, std::string(request)},
          {telemetry::label::reason, std::string(reason)}});
 }
@@ -792,8 +793,9 @@ PeerImp::onTimer(error_code const& ec)
 
     if (largeSendq_++ >= tuning::kSendqIntervals)
     {
-        // Our own send queue never drained: this node could not keep up with
-        // what it owed the peer, so it is local backpressure, not a peer fault.
+        // The send queue to this peer stayed full for several timer ticks:
+        // the peer, or the path to it, is not taking data as fast as this
+        // node sends it.
         setDisconnectReason(telemetry::lval::disconnect::largeSendq);
         fail("Large send queue");
         return;
@@ -1431,7 +1433,7 @@ PeerImp::handleTransaction(
             XRPL_METRIC_COUNTER_INC_LABELED(
                 app_,
                 telemetry::metric::peerTxRejectedTotal,
-                "Relayed transactions not processed, by reason",
+                telemetry::peerTxRejectedTotalDesc,
                 {{telemetry::label::reason,
                   std::string(telemetry::lval::tx_rejected::innerBatch)}});
             JLOG(pJournal_.warn()) << "Ignoring Network relayed Tx containing "
@@ -1452,7 +1454,7 @@ PeerImp::handleTransaction(
                 XRPL_METRIC_COUNTER_INC_LABELED(
                     app_,
                     telemetry::metric::peerTxRejectedTotal,
-                    "Relayed transactions not processed, by reason",
+                    telemetry::peerTxRejectedTotalDesc,
                     {{telemetry::label::reason,
                       std::string(telemetry::lval::tx_rejected::knownBad)}});
                 fee_.update(resource::kFeeUselessData, "known bad");
@@ -1463,7 +1465,7 @@ PeerImp::handleTransaction(
                 XRPL_METRIC_COUNTER_INC_LABELED(
                     app_,
                     telemetry::metric::peerTxRejectedTotal,
-                    "Relayed transactions not processed, by reason",
+                    telemetry::peerTxRejectedTotalDesc,
                     {{telemetry::label::reason,
                       std::string(telemetry::lval::tx_rejected::duplicate)}});
 
@@ -2911,12 +2913,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
             {
                 JLOG(pJournal_.debug()) << "GetObj: malformed ledgerhash from peer " << id_;
                 fee_.update(resource::kFeeMalformedRequest, "get object ledger hash");
-                XRPL_METRIC_COUNTER_INC_LABELED(
-                    app_,
-                    telemetry::kGetObjectRejectedTotal,
-                    telemetry::kGetObjectRejectedTotalDesc,
-                    {{telemetry::kLabelReason,
-                      std::string(telemetry::kReasonMalformedLedgerHash)}});
+                recordGetObjectRejected(telemetry::kReasonMalformedLedgerHash);
                 return;
             }
         }
@@ -2929,11 +2926,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                 << "GetObj: oversized request from peer " << id_ << " (" << packet.objects_size()
                 << " > " << tuning::kHardMaxReplyNodes << ")";
             fee_.update(resource::kFeeInvalidData, "oversized get object request");
-            XRPL_METRIC_COUNTER_INC_LABELED(
-                app_,
-                telemetry::kGetObjectRejectedTotal,
-                telemetry::kGetObjectRejectedTotalDesc,
-                {{telemetry::kLabelReason, std::string(telemetry::kReasonOversize)}});
+            recordGetObjectRejected(telemetry::kReasonOversize);
             return;
         }
 
@@ -3060,12 +3053,16 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
     // Stopwatch holds no state in that build.
     telemetry::Stopwatch const lookupTimer;
 
+    // Entries that reach the NodeStore. A malformed entry is skipped first,
+    // so it is not a lookup.
+    int attempted = 0;
     for (int i = 0; i < iterLimit; ++i)
     {
         auto const& obj = packet.objects(i);
         if (!obj.has_hash() || !stringIsUInt256Sized(obj.hash()))
             continue;
 
+        ++attempted;
         uint256 const hash = uint256::fromRaw(obj.hash());
         // VFALCO TODO Move this someplace more sensible so we don't
         //             need to inject the NodeStore interfaces.
@@ -3101,31 +3098,43 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
     resource::Charge const fee = computeGetObjectByHashFee(requested, reply.objects_size());
     charge(fee, "processed get object by hash request");
 
-    // Called unconditionally: every statement in the body is an XRPL_METRIC_*
-    // argument, and those macros discard their arguments when telemetry is
-    // compiled out. All four values here are already computed for the request
-    // itself, so passing them costs nothing.
-    recordGetObjectMetrics(requested, reply.objects_size(), lookupElapsed, fee);
+    // Called unconditionally: the body only feeds XRPL_METRIC_* macros, which
+    // discard their arguments when telemetry is compiled out, and every value
+    // here is already computed for the request itself.
+    recordGetObjectMetrics(
+        GetObjectCounts{
+            .requested = requested, .attempted = attempted, .found = reply.objects_size()},
+        lookupElapsed,
+        fee);
 
     JLOG(pJournal_.trace()) << "GetObj: " << reply.objects_size() << " of " << requested;
     send(std::make_shared<Message>(reply, protocol::mtGET_OBJECTS));
 }
 
-// Reads app_ through the metric macros when telemetry is compiled in and
-// touches no member when it is not, so clang-tidy asks for it to be static.
-// Making it static would give the two builds different signatures.
+// These read app_ through the metric macros when telemetry is compiled in and
+// touch no member when it is not, so clang-tidy asks for them to be static.
+// Making them static would give the two builds different signatures.
 // NOLINTBEGIN(readability-convert-member-functions-to-static)
 void
+PeerImp::recordGetObjectRejected(std::string_view reason)
+{
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        telemetry::kGetObjectRejectedTotal,
+        telemetry::kGetObjectRejectedTotalDesc,
+        {{telemetry::kLabelReason, std::string(reason)}});
+}
+
+void
 PeerImp::recordGetObjectMetrics(
-    int const requested,
-    int const found,
+    GetObjectCounts const& counts,
     std::chrono::microseconds const lookupElapsed,
     resource::Charge const& fee)
 {
     using namespace telemetry;
 
     XRPL_METRIC_HISTOGRAM_RECORD(
-        app_, kGetObjectRequestObjects, kGetObjectRequestObjectsDesc, requested);
+        app_, kGetObjectRequestObjects, kGetObjectRequestObjectsDesc, counts.requested);
 
     XRPL_METRIC_HISTOGRAM_RECORD(
         app_, kGetObjectLookupUs, kGetObjectLookupUsDesc, lookupElapsed.count());
@@ -3136,29 +3145,23 @@ PeerImp::recordGetObjectMetrics(
     // per-object increments on a loop bounded by kHardMaxReplyNodes would be
     // a measurable cost for no extra information.
     //
-    // `found` is the reply size, which the fetch loop only grows on a
-    // successful lookup within `iterLimit <= requested`, so `found <=
-    // requested` always holds. std::max still clamps both values, so a future
-    // caller passing found > requested cannot make the miss count wrap
-    // negative -- the counter takes an unsigned amount, where a wrap would
-    // read as ~1.8e19 rather than as an error.
+    // Only entries that reached the NodeStore are lookups: misses are the
+    // attempts that found nothing, so a malformed entry the loop skipped counts
+    // as neither. std::max keeps a caller that breaks `found <= attempted` from
+    // wrapping the unsigned amount to ~1.8e19.
     //
-    // Written as two calls rather than a loop over a {hit, miss} pair: the two
-    // amounts come from different expressions, so there is no single value to
-    // iterate over.
-    XRPL_METRIC_COUNTER_ADD_LABELED(
-        app_,
-        kGetObjectLookupsTotal,
-        kGetObjectLookupsTotalDesc,
-        static_cast<std::uint64_t>(std::max(0, found)),
-        {{kLabelResult, std::string(kResultHit)}});
-
-    XRPL_METRIC_COUNTER_ADD_LABELED(
-        app_,
-        kGetObjectLookupsTotal,
-        kGetObjectLookupsTotalDesc,
-        static_cast<std::uint64_t>(std::max(0, requested - found)),
-        {{kLabelResult, std::string(kResultMiss)}});
+    // One call site for both label values, so the counter is created once.
+    std::array<std::pair<std::string_view, int>, 2> const split{
+        {{kResultHit, counts.found}, {kResultMiss, counts.attempted - counts.found}}};
+    for (auto const& [result, amount] : split)
+    {
+        XRPL_METRIC_COUNTER_ADD_LABELED(
+            app_,
+            kGetObjectLookupsTotal,
+            kGetObjectLookupsTotalDesc,
+            static_cast<std::uint64_t>(std::max(0, amount)),
+            {{kLabelResult, std::string(result)}});
+    }
 }
 
 // NOLINTEND(readability-convert-member-functions-to-static)
