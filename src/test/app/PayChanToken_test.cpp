@@ -4636,6 +4636,31 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(alice, usd) == usd(1'000));
         }
 
+        // A claim can drain a channel to sfBalance == sfAmount without
+        // closing it. Clawback on that channel has nothing left to claw and
+        // succeeds as a no-op rather than hitting the internal dead-channel
+        // case.
+        {
+            Env env{*this, features};
+            setup(env);
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            auto const sig = paychan::signClaimAuth(alice.pk(), alice.sk(), chan, usd(4'000));
+            env(paychan::claim(bob, chan, usd(4'000), usd(4'000), Slice(sig), alice.pk()));
+            env.close();
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(0));
+
+            env(paychan::clawback(gw, chan));
+            env.close();
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(4'000));
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == usd(4'000));
+        }
+
         // Partial clawback reduces the channel amount in place; a later claim
         // clamps to what remains.
         {

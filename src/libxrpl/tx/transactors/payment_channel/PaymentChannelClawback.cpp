@@ -104,10 +104,11 @@ PaymentChannelClawback::doApply()
     auto const& chanBalance = slep->getFieldAmount(sfBalance);
 
     // Only the unclaimed remainder can be clawed; the destination's earned
-    // balance (sfBalance) is untouched.
+    // balance (sfBalance) is untouched. A claim can drain a channel to
+    // sfBalance == sfAmount without closing it, leaving nothing to claw.
     STAmount const lockedRemaining = chanAmt - chanBalance;
     if (lockedRemaining <= beast::kZero)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return tesSUCCESS;
 
     auto const clawAmount = ctx_.tx[~sfAmount];
     bool const full = !clawAmount || *clawAmount >= lockedRemaining;
