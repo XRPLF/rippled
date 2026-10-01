@@ -4206,31 +4206,34 @@ NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson cons
 void
 NetworkOPsImp::subMPT(InfoSub::Ref isrListener, HashSet<MPTID> const& mptIDs)
 {
-    for (auto const& mptID : mptIDs)
+    // Insert into subMPT_ before the InfoSub (unsubMPT removes in reverse), as
+    // subBook does, so a racing unsubMPT cannot leave a subMPT_ entry that the
+    // InfoSub doesn't know about.
     {
-        JLOG(journal_.trace()) << "subMPT: MPT: " << to_string(mptID);
+        std::scoped_lock const sl(mptLock_);
 
+        for (auto const& mptID : mptIDs)
+        {
+            JLOG(journal_.trace()) << "subMPT: MPT: " << to_string(mptID);
+
+            auto simIterator = subMPT_.find(mptID);
+            if (simIterator == subMPT_.end())
+            {
+                // Not found, note that the MPT issuance has a new single listener.
+                SubMapType usisElement;
+                usisElement[isrListener->getSeq()] = isrListener;
+                subMPT_.insert(simIterator, make_pair(mptID, usisElement));
+            }
+            else
+            {
+                // Found, note that the MPT issuance has another listener.
+                simIterator->second[isrListener->getSeq()] = isrListener;
+            }
+        }
+    }
+
+    for (auto const& mptID : mptIDs)
         isrListener->insertSubMPTInfo(mptID);
-    }
-
-    std::scoped_lock const sl(mptLock_);
-
-    for (auto const& mptID : mptIDs)
-    {
-        auto simIterator = subMPT_.find(mptID);
-        if (simIterator == subMPT_.end())
-        {
-            // Not found, note that the MPT issuance has a new single listener.
-            SubMapType usisElement;
-            usisElement[isrListener->getSeq()] = isrListener;
-            subMPT_.insert(simIterator, make_pair(mptID, usisElement));
-        }
-        else
-        {
-            // Found, note that the MPT issuance has another listener.
-            simIterator->second[isrListener->getSeq()] = isrListener;
-        }
-    }
 }
 
 void
