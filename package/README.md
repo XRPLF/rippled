@@ -221,18 +221,18 @@ The `release-info` action decides the channel from the event, and
 A variant is published to the same channel under its own name, so
 `xrpld-assert` never overwrites `xrpld`.
 
-Only a tag names a release version: any other build is `0.0.0-dev` with its
-short commit hash as build metadata, which the `develop` channel drops, so its
-packages are all `0.0.0~dev` and sort before every release. Versions sort in
+Only a tag names a channel and a release version: any other build is
+`0.0.0-dev` with its short commit hash as build metadata, which the `develop`
+channel drops, so its packages are all `0.0.0~dev` and sort before every release. Versions sort in
 row order, so moving to a more mature channel never downgrades.
 A tag matching none of the release patterns, such as `X.Y.Z-hotfix1`, publishes
 to `custom`, which sits outside that order.
 
 The action decides the package release number on the same split: a tag's version
 is unique, so its packages are release 1, while develop packages share one
-version and take
-`<run number>.<commit date>git<commit hash>`, e.g. `857.20260826gitb6a8995` —
-the leading run number keeps each push superseding the last, and the date and hash say which commit a package on
+version and take `<run number>.<commit date>git<commit hash>`, e.g.
+`857.20260826gitb6a8995` — the leading run number keeps each push superseding
+the last, and the date and hash say which commit a package on
 `packages.xrplf.org` came from. Both reach the packaging scripts as arguments,
 so neither script derives anything itself.
 
