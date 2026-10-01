@@ -101,7 +101,7 @@ public:
  * @return The set of books whose offers were created, modified, or
  *         deleted. May be empty for non-offer transactions.
  */
-hash_set<Book>
+HashSet<Book>
 affectedBooks(AcceptedLedgerTx const& alTx, beast::Journal const& j);
 
 }  // namespace xrpl

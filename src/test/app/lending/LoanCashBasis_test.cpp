@@ -265,7 +265,7 @@ private:
         using namespace jtx;
         using namespace loan;
         using namespace std::chrono_literals;
-        using tp = NetClock::time_point;
+        using Tp = NetClock::time_point;
 
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
         BrokerParameters const brokerParams{
@@ -295,7 +295,7 @@ private:
         auto runPayment = [&](FeatureBitset features,
                               std::uint32_t loanSetFlags,
                               std::uint32_t payFlags,
-                              std::function<void(Env&, tp const&)> const& advanceTime,
+                              std::function<void(Env&, Tp const&)> const& advanceTime,
                               std::function<STAmount(LoanState const&)> const& paymentAmount) {
             Env env(*this, features);
 
@@ -410,7 +410,7 @@ private:
 
         // ---- Regular, on-time payment ----
         {
-            auto const noAdvance = [](Env& env, tp const&) { env.close(); };
+            auto const noAdvance = [](Env& env, Tp const&) { env.close(); };
             auto const regularAmount = [&](LoanState const& state) {
                 return STAmount{
                     xrpAsset,
@@ -436,7 +436,7 @@ private:
 
         // ---- Late payment ----
         {
-            auto const advancePastDue = [&](Env& env, tp const& startDate) {
+            auto const advancePastDue = [&](Env& env, Tp const& startDate) {
                 env.close(startDate + std::chrono::seconds(paymentInterval + 1));
             };
             auto const lateAmount = [&](LoanState const& state) {
@@ -459,7 +459,7 @@ private:
 
         // ---- Overpayment ----
         {
-            auto const noAdvance = [](Env& env, tp const&) { env.close(); };
+            auto const noAdvance = [](Env& env, Tp const&) { env.close(); };
             auto const overpayAmount = [&](LoanState const& state) {
                 // One regular period, plus a generous extra principal
                 // paydown.
@@ -483,7 +483,7 @@ private:
 
         // ---- Full payment ----
         {
-            auto const noAdvance = [](Env& env, tp const&) { env.close(); };
+            auto const noAdvance = [](Env& env, Tp const&) { env.close(); };
             auto const fullAmount = [&](LoanState const&) {
                 // Generously large: full payment only ever consumes exactly
                 // what's due (principal + accrued interest; close fee/
