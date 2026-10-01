@@ -146,7 +146,7 @@
     "metrics": ["load_factor_metrics"]
   },
   "parity_validation_agreement": {
-    "description": "External dashboard parity: validation agreement percentages (MetricsRegistry).",
+    "description": "External dashboard parity: validation agreement percentages (AppMetricGauges). Published only by a node with a validator key; every node run-full-validation.sh starts is a validator with a [validation_seed], so both series exist from the first export.",
     "metrics": [
       "validation_agreement{metric=\"agreement_pct_1h\"}",
       "validation_agreement{metric=\"agreement_pct_24h\"}"
@@ -225,7 +225,7 @@
     "metrics": ["jq_trans_overflow_total"]
   },
   "validation_lifetime_counters": {
-    "description": "Lifetime validation agreement/miss ObservableCounters (MetricsRegistry.cpp:1636, :1658, validator-health dashboard). Both callbacks reconcile the tracker and Observe unconditionally, so the series exist even on a node that has not yet agreed or missed (value 0). Only existence is asserted, never the value — validation_missed_total legitimately dominates on a non-validating node.",
+    "description": "Lifetime validation agreement/miss ObservableCounters (AppMetricGauges.cpp, validator-health dashboard). Both callbacks reconcile the tracker and then Observe only on a node with a validator key, so a node without one publishes neither series. Every node run-full-validation.sh starts is a validator with a [validation_seed], so both series exist from the first export, at 0 before any ledger is decided. Only existence is asserted, never the value.",
     "metrics": ["validation_agreements_total", "validation_missed_total"]
   },
   "not_asserted": {
