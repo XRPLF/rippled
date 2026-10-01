@@ -368,7 +368,7 @@ VaultClawback::assetsToClawback(
         // sharesDestroyed is intentionally NOT re-derived here: the holder's shares are burned for
         // their pre-clamp value, so any sub-ULP trimmed off stays in the vault for the remaining
         // shareholders.
-        if (ctx_.view().rules().enabled(fixCleanup3_4_0) && assetsRecovered > beast::kZero)
+        if (fix340Enabled && assetsRecovered > beast::kZero)
         {
             auto const maybeClamped = clampVaultOutflow(vault, -assetsRecovered);
             if (!maybeClamped)
