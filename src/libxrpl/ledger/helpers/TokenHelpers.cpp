@@ -328,7 +328,7 @@ getLineIfUsable(
 static STAmount
 getTrustLineBalance(
     ReadView const& view,
-    SLE::const_ref sle,
+    SLE::ConstRef sle,
     AccountID const& account,
     Currency const& currency,
     AccountID const& issuer,
@@ -689,7 +689,7 @@ directSendNoFeeIOU(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     bool bCheckIssuer,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     beast::Journal j)
 {
     AccountID const& issuer = saAmount.getIssuer();
@@ -843,7 +843,7 @@ directSendNoLimitIOU(
     STAmount const& saAmount,
     STAmount& saActual,
     beast::Journal j,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     WaiveTransferFee waiveFee)
 {
     auto const& issuer = saAmount.getIssuer();
@@ -969,7 +969,7 @@ accountSendIOU(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     WaiveTransferFee waiveFee)
 {
     if (view.rules().enabled(fixAMMv1_1))
@@ -1577,7 +1577,7 @@ accountSend(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     WaiveTransferFee waiveFee,
     AllowMPTOverflow allowOverflow)
 {
