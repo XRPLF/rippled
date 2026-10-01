@@ -869,7 +869,7 @@ The **Threshold** column is the `threshold` node's evaluator, read straight from
 | `xrpld-consensus`  | LedgerHistoryMismatch    | `sum by (service_instance_id) (increase(ledger_hash_mismatch_total[15m]))`                                                   | `gt [0]`                                          | 2m    | critical |
 | `xrpld-consensus`  | LedgerCloseStalled       | `rate(ledgers_closed_total)` decayed to ≈0                                                                                   | `lt [0.001]`                                      | 3m    | critical |
 | `xrpld-consensus`  | ValidatedLedgerStale     | `max by (service_instance_id) (ledgermaster_validated_ledger_age < 1209600)`                                                 | `gt [60]` (seconds)                               | 5m    | critical |
-| `xrpld-validator`  | ValidationsMissed        | miss **ratio**, gated on send activity — see the expression below the table                                                  | `gt [0.1]`                                        | 15m   | warning  |
+| `xrpld-validator`  | ValidationsMissed        | miss **ratio**, nodes up more than 1 h — see the expression below the table                                                  | `gt [0.1]`                                        | 15m   | warning  |
 | `xrpld-validator`  | ValidationsNotChecked    | `rate(validations_checked_total)` ≈0                                                                                         | `lt [0.001]`                                      | 5m    | warning  |
 | `xrpld-jobqueue`   | JobQueueTxOverflow       | `sum by (service_instance_id) (increase(jq_trans_overflow_total[15m]))`                                                      | `gt [0]`                                          | 2m    | warning  |
 | `xrpld-jobqueue`   | JobQueueLatencyHigh      | `histogram_quantile(0.99, sum by (le, service_instance_id) (rate(job_queued_us_bucket[5m])))`                                | `gt [1000000]` (µs = 1s)                          | 5m    | warning  |
@@ -881,18 +881,16 @@ The **Threshold** column is the `threshold` node's evaluator, read straight from
 | `xrpld-overlay`    | PeerResourceDisconnects  | `sum by (service_instance_id) (increase(server_info{metric="peer_disconnects_resources"}[30m]))`                             | `gt [5]`                                          | 5m    | warning  |
 | `xrpld-overlay`    | UntrustedValidationFlood | untrusted-validation rate over 2m divided by the rate of the hour ending 10m earlier (floor 50/s), nodes up more than 4200 s | `gt [3]` (ratio)                                  | 1m    | warning  |
 
-**`ValidationsMissed` is a gated ratio, not `rate(...) > 0`.** The raw-rate shape
-is the pre-fix version and it fires on **every non-validating node**:
-`ValidationTracker` counts a miss whenever `weValidated && networkValidated` is
-not both true, and a non-validator never sets `weValidated`, so its measured
-ratio is exactly **1.0**. No threshold can separate "not a validator" from
-"validator disagreeing", hence the `and on (...)` activity gate. The shipped
-expression is:
+**`ValidationsMissed` is a ratio, not `rate(...) > 0`.** A few late or missed
+validations do not page; the rule fires only when more than 10% of a 15-minute
+window's ledgers were missed. A node without a validator key publishes neither
+counter, so it has no series and the condition never fires for it. The shipped
+expression is (each selector also carries `service_name="xrpld"`):
 
 - numerator: `sum by (service_instance_id) (rate(validation_missed_total[15m]))`
 - denominator: `clamp_min(` that same numerator `+ sum by (service_instance_id) (rate(validation_agreements_total[15m])), 1e-9)`
-- gate: `and on (service_instance_id) (sum by (service_instance_id) (rate(validations_sent_total[15m])) > 0)`
-- evaluator: `gt [0.1]` — i.e. >10% disagreement among nodes that do validate
+- gate: `and on (service_instance_id) (max by (service_instance_id) (server_info{metric="uptime"}) > 3600)` — skip the first hour after a start, as `NodeStateFlapping` and `NodeNotFull` do
+- evaluator: `gt [0.1]` — more than 10% of the window's ledgers missed
 
 3 rules are `severity: critical`, 11 are `severity: warning`.
 
@@ -905,10 +903,8 @@ Each rule carries labels `severity` and `category`, and annotations `summary`, `
   exact `0`) avoids float rate-noise suppressing the alert.
 - **JobQueueLatencyHigh 1s p99**: `gt [1000000]` µs = 1s. A default starting
   point, easy to tune — jobs queued >1s at p99 indicate the node is saturated.
-- **ValidationsMissed `> 0.1` on a gated ratio**, not `> 0` on a raw rate: the
-  raw rate is permanently nonzero (ratio 1.0) on non-validators, so a `> 0` rule
-  pages on every non-validating node in the fleet. See the note above the
-  rationale list.
+- **ValidationsMissed `> 0.1` on a ratio**, not `> 0` on a raw rate: a few late
+  or missed validations should not page. See the note above the rationale list.
 - **ManifestFloodInbound 524288 B/s**: an earlier 50 kB/s threshold produced ~41
   sustained 5-minute samples on healthy nodes; 512 KiB/s clears normal
   manifest-exchange peaks.

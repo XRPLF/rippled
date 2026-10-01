@@ -2548,21 +2548,29 @@ p50 2s, p95 4s, p99 5s on every node.
 
 #### Validator health
 
-**ValidationsMissed** — This validator's validations are not agreeing with the
-validated ledger. Sustained misses risk removal from UNLs. Check clock sync,
-peer connectivity, and whether the node is keeping up with ledger close.
+**ValidationsMissed** — This validator's validations are missing or do not
+match the validated ledger. Sustained misses risk removal from UNLs. Check clock
+sync, peer connectivity, and whether the node is keeping up with ledger close.
+If `validations_sent_total` is flat, the node is not validating: check its
+validator keys and `server_state`.
 
-> **Why this is a ratio gated on `validations_sent_total`, not
-> `rate(validation_missed_total) > 0`:** `ValidationTracker` classifies a ledger
-> as a miss whenever `weValidated && networkValidated` is not _both_ true, so a
-> node that never validates would count **every** ledger as a miss. xrpld
-> therefore publishes neither lifetime counter, and no `validation_agreement`
-> series, on a node without a validator key; such a node shows no data on the
-> Validator Health board rather than 0% agreement. The
-> `validations_sent_total > 0` gate is a second guard: it keeps any node that
-> sends no validations out of the ratio. It also means this rule stays silent
-> for a validator that has stopped validating altogether; the _Validation Rate_
-> panel shows that case.
+> **Why this is a ratio, not `rate(validation_missed_total) > 0`:** a few late or
+> missed validations do not page; the rule fires only when more than 10% of the
+> last 15 minutes' ledgers were missed. `ValidationTracker` counts a ledger as
+> agreed only when this node and the network both validated it, so a node that
+> never validates would count **every** ledger as a miss. xrpld therefore
+> publishes neither lifetime counter, and no `validation_agreement` series, on a
+> node without a validator key; such a node shows no data in the Validator Health
+> board's agreement panels rather than 0% agreement.
+>
+> The network side is each ledger this node accepts as validated. The ratio
+> reads 100% missed when one side keeps arriving without the other: the
+> validated ledger advances while the node sends nothing, or the node keeps
+> validating while its validated ledger is stuck (for example after a lost
+> quorum). When both stop, nothing is recorded here; `LedgerCloseStalled` and
+> `ValidatedLedgerStale` cover that case. Like `NodeStateFlapping` and
+> `NodeNotFull`, the rule skips the first hour after a start: a restarted
+> validator follows the network for a while before it validates again.
 
 **ValidationsNotChecked** — The node has stopped checking incoming validations
 from peers. Likely causes: overlay/peer disconnection or a stalled validation
