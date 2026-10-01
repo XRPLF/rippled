@@ -21,7 +21,7 @@ TEST(TicketEntryTests, constructors)
         e.alice.id(),
         ticketSeq);
 
-    expectKeylet<TicketEntry>(e, keylet::ticket(e.someID()), "ticket(uint256)", e.someID());
+    expectKeylet<TicketEntry>(e, keylet::ticket(e.someID()), "ticket(UInt256)", e.someID());
 }
 
 }  // namespace xrpl::test
