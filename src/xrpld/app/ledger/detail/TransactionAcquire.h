@@ -97,9 +97,9 @@ public:
      */
     TransactionAcquire(
         Application& app,
-        uint256 const& hash,
+        UInt256 const& hash,
         std::unique_ptr<PeerSet> peerSet,
-        uint256 const& roundParentHash,
+        UInt256 const& roundParentHash,
         std::uint32_t roundLedgerSeq);
     ~TransactionAcquire() override;
 

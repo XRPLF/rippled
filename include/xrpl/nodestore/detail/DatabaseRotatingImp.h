@@ -67,7 +67,7 @@ public:
     }
 
     void
-    store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t) override;
+    store(NodeObjectType type, Blob&& data, UInt256 const& hash, std::uint32_t) override;
 
     void
     sync() override;
@@ -115,7 +115,7 @@ private:
     std::atomic<std::uint64_t> copyForwardTotal_{0};
 
     std::shared_ptr<NodeObject>
-    fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)
+    fetchNodeObject(UInt256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)
         override;
 
     void

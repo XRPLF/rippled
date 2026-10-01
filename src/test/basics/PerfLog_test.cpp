@@ -41,7 +41,7 @@ class PerfLog_test : public beast::unit_test::Suite
 {
     enum class WithFile : bool { No = false, Yes = true };
 
-    using path = std::filesystem::path;
+    using Path = std::filesystem::path;
 
     // The method names to count. PerfLog treats them as opaque keys, so these are
     // made up rather than taken from the dispatch table: this test then needs no
@@ -106,14 +106,14 @@ class PerfLog_test : public beast::unit_test::Suite
             stopSignaled = true;
         }
 
-        static path
+        static Path
         logDir()
         {
             using namespace std::filesystem;
             return temp_directory_path() / "perf_log_test_dir";
         }
 
-        static path
+        static Path
         logFile()
         {
             return logDir() / "perf_log.txt";

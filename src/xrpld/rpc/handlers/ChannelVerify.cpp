@@ -56,7 +56,7 @@ doChannelVerify(rpc::JsonContext& context)
         }
     }
 
-    uint256 channelId;
+    UInt256 channelId;
     if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(RpcChannelMalformed);
 

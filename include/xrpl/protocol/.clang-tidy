@@ -1,0 +1,10 @@
+# protocol's hashers and iterable STObject/STArray types model std concepts, which mandate
+# snake_case member type names.
+#
+# clang-tidy replaces rather than merges this option, so the list is the
+# top-level one restated plus the 3 name(s) needed only here:
+#   argument_type const_pointer type
+InheritParentConfig: true
+CheckOptions:
+  readability-identifier-naming.TypeAliasIgnoredRegexp: "^(argument_type|const_iterator|const_pointer|const_reference|difference_type|duration|iterator|iterator_category|key_type|mapped_type|period|pointer|reference|rep|result_type|size_type|time_point|type|value_type)$"
+  readability-identifier-naming.TypedefIgnoredRegexp: "^(argument_type|const_iterator|const_pointer|const_reference|difference_type|duration|iterator|iterator_category|key_type|mapped_type|period|pointer|reference|rep|result_type|size_type|time_point|type|value_type)$"
