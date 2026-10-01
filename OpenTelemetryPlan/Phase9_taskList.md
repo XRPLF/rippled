@@ -235,10 +235,11 @@ is a `metric` label value, not a metric name of its own.
   - Histogram: `job_running_us{job_type="<name>",handler="<name>"}` — execution time distribution
 
 > **Naming**: the instruments are `job_queued_us` / `job_running_us`
-> (`kJobQueuedDurationUs` / `kJobRunningDurationUs`, `MetricsRegistry.cpp:94-95`).
+> (`kJobQueuedDurationUs` / `kJobRunningDurationUs` in `MetricsRegistry.cpp`).
 > `MetricsRegistry.h`'s Doxygen comments used to read
 > `job_queued_duration_us` / `job_running_duration_us`; **both were fixed in this
-> change** (`MetricsRegistry.h:810,815`), so there is no header/`.cpp` divergence
+> change** (the `jobQueuedDurationHistogram_` and `jobRunningDurationHistogram_`
+> comments in `MetricsRegistry.h`), so there is no header/`.cpp` divergence
 > left to work around.
 
 - Hook into PerfLog's existing job tracking alongside Task 9.4.
@@ -417,7 +418,7 @@ bare rename in `145b1469d6` and `25868f2740` — the
   - **14 rules in 5 groups**: `xrpld-consensus` (`LedgerHistoryMismatch`,
     `LedgerCloseStalled`, `ValidatedLedgerStale`), `xrpld-validator`
     (`ValidationsMissed`, `ValidationsNotChecked`), `xrpld-jobqueue`
-    (`JobQueueTxOverflow`, `JobQueueLatencyHigh`, `NodeStoreIOLatencyHigh`),
+    (`JobQueueTxOverflow`, `JobQueueLatencyHigh`, `IOEventLoopLatencyHigh`),
     `xrpld-node-state` (`NodeStateFlapping`, `NodeNotFull`), `xrpld-overlay`
     (`ManifestJobQueueConvoy`, `ManifestFloodInbound`, `PeerResourceDisconnects`,
     `UntrustedValidationFlood`)
@@ -818,11 +819,12 @@ health is explicitly out of scope.
 ### Why phase 9 (not phase 11)
 
 Every metric these alerts fire on is _born_ in phase 9
-(`ledger_history_mismatch_total`, `ledgers_closed_total`,
+(`ledger_hash_mismatch_total`, `ledgers_closed_total`,
 `validation_missed_total`, `validations_checked_total`,
 `jq_trans_overflow_total`, `job_queued_us_bucket` — the histogram instrument is
-`job_queued_us` (`MetricsRegistry.cpp:94`), so the Prometheus bucket series is
-`job_queued_us_bucket`, not `job_queued_duration_us_bucket`). Alerts
+`job_queued_us` (`kJobQueuedDurationUs` in `MetricsRegistry.cpp`), so the
+Prometheus bucket series is `job_queued_us_bucket`, not
+`job_queued_duration_us_bucket`). Alerts
 belong with the metrics they watch, and this is where the dependency lives.
 
 ### Delivery
@@ -864,14 +866,14 @@ The **Threshold** column is the `threshold` node's evaluator, read straight from
 
 | Group              | Alert                    | Expression (query node)                                                                                                      | Threshold (evaluator)                             | `for` | severity |
 | ------------------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ----- | -------- |
-| `xrpld-consensus`  | LedgerHistoryMismatch    | `sum by (service_instance_id) (increase(ledger_history_mismatch_total[15m]))`                                                | `gt [0]`                                          | 2m    | critical |
+| `xrpld-consensus`  | LedgerHistoryMismatch    | `sum by (service_instance_id) (increase(ledger_hash_mismatch_total[15m]))`                                                   | `gt [0]`                                          | 2m    | critical |
 | `xrpld-consensus`  | LedgerCloseStalled       | `rate(ledgers_closed_total)` decayed to ≈0                                                                                   | `lt [0.001]`                                      | 3m    | critical |
 | `xrpld-consensus`  | ValidatedLedgerStale     | `max by (service_instance_id) (ledgermaster_validated_ledger_age < 1209600)`                                                 | `gt [60]` (seconds)                               | 5m    | critical |
 | `xrpld-validator`  | ValidationsMissed        | miss **ratio**, gated on send activity — see the expression below the table                                                  | `gt [0.1]`                                        | 15m   | warning  |
 | `xrpld-validator`  | ValidationsNotChecked    | `rate(validations_checked_total)` ≈0                                                                                         | `lt [0.001]`                                      | 5m    | warning  |
 | `xrpld-jobqueue`   | JobQueueTxOverflow       | `sum by (service_instance_id) (increase(jq_trans_overflow_total[15m]))`                                                      | `gt [0]`                                          | 2m    | warning  |
 | `xrpld-jobqueue`   | JobQueueLatencyHigh      | `histogram_quantile(0.99, sum by (le, service_instance_id) (rate(job_queued_us_bucket[5m])))`                                | `gt [1000000]` (µs = 1s)                          | 5m    | warning  |
-| `xrpld-jobqueue`   | NodeStoreIOLatencyHigh   | `histogram_quantile(0.95, sum by (le, service_instance_id) (rate(ios_latency_milliseconds_bucket[10m])))`                    | `gt [1000]` (ms)                                  | 10m   | warning  |
+| `xrpld-jobqueue`   | IOEventLoopLatencyHigh   | `histogram_quantile(0.95, sum by (le, service_instance_id) (rate(ios_latency_milliseconds_bucket[10m])))`                    | `gt [1000]` (ms)                                  | 10m   | warning  |
 | `xrpld-node-state` | NodeStateFlapping        | state-transition rate over the node-state series                                                                             | `gt [0]` (transitions)                            | 15m   | warning  |
 | `xrpld-node-state` | NodeNotFull              | operating mode below FULL                                                                                                    | `lt [4]` (FULL = 4)                               | 15m   | warning  |
 | `xrpld-overlay`    | ManifestJobQueueConvoy   | `sum by (service_instance_id) (jobq_manifest_waiting)`                                                                       | `gt [3]` (waiting jobs)                           | 10m   | warning  |

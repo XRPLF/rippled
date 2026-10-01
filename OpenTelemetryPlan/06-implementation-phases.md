@@ -929,7 +929,7 @@ change):
 
 Shipped rules: `LedgerHistoryMismatch`, `LedgerCloseStalled`,
 `ValidatedLedgerStale`, `ValidationsMissed`, `ValidationsNotChecked`,
-`JobQueueTxOverflow`, `JobQueueLatencyHigh`, `NodeStoreIOLatencyHigh`,
+`JobQueueTxOverflow`, `JobQueueLatencyHigh`, `IOEventLoopLatencyHigh`,
 `NodeStateFlapping`, `NodeNotFull`, `ManifestJobQueueConvoy`,
 `ManifestFloodInbound`, `PeerResourceDisconnects`, `UntrustedValidationFlood`.
 Three carry `severity: critical`, eleven `severity: warning`.
@@ -2194,7 +2194,7 @@ reproduced.
 | External rule      | Addressed by (Phase 9 rule)                                      | Group              | Coverage                                                                                                                                                                            |
 | ------------------ | ---------------------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Unhealthy State    | `NodeNotFull`                                                    | `xrpld-node-state` | Full                                                                                                                                                                                |
-| High IO Latency    | `NodeStoreIOLatencyHigh` (`ios_latency_milliseconds_bucket` p95) | `xrpld-jobqueue`   | **Partial** — Phase 9 fires at p95 **> 1000 ms for 10m**; the external rule fires at **> 50 for 1m**. A 20× looser threshold and a 10× longer window                                |
+| High IO Latency    | `IOEventLoopLatencyHigh` (`ios_latency_milliseconds_bucket` p95) | `xrpld-jobqueue`   | **Partial** — Phase 9 fires at p95 **> 1000 ms for 10m**; the external rule fires at **> 50 for 1m**. A 20× looser threshold and a 10× longer window                                |
 | Job Queue Overflow | `JobQueueTxOverflow` (`jq_trans_overflow_total`)                 | `xrpld-jobqueue`   | Full                                                                                                                                                                                |
 | Stale Ledger       | `ValidatedLedgerStale` (`ledgermaster_validated_ledger_age`)     | `xrpld-consensus`  | **Partial** — different metric and threshold: Phase 9 uses `ledgermaster_validated_ledger_age > 60` for 5m; the external rule uses `ledger_economy{ledger_age_seconds} > 30` for 1m |
 

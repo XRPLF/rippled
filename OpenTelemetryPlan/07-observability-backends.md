@@ -346,17 +346,16 @@ rules in 5 groups**, all in folder `xrpld`, all `interval: 1m`, and all
 | ------------------ | ------------------------------------------------------------------------------------------------------- |
 | `xrpld-consensus`  | `LedgerHistoryMismatch`, `LedgerCloseStalled`, `ValidatedLedgerStale`                                   |
 | `xrpld-validator`  | `ValidationsMissed`, `ValidationsNotChecked`                                                            |
-| `xrpld-jobqueue`   | `JobQueueTxOverflow`, `JobQueueLatencyHigh`, `NodeStoreIOLatencyHigh`                                   |
+| `xrpld-jobqueue`   | `JobQueueTxOverflow`, `JobQueueLatencyHigh`, `IOEventLoopLatencyHigh`                                   |
 | `xrpld-node-state` | `NodeStateFlapping`, `NodeNotFull`                                                                      |
 | `xrpld-overlay`    | `ManifestJobQueueConvoy`, `ManifestFloodInbound`, `PeerResourceDisconnects`, `UntrustedValidationFlood` |
 
-> Two placements are worth noting because they are not what the rule name
-> suggests. `ValidatedLedgerStale` is grouped under `xrpld-consensus`, not
+> Two placements are worth noting because they are not what the rule names
+> suggest. `ValidatedLedgerStale` is grouped under `xrpld-consensus`, not
 > `xrpld-validator` — it fires on any node whose validated-ledger sequence stops
 > advancing, which is a chain-progress symptom rather than a validator-identity
-> one. `NodeStoreIOLatencyHigh` is grouped under `xrpld-jobqueue`, not
-> `xrpld-node-state` — slow NodeStore I/O manifests first as job-queue backlog,
-> so grouping it there keeps the cause and its effect in one notification.
+> one. `IOEventLoopLatencyHigh` sits in `xrpld-jobqueue` because, like
+> `JobQueueLatencyHigh`, it measures how long queued work waits before it runs.
 
 Thresholds, measured baselines and response procedures are in the runbook's
 alert catalogue, not here.

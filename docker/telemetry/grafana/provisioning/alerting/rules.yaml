@@ -577,7 +577,7 @@ groups:
       # more, not a single spike. The millisecond ladder has edges at 500ms
       # and 1000ms, so the threshold sits on a bucket edge.
       - uid: xrpld-nodestore-io-latency-high
-        title: NodeStoreIOLatencyHigh
+        title: IOEventLoopLatencyHigh
         condition: is_io_slow
         for: 10m
         isPaused: true

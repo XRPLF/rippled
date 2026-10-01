@@ -2286,7 +2286,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | I/O Latency                                                  | timeseries | `histogram_quantile(0.95, ios_latency_milliseconds_bucket)`                                                                                                | —                |
 | Job Queue Depth                                              | timeseries | `jobq_job_count`                                                                                                                                           | —                |
 | Ledger Fetch Rate                                            | stat       | `rate(ledger_fetches_total[$__rate_interval])`                                                                                                             | —                |
-| Ledger History Mismatches                                    | stat       | `rate(ledger_history_mismatch_total[$__rate_interval])`                                                                                                    | —                |
+| Ledger History Mismatches                                    | stat       | `sum by (service_instance_id) (rate(ledger_hash_mismatch_total[$__rate_interval]))`                                                                        | —                |
 | Key Jobs Execution Time                                      | timeseries | `histogram_quantile($quantile, sum by (le) (rate(job_running_us_bucket{job_type="acceptLedger"}[$__rate_interval])))` (+ 10 more key jobs)                 | `job_type`       |
 | Key Jobs Dequeue Wait Time                                   | timeseries | `histogram_quantile($quantile, sum by (le) (rate(job_queued_us_bucket{job_type="acceptLedger"}[$__rate_interval])))` (+ 10 more)                           | `job_type`       |
 | FullBelowCache Size                                          | timeseries | `node_family_full_below_cache_size`                                                                                                                        | —                |
@@ -2484,14 +2484,14 @@ Alerts fire only after the condition holds for the `for` dwell time.
 
 | Alert                      | Severity | Fires when                                              | For |
 | -------------------------- | -------- | ------------------------------------------------------- | --- |
-| `LedgerHistoryMismatch`    | critical | `increase(ledger_history_mismatch_total[15m])` > 0      | 2m  |
+| `LedgerHistoryMismatch`    | critical | `increase(ledger_hash_mismatch_total[15m])` > 0         | 2m  |
 | `LedgerCloseStalled`       | critical | `rate(ledgers_closed_total)` ≈ 0                        | 3m  |
 | `ValidatedLedgerStale`     | critical | `ledgermaster_validated_ledger_age` > 60s               | 5m  |
 | `ValidationsMissed`        | warning  | validator miss _ratio_ > 0.1                            | 15m |
 | `ValidationsNotChecked`    | warning  | `rate(validations_checked_total)` ≈ 0                   | 5m  |
 | `JobQueueTxOverflow`       | warning  | `increase(jq_trans_overflow_total[15m])` > 0            | 2m  |
 | `JobQueueLatencyHigh`      | warning  | p99 `job_queued_us` > 1s                                | 5m  |
-| `NodeStoreIOLatencyHigh`   | warning  | p95 `ios_latency_milliseconds` > 1s                     | 10m |
+| `IOEventLoopLatencyHigh`   | warning  | p95 `ios_latency_milliseconds` > 1s                     | 10m |
 | `NodeStateFlapping`        | warning  | > 0 re-entries into FULL per hour                       | 15m |
 | `NodeNotFull`              | warning  | `server_state` < 4 (FULL)                               | 15m |
 | `ManifestJobQueueConvoy`   | warning  | `jobq_manifest_waiting` > 3                             | 10m |
@@ -2519,18 +2519,12 @@ from the validated network chain. Likely causes: corrupted local state, a bug,
 or a node that fell out of sync and rebuilt incorrectly. Investigate the node's
 ledger acquisition logs; a healthy node never mismatches.
 
-> **Query trap — `sum(ledger_history_mismatch_total)` double-counts.** One
-> mismatch increments **two** instruments inside the same `handleMismatch()`
-> call: the legacy beast::insight counter, which carries no `reason` label
-> ([LedgerHistory.cpp:323](../src/xrpld/app/ledger/LedgerHistory.cpp#L323)), and
-> the `MetricsRegistry` counter, which does
-> ([LedgerHistory.cpp:331](../src/xrpld/app/ledger/LedgerHistory.cpp#L331)).
-> Both normalise to the same Prometheus family, so an unfiltered `sum()` or
-> `increase()` reports exactly **twice** the real mismatch count. Aggregate over
-> the labelled series only — `sum by (reason) (...)`, or
-> `sum(ledger_history_mismatch_total{reason!=""})` — and halve any historical
-> figure taken from the unfiltered form. The alert rule is unaffected: it only
-> tests `> 0`. This is a known issue; the duplicate producer awaits a code fix.
+> **Two metrics count the same mismatches — never add them.** Query
+> `ledger_hash_mismatch_total`: it has exactly one `reason` per mismatch, so
+> `sum by (reason) (...)` and a plain `sum(...)` are both exact. The
+> `ledger_history_mismatch_total` series is the unlabelled `beast::insight`
+> counter for the same events (see the Counters table above), exported only
+> with `[insight] server=otel`.
 
 **LedgerCloseStalled** — No ledgers closed for 3 minutes. A healthy node closes
 one every ~3-5s. Likely causes: lost peer connectivity, consensus stall, or the
@@ -2584,12 +2578,20 @@ being dropped. The node is shedding load it cannot process. Check CPU, the
 before running. The node is saturated. Correlate with CPU and the Job Queue
 dashboard.
 
-**NodeStoreIOLatencyHigh** — p95 node-store IO latency exceeds 1s. Sustained
-store latency is the usual _upstream cause_ of state flapping and sync stalls, so
-this often fires alongside `NodeStateFlapping` and explains it. Check disk
-utilisation and whether the node store sits on a slow volume — moving it to a
-local NVMe has previously cut time-to-`full` by more than 3x. Measured p99-of-p95
-is 37-49ms on healthy nodes and 488-566ms on nodes that are actively flapping.
+**IOEventLoopLatencyHigh** — work posted to the node's I/O event loop waits
+too long. The loop is the asio `io_context`, which runs peer networking, the
+RPC servers and timers. NodeStore reads and writes run on other threads.
+
+About every 100ms a probe is posted to the loop and times its own wait. The
+first probe is always recorded; after that, only probes of 10ms or more. So on
+a healthy node the p95 usually has no value. The rule fires when the p95 stays
+over 1s for 10m.
+
+A blocked loop delays peer messages and timers, so this can fire alongside
+`NodeStateFlapping`. Look for CPU saturation, or a slow peer, RPC or timer
+handler. The log shows an `io_context latency` warning for each probe of 500ms
+or more. `server_info` reports the latest probe, fast ones included, as
+`io_latency_ms`.
 
 #### Node operating state
 
@@ -2607,8 +2609,10 @@ startup walk.
 gate, every restart pages. The trade-off is deliberate: flapping confined to the
 first hour after boot is not alerted.
 
-Investigate in this order: `NodeStoreIOLatencyHigh` (most common cause), peer
-connectivity, then clock sync.
+Investigate in this order: the online-delete rotation's cache freshen (a
+rotation logs `rotating` when it starts and `finished rotation` when it
+completes, both at warning level in the `SHAMapStore` journal),
+`IOEventLoopLatencyHigh`, peer connectivity, then clock sync.
 
 **NodeNotFull** — The node has been below `FULL` for 15m
 (`0`=disconnected, `1`=connected, `2`=syncing, `3`=tracking, `4`=full). This is
