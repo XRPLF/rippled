@@ -63,17 +63,22 @@
  * in which a bare `const char*` selects the boolean alternative, so an
  * unwrapped literal is recorded as `true`.
  *
- * Example usage -- UpDownCounter (edge case: value that can decrease):
+ * Example usage -- UpDownCounter (edge case: value that can decrease). The
+ * +1 and the -1 go through one helper, so the name and description are
+ * written once and cannot drift apart:
  * @code
- * void ServerHandler::onRpcStart()
+ * void addRpcInFlight(ServiceRegistry& app, std::int64_t const delta)
  * {
- *     XRPL_METRIC_UPDOWN_ADD(app_, "rpc_in_flight_requests",
- *         "RPC requests currently executing", 1);
+ *     XRPL_METRIC_UPDOWN_ADD(app, "rpc_in_flight_requests",
+ *         "RPC requests currently executing", delta);
  * }
- * void ServerHandler::onRpcFinish()
+ * void PerfLogImp::rpcStart(std::string_view method, std::uint64_t requestId)
  * {
- *     XRPL_METRIC_UPDOWN_ADD(app_, "rpc_in_flight_requests",
- *         "RPC requests currently executing", -1);
+ *     addRpcInFlight(app_, 1);
+ * }
+ * void PerfLogImp::rpcEnd(std::string_view method, std::uint64_t requestId, bool finish)
+ * {
+ *     addRpcInFlight(app_, -1);
  * }
  * @endcode
  *
@@ -102,9 +107,15 @@
  * empty while the registry is enabled (a no-op meter stands in if the
  * pipeline failed to build, and again after stop()). So a call site holds
  * a valid instrument from its first call and needs no check of its own.
- * The only branch on the hot path is the recording() gate, which is false
- * once stop() has torn the pipeline down; without that gate a Record on a
- * stale SDK instrument would deref a dangling AggregationConfig.
+ * On the hot path a call checks the registry pointer, its recording()
+ * gate and the init guard of the instrument's static. The gate is false
+ * once stop() has torn the pipeline down; without it a Record on a stale
+ * SDK instrument would deref a dangling AggregationConfig.
+ *
+ * @note Give each metric name one kind and one description. Every expansion
+ * creates its own instrument. The SDK exports instruments with the same name,
+ * kind, unit and description as one stream. Any difference starts a second
+ * stream under that name.
  *
  * @note Static-init safety: Meter::CreateXxx is declared noexcept in the
  * OTel API (opentelemetry/metrics/meter.h), so the function-local static
@@ -128,8 +139,8 @@
  * rate() need an earlier sample, so they read that first event as 0, and for
  * a rare event that is often the only one. XRPL_METRIC_COUNTER_PREREGISTER
  * [_LABELED] creates the counter at startup and records 0 on each label set.
- * Pass the recording site's own name and description constants: the SDK
- * shares one storage only when name, kind, unit and description all match.
+ * Pass the recording site's own name and description constants, so the zero
+ * lands on the site's stream (see the note on one kind and one description).
  * Build the label sets from the site's value list with labelSetsFor() or
  * labelSetsForPairs(), never from observed data.
  *
@@ -330,8 +341,8 @@ preRegisterCounter(
 // exists before the first event (see the "Pre-registration" note above). Call
 // once, from startup code. Unlike the recording macros there is no static: a
 // static would keep the first registry's instrument, and each call must land
-// on the registry it is given. The SDK returns the same storage on every call
-// with the same name, kind, unit and description.
+// on the registry it is given. Calls with the same name, kind, unit and
+// description share one stream.
 #define XRPL_METRIC_COUNTER_PREREGISTER(app, name, description)                               \
     do                                                                                        \
     {                                                                                         \
@@ -355,8 +366,9 @@ preRegisterCounter(
     } while (false)
 
 // UpDownCounter: like COUNTER_ADD, but the underlying instrument permits a
-// negative amount (e.g. in-flight request count, +1 on start / -1 on
-// finish from two different points in the same or different call sites).
+// negative amount (e.g. in-flight request count: +1 on start and -1 on
+// finish, both through one helper, so the name and description are written
+// once).
 // A plain Counter's Add() must never see a negative value per the OTel
 // API contract; use this macro, not COUNTER_ADD, whenever the value can
 // decrease.

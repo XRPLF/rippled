@@ -342,6 +342,25 @@ PerfLogImp::~PerfLogImp()
     stop();
 }
 
+namespace {
+
+/**
+ * Adds delta to the count of RPC requests currently executing. rpcStart()
+ * and rpcEnd() both call it, so they use one name and description and
+ * share one instrument.
+ *
+ * @param app The application, which holds the metrics registry.
+ * @param delta +1 when a request starts, -1 when it ends.
+ */
+void
+addRpcInFlight(Application& app, std::int64_t const delta)
+{
+    XRPL_METRIC_UPDOWN_ADD(
+        app, "rpc_in_flight_requests", "RPC requests currently executing", delta);
+}
+
+}  // namespace
+
 void
 PerfLogImp::rpcStart(std::string_view method, std::uint64_t const requestId)
 {
@@ -373,11 +392,10 @@ PerfLogImp::rpcStart(std::string_view method, std::uint64_t const requestId)
         mr->recordRpcStarted(method);
 #endif
 
-    // A value that must be able to decrease (UpDownCounter), added at its
-    // call site with no MetricsRegistry member/init-line/method. Paired with
-    // the matching -1 in rpcEnd(). Runs on the same path as recordRpcStarted
-    // above, i.e. only after a methods-map entry exists for this request.
-    XRPL_METRIC_UPDOWN_ADD(app_, "rpc_in_flight_requests", "RPC requests currently executing", 1);
+    // Paired with the matching -1 in rpcEnd(). Runs on the same path as
+    // recordRpcStarted above, i.e. only after a methods-map entry exists for
+    // this request.
+    addRpcInFlight(app_, 1);
 }
 
 void
@@ -446,7 +464,7 @@ PerfLogImp::rpcEnd(std::string_view method, std::uint64_t const requestId, bool 
     // Matching -1 for the +1 recorded in rpcStart(). Placed after the early
     // returns above so it runs only when this request's methods-map entry was
     // found (i.e. a +1 was recorded for it), keeping the in-flight count balanced.
-    XRPL_METRIC_UPDOWN_ADD(app_, "rpc_in_flight_requests", "RPC requests currently executing", -1);
+    addRpcInFlight(app_, -1);
 }
 
 void
