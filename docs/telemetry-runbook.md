@@ -169,9 +169,9 @@ The collector can ship traces, metrics, and logs to a hosted **Grafana
 Cloud** stack instead of (or alongside) the local Tempo/Prometheus/Loki
 backends. This is a runtime choice — no xrpld rebuild and no change to the
 base stack. xrpld still exports to the local collector exactly as before;
-the collector adds one OTLP/HTTP exporter that forwards all three signals to
-the Grafana Cloud OTLP gateway, which fans them out to hosted Tempo, Mimir,
-and Loki.
+the collector adds two OTLP/HTTP exporters to the Grafana Cloud OTLP
+gateway, one for stored traces and one for metrics and logs. The gateway fans
+them out to hosted Tempo, Mimir, and Loki.
 
 ### Credentials
 
@@ -204,11 +204,11 @@ To return to local-only export, bring the stack up with just the base
 
 ### Files
 
-| File                                      | Role                                                                                           |
-| ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `otel-collector-config.grafanacloud.yaml` | Collector config: local backends **plus** a Grafana Cloud OTLP exporter on all three pipelines |
-| `docker-compose.grafanacloud.yaml`        | Override that mounts that config and injects the credentials                                   |
-| `.env.grafanacloud.example`               | Credential template (copy to `.env.grafanacloud`)                                              |
+| File                                      | Role                                                                                         |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `otel-collector-config.grafanacloud.yaml` | Collector config: local backends **plus** Grafana Cloud OTLP exporters for all three signals |
+| `docker-compose.grafanacloud.yaml`        | Override that mounts that config and injects the credentials                                 |
+| `.env.grafanacloud.example`               | Credential template (copy to `.env.grafanacloud`)                                            |
 
 ### Local + cloud vs cloud-only
 
@@ -216,8 +216,8 @@ The prepared config **dual-exports**: data goes to both the local stack and
 Grafana Cloud, so the on-box backends remain a fallback. For cloud-only,
 remove the local exporters (`debug`, `otlp/tempo`, `prometheus`,
 `otlp_http/loki`) from the respective pipelines in
-`otel-collector-config.grafanacloud.yaml`, leaving only
-`otlp_http/grafanacloud`.
+`otel-collector-config.grafanacloud.yaml`, leaving only the two Grafana Cloud
+exporters, `otlp_http/grafanacloud` and `otlp_http/grafanacloud-traces`.
 
 > **Note**: shipping logs to Grafana Cloud requires keeping xrpld file
 > logging on (at least `warning` level) so the collector's file_log receiver
