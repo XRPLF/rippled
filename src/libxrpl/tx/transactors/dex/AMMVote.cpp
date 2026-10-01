@@ -246,7 +246,7 @@ AMMVote::doApply()
 }
 
 void
-AMMVote::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMVote::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

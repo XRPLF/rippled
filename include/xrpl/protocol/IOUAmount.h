@@ -25,10 +25,10 @@ namespace xrpl {
 class IOUAmount : private boost::totally_ordered<IOUAmount>, private boost::additive<IOUAmount>
 {
 private:
-    using mantissa_type = std::int64_t;
-    using exponent_type = int;
-    mantissa_type mantissa_{};
-    exponent_type exponent_{};
+    using MantissaType = std::int64_t;
+    using ExponentType = int;
+    MantissaType mantissa_{};
+    ExponentType exponent_{};
 
     /**
      * Adjusts the mantissa and exponent to the proper range.
@@ -47,7 +47,7 @@ public:
     IOUAmount() = default;
     explicit IOUAmount(Number const& other);
     IOUAmount(beast::Zero);
-    IOUAmount(mantissa_type mantissa, exponent_type exponent);
+    IOUAmount(MantissaType mantissa, ExponentType exponent);
 
     IOUAmount& operator=(beast::Zero);
 
@@ -80,10 +80,10 @@ public:
     [[nodiscard]] int
     signum() const noexcept;
 
-    [[nodiscard]] exponent_type
+    [[nodiscard]] ExponentType
     exponent() const noexcept;
 
-    [[nodiscard]] mantissa_type
+    [[nodiscard]] MantissaType
     mantissa() const noexcept;
 
     static IOUAmount
@@ -101,7 +101,7 @@ inline IOUAmount::IOUAmount(beast::Zero)
     *this = beast::kZero;
 }
 
-inline IOUAmount::IOUAmount(mantissa_type mantissa, exponent_type exponent)
+inline IOUAmount::IOUAmount(MantissaType mantissa, ExponentType exponent)
     : mantissa_(mantissa), exponent_(exponent)
 {
     normalize();
@@ -162,13 +162,13 @@ IOUAmount::signum() const noexcept
     return (mantissa_ != 0) ? 1 : 0;
 }
 
-inline IOUAmount::exponent_type
+inline IOUAmount::ExponentType
 IOUAmount::exponent() const noexcept
 {
     return exponent_;
 }
 
-inline IOUAmount::mantissa_type
+inline IOUAmount::MantissaType
 IOUAmount::mantissa() const noexcept
 {
     return mantissa_;
