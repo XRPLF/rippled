@@ -843,7 +843,7 @@ The longest interval the internal mutex of one of this node's caches was held by
 
 ### Job stall
 
-A worker-pool job whose run time reached the same threshold the load monitor uses to warn about a slow job. Counted so the pool's own view of "one of my jobs took too long" reaches the pipeline as data rather than only as log text. Several distinct job kinds crossing the threshold in the same minute means the workers were not slow individually — the whole pool was waiting for one thing, which is the signature of a shared blocker such as a cache lock hold.
+A worker-pool job whose run time alone reached 1 s. The load monitor's slow-job warning uses the same 1 s bar but adds the time the job waited in the queue, so it also fires for a short job that waited long. Counted so slow jobs reach the pipeline as data, not only as log text. Several distinct job kinds crossing the threshold in the same minute usually means the workers were not slow individually — the whole pool was waiting for one thing, which is the signature of a shared blocker such as a cache lock hold.
 
 **Scope:** per node — measured on and specific to this individual server.
 
