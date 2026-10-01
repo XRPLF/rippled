@@ -2091,7 +2091,7 @@ Grafana keys a dashboard by its UID, so two dashboards sharing one UID overwrite
 | `rpc_requests_total` depends on `[insight]` config                    | Zero series if `[insight]` is absent or unset                                                       | Requires `[insight] server=otel` in xrpld.cfg                                                                                 |
 | Peer tracing enabled by default                                       | `peer.*` spans emit unless `trace_peer=0`                                                           | High volume — set `trace_peer=0` to opt out on busy mainnet nodes                                                             |
 | `handler="other"` mixes several producers                             | Cannot separate `GetConsL1` from `GetConsL2`                                                        | By design — the cardinality bound; see [§Per-Job-Type Metrics](#per-job-type-metrics-synchronous-countershistogram)           |
-| `overhead_cluster_*` is always zero                                   | 8 dashboard panel references are flatlines by construction; cluster traffic is counted as `unknown` | **NOT IMPLEMENTED** — see [§6.0](#60-mtcluster-is-counted-as-unknown-not-implemented)                                         |
+| `overhead_cluster_*` counts cluster members only                      | Zero on a node with no `[cluster_nodes]`; cluster messages from non-member peers count as `unknown` | By design — see [§6.0](#60-cluster-traffic-is-counted-for-cluster-members-only)                                               |
 | `squelch_ignored_bytes_in/out` always read zero                       | Only the `_messages_*` pair carries signal for this category                                        | **NOT IMPLEMENTED** — see [§6.1](#61-squelch_ignored-byte-counts-not-implemented)                                             |
 | `total_bytes_in` and `total_bytes_out` use different size bases       | In/out byte totals are not directly comparable when compression is on                               | **NOT IMPLEMENTED** — see [§6.2](#62-inboundoutbound-byte-basis-asymmetry-not-implemented)                                    |
 | `overhead` conflates `mtPING` with `mtSTATUS_CHANGE`                  | Keepalive traffic cannot be isolated from status-change traffic                                     | **NOT IMPLEMENTED** — needs a new category; see [§6.3](#63-peer-keepalive-and-discovery-traffic-gaps-not-implemented)         |
@@ -2102,29 +2102,16 @@ Grafana keys a dashboard by its UID, so two dashboards sharing one UID overwrite
 | Nine dotted `xrpl.<domain>.*` span attributes never shipped           | TraceQL filters and harness assertions on the dotted keys match nothing                             | **NOT IMPLEMENTED** — renamed to bare keys; see [§Span Attribute Enrichments](#span-attribute-enrichments-phases-2-4-removed) |
 | `node_writes_duration_us` has no dashboard panel                      | Cumulative write latency is exported and linted, but never charted                                  | Open follow-up — see [§Extended NodeStore Metrics](#extended-nodestore-metrics-additions-to-existing-nodestore_state)         |
 
-### 6.0 `mtCLUSTER` is counted as `unknown`: NOT IMPLEMENTED
+### 6.0 Cluster traffic is counted for cluster members only
 
-`mtCLUSTER` is absent from `kTypeLookup`
-(`src/xrpld/overlay/detail/TrafficCount.cpp:11-27`), and `categorize()`'s
-fallback chain only inspects `TMLedgerData`, `TMGetLedger` and
-`TMGetObjectByHash` before returning `Category::Unknown` (`:135`). No call site
-ever passes `Category::Cluster`. Cluster traffic is therefore counted as
-`unknown`, and `overhead_cluster_bytes_in/out` and
-`overhead_cluster_messages_in/out` are always zero — including the 8 panel
-references across `network-traffic` and `overlay-traffic-detail` (both the local
-and grafanacloud copies).
+`kTypeLookup` in `src/xrpld/overlay/detail/TrafficCount.cpp` maps `mtCLUSTER` to `Category::Cluster`. That category is exported as `overhead_cluster_bytes_in/out` and `overhead_cluster_messages_in/out`.
 
-This also degrades `unknown_*` as an anomaly signal: on a clustered node it mixes
-genuinely unrecognized wire types with routine `mtCLUSTER` traffic.
+- **Outbound:** the `Message` constructor sets the category. `NetworkOPsImp::processClusterTimer` sends cluster reports only to cluster members (`PeerInCluster`), so all outbound cluster traffic is member traffic.
+- **Inbound:** `PeerImp::onMessageBegin` passes the category through `TrafficCount::attribute`. A cluster message from a cluster member stays in the cluster category. From any other peer it is counted as `unknown`, and the node ignores it.
 
-**Status**: Planned, not yet implemented. The fix is a one-line addition to
-`kTypeLookup`, but `TrafficCount.cpp` is shared overlay code rather than a
-telemetry-owned file, so it is scoped as a separate overlay change. Note that
-landing it moves volume out of `unknown_bytes_in`, so any threshold measured
-against that series needs re-baselining. Until then, treat `overhead_cluster_*`
-as "no data" rather than "no cluster traffic", and read the
-[Cluster](../docs/telemetry-glossary.md#cluster) glossary entry's guidance on
-sustained cluster overhead as not yet observable.
+A cluster member is a peer in this node's cluster list, which `[cluster_nodes]` sets up. A node with no `[cluster_nodes]` has no members, so its `overhead_cluster_*` series read zero. That zero is the true value, not missing data. The local telemetry stack configures no cluster, so these series read zero there.
+
+Routine cluster traffic does not land in `unknown_*`. On a clustered node, a sustained non-zero `unknown_*` therefore points at an unrecognized wire type or at a cluster message from a peer outside the cluster. See the [Cluster](../docs/telemetry-glossary.md#cluster) glossary entry.
 
 ### 6.1 `squelch_ignored` byte counts: NOT IMPLEMENTED
 

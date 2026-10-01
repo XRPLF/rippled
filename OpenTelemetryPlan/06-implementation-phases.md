@@ -906,7 +906,7 @@ flowchart TB
 | 9.11 | Validator Health dashboard                              | ✅ Done                       |
 | 9.12 | Peer Quality dashboard                                  | ✅ Done                       |
 | 9.13 | Ledger Economy row on `node-health`                     | ✅ Done                       |
-| 9.14 | Overlay traffic accounting defects (documentation only) | 📄 Documented, not fixed      |
+| 9.14 | Overlay traffic accounting defects (documentation only) | 📄 Documented, 1 of 4 fixed   |
 | 9.15 | Peer keepalive / discovery instrumentation              | ❌ Not implemented            |
 | 9.16 | PeerFinder slot and cache metrics                       | ❌ Not implemented            |
 | 9.17 | Peer span coverage (`peer.connect` / `peer.message.*`)  | ❌ Not implemented (deferred) |
