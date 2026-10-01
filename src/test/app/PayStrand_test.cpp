@@ -768,7 +768,8 @@ struct PayStrand_test : public beast::unit_test::Suite
                 env,
                 usd,
                 std::nullopt,
-                STPath({STPathElement(0, xrpAccount(), xrpCurrency(), xrpAccount())}),
+                STPath({STPathElement(
+                    STPathElement::Type::TypeNone, xrpAccount(), xrpCurrency(), xrpAccount())}),
                 temBAD_PATH);
 
             // The same account can't appear more than once on a path
