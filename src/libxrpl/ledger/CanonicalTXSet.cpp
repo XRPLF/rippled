@@ -30,10 +30,10 @@ operator<(CanonicalTXSet::Key const& lhs, CanonicalTXSet::Key const& rhs)
     return lhs.txId_ < rhs.txId_;
 }
 
-uint256
+UInt256
 CanonicalTXSet::accountKey(AccountID const& account)
 {
-    uint256 ret = beast::kZero;
+    UInt256 ret = beast::kZero;
     memcpy(ret.begin(), account.begin(), account.size());
     ret ^= salt_;
     return ret;
@@ -62,7 +62,7 @@ CanonicalTXSet::popAcctTransaction(std::shared_ptr<STTx const> const& tx)
     //  3. After handling all transactions with Sequences, return Tickets
     //     with the lowest Ticket ID first.
     std::shared_ptr<STTx const> result;
-    uint256 const effectiveAccount{accountKey(tx->getAccountID(sfAccount))};
+    UInt256 const effectiveAccount{accountKey(tx->getAccountID(sfAccount))};
 
     auto const seqProxy = tx->getSeqProxy();
     Key const after(effectiveAccount, seqProxy, beast::kZero);
