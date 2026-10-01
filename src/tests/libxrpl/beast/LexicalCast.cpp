@@ -189,7 +189,7 @@ TYPED_TEST(LexicalCastIntegers, round_trips_random_values)
 {
     static constexpr auto kSampleCount = 1000uz;
 
-    xor_shift_engine r{50};  // seeded per test so a failure reproduces on its own
+    XorShiftEngine r{50};  // seeded per test so a failure reproduces on its own
 
     for (auto i = 0uz; i < kSampleCount; ++i)
         expectRoundTrip(static_cast<TypeParam>(r()));

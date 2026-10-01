@@ -94,7 +94,7 @@ confineOwnerCount(
 // Returns the number of account reserves funded by this account: 1 for itself (0 if sponsored by
 // another account) plus the count of accounts it sponsors.
 std::uint32_t
-accountCountImpl(SLE::const_ref sle, std::int32_t accountCountAdj, beast::Journal j)
+accountCountImpl(SLE::ConstRef sle, std::int32_t accountCountAdj, beast::Journal j)
 {
     bool const isSponsored = sle->isFieldPresent(sfSponsor);
     std::int64_t const sponsoringAccountCount = sle->getFieldU32(sfSponsoringAccountCount);
@@ -123,7 +123,7 @@ accountCountImpl(SLE::const_ref sle, std::int32_t accountCountAdj, beast::Journa
 std::uint32_t
 adjustOwnerCountImpl(
     ApplyView& view,
-    SLE::ref sle,
+    SLE::Ref sle,
     SF_UINT32 const& sfield,
     AccountID const& accID,
     std::int32_t ownerCountAdj,
@@ -140,8 +140,8 @@ adjustOwnerCountImpl(
 void
 adjustOwnerCountSigned(
     ApplyView& view,
-    SLE::ref accountSle,
-    SLE::ref sponsorSle,
+    SLE::Ref accountSle,
+    SLE::Ref sponsorSle,
     std::int32_t adjustment,
     beast::Journal j)
 {
@@ -225,7 +225,7 @@ adjustOwnerCountSigned(
 }  // namespace
 
 std::uint32_t
-ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj)
+ownerCount(SLE::ConstRef sle, beast::Journal j, std::int32_t ownerCountAdj)
 {
     XRPL_ASSERT(sle && sle->getType() == ltACCOUNT_ROOT, "xrpl::ownerCount : sle is account root");
 
@@ -311,8 +311,8 @@ transferRate(ReadView const& view, AccountID const& issuer)
 void
 increaseOwnerCount(
     ApplyView& view,
-    SLE::ref accountSle,
-    SLE::ref sponsorSle,
+    SLE::Ref accountSle,
+    SLE::Ref sponsorSle,
     std::uint32_t count,
     beast::Journal j)
 {
@@ -326,7 +326,7 @@ increaseOwnerCount(
 }
 
 void
-increaseOwnerCount(ApplyViewContext ctx, SLE::ref accountSle, std::uint32_t count, beast::Journal j)
+increaseOwnerCount(ApplyViewContext ctx, SLE::Ref accountSle, std::uint32_t count, beast::Journal j)
 {
     auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, accountSle);
 
@@ -341,8 +341,8 @@ increaseOwnerCount(ApplyViewContext ctx, SLE::ref accountSle, std::uint32_t coun
 void
 decreaseOwnerCount(
     ApplyView& view,
-    SLE::ref accountSle,
-    SLE::ref sponsorSle,
+    SLE::Ref accountSle,
+    SLE::Ref sponsorSle,
     std::uint32_t count,
     beast::Journal j)
 {
@@ -358,8 +358,8 @@ decreaseOwnerCount(
 void
 decreaseOwnerCountForObject(
     ApplyView& view,
-    SLE::ref accountSle,
-    SLE::ref objectSle,
+    SLE::Ref accountSle,
+    SLE::Ref objectSle,
     std::uint32_t count,
     beast::Journal j)
 {
@@ -372,14 +372,14 @@ decreaseOwnerCountForObject(
     if (!validObjectType)
         return;  // LCOV_EXCL_LINE
 
-    SLE::ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
+    SLE::Ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
     decreaseOwnerCount(view, accountSle, sponsorSle, count, j);
 }
 
 void
 adjustLoanBrokerOwnerCount(
     ApplyView& view,
-    SLE::ref brokerSle,
+    SLE::Ref brokerSle,
     std::int32_t delta,
     beast::Journal j)
 {
@@ -398,7 +398,7 @@ adjustLoanBrokerOwnerCount(
 }
 
 XRPAmount
-accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjustment adj)
+accountReserve(ReadView const& view, SLE::ConstRef sle, beast::Journal j, Adjustment adj)
 {
     XRPL_ASSERT(sle && sle->getType() == ltACCOUNT_ROOT, "xrpl::accountReserve : valid sle");
 
@@ -416,9 +416,9 @@ accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjus
 TER
 checkReserve(
     ApplyViewContext ctx,
-    SLE::const_ref accSle,
+    SLE::ConstRef accSle,
     XRPAmount accBalance,
-    SLE::const_ref sponsorSle,
+    SLE::ConstRef sponsorSle,
     Adjustment adj,
     beast::Journal j,
     TER insufReserveCode)
@@ -483,7 +483,7 @@ checkReserve(
 TER
 checkReserve(
     ApplyViewContext ctx,
-    SLE::const_ref accSle,
+    SLE::ConstRef accSle,
     XRPAmount accBalance,
     Adjustment adj,
     beast::Journal j)
@@ -497,7 +497,7 @@ checkReserve(
 // ----------------------------------------------------
 
 AccountID
-pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
+pseudoAccountAddress(ReadView const& view, UInt256 const& pseudoOwnerKey)
 {
     // This number must not be changed without an amendment
     static constexpr std::uint16_t kMaxAccountAttempts = 256;
@@ -557,7 +557,7 @@ isPseudoAccount(SLE::const_pointer sleAcct)
 }
 
 std::expected<SLE::pointer, TER>
-createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField)
+createPseudoAccount(ApplyView& view, UInt256 const& pseudoOwnerKey, SField const& ownerField)
 {
     [[maybe_unused]]
     auto const& fields = getPseudoAccountFields();
@@ -599,7 +599,7 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
 }
 
 [[nodiscard]] TER
-checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag)
+checkDestinationAndTag(SLE::ConstRef toSle, bool hasDestinationTag)
 {
     if (toSle == nullptr)
         return tecNO_DST;
