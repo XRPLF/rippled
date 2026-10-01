@@ -39,18 +39,22 @@ if(
     set(XRPLD_VERSION "$ENV{FORCE_XRPLD_VERSION}")
 
     # The rules beast::SemanticVersion::parse applies, so that an invalid version
-    # fails here rather than when xrpld starts.
+    # fails here rather than when xrpld starts. It reads each number as an int.
     set(SEMVER_NUMBER "(0|[1-9][0-9]*)")
     set(SEMVER_PRE_RELEASE "[A-Za-z1-9-][A-Za-z0-9-]*")
     set(SEMVER_METADATA "[A-Za-z0-9-]+")
+    set(SEMVER_NUMBER_MAX 2147483647)
     if(
         NOT XRPLD_VERSION
             MATCHES
             "^${SEMVER_NUMBER}\\.${SEMVER_NUMBER}\\.${SEMVER_NUMBER}(-${SEMVER_PRE_RELEASE}(\\.${SEMVER_PRE_RELEASE})*)?(\\+${SEMVER_METADATA}(\\.${SEMVER_METADATA})*)?$"
+        OR CMAKE_MATCH_1 GREATER SEMVER_NUMBER_MAX
+        OR CMAKE_MATCH_2 GREATER SEMVER_NUMBER_MAX
+        OR CMAKE_MATCH_3 GREATER SEMVER_NUMBER_MAX
     )
         message(
             FATAL_ERROR
-            "FORCE_XRPLD_VERSION '${XRPLD_VERSION}' is not a semantic version, see https://semver.org"
+            "FORCE_XRPLD_VERSION '${XRPLD_VERSION}' is not a semantic version xrpld accepts, see https://semver.org"
         )
     endif()
 else()
