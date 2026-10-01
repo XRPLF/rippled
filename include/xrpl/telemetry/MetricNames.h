@@ -359,8 +359,9 @@ inline constexpr char rotationPhaseDurationSeconds[] = "rotation_phase_duration_
 /**
  * Keys the rotation's cache freshen fetched, and how many were only in the
  * archive. Labelled `cache` (which cache) and `outcome` (`fetched` or
- * `copied`). Two Adds per cache per rotation, never one per key. The ratio
- * copied/fetched is the freshen's yield, which no other signal measures.
+ * `copied`). Two Adds for each cache a rotation freshens, never one per
+ * key. The ratio copied/fetched is the freshen's yield, which no other
+ * metric measures.
  */
 inline constexpr char rotationFreshenKeysTotal[] = "rotation_freshen_keys_total";
 
@@ -452,6 +453,8 @@ inline constexpr char sweepMallocTrimReclaimedKbTotalDesc[] =
     "Resident kilobytes returned to the OS by the sweep's malloc_trim";
 inline constexpr char rotationCopyNodeRestoreTotalDesc[] =
     "Nodes re-stored during rotation because they were missing from both backends";
+inline constexpr char rotationFreshenKeysTotalDesc[] =
+    "Keys the rotation's cache freshen fetched, and how many were only in the archive";
 /** @} */
 
 /**
@@ -878,6 +881,10 @@ inline constexpr char healthWait[] = "health_wait";
 namespace freshen_cache {
 inline constexpr char treenode[] = "treenode";
 inline constexpr char masterTx[] = "master_tx";
+/**
+ * Every value above, for pre-registration.
+ */
+inline constexpr std::array all{treenode, masterTx};
 }  // namespace freshen_cache
 
 /**
@@ -888,6 +895,10 @@ inline constexpr char masterTx[] = "master_tx";
 namespace freshen_outcome {
 inline constexpr char fetched[] = "fetched";
 inline constexpr char copied[] = "copied";
+/**
+ * Every value above, for pre-registration.
+ */
+inline constexpr std::array all{fetched, copied};
 }  // namespace freshen_outcome
 
 /**
