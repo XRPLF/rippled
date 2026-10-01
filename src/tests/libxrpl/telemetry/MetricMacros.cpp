@@ -1900,30 +1900,27 @@ TEST(MetricMacros, jobq_saturation_gauge_observes_exact_pool_exhaustion_values)
 // and xrpl::peer_finder::SlotCensus aggregates, so a field rename or a reorder on
 // either side breaks these tests instead of silently drifting from production.
 // Both are plain header-only aggregates with no out-of-line members, so using
-// them here adds no xrpld link dependency.
+// them here adds no xrpld link dependency. tallyPeerLedgerSupply() is inline in
+// the same header, so the peer-supply tests run the production arithmetic.
 //
 // The four counters are driven through XRPL_METRIC_COUNTER_INC_LABELED /
 // XRPL_METRIC_COUNTER_INC, which is exactly what the production call sites use.
 // -----------------------------------------------------------------
 
-// peer_ledger_supply must keep the two "who can serve me" counts on separate
-// series from the "who is even talking" denominator. The values chosen are the
-// headline supply gap: three peers connected and advertising a range, all three
-// covering the validated sequence, and NOT ONE covering the next one needed.
+// peer_ledger_supply must keep the "who can serve me" counts on separate series
+// from the "who is even talking" denominator. The ranges are the real supply
+// gap: three peers are ahead of this node and none still holds its next ledger.
+// They go through the real tally, so the export carries production arithmetic.
 TEST(MetricMacros, peer_ledger_supply_gauge_names_a_gap_no_peer_can_fill)
 {
     CollectingProvider const provider;
 
-    // The real aggregate the production callback reports, filled here as
-    // OverlayImpl::getPeerLedgerSupply() would fill it. Peer set holds
-    // [1000, 4000]; this node's validated sequence is 4000, so the next needed
-    // is 4001 -- past every peer's tip.
-    PeerLedgerSupply observed{
-        .peersReporting = 3,
-        .peersServingValidated = 3,
-        .peersServingNext = 0,
-        .supplyMinSeq = 1000,
-        .supplyMaxSeq = 4000};
+    // This node validated 4000, so it needs 4001; every peer starts above that.
+    std::array const ranges{
+        PeerLedgerRange{.minSeq = 4501, .maxSeq = 9000},
+        PeerLedgerRange{.minSeq = 4600, .maxSeq = 9000},
+        PeerLedgerRange{.minSeq = 5000, .maxSeq = 8999}};
+    PeerLedgerSupply observed = tallyPeerLedgerSupply(ranges, 4000);
 
     // Keep the instrument alive for the whole test: destroying the handle
     // deregisters the callback, which is why the real registry holds a member.
@@ -1940,6 +1937,7 @@ TEST(MetricMacros, peer_ledger_supply_gauge_names_a_gap_no_peer_can_fill)
                     ->Observe(value, {{telemetry::label::metric, field}});
             };
             observe("peers_reporting", self->peersReporting);
+            observe("peers_ahead", self->peersAhead);
             observe("peers_serving_validated", self->peersServingValidated);
             observe("peers_serving_next", self->peersServingNext);
             observe("supply_min_seq", self->supplyMinSeq);
@@ -1949,27 +1947,22 @@ TEST(MetricMacros, peer_ledger_supply_gauge_names_a_gap_no_peer_can_fill)
 
     auto const gap = provider.collect();
 
-    // Exactly five series, one per `metric` value: no field collapses into
+    // Exactly six series, one per `metric` value: no field collapses into
     // another, so the denominator and the verdict stay separately readable.
-    ASSERT_EQ(gap.at("peer_ledger_supply").size(), 5u);
+    ASSERT_EQ(gap.at("peer_ledger_supply").size(), 6u);
 
-    // THE verdict this signal exists for: zero peers can serve the next needed
-    // ledger while three are connected and reporting. That pair is the whole
-    // point -- "the network cannot supply what I need" is otherwise
-    // indistinguishable from "my peers are slow", and the two faults have
-    // completely different fixes (change the peer set vs. wait).
+    // The gap: peers are ahead, and not one holds the ledger after ours. Zero
+    // serving is only a gap because peers_ahead is not zero.
     EXPECT_EQ(gaugeValue(gap, "peer_ledger_supply", attrs("metric", "peers_serving_next")), 0);
+    EXPECT_EQ(gaugeValue(gap, "peer_ledger_supply", attrs("metric", "peers_ahead")), 3);
     EXPECT_EQ(gaugeValue(gap, "peer_ledger_supply", attrs("metric", "peers_reporting")), 3);
 
-    // Serving the validated sequence is NOT the same question, and reads 3 here:
-    // the peers can serve where this node already is, just not where it must go
-    // next. Without both counts the gap would look like a total peer failure.
-    EXPECT_EQ(gaugeValue(gap, "peer_ledger_supply", attrs("metric", "peers_serving_validated")), 3);
+    // No peer reaches back to this node's own ledger either.
+    EXPECT_EQ(gaugeValue(gap, "peer_ledger_supply", attrs("metric", "peers_serving_validated")), 0);
 
-    // The window, so an operator can see whether the wanted sequence is below
-    // the peer set's floor (discarded history) or above its tip (unreached).
-    EXPECT_EQ(gaugeValue(gap, "peer_ledger_supply", attrs("metric", "supply_min_seq")), 1000);
-    EXPECT_EQ(gaugeValue(gap, "peer_ledger_supply", attrs("metric", "supply_max_seq")), 4000);
+    // The window sits wholly above the needed ledger: history nobody kept.
+    EXPECT_EQ(gaugeValue(gap, "peer_ledger_supply", attrs("metric", "supply_min_seq")), 4501);
+    EXPECT_EQ(gaugeValue(gap, "peer_ledger_supply", attrs("metric", "supply_max_seq")), 9000);
 
     // Exactly one label key, and it is "metric". This is the cardinality guard:
     // a peer_id label here would mint a new series per connection.
@@ -1979,14 +1972,14 @@ TEST(MetricMacros, peer_ledger_supply_gauge_names_a_gap_no_peer_can_fill)
         EXPECT_EQ(labels.begin()->first, "metric");
     }
 
-    // NEGATIVE: a `metric` value outside the production set of five has no
+    // NEGATIVE: a `metric` value outside the production set of six has no
     // series, so the readings above are not an artifact of a catch-all series.
     EXPECT_EQ(gap.at("peer_ledger_supply").count(attrs("metric", "peers_serving")), 0u);
 }
 
 // The complementary reading to the gap above: a healthy peer set where every
-// reporting peer covers the next needed sequence, so waiting WILL finish the
-// sync. Kept separate from the gap test so each stays under the length limit.
+// reporting peer covers the next needed sequence. Kept separate from the gap
+// test so each stays under the length limit.
 TEST(MetricMacros, peer_ledger_supply_gauge_reads_zero_window_as_unknown)
 {
     CollectingProvider const provider;
@@ -1995,6 +1988,7 @@ TEST(MetricMacros, peer_ledger_supply_gauge_reads_zero_window_as_unknown)
     // next one, window [1000, 5000].
     PeerLedgerSupply observed{
         .peersReporting = 4,
+        .peersAhead = 4,
         .peersServingValidated = 4,
         .peersServingNext = 4,
         .supplyMinSeq = 1000,
@@ -2012,6 +2006,7 @@ TEST(MetricMacros, peer_ledger_supply_gauge_reads_zero_window_as_unknown)
                     ->Observe(value, {{telemetry::label::metric, field}});
             };
             observe("peers_reporting", self->peersReporting);
+            observe("peers_ahead", self->peersAhead);
             observe("peers_serving_validated", self->peersServingValidated);
             observe("peers_serving_next", self->peersServingNext);
             observe("supply_min_seq", self->supplyMinSeq);
@@ -2025,29 +2020,33 @@ TEST(MetricMacros, peer_ledger_supply_gauge_reads_zero_window_as_unknown)
 
     // NEGATIVE/edge: nothing has advertised a range yet. Peers that have not
     // sent mtSTATUS_CHANGE report [0, 0] and are excluded from every field, so
-    // all five read 0.
+    // all six read 0.
     observed = PeerLedgerSupply{};
     auto const silent = provider.collect();
 
     // A 0 window means "unknown", NOT "the peer set serves from genesis". The
     // only thing that separates the two is peers_reporting, which is why it must
-    // be read alongside: 0 out of 0 reporting is silence, 0 out of many would be
-    // a real supply gap. Asserting the pair together pins that contract.
+    // be read alongside: 0 out of 0 reporting is silence; with peers reporting,
+    // read zero serving against peers_ahead. Asserting the pair together pins
+    // that contract.
     EXPECT_EQ(gaugeValue(silent, "peer_ledger_supply", attrs("metric", "supply_min_seq")), 0);
     EXPECT_EQ(gaugeValue(silent, "peer_ledger_supply", attrs("metric", "peers_reporting")), 0);
     EXPECT_EQ(gaugeValue(silent, "peer_ledger_supply", attrs("metric", "supply_max_seq")), 0);
 
     // Every field is still a present series at 0, never absent: a dropped
     // series would be indistinguishable from a dead exporter.
-    ASSERT_EQ(silent.at("peer_ledger_supply").size(), 5u);
+    ASSERT_EQ(silent.at("peer_ledger_supply").size(), 6u);
+    EXPECT_EQ(gaugeValue(silent, "peer_ledger_supply", attrs("metric", "peers_ahead")), 0);
     EXPECT_EQ(gaugeValue(silent, "peer_ledger_supply", attrs("metric", "peers_serving_next")), 0);
     EXPECT_EQ(
         gaugeValue(silent, "peer_ledger_supply", attrs("metric", "peers_serving_validated")), 0);
 
     // A single reporting peer at the network tip: min and max collapse to the
-    // same sequence, which is a legitimate reading, not a defect.
+    // same sequence, which is a legitimate reading, not a defect. Nothing is
+    // ahead, so zero serving the next ledger is not a gap.
     observed = PeerLedgerSupply{
         .peersReporting = 1,
+        .peersAhead = 0,
         .peersServingValidated = 1,
         .peersServingNext = 0,
         .supplyMinSeq = 5000,
@@ -2055,6 +2054,67 @@ TEST(MetricMacros, peer_ledger_supply_gauge_reads_zero_window_as_unknown)
     auto const single = provider.collect();
     EXPECT_EQ(gaugeValue(single, "peer_ledger_supply", attrs("metric", "supply_min_seq")), 5000);
     EXPECT_EQ(gaugeValue(single, "peer_ledger_supply", attrs("metric", "supply_max_seq")), 5000);
+}
+
+// The tally itself, on the states a count of "peers holding validated + 1"
+// misreads. At the tip and on a fresh node, zero serving the next ledger is not
+// a gap; only peers_ahead and the fresh-node target say so.
+TEST(MetricMacros, peer_ledger_supply_tally_separates_tip_from_gap)
+{
+    // At the tip: this node and both reporting peers are at 4000, so
+    // validated + 1 does not exist yet. The [0, 0] peer has not reported.
+    std::array const atTip{
+        PeerLedgerRange{.minSeq = 1000, .maxSeq = 4000},
+        PeerLedgerRange{.minSeq = 2000, .maxSeq = 4000},
+        PeerLedgerRange{}};
+    auto const tip = tallyPeerLedgerSupply(atTip, 4000);
+    EXPECT_EQ(tip.peersReporting, 2);
+    EXPECT_EQ(tip.peersAhead, 0);
+    EXPECT_EQ(tip.peersServingValidated, 2);
+    EXPECT_EQ(tip.peersServingNext, 0);
+    EXPECT_EQ(tip.supplyMinSeq, 1000);
+    EXPECT_EQ(tip.supplyMaxSeq, 4000);
+
+    // The same peers, seen from a node a thousand ledgers behind: both are
+    // ahead and both still hold the next ledger.
+    auto const behind = tallyPeerLedgerSupply(atTip, 3000);
+    EXPECT_EQ(behind.peersAhead, 2);
+    EXPECT_EQ(behind.peersServingNext, 2);
+
+    // Range edges, behind at 3000: a range that starts at the next ledger,
+    // 3001, serves it, and one that starts at the validated ledger, 3000,
+    // serves that one too.
+    std::array const edges{
+        PeerLedgerRange{.minSeq = 1000, .maxSeq = 4000},
+        PeerLedgerRange{.minSeq = 3001, .maxSeq = 4000},
+        PeerLedgerRange{.minSeq = 3000, .maxSeq = 4000}};
+    auto const edge = tallyPeerLedgerSupply(edges, 3000);
+    EXPECT_EQ(edge.peersServingNext, 3);
+    EXPECT_EQ(edge.peersServingValidated, 2);
+
+    // Fresh node: no validated ledger, so the target is the newest reported
+    // ledger, 106001, and only the two peers that reach it count. Targeting
+    // the lowest reported ledger, 105000, would count one. No peer holds
+    // ledger 1, which is why validated + 1 would read 0 here.
+    std::array const fresh{
+        PeerLedgerRange{.minSeq = 105000, .maxSeq = 106000},
+        PeerLedgerRange{.minSeq = 105500, .maxSeq = 106001},
+        PeerLedgerRange{.minSeq = 105900, .maxSeq = 106001}};
+    auto const start = tallyPeerLedgerSupply(fresh, 0);
+    EXPECT_EQ(start.peersReporting, 3);
+    EXPECT_EQ(start.peersAhead, 3);
+    EXPECT_EQ(start.peersServingValidated, 0);
+    EXPECT_EQ(start.peersServingNext, 2);
+
+    // NEGATIVE: nothing reported. Every count is 0 and the window is 0,
+    // meaning unknown, never the unsigned-max starting value.
+    std::array const silent{PeerLedgerRange{}, PeerLedgerRange{}};
+    auto const none = tallyPeerLedgerSupply(silent, 4000);
+    EXPECT_EQ(none.peersReporting, 0);
+    EXPECT_EQ(none.peersAhead, 0);
+    EXPECT_EQ(none.peersServingNext, 0);
+    EXPECT_EQ(none.supplyMinSeq, 0);
+    EXPECT_EQ(none.supplyMaxSeq, 0);
 }
 
 // peerfinder_slot_census must export all nine numbers, because each of the three

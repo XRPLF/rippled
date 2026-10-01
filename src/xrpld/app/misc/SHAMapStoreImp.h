@@ -240,10 +240,6 @@ private:
         ~RotationPhase()
         {
             auto const elapsed = std::chrono::steady_clock::now() - start_;
-            // [[maybe_unused]] so a -DXRPL_ENABLE_TELEMETRY=0 build (macro
-            // expands to `do {} while (false)`) keeps compiling under -Werror.
-            [[maybe_unused]] auto const seconds =
-                std::chrono::duration<double>(elapsed - nested_).count();
             // One label set for every phase, so this stays one histogram
             // instrument. `cache` is empty on the non-freshen phases, and
             // Prometheus treats an empty label as absent.
@@ -251,7 +247,7 @@ private:
                 owner_.app_,
                 telemetry::metric::rotationPhaseDurationSeconds,
                 "Seconds spent in one online-delete rotation phase, less nested waits",
-                seconds,
+                std::chrono::duration<double>(elapsed - nested_).count(),
                 {{telemetry::label::stage, stage_}, {telemetry::label::cache, cache_}});
             if (enclosing_ != nullptr)
                 enclosing_->nested_ += elapsed;
@@ -274,17 +270,26 @@ private:
 
     private:
         SHAMapStoreImp& owner_;
-        // The two below are read only inside the metric macro in the
-        // destructor, so a -DXRPL_ENABLE_TELEMETRY=0 build sees no use at all.
-        // Owned copies: the constructor takes views so callers can pass the
-        // label constants, but a view stored in a member would only be valid
-        // as long as the caller's text was. A phase is built a handful of
-        // times per rotation, so two small strings cost nothing.
+        /**
+         * Stage label for the duration record. Read only inside the metric
+         * macro, so a telemetry-off build never reads it. An owned copy: the
+         * constructor takes a view so callers can pass the label constants,
+         * and a stored view would only live as long as the caller's text.
+         */
         [[maybe_unused]] std::string const stage_;
+        /**
+         * The cache a freshen phase worked on, empty for every other phase.
+         * Labels the duration record and, when set, the span. An owned copy,
+         * like stage_.
+         */
         [[maybe_unused]] std::string const cache_;
-        // The phase this one runs inside, or null.
+        /**
+         * The phase this one runs inside, or null.
+         */
         RotationPhase* const enclosing_;
-        // Time spent in phases opened inside this one.
+        /**
+         * Time spent in phases opened inside this one.
+         */
         std::chrono::steady_clock::duration nested_{};
         std::chrono::steady_clock::time_point start_ = std::chrono::steady_clock::now();
         telemetry::ScopedSpanGuard span_;
@@ -294,8 +299,10 @@ private:
     // SHAMapStore thread only, so it needs no lock.
     bool rotating_ = false;
 
-    // The innermost open RotationPhase, or null. SHAMapStore thread only, so
-    // it needs no lock.
+    /**
+     * The innermost open RotationPhase, or null. SHAMapStore thread only, so
+     * it needs no lock.
+     */
     RotationPhase* openPhase_ = nullptr;
 
     /**

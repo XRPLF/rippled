@@ -2619,8 +2619,10 @@ evaluating an hour after boot.
 
 Investigate in this order: the online-delete rotation's cache freshen (a
 rotation logs `rotating` when it starts and `finished rotation` when it
-completes, both at warning level in the `SHAMapStore` journal),
-`IOEventLoopLatencyHigh`, peer connectivity, then clock sync.
+completes, both at warning level in the `SHAMapStore` journal; its
+`nodestore.rotate` spans and the tree-node cache's lock-hold peak,
+`cache_metrics{metric="treenode_lock_hold_peak_us"}`, show where the time
+went), `IOEventLoopLatencyHigh`, peer connectivity, then clock sync.
 
 **NodeNotFull** — The node has been below `FULL` for 15m
 (`0`=disconnected, `1`=connected, `2`=syncing, `3`=tracking, `4`=full). This is
@@ -3650,21 +3652,22 @@ _Time to First Validated Ledger_ stays flat at zero.
 Ledger acquires are in flight, _Ledgers Behind Network_ is flat or rising, and
 `full` never arrives.
 
-| Look at                                                                                                       | Healthy                                           | Unhealthy                                                       | Conclude                                                                                                                                                                                                                                    |
-| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| _Missing SHAMap Nodes per Acquire (state/tx)_                                                                 | falling toward zero (read the trend over minutes) | **flat and non-zero**                                           | **no peer is serving that tree** — the node will sit here forever. Pinned at 256 is the per-sweep cap, meaningful only with the trend                                                                                                       |
-| _Acquire Stall Rate (no progress)_                                                                            | flat                                              | sustained rate **together with** a flat missing-node count      | the definitive stuck-sync signature: requesting and nobody answering                                                                                                                                                                        |
-| _Peers Able to Serve Needed Sequence_                                                                         | `peers_serving_next` above zero                   | `peers_serving_next` = 0 while `peers_reporting` > 0            | **decisive**: peers are connected and none holds the next needed ledger. Waiting cannot finish it — the peer set must change. Everything else in branch C will look starved as a consequence, so do not chase it                            |
-| _Peer Supply Window Margin (history headroom vs tip gap)_                                                     | _History Headroom_ positive, _Tip Gap_ near zero  | _History Headroom_ **below zero**                               | asking for history nobody kept — needs a full-history peer                                                                                                                                                                                  |
-|                                                                                                               |                                                   | _Tip Gap_ growing steadily                                      | the peer set lags the real network; not a history problem                                                                                                                                                                                   |
-| _Ledger Acquire Phase Outcomes (by phase & timeout)_ + _Ledger Acquire Phase Duration (p95 by phase)_ (row 9) | `header` short, `astree` the bulk                 | `astree` hot with `timed_out=true` and non-zero `missing_nodes` | the common stuck shape — peers are not supplying account-state nodes                                                                                                                                                                        |
-|                                                                                                               |                                                   | `header` hot                                                    | the node is waiting to be **told what to fetch**; invisible in the missing-node counts, which are both still zero                                                                                                                           |
-| _Add-Node Outcomes_                                                                                           | `good` dominates                                  | `duplicate` swamps `good`                                       | bandwidth busy, acquire standing still — peers re-sending known data                                                                                                                                                                        |
-|                                                                                                               |                                                   | `invalid` rising                                                | a specific misbehaving peer, not a local fault                                                                                                                                                                                              |
-| _Received-Data Stash Depth & In-Flight Acquires_                                                              | stash drains                                      | stash growing                                                   | data arrives faster than it is applied — a job-queue or disk problem, the **opposite** conclusion from a stall rate, and only this panel separates them                                                                                     |
-| `jobq_<jobtype>_deferred`                                                                                     | flat at 0                                         | sustained non-zero on `ledgerdata`/`ledgerrequest`              | a job the queue accepted then **withheld** at its concurrency limit of 3 — it appears in neither `waiting` nor `running`, so no other signal can show it. Starved `ledgerdata` is exactly why the stash grows while missing nodes stay flat |
-| _Worker Pool Saturation_ + _Worker Pool Capacity & Total Backlog_                                             | under 80%                                         | 100% with `total_waiting` climbing                              | the pool is **exhausted** — every stage looks slow at once. Stop here; no per-subsystem fix helps while no thread is free                                                                                                                   |
-| Acquire outcome `abandoned` in Tempo (`{name="ledger.acquire" && span.outcome="abandoned"}`)                  | absent                                            | present                                                         | the acquire was destroyed with no result: swept, shut down, or cleared by an admin `fetch_info` clear. Rule out the last two first                                                                                                          |
+| Look at                                                                                                       | Healthy                                           | Unhealthy                                                                                                  | Conclude                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _Missing SHAMap Nodes per Acquire (state/tx)_                                                                 | falling toward zero (read the trend over minutes) | **flat and non-zero**                                                                                      | **no peer is serving that tree** — the node will sit here forever. Pinned at 256 is the per-sweep cap, meaningful only with the trend                                                                                                       |
+| _Acquire Stall Rate (no progress)_                                                                            | flat                                              | sustained rate **together with** a flat missing-node count                                                 | the definitive stuck-sync signature: requesting and nobody answering                                                                                                                                                                        |
+| _Peers Able to Serve Needed Sequence_                                                                         | `peers_serving_next` above zero                   | `peers_ahead` = 0 (sustained) while `peers_reporting` > 0 and `ledgermaster_validated_ledger_age` climbing | **decisive**: no peer offers anything newer than this node, so _Ledgers Behind Network_ reads 0 too (same peer ranges). Waiting cannot finish it — the peer set must change. Everything else in branch C will look starved; do not chase it |
+|                                                                                                               |                                                   | `peers_serving_next` = 0 while `peers_ahead` > 0                                                           | none of the peers ahead offers the ledger after this node's. Not a sync blocker — the node fetches the newest ledger by hash — but its history keeps a hole that only a peer holding those ledgers can fill. Keep reading the rows below    |
+| _Peer Supply Window Margin (history headroom vs tip gap)_                                                     | _History Headroom_ positive, _Tip Gap_ near zero  | _History Headroom_ **below zero**                                                                          | no peer offers this node's validated ledger or anything older. Not a sync blocker, but the ledgers between this node's and the lowest one offered can stay a hole that only a peer holding them can fill                                    |
+|                                                                                                               |                                                   | _Tip Gap_ growing steadily                                                                                 | the peer set lags the real network; not a history problem                                                                                                                                                                                   |
+| _Ledger Acquire Phase Outcomes (by phase & timeout)_ + _Ledger Acquire Phase Duration (p95 by phase)_ (row 9) | `header` short, `astree` the bulk                 | `astree` hot with `timed_out=true` and non-zero `missing_nodes`                                            | the common stuck shape — peers are not supplying account-state nodes                                                                                                                                                                        |
+|                                                                                                               |                                                   | `header` hot                                                                                               | the node is waiting to be **told what to fetch**; invisible in the missing-node counts, which are both still zero                                                                                                                           |
+| _Add-Node Outcomes_                                                                                           | `good` dominates                                  | `duplicate` swamps `good`                                                                                  | bandwidth busy, acquire standing still — peers re-sending known data                                                                                                                                                                        |
+|                                                                                                               |                                                   | `invalid` rising                                                                                           | a specific misbehaving peer, not a local fault                                                                                                                                                                                              |
+| _Received-Data Stash Depth & In-Flight Acquires_                                                              | stash drains                                      | stash growing                                                                                              | data arrives faster than it is applied — a job-queue or disk problem, the **opposite** conclusion from a stall rate, and only this panel separates them                                                                                     |
+| `jobq_<jobtype>_deferred`                                                                                     | flat at 0                                         | sustained non-zero on `ledgerdata`/`ledgerrequest`                                                         | a job the queue accepted then **withheld** at its concurrency limit of 3 — it appears in neither `waiting` nor `running`, so no other signal can show it. Starved `ledgerdata` is exactly why the stash grows while missing nodes stay flat |
+| _Worker Pool Saturation_ + _Worker Pool Capacity & Total Backlog_                                             | under 80%                                         | 100% with `total_waiting` climbing                                                                         | the pool is **exhausted** — every stage looks slow at once. Stop here; no per-subsystem fix helps while no thread is free                                                                                                                   |
+| Acquire outcome `abandoned` in Tempo (`{name="ledger.acquire" && span.outcome="abandoned"}`)                  | absent                                            | present                                                                                                    | the acquire was destroyed with no result: swept, shut down, or cleared by an admin `fetch_info` clear. Rule out the last two first                                                                                                          |
 
 **Conclusion:** distinguish "nobody is serving it" (peer supply) from "it arrives
 and we cannot process it" (job queue / disk). The two look identical in a log and
@@ -3828,11 +3831,12 @@ first one that is wrong and fix it before reading further panels.
    - `connected` — success; this is the line that must be non-zero.
    - `tcp_fail` — no route, refused, or the peer port is closed or firewalled.
    - `tls_fail` — the TLS handshake failed.
-   - `self_connection` — TLS succeeded and PeerFinder then recognised the
-     remote address as one of this node's own, so it had dialled itself. A
-     local misconfiguration (own address in `[ips_fixed]`, or behind the
-     advertised endpoint), not an unreachable peer; reported separately so a
-     rising `tls_fail` is not confused with it.
+   - `self_connection` — TLS succeeded and then PeerFinder found the dial
+     had come back in to this node: it had dialled itself. The
+     address can come from `[ips]` or `[ips_fixed]`, or from a peer:
+     PeerFinder stores addresses peers send without checking them against
+     its own, so this can happen with no misconfiguration. It is reported
+     apart from `tls_fail` because no peer failed.
    - `upgrade_fail` — TLS succeeded but the HTTP upgrade or protocol
      negotiation was rejected. This is the outcome that pairs with step 3.
    - `timeout` — the attempt never reached a terminal state.
@@ -4065,17 +4069,29 @@ panel it reads.
     Steps 6 to 10 all assume some peer holds what the node is asking for. This
     step tests that assumption, and it is the one that separates "slow" from
     "impossible". Panel _Peers Able to Serve Needed Sequence_
-    (`peer_ledger_supply`, `metric=peers_reporting`,
-    `peers_serving_validated` and `peers_serving_next`). Read the two counts
-    together — `peers_reporting` is the denominator that makes the rest
-    meaningful:
-    - **`peers_serving_next` at zero with `peers_reporting` above zero** —
-      the decisive reading. Peers are connected and have advertised their
-      ranges, and **none of them holds the next ledger this node must
-      acquire.** No amount of waiting finishes the sync; the peer set itself
-      has to change. Add peers that hold the range, or point the node at a
-      full-history server. Everything in steps 6 to 10 will look starved as a
-      consequence, so do not chase them.
+    (`peer_ledger_supply`, `metric=peers_reporting`, `peers_ahead`,
+    `peers_serving_validated` and `peers_serving_next`). The needed ledger is
+    validated + 1; before the first validated ledger it is the newest ledger
+    any peer reports, because that is what a fresh node fetches. Read the
+    counts together — `peers_reporting` is the denominator that makes the
+    rest meaningful:
+    - **`peers_ahead` at zero with `peers_reporting` above zero** — no
+      connected peer holds anything newer than this node. At the tip this is
+      the normal reading: the next ledger does not exist yet, so
+      `peers_serving_next` is zero too and there is nothing to fetch. It is
+      the decisive reading only when the node is behind — its validated
+      ledger keeps ageing (`ledgermaster_validated_ledger_age` climbing)
+      while the network advances. Then its whole peer set is stuck with it,
+      no amount of waiting finishes the sync, and the peer set has to change.
+      Everything in steps 6 to 10 will look starved as a consequence, so do
+      not chase them.
+    - **`peers_serving_next` at zero with `peers_ahead` above zero** — peers
+      hold newer ledgers, but none of them offers the one right after this
+      node's. This does not stop the sync: the node catches up by fetching
+      the network's newest ledger by hash. But its history keeps a hole,
+      starting at that ledger, that only a peer holding those ledgers can
+      fill. If the sync is stuck as well, the cause is downstream: go back to
+      steps 6 to 10.
     - **`peers_serving_next` above zero but the sync is still slow** — supply
       is fine and the fault is downstream. Go back to steps 6 to 10: the data
       is available, so the limit is acquire progress, local processing or
@@ -4093,8 +4109,9 @@ panel it reads.
       is `validated_ledger_seq − supply_min_seq` and _Tip Gap_ is
       `supply_max_seq − validated_ledger_seq`. This is what tells the two
       shapes of a supply gap apart, and zero is the boundary in both cases:
-      _History Headroom_ **below zero** means the node is asking for history
-      nobody kept, so it needs a full-history peer; a _Tip Gap_ that grows
+      _History Headroom_ **below zero** means no peer offers this node's
+      validated ledger or anything older. That can leave a hole in its
+      history but does not stop the sync; a _Tip Gap_ that grows
       steadily means it is chasing a tip its peers have not reached, which is a
       peer set lagging the real network rather than a history problem. Both
       lines stay blank until the node has a validated ledger and a peer has
