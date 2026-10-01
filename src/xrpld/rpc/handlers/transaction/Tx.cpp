@@ -42,7 +42,7 @@
 namespace xrpl {
 
 static bool
-isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, uint256 const& hash)
+isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, UInt256 const& hash)
 {
     if (!ledgerMaster.haveLedger(seq))
         return false;
@@ -60,14 +60,14 @@ struct TxResult
     bool validated = false;
     std::optional<std::string> ctid;
     std::optional<NetClock::time_point> closeTime;
-    std::optional<uint256> ledgerHash;
+    std::optional<UInt256> ledgerHash;
     TxSearched searchedAll = TxSearched::Unknown;
     std::vector<BatchInnerResult> innerResults;
 };
 
 struct TxArgs
 {
-    std::optional<uint256> hash;
+    std::optional<UInt256> hash;
     std::optional<std::pair<uint32_t, uint16_t>> ctid;
     bool binary = false;
     std::optional<std::pair<uint32_t, uint32_t>> ledgerRange;
@@ -218,8 +218,8 @@ populateJsonResponse(
         if (context.apiVersion > 1)
         {
             static constexpr auto kOptionsJson =
-                static_cast<JsonOptions::underlying_t>(JsonOptions::Values::IncludeDate) |
-                static_cast<JsonOptions::underlying_t>(JsonOptions::Values::DisableApiPriorV2);
+                static_cast<JsonOptions::UnderlyingT>(JsonOptions::Values::IncludeDate) |
+                static_cast<JsonOptions::UnderlyingT>(JsonOptions::Values::DisableApiPriorV2);
             if (args.binary)
             {
                 response[jss::tx_blob] = result.txn->getJson(kOptionsJson, true);
@@ -308,7 +308,7 @@ doTxJson(rpc::JsonContext& context)
 
     if (context.params.isMember(jss::transaction))
     {
-        uint256 hash;
+        UInt256 hash;
         if (!hash.parseHex(context.params[jss::transaction].asString()))
             return rpcError(RpcNotImpl);
         args.hash = hash;

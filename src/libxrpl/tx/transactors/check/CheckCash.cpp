@@ -439,6 +439,12 @@ CheckCash::doApply()
             AccountID const& deliverIssuer = flowDeliver.getIssuer();
             auto const err = flowDeliver.asset().visit(
                 [&](Issue const& issue) -> std::optional<TER> {
+                    // An issuer needs no holder-limit waiver to receive its own currency.
+                    if (deliverIssuer == accountID_ && ctx_.view().rules().enabled(fixCleanup3_4_0))
+                    {
+                        return std::nullopt;
+                    }
+
                     // If a trust line does not exist yet create one.
                     Issue const& trustLineIssue = issue;
                     AccountID const truster = deliverIssuer == accountID_ ? srcId : accountID_;
@@ -624,7 +630,7 @@ CheckCash::doApply()
 }
 
 void
-CheckCash::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+CheckCash::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

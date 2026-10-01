@@ -192,7 +192,7 @@ getLimitedNewestLedgerInfo(soci::session& session, LedgerIndex ledgerFirstIndex,
  * @return Ledger or none if ledger not found.
  */
 std::optional<LedgerHeader>
-getLedgerInfoByHash(soci::session& session, uint256 const& ledgerHash, beast::Journal j);
+getLedgerInfoByHash(soci::session& session, UInt256 const& ledgerHash, beast::Journal j);
 
 /**
  * @brief getHashByIndex Returns hash of ledger with given sequence.
@@ -200,7 +200,7 @@ getLedgerInfoByHash(soci::session& session, uint256 const& ledgerHash, beast::Jo
  * @param ledgerIndex Ledger sequence.
  * @return Hash of the ledger.
  */
-uint256
+UInt256
 getHashByIndex(soci::session& session, LedgerIndex ledgerIndex);
 
 /**
@@ -316,7 +316,7 @@ getNewestAccountTxs(
  *         skipped. We need to skip some quantity of transactions if option
  *         offset is > 0 in the options structure.
  */
-std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
+std::pair<std::vector<RelationalDatabase::TxnMetaLedgerType>, int>
 getOldestAccountTxsB(
     soci::session& session,
     Application& app,
@@ -342,7 +342,7 @@ getOldestAccountTxsB(
  *         skipped. We need to skip some quantity of transactions if option
  *         offset is > 0 in the options structure.
  */
-std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
+std::pair<std::vector<RelationalDatabase::TxnMetaLedgerType>, int>
 getNewestAccountTxsB(
     soci::session& session,
     Application& app,
@@ -421,7 +421,7 @@ std::variant<RelationalDatabase::AccountTx, TxSearched>
 getTransaction(
     soci::session& session,
     Application& app,
-    uint256 const& id,
+    UInt256 const& id,
     std::optional<ClosedInterval<uint32_t>> const& range,
     ErrorCodeI& ec);
 

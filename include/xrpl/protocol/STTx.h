@@ -5,6 +5,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -13,6 +14,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFormats.h>
 
 #include <boost/container/flat_set.hpp>
@@ -39,7 +41,7 @@ enum class TxnSql : char {
 
 class STTx final : public STObject, public CountedObject<STTx>
 {
-    uint256 tid_;
+    UInt256 tid_;
     TxType txType_;
 
 public:
@@ -81,7 +83,7 @@ public:
         return getSignature(*this);
     }
 
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     getSigningHash() const;
 
     [[nodiscard]] TxType
@@ -96,7 +98,7 @@ public:
     [[nodiscard]] boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     getTransactionID() const;
 
     [[nodiscard]] json::Value
@@ -105,14 +107,36 @@ public:
     [[nodiscard]] json::Value
     getJson(JsonOptions options, bool binary) const;
 
+    /**
+     * Sign the transaction as its account.
+     *
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
+     */
+    void
+    sign(PublicKey const& publicKey, SecretKey const& secretKey);
+
+    /**
+     * Sign the transaction in one of its signature fields.
+     *
+     * The signature is bound to the role that made it, so it cannot be moved
+     * into another role.
+     *
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
+     * @param role The role signing the transaction.
+     * @param rules The current ledger rules.
+     */
     void
     sign(
         PublicKey const& publicKey,
         SecretKey const& secretKey,
-        std::optional<std::reference_wrapper<SField const>> signatureTarget = {});
+        SignatureRole role,
+        Rules const& rules);
 
     /**
      * Check the signature.
+     *
      * @param rules The current ledger rules.
      * @return `true` if valid signature. If invalid, the error message string.
      */
@@ -120,7 +144,7 @@ public:
     checkSign(Rules const& rules) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkBatchSign(Rules const& rules) const;
+    checkBatchSign() const;
 
     // SQL Functions with metadata.
     static std::string const&
@@ -139,7 +163,7 @@ public:
     /**
      * The IDs of the inner transactions of a Batch.
      */
-    [[nodiscard]] std::vector<uint256>
+    [[nodiscard]] std::vector<UInt256>
     getBatchTransactionIDs() const;
 
     /**
@@ -162,28 +186,28 @@ public:
 private:
     /**
      * Check the signature.
+     *
      * @param rules The current ledger rules.
      * @param sigObject Reference to object that contains the signature fields.
      *     Will be *this more often than not.
+     * @param role The role that made the signature in sigObject. Determines
+     *     the signing prefix, which binds the signature to that role.
      * @return `true` if valid signature. If invalid, the error message string.
      */
     [[nodiscard]] std::expected<void, std::string>
-    checkSign(Rules const& rules, STObject const& sigObject) const;
+    checkSign(Rules const& rules, STObject const& sigObject, SignatureRole role) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkSingleSign(STObject const& sigObject) const;
+    checkSingleSign(STObject const& sigObject, HashPrefix prefix) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkMultiSign(Rules const& rules, STObject const& sigObject) const;
+    checkMultiSign(STObject const& sigObject, HashPrefix prefix) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkBatchSingleSign(STObject const& batchSigner, std::vector<uint256> const& txIds) const;
+    checkBatchSingleSign(STObject const& batchSigner, std::vector<UInt256> const& txIds) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkBatchMultiSign(
-        STObject const& batchSigner,
-        Rules const& rules,
-        std::vector<uint256> const& txIds) const;
+    checkBatchMultiSign(STObject const& batchSigner, std::vector<UInt256> const& txIds) const;
 
     void
     buildBatchTxns();
@@ -234,7 +258,7 @@ STTx::getSigningPubKey() const
     return getFieldVL(sfSigningPubKey);
 }
 
-inline uint256
+inline UInt256
 STTx::getTransactionID() const
 {
     return tid_;
