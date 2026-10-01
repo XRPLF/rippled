@@ -654,6 +654,7 @@ callMethodsOnNullScopedGuard(TraceCategory cat)
         guard.setAttribute("double_key", 0.5);
         guard.setAttribute("bool_key", true);
         guard.addEvent("event");
+        guard.addEvent("event_with_attributes", {{"key", "value"}});
         guard.setOk();
         guard.setError("error");
         guard.recordException(std::runtime_error("error"));
