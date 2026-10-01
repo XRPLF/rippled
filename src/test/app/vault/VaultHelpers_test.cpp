@@ -72,7 +72,7 @@ private:
         Number const& assetsTotal,
         std::optional<std::uint8_t> fixedScale = std::nullopt)
     {
-        auto vault = std::make_shared<SLE>(keylet::vault(uint256(1)));
+        auto vault = std::make_shared<SLE>(keylet::vault(UInt256(1)));
         vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
         vault->at(sfAssetsTotal) = assetsTotal;
         associateAsset(*vault, asset);

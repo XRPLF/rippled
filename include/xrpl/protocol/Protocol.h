@@ -416,7 +416,7 @@ isFlagLedger(LedgerIndex seq);
  * The value is computed as the hash of the
  * canonicalized, serialized transaction object.
  */
-using TxID = uint256;
+using TxID = UInt256;
 
 /**
  * The maximum number of trustlines to delete as part of AMM account
@@ -555,6 +555,11 @@ constexpr std::size_t kEcConvertBackProofLength =
  * Length of the ZKProof for ConfidentialMPTClawback.
  */
 constexpr std::size_t kEcClawbackProofLength = SECP256K1_COMPACT_CLAWBACK_PROOF_SIZE;
+
+/**
+ * Length of compact equality proof.
+ */
+constexpr std::size_t kEcEqualityProofLength = 128;
 
 /**
  * Extra base fee multiplier charged to confidential MPT transactions.

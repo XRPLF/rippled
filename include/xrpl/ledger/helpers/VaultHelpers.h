@@ -34,7 +34,7 @@ class STTx;
  * @return The current assets total.
  */
 [[nodiscard]] Number
-getAssetsTotal(SLE::const_ref vault);
+getAssetsTotal(SLE::ConstRef vault);
 
 /**
  * @brief A change to a FixedPrecision Vault's balances.
@@ -79,7 +79,7 @@ struct VaultBalanceChange
  *         LossUnrealized would become negative.
  */
 [[nodiscard]] TER
-adjustVaultBalances(SLE::ref vault, VaultBalanceChange const& change, beast::Journal j);
+adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Journal j);
 
 /**
  * Return the Vault's current live exponent.
@@ -89,7 +89,7 @@ adjustVaultBalances(SLE::ref vault, VaultBalanceChange const& change, beast::Jou
  * finer than -Scale and coarsens once AssetsTotal outgrows 16 digits there.
  */
 [[nodiscard]] int
-getVaultScale(SLE::const_ref vault);
+getVaultScale(SLE::ConstRef vault);
 
 /**
  * Return the Vault's base exponent.
@@ -98,7 +98,7 @@ getVaultScale(SLE::const_ref vault);
  * Vaults use -Scale, or 0 for integral assets.
  */
 [[nodiscard]] int
-getVaultBaseScale(SLE::const_ref vault);
+getVaultBaseScale(SLE::ConstRef vault);
 
 namespace detail {
 
@@ -106,7 +106,7 @@ namespace detail {
  * Return the Vault's posterior live exponent after applying an unrounded delta.
  */
 [[nodiscard]] int
-getPosteriorVaultScale(SLE::const_ref vault, STAmount const& delta);
+getPosteriorVaultScale(SLE::ConstRef vault, STAmount const& delta);
 
 }  // namespace detail
 
@@ -115,7 +115,7 @@ getPosteriorVaultScale(SLE::const_ref vault, STAmount const& delta);
  */
 [[nodiscard]] STAmount
 roundToPosteriorVaultScale(
-    SLE::const_ref vault,
+    SLE::ConstRef vault,
     STAmount const& amount,
     Number::RoundingMode roundingMode);
 
@@ -188,7 +188,7 @@ creditToPosteriorScale(
  */
 [[nodiscard]] STAmount
 creditToPosteriorAvailableScale(
-    SLE::const_ref vault,
+    SLE::ConstRef vault,
     STAmount const& raw,
     Number::RoundingMode roundingMode);
 
@@ -198,7 +198,7 @@ creditToPosteriorAvailableScale(
  * Defined only for FixedPrecision Vaults, where this is 9 * 10^(15 - P).
  */
 [[nodiscard]] Number
-getVaultOpenLimit(SLE::const_ref vault);
+getVaultOpenLimit(SLE::ConstRef vault);
 
 /**
  * Check whether amount is an admissible optional inflow.
@@ -211,7 +211,7 @@ getVaultOpenLimit(SLE::const_ref vault);
  * The amount is rounded toward zero at the posterior live exponent.
  */
 [[nodiscard]] TER
-checkOptionalVaultInflow(SLE::const_ref vault, STAmount const& amount);
+checkOptionalVaultInflow(SLE::ConstRef vault, STAmount const& amount);
 
 /**
  * Open-zone capacity after adding roundedAmount: AssetsTotal + YieldUnrealized
@@ -228,7 +228,7 @@ checkOptionalVaultInflow(SLE::const_ref vault, STAmount const& amount);
  *                       posterior or base scale by the caller.
  */
 [[nodiscard]] Number
-vaultOpenZoneCapacity(SLE::const_ref vault, Number const& roundedAmount);
+vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount);
 
 /**
  * From the perspective of a vault, return the number of shares to give
@@ -242,7 +242,7 @@ vaultOpenZoneCapacity(SLE::const_ref vault, Number const& roundedAmount);
  * @return The number of shares, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets);
+assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& assets);
 
 /**
  * From the perspective of a vault, return the number of assets to take from
@@ -256,7 +256,7 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
  * @return The number of assets, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
+sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& shares);
 
 /**
  * Adjusts a requested asset change (delta) to match the decimal scale of the
@@ -286,7 +286,7 @@ sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
  *         change is below representable precision.
  */
 [[nodiscard]] std::expected<STAmount, TER>
-clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta);
+clampToAssetsTotalScale(SLE::ConstRef vault, STAmount const& delta);
 
 /**
  * Outflow clamp dispatcher for VaultWithdraw and VaultClawback: rounds a
@@ -303,7 +303,7 @@ clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta);
  *         change is below representable precision.
  */
 [[nodiscard]] std::expected<STAmount, TER>
-clampVaultOutflow(SLE::const_ref vault, STAmount const& delta);
+clampVaultOutflow(SLE::ConstRef vault, STAmount const& delta);
 
 /**
  * Returns the Vault's base exponent for asset at scale, before a Vault
@@ -357,7 +357,7 @@ enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
  * @param waive Whether to skip subtracting the unrealized loss.
  */
 [[nodiscard]] Number
-assetsTotalForWithdrawal(SLE::const_ref vault, WaiveUnrealizedLoss waive);
+assetsTotalForWithdrawal(SLE::ConstRef vault, WaiveUnrealizedLoss waive);
 
 /**
  * Returns true if debiting amount from total (the current value of a
@@ -388,7 +388,7 @@ debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount
  *                     caller.
  */
 [[nodiscard]] Number
-vaultDebitDustReference(SLE::const_ref vault, Number const& assetsTotal);
+vaultDebitDustReference(SLE::ConstRef vault, Number const& assetsTotal);
 
 /**
  * From the perspective of a vault, return the number of shares to demand from
@@ -407,8 +407,8 @@ vaultDebitDustReference(SLE::const_ref vault, Number const& assetsTotal);
  */
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
-    SLE::const_ref vault,
-    SLE::const_ref issuance,
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
     STAmount const& assets,
     TruncateShares truncate = TruncateShares::No,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
@@ -428,8 +428,8 @@ assetsToSharesWithdraw(
  */
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
-    SLE::const_ref vault,
-    SLE::const_ref issuance,
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
 
@@ -444,7 +444,7 @@ sharesToAssetsWithdraw(
  *                 both the share MPTID and the outstanding-amount total.
  */
 [[nodiscard]] bool
-isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance);
+isSoleShareholder(ReadView const& view, AccountID const& account, SLE::ConstRef issuance);
 
 /**
  * Resolves a Vault's LEVersion.
@@ -461,7 +461,7 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
  * absent.
  */
 [[nodiscard]] VaultVersion
-getVaultVersion(SLE::const_ref vault);
+getVaultVersion(SLE::ConstRef vault);
 
 /**
  * Decodes an already-extracted sfLEVersion value with the same range check as
@@ -498,7 +498,7 @@ vaultVersionFor(Rules const& rules);
  * @param vault The vault SLE.
  */
 [[nodiscard]] VaultKind
-getVaultKind(SLE::const_ref vault);
+getVaultKind(SLE::ConstRef vault);
 
 /**
  * Reads sfVaultKind from a transaction. An absent field resolves to
@@ -545,7 +545,7 @@ isValidClosedEndedGap(std::uint32_t sub, std::uint32_t red);
  * @param vault The vault SLE.
  */
 [[nodiscard]] VaultPhase
-getVaultPhase(ReadView const& view, SLE::const_ref vault);
+getVaultPhase(ReadView const& view, SLE::ConstRef vault);
 
 /**
  * Raw-fields overload of getVaultPhase. Derives the phase from an already
@@ -600,7 +600,7 @@ enum class SuppressExpired : bool { No = false, Yes = true };
 [[nodiscard]] TER
 checkVaultDomain(
     ReadView const& view,
-    SLE::const_ref issuance,
+    SLE::ConstRef issuance,
     AccountID const& subject,
     SuppressExpired suppressExpired);
 
