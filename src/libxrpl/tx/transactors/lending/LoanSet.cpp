@@ -638,8 +638,15 @@ LoanSet::doApply()
         }
     }
 
-    if (auto const ter = requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))
-        return ter;
+    // Without an origination fee the broker owner's leg of the send below is
+    // zero and does nothing, so the owner does not have to be able to hold the
+    // asset.
+    // Pre-fixCleanup3_5_0: the check ran on every loan.
+    if (originationFee != beast::kZero || !view.rules().enabled(fixCleanup3_5_0))
+    {
+        if (auto const ter = requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))
+            return ter;
+    }
 
     if (auto const ter = accountSendMulti(
             view,

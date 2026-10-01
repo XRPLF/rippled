@@ -427,12 +427,13 @@ private:
                     Ter{tecNO_AUTH});
                 env.close();
 
-                // Cannot create loan, even without an origination fee
+                // Post-fixCleanup3_5_0 a loan without an origination fee pays
+                // the lender nothing, so its authorization is not checked
                 env(set(borrower, broker.brokerID, principalRequest),
                     kCounterparty(lender),
                     Sig(sfCounterpartySignature, lender),
                     Fee(env.current()->fees().base * 5),
-                    Ter{tecNO_AUTH});
+                    Ter{features[fixCleanup3_5_0] ? TER{tesSUCCESS} : TER{tecNO_AUTH}});
                 env.close();
 
                 // No MPToken for lender - no authorization and no payment
@@ -697,6 +698,129 @@ private:
         }
     }
 
+    // The broker owner is paid only when the loan carries an origination fee, so
+    // only then does it have to be able to hold the vault asset.
+    void
+    testLoanSetZeroFeeUnauthorizedOwner(FeatureBitset features)
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        bool const fix350Enabled = features[fixCleanup3_5_0];
+        testcase << "LoanSet: broker owner cannot hold the vault asset"
+                 << (fix350Enabled ? "" : " pre-fixCleanup3_5_0");
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        // MPT. The issuer revokes the broker owner's authorization after the
+        // vault is funded. An origination fee still has to reach the owner, so
+        // only the zero-fee loan changes.
+        {
+            Env env(*this, features);
+            env.fund(XRP(1'000'000), issuer, lender, borrower);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth});
+            env.close();
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = lender});
+            mptt.authorize({.account = borrower});
+            env.close();
+            mptt.authorize({.account = issuer, .holder = lender});
+            mptt.authorize({.account = issuer, .holder = borrower});
+            env.close();
+
+            env(pay(issuer, lender, asset(10'000'000)));
+            env.close();
+
+            auto const broker = createVaultAndBroker(env, asset, lender);
+
+            // Pay out and delete the broker owner's MPToken.
+            auto const lenderMPToken = keylet::mptoken(mptt.issuanceID(), lender);
+            auto const sleLender = env.le(lenderMPToken);
+            if (!BEAST_EXPECT(sleLender))
+                return;
+            env(pay(lender, issuer, asset(sleLender->at(sfMPTAmount))));
+            env.close();
+            mptt.authorize({.account = lender, .flags = tfMPTUnauthorize});
+            env.close();
+            BEAST_EXPECT(!env.le(lenderMPToken));
+
+            env(set(borrower, broker.brokerID, asset(1'000).value()),
+                kLoanOriginationFee(asset(1).value()),
+                kCounterparty(lender),
+                Sig(sfCounterpartySignature, lender),
+                Fee(env.current()->fees().base * 5),
+                Ter{tecNO_AUTH});
+            env.close();
+
+            auto const sleBrokerBefore = env.le(keylet::loanBroker(broker.brokerID));
+            if (!BEAST_EXPECT(sleBrokerBefore))
+                return;
+            auto const loanKeylet = keylet::loan(
+                broker.brokerID, SeqProxy::rawSequence(sleBrokerBefore->at(sfLoanSequence)));
+
+            env(set(borrower, broker.brokerID, asset(1'000).value()),
+                kCounterparty(lender),
+                Sig(sfCounterpartySignature, lender),
+                Fee(env.current()->fees().base * 5),
+                Ter{fix350Enabled ? TER{tesSUCCESS} : TER{tecNO_AUTH}});
+            env.close();
+
+            BEAST_EXPECT(static_cast<bool>(env.le(loanKeylet)) == fix350Enabled);
+            // The broker owner was paid nothing, so it gained no holding.
+            BEAST_EXPECT(!env.le(lenderMPToken));
+        }
+
+        // IOU. The broker owner closes its trust line. A loan with a fee
+        // re-creates the line through addEmptyHolding, so the zero-fee loan is
+        // the only one the authorization check can block.
+        {
+            Env env(*this, features);
+            env.fund(XRP(1'000'000), issuer, lender, borrower);
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const asset = issuer[iouCurrency_];
+            env(trust(lender, asset(10'000'000)));
+            env(trust(borrower, asset(10'000'000)));
+            env.close();
+            env(pay(issuer, lender, asset(10'000'000)));
+            env.close();
+
+            auto const broker = createVaultAndBroker(env, asset, lender);
+
+            // Pay out and close the broker owner's trust line.
+            auto const lenderLine = keylet::trustLine(lender, asset.raw().get<Issue>());
+            if (!BEAST_EXPECT(env.le(lenderLine)))
+                return;
+            env(pay(lender, issuer, asset(env.balance(lender, asset.raw()).number())));
+            env.close();
+            env(trust(lender, asset(0)));
+            env.close();
+            BEAST_EXPECT(!env.le(lenderLine));
+
+            auto const sleBrokerBefore = env.le(keylet::loanBroker(broker.brokerID));
+            if (!BEAST_EXPECT(sleBrokerBefore))
+                return;
+            auto const loanKeylet = keylet::loan(
+                broker.brokerID, SeqProxy::rawSequence(sleBrokerBefore->at(sfLoanSequence)));
+
+            env(set(borrower, broker.brokerID, asset(1'000).value()),
+                kCounterparty(lender),
+                Sig(sfCounterpartySignature, lender),
+                Fee(env.current()->fees().base * 5),
+                Ter{fix350Enabled ? TER{tesSUCCESS} : TER{tecNO_LINE}});
+            env.close();
+
+            BEAST_EXPECT(static_cast<bool>(env.le(loanKeylet)) == fix350Enabled);
+            BEAST_EXPECT(!env.le(lenderLine));
+        }
+    }
+
     // LoanSet in a closed-ended vault — phase gating and maturity bound.
     void
     testLoanSetClosedEnded()
@@ -940,6 +1064,8 @@ public:
         testLoanSetExistingLineAfterIssuerClearsDefaultRipple();
         testLoanSetOriginationFeeTwoMptCreates(all_);
         testLoanSetOriginationFeeTwoMptCreates(all_ - fixCleanup3_4_0);
+        testLoanSetZeroFeeUnauthorizedOwner(all_);
+        testLoanSetZeroFeeUnauthorizedOwner(all_ - fixCleanup3_5_0);
     }
 };
 

@@ -866,14 +866,26 @@ private:
         env(credentials::deleteCred(broker, broker, issuer, credType));
         env.close();
 
-        // Create a loan, this should fail for tecNO_AUTH
+        // The loan has no origination fee, so nothing reaches the broker owner
+        // here; the service fee is paid later and LoanPay reroutes it to the
+        // broker pseudo-account.
+        // Pre-fixCleanup3_5_0: the owner's authorization was checked anyway.
+        bool const fix350Enabled = features[fixCleanup3_5_0];
+        auto const sleBroker = env.le(keylet::loanBroker(brokerInfo.brokerID));
+        if (!BEAST_EXPECT(sleBroker))
+            return;
+        auto const loanKeylet =
+            keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+
         env(set(borrower, brokerInfo.brokerID, 10'000),
             Sig(sfCounterpartySignature, broker),
             kLoanServiceFee(mpt(100).value()),
             kPaymentInterval(100),
             Fee(XRP(100)),
-            Ter(tecNO_AUTH));
+            Ter(fix350Enabled ? TER{tesSUCCESS} : TER{tecNO_AUTH}));
         env.close();
+
+        BEAST_EXPECT(static_cast<bool>(env.le(loanKeylet)) == fix350Enabled);
     }
 
     void
