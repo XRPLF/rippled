@@ -2042,6 +2042,12 @@ current value back from application code -- OTel's API is write-only by design;
 keep your own state if your logic needs to both record and read a running value
 (see the Doxygen header in `MetricMacros.h` for the full explanation).
 
+**Start rare counters at 0.** `rate()` and `increase()` need an earlier sample, so the event that creates a counter series reads as 0. A counter that can stay quiet for hours should therefore exist at 0 before its first event:
+
+- The `MetricsRegistry` starts its parity counters at 0 when `initSyncInstruments()` builds them, on every value of each fixed `reason` domain. Its rpc and job counters do not start at 0: their label sets are large and their events frequent.
+- Pre-create a call-site counter at startup with `XRPL_METRIC_COUNTER_PREREGISTER`, or with `XRPL_METRIC_COUNTER_PREREGISTER_LABELED` and every label set of its fixed domain. Pass the same name and description constants as the recording site, so both land on one series. `preRegisterGetObjectCounters()` in `include/xrpl/telemetry/PreRegisteredCounters.h` is the pattern.
+- An event before the first export that carries the zero is still missed. A label whose values are known only when the event happens cannot be pre-created.
+
 ## Deployment Tiers
 
 Multiple xrpld instances can send telemetry to per-tier collectors that all
