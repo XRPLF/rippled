@@ -595,7 +595,7 @@ flowchart TB
     SUBMIT(["doSubmit<br/>(no span)"]):::plain
     TXP["tx.process<br/>(NetworkOPs::processTransaction)"]:::span
     RELAYOUT(["Overlay::relay fan-out to N peers<br/>(no span; if applied / terQUEUED,<br/>shouldRelay, not tfInnerBatchTxn)"]):::plain
-    PREDROP(["Diverged / needNetworkLedger<br/>(no span — dropped before tx.receive)"]):::drop
+    PREDROP(["dropped before tx.receive (no span)"]):::drop
     RCV["tx.receive<br/>(peer TMTransaction in)"]:::span
     RCVDROP["tx.receive<br/>tx_status = dropped_no_sync /<br/>dropped_queue_full"]:::drop
     CHK(["checkTransaction<br/>(JtTransaction worker, no span)"]):::plain
@@ -610,10 +610,10 @@ flowchart TB
     SUBMIT -->|processTransaction| TXP
     TXP -.->|relay applied / queued tx| RELAYOUT
 
-    PRELAY_IN -.->|tracking == Diverged / needNetworkLedger| PREDROP
+    PRELAY_IN -.->|Diverged / needNetworkLedger / malformed / inner-batch / dup| PREDROP
     PRELAY_IN -->|else| RCV
-    RCV -.->|inner-batch / dup / age>4min / JtTransaction full| RCVDROP
-    RCV -->|addJob JtTransaction| CHK
+    RCV -.->|age>4min / JtTransaction full| RCVDROP
+    RCV -->|tx_status = queued_for_check, addJob JtTransaction| CHK
     CHK -->|processTransaction, trusted=peer| TXP
 
     RELAYOUT -. "tx.process ⇢ tx.receive (span_id over TMTransaction)" .-> RCV
@@ -628,16 +628,23 @@ Ingress branches (all evidence in code):
 - `tx.process`: local RPC → `doTransactionSync`; peer → `doTransactionAsync`
   (JtBatch) ([NetworkOPs.cpp:1434](../src/xrpld/app/misc/NetworkOPs.cpp#L1434)).
 - **Pre-span peer drops** (no `tx.receive` created): `Diverged`
-  ([PeerImp.cpp:1299](../src/xrpld/overlay/detail/PeerImp.cpp#L1299)) /
-  `needNetworkLedger` ([1302](../src/xrpld/overlay/detail/PeerImp.cpp#L1302)),
-  before the span at ~1320.
+  ([PeerImp.cpp:1325](../src/xrpld/overlay/detail/PeerImp.cpp#L1325)) /
+  `needNetworkLedger` ([1328](../src/xrpld/overlay/detail/PeerImp.cpp#L1328)),
+  a transaction that does not parse (`STTx` throws at
+  [1340](../src/xrpld/overlay/detail/PeerImp.cpp#L1340), caught at
+  [1495](../src/xrpld/overlay/detail/PeerImp.cpp#L1495)), `tfInnerBatchTxn`
+  ([1361](../src/xrpld/overlay/detail/PeerImp.cpp#L1361)), and a HashRouter
+  duplicate: the same tx seen in the last 10 s, charged a fee if marked `BAD`
+  ([1373](../src/xrpld/overlay/detail/PeerImp.cpp#L1373)). All come before the
+  span at [1415](../src/xrpld/overlay/detail/PeerImp.cpp#L1415).
 - **Post-span peer drops** (span exists, `tx_status` set, no job enqueued):
-  `tfInnerBatchTxn` ([1348](../src/xrpld/overlay/detail/PeerImp.cpp#L1348)),
-  HashRouter dup/`BAD` ([1361](../src/xrpld/overlay/detail/PeerImp.cpp#L1361)),
   `dropped_no_sync` when validated-ledger age > 4 min
-  ([1416](../src/xrpld/overlay/detail/PeerImp.cpp#L1416)), `dropped_queue_full`
+  ([1460](../src/xrpld/overlay/detail/PeerImp.cpp#L1460)), `dropped_queue_full`
   when `JtTransaction` jobs > `maxTransactions`
-  ([1421](../src/xrpld/overlay/detail/PeerImp.cpp#L1421)).
+  ([1466](../src/xrpld/overlay/detail/PeerImp.cpp#L1466)).
+- **Queued** (span exists): otherwise `tx_status` is `queued_for_check` and
+  `addJob(JtTransaction)` is called
+  ([1476](../src/xrpld/overlay/detail/PeerImp.cpp#L1476)).
 - **Relay fan-out**: an accepted/queued `tx.process` relays to N peers via
   `Overlay::relay`, gated on `applied || (non-FULL local) || terQUEUED`,
   HashRouter `shouldRelay`, and not `tfInnerBatchTxn`; the span context is
