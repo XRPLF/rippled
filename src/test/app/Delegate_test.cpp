@@ -23,6 +23,7 @@
 #include <test/jtx/regkey.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
@@ -1036,6 +1037,14 @@ class Delegate_test : public beast::unit_test::Suite
                 env(delegate::set(gw, bob, {"PaymentMint"}));
                 env.close();
 
+                // Cross-currency sfSendMax without any flag passes the granular
+                // template and is rejected by the granular semantic check.
+                env(pay(gw, alice, usd(500)),
+                    Sendmax(XRP(1001)),
+                    delegate::As(bob),
+                    Ter(terNO_DELEGATE_PERMISSION));
+                BEAST_EXPECT(expectOffers(env, carol, 1));
+
                 // bob can not send cross currency payment on behalf of the gw,
                 // even with PaymentMint permission and gw being the issuer.
                 env(pay(gw, alice, usd(5000)),
@@ -1063,6 +1072,14 @@ class Delegate_test : public beast::unit_test::Suite
                 BEAST_EXPECT(expectOffers(env, bob, 1));
                 env(delegate::set(alice, bob, {"PaymentBurn"}));
                 env.close();
+
+                // Cross-currency sfSendMax without any flag passes the granular
+                // template and is rejected by the granular semantic check.
+                env(pay(alice, gw, usd(500)),
+                    Sendmax(XRP(1001)),
+                    delegate::As(bob),
+                    Ter(terNO_DELEGATE_PERMISSION));
+                BEAST_EXPECT(expectOffers(env, bob, 1));
 
                 // bob can not send cross currency payment on behalf of alice,
                 // even with PaymentBurn permission and gw being the issuer.
@@ -1264,6 +1281,34 @@ class Delegate_test : public beast::unit_test::Suite
                 Domain(UInt256{1}),
                 delegate::As(bob),
                 Ter(terNO_DELEGATE_PERMISSION));
+
+            // sfPaths is not in the PaymentMint or PaymentBurn template.
+            env(pay(gw, alice, usd(100)),
+                Path(~XRP),
+                delegate::As(bob),
+                Ter(terNO_DELEGATE_PERMISSION));
+            env(pay(alice, gw, usd(50)),
+                Path(~XRP),
+                delegate::As(bob),
+                Ter(terNO_DELEGATE_PERMISSION));
+
+            // Valid Payment flags that are not in the PaymentMint or PaymentBurn template.
+            for (auto const flag : {tfPartialPayment, tfNoRippleDirect, tfLimitQuality})
+            {
+                env(pay(gw, alice, usd(100)),
+                    Txflags(flag),
+                    delegate::As(bob),
+                    Ter(terNO_DELEGATE_PERMISSION));
+                env(pay(alice, gw, usd(50)),
+                    Txflags(flag),
+                    delegate::As(bob),
+                    Ter(terNO_DELEGATE_PERMISSION));
+            }
+
+            // The same payments without the extra field or flag succeed.
+            env(pay(gw, alice, usd(100)), delegate::As(bob));
+            env(pay(alice, gw, usd(50)), delegate::As(bob));
+            env.require(Balance(alice, usd(50)));
         }
 
         // Delegate account holds no granular permissions for the tx type:
@@ -2327,6 +2372,97 @@ class Delegate_test : public beast::unit_test::Suite
     }
 
     void
+    testGranularPermissionWithSponsorCommonFields()
+    {
+        testcase("test granular permission with sponsor common fields");
+        using namespace jtx;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const gw{"gw"};
+        Account const sponsor{"sponsor"};
+        auto const usd = gw["USD"];
+        auto const feeAmt = XRP(10);
+
+        // Sponsor fields are common fields, so they are permitted in every granular template.
+        // Fee sponsorship is allowed for a granular delegated transaction.
+        {
+            Env env(*this);
+            env.fund(XRP(10000), alice, bob, gw, sponsor);
+            env.trust(usd(200), alice);
+            env.close();
+
+            env(delegate::set(gw, bob, {"PaymentMint"}));
+            env.close();
+
+            // Co-signed: the sponsor account pays the fee.
+            auto const gwBalance = env.balance(gw);
+            auto const bobBalance = env.balance(bob);
+            auto const sponsorBalance = env.balance(sponsor);
+            env(pay(gw, alice, usd(50)),
+                delegate::As(bob),
+                Fee(feeAmt),
+                sponsor::As(sponsor, spfSponsorFee),
+                Sig(sfSponsorSignature, sponsor));
+            env.close();
+            env.require(Balance(alice, usd(50)));
+            BEAST_EXPECT(env.balance(gw) == gwBalance);
+            BEAST_EXPECT(env.balance(bob) == bobBalance);
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalance - feeAmt);
+
+            // Pre-funded: sponsorship(sponsor, bob) pays the fee, bob is sfDelegate.
+            env(sponsor::set_fee(sponsor, 0, XRP(100)), sponsor::SponseeAcc(bob));
+            env.close();
+            auto const sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, bob);
+            env(pay(gw, alice, usd(50)),
+                delegate::As(bob),
+                Fee(feeAmt),
+                sponsor::As(sponsor, spfSponsorFee));
+            env.close();
+            env.require(Balance(alice, usd(100)));
+            BEAST_EXPECT(env.balance(gw) == gwBalance);
+            BEAST_EXPECT(env.balance(bob) == bobBalance);
+            BEAST_EXPECT(sponsor::sponsorshipFeeBalance(env, sponsor, bob) == sponsorFee - feeAmt);
+
+            // Sponsorship does not extend the granular permission: bob holds PaymentMint
+            // from gw but not PaymentBurn from alice.
+            env(pay(alice, gw, usd(10)),
+                delegate::As(bob),
+                Fee(feeAmt),
+                sponsor::As(sponsor, spfSponsorFee),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(terNO_DELEGATE_PERMISSION));
+            env.require(Balance(alice, usd(100)));
+        }
+
+        // Reserve sponsorship is blocked for a granular delegated transaction.
+        {
+            Env env(*this);
+            env.fund(XRP(10000), alice, bob, gw, sponsor);
+            env.trust(usd(200), alice);
+            env.close();
+
+            env(delegate::set(gw, bob, {"PaymentMint"}));
+            env(sponsor::set_reserve(sponsor, 0, 1), sponsor::SponseeAcc(bob));
+            env.close();
+
+            // Co-signed.
+            env(pay(gw, alice, usd(50)),
+                delegate::As(bob),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(temINVALID));
+
+            // Pre-funded.
+            env(pay(gw, alice, usd(50)),
+                delegate::As(bob),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Ter(temINVALID));
+            env.require(Balance(alice, usd(0)));
+        }
+    }
+
+    void
     testSingleSign()
     {
         testcase("test single sign");
@@ -3060,6 +3196,7 @@ class Delegate_test : public beast::unit_test::Suite
         testTrustSetGranular();
         testAccountSetGranular();
         testMPTokenIssuanceSetGranular();
+        testGranularPermissionWithSponsorCommonFields();
         testSingleSign();
         testSingleSignBadSecret();
         testMultiSign();
