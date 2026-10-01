@@ -2619,8 +2619,10 @@ evaluating an hour after boot.
 
 Investigate in this order: the online-delete rotation's cache freshen (a
 rotation logs `rotating` when it starts and `finished rotation` when it
-completes, both at warning level in the `SHAMapStore` journal),
-`IOEventLoopLatencyHigh`, peer connectivity, then clock sync.
+completes, both at warning level in the `SHAMapStore` journal; its
+`nodestore.rotate` spans and the tree-node cache's lock-hold peak,
+`cache_metrics{metric="treenode_lock_hold_peak_us"}`, show where the time
+went), `IOEventLoopLatencyHigh`, peer connectivity, then clock sync.
 
 **NodeNotFull** — The node has been below `FULL` for 15m
 (`0`=disconnected, `1`=connected, `2`=syncing, `3`=tracking, `4`=full). This is
