@@ -9,13 +9,13 @@
  * - SpanGuard::Impl holds ONLY the OTel Span (shared_ptr). It never
  *   touches the thread-local context stack, so a SpanGuard is
  *   thread-free and may be moved to and destroyed on any thread.
- * - ScopedSpanGuard::ScopedImpl holds a SpanGuard plus an optional
- *   Scope. The Scope pushes the span onto the constructing context
- *   store's stack; member order (guard first, scope second) ensures
- *   the Scope pops BEFORE the span ends on destruction. It is
- *   store-bound: construct and destroy while the same LocalValue
- *   context store is active (the same thread, or the same JobQueue
- *   coroutine even if it resumes on another worker).
+ * - ScopedSpanGuard holds a SpanGuard inline plus a ScopedImpl, which
+ *   holds the Scope and is allocated only for a live span. The Scope
+ *   pushes the span onto the constructing context store's stack; member
+ *   order (guard_ first, impl_ second) ensures the Scope pops BEFORE the
+ *   span ends on destruction. It is store-bound: construct and destroy
+ *   while the same LocalValue context store is active (the same thread,
+ *   or the same JobQueue coroutine even if it resumes on another worker).
  *
  * Static factory methods access the global Telemetry instance via
  * Telemetry::getInstance(), check whether the requested TraceCategory
@@ -23,7 +23,7 @@
  * null guard whose methods are all no-ops.
  *
  * @see SpanGuard, ScopedSpanGuard (SpanGuard.h), Telemetry (Telemetry.h),
- * FilteringSpanProcessor (Telemetry.cpp)
+ * FilteringSpanProcessor (FilteringSpanProcessor.h)
  */
 
 #ifdef XRPL_ENABLE_TELEMETRY
@@ -678,63 +678,48 @@ SpanGuard::discard() noexcept
 struct ScopedSpanGuard::ScopedImpl
 {
     /**
-     * The unscoped guard that owns the span. Declared FIRST so it is
-     * destroyed AFTER `scope`: the Scope must pop before the span ends.
+     * Active OTel Scope binding the guard's span to the active context
+     * store's stack. Destroying this ScopedImpl pops it; operator
+     * SpanGuard() and discard() do that eagerly under the constructing
+     * store.
      */
-    SpanGuard guard;
-
-    /**
-     * Active OTel Scope binding the span to the active context store's
-     * stack. Present while the guard is active; reset() (via operator
-     * SpanGuard) pops it eagerly under the constructing store. Declared
-     * AFTER `guard` so destruction order pops the scope before the span
-     * ends.
-     */
-    std::optional<otel_trace::Scope> scope;
+    otel_trace::Scope scope;
 
     /**
      * Identity of the LocalValue store the Scope was pushed onto (the
      * coroutine's store on a coro, else the thread's own store). Popping
-     * the Scope (via ~Scope or reset()) must happen while the SAME store
-     * is active, else a different stack is corrupted. Coroutine-aware
-     * storage lets a coro legitimately resume on another worker while
-     * keeping the same store, so store-identity — not thread-id — is the
-     * correct invariant. Checked in the destructor and operator
-     * SpanGuard() to turn a silent cross-store pop into an assertion
-     * failure in debug/test/fuzzing builds.
+     * the Scope must happen while the SAME store is active, else a
+     * different stack is corrupted. Coroutine-aware storage lets a coro
+     * legitimately resume on another worker while keeping the same store,
+     * so store-identity — not thread-id — is the correct invariant.
+     * Checked in the destructor, operator SpanGuard() and discard() to
+     * turn a silent cross-store pop into an assertion failure in
+     * debug/test/fuzzing builds.
      *
-     * Assigned in the constructor body AFTER the Scope push, not as a
-     * member initializer: the push is the first LocalValue touch on a
-     * fresh thread for a root or explicit-parent span (the OTel SDK skips
-     * the ambient-context read in those cases), so it materializes the
-     * store. Capturing before the push would record nullptr while the
-     * destructor sees the now-materialized store. For a null guard no
-     * Scope is pushed and the assertions short-circuit, so this holds
-     * whatever store is active then.
+     * Initialized AFTER `scope` in the member init list: members
+     * initialize in declaration order, so the Scope's push runs first. On a
+     * thread with no store yet, the push creates it; GetCurrent() only peeks
+     * and never creates one. Capturing before the push would record nullptr
+     * while the destructor sees the new store.
      */
-    void const* owner = nullptr;
+    void const* owner;
 
     /**
-     * Wrap a SpanGuard and activate its span on this thread. If the
-     * guard is active, push its span onto the thread-local context
-     * stack; a null guard leaves `scope` empty.
-     * @param g The span-owning guard to activate.
+     * Push a live guard's span onto the current context store.
+     * @param span The span to activate. The owning SpanGuard keeps it alive.
      */
-    explicit ScopedImpl(SpanGuard g) : guard(std::move(g))
+    explicit ScopedImpl(opentelemetry::nostd::shared_ptr<otel_trace::Span> const& span)
+        : scope(span), owner(detail::getLocalValues().get())
     {
-        if (guard)
-            scope.emplace(guard.impl_->span);
-        // Capture after the push so `owner` names the store the Scope
-        // actually lives on, even when the push materialized it.
-        owner = detail::getLocalValues().get();
     }
 };
 
 // ===== ScopedSpanGuard core lifecycle ======================================
 
-ScopedSpanGuard::ScopedSpanGuard(SpanGuard&& guard) noexcept
-    : impl_(std::make_unique<ScopedImpl>(std::move(guard)))
+ScopedSpanGuard::ScopedSpanGuard(SpanGuard&& guard) noexcept : guard_(std::move(guard))
 {
+    if (guard_)
+        impl_ = std::make_unique<ScopedImpl>(guard_.impl_->span);
 }
 
 ScopedSpanGuard::~ScopedSpanGuard()
@@ -744,7 +729,7 @@ ScopedSpanGuard::~ScopedSpanGuard()
     // store's context stack. A null guard holds no Scope, so the check is
     // skipped.
     XRPL_ASSERT(
-        !impl_ || !impl_->scope.has_value() || impl_->owner == detail::getLocalValues().get(),
+        !impl_ || impl_->owner == detail::getLocalValues().get(),
         "xrpl::telemetry::ScopedSpanGuard::~ScopedSpanGuard : destroyed on the "
         "constructing context store");
 }
@@ -773,7 +758,7 @@ ScopedSpanGuard::freshRoot(
 ScopedSpanGuard
 ScopedSpanGuard::childSpan(std::string_view name) const noexcept
 {
-    return ScopedSpanGuard(impl_->guard.childSpan(name));
+    return ScopedSpanGuard(guard_.childSpan(name));
 }
 
 ScopedSpanGuard
@@ -785,7 +770,7 @@ ScopedSpanGuard::childSpan(std::string_view name, SpanContext const& parentCtx) 
 ScopedSpanGuard
 ScopedSpanGuard::linkedSpan(std::string_view name) const noexcept
 {
-    return ScopedSpanGuard(impl_->guard.linkedSpan(name));
+    return ScopedSpanGuard(guard_.linkedSpan(name));
 }
 
 ScopedSpanGuard
@@ -803,11 +788,11 @@ operator SpanGuard() && noexcept
     // active; handing off under a different store would pop the wrong stack.
     // A null guard holds no Scope, so the check is skipped.
     XRPL_ASSERT(
-        !impl_->scope.has_value() || impl_->owner == detail::getLocalValues().get(),
+        !impl_ || impl_->owner == detail::getLocalValues().get(),
         "xrpl::telemetry::ScopedSpanGuard::operator SpanGuard : handoff on the "
         "constructing context store");
-    impl_->scope.reset();  // eager pop, on the origin store
-    return std::move(impl_->guard);
+    impl_.reset();  // eager pop, on the origin store
+    return std::move(guard_);
 }
 
 // ===== ScopedSpanGuard context capture =====================================
@@ -815,7 +800,7 @@ operator SpanGuard() && noexcept
 SpanContext
 ScopedSpanGuard::spanContext() const noexcept
 {
-    return impl_->guard.spanContext();
+    return guard_.spanContext();
 }
 
 // ===== ScopedSpanGuard forwarding methods ==================================
@@ -823,49 +808,49 @@ ScopedSpanGuard::spanContext() const noexcept
 void
 ScopedSpanGuard::setAttribute(std::string_view key, std::string_view value) noexcept
 {
-    impl_->guard.setAttribute(key, value);
+    guard_.setAttribute(key, value);
 }
 
 void
 ScopedSpanGuard::setAttribute(std::string_view key, char const* value) noexcept
 {
-    impl_->guard.setAttribute(key, value);
+    guard_.setAttribute(key, value);
 }
 
 void
 ScopedSpanGuard::setAttribute(std::string_view key, std::int64_t value) noexcept
 {
-    impl_->guard.setAttribute(key, value);
+    guard_.setAttribute(key, value);
 }
 
 void
 ScopedSpanGuard::setAttribute(std::string_view key, double value) noexcept
 {
-    impl_->guard.setAttribute(key, value);
+    guard_.setAttribute(key, value);
 }
 
 void
 ScopedSpanGuard::setAttribute(std::string_view key, bool value) noexcept
 {
-    impl_->guard.setAttribute(key, value);
+    guard_.setAttribute(key, value);
 }
 
 void
 ScopedSpanGuard::setOk() noexcept
 {
-    impl_->guard.setOk();
+    guard_.setOk();
 }
 
 void
 ScopedSpanGuard::setError(std::string_view description) noexcept
 {
-    impl_->guard.setError(description);
+    guard_.setError(description);
 }
 
 void
 ScopedSpanGuard::addEvent(std::string_view name) noexcept
 {
-    impl_->guard.addEvent(name);
+    guard_.addEvent(name);
 }
 
 void
@@ -873,13 +858,13 @@ ScopedSpanGuard::addEvent(
     std::string_view name,
     std::initializer_list<EventAttribute> attrs) noexcept
 {
-    impl_->guard.addEvent(name, attrs);
+    guard_.addEvent(name, attrs);
 }
 
 void
 ScopedSpanGuard::recordException(std::exception const& e) noexcept
 {
-    impl_->guard.recordException(e);
+    guard_.recordException(e);
 }
 
 void
@@ -889,19 +874,19 @@ ScopedSpanGuard::discard() noexcept
     // active; discarding under a different store corrupts that store's
     // context stack. A null guard holds no Scope, so the check is skipped.
     XRPL_ASSERT(
-        !impl_ || !impl_->scope.has_value() || impl_->owner == detail::getLocalValues().get(),
+        !impl_ || impl_->owner == detail::getLocalValues().get(),
         "xrpl::telemetry::ScopedSpanGuard::discard : discarded on the "
         "constructing context store");
     // Pop the scope first (under the constructing store) so no span stays
     // active on the stack, then discard the span via the owned guard.
-    impl_->scope.reset();
-    impl_->guard.discard();
+    impl_.reset();
+    guard_.discard();
 }
 
 ScopedSpanGuard::
 operator bool() const noexcept
 {
-    return impl_ && static_cast<bool>(impl_->guard);
+    return static_cast<bool>(guard_);
 }
 
 // ===== ScopedActivation ====================================================

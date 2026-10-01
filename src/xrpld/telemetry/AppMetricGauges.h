@@ -490,7 +490,8 @@ private:
         storageDetailGauge_;
     /**
      * Validation agreement percentages and counts over the 1h, 24h and 7d
-     * windows kept by ValidationTracker.
+     * windows kept by ValidationTracker. Observes nothing on a node without a
+     * validator key.
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         validationAgreementGauge_;
@@ -504,14 +505,16 @@ private:
     /**
      * ObservableCounter: validation_agreements_total — observed from
      * ValidationTracker::totalAgreementsEver() (monotonic gross lifetime
-     * tally, initial-classification semantics).
+     * tally, initial-classification semantics). Observes nothing on a node
+     * without a validator key.
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         validationAgreementsObservable_;
     /**
      * ObservableCounter: validation_missed_total — observed from
      * ValidationTracker::totalMissedEver() (monotonic gross lifetime tally,
-     * initial-classification semantics).
+     * initial-classification semantics). Observes nothing on a node without a
+     * validator key.
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         validationMissedObservable_;

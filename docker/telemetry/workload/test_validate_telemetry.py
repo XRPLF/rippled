@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for validate_telemetry.py's hierarchy check.
+"""Tests for validate_telemetry.py's hierarchy and metric-minimum checks.
 
 Run with plain python3 -- there is no pytest in the harness requirements, and
 this file is deliberately runnable with nothing but the standard library plus
@@ -7,17 +7,21 @@ the aiohttp that validate_telemetry.py already imports:
 
     python3 docker/telemetry/workload/test_validate_telemetry.py
 
-Why a stub Tempo rather than the real one: the behaviour under test is which
-traces the check ASKS FOR, which a live backend cannot demonstrate -- a passing
-query against real data proves the data happened to co-operate, not that the
-query was right. The stub records every request, so a test can assert on the
-query itself and on the answer the check derives from a known corpus.
+Why a stub Tempo and a stub Prometheus rather than the real ones: the behaviour
+under test is what the check ASKS FOR, which a live backend cannot demonstrate
+-- a passing query against real data proves the data happened to co-operate,
+not that the query was right. The stubs record every request, so a test can
+assert on the query itself and on the answer the check derives from a known
+corpus.
 """
 
 import asyncio
+import inspect
 import json
 import sys
 import tempfile
+import time
+import types
 from pathlib import Path
 from typing import Any
 
@@ -1140,6 +1144,565 @@ def test_every_contract_span_declares_allowed_parents() -> None:
     assert not missing, f"entries with no allowed_parents: {missing}"
     stale = [s["name"] for s in spans if "parent" in s]
     assert not stale, f"entries still carrying the old parent key: {stale}"
+
+
+class FakePrometheus:
+    """Answers /api/v1/query from a script kept per query.
+
+    Each query's answers are served in order and the last one repeats, so a
+    test can make a value rise between polls. An answer that is a dict is sent
+    as the whole response body, so a test can script a rejected query. Every
+    query is recorded, so a test can assert on what the check asked as well as
+    on its verdict.
+    """
+
+    def __init__(self, script: dict[str, list[Any]]) -> None:
+        self.script = script
+        self.queries: list[str] = []
+
+    def get(self, url: str, params: dict[str, str] | None = None) -> FakeResponse:
+        assert url.endswith("/api/v1/query"), url
+        query = (params or {})["query"]
+        self.queries.append(query)
+        answers = self.script[query]
+        answer = answers[min(self.queries.count(query), len(answers)) - 1]
+        if isinstance(answer, dict):
+            return FakeResponse(answer)
+        return FakeResponse({"status": "success", "data": {"result": answer}})
+
+
+def _instant(value: float, instance: str | None = None) -> dict[str, Any]:
+    """One instant-query series as Prometheus returns it.
+
+    A cluster-wide sum carries no labels, so the instance is left out unless a
+    test sums per node.
+    """
+    labels = {"service_instance_id": instance} if instance else {}
+    return {"metric": labels, "value": [0, str(value)]}
+
+
+def _check_min(
+    prometheus: FakePrometheus,
+    entry: Any,
+    selectors: list[str],
+    wait_sec: float = 0.0,
+) -> Any:
+    """Run _check_min_value on one entry of a group named "g".
+
+    wait_sec sets the deadline. With 0 the check answers from its first query,
+    which is what a finished run looks like. A wait above 0 also shortens the
+    poll interval, so a test that polls twice does not sleep for seconds.
+    """
+
+    async def go() -> Any:
+        deadline = time.monotonic() + wait_sec
+        return await vt._check_min_value(
+            prometheus,
+            "http://prometheus",
+            ("g", entry, selectors),
+            deadline,
+            asyncio.Semaphore(1),
+        )
+
+    original = vt.METRIC_POLL_INTERVAL_SEC
+    vt.METRIC_POLL_INTERVAL_SEC = 0.01
+    try:
+        return run(go())
+    finally:
+        vt.METRIC_POLL_INTERVAL_SEC = original
+
+
+# The entry most tests below check, and the queries it must produce.
+X_ENTRY = {"metric": "x_total", "min": 1}
+X_QUERY = "sum(x_total)"
+X_PER_NODE = {"metric": "x_total", "min": 1, "by": "service_instance_id"}
+X_PER_NODE_QUERY = "sum by (service_instance_id) (x_total)"
+
+
+def test_min_value_sums_the_selector() -> None:
+    """Cluster-wide by default, and per label value when "by" is given."""
+    assert vt._min_value_query(X_ENTRY) == X_QUERY
+    entry = {"metric": 'x_total{a="b"}', "min": 1, "by": "service_instance_id"}
+    assert vt._min_value_query(entry) == 'sum by (service_instance_id) (x_total{a="b"})'
+
+
+def test_counter_still_at_zero_fails_its_minimum() -> None:
+    """The case the check exists for: the series exists, but no event came.
+
+    An existence check passes here, because a counter created at 0 has a
+    series from startup.
+    """
+    prometheus = FakePrometheus({X_QUERY: [[_instant(0)]]})
+    result = _check_min(prometheus, X_ENTRY, ["x_total"])
+    assert result.passed is False
+    assert result.name == "metric.g.min.x_total", result.name
+    assert result.message == (
+        "sum(x_total): 1 of 1 series out of bounds (expected >= 1): "
+        "<unlabelled series> value 0.0"
+    ), result.message
+    assert prometheus.queries == [X_QUERY], prometheus.queries
+
+
+def test_counter_after_an_event_meets_its_minimum() -> None:
+    prometheus = FakePrometheus({X_QUERY: [[_instant(3)]]})
+    result = _check_min(prometheus, X_ENTRY, ["x_total"])
+    assert result.passed is True, result.message
+    assert result.message == "sum(x_total): all 1 series within bounds (>= 1)"
+    assert result.details["values"] == [3.0], result.details
+
+
+def test_minimum_above_one_is_graded_against_that_minimum() -> None:
+    """A min of 2 must refuse a value of 1, which a minimum fixed at 1 passes."""
+    prometheus = FakePrometheus({X_QUERY: [[_instant(1)]]})
+    result = _check_min(prometheus, {"metric": "x_total", "min": 2}, ["x_total"])
+    assert result.passed is False
+    assert result.message == (
+        "sum(x_total): 1 of 1 series out of bounds (expected >= 2): "
+        "<unlabelled series> value 1.0"
+    ), result.message
+
+
+def test_one_node_at_zero_fails_a_per_node_minimum_and_is_named() -> None:
+    prometheus = FakePrometheus(
+        {X_PER_NODE_QUERY: [[_instant(4, "node-1"), _instant(0, "node-2")]]}
+    )
+    result = _check_min(prometheus, X_PER_NODE, ["x_total"])
+    assert result.passed is False
+    assert result.message == (
+        f"{X_PER_NODE_QUERY}: 1 of 2 series out of bounds (expected >= 1): "
+        "service_instance_id=node-2 value 0.0"
+    ), result.message
+
+
+def test_per_node_minimum_fails_on_a_series_without_the_by_label() -> None:
+    """A series with no by label means the sum was not taken per node.
+
+    Four nodes pass and a fifth series carries no service_instance_id, so a
+    check that grades only the values would pass it.
+    """
+    nodes = [_instant(3, f"node-{n}") for n in range(1, 5)]
+    prometheus = FakePrometheus({X_PER_NODE_QUERY: [[*nodes, _instant(7)]]})
+    result = _check_min(prometheus, X_PER_NODE, ["x_total"])
+    assert result.passed is False
+    assert result.message == (
+        f"{X_PER_NODE_QUERY}: 1 of 5 series have no service_instance_id label"
+    ), result.message
+
+
+def test_misspelled_by_label_fails_instead_of_summing_cluster_wide() -> None:
+    """A by label no series carries sums everything into one unlabelled series.
+
+    That is a cluster-wide sum wearing a per-node name, so it must fail.
+    """
+    entry = {"metric": "x_total", "min": 1, "by": "service_instance"}
+    query = "sum by (service_instance) (x_total)"
+    prometheus = FakePrometheus({query: [[_instant(10)]]})
+    result = _check_min(prometheus, entry, ["x_total"])
+    assert result.passed is False
+    assert result.message == (
+        f"{query}: 1 of 1 series have no service_instance label"
+    ), result.message
+
+
+def test_min_value_waits_for_a_late_export() -> None:
+    """A value that reaches the minimum before the deadline passes.
+
+    The first answer is 0 and the second is 1, as when the last export lands
+    between two polls. Two queries, not more: the poll stops once it is met.
+    """
+    prometheus = FakePrometheus({X_QUERY: [[_instant(0)], [_instant(1)]]})
+    result = _check_min(prometheus, X_ENTRY, ["x_total"], wait_sec=5.0)
+    assert result.passed is True, result.message
+    assert prometheus.queries == [X_QUERY, X_QUERY], prometheus.queries
+
+
+def test_per_node_minimum_waits_until_every_node_reaches_it() -> None:
+    """One node at the minimum is not enough to stop polling."""
+    prometheus = FakePrometheus(
+        {
+            X_PER_NODE_QUERY: [
+                [_instant(4, "node-1"), _instant(0, "node-2")],
+                [_instant(4, "node-1"), _instant(1, "node-2")],
+            ]
+        }
+    )
+    result = _check_min(prometheus, X_PER_NODE, ["x_total"], wait_sec=5.0)
+    assert result.passed is True, result.message
+    assert prometheus.queries == [X_PER_NODE_QUERY] * 2, prometheus.queries
+
+
+def test_minimum_waits_through_an_empty_answer() -> None:
+    """No series yet is not a verdict: the series can still arrive."""
+    prometheus = FakePrometheus({X_QUERY: [[], [_instant(1)]]})
+    result = _check_min(prometheus, X_ENTRY, ["x_total"], wait_sec=5.0)
+    assert result.passed is True, result.message
+    assert prometheus.queries == [X_QUERY, X_QUERY], prometheus.queries
+
+
+def test_absent_series_fails_its_minimum() -> None:
+    prometheus = FakePrometheus({X_QUERY: [[]]})
+    result = _check_min(prometheus, X_ENTRY, ["x_total"])
+    assert result.passed is False
+    assert result.message == (
+        "sum(x_total): no data returned from Prometheus after "
+        f"{vt.METRIC_POLL_TIMEOUT_SEC:g}s"
+    ), result.message
+
+
+def test_rejected_query_fails_and_names_the_prometheus_error() -> None:
+    prometheus = FakePrometheus({X_QUERY: [{"status": "error", "error": "bad_data"}]})
+    result = _check_min(prometheus, X_ENTRY, ["x_total"])
+    assert result.passed is False
+    assert result.message == (
+        "sum(x_total): min_values check failed "
+        "(Prometheus rejected the query: bad_data)"
+    ), result.message
+
+
+def test_min_value_entry_error_names_each_malformed_shape() -> None:
+    """Every rule of the entry check, one case each, plus two valid entries."""
+    cases = [
+        (vt._NotAList("x_total"), "min_values is not a list: 'x_total'"),
+        ("x_total", "entry is not an object: 'x_total'"),
+        (
+            {"metric": "x_total", "min": 1, "By": "service_instance_id"},
+            "entry has keys other than metric, min and by: ['By']",
+        ),
+        ({"min": 1}, "entry needs a non-empty string metric: {'min': 1}"),
+        (
+            {"metric": "", "min": 1},
+            "entry needs a non-empty string metric: {'metric': '', 'min': 1}",
+        ),
+        (
+            {"metric": 5, "min": 1},
+            "entry needs a non-empty string metric: {'metric': 5, 'min': 1}",
+        ),
+        (
+            {"metric": "x_total"},
+            "entry needs a number min above 0: {'metric': 'x_total'}",
+        ),
+        (
+            {"metric": "x_total", "min": True},
+            "entry needs a number min above 0: {'metric': 'x_total', 'min': True}",
+        ),
+        (
+            {"metric": "x_total", "min": "1"},
+            "entry needs a number min above 0: {'metric': 'x_total', 'min': '1'}",
+        ),
+        (
+            {"metric": "x_total", "min": 0},
+            "entry needs a number min above 0: {'metric': 'x_total', 'min': 0}",
+        ),
+        (
+            {"metric": "x_total", "min": -1},
+            "entry needs a number min above 0: {'metric': 'x_total', 'min': -1}",
+        ),
+        (
+            {"metric": "x_total", "min": 1, "by": ""},
+            "entry needs by to be a non-empty string when set: "
+            "{'metric': 'x_total', 'min': 1, 'by': ''}",
+        ),
+        (
+            {"metric": "x_total", "min": 1, "by": 5},
+            "entry needs by to be a non-empty string when set: "
+            "{'metric': 'x_total', 'min': 1, 'by': 5}",
+        ),
+        ({"metric": "y_total", "min": 1}, "y_total is not in this group's metrics"),
+        ({"metric": "x_total", "min": 1}, None),
+        ({"metric": "x_total", "min": 0.5, "by": "service_instance_id"}, None),
+    ]
+    got = [(entry, vt._min_value_entry_error(entry, ["x_total"])) for entry, _ in cases]
+    assert got == cases, [g for g, c in zip(got, cases) if g != c]
+
+
+def test_malformed_min_value_entry_fails_without_a_query() -> None:
+    """A malformed entry fails by name and never reaches Prometheus.
+
+    An empty by is the dangerous one: the query would silently become a
+    cluster-wide sum.
+    """
+    for entry, error in [
+        (
+            {"metric": "x_total", "min": 1, "by": ""},
+            "entry needs by to be a non-empty string when set: "
+            "{'metric': 'x_total', 'min': 1, 'by': ''}",
+        ),
+        (
+            {"metric": "x_total", "min": 0},
+            "entry needs a number min above 0: {'metric': 'x_total', 'min': 0}",
+        ),
+    ]:
+        prometheus = FakePrometheus({})
+        result = _check_min(prometheus, entry, ["x_total"])
+        assert result.passed is False
+        assert result.name == "metric.g.min.x_total", result.name
+        assert result.message == f"g.min_values: {error}", result.message
+        assert prometheus.queries == [], prometheus.queries
+
+
+def test_min_value_for_an_unlisted_metric_fails_without_a_query() -> None:
+    """An entry must name a selector from its own group's "metrics" list."""
+    prometheus = FakePrometheus({})
+    result = _check_min(prometheus, {"metric": "y_total", "min": 1}, ["x_total"])
+    assert result.passed is False
+    assert result.message == (
+        "g.min_values: y_total is not in this group's metrics"
+    ), result.message
+    assert prometheus.queries == [], prometheus.queries
+
+
+def test_min_value_targets_read_every_group() -> None:
+    """Every object group is read, in order; groups without the key add nothing."""
+    first = {"metric": "x_total", "min": 1}
+    second = {"metric": "w_total", "min": 2}
+    contract = {
+        "description": "prose",
+        "a": {"metrics": ["x_total"], "min_values": [first]},
+        "b": {"metrics": ["y_total"]},
+        "accounted_patterns": [{"pattern": "^z$"}],
+        "c": {"metrics": ["w_total"], "min_values": [second]},
+    }
+    assert vt._min_value_targets(contract) == [
+        ("a", first, ["x_total"]),
+        ("c", second, ["w_total"]),
+    ]
+
+
+def test_min_value_targets_keep_a_non_list_value_whole() -> None:
+    """A string or an object where the list belongs is one target, not many.
+
+    Iterating a string would yield one bogus entry per character, and
+    iterating an object would yield its keys.
+    """
+    contract = {
+        "a": {"metrics": ["x_total"], "min_values": "x_total"},
+        "b": {"metrics": ["y_total"], "min_values": {"metric": "y_total", "min": 1}},
+    }
+    assert vt._min_value_targets(contract) == [
+        ("a", vt._NotAList("x_total"), ["x_total"]),
+        ("b", vt._NotAList({"metric": "y_total", "min": 1}), ["y_total"]),
+    ]
+
+
+def test_malformed_contract_is_reported_not_raised() -> None:
+    """Bad shapes each fail one check; the valid entry is still checked.
+
+    An exception here would abort run_validation before any report is
+    written, which loses every other result of the run.
+    """
+    contract = {
+        "a": {"metrics": ["a_total"], "min_values": "a_total"},
+        "b": {"metrics": ["b_total"], "min_values": ["b_total"]},
+        "c": {"metrics": ["c_total"], "min_values": [{"metric": "c_total", "min": 0}]},
+        "d": {"metrics": ["d_total"], "min_values": [{"metric": "d_total", "min": 1}]},
+    }
+    prometheus = FakePrometheus({"sum(d_total)": [[_instant(2)]]})
+    report = Report()
+    original_file = vt.EXPECTED_METRICS_FILE
+    with tempfile.TemporaryDirectory() as tmp:
+        scratch = Path(tmp) / "expected_metrics.json"
+        scratch.write_text(json.dumps(contract))
+        vt.EXPECTED_METRICS_FILE = scratch
+        try:
+            run(vt.validate_metric_minimums(prometheus, "http://prometheus", report))
+        finally:
+            vt.EXPECTED_METRICS_FILE = original_file
+    assert [(r.name, r.passed, r.message) for r in report.results[:3]] == [
+        (
+            "metric.a.min.<malformed>",
+            False,
+            "a.min_values: min_values is not a list: 'a_total'",
+        ),
+        (
+            "metric.b.min.<malformed>",
+            False,
+            "b.min_values: entry is not an object: 'b_total'",
+        ),
+        (
+            "metric.c.min.c_total",
+            False,
+            "c.min_values: entry needs a number min above 0: "
+            "{'metric': 'c_total', 'min': 0}",
+        ),
+    ], [(r.name, r.passed, r.message) for r in report.results]
+    assert [(r.name, r.passed) for r in report.results[3:]] == [
+        ("metric.d.min.d_total", True)
+    ], [(r.name, r.passed, r.message) for r in report.results]
+    assert prometheus.queries == ["sum(d_total)"], prometheus.queries
+
+
+def test_validate_metric_minimums_checks_every_entry_in_contract_order() -> None:
+    """The entry point: load the contract, check every entry, report in order.
+
+    Driven through a real file, like the span-parent sweep test, so the loader
+    and the report order are exercised rather than stubbed. The first entry
+    fails and the second passes, so a reordered report or a swapped verdict
+    cannot match.
+    """
+    contract = {
+        "a": {"metrics": ["a_total"], "min_values": [{"metric": "a_total", "min": 1}]},
+        "b": {"metrics": ["b_total"], "min_values": [{"metric": "b_total", "min": 1}]},
+    }
+    prometheus = FakePrometheus(
+        {"sum(a_total)": [[_instant(0)]], "sum(b_total)": [[_instant(2)]]}
+    )
+    report = Report()
+    original_file = vt.EXPECTED_METRICS_FILE
+    original_timeout = vt.METRIC_POLL_TIMEOUT_SEC
+    with tempfile.TemporaryDirectory() as tmp:
+        scratch = Path(tmp) / "expected_metrics.json"
+        scratch.write_text(json.dumps(contract))
+        vt.EXPECTED_METRICS_FILE = scratch
+        # The failing entry polls until the shared deadline, so keep it short.
+        vt.METRIC_POLL_TIMEOUT_SEC = 0.05
+        try:
+            run(vt.validate_metric_minimums(prometheus, "http://prometheus", report))
+        finally:
+            vt.EXPECTED_METRICS_FILE = original_file
+            vt.METRIC_POLL_TIMEOUT_SEC = original_timeout
+    assert [(r.name, r.passed) for r in report.results] == [
+        ("metric.a.min.a_total", False),
+        ("metric.b.min.b_total", True),
+    ], [(r.name, r.passed, r.message) for r in report.results]
+
+
+def test_every_contract_min_value_entry_is_valid() -> None:
+    """The contract itself, checked with the same rule the validator applies.
+
+    Asserted against the real file, because the file is the thing that can
+    drift. The file must declare at least one entry, or this would pass on
+    nothing.
+    """
+    with open(vt.EXPECTED_METRICS_FILE) as f:
+        contract = json.load(f)
+    targets = vt._min_value_targets(contract)
+    assert targets, "expected_metrics.json declares no min_values"
+    errors = [
+        (group, error)
+        for group, entry, selectors in targets
+        if (error := vt._min_value_entry_error(entry, selectors)) is not None
+    ]
+    assert errors == [], errors
+
+
+# Counter selectors under a `metrics` list that need no min_values entry, each
+# with its reason. Every other counter selector needs one, because a counter
+# that starts at 0 has a series before its first event, so its existence check
+# proves nothing. A new counter must land here or in min_values.
+COUNTERS_WITHOUT_MIN_VALUES = {
+    "span_calls_total": "the spanmetrics connector creates each series from the first span it counts",
+    "rpc_method_started_total": "the registry does not start its rpc counters at 0, so a series exists only after a call",
+    "rpc_method_finished_total": "the registry does not start its rpc counters at 0, so a series exists only after a call",
+    "job_queued_total": "the registry does not start its job counters at 0, so a series exists only after a job",
+    "job_started_total": "the registry does not start its job counters at 0, so a series exists only after a job",
+    "job_finished_total": "the registry does not start its job counters at 0, so a series exists only after a job",
+    "jq_trans_overflow_total": "observable counter: the check proves its callback runs; the value stays 0 on a healthy run",
+    "validation_agreements_total": "observable counter: the check proves its callback runs",
+    "validation_missed_total": "observable counter: the check proves its callback runs",
+}
+
+
+def test_every_counter_under_metrics_has_a_min_value_or_a_reason() -> None:
+    """A counter checked only for existence must be one that cannot start at 0.
+
+    Asserted against the real file. The exempt list must name only counters the
+    file still lists, and none that min_values also checks, so it cannot drift
+    into hiding a counter.
+    """
+    with open(vt.EXPECTED_METRICS_FILE) as f:
+        contract = json.load(f)
+    with_minimum = {
+        entry.get("metric")
+        for _, entry, _ in vt._min_value_targets(contract)
+        if isinstance(entry, dict)
+    }
+    counters = sorted(
+        {
+            selector
+            for data in contract.values()
+            if isinstance(data, dict)
+            for selector in data.get("metrics", [])
+            if isinstance(selector, str)
+            and selector.split("{", 1)[0].endswith("_total")
+        }
+    )
+    assert counters, "expected_metrics.json lists no counter under metrics"
+    uncovered = [
+        c
+        for c in counters
+        if c not in with_minimum and c not in COUNTERS_WITHOUT_MIN_VALUES
+    ]
+    assert (
+        uncovered == []
+    ), f"counters with neither a min_values entry nor a reason: {uncovered}"
+    stale = sorted(set(COUNTERS_WITHOUT_MIN_VALUES) - set(counters))
+    assert stale == [], f"exempt counters that no metrics list names: {stale}"
+    both = sorted(set(COUNTERS_WITHOUT_MIN_VALUES) & with_minimum)
+    assert both == [], f"exempt counters that min_values also checks: {both}"
+
+
+def test_run_validation_awaits_every_validation_phase() -> None:
+    """run_validation must await each validation phase exactly once.
+
+    The phases are found by name, as every public validate_* or assert_*
+    coroutine in the module, so a phase added on any branch is covered with no
+    edit here. That matters where a merge meets two adjacent phase calls:
+    keeping only one of them fails this test.
+    """
+    phases = sorted(
+        name
+        for name, obj in vars(vt).items()
+        if name.startswith(("validate_", "assert_"))
+        and inspect.iscoroutinefunction(obj)
+    )
+    assert "validate_metric_minimums" in phases, phases
+    calls: list[str] = []
+
+    def recorder(name: str) -> Any:
+        async def stub(*args: Any, **kwargs: Any) -> None:
+            calls.append(name)
+
+        return stub
+
+    class FakeSession:
+        """Stands in for aiohttp.ClientSession; no phase reaches it."""
+
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            pass
+
+        async def __aenter__(self) -> "FakeSession":
+            return self
+
+        async def __aexit__(self, *exc: object) -> bool:
+            return False
+
+    originals = {name: getattr(vt, name) for name in phases}
+    original_aiohttp = vt.aiohttp
+    try:
+        for name in phases:
+            setattr(vt, name, recorder(name))
+        vt.aiohttp = types.SimpleNamespace(ClientSession=FakeSession)
+        run(vt.run_validation("http://t", "http://p", "http://l", "http://g"))
+    finally:
+        vt.aiohttp = original_aiohttp
+        for name, function in originals.items():
+            setattr(vt, name, function)
+    assert sorted(calls) == phases, sorted(calls)
+
+
+def test_parity_value_check_still_names_each_out_of_range_series() -> None:
+    """The parity check shares the grading helper, so its verdict must not move."""
+    prometheus = FakePrometheus(
+        {"pct_metric": [[_instant(50, "node-1"), _instant(150, "node-2")]]}
+    )
+    entry = {"name": "pct", "query": "pct_metric", "lo": 0, "hi": 100}
+    result = run(vt._check_parity_value(prometheus, "http://prometheus", entry))
+    assert result.passed is False
+    assert (result.name, result.category) == ("parity.value_sanity.pct", "parity")
+    assert result.message == (
+        "pct: 1 of 2 series out of bounds (expected >= 0 and <= 100): "
+        "service_instance_id=node-2 value 150.0"
+    ), result.message
 
 
 def main() -> int:

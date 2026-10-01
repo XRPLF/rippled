@@ -235,10 +235,11 @@ is a `metric` label value, not a metric name of its own.
   - Histogram: `job_running_us{job_type="<name>",handler="<name>"}` — execution time distribution
 
 > **Naming**: the instruments are `job_queued_us` / `job_running_us`
-> (`kJobQueuedDurationUs` / `kJobRunningDurationUs`, `MetricsRegistry.cpp:94-95`).
+> (`kJobQueuedDurationUs` / `kJobRunningDurationUs` in `MetricsRegistry.cpp`).
 > `MetricsRegistry.h`'s Doxygen comments used to read
 > `job_queued_duration_us` / `job_running_duration_us`; **both were fixed in this
-> change** (`MetricsRegistry.h:810,815`), so there is no header/`.cpp` divergence
+> change** (the `jobQueuedDurationHistogram_` and `jobRunningDurationHistogram_`
+> comments in `MetricsRegistry.h`), so there is no header/`.cpp` divergence
 > left to work around.
 
 - Hook into PerfLog's existing job tracking alongside Task 9.4.
@@ -414,17 +415,18 @@ bare rename in `145b1469d6` and `25868f2740` — the
     explainer (8s grace / 5m late repair)
 
 - Provision Grafana alert rules (`docker/telemetry/grafana/provisioning/alerting/`) — **as shipped**:
-  - **13 rules in 5 groups**: `xrpld-consensus` (`LedgerHistoryMismatch`,
+  - **14 rules in 5 groups**: `xrpld-consensus` (`LedgerHistoryMismatch`,
     `LedgerCloseStalled`, `ValidatedLedgerStale`), `xrpld-validator`
     (`ValidationsMissed`, `ValidationsNotChecked`), `xrpld-jobqueue`
-    (`JobQueueTxOverflow`, `JobQueueLatencyHigh`, `NodeStoreIOLatencyHigh`),
+    (`JobQueueTxOverflow`, `JobQueueLatencyHigh`, `IOEventLoopLatencyHigh`),
     `xrpld-node-state` (`NodeStateFlapping`, `NodeNotFull`), `xrpld-overlay`
-    (`ManifestJobQueueConvoy`, `ManifestFloodInbound`, `PeerResourceDisconnects`)
+    (`ManifestJobQueueConvoy`, `ManifestFloodInbound`, `PeerResourceDisconnects`,
+    `UntrustedValidationFlood`)
   - **2 contact points** — `xrpld-default` (Slack) and `xrpld-critical`
     (Slack + email) — and a **nested** notification policy: root →
     `xrpld-default`, child route `severity = critical` → `xrpld-critical`.
     Auto-loaded via the existing `provisioning/` mount (no docker-compose change)
-  - 3 rules are `severity: critical`, 10 are `severity: warning`
+  - 3 rules are `severity: critical`, 11 are `severity: warning`
   - Alerting operator docs (per-alert meaning, tuning, receiver wiring) now live in the Alerting section of `docs/telemetry-runbook.md`
 
 **Key modified files**:
@@ -575,9 +577,9 @@ dropped the `xrpld-` prefix).
 
 | Panel                | Type       | PromQL                                        |
 | -------------------- | ---------- | --------------------------------------------- |
-| Base Fee (drops)     | stat       | `ledger_economy{metric="base_fee_xrp"}`       |
-| Reserve Base (drops) | stat       | `ledger_economy{metric="reserve_base_xrp"}`   |
-| Reserve Inc (drops)  | stat       | `ledger_economy{metric="reserve_inc_xrp"}`    |
+| Base Fee (drops)     | stat       | `ledger_economy{metric="base_fee_drops"}`     |
+| Reserve Base (drops) | stat       | `ledger_economy{metric="reserve_base_drops"}` |
+| Reserve Inc (drops)  | stat       | `ledger_economy{metric="reserve_inc_drops"}`  |
 | Ledger Age           | stat       | `ledger_economy{metric="ledger_age_seconds"}` |
 | Transaction Rate     | timeseries | `ledger_economy{metric="transaction_rate"}`   |
 
@@ -785,7 +787,7 @@ before commitment.
 - [x] Peer Quality dashboard ships (6 panels)
 - [x] Ledger Economy panels added to node-health dashboard (5 panels in a
       "Ledger Economy" row)
-- [x] Provisioned Grafana alerting: 13 rules / 5 groups, 2 contact points,
+- [x] Provisioned Grafana alerting: 14 rules / 5 groups, 2 contact points,
       nested notification policy
 - [ ] Tasks 9.14-9.17 closed — **open by design**: 9.14 documented-not-fixed
       (defects 1, 3 and 4 still blocked; defect 2 unblocked but not yet fixed),
@@ -817,11 +819,12 @@ health is explicitly out of scope.
 ### Why phase 9 (not phase 11)
 
 Every metric these alerts fire on is _born_ in phase 9
-(`ledger_history_mismatch_total`, `ledgers_closed_total`,
+(`ledger_hash_mismatch_total`, `ledgers_closed_total`,
 `validation_missed_total`, `validations_checked_total`,
 `jq_trans_overflow_total`, `job_queued_us_bucket` — the histogram instrument is
-`job_queued_us` (`MetricsRegistry.cpp:94`), so the Prometheus bucket series is
-`job_queued_us_bucket`, not `job_queued_duration_us_bucket`). Alerts
+`job_queued_us` (`kJobQueuedDurationUs` in `MetricsRegistry.cpp`), so the
+Prometheus bucket series is `job_queued_us_bucket`, not
+`job_queued_duration_us_bucket`). Alerts
 belong with the metrics they watch, and this is where the dependency lives.
 
 ### Delivery
@@ -837,7 +840,7 @@ New files under `docker/telemetry/grafana/provisioning/alerting/`:
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `contactpoints.yaml` | **Two** contact points: `xrpld-default` (Slack) and `xrpld-critical` (Slack + email).                                                                                                                                        |
 | `policies.yaml`      | **Nested** notification policy: root route → `xrpld-default`; child route matching `severity = critical` → `xrpld-critical` (`repeat_interval: 1h` vs the root's `4h`). Both grouped by `alertname` + `service_instance_id`. |
-| `rules.yaml`         | **13** alert rules across **5** groups (below).                                                                                                                                                                              |
+| `rules.yaml`         | **14** alert rules across **5** groups (below).                                                                                                                                                                              |
 
 Plus the Alerting section of `docs/telemetry-runbook.md` — operator runbook:
 what each alert means, likely causes, and how to point the contact point at a
@@ -845,8 +848,11 @@ real receiver.
 
 ### Alert rules
 
-All rules target Prometheus datasource `uid: prometheus`. Each rule uses the
-Grafana rule shape: query (A) → reduce (B, last value) → threshold (C). All
+All rules target Prometheus datasource `uid: prometheus`. Each rule has three
+nodes with named refIds: a Prometheus query, a `reduce` that keeps the query's
+last value, and a `threshold` on that value. The threshold node is the rule's
+`condition`. In `LedgerHistoryMismatch`, for example, the three are
+`mismatches_15m`, `mismatches_now` and `is_mismatching`. All
 `rate()`/`histogram_quantile()` expressions aggregate with
 `sum by (service_instance_id)` (or `+ le`) so **each node alerts independently**.
 Alert rules run headless, so they cannot use the dashboards' `$node` template
@@ -855,43 +861,40 @@ variables — they match all series and group by `service_instance_id` instead.
 All 5 groups evaluate at `interval: 1m`. Metric names carry **no** `xrpld_`
 prefix — `OTelCollectorImp::formatName()` adds none.
 
-The **Threshold** column is the rule's refId `C` evaluator, read straight from
+The **Threshold** column is the `threshold` node's evaluator, read straight from
 `rules.yaml` — it is the firing condition, so it is load-bearing, not decoration.
 
-| Group              | Alert                   | Expression (refId A)                                                                                      | Threshold (refId C)                               | `for` | severity |
-| ------------------ | ----------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ----- | -------- |
-| `xrpld-consensus`  | LedgerHistoryMismatch   | `sum by (service_instance_id) (increase(ledger_history_mismatch_total[15m]))`                             | `gt [0]`                                          | 2m    | critical |
-| `xrpld-consensus`  | LedgerCloseStalled      | `rate(ledgers_closed_total)` decayed to ≈0                                                                | `lt [0.001]`                                      | 3m    | critical |
-| `xrpld-consensus`  | ValidatedLedgerStale    | `max by (service_instance_id) (ledgermaster_validated_ledger_age < 1209600)`                              | `gt [60]` (seconds)                               | 5m    | critical |
-| `xrpld-validator`  | ValidationsMissed       | miss **ratio**, gated on send activity — see the expression below the table                               | `gt [0.1]`                                        | 15m   | warning  |
-| `xrpld-validator`  | ValidationsNotChecked   | `rate(validations_checked_total)` ≈0                                                                      | `lt [0.001]`                                      | 5m    | warning  |
-| `xrpld-jobqueue`   | JobQueueTxOverflow      | `sum by (service_instance_id) (increase(jq_trans_overflow_total[15m]))`                                   | `gt [0]`                                          | 2m    | warning  |
-| `xrpld-jobqueue`   | JobQueueLatencyHigh     | `histogram_quantile(0.99, sum by (le, service_instance_id) (rate(job_queued_us_bucket[5m])))`             | `gt [1000000]` (µs = 1s)                          | 5m    | warning  |
-| `xrpld-jobqueue`   | NodeStoreIOLatencyHigh  | `histogram_quantile(0.95, sum by (le, service_instance_id) (rate(ios_latency_milliseconds_bucket[10m])))` | `gt [1000]` (ms)                                  | 10m   | warning  |
-| `xrpld-node-state` | NodeStateFlapping       | state-transition rate over the node-state series                                                          | `gt [3]` (transitions)                            | 15m   | warning  |
-| `xrpld-node-state` | NodeNotFull             | operating mode below FULL                                                                                 | `lt [4]` (FULL = 4)                               | 15m   | warning  |
-| `xrpld-overlay`    | ManifestJobQueueConvoy  | `sum by (service_instance_id) (jobq_manifest_waiting)`                                                    | `gt [3]` (waiting jobs)                           | 10m   | warning  |
-| `xrpld-overlay`    | ManifestFloodInbound    | inbound manifest byte rate                                                                                | `gt [524288]` (B/s = 512 **KiB**/s, not 512 kB/s) | 10m   | warning  |
-| `xrpld-overlay`    | PeerResourceDisconnects | `sum by (service_instance_id) (increase(server_info{metric="peer_disconnects_resources"}[30m]))`          | `gt [5]`                                          | 5m    | warning  |
+| Group              | Alert                    | Expression (query node)                                                                                                      | Threshold (evaluator)                             | `for` | severity |
+| ------------------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ----- | -------- |
+| `xrpld-consensus`  | LedgerHistoryMismatch    | `sum by (service_instance_id) (increase(ledger_hash_mismatch_total[15m]))`                                                   | `gt [0]`                                          | 2m    | critical |
+| `xrpld-consensus`  | LedgerCloseStalled       | `rate(ledgers_closed_total)` decayed to ≈0                                                                                   | `lt [0.001]`                                      | 3m    | critical |
+| `xrpld-consensus`  | ValidatedLedgerStale     | `max by (service_instance_id) (ledgermaster_validated_ledger_age < 1209600)`                                                 | `gt [60]` (seconds)                               | 5m    | critical |
+| `xrpld-validator`  | ValidationsMissed        | miss **ratio**, nodes up more than 1 h — see the expression below the table                                                  | `gt [0.1]`                                        | 15m   | warning  |
+| `xrpld-validator`  | ValidationsNotChecked    | `rate(validations_checked_total)` ≈0                                                                                         | `lt [0.001]`                                      | 5m    | warning  |
+| `xrpld-jobqueue`   | JobQueueTxOverflow       | `sum by (service_instance_id) (increase(jq_trans_overflow_total[15m]))`                                                      | `gt [0]`                                          | 2m    | warning  |
+| `xrpld-jobqueue`   | JobQueueLatencyHigh      | `histogram_quantile(0.99, sum by (le, service_instance_id) (rate(job_queued_us_bucket[5m])))`                                | `gt [1000000]` (µs = 1s)                          | 5m    | warning  |
+| `xrpld-jobqueue`   | IOEventLoopLatencyHigh   | `histogram_quantile(0.95, sum by (le, service_instance_id) (rate(ios_latency_milliseconds_bucket[10m])))`                    | `gt [1000]` (ms)                                  | 10m   | warning  |
+| `xrpld-node-state` | NodeStateFlapping        | state-transition rate over the node-state series                                                                             | `gt [0]` (transitions)                            | 15m   | warning  |
+| `xrpld-node-state` | NodeNotFull              | operating mode below FULL                                                                                                    | `lt [4]` (FULL = 4)                               | 15m   | warning  |
+| `xrpld-overlay`    | ManifestJobQueueConvoy   | `sum by (service_instance_id) (jobq_manifest_waiting)`                                                                       | `gt [3]` (waiting jobs)                           | 10m   | warning  |
+| `xrpld-overlay`    | ManifestFloodInbound     | inbound manifest byte rate                                                                                                   | `gt [524288]` (B/s = 512 **KiB**/s, not 512 kB/s) | 10m   | warning  |
+| `xrpld-overlay`    | PeerResourceDisconnects  | `sum by (service_instance_id) (increase(server_info{metric="peer_disconnects_resources"}[30m]))`                             | `gt [5]`                                          | 5m    | warning  |
+| `xrpld-overlay`    | UntrustedValidationFlood | untrusted-validation rate over 2m divided by the rate of the hour ending 10m earlier (floor 50/s), nodes up more than 4200 s | `gt [3]` (ratio)                                  | 1m    | warning  |
 
-**`ValidationsMissed` is a gated ratio, not `rate(...) > 0`.** The raw-rate shape
-is the pre-fix version and it fires on **every non-validating node**:
-`ValidationTracker` counts a miss whenever `weValidated && networkValidated` is
-not both true, and a non-validator never sets `weValidated`, so its measured
-ratio is exactly **1.0**. No threshold can separate "not a validator" from
-"validator disagreeing", hence the `and on (...)` activity gate. The shipped
-expression is:
+**`ValidationsMissed` is a ratio, not `rate(...) > 0`.** A few late or missed
+validations do not page; the rule fires only when more than 10% of a 15-minute
+window's ledgers were missed. A node without a validator key publishes neither
+counter, so it has no series and the condition never fires for it. The shipped
+expression is (each selector also carries `service_name="xrpld"`):
 
 - numerator: `sum by (service_instance_id) (rate(validation_missed_total[15m]))`
 - denominator: `clamp_min(` that same numerator `+ sum by (service_instance_id) (rate(validation_agreements_total[15m])), 1e-9)`
-- gate: `and on (service_instance_id) (sum by (service_instance_id) (rate(validations_sent_total[15m])) > 0)`
-- evaluator: `gt [0.1]` — i.e. >10% disagreement among nodes that do validate
+- gate: `and on (service_instance_id) (max by (service_instance_id) (server_info{metric="uptime"}) > 3600)` — skip the first hour after a start, as `NodeStateFlapping` and `NodeNotFull` do
+- evaluator: `gt [0.1]` — more than 10% of the window's ledgers missed
 
-3 rules are `severity: critical`, 10 are `severity: warning`.
+3 rules are `severity: critical`, 11 are `severity: warning`.
 
-Each rule carries labels `severity` and `category`
-and annotations `summary` + `description` (with `{{ $labels.service_instance_id }}`
-and `{{ $values.B.Value }}` interpolation).
+Each rule carries labels `severity` and `category`, and annotations `summary`, `description` and `action`. The three flood rules (`ManifestJobQueueConvoy`, `ManifestFloodInbound`, `UntrustedValidationFlood`) also carry the label `page_oncall: "true"`. `summary` and `description` interpolate `{{ $labels.service_instance_id }}`, and `description` reads the reduce node's value as `$values.<reduce refId>.Value` (for example `$values.mismatches_now.Value`).
 
 #### Threshold rationale
 
@@ -900,13 +903,12 @@ and `{{ $values.B.Value }}` interpolation).
   exact `0`) avoids float rate-noise suppressing the alert.
 - **JobQueueLatencyHigh 1s p99**: `gt [1000000]` µs = 1s. A default starting
   point, easy to tune — jobs queued >1s at p99 indicate the node is saturated.
-- **ValidationsMissed `> 0.1` on a gated ratio**, not `> 0` on a raw rate: the
-  raw rate is permanently nonzero (ratio 1.0) on non-validators, so a `> 0` rule
-  pages on every non-validating node in the fleet. See the note above the
-  rationale list.
+- **ValidationsMissed `> 0.1` on a ratio**, not `> 0` on a raw rate: a few late
+  or missed validations should not page. See the note above the rationale list.
 - **ManifestFloodInbound 524288 B/s**: an earlier 50 kB/s threshold produced ~41
   sustained 5-minute samples on healthy nodes; 512 KiB/s clears normal
   manifest-exchange peaks.
+- **NodeStateFlapping `> 0`**: one `full → syncing → full` round is one re-entry into `full`, and that one round is the flap to catch.
 - Remaining `gt [0]` rules (`LedgerHistoryMismatch`, `JobQueueTxOverflow`) sit on
   true error counters where any sustained nonzero rate is actionable.
 
@@ -915,7 +917,8 @@ and `{{ $values.B.Value }}` interpolation).
 - No per-alert silencing schedules, no mute timings.
 - No RPC/API or fee-market alerts (dashboards cover those visually). Overlay
   alerts _were_ added during implementation — the `xrpld-overlay` group carries
-  three (manifest convoy, manifest flood, peer resource disconnects).
+  four (manifest convoy, manifest flood, peer resource disconnects, untrusted
+  validation flood).
 - Two contact points and a two-level policy tree shipped; deeper routing
   (Discord, PagerDuty, per-team splits) is left to the operator.
 
@@ -924,5 +927,5 @@ and `{{ $values.B.Value }}` interpolation).
 1. `yamllint` (or `python -c yaml.safe_load`) on all three YAML files.
 2. `docker compose -f docker/telemetry/docker-compose.yml config -q` still parses.
 3. Optional live check: start stack, `GET /api/v1/provisioning/alert-rules`
-   returns the 13 rules; Grafana logs show no provisioning errors.
+   returns the 14 rules; Grafana logs show no provisioning errors.
 4. Code-review pass (subagent) against phase conventions before commit.

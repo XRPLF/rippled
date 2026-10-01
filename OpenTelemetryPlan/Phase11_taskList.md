@@ -304,7 +304,7 @@ exported by this receiver.
 > **Scope note — do not duplicate Phase 9.** Phase 9 already ships provisioned
 > **Grafana** alerting at
 > `docker/telemetry/grafana/provisioning/alerting/{rules,contactpoints,policies}.yaml`
-> — 13 rules in 5 groups, 2 contact points (`xrpld-default` Slack,
+> — 14 rules in 5 groups, 2 contact points (`xrpld-default` Slack,
 > `xrpld-critical` Slack + email), and a nested notification policy keyed on
 > `severity = critical`. Four of the rules below overlap it:
 >
@@ -312,7 +312,7 @@ exported by this receiver.
 > | ------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 > | `XRPLServerNotFull` | `NodeNotFull` (group `xrpld-node-state`)          | Full                                                                                                             |
 > | `XRPLLedgerStale`   | `ValidatedLedgerStale` (group `xrpld-consensus`)  | **Partial** — Phase 9: `ledgermaster_validated_ledger_age > 60` for 5m; the external shape is `> 30` for 1m      |
-> | `XRPLHighIOLatency` | `NodeStoreIOLatencyHigh` (group `xrpld-jobqueue`) | **Partial** — Phase 9: p95 of `ios_latency_milliseconds_bucket` **> 1000 ms for 10m**; external: **> 50 for 1m** |
+> | `XRPLHighIOLatency` | `IOEventLoopLatencyHigh` (group `xrpld-jobqueue`) | **Partial** — Phase 9: p95 of `ios_latency_milliseconds_bucket` **> 1000 ms for 10m**; external: **> 50 for 1m** |
 > | `XRPLStateFlapping` | `NodeStateFlapping` (group `xrpld-node-state`)    | Full                                                                                                             |
 >
 > The remaining 8 (`XRPLAmendmentBlocked`, `XRPLNoPeers`,
@@ -512,7 +512,7 @@ exported by this receiver.
 > | Rule here          | Addressed by (Phase 9)                                                                      | Coverage                                                                                                                                                                    |
 > | ------------------ | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 > | Unhealthy State    | `NodeNotFull` (group `xrpld-node-state`)                                                    | Full                                                                                                                                                                        |
-> | High IO Latency    | `NodeStoreIOLatencyHigh` (group `xrpld-jobqueue`, p95 of `ios_latency_milliseconds_bucket`) | **Partial** — Phase 9 fires at p95 **> 1000 ms for 10m**; the rule below wants **> 50 for 1m** (20× tighter)                                                                |
+> | High IO Latency    | `IOEventLoopLatencyHigh` (group `xrpld-jobqueue`, p95 of `ios_latency_milliseconds_bucket`) | **Partial** — Phase 9 fires at p95 **> 1000 ms for 10m**; the rule below wants **> 50 for 1m** (20× tighter)                                                                |
 > | Job Queue Overflow | `JobQueueTxOverflow` (group `xrpld-jobqueue`, `jq_trans_overflow_total`)                    | Full                                                                                                                                                                        |
 > | Stale Ledger       | `ValidatedLedgerStale` (group `xrpld-consensus`, `ledgermaster_validated_ledger_age`)       | **Partial** — different metric: Phase 9 uses `ledgermaster_validated_ledger_age > 60` for 5m; the rule below uses `ledger_economy{metric="ledger_age_seconds"} > 30` for 1m |
 >
