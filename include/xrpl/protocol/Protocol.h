@@ -322,14 +322,7 @@ constexpr std::uint8_t kVaultMaximumLegacyIouScale = 18;
 /**
  * Maximum Scale for a Vault created under featureLendingProtocolV1_2.
  */
-constexpr std::uint8_t kVaultMaximumFixedIouScale = 10;
-
-/**
- * @deprecated Use kVaultMaximumFixedIouScale for V1.2 vaults, or
- * kVaultMaximumLegacyIouScale for pre-V1.2 vaults.
- */
-[[deprecated("Use kVaultMaximumFixedIouScale or kVaultMaximumLegacyIouScale")]]
-constexpr std::uint8_t kVaultMaximumIouScale = kVaultMaximumLegacyIouScale;
+constexpr std::uint8_t kVaultMaximumFixedPrecisionIouScale = 10;
 
 /**
  * Vault ledger-entry schema versions, persisted as sfLEVersion.

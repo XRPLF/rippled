@@ -384,8 +384,21 @@ VaultWithdraw::doApply()
     bool const isFinalWithdrawal =
         sharesRedeemed == STAmount{share, sleIssuance->at(sfOutstandingAmount)};
 
-    auto assetsAvailable = vault->at(sfAssetsAvailable);
-    auto assetsTotal = vault->at(sfAssetsTotal);
+    // FixedPrecision: a final withdrawal must not leave AssetsDeployed behind
+    // with no shares to back it. A final withdrawal pays out AssetsAvailable
+    // + AssetsDeployed, rounded to 16 digits; on a coarsened vault, an
+    // AssetsDeployed below half a unit of AssetsAvailable's grid rounds
+    // away, so the payout equals AssetsAvailable exactly and the vault would
+    // be left with no shares and no cash but a non-zero AssetsDeployed.
+    if (isFinalWithdrawal && getVaultVersion(vault) == VaultVersion::FixedPrecision &&
+        Number(vault->at(sfAssetsDeployed)) != beast::kZero)
+    {
+        JLOG(j_.debug()) << "VaultWithdraw: cannot empty vault while AssetsDeployed is non-zero";
+        return tecHAS_OBLIGATIONS;
+    }
+
+    auto const assetsAvailable = vault->at(sfAssetsAvailable);
+    Number const assetsTotal = getAssetsTotal(vault);
     auto const lossUnrealized = vault->at(sfLossUnrealized);
 
     if (fix340Enabled && !isFinalWithdrawal)
@@ -403,9 +416,12 @@ VaultWithdraw::doApply()
         // Number arithmetic can throw overflow_error when Scale and totals are large.
         try
         {
-            // A non-zero payout can be too small to change the stored sfAssetsTotal at
+            // A non-zero payout can be too small to change the stored balance at
             // STAmount's precision. Shares would still be burned, reject it instead.
-            if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsWithdrawn))
+            // FixedPrecision measures this against AssetsAvailable, the balance the
+            // cash actually leaves, not the derived AssetsTotal cache.
+            Number const dustReference = vaultDebitDustReference(vault, assetsTotal);
+            if (debitIsNonZeroDust(vaultAsset, dustReference, assetsWithdrawn))
             {
                 JLOG(j_.debug()) << "VaultWithdraw: withdrawal amount too small to change stored"
                                     " vault balance";
@@ -450,8 +466,7 @@ VaultWithdraw::doApply()
     // permits fixed-share zero-asset withdrawals in a fully-impaired vault (where
     // assetsTotalForWithdrawal == 0), and clamping-then-rejecting would undo that. Also skip on
     // the final-withdrawal path, which overwrites assetsWithdrawn with sfAssetsAvailable below.
-    if ((fix340Enabled || getVaultVersion(vault) == VaultVersion::FixedPrecision) &&
-        !isFinalWithdrawal && assetsWithdrawn > beast::kZero)
+    if (fix340Enabled && !isFinalWithdrawal && assetsWithdrawn > beast::kZero)
     {
         // Check availability against the unclamped amount first, so a withdrawal that is both
         // over the vault's available balance and sub-ULP at the posterior sfAssetsTotal scale
@@ -467,10 +482,12 @@ VaultWithdraw::doApply()
         // Number arithmetic can throw overflow_error when Scale and totals are large.
         try
         {
-            // Round down at the posterior sfAssetsTotal scale so the payout never exceeds the
-            // value represented by the redeemed shares. sharesRedeemed is intentionally not
+            // Round down at the posterior scale of the balance the payout actually
+            // leaves -- AssetsAvailable on FixedPrecision, the AssetsTotal cache on
+            // Legacy/CashBasis -- so the payout never exceeds the value represented
+            // by the redeemed shares. sharesRedeemed is intentionally not
             // re-derived: any trimmed residue stays with remaining shareholders.
-            auto const maybeClamped = clampToAssetsTotalScale(vault, -assetsWithdrawn);
+            auto const maybeClamped = clampVaultOutflow(vault, -assetsWithdrawn);
             if (!maybeClamped)
                 return maybeClamped.error();
             assetsWithdrawn = *maybeClamped;
@@ -504,7 +521,7 @@ VaultWithdraw::doApply()
     // unrealized loss. Otherwise the resulting (shares == 0, assetsTotal > 0) state would violate
     // the zero-sized-vault invariant.
     //
-    // The payout is set to the remaining sfAssetsAvailable. The helper result should already
+    // The payout is set to the remaining AssetsAvailable. The helper result should already
     // equal that value in a clean vault; any mismatch is a rounding artifact and is logged.
     if (view().rules().enabled(fixCleanup3_2_0) && isFinalWithdrawal)
     {
@@ -533,16 +550,33 @@ VaultWithdraw::doApply()
         }
         assetsWithdrawn = allAvailable;
 
-        // Do not let dust accumulate in the Vault.
-        assetsTotal = 0;
-        assetsAvailable = 0;
+        // Do not let dust accumulate in the Vault. AssetsDeployed is already
+        // zero here, guaranteed by the guard above.
+        if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+        {
+            if (auto const ter = adjustVaultBalances(vault, {.cash = -allAvailable}, j_);
+                !isTesSuccess(ter))
+                return ter;
+        }
+        else
+        {
+            vault->at(sfAssetsTotal) = 0;
+            vault->at(sfAssetsAvailable) = 0;
+        }
     }
     else
     {
-        // Debit both rails by the same delta so sfAssetsTotal and sfAssetsAvailable stay in step,
-        // as required by the ValidVault invariant.
-        assetsTotal -= assetsWithdrawn;
-        assetsAvailable -= assetsWithdrawn;
+        if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+        {
+            if (auto const ter = adjustVaultBalances(vault, {.cash = -assetsWithdrawn}, j_);
+                !isTesSuccess(ter))
+                return ter;
+        }
+        else
+        {
+            vault->at(sfAssetsTotal) -= assetsWithdrawn;
+            vault->at(sfAssetsAvailable) -= assetsWithdrawn;
+        }
     }
     view().update(vault);
 

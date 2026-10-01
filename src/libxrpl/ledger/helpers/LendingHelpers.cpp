@@ -35,18 +35,6 @@
 
 namespace xrpl {
 
-namespace {
-
-[[nodiscard]] int
-liveCoverScale(Number const& reference, Asset const& asset, int baseScale)
-{
-    if (reference == beast::kZero)
-        return baseScale;
-    return std::max(baseScale, scale(reference, asset));
-}
-
-}  // namespace
-
 [[nodiscard]] TER
 canApplyToBrokerCover(
     ReadView const& view,
@@ -78,60 +66,27 @@ canApplyToBrokerCover(
     return tesSUCCESS;
 }
 
-[[nodiscard]] int
-getBrokerCoverScale(SLE::const_ref vault, SLE::const_ref broker)
-{
-    XRPL_ASSERT(
-        vault && vault->getType() == ltVAULT, "xrpl::getBrokerCoverScale : valid Vault sle");
-    XRPL_ASSERT(
-        broker && broker->getType() == ltLOAN_BROKER,
-        "xrpl::getBrokerCoverScale : valid LoanBroker sle");
-
-    switch (getVaultVersion(vault))
-    {
-        case VaultVersion::Legacy:
-        case VaultVersion::CashBasis:
-            return scale(broker->at(sfCoverAvailable), vault->at(sfAsset));
-        case VaultVersion::FixedPrecision:
-            return liveCoverScale(
-                broker->at(sfCoverAvailable), vault->at(sfAsset), getVaultBaseScale(vault));
-    }
-    // LCOV_EXCL_START
-    UNREACHABLE("xrpl::getBrokerCoverScale : valid VaultVersion");
-    return Number::kMinExponent - 1;
-    // LCOV_EXCL_STOP
-}
+namespace detail {
 
 [[nodiscard]] int
 getPosteriorBrokerCoverScale(SLE::const_ref vault, SLE::const_ref broker, STAmount const& delta)
 {
     XRPL_ASSERT(
         vault && vault->getType() == ltVAULT,
-        "xrpl::getPosteriorBrokerCoverScale : valid Vault sle");
+        "xrpl::detail::getPosteriorBrokerCoverScale : valid Vault sle");
     XRPL_ASSERT(
         broker && broker->getType() == ltLOAN_BROKER,
-        "xrpl::getPosteriorBrokerCoverScale : valid LoanBroker sle");
+        "xrpl::detail::getPosteriorBrokerCoverScale : valid LoanBroker sle");
     XRPL_ASSERT(
         delta.asset() == vault->at(sfAsset),
-        "xrpl::getPosteriorBrokerCoverScale : delta and Vault asset match");
+        "xrpl::detail::getPosteriorBrokerCoverScale : delta and Vault asset match");
 
-    Number const posterior = [&] {
-        NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
-        return broker->at(sfCoverAvailable) + delta;
-    }();
-
-    switch (getVaultVersion(vault))
-    {
-        case VaultVersion::Legacy:
-        case VaultVersion::CashBasis:
-            return scale(posterior, vault->at(sfAsset));
-        case VaultVersion::FixedPrecision:
-            return liveCoverScale(posterior, vault->at(sfAsset), getVaultBaseScale(vault));
-    }
-    // LCOV_EXCL_START
-    UNREACHABLE("xrpl::getPosteriorBrokerCoverScale : valid VaultVersion");
-    return Number::kMinExponent - 1;
-    // LCOV_EXCL_STOP
+    return posteriorAssetScale(
+        getVaultVersion(vault),
+        vault->at(sfAsset),
+        getVaultBaseScale(vault),
+        broker->at(sfCoverAvailable),
+        delta);
 }
 
 [[nodiscard]] STAmount
@@ -143,16 +98,63 @@ roundToPosteriorBrokerCoverScale(
 {
     XRPL_ASSERT(
         vault && vault->getType() == ltVAULT,
-        "xrpl::roundToPosteriorBrokerCoverScale : valid Vault sle");
+        "xrpl::detail::roundToPosteriorBrokerCoverScale : valid Vault sle");
     XRPL_ASSERT(
         broker && broker->getType() == ltLOAN_BROKER,
-        "xrpl::roundToPosteriorBrokerCoverScale : valid LoanBroker sle");
+        "xrpl::detail::roundToPosteriorBrokerCoverScale : valid LoanBroker sle");
     XRPL_ASSERT(
         delta.asset() == vault->at(sfAsset),
-        "xrpl::roundToPosteriorBrokerCoverScale : delta and Vault asset match");
+        "xrpl::detail::roundToPosteriorBrokerCoverScale : delta and Vault asset match");
     if (delta.integral())
         return delta;
     return roundToScale(delta, getPosteriorBrokerCoverScale(vault, broker, delta), roundingMode);
+}
+
+}  // namespace detail
+
+[[nodiscard]] STAmount
+creditToPosteriorBrokerCoverScale(
+    SLE::const_ref vault,
+    SLE::const_ref broker,
+    STAmount const& raw,
+    Number::RoundingMode roundingMode)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT,
+        "xrpl::creditToPosteriorBrokerCoverScale : valid Vault sle");
+    XRPL_ASSERT(
+        broker && broker->getType() == ltLOAN_BROKER,
+        "xrpl::creditToPosteriorBrokerCoverScale : valid LoanBroker sle");
+    XRPL_ASSERT(
+        raw.asset() == vault->at(sfAsset),
+        "xrpl::creditToPosteriorBrokerCoverScale : raw and Vault asset match");
+    if (raw.integral())
+        return raw;
+
+    Asset const asset = vault->at(sfAsset);
+    Number const reference = broker->at(sfCoverAvailable);
+    int const scale = detail::getPosteriorBrokerCoverScale(vault, broker, raw);
+    return detail::creditToPosteriorScale(asset, reference, scale, raw, roundingMode);
+}
+
+[[nodiscard]] STAmount
+debitToPosteriorBrokerCoverScale(
+    SLE::const_ref vault,
+    SLE::const_ref broker,
+    STAmount const& amount,
+    Number::RoundingMode roundingMode)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT,
+        "xrpl::debitToPosteriorBrokerCoverScale : valid Vault sle");
+    XRPL_ASSERT(
+        broker && broker->getType() == ltLOAN_BROKER,
+        "xrpl::debitToPosteriorBrokerCoverScale : valid LoanBroker sle");
+    XRPL_ASSERT(
+        amount.asset() == vault->at(sfAsset),
+        "xrpl::debitToPosteriorBrokerCoverScale : amount and Vault asset match");
+    XRPL_ASSERT(!amount.negative(), "xrpl::debitToPosteriorBrokerCoverScale : non-negative amount");
+    return -detail::roundToPosteriorBrokerCoverScale(vault, broker, -amount, roundingMode);
 }
 
 [[nodiscard]] TER
@@ -171,10 +173,13 @@ checkOptionalBrokerCoverInflow(SLE::const_ref vault, SLE::const_ref broker, STAm
     if (getVaultVersion(vault) != VaultVersion::FixedPrecision)
         return tesSUCCESS;
 
-    STAmount const rounded =
-        roundToPosteriorBrokerCoverScale(vault, broker, amount, Number::RoundingMode::TowardsZero);
+    STAmount const rounded = detail::roundToPosteriorBrokerCoverScale(
+        vault, broker, amount, Number::RoundingMode::TowardsZero);
     int const baseScale = getVaultBaseScale(vault);
-    if (getPosteriorBrokerCoverScale(vault, broker, rounded) != baseScale)
+    // Keep this explicit even though the Open-limit capacity check below rejects
+    // every coarsening transition too. The protocol defines both conditions
+    // independently.
+    if (detail::getPosteriorBrokerCoverScale(vault, broker, rounded) != baseScale)
         return tecLIMIT_EXCEEDED;
 
     Number const posterior = [&] {
@@ -377,40 +382,6 @@ loanPaymentDeltas(LoanPaymentParts const& parts)
 }
 
 }  // namespace cash_basis
-
-namespace fixed_precision {
-
-PaymentDeltas
-loanPaymentDeltas(SLE::const_ref vaultSle, LoanPaymentParts const& parts)
-{
-    XRPL_ASSERT(
-        vaultSle && vaultSle->getType() == ltVAULT,
-        "xrpl::fixed_precision::loanPaymentDeltas : valid Vault sle");
-    XRPL_ASSERT(
-        getVaultVersion(vaultSle) == VaultVersion::FixedPrecision,
-        "xrpl::fixed_precision::loanPaymentDeltas : FixedPrecision Vault");
-
-    Asset const asset = vaultSle->at(sfAsset);
-    Number const assetsTotalBefore = vaultSle->at(sfAssetsTotal);
-    Number const assetsTotalAfter = [&] {
-        NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
-        // Floor the posterior rather than the interest delta because a prior
-        // AssetsTotal may be off the posterior grid when this payment coarsens
-        // the Vault. The STAmount conversion also clamps integral assets.
-        return Number{STAmount{asset, assetsTotalBefore + parts.interestPaid}};
-    }();
-    Number const assetsTotalDelta = assetsTotalAfter - assetsTotalBefore;
-    Number const creditRaw = parts.principalPaid + assetsTotalDelta;
-    Number const vaultCredit = roundToPosteriorAvailableScale(
-        vaultSle, STAmount{asset, creditRaw}, Number::RoundingMode::Downward);
-
-    return {
-        .assetsTotalDelta = assetsTotalDelta,
-        .debtTotalDelta = parts.principalPaid,
-        .vaultCredit = vaultCredit};
-}
-
-}  // namespace fixed_precision
 
 namespace {
 

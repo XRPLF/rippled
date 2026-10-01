@@ -467,6 +467,7 @@ LoanSet::doApply()
 
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
+    // For Legacy/CashBasis, getVaultBaseScale falls through to getVaultScale.
     auto const vaultScale = getVaultBaseScale(vaultSle);
     if (vaultAvailableProxy < principalRequested)
     {
@@ -545,13 +546,23 @@ LoanSet::doApply()
 
     if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
     {
-        Number const capacity = [&] {
-            NumberRoundModeGuard const rg(Number::RoundingMode::TowardsZero);
-            return vaultSle->at(sfAssetsTotal) + vaultSle->at(sfYieldUnrealized) +
-                state.interestDue;
-        }();
-        if (getVaultScale(vaultSle) != getVaultBaseScale(vaultSle) ||
-            capacity > getVaultOpenLimit(vaultSle))
+        // Reject origination if the Vault is already coarsened, or if this
+        // loan's interest would grow it past the Open-zone capacity ceiling.
+        // AssetsTotal is derived (AssetsAvailable + AssetsDeployed), never
+        // read from the stored cache, on FixedPrecision. These are two
+        // distinct rejection reasons and are checked separately so the log
+        // message always names the one that actually fired.
+        if (getVaultScale(vaultSle) != getVaultBaseScale(vaultSle))
+        {
+            JLOG(j_.warn()) << "FixedPrecision Vault is already coarsened; no further loans can "
+                               "be originated until it returns to its base scale.";
+            return tecLIMIT_EXCEEDED;
+        }
+        // Unlike checkOptionalVaultInflow, this checks the vault's current
+        // scale, not the posterior scale of the rounded amount -- state.interestDue
+        // is already rounded to the loan's scale (== the vault base scale, asserted
+        // below), so only the capacity formula itself is shared.
+        if (vaultOpenZoneCapacity(vaultSle, state.interestDue) > getVaultOpenLimit(vaultSle))
         {
             JLOG(j_.warn()) << "Loan interest would exceed the FixedPrecision Vault's Open zone.";
             return tecLIMIT_EXCEEDED;
@@ -577,8 +588,7 @@ LoanSet::doApply()
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     {
         auto const minCover = [&]() {
-            if (ctx_.view().rules().enabled(fixCleanup3_2_0) ||
-                getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+            if (ctx_.view().rules().enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(newDebtTotal, coverRateMinimum, vaultSle);
             }
@@ -711,10 +721,22 @@ LoanSet::doApply()
     view.insert(loan);
 
     // Update the balances in the vault
-    vaultAvailableProxy -= principalRequested;
-    vaultTotalProxy += assetsTotalDelta;
     if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
-        vaultSle->at(sfYieldUnrealized) += state.interestDue;
+    {
+        if (auto const ter = adjustVaultBalances(
+                vaultSle,
+                {.cash = -STAmount{vaultAsset, principalRequested},
+                 .deployed = debtTotalDelta,
+                 .yield = state.interestDue},
+                j_);
+            !isTesSuccess(ter))
+            return ter;
+    }
+    else
+    {
+        vaultAvailableProxy -= principalRequested;
+        vaultTotalProxy += assetsTotalDelta;
+    }
     XRPL_ASSERT_PARTS(
         *vaultAvailableProxy <= *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
@@ -722,7 +744,10 @@ LoanSet::doApply()
     view.update(vaultSle);
 
     // Update the balances in the loan broker
-    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), debtTotalDelta, vaultAsset, vaultScale);
+    // FixedPrecision default subtracts principal from DebtTotal exactly. That
+    // depends on origination never rounding DebtTotal at a scale coarser than
+    // the asset's base scale.
+    adjustBrokerDebtTotal(brokerSle->at(sfDebtTotal), vaultSle, debtTotalDelta, vaultScale);
     adjustLoanBrokerOwnerCount(view, brokerSle, 1, j_);
     loanSequenceProxy += 1;
     // The sequence should be extremely unlikely to roll over, but fail if it

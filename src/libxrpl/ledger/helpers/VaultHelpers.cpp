@@ -1,6 +1,8 @@
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
@@ -8,6 +10,7 @@
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
@@ -32,39 +35,70 @@ namespace {
 fixedBaseScale(SLE::const_ref vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::fixedBaseScale : valid Vault sle");
-    if (vault->at(sfAsset).integral())
-        return 0;
-    return -static_cast<int>(vault->at(sfScale));
+    Asset const asset = vault->at(sfAsset);
+    // sfScale is never written for an integral asset (VaultCreate only sets
+    // it when scale != 0, and integral assets always get scale 0), so it
+    // must not be read here; vaultBaseScale ignores the scale argument for
+    // an integral asset anyway.
+    if (asset.integral())
+        return vaultBaseScale(asset, 0);
+    return vaultBaseScale(asset, vault->at(sfScale));
 }
 
-[[nodiscard]] int
-liveScale(Number const& reference, Asset const& asset, int baseScale)
-{
-    if (reference == beast::kZero)
-        return baseScale;
-    return std::max(baseScale, scale(reference, asset));
-}
-
+// Thin, vault-specific wrapper over posteriorAssetScale: used by
+// getPosteriorVaultScale and creditToPosteriorAvailableScale.
 [[nodiscard]] int
 posteriorScale(SLE::const_ref vault, Number const& reference, STAmount const& delta)
 {
-    Number const posterior = [&] {
-        NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
-        return reference + delta;
-    }();
+    return detail::posteriorAssetScale(
+        getVaultVersion(vault), vault->at(sfAsset), fixedBaseScale(vault), reference, delta);
+}
 
-    switch (getVaultVersion(vault))
-    {
-        case VaultVersion::Legacy:
-        case VaultVersion::CashBasis:
-            return scale(posterior, vault->at(sfAsset));
-        case VaultVersion::FixedPrecision:
-            return liveScale(posterior, vault->at(sfAsset), fixedBaseScale(vault));
-    }
-    // LCOV_EXCL_START
-    UNREACHABLE("xrpl::posteriorScale : valid VaultVersion");
-    return Number::kMinExponent - 1;
-    // LCOV_EXCL_STOP
+// FixedPrecision-only counterpart to clampToAssetsTotalScale, for cash
+// outflows (VaultWithdraw, VaultClawback): rounds the magnitude of delta
+// toward zero at AssetsAvailable's own posterior scale, the balance the cash
+// actually leaves, instead of the derived AssetsTotal cache. Same
+// tecPRECISION_LOSS and integral-asset and magnitude-never-exceeds-delta
+// rules as clampToAssetsTotalScale. Not part of the public interface; reached
+// only through clampVaultOutflow.
+//
+// For an outflow it is safe to round the delta directly, unlike the credit
+// case: amount on the posterior grid of AssetsAvailable always leaves
+// AssetsAvailable minus amount representable, since the posterior grid is
+// exactly the grid AssetsAvailable itself will canonicalize to after the
+// subtraction.
+[[nodiscard]] std::expected<STAmount, TER>
+clampToAvailableScale(SLE::const_ref vault, STAmount const& delta)
+{
+    XRPL_ASSERT(
+        delta.asset() == vault->at(sfAsset),
+        "xrpl::clampToAvailableScale : delta and vault asset match");
+    XRPL_ASSERT(
+        getVaultVersion(vault) == VaultVersion::FixedPrecision,
+        "xrpl::clampToAvailableScale : FixedPrecision Vault");
+    XRPL_ASSERT(delta.negative(), "xrpl::clampToAvailableScale : outflow delta is negative");
+
+    Asset const asset = vault->at(sfAsset);
+    STAmount magnitude = delta.negative() ? -delta : delta;
+    if (asset.integral())
+        return magnitude;
+
+    STAmount const rounded = roundToScale(
+        delta,
+        posteriorScale(vault, vault->at(sfAssetsAvailable), delta),
+        Number::RoundingMode::TowardsZero);
+    STAmount actualDelta = rounded.negative() ? -rounded : rounded;
+
+    XRPL_ASSERT(
+        abs(actualDelta) <= abs(delta),
+        "xrpl::clampToAvailableScale : actual delta smaller or equal to calculated delta");
+
+    // Reject changes below scale precision (1 ULP) to prevent share balance changes
+    // without corresponding asset movements.
+    if (actualDelta <= beast::kZero)
+        return std::unexpected(tecPRECISION_LOSS);
+
+    return actualDelta;
 }
 
 [[nodiscard]] VaultKind
@@ -75,20 +109,201 @@ decodeVaultKind(std::optional<std::uint8_t> vaultKind)
     return VaultKind::OpenEnded;
 }
 
+// Write cached AssetsTotal from getAssetsTotal, as the exact total rounded
+// Downward to the Vault asset's 16-digit STAmount representation. Below
+// coarsening this equals the exact total; above it, the cache is a
+// deliberate floor of the exact value. Internal to adjustVaultBalances,
+// the only writer of AssetsAvailable, AssetsDeployed, AssetsTotal,
+// YieldUnrealized and LossUnrealized on a FixedPrecision Vault after
+// creation; not part of the public interface.
+void
+syncAssetsTotal(SLE::ref vault)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::syncAssetsTotal : valid Vault sle");
+    Asset const asset = vault->at(sfAsset);
+
+    // adjustVaultBalances writes AssetsAvailable as an already-canonical
+    // STAmount before calling this, so the associateAsset pass a transactor
+    // runs afterwards is always a no-op. If this fires, AssetsAvailable was
+    // written some other way.
+    XRPL_ASSERT(
+        (STAmount{asset, vault->at(sfAssetsAvailable)} == vault->at(sfAssetsAvailable)),
+        "xrpl::syncAssetsTotal : AssetsAvailable is a 16-digit STAmount value");
+
+    NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
+    vault->at(sfAssetsTotal) = STAmount{asset, getAssetsTotal(vault)};
+}
+
 }  // namespace
+
+namespace detail {
+
+[[nodiscard]] int
+liveScale(Number const& reference, Asset const& asset, int baseScale)
+{
+    if (reference == beast::kZero)
+        return baseScale;
+    // Round Downward, not the ambient mode: the live exponent must match the
+    // exponent syncAssetsTotal actually stores (also Downward), regardless of
+    // what rounding mode the caller's own arithmetic is using.
+    NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
+    return std::max(baseScale, scale(reference, asset));
+}
+
+[[nodiscard]] int
+posteriorAssetScale(
+    VaultVersion version,
+    Asset const& asset,
+    int baseScale,
+    Number const& reference,
+    STAmount const& delta)
+{
+    Number const posterior = [&] {
+        NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
+        return reference + delta;
+    }();
+
+    switch (version)
+    {
+        case VaultVersion::Legacy:
+        case VaultVersion::CashBasis:
+            return scale(posterior, asset);
+        case VaultVersion::FixedPrecision:
+            return liveScale(posterior, asset, baseScale);
+    }
+    // LCOV_EXCL_START
+    UNREACHABLE("xrpl::detail::posteriorAssetScale : valid VaultVersion");
+    return Number::kMinExponent - 1;
+    // LCOV_EXCL_STOP
+}
+
+[[nodiscard]] STAmount
+creditToPosteriorScale(
+    Asset const& asset,
+    Number const& reference,
+    int atScale,
+    STAmount const& raw,
+    Number::RoundingMode roundingMode)
+{
+    // Floor the SUM (reference + raw), not just raw, at atScale. See
+    // creditToPosteriorAvailableScale's doc: a delta floored on its own grid
+    // can still leave a 17-digit sum once the reference has crossed a power
+    // of ten.
+    Number const flooredSum = roundToAsset(asset, reference + Number(raw), atScale, roundingMode);
+    // flooredSum - reference can carry 17 significant digits (the sum is on
+    // the posterior grid, the reference on the finer one); build the
+    // STAmount under roundingMode, not the caller's ambient mode, so the
+    // credit this returns never exceeds raw.
+    NumberRoundModeGuard const rg(roundingMode);
+    return STAmount{asset, flooredSum - reference};
+}
+
+}  // namespace detail
+
+[[nodiscard]] Number
+getAssetsTotal(SLE::const_ref vault)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getAssetsTotal : valid Vault sle");
+
+    if (getVaultVersion(vault) != VaultVersion::FixedPrecision)
+        return vault->at(sfAssetsTotal);
+
+    // AssetsAvailable is at -Scale (or coarser) and AssetsDeployed is always at
+    // -Scale, so the sum is exact while it fits 19 digits. Fix the mode so a
+    // sum that does not fit rounds the same way for every caller.
+    NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
+    return vault->at(sfAssetsAvailable) + vault->at(sfAssetsDeployed);
+}
+
+[[nodiscard]] TER
+adjustVaultBalances(SLE::ref vault, VaultBalanceChange const& change, beast::Journal j)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT, "xrpl::adjustVaultBalances : valid Vault sle");
+    XRPL_ASSERT(
+        getVaultVersion(vault) == VaultVersion::FixedPrecision,
+        "xrpl::adjustVaultBalances : FixedPrecision Vault");
+    Asset const asset = vault->at(sfAsset);
+    STAmount const cash = change.cash.value_or(STAmount{asset, 0});
+    XRPL_ASSERT(cash.asset() == asset, "xrpl::adjustVaultBalances : cash and Vault asset match");
+    // This is the mode the ledger's own transfers (trust line / MPT balance
+    // updates) normalize in; computing AA' with any other ambient mode would
+    // not reproduce what the real transfer just did to the backing balance.
+    XRPL_ASSERT(
+        Number::getround() == Number::RoundingMode::ToNearest,
+        "xrpl::adjustVaultBalances : ambient rounding mode is ToNearest");
+
+    // AA' is the exact trust-line/MPT arithmetic the ledger uses for the
+    // transfer itself: a Number sum re-canonicalized to the asset's 16-digit
+    // STAmount precision. MPT and XRP sums are already integral, so this is
+    // a no-op rounding for them.
+    //
+    // AssetsDeployed, LossUnrealized and YieldUnrealized move no cash, so they stay
+    // exact Number sums; the asserts below check each fits 16 digits, rather
+    // than letting an STAmount conversion round it silently.
+    STAmount const availableAfter{asset, Number(vault->at(sfAssetsAvailable)) + Number(cash)};
+    Number const assetsDeployedAfter = Number(vault->at(sfAssetsDeployed)) + change.deployed;
+    Number const lossUnrealizedAfter = Number(vault->at(sfLossUnrealized)) + change.loss;
+    Number yieldUnrealizedAfter = Number(vault->at(sfYieldUnrealized)) + change.yield;
+
+    if (availableAfter < beast::kZero || assetsDeployedAfter < beast::kZero ||
+        lossUnrealizedAfter < beast::kZero)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "adjustVaultBalances: a balance would become negative."
+                        << " AssetsAvailable: " << Number(availableAfter)
+                        << ", AssetsDeployed: " << assetsDeployedAfter
+                        << ", LossUnrealized: " << lossUnrealizedAfter;
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+
+    // The impairment rule: a Loan can only be impaired for as much as it
+    // still owes. Reachable only through LoanManage's impair.
+    if (lossUnrealizedAfter > assetsDeployedAfter)
+        return tecLIMIT_EXCEEDED;
+
+    if (yieldUnrealizedAfter < beast::kZero)
+    {
+        JLOG(j.warn()) << "adjustVaultBalances: YieldUnrealized would become negative: "
+                       << yieldUnrealizedAfter << "; clamping to zero.";
+        yieldUnrealizedAfter = kNumZero;
+    }
+
+    // Every caller derives principal from a Loan's own PrincipalOutstanding so the new total must
+    // stay representable at the asset's own 16-digit precision too.
+    XRPL_ASSERT(
+        (STAmount{asset, assetsDeployedAfter} == assetsDeployedAfter),
+        "xrpl::adjustVaultBalances : AssetsDeployed is a 16-digit STAmount value");
+    XRPL_ASSERT(
+        (STAmount{asset, lossUnrealizedAfter} == lossUnrealizedAfter),
+        "xrpl::adjustVaultBalances : LossUnrealized is a 16-digit STAmount value");
+    XRPL_ASSERT(
+        (STAmount{asset, yieldUnrealizedAfter} == yieldUnrealizedAfter),
+        "xrpl::adjustVaultBalances : YieldUnrealized is a 16-digit STAmount value");
+
+    vault->at(sfAssetsAvailable) = availableAfter;
+    vault->at(sfAssetsDeployed) = assetsDeployedAfter;
+    vault->at(sfLossUnrealized) = lossUnrealizedAfter;
+    vault->at(sfYieldUnrealized) = yieldUnrealizedAfter;
+    syncAssetsTotal(vault);
+
+    return tesSUCCESS;
+}
 
 [[nodiscard]] int
 getVaultScale(SLE::const_ref vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultScale : valid Vault sle");
 
+    Number const assetsTotal = getAssetsTotal(vault);
     switch (getVaultVersion(vault))
     {
         case VaultVersion::Legacy:
         case VaultVersion::CashBasis:
-            return scale(vault->at(sfAssetsTotal), vault->at(sfAsset));
+            return scale(assetsTotal, vault->at(sfAsset));
         case VaultVersion::FixedPrecision:
-            return liveScale(vault->at(sfAssetsTotal), vault->at(sfAsset), fixedBaseScale(vault));
+            return detail::liveScale(assetsTotal, vault->at(sfAsset), fixedBaseScale(vault));
     }
     // LCOV_EXCL_START
     UNREACHABLE("xrpl::getVaultScale : valid VaultVersion");
@@ -115,28 +330,21 @@ getVaultBaseScale(SLE::const_ref vault)
     // LCOV_EXCL_STOP
 }
 
+namespace detail {
+
 [[nodiscard]] int
 getPosteriorVaultScale(SLE::const_ref vault, STAmount const& delta)
 {
     XRPL_ASSERT(
-        vault && vault->getType() == ltVAULT, "xrpl::getPosteriorVaultScale : valid Vault sle");
+        vault && vault->getType() == ltVAULT,
+        "xrpl::detail::getPosteriorVaultScale : valid Vault sle");
     XRPL_ASSERT(
         delta.asset() == vault->at(sfAsset),
-        "xrpl::getPosteriorVaultScale : delta and Vault asset match");
-    return posteriorScale(vault, vault->at(sfAssetsTotal), delta);
+        "xrpl::detail::getPosteriorVaultScale : delta and Vault asset match");
+    return posteriorScale(vault, getAssetsTotal(vault), delta);
 }
 
-[[nodiscard]] STAmount
-roundToVaultScale(SLE::const_ref vault, STAmount const& amount, Number::RoundingMode roundingMode)
-{
-    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::roundToVaultScale : valid Vault sle");
-    XRPL_ASSERT(
-        amount.asset() == vault->at(sfAsset),
-        "xrpl::roundToVaultScale : amount and Vault asset match");
-    if (amount.integral())
-        return amount;
-    return roundToScale(amount, getVaultScale(vault), roundingMode);
-}
+}  // namespace detail
 
 [[nodiscard]] STAmount
 roundToPosteriorVaultScale(
@@ -151,25 +359,28 @@ roundToPosteriorVaultScale(
         "xrpl::roundToPosteriorVaultScale : amount and Vault asset match");
     if (amount.integral())
         return amount;
-    return roundToScale(amount, getPosteriorVaultScale(vault, amount), roundingMode);
+    return roundToScale(amount, detail::getPosteriorVaultScale(vault, amount), roundingMode);
 }
 
 [[nodiscard]] STAmount
-roundToPosteriorAvailableScale(
+creditToPosteriorAvailableScale(
     SLE::const_ref vault,
-    STAmount const& amount,
+    STAmount const& raw,
     Number::RoundingMode roundingMode)
 {
     XRPL_ASSERT(
         vault && vault->getType() == ltVAULT,
-        "xrpl::roundToPosteriorAvailableScale : valid Vault sle");
+        "xrpl::creditToPosteriorAvailableScale : valid Vault sle");
     XRPL_ASSERT(
-        amount.asset() == vault->at(sfAsset),
-        "xrpl::roundToPosteriorAvailableScale : amount and Vault asset match");
-    if (amount.integral())
-        return amount;
-    return roundToScale(
-        amount, posteriorScale(vault, vault->at(sfAssetsAvailable), amount), roundingMode);
+        raw.asset() == vault->at(sfAsset),
+        "xrpl::creditToPosteriorAvailableScale : raw and Vault asset match");
+    if (raw.integral())
+        return raw;
+
+    Asset const asset = vault->at(sfAsset);
+    Number const reference = vault->at(sfAssetsAvailable);
+    int const scale = posteriorScale(vault, reference, raw);
+    return detail::creditToPosteriorScale(asset, reference, scale, raw, roundingMode);
 }
 
 [[nodiscard]] Number
@@ -200,16 +411,24 @@ checkOptionalVaultInflow(SLE::const_ref vault, STAmount const& amount)
     // Keep this explicit even though a non-negative YieldUnrealized makes the
     // Open-zone capacity ceiling reject every coarsening transition too. The
     // protocol defines both conditions independently.
-    if (getPosteriorVaultScale(vault, rounded) != baseScale)
+    if (detail::getPosteriorVaultScale(vault, rounded) != baseScale)
         return tecLIMIT_EXCEEDED;
 
-    Number const capacity = [&] {
-        NumberRoundModeGuard const rg(Number::RoundingMode::TowardsZero);
-        return vault->at(sfAssetsTotal) + vault->at(sfYieldUnrealized) + rounded;
-    }();
-    if (capacity > getVaultOpenLimit(vault))
+    if (vaultOpenZoneCapacity(vault, rounded) > getVaultOpenLimit(vault))
         return tecLIMIT_EXCEEDED;
     return tesSUCCESS;
+}
+
+[[nodiscard]] Number
+vaultOpenZoneCapacity(SLE::const_ref vault, Number const& roundedAmount)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT, "xrpl::vaultOpenZoneCapacity : valid Vault sle");
+    XRPL_ASSERT(
+        getVaultVersion(vault) == VaultVersion::FixedPrecision,
+        "xrpl::vaultOpenZoneCapacity : FixedPrecision Vault");
+    NumberRoundModeGuard const rg(Number::RoundingMode::TowardsZero);
+    return getAssetsTotal(vault) + vault->at(sfYieldUnrealized) + roundedAmount;
 }
 
 [[nodiscard]] std::optional<STAmount>
@@ -222,7 +441,7 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
     if (assets.negative() || assets.asset() != vault->at(sfAsset))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number const assetTotal = vault->at(sfAssetsTotal);
+    Number const assetTotal = getAssetsTotal(vault);
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
     {
@@ -246,7 +465,7 @@ sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
     if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number const assetTotal = vault->at(sfAssetsTotal);
+    Number const assetTotal = getAssetsTotal(vault);
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
     {
@@ -277,13 +496,18 @@ clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta)
     STAmount actualDelta;
     if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
     {
+        // FixedPrecision only reaches this branch for credits (VaultDeposit);
+        // outflows go through clampVaultOutflow -> clampToAvailableScale,
+        // which rounds at AssetsAvailable's own posterior scale instead.
+        XRPL_ASSERT(
+            !delta.negative(), "xrpl::clampToAssetsTotalScale : FixedPrecision credit only");
         STAmount const rounded =
             roundToPosteriorVaultScale(vault, delta, Number::RoundingMode::TowardsZero);
         actualDelta = rounded.negative() ? -rounded : rounded;
     }
     else
     {
-        Number const assetsTotal = vault->at(sfAssetsTotal);
+        Number const assetsTotal = getAssetsTotal(vault);
 
         // Calculate the scale after applying the delta using ToNearest rounding.
         // This aligns the delta with scale checks used by vault invariants.
@@ -328,10 +552,34 @@ clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta)
     return actualDelta;
 }
 
+[[nodiscard]] std::expected<STAmount, TER>
+clampVaultOutflow(SLE::const_ref vault, STAmount const& delta)
+{
+    XRPL_ASSERT(delta.negative(), "xrpl::clampVaultOutflow : outflow delta is negative");
+    return getVaultVersion(vault) == VaultVersion::FixedPrecision
+        ? clampToAvailableScale(vault, delta)
+        : clampToAssetsTotalScale(vault, delta);
+}
+
+[[nodiscard]] int
+vaultBaseScale(Asset const& asset, std::uint8_t scale)
+{
+    if (asset.integral())
+        return 0;
+    return -static_cast<int>(scale);
+}
+
+[[nodiscard]] bool
+isOnVaultBaseGrid(Asset const& asset, Number const& value, int baseScale)
+{
+    return STAmount{asset, value} == value &&
+        roundToAsset(asset, value, baseScale, Number::RoundingMode::TowardsZero) == value;
+}
+
 [[nodiscard]] Number
 assetsTotalForWithdrawal(SLE::const_ref vault, WaiveUnrealizedLoss waive)
 {
-    Number assetTotal = vault->at(sfAssetsTotal);
+    Number assetTotal = getAssetsTotal(vault);
     if (waive == WaiveUnrealizedLoss::No)
         assetTotal -= vault->at(sfLossUnrealized);
     return assetTotal;
@@ -343,6 +591,14 @@ debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount
     if (amount == 0)
         return false;
     return STAmount{asset, total - amount} == STAmount{asset, total};
+}
+
+[[nodiscard]] Number
+vaultDebitDustReference(SLE::const_ref vault, Number const& assetsTotal)
+{
+    return getVaultVersion(vault) == VaultVersion::FixedPrecision
+        ? Number(vault->at(sfAssetsAvailable))
+        : assetsTotal;
 }
 
 [[nodiscard]] std::optional<STAmount>
@@ -416,21 +672,38 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
 }
 
 [[nodiscard]] VaultVersion
-getVaultVersion(SLE::const_ref vault)
+decodeVaultVersion(std::optional<std::uint8_t> leVersion)
 {
-    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultVersion : valid Vault sle");
-    if (!vault->isFieldPresent(sfLEVersion))
+    if (!leVersion)
         return VaultVersion::Legacy;
-
-    auto const version = vault->at(sfLEVersion);
-    if (version > std::to_underlying(VaultVersion::FixedPrecision))
+    if (*leVersion > std::to_underlying(VaultVersion::FixedPrecision))
     {
         // LCOV_EXCL_START
-        UNREACHABLE("xrpl::getVaultVersion : invalid vault version");
+        UNREACHABLE("xrpl::decodeVaultVersion : invalid vault version");
         return VaultVersion::Legacy;
         // LCOV_EXCL_STOP
     }
-    return static_cast<VaultVersion>(version);
+    return static_cast<VaultVersion>(*leVersion);
+}
+
+[[nodiscard]] VaultVersion
+getVaultVersion(SLE::const_ref vault)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultVersion : valid Vault sle");
+    return decodeVaultVersion(vault->at(~sfLEVersion));
+}
+
+[[nodiscard]] VaultVersion
+vaultVersionFor(Rules const& rules)
+{
+    // FixedPrecision requires both cleanups, so a FixedPrecision Vault always
+    // sees them enabled.
+    if (rules.enabled(featureLendingProtocolV1_2) && rules.enabled(fixCleanup3_2_0) &&
+        rules.enabled(fixCleanup3_4_0))
+        return VaultVersion::FixedPrecision;
+    if (rules.enabled(featureLendingProtocolV1_1))
+        return VaultVersion::CashBasis;
+    return VaultVersion::Legacy;
 }
 
 [[nodiscard]] VaultKind
