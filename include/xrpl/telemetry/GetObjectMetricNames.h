@@ -52,9 +52,10 @@
  *     app_, kGetObjectRequestObjects, kGetObjectRequestObjectsDesc, requested);
  * @endcode
  *
- * Example usage -- edge case: the same instrument recorded under two
- * different label values, which is why the label key and both values are
- * constants rather than literals:
+ * Example usage -- edge case: two calls record one metric under two label
+ * values. Each call creates its own instrument, but both pass the same name
+ * and description constants, so the SDK exports one stream. The label key and
+ * values are constants too, so the two calls cannot drift apart:
  * @code
  * XRPL_METRIC_COUNTER_ADD_LABELED(
  *     app_, kGetObjectLookupsTotal, kGetObjectLookupsTotalDesc, hits,
@@ -104,7 +105,8 @@ inline constexpr char kGetObjectRequestObjects[] = "getobject_request_objects";
 inline constexpr char kGetObjectLookupUs[] = "getobject_lookup_us";
 
 /**
- * NodeStore lookups performed, split by the `result` label.
+ * NodeStore lookups attempted, split by the `result` label. An entry skipped
+ * before the lookup is not counted.
  */
 inline constexpr char kGetObjectLookupsTotal[] = "getobject_lookups_total";
 
