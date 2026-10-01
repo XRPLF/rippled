@@ -326,8 +326,9 @@ builds pass, since nothing publishes them. An unsupported pre-release, and
 build metadata on a final release such as `3.2.0+abc123`, are both rejected,
 except in the `custom` and `private` channels, which accept any version and
 switch each `-` inside the pre-release or build metadata to `.`, so
-`3.4.0-custom-1` packages as `3.4.0~custom.1`. The `develop` channel accepts
-only `0.0.0-dev`, whatever its build metadata, and packages it as `0.0.0~dev`.
+`3.4.0-custom-1` packages as `3.4.0~custom.1`. The `develop` channel and
+`UNRELEASED` accept `0.0.0-dev`, whatever its build metadata, and package it as
+`0.0.0~dev`; the `develop` channel accepts nothing else.
 
 The RPM path intentionally uses `~` in `Version`, matching the Debian
 pre-release ordering convention, so RPM filenames/NVRs begin with forms like

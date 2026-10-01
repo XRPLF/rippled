@@ -27,6 +27,9 @@ ANY_VERSION_CHANNELS = ("custom", "private")
 # The version of any untagged build, which is all the develop channel publishes.
 DEV_VERSION = "0.0.0-dev"
 
+# Channels an untagged build is packaged for: develop, or none for a local build.
+DEV_VERSION_CHANNELS = ("develop", "UNRELEASED")
+
 # The package name a variant suffixes, and the name every variant keeps for its
 # on-disk paths (/usr/bin/xrpld, /etc/xrpld, xrpld.service).
 BASE_NAME = "xrpld"
@@ -81,19 +84,19 @@ def package_version(reported: str, channel: str) -> str:
     the final 3.2.0; a no-op for a final release. The custom and private
     channels accept any pre-release and build metadata, with any '-' inside
     either switched to '.' (3.4.0-custom-1 -> 3.4.0~custom.1). The develop
-    channel accepts only 0.0.0-dev and drops its build metadata
-    (0.0.0-dev+abc1234 -> 0.0.0~dev): its commit hash is already in the package
-    release, and in the version it would order the builds by hash, before the
-    release is compared.
+    and UNRELEASED channels accept 0.0.0-dev, the develop channel nothing else,
+    and drop its build metadata (0.0.0-dev+abc1234 -> 0.0.0~dev): its commit
+    hash is already in the package release, and in the version it would order
+    the builds by hash, before the release is compared.
     """
     # Metadata first, as it may contain '-' too.
     release, plus, metadata = reported.partition("+")
-    if channel == "develop":
-        assert release == DEV_VERSION, (
-            f"unsupported version {reported!r}: "
-            f"the develop channel only accepts {DEV_VERSION}."
-        )
+    if release == DEV_VERSION and channel in DEV_VERSION_CHANNELS:
         return DEV_VERSION.replace("-", "~")
+    assert channel != "develop", (
+        f"unsupported version {reported!r}: "
+        f"the develop channel only accepts {DEV_VERSION}."
+    )
     base, _, pre_release = release.partition("-")
     if channel in ANY_VERSION_CHANNELS:
         pre_release = pre_release.replace("-", ".")
