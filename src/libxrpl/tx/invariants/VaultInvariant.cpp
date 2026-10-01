@@ -456,10 +456,14 @@ ValidVault::checkTotalsAddUp(
     // deltas, not the values rounded to the posterior AssetsTotal scale.
     bool const availableAddsUp = [&] {
         if (afterVault.version == VaultVersion::FixedPrecision)
+        {
             return (afterVault.assetsAvailable - beforeVault.assetsAvailable) == exactVaultDelta;
+        }
         if (fix340Enabled)
+        {
             return agreesWithinOneUnit(
                 assetAvailableDelta, roundedVaultDelta, vaultAsset, minScale);
+        }
         return assetAvailableDelta == roundedVaultDelta;
     }();
     if (!availableAddsUp)
