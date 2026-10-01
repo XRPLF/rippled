@@ -1799,7 +1799,7 @@ increase(nodestore_state{metric="acquire_timeouts", service_instance_id=~"$node"
 > **Diagnostic procedure.** These signals exist to answer one question — why a
 > node is slow to reach `full` — and the decision rule that uses them lives in
 > [docs/telemetry-runbook.md § Slow to reach `full`](../docs/telemetry-runbook.md#slow-to-reach-full),
-> with the measured reference values from both bottleneck modes. The short form:
+> with the signals that separate the two bottleneck modes. The short form:
 > the `ledgerData` lane sitting at its concurrency cap is true in **both** modes,
 > so it is never a diagnosis on its own.
 
