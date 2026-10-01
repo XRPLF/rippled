@@ -15,9 +15,8 @@ outputs:
 runs:
   using: composite
   steps:
-    # A tag names its own version. Anything else takes it from BuildInfo.cpp and
-    # appends the commit hash as build metadata, joined with a plus sign because a
-    # Conan version cannot contain two hyphens.
+    # A tag names its own version. Anything else is a development build named by
+    # its commit hash, matching what cmake/XrplVersion.cmake derives.
     - name: Determine version
       id: version
       shell: bash
@@ -29,12 +28,7 @@ runs:
         if [[ "${IS_TAG}" == "true" ]]; then
             version="${REF_NAME}"
         else
-            version="$(awk -F'"' '/versionString =/ { print $2 }' src/libxrpl/protocol/BuildInfo.cpp)"
-            if [[ -z "${version}" ]]; then
-                echo "Unable to read versionString from BuildInfo.cpp." >&2
-                exit 1
-            fi
-            version="${version}+${SHA:0:7}"
+            version="0.0.0-dev+${SHA:0:7}"
         fi
 
         echo "version=${version}" | tee -a "${GITHUB_OUTPUT}"
