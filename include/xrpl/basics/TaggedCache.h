@@ -369,7 +369,7 @@ private:
     // a burst can't drive the cache past its RAM budget between timer sweeps.
     // No-op unless cacheHardCap_ > 0 (opt-in); caller holds mutex_.
     void
-    evictForHardCap(cache_type::map_type& partition, cache_type::map_type::iterator const& keep);
+    evictForHardCap(CacheType::MapType& partition, CacheType::MapType::iterator const& keep);
 
     [[nodiscard]] std::thread
     sweepHelper(

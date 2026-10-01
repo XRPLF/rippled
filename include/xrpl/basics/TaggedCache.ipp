@@ -232,7 +232,7 @@ template <
     class Mutex>
 inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    evictForHardCap(cache_type::map_type& partition, cache_type::map_type::iterator const& keep)
+    evictForHardCap(CacheType::MapType& partition, CacheType::MapType::iterator const& keep)
 {
     // Caller holds mutex_. Only value caches carry strong/weak entries; key
     // caches never enable the hard cap, so this is a no-op for them.
@@ -258,7 +258,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             std::size_t bucketsWalked = 0;
             key_type oldestKey{};
             bool haveOldest = false;
-            clock_type::time_point oldestAccess{};
+            ClockType::time_point oldestAccess{};
 
             std::size_t b = evictHand_ % bucketCount;
             while (sampled < kEvictSampleBudget && bucketsWalked < maxBuckets)
