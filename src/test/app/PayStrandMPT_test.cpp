@@ -256,7 +256,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                     usd,
                     STPath({
                         STPathElement{
-                            STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()},
+                            STPathElementType::Currency, xrpAccount(), xrpCurrency(), xrpAccount()},
                     }),
                     tesSUCCESS,
                     makeEndpointStep(alice, gw, usd),

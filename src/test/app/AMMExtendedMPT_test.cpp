@@ -1945,7 +1945,7 @@ private:
                 STPathSet paths;
                 auto const ipe = [](MPTTester const& iss) {
                     return STPathElement(
-                        STPathElement::TypeMpt | STPathElement::TypeIssuer,
+                        STPathElementType::Mpt | STPathElementType::Issuer,
                         xrpAccount(),
                         PathAsset{iss.issuanceID()},
                         iss.issuer());

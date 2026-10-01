@@ -947,7 +947,7 @@ Pathfinder::isNoRippleOut(STPath const& currentPath)
 
     // Last link must be an account.
     STPathElement const& endElement = currentPath.back();
-    if ((endElement.getNodeType() & STPathElement::TypeAccount) == 0u)
+    if (!endElement.isType(STPathElementType::Account))
         return false;
 
     // If there's only one item in the path, return true if that item specifies
@@ -1171,7 +1171,7 @@ Pathfinder::addLink(
                             return;
                         // Add accounts to incompletePaths
                         STPathElement const pathElement(
-                            STPathElement::TypeAccount, it->account, uEndPathAsset, it->account);
+                            STPathElementType::Account, it->account, uEndPathAsset, it->account);
                         incompletePaths.assembleAdd(currentPath, pathElement);
                         ++it;
                     }
@@ -1194,7 +1194,7 @@ Pathfinder::addLink(
                     assetFromPathAsset(uEndPathAsset, uEndIssuer), domain_))
             {
                 STPathElement const pathElement(
-                    STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount());
+                    STPathElementType::Currency, xrpAccount(), xrpCurrency(), xrpAccount());
                 incompletePaths.assembleAdd(currentPath, pathElement);
             }
         }
@@ -1220,7 +1220,7 @@ Pathfinder::addLink(
 
                         // add the order book itself
                         newPath.emplaceBack(
-                            STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount());
+                            STPathElementType::Currency, xrpAccount(), xrpCurrency(), xrpAccount());
 
                         if (isXRP(dstAmount_.asset()))
                         {
@@ -1239,8 +1239,8 @@ Pathfinder::addLink(
                     else if (!currentPath.hasSeen(
                                  book.out.getIssuer(), book.out, book.out.getIssuer()))
                     {
-                        auto const assetType = book.out.holds<Issue>() ? STPathElement::TypeCurrency
-                                                                       : STPathElement::TypeMpt;
+                        auto const assetType = book.out.holds<Issue>() ? STPathElementType::Currency
+                                                                       : STPathElementType::Mpt;
                         // Don't want the book if we've already seen the issuer
                         // book -> account -> book
                         if ((newPath.size() >= 2) && newPath.back().isAccount() &&
@@ -1248,7 +1248,7 @@ Pathfinder::addLink(
                         {
                             // replace the redundant account with the order book
                             newPath[newPath.size() - 1] = STPathElement(
-                                assetType | STPathElement::TypeIssuer,
+                                assetType | STPathElementType::Issuer,
                                 xrpAccount(),
                                 book.out,
                                 book.out.getIssuer());
@@ -1257,7 +1257,7 @@ Pathfinder::addLink(
                         {
                             // add the order book
                             newPath.emplaceBack(
-                                assetType | STPathElement::TypeIssuer,
+                                assetType | STPathElementType::Issuer,
                                 xrpAccount(),
                                 book.out,
                                 book.out.getIssuer());
@@ -1283,7 +1283,7 @@ Pathfinder::addLink(
                             incompletePaths.assembleAdd(
                                 newPath,
                                 STPathElement(
-                                    STPathElement::TypeAccount,
+                                    STPathElementType::Account,
                                     book.out.getIssuer(),
                                     book.out,
                                     book.out.getIssuer()));
