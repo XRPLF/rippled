@@ -601,7 +601,7 @@ LoanManage::doApply()
     if (view.rules().enabled(fixCleanup3_1_3) && isTesSuccess(result))
     {
         bool const fixedPrecision = getVaultVersion(vaultSle) == VaultVersion::FixedPrecision;
-        bool const assetsEqualBeforeStore =
+        [[maybe_unused]] bool const assetsEqualBeforeStore =
             fixedPrecision && vaultSle->at(sfAssetsAvailable) == vaultSle->at(sfAssetsTotal);
 
         associateAsset(*loanSle, vaultAsset);
@@ -610,8 +610,8 @@ LoanManage::doApply()
 
         if (fixedPrecision)
         {
-            Number const assetsAvailableAfter = *vaultSle->at(sfAssetsAvailable);
-            Number const assetsTotalAfter = *vaultSle->at(sfAssetsTotal);
+            [[maybe_unused]] Number const assetsAvailableAfter = *vaultSle->at(sfAssetsAvailable);
+            [[maybe_unused]] Number const assetsTotalAfter = *vaultSle->at(sfAssetsTotal);
             XRPL_ASSERT_PARTS(
                 assetsAvailableAfter <= assetsTotalAfter,
                 "xrpl::LoanManage::doApply",
