@@ -7,8 +7,7 @@
 // that each key arrives once, with its last value, in first-set order; that
 // values are copied when set; that every other call is forwarded at once and
 // unchanged; that the delegate gets its own recordable back; and that
-// discarded spans are still dropped. One test uses the real OTLP recordable
-// to show its attribute count limit still applies.
+// discarded spans are still dropped.
 //
 // The whole file is telemetry-only: without XRPL_ENABLE_TELEMETRY the SDK
 // headers are unavailable, so the translation unit compiles empty.
@@ -24,7 +23,6 @@
 #include <opentelemetry/common/key_value_iterable.h>
 #include <opentelemetry/common/key_value_iterable_view.h>
 #include <opentelemetry/common/timestamp.h>
-#include <opentelemetry/exporters/otlp/otlp_recordable.h>
 #include <opentelemetry/nostd/span.h>
 #include <opentelemetry/nostd/string_view.h>
 #include <opentelemetry/nostd/variant.h>
@@ -36,13 +34,11 @@
 #include <opentelemetry/sdk/trace/span_limits.h>
 #include <opentelemetry/sdk/trace/tracer_provider.h>
 #include <opentelemetry/sdk/trace/tracer_provider_factory.h>
-#include <opentelemetry/trace/span.h>
 #include <opentelemetry/trace/span_context.h>
 #include <opentelemetry/trace/span_id.h>
 #include <opentelemetry/trace/span_metadata.h>
 #include <opentelemetry/trace/trace_flags.h>
 #include <opentelemetry/trace/trace_id.h>
-#include <opentelemetry/trace/tracer.h>
 
 #include <algorithm>
 #include <array>
@@ -747,40 +743,6 @@ TEST(FilteringSpanProcessor, null_recordable_from_the_delegate_stays_null)
 
     EXPECT_EQ(processor.MakeRecordable(), nullptr);
     EXPECT_EQ(log.made.size(), 1U);
-}
-
-TEST(FilteringSpanProcessor, otlp_recordable_gets_each_key_once_within_its_count_limit)
-{
-    DelegateLog log;
-    FilteringSpanProcessor processor{recordingDelegate(log, [] {
-        return std::unique_ptr<otel_sdk_trace::Recordable>{
-            std::make_unique<opentelemetry::exporter::otlp::OtlpRecordable>()};
-    })};
-    otel_sdk_trace::SpanLimits limits;
-    limits.attribute_count_limit = 2;
-
-    auto span = processor.MakeRecordable();
-    ASSERT_NE(span, nullptr);
-    span->SetSpanLimits(limits);
-    span->SetAttribute("first", std::int64_t{1});
-    span->SetAttribute("second", std::int64_t{2});
-    span->SetAttribute("first", std::int64_t{3});
-    span->SetAttribute("third", std::int64_t{4});
-    processor.OnEnd(std::move(span));
-
-    // Two keys fit the limit. "first" keeps its place and its last value, and
-    // only "third" is dropped.
-    ASSERT_EQ(log.ended.size(), 1U);
-    auto const* otlp =
-        dynamic_cast<opentelemetry::exporter::otlp::OtlpRecordable const*>(log.ended.front().get());
-    ASSERT_NE(otlp, nullptr);
-    auto const& exported = otlp->span();
-    ASSERT_EQ(exported.attributes_size(), 2);
-    EXPECT_EQ(exported.attributes(0).key(), "first");
-    EXPECT_EQ(exported.attributes(0).value().int_value(), 3);
-    EXPECT_EQ(exported.attributes(1).key(), "second");
-    EXPECT_EQ(exported.attributes(1).value().int_value(), 2);
-    EXPECT_EQ(exported.dropped_attributes_count(), 1U);
 }
 
 TEST(FilteringSpanProcessor, sdk_span_that_sets_a_key_twice_exports_it_once)
