@@ -172,6 +172,10 @@ doAccountLines(rpc::JsonContext& context)
         if (!hint.has_value())
             return rpcError(RpcInvalidParams);
         startHint = *hint;
+
+        // Reject a marker that doesn't exist
+        if (!ledger->read({ltANY, startAfter}))
+            return rpcError(RpcInvalidParams);
     }
 
     auto count = 0;

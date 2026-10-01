@@ -9,6 +9,7 @@
 #include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/pay.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
