@@ -18,6 +18,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/rate.h>
 #include <test/jtx/regkey.h>
 #include <test/jtx/sendmax.h>
@@ -2265,6 +2266,63 @@ class Delegate_test : public beast::unit_test::Suite
             // but is not allowed for delegation, the transaction will be rejected with
             // terNO_DELEGATE_PERMISSION. The set of permitted flags for delegation is defined in
             // permissions.macro.
+        }
+
+        // Fields and flags not in permissions.macro template are not permitted for delegation.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const credIssuer{"credIssuer"};
+            env.fund(XRP(100000), alice, bob, credIssuer);
+            env.close();
+
+            env(pdomain::setTx(credIssuer, {{.issuer = credIssuer, .credType = "credential"}}));
+            auto const domainID = pdomain::getNewDomain(env.meta());
+            env.close();
+
+            MPTTester mpt(env, alice, {.fund = false});
+            mpt.create({.flags = tfMPTCanLock | tfMPTCanTransfer});
+            env.close();
+
+            // bob holds every granular permission defined for MPTokenIssuanceSet
+            env(delegate::set(alice, bob, {"MPTokenIssuanceLock", "MPTokenIssuanceUnlock"}));
+            env.close();
+
+            std::vector<MPTSet> const dynamicChanges = {
+                {.transferFee = 100},
+                {.metadata = "test"},
+                {.domainID = domainID},
+                {.flags = tfMPTSetCanTrade},
+                {.flags = tfMPTSetCanClawback},
+                {.immutableFlags = tifMPTTransferFee},
+                // a permitted flag does not unlock the extra fields
+                {.flags = tfMPTLock, .domainID = domainID},
+            };
+
+            for (auto arg : dynamicChanges)
+            {
+                arg.account = alice;
+                arg.delegate = bob;
+                arg.err = terNO_DELEGATE_PERMISSION;
+                mpt.set(arg);
+                env.close();
+            }
+
+            // Lock/unlock combined with a mutation is rejected by preflight
+            // before the permission check is reached.
+            mpt.set(
+                {.account = alice,
+                 .flags = tfMPTLock,
+                 .transferFee = 100,
+                 .delegate = bob,
+                 .err = temMALFORMED});
+            mpt.set(
+                {.account = alice,
+                 .flags = tfMPTUnlock,
+                 .metadata = "test",
+                 .delegate = bob,
+                 .err = temMALFORMED});
         }
     }
 
