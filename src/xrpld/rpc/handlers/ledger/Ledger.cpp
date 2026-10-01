@@ -67,6 +67,9 @@ LedgerHandler::process(Input const& input) const
         if (!isUnlimited(context_.get().role))
             return std::unexpected{::rpc::Status{RpcNoPermission}};
 
+        // Dead code: the check above already returns for any role that is not
+        // unlimited, so this condition can never be true. Safe to remove; kept
+        // to keep this migration a strict port of the original handler.
         if (context_.get().app.getFeeTrack().isLoadedLocal() && !isUnlimited(context_.get().role))
         {
             return std::unexpected{::rpc::Status{RpcTooBusy}};
