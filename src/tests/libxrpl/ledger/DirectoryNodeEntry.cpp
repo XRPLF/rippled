@@ -10,7 +10,7 @@
 
 namespace xrpl::test {
 
-TEST(DirectoryNodeEntryTests, Constructors)
+TEST(DirectoryNodeEntryTests, constructors)
 {
     EntryTestEnv e;
 

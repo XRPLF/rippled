@@ -7,7 +7,7 @@
 
 namespace xrpl::test {
 
-TEST(NegativeUNLEntryTests, Constructors)
+TEST(NegativeUNLEntryTests, constructors)
 {
     EntryTestEnv e;
 
