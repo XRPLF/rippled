@@ -31,6 +31,12 @@ if(tests)
 endif()
 
 option(benchmark "Build benchmarks" ON)
+# Opt-in: the Number divergence harness (xrpl.bench.number_diff) and the
+# mpdecimal benchmark subjects. Requires the `bench_mpdecimal` Conan option.
+option(bench_mpdecimal "Build benchmarks that need mpdecimal" OFF)
+# Opt-in: Intel Decimal Floating-Point Math Library benchmark subjects. The
+# library is downloaded and built at configure/build time (benchmarks only).
+option(bench_intel_dfp "Build benchmarks that need Intel's decimal library" OFF)
 
 # When OFF, the crates directory is not added to the build at all: no Rust
 # toolchain is required, no cxxbridge bindings are generated, and the C++ tests

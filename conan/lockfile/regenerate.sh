@@ -25,12 +25,15 @@ rm -f conan.lock
 conan lock create . \
     --options '&:jemalloc=True' \
     --options '&:rocksdb=True' \
+    --options '&:bench_mpdecimal=True' \
     --profile:all=conan/lockfile/linux.profile
 conan lock create . \
     --options '&:jemalloc=True' \
     --options '&:rocksdb=True' \
+    --options '&:bench_mpdecimal=True' \
     --profile:all=conan/lockfile/macos.profile
 conan lock create . \
     --options '&:jemalloc=True' \
     --options '&:rocksdb=True' \
+    --options '&:bench_mpdecimal=True' \
     --profile:all=conan/lockfile/windows.profile

@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 834 276" width="834" height="276" role="img" aria-label="AMM swap-in: correct digits (higher is better) and cost (lower is faster)">
+<style>
+text{font-family:system-ui, -apple-system, sans-serif;font-size:12px}
+.bg{fill:#fcfcfb}.t1{fill:#0b0b0b}.t2{fill:#52514e}.grid{stroke:#e4e3df;stroke-width:1}.base{stroke:#b9b8b2;stroke-width:1}.f-number{fill:#2a78d6}.f-ieee64{fill:#eb6834}.f-wide{fill:#1baf7a}
+@media (prefers-color-scheme: dark){.bg{fill:#1a1a19}.t1{fill:#ffffff}.t2{fill:#c3c2b7}.grid{stroke:#383835}.base{stroke:#5e5d58}.f-number{fill:#3987e5}.f-ieee64{fill:#d95926}.f-wide{fill:#199e70}}
+</style>
+<rect class="bg" width="834" height="276"/>
+<text class="t1" x="0" y="18" font-size="15" font-weight="600">AMM swap-in: correct digits (higher is better) and cost (lower is faster)</text>
+<rect class="f-number" x="0.0" y="32" width="12" height="12" rx="3"/>
+<text class="t2" x="18.0" y="42">Number today (19 digits)</text>
+<rect class="f-ieee64" x="214.8" y="32" width="12" height="12" rx="3"/>
+<text class="t2" x="232.8" y="42">16-digit types</text>
+<rect class="f-wide" x="357.6" y="32" width="12" height="12" rx="3"/>
+<text class="t2" x="375.6" y="42">34- and 38-digit types</text>
+<text class="t1" x="0" y="94.0">Number (Large330)</text>
+<text class="t1" x="0" y="118.0">Boost decimal64</text>
+<text class="t1" x="0" y="142.0">Intel BID64</text>
+<text class="t1" x="0" y="166.0">Boost decimal128</text>
+<text class="t1" x="0" y="190.0">Intel BID128</text>
+<text class="t1" x="0" y="214.0">mpdecimal 34</text>
+<text class="t1" x="0" y="238.0">mpdecimal 38</text>
+<text class="t1" x="150" y="64" font-weight="600">Correct digits, worst case</text>
+<line class="grid" x1="150.0" y1="78" x2="150.0" y2="246"/>
+<text class="t2" x="150.0" y="262" text-anchor="middle" font-size="11">0</text>
+<line class="grid" x1="190.0" y1="78" x2="190.0" y2="246"/>
+<text class="t2" x="190.0" y="262" text-anchor="middle" font-size="11">10</text>
+<line class="grid" x1="230.0" y1="78" x2="230.0" y2="246"/>
+<text class="t2" x="230.0" y="262" text-anchor="middle" font-size="11">20</text>
+<line class="grid" x1="270.0" y1="78" x2="270.0" y2="246"/>
+<text class="t2" x="270.0" y="262" text-anchor="middle" font-size="11">30</text>
+<line class="grid" x1="310.0" y1="78" x2="310.0" y2="246"/>
+<text class="t2" x="310.0" y="262" text-anchor="middle" font-size="11">40</text>
+<text class="t2" x="310.0" y="274" text-anchor="end" font-size="11">significant digits</text>
+<path class="f-number" d="M150.0,84.0 H172.0 Q176.0,84.0 176.0,88.0 V92.0 Q176.0,96.0 172.0,96.0 H150.0 Z"><title>Number (Large330): 6.5 significant digits</title></path>
+<text class="t2" x="181.0" y="94.0" font-size="11">6.5</text>
+<path class="f-ieee64" d="M150.0,108.0 H159.2 Q163.2,108.0 163.2,112.0 V116.0 Q163.2,120.0 159.2,120.0 H150.0 Z"><title>Boost decimal64: 3.3 significant digits</title></path>
+<text class="t2" x="168.2" y="118.0" font-size="11">3.3</text>
+<path class="f-ieee64" d="M150.0,132.0 H159.2 Q163.2,132.0 163.2,136.0 V140.0 Q163.2,144.0 159.2,144.0 H150.0 Z"><title>Intel BID64: 3.3 significant digits</title></path>
+<text class="t2" x="168.2" y="142.0" font-size="11">3.3</text>
+<path class="f-wide" d="M150.0,156.0 H233.7 Q237.7,156.0 237.7,160.0 V164.0 Q237.7,168.0 233.7,168.0 H150.0 Z"><title>Boost decimal128: 21.9 significant digits</title></path>
+<text class="t2" x="242.7" y="166.0" font-size="11">21.9</text>
+<path class="f-wide" d="M150.0,180.0 H233.7 Q237.7,180.0 237.7,184.0 V188.0 Q237.7,192.0 233.7,192.0 H150.0 Z"><title>Intel BID128: 21.9 significant digits</title></path>
+<text class="t2" x="242.7" y="190.0" font-size="11">21.9</text>
+<path class="f-wide" d="M150.0,204.0 H233.7 Q237.7,204.0 237.7,208.0 V212.0 Q237.7,216.0 233.7,216.0 H150.0 Z"><title>mpdecimal 34: 21.9 significant digits</title></path>
+<text class="t2" x="242.7" y="214.0" font-size="11">21.9</text>
+<path class="f-wide" d="M150.0,228.0 H251.2 Q255.2,228.0 255.2,232.0 V236.0 Q255.2,240.0 251.2,240.0 H150.0 Z"><title>mpdecimal 38: 26.3 significant digits</title></path>
+<text class="t2" x="260.2" y="238.0" font-size="11">26.3</text>
+<line class="base" x1="150" y1="78" x2="150" y2="246"/>
+<text class="t1" x="378" y="64" font-weight="600">Correct digits, median</text>
+<line class="grid" x1="378.0" y1="78" x2="378.0" y2="246"/>
+<text class="t2" x="378.0" y="262" text-anchor="middle" font-size="11">0</text>
+<line class="grid" x1="418.0" y1="78" x2="418.0" y2="246"/>
+<text class="t2" x="418.0" y="262" text-anchor="middle" font-size="11">10</text>
+<line class="grid" x1="458.0" y1="78" x2="458.0" y2="246"/>
+<text class="t2" x="458.0" y="262" text-anchor="middle" font-size="11">20</text>
+<line class="grid" x1="498.0" y1="78" x2="498.0" y2="246"/>
+<text class="t2" x="498.0" y="262" text-anchor="middle" font-size="11">30</text>
+<line class="grid" x1="538.0" y1="78" x2="538.0" y2="246"/>
+<text class="t2" x="538.0" y="262" text-anchor="middle" font-size="11">40</text>
+<text class="t2" x="538.0" y="274" text-anchor="end" font-size="11">significant digits</text>
+<path class="f-number" d="M378.0,84.0 H429.6 Q433.6,84.0 433.6,88.0 V92.0 Q433.6,96.0 429.6,96.0 H378.0 Z"><title>Number (Large330): 13.9 significant digits</title></path>
+<text class="t2" x="438.6" y="94.0" font-size="11">13.9</text>
+<path class="f-ieee64" d="M378.0,108.0 H417.3 Q421.3,108.0 421.3,112.0 V116.0 Q421.3,120.0 417.3,120.0 H378.0 Z"><title>Boost decimal64: 10.8 significant digits</title></path>
+<text class="t2" x="426.3" y="118.0" font-size="11">10.8</text>
+<path class="f-ieee64" d="M378.0,132.0 H417.3 Q421.3,132.0 421.3,136.0 V140.0 Q421.3,144.0 417.3,144.0 H378.0 Z"><title>Intel BID64: 10.8 significant digits</title></path>
+<text class="t2" x="426.3" y="142.0" font-size="11">10.8</text>
+<path class="f-wide" d="M378.0,156.0 H492.6 Q496.6,156.0 496.6,160.0 V164.0 Q496.6,168.0 492.6,168.0 H378.0 Z"><title>Boost decimal128: 29.7 significant digits</title></path>
+<text class="t2" x="501.6" y="166.0" font-size="11">29.7</text>
+<path class="f-wide" d="M378.0,180.0 H493.3 Q497.3,180.0 497.3,184.0 V188.0 Q497.3,192.0 493.3,192.0 H378.0 Z"><title>Intel BID128: 29.8 significant digits</title></path>
+<text class="t2" x="502.3" y="190.0" font-size="11">29.8</text>
+<path class="f-wide" d="M378.0,204.0 H493.3 Q497.3,204.0 497.3,208.0 V212.0 Q497.3,216.0 493.3,216.0 H378.0 Z"><title>mpdecimal 34: 29.8 significant digits</title></path>
+<text class="t2" x="502.3" y="214.0" font-size="11">29.8</text>
+<path class="f-wide" d="M378.0,228.0 H508.7 Q512.7,228.0 512.7,232.0 V236.0 Q512.7,240.0 508.7,240.0 H378.0 Z"><title>mpdecimal 38: 33.7 significant digits</title></path>
+<text class="t2" x="517.7" y="238.0" font-size="11">33.7</text>
+<line class="base" x1="378" y1="78" x2="378" y2="246"/>
+<text class="t1" x="606" y="64" font-weight="600">Cost</text>
+<line class="grid" x1="606.0" y1="78" x2="606.0" y2="246"/>
+<text class="t2" x="606.0" y="262" text-anchor="middle" font-size="11">0</text>
+<line class="grid" x1="638.0" y1="78" x2="638.0" y2="246"/>
+<text class="t2" x="638.0" y="262" text-anchor="middle" font-size="11">200</text>
+<line class="grid" x1="670.0" y1="78" x2="670.0" y2="246"/>
+<text class="t2" x="670.0" y="262" text-anchor="middle" font-size="11">400</text>
+<line class="grid" x1="702.0" y1="78" x2="702.0" y2="246"/>
+<text class="t2" x="702.0" y="262" text-anchor="middle" font-size="11">600</text>
+<line class="grid" x1="734.0" y1="78" x2="734.0" y2="246"/>
+<text class="t2" x="734.0" y="262" text-anchor="middle" font-size="11">800</text>
+<line class="grid" x1="766.0" y1="78" x2="766.0" y2="246"/>
+<text class="t2" x="766.0" y="262" text-anchor="middle" font-size="11">1000</text>
+<text class="t2" x="766.0" y="274" text-anchor="end" font-size="11">ns per call</text>
+<path class="f-number" d="M606.0,84.0 H725.2 Q729.2,84.0 729.2,88.0 V92.0 Q729.2,96.0 725.2,96.0 H606.0 Z"><title>Number (Large330): 770 ns per call</title></path>
+<text class="t2" x="734.2" y="94.0" font-size="11">770</text>
+<path class="f-ieee64" d="M606.0,108.0 H625.7 Q629.7,108.0 629.7,112.0 V116.0 Q629.7,120.0 625.7,120.0 H606.0 Z"><title>Boost decimal64: 148 ns per call</title></path>
+<text class="t2" x="634.7" y="118.0" font-size="11">148</text>
+<path class="f-ieee64" d="M606.0,132.0 H622.4 Q626.4,132.0 626.4,136.0 V140.0 Q626.4,144.0 622.4,144.0 H606.0 Z"><title>Intel BID64: 128 ns per call</title></path>
+<text class="t2" x="631.4" y="142.0" font-size="11">128</text>
+<path class="f-wide" d="M606.0,156.0 H705.3 Q709.3,156.0 709.3,160.0 V164.0 Q709.3,168.0 705.3,168.0 H606.0 Z"><title>Boost decimal128: 646 ns per call</title></path>
+<text class="t2" x="714.3" y="166.0" font-size="11">646</text>
+<path class="f-wide" d="M606.0,180.0 H644.6 Q648.6,180.0 648.6,184.0 V188.0 Q648.6,192.0 644.6,192.0 H606.0 Z"><title>Intel BID128: 266 ns per call</title></path>
+<text class="t2" x="653.6" y="190.0" font-size="11">266</text>
+<path class="f-wide" d="M606.0,204.0 H664.4 Q668.4,204.0 668.4,208.0 V212.0 Q668.4,216.0 664.4,216.0 H606.0 Z"><title>mpdecimal 34: 390 ns per call</title></path>
+<text class="t2" x="673.4" y="214.0" font-size="11">390</text>
+<path class="f-wide" d="M606.0,228.0 H666.7 Q670.7,228.0 670.7,232.0 V236.0 Q670.7,240.0 666.7,240.0 H606.0 Z"><title>mpdecimal 38: 404 ns per call</title></path>
+<text class="t2" x="675.7" y="238.0" font-size="11">404</text>
+<line class="base" x1="606" y1="78" x2="606" y2="246"/>
+</svg>

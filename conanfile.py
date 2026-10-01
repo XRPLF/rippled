@@ -16,6 +16,7 @@ class Xrpl(ConanFile):
     options = {
         "assertions": [True, False],
         "benchmark": [True, False],
+        "bench_mpdecimal": [True, False],
         "coverage": [True, False],
         "fPIC": [True, False],
         "jemalloc": [True, False],
@@ -51,6 +52,7 @@ class Xrpl(ConanFile):
     default_options = {
         "assertions": False,
         "benchmark": True,
+        "bench_mpdecimal": False,
         "coverage": False,
         "fPIC": True,
         "jemalloc": False,
@@ -66,6 +68,7 @@ class Xrpl(ConanFile):
         "boost/*:without_coroutine2": False,
         "date/*:header_only": True,
         "ed25519/*:shared": False,
+        "mpdecimal/*:cxx": False,
         "grpc/*:shared": False,
         "grpc/*:secure": True,
         "grpc/*:codegen": True,
@@ -137,6 +140,8 @@ class Xrpl(ConanFile):
     def requirements(self):
         if self.options.benchmark:
             self.requires("benchmark/1.9.5")
+            if self.options.bench_mpdecimal:
+                self.requires("mpdecimal/4.0.0")
         self.requires("boost/1.91.0", force=True, transitive_headers=True)
         self.requires("date/3.0.4", transitive_headers=True)
         if self.options.jemalloc:
@@ -172,6 +177,7 @@ class Xrpl(ConanFile):
         tc = CMakeToolchain(self)
         tc.variables["tests"] = self.options.tests
         tc.variables["benchmark"] = self.options.benchmark
+        tc.variables["bench_mpdecimal"] = self.options.bench_mpdecimal
         tc.variables["assert"] = self.options.assertions
         tc.variables["coverage"] = self.options.coverage
         tc.variables["jemalloc"] = self.options.jemalloc
