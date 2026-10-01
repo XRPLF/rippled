@@ -36,7 +36,7 @@ static constexpr auto kMaxTimeouts = 20;
 
 TransactionAcquire::TransactionAcquire(
     Application& app,
-    uint256 const& hash,
+    UInt256 const& hash,
     std::unique_ptr<PeerSet> peerSet)
     : TimeoutCounter(
           app,
@@ -64,7 +64,7 @@ TransactionAcquire::done()
         JLOG(journal_.debug()) << "Acquired TX set " << hash_;
         map_->setImmutable();
 
-        uint256 const& hash(hash_);
+        UInt256 const& hash(hash_);
         std::shared_ptr<SHAMap> const& map(map_);
         auto const pap = &app_;
         // Note that, when we're in the process of shutting down, addJob()
