@@ -1282,7 +1282,7 @@ constexpr std::array kUnlabelledCounters{
  */
 constexpr std::array kReasonCounters{
     ReasonCounter{
-        .name = "ledger_history_mismatch_total",
+        .name = "ledger_hash_mismatch_total",
         .increment = &MetricsRegistry::incrementLedgerHistoryMismatch,
         .reasons = xrpl::telemetry::ledger_mismatch_reason::all},
     ReasonCounter{

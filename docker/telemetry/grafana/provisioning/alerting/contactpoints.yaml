@@ -17,8 +17,8 @@
 # configuration; alerts simply route nowhere until a destination is supplied.
 #
 # To enable delivery, edit the two placeholder values IN PLACE with a real
-# webhook / address. Do NOT commit the result — and do not substitute
-# ${SLACK_WEBHOOK_URL} / ${ALERT_EMAIL_TO} here expecting a fallback:
+# webhook / address. Do NOT commit the result. Do not put
+# ${SLACK_WEBHOOK_URL} or any other variable in either placeholder:
 # Grafana expands ${VAR} but does NOT support ${VAR:-default}, so an unset
 # variable expands to empty, fails validation, and Grafana exits 1 — taking
 # the whole telemetry stack down, not just alerting.
@@ -40,15 +40,11 @@
 # they are NOT set in docker-compose.yml. Email stays off until
 # GF_SMTP_ENABLED=true and the relay settings point somewhere real.
 #
-# Grafana Cloud does NOT use this file — Cloud has no provisioning filesystem.
-# Cloud delivery is created over the REST API instead: one contact point named
-# `xrpld-alerts` holding a Slack receiver AND an email receiver, attached to
-# each rule via per-rule notification_settings. Keep this file's templates and
-# the Cloud receivers' templates in step by hand; nothing syncs them.
-# The notification policy tree must never be pushed to a shared Cloud
-# instance -- there is exactly one tree per org and the PUT endpoint
-# replaces it wholesale. That Cloud instance is shared with other teams, so a
-# change there must be scoped to the `xrpld-` uids and the xrpld folder.
+# Grafana Cloud does NOT read this file: Cloud has no provisioning
+# filesystem. Create the Cloud contact points and notification templates
+# through its API or UI, and keep them in step with this file and
+# templates.yaml by hand. Do not push a notification policy tree to a Cloud
+# stack: the PUT endpoint replaces the org's default policy tree wholesale.
 
 apiVersion: 1
 

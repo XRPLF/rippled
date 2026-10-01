@@ -194,16 +194,29 @@ class NetworkOPsImp final : public NetworkOPs
         FailHard const failType;
         bool applied = false;
         TER result;
-        std::shared_ptr<telemetry::SpanGuard> span;  ///< Keeps the tx.process
-                                                     ///< span alive until the
-                                                     ///< batch processes this.
+        /**
+         * The tx.process span, kept alive until the batch applies this
+         * transaction. Held by value, so the holder costs no heap allocation.
+         * Empty for an entry queued without one, such as a held transaction.
+         */
+        std::optional<telemetry::SpanGuard> span;
 
+        /**
+         * Record one transaction for the next batch.
+         *
+         * @param t Transaction to apply.
+         * @param a Whether it came from a privileged source (TapUnlimited).
+         * @param l Whether a local client submitted it.
+         * @param f fail_hard setting from submission. Must be FailHard::No
+         *          unless l is true.
+         * @param s tx.process span to keep alive until the batch applies it.
+         */
         TransactionStatus(
             std::shared_ptr<Transaction> t,
             bool a,
             bool l,
             FailHard f,
-            std::shared_ptr<telemetry::SpanGuard> s = nullptr)
+            std::optional<telemetry::SpanGuard> s = std::nullopt)
             : transaction(std::move(t)), admin(a), local(l), failType(f), span(std::move(s))
         {
             XRPL_ASSERT(
@@ -459,7 +472,7 @@ public:
         std::shared_ptr<Transaction> transaction,
         bool bUnlimited,
         FailHard failType,
-        std::shared_ptr<telemetry::SpanGuard> span = nullptr);
+        std::optional<telemetry::SpanGuard> span = std::nullopt);
 
     /**
      * For transactions not submitted by a locally connected client, fire and
@@ -469,13 +482,15 @@ public:
      * @param transaction Transaction object
      * @param bUnlimited Whether a privileged client connection submitted it.
      * @param failType fail_hard setting from transaction submission.
+     * @param span Optional tx.process span to keep alive across the
+     *             batch boundary so its context propagates to peers.
      */
     void
     doTransactionAsync(
         std::shared_ptr<Transaction> transaction,
         bool bUnlimited,
         FailHard failtype,
-        std::shared_ptr<telemetry::SpanGuard> span = nullptr);
+        std::optional<telemetry::SpanGuard> span = std::nullopt);
 
 private:
     bool
@@ -1620,20 +1635,17 @@ NetworkOPsImp::processTransaction(
     using namespace telemetry;
     // SpanGuard is thread-free (holds no Scope), so it is safe to store here
     // and end on the batch worker thread that later applies this transaction —
-    // no detach step is needed.
-    // Left null when telemetry is compiled out: there is no span to own, so
-    // nothing is allocated for one. The transaction pipeline already accepts a
-    // null span -- both doTransaction* overloads default it to nullptr -- and
-    // every use tests it. Without this the make_shared allocated once per
-    // submitted and relayed transaction to hold an empty object.
-    std::shared_ptr<SpanGuard> span;
+    // no detach step is needed. It is held by value, so the holder costs no
+    // heap allocation. Empty when telemetry is compiled out; both
+    // doTransaction* overloads default it to empty, and every use tests it.
+    std::optional<SpanGuard> span;
 #ifdef XRPL_ENABLE_TELEMETRY
-    span = std::make_shared<SpanGuard>(txProcessSpan(transaction->getID()));
+    span.emplace(txProcessSpan(transaction->getID()));
 #endif
     // Guarded on the span being live because these values are not free and this
     // runs for every submitted and relayed transaction: the hash string
-    // allocates, and the open-ledger index takes the ledger master's lock. With
-    // telemetry compiled out the span is null; with it compiled in the block is
+    // allocates, and the open-ledger index takes the open ledger's lock. With
+    // telemetry compiled out the span is empty; with it compiled in the block is
     // skipped when telemetry is disabled at runtime or the transaction category
     // is off.
     if (span && *span)
@@ -1700,7 +1712,7 @@ NetworkOPsImp::doTransactionAsync(
     std::shared_ptr<Transaction> transaction,
     bool bUnlimited,
     FailHard failType,
-    std::shared_ptr<telemetry::SpanGuard> span)
+    std::optional<telemetry::SpanGuard> span)
 {
     std::scoped_lock const lock(mutex_);
 
@@ -1724,7 +1736,7 @@ NetworkOPsImp::doTransactionSync(
     std::shared_ptr<Transaction> transaction,
     bool bUnlimited,
     FailHard failType,
-    std::shared_ptr<telemetry::SpanGuard> span)
+    std::optional<telemetry::SpanGuard> span)
 {
     std::unique_lock<std::mutex> lock(mutex_);
 
@@ -1879,8 +1891,10 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
                     // Parent the txq.enqueue span to this tx's tx.process span
                     // via an explicit captured context (the parent is explicit,
-                    // not ambient-inherited). Null on the open-ledger rebuild
-                    // path, where no tx.process span exists.
+                    // not ambient-inherited). No context is passed when the
+                    // entry has no live tx.process span: held transactions,
+                    // queued by processTransactionSet and by the submitHeld
+                    // push below, carry none.
                     auto const txProcessCtx =
                         (e.span && *e.span) ? e.span->spanContext() : telemetry::SpanContext{};
                     auto const result = registry_.get().getTxQ().apply(
@@ -1905,7 +1919,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             validatedLedgerIndex = l->header().seq;
 
         auto newOL = registry_.get().getOpenLedger().current();
-        for (TransactionStatus const& e : transactions)
+        for (TransactionStatus& e : transactions)
         {
             // Make this transaction's span ambient for the duration of its
             // apply so the per-tx log lines below carry its trace_id.

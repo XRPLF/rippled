@@ -153,7 +153,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         /**
          * Capture the counts the handler hands to the metric record, then
          * record for real. Same seam as charge(): the override sees the exact
-         * struct the handler built, so the split it chose is observable.
+         * struct the handler built.
          */
         void
         recordGetObjectMetrics(
@@ -824,8 +824,10 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         BEAST_EXPECT(counts->attempted == numStored + numUnstored);
         BEAST_EXPECT(counts->found == numStored);
 
-        // The miss count the metric records: only the unstored hashes.
-        BEAST_EXPECT(counts->attempted - counts->found == numUnstored);
+        // The split the metric records: the stored hashes are hits, and only
+        // the unstored ones are misses.
+        BEAST_EXPECT(counts->hits() == numStored);
+        BEAST_EXPECT(counts->misses() == numUnstored);
     }
 
     /**
@@ -856,6 +858,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         BEAST_EXPECT(counts->requested == requested);
         BEAST_EXPECT(counts->attempted == static_cast<int>(tuning::kHardMaxReplyNodes));
         BEAST_EXPECT(counts->found == 0);
+        BEAST_EXPECT(counts->misses() == static_cast<int>(tuning::kHardMaxReplyNodes));
     }
 
     /**
@@ -1136,14 +1139,12 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
     void
     run() override
     {
-        // NOTE ON METRIC COVERAGE. The five getobject_* instruments are
-        // recorded through the XRPL_METRIC_* macros, which push into the
-        // OpenTelemetry SDK. That API is write-only by design -- there is no
-        // read-back accessor and no in-memory metric reader in this build --
-        // and a default jtx::Env leaves telemetry disabled, so the macros do
-        // not execute at all here. These tests therefore assert the
-        // observable behaviour of each instrumented code path, which pins
-        // the values the instruments are fed:
+        // NOTE ON METRIC COVERAGE. The five getobject_* metrics are
+        // recorded through the XRPL_METRIC_* macros, and a default jtx::Env
+        // leaves telemetry disabled, so the macros record nothing here.
+        // These tests therefore assert the observable behaviour of each
+        // instrumented code path, which pins the counts the record step
+        // receives:
         //   getobject_request_objects  <- the request's objects_size()
         //   getobject_lookups_total    <- the counts captured by
         //                                 PeerTest::recordGetObjectMetrics()
@@ -1152,9 +1153,8 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         //   getobject_rejected_total   <- the two gates' exact fee_ values
         //                                 plus "no charge was applied"
         // Only getobject_lookup_us has no in-process witness, being a wall
-        // clock reading. The counter and histogram values themselves remain
-        // unverified by unit test and are checked live against Prometheus
-        // per the design's live-validation step.
+        // clock reading. This suite does not read back the values PeerImp
+        // records.
         int const limit = static_cast<int>(tuning::kHardMaxReplyNodes);
         testReplyLimit(limit + 1, limit);
         testReplyLimit(limit, limit);

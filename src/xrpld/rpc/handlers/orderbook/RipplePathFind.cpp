@@ -31,9 +31,13 @@ doRipplePathFind(rpc::JsonContext& context)
     // context.coro->yield() below; the coro-aware OTel context storage moves it
     // with the coroutine on resume (it is never stranded on a worker's
     // thread-local stack), so the scope pops on the correct store and the
-    // span's log lines stay trace-correlated.
+    // span's log lines stay trace-correlated. Internal, not Server: the inbound
+    // boundary is above rpc.command.
     auto span = ScopedSpanGuard(
-        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request);
+        TraceCategory::Rpc,
+        pathfind_span::prefix::pathfind,
+        pathfind_span::op::request,
+        SpanRole::Internal);
     // Guarded on the span being live because the account parse below is not
     // free and runs on every ripple_path_find call otherwise. The compiled-out
     // guard's operator bool() is a literal false, so the block disappears

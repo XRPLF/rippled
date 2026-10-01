@@ -598,7 +598,7 @@ for attempt in $(seq 1 60); do
     fi
     # Fatal for the same reason as the consensus timeout above, and because
     # several assertions are gated on a validated ledger existing at all:
-    # ledger_economy{metric="base_fee_xrp"} is only observed from a validated
+    # ledger_economy{metric="base_fee_drops"} is only observed from a validated
     # ledger, and complete_ledgers stays absent while the range is empty.
     if [ "$attempt" -eq 60 ]; then
         die "No validated ledger after ${attempt} attempts (last seq: $val_seq). Check $WORKDIR/$NODE_PREFIX-*/debug.log, then '$0 --cleanup'."
