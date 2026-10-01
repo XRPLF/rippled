@@ -122,35 +122,35 @@ backend=sqlite
     return std::format(kConfigContentsTemplate, dbPathSection, valFileSection);
 }
 
-// setenv and unsetenv are POSIX only.
-#if BOOST_OS_LINUX || BOOST_OS_MACOS
+// setenv and unsetenv are POSIX only, and MSVC does not have them.
+#ifndef _MSC_VER
+
+/**
+ * Read an environment variable into a value the caller owns.
+ *
+ * The value is copied, because POSIX allows a later `setenv` to release the
+ * string `getenv` returned.
+ *
+ * @param name Name of the environment variable to read.
+ * @return The value, or std::nullopt when the variable is not set.
+ */
+[[nodiscard]] std::optional<std::string>
+envVar(char const* name)
+{
+    if (char const* const value = std::getenv(name); value != nullptr)
+        return std::string{value};
+
+    return std::nullopt;
+}
 
 /**
  * Set an environment variable and restore its previous value when done.
- *
- * The previous value is copied, because POSIX allows a later `setenv` to release
- * the string `getenv` returned.
  */
 class EnvVarGuard
 {
 private:
     std::string const name_;
     std::optional<std::string> const saved_;
-
-    /**
-     * Read an environment variable into a value this guard owns.
-     *
-     * @param name Name of the environment variable to read.
-     * @return The value, or std::nullopt when the variable is not set.
-     */
-    [[nodiscard]] static std::optional<std::string>
-    read(char const* name)
-    {
-        if (char const* const value = std::getenv(name); value != nullptr)
-            return std::string{value};
-
-        return std::nullopt;
-    }
 
     /**
      * Give an environment variable a value, or remove it.
@@ -178,8 +178,8 @@ public:
      * @param name Name of the environment variable to set.
      * @param value Value to set, or std::nullopt to remove the variable.
      */
-    EnvVarGuard(char const* name, std::optional<std::string> const& value)
-        : name_(name), saved_(read(name))
+    [[nodiscard]] EnvVarGuard(char const* name, std::optional<std::string> const& value)
+        : name_(name), saved_(envVar(name))
     {
         apply(name_.c_str(), value);
     }
@@ -197,7 +197,7 @@ public:
     }
 };
 
-#endif  // BOOST_OS_LINUX || BOOST_OS_MACOS
+#endif  // _MSC_VER
 
 /**
  * Write an xrpld config file and remove when done.
@@ -412,7 +412,11 @@ port_wss_admin
         }
 
         // Config file in HOME or XDG_CONFIG_HOME directory.
-#if BOOST_OS_LINUX || BOOST_OS_MACOS
+#ifndef _MSC_VER
+        // Save the values the guards below must put back.
+        auto const home = detail::envVar("HOME");
+        auto const xdgConfigHome = detail::envVar("XDG_CONFIG_HOME");
+
         for (auto const& configFile : configFiles)
         {
             // Point the current working directory to a temporary directory, so
@@ -448,6 +452,10 @@ port_wss_admin
                     "/Users/dummy/xrpld/config/log/debug.log");
             }
 
+            // Both guards are gone: both variables must hold their old values.
+            BEAST_EXPECT(detail::envVar("HOME") == home);
+            BEAST_EXPECT(detail::envVar("XDG_CONFIG_HOME") == xdgConfigHome);
+
             // The XDG config directory is not set: the config file must be in a
             // subdirectory named .config followed by the system name.
             {
@@ -478,8 +486,12 @@ port_wss_admin
                     c.section(Sections::kDebugLogfile).values()[0] ==
                     "/Users/dummy/xrpld/config/log/debug.log");
             }
+
+            // Both guards are gone: both variables must hold their old values.
+            BEAST_EXPECT(detail::envVar("HOME") == home);
+            BEAST_EXPECT(detail::envVar("XDG_CONFIG_HOME") == xdgConfigHome);
         }
-#endif
+#endif  // _MSC_VER
 
         // Restore the current working directory.
         current_path(cwd);
