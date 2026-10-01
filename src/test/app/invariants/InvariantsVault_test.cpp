@@ -1799,6 +1799,65 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
+        // Vault flag rules, gated on featureLendingProtocolV1_2. Immutability of
+        // lsfVaultPrivate and lsfVaultOwnerCanBlockDeposit is enforced by
+        // NoModifiedUnmodifiableFields; the deposit-blocked rules by ValidVault.
+        testcase << "Vault flags";
+        auto const precloseBlockable = [&](Account const& a1, Account const& a2, Env& env) {
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create(
+                {.owner = a1, .asset = xrpIssue(), .flags = tfVaultOwnerCanBlockDeposit});
+            env(tx);
+            return true;
+        };
+        auto const flipFlag = [&](std::uint32_t flag) {
+            return [flag](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                sleVault->setFieldU32(sfFlags, sleVault->getFlags() ^ flag);
+                ac.view().update(sleVault);
+                return true;
+            };
+        };
+
+        // lsfVaultPrivate toggled
+        doInvariantCheck(
+            {"vault lsfVaultPrivate or lsfVaultOwnerCanBlockDeposit flag changed"},
+            flipFlag(lsfVaultPrivate),
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseBlockable);
+
+        // lsfVaultOwnerCanBlockDeposit toggled
+        doInvariantCheck(
+            {"vault lsfVaultPrivate or lsfVaultOwnerCanBlockDeposit flag changed"},
+            flipFlag(lsfVaultOwnerCanBlockDeposit),
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseBlockable);
+
+        // lsfVaultDepositBlocked set on a vault without lsfVaultOwnerCanBlockDeposit
+        doInvariantCheck(
+            {"vault deposit blocked without owner block-deposit permission"},
+            flipFlag(lsfVaultDepositBlocked),
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // lsfVaultDepositBlocked toggled by a transaction other than VaultSet
+        doInvariantCheck(
+            {"only VaultSet may change the deposit blocked flag"},
+            flipFlag(lsfVaultDepositBlocked),
+            XRPAmount{},
+            STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseBlockable);
+
         testcase << "Vault create";
         doInvariantCheck(
             {
