@@ -60,7 +60,8 @@
  * unwrapped literal is recorded as `true`.
  *
  * Example usage -- UpDownCounter (edge case: value that can decrease). The
- * +1 and the -1 go through one helper, so the name has one call site:
+ * +1 and the -1 go through one helper, so the name and description are
+ * written once and cannot drift apart:
  * @code
  * void addRpcInFlight(ServiceRegistry& app, std::int64_t const delta)
  * {
@@ -102,13 +103,15 @@
  * empty while the registry is enabled (a no-op meter stands in if the
  * pipeline failed to build, and again after stop()). So a call site holds
  * a valid instrument from its first call and needs no check of its own.
- * The only branch on the hot path is the recording() gate, which is false
- * once stop() has torn the pipeline down; without that gate a Record on a
- * stale SDK instrument would deref a dangling AggregationConfig.
+ * On the hot path a call checks the registry pointer, its recording()
+ * gate and the init guard of the instrument's static. The gate is false
+ * once stop() has torn the pipeline down; without it a Record on a stale
+ * SDK instrument would deref a dangling AggregationConfig.
  *
- * @note Give each metric name one call site. Every expansion creates its own
- * instrument, and two whose descriptions differ become two streams under one
- * name. Route every value through one helper or loop.
+ * @note Give each metric name one kind and one description. Every expansion
+ * creates its own instrument. The SDK exports instruments with the same name,
+ * kind, unit and description as one stream. Any difference starts a second
+ * stream under that name.
  *
  * @note Static-init safety: Meter::CreateXxx is declared noexcept in the
  * OTel API (opentelemetry/metrics/meter.h), so the function-local static
@@ -201,7 +204,8 @@
 
 // UpDownCounter: like COUNTER_ADD, but the underlying instrument permits a
 // negative amount (e.g. in-flight request count: +1 on start and -1 on
-// finish, both through one helper so the name has one call site).
+// finish, both through one helper, so the name and description are written
+// once).
 // A plain Counter's Add() must never see a negative value per the OTel
 // API contract; use this macro, not COUNTER_ADD, whenever the value can
 // decrease.

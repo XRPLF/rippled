@@ -45,18 +45,17 @@
  *     app_, kGetObjectRequestObjects, kGetObjectRequestObjectsDesc, requested);
  * @endcode
  *
- * Example usage -- edge case: the same instrument recorded under two
- * different label values from one call site, so it is created once. The
- * label key and both values are constants rather than literals:
+ * Example usage -- edge case: two calls record one metric under two label
+ * values. Each call creates its own instrument, but both pass the same name
+ * and description constants, so the SDK exports one stream. The label key and
+ * values are constants too, so the two calls cannot drift apart:
  * @code
- * std::array<std::pair<std::string_view, int>, 2> const split{
- *     {{kResultHit, hits}, {kResultMiss, misses}}};
- * for (auto const& [result, amount] : split)
- * {
- *     XRPL_METRIC_COUNTER_ADD_LABELED(
- *         app_, kGetObjectLookupsTotal, kGetObjectLookupsTotalDesc, amount,
- *         {{kLabelResult, std::string(result)}});
- * }
+ * XRPL_METRIC_COUNTER_ADD_LABELED(
+ *     app_, kGetObjectLookupsTotal, kGetObjectLookupsTotalDesc, hits,
+ *     {{kLabelResult, std::string(kResultHit)}});
+ * XRPL_METRIC_COUNTER_ADD_LABELED(
+ *     app_, kGetObjectLookupsTotal, kGetObjectLookupsTotalDesc, misses,
+ *     {{kLabelResult, std::string(kResultMiss)}});
  * @endcode
  *
  * @note These are `constexpr char[]`, not `constexpr std::string_view`. The

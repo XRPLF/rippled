@@ -97,7 +97,6 @@
 #include <xrpl.pb.h>
 
 #include <algorithm>
-#include <array>
 #include <atomic>
 #include <chrono>
 #include <cstddef>
@@ -2823,7 +2822,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
             {
                 JLOG(pJournal_.debug()) << "GetObj: malformed ledgerhash from peer " << id_;
                 fee_.update(resource::kFeeMalformedRequest, "get object ledger hash");
-                recordGetObjectRejected(telemetry::kReasonMalformedLedgerHash);
+                XRPL_METRIC_COUNTER_INC_LABELED(
+                    app_,
+                    telemetry::kGetObjectRejectedTotal,
+                    telemetry::kGetObjectRejectedTotalDesc,
+                    {{telemetry::kLabelReason,
+                      std::string(telemetry::kReasonMalformedLedgerHash)}});
                 return;
             }
         }
@@ -2836,7 +2840,11 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                 << "GetObj: oversized request from peer " << id_ << " (" << packet.objects_size()
                 << " > " << tuning::kHardMaxReplyNodes << ")";
             fee_.update(resource::kFeeInvalidData, "oversized get object request");
-            recordGetObjectRejected(telemetry::kReasonOversize);
+            XRPL_METRIC_COUNTER_INC_LABELED(
+                app_,
+                telemetry::kGetObjectRejectedTotal,
+                telemetry::kGetObjectRejectedTotalDesc,
+                {{telemetry::kLabelReason, std::string(telemetry::kReasonOversize)}});
             return;
         }
 
@@ -3009,8 +3017,7 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
     charge(fee, "processed get object by hash request");
 
     // Called unconditionally: the body only feeds XRPL_METRIC_* macros, which
-    // discard their arguments when telemetry is compiled out, and every value
-    // here is already computed for the request itself.
+    // drop their arguments when telemetry is compiled out.
     recordGetObjectMetrics(
         GetObjectCounts{
             .requested = requested, .attempted = attempted, .found = reply.objects_size()},
@@ -3019,20 +3026,6 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
 
     JLOG(pJournal_.trace()) << "GetObj: " << reply.objects_size() << " of " << requested;
     send(std::make_shared<Message>(reply, protocol::mtGET_OBJECTS));
-}
-
-// These read app_ through the metric macros when telemetry is compiled in and
-// touch no member when it is not, so clang-tidy asks for them to be static.
-// Making them static would give the two builds different signatures.
-// NOLINTBEGIN(readability-convert-member-functions-to-static)
-void
-PeerImp::recordGetObjectRejected(std::string_view reason)
-{
-    XRPL_METRIC_COUNTER_INC_LABELED(
-        app_,
-        telemetry::kGetObjectRejectedTotal,
-        telemetry::kGetObjectRejectedTotalDesc,
-        {{telemetry::kLabelReason, std::string(reason)}});
 }
 
 void
@@ -3053,28 +3046,28 @@ PeerImp::recordGetObjectMetrics(
 
     // Batch totals, added once per request rather than once per object:
     // per-object increments on a loop bounded by kHardMaxReplyNodes would be
-    // a measurable cost for no extra information.
+    // a measurable cost for no extra information. Only entries that reached
+    // the NodeStore count; see GetObjectCounts::hits() and misses().
     //
-    // Only entries that reached the NodeStore are lookups: misses are the
-    // attempts that found nothing, so a malformed entry the loop skipped counts
-    // as neither. std::max keeps a caller that breaks `found <= attempted` from
-    // wrapping the unsigned amount to ~1.8e19.
-    //
-    // One call site for both label values, so the counter is created once.
-    std::array<std::pair<std::string_view, int>, 2> const split{
-        {{kResultHit, counts.found}, {kResultMiss, counts.attempted - counts.found}}};
-    for (auto const& [result, amount] : split)
-    {
-        XRPL_METRIC_COUNTER_ADD_LABELED(
-            app_,
-            kGetObjectLookupsTotal,
-            kGetObjectLookupsTotalDesc,
-            static_cast<std::uint64_t>(std::max(0, amount)),
-            {{kLabelResult, std::string(result)}});
-    }
-}
+    // Two calls, one per label value. Both pass the same name and
+    // description, so the SDK exports one stream. Keep them as plain calls: a
+    // loop would name kResultHit and kResultMiss outside the XRPL_METRIC_*
+    // arguments, and their header is included only when telemetry is
+    // compiled in.
+    XRPL_METRIC_COUNTER_ADD_LABELED(
+        app_,
+        kGetObjectLookupsTotal,
+        kGetObjectLookupsTotalDesc,
+        static_cast<std::uint64_t>(counts.hits()),
+        {{kLabelResult, std::string(kResultHit)}});
 
-// NOLINTEND(readability-convert-member-functions-to-static)
+    XRPL_METRIC_COUNTER_ADD_LABELED(
+        app_,
+        kGetObjectLookupsTotal,
+        kGetObjectLookupsTotalDesc,
+        static_cast<std::uint64_t>(counts.misses()),
+        {{kLabelResult, std::string(kResultMiss)}});
+}
 
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactions> const& m)
