@@ -1061,7 +1061,7 @@ A cluster is a set of servers run by the same operator that trust each other, ex
 
 **Scope:** cluster-wide — shared across a co-operated cluster of nodes run by one operator.
 
-**What is observable:** cluster overhead is **not** measurable today, and this is a gap in the instrumentation rather than a display problem. The cluster message type is not in the overlay's message-to-category lookup table and none of the fallback branches match it, so every cluster message falls through to the `unknown` category (`src/xrpld/overlay/detail/TrafficCount.cpp`); no code path ever reports the cluster category, even though the `overhead_cluster` name is defined. Consequences: the `overhead_cluster_*` series read zero on a clustered node — treat them as "no data", not "no cluster traffic" — the churn guidance above cannot yet be acted on, and `unknown_*` is a weaker anomaly signal on a clustered node because it mixes genuinely unrecognized wire types with routine cluster traffic. If this is ever instrumented, volume moves out of `unknown_bytes_in`, so any alert threshold set against that series will need re-baselining.
+**What is observable:** the `overhead_cluster_*` series measure cluster overhead in bytes and messages, in and out. The overlay's message-to-category lookup table maps the cluster message type to the cluster category (`src/xrpld/overlay/detail/TrafficCount.cpp`). Only traffic with cluster members counts. A node sends cluster messages only to its members. A cluster message from any other peer is counted as `unknown` instead. A node with no `[cluster_nodes]` has no members, so these series read zero there, and that zero is the true value.
 
 **See also:** [Cluster on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/clustering)
 
