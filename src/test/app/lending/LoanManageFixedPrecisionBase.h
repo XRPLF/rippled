@@ -3,9 +3,10 @@
 #include <test/app/lending/LoanPayFixedPrecisionBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/flags.h>
+#include <test/jtx/TestHelpers.h>
 
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TxFlags.h>
