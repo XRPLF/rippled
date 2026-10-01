@@ -140,8 +140,8 @@ private:
         Number const& maximum)
     {
         auto const growthState = getCurrentState(env, broker, growthLoan);
-        using d = NetClock::duration;
-        env.close(growthState.startDate + d{366 * 24 * 60 * 60});
+        using Duration = NetClock::duration;
+        env.close(growthState.startDate + Duration{366 * 24 * 60 * 60});
         env(jtx::loan::pay(borrower, growthLoan.key, broker.asset(maximum), tfLoanFullPayment));
         env.close();
     }
@@ -2091,8 +2091,8 @@ private:
             if (row.late)
             {
                 auto const state = getCurrentState(env, broker, loanKeylet);
-                using d = NetClock::duration;
-                env.close(NetClock::time_point{d{state.nextPaymentDate + 1}});
+                using Duration = NetClock::duration;
+                env.close(NetClock::time_point{Duration{state.nextPaymentDate + 1}});
                 Number const generousAmount =
                     roundPeriodicPayment(asset, state.periodicPayment, state.loanScale) * 3 +
                     asset(100).value();
@@ -2305,8 +2305,8 @@ private:
 
         // Pay the second loan late.
         auto const lateState = getCurrentState(env, broker, lateLoan);
-        using d = NetClock::duration;
-        env.close(NetClock::time_point{d{lateState.nextPaymentDate + 1}});
+        using Duration = NetClock::duration;
+        env.close(NetClock::time_point{Duration{lateState.nextPaymentDate + 1}});
         Number const generousAmount =
             roundPeriodicPayment(asset, lateState.periodicPayment, lateState.loanScale) * 3 +
             asset(100).value();
