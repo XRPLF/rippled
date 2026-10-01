@@ -814,6 +814,7 @@ inline constexpr char totalWaiting[] = "total_waiting";
  */
 namespace peer_supply {
 inline constexpr char peersReporting[] = "peers_reporting";
+inline constexpr char peersAhead[] = "peers_ahead";
 inline constexpr char peersServingValidated[] = "peers_serving_validated";
 inline constexpr char peersServingNext[] = "peers_serving_next";
 inline constexpr char supplyMinSeq[] = "supply_min_seq";
