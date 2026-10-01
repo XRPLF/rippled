@@ -181,11 +181,11 @@ struct Peer
     /**
      * Type definitions for generic consensus
      */
-    using Ledger_t = Ledger;
-    using NodeID_t = PeerID;
-    using NodeKey_t = PeerKey;
-    using TxSet_t = TxSet;
-    using PeerPosition_t = Position;
+    using LedgerT = Ledger;
+    using NodeIDT = PeerID;
+    using NodeKeyT = PeerKey;
+    using TxSetT = TxSet;
+    using PeerPositionT = Position;
     using Result = ConsensusResult<Peer>;
     using NodeKey = Validation::NodeKey;
 
@@ -243,7 +243,7 @@ struct Peer
     /**
      * Ledgers this node has closed or loaded from the network
      */
-    hash_map<Ledger::ID, Ledger> ledgers;
+    HashMap<Ledger::ID, Ledger> ledgers;
 
     /**
      * Validations from trusted nodes
@@ -309,7 +309,7 @@ struct Peer
     // TODO: Use the logic in ValidatorList to set this dynamically
     std::size_t quorum = 0;
 
-    hash_set<NodeKey_t> trustedKeys;
+    HashSet<NodeKeyT> trustedKeys;
 
     // Simulation parameters
     ConsensusParms consensusParms;
@@ -927,17 +927,17 @@ struct Peer
         return earliestAllowedSeq();
     }
 
-    std::pair<std::size_t, hash_set<NodeKey_t>>
+    std::pair<std::size_t, HashSet<NodeKeyT>>
     getQuorumKeys()
     {
-        hash_set<NodeKey_t> keys;
+        HashSet<NodeKeyT> keys;
         for (auto const p : trustGraph.trustedPeers(this))
             keys.insert(p->key);
         return {quorum, keys};
     }
 
     std::size_t
-    laggards(Ledger::Seq const seq, hash_set<NodeKey_t>& trusted)
+    laggards(Ledger::Seq const seq, HashSet<NodeKeyT>& trusted)
     {
         return validations.laggards(seq, trusted);
     }
@@ -999,7 +999,7 @@ struct Peer
         issue(StartRound{.bestLedger = bestLCL, .prevLedger = lastClosedLedger});
 
         // Not yet modeling dynamic UNL.
-        hash_set<PeerID> const nowUntrusted;
+        HashSet<PeerID> const nowUntrusted;
         consensus.startRound(now(), bestLCL, lastClosedLedger, nowUntrusted, runAsValidator, {});
     }
 
@@ -1040,7 +1040,7 @@ struct Peer
     // which a node generates the wrong ledger, even when consensus worked
     // properly.
     // TODO: Make this more robust
-    hash_map<Ledger::Seq, Tx> txInjections;
+    HashMap<Ledger::Seq, Tx> txInjections;
 
     /**
      * Inject non-consensus Tx
