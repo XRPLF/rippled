@@ -3,8 +3,7 @@
 # Identical to otel-collector-config.yaml (local Tempo/Prometheus/Loki) but
 # ALSO ships all three signals to Grafana Cloud over a single OTLP/HTTP
 # endpoint. Local backends are kept so the on-box stack still works as a
-# fallback; remove the local exporters from the pipelines below if you want
-# cloud-only.
+# fallback; for cloud-only, see the comment at the start of service.pipelines.
 #
 # Selecting this config is a RUNTIME choice — no code or image changes:
 #   Local only (default):
@@ -321,9 +320,9 @@ exporters:
 service:
   extensions: [health_check, basicauth/grafanacloud]
   pipelines:
-    # Each pipeline keeps its local exporter(s) AND adds Grafana Cloud.
-    # For cloud-only, drop debug/otlp/tempo, prometheus, and otlp_http/loki
-    # from the respective exporter lists.
+    # Local and Grafana Cloud exporters run side by side. For cloud-only,
+    # remove otlp/tempo from traces/store and otlp_http/loki from logs, and
+    # delete metrics/local (its only exporter is prometheus).
     # 100% of spans feed the spanmetrics connector so span-derived RED
     # metrics stay exact. No tail sampling on this branch.
     traces/metrics:

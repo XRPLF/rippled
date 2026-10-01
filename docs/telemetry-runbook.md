@@ -213,11 +213,12 @@ To return to local-only export, bring the stack up with just the base
 ### Local + cloud vs cloud-only
 
 The prepared config **dual-exports**: data goes to both the local stack and
-Grafana Cloud, so the on-box backends remain a fallback. For cloud-only,
-remove the local exporters (`debug`, `otlp/tempo`, `prometheus`,
-`otlp_http/loki`) from the respective pipelines in
-`otel-collector-config.grafanacloud.yaml`, leaving only the two Grafana Cloud
-exporters, `otlp_http/grafanacloud` and `otlp_http/grafanacloud-traces`.
+Grafana Cloud, so the on-box backends remain a fallback. For cloud-only, edit
+`otel-collector-config.grafanacloud.yaml`: remove `otlp/tempo` from
+`traces/store` and `otlp_http/loki` from `logs`, and delete the
+`metrics/local` pipeline, whose only exporter is `prometheus`. The two Grafana
+Cloud exporters, `otlp_http/grafanacloud` and
+`otlp_http/grafanacloud-traces`, remain.
 
 > **Note**: shipping logs to Grafana Cloud requires keeping xrpld file
 > logging on (at least `warning` level) so the collector's file_log receiver
