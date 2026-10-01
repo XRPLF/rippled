@@ -80,14 +80,14 @@ def capture(*command: object) -> str:
 def package_version(reported: str, channel: str) -> str:
     """Normalise a reported version into one the package formats accept.
 
-    A pre-release switches to '~' (3.2.0-b1 -> 3.2.0~b1), which also sorts before
-    the final 3.2.0; a no-op for a final release. The custom and private
-    channels accept any pre-release and build metadata, with any '-' inside
-    either switched to '.' (3.4.0-custom-1 -> 3.4.0~custom.1). The develop
-    and UNRELEASED channels accept 0.0.0-dev, the develop channel nothing else,
-    and drop its build metadata (0.0.0-dev+abc1234 -> 0.0.0~dev): its commit
-    hash is already in the package release, and in the version it would order
-    the builds by hash, before the release is compared.
+    - Release: unchanged (3.2.0 -> 3.2.0).
+    - bN/rcN pre-release: '-' becomes '~', to sort before the release
+      (3.2.0-b1 -> 3.2.0~b1).
+    - custom, private: any version, '-' inside the pre-release and build
+      metadata becomes '.' (3.4.0-custom-1 -> 3.4.0~custom.1).
+    - develop, UNRELEASED: 0.0.0-dev without build metadata, so builds sort by
+      package release, not commit hash (0.0.0-dev+abc1234 -> 0.0.0~dev).
+      develop accepts nothing else.
     """
     # Metadata first, as it may contain '-' too.
     release, plus, metadata = reported.partition("+")
