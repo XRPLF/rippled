@@ -221,20 +221,24 @@ The `release-info` action decides the channel from the event, and
 A variant is published to the same channel under its own name, so
 `xrpld-assert` never overwrites `xrpld`.
 
-Only a tag names a channel and a release version: any other build is
-`0.0.0-dev` with its short commit hash as build metadata, which the `develop`
-channel drops, so its packages are all `0.0.0~dev` and sort before every release. Versions sort in
-row order, so moving to a more mature channel never downgrades.
-A tag matching none of the release patterns, such as `X.Y.Z-hotfix1`, publishes
-to `custom`, which sits outside that order.
+Only a tag picks a release channel. Versions sort in row order, so moving to a
+more mature channel never downgrades. A tag matching none of the release
+patterns, such as `X.Y.Z-hotfix1`, publishes to `custom`, which sits outside
+that order.
 
-The action decides the package release number on the same split: a tag's version
-is unique, so its packages are release 1, while develop packages share one
-version and take `<run number>.<commit date>git<commit hash>`, e.g.
-`857.20260826gitb6a8995` — the leading run number keeps each push superseding
-the last, and the date and hash say which commit a package on
-`packages.xrplf.org` came from. Both reach the packaging scripts as arguments,
-so neither script derives anything itself.
+Every untagged build reports `0.0.0-dev+<hash>`, which the `develop` channel
+packages as `0.0.0~dev`, below every release.
+
+The action also picks the package release number:
+
+- A tag: `1`, since a tag's version is never reused.
+- Anything else: `<run number>.<commit date>git<commit hash>`, e.g.
+  `857.20260826gitb6a8995`. Develop packages all share `0.0.0~dev`, so the run
+  number orders them, and the date and hash name the commit a package on
+  `packages.xrplf.org` came from.
+
+Both reach the packaging scripts as arguments, so neither script derives
+anything itself.
 
 Publishing is its own job, gated behind the install tests, uploading from the same
 image that built the packages with the `publish_pkg.py` shipped in it — the
@@ -319,16 +323,18 @@ With `PKG_RELEASE=1`, the package metadata becomes:
 from the build host, so the RHEL image can track a newer release without
 changing what the packages claim to target.
 
-The Debian changelog entry carries the channel passed as `--channel`, which
-only accepts the channels in the table above plus `UNRELEASED`, the Debian
-convention for a build that targets no channel at all — what local and CMake
-builds pass, since nothing publishes them. An unsupported pre-release, and
-build metadata on a final release such as `3.2.0+abc123`, are both rejected,
-except in the `custom` and `private` channels, which accept any version and
-switch each `-` inside the pre-release or build metadata to `.`, so
-`3.4.0-custom-1` packages as `3.4.0~custom.1`. The `develop` channel and
-`UNRELEASED` accept `0.0.0-dev`, whatever its build metadata, and package it as
-`0.0.0~dev`; the `develop` channel accepts nothing else.
+The Debian changelog entry carries the channel passed as `--channel`: one of
+the channels in the table above, or `UNRELEASED`, the Debian convention for a
+build that targets no channel, which local and CMake builds pass. Each channel
+accepts:
+
+- `stable`, `rc`, `beta`: `X.Y.Z`, or a `bN`/`rcN` pre-release, the only kind
+  that may carry build metadata. `3.2.0-b1` packages as `3.2.0~b1`.
+- `custom`, `private`: any version, with each `-` inside the pre-release or
+  build metadata switched to `.`. `3.4.0-custom-1` packages as `3.4.0~custom.1`.
+- `develop`: only `0.0.0-dev`, without its build metadata. `0.0.0-dev+abc1234`
+  packages as `0.0.0~dev`.
+- `UNRELEASED`: `0.0.0-dev` as `develop` does, anything else as `stable` does.
 
 The RPM path intentionally uses `~` in `Version`, matching the Debian
 pre-release ordering convention, so RPM filenames/NVRs begin with forms like
