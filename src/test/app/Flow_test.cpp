@@ -480,7 +480,7 @@ struct Flow_test : public beast::unit_test::Suite
                 STPathSet paths;
                 auto const ipe = [](Issue const& iss) {
                     return STPathElement(
-                        STPathElement::TypeCurrency | STPathElement::TypeIssuer,
+                        STPathElementType::Currency | STPathElementType::Issuer,
                         xrpAccount(),
                         iss.currency,
                         iss.account);

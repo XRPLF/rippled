@@ -225,7 +225,7 @@ public:
         else
         {
             col.emplace_back(
-                STPathElement::Type::TypeBoundary,
+                STPathElementType::Boundary,
                 acc.value_or(AccountID{}),
                 cur.value_or(Currency{}),
                 iss.value_or(AccountID{}));
@@ -684,7 +684,7 @@ struct PayStrand_test : public beast::unit_test::Suite
                 usd,
                 STPath({
                     STPathElement{
-                        STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()},
+                        STPathElementType::Currency, xrpAccount(), xrpCurrency(), xrpAccount()},
                 }),
                 tesSUCCESS,
                 D{.src = alice, .dst = gw, .currency = usdC},
@@ -770,7 +770,8 @@ struct PayStrand_test : public beast::unit_test::Suite
                 env,
                 usd,
                 std::nullopt,
-                STPath({STPathElement(0, xrpAccount(), xrpCurrency(), xrpAccount())}),
+                STPath({STPathElement(
+                    STPathElementType::None, xrpAccount(), xrpCurrency(), xrpAccount())}),
                 temBAD_PATH);
 
             // The same account can't appear more than once on a path
