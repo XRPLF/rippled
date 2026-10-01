@@ -18,12 +18,11 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/format/free_funcs.hpp>
-
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -46,14 +45,14 @@ STLedgerEntry::STLedgerEntry(Keylet const& k) : STObject(sfLedgerEntry), key_(k.
     setFieldU16(sfLedgerEntryType, static_cast<std::uint16_t>(type_));
 }
 
-STLedgerEntry::STLedgerEntry(SerialIter& sit, uint256 const& index)
+STLedgerEntry::STLedgerEntry(SerialIter& sit, UInt256 const& index)
     : STObject(sfLedgerEntry), key_(index), type_(ltANY)
 {
     set(sit);
     setSLEType();
 }
 
-STLedgerEntry::STLedgerEntry(STObject const& object, uint256 const& index)
+STLedgerEntry::STLedgerEntry(STObject const& object, UInt256 const& index)
     : STObject(object), key_(index), type_(ltANY)
 {
     setSLEType();
@@ -111,7 +110,7 @@ STLedgerEntry::getSType() const
 std::string
 STLedgerEntry::getText() const
 {
-    return str(boost::format("{ %s, %s }") % to_string(key_) % STObject::getText());
+    return std::format("{{ {}, {} }}", to_string(key_), STObject::getText());
 }
 
 json::Value
@@ -144,12 +143,12 @@ STLedgerEntry::isThreadedType(Rules const& rules) const
 
 bool
 STLedgerEntry::thread(
-    uint256 const& txID,
+    UInt256 const& txID,
     std::uint32_t ledgerSeq,
-    uint256& prevTxID,
+    UInt256& prevTxID,
     std::uint32_t& prevLedgerID)
 {
-    uint256 const oldPrevTxID = getFieldH256(sfPreviousTxnID);
+    UInt256 const oldPrevTxID = getFieldH256(sfPreviousTxnID);
 
     JLOG(debugLog().info()) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
 

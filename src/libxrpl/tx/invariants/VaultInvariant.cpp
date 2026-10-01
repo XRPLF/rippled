@@ -3,9 +3,11 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -19,16 +21,32 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
 #include <algorithm>
 #include <cstdint>
-#include <memory>
 #include <optional>
+#include <utility>
 #include <variant>
 #include <vector>
 
 namespace xrpl {
+
+namespace {
+
+/*
+ * True iff the recorded sfVaultKind identifies a closed-ended vault.
+ * Centralizes the presence + enum-value check used by the phase-gate
+ * invariants below.
+ */
+[[nodiscard]] bool
+isClosedEnded(std::optional<std::uint8_t> const& vaultKind)
+{
+    return vaultKind && *vaultKind == std::to_underlying(VaultKind::ClosedEnded);
+}
+
+}  // namespace
 
 ValidVault::Vault
 ValidVault::Vault::make(SLE const& from)
@@ -45,6 +63,9 @@ ValidVault::Vault::make(SLE const& from)
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
     self.lossUnrealized = from.at(sfLossUnrealized);
+    self.vaultKind = from[~sfVaultKind];
+    self.subscriptionDate = from[~sfSubscriptionDate];
+    self.redemptionDate = from[~sfRedemptionDate];
     return self;
 }
 
@@ -63,10 +84,7 @@ ValidVault::Shares::make(SLE const& from)
 }
 
 void
-ValidVault::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidVault::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     // If `before` is empty, this means an object is being created, in which
     // case `isDelete` must be false. Otherwise `before` and `after` are set and
@@ -172,7 +190,7 @@ ValidVault::visitEntry(
         }
     }
 
-    uint256 const key = (before ? before->key() : after->key());
+    UInt256 const key = (before ? before->key() : after->key());
     // Append to deltas if sign is non-zero, i.e. an object of an interesting
     // type has been updated. A transaction may update an object even when
     // its balance has not changed, e.g. transaction fee equals the amount
@@ -186,6 +204,210 @@ ValidVault::visitEntry(
     }
 }
 
+std::optional<ValidVault::DeltaInfo>
+ValidVault::deltaAssets(AccountID const& id) const
+{
+    auto const& vaultAsset = afterVault_[0].asset;
+    auto const lookup = [&](UInt256 const& key) -> std::optional<DeltaInfo> {
+        auto const it = deltas_.find(key);
+        if (it == deltas_.end())
+            return std::nullopt;
+        return it->second;
+    };
+
+    return std::visit(
+        [&]<typename TIss>(TIss const& issue) -> std::optional<DeltaInfo> {
+            if constexpr (std::is_same_v<TIss, Issue>)
+            {
+                if (isXRP(issue))
+                    return lookup(keylet::account(id).key);
+                auto result = lookup(keylet::trustLine(id, issue).key);
+                // Trust-line balance is stored from the low-account's perspective;
+                // negate if id is the high account so the delta is in id's terms.
+                if (result && id > issue.getIssuer())
+                    result->delta = -result->delta;
+                return result;
+            }
+            else if constexpr (std::is_same_v<TIss, MPTIssue>)
+            {
+                return lookup(keylet::mptoken(issue.getMptID(), id).key);
+            }
+        },
+        vaultAsset.value());
+}
+
+std::optional<AccountID>
+ValidVault::feePayerAccountRoot(ReadView const& view, STTx const& tx)
+{
+    auto const feePayer = Transactor::getFeePayer(view, tx);
+    if (feePayer.type == FeePayerType::SponsorPreFunded)
+        return std::nullopt;
+    return feePayer.id;
+}
+
+std::optional<ValidVault::DeltaInfo>
+ValidVault::deltaAssetsForParty(
+    ReadView const& view,
+    AccountID const& id,
+    STTx const& tx,
+    XRPAmount fee,
+    bool fix340Enabled) const
+{
+    auto const& vaultAsset = afterVault_[0].asset;
+    auto ret = deltaAssets(id);
+    if (!ret.has_value() || !vaultAsset.native())
+        return ret;
+
+    if (!fix340Enabled)
+    {
+        // Legacy behaviour: only tx[sfAccount] was ever considered for a fee
+        // correction, and only when STTx::getFeePayerID identified it as the
+        // fee payer (which is never true for a sponsor, since
+        // self-sponsorship is disallowed). After that sender-only correction
+        // a zero delta is collapsed to absence; if the correction does not
+        // apply, a present-zero is returned as-is.
+        if (id != tx[sfAccount] || tx.getFeePayerID() != id)
+            return ret;
+
+        ret->delta += fee.drops();
+        if (ret->delta == kZero)
+            return std::nullopt;
+
+        return ret;
+    }
+
+    // Add the fee back only onto the AccountRoot that actually paid it: an
+    // ordinary sender, a delegate, or a co-signed fee sponsor -- but never a
+    // pre-funded sponsorship, whose fee is drawn from the ltSponsorship
+    // object rather than the sponsor's own XRP balance.
+    if (auto const payer = feePayerAccountRoot(view, tx); payer && *payer == id)
+        ret->delta += fee.drops();
+
+    // Normalize an economically zero delta to absence regardless of who (if
+    // anyone) paid the fee, so a touched-but-unchanged AccountRoot (e.g. the
+    // sender in a third-party withdrawal, touched only for sequence/ticket
+    // processing) is never misread as a second payout recipient.
+    if (ret->delta == kZero)
+        return std::nullopt;
+
+    return ret;
+}
+
+std::optional<ValidVault::DeltaInfo>
+ValidVault::deltaShares(AccountID const& id) const
+{
+    auto const& afterVault = afterVault_[0];
+    auto const it = [&]() {
+        if (id == afterVault.pseudoId)
+            return deltas_.find(keylet::mptokenIssuance(afterVault.shareMPTID).key);
+        return deltas_.find(keylet::mptoken(afterVault.shareMPTID, id).key);
+    }();
+
+    return it != deltas_.end() ? std::optional<DeltaInfo>(it->second) : std::nullopt;
+}
+
+bool
+ValidVault::isVaultEmpty(Vault const& vault)
+{
+    return vault.assetsAvailable == 0 && vault.assetsTotal == 0;
+}
+
+bool
+ValidVault::finalizeLoanSet(ReadView const& view, beast::Journal const& j) const
+{
+    if (afterVault_.empty())
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::ValidVault::finalizeLoanSet : vault exists");
+        return false;
+        // LCOV_EXCL_STOP
+    }
+
+    auto const& afterVault = afterVault_[0];
+
+    // Loan origination against a closed-ended vault is only permitted while the vault is in the
+    // Investment phase - strictly past SubscriptionDate and before RedemptionDate. Open-ended
+    // vaults have NoPhase and are unaffected.
+    auto const phase = getVaultPhase(
+        view, afterVault.vaultKind, afterVault.subscriptionDate, afterVault.redemptionDate);
+    if (phase == VaultPhase::NoPhase)
+        return true;
+
+    if (phase != VaultPhase::Investment)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan origination only allowed in Investment phase";
+        return false;
+    }
+
+    return true;
+}
+
+namespace {
+
+// sfAssetsTotal, sfAssetsAvailable and sfLossUnrealized are STNumber fields
+// with kSmdNeedsAsset, so IOU writes go through associateAsset -> roundToAsset
+// -> STAmount quantization. Since assetsTotal is the largest number, it lands
+// on the coarsest decimal grid, and strict equality on the deltas can fire on
+// a single unit of quantization noise even when the underlying flow is
+// correct. Absorb one unit at the coarsest scale.
+//
+// XRP and MPT are integer-domain assets (Asset::integral() is true) with no
+// sub-ULP quantization; treating a whole drop / MPT unit as "noise" would
+// hide real accounting bugs. Keep the strict comparison there. Note that
+// gating on the sign of `scale` would be wrong: IOU amounts >= 1e15 have a
+// non-negative STAmount exponent but still quantize.
+[[nodiscard]] bool
+agreesWithinOneUnit(Number const& lhs, Number const& rhs, Asset const& asset, std::int32_t scale)
+{
+    if (asset.integral())
+        return lhs == rhs;
+    auto const diff = lhs - rhs;
+    Number const tolerance{1, scale};
+    return (diff < beast::kZero ? -diff : diff) <= tolerance;
+}
+
+// L, T and A are each independently quantized; the strict L <= T - A check
+// can fire on residual noise even when the true relationship holds. Tolerate
+// one unit at scale(assetsTotal) - the coarsest of the three grids. As with
+// the delta check above, the tolerance is meaningful only for IOU
+// (Asset::integral() is false); XRP and MPT keep the strict comparison.
+[[nodiscard]] bool
+lessOrEqualPlusOneUnit(Number const& lhs, Number const& rhs, Asset const& asset, std::int32_t scale)
+{
+    if (asset.integral())
+        return lhs <= rhs;
+    return lhs <= rhs + Number{1, scale};
+}
+
+}  // namespace
+
+std::int32_t
+ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules) const
+{
+    // Returns the posterior `assetsTotal` scale.
+    //
+    // 1. Because STAmounts are normalized, `assetsTotal` (being >= `assetsAvailable`)
+    // safely represents the coarsest exponent needed for both fields.
+    //
+    // 2. The scale may decrease (withdraw/clawback) or increase (deposit). In both cases
+    // we ensure the vault is in a legitimate state in the post-transaction scale.
+    auto const& afterVault = afterVault_[0];
+    auto const& vaultAsset = afterVault.asset;
+    if (rules.enabled(fixCleanup3_2_0))
+    {
+        NumberRoundModeGuard const roundGuard(Number::RoundingMode::ToNearest);
+        return scale(afterVault.assetsTotal, vaultAsset);
+    }
+
+    auto const& beforeVault = beforeVault_[0];
+    auto const totalDelta =
+        DeltaInfo::makeDelta(beforeVault.assetsTotal, afterVault.assetsTotal, vaultAsset);
+    auto const availableDelta =
+        DeltaInfo::makeDelta(beforeVault.assetsAvailable, afterVault.assetsAvailable, vaultAsset);
+    return computeCoarsestScale({vaultDelta, totalDelta, availableDelta});
+}
+
 bool
 ValidVault::finalize(
     STTx const& tx,
@@ -195,13 +417,14 @@ ValidVault::finalize(
     beast::Journal const& j)
 {
     bool const enforce = view.rules().enabled(featureSingleAssetVault);
+    bool const fix340Enabled = view.rules().enabled(fixCleanup3_4_0);
 
     if (!isTesSuccess(ret))
         return true;  // Do not perform checks
 
     if (afterVault_.empty() && beforeVault_.empty())
     {
-        if (hasPrivilege(tx, MustModifyVault))
+        if (hasPrivilege(tx, Privilege::MustModifyVault))
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: vault operation succeeded without modifying "
@@ -212,7 +435,8 @@ ValidVault::finalize(
 
         return true;  // Not a vault operation
     }
-    if (!(hasPrivilege(tx, MustModifyVault) || hasPrivilege(tx, MayModifyVault)))
+    if (!(hasPrivilege(tx, Privilege::MustModifyVault) ||
+          hasPrivilege(tx, Privilege::MayModifyVault)))
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault updated by a wrong transaction type";
@@ -320,7 +544,7 @@ ValidVault::finalize(
                 return e;
         }
 
-        auto const sleShares = view.read(keylet::mptIssuance(afterVault.shareMPTID));
+        auto const sleShares = view.read(keylet::mptokenIssuance(afterVault.shareMPTID));
 
         return sleShares ? std::optional<Shares>(Shares::make(*sleShares)) : std::nullopt;
     }();
@@ -328,7 +552,8 @@ ValidVault::finalize(
     bool result = true;
 
     // Universal transaction checks
-    if (!beforeVault_.empty())
+    // From LendingProtocolV1_1 onwards, vault immutability check is moved to InvariantCheck.cpp
+    if (!beforeVault_.empty() && !view.rules().enabled(featureLendingProtocolV1_1))
     {
         auto const& beforeVault = beforeVault_[0];
         if (afterVault.asset != beforeVault.asset || afterVault.pseudoId != beforeVault.pseudoId ||
@@ -371,7 +596,7 @@ ValidVault::finalize(
 
     if (afterVault.assetsAvailable < kZero)
     {
-        JLOG(j.fatal()) << "Invariant failed: assets available must be positive";
+        JLOG(j.fatal()) << "Invariant failed: assets available must not be negative";
         result = false;
     }
 
@@ -381,23 +606,46 @@ ValidVault::finalize(
                            "not be greater than assets outstanding";
         result = false;
     }
-    else if (afterVault.lossUnrealized > afterVault.assetsTotal - afterVault.assetsAvailable)
+    else
     {
-        JLOG(j.fatal())  //
-            << "Invariant failed: loss unrealized must not exceed "
-               "the difference between assets outstanding and available";
+        bool const gapExceeded = [&] {
+            if (!fix340Enabled)
+            {
+                return afterVault.lossUnrealized >
+                    afterVault.assetsTotal - afterVault.assetsAvailable;
+            }
+
+            auto const s = scale(afterVault.assetsTotal, afterVault.asset);
+            return !lessOrEqualPlusOneUnit(
+                afterVault.lossUnrealized,
+                afterVault.assetsTotal - afterVault.assetsAvailable,
+                afterVault.asset,
+                s);
+        }();
+        if (gapExceeded)
+        {
+            JLOG(j.fatal())  //
+                << "Invariant failed: loss unrealized must not exceed "
+                   "the difference between assets outstanding and available";
+            result = false;
+        }
+    }
+
+    if (fix340Enabled && afterVault.lossUnrealized < kZero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loss unrealized must not be negative";
         result = false;
     }
 
     if (afterVault.assetsTotal < kZero)
     {
-        JLOG(j.fatal()) << "Invariant failed: assets outstanding must be positive";
+        JLOG(j.fatal()) << "Invariant failed: assets outstanding must not be negative";
         result = false;
     }
 
     if (afterVault.assetsMaximum < kZero)
     {
-        JLOG(j.fatal()) << "Invariant failed: assets maximum must be positive";
+        JLOG(j.fatal()) << "Invariant failed: assets maximum must not be negative";
         result = false;
     }
 
@@ -419,6 +667,9 @@ ValidVault::finalize(
             "unrealized";
         result = false;
     }
+
+    // Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced by
+    // NoModifiedUnmodifiableFields in InvariantCheck.cpp.
 
     auto const beforeShares = [&]() -> std::optional<Shares> {
         if (beforeVault_.empty())
@@ -445,61 +696,6 @@ ValidVault::finalize(
     }
 
     auto const& vaultAsset = afterVault.asset;
-    auto const deltaAssets = [&](AccountID const& id) -> std::optional<DeltaInfo> {
-        auto const get =  //
-            [&](auto const& it, std::int8_t sign = 1) -> std::optional<DeltaInfo> {
-            if (it == deltas_.end())
-                return std::nullopt;
-
-            return DeltaInfo{it->second.delta * sign, it->second.scale};
-        };
-
-        return std::visit(
-            [&]<typename TIss>(TIss const& issue) {
-                if constexpr (std::is_same_v<TIss, Issue>)
-                {
-                    if (isXRP(issue))
-                        return get(deltas_.find(keylet::account(id).key));
-                    return get(
-                        deltas_.find(keylet::line(id, issue).key), id > issue.getIssuer() ? -1 : 1);
-                }
-                else if constexpr (std::is_same_v<TIss, MPTIssue>)
-                {
-                    return get(deltas_.find(keylet::mptoken(issue.getMptID(), id).key));
-                }
-            },
-            vaultAsset.value());
-    };
-    auto const deltaAssetsTxAccount = [&]() -> std::optional<DeltaInfo> {
-        auto ret = deltaAssets(tx[sfAccount]);
-        // Nothing returned or not XRP transaction
-        if (!ret.has_value() || !vaultAsset.native())
-            return ret;
-
-        // Delegated transaction; no need to compensate for fees
-        if (auto const delegate = tx[~sfDelegate];
-            delegate.has_value() && *delegate != tx[sfAccount])
-            return ret;
-
-        ret->delta += fee.drops();
-        if (ret->delta == kZero)
-            return std::nullopt;
-
-        return ret;
-    };
-    auto const deltaShares = [&](AccountID const& id) -> std::optional<DeltaInfo> {
-        auto const it = [&]() {
-            if (id == afterVault.pseudoId)
-                return deltas_.find(keylet::mptIssuance(afterVault.shareMPTID).key);
-            return deltas_.find(keylet::mptoken(afterVault.shareMPTID, id).key);
-        }();
-
-        return it != deltas_.end() ? std::optional<DeltaInfo>(it->second) : std::nullopt;
-    };
-
-    auto const vaultHoldsNoAssets = [&](Vault const& vault) {
-        return vault.assetsAvailable == 0 && vault.assetsTotal == 0;
-    };
 
     // Technically this does not need to be a lambda, but it's more
     // convenient thanks to early "return false"; the not-so-nice
@@ -561,6 +757,26 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                if (isClosedEnded(afterVault.vaultKind))
+                {
+                    if (!afterVault.subscriptionDate || !afterVault.redemptionDate)
+                    {
+                        JLOG(j.fatal())  //
+                            << "Invariant failed: closed-ended vault must have SubscriptionDate "
+                               "and RedemptionDate";
+                        result = false;
+                    }
+                    else if (!isValidClosedEndedGap(
+                                 *afterVault.subscriptionDate, *afterVault.redemptionDate))
+                    {
+                        JLOG(j.fatal())  //
+                            << "Invariant failed: closed-ended vault RedemptionDate - "
+                               "SubscriptionDate must be within [MIN_INVESTMENT_PERIOD, "
+                               "MAX_INVESTMENT_PERIOD)";
+                        result = false;
+                    }
+                }
+
                 return result;
             }
             case ttVAULT_SET: {
@@ -586,8 +802,13 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                // AssetsTotal may exceed AssetsMaximum when the excess is interest. After
+                // fixCleanup3_4_0, only reject a VaultSet that supplies sfAssetsMaximum or
+                // otherwise changes the cap to a nonzero value still below AssetsTotal.
                 if (afterVault.assetsMaximum > kZero &&
-                    afterVault.assetsTotal > afterVault.assetsMaximum)
+                    afterVault.assetsTotal > afterVault.assetsMaximum &&
+                    (!fix340Enabled || tx.isFieldPresent(sfAssetsMaximum) ||
+                     beforeVault.assetsMaximum != afterVault.assetsMaximum))
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: set assets outstanding must not "
@@ -621,6 +842,21 @@ ValidVault::finalize(
                     !beforeVault_.empty(), "xrpl::ValidVault::finalize : deposit updated a vault");
                 auto const& beforeVault = beforeVault_[0];
 
+                // Deposit is only allowed while the vault is in NoPhase or
+                // Subscription.
+                auto const depositPhase = getVaultPhase(
+                    view,
+                    afterVault.vaultKind,
+                    afterVault.subscriptionDate,
+                    afterVault.redemptionDate);
+                if (depositPhase != VaultPhase::NoPhase && depositPhase != VaultPhase::Subscription)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: deposit only allowed in "
+                        "Subscription or NoPhase";
+                    result = false;
+                }
+
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
                 if (!maybeVaultDeltaAssets)
                 {
@@ -629,16 +865,8 @@ ValidVault::finalize(
                     return false;  // That's all we can do
                 }
 
-                // Get the coarsest scale to round calculations to
-                auto const totalDelta = DeltaInfo::makeDelta(
-                    beforeVault.assetsTotal, afterVault.assetsTotal, vaultAsset);
-                auto const availableDelta = DeltaInfo::makeDelta(
-                    beforeVault.assetsAvailable, afterVault.assetsAvailable, vaultAsset);
-                auto const minScale = computeCoarsestScale({
-                    *maybeVaultDeltaAssets,
-                    totalDelta,
-                    availableDelta,
-                });
+                // Get the posterior scale to round calculations to
+                auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
 
                 auto const vaultDeltaAssets =
                     roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
@@ -669,12 +897,12 @@ ValidVault::finalize(
 
                 if (!issuerDeposit)
                 {
-                    auto const maybeAccDeltaAssets = deltaAssetsTxAccount();
+                    auto const maybeAccDeltaAssets =
+                        deltaAssetsForParty(view, tx[sfAccount], tx, fee, fix340Enabled);
                     if (!maybeAccDeltaAssets)
                     {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: deposit must change depositor "
-                            "balance";
+                        JLOG(j.fatal())
+                            << "Invariant failed: deposit must change depositor balance";
                         return false;
                     }
                     auto const localMinScale =
@@ -685,19 +913,27 @@ ValidVault::finalize(
                     auto const localVaultDeltaAssets =
                         roundToAsset(vaultAsset, vaultDeltaAssets, localMinScale);
 
+                    // For IOUs, if the deposit amount is not-representable at depositor trustline
+                    // scale deposit amount could round to zero, giving depositor shares for no
+                    // assets. Unlike withdrawal, we do not allow that.
                     if (accountDeltaAssets >= kZero)
                     {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: deposit must decrease depositor "
-                            "balance";
+                        JLOG(j.fatal())
+                            << "Invariant failed: deposit must decrease depositor balance";
                         result = false;
                     }
 
-                    if (localVaultDeltaAssets * -1 != accountDeltaAssets)
+                    bool const acctVaultAddsUp = fix340Enabled
+                        ? agreesWithinOneUnit(
+                              localVaultDeltaAssets * -1,
+                              accountDeltaAssets,
+                              vaultAsset,
+                              localMinScale)
+                        : localVaultDeltaAssets * -1 == accountDeltaAssets;
+                    if (!acctVaultAddsUp)
                     {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: deposit must change vault and "
-                            "depositor balance by equal amount";
+                        JLOG(j.fatal()) << "Invariant failed: " <<  //
+                            "deposit must change vault and depositor balance by equal amount";
                         result = false;
                     }
                 }
@@ -705,63 +941,62 @@ ValidVault::finalize(
                 if (afterVault.assetsMaximum > kZero &&
                     afterVault.assetsTotal > afterVault.assetsMaximum)
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: deposit assets outstanding must not "
-                        "exceed assets maximum";
+                    JLOG(j.fatal()) << "Invariant failed: " <<  //
+                        "deposit assets outstanding must not exceed assets maximum";
                     result = false;
                 }
 
                 auto const maybeAccDeltaShares = deltaShares(tx[sfAccount]);
                 if (!maybeAccDeltaShares)
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: deposit must change depositor "
-                        "shares";
+                    JLOG(j.fatal()) << "Invariant failed: deposit must change depositor shares";
                     return false;  // That's all we can do
                 }
-                // We don't need to round shares, they are integral MPT
+                // We don't round shares, they are integral MPT
                 auto const& accountDeltaShares = *maybeAccDeltaShares;
                 if (accountDeltaShares.delta <= kZero)
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: deposit must increase depositor "
-                        "shares";
+                    JLOG(j.fatal()) << "Invariant failed: deposit must increase depositor shares";
                     result = false;
                 }
 
                 auto const maybeVaultDeltaShares = deltaShares(afterVault.pseudoId);
                 if (!maybeVaultDeltaShares || maybeVaultDeltaShares->delta == kZero)
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: deposit must change vault shares";
+                    JLOG(j.fatal()) << "Invariant failed: deposit must change vault shares";
                     return false;  // That's all we can do
                 }
 
-                // We don't need to round shares, they are integral MPT
+                // We don't round shares, they are integral MPT
                 auto const& vaultDeltaShares = *maybeVaultDeltaShares;
                 if (vaultDeltaShares.delta * -1 != accountDeltaShares.delta)
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: deposit must change depositor and "
-                        "vault shares by equal amount";
+                    JLOG(j.fatal()) << "Invariant failed: " <<  //
+                        "deposit must change depositor and vault shares by equal amount";
                     result = false;
                 }
 
                 auto const assetTotalDelta = roundToAsset(
                     vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                if (assetTotalDelta != vaultDeltaAssets)
+                bool const totalAddsUp = fix340Enabled
+                    ? agreesWithinOneUnit(assetTotalDelta, vaultDeltaAssets, vaultAsset, minScale)
+                    : assetTotalDelta == vaultDeltaAssets;
+                if (!totalAddsUp)
                 {
-                    JLOG(j.fatal()) << "Invariant failed: deposit and assets "
-                                       "outstanding must add up";
+                    JLOG(j.fatal())
+                        << "Invariant failed: deposit and assets outstanding must add up";
                     result = false;
                 }
 
                 auto const assetAvailableDelta = roundToAsset(
                     vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
-                if (assetAvailableDelta != vaultDeltaAssets)
+                bool const availableAddsUp = fix340Enabled
+                    ? agreesWithinOneUnit(
+                          assetAvailableDelta, vaultDeltaAssets, vaultAsset, minScale)
+                    : assetAvailableDelta == vaultDeltaAssets;
+                if (!availableAddsUp)
                 {
-                    JLOG(j.fatal()) << "Invariant failed: deposit and assets "
-                                       "available must add up";
+                    JLOG(j.fatal()) << "Invariant failed: deposit and assets available must add up";
                     result = false;
                 }
 
@@ -772,34 +1007,56 @@ ValidVault::finalize(
 
                 XRPL_ASSERT(
                     !beforeVault_.empty(),
-                    "xrpl::ValidVault::finalize : withdrawal updated a "
-                    "vault");
+                    "xrpl::ValidVault::finalize : withdrawal updated a vault");
                 auto const& beforeVault = beforeVault_[0];
+
+                // Withdrawal from a closed-ended vault is not allowed during the Investment phase
+                // (strictly past SubscriptionDate, before RedemptionDate).
+                if (getVaultPhase(
+                        view,
+                        afterVault.vaultKind,
+                        afterVault.subscriptionDate,
+                        afterVault.redemptionDate) == VaultPhase::Investment)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: withdrawal not allowed during "
+                        "Investment phase";
+                    result = false;
+                }
 
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
 
-                if (!maybeVaultDeltaAssets)
+                // Post-fixCleanup3_4_0: a withdrawal that redeems shares from a
+                // pool with no effective value left to back them (e.g. fully
+                // impaired/insolvent) legitimately moves zero assets on both
+                // sides — VaultWithdraw::doApply does not touch either
+                // balance-holding entry for a zero-value transfer, so no delta
+                // is recorded. VaultWithdraw::doApply separately rejects
+                // (tecPRECISION_LOSS) the case where a *positive* per-share
+                // value merely rounds down to zero, so a missing delta while
+                // the pool still held positive effective value indicates a
+                // real accounting bug, not this exception.
+                bool const zeroDeltaIsLegitimate = fix340Enabled && !maybeVaultDeltaAssets &&
+                    beforeVault.assetsTotal == beforeVault.lossUnrealized;
+
+                if (!maybeVaultDeltaAssets && !zeroDeltaIsLegitimate)
                 {
-                    JLOG(j.fatal()) << "Invariant failed: withdrawal must "
-                                       "change vault balance";
+                    JLOG(j.fatal()) << "Invariant failed: withdrawal must change vault balance";
                     return false;  // That's all we can do
                 }
 
-                // Get the most coarse scale to round calculations to
-                auto const totalDelta = DeltaInfo::makeDelta(
-                    beforeVault.assetsTotal, afterVault.assetsTotal, vaultAsset);
-                auto const availableDelta = DeltaInfo::makeDelta(
-                    beforeVault.assetsAvailable, afterVault.assetsAvailable, vaultAsset);
-                auto const minScale =
-                    computeCoarsestScale({*maybeVaultDeltaAssets, totalDelta, availableDelta});
+                DeltaInfo const vaultDeltaAssets = maybeVaultDeltaAssets.value_or(
+                    DeltaInfo{.delta = kNumZero, .scale = std::nullopt});
+
+                // Get the posterior scale to round calculations to
+                auto const minScale = computeVaultMinScale(vaultDeltaAssets, view.rules());
 
                 auto const vaultPseudoDeltaAssets =
-                    roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
+                    roundToAsset(vaultAsset, vaultDeltaAssets.delta, minScale);
 
-                if (vaultPseudoDeltaAssets >= kZero)
+                if (!zeroDeltaIsLegitimate && vaultPseudoDeltaAssets >= kZero)
                 {
-                    JLOG(j.fatal()) << "Invariant failed: withdrawal must "
-                                       "decrease vault balance";
+                    JLOG(j.fatal()) << "Invariant failed: withdrawal must decrease vault balance";
                     result = false;
                 }
 
@@ -814,104 +1071,165 @@ ValidVault::finalize(
 
                 if (!issuerWithdrawal)
                 {
-                    auto const maybeAccDelta = deltaAssetsTxAccount();
-                    auto const maybeOtherAccDelta = [&]() -> std::optional<DeltaInfo> {
-                        if (auto const destination = tx[~sfDestination];
-                            destination && *destination != tx[sfAccount])
-                            return deltaAssets(*destination);
-                        return std::nullopt;
-                    }();
+                    // Identify the intended recipient explicitly from
+                    // sfDestination (falling back to sfAccount for a
+                    // self-withdrawal), rather than inferring it from which
+                    // side happens to show a delta. When a distinct
+                    // destination is named, the sending account must not
+                    // also show a real economic delta -- that would mean two
+                    // accounts were paid, which is always a bug, regardless
+                    // of what (if anything) the named destination received.
+                    auto const destinationField = tx[~sfDestination];
+                    AccountID const recipient = destinationField.value_or(tx[sfAccount]);
+                    bool const distinctDestination =
+                        destinationField.has_value() && *destinationField != tx[sfAccount];
 
-                    if (maybeAccDelta.has_value() == maybeOtherAccDelta.has_value())
+                    // Intentionally ungated: `fix340Enabled &&` here would let the
+                    // pre-amendment sponsored case succeed and change consensus.
+                    if (distinctDestination &&
+                        deltaAssetsForParty(view, tx[sfAccount], tx, fee, fix340Enabled)
+                            .has_value())
                     {
                         JLOG(j.fatal()) <<  //
-                            "Invariant failed: withdrawal must change one "
-                            "destination balance";
+                            "Invariant failed: withdrawal must change one destination balance";
                         return false;
                     }
 
-                    auto const destinationDelta =  //
-                        maybeAccDelta ? *maybeAccDelta : *maybeOtherAccDelta;
+                    auto const maybeRecipientDelta =
+                        deltaAssetsForParty(view, recipient, tx, fee, fix340Enabled);
 
-                    // the scale of destinationDelta can be coarser than
-                    // minScale, so we take that into account when rounding
-                    auto const localMinScale =
-                        std::max(minScale, computeCoarsestScale({destinationDelta}));
-
-                    auto const roundedDestinationDelta =
-                        roundToAsset(vaultAsset, destinationDelta.delta, localMinScale);
-
-                    if (roundedDestinationDelta <= kZero)
+                    if (!maybeRecipientDelta.has_value())
                     {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: withdrawal must increase "
-                            "destination balance";
-                        result = false;
+                        // A legitimate zero-value withdrawal moves nothing to
+                        // the recipient either; there is nothing left to
+                        // cross-check.
+                        if (!zeroDeltaIsLegitimate)
+                        {
+                            JLOG(j.fatal()) <<  //
+                                "Invariant failed: withdrawal must change one destination balance";
+                            return false;
+                        }
                     }
-
-                    auto const localPseudoDeltaAssets =
-                        roundToAsset(vaultAsset, vaultPseudoDeltaAssets, localMinScale);
-                    if (localPseudoDeltaAssets * -1 != roundedDestinationDelta)
+                    else
                     {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: withdrawal must change vault "
-                            "and destination balance by equal amount";
-                        result = false;
+                        // A one-sided change is cross-checked even for a
+                        // legitimate zero vault delta: the destination must
+                        // then have moved by (rounded) zero as well.
+                        auto const destinationDelta = *maybeRecipientDelta;
+
+                        // the scale of destinationDelta can be coarser than
+                        // minScale, so we take that into account when rounding
+                        auto const destinationScale = computeCoarsestScale({destinationDelta});
+                        auto const localMinScale = std::max(minScale, destinationScale);
+
+                        auto const roundedDestinationDelta =
+                            roundToAsset(vaultAsset, destinationDelta.delta, localMinScale);
+
+                        // Post-fixCleanup3_2_0: Tolerate zero-rounded destination deltas for IOUs
+                        // only. If the receiver's trust line sits at a coarser scale, the inflow
+                        // may safely round down to zero.
+                        //
+                        // XRP and MPT remain strict for rounding artifacts.
+                        bool const tolerateZeroDelta =
+                            view.rules().enabled(fixCleanup3_2_0) && !vaultAsset.integral();
+                        auto const invalidBalanceChange = tolerateZeroDelta
+                            ? roundedDestinationDelta < kZero
+                            : roundedDestinationDelta <= kZero;
+                        if (invalidBalanceChange)
+                        {
+                            JLOG(j.fatal()) <<  //
+                                "Invariant failed: withdrawal must increase destination balance";
+                            result = false;
+                        }
+
+                        auto const localPseudoDeltaAssets =
+                            roundToAsset(vaultAsset, vaultPseudoDeltaAssets, localMinScale);
+                        // For IOU assets near a precision boundary the destination's STAmount
+                        // exponent can shift, making part of the sent value unrepresentable at
+                        // the receiver's new scale — that portion is irreversibly absorbed by the
+                        // IOU rail.  Tolerate the mismatch only when the destroyed amount (vault
+                        // outflow minus destination inflow, in Number space) is itself sub-ULP at
+                        // the destination's scale.  Floor rounding is used so that values exactly
+                        // at the step boundary are not mistakenly dismissed.  Any representable
+                        // discrepancy indicates a real accounting bug and must be caught.
+                        auto const destroyedIsSubUlp = tolerateZeroDelta &&
+                            roundToAsset(
+                                vaultAsset,
+                                vaultDeltaAssets.delta * -1 - destinationDelta.delta,
+                                destinationScale,
+                                Number::RoundingMode::Downward) == kZero;
+                        bool const withdrawAddsUp = fix340Enabled
+                            ? agreesWithinOneUnit(
+                                  localPseudoDeltaAssets * -1,
+                                  roundedDestinationDelta,
+                                  vaultAsset,
+                                  localMinScale)
+                            : localPseudoDeltaAssets * -1 == roundedDestinationDelta;
+                        if (!destroyedIsSubUlp && !withdrawAddsUp)
+                        {
+                            JLOG(j.fatal()) << "Invariant failed: " <<  //
+                                "withdrawal must change vault and destination balance by equal "
+                                "amount";
+                            result = false;
+                        }
                     }
                 }
 
-                // We don't need to round shares, they are integral MPT
+                // We don't round shares, they are integral MPT
                 auto const accountDeltaShares = deltaShares(tx[sfAccount]);
                 if (!accountDeltaShares)
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: withdrawal must change depositor "
-                        "shares";
+                    JLOG(j.fatal()) << "Invariant failed: withdrawal must change depositor shares";
                     return false;
                 }
 
                 if (accountDeltaShares->delta >= kZero)
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: withdrawal must decrease depositor "
-                        "shares";
+                    JLOG(j.fatal())
+                        << "Invariant failed: withdrawal must decrease depositor shares";
                     result = false;
                 }
 
-                // We don't need to round shares, they are integral MPT
+                // We don't round shares, they are integral MPT
                 auto const vaultDeltaShares = deltaShares(afterVault.pseudoId);
                 if (!vaultDeltaShares || vaultDeltaShares->delta == kZero)
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: withdrawal must change vault shares";
+                    JLOG(j.fatal()) << "Invariant failed: withdrawal must change vault shares";
                     return false;  // That's all we can do
                 }
 
                 if (vaultDeltaShares->delta * -1 != accountDeltaShares->delta)
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: withdrawal must change depositor "
-                        "and vault shares by equal amount";
+                    JLOG(j.fatal()) << "Invariant failed: " <<  //
+                        "withdrawal must change depositor and vault shares by equal amount";
                     result = false;
                 }
 
                 auto const assetTotalDelta = roundToAsset(
                     vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
                 // Note, vaultBalance is negative (see check above)
-                if (assetTotalDelta != vaultPseudoDeltaAssets)
+                bool const totalAddsUp = fix340Enabled
+                    ? agreesWithinOneUnit(
+                          assetTotalDelta, vaultPseudoDeltaAssets, vaultAsset, minScale)
+                    : assetTotalDelta == vaultPseudoDeltaAssets;
+                if (!totalAddsUp)
                 {
-                    JLOG(j.fatal()) << "Invariant failed: withdrawal and "
-                                       "assets outstanding must add up";
+                    JLOG(j.fatal())
+                        << "Invariant failed: withdrawal and assets outstanding must add up";
                     result = false;
                 }
 
                 auto const assetAvailableDelta = roundToAsset(
                     vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
 
-                if (assetAvailableDelta != vaultPseudoDeltaAssets)
+                bool const availableAddsUp = fix340Enabled
+                    ? agreesWithinOneUnit(
+                          assetAvailableDelta, vaultPseudoDeltaAssets, vaultAsset, minScale)
+                    : assetAvailableDelta == vaultPseudoDeltaAssets;
+                if (!availableAddsUp)
                 {
-                    JLOG(j.fatal()) << "Invariant failed: withdrawal and "
-                                       "assets available must add up";
+                    JLOG(j.fatal())
+                        << "Invariant failed: withdrawal and assets available must add up";
                     result = false;
                 }
 
@@ -929,12 +1247,11 @@ ValidVault::finalize(
                     // The owner can use clawback to force-burn shares when the
                     // vault is empty but there are outstanding shares
                     if (!(beforeShares && beforeShares->sharesTotal > 0 &&
-                          vaultHoldsNoAssets(beforeVault) && beforeVault.owner == tx[sfAccount]))
+                          isVaultEmpty(beforeVault) && beforeVault.owner == tx[sfAccount]))
                     {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: clawback may only be performed "
-                            "by the asset issuer, or by the vault owner of an "
-                            "empty vault";
+                        JLOG(j.fatal()) << "Invariant failed: " <<  //
+                            "clawback may only be performed by the asset issuer, or by the vault "
+                            "owner of an empty vault";
                         return false;  // That's all we can do
                     }
                 }
@@ -942,29 +1259,26 @@ ValidVault::finalize(
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
                 if (maybeVaultDeltaAssets)
                 {
-                    auto const totalDelta = DeltaInfo::makeDelta(
-                        beforeVault.assetsTotal, afterVault.assetsTotal, vaultAsset);
-                    auto const availableDelta = DeltaInfo::makeDelta(
-                        beforeVault.assetsAvailable, afterVault.assetsAvailable, vaultAsset);
                     auto const minScale =
-                        computeCoarsestScale({*maybeVaultDeltaAssets, totalDelta, availableDelta});
+                        computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
                     auto const vaultDeltaAssets =
                         roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
                     if (vaultDeltaAssets >= kZero)
                     {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: clawback must decrease vault "
-                            "balance";
+                        JLOG(j.fatal()) << "Invariant failed: clawback must decrease vault balance";
                         result = false;
                     }
 
                     auto const assetsTotalDelta = roundToAsset(
                         vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                    if (assetsTotalDelta != vaultDeltaAssets)
+                    bool const totalAddsUp = fix340Enabled
+                        ? agreesWithinOneUnit(
+                              assetsTotalDelta, vaultDeltaAssets, vaultAsset, minScale)
+                        : assetsTotalDelta == vaultDeltaAssets;
+                    if (!totalAddsUp)
                     {
                         JLOG(j.fatal()) <<  //
-                            "Invariant failed: clawback and assets outstanding "
-                            "must add up";
+                            "Invariant failed: clawback and assets outstanding must add up";
                         result = false;
                     }
 
@@ -972,15 +1286,18 @@ ValidVault::finalize(
                         vaultAsset,
                         afterVault.assetsAvailable - beforeVault.assetsAvailable,
                         minScale);
-                    if (assetAvailableDelta != vaultDeltaAssets)
+                    bool const availableAddsUp = fix340Enabled
+                        ? agreesWithinOneUnit(
+                              assetAvailableDelta, vaultDeltaAssets, vaultAsset, minScale)
+                        : assetAvailableDelta == vaultDeltaAssets;
+                    if (!availableAddsUp)
                     {
                         JLOG(j.fatal()) <<  //
-                            "Invariant failed: clawback and assets available "
-                            "must add up";
+                            "Invariant failed: clawback and assets available must add up";
                         result = false;
                     }
                 }
-                else if (!vaultHoldsNoAssets(beforeVault))
+                else if (!isVaultEmpty(beforeVault))
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: clawback must change vault balance";
@@ -998,8 +1315,7 @@ ValidVault::finalize(
                 if (maybeAccountDeltaShares->delta >= kZero)
                 {
                     JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback must decrease holder "
-                        "shares";
+                        "Invariant failed: clawback must decrease holder shares";
                     result = false;
                 }
 
@@ -1014,9 +1330,8 @@ ValidVault::finalize(
 
                 if (vaultDeltaShares->delta * -1 != maybeAccountDeltaShares->delta)
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback must change holder and "
-                        "vault shares by equal amount";
+                    JLOG(j.fatal()) << "Invariant failed: " <<  //
+                        "clawback must change holder and vault shares by equal amount";
                     result = false;
                 }
 
@@ -1024,11 +1339,10 @@ ValidVault::finalize(
             }
 
             case ttLOAN_SET:
+                return finalizeLoanSet(view, j);
             case ttLOAN_MANAGE:
-            case ttLOAN_PAY: {
-                // TBD
+            case ttLOAN_PAY:
                 return true;
-            }
 
             default:
                 // LCOV_EXCL_START

@@ -12,7 +12,7 @@
 
 namespace xrpl {
 
-STBase::STBase() : fName_(&kSfGeneric)
+STBase::STBase() : fName_(&sfGeneric)
 {
 }
 
@@ -36,12 +36,6 @@ bool
 STBase::operator==(STBase const& t) const
 {
     return (getSType() == t.getSType()) && isEquivalent(t);
-}
-
-bool
-STBase::operator!=(STBase const& t) const
-{
-    return (getSType() != t.getSType()) || !isEquivalent(t);
 }
 
 STBase*

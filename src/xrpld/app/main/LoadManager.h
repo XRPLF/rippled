@@ -2,7 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
-#include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
@@ -12,17 +12,18 @@ namespace xrpl {
 
 class Application;
 
-/** Manages load sources.
-
-    This object creates an associated thread to maintain a clock.
-
-    When the server is overloaded by a particular peer it issues a warning
-    first. This allows friendly peers to reduce their consumption of resources,
-    or disconnect from the server.
-
-    The warning system is used instead of merely dropping, because hostile
-    peers can just reconnect anyway.
-*/
+/**
+ * Manages load sources.
+ *
+ * This object creates an associated thread to maintain a clock.
+ *
+ * When the server is overloaded by a particular peer it issues a warning
+ * first. This allows friendly peers to reduce their consumption of resources,
+ * or disconnect from the server.
+ *
+ * The warning system is used instead of merely dropping, because hostile
+ * peers can just reconnect anyway.
+ */
 class LoadManager
 {
     LoadManager(Application& app, beast::Journal journal);
@@ -33,20 +34,22 @@ public:
     LoadManager&
     operator=(LoadManager const&) = delete;
 
-    /** Destroy the manager.
-
-        The destructor returns only after the thread has stopped.
-    */
+    /**
+     * Destroy the manager.
+     *
+     * The destructor returns only after the thread has stopped.
+     */
     ~LoadManager();
 
-    /** Turn on stall detection.
-
-        The stall detector begins in a disabled state. After this function
-        is called, it will report stalls using a separate thread whenever
-        the reset function is not called at least once per 10 seconds.
-
-        @see resetStallDetector
-    */
+    /**
+     * Turn on stall detection.
+     *
+     * The stall detector begins in a disabled state. After this function
+     * is called, it will report stalls using a separate thread whenever
+     * the reset function is not called at least once per 10 seconds.
+     *
+     * @see resetStallDetector
+     */
     // VFALCO NOTE it seems that the stall detector has an "armed" state
     //             to prevent it from going off during program startup if
     //             there's a lengthy initialization operation taking place?
@@ -54,11 +57,12 @@ public:
     void
     activateStallDetector();
 
-    /** Reset the stall detection timer.
-
-        A dedicated thread monitors the stall timer, and if too much
-        time passes it will produce log warnings.
-    */
+    /**
+     * Reset the stall detection timer.
+     *
+     * A dedicated thread monitors the stall timer, and if too much
+     * time passes it will produce log warnings.
+     */
     void
     heartbeat();
 

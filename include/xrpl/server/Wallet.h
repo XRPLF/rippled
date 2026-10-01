@@ -1,8 +1,24 @@
 #pragma once
 
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/PeerReservationTable.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/Manifest.h>
+
+// boost::optional (not std::optional) appears in the declarations below,
+// because SOCI's into()/use() bindings only support boost::optional.
+#include <boost/optional/optional.hpp>
+
+#include <functional>
+#include <memory>
+#include <string>
+#include <unordered_set>
+#include <utility>
 
 namespace xrpl {
 
@@ -54,7 +70,7 @@ saveManifests(
     soci::session& session,
     std::string const& dbTable,
     std::function<bool(PublicKey const&)> const& isTrusted,
-    hash_map<PublicKey, Manifest> const& map,
+    HashMap<PublicKey, Manifest> const& map,
     beast::Journal j);
 
 /**
@@ -66,19 +82,22 @@ saveManifests(
 void
 addValidatorManifest(soci::session& session, std::string const& serialized);
 
-/** Delete any saved public/private key associated with this node. */
+/**
+ * Delete any saved public/private key associated with this node.
+ */
 void
 clearNodeIdentity(soci::session& session);
 
-/** Returns a stable public and private key for this node.
-
-    The node's public identity is defined by a secp256k1 keypair
-    that is (normally) randomly generated. This function will
-    return such a keypair, securely generating one if needed.
-
-    @param session Session with the database.
-
-    @return Pair of public and private secp256k1 keys.
+/**
+ * Returns a stable public and private key for this node.
+ *
+ * The node's public identity is defined by a secp256k1 keypair
+ * that is (normally) randomly generated. This function will
+ * return such a keypair, securely generating one if needed.
+ *
+ * @param session Session with the database.
+ *
+ * @return Pair of public and private secp256k1 keys.
  */
 std::pair<PublicKey, SecretKey>
 getNodeIdentity(soci::session& session);
@@ -149,7 +168,7 @@ readAmendments(
 void
 voteAmendment(
     soci::session& session,
-    uint256 const& amendment,
+    UInt256 const& amendment,
     std::string const& name,
     AmendmentVote vote);
 

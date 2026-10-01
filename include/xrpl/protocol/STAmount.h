@@ -1,18 +1,34 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
-#include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/json_get_or_throw.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -29,14 +45,14 @@ namespace xrpl {
 class STAmount final : public STBase, public CountedObject<STAmount>
 {
 public:
-    using mantissa_type = std::uint64_t;
-    using exponent_type = int;
-    using rep = std::pair<mantissa_type, exponent_type>;
+    using MantissaType = std::uint64_t;
+    using ExponentType = int;
+    using rep = std::pair<MantissaType, ExponentType>;
 
 private:
     Asset asset_;
-    mantissa_type value_{};
-    exponent_type offset_;
+    MantissaType value_{};
+    ExponentType offset_;
     bool isNegative_{};
 
 public:
@@ -74,16 +90,16 @@ public:
     STAmount(
         SField const& name,
         A const& asset,
-        mantissa_type mantissa,
-        exponent_type exponent,
+        MantissaType mantissa,
+        ExponentType exponent,
         bool negative,
         Unchecked);
 
     template <AssetType A>
     STAmount(
         A const& asset,
-        mantissa_type mantissa,
-        exponent_type exponent,
+        MantissaType mantissa,
+        ExponentType exponent,
         bool negative,
         Unchecked);
 
@@ -92,8 +108,8 @@ public:
     STAmount(
         SField const& name,
         A const& asset,
-        mantissa_type mantissa = 0,
-        exponent_type exponent = 0,
+        MantissaType mantissa = 0,
+        ExponentType exponent = 0,
         bool negative = false);
 
     STAmount(SField const& name, std::int64_t mantissa);
@@ -174,7 +190,9 @@ public:
     [[nodiscard]] int
     signum() const noexcept;
 
-    /** Returns a zero value with the same issuer and currency. */
+    /**
+     * Returns a zero value with the same issuer and currency.
+     */
     [[nodiscard]] STAmount
     zeroed() const;
 
@@ -183,6 +201,23 @@ public:
 
     [[nodiscard]] STAmount const&
     value() const noexcept;
+
+    /**
+     * Checks if this amount evaluates to zero when constrained to a specific
+     * accounting scale.
+     * For XRP and MPT `roundToScale` is a no-op, returns true only when the amount itself is zero.
+     * The `scale` argument is ignored in that case.
+     * For IOU, the amount is rounded to the given scale using Number::RoundingMode::ToNearest mode
+     * and the result is checked for zero; if `scale <= exponent()`, `roundToScale` short-circuits
+     * and returns the value unchanged, so this returns false for any non-zero amount.
+     *
+     * @param scale The target accounting scale to evaluate against.
+     * @return `true` if this amount rounds to zero at the given scale, `false` otherwise.
+     *
+     * @see roundToScale
+     */
+    [[nodiscard]] bool
+    isZeroAtScale(int scale) const;
 
     //--------------------------------------------------------------------------
     //
@@ -222,7 +257,9 @@ public:
     void
     clear(Asset const& asset);
 
-    /** Set the Issue for this amount. */
+    /**
+     * Set the Issue for this amount.
+     */
     void
     setIssue(Asset const& asset);
 
@@ -290,8 +327,8 @@ template <AssetType A>
 STAmount::STAmount(
     SField const& name,
     A const& asset,
-    mantissa_type mantissa,
-    exponent_type exponent,
+    MantissaType mantissa,
+    ExponentType exponent,
     bool negative,
     Unchecked)
     : STBase(name), asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
@@ -301,8 +338,8 @@ STAmount::STAmount(
 template <AssetType A>
 STAmount::STAmount(
     A const& asset,
-    mantissa_type mantissa,
-    exponent_type exponent,
+    MantissaType mantissa,
+    ExponentType exponent,
     bool negative,
     Unchecked)
     : asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
@@ -540,7 +577,7 @@ STAmount::fromNumber(A const& a, Number const& number)
         return STAmount{asset, intValue, 0, negative};
     }
 
-    auto const [mantissa, exponent] = working.normalizeToRange(kMinValue, kMaxValue);
+    auto const [mantissa, exponent] = working.normalizeToRange<kMinValue, kMaxValue>();
 
     return STAmount{asset, mantissa, exponent, negative};
 }
@@ -575,11 +612,24 @@ STAmount::value() const noexcept
     return *this;
 }
 
-inline bool
+[[nodiscard]] inline bool
 isLegalNet(STAmount const& value)
 {
     return !value.native() || (value.mantissa() <= STAmount::kMaxNativeN);
 }
+
+[[nodiscard]] inline bool
+isLegalMPT(STAmount const& value)
+{
+    return !value.holds<MPTIssue>() ||
+        (!value.negative() && value.exponent() == 0 && value.mantissa() <= kMaxMpTokenAmount);
+}
+
+/* Check recursively if an object has invalid MPTAmount or XRPAmount in STAmount field.
+ * Calls isLegalNet() and isLegalMPT().
+ */
+[[nodiscard]] bool
+hasInvalidAmount(STBase const& field, beast::Journal j);
 
 //------------------------------------------------------------------------------
 //
@@ -591,12 +641,6 @@ bool
 operator==(STAmount const& lhs, STAmount const& rhs);
 bool
 operator<(STAmount const& lhs, STAmount const& rhs);
-
-inline bool
-operator!=(STAmount const& lhs, STAmount const& rhs)
-{
-    return !(lhs == rhs);
-}
 
 inline bool
 operator>(STAmount const& lhs, STAmount const& rhs)
@@ -658,7 +702,8 @@ divRoundStrict(STAmount const& v1, STAmount const& v2, Asset const& asset, bool 
 std::uint64_t
 getRate(STAmount const& offerOut, STAmount const& offerIn);
 
-/** Round an arbitrary precision Amount to the precision of an STAmount that has
+/**
+ * Round an arbitrary precision Amount to the precision of an STAmount that has
  * a given exponent.
  *
  * This is used to ensure that calculations involving IOU amounts do not collect
@@ -668,7 +713,6 @@ getRate(STAmount const& offerOut, STAmount const& offerIn);
  * @param scale An exponent value to establish the precision limit of
  *     `value`. Should be larger than `value.exponent()`.
  * @param rounding Optional Number rounding mode
- *
  */
 [[nodiscard]] STAmount
 roundToScale(
@@ -676,7 +720,8 @@ roundToScale(
     std::int32_t scale,
     Number::RoundingMode rounding = Number::getround());
 
-/** Round an arbitrary precision Number IN PLACE to the precision of a given
+/**
+ * Round an arbitrary precision Number IN PLACE to the precision of a given
  * Asset.
  *
  * This is used to ensure that calculations do not collect dust for IOUs, or
@@ -692,7 +737,8 @@ roundToAsset(A const& asset, Number& value)
     value = STAmount{asset, value};
 }
 
-/** Round an arbitrary precision Number to the precision of a given Asset.
+/**
+ * Round an arbitrary precision Number to the precision of a given Asset.
  *
  * This is used to ensure that calculations do not collect dust beyond specified
  * scale for IOUs, or fractional amounts for the integral types XRP and MPT.
@@ -734,7 +780,8 @@ canAdd(STAmount const& amt1, STAmount const& amt2);
 bool
 canSubtract(STAmount const& amt1, STAmount const& amt2);
 
-/** Get the scale of a Number for a given asset.
+/**
+ * Get the scale of a Number for a given asset.
  *
  * "scale" is similar to "exponent", but from the perspective of STAmount, which has different rules
  * and mantissa ranges for determining the exponent than Number.

@@ -4,7 +4,9 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -16,16 +18,14 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
-#include <memory>
+#include <algorithm>
+#include <optional>
 #include <utility>
 
 namespace xrpl {
 
 void
-TransfersNotFrozen::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+TransfersNotFrozen::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     /*
      * A trust line freeze state alone doesn't determine if a transfer is
@@ -76,9 +76,24 @@ TransfersNotFrozen::finalize(
      *           view.rules().enabled(fixFreezeExploit);
      */
     [[maybe_unused]] bool const enforce = view.rules().enabled(featureDeepFreeze);
+    bool const fixOverrideFreeze = view.rules().enabled(fixCleanup3_4_0);
 
-    for (auto const& [issue, changes] : balanceChanges_)
-    {
+    /*
+     * XLS-0066: a broker must be able to default an already-late loan
+     * regardless of the vault asset's freeze state. LoanManage::defaultLoan
+     * moves First-Loss Capital from the broker to the vault pseudo-account via
+     * accountSend, which transits through the issuer in two hops (see
+     * getLoanDefaultFreezeExemptAccounts), so a frozen issuer would otherwise
+     * trip this invariant on either hop. Gated behind fixCleanup3_4_0, and
+     * scoped to exactly the issuer/broker and issuer/vault lines involved for
+     * the vault's own currency, so ledgers without the amendment (or an
+     * unrelated frozen currency/line touched by the same transaction) keep
+     * the current (blocking) behavior.
+     */
+    auto const loanDefaultAccounts = getLoanDefaultFreezeExemptAccounts(view, tx);
+
+    return std::ranges::all_of(balanceChanges_, [&](auto const& entry) {
+        auto const& [issue, changes] = entry;
         auto const issuerSle = findIssuer(issue.account, view);
         // It should be impossible for the issuer to not be found, but check
         // just in case so xrpld doesn't crash in release.
@@ -90,26 +105,16 @@ TransfersNotFrozen::finalize(
                 enforce,
                 "xrpl::TransfersNotFrozen::finalize : enforce "
                 "invariant.");
-            if (enforce)
-            {
-                return false;
-            }
-            continue;
+            return !enforce;
         }
 
-        if (!validateIssuerChanges(issuerSle, changes, tx, j, enforce))
-        {
-            return false;
-        }
-    }
-
-    return true;
+        return validateIssuerChanges(
+            issuerSle, changes, tx, j, enforce, fixOverrideFreeze, loanDefaultAccounts);
+    });
 }
 
 bool
-TransfersNotFrozen::isValidEntry(
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+TransfersNotFrozen::isValidEntry(SLE::ConstRef before, SLE::ConstRef after)
 {
     // `after` can never be null, even if the trust line is deleted.
     XRPL_ASSERT(after, "xrpl::TransfersNotFrozen::isValidEntry : valid after.");
@@ -134,10 +139,7 @@ TransfersNotFrozen::isValidEntry(
 }
 
 STAmount
-TransfersNotFrozen::calculateBalanceChange(
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after,
-    bool isDelete)
+TransfersNotFrozen::calculateBalanceChange(SLE::ConstRef before, SLE::ConstRef after, bool isDelete)
 {
     auto const getBalance = [](auto const& line, auto const& other, bool zero) {
         STAmount const amt = line ? line->at(sfBalance) : other->at(sfBalance).zeroed();
@@ -180,9 +182,7 @@ TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
 }
 
 void
-TransfersNotFrozen::recordBalanceChanges(
-    std::shared_ptr<SLE const> const& after,
-    STAmount const& balanceChange)
+TransfersNotFrozen::recordBalanceChanges(SLE::ConstRef after, STAmount const& balanceChange)
 {
     auto const balanceChangeSign = balanceChange.signum();
     auto const currency = after->at(sfBalance).get<Issue>().currency;
@@ -198,7 +198,7 @@ TransfersNotFrozen::recordBalanceChanges(
         {.line = after, .balanceChangeSign = -balanceChangeSign});
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 {
     if (auto it = possibleIssuers_.find(issuerID); it != possibleIssuers_.end())
@@ -211,11 +211,13 @@ TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 
 bool
 TransfersNotFrozen::validateIssuerChanges(
-    std::shared_ptr<SLE const> const& issuer,
+    SLE::ConstRef issuer,
     IssuerChanges const& changes,
     STTx const& tx,
     beast::Journal const& j,
-    bool enforce)
+    bool enforce,
+    bool fixOverrideFreeze,
+    std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts)
 {
     if (!issuer)
     {
@@ -241,7 +243,15 @@ TransfersNotFrozen::validateIssuerChanges(
         {
             bool const high = change.line->at(sfLowLimit).getIssuer() == issuer->at(sfAccount);
 
-            if (!validateFrozenState(change, high, tx, j, enforce, globalFreeze))
+            if (!validateFrozenState(
+                    change,
+                    high,
+                    tx,
+                    j,
+                    enforce,
+                    globalFreeze,
+                    fixOverrideFreeze,
+                    loanDefaultAccounts))
             {
                 return false;
             }
@@ -257,27 +267,59 @@ TransfersNotFrozen::validateFrozenState(
     STTx const& tx,
     beast::Journal const& j,
     bool enforce,
-    bool globalFreeze)
+    bool globalFreeze,
+    bool fixOverrideFreeze,
+    std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts)
 {
     bool const freeze =
         change.balanceChangeSign < 0 && change.line->isFlag(high ? lsfLowFreeze : lsfHighFreeze);
     bool const deepFreeze = change.line->isFlag(high ? lsfLowDeepFreeze : lsfHighDeepFreeze);
     bool const frozen = globalFreeze || deepFreeze || freeze;
 
-    bool const isAMMLine = change.line->isFlag(lsfAMMNode);
-
     if (!frozen)
     {
         return true;
     }
 
-    // AMMClawbacks are allowed to override some freeze rules
-    if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, OverrideFreeze))
+    // Pre-fixCleanup3_4_0: the isAMMLine check incorrectly blocked clawback on
+    // individually-frozen or deep-frozen AMM trust lines.
+    // Post-fixCleanup3_4_0: AMMClawbacks are allowed to override all freeze types.
+    bool const isAMMLine = change.line->isFlag(lsfAMMNode);
+    if ((fixOverrideFreeze || !isAMMLine || globalFreeze) &&
+        hasPrivilege(tx, Privilege::OverrideFreeze))
     {
         JLOG(j.debug()) << "Invariant check allowing funds to be moved "
                         << (change.balanceChangeSign > 0 ? "to" : "from")
-                        << " a frozen trustline for AMMClawback " << tx.getTransactionID();
+                        << " a frozen trustline for a freeze privileged transaction "
+                        << tx.getTransactionID();
         return true;
+    }
+
+    // XLS-0066: LoanManage::defaultLoan's transfer is exempt from freeze (see
+    // finalize()). Since neither the broker nor vault pseudo-account is the
+    // asset's issuer, accountSend routes it as two hops through the issuer
+    // (broker -> issuer, issuer -> vault), so both the issuer/broker and
+    // issuer/vault lines are exempt -- but only for the vault's own currency,
+    // so an unrelated frozen line (a different currency, or one touched by
+    // the same transaction for some other reason) is still caught.
+    if (loanDefaultAccounts && loanDefaultAccounts->asset.holds<Issue>() &&
+        loanDefaultAccounts->asset.get<Issue>().currency ==
+            change.line->at(sfBalance).get<Issue>().currency)
+    {
+        AccountID const lowAcct = change.line->at(sfLowLimit).getIssuer();
+        AccountID const highAcct = change.line->at(sfHighLimit).getIssuer();
+        auto const& accts = *loanDefaultAccounts;
+        auto const isPair = [&](AccountID const& a, AccountID const& b) {
+            return (lowAcct == a && highAcct == b) || (lowAcct == b && highAcct == a);
+        };
+        if (isPair(accts.issuer, accts.broker) || isPair(accts.issuer, accts.vault))
+        {
+            JLOG(j.debug()) << "Invariant check allowing funds to be moved "
+                            << (change.balanceChangeSign > 0 ? "to" : "from")
+                            << " a frozen trustline for LoanManage default "
+                            << tx.getTransactionID();
+            return true;
+        }
     }
 
     JLOG(j.fatal()) << "Invariant failed: Attempting to move frozen funds for "

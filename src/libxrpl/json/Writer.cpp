@@ -9,6 +9,7 @@
 #include <set>  // IWYU pragma: keep
 #include <stack>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -87,14 +88,14 @@ public:
     }
 
     void
-    output(boost::beast::string_view const& bytes)
+    output(std::string_view bytes)
     {
         markStarted();
         output_(bytes);
     }
 
     void
-    stringOutput(boost::beast::string_view const& bytes)
+    stringOutput(std::string_view bytes)
     {
         markStarted();
         std::size_t position = 0, writtenUntil = 0;
@@ -199,15 +200,21 @@ private:
     // JSON collections are either arrays, or objects.
     struct Collection
     {
-        /** What type of collection are we in? */
+        /**
+         * What type of collection are we in?
+         */
         Writer::CollectionType type = Writer::CollectionType::Array;
 
-        /** Is this the first entry in a collection?
-         *  If false, we have to emit a , before we write the next entry. */
+        /**
+         * Is this the first entry in a collection?
+         *  If false, we have to emit a , before we write the next entry.
+         */
         bool isFirst = true;
 
 #ifndef NDEBUG
-        /** What tags have we already seen in this collection? */
+        /**
+         * What tags have we already seen in this collection?
+         */
         std::set<std::string> tags{};  // NOLINT(readability-redundant-member-init)
 #endif
     };
@@ -230,9 +237,8 @@ Writer::~Writer()
         impl_->finishAll();
 }
 
-Writer::Writer(Writer&& w) noexcept
+Writer::Writer(Writer&& w) noexcept : impl_(std::move(w.impl_))
 {
-    impl_ = std::move(w.impl_);
 }
 
 Writer&

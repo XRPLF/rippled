@@ -3,39 +3,43 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 
 namespace xrpl {
 
-/** Action to perform when releasing a strong pointer.
-
-    noop: Do nothing. For example, a `noop` action will occur when a count is
-    decremented to a non-zero value.
-
-    partialDestroy: Run the `partialDestructor`. This action will happen when a
-    strong count is decremented to zero and the weak count is non-zero.
-
-    destroy: Run the destructor. This action will occur when either the strong
-    count or weak count is decremented and the other count is also zero.
+/**
+ * Action to perform when releasing a strong pointer.
+ *
+ * noop: Do nothing. For example, a `noop` action will occur when a count is
+ * decremented to a non-zero value.
+ *
+ * partialDestroy: Run the `partialDestructor`. This action will happen when a
+ * strong count is decremented to zero and the weak count is non-zero.
+ *
+ * destroy: Run the destructor. This action will occur when either the strong
+ * count or weak count is decremented and the other count is also zero.
  */
 enum class ReleaseStrongRefAction { NoOp, PartialDestroy, Destroy };
 
-/** Action to perform when releasing a weak pointer.
-
-    noop: Do nothing. For example, a `noop` action will occur when a count is
-    decremented to a non-zero value.
-
-    destroy: Run the destructor. This action will occur when either the strong
-    count or weak count is decremented and the other count is also zero.
+/**
+ * Action to perform when releasing a weak pointer.
+ *
+ * noop: Do nothing. For example, a `noop` action will occur when a count is
+ * decremented to a non-zero value.
+ *
+ * destroy: Run the destructor. This action will occur when either the strong
+ * count or weak count is decremented and the other count is also zero.
  */
 enum class ReleaseWeakRefAction { NoOp, Destroy };
 
-/** Implement the strong count, weak count, and bit flags for an intrusive
-    pointer.
-
-    A class can satisfy the requirements of an xrpl::IntrusivePointer by
-    inheriting from this class.
-  */
+/**
+ * Implement the strong count, weak count, and bit flags for an intrusive
+ * pointer.
+ *
+ * A class can satisfy the requirements of an xrpl::IntrusivePointer by
+ * inheriting from this class.
+ */
 struct IntrusiveRefCounts
 {
     virtual ~IntrusiveRefCounts() noexcept;
@@ -73,21 +77,13 @@ struct IntrusiveRefCounts
     std::size_t
     useCount() const noexcept;
 
-    // This function MUST be called after a partial destructor finishes running.
-    // Calling this function may cause other threads to delete the object
-    // pointed to by `o`, so `o` should never be used after calling this
-    // function. The parameter will be set to a `nullptr` after calling this
-    // function to emphasize that it should not be used.
-    // Note: This is intentionally NOT called at the end of `partialDestructor`.
-    // The reason for this is if new classes are written to support this smart
-    // pointer class, they need to write their own `partialDestructor` function
-    // and ensure `partialDestructorFinished` is called at the end. Putting this
-    // call inside the smart pointer class itself is expected to be less error
-    // prone.
-    // Note: The "two-star" programming is intentional. It emphasizes that `o`
-    // may be deleted and the unergonomic API is meant to signal the special
-    // nature of this function call to callers.
-    // Note: This is a template to support incompletely defined classes.
+    // MUST be called after `partialDestructor` returns. Another thread may
+    // then delete the object, so `*o` is nulled and must not be used after
+    // (unless the caller holds its own weak ref, e.g.
+    // SharedWeakUnion::convertToWeak). Called by the smart pointers, not
+    // `partialDestructor`, so custom partial destructors can't forget it.
+    // The two-star API signals that `*o` may be deleted. Templated to
+    // support incomplete types.
     template <class T>
     friend void
     partialDestructorFinished(T** o);
@@ -104,109 +100,123 @@ private:
     static constexpr size_t kFieldTypeBits = sizeof(FieldType) * 8;
     static constexpr FieldType kOne = 1;
 
-    /** `refCounts` consists of four fields that are treated atomically:
-
-         1. Strong count. This is a count of the number of shared pointers that
-         hold a reference to this object. When the strong counts goes to zero,
-         if the weak count is zero, the destructor is run. If the weak count is
-         non-zero when the strong count goes to zero then the partialDestructor
-         is run.
-
-         2. Weak count. This is a count of the number of weak pointer that hold
-         a reference to this object. When the weak count goes to zero and the
-         strong count is also zero, then the destructor is run.
-
-         3. Partial destroy started bit. This bit is set if the
-         `partialDestructor` function has been started (or is about to be
-         started). This is used to prevent the destructor from running
-         concurrently with the partial destructor. This can easily happen when
-         the last strong pointer release its reference in one thread and starts
-         the partialDestructor, while in another thread the last weak pointer
-         goes out of scope and starts the destructor while the partialDestructor
-         is still running. Both a start and finished bit is needed to handle a
-         corner-case where the last strong pointer goes out of scope, then then
-         last `weakPointer` goes out of scope, but this happens before the
-         `partialDestructor` bit is set. It would be possible to use a single
-         bit if it could also be set atomically when the strong count goes to
-         zero and the weak count is non-zero, but that would add complexity (and
-         likely slow down common cases as well).
-
-         4. Partial destroy finished bit. This bit is set when the
-         `partialDestructor` has finished running. See (3) above for more
-         information.
-
-         */
+    /**
+     * `refCounts` consists of four fields that are treated atomically:
+     *
+     * 1. Strong count. This is a count of the number of shared pointers that
+     * hold a reference to this object. When the strong counts goes to zero,
+     * if the weak count is zero, the destructor is run. If the weak count is
+     * non-zero when the strong count goes to zero then the partialDestructor
+     * is run.
+     *
+     * 2. Weak count. This is a count of the number of weak pointer that hold
+     * a reference to this object. When the weak count goes to zero and the
+     * strong count is also zero, then the destructor is run.
+     *
+     * 3. Partial destroy started bit. This bit is set if the
+     * `partialDestructor` function has been started (or is about to be
+     * started). This is used to prevent the destructor from running
+     * concurrently with the partial destructor. This can easily happen when
+     * the last strong pointer release its reference in one thread and starts
+     * the partialDestructor, while in another thread the last weak pointer
+     * goes out of scope and starts the destructor while the partialDestructor
+     * is still running. Both a start and finished bit is needed to handle a
+     * corner-case where the last strong pointer goes out of scope, then then
+     * last `weakPointer` goes out of scope, but this happens before the
+     * `partialDestructor` bit is set. It would be possible to use a single
+     * bit if it could also be set atomically when the strong count goes to
+     * zero and the weak count is non-zero, but that would add complexity (and
+     * likely slow down common cases as well).
+     *
+     * 4. Partial destroy finished bit. This bit is set when the
+     * `partialDestructor` has finished running. See (3) above for more
+     * information.
+     */
 
     mutable std::atomic<FieldType> refCounts_{kStrongDelta};
 
-    /**  Amount to change the strong count when adding or releasing a reference
-
-         Note: The strong count is stored in the low `StrongCountNumBits` bits
-       of refCounts
-      */
+    /**
+     * Amount to change the strong count when adding or releasing a reference
+     *
+     *   Note: The strong count is stored in the low `StrongCountNumBits` bits
+     * of refCounts
+     */
     static constexpr FieldType kStrongDelta = 1;
 
-    /**  Amount to change the weak count when adding or releasing a reference
-
-         Note: The weak count is stored in the high `WeakCountNumBits` bits of
-         refCounts
-      */
+    /**
+     * Amount to change the weak count when adding or releasing a reference
+     *
+     * Note: The weak count is stored in the high `WeakCountNumBits` bits of
+     * refCounts
+     */
     static constexpr FieldType kWeakDelta = (kOne << kStrongCountNumBits);
 
-    /**  Flag that is set when the partialDestroy function has started running
-         (or is about to start running).
-
-         See description of the `refCounts` field for a fuller description of
-         this field.
-      */
+    /**
+     * Flag that is set when the partialDestroy function has started running
+     * (or is about to start running).
+     *
+     * See description of the `refCounts` field for a fuller description of
+     * this field.
+     */
     static constexpr FieldType kPartialDestroyStartedMask = (kOne << (kFieldTypeBits - 1));
 
-    /**  Flag that is set when the partialDestroy function has finished running
-
-         See description of the `refCounts` field for a fuller description of
-         this field.
-      */
+    /**
+     * Flag that is set when the partialDestroy function has finished running
+     *
+     * See description of the `refCounts` field for a fuller description of
+     * this field.
+     */
     static constexpr FieldType kPartialDestroyFinishedMask = (kOne << (kFieldTypeBits - 2));
 
-    /** Mask that will zero out all the `count` bits and leave the tag bits
-        unchanged.
-      */
+    /**
+     * Mask that will zero out all the `count` bits and leave the tag bits
+     * unchanged.
+     */
     static constexpr FieldType kTagMask = kPartialDestroyStartedMask | kPartialDestroyFinishedMask;
 
-    /** Mask that will zero out the `tag` bits and leave the count bits
-        unchanged.
-      */
+    /**
+     * Mask that will zero out the `tag` bits and leave the count bits
+     * unchanged.
+     */
     static constexpr FieldType kValueMask = ~kTagMask;
 
-    /** Mask that will zero out everything except the strong count.
+    /**
+     * Mask that will zero out everything except the strong count.
      */
     static constexpr FieldType kStrongMask = ((kOne << kStrongCountNumBits) - 1) & kValueMask;
 
-    /** Mask that will zero out everything except the weak count.
+    /**
+     * Mask that will zero out everything except the weak count.
      */
     static constexpr FieldType kWeakMask =
         (((kOne << kWeakCountNumBits) - 1) << kStrongCountNumBits) & kValueMask;
 
-    /** Unpack the count and tag fields from the packed atomic integer form. */
+    /**
+     * Unpack the count and tag fields from the packed atomic integer form.
+     */
     struct RefCountPair
     {
         CountType strong;
         CountType weak;
-        /**  The `partialDestroyStartedBit` is set to on when the partial
-             destroy function is started. It is not a boolean; it is a uint32
-             with all bits zero with the possible exception of the
-             `partialDestroyStartedMask` bit. This is done so it can be directly
-             masked into the `combinedValue`.
+        /**
+         * The `partialDestroyStartedBit` is set to on when the partial
+         * destroy function is started. It is not a boolean; it is a uint32
+         * with all bits zero with the possible exception of the
+         * `partialDestroyStartedMask` bit. This is done so it can be directly
+         * masked into the `combinedValue`.
          */
         FieldType partialDestroyStartedBit{0};
-        /**  The `partialDestroyFinishedBit` is set to on when the partial
-             destroy function has finished.
+        /**
+         * The `partialDestroyFinishedBit` is set to on when the partial
+         * destroy function has finished.
          */
         FieldType partialDestroyFinishedBit{0};
         RefCountPair(FieldType v) noexcept;
         RefCountPair(CountType s, CountType w) noexcept;
 
-        /** Convert back to the packed integer form. */
+        /**
+         * Convert back to the packed integer form.
+         */
         [[nodiscard]] FieldType
         combinedValue() const noexcept;
 
@@ -214,9 +224,10 @@ private:
             static_cast<CountType>((kOne << kStrongCountNumBits) - 1);
         static constexpr CountType kMaxWeakValue =
             static_cast<CountType>((kOne << kWeakCountNumBits) - 1);
-        /**  Put an extra margin to detect when running up against limits.
-             This is only used in debug code, and is useful if we reduce the
-             number of bits in the strong and weak counts (to 16 and 14 bits).
+        /**
+         * Put an extra margin to detect when running up against limits.
+         * This is only used in debug code, and is useful if we reduce the
+         * number of bits in the strong and weak counts (to 16 and 14 bits).
          */
         static constexpr CountType kCheckStrongMaxValue = kMaxStrongValue - 32;
         static constexpr CountType kCheckWeakMaxValue = kMaxWeakValue - 32;
@@ -315,15 +326,11 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
         ReleaseStrongRefAction action = NoOp;
         if (prevVal.strong == 1)
         {
-            if (prevVal.weak == 0)
-            {
-                action = NoOp;
-            }
-            else
-            {
-                nextIntVal |= kPartialDestroyStartedMask;
-                action = PartialDestroy;
-            }
+            // The weak ref added here keeps the weak count non-zero, so
+            // releasing the last strong ref always starts a partial destroy,
+            // regardless of the previous weak count.
+            nextIntVal |= kPartialDestroyStartedMask;
+            action = PartialDestroy;
         }
         if (refCounts_.compare_exchange_weak(prevIntVal, nextIntVal, std::memory_order_acq_rel))
         {
@@ -339,24 +346,26 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
 inline ReleaseWeakRefAction
 IntrusiveRefCounts::releaseWeakRef() const
 {
-    auto prevIntVal = refCounts_.fetch_sub(kWeakDelta, std::memory_order_acq_rel);
-    RefCountPair prev = prevIntVal;
+    auto const prevIntVal = refCounts_.fetch_sub(kWeakDelta, std::memory_order_acq_rel);
+    RefCountPair const prev = prevIntVal;
     if (prev.weak == 1 && prev.strong == 0)
     {
+        // `wait` blocks while the value equals its argument, so it must be
+        // given the value as it is after the decrement above.
+        auto curIntVal = prevIntVal - kWeakDelta;
         if (prev.partialDestroyStartedBit == 0u)
         {
             // This case should only be hit if the partialDestroyStartedBit is
             // set non-atomically (and even then very rarely). The code is kept
             // in case we need to set the flag non-atomically for perf reasons.
-            refCounts_.wait(prevIntVal, std::memory_order_acquire);
-            prevIntVal = refCounts_.load(std::memory_order_acquire);
-            prev = RefCountPair{prevIntVal};
+            refCounts_.wait(curIntVal, std::memory_order_acquire);
+            curIntVal = refCounts_.load(std::memory_order_acquire);
         }
-        if (prev.partialDestroyFinishedBit == 0u)
+        if (RefCountPair{curIntVal}.partialDestroyFinishedBit == 0u)
         {
             // partial destroy MUST finish before running a full destroy (when
             // using weak pointers)
-            refCounts_.wait(prevIntVal - kWeakDelta, std::memory_order_acquire);
+            refCounts_.wait(curIntVal, std::memory_order_acquire);
         }
         return ReleaseWeakRefAction::Destroy;
     }

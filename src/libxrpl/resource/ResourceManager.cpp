@@ -23,7 +23,7 @@
 #include <string_view>
 #include <thread>
 
-namespace xrpl::Resource {
+namespace xrpl::resource {
 
 class ManagerImp : public Manager
 {
@@ -36,7 +36,7 @@ private:
     std::condition_variable cond_;
 
 public:
-    ManagerImp(beast::insight::Collector::ptr const& collector, beast::Journal journal)
+    ManagerImp(beast::insight::Collector::Ptr const& collector, beast::Journal journal)
         : journal_(journal), logic_(collector, stopwatch(), journal)
     {
         thread_ = std::thread{&ManagerImp::run, this};
@@ -58,14 +58,14 @@ public:
     }
 
     Consumer
-    newInboundEndpoint(beast::IP::Endpoint const& address) override
+    newInboundEndpoint(beast::ip::Endpoint const& address) override
     {
         return logic_.newInboundEndpoint(address);
     }
 
     Consumer
     newInboundEndpoint(
-        beast::IP::Endpoint const& address,
+        beast::ip::Endpoint const& address,
         bool const proxy,
         std::string_view forwardedFor) override
     {
@@ -85,13 +85,13 @@ public:
     }
 
     Consumer
-    newOutboundEndpoint(beast::IP::Endpoint const& address) override
+    newOutboundEndpoint(beast::ip::Endpoint const& address) override
     {
         return logic_.newOutboundEndpoint(address);
     }
 
     Consumer
-    newUnlimitedEndpoint(beast::IP::Endpoint const& address) override
+    newUnlimitedEndpoint(beast::ip::Endpoint const& address) override
     {
         return logic_.newUnlimitedEndpoint(address);
     }
@@ -136,7 +136,7 @@ private:
     void
     run()
     {
-        beast::setCurrentThreadName("Resource::Mngr");
+        beast::setCurrentThreadName("resource::Mngr");
         for (;;)
         {
             logic_.periodicActivity();
@@ -159,9 +159,9 @@ Manager::~Manager() = default;
 //------------------------------------------------------------------------------
 
 std::unique_ptr<Manager>
-makeManager(beast::insight::Collector::ptr const& collector, beast::Journal journal)
+makeManager(beast::insight::Collector::Ptr const& collector, beast::Journal journal)
 {
     return std::make_unique<ManagerImp>(collector, journal);
 }
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource

@@ -77,22 +77,22 @@ SingleMetrics::addMetrics(std::uint32_t val)
 {
     using namespace std::chrono_literals;
     accum += val;
-    N++;
-    auto const timeElapsed = clock_type::now() - intervalStart;
+    n++;
+    auto const timeElapsed = ClockType::now() - intervalStart;
     auto const timeElapsedInSecs = std::chrono::duration_cast<std::chrono::seconds>(timeElapsed);
 
     if (timeElapsedInSecs >= 1s)
     {
-        auto const avg = accum / (perTimeUnit ? timeElapsedInSecs.count() : N);
+        auto const avg = accum / (perTimeUnit ? timeElapsedInSecs.count() : n);
         rollingAvgAggregate.push_back(avg);
 
         auto const total =
             std::accumulate(rollingAvgAggregate.begin(), rollingAvgAggregate.end(), 0ull);
         rollingAvg = total / rollingAvgAggregate.size();
 
-        intervalStart = clock_type::now();
+        intervalStart = ClockType::now();
         accum = 0;
-        N = 0;
+        n = 0;
     }
 }
 

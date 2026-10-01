@@ -115,7 +115,7 @@ By default, Conan will use the profile named "default".
 [find_package]: https://cmake.org/cmake/help/latest/command/find_package.html
 [pcf]: https://cmake.org/cmake/help/latest/manual/cmake-packages.7.html#package-configuration-file
 [prefix_path]: https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html
-[profile]: https://docs.conan.io/en/latest/reference/profiles.html
+[profile]: https://docs.conan.io/2/reference/config_files/profiles.html
 [pvf]: https://cmake.org/cmake/help/latest/manual/cmake-packages.7.html#package-version-file
 [runtime]: https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html
 [search]: https://cmake.org/cmake/help/latest/command/find_package.html#search-procedure

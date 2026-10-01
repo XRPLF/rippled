@@ -33,7 +33,7 @@ public:
      * @brief Construct a Vault ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Vault(std::shared_ptr<SLE const> sle)
+    explicit Vault(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -287,6 +287,102 @@ public:
     {
         return this->sle_->isFieldPresent(sfScale);
     }
+
+    /**
+     * @brief Get sfLEVersion (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    getLEVersion() const
+    {
+        if (hasLEVersion())
+            return this->sle_->at(sfLEVersion);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLEVersion is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLEVersion() const
+    {
+        return this->sle_->isFieldPresent(sfLEVersion);
+    }
+
+    /**
+     * @brief Get sfVaultKind (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    getVaultKind() const
+    {
+        if (hasVaultKind())
+            return this->sle_->at(sfVaultKind);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfVaultKind is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasVaultKind() const
+    {
+        return this->sle_->isFieldPresent(sfVaultKind);
+    }
+
+    /**
+     * @brief Get sfSubscriptionDate (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getSubscriptionDate() const
+    {
+        if (hasSubscriptionDate())
+            return this->sle_->at(sfSubscriptionDate);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfSubscriptionDate is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasSubscriptionDate() const
+    {
+        return this->sle_->isFieldPresent(sfSubscriptionDate);
+    }
+
+    /**
+     * @brief Get sfRedemptionDate (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getRedemptionDate() const
+    {
+        if (hasRedemptionDate())
+            return this->sle_->at(sfRedemptionDate);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfRedemptionDate is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasRedemptionDate() const
+    {
+        return this->sle_->isFieldPresent(sfRedemptionDate);
+    }
 };
 
 /**
@@ -330,7 +426,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    VaultBuilder(std::shared_ptr<SLE const> sle)
+    VaultBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltVAULT)
         {
@@ -339,7 +435,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfPreviousTxnID (SoeRequired)
@@ -507,12 +605,56 @@ public:
     }
 
     /**
+     * @brief Set sfLEVersion (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setLEVersion(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    {
+        object_[sfLEVersion] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfVaultKind (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setVaultKind(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    {
+        object_[sfVaultKind] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfSubscriptionDate (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setSubscriptionDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfSubscriptionDate] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfRedemptionDate (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setRedemptionDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfRedemptionDate] = value;
+        return *this;
+    }
+
+    /**
      * @brief Build and return the completed Vault wrapper.
      * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     Vault
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return Vault{std::make_shared<SLE>(std::move(object_), index)};
     }

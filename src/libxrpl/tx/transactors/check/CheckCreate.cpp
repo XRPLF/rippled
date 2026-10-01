@@ -7,6 +7,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -24,7 +25,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <cstdint>
 #include <memory>
 #include <optional>
 
@@ -111,10 +111,10 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         {
             // The currency may not be globally frozen
             AccountID const& issuerId{sendMax.getIssuer()};
-            if (isGlobalFrozen(ctx.view, sendMax.asset()))
+            if (auto const ter = checkGlobalFrozen(ctx.view, sendMax.asset()); !isTesSuccess(ter))
             {
-                JLOG(ctx.j.warn()) << "Creating a check for frozen asset";
-                return sendMax.asset().holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
+                JLOG(ctx.j.warn()) << "Creating a check for frozen or locked asset";
+                return ter;
             }
             auto const err = sendMax.asset().visit(
                 [&](Issue const& issue) -> std::optional<TER> {
@@ -127,7 +127,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                     {
                         // Check if the issuer froze the line
                         auto const sleTrust =
-                            ctx.view.read(keylet::line(srcId, issuerId, issue.currency));
+                            ctx.view.read(keylet::trustLine(srcId, issuerId, issue.currency));
                         if (sleTrust &&
                             sleTrust->isFlag((issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
                         {
@@ -139,7 +139,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                     {
                         // Check if dst froze the line.
                         auto const sleTrust =
-                            ctx.view.read(keylet::line(issuerId, dstId, issue.currency));
+                            ctx.view.read(keylet::trustLine(issuerId, dstId, issue.currency));
                         if (sleTrust &&
                             sleTrust->isFlag((dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))
                         {
@@ -153,9 +153,21 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                 },
                 [&](MPTIssue const& issue) -> std::optional<TER> {
                     if (srcId != issuerId && isFrozen(ctx.view, srcId, issue))
+                    {
+                        JLOG(ctx.j.warn()) << "Creating a check for locked MPT.";
                         return tecLOCKED;
+                    }
                     if (dstId != issuerId && isFrozen(ctx.view, dstId, issue))
+                    {
+                        JLOG(ctx.j.warn()) << "Creating a check for locked MPT.";
                         return tecLOCKED;
+                    }
+                    if (auto const ter = canTransfer(ctx.view, issue, srcId, dstId);
+                        !isTesSuccess(ter))
+                    {
+                        JLOG(ctx.j.warn()) << "MPT transfer is disabled.";
+                        return ter;
+                    }
 
                     return std::nullopt;
                 });
@@ -169,7 +181,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         return tecEXPIRED;
     }
 
-    return canTrade(ctx.view, ctx.tx[sfSendMax].asset());
+    return tesSUCCESS;
 }
 
 TER
@@ -182,23 +194,20 @@ CheckCreate::doApply()
     // A check counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
-    {
-        STAmount const reserve{view().fees().accountReserve(sle->getFieldU32(sfOwnerCount) + 1)};
-
-        if (preFeeBalance_ < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
-
+    if (auto const ret = checkReserve(
+            ctx_.getApplyViewContext(), sle, preFeeBalance_, {.ownerCountDelta = 1}, ctx_.journal);
+        !isTesSuccess(ret))
+        return ret;
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
-    std::uint32_t const seq = ctx_.tx.getSeqValue();
+    auto const seq = ctx_.tx.getSeqProxy();
     Keylet const checkKeylet = keylet::check(accountID_, seq);
     auto sleCheck = std::make_shared<SLE>(checkKeylet);
 
     sleCheck->setAccountID(sfAccount, accountID_);
     AccountID const dstAccountId = ctx_.tx[sfDestination];
     sleCheck->setAccountID(sfDestination, dstAccountId);
-    sleCheck->setFieldU32(sfSequence, seq);
+    sleCheck->setFieldU32(sfSequence, seq.value());
     sleCheck->setFieldAmount(sfSendMax, ctx_.tx[sfSendMax]);
     if (auto const srcTag = ctx_.tx[~sfSourceTag])
         sleCheck->setFieldU32(sfSourceTag, *srcTag);
@@ -241,15 +250,14 @@ CheckCreate::doApply()
         sleCheck->setFieldU64(sfOwnerNode, *page);
     }
     // If we succeeded, the new entry counts against the creator's reserve.
-    adjustOwnerCount(view(), sle, 1, viewJ);
+
+    increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, viewJ);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCheck);
     return tesSUCCESS;
 }
 
 void
-CheckCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+CheckCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

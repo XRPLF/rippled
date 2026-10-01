@@ -16,7 +16,7 @@
 #include <memory>
 #include <optional>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 bool
 canHaveMPTokenIssuanceID(
@@ -67,4 +67,4 @@ insertMPTokenIssuanceID(
         response[jss::mpt_issuance_id] = to_string(result.value());
 }
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

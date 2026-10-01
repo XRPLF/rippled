@@ -1,51 +1,42 @@
+# The environment CI builds in: every tool on PATH, no Nix stdenv setup hooks.
+# Baked into the `nix-*` Docker images on Linux (see nix/docker), built on the
+# runner on macOS (see .github/actions/setup-nix-env).
 {
   pkgs,
-  glibc231,
+  customGlibc,
   ...
 }:
 let
   inherit (import ./packages.nix { inherit pkgs; }) commonPackages;
 
-  # binutils wrapped to emit binaries that reference glibc 2.31 (dynamic
-  # linker path, library search path, RPATH).
-  binutils231 = pkgs.wrapBintoolsWith {
-    bintools = pkgs.binutils-unwrapped;
-    libc = glibc231;
-  };
+  # Each forces something absent on the other platform, so both stay lazy.
+  linux = import ./linux.nix { inherit pkgs customGlibc; };
+  darwin = import ./darwin.nix { inherit pkgs; };
 
-  # Rebuild gcc 15 (specifically libstdc++ / libgcc_s) against glibc 2.31.
-  # The override swaps gcc15.cc's bootstrap stdenv for one that uses the
-  # existing gcc 15 binary but links against glibc 2.31, so the resulting
-  # compiler ships runtime libraries that only reference symbols available
-  # in glibc 2.31.
-  gcc15CcWithGlibc231 = pkgs.gcc15.cc.override {
-    stdenv = pkgs.stdenvAdapters.overrideCC pkgs.stdenv (
-      pkgs.wrapCCWith {
-        cc = pkgs.gcc15.cc;
-        libc = glibc231;
-        bintools = binutils231;
-      }
-    );
-  };
+  # What a buildEnv cannot express: environment variables. $GITHUB_ENV format;
+  # `set -a; . env; set +a` loads it in a shell.
+  darwinEnv = pkgs.writeTextDir "share/xrpld-ci-env/env" (
+    pkgs.lib.concatStrings (
+      pkgs.lib.mapAttrsToList (name: value: "${name}=${value}\n") (darwin.sdkEnv // darwin.libresolvEnv)
+    )
+  );
 
-  # cc-wrapper around the rebuilt compiler, pointing at glibc 2.31 headers
-  # and libraries. This is what we actually expose to users.
-  gcc15WithGlibc231 = pkgs.wrapCCWith {
-    cc = gcc15CcWithGlibc231;
-    libc = glibc231;
-    bintools = binutils231;
-  };
-
+  toolchain = if pkgs.stdenv.isLinux then linux.toolchain else (darwin.toolchain ++ [ darwinEnv ]);
 in
 {
   default = pkgs.buildEnv {
     name = "xrpld-ci-env";
-    paths = commonPackages ++ [
-      gcc15WithGlibc231
-      binutils231
-    ];
+    paths =
+      commonPackages
+      ++ toolchain
+      ++ [
+        # CA certificate bundle so HTTPS clients (git, curl, conan) can verify
+        # TLS connections without ca-certificates being installed in the system.
+        pkgs.cacert
+      ];
     pathsToLink = [
       "/bin"
+      "/etc/ssl/certs"
       "/lib"
       "/include"
       "/share"

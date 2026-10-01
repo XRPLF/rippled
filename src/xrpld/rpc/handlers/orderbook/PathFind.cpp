@@ -13,9 +13,9 @@
 namespace xrpl {
 
 json::Value
-doPathFind(RPC::JsonContext& context)
+doPathFind(rpc::JsonContext& context)
 {
-    if (context.app.config().PATH_SEARCH_MAX == 0)
+    if (context.app.config().pathSearchMax == 0)
         return rpcError(RpcNotSupported);
 
     auto lpLedger = context.ledgerMaster.getClosedLedger();
@@ -34,7 +34,7 @@ doPathFind(RPC::JsonContext& context)
 
     if (sSubCommand == "create")
     {
-        context.loadType = Resource::kFeeHeavyBurdenRpc;
+        context.loadType = resource::kFeeHeavyBurdenRpc;
         context.infoSub->clearRequest();
         return context.app.getPathRequestManager().makePathRequest(
             context.infoSub, lpLedger, context.params);

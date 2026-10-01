@@ -25,8 +25,8 @@ class SkipList_test : public beast::unit_test::Suite
             auto prev = std::make_shared<Ledger>(
                 kCreateGenesis,
                 Rules{config.features},
-                config.FEES.toFees(),
-                std::vector<uint256>{},
+                config.fees.toFees(),
+                std::vector<UInt256>{},
                 env.app().getNodeFamily());
             history.push_back(prev);
             for (auto i = 0; i < 1023; ++i)

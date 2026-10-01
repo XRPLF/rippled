@@ -6,7 +6,7 @@ set -e
 # On MacOS, ensure that GNU sed is installed and available as `gsed`.
 SED_COMMAND=sed
 if [[ "${OSTYPE}" == 'darwin'* ]]; then
-    if ! command -v gsed &> /dev/null; then
+    if ! command -v gsed &>/dev/null; then
         echo "Error: gsed is not installed. Please install it using 'brew install gnu-sed'."
         exit 1
     fi
@@ -45,9 +45,6 @@ for DIRECTORY in "${DIRECTORIES[@]}"; do
         ${SED_COMMAND} -i -E 's/(BEAST_DEFINE_TESTSUITE.+)ripple(.+)/\1xrpl\2/g' "${FILE}"
     done
 done
-
-# Special case for NuDBFactory that has ripple twice in the test suite name.
-${SED_COMMAND} -i -E 's/(BEAST_DEFINE_TESTSUITE.+)ripple(.+)/\1xrpl\2/g' src/test/nodestore/NuDBFactory_test.cpp
 
 DIRECTORY=$1
 find "${DIRECTORY}" -type f -name "*.md" | while read -r FILE; do

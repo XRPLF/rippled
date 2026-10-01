@@ -33,7 +33,7 @@ public:
      * @brief Construct a NFTokenPage ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit NFTokenPage(std::shared_ptr<SLE const> sle)
+    explicit NFTokenPage(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -157,7 +157,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    NFTokenPageBuilder(std::shared_ptr<SLE const> sle)
+    NFTokenPageBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltNFTOKEN_PAGE)
         {
@@ -166,7 +166,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfPreviousPageMin (SoeOptional)
@@ -229,7 +231,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     NFTokenPage
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return NFTokenPage{std::make_shared<SLE>(std::move(object_), index)};
     }

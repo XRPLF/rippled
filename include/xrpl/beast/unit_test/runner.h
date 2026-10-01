@@ -13,11 +13,12 @@
 
 namespace beast::unit_test {
 
-/** Unit test runner interface.
-
-    Derived classes can customize the reporting behavior. This interface is
-    injected into the unit_test class to receive the results of the tests.
-*/
+/**
+ * Unit test runner interface.
+ *
+ * Derived classes can customize the reporting behavior. This interface is
+ * injected into the unit_test class to receive the results of the tests.
+ */
 class Runner
 {
     std::string arg_;
@@ -33,110 +34,132 @@ public:
     Runner&
     operator=(Runner const&) = delete;
 
-    /** Set the argument string.
-
-        The argument string is available to suites and
-        allows for customization of the test. Each suite
-        defines its own syntax for the argument string.
-        The same argument is passed to all suites.
-    */
+    /**
+     * Set the argument string.
+     *
+     * The argument string is available to suites and
+     * allows for customization of the test. Each suite
+     * defines its own syntax for the argument string.
+     * The same argument is passed to all suites.
+     */
     void
     arg(std::string const& s)
     {
         arg_ = s;
     }
 
-    /** Returns the argument string. */
+    /**
+     * Returns the argument string.
+     */
     [[nodiscard]] std::string const&
     arg() const
     {
         return arg_;
     }
 
-    /** Run the specified suite.
-        @return `true` if any conditions failed.
-    */
+    /**
+     * Run the specified suite.
+     * @return `true` if any conditions failed.
+     */
     template <class = void>
     bool
     run(SuiteInfo const& s);
 
-    /** Run a sequence of suites.
-        The expression
-            `FwdIter::value_type`
-        must be convertible to `SuiteInfo`.
-        @return `true` if any conditions failed.
-    */
+    /**
+     * Run a sequence of suites.
+     * The expression
+     *     `FwdIter::value_type`
+     * must be convertible to `SuiteInfo`.
+     * @return `true` if any conditions failed.
+     */
     template <class FwdIter>
     bool
     run(FwdIter first, FwdIter last);
 
-    /** Conditionally run a sequence of suites.
-        pred will be called as:
-        @code
-            bool pred(SuiteInfo const&);
-        @endcode
-        @return `true` if any conditions failed.
-    */
+    /**
+     * Conditionally run a sequence of suites.
+     * pred will be called as:
+     * @code
+     *     bool pred(SuiteInfo const&);
+     * @endcode
+     * @return `true` if any conditions failed.
+     */
     template <class FwdIter, class Pred>
     bool
     runIf(FwdIter first, FwdIter last, Pred pred = Pred{});
 
-    /** Run all suites in a container.
-        @return `true` if any conditions failed.
-    */
+    /**
+     * Run all suites in a container.
+     * @return `true` if any conditions failed.
+     */
     template <class SequenceContainer>
     bool
     runEach(SequenceContainer const& c);
 
-    /** Conditionally run suites in a container.
-        pred will be called as:
-        @code
-            bool pred(SuiteInfo const&);
-        @endcode
-        @return `true` if any conditions failed.
-    */
+    /**
+     * Conditionally run suites in a container.
+     * pred will be called as:
+     * @code
+     *     bool pred(SuiteInfo const&);
+     * @endcode
+     * @return `true` if any conditions failed.
+     */
     template <class SequenceContainer, class Pred>
     bool
     runEachIf(SequenceContainer const& c, Pred pred = Pred{});
 
 protected:
-    /// Called when a new suite starts.
+    /**
+     * Called when a new suite starts.
+     */
     virtual void
     onSuiteBegin(SuiteInfo const&)
     {
     }
 
-    /// Called when a suite ends.
+    /**
+     * Called when a suite ends.
+     */
     virtual void
     onSuiteEnd()
     {
     }
 
-    /// Called when a new case starts.
+    /**
+     * Called when a new case starts.
+     */
     virtual void
     onCaseBegin(std::string const&)
     {
     }
 
-    /// Called when a new case ends.
+    /**
+     * Called when a new case ends.
+     */
     virtual void
     onCaseEnd()
     {
     }
 
-    /// Called for each passing condition.
+    /**
+     * Called for each passing condition.
+     */
     virtual void
     onPass()
     {
     }
 
-    /// Called for each failing condition.
+    /**
+     * Called for each failing condition.
+     */
     virtual void
     onFail(std::string const&)
     {
     }
 
-    /// Called when a test logs output.
+    /**
+     * Called when a test logs output.
+     */
     virtual void
     onLog(std::string const&)
     {

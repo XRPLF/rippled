@@ -6,7 +6,7 @@ set -e
 # On MacOS, ensure that GNU sed is installed and available as `gsed`.
 SED_COMMAND=sed
 if [[ "${OSTYPE}" == 'darwin'* ]]; then
-    if ! command -v gsed &> /dev/null; then
+    if ! command -v gsed &>/dev/null; then
         echo "Error: gsed is not installed. Please install it using 'brew install gnu-sed'."
         exit 1
     fi
@@ -77,8 +77,8 @@ ${SED_COMMAND} -i 's/Ripple integrators/XRPL developers/' README.md
 ${SED_COMMAND} -i 's/sanitizer-configuration-for-rippled/sanitizer-configuration-for-xrpld/' docs/build/sanitizers.md
 ${SED_COMMAND} -i 's/rippled/xrpld/g' .github/scripts/levelization/README.md
 ${SED_COMMAND} -i 's/rippled/xrpld/g' .github/scripts/strategy-matrix/generate.py
-${SED_COMMAND} -i 's@/rippled@/xrpld@g' docs/build/install.md
-${SED_COMMAND} -i 's@github.com/XRPLF/xrpld@github.com/XRPLF/rippled@g' docs/build/install.md
+${SED_COMMAND} -i 's@/rippled@/xrpld@g' docs/install.md
+${SED_COMMAND} -i 's@github.com/XRPLF/xrpld@github.com/XRPLF/rippled@g' docs/install.md
 ${SED_COMMAND} -i 's/rippled/xrpld/g' docs/Doxyfile
 ${SED_COMMAND} -i 's/ripple_basics/basics/' include/xrpl/basics/CountedObject.h
 ${SED_COMMAND} -i 's/<ripple/<xrpl/' include/xrpl/protocol/AccountID.h
@@ -90,7 +90,7 @@ ${SED_COMMAND} -i 's/www.ripple.com/www.xrpl.org/g' src/test/protocol/Seed_test.
 # Restore specific changes.
 ${SED_COMMAND} -i 's@b5efcc/src/xrpld@b5efcc/src/ripple@' include/xrpl/protocol/README.md
 ${SED_COMMAND} -i 's/dbPrefix_ = "xrpldb"/dbPrefix_ = "rippledb"/' src/xrpld/app/misc/SHAMapStoreImp.h # cspell: disable-line
-${SED_COMMAND} -i 's/kConfigLegacyName = "xrpld.cfg"/kConfigLegacyName = "rippled.cfg"/' src/xrpld/core/detail/Config.cpp
+${SED_COMMAND} -i 's/kConfigLegacyName = "xrpld.cfg"/kConfigLegacyName = "rippled.cfg"/' src/xrpld/core/Config.h
 
 popd
 echo "Renaming complete."

@@ -20,8 +20,8 @@ class NFTokenAcceptOfferBuilder;
  *
  * Type: ttNFTOKEN_ACCEPT_OFFER (29)
  * Delegable: Delegation::Delegable
- * Amendment: uint256{}
- * Privileges: NoPriv
+ * Amendment: UInt256{}
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use NFTokenAcceptOfferBuilder to construct new transactions.
@@ -164,7 +164,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfNFTokenBuyOffer (SoeOptional)

@@ -288,7 +288,7 @@ components with non-trivial changes are colored green.
     validated.
 
 ![Sequence diagram](./negativeUNL_highLevel_sequence.png?raw=true "Negative UNL
- Changes")
+Changes")
 
 ## Roads Not Taken
 

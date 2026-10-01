@@ -8,7 +8,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Protocol.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -324,7 +324,7 @@ public:
         env.close();
 
         // becky authorize any account recognized by carol to make a payment
-        env(deposit::authCredentials(becky, {{carol, credType}}));
+        env(deposit::authCredentials(becky, {{.issuer = carol, .credType = credType}}));
         env.close();
 
         {
@@ -507,7 +507,7 @@ public:
             env.close();
 
             // becky authorize any account recognized by carol to make a payment
-            env(deposit::authCredentials(becky, {{carol, credType2}}));
+            env(deposit::authCredentials(becky, {{.issuer = carol, .credType = credType2}}));
             env.close();
 
             {
