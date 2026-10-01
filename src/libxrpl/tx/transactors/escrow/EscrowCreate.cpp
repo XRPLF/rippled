@@ -214,7 +214,7 @@ escrowCreatePreclaimHelper<Issue>(
     {
         if (ctx.view.rules().enabled(fixTokenEscrowV1_1))
         {
-            bool const isAMM = isPseudoAccount(sleIssuer, {&sfAMMID});
+            bool const isAMM = sleIssuer->isFieldPresent(sfAMMID);
             bool const isBlackholedIssuer = isBlackholed(ctx.view, sleIssuer);
             if (!isAMM && !isBlackholedIssuer)
                 return tecNO_PERMISSION;
@@ -521,7 +521,7 @@ EscrowCreate::doApply()
             auto sleIssuer = ctx_.view().peek(keylet::account(issuer));
             if (sleIssuer && !sleIssuer->isFlag(lsfAllowTrustLineLocking))
             {
-                bool const isAMM = isPseudoAccount(sleIssuer, {&sfAMMID});
+                bool const isAMM = sleIssuer->isFieldPresent(sfAMMID);
                 bool const isBlackholedIssuer = isBlackholed(ctx_.view(), sleIssuer);
                 if (isAMM || isBlackholedIssuer)
                 {
