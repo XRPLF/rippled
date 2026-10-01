@@ -1149,7 +1149,7 @@ private:
 
         TER const expected = withFix ? TER(tecPSEUDO_ACCOUNT) : TER(tecNO_PERMISSION);
 
-        auto const withdrawToPseudo = [&](uint256 const& vaultId) {
+        auto const withdrawToPseudo = [&](UInt256 const& vaultId) {
             auto tx = vault.withdraw({.depositor = depositor, .id = vaultId, .amount = asset(1)});
             tx[sfDestination] = pseudoDestination.human();
             return tx;
