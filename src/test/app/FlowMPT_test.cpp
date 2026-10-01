@@ -342,7 +342,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
                     STPathSet paths;
                     auto const ipe = [](Asset const& asset) {
                         return STPathElement(
-                            STPathElement::TypeAsset | STPathElement::TypeIssuer,
+                            STPathElementType::Asset | STPathElementType::Issuer,
                             xrpAccount(),
                             asset,
                             asset.getIssuer());
