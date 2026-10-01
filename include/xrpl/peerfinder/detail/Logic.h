@@ -61,7 +61,7 @@ public:
     using Slots = std::map<beast::ip::Endpoint, std::shared_ptr<SlotImp>>;
 
     beast::Journal journal;
-    clock_type& clock;
+    ClockType& clock;
     Store& store;
     Checker& checker;
 
@@ -105,13 +105,13 @@ public:
     // A list of dynamic sources to consult as a fallback
     std::vector<std::shared_ptr<Source>> sources;
 
-    clock_type::time_point whenBroadcast;
+    ClockType::time_point whenBroadcast;
 
     ConnectHandouts::Squelches squelches;
 
     //--------------------------------------------------------------------------
 public:
-    Logic(clock_type& clock, Store& store, Checker& checker, beast::Journal journal)
+    Logic(ClockType& clock, Store& store, Checker& checker, beast::Journal journal)
         : journal(journal)
         , clock(clock)
         , store(store)
@@ -292,7 +292,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    std::pair<SlotImp::ptr, Result>
+    std::pair<SlotImp::Ptr, Result>
     newInboundSlot(
         beast::ip::Endpoint const& localEndpoint,
         beast::ip::Endpoint const& remoteEndpoint)
@@ -310,7 +310,7 @@ public:
             {
                 JLOG(journal.debug()) << std::left << std::setw(18) << "Logic dropping inbound "
                                       << remoteEndpoint << " because of ip limits.";
-                return {SlotImp::ptr(), Result::IpLimitExceeded};
+                return {SlotImp::Ptr(), Result::IpLimitExceeded};
             }
         }
 
@@ -319,11 +319,11 @@ public:
         {
             JLOG(journal.debug()) << std::left << std::setw(18) << "Logic dropping "
                                   << remoteEndpoint << " as duplicate incoming";
-            return {SlotImp::ptr(), Result::DuplicatePeer};
+            return {SlotImp::Ptr(), Result::DuplicatePeer};
         }
 
         // Create the slot
-        SlotImp::ptr const slot(
+        SlotImp::Ptr const slot(
             std::make_shared<SlotImp>(
                 localEndpoint, remoteEndpoint, fixed(remoteEndpoint.address()), clock));
         // Add slot to table
@@ -343,7 +343,7 @@ public:
     }
 
     // Can't check for self-connect because we don't know the local endpoint
-    std::pair<SlotImp::ptr, Result>
+    std::pair<SlotImp::Ptr, Result>
     newOutboundSlot(beast::ip::Endpoint const& remoteEndpoint)
     {
         JLOG(journal.debug()) << std::left << std::setw(18) << "Logic connect " << remoteEndpoint;
@@ -355,11 +355,11 @@ public:
         {
             JLOG(journal.debug()) << std::left << std::setw(18) << "Logic dropping "
                                   << remoteEndpoint << " as duplicate connect";
-            return {SlotImp::ptr(), Result::DuplicatePeer};
+            return {SlotImp::Ptr(), Result::DuplicatePeer};
         }
 
         // Create the slot
-        SlotImp::ptr const slot(
+        SlotImp::Ptr const slot(
             std::make_shared<SlotImp>(remoteEndpoint, fixed(remoteEndpoint), clock));
 
         // Add slot to table
@@ -380,7 +380,7 @@ public:
     }
 
     bool
-    onConnected(SlotImp::ptr const& slot, beast::ip::Endpoint const& localEndpoint)
+    onConnected(SlotImp::Ptr const& slot, beast::ip::Endpoint const& localEndpoint)
     {
         beast::WrappedSink sink{journal.sink(), slot->prefix()};
         beast::Journal const journal{sink};
@@ -418,7 +418,7 @@ public:
     }
 
     Result
-    activate(SlotImp::ptr const& slot, PublicKey const& key, bool reserved)
+    activate(SlotImp::Ptr const& slot, PublicKey const& key, bool reserved)
     {
         beast::WrappedSink sink{journal.sink(), slot->prefix()};
         beast::Journal const journal{sink};
@@ -498,7 +498,7 @@ public:
      * the HTTP handshake and not via TMEndpoints.
      */
     std::vector<Endpoint>
-    redirect(SlotImp::ptr const& slot)
+    redirect(SlotImp::Ptr const& slot)
     {
         std::scoped_lock const _(lock);
         RedirectHandouts h(slot);
@@ -627,14 +627,14 @@ public:
 
         std::scoped_lock const _(lock);
 
-        clock_type::time_point const now = clock.now();
+        ClockType::time_point const now = clock.now();
         if (whenBroadcast <= now)
         {
             std::vector<SlotHandouts> targets;
 
             {
                 // build list of active slots
-                std::vector<SlotImp::ptr> activeSlots;
+                std::vector<SlotImp::Ptr> activeSlots;
                 activeSlots.reserve(slots.size());
                 std::ranges::for_each(slots, [&activeSlots](Slots::value_type const& value) {
                     if (value.second->state() == Slot::State::Active)
@@ -644,7 +644,7 @@ public:
 
                 // build target vector
                 targets.reserve(activeSlots.size());
-                std::ranges::for_each(activeSlots, [&targets](SlotImp::ptr const& slot) {
+                std::ranges::for_each(activeSlots, [&targets](SlotImp::Ptr const& slot) {
                     targets.emplace_back(slot);
                 });
             }
@@ -685,7 +685,7 @@ public:
             // broadcast
             for (auto const& t : targets)
             {
-                SlotImp::ptr const& slot = t.slot();
+                SlotImp::Ptr const& slot = t.slot();
                 auto const& list = t.list();
                 beast::WrappedSink sink{journal.sink(), slot->prefix()};
                 beast::Journal const journal{sink};
@@ -722,7 +722,7 @@ public:
 
     // Validate and clean up the list that we received from the slot.
     void
-    preprocess(SlotImp::ptr const& slot, Endpoints& list)
+    preprocess(SlotImp::Ptr const& slot, Endpoints& list)
     {
         bool neighbor(false);
         for (auto iter = list.begin(); iter != list.end();)
@@ -786,7 +786,7 @@ public:
     }
 
     void
-    onEndpoints(SlotImp::ptr const& slot, Endpoints list)
+    onEndpoints(SlotImp::Ptr const& slot, Endpoints list)
     {
         beast::WrappedSink sink{journal.sink(), slot->prefix()};
         beast::Journal const journal{sink};
@@ -813,7 +813,7 @@ public:
             slot->state() == Slot::State::Active,
             "xrpl::peer_finder::Logic::onEndpoints : valid slot state");
 
-        clock_type::time_point const now(clock.now());
+        ClockType::time_point const now(clock.now());
 
         // Limit how often we accept new endpoints
         if (slot->whenAcceptEndpoints > now)
@@ -881,7 +881,7 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    remove(SlotImp::ptr const& slot)
+    remove(SlotImp::Ptr const& slot)
     {
         {
             auto const iter = slots.find(slot->remoteEndpoint());
@@ -929,7 +929,7 @@ public:
     }
 
     void
-    onClosed(SlotImp::ptr const& slot)
+    onClosed(SlotImp::Ptr const& slot)
     {
         std::scoped_lock const _(lock);
 
@@ -989,7 +989,7 @@ public:
     }
 
     void
-    onFailure(SlotImp::ptr const& slot)
+    onFailure(SlotImp::Ptr const& slot)
     {
         std::scoped_lock const _(lock);
 

@@ -653,14 +653,14 @@ private:
      * Pending ledger events indexed by ledger hash. Touched only inside
      * reconcile(), so it needs no synchronisation.
      */
-    hash_map<uint256, LedgerEvent> pending_;
+    HashMap<uint256, LedgerEvent> pending_;
 
     /**
      * Ledger hashes already counted into the agreement and missed totals.
      * Membership survives eviction from pending_, so a ledger reaches the
      * totals once. Holds at most kMaxTalliedEvents hashes.
      */
-    hash_set<uint256> tallied_;
+    HashSet<uint256> tallied_;
 
     /**
      * The hashes in tallied_ in the order they were counted. The front is

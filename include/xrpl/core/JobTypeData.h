@@ -18,7 +18,7 @@ private:
     LoadMonitor load_;
 
     /* Support for insight */
-    beast::insight::Collector::ptr collector_;
+    beast::insight::Collector::Ptr collector_;
 
 public:
     /**
@@ -82,7 +82,7 @@ public:
 
     JobTypeData(
         JobTypeInfo const& info,
-        beast::insight::Collector::ptr collector,
+        beast::insight::Collector::Ptr collector,
         Logs& logs) noexcept
         : load_(logs.journal("LoadMonitor")), collector_(std::move(collector)), info(info)
 
