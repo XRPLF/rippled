@@ -88,9 +88,7 @@ protected:
     // most of this file's tests assert instant-interest-recognition-specific expected values
     // for those fields. Tests that specifically exercise the amendment opt
     // it back in explicitly (e.g. `all_ | featureLendingProtocolV1_1`).
-    // featureLendingProtocolV1_2 is also excluded: it changes vault precision.
-    FeatureBitset const all_{
-        jtx::testableAmendments() - featureLendingProtocolV1_1 - featureLendingProtocolV1_2};
+    FeatureBitset const all_{jtx::testableAmendments() - featureLendingProtocolV1_1};
     std::string const iouCurrency_{"IOU"};
 
     struct BrokerParameters
@@ -348,7 +346,7 @@ protected:
                 {
                     auto const expectedDebt =
                         env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                            getVaultVersion(vaultSle) >= VaultVersion::CashBasis
+                            getVaultVersion(vaultSle) == VaultVersion::CashBasis
                         ? principalOutstanding
                         : principalOutstanding + interestOwed;
                     env.test.BEAST_EXPECT(brokerDebt == expectedDebt);
@@ -453,7 +451,7 @@ protected:
                             env.test.BEAST_EXPECT(
                                 vaultSle->at(sfLossUnrealized) ==
                                 (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                                         getVaultVersion(vaultSle) >= VaultVersion::CashBasis
+                                         getVaultVersion(vaultSle) == VaultVersion::CashBasis
                                      ? principalOutstanding
                                      : totalValue - managementFeeOutstanding));
                         }
@@ -668,7 +666,7 @@ protected:
                     vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable);
                 auto const unrealizedLoss = vaultSle->at(sfLossUnrealized) +
                     (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                             getVaultVersion(vaultSle) >= VaultVersion::CashBasis
+                             getVaultVersion(vaultSle) == VaultVersion::CashBasis
                          ? state.principalOutstanding
                          : state.totalValue - state.managementFeeOutstanding);
 

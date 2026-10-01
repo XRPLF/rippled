@@ -1675,6 +1675,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         Number const interestDue{75};
 
         auto const legacyVault = makeVaultSle();
+        auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis);
 
         {
             testcase(
@@ -1690,17 +1691,14 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         {
             testcase(
-                "loanOriginationDeltas dispatcher: CashBasis and FixedPrecision "
-                "Vaults pick cash-basis accounting");
+                "loanOriginationDeltas dispatcher: amendment enabled, LEVersion == "
+                "VaultVersion::CashBasis picks CashBasis");
             Env const env{*this};
-            for (auto const version : {VaultVersion::CashBasis, VaultVersion::FixedPrecision})
-            {
-                auto const deltas =
-                    loanOriginationDeltas(makeVaultSle(version), principalRequested, interestDue);
-                auto const expected = xrpl::cash_basis::loanOriginationDeltas(principalRequested);
-                BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
-                BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
-            }
+            auto const deltas =
+                loanOriginationDeltas(cashBasisVault, principalRequested, interestDue);
+            auto const expected = xrpl::cash_basis::loanOriginationDeltas(principalRequested);
+            BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
+            BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
         }
     }
 
@@ -1715,6 +1713,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         Number const interestDue{101};
 
         auto const legacyVault = makeVaultSle(std::nullopt, vaultMaximum, vaultTotal);
+        auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis, vaultMaximum, vaultTotal);
 
         {
             testcase(
@@ -1729,16 +1728,12 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         {
             testcase(
-                "loanOriginationExceedsVaultMaximum dispatcher: CashBasis and "
-                "FixedPrecision Vaults pick cash-basis accounting");
+                "loanOriginationExceedsVaultMaximum dispatcher: amendment enabled, LEVersion == "
+                "VaultVersion::CashBasis picks CashBasis");
             Env const env{*this};
-            for (auto const version : {VaultVersion::CashBasis, VaultVersion::FixedPrecision})
-            {
-                BEAST_EXPECT(
-                    loanOriginationExceedsVaultMaximum(
-                        makeVaultSle(version, vaultMaximum, vaultTotal), vaultTotal, interestDue) ==
-                    false);
-            }
+            BEAST_EXPECT(
+                loanOriginationExceedsVaultMaximum(cashBasisVault, vaultTotal, interestDue) ==
+                false);
         }
     }
 
@@ -1748,6 +1743,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         using namespace jtx;
 
         auto const legacyVault = makeVaultSle();
+        auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis);
 
         {
             testcase(
@@ -1762,16 +1758,13 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         {
             testcase(
-                "loanVaultExposure dispatcher: CashBasis and FixedPrecision "
-                "Vaults pick cash-basis accounting");
+                "loanVaultExposure dispatcher: amendment enabled, LEVersion == "
+                "VaultVersion::CashBasis "
+                "picks CashBasis");
             Env const env{*this};
             auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
-            for (auto const version : {VaultVersion::CashBasis, VaultVersion::FixedPrecision})
-            {
-                BEAST_EXPECT(
-                    loanVaultExposure(makeVaultSle(version), sle) ==
-                    xrpl::cash_basis::loanVaultExposure(sle));
-            }
+            BEAST_EXPECT(
+                loanVaultExposure(cashBasisVault, sle) == xrpl::cash_basis::loanVaultExposure(sle));
         }
     }
 
@@ -1787,6 +1780,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             .feePaid = Number{3}};
 
         auto const legacyVault = makeVaultSle();
+        auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis);
 
         {
             testcase(
@@ -1801,16 +1795,14 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         {
             testcase(
-                "loanPaymentDeltas dispatcher: CashBasis and FixedPrecision "
-                "Vaults pick cash-basis accounting");
+                "loanPaymentDeltas dispatcher: amendment enabled, LEVersion == "
+                "VaultVersion::CashBasis "
+                "picks CashBasis");
             Env const env{*this};
-            for (auto const version : {VaultVersion::CashBasis, VaultVersion::FixedPrecision})
-            {
-                auto const deltas = loanPaymentDeltas(makeVaultSle(version), parts);
-                auto const expected = xrpl::cash_basis::loanPaymentDeltas(parts);
-                BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
-                BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
-            }
+            auto const deltas = loanPaymentDeltas(cashBasisVault, parts);
+            auto const expected = xrpl::cash_basis::loanPaymentDeltas(parts);
+            BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
+            BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
         }
     }
 
