@@ -362,7 +362,7 @@ public:
     operator=(MetricsRegistry const&) = delete;
 
     /**
-     * Flush pending metrics and shut down the pipeline.
+     * Shut down the export pipeline, dropping values not yet exported.
      *
      * Stores `Phase::Stopped` first so `recording()` reads false on every
      * later record call, then destroys the SDK provider. meter_ is not

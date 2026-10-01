@@ -431,10 +431,10 @@ MetricsRegistry::stop()
     // macros read meter_, and none of them does so once phase_ is Stopped.
     //
     // SDK teardown order: Shutdown() stops the PeriodicExportingMetricReader
-    // thread (so no further gauge callbacks fire) and performs the final
-    // collect-and-export drain itself. The trailing ForceFlush() is a
-    // redundant safety net (a no-op once the reader is shut down), then
-    // reset() destroys the provider.
+    // thread, so no further gauge callbacks fire. It does not collect first
+    // (opentelemetry-cpp 1.28.0), so values recorded since the last export are
+    // never exported. The ForceFlush() after it collects nothing either: the
+    // reader is already shut down. Then reset() destroys the provider.
     //
     // provider_.reset() destroys MeterProvider -> MeterContext -> ViewRegistry
     // -> each View -> its shared_ptr<AggregationConfig>. Live SDK
