@@ -18,7 +18,7 @@ struct OwnerCounts
     std::uint32_t sponsoring = 0;
 
     OwnerCounts() = default;
-    OwnerCounts(SLE::const_ref sle)
+    OwnerCounts(SLE::ConstRef sle)
         : owner(sle->at(sfOwnerCount))
         , sponsored(sle->at(sfSponsoredOwnerCount))
         , sponsoring(sle->at(sfSponsoringOwnerCount))

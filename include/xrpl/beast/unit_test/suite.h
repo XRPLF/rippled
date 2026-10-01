@@ -643,12 +643,12 @@ Suite::run(Runner& r)
  * Library   Identifies the library.
  *
  * The declaration for the class implementing the test should be the same
- * as Class ## _test. For example, if Class is aged_ordered_container, the
+ * as Class ## _test. For example, if Class is AgedOrderedContainer, the
  * test class must be declared as:
  *
  * @code
  *
- * struct aged_ordered_container_test : beast::unit_test::suite
+ * struct AgedOrderedContainer_test : beast::unit_test::suite
  * {
  *     //...
  * };

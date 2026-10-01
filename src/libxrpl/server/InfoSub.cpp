@@ -49,7 +49,7 @@ safeUnsub(std::uint64_t seq, F&& f, beast::Journal j) noexcept
 // is free.
 template <typename T>
 [[nodiscard]] std::size_t
-countNew(hash_set<T> const& requested, hash_set<T> const& existing)
+countNew(HashSet<T> const& requested, HashSet<T> const& existing)
 {
     std::size_t fresh = 0;
     for (auto const& entry : requested)
@@ -192,8 +192,8 @@ InfoSub::totalSubscriptionCount() const
 
 bool
 InfoSub::tryReserveAccountSubscriptions(
-    hash_set<AccountID> const& proposedAccounts,
-    hash_set<AccountID> const& normalAccounts,
+    HashSet<AccountID> const& proposedAccounts,
+    HashSet<AccountID> const& normalAccounts,
     std::size_t cap)
 {
     // One lock hold covers the count, the check and the insert.
@@ -211,7 +211,7 @@ InfoSub::tryReserveAccountSubscriptions(
 }
 
 bool
-InfoSub::tryReserveMPTSubscriptions(hash_set<MPTID> const& mptIDs, std::size_t cap)
+InfoSub::tryReserveMPTSubscriptions(HashSet<MPTID> const& mptIDs, std::size_t cap)
 {
     // One lock hold covers the count, the check and the insert.
     std::scoped_lock const sl(lock_);
