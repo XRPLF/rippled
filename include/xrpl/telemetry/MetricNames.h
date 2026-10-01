@@ -350,8 +350,9 @@ inline constexpr char rotationCopyNodeRestoreTotal[] = "rotation_copy_node_resto
 inline constexpr char rotationState[] = "rotation_state";
 
 /**
- * Wall-clock seconds spent in one online-delete rotation phase. Labelled by
- * `stage`; see lval::rotation_phase. Recorded once per phase end.
+ * Seconds spent in one online-delete rotation phase, recorded once per phase
+ * end. Labelled by `stage`; see lval::rotation_phase. A health_wait inside a
+ * phase is recorded as its own stage and left out of that phase's time.
  */
 inline constexpr char rotationPhaseDurationSeconds[] = "rotation_phase_duration_seconds";
 

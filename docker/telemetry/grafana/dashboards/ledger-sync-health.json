@@ -5177,7 +5177,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*p95 wall-clock seconds spent in each online-delete rotation phase, broken down by `stage`. Recorded from `SHAMapStoreImp::RotationPhase`'s destructor at the end of every rotation phase.*\n\n###### What to look for:\n* `freshen.keys` p95 in seconds means the tree-node cache mutex was held across a `getKeys()` copy for that long \u2014 every SHAMap fetch during that window waited.\n* `copy` p95 approaching the rotation cadence means the state-map walk is no longer converging inside its own interval.\n\n###### Source:\n`SHAMapStoreImp.cpp` \u2014 `SHAMapStoreImp::run` and `RotationPhase`\n\n###### Keywords:\nRotation phase duration, online-delete, freshen.keys, rotation stall",
+      "description": "###### What this is:\n*p95 seconds spent in each online-delete rotation phase, broken down by `stage`. A health wait inside a phase counts under `health_wait`, not under that phase. Recorded from `SHAMapStoreImp::RotationPhase`'s destructor at the end of every rotation phase.*\n\n###### What to look for:\n* `freshen.keys` p95 in seconds means a cache mutex (tree-node or transaction cache) was held across a `getKeys()` copy for up to that long. For the tree-node cache, every SHAMap fetch during that window waited.\n* `copy` p95 approaching the rotation cadence means the state-map walk is no longer converging inside its own interval.\n\n###### Source:\n`SHAMapStoreImp.cpp` \u2014 `SHAMapStoreImp::run`; `SHAMapStoreImp.h` \u2014 `SHAMapStoreImp::RotationPhase`\n\n###### Keywords:\nRotation phase duration, online-delete, freshen.keys, rotation stall",
       "fieldConfig": {
         "defaults": {
           "color": {

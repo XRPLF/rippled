@@ -209,6 +209,10 @@ private:
      * One rotation phase: a child span of nodestore.rotate for its lifetime
      * and one rotation_phase_duration_seconds record when it ends. Lives on
      * the SHAMapStore thread only. Not movable: hold it in a scope.
+     *
+     * The record leaves out time spent in a phase opened inside this one (a
+     * health_wait), which is recorded under its own stage, so a wait is
+     * counted once. The span still covers the whole phase.
      */
     class RotationPhase
     {
@@ -220,22 +224,24 @@ private:
             char const* stage)
             : owner_(owner)
             , stage_(stage)
+            , enclosing_(owner.openPhase_)
             , span_(telemetry::TraceCategory::Ledger, telemetry::nodestore_span::rotateFull, phase)
         {
+            owner_.openPhase_ = this;
         }
 
         ~RotationPhase()
         {
-            // [[maybe_unused]] so a -DXRPL_ENABLE_TELEMETRY=0 build (macro
-            // expands to `do {} while (false)`) keeps compiling under -Werror.
-            [[maybe_unused]] auto const seconds =
-                std::chrono::duration<double>(std::chrono::steady_clock::now() - start_).count();
+            auto const elapsed = std::chrono::steady_clock::now() - start_;
             XRPL_METRIC_HISTOGRAM_RECORD_LABELED(
                 owner_.app_,
                 telemetry::metric::rotationPhaseDurationSeconds,
-                "Wall-clock seconds spent in one online-delete rotation phase",
-                seconds,
+                "Seconds spent in one online-delete rotation phase, less nested waits",
+                std::chrono::duration<double>(elapsed - nested_).count(),
                 {{telemetry::label::stage, std::string(stage_)}});
+            if (enclosing_ != nullptr)
+                enclosing_->nested_ += elapsed;
+            owner_.openPhase_ = enclosing_;
         }
 
         RotationPhase(RotationPhase const&) = delete;
@@ -253,10 +259,20 @@ private:
         }
 
     private:
-        // Read only inside the metric macro in the destructor, so a
-        // -DXRPL_ENABLE_TELEMETRY=0 build sees no use at all.
-        [[maybe_unused]] SHAMapStoreImp& owner_;
+        SHAMapStoreImp& owner_;
+        /**
+         * Stage label for the duration record. Read only inside the metric
+         * macro, so a telemetry-off build never reads it.
+         */
         [[maybe_unused]] char const* stage_;
+        /**
+         * The phase this one runs inside, or null.
+         */
+        RotationPhase* const enclosing_;
+        /**
+         * Time spent in phases opened inside this one.
+         */
+        std::chrono::steady_clock::duration nested_{};
         std::chrono::steady_clock::time_point start_ = std::chrono::steady_clock::now();
         telemetry::ScopedSpanGuard span_;
     };
@@ -264,6 +280,12 @@ private:
     // True while run() is inside its rotation block. Read and written on the
     // SHAMapStore thread only, so it needs no lock.
     bool rotating_ = false;
+
+    /**
+     * The innermost open RotationPhase, or null. SHAMapStore thread only, so
+     * it needs no lock.
+     */
+    RotationPhase* openPhase_ = nullptr;
 
     template <class CacheInstance>
     bool
