@@ -317,12 +317,12 @@ checkConsensus(
 template <class Adaptor>
 class Consensus
 {
-    using Ledger_t = Adaptor::Ledger_t;
-    using TxSet_t = Adaptor::TxSet_t;
-    using NodeID_t = Adaptor::NodeID_t;
-    using Tx_t = TxSet_t::Tx;
-    using PeerPosition_t = Adaptor::PeerPosition_t;
-    using Proposal_t = ConsensusProposal<NodeID_t, typename Ledger_t::ID, typename TxSet_t::ID>;
+    using LedgerT = Adaptor::LedgerT;
+    using TxSetT = Adaptor::TxSetT;
+    using NodeIDT = Adaptor::NodeIDT;
+    using TxT = TxSetT::Tx;
+    using PeerPositionT = Adaptor::PeerPositionT;
+    using ProposalT = ConsensusProposal<NodeIDT, typename LedgerT::ID, typename TxSetT::ID>;
 
     using Result = ConsensusResult<Adaptor>;
 
@@ -354,7 +354,7 @@ public:
     /**
      * Clock type for measuring time within the consensus code
      */
-    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
+    using ClockType = beast::AbstractClock<std::chrono::steady_clock>;
 
     Consensus(Consensus&&) noexcept = default;
 
@@ -365,7 +365,7 @@ public:
      * @param adaptor The instance of the adaptor class
      * @param j The journal to log debug output
      */
-    Consensus(clock_type const& clock, Adaptor& adaptor, beast::Journal j);
+    Consensus(ClockType const& clock, Adaptor& adaptor, beast::Journal j);
 
     /**
      * Kick-off the next round of consensus.
@@ -386,9 +386,9 @@ public:
     void
     startRound(
         NetClock::time_point const& now,
-        Ledger_t::ID const& prevLedgerID,
-        Ledger_t prevLedger,
-        hash_set<NodeID_t> const& nowUntrusted,
+        LedgerT::ID const& prevLedgerID,
+        LedgerT prevLedger,
+        HashSet<NodeIDT> const& nowUntrusted,
         bool proposing,
         std::unique_ptr<std::stringstream> const& clog = {});
 
@@ -400,7 +400,7 @@ public:
      * @return Whether we should do delayed relay of this proposal.
      */
     bool
-    peerProposal(NetClock::time_point const& now, PeerPosition_t const& newProposal);
+    peerProposal(NetClock::time_point const& now, PeerPositionT const& newProposal);
 
     /**
      * Call periodically to drive consensus forward.
@@ -420,7 +420,7 @@ public:
      * @param txSet the transaction set
      */
     void
-    gotTxSet(NetClock::time_point const& now, TxSet_t const& txSet);
+    gotTxSet(NetClock::time_point const& now, TxSetT const& txSet);
 
     /**
      * Simulate the consensus process without any network traffic.
@@ -452,7 +452,7 @@ public:
      *
      * @return ID of previous ledger
      */
-    Ledger_t::ID
+    LedgerT::ID
     prevLedgerID() const
     {
         return prevLedgerID_;
@@ -494,15 +494,15 @@ private:
     void
     startRoundInternal(
         NetClock::time_point const& now,
-        Ledger_t::ID const& prevLedgerID,
-        Ledger_t const& prevLedger,
+        LedgerT::ID const& prevLedgerID,
+        LedgerT const& prevLedger,
         ConsensusMode mode,
         std::unique_ptr<std::stringstream> const& clog,
         StartRoundReason reason = StartRoundReason::Initial);
 
     // Change our view of the previous ledger
     void
-    handleWrongLedger(Ledger_t::ID const& lgrId, std::unique_ptr<std::stringstream> const& clog);
+    handleWrongLedger(LedgerT::ID const& lgrId, std::unique_ptr<std::stringstream> const& clog);
 
     /**
      * Check if our previous ledger matches the network's.
@@ -524,7 +524,7 @@ private:
      * Handle a replayed or a new peer proposal.
      */
     bool
-    peerProposalInternal(NetClock::time_point const& now, PeerPosition_t const& newProposal);
+    peerProposalInternal(NetClock::time_point const& now, PeerPositionT const& newProposal);
 
     /**
      * Handle pre-close phase.
@@ -587,12 +587,12 @@ private:
 
     // Create disputes between our position and the provided one.
     void
-    createDisputes(TxSet_t const& o, std::unique_ptr<std::stringstream> const& clog = {});
+    createDisputes(TxSetT const& o, std::unique_ptr<std::stringstream> const& clog = {});
 
     // Update our disputes given that this node has adopted a new position.
     // Will call createDisputes as needed.
     void
-    updateDisputes(NodeID_t const& node, TxSet_t const& other);
+    updateDisputes(NodeIDT const& node, TxSetT const& other);
 
     // Revoke our outstanding proposal, if any, and cease proposing
     // until this round ends.
@@ -611,7 +611,7 @@ private:
     bool firstRound_ = true;
     bool haveCloseTimeConsensus_ = false;
 
-    clock_type const& clock_;
+    ClockType const& clock_;
 
     // How long the consensus convergence has taken, expressed as
     // a percentage of the time that we expected it to take.
@@ -639,12 +639,12 @@ private:
     // Non-peer (self) consensus data
 
     // Last validated ledger ID provided to consensus
-    Ledger_t::ID prevLedgerID_;
+    LedgerT::ID prevLedgerID_;
     // Last validated ledger seen by consensus
-    Ledger_t previousLedger_;
+    LedgerT previousLedger_;
 
     // Transaction Sets, indexed by hash of transaction tree
-    hash_map<typename TxSet_t::ID, TxSet_t const> acquired_;
+    HashMap<typename TxSetT::ID, TxSetT const> acquired_;
 
     std::optional<Result> result_;
     ConsensusCloseTimes rawCloseTimes_;
@@ -660,17 +660,17 @@ private:
     // Peer related consensus data
 
     // Peer proposed positions for the current round
-    hash_map<NodeID_t, PeerPosition_t> currPeerPositions_;
+    HashMap<NodeIDT, PeerPositionT> currPeerPositions_;
 
     // Recently received peer positions, available when transitioning between
     // ledgers or rounds
-    hash_map<NodeID_t, std::deque<PeerPosition_t>> recentPeerPositions_;
+    HashMap<NodeIDT, std::deque<PeerPositionT>> recentPeerPositions_;
 
     // The number of proposers who participated in the last consensus round
     std::size_t prevProposers_ = 0;
 
     // nodes that have bowed out of this consensus process
-    hash_set<NodeID_t> deadNodes_;
+    HashSet<NodeIDT> deadNodes_;
 
     /**
      * Span for the establish phase of consensus.
@@ -700,7 +700,7 @@ private:
      * @param prevLedger  The prior ledger, read before previousLedger_ is set.
      */
     void
-    annotateOpenStart(StartRoundReason reason, Ledger_t const& prevLedger);
+    annotateOpenStart(StartRoundReason reason, LedgerT const& prevLedger);
 
     /**
      * Record what ended the open phase.
@@ -738,7 +738,7 @@ private:
 };
 
 template <class Adaptor>
-Consensus<Adaptor>::Consensus(clock_type const& clock, Adaptor& adaptor, beast::Journal journal)
+Consensus<Adaptor>::Consensus(ClockType const& clock, Adaptor& adaptor, beast::Journal journal)
     : adaptor_(adaptor), clock_(clock), j_{journal}
 {
     JLOG(j_.debug()) << "Creating consensus object";
@@ -748,9 +748,9 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::startRound(
     NetClock::time_point const& now,
-    Ledger_t::ID const& prevLedgerID,
-    Ledger_t prevLedger,
-    hash_set<NodeID_t> const& nowUntrusted,
+    LedgerT::ID const& prevLedgerID,
+    LedgerT prevLedger,
+    HashSet<NodeIDT> const& nowUntrusted,
     bool proposing,
     std::unique_ptr<std::stringstream> const& clog)
 {
@@ -766,7 +766,7 @@ Consensus<Adaptor>::startRound(
         prevCloseTime_ = rawCloseTimes_.self;
     }
 
-    for (NodeID_t const& n : nowUntrusted)
+    for (NodeIDT const& n : nowUntrusted)
         recentPeerPositions_.erase(n);
 
     ConsensusMode startMode = proposing ? ConsensusMode::Proposing : ConsensusMode::Observing;
@@ -793,8 +793,8 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::startRoundInternal(
     NetClock::time_point const& now,
-    Ledger_t::ID const& prevLedgerID,
-    Ledger_t const& prevLedger,
+    LedgerT::ID const& prevLedgerID,
+    LedgerT const& prevLedger,
     ConsensusMode mode,
     std::unique_ptr<std::stringstream> const& clog,
     StartRoundReason const reason)
@@ -860,7 +860,7 @@ Consensus<Adaptor>::startRoundInternal(
     closeResolution_ = getNextLedgerTimeResolution(
         previousLedger_.closeTimeResolution(),
         previousLedger_.closeAgree(),
-        previousLedger_.seq() + typename Ledger_t::Seq{1});
+        previousLedger_.seq() + typename LedgerT::Seq{1});
 
     playbackProposals();
     CLOG(clog) << "number of peer proposals,previous proposers: " << currPeerPositions_.size()
@@ -887,7 +887,7 @@ Consensus<Adaptor>::startRoundInternal(
 
 template <class Adaptor>
 bool
-Consensus<Adaptor>::peerProposal(NetClock::time_point const& now, PeerPosition_t const& newPeerPos)
+Consensus<Adaptor>::peerProposal(NetClock::time_point const& now, PeerPositionT const& newPeerPos)
 {
     JLOG(j_.debug()) << "PROPOSAL " << newPeerPos.render();
     auto const& peerID = newPeerPos.proposal().nodeID();
@@ -908,7 +908,7 @@ template <class Adaptor>
 bool
 Consensus<Adaptor>::peerProposalInternal(
     NetClock::time_point const& now,
-    PeerPosition_t const& newPeerPos)
+    PeerPositionT const& newPeerPos)
 {
     // Nothing to do for now if we are currently working on a ledger
     if (phase_ == ConsensusPhase::Accepted)
@@ -1045,7 +1045,7 @@ Consensus<Adaptor>::timerEntry(
 
 template <class Adaptor>
 void
-Consensus<Adaptor>::gotTxSet(NetClock::time_point const& now, TxSet_t const& txSet)
+Consensus<Adaptor>::gotTxSet(NetClock::time_point const& now, TxSetT const& txSet)
 {
     // Nothing to do if we've finished work on a ledger
     if (phase_ == ConsensusPhase::Accepted)
@@ -1212,7 +1212,7 @@ Consensus<Adaptor>::getJson(bool full) const
 template <class Adaptor>
 void
 Consensus<Adaptor>::handleWrongLedger(
-    Ledger_t::ID const& lgrId,
+    LedgerT::ID const& lgrId,
     std::unique_ptr<std::stringstream> const& clog)
 {
     CLOG(clog) << "handleWrongLedger. ";
@@ -1713,11 +1713,11 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
         auto it = currPeerPositions_.begin();
         while (it != currPeerPositions_.end())
         {
-            Proposal_t const& peerProp = it->second.proposal();
+            ProposalT const& peerProp = it->second.proposal();
             if (peerProp.isStale(peerCutoff))
             {
                 // peer's proposal is stale, so remove it
-                NodeID_t const& peerID = peerProp.nodeID();
+                NodeIDT const& peerID = peerProp.nodeID();
                 JLOG(j_.warn()) << "Removing stale proposal from " << peerID;
                 for (auto& dt : result_->disputes)
                     dt.second.unVote(peerID);
@@ -1733,11 +1733,11 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
     }
 
     // This will stay unseated unless there are any changes
-    std::optional<TxSet_t> ourNewSet;
+    std::optional<TxSetT> ourNewSet;
 
     // Update votes on disputed transactions
     {
-        std::optional<typename TxSet_t::MutableTxSet> mutableSet;
+        std::optional<typename TxSetT::MutableTxSet> mutableSet;
         for (auto& [txId, dispute] : result_->disputes)
         {
             // Because the threshold for inclusion increases,
@@ -1891,7 +1891,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
 
             for (auto const& [nodeId, peerPos] : currPeerPositions_)
             {
-                Proposal_t const& p = peerPos.proposal();
+                ProposalT const& p = peerPos.proposal();
                 if (p.position() == newID)
                     updateDisputes(nodeId, result_->txns);
             }
@@ -1924,7 +1924,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     // Count number of agreements/disagreements with our position
     for (auto const& [nodeId, peerPos] : currPeerPositions_)
     {
-        Proposal_t const& peerProp = peerPos.proposal();
+        ProposalT const& peerProp = peerPos.proposal();
         if (peerProp.position() == ourPosition)
         {
             ++agree;
@@ -2071,7 +2071,7 @@ Consensus<Adaptor>::leaveConsensus(std::unique_ptr<std::stringstream> const& clo
 
 template <class Adaptor>
 void
-Consensus<Adaptor>::createDisputes(TxSet_t const& o, std::unique_ptr<std::stringstream> const& clog)
+Consensus<Adaptor>::createDisputes(TxSetT const& o, std::unique_ptr<std::stringstream> const& clog)
 {
     // Cannot create disputes without our stance
     XRPL_ASSERT(result_, "xrpl::Consensus::createDisputes : result is set");
@@ -2107,7 +2107,7 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o, std::unique_ptr<std::string
                 (!inThisSet && !result_->txns.find(txId) && o.find(txId)),
             "xrpl::Consensus::createDisputes : has disputed transactions");
 
-        Tx_t const tx = inThisSet ? result_->txns.find(txId) : o.find(txId);
+        TxT const tx = inThisSet ? result_->txns.find(txId) : o.find(txId);
         auto txID = tx.id();
 
         if (result_->disputes.find(txID) != result_->disputes.end())
@@ -2115,7 +2115,7 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o, std::unique_ptr<std::string
 
         JLOG(j_.debug()) << "Transaction " << txID << " is disputed";
 
-        typename Result::Dispute_t dtx{
+        typename Result::DisputeT dtx{
             tx,
             result_->txns.exists(txID),
             std::max(prevProposers_, currPeerPositions_.size()),
@@ -2124,7 +2124,7 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o, std::unique_ptr<std::string
         // Update all of the available peer's votes on the disputed transaction
         for (auto const& [nodeId, peerPos] : currPeerPositions_)
         {
-            Proposal_t const& peerProp = peerPos.proposal();
+            ProposalT const& peerProp = peerPos.proposal();
             auto const cit = acquired_.find(peerProp.position());
             if (cit != acquired_.end() && dtx.setVote(nodeId, cit->second.exists(txID)))
                 peerUnchangedCounter_ = 0;
@@ -2140,7 +2140,7 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o, std::unique_ptr<std::string
 
 template <class Adaptor>
 void
-Consensus<Adaptor>::updateDisputes(NodeID_t const& node, TxSet_t const& other)
+Consensus<Adaptor>::updateDisputes(NodeIDT const& node, TxSetT const& other)
 {
     // Cannot updateDisputes without our stance
     XRPL_ASSERT(result_, "xrpl::Consensus::updateDisputes : result is set");
@@ -2169,7 +2169,7 @@ Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
 
 template <class Adaptor>
 void
-Consensus<Adaptor>::annotateOpenStart(StartRoundReason const reason, Ledger_t const& prevLedger)
+Consensus<Adaptor>::annotateOpenStart(StartRoundReason const reason, LedgerT const& prevLedger)
 {
     if (!openSpan_ || !*openSpan_)
         return;
