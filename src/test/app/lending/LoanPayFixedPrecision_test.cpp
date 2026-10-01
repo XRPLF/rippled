@@ -1438,6 +1438,89 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         BEAST_EXPECT(!env.le(fixture.vaultKeylet));
     }
 
+    // Rejects origination on a Vault that is already coarsened (its stored
+    // scale differs from its base scale), independent of this loan's own
+    // interest. This exercises the "already coarsened" guard specifically:
+    // the loan requested here carries zero interest, so the Open-zone
+    // capacity check would pass trivially, and only the coarsened-vault
+    // check can be the reason for the rejection.
+    void
+    testOriginationRejectedOnAlreadyCoarsenedVault()
+    {
+        using namespace test::jtx;
+        using namespace loan;
+
+        testcase("LoanSet rejects origination on an already-coarsened FixedPrecision vault");
+
+        Env env(*this, features());
+        auto const [issuer, owner, depositor, asset] =
+            setupIou(env, {.depositorTrust = 30'000'000, .depositorFunds = 10'000'000});
+
+        auto const fixture = setupLendingVault(
+            env,
+            owner,
+            depositor,
+            asset,
+            Number{899'999},
+            std::chrono::seconds{473'040'000},
+            std::uint8_t{10});
+
+        // Originate one loan with the maximum late-interest rate, then let it
+        // go overdue long enough that a late payment coarsens the Vault
+        // (pushes getVaultScale() away from getVaultBaseScale()).
+        std::uint32_t const gracePeriod = 60;
+        auto const coarseningLoanKeylet =
+            keylet::loan(fixture.brokerKeylet.key, SeqProxy::rawSequence(1));
+        env(set(depositor, fixture.brokerKeylet.key, Number{700'000}),
+            kInterestRate(TenthBips32(0)),
+            kLateInterestRate(lending::kMaxLateInterestRate),
+            kGracePeriod(gracePeriod),
+            kPaymentInterval(24 * 60 * 60),
+            kPaymentTotal(5),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const loanSle = env.le(coarseningLoanKeylet);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        std::uint32_t const dueDate = loanSle->at(sfNextPaymentDueDate);
+
+        env.close(
+            NetClock::time_point{NetClock::duration{dueDate + gracePeriod}} +
+            std::chrono::seconds{800 * 24 * 60 * 60});
+
+        env(pay(depositor, coarseningLoanKeylet.key, asset(7'000'000).value(), tfLoanLatePayment));
+        env.close();
+
+        auto const vaultSle = env.le(fixture.vaultKeylet);
+        if (!BEAST_EXPECT(vaultSle))
+            return;
+        // The precondition for this test: the Vault is now coarsened.
+        BEAST_EXPECT(getVaultScale(vaultSle) != getVaultBaseScale(vaultSle));
+
+        // Zero interest: the Open-zone capacity check alone would pass. Only
+        // the "already coarsened" check can produce the rejection.
+        env(set(depositor, fixture.brokerKeylet.key, Number{1}),
+            kInterestRate(TenthBips32(0)),
+            kGracePeriod(gracePeriod),
+            kPaymentInterval(24 * 60 * 60),
+            kPaymentTotal(1),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2),
+            Ter(tecLIMIT_EXCEEDED));
+        env.close();
+
+        checkVaultLoanSums(env, fixture, {coarseningLoanKeylet}, "already-coarsened rejection");
+    }
+
+    // The next tests try to originate a loan whose interest would coarsen a
+    // FixedPrecision vault. The LoanSet Open-zone guard rejects it before that
+    // happens, so each asserts the rejection.
+
+    // A 100%-interest, single one-year-payment loan of principal would
+    // recognize about its principal again as interest, which the Open-zone guard
+    // rejects: the vault stays at its base scale with no debt.
 public:
     void
     run() override
@@ -1464,6 +1547,7 @@ public:
         testFinalWithdrawalRoundingCanExceedAvailable();
         testMinCoverBrokerLoanPayment();
         testVaultDeleteAllowedAfterLoanPayoff();
+        testOriginationRejectedOnAlreadyCoarsenedVault();
     }
 };
 
