@@ -15,6 +15,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
+#include <test/jtx/proposal.h>
 #include <test/jtx/sponsor.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/token.h>
@@ -327,6 +328,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         FieldType const typeID,
         std::string const& expectedError,
         bool required = true,
+        std::optional<std::string> typeNameOverride = std::nullopt,
         std::source_location const location = std::source_location::current())
     {
         forAllApiVersions([&, this](unsigned apiVersion) {
@@ -349,8 +351,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 correctRequest[fieldName] = fieldValue;
                 json::Value const jrr = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
-                auto const expectedErrMsg =
-                    rpc::expectedFieldMessage(fieldName, getTypeName(typeID));
+                auto const expectedErrMsg = rpc::expectedFieldMessage(
+                    fieldName, typeNameOverride.value_or(getTypeName(typeID)));
                 checkErrorValue(jrr, expectedError, expectedErrMsg, location);
             };
 
@@ -426,6 +428,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             FieldType::HashField,
             "malformedRequest",
             true,
+            std::nullopt,
             location);
     }
 
@@ -441,6 +444,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         test::jtx::Env& env,
         json::StaticString const& parentField,
         std::vector<Subfield> const& subfields,
+        std::optional<std::string> parentTypeNameOverride = std::nullopt,
         std::source_location const location = std::source_location::current())
     {
         testMalformedField(
@@ -450,6 +454,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             FieldType::HashOrObjectField,
             "malformedRequest",
             true,
+            parentTypeNameOverride,
             location);
 
         json::Value correctOutput;
@@ -670,21 +675,21 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     auto const sle = std::make_shared<SLE>(keylet);
 
                     // Create Amendments vector (enabled amendments)
-                    std::vector<uint256> enabledAmendments;
+                    std::vector<UInt256> enabledAmendments;
                     enabledAmendments.push_back(
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "42426C4D4F1009EE67080A9B7965B44656D7"
                             "714D104A72F9B4369F97ABF044EE"));
                     enabledAmendments.push_back(
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "4C97EBA926031A7CF7D7B36FDE3ED66DDA54"
                             "21192D63DE53FFB46E43B9DC8373"));
                     enabledAmendments.push_back(
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "03BDC0099C4E14163ADA272C1B6F6FABB448"
                             "CC3E51F522F978041E4B57D9158C"));
                     enabledAmendments.push_back(
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "35291ADD2D79EB6991343BDA0912269C817D"
                             "0F094B02226C1C14AD2858962ED4"));
                     sle->setFieldV256(sfAmendments, STVector256(enabledAmendments));
@@ -695,7 +700,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     auto majority1 = STObject::makeInnerObject(sfMajority);
                     majority1.setFieldH256(
                         sfAmendment,
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "7BB62DC13EC72B775091E9C71BF8CF97E122"
                             "647693B50C5E87A80DFD6FCFAC50"));
                     majority1.setFieldU32(sfCloseTime, 779561310);
@@ -704,7 +709,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     auto majority2 = STObject::makeInnerObject(sfMajority);
                     majority2.setFieldH256(
                         sfAmendment,
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "755C971C29971C9F20C6F080F2ED96F87884"
                             "E40AD19554A5EBECDCEC8A1F77FE"));
                     majority2.setFieldU32(sfCloseTime, 779561310);
@@ -1525,10 +1530,10 @@ class LedgerEntry_test : public beast::unit_test::Suite
         Account const buyer{"buyer"};
         env.fund(XRP(1000), issuer, buyer);
 
-        uint256 const nftokenID0 = token::getNextID(env, issuer, 0, tfTransferable);
+        UInt256 const nftokenID0 = token::getNextID(env, issuer, 0, tfTransferable);
         env(token::mint(issuer, 0), Txflags(tfTransferable));
         env.close();
-        uint256 const offerID =
+        UInt256 const offerID =
             keylet::nftokenOffer(issuer, SeqProxy::rawSequence(env.seq(issuer))).key;
         env(token::createOffer(issuer, nftokenID0, drops(1)),
             token::Destination(buyer),
@@ -1608,7 +1613,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     sle->setFieldArray(sfDisabledValidators, disabledValidators);
                     sle->setFieldH256(
                         sfPreviousTxnID,
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "8D47FFE664BE6C335108DF689537625855A6"
                             "A95160CC6D351341B9"
                             "2624D9C5E3"));
@@ -1713,7 +1718,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         std::string const ledgerHash{to_string(env.closed()->header().hash)};
 
-        uint256 const payChanIndex{
+        UInt256 const payChanIndex{
             keylet::payChannel(alice, env.master, SeqProxy::rawSequence(env.seq(alice) - 1)).key};
         {
             // Request the payment channel using its index.
@@ -2024,6 +2029,87 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     {.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
                     {.fieldName = jss::ticket_seq, .malformedErrorMsg = "malformedRequest"},
                 });
+        }
+    }
+
+    void
+    testTransactionProposal()
+    {
+        testcase("TransactionProposal");
+        using namespace test::jtx;
+        using namespace std::literals::chrono_literals;
+
+        Env env{*this};
+
+        Account const target{"target"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), target, bob);
+        env.close();
+
+        // A ticket for the proposal to be built against, and the proposal
+        // itself (an unsigned Payment payload).
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+        env(proposal::create(
+                target,
+                proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq),
+                proposal::expiration(env, 100s)),
+            proposal::verify::create());
+        env.close();
+
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
+        auto const proposalIndex = to_string(keylet::txProposal(target.id(), ticketSeq).key);
+
+        {
+            // Request by target account and ticket sequence.
+            json::Value jvParams;
+            jvParams[jss::transaction_proposal][jss::account] = target.human();
+            jvParams[jss::transaction_proposal][jss::ticket_seq] = ticketSeq;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::TransactionProposal);
+            BEAST_EXPECT(proposalIndex == jrr[jss::node][jss::index].asString());
+        }
+        {
+            // Request by object index (hex string form).
+            json::Value jvParams;
+            jvParams[jss::transaction_proposal] = proposalIndex;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::TransactionProposal);
+            BEAST_EXPECT(proposalIndex == jrr[jss::node][jss::index].asString());
+        }
+        {
+            // No proposal exists against this (account, ticket_seq) pair.
+            json::Value jvParams;
+            jvParams[jss::transaction_proposal][jss::account] = target.human();
+            jvParams[jss::transaction_proposal][jss::ticket_seq] = ticketSeq + 1;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+        }
+        {
+            // Lookup by an index of the wrong entry type.
+            json::Value jvParams;
+            jvParams[jss::transaction_proposal] = to_string(keylet::account(target).key);
+            jvParams[jss::ledger_hash] = ledgerHash;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "unexpectedLedgerType", "Unexpected ledger type.");
+        }
+
+        {
+            // Malformed cases (missing / wrong-type subfields, and a
+            // non-object non-hex-string parent value). Once the parent has
+            // been shown not to be an object, parseTransactionProposal names
+            // "hex string" — not "hex string or object" — as the form still
+            // on the table.
+            runLedgerEntryTest(
+                env,
+                jss::transaction_proposal,
+                {
+                    {.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
+                    {.fieldName = jss::ticket_seq, .malformedErrorMsg = "malformedRequest"},
+                },
+                "hex string");
         }
     }
 
@@ -2403,7 +2489,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value params;
 
                 // "field":[incorrect index hash]
-                auto const badKey = strHex(expectedKey.key + uint256{1});
+                auto const badKey = strHex(expectedKey.key + UInt256{1});
                 params[jss::ledger_index] = jss::validated;
                 params[field] = badKey;
                 auto const jv = env.rpc("json", "ledger_entry", to_string(params));
@@ -2621,7 +2707,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 // "hashes":[incorrect index hash]
                 {
                     json::Value params;
-                    auto const badKey = strHex(expectedKey.key + uint256{1});
+                    auto const badKey = strHex(expectedKey.key + UInt256{1});
                     params[jss::ledger_index] = jss::validated;
                     params[jss::hashes] = badKey;
                     auto const jv = env.rpc("json", "ledger_entry", to_string(params));
@@ -2747,6 +2833,7 @@ public:
         testSignerList();
         testSponsorship();
         testTicket();
+        testTransactionProposal();
         testDID();
         testInvalidOracleLedgerEntry();
         testOracleLedgerEntry();
