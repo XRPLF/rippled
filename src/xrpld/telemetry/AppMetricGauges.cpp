@@ -1767,18 +1767,23 @@ AppMetricGauges::registerPeerLedgerSupplyGauge()
                         ->Observe(value, {{label::metric, field}});
                 };
 
-                // One pass over the peers, so all five series describe the
+                // One read of the peers, so all six series describe the
                 // same peer set at the same instant.
                 auto const supply = app.getOverlay().getPeerLedgerSupply(
                     app.getLedgerMaster().getValidLedgerIndex());
 
                 // The denominator. Zero serving out of zero reporting is
-                // silence; zero out of many is a real supply gap.
+                // silence.
                 observe(lval::peer_supply::peersReporting, supply.peersReporting);
+
+                // Zero means no peer holds anything newer: normal at the tip.
+                observe(lval::peer_supply::peersAhead, supply.peersAhead);
                 observe(lval::peer_supply::peersServingValidated, supply.peersServingValidated);
 
-                // The verdict: zero here while peers_reporting is non-zero
-                // means waiting cannot finish the sync.
+                // Zero with peers ahead means none of them offers the ledger
+                // after ours. Zero with none ahead means no peer has anything
+                // newer: normal at the tip, a stuck peer set if the validated
+                // ledger keeps ageing.
                 observe(lval::peer_supply::peersServingNext, supply.peersServingNext);
 
                 // The window the peer set covers, so an operator can tell a

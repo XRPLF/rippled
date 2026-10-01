@@ -760,18 +760,24 @@ private:
     /**
      * Register the `peer_ledger_supply` gauge.
      *
-     * Five series under the `metric` attribute, from one
+     * Six series under the `metric` attribute, from one
      * Overlay::getPeerLedgerSupply() pass over the active peers:
      *
      *   `peers_reporting` — peers that have advertised a ledger range at all.
      *     The denominator that makes the rest readable.
+     *   `peers_ahead` — peers whose range ends above this node's validated
+     *     sequence. Zero means no peer holds anything newer, which is the
+     *     normal reading at the tip.
      *   `peers_serving_validated` — peers whose range covers this node's
      *     validated sequence.
-     *   `peers_serving_next` — **the signal this gauge exists for.** Peers
-     *     whose range covers validated + 1, the next ledger this node must
-     *     acquire. Zero here with a non-zero `peers_reporting` means no
-     *     connected peer holds what this node needs, so no amount of waiting
-     *     will finish the sync; the peer set has to change.
+     *   `peers_serving_next` — peers whose range covers the needed ledger:
+     *     validated + 1, or on a node with no validated ledger yet the newest
+     *     one any peer reports, since that is what a fresh node fetches. Read
+     *     it with `peers_ahead`. Zero with peers ahead means none of them
+     *     offers the ledger after this node's: it still catches up by fetching
+     *     the newest ledger by hash, but cannot fill the ledgers in between.
+     *     Zero with none ahead means no peer has anything newer: normal at the
+     *     tip, a stuck peer set if the validated ledger keeps ageing.
      *   `supply_min_seq` / `supply_max_seq` — the sequence window the peer set
      *     covers, so an operator can see whether the node is asking for
      *     history nobody kept or for a tip nobody has reached.

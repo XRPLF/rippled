@@ -18,12 +18,15 @@
 
 #include <xrpl.pb.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <set>
+#include <span>
 #include <vector>
 
 namespace boost::asio::ssl {
@@ -33,19 +36,36 @@ class context;
 namespace xrpl {
 
 /**
- * How much of the ledger range this node needs its peer set can serve.
+ * How much of what this node needs next its peer set can serve.
  *
- * Aggregated from the per-peer ranges advertised in mtSTATUS_CHANGE. The
- * distinction this exists to draw: a node that is behind because no connected
- * peer holds the sequence it wants is a supply problem to be fixed by changing
- * the peer set, while a node whose peers all hold that sequence is a
- * throughput problem. Without the aggregate the two look identical.
+ * @code
+ *   PeerImp::ledgerRange() --> tallyPeerLedgerSupply() --> PeerLedgerSupply
+ *   (one range per peer)       (this node's validated seq)  (counts, window)
+ * @endcode
+ *
+ * The needed ledger is validated + 1. A node with no validated ledger yet
+ * fetches the network's newest ledger instead, so for it the needed ledger is
+ * the highest sequence any peer reports.
+ *
+ * Zero peers serving the needed ledger means one of two things, and
+ * `peersAhead` tells them apart. With no peer ahead, nothing newer exists in
+ * the peer set, which is normal at the tip. With peers ahead, none of them
+ * offers the ledger after this node's: it still catches up by fetching the
+ * newest ledger by hash, but cannot fill the ledgers in between from these
+ * peers.
  *
  * Example usage -- the supply verdict from a telemetry gauge callback:
  * @code
  * auto const supply = overlay.getPeerLedgerSupply(validatedSeq);
- * if (supply.peersReporting > 0 && supply.peersServingNext == 0)
- *     // peers are connected, but none holds the next ledger needed
+ * if (supply.peersAhead > 0 && supply.peersServingNext == 0)
+ *     // peers hold newer ledgers, but none holds the one after ours
+ * @endcode
+ *
+ * Example usage -- edge case: at the tip there is nothing to fetch:
+ * @code
+ * auto const supply = overlay.getPeerLedgerSupply(validatedSeq);
+ * if (supply.peersReporting > 0 && supply.peersAhead == 0)
+ *     // peersServingNext is 0 because validated + 1 does not exist yet
  * @endcode
  *
  * Example usage -- edge case: nothing has advertised a range yet:
@@ -58,7 +78,9 @@ namespace xrpl {
  * @note A peer that has not yet sent a status change advertises [0, 0]. Such
  *       peers are excluded from every field, so `peersReporting` is the
  *       denominator that makes the other counts readable: zero serving out of
- *       zero reporting is silence, zero out of many is a genuine gap.
+ *       zero reporting is silence.
+ * @note A peer advertises up to its published ledger, and can also serve its
+ *       newer last closed ledger by hash, so these counts are a floor.
  */
 struct PeerLedgerSupply
 {
@@ -68,12 +90,19 @@ struct PeerLedgerSupply
     std::int64_t peersReporting{0};
 
     /**
+     * Reporting peers whose range ends above this node's validated sequence.
+     * Zero means no peer holds anything newer, which is normal at the tip.
+     */
+    std::int64_t peersAhead{0};
+
+    /**
      * Reporting peers whose range covers this node's validated sequence.
      */
     std::int64_t peersServingValidated{0};
 
     /**
-     * Reporting peers whose range covers validated + 1, the next one needed.
+     * Reporting peers whose range covers the needed ledger: validated + 1, or
+     * the newest reported ledger on a node with no validated ledger yet.
      */
     std::int64_t peersServingNext{0};
 
@@ -87,6 +116,92 @@ struct PeerLedgerSupply
      */
     std::int64_t supplyMaxSeq{0};
 };
+
+/**
+ * One peer's advertised ledger range, as tallyPeerLedgerSupply() reads it.
+ *
+ * @code
+ *   PeerImp::ledgerRange() --> PeerLedgerRange --> tallyPeerLedgerSupply()
+ * @endcode
+ *
+ * A range is either [0, 0], meaning the peer has not reported, or
+ * 1 <= minSeq <= maxSeq. PeerImp zeroes any other range it receives, so a
+ * caller that builds ranges by hand must keep to the same rule.
+ *
+ * @code
+ * // A peer holding ledgers 1000 through 4000.
+ * PeerLedgerRange const held{.minSeq = 1000, .maxSeq = 4000};
+ *
+ * // A peer that has not reported yet: the tally skips it.
+ * PeerLedgerRange const silent{};
+ * @endcode
+ *
+ * @note A plain value with no lock; copy it freely.
+ */
+struct PeerLedgerRange
+{
+    /**
+     * Oldest sequence the peer offers.
+     */
+    std::uint32_t minSeq{0};
+
+    /**
+     * Newest sequence the peer offers.
+     */
+    std::uint32_t maxSeq{0};
+};
+
+/**
+ * Tally what a set of advertised peer ranges can serve a node.
+ *
+ * Kept inline and free of the overlay so a test can run it on fixed ranges.
+ *
+ * @param ranges One range per connected peer. A [0, 0] range has not been
+ *        reported and is skipped.
+ * @param validatedSeq This node's validated sequence; 0 before the first one.
+ * @return The counts and the sequence window the reporting peers cover.
+ */
+[[nodiscard]] inline PeerLedgerSupply
+tallyPeerLedgerSupply(std::span<PeerLedgerRange const> ranges, std::uint32_t validatedSeq)
+{
+    PeerLedgerSupply supply;
+    auto lowest = std::numeric_limits<std::uint32_t>::max();
+    std::uint32_t highest = 0;
+
+    for (auto const& range : ranges)
+    {
+        if (range.maxSeq == 0)
+            continue;
+
+        ++supply.peersReporting;
+        if (range.maxSeq > validatedSeq)
+            ++supply.peersAhead;
+        if (validatedSeq >= range.minSeq && validatedSeq <= range.maxSeq)
+            ++supply.peersServingValidated;
+
+        lowest = std::min(lowest, range.minSeq);
+        highest = std::max(highest, range.maxSeq);
+    }
+
+    // Nothing reported: the window stays 0, meaning unknown.
+    if (supply.peersReporting == 0)
+        return supply;
+
+    supply.supplyMinSeq = lowest;
+    supply.supplyMaxSeq = highest;
+
+    // A node with no validated ledger fetches the newest one, not ledger 1.
+    // Widened so validated + 1 cannot wrap to 0.
+    auto const neededSeq =
+        validatedSeq == 0 ? std::uint64_t{highest} : std::uint64_t{validatedSeq} + 1;
+
+    for (auto const& range : ranges)
+    {
+        if (neededSeq >= range.minSeq && neededSeq <= range.maxSeq)
+            ++supply.peersServingNext;
+    }
+    return supply;
+}
 
 /**
  * Manages the set of connected peers.
@@ -301,17 +416,13 @@ public:
     txMetrics() const = 0;
 
     /**
-     * Returns how much of the sequence range this node needs its peers can
-     * actually serve.
+     * Returns how much of what this node needs next its peers can serve.
      *
-     * Each peer advertises the smallest and largest ledger it holds in
-     * mtSTATUS_CHANGE, which the connection caches. Those ranges are never
-     * compared against each other, so "no peer on the network holds the
-     * ledger I need" is today indistinguishable from "my peers are slow".
-     * This aggregates them into that answer.
+     * Reads the range each active peer last advertised in mtSTATUS_CHANGE and
+     * passes them to tallyPeerLedgerSupply(), which holds the arithmetic.
      *
-     * @param validatedSeq This node's validated sequence; the ledger it is
-     *        currently able to serve from.
+     * @param validatedSeq This node's validated sequence; 0 before the first
+     *        one, which makes the needed ledger the newest one peers report.
      * @return The supply counts and the sequence window the peer set covers.
      *
      * @note O(peers), taking the peer-list lock once. Intended for a ~10 s

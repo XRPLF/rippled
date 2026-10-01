@@ -64,9 +64,9 @@
       "name": "tx.receive",
       "category": "transaction",
       "allowed_parents": ["ROOT"],
-      "required_attributes": ["tx_hash", "peer_id"],
+      "required_attributes": ["tx_hash", "peer_id", "tx_status"],
       "config_flag": "trace_transactions",
-      "note": "Cross-node span: parent context propagated from the sender's tx.process via protobuf. Also carries tx_type and peer_version. The span is created only after the node decides to process the transaction, so a relayed duplicate produces no span at all; how many were dropped is the transactions_duplicate traffic category. tx_status is set only on the paths that drop a transaction after that point, so it is not a required attribute."
+      "note": "Cross-node span: parent context propagated from the sender's tx.process via protobuf. Also carries current_ledger_seq, and tx_type and peer_version when known. The span is created only after the node decides to process the transaction, so a relayed duplicate produces no span at all; how many were dropped is the transactions_duplicate traffic category. tx_status is set once on every path after that point: dropped_no_sync, dropped_queue_full or queued_for_check."
     },
     {
       "name": "tx.apply",
@@ -809,5 +809,5 @@
   },
   "_conditional_attributes_note": "Five attributes documented in the 'Fresh-node sync diagnostics' table of docs/telemetry-glossary.md are deliberately absent from required_attributes above, because each is emitted only when its value is known and _validate_span_attributes_otlp() has no per-attribute optional flag -- listing one would fail CI red on a healthy run. ledger.acquire/peer_count is set only when finalizeAcquireSpan() is passed a peer count (InboundLedger.cpp), which the sweep and shutdown paths cannot supply. ledger_seq on the three ledger.acquire.header/.astree/.txtree phase spans is set only when seq_ != 0 (InboundLedger.cpp startPhaseSpan), and a by-hash acquire starts with seq_ == 0 and learns the sequence only when the header arrives -- so a phase that opens before the header legitimately carries no sequence. ledger_seq on ledger.serve is set only when the reply carries one (PeerImp.cpp), which an object-by-hash request does not. All five ARE indexed in the glossary table and rendered by the Ledger Sync Health board; the honest encoding is to document them here rather than assert a conditional attribute as required.",
   "total_span_types": 58,
-  "total_unique_attributes": 78
+  "total_unique_attributes": 79
 }

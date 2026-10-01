@@ -350,8 +350,9 @@ inline constexpr char rotationCopyNodeRestoreTotal[] = "rotation_copy_node_resto
 inline constexpr char rotationState[] = "rotation_state";
 
 /**
- * Wall-clock seconds spent in one online-delete rotation phase. Labelled by
- * `stage`; see lval::rotation_phase. Recorded once per phase end.
+ * Seconds spent in one online-delete rotation phase, recorded once per phase
+ * end. Labelled by `stage`; see lval::rotation_phase. A health_wait inside a
+ * phase is recorded as its own stage and left out of that phase's time.
  */
 inline constexpr char rotationPhaseDurationSeconds[] = "rotation_phase_duration_seconds";
 
@@ -796,6 +797,7 @@ inline constexpr char totalWaiting[] = "total_waiting";
  */
 namespace peer_supply {
 inline constexpr char peersReporting[] = "peers_reporting";
+inline constexpr char peersAhead[] = "peers_ahead";
 inline constexpr char peersServingValidated[] = "peers_serving_validated";
 inline constexpr char peersServingNext[] = "peers_serving_next";
 inline constexpr char supplyMinSeq[] = "supply_min_seq";
