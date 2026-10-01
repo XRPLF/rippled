@@ -383,8 +383,10 @@ MetricsRegistry::initSyncInstruments()
         meter_->CreateUInt64Counter("state_changes_total", "Total operating mode changes");
     // Started here, not in the block below, so removing this counter removes its zero too.
     stateChangesCounter_->Add(0);
+    // Not ledger_history_mismatch_total: the beast::insight counter in
+    // LedgerHistory already exports that name for the same event.
     ledgerHistoryMismatchCounter_ = meter_->CreateUInt64Counter(
-        "ledger_history_mismatch_total", "Total built-vs-validated ledger mismatches by reason");
+        "ledger_hash_mismatch_total", "Total built-vs-validated ledger mismatches by reason");
     txqExpiredCounter_ = meter_->CreateUInt64Counter(
         "txq_expired_total", "Total transactions expired out of the transaction queue");
     txqDroppedCounter_ = meter_->CreateUInt64Counter(
@@ -429,10 +431,10 @@ MetricsRegistry::stop()
     // macros read meter_, and none of them does so once phase_ is Stopped.
     //
     // SDK teardown order: Shutdown() stops the PeriodicExportingMetricReader
-    // thread (so no further gauge callbacks fire) and performs the final
-    // collect-and-export drain itself. The trailing ForceFlush() is a
-    // redundant safety net (a no-op once the reader is shut down), then
-    // reset() destroys the provider.
+    // thread, so no further gauge callbacks fire. It does not collect first
+    // (opentelemetry-cpp 1.28.0), so values recorded since the last export are
+    // never exported. The ForceFlush() after it collects nothing either: the
+    // reader is already shut down. Then reset() destroys the provider.
     //
     // provider_.reset() destroys MeterProvider -> MeterContext -> ViewRegistry
     // -> each View -> its shared_ptr<AggregationConfig>. Live SDK

@@ -312,14 +312,14 @@ either span can be filtered on it.
 
 ### Transaction Queue Spans
 
-| Span Name          | Source File | Attributes                                                        | Description                                                                                                                                                                                  |
-| ------------------ | ----------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `txq.enqueue`      | TxQ.cpp     | `tx_hash`, `tx_type`, `current_ledger_seq`, `current_ledger_hash` | Enqueue decision; parents to `tx.process` on the submission path (explicit context), a root on the open-ledger rebuild path — `current_ledger_seq` correlates it to the ledger in both cases |
-| `txq.apply_direct` | TxQ.cpp     | --                                                                | Direct apply attempt (bypassing queue)                                                                                                                                                       |
-| `txq.batch_clear`  | TxQ.cpp     | --                                                                | Batch clear of queued transactions for an account                                                                                                                                            |
-| `txq.accept`       | TxQ.cpp     | `queue_size`, `ledger_changed`                                    | Ledger-close accept loop over queued transactions                                                                                                                                            |
-| `txq.accept_tx`    | TxQ.cpp     | `tx_hash`, `retries_remaining`, `ter_code`, `txq_status`          | Per-transaction apply during accept                                                                                                                                                          |
-| `txq.cleanup`      | TxQ.cpp     | `ledger_seq`                                                      | Post-close cleanup of expired queue entries                                                                                                                                                  |
+| Span Name          | Source File | Attributes                                                        | Description                                                                                                                                                             |
+| ------------------ | ----------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `txq.enqueue`      | TxQ.cpp     | `tx_hash`, `tx_type`, `current_ledger_seq`, `current_ledger_hash` | Admission decision on every `TxQ::apply` (`txq_status` = outcome); child of `tx.process` on submit, of `consensus.accept.apply` on a rebuild in `doAccept`, else a root |
+| `txq.apply_direct` | TxQ.cpp     | --                                                                | Direct apply attempt (bypassing queue)                                                                                                                                  |
+| `txq.batch_clear`  | TxQ.cpp     | --                                                                | Batch clear of queued transactions for an account                                                                                                                       |
+| `txq.accept`       | TxQ.cpp     | `queue_size`, `ledger_changed`                                    | Ledger-close accept loop over queued transactions                                                                                                                       |
+| `txq.accept_tx`    | TxQ.cpp     | `tx_hash`, `retries_remaining`, `ter_code`, `txq_status`          | Per-transaction apply during accept                                                                                                                                     |
+| `txq.cleanup`      | TxQ.cpp     | `ledger_seq`, `expired_count`                                     | Once per closed ledger, even when nothing expired: fee-metric update, queue resize, and expiry of entries past `LastLedgerSequence` (`expired_count`)                   |
 
 ### PathFinding Spans
 
@@ -2044,6 +2044,12 @@ current value back from application code -- OTel's API is write-only by design;
 keep your own state if your logic needs to both record and read a running value
 (see the Doxygen header in `MetricMacros.h` for the full explanation).
 
+**Start rare counters at 0.** `rate()` and `increase()` need an earlier sample, so the event that creates a counter series reads as 0. A counter that can stay quiet for hours should therefore exist at 0 before its first event:
+
+- The `MetricsRegistry` starts its parity counters at 0 when `initSyncInstruments()` builds them, on every value of each fixed `reason` domain. Its rpc and job counters do not start at 0: their label sets are large and their events frequent.
+- Pre-create a call-site counter at startup with `XRPL_METRIC_COUNTER_PREREGISTER`, or with `XRPL_METRIC_COUNTER_PREREGISTER_LABELED` and every label set of its fixed domain. Pass the same name and description constants as the recording site, so both land on one series. `preRegisterGetObjectCounters()` in `include/xrpl/telemetry/PreRegisteredCounters.h` is the pattern.
+- An event before the first export that carries the zero is still missed. A label whose values are known only when the event happens cannot be pre-created.
+
 ## Deployment Tiers
 
 Multiple xrpld instances can send telemetry to per-tier collectors that all
@@ -2282,7 +2288,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | I/O Latency                                                  | timeseries | `histogram_quantile(0.95, ios_latency_milliseconds_bucket)`                                                                                                | —                |
 | Job Queue Depth                                              | timeseries | `jobq_job_count`                                                                                                                                           | —                |
 | Ledger Fetch Rate                                            | stat       | `rate(ledger_fetches_total[$__rate_interval])`                                                                                                             | —                |
-| Ledger History Mismatches                                    | stat       | `rate(ledger_history_mismatch_total[$__rate_interval])`                                                                                                    | —                |
+| Ledger History Mismatches                                    | stat       | `sum by (service_instance_id) (rate(ledger_hash_mismatch_total[$__rate_interval]))`                                                                        | —                |
 | Key Jobs Execution Time                                      | timeseries | `histogram_quantile($quantile, sum by (le) (rate(job_running_us_bucket{job_type="acceptLedger"}[$__rate_interval])))` (+ 10 more key jobs)                 | `job_type`       |
 | Key Jobs Dequeue Wait Time                                   | timeseries | `histogram_quantile($quantile, sum by (le) (rate(job_queued_us_bucket{job_type="acceptLedger"}[$__rate_interval])))` (+ 10 more)                           | `job_type`       |
 | FullBelowCache Size                                          | timeseries | `node_family_full_below_cache_size`                                                                                                                        | —                |
@@ -2456,15 +2462,15 @@ enforces that in CI, because the two silently drifted once already.
 
 ## Alerting
 
-xrpld provisions thirteen Grafana alert rules on the health-critical metrics, so
-a stock stack alerts out of the box with no UI setup. Rules are provisioned from
+xrpld provisions fourteen Grafana alert rules on the health-critical metrics, so
+a stock stack loads them with no UI setup. Rules are provisioned from
 `docker/telemetry/grafana/provisioning/alerting/` and load automatically when
 the Grafana container starts. They appear under **Alerting → Alert rules**,
 folder **xrpld**.
 
-> **All rules ship `isPaused: true`.** Thresholds are tuned against a small
-> dev/devnet population, so every rule is deactivated on arrival — compare it
-> against your own baseline, then unpause. The key is camelCase: `is_paused` is
+> **All rules ship `isPaused: true`.** Thresholds are starting points, so every
+> rule is deactivated on arrival — compare each against your own baseline, then
+> unpause. The key is camelCase: `is_paused` is
 > **silently ignored** by the provisioning loader (no error, no warning) and
 > leaves the rule live. Note the sibling field `notification_settings` _is_
 > snake_case.
@@ -2473,26 +2479,30 @@ folder **xrpld**.
 
 All rules evaluate every minute against the Prometheus datasource and aggregate
 `by (service_instance_id)` so each node alerts on its own. Every expr selects
-`{service_name="xrpld"}` — the same Prometheus may also host a legacy statsd
-fleet exporting some of these names (`state_accounting_*` in particular) with no
-xrpld resource attributes, and without the selector those series get summed in.
+`{service_name="xrpld"}`. Another exporter on the same Prometheus, such as a
+StatsD bridge, can export some of these names (`state_accounting_*` in
+particular) without xrpld's resource attributes, and without the selector those
+series get summed in.
 Alerts fire only after the condition holds for the `for` dwell time.
 
-| Alert                     | Severity | Fires when                                         | For |
-| ------------------------- | -------- | -------------------------------------------------- | --- |
-| `LedgerHistoryMismatch`   | critical | `increase(ledger_history_mismatch_total[15m])` > 0 | 2m  |
-| `LedgerCloseStalled`      | critical | `rate(ledgers_closed_total)` ≈ 0                   | 3m  |
-| `ValidatedLedgerStale`    | critical | `ledgermaster_validated_ledger_age` > 60s          | 5m  |
-| `ValidationsMissed`       | warning  | validator miss _ratio_ > 0.1                       | 15m |
-| `ValidationsNotChecked`   | warning  | `rate(validations_checked_total)` ≈ 0              | 5m  |
-| `JobQueueTxOverflow`      | warning  | `increase(jq_trans_overflow_total[15m])` > 0       | 2m  |
-| `JobQueueLatencyHigh`     | warning  | p99 `job_queued_us` > 1s                           | 5m  |
-| `NodeStoreIOLatencyHigh`  | warning  | p95 `ios_latency_milliseconds` > 1s                | 10m |
-| `NodeStateFlapping`       | warning  | > 3 re-entries into FULL per hour                  | 15m |
-| `NodeNotFull`             | warning  | `server_state` < 4 (FULL)                          | 15m |
-| `ManifestJobQueueConvoy`  | warning  | `jobq_manifest_waiting` > 3                        | 10m |
-| `ManifestFloodInbound`    | warning  | `rate(overhead_manifest_bytes_in)` > 512 KiB/s     | 10m |
-| `PeerResourceDisconnects` | warning  | > 5 resource-driven peer disconnects per 30m       | 5m  |
+| Alert                      | Severity | Fires when                                              | For |
+| -------------------------- | -------- | ------------------------------------------------------- | --- |
+| `LedgerHistoryMismatch`    | critical | `increase(ledger_hash_mismatch_total[15m])` > 0         | 2m  |
+| `LedgerCloseStalled`       | critical | `rate(ledgers_closed_total)` ≈ 0                        | 3m  |
+| `ValidatedLedgerStale`     | critical | `ledgermaster_validated_ledger_age` > 60s               | 5m  |
+| `ValidationsMissed`        | warning  | validator miss _ratio_ > 0.1                            | 15m |
+| `ValidationsNotChecked`    | warning  | `rate(validations_checked_total)` ≈ 0                   | 5m  |
+| `JobQueueTxOverflow`       | warning  | `increase(jq_trans_overflow_total[15m])` > 0            | 2m  |
+| `JobQueueLatencyHigh`      | warning  | p99 `job_queued_us` > 1s                                | 5m  |
+| `IOEventLoopLatencyHigh`   | warning  | p95 `ios_latency_milliseconds` > 1s                     | 10m |
+| `NodeStateFlapping`        | warning  | > 0 re-entries into FULL per hour                       | 15m |
+| `NodeNotFull`              | warning  | `server_state` < 4 (FULL)                               | 15m |
+| `ManifestJobQueueConvoy`   | warning  | `jobq_manifest_waiting` > 3                             | 10m |
+| `ManifestFloodInbound`     | warning  | `rate(overhead_manifest_bytes_in)` > 512 KiB/s          | 10m |
+| `PeerResourceDisconnects`  | warning  | > 5 resource-driven peer disconnects per 30m            | 5m  |
+| `UntrustedValidationFlood` | warning  | `rate(validations_untrusted_messages_in)` > 3x baseline | 1m  |
+
+Rules labelled `page_oncall: "true"` (`ManifestJobQueueConvoy`, `ManifestFloodInbound` and `UntrustedValidationFlood`) are the ones meant to page on-call. The provisioned Slack template does not read the label; to tag an on-call group, add a mention for it to your own Slack template.
 
 Two expression idioms recur and are load-bearing — do not "simplify" them away:
 
@@ -2512,18 +2522,12 @@ from the validated network chain. Likely causes: corrupted local state, a bug,
 or a node that fell out of sync and rebuilt incorrectly. Investigate the node's
 ledger acquisition logs; a healthy node never mismatches.
 
-> **Query trap — `sum(ledger_history_mismatch_total)` double-counts.** One
-> mismatch increments **two** instruments inside the same `handleMismatch()`
-> call: the legacy beast::insight counter, which carries no `reason` label
-> ([LedgerHistory.cpp:323](../src/xrpld/app/ledger/LedgerHistory.cpp#L323)), and
-> the `MetricsRegistry` counter, which does
-> ([LedgerHistory.cpp:331](../src/xrpld/app/ledger/LedgerHistory.cpp#L331)).
-> Both normalise to the same Prometheus family, so an unfiltered `sum()` or
-> `increase()` reports exactly **twice** the real mismatch count. Aggregate over
-> the labelled series only — `sum by (reason) (...)`, or
-> `sum(ledger_history_mismatch_total{reason!=""})` — and halve any historical
-> figure taken from the unfiltered form. The alert rule is unaffected: it only
-> tests `> 0`. This is a known issue; the duplicate producer awaits a code fix.
+> **Two metrics count the same mismatches — never add them.** Query
+> `ledger_hash_mismatch_total`: it has exactly one `reason` per mismatch, so
+> `sum by (reason) (...)` and a plain `sum(...)` are both exact. The
+> `ledger_history_mismatch_total` series is the unlabelled `beast::insight`
+> counter for the same events (see the Counters table above), exported only
+> with `[insight] server=otel`.
 
 **LedgerCloseStalled** — No ledgers closed for 3 minutes. A healthy node closes
 one every ~3-5s. Likely causes: lost peer connectivity, consensus stall, or the
@@ -2533,33 +2537,42 @@ node is likely down. Check peer count and process health first.
 **ValidatedLedgerStale** — The validated ledger has fallen more than 60s behind.
 This is the clearest single "is this node healthy" signal on XRPL: it is the
 symptom nearly every consensus or sync failure eventually produces, so it is
-often the first thing to check and the last thing to clear. Measured over 7 days:
-p50 2s, p95 4s, p99 5s on every node.
+often the first thing to check and the last thing to clear. On a healthy node
+the validated ledger is a few seconds old.
 
 > **The `< 1209600` clause in this rule's expression is required — do not remove
 > it.** When a node holds no validated ledger at all,
 > `LedgerMaster::getValidatedLedgerAge()` returns `weeks{2}` (1 209 600 s) as a
 > **sentinel**, not a measurement. Without the clause the rule reads that as "14
-> days stale" and fires on every node during startup — measured, it produced
-> sustained firing on all nine nodes over a six-day window, healthy ones included.
+> days stale" and can fire on any node during startup, healthy ones included.
 > A node genuinely stuck without a validated ledger is caught by
 > `LedgerCloseStalled` and `NodeNotFull` instead.
 
 #### Validator health
 
-**ValidationsMissed** — This validator's validations are not agreeing with the
-validated ledger. Sustained misses risk removal from UNLs. Check clock sync,
-peer connectivity, and whether the node is keeping up with ledger close.
+**ValidationsMissed** — This validator's validations are missing or do not
+match the validated ledger. Sustained misses risk removal from UNLs. Check clock
+sync, peer connectivity, and whether the node is keeping up with ledger close.
+If `validations_sent_total` is flat, the node is not validating: check its
+validator keys and `server_state`.
 
-> **Why this is a ratio gated on `validations_sent_total`, not
-> `rate(validation_missed_total) > 0`:** `ValidationTracker` classifies a ledger
-> as a miss whenever `weValidated && networkValidated` is not _both_ true. A node
-> that does not validate never sets `weValidated`, so **every** reconciled ledger
-> counts as a miss and the raw rate is permanently nonzero — the measured miss
-> ratio is exactly `1.0` on non-validating nodes. No threshold can separate "not
-> a validator" from "validator disagreeing", so the rule gates on
-> `validations_sent_total > 0` to exclude non-validators entirely, and then
-> measures the ratio among nodes that genuinely do validate.
+> **Why this is a ratio, not `rate(validation_missed_total) > 0`:** a few late or
+> missed validations do not page; the rule fires only when more than 10% of the
+> last 15 minutes' ledgers were missed. `ValidationTracker` counts a ledger as
+> agreed only when this node and the network both validated it, so a node that
+> never validates would count **every** ledger as a miss. xrpld therefore
+> publishes neither lifetime counter, and no `validation_agreement` series, on a
+> node without a validator key; such a node shows no data in the Validator Health
+> board's agreement panels rather than 0% agreement.
+>
+> The network side is each ledger this node accepts as validated. The ratio
+> reads 100% missed when one side keeps arriving without the other: the
+> validated ledger advances while the node sends nothing, or the node keeps
+> validating while its validated ledger is stuck (for example after a lost
+> quorum). When both stop, nothing is recorded here; `LedgerCloseStalled` and
+> `ValidatedLedgerStale` cover that case. Like `NodeStateFlapping` and
+> `NodeNotFull`, the rule skips the first hour after a start: a restarted
+> validator follows the network for a while before it validates again.
 
 **ValidationsNotChecked** — The node has stopped checking incoming validations
 from peers. Likely causes: overlay/peer disconnection or a stalled validation
@@ -2575,19 +2588,24 @@ being dropped. The node is shedding load it cannot process. Check CPU, the
 before running. The node is saturated. Correlate with CPU and the Job Queue
 dashboard.
 
-**NodeStoreIOLatencyHigh** — p95 node-store IO latency exceeds 1s. Sustained
-store latency is the usual _upstream cause_ of state flapping and sync stalls, so
-this often fires alongside `NodeStateFlapping` and explains it. Check disk
-utilisation and whether the node store sits on a slow volume — moving it to a
-local NVMe has previously cut time-to-`full` by more than 3x. Measured p99-of-p95
-is 37-49ms on healthy nodes and 488-566ms on nodes that are actively flapping.
+**IOEventLoopLatencyHigh** — work posted to the node's I/O event loop waits
+too long. The loop is the asio `io_context`, which runs peer networking, the
+RPC servers and timers. NodeStore reads and writes run on other threads.
+
+About every 100ms a probe is posted to the loop and times its own wait. The
+first probe is always recorded; after that, only probes of 10ms or more. So on
+a healthy node the p95 usually has no value. The rule fires when the p95 stays
+over 1s for 10m.
+
+A blocked loop delays peer messages and timers, so this can fire alongside
+`NodeStateFlapping`. Look for CPU saturation, or a slow peer, RPC or timer
+handler. The log shows an `io_context latency` warning for each probe of 500ms
+or more. `server_info` reports the latest probe, fast ones included, as
+`io_latency_ms`.
 
 #### Node operating state
 
-**NodeStateFlapping** — The node is oscillating `full → syncing/connected → full`
-instead of holding sync. Measured: a flapping node re-enters `full` 4-6 times per
-hour sustained, while a healthy node manages 0-1, so the `> 3` threshold sits
-between the two populations with roughly a 3x margin.
+**NodeStateFlapping** — The node is oscillating `full → syncing/connected → full` instead of holding sync. The rule fires on any re-entry into `full` in the last hour (`> 0`) once the node has been up for an hour: one `full → syncing → full` round is a single re-entry, and that one round is the flap this rule exists to catch.
 
 The rule counts `state_accounting_full_transitions`, which counts transitions
 _into_ `full` and is exported as a cumulative gauge — `increase()` is therefore
@@ -2598,11 +2616,13 @@ startup walk.
 
 **The `uptime > 3600` gate is load-bearing.** Every node walks
 `disconnected → connected → syncing → tracking → full` once at boot; without the
-gate, every restart pages. The trade-off is deliberate: flapping confined to the
-first hour after boot is not alerted.
+gate, every restart pages. The trade-off is deliberate: the rule starts
+evaluating an hour after boot.
 
-Investigate in this order: `NodeStoreIOLatencyHigh` (most common cause), peer
-connectivity, then clock sync.
+Investigate in this order: the online-delete rotation's cache freshen (a
+rotation logs `rotating` when it starts and `finished rotation` when it
+completes, both at warning level in the `SHAMapStore` journal),
+`IOEventLoopLatencyHigh`, peer connectivity, then clock sync.
 
 **NodeNotFull** — The node has been below `FULL` for 15m
 (`0`=disconnected, `1`=connected, `2`=syncing, `3`=tracking, `4`=full). This is
@@ -2612,48 +2632,41 @@ counter by definition cannot catch it.
 
 #### Overlay / manifests
 
-**ManifestJobQueueConvoy** — Manifest jobs are backing up in the job queue. Peers
-send `TMManifests` dumps up to ~57MB (just under `kMaximumMessageSize`, see
-`overlay/Message.h`), and `JtManifest` is registered with `maxLimit`
-(`core/JobTypes.h`), so every peer's dump runs concurrently and they convoy on
-`ManifestCache::mutex_`; `OverlayImpl::onManifests` also re-verifies the blob a
-second time on Accept. Measured effect: each `RcvManifests` job took 16-18s and
-the entire 8-worker pool was occupied.
+**ManifestJobQueueConvoy** — Manifest jobs are backing up in the job queue: they
+arrive faster than the job workers can run them.
 
 This is the most reliable manifest-flood signal because `jobq_manifest_waiting`
-is `0` at the 99.9th percentile on every node over 24h — any sustained backlog is
-a genuine outlier rather than normal variance.
+is almost always `0` on a healthy node: any sustained backlog is a genuine
+outlier rather than normal variance.
 
 **ManifestFloodInbound** — Inbound manifest byte-rate exceeds 512 KiB/s (524288
-B/s — the rule's literal `params: [524288]`). Catches the
-wire-level cause (a peer shipping oversized dumps) even when the job pool absorbs
-it without a visible backlog. Measured over 7 days: healthy p95 0.2-0.5 kB/s and
-p99 1.0-1.8 kB/s, against peaks up to 2.7 MB/s during real storms — so the
-threshold sits ~280x above healthy p99 and ~5x below the peaks.
+B/s — the rule's literal `params: [524288]`). Catches a high inbound manifest
+rate even when the job pool absorbs it without a visible backlog. The threshold
+sits far above a healthy node's inbound manifest rate, so routine traffic does
+not page. Tune it against a multi-day sample; a single day hides weekly
+variation.
 
-> An earlier revision used 50 kB/s, justified from a 24-hour window. Over a full
-> week that produced ~41 sustained 5-minute firings across six **healthy** nodes,
-> i.e. routine paging. Prefer a 7-day sample when tuning any threshold here; 24
-> hours is too short to expose weekly variation.
-
-> **Both manifest rules deliberately suppress startup.** The manifest storm at
-> boot is _measured normal behaviour_, so `ManifestFloodInbound` carries an
-> `uptime > 1800` gate and `ManifestJobQueueConvoy` relies on a 10m dwell that the
-> startup burst does not outlast. A flood confined to the first 30 minutes after
-> boot will therefore not alert.
+> **Startup.** A manifest burst at boot is normal. `ManifestFloodInbound` has an
+> `uptime > 1800` gate, so it starts evaluating 30 minutes after boot.
+> `ManifestJobQueueConvoy` has no uptime gate; its 10m dwell keeps the short
+> startup burst from paging.
 
 **PeerResourceDisconnects** — The node dropped more than 5 peers in 30m for
 exceeding resource budgets. Sustained disconnects starve the node of peers and
 precede sync loss.
 
+**UntrustedValidationFlood** — Validations from untrusted validators are arriving at more than 3x their baseline rate. Peers relay untrusted validations by default, so the normal rate depends on the network's validator count and on this node's peer count. The rule therefore divides the last 2m rate of `validations_untrusted_messages_in` by a baseline: the average rate over the hour that ended 10m earlier. This lets one threshold fit any network with more than 50 msg/s of untrusted traffic. On a healthy node the ratio stays near 1, or below it where the 50 msg/s floor applies. The ratio must stay above 3 on two evaluations in a row before the rule fires. When it fires, check peer latency, consensus round time and whether the node left `full`. After it resolves, confirm on the Network Traffic dashboard's "Validation Traffic" panel (Untrusted In series) that the flood has ended.
+
+> **Two guards keep this rule quiet on healthy nodes.** The baseline has a floor of 50 msg/s (`clamp_min(..., 50)`), so on a network with almost no untrusted traffic the rule does not divide by zero, and needs more than 150 msg/s to fire. An `uptime > 4200` gate (the 1h baseline plus its 10m offset) skips the first 70 minutes after boot. After a stop of an hour or more, the baseline hour holds only minutes of samples, so it reads far too low, and without the gate the ratio could pass 3 for many minutes.
+
 ### Tuning thresholds
 
 Thresholds live in
 `docker/telemetry/grafana/provisioning/alerting/rules.yaml` as the `params`
-array of each rule's `C` (threshold) node. Common tunables:
+array of each rule's `threshold` node (the node its `condition` names). Common tunables:
 
 - **`JobQueueLatencyHigh`** — `params: [1000000]` is 1 000 000 µs (1s). Lower
-  it for latency-sensitive deployments.
+  it for latency-sensitive deployments, but keep it well above the healthy p99.
 - **`LedgerCloseStalled` / `ValidationsNotChecked`** — use `lt` with a tiny
   epsilon (`0.001`) rather than `0`, so floating-point rate noise near zero
   does not suppress the alert.
@@ -2706,7 +2719,8 @@ docker compose -f docker/telemetry/docker-compose.yml up -d grafana
 
 Three traps worth knowing before you edit this file:
 
-- **Do not substitute `${SLACK_WEBHOOK_URL}` / `${ALERT_EMAIL_TO}` here.** Grafana
+- **Do not replace either placeholder with a variable such as
+  `${SLACK_WEBHOOK_URL}`.** Grafana
   expands `${VAR}` but does **not** support `${VAR:-default}`, so an unset variable
   expands to empty, fails validation, and Grafana **exits 1** — taking the whole
   telemetry stack down, not just alerting. A blank variable does not "disable that
@@ -2757,13 +2771,14 @@ cannot be loaded there. Cloud deployment goes through the Grafana alerting **RES
 API**, driven from the same tracked `rules.yaml` — it stays the single source of
 truth, so local and Cloud cannot drift.
 
-Each rule needs three Cloud-specific transforms on the way out:
+Each rule needs four Cloud-specific transforms on the way out:
 
-| Field in `rules.yaml`             | Cloud form               |
-| --------------------------------- | ------------------------ |
-| local `prometheus` datasource uid | the Cloud datasource uid |
-| `folder:` _name_                  | an existing `folderUID`  |
-| `interval` (duration string)      | integer seconds          |
+| Field in `rules.yaml`             | Cloud form                                                      |
+| --------------------------------- | --------------------------------------------------------------- |
+| local `prometheus` datasource uid | the Cloud datasource uid                                        |
+| `folder:` _name_                  | an existing `folderUID`                                         |
+| `interval` (duration string)      | integer seconds                                                 |
+| no `notification_settings`        | `notification_settings.receiver` set to the Cloud contact point |
 
 Then, in order:
 
@@ -2777,25 +2792,22 @@ Land the rules with delivery disabled while no recipient has been chosen, and
 activate them only once the thresholds have been checked against the target
 fleet's baseline.
 
-Credentials come from `.env.grafanaserviceapi` (gitignored, a service-account
-token with `alert.rules:write`); the recipient address comes from `ALERT_EMAIL_TO`
-in `.env.alerting`. Neither is ever written to a tracked file.
+Cloud cannot read `contactpoints.yaml` or `templates.yaml` either: create the
+contact points and templates through the API or UI, and keep them in step by
+hand. Keep the API token and any recipient addresses out of tracked files.
 
-> **The Cloud notification policy tree must not be pushed.** There is exactly one
-> policy tree per org and the PUT endpoint **replaces it wholesale**. On a shared
-> stack the root receiver and its sibling routes belong to other teams, so pushing
-> an xrpld-shaped tree would silently re-route their alerts. The uploader
-> therefore never touches the tree; instead each rule carries
-> `notification_settings.receiver`, which routes that rule directly to the xrpld
-> contact point and bypasses the tree entirely. Verify with a before/after hash of
-> `GET /api/v1/provisioning/policies`.
+> **Do not push a notification policy tree to a Grafana Cloud stack.** The PUT
+> endpoint **replaces the org's default policy tree wholesale**, so pushing this
+> repository's tree would replace any routes already there.
+> Route each rule to its contact point with `notification_settings.receiver`
+> instead, which bypasses the tree.
 
 ### Verifying alert provisioning loaded
 
 After the stack is up:
 
 ```bash
-# All thirteen rules present, and is each one paused?
+# All fourteen rules present, and is each one paused?
 curl -s http://localhost:3000/api/v1/provisioning/alert-rules |
     jq -r '.[] | "\(.title)\tpaused=\(.isPaused)"'
 

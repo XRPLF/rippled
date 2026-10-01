@@ -25,7 +25,6 @@ namespace perf {
 class PerfLog;
 }  // namespace perf
 namespace telemetry {
-class Telemetry;
 class MetricsRegistry;
 }  // namespace telemetry
 
@@ -240,9 +239,6 @@ public:
 
     virtual perf::PerfLog&
     getPerfLog() = 0;
-
-    virtual telemetry::Telemetry&
-    getTelemetry() = 0;
 
     /**
      * Return the MetricsRegistry, or nullptr if telemetry is disabled.

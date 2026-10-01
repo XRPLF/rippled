@@ -26,6 +26,10 @@
  *     Observable UpDownCounter  XRPL_METRIC_OBSERVABLE_UPDOWN_REGISTER
  *     Observable Gauge          XRPL_METRIC_OBSERVABLE_GAUGE_REGISTER
  *
+ *   Startup pre-registration of a counter (call ONCE, at startup -- see the
+ *   "Pre-registration" note below):
+ *     Counter            XRPL_METRIC_COUNTER_PREREGISTER [+ _LABELED]
+ *
  * When XRPL_ENABLE_TELEMETRY is not defined, every macro expands to a
  * no-op statement, so call sites never need their own #ifdef.
  *
@@ -129,6 +133,24 @@
  * write-only/push-based by design. If your logic needs both to record a
  * metric AND read its running value, keep your own state (std::atomic or
  * similar) and separately feed OTel via these macros.
+ *
+ * @note Pre-registration. A counter's series appears on its first Add, so
+ * Prometheus first sees it already at the event's value. increase() and
+ * rate() need an earlier sample, so they read that first event as 0, and for
+ * a rare event that is often the only one. XRPL_METRIC_COUNTER_PREREGISTER
+ * [_LABELED] creates the counter at startup and records 0 on each label set.
+ * Pass the recording site's own name and description constants, so the zero
+ * lands on the site's stream (see the note on one kind and one description).
+ * Build the label sets from the site's value list with labelSetsFor() or
+ * labelSetsForPairs(), never from observed data.
+ *
+ * @code
+ * XRPL_METRIC_COUNTER_PREREGISTER_LABELED(
+ *     app,
+ *     kGetObjectRejectedTotal,
+ *     kGetObjectRejectedTotalDesc,
+ *     labelSetsFor(kLabelReason, kGetObjectRejectedReasons));
+ * @endcode
  */
 
 // On Windows, OTel's spin_lock_mutex.h (transitively included from
@@ -146,9 +168,122 @@
 #include <xrpl/core/ServiceRegistry.h>       // IWYU pragma: keep
 #include <xrpl/telemetry/MetricsRegistry.h>  // IWYU pragma: keep
 
+#include <ranges>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+// The label-set builders below are declared in both builds, so code that
+// names them compiles with telemetry off. The two preRegisterCounter()
+// overloads exist only with telemetry on, and the two pre-registration
+// macros do nothing without it.
+namespace xrpl::telemetry {
+
+/**
+ * The labels of one counter series, as (key, value) pairs.
+ *
+ * Owned strings, because a pre-registration list is built at run time and
+ * must outlive the loop that builds it.
+ */
+using CounterLabelSet = std::vector<std::pair<std::string, std::string>>;
+
+/**
+ * One label set per value of a single label.
+ *
+ * @param key    Label key, as the recording site writes it.
+ * @param values Every value the recording site can write under @p key.
+ * @return One single-pair label set per value, in the order of @p values.
+ */
+template <std::ranges::sized_range Values>
+[[nodiscard]] std::vector<CounterLabelSet>
+labelSetsFor(std::string_view key, Values const& values)
+{
+    std::vector<CounterLabelSet> labelSets;
+    labelSets.reserve(std::ranges::size(values));
+    for (auto const& value : values)
+        labelSets.push_back(CounterLabelSet{{std::string(key), std::string(value)}});
+    return labelSets;
+}
+
+/**
+ * One label set per listed pair, for a two-label counter where only some
+ * pairings can occur.
+ *
+ * @param firstKey  Key of the first label.
+ * @param secondKey Key of the second label.
+ * @param pairs     Every (first, second) value pair the recording site writes.
+ * @return One two-pair label set per entry of @p pairs, in order.
+ */
+template <std::ranges::sized_range Pairs>
+[[nodiscard]] std::vector<CounterLabelSet>
+labelSetsForPairs(std::string_view firstKey, std::string_view secondKey, Pairs const& pairs)
+{
+    std::vector<CounterLabelSet> labelSets;
+    labelSets.reserve(std::ranges::size(pairs));
+    for (auto const& [first, second] : pairs)
+    {
+        labelSets.push_back(
+            CounterLabelSet{
+                {std::string(firstKey), std::string(first)},
+                {std::string(secondKey), std::string(second)}});
+    }
+    return labelSets;
+}
+
+}  // namespace xrpl::telemetry
+
 #ifdef XRPL_ENABLE_TELEMETRY
 
+#include <opentelemetry/metrics/meter.h>
+#include <opentelemetry/nostd/string_view.h>
+
 #include <functional>  // IWYU pragma: keep
+#include <span>
+
+namespace xrpl::telemetry {
+
+/**
+ * Create an unlabelled counter and record 0 on it, so its one series exists
+ * before the first event.
+ *
+ * @param meter       The meter the recording site creates the counter on.
+ * @param name        The recording site's instrument name.
+ * @param description The recording site's description. It must match
+ *                    exactly, or this zero lands on a second stream.
+ */
+inline void
+preRegisterCounter(
+    opentelemetry::metrics::Meter& meter,
+    opentelemetry::nostd::string_view name,
+    opentelemetry::nostd::string_view description)
+{
+    meter.CreateUInt64Counter(name, description)->Add(0);
+}
+
+/**
+ * Create a labelled counter and record 0 on each label set, so each series
+ * exists before its first event.
+ *
+ * @param meter       The meter the recording site creates the counter on.
+ * @param name        The recording site's instrument name.
+ * @param description The recording site's description. It must match
+ *                    exactly, or these zeros land on a second stream.
+ * @param labelSets   Every label set the recording site can write.
+ */
+inline void
+preRegisterCounter(
+    opentelemetry::metrics::Meter& meter,
+    opentelemetry::nostd::string_view name,
+    opentelemetry::nostd::string_view description,
+    std::span<CounterLabelSet const> labelSets)
+{
+    auto const counter = meter.CreateUInt64Counter(name, description);
+    for (auto const& labels : labelSets)
+        counter->Add(0, labels);
+}
+
+}  // namespace xrpl::telemetry
 
 #define XRPL_METRIC_COUNTER_INC(app, name, description)                                     \
     do                                                                                      \
@@ -199,6 +334,34 @@
             static auto const xrpl_counter_ =                                               \
                 xrpl_mr_->meter()->CreateUInt64Counter((name), (description));              \
             xrpl_counter_->Add(amount, __VA_ARGS__);                                        \
+        }                                                                                   \
+    } while (false)
+
+// Startup pre-registration: create the counter now and record 0, so its series
+// exists before the first event (see the "Pre-registration" note above). Call
+// once, from startup code. Unlike the recording macros there is no static: a
+// static would keep the first registry's instrument, and each call must land
+// on the registry it is given. Calls with the same name, kind, unit and
+// description share one stream.
+#define XRPL_METRIC_COUNTER_PREREGISTER(app, name, description)                               \
+    do                                                                                        \
+    {                                                                                         \
+        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->recording())   \
+        {                                                                                     \
+            ::xrpl::telemetry::preRegisterCounter(*xrpl_mr_->meter(), (name), (description)); \
+        }                                                                                     \
+    } while (false)
+
+// labelSets holds every label set the recording site can write, as a
+// contiguous range of CounterLabelSet such as labelSetsFor() returns. It is
+// evaluated only while the registry records.
+#define XRPL_METRIC_COUNTER_PREREGISTER_LABELED(app, name, description, labelSets)          \
+    do                                                                                      \
+    {                                                                                       \
+        if (auto* xrpl_mr_ = (app).getMetricsRegistry(); xrpl_mr_ && xrpl_mr_->recording()) \
+        {                                                                                   \
+            ::xrpl::telemetry::preRegisterCounter(                                          \
+                *xrpl_mr_->meter(), (name), (description), (labelSets));                    \
         }                                                                                   \
     } while (false)
 
@@ -424,6 +587,14 @@
 #define XRPL_METRIC_COUNTER_ADD_LABELED(app, name, description, amount, ...) \
     do                                                                       \
     {                                                                        \
+    } while (false)
+#define XRPL_METRIC_COUNTER_PREREGISTER(app, name, description) \
+    do                                                          \
+    {                                                           \
+    } while (false)
+#define XRPL_METRIC_COUNTER_PREREGISTER_LABELED(app, name, description, labelSets) \
+    do                                                                             \
+    {                                                                              \
     } while (false)
 #define XRPL_METRIC_UPDOWN_ADD(app, name, description, amount) \
     do                                                         \
