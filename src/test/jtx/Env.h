@@ -109,9 +109,9 @@ testableAmendments()
         }
         return FeatureBitset(feats);
     }();
-    // TEMP(split2 S1b-S4): featureLendingProtocolV1_2 changes vault
-    // precision; exclude it from testableAmendments() until every
-    // suite that needs FixedPrecision explicitly opts in. Dropped in S5.
+    // Temporary while the FixedPrecision Vault stack lands: existing suites
+    // keep creating CashBasis Vaults. FixedPrecision suites enable
+    // featureLendingProtocolV1_2 explicitly. Removed in the LoanManage PR.
     return kIds - featureLendingProtocolV1_2;
 }
 
