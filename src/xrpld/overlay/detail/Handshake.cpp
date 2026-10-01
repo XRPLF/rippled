@@ -264,7 +264,7 @@ throwNegotiationFailure(Application& app, char const* reason, std::string const&
     XRPL_METRIC_COUNTER_INC_LABELED(
         app,
         telemetry::metric::handshakeNegotiationFailTotal,
-        "Peer handshake negotiations rejected, by reason",
+        telemetry::handshakeNegotiationFailTotalDesc,
         {{telemetry::label::reason, std::string(reason)}});
 
     throw std::runtime_error(message);
@@ -403,8 +403,7 @@ verifyHandshake(
 
     if (publicKey == app.nodeIdentity().first)
     {
-        throwNegotiationFailure(
-            app, telemetry::lval::handshake_fail::selfConnection, "Self connection");
+        throwNegotiationFailure(app, telemetry::lval::selfConnection, "Self connection");
     }
 
     if (auto const iter = headers.find("Local-IP"); iter != headers.end())

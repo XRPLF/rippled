@@ -319,7 +319,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
         XRPL_METRIC_COUNTER_INC(
             app_,
             telemetry::metric::rotationCopyNodeRestoreTotal,
-            "Nodes re-stored during rotation because they were missing from both backends");
+            telemetry::rotationCopyNodeRestoreTotalDesc);
     }
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {

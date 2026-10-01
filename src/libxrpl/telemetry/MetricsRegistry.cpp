@@ -28,6 +28,8 @@
 #ifdef XRPL_ENABLE_TELEMETRY
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/JobTypeInfo.h>
+#include <xrpl/core/JobTypes.h>
 #include <xrpl/telemetry/GetObjectMetricNames.h>
 #include <xrpl/telemetry/HistogramBuckets.h>
 #include <xrpl/telemetry/MetricNames.h>
@@ -40,6 +42,7 @@
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_options.h>
+#include <opentelemetry/metrics/sync_instruments.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/sdk/metrics/aggregation/aggregation_config.h>
 #include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_factory.h>
@@ -202,6 +205,25 @@ addRotationPhaseHistogramView(metric_sdk::ViewRegistry& views, std::string const
         views,
         name,
         xrpl::telemetry::buckets::toVector(xrpl::telemetry::buckets::kRotationPhaseSecondsBuckets));
+}
+
+/**
+ * Add to jobq_stall_total for one job type.
+ *
+ * The startup zero and every real stall both go through here, so they build
+ * the same label set and land on the same series.
+ *
+ * @param counter The jobq_stall_total counter.
+ * @param value   Amount to add: 0 creates the series, 1 counts a stall.
+ * @param jobType The job type's JobTypes name.
+ */
+void
+addJobStall(
+    opentelemetry::metrics::Counter<std::uint64_t>& counter,
+    std::uint64_t value,
+    std::string_view jobType)
+{
+    counter.Add(value, {{xrpl::telemetry::label::jobType, std::string(jobType)}});
 }
 
 }  // namespace
@@ -445,13 +467,40 @@ MetricsRegistry::initExporterAndProvider(Options const& options)
     addHistogramView(
         *views, kPathfindDiscoveredPaths, buckets::toVector(buckets::kObjectCountBuckets));
 
-    // Create MeterProvider with resource, then attach the metric reader.
+    // Create MeterProvider with resource, then attach the readers. The extra
+    // reader goes first: the OTLP reader starts collecting on its own thread
+    // as soon as it is added, and adding a reader during a collect is unsafe.
     provider_ = metric_sdk::MeterProviderFactory::Create(std::move(views), resourceAttrs);
+    if (options.extraReader)
+        provider_->AddMetricReader(options.extraReader);
     provider_->AddMetricReader(std::move(reader));
 
     // Get a meter for all xrpld instruments.
     meter_ = provider_->GetMeter(std::string(kMeterName), std::string(kMeterVersion));
 }
+
+namespace {
+
+/**
+ * Add to a counter whose one label is `reason`.
+ *
+ * The startup zero and every real increment both go through here, so they
+ * build the same label set and land on the same series.
+ *
+ * @param counter A counter labelled by `reason` alone.
+ * @param value   Amount to add: 0 creates the series, 1 counts an event.
+ * @param reason  The label value.
+ */
+void
+addWithReason(
+    opentelemetry::metrics::Counter<std::uint64_t>& counter,
+    std::uint64_t value,
+    std::string_view reason)
+{
+    counter.Add(value, {{"reason", std::string(reason)}});
+}
+
+}  // namespace
 
 void
 MetricsRegistry::initSyncInstruments()
@@ -472,6 +521,15 @@ MetricsRegistry::initSyncInstruments()
     jobFinishedCounter_ = meter_->CreateUInt64Counter("job_finished_total", "Total jobs completed");
     jobStallCounter_ = meter_->CreateUInt64Counter(
         metric::jobqStallTotal, "Jobs whose run time reached the 1 s stall threshold");
+    // Stalls are rare, so each job type starts at 0, and a stall after the
+    // first export shows under increase(). A stall before that export is
+    // still missed (see the constructor's note). A special() type is left
+    // out: the job queue never runs one.
+    for (auto const& [_, info] : JobTypes::instance())
+    {
+        if (!info.special())
+            addJobStall(*jobStallCounter_, 0, info.name());
+    }
     jobQueuedDurationHistogram_ = meter_->CreateDoubleHistogram(
         kJobQueuedDurationUs, "Time jobs spent waiting in the queue (microseconds)");
     jobRunningDurationHistogram_ =
@@ -479,7 +537,7 @@ MetricsRegistry::initSyncInstruments()
 
     // --- External dashboard parity counters ---
     ledgersClosedCounter_ =
-        meter_->CreateUInt64Counter("ledgers_closed_total", "Total ledgers closed by consensus");
+        meter_->CreateUInt64Counter(kLedgersClosedTotal, kLedgersClosedTotalDesc);
     validationsSentCounter_ = meter_->CreateUInt64Counter(
         "validations_sent_total", "Total validations sent by this node");
     validationsCheckedCounter_ = meter_->CreateUInt64Counter(
@@ -496,6 +554,21 @@ MetricsRegistry::initSyncInstruments()
         "txq_dropped_total", "Total transactions refused admission to the queue by reason");
     // Note: validation_agreements_total / validation_missed_total are monotonic
     // ObservableCounters owned by the observable-gauge layer.
+
+    // Each parity counter created above starts at 0 for each label value, so
+    // a later event shows under increase(), which cannot count the event that
+    // creates a series. An event before the first export is still lost (see
+    // the constructor's note). The rpc counters, and the job counters other
+    // than jobq_stall_total, are left out: their label sets are large, and
+    // their events are frequent.
+    ledgersClosedCounter_->Add(0);
+    validationsSentCounter_->Add(0);
+    validationsCheckedCounter_->Add(0);
+    for (auto const reason : ledger_mismatch_reason::all)
+        addWithReason(*ledgerHistoryMismatchCounter_, 0, reason);
+    txqExpiredCounter_->Add(0);
+    for (auto const reason : txq_drop_reason::all)
+        addWithReason(*txqDroppedCounter_, 0, reason);
 }
 #endif  // XRPL_ENABLE_TELEMETRY
 
@@ -674,7 +747,7 @@ MetricsRegistry::recordJobFinished(
     // One compare per job finish. A process-wide freeze shows up here as
     // several job types crossing the bar in the same second.
     if (runningDurUs >= kJobStallThresholdUs && jobStallCounter_)
-        jobStallCounter_->Add(1, {{label::jobType, std::string(jobType)}});
+        addJobStall(*jobStallCounter_, 1, jobType);
 #endif
 }
 
@@ -714,7 +787,7 @@ MetricsRegistry::incrementLedgerHistoryMismatch(std::string_view reason)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (recording() && ledgerHistoryMismatchCounter_)
-        ledgerHistoryMismatchCounter_->Add(1, {{"reason", std::string(reason)}});
+        addWithReason(*ledgerHistoryMismatchCounter_, 1, reason);
 #endif
 }
 
@@ -732,7 +805,7 @@ MetricsRegistry::incrementTxqDropped(std::string_view reason)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (recording() && txqDroppedCounter_)
-        txqDroppedCounter_->Add(1, {{"reason", std::string(reason)}});
+        addWithReason(*txqDroppedCounter_, 1, reason);
 #endif
 }
 

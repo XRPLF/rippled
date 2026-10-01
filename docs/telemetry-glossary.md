@@ -665,7 +665,7 @@ How many jobs of a given type are queued or executing at the instant the queue i
 
 ### Ledger acquire (inbound fetch)
 
-Acquiring a ledger means requesting it and its contents from peers when the node lacks it. Acquire outcomes split three ways: complete, failed (the acquisition ended on its own without the ledger, having run out of retries or hit unusable data), and aborted (it was abandoned before finishing, either swept away as stale or discarded wholesale at shutdown). A rising failed rate means the node cannot fetch needed ledgers from its peers.
+Acquiring a ledger means requesting it and its contents from peers when the node lacks it. Acquire outcomes split three ways: complete, failed (the acquisition ended on its own without the ledger, having run out of retries or hit unusable data), and abandoned (it was destroyed before finishing: swept away as stale, discarded wholesale at shutdown, or dropped by an admin fetch_info clear). A rising failed rate means the node cannot fetch needed ledgers from its peers.
 
 **Scope:** per node — measured on and specific to this individual server.
 
@@ -1069,7 +1069,7 @@ A cluster is a set of servers run by the same operator that trust each other, ex
 
 ### Disconnect reason
 
-The cause recorded when a peer connection is torn down, kept alongside the direction the connection was originally opened in. A single disconnect count cannot separate the two situations that matter, because they produce the same number: a node shedding load, which drops peers deliberately because it could not keep up with what it owed them or because a peer exceeded its resource allowance, and a network or topology fault, where the peer became unreachable, stopped answering keepalives, or turned out to be following a different chain. The first is a local capacity problem and the peer list is not the fix; the second is the opposite. A third group is neither — clean teardown at shutdown and peers closing their own side are ordinary churn, and a count dominated by those is healthy. The direction matters separately, since churn among the peers a node dials points somewhere different from churn among the peers that dial it.
+The cause recorded when a peer connection is torn down, kept alongside the direction the connection was originally opened in. A single disconnect count cannot separate the situations that matter, because they all add to the same number. This node drops a peer on purpose for two reasons. If its send queue to that peer stays full, the cause is a slow peer or network path; on many peers at once, it is this node's own uplink. If the peer's own traffic uses up its resource allowance, the fault is the peer's. A network or topology fault is different: the peer became unreachable, stopped answering keepalives, or turned out to be following a different chain, and the fix is the peer set. A further group is neither — clean teardown at shutdown and peers closing their own side are ordinary churn, and a count dominated by those is healthy. The direction matters separately, since churn among the peers a node dials points somewhere different from churn among the peers that dial it.
 
 **Scope:** per node — measured on and specific to this individual server.
 

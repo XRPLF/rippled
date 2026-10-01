@@ -1075,7 +1075,7 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         XRPL_METRIC_COUNTER_INC_LABELED(
             app_,
             telemetry::metric::ledgerQuorumShortfallTotal,
-            "Pre-accept gate rejections because trusted validations were below quorum",
+            telemetry::ledgerQuorumShortfallTotalDesc,
             {{telemetry::label::stage, std::string(telemetry::lval::quorum_shortfall::preAccept)}});
         return;
     }

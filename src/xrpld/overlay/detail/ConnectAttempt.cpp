@@ -204,7 +204,7 @@ ConnectAttempt::reportOutcome(std::string_view outcome)
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
         telemetry::metric::overlayConnectTotal,
-        "Outbound peer connection attempts, by terminal outcome",
+        telemetry::overlayConnectTotalDesc,
         {{telemetry::label::outcome, std::string(outcome)}});
 
     // End the span with the SAME outcome value the counter just recorded, from
@@ -387,10 +387,10 @@ ConnectAttempt::onHandshake(error_code ec)
             slot_, beast::IPAddressConversion::fromAsio(localEndpoint)))
     {
         // Not a TLS failure: the handshake succeeded and PeerFinder then
-        // recognised the remote address as our own. Logic::onConnected has
+        // found the dial had come back in to this node. Logic::onConnected has
         // exactly one false-returning path and it is the self-connect check
         // ("Logic dropping as self connect"), so this branch means we dialled
-        // ourselves -- a local misconfiguration, not an unreachable peer.
+        // ourselves, not that a peer was unreachable.
         reportOutcome(telemetry::peer_span::val::selfConnection);
         fail("Self connection");
         return;

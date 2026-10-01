@@ -2378,9 +2378,7 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
     // counter Add, no labels: the ledger hash and sequence would both be
     // unbounded as label values, and the log line above already carries them.
     XRPL_METRIC_COUNTER_INC(
-        registry_.get(),
-        telemetry::metric::ledgerJumpTotal,
-        "Forced jumps of the last closed ledger to a divergent chain");
+        registry_.get(), telemetry::metric::ledgerJumpTotal, telemetry::ledgerJumpTotalDesc);
 
     clearNeedNetworkLedger();
 
@@ -2975,7 +2973,7 @@ NetworkOPsImp::setMode(OperatingMode om)
     XRPL_METRIC_COUNTER_INC_LABELED(
         registry_.get(),
         telemetry::metric::stateChangesTotal,
-        "Total operating mode changes",
+        telemetry::stateChangesTotalDesc,
         {{telemetry::label::from, strOperatingMode(mode_.load(), false)},
          {telemetry::label::to, strOperatingMode(om, false)}});
 
