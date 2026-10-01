@@ -267,6 +267,30 @@ public:
     }
 
     /**
+     * @brief Get sfAssetsDeployed (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getAssetsDeployed() const
+    {
+        if (hasAssetsDeployed())
+            return this->sle_->at(sfAssetsDeployed);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAssetsDeployed is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAssetsDeployed() const
+    {
+        return this->sle_->isFieldPresent(sfAssetsDeployed);
+    }
+
+    /**
      * @brief Get sfShareMPTID (SoeRequired)
      * @return The field value.
      */
@@ -603,6 +627,17 @@ public:
     setYieldUnrealized(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
     {
         object_[sfYieldUnrealized] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAssetsDeployed (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setAssetsDeployed(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    {
+        object_[sfAssetsDeployed] = value;
         return *this;
     }
 

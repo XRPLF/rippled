@@ -1,7 +1,10 @@
 #include <xrpl/tx/transactors/vault/VaultSet.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -110,6 +113,21 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    // FixedPrecision: AssetsMaximum must be exactly representable on the
+    // Vault's base grid, otherwise associateAsset would silently round the
+    // cap the owner asked for.
+    if (auto const assetMax = ctx.tx[~sfAssetsMaximum];
+        assetMax && getVaultVersion(vault) == VaultVersion::FixedPrecision)
+    {
+        Asset const asset = vault->at(sfAsset);
+        if (!isOnVaultBaseGrid(asset, *assetMax, getVaultBaseScale(vault)))
+        {
+            JLOG(ctx.j.debug()) << "VaultSet: AssetsMaximum " << *assetMax
+                                << " is not representable at the Vault scale.";
+            return tecPRECISION_LOSS;
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -144,7 +162,7 @@ VaultSet::doApply()
         vault->at(sfData) = tx[sfData];
     if (tx.isFieldPresent(sfAssetsMaximum))
     {
-        if (tx[sfAssetsMaximum] != 0 && tx[sfAssetsMaximum] < *vault->at(sfAssetsTotal))
+        if (tx[sfAssetsMaximum] != 0 && tx[sfAssetsMaximum] < getAssetsTotal(vault))
             return tecLIMIT_EXCEEDED;
         vault->at(sfAssetsMaximum) = tx[sfAssetsMaximum];
     }
