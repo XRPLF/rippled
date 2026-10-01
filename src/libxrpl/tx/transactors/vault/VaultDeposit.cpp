@@ -329,7 +329,7 @@ VaultDeposit::doApply()
         // Post-fixCleanup3_4_0: round the deposit to the sfAssetsTotal scale so all accounting
         // fields (trust line / MPT, sfAssetsAvailable, sfAssetsTotal) change by the same
         // representable delta.
-        if (fix340Enabled || getVaultVersion(vault) == VaultVersion::FixedPrecision)
+        if (fix340Enabled)
         {
             // Round down at the posterior sfAssetsTotal scale so the vault is credited by no more
             // than the depositor paid. Keep the share count from the first round trip: the clamp
@@ -366,13 +366,22 @@ VaultDeposit::doApply()
         sharesCreated.asset() != assetsDeposited.asset(),
         "xrpl::VaultDeposit::doApply : assets are not shares");
 
-    vault->at(sfAssetsTotal) += assetsDeposited;
-    vault->at(sfAssetsAvailable) += assetsDeposited;
+    if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+    {
+        if (auto const ter = adjustVaultBalances(vault, {.cash = assetsDeposited}, j_);
+            !isTesSuccess(ter))
+            return ter;
+    }
+    else
+    {
+        vault->at(sfAssetsTotal) += assetsDeposited;
+        vault->at(sfAssetsAvailable) += assetsDeposited;
+    }
     view().update(vault);
 
     // A deposit must not push the vault over its limit.
     auto const maximum = *vault->at(sfAssetsMaximum);
-    if (maximum != 0 && *vault->at(sfAssetsTotal) > maximum)
+    if (maximum != 0 && getAssetsTotal(vault) > maximum)
         return tecLIMIT_EXCEEDED;
 
     // Transfer assets from depositor to vault.

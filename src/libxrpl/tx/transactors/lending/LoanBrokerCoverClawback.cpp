@@ -167,8 +167,7 @@ determineClawAmount(
 {
     auto const maxClawAmount = [&]() {
         auto const minRequiredCover = [&]() {
-            if (rules.enabled(fixCleanup3_2_0) ||
-                getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+            if (rules.enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(
                     sleBroker->at(sfDebtTotal),
@@ -203,9 +202,8 @@ determineClawAmount(
     if (getVaultVersion(vaultSle) != VaultVersion::FixedPrecision)
         return requested;
 
-    // Negate so the posterior is CoverAvailable minus amount.
-    STAmount rounded = -roundToPosteriorBrokerCoverScale(
-        vaultSle, sleBroker, -requested, Number::RoundingMode::TowardsZero);
+    STAmount rounded = debitToPosteriorBrokerCoverScale(
+        vaultSle, sleBroker, requested, Number::RoundingMode::TowardsZero);
     if (rounded == beast::kZero)
         return std::unexpected(tecPRECISION_LOSS);
     return rounded;

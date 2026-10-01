@@ -1,9 +1,8 @@
-#include <test/app/vault/VaultTestBase.h>
+#include <test/app/vault/VaultFixedPrecisionBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/flags.h>
-#include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
@@ -12,45 +11,28 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
 #include <cstdint>
+#include <optional>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
-class VaultFixedPrecision_test : public VaultTestBase
+class VaultFixedPrecision_test : public VaultFixedPrecisionBase
 {
-    static FeatureBitset
-    features()
-    {
-        return test::jtx::testableAmendments() | featureLendingProtocolV1_1 |
-            featureLendingProtocolV1_2;
-    }
-
-    // Submits a VaultCreate for an open-ended vault at the given fixed
-    // Scale and closes the ledger. Shared by every scenario below that
-    // needs a Scale-6 vault rather than the protocol default.
-    static std::pair<test::jtx::Vault, Keylet>
-    createScaledVault(
-        test::jtx::Env& env,
-        test::jtx::Account const& owner,
-        Asset const& asset,
-        std::uint8_t scale)
-    {
-        test::jtx::Vault const vault{env};
-        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
-        create[sfScale] = scale;
-        env(create);
-        env.close();
-        return {vault, keylet};
-    }
-
     void
     testCreate()
     {
@@ -77,6 +59,9 @@ class VaultFixedPrecision_test : public VaultTestBase
             BEAST_EXPECT(sle->at(sfLEVersion) == std::to_underlying(VaultVersion::FixedPrecision));
             BEAST_EXPECT(sle->at(sfScale) == kVaultDefaultIouScale);
             BEAST_EXPECT(sle->at(sfYieldUnrealized) == beast::kZero);
+            BEAST_EXPECT(sle->at(sfAssetsDeployed) == beast::kZero);
+            BEAST_EXPECT(getAssetsTotal(sle) == beast::kZero);
+            BEAST_EXPECT(sle->at(sfAssetsTotal) == getAssetsTotal(sle));
         }
 
         {
@@ -90,7 +75,7 @@ class VaultFixedPrecision_test : public VaultTestBase
                 {.owner = owner,
                  .asset = asset,
                  .vaultKind = std::to_underlying(VaultKind::OpenEnded)});
-            tx[sfScale] = kVaultMaximumFixedIouScale;
+            tx[sfScale] = kVaultMaximumFixedPrecisionIouScale;
             env(tx);
             env.close();
 
@@ -101,57 +86,93 @@ class VaultFixedPrecision_test : public VaultTestBase
             BEAST_EXPECT(sle->at(sfVaultKind) == std::to_underlying(VaultKind::OpenEnded));
 
             auto [invalid, invalidKeylet] = vault.create({.owner = owner, .asset = asset});
-            invalid[sfScale] = static_cast<std::uint8_t>(kVaultMaximumFixedIouScale + 1);
+            invalid[sfScale] = static_cast<std::uint8_t>(kVaultMaximumFixedPrecisionIouScale + 1);
             env(invalid, Ter(temMALFORMED));
             BEAST_EXPECT(!env.le(invalidKeylet));
         }
 
-        for (std::uint8_t const scaleValue :
-             {kVaultMaximumFixedIouScale,
-              static_cast<std::uint8_t>(kVaultMaximumFixedIouScale + 1)})
+        // Without fixCleanup3_2_0 and fixCleanup3_4_0, V1_2 alone leaves a vault on the
+        // CashBasis rules, including the legacy Scale maximum.
+        struct Row
         {
-            testcase(
-                scaleValue == kVaultMaximumFixedIouScale
-                    ? "VaultCreate accepts fixed Scale maximum"
-                    : "VaultCreate rejects Scale above fixed maximum");
-            Env env(*this, features());
+            char const* name = nullptr;
+            FeatureBitset amendments;
+            std::uint8_t scale;
+            TER ter;
+            VaultVersion version;
+        };
+        auto const aboveFixed = static_cast<std::uint8_t>(kVaultMaximumFixedPrecisionIouScale + 1);
+        auto const fixedVersion = VaultVersion::FixedPrecision;
+        auto const cashVersion = VaultVersion::CashBasis;
+        Row const rows[] = {
+            {.name = "VaultCreate accepts fixed Scale maximum",
+             .amendments = features(),
+             .scale = kVaultMaximumFixedPrecisionIouScale,
+             .ter = tesSUCCESS,
+             .version = fixedVersion},
+            {.name = "VaultCreate rejects Scale above fixed maximum",
+             .amendments = features(),
+             .scale = aboveFixed,
+             .ter = temMALFORMED,
+             .version = fixedVersion},
+            {.name = "CashBasis Vault retains legacy Scale maximum",
+             .amendments = features() - featureLendingProtocolV1_2,
+             .scale = kVaultMaximumLegacyIouScale,
+             .ter = tesSUCCESS,
+             .version = cashVersion},
+            {.name =
+                 "VaultCreate: V1_2 on, fixCleanup3_2_0 off falls back to the legacy Scale maximum",
+             .amendments = features() - fixCleanup3_2_0,
+             .scale = kVaultMaximumLegacyIouScale,
+             .ter = tesSUCCESS,
+             .version = cashVersion},
+            {.name =
+                 "VaultCreate: V1_2 on, fixCleanup3_2_0 off accepts Scale above the fixed maximum",
+             .amendments = features() - fixCleanup3_2_0,
+             .scale = aboveFixed,
+             .ter = tesSUCCESS,
+             .version = cashVersion},
+            {.name =
+                 "VaultCreate: V1_2 on, fixCleanup3_4_0 off falls back to the legacy Scale maximum",
+             .amendments = features() - fixCleanup3_4_0,
+             .scale = kVaultMaximumLegacyIouScale,
+             .ter = tesSUCCESS,
+             .version = cashVersion},
+            {.name =
+                 "VaultCreate: V1_2 on, fixCleanup3_4_0 off accepts Scale above the fixed maximum",
+             .amendments = features() - fixCleanup3_4_0,
+             .scale = aboveFixed,
+             .ter = tesSUCCESS,
+             .version = cashVersion},
+        };
+        for (auto const& row : rows)
+        {
+            testcase(row.name);
+            Env env(*this, row.amendments);
             env.fund(XRP(1'000'000), issuer, owner);
             env.close();
 
             Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            tx[sfScale] = scaleValue;
-            if (scaleValue == kVaultMaximumFixedIouScale)
-            {
-                env(tx);
-            }
-            else
-            {
-                env(tx, Ter(temMALFORMED));
-            }
-            env.close();
-            BEAST_EXPECT(
-                static_cast<bool>(env.le(keylet)) == (scaleValue == kVaultMaximumFixedIouScale));
-        }
-
-        {
-            testcase("CashBasis Vault retains legacy Scale maximum");
-            auto const legacyFeatures = features() - featureLendingProtocolV1_2;
-            Env env(*this, legacyFeatures);
-            env.fund(XRP(1'000'000), issuer, owner);
-            env.close();
-
-            Vault const vault{env};
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            tx[sfScale] = kVaultMaximumLegacyIouScale;
-            env(tx);
+            tx[sfScale] = row.scale;
+            env(tx, Ter(row.ter));
             env.close();
 
             auto const sle = env.le(keylet);
+            if (row.ter != tesSUCCESS)
+            {
+                BEAST_EXPECT(!sle);
+                continue;
+            }
             if (!BEAST_EXPECT(sle))
-                return;
-            BEAST_EXPECT(sle->at(sfLEVersion) == std::to_underlying(VaultVersion::CashBasis));
-            BEAST_EXPECT(!sle->isFieldPresent(sfYieldUnrealized));
+                continue;
+            BEAST_EXPECT(sle->at(sfScale) == row.scale);
+            BEAST_EXPECT(sle->at(sfLEVersion) == std::to_underlying(row.version));
+            if (row.version == cashVersion)
+            {
+                BEAST_EXPECT(!sle->isFieldPresent(sfYieldUnrealized));
+                BEAST_EXPECT(!sle->isFieldPresent(sfAssetsDeployed));
+            }
         }
     }
 
@@ -160,19 +181,12 @@ class VaultFixedPrecision_test : public VaultTestBase
     {
         using namespace test::jtx;
 
-        Account const issuer{"issuer"};
-        Account const owner{"owner"};
-        PrettyAsset const asset{issuer["USD"]};
         Number const open{9, 9};
         Number const baseUnit{1, -6};
 
         Env env(*this, features());
-        env.fund(XRP(1'000'000), issuer, owner);
-        env.close();
-        env(trust(owner, asset(open + Number{1})));
-        env.close();
-        env(pay(issuer, owner, asset(open + Number{1})));
-        env.close();
+        auto const [issuer, owner, depositor, asset] =
+            setupIou(env, {.ownerOnly = true, .ownerTrust = open + Number{1}});
 
         auto [vault, keylet] = createScaledVault(env, owner, asset, 6);
 
@@ -180,22 +194,14 @@ class VaultFixedPrecision_test : public VaultTestBase
         env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(open)}));
         env.close();
 
-        auto const atOpen = env.le(keylet);
-        if (!BEAST_EXPECT(atOpen))
-            return;
-        BEAST_EXPECT(atOpen->at(sfAssetsTotal) == open);
-        BEAST_EXPECT(atOpen->at(sfAssetsAvailable) == open);
+        expectVault(env, keylet, {.available = open, .assetsDeployed = Number{0}, .total = open});
 
         testcase("VaultDeposit rejects one base unit above Open");
         env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(baseUnit)}),
             Ter(tecLIMIT_EXCEEDED));
         env.close();
 
-        auto const afterRejected = env.le(keylet);
-        if (!BEAST_EXPECT(afterRejected))
-            return;
-        BEAST_EXPECT(afterRejected->at(sfAssetsTotal) == open);
-        BEAST_EXPECT(afterRejected->at(sfAssetsAvailable) == open);
+        expectVault(env, keylet, {.available = open, .assetsDeployed = Number{0}, .total = open});
     }
 
     void
@@ -239,6 +245,7 @@ class VaultFixedPrecision_test : public VaultTestBase
             return;
         BEAST_EXPECT(after->at(sfLEVersion) == std::to_underlying(VaultVersion::CashBasis));
         BEAST_EXPECT(!after->isFieldPresent(sfYieldUnrealized));
+        BEAST_EXPECT(!after->isFieldPresent(sfAssetsDeployed));
         BEAST_EXPECT(after->at(sfAssetsTotal) == deposit);
     }
 
@@ -247,27 +254,16 @@ class VaultFixedPrecision_test : public VaultTestBase
     {
         using namespace test::jtx;
 
-        // On a fresh vault the share price is one base unit, so the share
-        // round-trip already lands on the Scale-6 grid before
-        // clampToAssetsTotalScale. These cases check that the deposit,
-        // withdraw, and clawback paths still book that truncated amount.
-        // A non-unit share price (loan yield) is needed to exercise the
-        // clamp itself; that arrives with the lending PR.
+        // On a fresh vault the share price is one base unit, so the share round-trip
+        // already lands on the Scale-6 grid. These cases check that deposit, withdraw
+        // and clawback still book the truncated amount.
 
-        Account const issuer{"issuer"};
-        Account const owner{"owner"};
-        PrettyAsset const asset{issuer["USD"]};
         Number const depositRequested{32'345'678, -7};  // 3.2345678
         Number const outflowRequested{10'000'005, -7};  // 1.0000005
 
         Env env(*this, features());
-        env.fund(XRP(1'000'000), issuer, owner);
-        env(fset(issuer, asfAllowTrustLineClawback));
-        env.close();
-        env(trust(owner, asset(4)));
-        env.close();
-        env(pay(issuer, owner, asset(4)));
-        env.close();
+        auto const [issuer, owner, depositor, asset] =
+            setupIou(env, {.clawback = true, .ownerOnly = true, .ownerTrust = 4});
 
         auto [vault, keylet] = createScaledVault(env, owner, asset, 6);
 
@@ -276,11 +272,12 @@ class VaultFixedPrecision_test : public VaultTestBase
             {.depositor = owner, .id = keylet.key, .amount = asset(depositRequested)}));
         env.close();
 
-        auto afterDeposit = env.le(keylet);
-        if (!BEAST_EXPECT(afterDeposit))
-            return;
-        BEAST_EXPECT(afterDeposit->at(sfAssetsTotal) == (Number{3'234'567, -6}));
-        BEAST_EXPECT(afterDeposit->at(sfAssetsAvailable) == (Number{3'234'567, -6}));
+        expectVault(
+            env,
+            keylet,
+            {.available = Number{3'234'567, -6},
+             .assetsDeployed = Number{0},
+             .total = Number{3'234'567, -6}});
         BEAST_EXPECT(env.balance(owner, asset) == asset(Number{765'433, -6}));
 
         testcase("VaultWithdraw books the truncated amount on the base grid");
@@ -288,11 +285,12 @@ class VaultFixedPrecision_test : public VaultTestBase
             {.depositor = owner, .id = keylet.key, .amount = asset(outflowRequested)}));
         env.close();
 
-        auto afterWithdraw = env.le(keylet);
-        if (!BEAST_EXPECT(afterWithdraw))
-            return;
-        BEAST_EXPECT(afterWithdraw->at(sfAssetsTotal) == (Number{2'234'567, -6}));
-        BEAST_EXPECT(afterWithdraw->at(sfAssetsAvailable) == (Number{2'234'567, -6}));
+        expectVault(
+            env,
+            keylet,
+            {.available = Number{2'234'567, -6},
+             .assetsDeployed = Number{0},
+             .total = Number{2'234'567, -6}});
         BEAST_EXPECT(env.balance(owner, asset) == asset(Number{1'765'433, -6}));
 
         testcase("VaultClawback books the truncated amount on the base grid");
@@ -303,11 +301,12 @@ class VaultFixedPrecision_test : public VaultTestBase
              .amount = asset(outflowRequested).value()}));
         env.close();
 
-        auto const afterClawback = env.le(keylet);
-        if (!BEAST_EXPECT(afterClawback))
-            return;
-        BEAST_EXPECT(afterClawback->at(sfAssetsTotal) == (Number{1'234'567, -6}));
-        BEAST_EXPECT(afterClawback->at(sfAssetsAvailable) == (Number{1'234'567, -6}));
+        expectVault(
+            env,
+            keylet,
+            {.available = Number{1'234'567, -6},
+             .assetsDeployed = Number{0},
+             .total = Number{1'234'567, -6}});
     }
 
     void
@@ -317,21 +316,12 @@ class VaultFixedPrecision_test : public VaultTestBase
 
         testcase("FixedPrecision MPT Vault enforces integral Open zone");
 
-        Account const issuer{"issuer"};
-        Account const owner{"owner"};
         constexpr std::uint64_t open = 9'000'000'000'000'000;
         constexpr std::uint64_t maximum = open + 1;
 
         Env env(*this, features());
-        env.fund(XRP(1'000'000), issuer, owner);
-        env.close();
-
-        MPTTester mpt{env, issuer, kMptInitNoFund};
-        mpt.create({.maxAmt = maximum, .flags = tfMPTCanTransfer});
-        PrettyAsset const asset = mpt.issuanceID();
-        mpt.authorize({.account = owner});
-        env(pay(issuer, owner, asset(maximum)));
-        env.close();
+        auto const [issuer, owner, depositor, asset] =
+            setupMpt(env, {.maxAmt = maximum, .holderFunds = maximum});
 
         Vault const vault{env};
         auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
@@ -350,36 +340,228 @@ class VaultFixedPrecision_test : public VaultTestBase
     }
 
     void
-    testDepositDust()
+    testDust()
     {
         using namespace test::jtx;
+
+        Env env(*this, features());
+        auto const [issuer, owner, depositor, asset] =
+            setupIou(env, {.clawback = true, .depositorTrust = 2});
+        auto [vault, keylet] = createScaledVault(env, owner, asset, 6);
+        Number const dust{1, -7};
 
         testcase("VaultDeposit rejects sub-base-unit dust");
-
-        Account const issuer{"issuer"};
-        Account const owner{"owner"};
-        PrettyAsset const asset{issuer["USD"]};
-
-        Env env(*this, features());
-        env.fund(XRP(1'000'000), issuer, owner);
-        env.close();
-        env(trust(owner, asset(1)));
-        env.close();
-        env(pay(issuer, owner, asset(1)));
-        env.close();
-
-        auto [vault, keylet] = createScaledVault(env, owner, asset, 6);
-
-        env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(Number{1, -7})}),
+        env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(dust)}),
             Ter(tecPRECISION_LOSS));
-    }
 
-    void
-    testWithdrawDust()
-    {
-        using namespace test::jtx;
+        env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(1)}));
+        env.close();
 
         testcase("VaultWithdraw rejects sub-base-unit dust");
+        env(vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(dust)}),
+            Ter(tecPRECISION_LOSS));
+
+        testcase("VaultClawback rejects sub-base-unit dust");
+        env(vault.clawback(
+                {.issuer = issuer,
+                 .id = keylet.key,
+                 .holder = depositor,
+                 .amount = asset(dust).value()}),
+            Ter(tecPRECISION_LOSS));
+    }
+
+    struct SyncStep
+    {
+        enum class Op { Deposit, Withdraw, Clawback };
+        Op op;
+        std::int64_t amount;
+        std::int64_t expectedAvailable;
+    };
+
+    // Applies each step as holder (the issuer claws back) and checks the
+    // expected AssetsAvailable after it.
+    void
+    runSyncSteps(
+        test::jtx::Env& env,
+        test::jtx::Vault const& vault,
+        Keylet const& keylet,
+        test::jtx::Account const& issuer,
+        test::jtx::Account const& holder,
+        PrettyAsset const& asset,
+        std::vector<SyncStep> const& steps)
+    {
+        for (auto const& step : steps)
+        {
+            switch (step.op)
+            {
+                case SyncStep::Op::Deposit:
+                    env(vault.deposit(
+                        {.depositor = holder, .id = keylet.key, .amount = asset(step.amount)}));
+                    break;
+                case SyncStep::Op::Withdraw:
+                    env(vault.withdraw(
+                        {.depositor = holder, .id = keylet.key, .amount = asset(step.amount)}));
+                    break;
+                case SyncStep::Op::Clawback:
+                    env(vault.clawback(
+                        {.issuer = issuer,
+                         .id = keylet.key,
+                         .holder = holder,
+                         .amount = asset(step.amount).value()}));
+                    break;
+            }
+            env.close();
+            checkFixedPrecisionSync(env, keylet, Number{step.expectedAvailable});
+        }
+    }
+
+    void
+    testAssetsTotalStaysInSyncIou()
+    {
+        using namespace test::jtx;
+        using Op = SyncStep::Op;
+
+        testcase("FixedPrecision IOU vault keeps AssetsTotal in sync across deposits/withdrawals");
+
+        Env env(*this, features());
+        auto const [issuer, owner, depositor, asset] =
+            setupIou(env, {.ownerOnly = true, .ownerTrust = 10'000});
+
+        Vault const vault{env};
+        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(create);
+        env.close();
+
+        // Two deposits, a partial withdrawal, then a final withdrawal that empties
+        // the vault.
+        runSyncSteps(
+            env,
+            vault,
+            keylet,
+            issuer,
+            owner,
+            asset,
+            {{.op = Op::Deposit, .amount = 1'000, .expectedAvailable = 1'000},
+             {.op = Op::Deposit, .amount = 500, .expectedAvailable = 1'500},
+             {.op = Op::Withdraw, .amount = 600, .expectedAvailable = 900},
+             {.op = Op::Withdraw, .amount = 900, .expectedAvailable = 0}});
+    }
+
+    void
+    testAssetsTotalStaysInSyncClawback()
+    {
+        using namespace test::jtx;
+        using Op = SyncStep::Op;
+
+        testcase(
+            "FixedPrecision IOU vault keeps AssetsTotal in sync across clawback and final "
+            "withdrawal");
+
+        Env env(*this, features());
+        auto const [issuer, owner, depositor, asset] = setupIou(env, {.clawback = true});
+
+        Vault const vault{env};
+        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(create);
+        env.close();
+
+        // Clawback partially recovers assets; the rest is a final withdrawal.
+        runSyncSteps(
+            env,
+            vault,
+            keylet,
+            issuer,
+            depositor,
+            asset,
+            {{.op = Op::Deposit, .amount = 1'000, .expectedAvailable = 1'000},
+             {.op = Op::Clawback, .amount = 400, .expectedAvailable = 600},
+             {.op = Op::Withdraw, .amount = 600, .expectedAvailable = 0}});
+    }
+
+    void
+    testAssetsTotalStaysInSyncIntegralAsset()
+    {
+        using namespace test::jtx;
+        using Op = SyncStep::Op;
+
+        testcase("FixedPrecision MPT vault keeps AssetsTotal in sync across deposits/withdrawals");
+
+        constexpr std::uint64_t total = 1'000;
+
+        Env env(*this, features());
+        auto const [issuer, owner, depositor, asset] =
+            setupMpt(env, {.maxAmt = total, .holderFunds = total});
+
+        Vault const vault{env};
+        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(create);
+        env.close();
+
+        runSyncSteps(
+            env,
+            vault,
+            keylet,
+            issuer,
+            owner,
+            asset,
+            {{.op = Op::Deposit, .amount = total, .expectedAvailable = total},
+             {.op = Op::Withdraw, .amount = 400, .expectedAvailable = 600},
+             {.op = Op::Withdraw, .amount = 600, .expectedAvailable = 0}});
+    }
+
+    void
+    testCashBasisAssetsTotalControl()
+    {
+        using namespace test::jtx;
+
+        testcase(
+            "CashBasis vault: AssetsTotal tracks AssetsAvailable directly, AssetsDeployed absent");
+
+        Env env(*this, features() - featureLendingProtocolV1_2);
+        auto const [issuer, owner, depositor, asset] = setupIou(env, {.ownerOnly = true});
+
+        Vault const vault{env};
+        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
+        create[sfScale] = 0;
+        env(create);
+        env.close();
+
+        auto const expectCashBasis = [&](Number const& expected) {
+            auto const sle = env.le(keylet);
+            if (!BEAST_EXPECT(sle))
+                return;
+            BEAST_EXPECT(!sle->isFieldPresent(sfAssetsDeployed));
+            BEAST_EXPECT(sle->at(sfAssetsTotal) == sle->at(sfAssetsAvailable));
+            BEAST_EXPECT(sle->at(sfAssetsTotal) == expected);
+            BEAST_EXPECT(getAssetsTotal(sle) == expected);
+        };
+
+        // Deposit and partial withdrawal move AssetsAvailable and AssetsTotal
+        // together; there is no AssetsDeployed.
+        env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(1'000)}));
+        env.close();
+        expectCashBasis(Number{1'000});
+
+        env(vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(400)}));
+        env.close();
+        expectCashBasis(Number{600});
+
+        // Final withdrawal leaves both at zero.
+        env(vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(600)}));
+        env.close();
+        expectCashBasis(Number{0});
+    }
+
+    // FixedPrecision VaultCreate refuses an AssetsMaximum that is not
+    // exactly representable on the vault's base grid (10^-Scale), whether
+    // because it needs more than 16 significant digits or because it has a
+    // nonzero digit finer than the grid.
+    void
+    testAssetsMaximumNotRepresentableOnCreate()
+    {
+        using namespace test::jtx;
+
+        testcase("FixedPrecision VaultCreate: AssetsMaximum must be exactly representable");
 
         Account const issuer{"issuer"};
         Account const owner{"owner"};
@@ -388,25 +570,240 @@ class VaultFixedPrecision_test : public VaultTestBase
         Env env(*this, features());
         env.fund(XRP(1'000'000), issuer, owner);
         env.close();
-        env(trust(owner, asset(2)));
-        env.close();
-        env(pay(issuer, owner, asset(2)));
-        env.close();
 
-        auto [vault, keylet] = createScaledVault(env, owner, asset, 6);
-        env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(1)}));
-        env.close();
+        Vault const vault{env};
 
-        env(vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(Number{1, -7})}),
-            Ter(tecPRECISION_LOSS));
+        auto tryCreate = [&](Number const& cap, std::optional<std::uint8_t> scale, TER expected) {
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            if (scale)
+                tx[sfScale] = *scale;
+            tx[sfAssetsMaximum] = cap;
+            env(tx, Ter(expected));
+            env.close();
+            if (expected == tesSUCCESS)
+            {
+                auto const sle = env.le(keylet);
+                if (BEAST_EXPECT(sle))
+                    BEAST_EXPECT(Number(sle->at(sfAssetsMaximum)) == cap);
+            }
+            else
+            {
+                BEAST_EXPECT(!env.le(keylet));
+            }
+        };
+
+        // Default Scale (6). 17 significant digits: not exactly representable
+        // in a 16-digit STAmount.
+        tryCreate(Number{12345678901234567LL, -1}, std::nullopt, tecPRECISION_LOSS);
+
+        // Within 16 digits but off the 10^-6 base grid.
+        tryCreate(Number{10000001, -7}, std::nullopt, tecPRECISION_LOSS);
+
+        // Exactly on the base grid.
+        tryCreate(Number{1000001, -6}, std::nullopt, tesSUCCESS);
+
+        // Large value, still on the grid: any integer is a multiple of 10^-6.
+        tryCreate(Number{1, 20}, std::nullopt, tesSUCCESS);
+
+        // A different Scale: on grid.
+        tryCreate(Number{1, -2}, std::uint8_t{2}, tesSUCCESS);
+
+        // Same Scale: off grid (extra digit at 10^-3).
+        tryCreate(Number{1, -3}, std::uint8_t{2}, tecPRECISION_LOSS);
     }
 
+    // Same conditions, enforced by VaultSet::preclaim against the vault's
+    // already-fixed Scale. A refused Set must leave AssetsMaximum unchanged.
     void
-    testClawbackDust()
+    testAssetsMaximumNotRepresentableOnSet()
     {
         using namespace test::jtx;
 
-        testcase("VaultClawback rejects sub-base-unit dust");
+        testcase("FixedPrecision VaultSet: AssetsMaximum must be exactly representable");
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        PrettyAsset const asset{issuer["USD"]};
+
+        Env env(*this, features());
+        env.fund(XRP(1'000'000), issuer, owner);
+        env.close();
+
+        Vault const vault{env};
+        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(create);
+        env.close();
+
+        auto currentMax = [&]() -> std::optional<Number> {
+            auto const sle = env.le(keylet);
+            if (!BEAST_EXPECT(sle))
+                return std::nullopt;
+            if (!sle->isFieldPresent(sfAssetsMaximum))
+                return std::nullopt;
+            return Number(sle->at(sfAssetsMaximum));
+        };
+
+        auto trySet = [&](Number const& cap, TER expected) {
+            auto const before = currentMax();
+            auto tx = vault.set({.owner = owner, .id = keylet.key});
+            tx[sfAssetsMaximum] = cap;
+            env(tx, Ter(expected));
+            env.close();
+            if (expected == tesSUCCESS)
+            {
+                BEAST_EXPECT(currentMax() == cap);
+            }
+            else
+            {
+                BEAST_EXPECT(currentMax() == before);
+            }
+        };
+
+        // 17 significant digits.
+        trySet(Number{12345678901234567LL, -1}, tecPRECISION_LOSS);
+        // Off the 10^-6 grid but within 16 digits.
+        trySet(Number{10000001, -7}, tecPRECISION_LOSS);
+        // Exactly on the grid: accepted and stored.
+        trySet(Number{1000001, -6}, tesSUCCESS);
+        // Large on-grid value.
+        trySet(Number{1, 20}, tesSUCCESS);
+    }
+
+    // On an integral asset (MPT, XRP) the base grid is 10^0, so any
+    // non-integral AssetsMaximum is refused regardless of digit count.
+    void
+    testAssetsMaximumIntegralAssets()
+    {
+        using namespace test::jtx;
+
+        testcase("FixedPrecision VaultCreate: AssetsMaximum on integral assets (MPT, XRP)");
+
+        // MPT.
+        {
+            Env env(*this, features());
+            auto const [issuer, owner, depositor, asset] =
+                setupMpt(env, {.maxAmt = 1'000'000, .holderFunds = 1'000'000});
+
+            Vault const vault{env};
+            {
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                tx[sfAssetsMaximum] = Number{5, -1};  // 0.5, non-integral
+                env(tx, Ter(tecPRECISION_LOSS));
+                env.close();
+                BEAST_EXPECT(!env.le(keylet));
+            }
+            {
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                tx[sfAssetsMaximum] = Number{1'000};
+                env(tx, Ter(tesSUCCESS));
+                env.close();
+                auto const sle = env.le(keylet);
+                if (BEAST_EXPECT(sle))
+                    BEAST_EXPECT(Number(sle->at(sfAssetsMaximum)) == Number{1'000});
+            }
+        }
+
+        // XRP.
+        {
+            Env env(*this, features());
+            Account const owner{"owner"};
+            env.fund(XRP(1'000'000), owner);
+            env.close();
+            PrettyAsset const asset = xrpIssue();
+
+            Vault const vault{env};
+            {
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                tx[sfAssetsMaximum] = Number{5, -1};
+                env(tx, Ter(tecPRECISION_LOSS));
+                env.close();
+                BEAST_EXPECT(!env.le(keylet));
+            }
+            {
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                tx[sfAssetsMaximum] = Number{1'000};
+                env(tx, Ter(tesSUCCESS));
+                env.close();
+                auto const sle = env.le(keylet);
+                if (BEAST_EXPECT(sle))
+                    BEAST_EXPECT(Number(sle->at(sfAssetsMaximum)) == Number{1'000});
+            }
+        }
+    }
+
+    // Control: pre-V1.2 (CashBasis) vaults have no FixedPrecision grid
+    // check, so an off-grid AssetsMaximum is accepted on both VaultCreate and
+    // VaultSet, as before this change.
+    void
+    testAssetsMaximumOffGridAcceptedPreV12()
+    {
+        using namespace test::jtx;
+
+        testcase(
+            "Pre-FixedPrecision (CashBasis) VaultCreate/Set: AssetsMaximum grid check does not "
+            "apply");
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        PrettyAsset const asset{issuer["USD"]};
+
+        Env env(*this, features() - featureLendingProtocolV1_2);
+        env.fund(XRP(1'000'000), issuer, owner);
+        env.close();
+
+        Vault const vault{env};
+        // Off the 10^-6 grid: on FixedPrecision this would be tecPRECISION_LOSS.
+        Number const offGrid{10000001, -7};
+
+        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
+        create[sfScale] = 0;
+        create[sfAssetsMaximum] = offGrid;
+        env(create, Ter(tesSUCCESS));
+        env.close();
+
+        auto const sle = env.le(keylet);
+        if (BEAST_EXPECT(sle))
+            BEAST_EXPECT(Number(sle->at(sfAssetsMaximum)) == offGrid);
+
+        // VaultSet with a different off-grid value on the same pre-V1.2 vault.
+        Number const offGrid2{10000003, -7};
+        auto tx = vault.set({.owner = owner, .id = keylet.key});
+        tx[sfAssetsMaximum] = offGrid2;
+        env(tx, Ter(tesSUCCESS));
+        env.close();
+        auto const sle2 = env.le(keylet);
+        if (BEAST_EXPECT(sle2))
+            BEAST_EXPECT(Number(sle2->at(sfAssetsMaximum)) == offGrid2);
+    }
+
+    // Reproduces a reported issue: the end-of-transaction associateAsset pass is not
+    // a no-op. The original witness (VaultDepositAssociateAsset_test.cpp) grows a
+    // vault's running total by two decades so the exact sum needs 18 digits, more
+    // than an IOU STAmount holds, and shows associateAsset quantizing it afterwards.
+    // On this branch that same deposit is refused outright: the Open-zone guard
+    // in checkOptionalVaultInflow (testDepositAdmission above) caps a FixedPrecision
+    // IOU vault's total at the largest value representable in 16 digits at its
+    // Scale, so a deposit that would need 18 digits never reaches associateAsset in
+    // the first place. This test reproduces the two-decade-jump shape at Scale 10
+    // (this branch's fixed Scale ceiling) and confirms it is rejected with
+    // tecLIMIT_EXCEEDED, leaving the vault unchanged -- the deposit side of the
+    // issue does not reproduce on FixedPrecision because the Open-zone guard
+    // forecloses it structurally.
+    //
+    // The Withdraw/Clawback witnesses are not exercised here: their dust-vault
+    // precondition (sfAssetsTotal below the smallest representable IOU, 10^-81)
+    // needs a donation into an insolvent vault, which VaultDeposit::preclaim
+    // refuses outright (tecLOCKED, no donation exemption -- a known, separately
+    // tracked gap) and is otherwise unreachable by any sequence of transactions,
+    // so it cannot be ported as a transactor test.
+    void
+    testDepositCoarseningRefusedInsteadOfAssociateAssetRounding()
+    {
+        using namespace test::jtx;
+
+        testcase(
+            "A deposit shaped like the associateAsset witness is refused by the "
+            "Open-zone guard on FixedPrecision, not silently rounded");
 
         Account const issuer{"issuer"};
         Account const owner{"owner"};
@@ -415,23 +812,38 @@ class VaultFixedPrecision_test : public VaultTestBase
 
         Env env(*this, features());
         env.fund(XRP(1'000'000), issuer, owner, depositor);
-        env(fset(issuer, asfAllowTrustLineClawback));
         env.close();
-        env(trust(depositor, asset(2)));
+        env(fset(issuer, asfDefaultRipple));
         env.close();
-        env(pay(issuer, depositor, asset(2)));
+        env(trust(depositor, asset(20'000'000)));
         env.close();
-
-        auto [vault, keylet] = createScaledVault(env, owner, asset, 6);
-        env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(1)}));
+        env(pay(issuer, depositor, asset(15'000'000)));
         env.close();
 
-        env(vault.clawback(
-                {.issuer = issuer,
-                 .id = keylet.key,
-                 .holder = depositor,
-                 .amount = asset(Number{1, -7}).value()}),
-            Ter(tecPRECISION_LOSS));
+        Vault const vault{env};
+        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
+        create[sfScale] =
+            kVaultMaximumFixedPrecisionIouScale;  // 10: the branch's fixed Scale ceiling
+        env(create);
+        env.close();
+
+        // First deposit uses all 16 digits an IOU STAmount has, at Scale 10 (span 10^5..10^-10),
+        // well inside the Open zone (9e5 at this Scale).
+        Number const firstDeposit{1'234'567'890'123'456LL, -10};
+        env(vault.deposit(
+            {.depositor = depositor, .id = keylet.key, .amount = asset(firstDeposit)}));
+        env.close();
+        checkFixedPrecisionSync(env, keylet, firstDeposit);
+
+        // Second deposit grows the magnitude by two more decades, mirroring the reporters'
+        // witness (span would become 10^7..10^-10, 18 digits): refused before associateAsset
+        // ever sees an unrepresentable total.
+        env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(10'000'000)}),
+            Ter(tecLIMIT_EXCEEDED));
+        env.close();
+
+        // The vault is untouched by the refused deposit.
+        checkFixedPrecisionSync(env, keylet, firstDeposit);
     }
 
 public:
@@ -443,9 +855,16 @@ public:
         testExistingCashBasisVault();
         testPartialTowardZeroRounding();
         testIntegralAssetCapacity();
-        testDepositDust();
-        testWithdrawDust();
-        testClawbackDust();
+        testDust();
+        testAssetsTotalStaysInSyncIou();
+        testAssetsTotalStaysInSyncClawback();
+        testAssetsTotalStaysInSyncIntegralAsset();
+        testCashBasisAssetsTotalControl();
+        testAssetsMaximumNotRepresentableOnCreate();
+        testAssetsMaximumNotRepresentableOnSet();
+        testAssetsMaximumIntegralAssets();
+        testAssetsMaximumOffGridAcceptedPreV12();
+        testDepositCoarseningRefusedInsteadOfAssociateAssetRounding();
     }
 };
 

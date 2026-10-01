@@ -178,9 +178,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
         if (auto const value = tx[field]; value &&
             (STAmount{asset, *value} != *value ||
              (getVaultVersion(sleVault) == VaultVersion::FixedPrecision &&
-              roundToAsset(
-                  asset, *value, getVaultBaseScale(sleVault), Number::RoundingMode::TowardsZero) !=
-                  *value)))
+              !isOnVaultBaseGrid(asset, *value, getVaultBaseScale(sleVault)))))
         {
             JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value
                                << ") can not be represented as a(n) " << to_string(asset) << ".";

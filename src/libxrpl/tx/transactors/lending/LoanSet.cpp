@@ -316,6 +316,12 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
+    if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+    {
+        // FixedPrecision Vaults are not yet supported by LoanSet.
+        return tecNO_PERMISSION;
+    }
+
     if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
     {
         auto const phase = getVaultPhase(ctx.view, vault);
@@ -347,7 +353,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     // already at AssetsMaximum cannot take another loan. Cash-basis origination
     // does not change AssetsTotal (see cash_basis::loanOriginationDeltas), so
     // this leftover instant-recognition gate must not apply there.
-    if (getVaultVersion(vault) < VaultVersion::CashBasis && vault->at(sfAssetsMaximum) != 0 &&
+    if (getVaultVersion(vault) != VaultVersion::CashBasis && vault->at(sfAssetsMaximum) != 0 &&
         vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
     {
         JLOG(ctx.j.warn()) << "Vault at maximum assets limit. Can't add another loan.";
@@ -496,7 +502,7 @@ LoanSet::doApply()
 
     XRPL_ASSERT_PARTS(
         *vaultSle->at(sfAssetsMaximum) == 0 ||
-            getVaultVersion(vaultSle) >= VaultVersion::CashBasis ||
+            getVaultVersion(vaultSle) == VaultVersion::CashBasis ||
             *vaultSle->at(sfAssetsMaximum) > *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
         "instant-recognition vault is below maximum limit");
@@ -559,8 +565,7 @@ LoanSet::doApply()
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     {
         auto const minCover = [&]() {
-            if (ctx_.view().rules().enabled(fixCleanup3_2_0) ||
-                getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+            if (ctx_.view().rules().enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(newDebtTotal, coverRateMinimum, vaultSle);
             }

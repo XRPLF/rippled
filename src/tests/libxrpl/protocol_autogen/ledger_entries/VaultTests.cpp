@@ -33,6 +33,7 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     auto const assetsMaximumValue = canonical_NUMBER();
     auto const lossUnrealizedValue = canonical_NUMBER();
     auto const yieldUnrealizedValue = canonical_NUMBER();
+    auto const assetsDeployedValue = canonical_NUMBER();
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
@@ -59,6 +60,7 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     builder.setAssetsMaximum(assetsMaximumValue);
     builder.setLossUnrealized(lossUnrealizedValue);
     builder.setYieldUnrealized(yieldUnrealizedValue);
+    builder.setAssetsDeployed(assetsDeployedValue);
     builder.setScale(scaleValue);
     builder.setLEVersion(lEVersionValue);
     builder.setVaultKind(vaultKindValue);
@@ -177,6 +179,14 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = assetsDeployedValue;
+        auto const actualOpt = entry.getAssetsDeployed();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAssetsDeployed");
+        EXPECT_TRUE(entry.hasAssetsDeployed());
+    }
+
+    {
         auto const& expected = scaleValue;
         auto const actualOpt = entry.getScale();
         ASSERT_TRUE(actualOpt.has_value());
@@ -242,6 +252,7 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     auto const assetsMaximumValue = canonical_NUMBER();
     auto const lossUnrealizedValue = canonical_NUMBER();
     auto const yieldUnrealizedValue = canonical_NUMBER();
+    auto const assetsDeployedValue = canonical_NUMBER();
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
@@ -265,6 +276,7 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     sle->at(sfAssetsMaximum) = assetsMaximumValue;
     sle->at(sfLossUnrealized) = lossUnrealizedValue;
     sle->at(sfYieldUnrealized) = yieldUnrealizedValue;
+    sle->at(sfAssetsDeployed) = assetsDeployedValue;
     sle->at(sfShareMPTID) = shareMPTIDValue;
     sle->at(sfWithdrawalPolicy) = withdrawalPolicyValue;
     sle->at(sfScale) = scaleValue;
@@ -451,6 +463,19 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = assetsDeployedValue;
+
+        auto const fromSleOpt = entryFromSle.getAssetsDeployed();
+        auto const fromBuilderOpt = entryFromBuilder.getAssetsDeployed();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAssetsDeployed");
+        expectEqualField(expected, *fromBuilderOpt, "sfAssetsDeployed");
+    }
+
+    {
         auto const& expected = scaleValue;
 
         auto const fromSleOpt = entryFromSle.getScale();
@@ -597,6 +622,8 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getLossUnrealized().has_value());
     EXPECT_FALSE(entry.hasYieldUnrealized());
     EXPECT_FALSE(entry.getYieldUnrealized().has_value());
+    EXPECT_FALSE(entry.hasAssetsDeployed());
+    EXPECT_FALSE(entry.getAssetsDeployed().has_value());
     EXPECT_FALSE(entry.hasScale());
     EXPECT_FALSE(entry.getScale().has_value());
     EXPECT_FALSE(entry.hasLEVersion());
