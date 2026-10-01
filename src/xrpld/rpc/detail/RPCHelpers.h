@@ -17,7 +17,6 @@
 #include <xrpl/protocol/STLedgerEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
-#include <xrpl/server/NetworkOPs.h>
 
 #include <cstdint>
 #include <optional>

@@ -311,20 +311,22 @@ public:
         env(offer(alice, usdGw1(10), XRP(100)));
         env.close();
 
+        {
+            json::Value params;
+            params[jss::account] = alice.human();
+            auto const result = env.rpc("json", "account_offers", to_string(params))[jss::result];
+            BEAST_EXPECT(!result.isMember(jss::error_message));
+            BEAST_EXPECT(result[jss::offers].size() == 1);
+        }
+
+        // The marker points directly at the Credential entry
+        auto const credKey = credentials::keylet(alice, gw1, "termsandconditions").key;
         json::Value params;
         params[jss::account] = alice.human();
-        params[jss::limit] = 1u;
-        auto const first = env.rpc("json", "account_offers", to_string(params))[jss::result];
-        BEAST_EXPECT(!first.isMember(jss::error_message));
-        BEAST_EXPECT(checkMarker(first));
-
-        // The marker returned above points at the Credential entry. Feeding
-        // it back in should resume the filtering
-        params[jss::marker] = first[jss::marker];
-        auto const second = env.rpc("json", "account_offers", to_string(params))[jss::result];
-        BEAST_EXPECT(!second.isMember(jss::error_message));
-        BEAST_EXPECT(second[jss::offers].isArray());
-        BEAST_EXPECT(second[jss::offers].size() == 1);
+        params[jss::marker] = to_string(credKey) + ",0";
+        auto const result = env.rpc("json", "account_offers", to_string(params))[jss::result];
+        BEAST_EXPECT(!result.isMember(jss::error_message));
+        BEAST_EXPECT(result[jss::offers].isArray());
     }
 
     void

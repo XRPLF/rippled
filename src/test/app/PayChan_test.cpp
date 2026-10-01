@@ -15,6 +15,7 @@
 
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 
 #include <xrpl/basics/Buffer.h>
@@ -1234,21 +1235,24 @@ struct PayChan_test : public beast::unit_test::Suite
         env(create(alice, bob, XRP(1), settleDelay, alice.pk()));
         env.close();
 
+        {
+            json::Value params;
+            params[jss::account] = alice.human();
+            auto const result = env.rpc("json", "account_channels", to_string(params))[jss::result];
+            BEAST_EXPECT(!result.isMember(jss::error_message));
+            BEAST_EXPECT(result[jss::channels].size() == 1);
+            BEAST_EXPECT(
+                result[jss::channels][0u][jss::destination_account].asString() == bob.human());
+        }
+
+        // The marker points directly at the Credential entry
+        auto const credKey = credentials::keylet(alice, gw1, "termsandconditions").key;
         json::Value params;
         params[jss::account] = alice.human();
-        params[jss::limit] = 1;
-        auto const first = env.rpc("json", "account_channels", to_string(params))[jss::result];
-        BEAST_EXPECT(!first.isMember(jss::error_message));
-        BEAST_EXPECT(first.isMember(jss::marker));
-
-        // The marker returned above points at the Credential entry. Feeding
-        // it back in should resume the filtering
-        params[jss::marker] = first[jss::marker];
-        auto const second = env.rpc("json", "account_channels", to_string(params))[jss::result];
-        BEAST_EXPECT(!second.isMember(jss::error_message));
-        BEAST_EXPECT(second[jss::channels].isArray());
-        BEAST_EXPECT(second[jss::channels].size() == 1);
-        BEAST_EXPECT(second[jss::channels][0u][jss::destination_account].asString() == bob.human());
+        params[jss::marker] = to_string(credKey) + ",0";
+        auto const result = env.rpc("json", "account_channels", to_string(params))[jss::result];
+        BEAST_EXPECT(!result.isMember(jss::error_message));
+        BEAST_EXPECT(result[jss::channels].isArray());
     }
 
     void
