@@ -2461,14 +2461,14 @@ enforces that in CI, because the two silently drifted once already.
 ## Alerting
 
 xrpld provisions fourteen Grafana alert rules on the health-critical metrics, so
-a stock stack alerts out of the box with no UI setup. Rules are provisioned from
+a stock stack loads them with no UI setup. Rules are provisioned from
 `docker/telemetry/grafana/provisioning/alerting/` and load automatically when
 the Grafana container starts. They appear under **Alerting → Alert rules**,
 folder **xrpld**.
 
-> **All rules ship `isPaused: true`.** Thresholds are tuned against a small
-> dev/devnet population, so every rule is deactivated on arrival — compare it
-> against your own baseline, then unpause. The key is camelCase: `is_paused` is
+> **All rules ship `isPaused: true`.** Thresholds are starting points, so every
+> rule is deactivated on arrival — compare each against your own baseline, then
+> unpause. The key is camelCase: `is_paused` is
 > **silently ignored** by the provisioning loader (no error, no warning) and
 > leaves the rule live. Note the sibling field `notification_settings` _is_
 > snake_case.
@@ -2477,9 +2477,10 @@ folder **xrpld**.
 
 All rules evaluate every minute against the Prometheus datasource and aggregate
 `by (service_instance_id)` so each node alerts on its own. Every expr selects
-`{service_name="xrpld"}` — the same Prometheus may also host a legacy statsd
-fleet exporting some of these names (`state_accounting_*` in particular) with no
-xrpld resource attributes, and without the selector those series get summed in.
+`{service_name="xrpld"}`. Another exporter on the same Prometheus, such as a
+StatsD bridge, can export some of these names (`state_accounting_*` in
+particular) without xrpld's resource attributes, and without the selector those
+series get summed in.
 Alerts fire only after the condition holds for the `for` dwell time.
 
 | Alert                      | Severity | Fires when                                              | For |
@@ -2534,15 +2535,14 @@ node is likely down. Check peer count and process health first.
 **ValidatedLedgerStale** — The validated ledger has fallen more than 60s behind.
 This is the clearest single "is this node healthy" signal on XRPL: it is the
 symptom nearly every consensus or sync failure eventually produces, so it is
-often the first thing to check and the last thing to clear. Measured over 7 days:
-p50 2s, p95 4s, p99 5s on every node.
+often the first thing to check and the last thing to clear. On a healthy node
+the validated ledger is a few seconds old.
 
 > **The `< 1209600` clause in this rule's expression is required — do not remove
 > it.** When a node holds no validated ledger at all,
 > `LedgerMaster::getValidatedLedgerAge()` returns `weeks{2}` (1 209 600 s) as a
 > **sentinel**, not a measurement. Without the clause the rule reads that as "14
-> days stale" and fires on every node during startup — measured, it produced
-> sustained firing on all nine nodes over a six-day window, healthy ones included.
+> days stale" and can fire on any node during startup, healthy ones included.
 > A node genuinely stuck without a validated ledger is caught by
 > `LedgerCloseStalled` and `NodeNotFull` instead.
 
@@ -2614,8 +2614,8 @@ startup walk.
 
 **The `uptime > 3600` gate is load-bearing.** Every node walks
 `disconnected → connected → syncing → tracking → full` once at boot; without the
-gate, every restart pages. The trade-off is deliberate: flapping confined to the
-first hour after boot is not alerted.
+gate, every restart pages. The trade-off is deliberate: the rule starts
+evaluating an hour after boot.
 
 Investigate in this order: the online-delete rotation's cache freshen (a
 rotation logs `rotating` when it starts and `finished rotation` when it
@@ -2630,43 +2630,32 @@ counter by definition cannot catch it.
 
 #### Overlay / manifests
 
-**ManifestJobQueueConvoy** — Manifest jobs are backing up in the job queue. Peers
-send `TMManifests` dumps up to ~57MB (just under `kMaximumMessageSize`, see
-`overlay/Message.h`), and `JtManifest` is registered with `maxLimit`
-(`core/JobTypes.h`), so every peer's dump runs concurrently and they convoy on
-`ManifestCache::mutex_`; `OverlayImpl::onManifests` also re-verifies the blob a
-second time on Accept. Measured effect: each `RcvManifests` job took 16-18s and
-the entire 8-worker pool was occupied.
+**ManifestJobQueueConvoy** — Manifest jobs are backing up in the job queue: they
+arrive faster than the job workers can run them.
 
 This is the most reliable manifest-flood signal because `jobq_manifest_waiting`
-is `0` at the 99.9th percentile on every node over 24h — any sustained backlog is
-a genuine outlier rather than normal variance.
+is almost always `0` on a healthy node: any sustained backlog is a genuine
+outlier rather than normal variance.
 
 **ManifestFloodInbound** — Inbound manifest byte-rate exceeds 512 KiB/s (524288
-B/s — the rule's literal `params: [524288]`). Catches the
-wire-level cause (a peer shipping oversized dumps) even when the job pool absorbs
-it without a visible backlog. Measured over 7 days: healthy p95 0.2-0.5 kB/s and
-p99 1.0-1.8 kB/s, against peaks up to 2.7 MB/s during real storms — so the
-threshold sits ~280x above healthy p99 and ~5x below the peaks.
+B/s — the rule's literal `params: [524288]`). Catches a high inbound manifest
+rate even when the job pool absorbs it without a visible backlog. The threshold
+sits far above a healthy node's inbound manifest rate, so routine traffic does
+not page. Tune it against a multi-day sample; a single day hides weekly
+variation.
 
-> An earlier revision used 50 kB/s, justified from a 24-hour window. Over a full
-> week that produced ~41 sustained 5-minute firings across six **healthy** nodes,
-> i.e. routine paging. Prefer a 7-day sample when tuning any threshold here; 24
-> hours is too short to expose weekly variation.
-
-> **Both manifest rules deliberately suppress startup.** The manifest storm at
-> boot is _measured normal behaviour_, so `ManifestFloodInbound` carries an
-> `uptime > 1800` gate and `ManifestJobQueueConvoy` relies on a 10m dwell that the
-> startup burst does not outlast. A flood confined to the first 30 minutes after
-> boot will therefore not alert.
+> **Startup.** A manifest burst at boot is normal. `ManifestFloodInbound` has an
+> `uptime > 1800` gate, so it starts evaluating 30 minutes after boot.
+> `ManifestJobQueueConvoy` has no uptime gate; its 10m dwell keeps the short
+> startup burst from paging.
 
 **PeerResourceDisconnects** — The node dropped more than 5 peers in 30m for
 exceeding resource budgets. Sustained disconnects starve the node of peers and
 precede sync loss.
 
-**UntrustedValidationFlood** — Validations from untrusted validators are arriving at more than 3x their baseline rate. Peers relay untrusted validations by default, so the normal rate depends on the network's validator count and on this node's peer count. The rule therefore divides the last 2m rate of `validations_untrusted_messages_in` by a baseline: the average rate over the hour that ended 10m earlier. This lets one threshold fit any network with more than 50 msg/s of untrusted traffic. Measured over 30 days, the ratio stayed below 1.2 except in two events. A real flood peaked at about 20x and stayed above 3 for about 4 minutes; the rule would have fired on its second minute. A smaller 2.4x burst would not have fired. When it fires, check peer latency, consensus round time and whether the node left `full`. It is a burst detector: a flood that keeps going enters the baseline 10 minutes after it starts. The alert then resolves within about 30 minutes of the start, even while the flood goes on. Before treating a resolve as the end of the flood, check the Untrusted In series on the Network Traffic dashboard's "Validation Traffic" panel.
+**UntrustedValidationFlood** — Validations from untrusted validators are arriving at more than 3x their baseline rate. Peers relay untrusted validations by default, so the normal rate depends on the network's validator count and on this node's peer count. The rule therefore divides the last 2m rate of `validations_untrusted_messages_in` by a baseline: the average rate over the hour that ended 10m earlier. This lets one threshold fit any network with more than 50 msg/s of untrusted traffic. On a healthy node the ratio stays near 1, or below it where the 50 msg/s floor applies. The ratio must stay above 3 on two evaluations in a row before the rule fires. When it fires, check peer latency, consensus round time and whether the node left `full`. After it resolves, confirm on the Network Traffic dashboard's "Validation Traffic" panel (Untrusted In series) that the flood has ended.
 
-> **Two guards keep this rule quiet on healthy nodes.** The baseline has a floor of 50 msg/s (`clamp_min(..., 50)`), so a network with almost no untrusted traffic needs more than 150 msg/s to fire instead of dividing by zero. An `uptime > 4200` gate (the 1h baseline plus its 10m offset) skips the first 70 minutes after boot. After a stop of an hour or more, the baseline hour holds only minutes of samples, so it reads far too low. Over the same 30 days, without the gate the ratio passed 3 for up to about 20 minutes after such a stop, peaking at about 4.5. A flood in the first 70 minutes after boot is not alerted.
+> **Two guards keep this rule quiet on healthy nodes.** The baseline has a floor of 50 msg/s (`clamp_min(..., 50)`), so on a network with almost no untrusted traffic the rule does not divide by zero, and needs more than 150 msg/s to fire. An `uptime > 4200` gate (the 1h baseline plus its 10m offset) skips the first 70 minutes after boot. After a stop of an hour or more, the baseline hour holds only minutes of samples, so it reads far too low, and without the gate the ratio could pass 3 for many minutes.
 
 ### Tuning thresholds
 
@@ -2675,7 +2664,7 @@ Thresholds live in
 array of each rule's `threshold` node (the node its `condition` names). Common tunables:
 
 - **`JobQueueLatencyHigh`** — `params: [1000000]` is 1 000 000 µs (1s). Lower
-  it for latency-sensitive deployments.
+  it for latency-sensitive deployments, but keep it well above the healthy p99.
 - **`LedgerCloseStalled` / `ValidationsNotChecked`** — use `lt` with a tiny
   epsilon (`0.001`) rather than `0`, so floating-point rate noise near zero
   does not suppress the alert.
@@ -2728,7 +2717,8 @@ docker compose -f docker/telemetry/docker-compose.yml up -d grafana
 
 Three traps worth knowing before you edit this file:
 
-- **Do not substitute `${SLACK_WEBHOOK_URL}` / `${ALERT_EMAIL_TO}` here.** Grafana
+- **Do not replace either placeholder with a variable such as
+  `${SLACK_WEBHOOK_URL}`.** Grafana
   expands `${VAR}` but does **not** support `${VAR:-default}`, so an unset variable
   expands to empty, fails validation, and Grafana **exits 1** — taking the whole
   telemetry stack down, not just alerting. A blank variable does not "disable that
@@ -2779,13 +2769,14 @@ cannot be loaded there. Cloud deployment goes through the Grafana alerting **RES
 API**, driven from the same tracked `rules.yaml` — it stays the single source of
 truth, so local and Cloud cannot drift.
 
-Each rule needs three Cloud-specific transforms on the way out:
+Each rule needs four Cloud-specific transforms on the way out:
 
-| Field in `rules.yaml`             | Cloud form               |
-| --------------------------------- | ------------------------ |
-| local `prometheus` datasource uid | the Cloud datasource uid |
-| `folder:` _name_                  | an existing `folderUID`  |
-| `interval` (duration string)      | integer seconds          |
+| Field in `rules.yaml`             | Cloud form                                                      |
+| --------------------------------- | --------------------------------------------------------------- |
+| local `prometheus` datasource uid | the Cloud datasource uid                                        |
+| `folder:` _name_                  | an existing `folderUID`                                         |
+| `interval` (duration string)      | integer seconds                                                 |
+| no `notification_settings`        | `notification_settings.receiver` set to the Cloud contact point |
 
 Then, in order:
 
@@ -2799,18 +2790,15 @@ Land the rules with delivery disabled while no recipient has been chosen, and
 activate them only once the thresholds have been checked against the target
 fleet's baseline.
 
-Credentials come from `.env.grafanaserviceapi` (gitignored, a service-account
-token with `alert.rules:write`); the recipient address comes from `ALERT_EMAIL_TO`
-in `.env.alerting`. Neither is ever written to a tracked file.
+Cloud cannot read `contactpoints.yaml` or `templates.yaml` either: create the
+contact points and templates through the API or UI, and keep them in step by
+hand. Keep the API token and any recipient addresses out of tracked files.
 
-> **The Cloud notification policy tree must not be pushed.** There is exactly one
-> policy tree per org and the PUT endpoint **replaces it wholesale**. On a shared
-> stack the root receiver and its sibling routes belong to other teams, so pushing
-> an xrpld-shaped tree would silently re-route their alerts. The uploader
-> therefore never touches the tree; instead each rule carries
-> `notification_settings.receiver`, which routes that rule directly to the xrpld
-> contact point and bypasses the tree entirely. Verify with a before/after hash of
-> `GET /api/v1/provisioning/policies`.
+> **Do not push a notification policy tree to a Grafana Cloud stack.** The PUT
+> endpoint **replaces the org's default policy tree wholesale**, so pushing this
+> repository's tree would replace any routes already there.
+> Route each rule to its contact point with `notification_settings.receiver`
+> instead, which bypasses the tree.
 
 ### Verifying alert provisioning loaded
 

@@ -19,10 +19,10 @@
 #
 # Conventions that are load-bearing — do not "simplify" these away:
 #
-#   * Every expr selects {service_name="xrpld"}. The same Prometheus also
-#     hosts a legacy statsd fleet under job="integrations/unix" which exports
-#     some of these names (state_accounting_* in particular) with no xrpld
-#     resource attributes. Without the selector those series get summed in.
+#   * Every expr selects {service_name="xrpld"}. Another exporter on the same
+#     Prometheus, such as a StatsD bridge, can export some of these names
+#     (state_accounting_* in particular) without xrpld's resource attributes.
+#     Without the selector those series get summed in.
 #
 #   * `isPaused: true` on every rule. The key is camelCase; `is_paused` is
 #     SILENTLY IGNORED by the provisioning loader (no error, no warning) and
@@ -43,9 +43,9 @@
 #     provisioned Slack template does not read it; to tag an on-call group,
 #     add a mention for it to your own Slack template.
 #
-# Thresholds are documented in docs/telemetry-runbook.md (Alerting section)
-# and are derived from measured values across a 7-node dev/devnet population.
-# Production nodes (higher peer counts, real traffic) need a re-tune.
+# Thresholds are documented in docs/telemetry-runbook.md (Alerting section).
+# They are starting points: tune them against your own nodes, since busier
+# production nodes (more peers, real traffic) behave differently.
 
 apiVersion: 1
 
@@ -192,17 +192,16 @@ groups:
                 uid: __expr__
 
       # The validated ledger falling behind wall-clock is the single clearest
-      # "this node is unhealthy" signal on XRPL: it is the symptom every other
-      # consensus/sync failure eventually produces. Measured p50 2s / p95 4s /
-      # p99 5s across all nodes over 7d, so 60s carries ~12x headroom over p99.
+      # "this node is unhealthy" signal on XRPL: it is the symptom nearly every
+      # consensus or sync failure eventually produces. On a healthy node the
+      # validated ledger is a few seconds old, so 60s leaves wide headroom.
       #
       # The `< 1209600` clause is REQUIRED, not defensive. When there is no
       # validated ledger at all, LedgerMaster::getValidatedLedgerAge() returns
       # weeks{2} == 1209600s as a SENTINEL rather than a measurement
       # (LedgerMaster.cpp, "No validated ledger" branch). Without the clause the
-      # rule reads that sentinel as "14 days stale" and fires on every node
-      # during startup — measured: it produced sustained firing on all 9 nodes
-      # including healthy ones over a 6-day window. Excluding the exact sentinel
+      # rule reads that sentinel as "14 days stale" and can fire on any node
+      # during startup, healthy ones included. Excluding the exact sentinel
       # keeps the rule measuring real staleness; a node genuinely holding no
       # validated ledger is caught by LedgerCloseStalled and NodeNotFull.
       - uid: xrpld-validated-ledger-stale
@@ -513,14 +512,9 @@ groups:
       # above 1s means the node is saturated and work is backing up. `le` must
       # stay inside the inner sum or histogram_quantile cannot interpolate.
       #
-      # Threshold re-validated after the microsecond ladder was re-cut. Do NOT
-      # tune it down against a casual reading of this p99: before that change
-      # the ladder's first edge was 100us with 99.3% of samples beneath it, so
-      # p99 reported 99.7us -- the bucket edge scaled by the quantile, not a
-      # latency. Measured cumulative distribution: 99.26% of samples land
-      # within 100us, 99.969% within 5ms, 99.990% within 100ms, and only
-      # 0.0022% exceed 1s. So 1s sits about four orders of magnitude above the
-      # healthy p99 and fires only on genuine saturation, which is the intent.
+      # Do NOT tune the threshold down toward the healthy p99. Healthy queue
+      # waits sit far below 1s, so a p99 over 1s for 5m means a real backlog,
+      # which is the intent.
       - uid: xrpld-jobqueue-latency-high
         title: JobQueueLatencyHigh
         condition: is_queue_slow
@@ -820,19 +814,14 @@ groups:
     folder: xrpld
     interval: 1m
     rules:
-      # Manifest job convoy — the primary manifest-flooding signal.
+      # Manifest job convoy — the primary manifest-flooding signal. A sustained
+      # backlog means manifest jobs arrive faster than the job workers can run
+      # them.
       #
-      # Peers send TMManifests dumps up to ~57MB (just under
-      # kMaximumMessageSize, overlay/Message.h). JtManifest is registered with
-      # maxLimit (core/JobTypes.h), so every peer's dump runs concurrently and
-      # they convoy on ManifestCache::mutex_; OverlayImpl::onManifests also
-      # re-verifies the blob a second time on Accept. Measured effect: each
-      # RcvManifests job took 16-18s and the whole 8-worker pool was occupied.
-      #
-      # jobq_manifest_waiting is 0 at the 99.9th percentile on every node over
-      # 24h, so any sustained backlog is a genuine outlier rather than normal
-      # variance. Threshold >3 with a 10m dwell keeps the measured startup
-      # burst (peaks of 5 and 11, lasting well under 10m) from paging.
+      # On a healthy node jobq_manifest_waiting is almost always 0, so a
+      # sustained backlog is a genuine outlier rather than normal variance.
+      # Threshold >3 with a 10m dwell keeps the short startup burst from
+      # paging.
       - uid: xrpld-manifest-job-convoy
         title: ManifestJobQueueConvoy
         condition: is_convoying
@@ -850,8 +839,7 @@ groups:
             Manifest jobs waiting on {{ $labels.service_instance_id }} over 10m: {{
             printf "%.0f" $values.manifest_waiting_now.Value }} (threshold: more than 3).
           action: >-
-            Peer manifest dumps are saturating the job pool and convoying on the
-            manifest cache lock.
+            Manifest jobs are arriving faster than the job workers can run them.
         data:
           - refId: manifest_waiting_10m
             relativeTimeRange:
@@ -896,23 +884,16 @@ groups:
                 uid: __expr__
 
       # Inbound manifest byte-rate flood. Complements the convoy rule: this
-      # catches the wire-level cause (a peer shipping huge dumps) even when the
-      # job pool absorbs it without a visible backlog.
+      # catches a high inbound manifest rate even when the job pool absorbs it
+      # without a visible backlog.
       #
-      # Threshold derived from a 7-day sample (uptime-gated), NOT from the
-      # 24h window that an earlier revision used:
-      #   healthy p95 0.2-0.5 kB/s, p99 1.0-1.8 kB/s
-      #   observed peaks up to 2.7 MB/s during real manifest storms
-      # 512 KiB/s (524288 B/s) sits ~280x above healthy p99 and ~5x below the
-      # peaks. An earlier 50 kB/s threshold produced ~41 sustained 5-min samples
-      # across six healthy nodes over six days (i.e. routine paging);
-      # 512 KiB/s reduces that to 2 while still catching every genuine storm.
+      # 512 KiB/s (524288 B/s) sits far above a healthy node's inbound manifest
+      # rate, so routine traffic does not page. Tune it against a multi-day
+      # sample; a single day hides weekly variation.
       #
-      # The uptime gate exists because the startup manifest burst is MEASURED
-      # NORMAL behaviour. It does not hide real floods — the same 7-day sample
-      # shows firing rates with and without the gate within a factor of two — but a
-      # flood confined to the first 30 minutes after boot is deliberately not
-      # alerted. ManifestJobQueueConvoy covers that window via the job pool.
+      # The uptime gate starts the rule 30 minutes after boot, since a manifest
+      # burst at boot is normal. ManifestJobQueueConvoy has no uptime gate, so
+      # it still evaluates in that window.
       - uid: xrpld-manifest-flood-inbound
         title: ManifestFloodInbound
         condition: is_flooding
@@ -931,7 +912,7 @@ groups:
             printf "%.0f" $values.manifest_bytes_s_now.Value }} B/s (threshold: over 524288 B/s, i.e. 512
             KiB/s).
           action: >-
-            A peer is flooding oversized TMManifests dumps.
+            Inbound manifest traffic is far above a healthy node's rate.
         data:
           - refId: manifest_bytes_s_10m
             relativeTimeRange:
@@ -982,10 +963,9 @@ groups:
       # exceeding resource budgets, which precedes peer starvation and sync
       # loss. Sparse and bursty, so increase() over a wide window.
       #
-      # Measured p95 of the 30m increase: 0 on every healthy node, 4.0 and 11.7
-      # on the two nodes that are independently known to be degraded (the same
-      # two that flap). So >5 sits above the healthy baseline entirely and only
-      # trips on a node already in trouble.
+      # A healthy node rarely drops a peer for using up its resource allowance,
+      # so more than 5 in 30m sits above the healthy baseline and points to
+      # trouble with this node or its peers.
       - uid: xrpld-peer-resource-disconnects
         title: PeerResourceDisconnects
         condition: is_disconnecting
@@ -1053,21 +1033,18 @@ groups:
       #
       # The rule divides the last 2m rate by the average over the hour that
       # ended 10m earlier, so one threshold fits any peer count, on any
-      # network with more than 50 msg/s of untrusted traffic. Measured over
-      # 30 days (uptime-gated, mainnet and devnet nodes), the healthy ratio
-      # stayed below 1.2 at every 1m step. A real flood peaked at about 20x
-      # and stayed above 3 for about 4 minutes. A smaller burst reached 2.4x
-      # for one step. Above 3 on two evaluations in a row (for: 1m) fires on
-      # the flood and stays quiet on the burst.
+      # network with more than 50 msg/s of untrusted traffic. On a healthy node
+      # the ratio stays near 1, or below it where the 50 msg/s floor applies.
+      # The ratio must stay above 3 on two evaluations in a row (for: 1m)
+      # before the rule fires.
       #
-      # clamp_min(..., 50) gives a network with almost no untrusted traffic
-      # (devnet: 0 at p99, at most 36/s) a floor instead of a divide by zero,
-      # so there the rule needs more than 150 msg/s to fire.
+      # clamp_min(..., 50) gives a network with almost no untrusted traffic a
+      # floor instead of a divide by zero, so there the rule needs more than
+      # 150 msg/s to fire.
       #
       # The uptime gate is load-bearing. After a stop of an hour or more, the
-      # baseline hour holds only minutes of samples, so it reads far too low.
-      # Over the same 30 days, without the gate the ratio then passed 3 for up
-      # to about 20 minutes, peaking at about 4.5. 4200s is the 1h baseline
+      # baseline hour holds only minutes of samples, so it reads far too low
+      # and the ratio can pass 3 for many minutes. 4200s is the 1h baseline
       # plus its 10m offset. The gate takes the max, not the sum, of
       # the uptime series, so overlapping series cannot inflate it.
       # noDataState is OK because the gate returns no rows while every node is

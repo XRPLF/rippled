@@ -170,10 +170,10 @@ services:
   # Anonymous admin access enabled for local development convenience.
   grafana:
     image: grafana/grafana:13.1.2
-    # Alerting secrets/addresses (Slack webhook, alert email) come from this
-    # gitignored file; Grafana expands the ${VARS} referenced in the alerting
-    # provisioning YAML. Absent file = unset vars = receivers have no live
-    # destination, which is fine for a local stack. See .env.alerting.example.
+    # The SMTP relay settings for email alerts come from this gitignored
+    # file. Contact-point destinations do not: edit them in place in
+    # contactpoints.yaml. An absent file leaves SMTP off, which is fine for a
+    # local stack. See .env.alerting.example.
     env_file:
       - path: .env.alerting
         required: false
@@ -189,10 +189,9 @@ services:
       # makes the renderer reject requests unless both sides share a token that
       # is not the "-" default. Must match AUTH_TOKEN on the renderer service.
       - GF_RENDERING_RENDERER_TOKEN=${GF_RENDERING_RENDERER_TOKEN:-xrpld-local-render}
-    # SMTP for the critical-tier email receiver and the Slack webhook / email
-    # address for the contact points all come from the env_file above, which
-    # injects them straight into the container environment for Grafana to
-    # expand. They are deliberately NOT duplicated here: a compose-level
+    # The SMTP settings for the critical-tier email receiver come from the
+    # env_file above, which puts them straight into the container
+    # environment. They are deliberately NOT duplicated here: a compose-level
     # `environment:` entry is interpolated from the host shell and would
     # override (and blank out) the env_file values.
     ports:
