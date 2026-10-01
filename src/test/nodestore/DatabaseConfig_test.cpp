@@ -83,7 +83,7 @@ private:
         Batch batch;
         batch.reserve(numObjects);
 
-        beast::xor_shift_engine rng(seed);
+        beast::XorShiftEngine rng(seed);
 
         for (int i = 0; i < numObjects; ++i)
         {

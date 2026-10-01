@@ -32,7 +32,7 @@ public:
     }
 
     explicit NFTokenOfferEntry(
-        uint256 const& offerID,
+        UInt256 const& offerID,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::nftokenOffer(offerID), view, j)

@@ -145,7 +145,7 @@ public:
 
     using DeltaItem =
         std::pair<boost::intrusive_ptr<SHAMapItem const>, boost::intrusive_ptr<SHAMapItem const>>;
-    using Delta = std::map<uint256, DeltaItem>;
+    using Delta = std::map<UInt256, DeltaItem>;
 
     SHAMap() = delete;
     SHAMap(SHAMap const&) = delete;
@@ -158,7 +158,7 @@ public:
     // build new map
     SHAMap(SHAMapType t, Family& f);
 
-    SHAMap(SHAMapType t, uint256 const& hash, Family& f);
+    SHAMap(SHAMapType t, UInt256 const& hash, Family& f);
 
     ~SHAMap() = default;
 
@@ -214,10 +214,10 @@ public:
      * Does the tree have an item with the given ID?
      */
     bool
-    hasItem(uint256 const& id) const;
+    hasItem(UInt256 const& id) const;
 
     bool
-    delItem(uint256 const& id);
+    delItem(UInt256 const& id);
 
     bool
     addItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item);
@@ -235,9 +235,9 @@ public:
     // Save a copy if you need to extend the life
     // of the SHAMapItem beyond this SHAMap
     boost::intrusive_ptr<SHAMapItem const> const&
-    peekItem(uint256 const& id) const;
+    peekItem(UInt256 const& id) const;
     boost::intrusive_ptr<SHAMapItem const> const&
-    peekItem(uint256 const& id, SHAMapHash& hash) const;
+    peekItem(UInt256 const& id, SHAMapHash& hash) const;
 
     // traverse functions
     /**
@@ -248,7 +248,7 @@ public:
      * @note The item does not need to exist.
      */
     ConstIterator
-    upperBound(uint256 const& id) const;
+    upperBound(UInt256 const& id) const;
 
     /**
      * Find the object with the greatest object id smaller than the input id.
@@ -258,7 +258,7 @@ public:
      * @note The item does not need to exist.
      */
     ConstIterator
-    lowerBound(uint256 const& id) const;
+    lowerBound(UInt256 const& id) const;
 
     /**
      * Visit every node in this SHAMap
@@ -300,7 +300,7 @@ public:
      * @param filter The filter to use when retrieving nodes
      * @param return The nodes known to be missing
      */
-    std::vector<std::pair<SHAMapNodeID, uint256>>
+    std::vector<std::pair<SHAMapNodeID, UInt256>>
     getMissingNodes(int maxNodes, SHAMapSyncFilter const* filter);
 
     [[nodiscard]] bool
@@ -317,7 +317,7 @@ public:
      * @return the proof path if found
      */
     std::optional<std::vector<Blob>>
-    getProofPath(uint256 const& key) const;
+    getProofPath(UInt256 const& key) const;
 
     /**
      * Verify the proof path
@@ -327,7 +327,7 @@ public:
      * @return true if verified successfully
      */
     static bool
-    verifyProofPath(uint256 const& rootHash, uint256 const& key, std::vector<Blob> const& path);
+    verifyProofPath(UInt256 const& rootHash, UInt256 const& key, std::vector<Blob> const& path);
 
     /**
      * Serializes the root in a format appropriate for sending over the wire
@@ -505,7 +505,7 @@ private:
          * heading for, or the node is newly created. Either way `target` selects the branch.
          */
         void
-        pushNode(SHAMapTreeNodePtr node, uint256 const& target)
+        pushNode(SHAMapTreeNodePtr node, UInt256 const& target)
         {
             if (stack_.empty())
             {
@@ -547,7 +547,7 @@ private:
      * Update hashes up to the root
      */
     void
-    dirtyUp(NodePathStack& stack, uint256 const& target, SHAMapTreeNodePtr terminal);
+    dirtyUp(NodePathStack& stack, UInt256 const& target, SHAMapTreeNodePtr terminal);
 
     /**
      * Walk towards the specified id, returning the node.  Caller must check
@@ -555,12 +555,12 @@ private:
      * id
      */
     SHAMapLeafNode*
-    walkTowardsKey(uint256 const& id, NodePathStack* stack = nullptr) const;
+    walkTowardsKey(UInt256 const& id, NodePathStack* stack = nullptr) const;
     /**
      * Return nullptr if key not found
      */
     SHAMapLeafNode*
-    findKey(uint256 const& id) const;
+    findKey(UInt256 const& id) const;
 
     /**
      * Unshare the node, allowing it to be modified
@@ -604,7 +604,7 @@ private:
      * @return An iterator to the item found, or end() if no item lies on that side of `id`.
      */
     ConstIterator
-    boundHelper(uint256 const& id, BelowDirection direction) const;
+    boundHelper(UInt256 const& id, BelowDirection direction) const;
 
     // Simple descent
     // Get a child of the specified node
@@ -619,14 +619,14 @@ private:
 
     // Descend with filter
     // If pending, callback is called as if it called fetchNodeNT
-    using descendCallback = std::function<void(SHAMapTreeNodePtr, SHAMapHash const&)>;
+    using DescendCallback = std::function<void(SHAMapTreeNodePtr, SHAMapHash const&)>;
     SHAMapTreeNode*
     descendAsync(
         SHAMapInnerNode* parent,
         unsigned int branch,
         SHAMapSyncFilter const* filter,
         bool& pending,
-        descendCallback&&) const;
+        DescendCallback&&) const;
 
     std::pair<SHAMapTreeNode*, SHAMapNodeID>
     descend(
@@ -649,12 +649,12 @@ private:
     bool
     hasInnerNode(SHAMapNodeID const& nodeID, SHAMapHash const& hash) const;
     bool
-    hasLeafNode(uint256 const& tag, SHAMapHash const& hash) const;
+    hasLeafNode(UInt256 const& tag, SHAMapHash const& hash) const;
 
     SHAMapLeafNode const*
     peekFirstItem(NodePathStack& stack) const;
     SHAMapLeafNode const*
-    peekNextItem(uint256 const& id, NodePathStack& stack) const;
+    peekNextItem(UInt256 const& id, NodePathStack& stack) const;
     bool
     walkBranch(
         SHAMapTreeNode* node,
@@ -681,7 +681,7 @@ private:
         std::uint32_t generation;
 
         // nodes we have discovered to be missing
-        std::vector<std::pair<SHAMapNodeID, uint256>> missingNodes;
+        std::vector<std::pair<SHAMapNodeID, UInt256>> missingNodes;
         std::set<SHAMapHash> missingHashes;
 
         // nodes we are in the process of traversing

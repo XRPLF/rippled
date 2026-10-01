@@ -215,10 +215,10 @@ doBookOffers(rpc::JsonContext& context)
             return rpc::invalidFieldError(jss::taker);
     }
 
-    std::optional<uint256> domain;
+    std::optional<UInt256> domain;
     if (context.params.isMember(jss::domain))
     {
-        uint256 num;
+        UInt256 num;
         if (!context.params[jss::domain].isString() ||
             !num.parseHex(context.params[jss::domain].asString()))
         {
