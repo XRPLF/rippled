@@ -345,9 +345,9 @@ PerfLogImp::~PerfLogImp()
 namespace {
 
 /**
- * Adds delta to the count of RPC requests currently executing. The only call
- * site of rpc_in_flight_requests, so rpcStart() and rpcEnd() share one
- * instrument.
+ * Adds delta to the count of RPC requests currently executing. rpcStart()
+ * and rpcEnd() both call it, so they use one name and description and
+ * share one instrument.
  *
  * @param app The application, which holds the metrics registry.
  * @param delta +1 when a request starts, -1 when it ends.

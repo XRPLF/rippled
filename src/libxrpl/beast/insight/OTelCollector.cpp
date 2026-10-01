@@ -129,9 +129,10 @@ private:
 /**
  * @brief OTel-backed implementation of beast::insight::CounterImpl.
  *
- * Wraps an OTel Counter<uint64_t> instrument. Each increment() call
- * is forwarded directly to the OTel counter's Add() method. The
- * PeriodicMetricReader collects and exports the accumulated delta.
+ * Wraps an OTel Counter<uint64_t> instrument. increment() calls Add() only
+ * for a positive amount. The telemetry pipeline's OTLP exporter is
+ * cumulative, so each export carries the running total, not the change since
+ * the last one.
  *
  * Thread safety: OTel Counter::Add() is thread-safe by specification.
  */
@@ -139,6 +140,9 @@ class OTelCounterImpl : public CounterImpl
 {
 public:
     /**
+     * Creates the OTel counter and records 0 on it, so the series exists
+     * from construction instead of from the first increment.
+     *
      * @param name   Export-ready metric name, already run through
      *               formatName() by the collector: lowercase, with `.` and
      *               ` ` mapped to `_` (e.g. "rpc_size").
@@ -339,13 +343,13 @@ private:
 /**
  * @brief OTel-backed implementation of beast::insight::MeterImpl.
  *
- * Wraps an OTel Counter<uint64_t> instrument. Semantically identical
- * to Counter but uses unsigned values. The OTel SDK accumulates deltas
- * and exports them via the PeriodicMetricReader.
+ * Wraps an OTel Counter<uint64_t> instrument, like OTelCounterImpl, but takes
+ * unsigned amounts, so increment() passes every amount to Add(). Export is
+ * cumulative, as for OTelCounterImpl.
  *
- * Note: In StatsD, Meter used the non-standard "|m" type which was
- * silently dropped by the OTel StatsD receiver. With native OTel,
- * Meter values are properly captured as counter deltas.
+ * Note: StatsDCollector sends a Meter with the non-standard "|m" type, which
+ * the OTel StatsD receiver rejects. This collector records it on an OTel
+ * counter, so its values are exported.
  *
  * Thread safety: OTel Counter::Add() is thread-safe by specification.
  */
@@ -353,6 +357,9 @@ class OTelMeterImpl : public MeterImpl
 {
 public:
     /**
+     * Creates the OTel counter and records 0 on it, so the series exists
+     * from construction instead of from the first increment.
+     *
      * @param name   Export-ready metric name, already run through
      *               formatName() by the collector: lowercase, with `.` and
      *               ` ` mapped to `_` (e.g. "rpc_size").
@@ -695,6 +702,9 @@ OTelCounterImpl::OTelCounterImpl(
     opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter)
     : counter_(meter->CreateUInt64Counter(name))
 {
+    // A series that first appears with an event has no earlier sample, so
+    // rate() and increase() miss that event.
+    counter_->Add(0);
 }
 
 void
@@ -828,6 +838,9 @@ OTelMeterImpl::OTelMeterImpl(
     opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter)
     : counter_(meter->CreateUInt64Counter(name))
 {
+    // See OTelCounterImpl: without this zero, rate() and increase() miss the
+    // first increment.
+    counter_->Add(0);
 }
 
 void

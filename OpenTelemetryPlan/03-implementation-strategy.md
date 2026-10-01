@@ -8,9 +8,9 @@
 ## 3.1 Directory Structure
 
 The telemetry implementation follows xrpld's existing code organization
-pattern. The tree below is the current on-disk contents of the three telemetry
-directories, and it has three differences from the original design sketch worth
-calling out: `TelemetryConfig.h`, `TraceContext.h`, `SpanAttributes.h` and
+pattern. The tree below sketches the three telemetry directories. It differs
+from the original design sketch in two ways worth calling out:
+`TelemetryConfig.h`, `TraceContext.h`, `SpanAttributes.h` and
 `TraceContext.cpp` were never created (config structs live inside
 `Telemetry.h`, propagation lives in `TraceContextPropagator.h`, and attribute
 constants live in the `*SpanNames.h` headers next to their owning class); the
@@ -23,6 +23,7 @@ include/xrpl/telemetry/            # libxrpl layer: tracing SDK wrapper
 ├── SpanGuard.h                    # RAII span management, factory methods, discard()
 ├── SpanNames.h                    # StaticStr/join() + shared span & attr constants
 ├── DiscardFlag.h                  # Thread-local discard flag
+├── FilteringSpanProcessor.h       # Drops discarded spans; exports each attribute key once
 ├── CoroAwareContextStorage.h      # RuntimeContextStorage override for coroutines
 ├── DeterministicIdGenerator.h     # trace_id from txHash / prevLedgerHash
 ├── TraceContextPropagator.h       # protobuf TraceContext inject/extract (P2P)
@@ -32,7 +33,8 @@ include/xrpl/telemetry/            # libxrpl layer: tracing SDK wrapper
 └── GetObjectMetricNames.h         # getobject_* metric name constants
 
 src/libxrpl/telemetry/
-├── Telemetry.cpp                  # TelemetryImpl + FilteringSpanProcessor + initMetrics()
+├── Telemetry.cpp                  # TelemetryImpl + initMetrics()
+├── FilteringSpanProcessor.cpp     # Span processor + the recordable that merges repeated keys
 ├── TelemetryConfig.cpp            # [telemetry] section parsing (makeTelemetrySetup)
 ├── SpanGuard.cpp                  # Span/scope guard implementation
 ├── CoroAwareContextStorage.cpp
