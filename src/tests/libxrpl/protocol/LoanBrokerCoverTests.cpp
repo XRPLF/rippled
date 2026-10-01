@@ -37,7 +37,7 @@ makeBroker(Asset const& asset, Number const& coverAvailable)
     return broker;
 }
 
-TEST(LoanBrokerCover, BrokerCoverScaleAndRounding)
+TEST(LoanBrokerCover, broker_cover_scale_and_rounding)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -73,7 +73,7 @@ TEST(LoanBrokerCover, BrokerCoverScaleAndRounding)
         refine);
 }
 
-TEST(LoanBrokerCover, BrokerCoverOptionalInflowBoundaries)
+TEST(LoanBrokerCover, broker_cover_optional_inflow_boundaries)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -97,7 +97,7 @@ TEST(LoanBrokerCover, BrokerCoverOptionalInflowBoundaries)
     }
 }
 
-TEST(LoanBrokerCover, BrokerCoverOptionalInflowScaleMismatch)
+TEST(LoanBrokerCover, broker_cover_optional_inflow_scale_mismatch)
 {
     // Base scale 6: CoverAvailable already carries 16 significant digits, so
     // any positive inflow needs a coarser posterior scale than the broker's
@@ -112,7 +112,7 @@ TEST(LoanBrokerCover, BrokerCoverOptionalInflowScaleMismatch)
     EXPECT_EQ(checkOptionalBrokerCoverInflow(vault, broker, amount), tecLIMIT_EXCEEDED);
 }
 
-TEST(LoanBrokerCover, CreditToPosteriorBrokerCoverScaleAtToNearestCarryCusp)
+TEST(LoanBrokerCover, credit_to_posterior_broker_cover_scale_at_to_nearest_carry_cusp)
 {
     // Base scale 6; CoverAvailable already has 16 significant digits, one
     // unit below the next power of ten. Number holds 19 digits, so the raw
