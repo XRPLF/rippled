@@ -3822,11 +3822,12 @@ first one that is wrong and fix it before reading further panels.
    - `connected` — success; this is the line that must be non-zero.
    - `tcp_fail` — no route, refused, or the peer port is closed or firewalled.
    - `tls_fail` — the TLS handshake failed.
-   - `self_connection` — TLS succeeded and PeerFinder then recognised the
-     remote address as one of this node's own, so it had dialled itself. A
-     local misconfiguration (own address in `[ips_fixed]`, or behind the
-     advertised endpoint), not an unreachable peer; reported separately so a
-     rising `tls_fail` is not confused with it.
+   - `self_connection` — TLS succeeded and then PeerFinder found the dial
+     had come back in to this node: it had dialled itself. The
+     address can come from `[ips]` or `[ips_fixed]`, or from a peer:
+     PeerFinder stores addresses peers send without checking them against
+     its own, so this can happen with no misconfiguration. It is reported
+     apart from `tls_fail` because no peer failed.
    - `upgrade_fail` — TLS succeeded but the HTTP upgrade or protocol
      negotiation was rejected. This is the outcome that pairs with step 3.
    - `timeout` — the attempt never reached a terminal state.
