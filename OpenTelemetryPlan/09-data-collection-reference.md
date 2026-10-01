@@ -109,14 +109,14 @@ Controlled by `trace_rpc=1` in `[telemetry]` config.
 
 Controlled by `trace_transactions=1` in `[telemetry]` config.
 
-| Span Name       | Parent         | Source File     | Description                                                       |
-| --------------- | -------------- | --------------- | ----------------------------------------------------------------- |
-| `tx.process`    | —              | NetworkOPs.cpp  | Transaction submission entry point (local or peer-relayed)        |
-| `tx.receive`    | —              | PeerImp.cpp     | Raw transaction received from peer overlay (before deduplication) |
-| `tx.apply`      | `ledger.build` | BuildLedger.cpp | Transaction set applied to new ledger during consensus            |
-| `tx.preflight`  | —              | applySteps.cpp  | Stateless checks stage (`stage=preflight`)                        |
-| `tx.preclaim`   | —              | applySteps.cpp  | Ledger-aware checks stage before fee claim (`stage=preclaim`)     |
-| `tx.transactor` | —              | Transactor.cpp  | Apply stage — the transactor runs (`stage=apply`)                 |
+| Span Name       | Parent         | Source File     | Description                                                   |
+| --------------- | -------------- | --------------- | ------------------------------------------------------------- |
+| `tx.process`    | —              | NetworkOPs.cpp  | Transaction submission entry point (local or peer-relayed)    |
+| `tx.receive`    | —              | PeerImp.cpp     | Transaction received from peer overlay (after deduplication)  |
+| `tx.apply`      | `ledger.build` | BuildLedger.cpp | Transaction set applied to new ledger during consensus        |
+| `tx.preflight`  | —              | applySteps.cpp  | Stateless checks stage (`stage=preflight`)                    |
+| `tx.preclaim`   | —              | applySteps.cpp  | Ledger-aware checks stage before fee claim (`stage=preclaim`) |
+| `tx.transactor` | —              | Transactor.cpp  | Apply stage — the transactor runs (`stage=apply`)             |
 
 The three apply-pipeline spans share a deterministic `trace_id` derived from
 `txID[0:16]`, so preflight, preclaim, and transactor for one transaction group
