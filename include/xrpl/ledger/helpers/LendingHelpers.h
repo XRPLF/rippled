@@ -50,7 +50,7 @@ namespace xrpl {
 [[nodiscard]] TER
 canApplyToBrokerCover(
     ReadView const& view,
-    SLE::const_ref sleBroker,
+    SLE::ConstRef sleBroker,
     Asset const& vaultAsset,
     STAmount const& amount,
     beast::Journal j,
@@ -63,7 +63,7 @@ namespace detail {
  * unrounded delta.
  */
 [[nodiscard]] int
-getPosteriorBrokerCoverScale(SLE::const_ref vault, SLE::const_ref broker, STAmount const& delta);
+getPosteriorBrokerCoverScale(SLE::ConstRef vault, SLE::ConstRef broker, STAmount const& delta);
 
 /**
  * Round a cover outflow delta (cover withdraw, cover clawback, the
@@ -75,8 +75,8 @@ getPosteriorBrokerCoverScale(SLE::const_ref vault, SLE::const_ref broker, STAmou
  */
 [[nodiscard]] STAmount
 roundToPosteriorBrokerCoverScale(
-    SLE::const_ref vault,
-    SLE::const_ref broker,
+    SLE::ConstRef vault,
+    SLE::ConstRef broker,
     STAmount const& delta,
     Number::RoundingMode roundingMode);
 
@@ -95,8 +95,8 @@ roundToPosteriorBrokerCoverScale(
  */
 [[nodiscard]] STAmount
 debitToPosteriorBrokerCoverScale(
-    SLE::const_ref vault,
-    SLE::const_ref broker,
+    SLE::ConstRef vault,
+    SLE::ConstRef broker,
     STAmount const& amount,
     Number::RoundingMode roundingMode);
 
@@ -110,8 +110,8 @@ debitToPosteriorBrokerCoverScale(
  */
 [[nodiscard]] STAmount
 creditToPosteriorBrokerCoverScale(
-    SLE::const_ref vault,
-    SLE::const_ref broker,
+    SLE::ConstRef vault,
+    SLE::ConstRef broker,
     STAmount const& raw,
     Number::RoundingMode roundingMode);
 
@@ -130,7 +130,7 @@ creditToPosteriorBrokerCoverScale(
  * limit; LoanBrokerCoverWithdraw and LoanBrokerCoverClawback are unaffected.
  */
 [[nodiscard]] TER
-checkOptionalBrokerCoverInflow(SLE::const_ref vault, SLE::const_ref broker, STAmount const& amount);
+checkOptionalBrokerCoverInflow(SLE::ConstRef vault, SLE::ConstRef broker, STAmount const& amount);
 
 // Lending protocol has dependencies, so capture them here.
 bool
@@ -346,7 +346,7 @@ template <class NumberProxy>
 void
 adjustBrokerDebtTotal(
     NumberProxy debtTotal,
-    SLE::const_ref vaultSle,
+    SLE::ConstRef vaultSle,
     Number const& delta,
     int vaultScale)
 {
@@ -369,7 +369,7 @@ adjustBrokerDebtTotal(
  * (-Scale, or 0 for integral assets).
  */
 Number
-minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::const_ref vaultSle);
+minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::ConstRef vaultSle);
 
 TER
 checkLoanGuards(
@@ -399,7 +399,7 @@ constructLoanState(
 // directly from a Loan ledger object, which always holds rounded values,
 // rather than taking them as separate Number arguments.
 LoanState
-constructLoanState(SLE::const_ref loan);
+constructLoanState(SLE::ConstRef loan);
 
 Number
 computeManagementFee(
@@ -422,7 +422,7 @@ computeFullPaymentInterest(
 // boundary is amendment-gated: with fixCleanup3_4_0 the due date must be
 // strictly in the past, otherwise the exact due-date instant counts as late.
 [[nodiscard]] bool
-isPaymentLate(ReadView const& view, SLE::const_ref loanSle);
+isPaymentLate(ReadView const& view, SLE::ConstRef loanSle);
 
 // Deltas applied to Vault.AssetsTotal and LoanBroker.DebtTotal at a single
 // accounting touch point (origination, payment, impair/unimpair/default).
@@ -450,7 +450,7 @@ loanOriginationExceedsVaultMaximum(
 
 // LoanManage impair/unimpair/default: the vault's exposure to this loan
 Number
-loanVaultExposure(SLE::const_ref loanSle);
+loanVaultExposure(SLE::ConstRef loanSle);
 
 // LoanPay: what's added to Vault.AssetsTotal and subtracted from LoanBroker.DebtTotal for a payment
 AccountingDeltas
@@ -466,7 +466,7 @@ AccountingDeltas
 loanOriginationDeltas(Number const& principalRequested);
 
 Number
-loanVaultExposure(SLE::const_ref loanSle);
+loanVaultExposure(SLE::ConstRef loanSle);
 
 AccountingDeltas
 loanPaymentDeltas(LoanPaymentParts const& parts);
@@ -479,21 +479,21 @@ loanPaymentDeltas(LoanPaymentParts const& parts);
 // points transactors call.
 AccountingDeltas
 loanOriginationDeltas(
-    SLE::const_ref vaultSle,
+    SLE::ConstRef vaultSle,
     Number const& principalRequested,
     Number const& interestDue);
 
 bool
 loanOriginationExceedsVaultMaximum(
-    SLE::const_ref vaultSle,
+    SLE::ConstRef vaultSle,
     Number const& vaultTotal,
     Number const& interestDue);
 
 Number
-loanVaultExposure(SLE::const_ref vaultSle, SLE::const_ref loanSle);
+loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle);
 
 AccountingDeltas
-loanPaymentDeltas(SLE::const_ref vaultSle, LoanPaymentParts const& parts);
+loanPaymentDeltas(SLE::ConstRef vaultSle, LoanPaymentParts const& parts);
 
 namespace detail {
 // These classes and functions should only be accessed by LendingHelper
@@ -761,8 +761,8 @@ std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
     ApplyView& view,
-    SLE::ref loan,
-    SLE::const_ref brokerSle,
+    SLE::Ref loan,
+    SLE::ConstRef brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
     beast::Journal j);

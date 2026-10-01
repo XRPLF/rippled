@@ -266,7 +266,7 @@ protected:
     // first, matching how STAmount::mpt()/xrp() extract an exact int64.
     template <class T>
     static std::uint64_t
-    toU64(SLE::const_ref vault, TypedField<T> const& field)
+    toU64(SLE::ConstRef vault, TypedField<T> const& field)
     {
         Asset const asset = vault->at(sfAsset);
         STAmount const amount{asset, Number(vault->at(field))};

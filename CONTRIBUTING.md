@@ -479,8 +479,12 @@ exists, then no other unit test will be executed, apart from `TestSuiteName`.
     elsewhere in the codebase.
 12. Use clear and self-explanatory names for functions, variables,
     structs and classes.
-13. Use TitleCase for classes, structs and filenames, camelCase for
-    function and variable names, lower case for namespaces and folders.
+13. Use TitleCase for classes, structs, type aliases and filenames,
+    camelCase for function and variable names, lower case for namespaces and
+    folders. The exception is a type alias that generic code looks up by name
+    (`value_type`, `iterator`, `result_type`, and the rest of the standard
+    container, hash and clock members), which keeps its snake_case spelling;
+    `.clang-tidy` lists the names that are allowed.
 14. Provide as many comments as you feel that a competent programmer
     would need to understand what your code does.
 

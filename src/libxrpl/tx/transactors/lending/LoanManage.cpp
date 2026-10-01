@@ -145,9 +145,9 @@ namespace {
 TER
 defaultLoanFixedPrecision(
     ApplyView& view,
-    SLE::ref loanSle,
-    SLE::ref brokerSle,
-    SLE::ref vaultSle,
+    SLE::Ref loanSle,
+    SLE::Ref brokerSle,
+    SLE::Ref vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -280,9 +280,9 @@ defaultLoanFixedPrecision(
 TER
 LoanManage::defaultLoan(
     ApplyView& view,
-    SLE::ref loanSle,
-    SLE::ref brokerSle,
-    SLE::ref vaultSle,
+    SLE::Ref loanSle,
+    SLE::Ref brokerSle,
+    SLE::Ref vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -435,8 +435,8 @@ LoanManage::defaultLoan(
 TER
 LoanManage::impairLoan(
     ApplyView& view,
-    SLE::ref loanSle,
-    SLE::ref vaultSle,
+    SLE::Ref loanSle,
+    SLE::Ref vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -502,8 +502,8 @@ LoanManage::impairLoan(
 [[nodiscard]] TER
 LoanManage::unimpairLoan(
     ApplyView& view,
-    SLE::ref loanSle,
-    SLE::ref vaultSle,
+    SLE::Ref loanSle,
+    SLE::Ref vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -627,7 +627,7 @@ LoanManage::doApply()
 }
 
 void
-LoanManage::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanManage::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

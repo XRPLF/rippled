@@ -997,7 +997,7 @@ public:
         env(trust("alice", usd(100)),
             Msig(becky, bogie_),
             Fee(3 * baseFee),
-            Require(lines("alice", 1)));
+            Require(Lines("alice", 1)));
         env.close();
         env.require(Owners(alice, 2));
 
@@ -1388,20 +1388,20 @@ public:
         // Attach phantom signers to alice using a ticket.
         env(signers(alice, 1, {{bogie_, 1}, {demon_, 1}}), ticket::Use(aliceTicketSeq++));
         env.close();
-        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+        env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // This should work.
         auto const baseFee = env.current()->fees().base;
         env(noop(alice), Msig(bogie_, demon_), Fee(3 * baseFee), ticket::Use(aliceTicketSeq++));
         env.close();
-        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+        env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // Should also be able to remove the signer list using a ticket.
         env(signers(alice, jtx::kNone), ticket::Use(aliceTicketSeq++));
         env.close();
-        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+        env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
     }
 
@@ -1421,8 +1421,8 @@ public:
 
         uint8_t tag2[] = "hello world some ascii 32b long";  // including 1 byte for NUL
 
-        uint256 bogieTag = xrpl::BaseUInt<256>::fromVoid(tag1);
-        uint256 demonTag = xrpl::BaseUInt<256>::fromVoid(tag2);
+        UInt256 bogieTag = xrpl::BaseUInt<256>::fromVoid(tag1);
+        UInt256 demonTag = xrpl::BaseUInt<256>::fromVoid(tag2);
 
         // Attach phantom signers to alice and use them for a transaction.
         env(signers(alice, 1, {{bogie_, 1, bogieTag}, {demon_, 1, demonTag}}));

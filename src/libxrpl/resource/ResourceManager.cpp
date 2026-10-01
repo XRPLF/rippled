@@ -36,7 +36,7 @@ private:
     std::condition_variable cond_;
 
 public:
-    ManagerImp(beast::insight::Collector::ptr const& collector, beast::Journal journal)
+    ManagerImp(beast::insight::Collector::Ptr const& collector, beast::Journal journal)
         : journal_(journal), logic_(collector, stopwatch(), journal)
     {
         thread_ = std::thread{&ManagerImp::run, this};
@@ -159,7 +159,7 @@ Manager::~Manager() = default;
 //------------------------------------------------------------------------------
 
 std::unique_ptr<Manager>
-makeManager(beast::insight::Collector::ptr const& collector, beast::Journal journal)
+makeManager(beast::insight::Collector::Ptr const& collector, beast::Journal journal)
 {
     return std::make_unique<ManagerImp>(collector, journal);
 }

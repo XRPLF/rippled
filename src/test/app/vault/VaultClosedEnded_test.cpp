@@ -453,21 +453,21 @@ private:
 
         // Boundary: parent close time exactly at SubscriptionDate must still
         // be Subscription.
-        closeToTime(env, tp{d{sub}});
+        closeToTime(env, Tp{D{sub}});
         runTest(tesSUCCESS, tesSUCCESS);
 
         // One second past SubscriptionDate: Investment.
-        closeToTime(env, tp{d{sub}} + getLedgerTimeResolution(env));
+        closeToTime(env, Tp{D{sub}} + getLedgerTimeResolution(env));
         runTest(tecEXPIRED, tecTOO_SOON);
 
         // Any point strictly before RedemptionDate remains Investment.
-        closeToTime(env, tp{d{red}} - getLedgerTimeResolution(env));
+        closeToTime(env, Tp{D{red}} - getLedgerTimeResolution(env));
         runTest(tecEXPIRED, tecTOO_SOON);
 
         // Boundary: parent close time == RedemptionDate is Redemption (per
         // spec table: now >= RedemptionDate). Deposits are rejected but
         // withdrawals succeed.
-        closeToTime(env, tp{d{red}});
+        closeToTime(env, Tp{D{red}});
         runTest(tecEXPIRED, tesSUCCESS);
         env.close();
     }
@@ -502,7 +502,7 @@ private:
         // Advance the clock through a wide range of ledger times: an open-ended vault's phase
         // must be NoPhase at every one of them, because the derivation short-circuits on
         // VaultKind::OpenEnded before it looks at any dates.
-        auto const ledgerTime = tp{d{30}} + env.closed()->header().closeTimeResolution;
+        auto const ledgerTime = Tp{D{30}} + env.closed()->header().closeTimeResolution;
         checkPhaseAt(ledgerTime);
         checkPhaseAt(ledgerTime + std::chrono::seconds{kMinInvestmentPeriod});
         checkPhaseAt(
@@ -543,11 +543,11 @@ private:
         deposit(tesSUCCESS);
 
         // Investment: rejected.
-        env.close(tp{d{sub + 1}});
+        env.close(Tp{D{sub + 1}});
         deposit(tecEXPIRED);
 
         // Redemption: rejected.
-        env.close(tp{d{red}});
+        env.close(Tp{D{red}});
         deposit(tecEXPIRED);
     }
 
@@ -604,7 +604,7 @@ private:
         withdraw(XRP(1).value(), tesSUCCESS);
 
         // Investment: rejected.
-        closeToTime(env, tp{d{sub}} + getLedgerTimeResolution(env));
+        closeToTime(env, Tp{D{sub}} + getLedgerTimeResolution(env));
         withdraw(XRP(1).value(), tecTOO_SOON);
 
         // Deploy capital: borrower takes a loan of XRP(60) against the
@@ -623,7 +623,7 @@ private:
         // withdrawal within AssetsAvailable succeeds. A withdrawal within the depositor's share
         // value but exceeding the vault's liquid balance fails with tecINSUFFICIENT_FUNDS from the
         // vault-shortage guard (not the insufficient-shares guard).
-        closeToTime(env, tp{d{red}});
+        closeToTime(env, Tp{D{red}});
         withdraw(XRP(10).value(), tesSUCCESS);
         withdraw(XRP(80).value(), tecINSUFFICIENT_FUNDS);
     }
@@ -710,7 +710,7 @@ private:
         env.close();
 
         // ---- Investment phase (now == sub + 1) ----
-        env.close(tp{d{sub + 1}});
+        env.close(Tp{D{sub + 1}});
 
         // Deposits into a closed-ended vault past SubscriptionDate return tecEXPIRED.
         env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = XRP(10).value()}),
@@ -752,7 +752,7 @@ private:
         sharesEq(bob, 200'000'000);
 
         // ---- Redemption phase (now == red) ----
-        env.close(tp{d{red}});
+        env.close(Tp{D{red}});
 
         // Deposits into a closed-ended vault past SubscriptionDate return tecEXPIRED, in both
         // Investment and Redemption.
@@ -824,7 +824,7 @@ private:
         // Investment phase: originate a zero-interest, single-payment loan
         // with a 300s payment interval and 60s grace. The payment is due
         // shortly after origination and well before RedemptionDate.
-        env.close(tp{d{sub + 1}});
+        env.close(Tp{D{sub + 1}});
         env(loan::set(borrower, brokerKeylet.key, XRP(60).value()),
             loan::kInterestRate(TenthBips32(0)),
             kGracePeriod(60),
@@ -838,7 +838,7 @@ private:
 
         // Advance to Redemption. The payment is now past its due date and
         // grace, and the vault is no longer in Investment.
-        closeToTime(env, tp{d{red}});
+        closeToTime(env, Tp{D{red}});
 
         env(loan::pay(borrower, loanKeylet.key, XRP(60).value(), tfLoanLatePayment));
         env.close();
@@ -890,7 +890,7 @@ private:
         env(loan_broker::set(owner, keylet.key));
         env.close();
 
-        env.close(tp{d{sub + 1}});
+        env.close(Tp{D{sub + 1}});
 
         auto const originate = [&](Account const& b, STAmount const& principal) {
             env(loan::set(b, brokerKeylet.key, principal),
@@ -946,7 +946,7 @@ private:
         }
 
         // Redemption: both depositors withdraw in full.
-        env.close(tp{d{red}});
+        env.close(Tp{D{red}});
         env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = XRP(100).value()}));
         env.close();
         env(vault.withdraw({.depositor = bob, .id = keylet.key, .amount = XRP(100).value()}));
@@ -997,14 +997,14 @@ private:
         totalsEq(iou(290).value());
 
         // Investment phase clawback.
-        env.close(tp{d{sub + 1}});
+        env.close(Tp{D{sub + 1}});
         env(vault.clawback(
             {.issuer = issuer, .id = keylet.key, .holder = alice, .amount = iou(10).value()}));
         env.close();
         totalsEq(iou(280).value());
 
         // Redemption phase clawback.
-        env.close(tp{d{red}});
+        env.close(Tp{D{red}});
         env(vault.clawback(
             {.issuer = issuer, .id = keylet.key, .holder = alice, .amount = iou(10).value()}));
         env.close();
