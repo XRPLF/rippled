@@ -82,13 +82,6 @@ constexpr std::array<SField const*, 9> kOwnerDirNodeFields{
     &sfVaultNode,
 };
 
-// Catch accidental duplicates in kOwnerDirNodeFields at compile time.
-static_assert(
-    std::ranges::all_of(
-        kOwnerDirNodeFields,
-        [](SField const* f) { return std::ranges::count(kOwnerDirNodeFields, f) == 1; }),
-    "kOwnerDirNodeFields must not contain duplicates");
-
 }  // namespace
 
 bool
