@@ -635,7 +635,7 @@ ValidConfidentialMPToken::visitEntry(
 
         // Record the after-state MPToken so finalize() can evaluate the mirror
         // key invariants (I17-I20) against its issuance.
-        change.mptoken = after;
+        change.mptokens.push_back(after);
 
         // I20: a transaction that rewrites sfIssuerEncryptedBalance without
         // advancing sfIssuerKeyMirrorEpoch must leave sfIssuerMirrorEncryptionKey
@@ -877,9 +877,9 @@ ValidConfidentialMPToken::finalize(
                 return false;
             }
 
-            if (checks.mptoken)
+            for (auto const& mptokenPtr : checks.mptokens)
             {
-                auto const& mptoken = *checks.mptoken;
+                auto const& mptoken = *mptokenPtr;
                 bool const hasMirrorKey = mptoken.isFieldPresent(sfIssuerMirrorEncryptionKey);
                 bool const hasMirrorEpoch = mptoken.isFieldPresent(sfIssuerKeyMirrorEpoch);
 
@@ -921,17 +921,17 @@ ValidConfidentialMPToken::finalize(
                         return false;
                     }
                 }
+            }
 
-                // I20: rewriting sfIssuerEncryptedBalance without advancing
-                // sfIssuerKeyMirrorEpoch must leave sfIssuerMirrorEncryptionKey
-                // unchanged.
-                if (checks.mirrorKeyChangedWithoutEpoch)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: sfIssuerMirrorEncryptionKey changed "
-                                       "without advancing the mirror epoch for MPT "
-                                    << to_string(id);
-                    return false;
-                }
+            // I20: rewriting sfIssuerEncryptedBalance without advancing
+            // sfIssuerKeyMirrorEpoch must leave sfIssuerMirrorEncryptionKey
+            // unchanged.
+            if (checks.mirrorKeyChangedWithoutEpoch)
+            {
+                JLOG(j.fatal()) << "Invariant failed: sfIssuerMirrorEncryptionKey changed "
+                                   "without advancing the mirror epoch for MPT "
+                                << to_string(id);
+                return false;
             }
         }
     }

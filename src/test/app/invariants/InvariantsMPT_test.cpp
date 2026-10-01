@@ -1873,6 +1873,53 @@ class InvariantsMPT_test : public InvariantsBase
             STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseStaleMirror);
+
+        // Multiple holders under the same issuance. Corrupt the MPToken that is visited first (smaller key) so a
+        // regression that only retains the last-visited entry would miss it.
+        Account const a3{"A3"};
+        auto const precloseTwoHolders =
+            [&mptID, &a3](Account const& a1, Account const& a2, Env& env) -> bool {
+            env.fund(XRP(1000), a3);
+            MPTTester mpt(env, a1, {.holders = {a2, a3}, .fund = false});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance});
+            mptID = mpt.issuanceID();
+            mpt.authorize({.account = a2});
+            mpt.authorize({.account = a3});
+            mpt.pay(a1, a2, 100);
+            mpt.pay(a1, a3, 100);
+            mpt.generateKeyPair(a1);
+            mpt.set({.account = a1, .issuerPubKey = mpt.getPubKey(a1)});
+            mpt.generateKeyPair(a2);
+            mpt.convert({.account = a2, .amt = 100, .holderPubKey = mpt.getPubKey(a2)});
+            mpt.generateKeyPair(a3);
+            mpt.convert({.account = a3, .amt = 100, .holderPubKey = mpt.getPubKey(a3)});
+            return true;
+        };
+
+        doInvariantCheck(
+            {"sfIssuerMirrorEncryptionKey presence does not match sfIssuerKeyMirrorEpoch presence"},
+            [&mptID, &a3](Account const&, Account const& a2, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                auto sleToken2 = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                auto sleToken3 = ac.view().peek(keylet::mptoken(mptID, a3.id()));
+                if (!sleIssuance || !sleToken2 || !sleToken3)
+                    return false;
+                // The MPToken visited first (smaller key) is corrupted; the
+                // other is touched but left valid.
+                auto& corrupt = sleToken2->key() < sleToken3->key() ? sleToken2 : sleToken3;
+                auto& other = sleToken2->key() < sleToken3->key() ? sleToken3 : sleToken2;
+                // Add a mirror key but leave the mirror epoch absent.
+                corrupt->setFieldVL(
+                    sfIssuerMirrorEncryptionKey, sleIssuance->getFieldVL(sfIssuerEncryptionKey));
+                ac.view().update(corrupt);
+                // Touch the other holder's MPToken so finalize() sees both.
+                ac.view().update(other);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseTwoHolders);
     }
 
 public:

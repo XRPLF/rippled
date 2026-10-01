@@ -187,9 +187,9 @@ class ValidConfidentialMPToken
         // I16: sfInitialIssuerEncryptionKey present before the transaction but
         // absent or changed afterwards.
         bool initialIssuerKeyMutated = false;
-        // The holder MPToken after the transaction, used by finalize() to
-        // evaluate the mirror-key invariants against its issuance.
-        SLE::const_pointer mptoken;
+        // The holder MPTokens after the transaction, used by finalize() to
+        // evaluate the mirror-key invariants against their issuance.
+        std::vector<SLE::const_pointer> mptokens;
         // I20: sfIssuerEncryptedBalance was rewritten without advancing
         // sfIssuerKeyMirrorEpoch, yet sfIssuerMirrorEncryptionKey changed.
         bool mirrorKeyChangedWithoutEpoch = false;
