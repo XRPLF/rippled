@@ -17,6 +17,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
