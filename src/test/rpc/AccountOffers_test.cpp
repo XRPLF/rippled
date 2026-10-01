@@ -3,6 +3,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
@@ -287,12 +288,53 @@ public:
     }
 
     void
+    testAccountOffersMarkerAcrossTypes()
+    {
+        testcase("Marker pointing to a non-offer owner directory entry");
+        using namespace jtx;
+        Env env{*this};
+
+        Account const alice{"alice"};
+        Account const gw1{"gw1"};
+        env.fund(XRP(10000), alice, gw1);
+        env.close();
+
+        // gw1, the credential issuer, can place a Credential
+        // into alice's owner directory. alice's consent isn't required for
+        // the object to exist there.
+        env(credentials::create(alice, gw1, "termsandconditions"));
+        env.close();
+
+        // A buy order for USD doesn't require alice to already hold a USD
+        // trust line, so this is the only other entry in alice's directory.
+        auto const usdGw1 = gw1["USD"];
+        env(offer(alice, usdGw1(10), XRP(100)));
+        env.close();
+
+        json::Value params;
+        params[jss::account] = alice.human();
+        params[jss::limit] = 1u;
+        auto const first = env.rpc("json", "account_offers", to_string(params))[jss::result];
+        BEAST_EXPECT(!first.isMember(jss::error_message));
+        BEAST_EXPECT(checkMarker(first));
+
+        // The marker returned above points at the Credential entry. Feeding
+        // it back in should resume the filtering
+        params[jss::marker] = first[jss::marker];
+        auto const second = env.rpc("json", "account_offers", to_string(params))[jss::result];
+        BEAST_EXPECT(!second.isMember(jss::error_message));
+        BEAST_EXPECT(second[jss::offers].isArray());
+        BEAST_EXPECT(second[jss::offers].size() == 1);
+    }
+
+    void
     run() override
     {
         testSequential(true);
         testSequential(false);
         testBadInput();
         testNonAdminMinLimit();
+        testAccountOffersMarkerAcrossTypes();
     }
 };
 

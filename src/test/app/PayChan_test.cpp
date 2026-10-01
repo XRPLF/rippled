@@ -1210,6 +1210,48 @@ struct PayChan_test : public beast::unit_test::Suite
     }
 
     void
+    testAccountChannelsRPCMarkerCredentialGap(FeatureBitset features)
+    {
+        testcase("Account channels RPC marker across owner directory types");
+
+        using namespace jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw1 = Account("gw1");
+        Env env{*this, features};
+        env.fund(XRP(10000), alice, bob, gw1);
+        env.close();
+
+        // gw1, the credential issuer, can unilaterally place a Credential
+        // into alice's owner directory. alice's consent isn't required for
+        // the object to exist there.
+        env(credentials::create(alice, gw1, "termsandconditions"));
+        env.close();
+
+        auto const settleDelay = 3600s;
+        env(create(alice, bob, XRP(1), settleDelay, alice.pk()));
+        env.close();
+
+        json::Value params;
+        params[jss::account] = alice.human();
+        params[jss::limit] = 1;
+        auto const first = env.rpc("json", "account_channels", to_string(params))[jss::result];
+        BEAST_EXPECT(!first.isMember(jss::error_message));
+        BEAST_EXPECT(first.isMember(jss::marker));
+
+        // The marker returned above points at the Credential entry. Feeding
+        // it back in should resume the filtering
+        params[jss::marker] = first[jss::marker];
+        auto const second = env.rpc("json", "account_channels", to_string(params))[jss::result];
+        BEAST_EXPECT(!second.isMember(jss::error_message));
+        BEAST_EXPECT(second[jss::channels].isArray());
+        BEAST_EXPECT(second[jss::channels].size() == 1);
+        BEAST_EXPECT(second[jss::channels][0u][jss::destination_account].asString() == bob.human());
+    }
+
+    void
     testAccountChannelsRPCSenderOnly(FeatureBitset features)
     {
         // Check that the account_channels command only returns channels owned
@@ -2125,6 +2167,7 @@ struct PayChan_test : public beast::unit_test::Suite
         testMultiple(features);
         testAccountChannelsRPC(features);
         testAccountChannelsRPCMarkers(features);
+        testAccountChannelsRPCMarkerCredentialGap(features);
         testAccountChannelsRPCSenderOnly(features);
         testAccountChannelAuthorize(features);
         testAuthVerifyRPC(features);

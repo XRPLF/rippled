@@ -111,16 +111,6 @@ doAccountOffers(rpc::JsonContext& context)
         if (!hint.has_value())
             return rpc::invalidFieldError(jss::marker);
         startHint = *hint;
-
-        // We then must check if the object pointed to by the marker is actually
-        // owned by the account in the request.
-        auto const sle = ledger->read({ltANY, startAfter});
-
-        if (!sle)
-            return rpcError(RpcInvalidParams);
-
-        if (!rpc::isRelatedToAccount(*ledger, sle, accountID))
-            return rpcError(RpcInvalidParams);
     }
 
     auto count = 0;
