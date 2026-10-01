@@ -16,14 +16,15 @@ runs:
   using: composite
   steps:
     # A tag names its own version. Anything else is a development build named by
-    # its commit hash, matching what cmake/XrplVersion.cmake derives.
+    # its commit hash, matching what cmake/XrplVersion.cmake derives: the head of
+    # a pull request rather than the merge commit GitHub creates for it.
     - name: Determine version
       id: version
       shell: bash
       env:
         IS_TAG: ${{ startsWith(github.ref, 'refs/tags/') }}
         REF_NAME: ${{ github.ref_name }}
-        SHA: ${{ github.sha }}
+        SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       run: |
         if [[ "${IS_TAG}" == "true" ]]; then
             version="${REF_NAME}"
