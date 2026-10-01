@@ -31,7 +31,7 @@ class STTx;
  * @return The number of shares, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets);
+assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& assets);
 
 /**
  * From the perspective of a vault, return the number of assets to take from
@@ -45,7 +45,7 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
  * @return The number of assets, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
+sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& shares);
 
 /**
  * Adjusts a requested asset change (`delta`) to match the decimal scale of the
@@ -71,7 +71,7 @@ sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
  *         change is below representable precision.
  */
 [[nodiscard]] std::expected<STAmount, TER>
-clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta);
+clampToAssetsTotalScale(SLE::ConstRef vault, STAmount const& delta);
 
 /**
  * Controls whether to truncate shares instead of rounding.
@@ -97,7 +97,7 @@ enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
  * @param waive Whether to skip subtracting the unrealized loss.
  */
 [[nodiscard]] Number
-assetsTotalForWithdrawal(SLE::const_ref vault, WaiveUnrealizedLoss waive);
+assetsTotalForWithdrawal(SLE::ConstRef vault, WaiveUnrealizedLoss waive);
 
 /**
  * Returns true if debiting `amount` from `total` (the current value of a
@@ -133,8 +133,8 @@ debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount
  */
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
-    SLE::const_ref vault,
-    SLE::const_ref issuance,
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
     STAmount const& assets,
     TruncateShares truncate = TruncateShares::No,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
@@ -154,8 +154,8 @@ assetsToSharesWithdraw(
  */
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
-    SLE::const_ref vault,
-    SLE::const_ref issuance,
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
 
@@ -170,7 +170,7 @@ sharesToAssetsWithdraw(
  *                 both the share MPTID and the outstanding-amount total.
  */
 [[nodiscard]] bool
-isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance);
+isSoleShareholder(ReadView const& view, AccountID const& account, SLE::ConstRef issuance);
 
 /**
  * Resolves a Vault's LEVersion, the single point every accounting touch
@@ -185,7 +185,7 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
  * absent.
  */
 [[nodiscard]] VaultVersion
-getVaultVersion(SLE::const_ref vault);
+getVaultVersion(SLE::ConstRef vault);
 
 /**
  * True when @p tx is a VaultDeposit that donates assets (tfVaultDonate)
@@ -203,7 +203,7 @@ isVaultDonate(Rules const& rules, STTx const& tx);
  * @param vault The vault SLE.
  */
 [[nodiscard]] VaultKind
-getVaultKind(SLE::const_ref vault);
+getVaultKind(SLE::ConstRef vault);
 
 /**
  * Reads sfVaultKind from a transaction. An absent field resolves to
@@ -250,7 +250,7 @@ isValidClosedEndedGap(std::uint32_t sub, std::uint32_t red);
  * @param vault The vault SLE.
  */
 [[nodiscard]] VaultPhase
-getVaultPhase(ReadView const& view, SLE::const_ref vault);
+getVaultPhase(ReadView const& view, SLE::ConstRef vault);
 
 /**
  * Raw-fields overload of getVaultPhase. Derives the phase from an already
@@ -305,7 +305,7 @@ enum class SuppressExpired : bool { No = false, Yes = true };
 [[nodiscard]] TER
 checkVaultDomain(
     ReadView const& view,
-    SLE::const_ref issuance,
+    SLE::ConstRef issuance,
     AccountID const& subject,
     SuppressExpired suppressExpired);
 

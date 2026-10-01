@@ -20,14 +20,14 @@ template <class Handler, class Impl>
 class BasePeer : public IOList::Work
 {
 protected:
-    using clock_type = std::chrono::system_clock;
-    using error_code = boost::system::error_code;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using waitable_timer = boost::asio::basic_waitable_timer<clock_type>;
+    using ClockType = std::chrono::system_clock;
+    using ErrorCode = boost::system::error_code;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
+    using WaitableTimer = boost::asio::basic_waitable_timer<ClockType>;
 
     Port const& port_;
     Handler& handler_;
-    endpoint_type remoteAddress_;
+    EndpointType remoteAddress_;
     beast::WrappedSink sink_;
     beast::Journal const j_;
 
@@ -40,7 +40,7 @@ public:
         Port const& port,
         Handler& handler,
         boost::asio::executor const& executor,
-        endpoint_type remoteAddress,
+        EndpointType remoteAddress,
         beast::Journal journal);
 
     void
@@ -61,7 +61,7 @@ BasePeer<Handler, Impl>::BasePeer(
     Port const& port,
     Handler& handler,
     boost::asio::executor const& executor,
-    endpoint_type remoteAddress,
+    EndpointType remoteAddress,
     beast::Journal journal)
     : port_(port)
     , handler_(handler)
@@ -84,7 +84,7 @@ BasePeer<Handler, Impl>::close()
 {
     if (!strand_.running_in_this_thread())
         return post(strand_, [self = impl().shared_from_this()] { self->close(); });
-    error_code ec;
+    ErrorCode ec;
     xrpl::getLowestLayer(impl().ws_).socket().close(ec);
 }
 

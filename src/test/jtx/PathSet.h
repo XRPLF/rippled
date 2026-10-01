@@ -29,7 +29,7 @@ countOffers(
     Asset const& takerGets)
 {
     size_t count = 0;
-    forEachItem(*env.current(), account, [&](SLE::const_ref sle) {
+    forEachItem(*env.current(), account, [&](SLE::ConstRef sle) {
         if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays).asset() == takerPays &&
             sle->getFieldAmount(sfTakerGets).asset() == takerGets)
             ++count;
@@ -45,7 +45,7 @@ countOffers(
     STAmount const& takerGets)
 {
     size_t count = 0;
-    forEachItem(*env.current(), account, [&](SLE::const_ref sle) {
+    forEachItem(*env.current(), account, [&](SLE::ConstRef sle) {
         if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays) == takerPays &&
             sle->getFieldAmount(sfTakerGets) == takerGets)
             ++count;
