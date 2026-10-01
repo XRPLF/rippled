@@ -51,7 +51,7 @@ public:
                 kCreateGenesis,
                 Rules{env.app().config().features},
                 env.app().config().fees.toFees(),
-                std::vector<uint256>{},
+                std::vector<UInt256>{},
                 env.app().getNodeFamily());
         }
         auto res = std::make_shared<Ledger>(*prev, prev->header().closeTime + closeOffset);
@@ -92,7 +92,7 @@ public:
             Env env{*this, envconfig(), std::make_unique<CheckMessageLogs>("MISMATCH ", &found)};
             LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
-            uint256 const dummyTxHash{1};
+            UInt256 const dummyTxHash{1};
             lh.builtLedger(genesis, dummyTxHash, {});
             lh.validatedLedger(genesis, dummyTxHash);
 
@@ -111,7 +111,7 @@ public:
             auto const ledgerA = makeLedger(genesis, env, lh, 4s);
             auto const ledgerB = makeLedger(genesis, env, lh, 40s);
 
-            uint256 const dummyTxHash{1};
+            UInt256 const dummyTxHash{1};
             lh.builtLedger(ledgerA, dummyTxHash, {});
             lh.validatedLedger(ledgerB, dummyTxHash);
 
@@ -132,7 +132,7 @@ public:
             auto const ledgerAC = makeLedger(ledgerA, env, lh, 4s);
             auto const ledgerBD = makeLedger(ledgerB, env, lh, 4s);
 
-            uint256 const dummyTxHash{1};
+            UInt256 const dummyTxHash{1};
             lh.builtLedger(ledgerAC, dummyTxHash, {});
             lh.validatedLedger(ledgerBD, dummyTxHash);
 

@@ -395,7 +395,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 0xCD,
                 0xEF};
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash) == uint128::fromRaw(expected));
+            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash) == UInt128::fromRaw(expected));
         }
 
         // Valid lowercase hex string for UInt128
@@ -492,7 +492,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                                                       0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67};
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                obj.object->getFieldH160(sfTakerPaysCurrency) == uint160::fromRaw(expected));
+                obj.object->getFieldH160(sfTakerPaysCurrency) == UInt160::fromRaw(expected));
         }
         // Valid lowercase hex string for UInt160
         {
@@ -580,7 +580,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                obj.object->getFieldH192(sfMPTokenIssuanceID) == uint192::fromRaw(expected));
+                obj.object->getFieldH192(sfMPTokenIssuanceID) == UInt192::fromRaw(expected));
         }
 
         // Valid lowercase hex string for UInt192
@@ -680,7 +680,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
                 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash) == uint256::fromRaw(expected));
+            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash) == UInt256::fromRaw(expected));
         }
         // Valid lowercase hex string for UInt256
         {
@@ -1012,7 +1012,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         {
             json::Value j;
             json::Value arr(json::ValueType::Array);
-            arr.append("0123456789ABCDEF");  // too short for uint256
+            arr.append("0123456789ABCDEF");  // too short for UInt256
             j[sfHashes] = arr;
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
