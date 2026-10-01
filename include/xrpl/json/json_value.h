@@ -526,7 +526,7 @@ class ValueIteratorBase
 {
 public:
     using iterator_category = std::bidirectional_iterator_tag;
-    using size_t = unsigned int;
+    using SizeT = unsigned int;
     using difference_type = int;
     using SelfType = ValueIteratorBase;
 
@@ -593,7 +593,7 @@ class ValueConstIterator : public ValueIteratorBase
     friend class Value;
 
 public:
-    using size_t = unsigned int;
+    using SizeT = unsigned int;
     using difference_type = int;
     using value_type = Value const;
     using reference = Value const&;
@@ -658,7 +658,7 @@ class ValueIterator : public ValueIteratorBase
     friend class Value;
 
 public:
-    using size_t = unsigned int;
+    using SizeT = unsigned int;
     using difference_type = int;
     using value_type = Value;
     using reference = Value&;

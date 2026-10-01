@@ -330,11 +330,6 @@ getSingleSection(
 //
 //------------------------------------------------------------------------------
 
-char const* const Config::kConfigFileName = "xrpld.cfg";
-char const* const Config::kConfigLegacyName = "rippled.cfg";
-char const* const Config::kDatabaseDirName = "db";
-char const* const Config::kValidatorsFileName = "validators.txt";
-
 [[nodiscard]] static std::string
 getEnvVar(char const* name)
 {
@@ -1096,11 +1091,11 @@ Config::loadFromString(std::string const& fileContents)
         }
         else if (boost::iequals(match[2], "days"))
         {
-            amendmentMajorityTime = days(duration);
+            amendmentMajorityTime = Days(duration);
         }
         else if (boost::iequals(match[2], "weeks"))
         {
-            amendmentMajorityTime = weeks(duration);
+            amendmentMajorityTime = Weeks(duration);
         }
 
         if (amendmentMajorityTime < minutes(15))

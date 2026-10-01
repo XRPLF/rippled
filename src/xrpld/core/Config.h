@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -86,10 +87,10 @@ class Config : public BasicConfig
 {
 public:
     // Settings related to the configuration file location and directories
-    static char const* const kConfigFileName;
-    static char const* const kConfigLegacyName;
-    static char const* const kDatabaseDirName;
-    static char const* const kValidatorsFileName;
+    static constexpr std::string_view kConfigFileName = "xrpld.cfg";
+    static constexpr std::string_view kConfigLegacyName = "rippled.cfg";
+    static constexpr std::string_view kDatabaseDirName = "db";
+    static constexpr std::string_view kValidatorsFileName = "validators.txt";
 
     /**
      * Returns the full path and filename of the debug log file.
@@ -155,7 +156,7 @@ public:
 
     std::string startLedger;
 
-    std::optional<uint256> trapTxHash;
+    std::optional<UInt256> trapTxHash;
 
     // Network parameters
     uint32_t networkId = 0;
@@ -288,7 +289,7 @@ public:
     // These override the command line client settings
     std::optional<beast::ip::Endpoint> rpcIp;
 
-    std::unordered_set<uint256, beast::Uhash<>> features;
+    std::unordered_set<UInt256, beast::Uhash<>> features;
 
     std::string serverDomain;
 
