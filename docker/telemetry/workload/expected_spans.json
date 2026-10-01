@@ -64,9 +64,9 @@
       "name": "tx.receive",
       "category": "transaction",
       "allowed_parents": ["ROOT"],
-      "required_attributes": ["tx_hash", "peer_id"],
+      "required_attributes": ["tx_hash", "peer_id", "tx_status"],
       "config_flag": "trace_transactions",
-      "note": "Cross-node span: parent context propagated from the sender's tx.process via protobuf. Also carries tx_type and peer_version. The span is created only after the node decides to process the transaction, so a relayed duplicate produces no span at all; how many were dropped is the transactions_duplicate traffic category. tx_status is set only on the paths that drop a transaction after that point, so it is not a required attribute."
+      "note": "Cross-node span: parent context propagated from the sender's tx.process via protobuf. Also carries current_ledger_seq, and tx_type and peer_version when known. The span is created only after the node decides to process the transaction, so a relayed duplicate produces no span at all; how many were dropped is the transactions_duplicate traffic category. tx_status is set once on every path after that point: dropped_no_sync, dropped_queue_full or queued_for_check."
     },
     {
       "name": "tx.apply",
@@ -541,5 +541,5 @@
     }
   ],
   "total_span_types": 42,
-  "total_unique_attributes": 60
+  "total_unique_attributes": 61
 }
