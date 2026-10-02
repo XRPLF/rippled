@@ -856,7 +856,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 ## Log-Trace Correlation
 
-When xrpld is built with `telemetry=ON`, log lines emitted within an active, sampled OpenTelemetry span automatically include `trace_id` and `span_id` fields:
+When xrpld is built with telemetry (Conan `-o telemetry=True`), log lines emitted within an active, sampled OpenTelemetry span automatically include `trace_id` and `span_id` fields:
 
 ```
 2024-Jan-15 10:30:45.123456789 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
@@ -969,7 +969,7 @@ count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
 
 ### No trace_id in log output
 
-- Verify xrpld was built with `telemetry=ON` (the `XRPL_ENABLE_TELEMETRY` preprocessor flag)
+- Verify xrpld was built with Conan `-o telemetry=True`, which defines the `XRPL_ENABLE_TELEMETRY` preprocessor flag
 - Verify `enabled=1` in the `[telemetry]` config section
 - Log lines only contain `trace_id`/`span_id` when emitted inside an active span — background logs outside of RPC/consensus/transaction processing will not have trace context
 - Check that the specific trace category is enabled (e.g., `trace_rpc=1`)
