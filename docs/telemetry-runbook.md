@@ -720,7 +720,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Transaction Processing Rate        | timeseries     | `rate(span_calls_total{span_name="tx.process"}[$__rate_interval])` and `tx.receive`          | `span_name`                         |
 | Transaction Processing Latency     | timeseries     | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                              | —                                   |
 | Transaction Path Distribution      | piechart       | `sum by (local) (increase(span_calls_total{span_name="tx.process"}[$__rate_interval]))`      | `local`                             |
-| Transaction Receive vs Suppressed  | timeseries     | `rate(span_calls_total{span_name="tx.receive"}[$__rate_interval])`                           | —                                   |
+| Transaction Receive Rate           | timeseries     | `rate(span_calls_total{span_name="tx.receive"}[$__rate_interval])`                           | —                                   |
 | TX Processing Duration Heatmap     | heatmap        | `tx.process` histogram buckets                                                               | `le`                                |
 | TX Apply Duration per Ledger       | timeseries     | p95/p50 of `tx.apply`                                                                        | —                                   |
 | TX Apply Failed Rate               | stat           | `rate(span_calls_total{span_name="tx.transactor",stage="apply",ter_result!~"tesSUCCESS\|"})` | `stage`, `ter_result`               |
