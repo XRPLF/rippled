@@ -1,3 +1,4 @@
+#include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/BuildInfo.h>
 
@@ -69,8 +70,12 @@ public:
         auto vFF = 0xFFFF'FFFF'FFFF'FFFFLLU;
         BEAST_EXPECT(!build_info::isNewerVersion(vFF));
 
+        // 1.5.9 is newer than a development build (0.0.0-dev), but not a release.
         auto v159 = build_info::encodeSoftwareVersion("1.5.9");
-        BEAST_EXPECT(!build_info::isNewerVersion(v159));
+        BEAST_EXPECT(
+            build_info::isNewerVersion(v159) ==
+            (beast::SemanticVersion(build_info::getVersionString()) <
+             beast::SemanticVersion("1.5.9")));
 
         auto vCurrent = build_info::getEncodedVersion();
         BEAST_EXPECT(!build_info::isNewerVersion(vCurrent));
