@@ -23,7 +23,6 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/CoroTask.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
