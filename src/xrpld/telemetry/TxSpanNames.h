@@ -114,6 +114,12 @@ inline constexpr auto droppedNoSync = makeStr("dropped_no_sync");
  */
 inline constexpr auto droppedQueueFull = makeStr("dropped_queue_full");
 /**
+ * Transaction was dropped because the job queue is stopping. The server
+ * stops its job queue while it shuts down. From then on JobQueue::addJob()
+ * declines new jobs. The check job never runs.
+ */
+inline constexpr auto droppedQueueStopping = makeStr("dropped_queue_stopping");
+/**
  * Transaction was handed to the job queue to be checked.
  */
 inline constexpr auto queuedForCheck = makeStr("queued_for_check");
