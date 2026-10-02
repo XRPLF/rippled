@@ -859,7 +859,7 @@ ValidVault::finalize(
                 if (afterVault.assetsAvailable != kZero || afterVault.assetsTotal != kZero ||
                     afterVault.lossUnrealized != kZero || updatedShares->sharesTotal != 0 ||
                     (afterVault.version == VaultVersion::FixedPrecision &&
-                     afterVault.assetsDeployed != kZero))
+                     (afterVault.assetsDeployed != kZero || afterVault.yieldUnrealized != kZero)))
                 {
                     JLOG(j.fatal())  //
                         << "Invariant failed: created vault must be empty";

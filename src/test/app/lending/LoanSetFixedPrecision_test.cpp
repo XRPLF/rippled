@@ -214,15 +214,18 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
     // truncates below the full share count, so the clawback succeeds and leaves
     // shares behind.
     void
-    testLendingFullClawbackClampsInsteadOfHasObligations()
+    testLendingFullClawbackClampsInsteadOfHasObligations(
+        FeatureBitset const amendments,
+        std::string const& label)
     {
         using namespace test::jtx;
 
         testcase(
             "Lending: full-value VaultClawback with a large AssetsDeployed clamps to "
-            "AssetsAvailable instead of tecHAS_OBLIGATIONS");
+            "AssetsAvailable instead of tecHAS_OBLIGATIONS (" +
+            label + ")");
 
-        Env env(*this, features());
+        Env env(*this, amendments);
         auto const [issuer, owner, depositor, asset] = setupIou(env, {.clawback = true});
 
         auto const fixture = setupLendingVault(
@@ -599,7 +602,10 @@ public:
         testLendingAssetsDeployedTwoLoans();
         testLendingClawbackAndWithdrawWhileLoanOpen();
         testLendingFinalWithdrawalWhileLoanOpen();
-        testLendingFullClawbackClampsInsteadOfHasObligations();
+        testLendingFullClawbackClampsInsteadOfHasObligations(features(), "all amendments");
+        // FixedPrecision Vaults take the clamped path even without fixCleanup3_1_3.
+        testLendingFullClawbackClampsInsteadOfHasObligations(
+            features() - fixCleanup3_1_3, "without fixCleanup3_1_3");
         testLendingCashBasisControl();
         testOriginationGuardBlocksCoarsening();
         testLoanSetTransferLegShapes();

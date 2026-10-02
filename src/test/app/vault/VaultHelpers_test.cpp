@@ -80,6 +80,9 @@ private:
         {
             vault->at(sfLEVersion) = std::to_underlying(VaultVersion::FixedPrecision);
             vault->at(sfScale) = *fixedScale;
+            // FixedPrecision derives its total from these two fields.
+            vault->at(sfAssetsAvailable) = assetsTotal;
+            vault->at(sfAssetsDeployed) = Number{0};
         }
         return vault;
     }

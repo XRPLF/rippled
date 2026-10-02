@@ -64,7 +64,7 @@ namespace detail {
  * unrounded delta.
  */
 [[nodiscard]] int
-getPosteriorBrokerCoverScale(SLE::ConstRef vault, SLE::ConstRef broker, STAmount const& delta);
+getPosteriorBrokerCoverScale(SLE::ConstRef vault, SLE::ConstRef broker, Number const& delta);
 
 /**
  * Round a cover outflow delta (cover withdraw, cover clawback, the
@@ -113,7 +113,7 @@ debitToPosteriorBrokerCoverScale(
 creditToPosteriorBrokerCoverScale(
     SLE::ConstRef vault,
     SLE::ConstRef broker,
-    STAmount const& raw,
+    Number const& raw,
     Number::RoundingMode roundingMode);
 
 /**

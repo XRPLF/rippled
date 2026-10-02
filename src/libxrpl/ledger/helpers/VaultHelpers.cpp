@@ -48,7 +48,7 @@ fixedBaseScale(SLE::ConstRef vault)
 // Thin, vault-specific wrapper over posteriorAssetScale: used by
 // getPosteriorVaultScale and creditToPosteriorAvailableScale.
 [[nodiscard]] int
-posteriorScale(SLE::ConstRef vault, Number const& reference, STAmount const& delta)
+posteriorScale(SLE::ConstRef vault, Number const& reference, Number const& delta)
 {
     return detail::posteriorAssetScale(
         getVaultVersion(vault), vault->at(sfAsset), fixedBaseScale(vault), reference, delta);
@@ -156,12 +156,12 @@ posteriorAssetScale(
     Asset const& asset,
     int baseScale,
     Number const& reference,
-    STAmount const& delta)
+    Number const& delta)
 {
-    Number const posterior = [&] {
-        NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
-        return reference + delta;
-    }();
+    // ToNearest for the sum and for scale()'s canonicalization of it, as the
+    // Legacy/CashBasis clamp always did; liveScale sets its own mode.
+    NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
+    Number const posterior = reference + delta;
 
     switch (version)
     {
@@ -182,20 +182,32 @@ creditToPosteriorScale(
     Asset const& asset,
     Number const& reference,
     int atScale,
-    STAmount const& raw,
+    Number const& raw,
     Number::RoundingMode roundingMode)
 {
     // Floor the SUM (reference + raw), not just raw, at atScale. See
     // creditToPosteriorAvailableScale's doc: a delta floored on its own grid
     // can still leave a 17-digit sum once the reference has crossed a power
     // of ten.
-    Number const flooredSum = roundToAsset(asset, reference + Number(raw), atScale, roundingMode);
+    Number const flooredSum = roundToAsset(asset, reference + raw, atScale, roundingMode);
     // flooredSum - reference can carry 17 significant digits (the sum is on
     // the posterior grid, the reference on the finer one); build the
     // STAmount under roundingMode, not the caller's ambient mode, so the
     // credit this returns never exceeds raw.
     NumberRoundModeGuard const rg(roundingMode);
     return STAmount{asset, flooredSum - reference};
+}
+
+[[nodiscard]] int
+getPosteriorVaultScale(SLE::ConstRef vault, STAmount const& delta)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT,
+        "xrpl::detail::getPosteriorVaultScale : valid Vault sle");
+    XRPL_ASSERT(
+        delta.asset() == vault->at(sfAsset),
+        "xrpl::detail::getPosteriorVaultScale : delta and Vault asset match");
+    return posteriorScale(vault, getAssetsTotal(vault), delta);
 }
 
 }  // namespace detail
@@ -330,22 +342,6 @@ getVaultBaseScale(SLE::ConstRef vault)
     // LCOV_EXCL_STOP
 }
 
-namespace detail {
-
-[[nodiscard]] int
-getPosteriorVaultScale(SLE::ConstRef vault, STAmount const& delta)
-{
-    XRPL_ASSERT(
-        vault && vault->getType() == ltVAULT,
-        "xrpl::detail::getPosteriorVaultScale : valid Vault sle");
-    XRPL_ASSERT(
-        delta.asset() == vault->at(sfAsset),
-        "xrpl::detail::getPosteriorVaultScale : delta and Vault asset match");
-    return posteriorScale(vault, getAssetsTotal(vault), delta);
-}
-
-}  // namespace detail
-
 [[nodiscard]] STAmount
 roundToPosteriorVaultScale(
     SLE::ConstRef vault,
@@ -365,19 +361,19 @@ roundToPosteriorVaultScale(
 [[nodiscard]] STAmount
 creditToPosteriorAvailableScale(
     SLE::ConstRef vault,
-    STAmount const& raw,
+    Number const& raw,
     Number::RoundingMode roundingMode)
 {
     XRPL_ASSERT(
         vault && vault->getType() == ltVAULT,
         "xrpl::creditToPosteriorAvailableScale : valid Vault sle");
-    XRPL_ASSERT(
-        raw.asset() == vault->at(sfAsset),
-        "xrpl::creditToPosteriorAvailableScale : raw and Vault asset match");
-    if (raw.integral())
-        return raw;
-
     Asset const asset = vault->at(sfAsset);
+    if (asset.integral())
+    {
+        NumberRoundModeGuard const rg(roundingMode);
+        return STAmount{asset, raw};
+    }
+
     Number const reference = vault->at(sfAssetsAvailable);
     int const scale = posteriorScale(vault, reference, raw);
     return detail::creditToPosteriorScale(asset, reference, scale, raw, roundingMode);
@@ -402,6 +398,8 @@ checkOptionalVaultInflow(SLE::ConstRef vault, STAmount const& amount)
         amount.asset() == vault->at(sfAsset),
         "xrpl::checkOptionalVaultInflow : amount and Vault asset match");
     XRPL_ASSERT(!amount.negative(), "xrpl::checkOptionalVaultInflow : non-negative amount");
+    if (amount.negative())
+        return tefINTERNAL;  // LCOV_EXCL_LINE
     if (getVaultVersion(vault) != VaultVersion::FixedPrecision)
         return tesSUCCESS;
 
