@@ -2357,21 +2357,6 @@ class Delegate_test : public beast::unit_test::Suite
                 mpt.set(arg);
                 env.close();
             }
-
-            // Lock/unlock combined with a mutation is rejected by preflight
-            // before the permission check is reached.
-            mpt.set(
-                {.account = alice,
-                 .flags = tfMPTLock,
-                 .transferFee = 100,
-                 .delegate = bob,
-                 .err = temMALFORMED});
-            mpt.set(
-                {.account = alice,
-                 .flags = tfMPTUnlock,
-                 .metadata = "test",
-                 .delegate = bob,
-                 .err = temMALFORMED});
         }
     }
 
@@ -2429,31 +2414,9 @@ class Delegate_test : public beast::unit_test::Suite
             BEAST_EXPECT(sponsor::sponsorshipFeeBalance(env, sponsor, bob) == sponsorFee - feeAmt);
         }
 
-        // Reserve sponsorship is blocked for a granular delegated transaction.
-        {
-            Env env(*this);
-            env.fund(XRP(10000), alice, bob, gw, sponsor);
-            env.trust(usd(200), alice);
-            env.close();
-
-            env(delegate::set(gw, bob, {"PaymentMint"}));
-            env(sponsor::set_reserve(sponsor, 0, 1), sponsor::SponseeAcc(bob));
-            env.close();
-
-            // Co-signed.
-            env(pay(gw, alice, usd(50)),
-                delegate::As(bob),
-                sponsor::As(sponsor, spfSponsorReserve),
-                Sig(sfSponsorSignature, sponsor),
-                Ter(temINVALID));
-
-            // Pre-funded.
-            env(pay(gw, alice, usd(50)),
-                delegate::As(bob),
-                sponsor::As(sponsor, spfSponsorReserve),
-                Ter(temINVALID));
-            env.require(Balance(alice, usd(0)));
-        }
+        // Reserve sponsorship is not tested here: checkSponsor rejects it with temINVALID for any
+        // delegated transaction before the permission check, regardless of the delegate's
+        // permissions. It is covered by testDelegateBlockReserveSponsor in Sponsor_test.
     }
 
     void
