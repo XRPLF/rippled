@@ -783,6 +783,59 @@ struct FlowMPT_test : public beast::unit_test::Suite
     }
 
     void
+    testConsumeOfferOverflow(FeatureBitset features)
+    {
+        // An overflow while consuming an offer fails the strand under
+        // MPTokensV2, and the transaction with tecINTERNAL otherwise. Either
+        // way no balances change and the offer stays on the book.
+        testcase("BookStep consumeOffer overflow");
+
+        using namespace jtx;
+
+        Account const gw("gateway");
+        Account const eurGW("eur_gateway");
+        Account const maker("maker");
+        Account const alice("alice");
+        Account const bob("bob");
+
+        for (bool const withV2 : {true, false})
+        {
+            Env env(*this, withV2 ? features : features - featureMPTokensV2);
+
+            env.fund(XRP(10'000), gw, eurGW, maker, alice, bob);
+            env.close();
+
+            auto const usd = gw["USD"];
+            auto const eur = eurGW["EUR"];
+            STAmount const usdMax{usd.issue(), STAmount::kMaxValue, STAmount::kMaxOffset};
+            STAmount const usdIn{usd.issue(), 1, 90};
+
+            env.trust(usdMax, maker, alice);
+            env.trust(eur(1'000), maker, bob);
+            env.close();
+
+            env(pay(gw, maker, usdMax));
+            env(pay(gw, alice, usdIn));
+            env(pay(eurGW, maker, eur(100)));
+            env(offer(maker, usdIn, eur(100)));
+            env.close();
+
+            env(pay(alice, bob, eur(100)),
+                Path(~eur),
+                Sendmax(usdIn),
+                Ter(withV2 ? TER{tecPATH_PARTIAL} : TER{tecINTERNAL}));
+            env.close();
+
+            env.require(
+                Balance(bob, eur(0)),
+                Balance(maker, eur(100)),
+                Balance(maker, usdMax),
+                Balance(alice, usdIn));
+            BEAST_EXPECT(isOffer(env, maker, usdIn, eur(100)));
+        }
+    }
+
+    void
     testFalseDry(FeatureBitset features)
     {
         testcase("falseDryChanges");
@@ -2525,6 +2578,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
         testTransferRate(features);
         testMPTEndpointTransferRateOverflow(features);
         testMPTEndpointRipplingInputOverflow(features);
+        testConsumeOfferOverflow(features);
         testSelfPayment1(features);
         testSelfPayment2(features);
         testSelfFundedXRPEndpoint(false, features);
