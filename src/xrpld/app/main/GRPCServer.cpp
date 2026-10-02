@@ -540,11 +540,11 @@ GRPCServerImpl::setupListeners()
     auto addToRequests = [&requests](auto callData) { requests.push_back(std::move(callData)); };
 
     {
-        using cd =
+        using Cd =
             CallData<org::xrpl::rpc::v1::GetLedgerRequest, org::xrpl::rpc::v1::GetLedgerResponse>;
 
         addToRequests(
-            std::make_shared<cd>(
+            std::make_shared<Cd>(
                 service_,
                 *cq_,
                 app_,
@@ -556,12 +556,12 @@ GRPCServerImpl::setupListeners()
                 secureGatewayIPs_));
     }
     {
-        using cd = CallData<
+        using Cd = CallData<
             org::xrpl::rpc::v1::GetLedgerDataRequest,
             org::xrpl::rpc::v1::GetLedgerDataResponse>;
 
         addToRequests(
-            std::make_shared<cd>(
+            std::make_shared<Cd>(
                 service_,
                 *cq_,
                 app_,
@@ -573,12 +573,12 @@ GRPCServerImpl::setupListeners()
                 secureGatewayIPs_));
     }
     {
-        using cd = CallData<
+        using Cd = CallData<
             org::xrpl::rpc::v1::GetLedgerDiffRequest,
             org::xrpl::rpc::v1::GetLedgerDiffResponse>;
 
         addToRequests(
-            std::make_shared<cd>(
+            std::make_shared<Cd>(
                 service_,
                 *cq_,
                 app_,
@@ -590,12 +590,12 @@ GRPCServerImpl::setupListeners()
                 secureGatewayIPs_));
     }
     {
-        using cd = CallData<
+        using Cd = CallData<
             org::xrpl::rpc::v1::GetLedgerEntryRequest,
             org::xrpl::rpc::v1::GetLedgerEntryResponse>;
 
         addToRequests(
-            std::make_shared<cd>(
+            std::make_shared<Cd>(
                 service_,
                 *cq_,
                 app_,

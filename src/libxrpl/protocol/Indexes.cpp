@@ -104,6 +104,7 @@ enum class LedgerNameSpace : std::uint16_t {
     LoanBroker = 'l',  // lower-case L
     Loan = 'L',
     Sponsorship = '>',
+    TransactionProposal = 'y',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',
@@ -112,16 +113,20 @@ enum class LedgerNameSpace : std::uint16_t {
 };
 
 template <class... Args>
-static uint256
+static UInt256
 indexHash(LedgerNameSpace space, Args const&... args)
 {
     return sha512Half(safeCast<std::uint16_t>(space), args...);
 }
 
-uint256
+UInt256
 getBookBase(Book const& book)
 {
     XRPL_ASSERT(isConsistent(book), "xrpl::getBookBase : input is consistent");
+
+    constexpr std::uint8_t kIssueToMPTTag = 0x01;
+    constexpr std::uint8_t kMPTToIssueTag = 0x02;
+    constexpr std::uint8_t kMPTToMPTTag = 0x03;
 
     auto getIndexHash = [&book]<typename... Args>(Args... args) {
         if (book.domain)
@@ -136,19 +141,36 @@ getBookBase(Book const& book)
                 return getIndexHash(
                     LedgerNameSpace::BookDir, in.currency, out.currency, in.account, out.account);
             }
+            // The three MPT-involving branches are new under MPTokensV2 and
+            // each gets a 1-byte discriminator to prevent preimage collisions
+            // between branches: the (Issue,MPT) and (MPT,Issue) preimages
+            // are both 64 bytes of raw concatenation, so without a
+            // per-branch tag chosen Currency / MPTID / AccountID values can
+            // align byte-for-byte and produce the same BookDir keylet for
+            // two distinct markets. (Issue,Issue) is left untagged to
+            // preserve existing mainnet order-book keylets.
             else if constexpr (std::is_same_v<TIn, Issue> && std::is_same_v<TOut, MPTIssue>)
             {
                 return getIndexHash(
-                    LedgerNameSpace::BookDir, in.currency, out.getMptID(), in.account);
+                    LedgerNameSpace::BookDir,
+                    kIssueToMPTTag,
+                    in.currency,
+                    out.getMptID(),
+                    in.account);
             }
             else if constexpr (std::is_same_v<TIn, MPTIssue> && std::is_same_v<TOut, Issue>)
             {
                 return getIndexHash(
-                    LedgerNameSpace::BookDir, in.getMptID(), out.currency, out.account);
+                    LedgerNameSpace::BookDir,
+                    kMPTToIssueTag,
+                    in.getMptID(),
+                    out.currency,
+                    out.account);
             }
             else
             {
-                return getIndexHash(LedgerNameSpace::BookDir, in.getMptID(), out.getMptID());
+                return getIndexHash(
+                    LedgerNameSpace::BookDir, kMPTToMPTTag, in.getMptID(), out.getMptID());
             }
         },
         book.in.value(),
@@ -160,16 +182,16 @@ getBookBase(Book const& book)
     return k.key;
 }
 
-uint256
-getQualityNext(uint256 const& uBase)
+UInt256
+getQualityNext(UInt256 const& uBase)
 {
-    static constexpr uint256 kNextQuality(
+    static constexpr UInt256 kNextQuality(
         "0000000000000000000000000000000000000000000000010000000000000000");
     return uBase + kNextQuality;
 }
 
 std::uint64_t
-getQuality(uint256 const& uBase)
+getQuality(UInt256 const& uBase)
 {
     // VFALCO [base_uint] This assumes a certain storage format
     //
@@ -201,7 +223,7 @@ account(AccountID const& id) noexcept
 }
 
 Keylet
-child(uint256 const& key) noexcept
+child(UInt256 const& key) noexcept
 {
     return {ltCHILD, key};
 }
@@ -288,7 +310,7 @@ quality(Keylet const& k, std::uint64_t const q) noexcept
     // represent adjacent entries. We place the quality, in big endian format,
     // in the 8 right most bytes; this way, incrementing goes to the next entry
     // for indexes.
-    uint256 x = k.key;
+    UInt256 x = k.key;
 
     // Store the quality as a big-endian integer in the final 8 bytes.
     // store_big_u64 writes through unaligned byte storage (via memcpy) and
@@ -341,6 +363,14 @@ check(AccountID const& id, SeqProxy const& seq) noexcept
 }
 
 Keylet
+txProposal(AccountID const& target, std::uint32_t ticketSequence) noexcept
+{
+    return {
+        ltTRANSACTION_PROPOSAL,
+        indexHash(LedgerNameSpace::TransactionProposal, target, ticketSequence)};
+}
+
+Keylet
 depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept
 {
     return {ltDEPOSIT_PREAUTH, indexHash(LedgerNameSpace::DepositPreauth, owner, preauthorized)};
@@ -352,7 +382,7 @@ depositPreauth(
     AccountID const& owner,
     std::set<std::pair<AccountID, Slice>> const& authCreds) noexcept
 {
-    std::vector<uint256> hashes;
+    std::vector<UInt256> hashes;
     hashes.reserve(authCreds.size());
     for (auto const& o : authCreds)
         hashes.emplace_back(sha512Half(o.first, o.second));
@@ -364,7 +394,7 @@ depositPreauth(
 //------------------------------------------------------------------------------
 
 Keylet
-unchecked(uint256 const& key) noexcept
+unchecked(UInt256 const& key) noexcept
 {
     return {ltANY, key};
 }
@@ -376,7 +406,7 @@ ownerDir(AccountID const& id) noexcept
 }
 
 Keylet
-page(uint256 const& key, std::uint64_t const index) noexcept
+page(UInt256 const& key, std::uint64_t const index) noexcept
 {
     if (index == 0)
         return {ltDIR_NODE, key};
@@ -401,19 +431,19 @@ nftokenPageMin(AccountID const& owner)
 {
     std::array<std::uint8_t, 32> buf{};
     std::memcpy(buf.data(), owner.data(), owner.size());
-    return {ltNFTOKEN_PAGE, uint256::fromRaw(buf)};
+    return {ltNFTOKEN_PAGE, UInt256::fromRaw(buf)};
 }
 
 Keylet
 nftokenPageMax(AccountID const& owner)
 {
-    uint256 id = nft::kPageMask;
+    UInt256 id = nft::kPageMask;
     std::memcpy(id.data(), owner.data(), owner.size());
     return {ltNFTOKEN_PAGE, id};
 }
 
 Keylet
-nftokenPage(Keylet const& k, uint256 const& token)
+nftokenPage(Keylet const& k, UInt256 const& token)
 {
     XRPL_ASSERT(k.type == ltNFTOKEN_PAGE, "xrpl::keylet::nftokenPage : valid input type");
     return {ltNFTOKEN_PAGE, (k.key & ~nft::kPageMask) + (token & nft::kPageMask)};
@@ -426,13 +456,13 @@ nftokenOffer(AccountID const& owner, SeqProxy const& seq)
 }
 
 Keylet
-nftBuys(uint256 const& id) noexcept
+nftBuys(UInt256 const& id) noexcept
 {
     return {ltDIR_NODE, indexHash(LedgerNameSpace::NftokenBuyOffers, id)};
 }
 
 Keylet
-nftSells(uint256 const& id) noexcept
+nftSells(UInt256 const& id) noexcept
 {
     return {ltDIR_NODE, indexHash(LedgerNameSpace::NftokenSellOffers, id)};
 }
@@ -472,7 +502,7 @@ amm(Asset const& asset1, Asset const& asset2) noexcept
 }
 
 Keylet
-amm(uint256 const& id) noexcept
+amm(UInt256 const& id) noexcept
 {
     return {ltAMM, id};
 }
@@ -546,7 +576,7 @@ mptoken(MPTID const& issuanceID, AccountID const& holder) noexcept
 }
 
 Keylet
-mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept
+mptoken(UInt256 const& issuanceKey, AccountID const& holder) noexcept
 {
     return {ltMPTOKEN, indexHash(LedgerNameSpace::MPToken, issuanceKey, holder)};
 }
@@ -570,7 +600,7 @@ loanBroker(AccountID const& owner, SeqProxy const& seq) noexcept
 }
 
 Keylet
-loan(uint256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept
+loan(UInt256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept
 {
     return loan(indexHash(LedgerNameSpace::Loan, loanBrokerID, loanSeq.value()));
 }
@@ -584,7 +614,7 @@ permissionedDomain(AccountID const& account, SeqProxy const& seq) noexcept
 }
 
 Keylet
-permissionedDomain(uint256 const& domainID) noexcept
+permissionedDomain(UInt256 const& domainID) noexcept
 {
     return {ltPERMISSIONED_DOMAIN, domainID};
 }

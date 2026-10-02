@@ -29,11 +29,11 @@ class Book final : public CountedObject<Book>
 public:
     Asset in;
     Asset out;
-    std::optional<uint256> domain;
+    std::optional<UInt256> domain;
 
     Book() = default;
 
-    Book(Asset const& in, Asset const& out, std::optional<uint256> const& domain)
+    Book(Asset const& in, Asset const& out, std::optional<UInt256> const& domain)
         : in(in), out(out), domain(domain)
     {
     }
@@ -107,8 +107,8 @@ struct hash<xrpl::Issue> : private boost::base_from_member<std::hash<xrpl::Curre
                            private boost::base_from_member<std::hash<xrpl::AccountID>, 1>
 {
 private:
-    using currency_hash_type = boost::base_from_member<std::hash<xrpl::Currency>, 0>;
-    using issuer_hash_type = boost::base_from_member<std::hash<xrpl::AccountID>, 1>;
+    using CurrencyHashType = boost::base_from_member<std::hash<xrpl::Currency>, 0>;
+    using IssuerHashType = boost::base_from_member<std::hash<xrpl::AccountID>, 1>;
 
 public:
     hash() = default;
@@ -119,9 +119,9 @@ public:
     value_type
     operator()(argument_type const& value) const
     {
-        value_type result(currency_hash_type::member(value.currency));
+        value_type result(CurrencyHashType::member(value.currency));
         if (!isXRP(value.currency))
-            boost::hash_combine(result, issuer_hash_type::member(value.account));
+            boost::hash_combine(result, IssuerHashType::member(value.account));
         return result;
     }
 };
@@ -130,10 +130,10 @@ template <>
 struct hash<xrpl::MPTIssue> : private boost::base_from_member<std::hash<xrpl::MPTID>, 0>
 {
 private:
-    using id_hash_type = boost::base_from_member<std::hash<xrpl::MPTID>, 0>;
+    using IdHashType = boost::base_from_member<std::hash<xrpl::MPTID>, 0>;
 
 public:
-    explicit hash() = default;
+    hash() = default;
 
     using value_type = std::size_t;
     using argument_type = xrpl::MPTIssue;
@@ -141,7 +141,7 @@ public:
     value_type
     operator()(argument_type const& value) const
     {
-        value_type const result(id_hash_type::member(value.getMptID()));
+        value_type const result(IdHashType::member(value.getMptID()));
         return result;
     }
 };
@@ -153,14 +153,14 @@ private:
     using value_type = std::size_t;
     using argument_type = xrpl::Asset;
 
-    using issue_hasher = std::hash<xrpl::Issue>;
-    using mptissue_hasher = std::hash<xrpl::MPTIssue>;
+    using IssueHasher = std::hash<xrpl::Issue>;
+    using MptissueHasher = std::hash<xrpl::MPTIssue>;
 
-    issue_hasher mIssueHasher_;
-    mptissue_hasher mMptissueHasher_;
+    IssueHasher mIssueHasher_;
+    MptissueHasher mMptissueHasher_;
 
 public:
-    explicit hash() = default;
+    hash() = default;
 
     value_type
     operator()(argument_type const& asset) const
@@ -183,11 +183,11 @@ template <>
 struct hash<xrpl::Book>
 {
 private:
-    using asset_hasher = std::hash<xrpl::Asset>;
-    using uint256_hasher = xrpl::uint256::hasher;
+    using AssetHasher = std::hash<xrpl::Asset>;
+    using UInt256Hasher = xrpl::UInt256::hasher;
 
-    asset_hasher issueHasher_;
-    uint256_hasher uint256Hasher_;
+    AssetHasher issueHasher_;
+    UInt256Hasher uint256Hasher_;
 
 public:
     hash() = default;
@@ -227,7 +227,7 @@ struct hash<xrpl::Issue> : std::hash<xrpl::Issue>
 template <>
 struct hash<xrpl::MPTIssue> : std::hash<xrpl::MPTIssue>
 {
-    explicit hash() = default;
+    hash() = default;
 
     using Base = std::hash<xrpl::MPTIssue>;
 };
@@ -235,7 +235,7 @@ struct hash<xrpl::MPTIssue> : std::hash<xrpl::MPTIssue>
 template <>
 struct hash<xrpl::Asset> : std::hash<xrpl::Asset>
 {
-    explicit hash() = default;
+    hash() = default;
 
     using Base = std::hash<xrpl::Asset>;
 };

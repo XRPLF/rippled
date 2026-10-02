@@ -1,5 +1,5 @@
 {
-  "image_tag": "sha-a0074f8",
+  "image_tag": "sha-060957e",
   "configs": {
     "ubuntu": [
       {
@@ -30,6 +30,7 @@
         "arch": ["arm64"],
         "minimal": false
       },
+
       {
         "compiler": ["gcc", "clang"],
         "build_type": ["Debug", "Release"],
@@ -37,6 +38,7 @@
         "minimal": false,
         "sanitizers": ["address", "undefinedbehavior", "thread"]
       },
+
       {
         "compiler": ["clang"],
         "build_type": ["Debug"],
@@ -62,42 +64,45 @@
         "extra_cmake_args": "-Dunity=ON"
       }
     ],
+
     "debian": [
       {
         "compiler": ["gcc"],
         "build_type": ["Release"],
         "arch": ["amd64"],
         "minimal": false,
-        "extra_cmake_args": "-Dvalidator_keys=ON"
+        "extra_cmake_args": "-Dvalidator_keys=ON",
+        "package": {
+          "type": "deb",
+          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-3a2d19f"
+        }
+      },
+      {
+        "compiler": ["gcc"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "minimal": false,
+        "suffix": "assert",
+        "extra_cmake_args": "-Dvalidator_keys=ON -Dassert=ON",
+        "package": {
+          "type": "deb",
+          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-3a2d19f",
+          "variant": "assert"
+        }
       }
     ],
+
     "rhel": [
       {
         "compiler": ["gcc"],
         "build_type": ["Release"],
         "arch": ["amd64"],
         "minimal": false,
-        "extra_cmake_args": "-Dvalidator_keys=ON"
-      }
-    ]
-  },
-  "package_configs": {
-    "debian": [
-      {
-        "compiler": ["gcc"],
-        "build_type": ["Release"],
-        "arch": ["amd64"],
-        "minimal": false,
-        "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-a6983f8"
-      }
-    ],
-    "rhel": [
-      {
-        "compiler": ["gcc"],
-        "build_type": ["Release"],
-        "arch": ["amd64"],
-        "minimal": false,
-        "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-a6983f8"
+        "extra_cmake_args": "-Dvalidator_keys=ON",
+        "package": {
+          "type": "rpm",
+          "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-3a2d19f"
+        }
       }
     ]
   }

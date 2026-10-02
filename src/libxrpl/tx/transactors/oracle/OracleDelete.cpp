@@ -52,7 +52,7 @@ OracleDelete::preclaim(PreclaimContext const& ctx)
 TER
 OracleDelete::deleteOracle(
     ApplyView& view,
-    SLE::ref sle,
+    SLE::Ref sle,
     AccountID const& account,
     beast::Journal j)
 {
@@ -88,7 +88,7 @@ OracleDelete::doApply()
 }
 
 void
-OracleDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+OracleDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

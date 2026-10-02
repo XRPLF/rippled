@@ -48,21 +48,20 @@ struct TER_test : public beast::unit_test::Suite
         {
             // Entries in the tuple should not be convertible or assignable
             // unless they are the same types.
-            using To_t = std::decay_t<decltype(std::get<I1>(tup))>;
-            using From_t = std::decay_t<decltype(std::get<I2>(tup))>;
+            using ToT = std::decay_t<decltype(std::get<I1>(tup))>;
+            using FromT = std::decay_t<decltype(std::get<I2>(tup))>;
             static_assert(
-                std::is_same_v<From_t, To_t> == std::is_convertible_v<From_t, To_t>, "Convert err");
+                std::is_same_v<FromT, ToT> == std::is_convertible_v<FromT, ToT>, "Convert err");
             static_assert(
-                std::is_same_v<To_t, From_t> == std::is_constructible_v<To_t, From_t>,
-                "Construct err");
+                std::is_same_v<ToT, FromT> == std::is_constructible_v<ToT, FromT>, "Construct err");
             static_assert(
-                std::is_same_v<To_t, From_t> == std::is_assignable_v<To_t&, From_t const&>,
+                std::is_same_v<ToT, FromT> == std::is_assignable_v<ToT&, FromT const&>,
                 "Assign err");
 
             // Assignment or conversion from integer to type should never work.
-            static_assert(!std::is_convertible_v<int, To_t>, "Convert err");
-            static_assert(!std::is_constructible_v<To_t, int>, "Construct err");
-            static_assert(!std::is_assignable_v<To_t&, int const&>, "Assign err");
+            static_assert(!std::is_convertible_v<int, ToT>, "Convert err");
+            static_assert(!std::is_constructible_v<ToT, int>, "Construct err");
+            static_assert(!std::is_assignable_v<ToT&, int const&>, "Assign err");
         }
     };
 
@@ -126,11 +125,11 @@ struct TER_test : public beast::unit_test::Suite
 
         // Lambda that verifies assignability and convertibility.
         auto isConvertible = [](auto from, auto to) {
-            using From_t = std::decay_t<decltype(from)>;
-            using To_t = std::decay_t<decltype(to)>;
-            static_assert(std::is_convertible_v<From_t, To_t>, "Convert err");
-            static_assert(std::is_constructible_v<To_t, From_t>, "Construct err");
-            static_assert(std::is_assignable_v<To_t&, From_t const&>, "Assign err");
+            using FromT = std::decay_t<decltype(from)>;
+            using ToT = std::decay_t<decltype(to)>;
+            static_assert(std::is_convertible_v<FromT, ToT>, "Convert err");
+            static_assert(std::is_constructible_v<ToT, FromT>, "Construct err");
+            static_assert(std::is_assignable_v<ToT&, FromT const&>, "Assign err");
         };
 
         // Verify the right types convert to NotTEC.
@@ -144,11 +143,11 @@ struct TER_test : public beast::unit_test::Suite
 
         // Lambda that verifies types and not assignable or convertible.
         auto notConvertible = [](auto from, auto to) {
-            using To_t = std::decay_t<decltype(to)>;
-            using From_t = std::decay_t<decltype(from)>;
-            static_assert(!std::is_convertible_v<From_t, To_t>, "Convert err");
-            static_assert(!std::is_constructible_v<To_t, From_t>, "Construct err");
-            static_assert(!std::is_assignable_v<To_t&, From_t const&>, "Assign err");
+            using ToT = std::decay_t<decltype(to)>;
+            using FromT = std::decay_t<decltype(from)>;
+            static_assert(!std::is_convertible_v<FromT, ToT>, "Convert err");
+            static_assert(!std::is_constructible_v<ToT, FromT>, "Construct err");
+            static_assert(!std::is_assignable_v<ToT&, FromT const&>, "Assign err");
         };
 
         // Verify types that shouldn't convert to NotTEC.

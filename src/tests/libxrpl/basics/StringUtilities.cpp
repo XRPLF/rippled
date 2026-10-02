@@ -290,7 +290,7 @@ TEST_F(StringUtilitiesTest, to_string)
     EXPECT_EQ(result, "hello");
 }
 
-TEST_F(StringUtilitiesTest, trimWhitespace)
+TEST_F(StringUtilitiesTest, trim_whitespace)
 {
     EXPECT_EQ(trimWhitespace(""), "");
     EXPECT_EQ(trimWhitespace("   "), "");
@@ -303,7 +303,7 @@ TEST_F(StringUtilitiesTest, trimWhitespace)
     EXPECT_EQ(trimWhitespace("  a b\tc  "), "a b\tc");
 }
 
-TEST_F(StringUtilitiesTest, toLower)
+TEST_F(StringUtilitiesTest, to_lower)
 {
     EXPECT_EQ(toLower(""), "");
     EXPECT_EQ(toLower("ABC"), "abc");
@@ -318,7 +318,7 @@ TEST_F(StringUtilitiesTest, toLower)
 // Both helpers are documented as depending only on their input. Guard that by
 // checking the bytes just outside ASCII, which a locale-aware isspace/tolower
 // could classify differently.
-TEST_F(StringUtilitiesTest, trimAndLowerIgnoreLocale)
+TEST_F(StringUtilitiesTest, trim_and_lower_ignore_locale)
 {
     // 0xA0 is NO-BREAK SPACE in Latin-1 and is whitespace to some locales.
     std::string const nbsp("\xA0", 1);
