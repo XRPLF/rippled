@@ -2863,20 +2863,20 @@ A span becomes current in **either** of two ways:
 - As a [`ScopedSpanGuard`](../include/xrpl/telemetry/SpanGuard.h), which activates on construction.
 - By activating a plain `SpanGuard` through `activate()` or the `activateIfLive()` wrapper. `activate()` returns a `ScopedActivation` whose `Impl` holds an `otel_trace::Scope` constructed from the span, and that `Scope` pushes onto the same `RuntimeContext` store `Log.cpp` reads.
 
-A plain `SpanGuard` that is **never activated** makes no span current — it "never pushes the span onto the thread-local context stack" ([SpanGuard.h](../include/xrpl/telemetry/SpanGuard.h#L274)) — so lines inside such a region carry no `trace_id` regardless of severity.
+A plain `SpanGuard` that is **never activated** makes no span current. The `SpanGuard` class comment in [SpanGuard.h](../include/xrpl/telemetry/SpanGuard.h) says it "never pushes the span onto the thread-local context stack". So lines inside such a region carry no `trace_id`, whatever their severity.
 
 Severity does not affect injection, but `JLOG` filters on severity **before** `format()` runs, so the configured log level decides whether a qualifying line is emitted at all.
 
-**The dependably correlated line at `info`** is the consensus accept pair at [RCLConsensus.cpp:736/740](../src/xrpld/app/consensus/RCLConsensus.cpp#L736) — an `if`/`else`, so exactly one of the two fires on every accepted round. `doAccept` activates the accept span as ambient (`activateIfLive(acceptSpan)`) and then opens `consensus.accept.apply` as a scoped guard ([RCLConsensus.cpp:634](../src/xrpld/app/consensus/RCLConsensus.cpp#L634)), which stays ambient to the end of the function. Both branches of the pair sit inside it, so their lines carry the round's `trace_id` and `consensus.accept.apply`'s `span_id`. At roughly one round every 4 s this yields dozens of correlated lines per run.
+**The dependably correlated line at `info`** is the consensus accept pair (`CNF Val` / `CNF buildLCL`) in `RCLConsensus::Adaptor::doAccept()` ([RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp)). The pair is an `if`/`else`, so exactly one of the two fires on every accepted round. `doAccept` activates the accept span as ambient (`activateIfLive(acceptSpan)`). It then opens `consensus.accept.apply` as a scoped guard, which stays ambient to the end of the function. Both branches of the pair sit inside it, so their lines carry the round's `trace_id` and `consensus.accept.apply`'s `span_id`. At roughly one round every 4 s this yields dozens of correlated lines per run.
 
 That is a dependable pair rather than an unconditional one: `info` severity is necessary but not sufficient. Four preconditions must all hold, and each has its own bail-out that silently yields an uncorrelated line rather than an error:
 
-| Precondition                                                                  | Where it is enforced                                                                                                                                                                                                                                                                        | What happens if it fails                                                                        |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Telemetry enabled — built with `telemetry=ON` **and** `[telemetry] enabled=1` | The `SpanGuard` factories return early on `tel == nullptr \|\| !tel->isEnabled()`, e.g. [SpanGuard.cpp:278-280](../src/libxrpl/telemetry/SpanGuard.cpp#L278)                                                                                                                                | Null guard, no span, no `trace_id`                                                              |
-| `trace_consensus=1`                                                           | The round span is built by `hashSpan(TraceCategory::Consensus, …)`, which checks `isCategoryEnabled()` ([SpanGuard.cpp:354](../src/libxrpl/telemetry/SpanGuard.cpp#L354))                                                                                                                   | No round span, so `roundSpanContext_` never becomes valid                                       |
-| A valid `roundSpanContext_` at accept time                                    | `makeAcceptSpan()` calls `SpanGuard::childSpan(cs::accept, roundSpanContext_)` ([RCLConsensus.cpp:512](../src/xrpld/app/consensus/RCLConsensus.cpp#L512)), and `childSpan` returns a null guard on an invalid parent ([SpanGuard.cpp:274-281](../src/libxrpl/telemetry/SpanGuard.cpp#L274)) | Null accept span, so `activateIfLive` activates nothing and the pair logs without trace context |
-| The current span context is valid **and sampled**                             | Injection is gated on `spanCtx.IsValid() && spanCtx.IsSampled()` ([Log.cpp:328](../src/libxrpl/basics/Log.cpp#L328))                                                                                                                                                                        | Ids are withheld deliberately, so the log never advertises a trace that was not exported        |
+| Precondition                                                                       | Where it is enforced                                                                                                                                                                                                                                                                                      | What happens if it fails                                                                        |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Telemetry enabled — built with `-o telemetry=True` **and** `[telemetry] enabled=1` | The `SpanGuard` factories return early on `tel == nullptr \|\| !tel->isEnabled()`, e.g. `SpanGuard::span()` in [SpanGuard.cpp](../src/libxrpl/telemetry/SpanGuard.cpp)                                                                                                                                    | Null guard, no span, no `trace_id`                                                              |
+| `trace_consensus=1`                                                                | The round span is built by `SpanGuard::hashSpan(TraceCategory::Consensus, …)`, which checks `isCategoryEnabled()` ([SpanGuard.cpp](../src/libxrpl/telemetry/SpanGuard.cpp))                                                                                                                               | No round span, so `roundSpanContext_` never becomes valid                                       |
+| A valid `roundSpanContext_` at accept time                                         | `RCLConsensus::Adaptor::makeAcceptSpan()` calls `SpanGuard::childSpan(cs::accept, roundSpanContext_)` ([RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp)), and `SpanGuard::childSpan()` returns a null guard on an invalid parent ([SpanGuard.cpp](../src/libxrpl/telemetry/SpanGuard.cpp)) | Null accept span, so `activateIfLive` activates nothing and the pair logs without trace context |
+| The current span context is valid **and sampled**                                  | Injection is gated on `spanCtx.IsValid() && spanCtx.IsSampled()` (`Logs::format()` in [Log.cpp](../src/libxrpl/basics/Log.cpp))                                                                                                                                                                           | Ids are withheld deliberately, so the log never advertises a trace that was not exported        |
 
 The sampled check always passes today: head sampling is fixed at 1.0, and a span with no parent or a remote parent is decided by that ratio, not by the peer's sampled flag (`makeHeadSampler` in [Telemetry.cpp](../src/libxrpl/telemetry/Telemetry.cpp)). The gate matters only below 1.0: a span the ratio rejects, and every local child of it, is not exported but still carries valid ids.
 
@@ -2890,9 +2890,9 @@ With all four satisfied, `info` is the minimum level at which the `log.trace_id_
 
 #### Why not `debug`
 
-`debug` does correlate strictly more: it additionally brings in [`BuildLedger.cpp:81`](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L81) (inside the `ledger.build` `ScopedSpanGuard` at [:55](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L55), once per ledger close) and [`RPCHandler.cpp:188`](../src/xrpld/rpc/detail/RPCHandler.cpp#L188) (inside the `rpc.command.*` `ScopedSpanGuard` at [:168](../src/xrpld/rpc/detail/RPCHandler.cpp#L168), once per RPC command), giving broader multi-subsystem coverage.
+`debug` does correlate strictly more. It adds the `Flushed` line of `buildLedgerImpl()` in [BuildLedger.cpp](../src/xrpld/app/ledger/detail/BuildLedger.cpp), once per ledger close, inside that function's `ledger.build` `ScopedSpanGuard`. It also adds the `RPC call` line of `callMethod()` in [RPCHandler.cpp](../src/xrpld/rpc/detail/RPCHandler.cpp), once per RPC command, inside that function's `rpc.command.*` `ScopedSpanGuard`. So more subsystems carry correlated lines.
 
-But raising the **base** level to `debug` puts synchronous log I/O inside `ledger.build`, `consensus.accept` (including [RCLConsensus.cpp:715](../src/xrpld/app/consensus/RCLConsensus.cpp#L715), which logs **per transaction**) and `tx.apply` — precisely the spans whose p50/p95/p99 latencies `regression-metrics.json` gates. A baseline captured at `debug` bakes that log I/O into the latency numbers permanently, turning the regression gate into a measurement of its own configuration.
+But raising the **base** level to `debug` puts synchronous log I/O inside `ledger.build`, `consensus.accept` and `tx.apply`. These are spans whose latency quantiles `regression-metrics.json` gates. Inside `consensus.accept`, the debug `Tx:` line of `RCLConsensus::Adaptor::doAccept()` in [RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp) logs **per transaction**. A baseline captured at `debug` bakes that log I/O into the latency numbers permanently, turning the regression gate into a measurement of its own configuration.
 
 So if you need the broader coverage, enable it **per partition** rather than globally, and only **after** a baseline has been captured at the harness's normal level:
 
@@ -3476,9 +3476,9 @@ Two more pairs from the same family:
   cumulative object-payload bytes this process has written — the same value as
   `node_written_bytes`, from the same accessor — so it excludes keys, padding and
   the log, and it resets with the process. A ratio of the two is a constant 1.0 and
-  measures nothing. This label value was called `nudb_bytes` in earlier revisions; it
-  comes from `node_store::Database` rather than the NuDB backend, so it is not part
-  of the `nudb_*` family above and reads the same on RocksDB.
+  measures nothing. It comes from `node_store::Database`, not the NuDB backend.
+  So it is not part of the `nudb_*` family above, and it reads the same on
+  RocksDB.
 - These gauges are sampled on the `MetricsRegistry` reader's 10 s cadence, while
   the `jobq_*` lane gauges are sampled at 1 s by a different provider. Widen the
   window when correlating them rather than reading a single scrape; see the caveat
@@ -3637,14 +3637,14 @@ The counts are not hard-coded in the validator — it iterates the inventory fil
 so those files are authoritative. The figures below are the inventory as it
 stands today.
 
-| Category         | Checks                                                                                                                                                                               | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Spans            | Every **required** entry in `expected_spans.json` — 42 span types at the time of writing: 26 required, 16 marked `"optional": true`                                                  | Span name found in Tempo carrying its `required_attributes`, plus the declared parent-child relationships. An `"optional": true` entry that does not fire is recorded as a skip, not a failure — it needs traffic the harness may not generate (HTTP/JSON-RPC client, gRPC client, missing-ledger fetch, mode transitions) or that it deliberately no longer generates (path-finding RPC — see "Pathfinding is not exercised" in [the workload README](../docker/telemetry/workload/README.md)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| Metrics          | Every entry in every asserted category of `expected_metrics.json` — 84 checks across 25 asserting categories at the time of writing: 79 metric names plus 5 `required_labels` checks | SpanMetrics, `beast::insight` gauges/counters exported over OTLP, and the `MetricsRegistry` OTLP metrics. Each must have > 0 Prometheus series; none are optional. A category may also declare `required_labels`, and each label there becomes one additional check that at least one of that category's series carries it with a non-empty value (matched as `<label>!=""`, because Prometheus cannot distinguish an absent label from an empty one). Those labels were declared but never actually read until the check was generalised, so they were documented as required while going unverified; `spanmetrics` contributes 4 and `job_queue` 1. The separate `not_asserted` group lists metrics deliberately left out of the gate because they are workload-gated or defect-gated; it has neither a `metrics` nor a `required_labels` key, so the validator skips it entirely.                                                                                                                                                                                                                                                                  |
-| Logs             | 2 checks                                                                                                                                                                             | `trace_id`/`span_id` present in Loki, and a logged trace id resolves in Tempo. Gated in CI. `run-full-validation.sh` prints a four-leg diagnostic (node, mount, collector, Loki) after the suite whenever these run, so a failure names the leg that broke.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Parity           | 10 checks                                                                                                                                                                            | 6 span attributes the external-parity dashboard panels read, plus 4 metric value-sanity bounds.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| Dashboards       | Every uid in `expected_metrics.json` under `grafana_dashboards.uids` — currently all 15 provisioned dashboards                                                                       | Each listed dashboard loads and reports a panel count. This is a provisioning check only: it does **not** execute the panels' queries, so a dashboard can pass while individual panels render empty. `log-derived-insights` is Loki-backed, so only its provisioning is covered here; its data path is covered by the two log checks instead.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| Reverse coverage | 2 checks — `metric.reverse_coverage` and `span.reverse_coverage`                                                                                                                     | The only checks that run in the opposite direction: they read the full emitted inventory (the Prometheus `__name__` label values, the Tempo `name` intrinsic's tag values) and name everything the contract never mentions, sorted and one per line in the log. **Warn only — `passed` is hardcoded `True` in `_reverse_coverage_result`, so these can never fail CI.** Downstream branches legitimately add telemetry an upstream contract has not seen, and a hard failure would redden all of them. A metric family is accounted for by a `metrics` entry, by a `not_asserted.metrics_excluded` key, or by an anchored regex under the top-level `accounted_patterns` list — which exists for families whose membership is derived mechanically from a table in the code (the per-job-type job-queue instruments, the overlay per-category traffic cross product) plus the Prometheus scrape plumbing that is not xrpld telemetry. Histogram `_bucket`/`_count`/`_sum` names fold onto their base family before matching. Spans need no pattern list: the check reuses the forward matcher, so `rpc.command.*` covers every command it expands to. |
+| Category         | Checks                                                                                                                                                                                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Spans            | Every **required** entry in `expected_spans.json` — 42 span types at the time of writing: 26 required, 16 marked `"optional": true`                                                         | Span name found in Tempo carrying its `required_attributes`, plus the declared parent-child relationships. An `"optional": true` entry that does not fire is recorded as a skip, not a failure. Such an entry needs traffic the harness may not generate: an HTTP/JSON-RPC client, a gRPC client, a missing-ledger fetch or a mode transition. The harness also sends no path-finding RPC, on purpose (see "Pathfinding is not exercised" in [the workload README](../docker/telemetry/workload/README.md)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Metrics          | Every entry in every asserted category of `expected_metrics.json`. At the time of writing that is 94 checks across 26 asserting categories: 89 metric names plus 5 `required_labels` checks | SpanMetrics, `beast::insight` gauges/counters exported over OTLP, and the `MetricsRegistry` OTLP metrics. Each must have > 0 Prometheus series; none are optional. A category may also declare `required_labels`, and each label there becomes one additional check that at least one of that category's series carries it with a non-empty value (matched as `<label>!=""`, because Prometheus cannot distinguish an absent label from an empty one). `spanmetrics` contributes 4 of these label checks and `job_queue` 1. The separate `not_asserted` group lists metrics deliberately left out of the gate because they are workload-gated or defect-gated; it has neither a `metrics` nor a `required_labels` key, so the validator skips it entirely.                                                                                                                                                                                                                                                                                                                                                                                            |
+| Logs             | 2 checks                                                                                                                                                                                    | `trace_id`/`span_id` present in Loki, and a logged trace id resolves in Tempo. Gated in CI. `run-full-validation.sh` prints a four-leg diagnostic (node, mount, collector, Loki) after the suite whenever these run, so a failure names the leg that broke.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Parity           | 10 checks                                                                                                                                                                                   | 6 span attributes the external-parity dashboard panels read, plus 4 metric value-sanity bounds.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Dashboards       | Every uid in `expected_metrics.json` under `grafana_dashboards.uids` — currently all 15 provisioned dashboards                                                                              | Each listed dashboard loads and reports a panel count. This is a provisioning check only: it does **not** execute the panels' queries, so a dashboard can pass while individual panels render empty. `log-derived-insights` is Loki-backed, so only its provisioning is covered here; its data path is covered by the two log checks instead.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Reverse coverage | 2 checks — `metric.reverse_coverage` and `span.reverse_coverage`                                                                                                                            | The only checks that run in the opposite direction: they read the full emitted inventory (the Prometheus `__name__` label values, the Tempo `name` intrinsic's tag values) and name everything the contract never mentions, sorted and one per line in the log. **Warn only — `passed` is hardcoded `True` in `_reverse_coverage_result`, so these can never fail CI.** Downstream branches legitimately add telemetry an upstream contract has not seen, and a hard failure would redden all of them. A metric family is accounted for by a `metrics` entry, by a `not_asserted.metrics_excluded` key, or by an anchored regex under the top-level `accounted_patterns` list — which exists for families whose membership is derived mechanically from a table in the code (the per-job-type job-queue instruments, the overlay per-category traffic cross product) plus the Prometheus scrape plumbing that is not xrpld telemetry. Histogram `_bucket`/`_count`/`_sum` names fold onto their base family before matching. Spans need no pattern list: the check reuses the forward matcher, so `rpc.command.*` covers every command it expands to. |
 
 ### Running Individual Tools
 
@@ -3722,7 +3722,7 @@ Key properties:
   bound.** The `AND` is deliberate: SpanMetrics latency histograms use explicit
   buckets, so a quantile sitting near a bucket boundary can jump a whole bucket
   with no real change. Bounds live in `regression-thresholds.json` — `defaults`
-  per category and quantile, plus a per-metric `override` for every gated key.
+  per category and quantile, plus an `overrides` entry for every gated key.
 - **The absolute bound is derived per metric, as `hi_next − baseline`.** Locate
   the baseline in the half-open bucket `(lo, hi]` of its ladder and take
   `hi_next` as the next edge above `hi`; the trip point is then exactly
@@ -3739,48 +3739,42 @@ Key properties:
   `baseline-timings.json` obliges you to re-derive these bounds** — a value that
   moves into a different bucket gets a different `hi_next` — and
   `.github/scripts/telemetry/check_regression_bounds.py` fails CI if you do not.
-- **A single flat bound cannot work here.** The gated quantiles span 0.006 ms to
-  21 ms, so one figure is inert at the bottom of that range and trigger-happy at
-  the top. The flat 10/15 ms span bound it replaced sat 1.15x to 2000x above the
-  metric it guarded, and a 10x regression injected into each key in turn was
-  caught on only 5 of 28.
+- **A single flat bound cannot work here.** The gated quantiles span 0.06 ms to
+  21 ms. So one figure is inert at the bottom of that range and trigger-happy at
+  the top.
 - **The detection floor is `hi_next / baseline`, so some keys are only weakly
-  guarded.** It ranges 2.21x to 16.28x over the current baseline;
-  `job.acceptLedger.running.p95` is effectively not guarded at 16.3x, and is the
-  one gated key a 10x regression does not catch (it first fires at 16.28x; at 20x
-  the sweep catches 20 of 20). `baselines/README.md` lists all seven weak keys,
-  the limiting ladder step for each, and the edges that would fix them.
+  guarded.** It ranges from 2.00x to 7.41x over the current baseline, so a 10x
+  slowdown of any gated key trips the gate. The weakest key is
+  `span.consensus.ledger_close.p95`, at 7.41x. `baselines/README.md` lists the
+  six weakest keys, the limiting ladder step for each, and the edges that would
+  fix them.
 - **A baseline refresh can silently move sensitivity in either direction.** The
   trip point is derived from the baseline, so a refresh that lands at the low end
-  of a metric's range tightens the gate and one that lands high loosens it.
-  `job.acceptLedger.running.p95` has been measured with a 5.74x detection floor
-  on one baseline and 16.28x on another — it does not fire on any observed run,
-  so it stays gated, but the weak floor is recorded rather than left to surprise
-  someone. The same effect puts three `p50` keys below the spread they need, and
-  those are excluded (below). `baselines/README.md` carries the measurements.
+  of a metric's range tightens the gate and one that lands high loosens it. So
+  re-check every key's detection floor after a refresh. The same effect puts
+  three `p50` keys below the spread they need, and those are excluded (below).
+  `baselines/README.md` carries the measurements.
 - **The bound covers quantization noise only, so a key whose run-to-run variance
-  exceeds it cannot be gated. Five keys are excluded for that reason**, leaving
-  20 gated. `span.ledger.validate.p95` and `.p99` came first — spreads of 5.9x
-  and 66.8x across four CI runs, both reaching past their trip points on healthy
-  runs, because the span's duration follows peer-validation arrival timing rather
-  than code speed. `span.tx.apply.p50`, `span.ledger.build.p50` and
-  `span.consensus.ledger_close.p50` join them on this baseline, with observed
-  maxima 46.76x, 4.77x and 2.38x above their trip points. That is the same rule
-  applied, not a new exception: the decisive evidence is that
-  `span.tx.apply.p50` has read 0.7917 ms and 0.00597 ms on the same workload
-  — 132x apart — so whether the gate worked was
-  decided by where in its own distribution the captured run fell, not by the
-  code. All five share one shape: the observed maximum exceeds
-  `baseline + bound`, four of them because a low-bucket baseline yields a tiny
-  bound. Widening gates nothing and re-baselining until a run lands high is the
-  trap; **a multi-run baseline, or a spread measurement captured alongside it, is
-  what would let them be gated again** — not implemented, and the reason these
-  exclusions stand. They are listed with their measurements in `excluded_keys` in
-  `regression-metrics.json`, and `check_regression_bounds.py` rule F keeps each
-  entry honest. Before gating any key, check its observed maximum across runs
-  against `baseline + bound`; see `baselines/README.md`.
+  exceeds it cannot be gated. Six keys are excluded for that reason**, leaving
+  19 gated: `span.ledger.validate.p95` and `.p99`, `span.ledger.build.p50` and
+  `.p99`, `span.tx.apply.p50` and `span.consensus.ledger_close.p50`. All six
+  share one shape: the observed maximum across CI runs exceeds
+  `baseline + bound`, so a healthy run can clear the trip point. Four of them
+  have a baseline in a low bucket, where the bound is tiny. For the other two,
+  `span.ledger.validate.p99` and `span.ledger.build.p99`, the spread is wider
+  than the one bucket of headroom the bound allows.
+  `ledger.validate` varies because its duration follows when peer validations
+  arrive, not how fast the code runs.
+  Widening a bound gates nothing, and re-baselining until a run lands high is
+  the trap. **A bound sized from the spread across runs is what would let these
+  keys be gated again.** The baseline is the median of three runs, but
+  `check_regression_bounds.py` rule C requires every bound to equal
+  `hi_next − baseline`, so the spread plays no part. The keys are listed with
+  their measurements in `excluded_keys` in `regression-metrics.json`, and rule F
+  keeps each entry honest. Before gating any key, check its observed maximum
+  across runs against `baseline + bound`; see `baselines/README.md`.
 - **For every currently gated metric the absolute bound decides; the percentage
-  bound does not.** Measured, the bound is 121%-1528% of its own baseline, above
+  bound does not.** Measured, the bound is 100%-641% of its own baseline, above
   both configured percentage bounds. This is _not_ a general property: the span
   ladder's top steps are only 1.25x-1.5x apart, so a baseline between about
   2667-3000 ms or 3334-4000 ms gets an absolute bound worth under 50% of itself
@@ -3837,8 +3831,9 @@ automatic promotion from `develop`.
    `placeholder` key. For a refresh of an already-populated baseline, take the
    `timings.json` artifact instead and justify the delta in the PR description.
 
-Never hand-edit `baseline-timings.json` — every entry should trace back to a real
-CI run so its variance characteristics are preserved. Details in
+Do not hand-edit `baseline-timings.json`, with one exception: combining several
+CI runs into a median, which nothing automates yet. Every entry should still trace
+back to real CI runs, so its variance characteristics are preserved. Details in
 `docker/telemetry/workload/baselines/README.md`.
 
 #### CI workflow
@@ -3878,20 +3873,20 @@ CI, so Conan and ccache hit the shared caches) and `validate-telemetry`
   log-record attributes, Loki's OTLP path stores them as structured metadata, and
   structured metadata joins a metric query's label set — so an unaggregated
   `count_over_time` produces one series per log line and Loki answers `HTTP 400
-maximum number of series (500) reached`. Unaggregated, both legs printed
-  `unavailable` on runs `32877465763` and `32964262700` and the block
-  distinguished nothing. A rejected query now logs its HTTP status and Loki's own
-  plain-text explanation rather than a JSON-mimetype error.
+maximum number of series (500) reached`. Without the `sum()`, both counts would
+  print `unavailable`. A rejected query logs its HTTP status and Loki's own
+  plain-text explanation.
   `log.trace_id_cross_reference` polls Tempo for up to `METRIC_POLL_TIMEOUT_SEC`
   before failing, so a logged id that Tempo has not yet indexed is retried rather
   than reported absent. It also separates a failed Tempo query from a genuinely
   absent trace: a 404 on `/api/traces/<id>` is absence and moves to the next
   candidate, while any other non-200 raises `TempoQueryError` and is reported as
-  "could not verify" rather than "not exported". Both Tempo helpers previously
-  passed an error body straight to `resp.json()`, so a JSON 5xx read as zero
+  "could not verify" rather than "not exported". Both Tempo helpers,
+  `_tempo_search()` and `_tempo_get_trace()`, check the HTTP status before they
+  parse the body. So a 5xx raises `TempoQueryError` instead of reading as zero
   spans or zero traces.
   `docker/telemetry/integration-test.sh` (which has its own
-  `check_log_correlation()`) is still run by no workflow.
+  `check_log_correlation()`) is not run by any workflow.
 - **Inputs**: only `run_benchmark` changes behaviour. `rpc_rate`, `rpc_duration`,
   `tx_tps` and `tx_duration` are inert, as noted in their descriptions.
 - **Results**: reports are uploaded as the `telemetry-validation-reports`
@@ -3921,11 +3916,11 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 If benchmarks exceed thresholds:
 
 1. **Reduce trace volume with collector-side tail sampling.** There is no
-   `sampling_ratio` config key — xrpld's head sampling is a compile-time
-   constant fixed at 1.0
-   ([Telemetry.h:234](../include/xrpl/telemetry/Telemetry.h#L234)
-   `static constexpr double samplingRatio = 1.0;`), and
-   [TelemetryConfig.cpp:139](../src/libxrpl/telemetry/TelemetryConfig.cpp#L139)
+   `sampling_ratio` config key. xrpld's head sampling is a compile-time
+   constant fixed at 1.0: `Telemetry::Setup` in
+   [Telemetry.h](../include/xrpl/telemetry/Telemetry.h) declares
+   `static constexpr double samplingRatio = 1.0;`. `makeTelemetrySetup()`
+   in [TelemetryConfig.cpp](../src/libxrpl/telemetry/TelemetryConfig.cpp)
    explicitly parses nothing for it. Volume reduction is a collector decision.
    The only policy shipped is a single 0.5% probabilistic `tail_sampling`
    processor in `otel-collector-config.grafanacloud.yaml`; the base
