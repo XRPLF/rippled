@@ -595,15 +595,16 @@ the suggested commit message, or modify it as needed.
 
 #### Slightly more complicated pull requests
 
-Some pull requests need to be pushed to `develop` as more than one
-commit. A PR author may _request_ to merge as separate commits. They
+Some pull requests need to be pushed to their base branch (usually `develop`)
+as more than one commit.
+A PR author may _request_ to merge as separate commits. They
 must _justify_ why separate commits are needed, and _specify_ how they
 would like the commits to be merged. If you disagree with the author,
 discuss it with them directly.
 
 If the process is reasonable, follow it. The simplest option is to do a
-fast forward only merge (`--ff-only`) on the command line and push to
-`develop`.
+fast forward only merge (`--ff-only`) on the command line
+and push to the base branch.
 
 Some examples of when separate commits are worthwhile are:
 
@@ -616,9 +617,9 @@ Some examples of when separate commits are worthwhile are:
 
 Either way, check that:
 
-- The commits are based on the current tip of `develop`.
+- The commits are based on the current tip of the base branch.
 - The commits are clean:
-  No merge commits (except when merging a release back into `develop`),
+  No merge commits (except when merging a release, see [RELEASING.md](./RELEASING.md)),
   no "[FOLD]" or "fixup!" messages.
 - All commits are signed. If the commits are not signed by the author, use
   `git commit --amend -S` to sign them yourself.
