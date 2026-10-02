@@ -561,38 +561,38 @@ The OTel Collector receives these via a `statsd` receiver on UDP port 8125 and e
 
 #### Gauges
 
-| Prometheus Metric                           | Source                    | Description                                                                |
-| ------------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
-| `xrpld_LedgerMaster_Validated_Ledger_Age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                          |
-| `xrpld_LedgerMaster_Published_Ledger_Age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                          |
-| `xrpld_State_Accounting_{Mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
-| `xrpld_State_Accounting_{Mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                  |
-| `xrpld_Peer_Finder_Active_Inbound_Peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
-| `xrpld_Peer_Finder_Active_Outbound_Peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
-| `xrpld_Overlay_Peer_Disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
-| `xrpld_jobq_job_count`                      | JobQueue.cpp:26           | Current job queue depth                                                    |
-| `xrpld_{category}_Bytes_In/Out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
-| `xrpld_{category}_Messages_In/Out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
+| Prometheus Metric                           | Source                                       | Description                                                                |
+| ------------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------- |
+| `xrpld_LedgerMaster_Validated_Ledger_Age`   | `LedgerMaster::Stats` (LedgerMaster.h)       | Age of validated ledger (seconds)                                          |
+| `xrpld_LedgerMaster_Published_Ledger_Age`   | `LedgerMaster::Stats` (LedgerMaster.h)       | Age of published ledger (seconds)                                          |
+| `xrpld_State_Accounting_{Mode}_duration`    | `NetworkOPsImp::Stats` (NetworkOPs.cpp)      | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
+| `xrpld_State_Accounting_{Mode}_transitions` | `NetworkOPsImp::Stats` (NetworkOPs.cpp)      | Transition count per mode                                                  |
+| `xrpld_Peer_Finder_Active_Inbound_Peers`    | `ManagerImp::Stats` (PeerfinderManager.cpp)  | Active inbound peer connections                                            |
+| `xrpld_Peer_Finder_Active_Outbound_Peers`   | `ManagerImp::Stats` (PeerfinderManager.cpp)  | Active outbound peer connections                                           |
+| `xrpld_Overlay_Peer_Disconnects`            | `OverlayImpl::Stats` (OverlayImpl.h)         | Peer disconnect count                                                      |
+| `xrpld_jobq_job_count`                      | `JobQueue::JobQueue()` (JobQueue.cpp)        | Current job queue depth                                                    |
+| `xrpld_{category}_Bytes_In/Out`             | `OverlayImpl::TrafficGauges` (OverlayImpl.h) | Overlay traffic bytes per category (57 categories)                         |
+| `xrpld_{category}_Messages_In/Out`          | `OverlayImpl::TrafficGauges` (OverlayImpl.h) | Overlay traffic messages per category                                      |
 
 #### Counters
 
-| Prometheus Metric               | Source                | Description                    |
-| ------------------------------- | --------------------- | ------------------------------ |
-| `xrpld_rpc_requests`            | ServerHandler.cpp:108 | Total RPC request count        |
-| `xrpld_ledger_fetches`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
-| `xrpld_ledger_history_mismatch` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
-| `xrpld_warn`                    | Logic.h:33            | Resource manager warning count |
-| `xrpld_drop`                    | Logic.h:34            | Resource manager drop count    |
+| Prometheus Metric               | Source                                                        | Description                               |
+| ------------------------------- | ------------------------------------------------------------- | ----------------------------------------- |
+| `xrpld_rpc_requests`            | `ServerHandler::ServerHandler()` (ServerHandler.cpp)          | Total RPC request count                   |
+| `xrpld_ledger_fetches`          | `InboundLedgersImp::InboundLedgersImp()` (InboundLedgers.cpp) | Ledger fetch request count                |
+| `xrpld_ledger_history_mismatch` | `LedgerHistory::LedgerHistory()` (LedgerHistory.cpp)          | Built vs validated ledger hash mismatches |
+| `xrpld_warn`                    | `resource::Logic::Stats` (Logic.h)                            | Resource manager warning count            |
+| `xrpld_drop`                    | `resource::Logic::Stats` (Logic.h)                            | Resource manager drop count               |
 
 #### Histograms (from StatsD timers)
 
-| Prometheus Metric     | Source                | Description                    |
-| --------------------- | --------------------- | ------------------------------ |
-| `xrpld_rpc_time`      | ServerHandler.cpp:110 | RPC response time (ms)         |
-| `xrpld_rpc_size`      | ServerHandler.cpp:109 | RPC response size (bytes)      |
-| `xrpld_ios_latency`   | Application.cpp:438   | I/O service loop latency (ms)  |
-| `xrpld_pathfind_fast` | PathRequests.h:23     | Fast pathfinding duration (ms) |
-| `xrpld_pathfind_full` | PathRequests.h:24     | Full pathfinding duration (ms) |
+| Prometheus Metric     | Source                                                            | Description                    |
+| --------------------- | ----------------------------------------------------------------- | ------------------------------ |
+| `xrpld_rpc_time`      | `ServerHandler::ServerHandler()` (ServerHandler.cpp)              | RPC response time (ms)         |
+| `xrpld_rpc_size`      | `ServerHandler::ServerHandler()` (ServerHandler.cpp)              | RPC response size (bytes)      |
+| `xrpld_ios_latency`   | `ApplicationImp::io_latency_sampler_` (Application.cpp)           | I/O service loop latency (ms)  |
+| `xrpld_pathfind_fast` | `PathRequestManager::PathRequestManager()` (PathRequestManager.h) | Fast pathfinding duration (ms) |
+| `xrpld_pathfind_full` | `PathRequestManager::PathRequestManager()` (PathRequestManager.h) | Full pathfinding duration (ms) |
 
 ## Deployment Tiers
 
