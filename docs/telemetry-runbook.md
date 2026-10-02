@@ -38,13 +38,15 @@ Follow [BUILD.md](../BUILD.md), adding `-o telemetry=True` so Conan pulls `opent
 
 ```bash
 conan install .. --output-folder . --build missing -o telemetry=True --settings build_type=Release
-cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtelemetry=ON ..
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON ..
 cmake --build . --target xrpld
 ```
 
-Conan also writes a `conan-release` CMake preset, so `cmake --preset conan-release -Dtelemetry=ON` works instead of the explicit toolchain line. There is no preset named `default`.
+The Conan option is the only telemetry switch. The toolchain file that `conan install` writes sets the `telemetry` CMake variable, and `CMakeLists.txt` reads it, so the CMake line needs no telemetry flag. Do not add `-Dtelemetry=`: it overrides the toolchain's value and can disagree with what Conan fetched. The toolchain sets `telemetry` only while the CMake cache has no value for it, so change the option in a fresh build directory.
 
-Both telemetry flags are the current default, so omitting them still gives you an instrumented build. Pass them anyway, so the build stays instrumented wherever the default moves.
+Conan also writes a `conan-release` preset. From the repo root, `cmake --preset conan-release -Dxrpld=ON` works instead of the explicit toolchain line. Then `cmake --build --preset conan-release --target xrpld` builds in `.build/build/Release`. There is no preset named `default`.
+
+`telemetry=True` is the current Conan default, so omitting it still gives you an instrumented build. Pass it anyway, so the build stays instrumented wherever the default moves.
 
 ## Configuration Reference
 
@@ -92,7 +94,7 @@ All spans instrumented in xrpld, grouped by subsystem:
 | Span Name       | Source File     | Attributes                                                                                                                                                                                                                                                     | Description                                                  |
 | --------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq`, `tx_account` and one `tx_<field>` per other account field the transaction carries (`tx_destination`, `tx_owner`, ...; keys in `TxAccountSpanNames.h`) | Transaction submission and processing                        |
-| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `tx_status`, `current_ledger_seq`                                                                                                                                                                             | Transaction this node will process, received from peer relay |
+| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `tx_status`, `current_ledger_seq`                                                                                                                                                                             | Peer-relayed transaction, received after the duplicate check |
 | `tx.apply`      | BuildLedger.cpp | `ledger_seq`, `tx_count`, `tx_failed`                                                                                                                                                                                                                          | Transaction set applied per ledger                           |
 | `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                                                                                                                                                                                               | Stateless checks stage                                       |
 | `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`, `current_ledger_seq`, `current_ledger_hash`                                                                                                                                                                                  | Ledger-aware checks stage                                    |
@@ -930,9 +932,9 @@ Set `enabled=0` in config (runtime disable), or compile telemetry out:
 
 ```bash
 conan install .. --output-folder . --build missing -o telemetry=False --settings build_type=Release
-cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dtelemetry=OFF ..
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON ..
 ```
 
-Both flags are needed, and both must be stated. The default is `ON`, so omitting a flag leaves telemetry compiled in.
+`-o telemetry=False` is the switch: Conan then skips `opentelemetry-cpp`, and its toolchain file sets the `telemetry` CMake variable to `False`. State it, because the Conan default is `True` and omitting it leaves telemetry compiled in. Run this in a fresh build directory: the toolchain sets `telemetry` only while the CMake cache has no value for it.
 
 When telemetry is compiled out, all trace macros expand to no-ops with zero overhead.
