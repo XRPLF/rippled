@@ -183,13 +183,14 @@ protected:
 
         // A 15-year investment window, so extra loans with long payment intervals
         // still fit before RedemptionDate.
+        std::chrono::seconds const investmentWindow{15 * 365 * 24 * 60 * 60};
         auto fixture = setupLendingVault(
             env,
             owner,
             depositor,
             asset,
             params.depositAmount,
-            std::chrono::seconds{473'040'000},
+            investmentWindow,
             params.scale,
             params.coverRateMinimum,
             params.coverRateLiquidation);
@@ -248,11 +249,11 @@ protected:
             NetClock::time_point{NetClock::duration{dueDate + gracePeriod}} +
             std::chrono::seconds{params.overdueDays * 24 * 60 * 60});
 
-        env(
-            pay(depositor,
-                loanKeylets[0].key,
-                asset(params.loanPrincipal * 10).value(),
-                tfLoanLatePayment));
+        // Generously covers the coarsening loan's principal plus accrued late
+        // interest.
+        Number const latePaymentAmount = params.loanPrincipal * 10;
+        env(pay(
+            depositor, loanKeylets[0].key, asset(latePaymentAmount).value(), tfLoanLatePayment));
         env.close();
 
         return {.fixture = fixture, .loanKeylets = loanKeylets};
@@ -305,6 +306,7 @@ protected:
             if (!BEAST_EXPECT(principal > beast::kZero))
                 return;
 
+            std::uint32_t const oneYearInterval = 365 * 24 * 60 * 60;
             auto const loanKeylet = openLoan(
                 env,
                 fixture,
@@ -312,7 +314,7 @@ protected:
                 /* paymentTotal */ 1,
                 percentageToTenthBips(100),
                 /* flags */ 0,
-                /* paymentInterval */ 31'536'000);
+                oneYearInterval);
 
             auto const loanSle = env.le(loanKeylet);
             if (!BEAST_EXPECT(loanSle))

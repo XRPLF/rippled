@@ -332,13 +332,15 @@ class VaultCoarsenedFixedPrecision_test : public LoanPayFixedPrecisionBase
              .withDepositor = true,
              .holderFunds = 200'000'000'000'000'000ULL});
 
+        // ~28.5 years, under the 30-year cap.
+        std::chrono::seconds const investmentWindow{900'000'000};
         auto const fixture = setupLendingVault(
             env,
             owner,
             depositor,
             asset,
             Number{static_cast<std::int64_t>(initialDeposit)},
-            std::chrono::seconds{900'000'000});  // ~28.5 years, under the 30-year cap
+            investmentWindow);
         compoundVaultBySoleHolderLoanCycles(env, fixture, depositor, asset, cycles);
 
         // The loop above advances the clock cycles simulated years; make sure
@@ -352,7 +354,8 @@ class VaultCoarsenedFixedPrecision_test : public LoanPayFixedPrecisionBase
         std::uint64_t const available = toU64(vaultSle, sfAssetsAvailable);
         // available * initialDeposit > 1e19, checked as available > 1e19 / 1e6
         // to avoid overflowing uint64_t's ~1.84e19 range.
-        BEAST_EXPECT(available > 10'000'000'000'000ULL);  // > 1e13
+        std::uint64_t const minAvailable = 10'000'000'000'000ULL;  // > 1e13
+        BEAST_EXPECT(available > minAvailable);
 
         auto const shareMPTID = vaultSle->at(sfShareMPTID);
         auto const issuance = env.le(keylet::mptokenIssuance(shareMPTID));

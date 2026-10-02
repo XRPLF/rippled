@@ -41,6 +41,14 @@ namespace xrpl {
 // Scale past its base grid.
 class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
 {
+    // Long enough that an extra loan's first payment is not yet due when the
+    // coarsening loan goes late.
+    static constexpr std::uint32_t kLongPaymentInterval = 1000 * 24 * 60 * 60;
+
+    // A dustBorrower trust line big enough to hold its small funded balance.
+    static inline Number const kDustBorrowerTrustLimit{10};
+    static inline Number const kDustBorrowerFunds{2};
+
     void
     testLendingAssetsDeployedPayments()
     {
@@ -52,18 +60,24 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         Env env(*this, features());
         auto const [issuer, owner, depositor, asset] = setupIou(env);
 
-        auto const fixture = setupLendingVault(env, owner, depositor, asset, Number{1'000});
-        auto const loanKeylet = openLoan(env, fixture, Number{300}, 2);
+        Number const vaultDeposit{1'000};
+        Number const loanPrincipal{300};
+        std::uint32_t const paymentTotal = 2;
+        Number const payment{150};
 
-        env(pay(depositor, loanKeylet.key, asset(150).value()));
+        auto const fixture = setupLendingVault(env, owner, depositor, asset, vaultDeposit);
+        auto const loanKeylet = openLoan(env, fixture, loanPrincipal, paymentTotal);
+
+        env(pay(depositor, loanKeylet.key, asset(payment).value()));
         env.close();
 
-        auto sle = expectVault(env, fixture.vaultKeylet, {.assetsDeployed = Number{150}});
+        auto sle =
+            expectVault(env, fixture.vaultKeylet, {.assetsDeployed = loanPrincipal - payment});
         if (!sle)
             return;
         checkVaultLoanSums(env, fixture, {loanKeylet}, "first payment");
 
-        env(pay(depositor, loanKeylet.key, asset(150).value()));
+        env(pay(depositor, loanKeylet.key, asset(payment).value()));
         env.close();
 
         sle = env.le(fixture.vaultKeylet);
@@ -71,8 +85,8 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             return;
         BEAST_EXPECT(sle->at(sfAssetsDeployed) == beast::kZero);
         BEAST_EXPECT(sle->at(sfAssetsTotal) == getAssetsTotal(sle));
-        BEAST_EXPECT(sle->at(sfAssetsAvailable) == Number{1'000});
-        BEAST_EXPECT(sle->at(sfAssetsTotal) == Number{1'000});
+        BEAST_EXPECT(sle->at(sfAssetsAvailable) == vaultDeposit);
+        BEAST_EXPECT(sle->at(sfAssetsTotal) == vaultDeposit);
         checkVaultLoanSums(env, fixture, {loanKeylet}, "final payment");
     }
 
@@ -92,15 +106,22 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         auto const [issuer, owner, depositor, asset] =
             setupIou(env, {.depositorTrust = 2'100, .ownerTrust = 2'000});
 
-        auto const fixture = setupLendingVault(env, owner, depositor, asset, Number{2'000});
+        Number const vaultDeposit{2'000};
+        Number const loanPrincipal{1'000};
+        std::uint32_t const paymentTotal = 3;
+        std::uint32_t const interestRatePercent = 5;
+        // Generous 1-hour interval: payments below must not drift late.
+        std::uint32_t const paymentInterval = 60 * 60;
+
+        auto const fixture = setupLendingVault(env, owner, depositor, asset, vaultDeposit);
         auto const loanKeylet = openLoan(
             env,
             fixture,
-            Number{1'000},
-            3,
-            percentageToTenthBips(5),
+            loanPrincipal,
+            paymentTotal,
+            percentageToTenthBips(interestRatePercent),
             0,
-            3'600);  // generous 1-hour interval: payments below must not drift late
+            paymentInterval);
 
         auto const loanSle0 = env.le(loanKeylet);
         if (!BEAST_EXPECT(loanSle0))
@@ -125,7 +146,7 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         Number prevVaultBalance = env.balance(vaultAccount, asset).value();
         BEAST_EXPECT(prevAssetsDeployed == prevPrincipal);
 
-        for (std::uint32_t i = 0; i < 3; ++i)
+        for (std::uint32_t i = 0; i < paymentTotal; ++i)
         {
             env(pay(depositor, loanKeylet.key, asset(periodicPaymentDue).value()));
             env.close();
@@ -170,10 +191,17 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         Env env(*this, features());
         auto const [issuer, owner, depositor, asset] = setupIou(env);
 
-        auto const fixture = setupLendingVault(env, owner, depositor, asset, Number{1'000});
+        Number const vaultDeposit{1'000};
+        Number const loanPrincipal{500};
+        std::uint32_t const paymentTotal = 5;
+        Number const periodicPayment = loanPrincipal / paymentTotal;
+        // Overpay well beyond one periodic payment.
+        Number const overpayAmount = periodicPayment * 3;
+
+        auto const fixture = setupLendingVault(env, owner, depositor, asset, vaultDeposit);
         // tfLoanOverpayment marks the loan as accepting overpayments.
         auto const loanKeylet =
-            openLoan(env, fixture, Number{500}, 5, TenthBips32(0), tfLoanOverpayment);
+            openLoan(env, fixture, loanPrincipal, paymentTotal, TenthBips32(0), tfLoanOverpayment);
 
         auto const loanSleBefore = env.le(loanKeylet);
         if (!BEAST_EXPECT(loanSleBefore))
@@ -186,8 +214,7 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         Number const assetsDeployedBefore = vaultSle->at(sfAssetsDeployed);
         BEAST_EXPECT(assetsDeployedBefore == principalBefore);
 
-        // A periodic payment here would be 100; overpay well beyond that.
-        env(pay(depositor, loanKeylet.key, asset(300).value(), tfLoanOverpayment));
+        env(pay(depositor, loanKeylet.key, asset(overpayAmount).value(), tfLoanOverpayment));
         env.close();
 
         auto const loanSleAfter = env.le(loanKeylet);
@@ -198,7 +225,7 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         Number const assetsDeployedAfter = vaultSle->at(sfAssetsDeployed);
 
         // The overpayment paid down more than one periodic payment.
-        BEAST_EXPECT(principalBefore - principalAfter > Number{100});
+        BEAST_EXPECT(principalBefore - principalAfter > periodicPayment);
         BEAST_EXPECT(assetsDeployedAfter == principalAfter);
         BEAST_EXPECT(
             assetsDeployedBefore - assetsDeployedAfter == principalBefore - principalAfter);
@@ -219,22 +246,28 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         Env env(*this, features());
         auto const [issuer, owner, depositor, asset] = setupIou(env);
 
-        auto const fixture = setupLendingVault(env, owner, depositor, asset, Number{1'000});
-        auto const loanAKeylet = openLoan(env, fixture, Number{300}, 3);
-        auto const loanBKeylet = openLoan(env, fixture, Number{200}, 2);
+        Number const vaultDeposit{1'000};
+        Number const principalA{300};
+        std::uint32_t const paymentTotalA = 3;
+        Number const principalB{200};
+        std::uint32_t const paymentTotalB = 2;
+
+        auto const fixture = setupLendingVault(env, owner, depositor, asset, vaultDeposit);
+        auto const loanAKeylet = openLoan(env, fixture, principalA, paymentTotalA);
+        auto const loanBKeylet = openLoan(env, fixture, principalB, paymentTotalB);
 
         auto vaultSle = env.le(fixture.vaultKeylet);
         if (!BEAST_EXPECT(vaultSle))
             return;
-        BEAST_EXPECT(vaultSle->at(sfAssetsDeployed) == Number{500});
+        BEAST_EXPECT(vaultSle->at(sfAssetsDeployed) == principalA + principalB);
         checkVaultLoanSums(env, fixture, {loanAKeylet, loanBKeylet}, "early payoff, before payoff");
 
         auto const loanASle = env.le(loanAKeylet);
         if (!BEAST_EXPECT(loanASle))
             return;
-        Number const principalA = loanASle->at(sfPrincipalOutstanding);
+        Number const principalABefore = loanASle->at(sfPrincipalOutstanding);
 
-        env(pay(depositor, loanAKeylet.key, asset(principalA).value(), tfLoanFullPayment));
+        env(pay(depositor, loanAKeylet.key, asset(principalABefore).value(), tfLoanFullPayment));
         env.close();
 
         auto const loanASleAfter = env.le(loanAKeylet);
@@ -243,7 +276,7 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             return;
         BEAST_EXPECT(loanASleAfter->at(sfPrincipalOutstanding) == beast::kZero);
         BEAST_EXPECT(loanASleAfter->at(sfPaymentRemaining) == 0);
-        BEAST_EXPECT(vaultSle->at(sfAssetsDeployed) == Number{200});
+        BEAST_EXPECT(vaultSle->at(sfAssetsDeployed) == principalB);
         BEAST_EXPECT(vaultSle->at(sfAssetsTotal) == getAssetsTotal(vaultSle));
         checkVaultLoanSums(env, fixture, {loanAKeylet, loanBKeylet}, "early payoff, after payoff");
     }
@@ -263,15 +296,22 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         auto const [issuer, owner, depositor, asset] =
             setupMpt(env, {.maxAmt = 100'000, .withDepositor = true, .holderFunds = 2'100});
 
-        auto const fixture = setupLendingVault(env, owner, depositor, asset, Number{2'000});
+        Number const vaultDeposit{2'000};
+        Number const loanPrincipal{1'000};
+        std::uint32_t const paymentTotal = 3;
+        std::uint32_t const interestRatePercent = 5;
+        // Generous 1-hour interval: payments below must not drift late.
+        std::uint32_t const paymentInterval = 60 * 60;
+
+        auto const fixture = setupLendingVault(env, owner, depositor, asset, vaultDeposit);
         auto const loanKeylet = openLoan(
             env,
             fixture,
-            Number{1'000},
-            3,
-            percentageToTenthBips(5),
+            loanPrincipal,
+            paymentTotal,
+            percentageToTenthBips(interestRatePercent),
             0,
-            3'600);  // generous 1-hour interval: payments below must not drift late
+            paymentInterval);
 
         auto const loanSle0 = env.le(loanKeylet);
         if (!BEAST_EXPECT(loanSle0))
@@ -294,7 +334,7 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         Number prevVaultBalance = env.balance(vaultAccount, asset).value();
         BEAST_EXPECT(prevAssetsDeployed == prevPrincipal);
 
-        for (std::uint32_t i = 0; i < 3; ++i)
+        for (std::uint32_t i = 0; i < paymentTotal; ++i)
         {
             env(pay(depositor, loanKeylet.key, asset(periodicPaymentDue).value()));
             env.close();
@@ -468,7 +508,9 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         // dustBorrower holds a small balance so a sub-1e-9 debit registers; see
         // ExtraLoan::borrower.
         Account const dustBorrower{"dustBorrower"};
-        fundIouHolder(env, dustBorrower, accounts, 10, 1);
+        Number const dustBorrowerTrustLimit{10};
+        Number const dustBorrowerFunds{1};
+        fundIouHolder(env, dustBorrower, accounts, dustBorrowerTrustLimit, dustBorrowerFunds);
 
         Number const overpayPrincipal{1'000};
         // Half a live unit once coarsened (1e-9 at Scale 10).
@@ -488,11 +530,11 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
                      .paymentTotal = 2,
                      // Long enough that its first payment is not yet due, so it can be paid as
                      // a plain overpayment.
-                     .paymentInterval = 1000 * 24 * 60 * 60},
+                     .paymentInterval = kLongPaymentInterval},
                  ExtraLoan{
                      .principal = nonTerminalPrincipal,
                      .paymentTotal = 3,
-                     .paymentInterval = 1000 * 24 * 60 * 60,
+                     .paymentInterval = kLongPaymentInterval,
                      .borrower = dustBorrower}}});
         auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
         auto const& loanKeylet = coarsened.loanKeylets[1];
@@ -600,7 +642,7 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         auto const accounts = setupCoarsenIou(env);
         auto const& [issuer, owner, depositor, asset] = accounts;
         Account const dustBorrower{"dustBorrower"};
-        fundIouHolder(env, dustBorrower, accounts, 10, 2);
+        fundIouHolder(env, dustBorrower, accounts, kDustBorrowerTrustLimit, kDustBorrowerFunds);
 
         // A single-payment loan: the dust principal floors to a zero vault credit,
         // but the flat service fee is non-zero. It is also the terminal payment.
@@ -614,7 +656,7 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             {.extraLoans = {ExtraLoan{
                  .principal = dustPrincipal,
                  .paymentTotal = 1,
-                 .paymentInterval = 1000 * 24 * 60 * 60,
+                 .paymentInterval = kLongPaymentInterval,
                  .borrower = dustBorrower,
                  .serviceFee = fee}}});
         auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
@@ -670,7 +712,7 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         auto const accounts = setupCoarsenIou(env);
         auto const& [issuer, owner, depositor, asset] = accounts;
         Account const dustBorrower{"dustBorrower"};
-        fundIouHolder(env, dustBorrower, accounts, 10, 2);
+        fundIouHolder(env, dustBorrower, accounts, kDustBorrowerTrustLimit, kDustBorrowerFunds);
 
         // Both the dust principal and the dust fee are on the vault's base
         // grid, well below CoverAvailable's magnitude, so
@@ -687,7 +729,7 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             {.extraLoans = {ExtraLoan{
                  .principal = dustPrincipal,
                  .paymentTotal = 1,
-                 .paymentInterval = 1000 * 24 * 60 * 60,
+                 .paymentInterval = kLongPaymentInterval,
                  .borrower = dustBorrower,
                  .serviceFee = dustFee}}});
         auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
@@ -754,7 +796,7 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         auto const accounts = setupCoarsenIou(env);
         auto const& [issuer, owner, depositor, asset] = accounts;
         Account const dustBorrower{"dustBorrower"};
-        fundIouHolder(env, dustBorrower, accounts, 10, 2);
+        fundIouHolder(env, dustBorrower, accounts, kDustBorrowerTrustLimit, kDustBorrowerFunds);
 
         Number const dustPrincipal{9, -10};
         Number const fee{1};
@@ -766,7 +808,7 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             {.extraLoans = {ExtraLoan{
                  .principal = dustPrincipal,
                  .paymentTotal = 1,
-                 .paymentInterval = 1000 * 24 * 60 * 60,
+                 .paymentInterval = kLongPaymentInterval,
                  .borrower = dustBorrower,
                  .serviceFee = fee}}});
         auto const& brokerKeylet = coarsened.fixture.brokerKeylet;
@@ -904,7 +946,7 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             {.extraLoans = {ExtraLoan{
                  .principal = crossingPrincipal,
                  .flags = tfLoanOverpayment,
-                 .paymentInterval = 1000 * 24 * 60 * 60}},
+                 .paymentInterval = kLongPaymentInterval}},
              .overdueDays = 345});
         auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
         auto const& crossingLoanKeylet = coarsened.loanKeylets[1];
@@ -915,7 +957,9 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         // The next power of ten above the balance: crossing it adds a digit to the
         // integer part.
         Number const nextPowerOfTen = smallestPowerOfTenAbove(before.available);
-        Number const crossingPayment = nextPowerOfTen - before.available + Number{1};
+        // A margin, so the payment strictly crosses the boundary.
+        Number const margin{1};
+        Number const crossingPayment = nextPowerOfTen - before.available + margin;
 
         auto const loanSleBefore = env.le(crossingLoanKeylet);
         if (!BEAST_EXPECT(loanSleBefore))
@@ -966,34 +1010,45 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         env.close();
 
         PrettyAsset const iou = issuer["IOU"];
-        env(trust(alice, iou(Number{10, 10})));
-        env(trust(borrower, iou(Number{10, 10})));
-        env(pay(issuer, alice, iou(Number{10, 9})));
-        env(pay(issuer, borrower, iou(Number{10, 2})));
+        Number const trustLimit{10, 10};
+        Number const aliceFunds{10, 9};
+        Number const borrowerFunds{10, 2};
+        env(trust(alice, iou(trustLimit)));
+        env(trust(borrower, iou(trustLimit)));
+        env(pay(issuer, alice, iou(aliceFunds)));
+        env(pay(issuer, borrower, iou(borrowerFunds)));
 
         test::jtx::Vault const vault{env};
         [[maybe_unused]] auto [createTx, vaultKeylet, subscriptionDate] =
             vault.createClosedEnded({.owner = alice, .asset = iou});
-        createTx[sfScale] = 6;
+        std::uint8_t const vaultScale = 6;
+        createTx[sfScale] = vaultScale;
         env(createTx);
-        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = iou(100)}));
+        Number const vaultDeposit{100};
+        env(vault.deposit(
+            {.depositor = alice, .id = vaultKeylet.key, .amount = iou(vaultDeposit)}));
         vault.closePastSubscription(subscriptionDate);
 
         auto const minCoverBroker =
             keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+        Number const debtMaximum{100};
+        std::uint32_t const coverRateMinimumPercent = 10;
+        std::uint32_t const coverRateLiquidationPercent = 25;
         env(set(alice, vaultKeylet.key),
-            kDebtMaximum(Number{100}),
-            kCoverRateMinimum(percentageToTenthBips(10)),
-            kCoverRateLiquidation(percentageToTenthBips(25)));
-        env(coverDeposit(alice, minCoverBroker.key, iou(Number{1, -1})));
-        env(loan::set(borrower, minCoverBroker.key, Number{1}),
+            kDebtMaximum(debtMaximum),
+            kCoverRateMinimum(percentageToTenthBips(coverRateMinimumPercent)),
+            kCoverRateLiquidation(percentageToTenthBips(coverRateLiquidationPercent)));
+        Number const coverDepositAmount{1, -1};
+        env(coverDeposit(alice, minCoverBroker.key, iou(coverDepositAmount)));
+        Number const loanPrincipal{1};
+        env(loan::set(borrower, minCoverBroker.key, loanPrincipal),
             Sig(sfCounterpartySignature, alice),
             Fee(env.current()->fees().base * 2));
         {
             auto const broker = env.le(minCoverBroker);
             BEAST_EXPECT(broker);
             if (broker)
-                BEAST_EXPECT((broker->at(sfDebtTotal) == Number{1}));
+                BEAST_EXPECT((broker->at(sfDebtTotal) == loanPrincipal));
         }
         test::checkFixedPrecisionVaultAssetsDeployed(
             *this,
@@ -1004,7 +1059,7 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             "after minCoverBroker loan origination");
 
         auto const loanKeylet = keylet::loan(minCoverBroker.key, SeqProxy::rawSequence(1));
-        env(loan::pay(borrower, loanKeylet.key, iou(1).value()));
+        env(loan::pay(borrower, loanKeylet.key, iou(loanPrincipal).value()));
         test::checkFixedPrecisionVaultAssetsDeployed(
             *this, env, vaultKeylet, {}, {loanKeylet}, "after minCoverBroker loan payment");
     }
@@ -1026,9 +1081,12 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         Env env(*this, features());
         auto const [issuer, owner, depositor, asset] = setupIou(env);
 
-        auto const fixture = setupLendingVault(env, owner, depositor, asset, Number{1'000});
-        Number const principal{1'000};
-        auto const loanKeylet = openLoan(env, fixture, principal, 1);
+        Number const vaultDeposit{1'000};
+        // Lends out the vault's entire deposit.
+        Number const principal = vaultDeposit;
+        std::uint32_t const paymentTotal = 1;
+        auto const fixture = setupLendingVault(env, owner, depositor, asset, vaultDeposit);
+        auto const loanKeylet = openLoan(env, fixture, principal, paymentTotal);
 
         test::jtx::Vault const vault{env};
 
@@ -1105,27 +1163,28 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         auto const [issuer, owner, depositor, asset] =
             setupIou(env, {.depositorTrust = 30'000'000, .depositorFunds = 10'000'000});
 
-        auto const fixture = setupLendingVault(
-            env,
-            owner,
-            depositor,
-            asset,
-            Number{899'999},
-            std::chrono::seconds{473'040'000},
-            std::uint8_t{10});
+        Number const depositAmount{899'999};
+        // A 15-year investment window, as in LoanPayFixedPrecisionBase::coarsenVault.
+        std::chrono::seconds const investmentWindow{15 * 365 * 24 * 60 * 60};
+        std::uint8_t const scale = 10;
+        auto const fixture =
+            setupLendingVault(env, owner, depositor, asset, depositAmount, investmentWindow, scale);
 
         // Originate one loan with the maximum late-interest rate, then let it
         // go overdue long enough that a late payment coarsens the Vault
         // (pushes getVaultScale() away from getVaultBaseScale()).
         std::uint32_t const gracePeriod = 60;
+        std::uint32_t const paymentInterval = 24 * 60 * 60;
+        Number const loanPrincipal{700'000};
+        std::uint32_t const paymentTotal = 5;
         auto const coarseningLoanKeylet =
             keylet::loan(fixture.brokerKeylet.key, SeqProxy::rawSequence(1));
-        env(set(depositor, fixture.brokerKeylet.key, Number{700'000}),
+        env(set(depositor, fixture.brokerKeylet.key, loanPrincipal),
             kInterestRate(TenthBips32(0)),
             kLateInterestRate(lending::kMaxLateInterestRate),
             kGracePeriod(gracePeriod),
-            kPaymentInterval(24 * 60 * 60),
-            kPaymentTotal(5),
+            kPaymentInterval(paymentInterval),
+            kPaymentTotal(paymentTotal),
             Sig(sfCounterpartySignature, owner),
             Fee(env.current()->fees().base * 2));
         env.close();
@@ -1135,11 +1194,19 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             return;
         std::uint32_t const dueDate = loanSle->at(sfNextPaymentDueDate);
 
+        int const overdueDays = 800;
         env.close(
             NetClock::time_point{NetClock::duration{dueDate + gracePeriod}} +
-            std::chrono::seconds{800 * 24 * 60 * 60});
+            std::chrono::seconds{overdueDays * 24 * 60 * 60});
 
-        env(pay(depositor, coarseningLoanKeylet.key, asset(7'000'000).value(), tfLoanLatePayment));
+        // Generously covers the coarsening loan's principal plus accrued late
+        // interest.
+        Number const latePaymentAmount = loanPrincipal * 10;
+        env(
+            pay(depositor,
+                coarseningLoanKeylet.key,
+                asset(latePaymentAmount).value(),
+                tfLoanLatePayment));
         env.close();
 
         auto const vaultSle = env.le(fixture.vaultKeylet);
@@ -1150,11 +1217,13 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
 
         // Zero interest: the Open-zone capacity check alone would pass. Only
         // the "already coarsened" check can produce the rejection.
-        env(set(depositor, fixture.brokerKeylet.key, Number{1}),
+        Number const minimalPrincipal{1};
+        std::uint32_t const singlePaymentTotal = 1;
+        env(set(depositor, fixture.brokerKeylet.key, minimalPrincipal),
             kInterestRate(TenthBips32(0)),
             kGracePeriod(gracePeriod),
-            kPaymentInterval(24 * 60 * 60),
-            kPaymentTotal(1),
+            kPaymentInterval(paymentInterval),
+            kPaymentTotal(singlePaymentTotal),
             Sig(sfCounterpartySignature, owner),
             Fee(env.current()->fees().base * 2),
             Ter(tecLIMIT_EXCEEDED));

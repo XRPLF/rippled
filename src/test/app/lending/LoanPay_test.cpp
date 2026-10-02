@@ -1608,20 +1608,27 @@ private:
         using namespace jtx;
         using namespace loan;
 
-        FixedPrecisionIOU f{*this, fixedPrecisionFeatures(), 10'000'000, 2'000'000, 100};
+        Number const trustLimit{10'000'000};
+        Number const lenderAmount{2'000'000};
+        Number const borrowerAmount{100};
+        FixedPrecisionIOU f{
+            *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
         auto& [env, issuer, lender, borrower, asset] = f;
 
         auto brokerParams = fixedPrecisionBrokerParams();
-        brokerParams.managementFeeRate = TenthBips16{100};
+        TenthBips16 const managementFeeRate{100};
+        brokerParams.managementFeeRate = managementFeeRate;
         auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
+        Number const principal{1'000};
+        std::uint32_t const interestRatePercent = 12;
         auto const loanKeylet = originateLoan(
             env,
             broker,
             borrower,
             lender,
-            asset(1'000).value(),
+            asset(principal).value(),
             {.paymentTotal = 3, .paymentInterval = 24 * 60 * 60},
-            kInterestRate(percentageToTenthBips(12)));
+            kInterestRate(percentageToTenthBips(interestRatePercent)));
 
         auto const state = getCurrentState(env, broker, loanKeylet);
         STAmount const payment{
@@ -1712,8 +1719,11 @@ private:
         using namespace jtx;
         using namespace loan;
 
+        Number const trustLimit{2, 10};
+        Number const lenderAmount{1, 10};
+        Number const borrowerAmount{2, 9};
         FixedPrecisionIOU f{
-            *this, fixedPrecisionFeatures(), Number{2, 10}, Number{1, 10}, Number{2, 9}};
+            *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
         auto& [env, issuer, lender, borrower, asset] = f;
 
         auto brokerParams = fixedPrecisionBrokerParams();
@@ -1723,16 +1733,18 @@ private:
         // Optional cover can fill the Open zone at P=6. The first redirected
         // fee below is mandatory growth and takes CoverAvailable into the
         // coarsened state.
-        env(loan_broker::coverDeposit(lender, broker.brokerID, asset(Number{9, 9})));
+        Number const coverDepositAmount{9, 9};
+        env(loan_broker::coverDeposit(lender, broker.brokerID, asset(coverDepositAmount)));
         env.close();
 
+        Number const loanPrincipal{1'000};
         auto const makeLoan = [&](Number const& serviceFee) {
             return originateLoan(
                 env,
                 broker,
                 borrower,
                 lender,
-                asset(1'000).value(),
+                asset(loanPrincipal).value(),
                 {.paymentTotal = 2, .paymentInterval = 24 * 60 * 60},
                 kLoanServiceFee(serviceFee));
         };
@@ -1773,7 +1785,8 @@ private:
         if (!BEAST_EXPECT(brokerCoarsened))
             return;
         Number const coverBeforeDust = brokerCoarsened->at(sfCoverAvailable);
-        BEAST_EXPECT(coverBeforeDust == Number(1, 10));
+        Number const expectedCoverAfterFirstPayment{1, 10};
+        BEAST_EXPECT(coverBeforeDust == expectedCoverAfterFirstPayment);
 
         payOnce(roundedFeeLoan, roundedFeeRaw);
         checkSums("after roundedFeeLoan payment");
@@ -1811,24 +1824,32 @@ private:
         using namespace jtx;
         using namespace loan;
 
+        Number const trustLimit{3, 10};
+        Number const lenderAmount{11, 9};
+        Number const borrowerAmount{15, 9};
         FixedPrecisionIOU f{
-            *this, fixedPrecisionFeatures(), Number{3, 10}, Number{11, 9}, Number{15, 9}};
+            *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
         auto& [env, issuer, lender, borrower, asset] = f;
 
         auto brokerParams = fixedPrecisionBrokerParams();
-        brokerParams.vaultDeposit = Number{9, 9};
-        brokerParams.debtMax = Number{9, 9};
+        Number const vaultDeposit{9, 9};
+        Number const debtMax{9, 9};
+        brokerParams.vaultDeposit = vaultDeposit;
+        brokerParams.debtMax = debtMax;
         brokerParams.coverDeposit = 1'000'000'000;
         auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
         LoanShape const shape{.paymentTotal = 2, .paymentInterval = 2 * 365 * 24 * 60 * 60};
-        auto const firstLoan = originateLoan(env, broker, borrower, lender, Number{7, 9}, shape);
+        Number const firstLoanPrincipal{7, 9};
+        auto const firstLoan =
+            originateLoan(env, broker, borrower, lender, firstLoanPrincipal, shape);
+        Number const growthLoanPrincipal{1, 9};
         auto const growthLoan = originateLoan(
             env,
             broker,
             borrower,
             lender,
-            Number{1, 9},
+            growthLoanPrincipal,
             shape,
             kCloseInterestRate(lending::kMaxCloseInterestRate));
 
@@ -1839,7 +1860,8 @@ private:
         Number const assetsTotalBeforeGrowth = vaultBeforeGrowth->at(sfAssetsTotal);
         Number const yieldBeforeGrowth = vaultBeforeGrowth->at(sfYieldUnrealized);
 
-        payOffGrowthLoan(env, broker, borrower, growthLoan, Number{1, 10});
+        Number const payoffMaximum{1, 10};
+        payOffGrowthLoan(env, broker, borrower, growthLoan, payoffMaximum);
 
         auto const coarsenedVault = env.le(broker.vaultKeylet());
         if (!BEAST_EXPECT(coarsenedVault))
@@ -1876,29 +1898,37 @@ private:
         using namespace jtx;
         using namespace loan;
 
+        Number const trustLimit{3, 10};
+        Number const lenderAmount{11, 9};
+        Number const borrowerAmount{5, 9};
         FixedPrecisionIOU f{
-            *this, fixedPrecisionFeatures(), Number{3, 10}, Number{11, 9}, Number{5, 9}};
+            *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
         auto& [env, issuer, lender, borrower, asset] = f;
 
         auto brokerParams = fixedPrecisionBrokerParams();
-        brokerParams.vaultDeposit = Number{9, 9};
-        brokerParams.debtMax = Number{2, 9};
+        Number const vaultDeposit{9, 9};
+        Number const debtMax{2, 9};
+        brokerParams.vaultDeposit = vaultDeposit;
+        brokerParams.debtMax = debtMax;
         brokerParams.coverDeposit = 200'000'000;
         auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
         LoanShape const shape{.paymentTotal = 2, .paymentInterval = 2 * 365 * 24 * 60 * 60};
+        Number const terminalLoanPrincipal{1'000'000};
         auto const terminalLoan =
-            originateLoan(env, broker, borrower, lender, Number{1'000'000}, shape);
+            originateLoan(env, broker, borrower, lender, terminalLoanPrincipal, shape);
+        Number const growthLoanPrincipal{1, 9};
         auto const growthLoan = originateLoan(
             env,
             broker,
             borrower,
             lender,
-            Number{1, 9},
+            growthLoanPrincipal,
             shape,
             kCloseInterestRate(lending::kMaxCloseInterestRate));
 
-        payOffGrowthLoan(env, broker, borrower, growthLoan, Number{4, 9});
+        Number const payoffMaximum{4, 9};
+        payOffGrowthLoan(env, broker, borrower, growthLoan, payoffMaximum);
 
         auto const vaultBefore = env.le(broker.vaultKeylet());
         auto const brokerBefore = env.le(broker.brokerKeylet());
@@ -1954,35 +1984,44 @@ private:
         using namespace jtx;
         using namespace loan;
 
+        Number const trustLimit{3, 10};
+        Number const lenderAmount{1, 10};
+        Number const borrowerAmount{5, 9};
         FixedPrecisionIOU f{
-            *this, fixedPrecisionFeatures(), Number{3, 10}, Number{1, 10}, Number{5, 9}};
+            *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
         auto& [env, issuer, lender, borrower, asset] = f;
 
         auto brokerParams = fixedPrecisionBrokerParams();
-        brokerParams.vaultDeposit = Number{85, 8};
-        brokerParams.debtMax = Number{2, 9};
+        Number const vaultDeposit{85, 8};
+        Number const debtMax{2, 9};
+        brokerParams.vaultDeposit = vaultDeposit;
+        brokerParams.debtMax = debtMax;
         brokerParams.coverDeposit = 200'000'000;
         auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
         LoanShape const shape{.paymentTotal = 2, .paymentInterval = 2 * 365 * 24 * 60 * 60};
+        Number const targetLoanPrincipal{1'000'000};
+        std::uint32_t const interestRatePercent = 12;
         auto const targetLoan = originateLoan(
             env,
             broker,
             borrower,
             lender,
-            asset(1'000'000).value(),
+            asset(targetLoanPrincipal).value(),
             shape,
-            kInterestRate(percentageToTenthBips(12)));
+            kInterestRate(percentageToTenthBips(interestRatePercent)));
+        Number const growthLoanPrincipal{15, 8};
         auto const growthLoan = originateLoan(
             env,
             broker,
             borrower,
             lender,
-            asset(Number{15, 8}).value(),
+            asset(growthLoanPrincipal).value(),
             shape,
             kCloseInterestRate(lending::kMaxCloseInterestRate));
 
-        payOffGrowthLoan(env, broker, borrower, growthLoan, Number{4, 9});
+        Number const payoffMaximum{4, 9};
+        payOffGrowthLoan(env, broker, borrower, growthLoan, payoffMaximum);
 
         auto const targetBefore = env.le(targetLoan);
         auto const vaultBefore = env.le(broker.vaultKeylet());
@@ -2058,50 +2097,66 @@ private:
         {
             testcase(row.name);
 
-            FixedPrecisionIOU f{*this, fixedPrecisionFeatures(), 5'000'000, 2'000'000, 500'000};
+            Number const trustLimit{5'000'000};
+            Number const lenderAmount{2'000'000};
+            Number const borrowerAmount{500'000};
+            FixedPrecisionIOU f{
+                *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
             auto& [env, issuer, lender, borrower, asset] = f;
 
             auto brokerParams = fixedPrecisionBrokerParams();
-            brokerParams.debtMax = 500'000;
+            Number const debtMax{500'000};
+            brokerParams.debtMax = debtMax;
             brokerParams.coverDeposit = 50'000;
             auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
+            Number const loanPrincipal{100'000};
+            std::uint32_t const lateInterestRatePercent = 24;
+            Number const latePaymentFee{1};
+            std::uint32_t const interestRatePercent = 12;
+            std::uint32_t const overpaymentInterestRatePercent = 20;
             auto const loanKeylet = row.late
                 ? originateLoan(
                       env,
                       broker,
                       borrower,
                       lender,
-                      asset(100'000).value(),
+                      asset(loanPrincipal).value(),
                       {.paymentTotal = 12, .paymentInterval = 600},
-                      kLateInterestRate(percentageToTenthBips(24)),
-                      kLatePaymentFee(asset(1).value()))
+                      kLateInterestRate(percentageToTenthBips(lateInterestRatePercent)),
+                      kLatePaymentFee(asset(latePaymentFee).value()))
                 : originateLoan(
                       env,
                       broker,
                       borrower,
                       lender,
-                      asset(100'000).value(),
+                      asset(loanPrincipal).value(),
                       {.paymentTotal = 3,
                        .paymentInterval = 24 * 60 * 60,
                        .flags = tfLoanOverpayment},
-                      kInterestRate(percentageToTenthBips(12)),
-                      kOverpaymentInterestRate(percentageToTenthBips(20)));
+                      kInterestRate(percentageToTenthBips(interestRatePercent)),
+                      kOverpaymentInterestRate(
+                          percentageToTenthBips(overpaymentInterestRatePercent)));
 
             if (row.late)
             {
                 auto const state = getCurrentState(env, broker, loanKeylet);
                 using Duration = NetClock::duration;
                 env.close(NetClock::time_point{Duration{state.nextPaymentDate + 1}});
+                // Covers 3 periods plus a small margin.
+                std::uint32_t const catchUpPeriods = 3;
+                Number const catchUpMargin{100};
                 Number const generousAmount =
-                    roundPeriodicPayment(asset, state.periodicPayment, state.loanScale) * 3 +
-                    asset(100).value();
+                    roundPeriodicPayment(asset, state.periodicPayment, state.loanScale) *
+                        catchUpPeriods +
+                    asset(catchUpMargin).value();
                 env(pay(borrower, loanKeylet.key, asset(generousAmount), tfLoanLatePayment));
                 env.close();
             }
             else
             {
-                env(pay(borrower, loanKeylet.key, asset(50'000), tfLoanOverpayment));
+                Number const overpayAmount{50'000};
+                env(pay(borrower, loanKeylet.key, asset(overpayAmount), tfLoanOverpayment));
                 env.close();
             }
 
@@ -2177,27 +2232,36 @@ private:
         using namespace jtx;
         using namespace loan;
 
-        FixedPrecisionIOU f{*this, fixedPrecisionFeatures(), 10'000'000, 3'000'000, 1'000'000};
+        Number const trustLimit{10'000'000};
+        Number const lenderAmount{3'000'000};
+        Number const borrowerAmount{1'000'000};
+        FixedPrecisionIOU f{
+            *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
         auto& [env, issuer, lender, borrower, asset] = f;
 
         auto brokerParams = fixedPrecisionBrokerParams();
-        brokerParams.vaultDeposit = 2'000'000;
-        brokerParams.debtMax = 1'000'000;
+        Number const vaultDeposit{2'000'000};
+        Number const debtMax{1'000'000};
+        brokerParams.vaultDeposit = vaultDeposit;
+        brokerParams.debtMax = debtMax;
         brokerParams.coverDeposit = 100'000;
         auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
+        std::size_t const loanCount = 3;
+        Number const loanPrincipal{100'000};
+        std::uint32_t const interestRatePercent = 12;
         std::vector<Keylet> loans;
-        loans.reserve(3);
-        for (std::size_t i = 0; i < 3; ++i)
+        loans.reserve(loanCount);
+        for (std::size_t i = 0; i < loanCount; ++i)
         {
             loans.push_back(originateLoan(
                 env,
                 broker,
                 borrower,
                 lender,
-                asset(100'000).value(),
+                asset(loanPrincipal).value(),
                 {.paymentTotal = 2, .paymentInterval = 24 * 60 * 60},
-                kInterestRate(percentageToTenthBips(12))));
+                kInterestRate(percentageToTenthBips(interestRatePercent))));
         }
 
         auto const expectedYield = [&] {
@@ -2216,7 +2280,9 @@ private:
             return;
         BEAST_EXPECT(vault->at(sfYieldUnrealized) == expectedYield());
 
-        for (std::size_t i = 0; i < 2; ++i)
+        // Pay two of the three loans.
+        std::size_t const paidLoanCount = 2;
+        for (std::size_t i = 0; i < paidLoanCount; ++i)
         {
             auto const state = getCurrentState(env, broker, loans[i]);
             Number const payment =
@@ -2243,14 +2309,26 @@ private:
         using namespace jtx;
         using namespace loan;
 
-        FixedPrecisionIOU f{*this, fixedPrecisionFeatures(), 10'000'000, 3'000'000, 1'000'000};
+        Number const trustLimit{10'000'000};
+        Number const lenderAmount{3'000'000};
+        Number const borrowerAmount{1'000'000};
+        FixedPrecisionIOU f{
+            *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
         auto& [env, issuer, lender, borrower, asset] = f;
 
         auto brokerParams = fixedPrecisionBrokerParams();
-        brokerParams.vaultDeposit = 2'000'000;
-        brokerParams.debtMax = 1'000'000;
+        Number const vaultDeposit{2'000'000};
+        Number const debtMax{1'000'000};
+        brokerParams.vaultDeposit = vaultDeposit;
+        brokerParams.debtMax = debtMax;
         brokerParams.coverDeposit = 100'000;
         auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
+
+        Number const loanPrincipal{100'000};
+        std::uint32_t const interestRatePercent = 12;
+        std::uint32_t const overpaymentInterestRatePercent = 20;
+        std::uint32_t const lateInterestRatePercent = 24;
+        Number const latePaymentFee{1};
 
         // One loan each for overpayment, late payment, and an untouched
         // loan still accruing scheduled interest.
@@ -2259,28 +2337,28 @@ private:
             broker,
             borrower,
             lender,
-            asset(100'000).value(),
+            asset(loanPrincipal).value(),
             {.paymentTotal = 3, .paymentInterval = 24 * 60 * 60, .flags = tfLoanOverpayment},
-            kInterestRate(percentageToTenthBips(12)),
-            kOverpaymentInterestRate(percentageToTenthBips(20)));
+            kInterestRate(percentageToTenthBips(interestRatePercent)),
+            kOverpaymentInterestRate(percentageToTenthBips(overpaymentInterestRatePercent)));
         auto const lateLoan = originateLoan(
             env,
             broker,
             borrower,
             lender,
-            asset(100'000).value(),
+            asset(loanPrincipal).value(),
             {.paymentTotal = 12, .paymentInterval = 600},
-            kInterestRate(percentageToTenthBips(12)),
-            kLateInterestRate(percentageToTenthBips(24)),
-            kLatePaymentFee(asset(1).value()));
+            kInterestRate(percentageToTenthBips(interestRatePercent)),
+            kLateInterestRate(percentageToTenthBips(lateInterestRatePercent)),
+            kLatePaymentFee(asset(latePaymentFee).value()));
         auto const untouchedLoan = originateLoan(
             env,
             broker,
             borrower,
             lender,
-            asset(100'000).value(),
+            asset(loanPrincipal).value(),
             {.paymentTotal = 3, .paymentInterval = 24 * 60 * 60},
-            kInterestRate(percentageToTenthBips(12)));
+            kInterestRate(percentageToTenthBips(interestRatePercent)));
 
         std::vector<Keylet> const loans{overpaidLoan, lateLoan, untouchedLoan};
         auto const expectedYield = [&] {
@@ -2300,16 +2378,21 @@ private:
         BEAST_EXPECT(vault->at(sfYieldUnrealized) == expectedYield());
 
         // Overpay the first loan.
-        env(pay(borrower, overpaidLoan.key, asset(50'000), tfLoanOverpayment));
+        Number const overpayAmount{50'000};
+        env(pay(borrower, overpaidLoan.key, asset(overpayAmount), tfLoanOverpayment));
         env.close();
 
         // Pay the second loan late.
         auto const lateState = getCurrentState(env, broker, lateLoan);
         using Duration = NetClock::duration;
         env.close(NetClock::time_point{Duration{lateState.nextPaymentDate + 1}});
+        // Covers 3 periods plus a small margin.
+        std::uint32_t const catchUpPeriods = 3;
+        Number const catchUpMargin{100};
         Number const generousAmount =
-            roundPeriodicPayment(asset, lateState.periodicPayment, lateState.loanScale) * 3 +
-            asset(100).value();
+            roundPeriodicPayment(asset, lateState.periodicPayment, lateState.loanScale) *
+                catchUpPeriods +
+            asset(catchUpMargin).value();
         env(pay(borrower, lateLoan.key, asset(generousAmount), tfLoanLatePayment));
         env.close();
 
