@@ -141,9 +141,9 @@ namespace xrpl::telemetry {
 
 /**
  * Run time at which a finished job counts as a stall, in microseconds.
- * Equal to LoadMonitor's 1 s warn threshold (LoadMonitor.cpp
- * addLoadSample) so this counter and the "Job: ... run:" log line
- * describe the same event.
+ * LoadMonitor's "Job: ... run:" warning uses the same 1 s bar
+ * (LoadMonitor.cpp addLoadSample), but it tests run time plus queue wait.
+ * So it also fires for a short job that waited long, which is not a stall.
  */
 inline constexpr std::int64_t kJobStallThresholdUs = 1'000'000;
 
