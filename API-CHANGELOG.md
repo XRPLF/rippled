@@ -24,11 +24,11 @@ This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-R
 
 ## XRP Ledger server version 3.5.0
 
-Version 3.5.0 is not yet released. These changes are available in the 3.5.0 beta releases.
+Version 3.5.0 is not yet released.
 
-### Bugfixes in 3.5.0
+### Additions in 3.5.0
 
-- `unsubscribe`: `book_changes` is now accepted in `streams`. Previously the request returned `malformedStream`, so the only way to stop the stream was to close the WebSocket connection. [#8321](https://github.com/XRPLF/rippled/pull/8321)
+- `subscribe`, `unsubscribe`: Added an optional `mpt_issuances` request field, an array of MPT issuance IDs (hex strings). Subscribers receive a message with `type` `mptTransaction` for each validated transaction whose metadata affects a subscribed issuance; the message has the same fields as the `transactions` stream. MPT issuance subscriptions count toward the per-connection subscription limit. An empty array, a non-array value, or an invalid ID returns `invalidParams`. ([#5671](https://github.com/XRPLF/rippled/pull/5671))
 
 ## XRP Ledger server version 3.4.0
 

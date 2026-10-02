@@ -181,7 +181,7 @@ doUnsubscribe(rpc::JsonContext& context)
 
             if (jv.isMember(jss::domain))
             {
-                uint256 domain;
+                UInt256 domain;
                 if (!jv[jss::domain].isString() || !domain.parseHex(jv[jss::domain].asString()))
                 {
                     return rpcError(RpcDomainMalformed);
@@ -209,6 +209,18 @@ doUnsubscribe(rpc::JsonContext& context)
                 }
             }
         }
+    }
+
+    if (context.params.isMember(jss::mpt_issuances))
+    {
+        if (!context.params[jss::mpt_issuances].isArray())
+            return rpcError(RpcInvalidParams);
+
+        auto ids = rpc::parseMPTIssuanceIDs(context.params[jss::mpt_issuances]);
+        if (ids.empty())
+            return rpcError(RpcInvalidParams);
+        context.netOps.unsubMPT(ispSub, ids);
+        JLOG(context.j.debug()) << "doUnsubscribe: mpts: " << ids.size();
     }
 
     if (removeUrl)
