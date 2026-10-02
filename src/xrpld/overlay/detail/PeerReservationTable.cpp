@@ -92,7 +92,7 @@ PeerReservationTable::insertOrAssign(PeerReservation const& reservation)
     // connection_ is set by load() during two-phase init. Validate
     // before dereferencing to guard against use-before-load or a reset
     // connection. See PR #6029 for the general pattern discussion.
-    if (!connection_)
+    if (connection_ == nullptr)
     {
         Throw<std::runtime_error>(
             "PeerReservationTable::insertOrAssign: database connection is "
@@ -118,7 +118,7 @@ PeerReservationTable::erase(PublicKey const& nodeId)
         table_.erase(it);
         // Validate connection_ before dereferencing — see comment in
         // insertOrAssign above.
-        if (!connection_)
+        if (connection_ == nullptr)
         {
             Throw<std::runtime_error>(
                 "PeerReservationTable::erase: database connection is not "
