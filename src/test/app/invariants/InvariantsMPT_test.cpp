@@ -1877,7 +1877,7 @@ class InvariantsMPT_test : public InvariantsBase
         // Rewriting sfIssuerEncryptedBalance while decreasing
         // sfIssuerKeyMirrorEpoch. Setup: Bob at mirror epoch 1, issuance issuer key epoch 2.
         doInvariantCheck(
-            {"sfIssuerMirrorEncryptionKey changed decreasing the mirror epoch"},
+            {"sfIssuerMirrorEncryptionKey changed without advancing the mirror epoch"},
             [&mptID](Account const&, Account const& a2, ApplyContext& ac) {
                 auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
                 auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
