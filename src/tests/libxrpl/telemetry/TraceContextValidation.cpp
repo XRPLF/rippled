@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -63,6 +64,31 @@ lastByteSet(std::size_t size)
     auto id = std::string(size, '\0');
     id.back() = '\x01';
     return id;
+}
+
+/**
+ * The trace_id of the local span in the isSameTraceId() tests.
+ *
+ * Its bytes are 1, 2, 3, ... in order. No byte is zero and no two bytes
+ * are equal.
+ */
+std::array<std::byte, kTraceIdSize>
+localTraceId()
+{
+    std::array<std::byte, kTraceIdSize> id{};
+    std::ranges::generate(id, [next = 0]() mutable { return static_cast<std::byte>(++next); });
+    return id;
+}
+
+/**
+ * The bytes of an id as a peer sends them in a TraceContext field.
+ */
+std::string
+wireBytes(std::span<std::byte const> id)
+{
+    auto wire = std::string(id.size(), '\0');
+    std::ranges::transform(id, wire.begin(), [](std::byte b) { return std::to_integer<char>(b); });
+    return wire;
 }
 
 // A context that passes every check: well-formed ids and no flags.
@@ -288,6 +314,54 @@ TEST(TraceContextValidation, trace_flags_byte_clears_unknown_bits)
     protocol::TraceContext tc;
     tc.set_trace_flags(kMaxTraceFlags);
     EXPECT_EQ(std::uint32_t{traceFlagsByte(tc)}, kKnownTraceFlags);
+}
+
+TEST(TraceContextValidation, same_trace_id_matches)
+{
+    auto const local = localTraceId();
+    EXPECT_TRUE(isSameTraceId(wireBytes(local), local));
+}
+
+TEST(TraceContextValidation, trace_id_with_other_first_byte_does_not_match)
+{
+    auto const local = localTraceId();
+    auto peer = wireBytes(local);
+    peer.front() = '\x7F';
+    ASSERT_EQ(peer.size(), kTraceIdSize);
+    EXPECT_FALSE(isSameTraceId(peer, local));
+}
+
+TEST(TraceContextValidation, trace_id_with_other_last_byte_does_not_match)
+{
+    auto const local = localTraceId();
+    auto peer = wireBytes(local);
+    peer.back() = '\x7F';
+    ASSERT_EQ(peer.size(), kTraceIdSize);
+    EXPECT_FALSE(isSameTraceId(peer, local));
+}
+
+TEST(TraceContextValidation, absent_trace_id_does_not_match)
+{
+    auto tc = validContext();
+    tc.clear_trace_id();
+    ASSERT_FALSE(tc.has_trace_id());
+    EXPECT_FALSE(isSameTraceId(tc.trace_id(), localTraceId()));
+}
+
+// The first kTraceIdSize bytes are the local trace_id.
+TEST(TraceContextValidation, longer_trace_id_does_not_match)
+{
+    auto const local = localTraceId();
+    auto const peer = wireBytes(local) + '\x7F';
+    EXPECT_FALSE(isSameTraceId(peer, local));
+}
+
+// Every byte is the local trace_id's byte at the same place.
+TEST(TraceContextValidation, shorter_trace_id_does_not_match)
+{
+    auto const local = localTraceId();
+    auto const peer = wireBytes(std::span(local).first(kTraceIdSize - 1));
+    EXPECT_FALSE(isSameTraceId(peer, local));
 }
 
 TEST(SanitizeTraceContext, absent_context_stays_absent)
