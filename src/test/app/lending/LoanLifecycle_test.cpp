@@ -205,8 +205,14 @@ private:
         if (!BEAST_EXPECT(!createJson.isMember(jss::Signers)))
             counterpartyJson[sfSigners] = createJson[sfSigners];
 
-        // The duplicated signature works
-        createJson = env.json(createJson, Json(sfCounterpartySignature, counterpartyJson));
+        // The duplicated signature does not work: the counterparty signs a
+        // different prefix than the account.
+        env(env.json(createJson, Json(sfCounterpartySignature, counterpartyJson)),
+            Ter(telENV_RPC_FAILED));
+
+        // Signing the counterparty field itself works, even though the lender
+        // is both the borrower and the counterparty.
+        createJson = env.json(createJson, Sig(sfCounterpartySignature, lender));
         env(createJson);
 
         env.close();

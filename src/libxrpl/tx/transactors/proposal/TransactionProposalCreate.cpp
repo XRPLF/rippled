@@ -5,7 +5,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -28,6 +27,7 @@
 #include <exception>
 #include <expected>
 #include <memory>
+#include <string>
 
 namespace xrpl {
 
@@ -42,18 +42,15 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
 
     STObject const proposedTx = ctx.tx.getFieldObject(sfProposedTransaction);
 
-    // The proposed transaction must pass its own static checks under the
-    // current rules, so no statically-dead proposal can be stored. This also
-    // guarantees every field common to all transactions (TransactionType,
-    // Account, Fee, Sequence, ...) is present, since applyTemplate throws
-    // otherwise; the checks below can therefore read those fields directly
-    // without re-checking presence. TapDryRun accepts the unsigned canonical
-    // form without a signature check; TapProposal additionally skips
-    // signature-presence checks (e.g. Batch signer matching), which are
-    // deferred to submission time (On-Chain Cosigner spec §5.3.1.2). A
-    // proposedTx that fails here is rejected with its own type's preflight
-    // code (or temMALFORMED if it isn't even a valid instance of that type),
-    // ahead of the Cosigner-specific structural checks below.
+    // The proposed transaction must pass "the same [stateless format]
+    // checks it would receive if submitted directly" (On-Chain Cosigner
+    // spec §5.3.1 rule 2), so no statically-dead proposal can be stored.
+    // That is exactly the pair checkValidity runs on a direct submission:
+    // xrpl::preflight (the transactor's own preflight chain) and
+    // passesLocalChecks. TapDryRun accepts the unsigned canonical form;
+    // TapProposal skips signature-presence checks (§5.3.1.2). A failure
+    // surfaces the proposed type's own code, or temMALFORMED if the
+    // payload is not even a valid instance of that type.
     try
     {
         STTx const stx{STObject{proposedTx}};
@@ -64,10 +61,14 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                    "failed preflight: "
                                 << transHuman(inner.ter);
-            // Surface the proposed transaction type's own preflight code
-            // rather than collapsing it to a generic error (On-Chain Cosigner
-            // spec §5.3.1).
             return inner.ter;
+        }
+        if (std::string reason; !passesLocalChecks(stx, reason))
+        {
+            JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
+                                   "fails local checks: "
+                                << reason;
+            return temMALFORMED;
         }
     }
     catch (std::exception const& e)
@@ -188,12 +189,45 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
             if (!sleSigners)
                 return false;
 
-            auto const accountSigners = SignerEntries::deserialize(*sleSigners, ctx.j, "ledger");
-            if (!accountSigners)
-                return std::unexpected(TER{accountSigners.error()});
+            // deserialize itself returns unexpected(temMALFORMED) when
+            // sfSignerEntries is missing or an element is not an sfSignerEntry.
+            // Those are the right codes for a transaction object. Here the object
+            // is an on-ledger ltSIGNER_LIST (sfSignerEntries is SoeRequired;
+            // each element is an sfSignerEntry). A corrupt SLE can still throw
+            // from the STObject accessors deserialize calls: getFieldArray
+            // ("Wrong field type") or getAccountID/getFieldU16 ("Field not
+            // found") when an sfSignerEntry is missing required fields. Either
+            // the expected<> error or a throw is unexpected ledger state, not a
+            // malformed TransactionProposalCreate, so tefBAD_LEDGER (rather
+            // than tefINTERNAL, which is reserved for truly unreachable code
+            // paths) is the right code.
+            try
+            {
+                auto const accountSigners =
+                    SignerEntries::deserialize(*sleSigners, ctx.j, "ledger");
+                if (!accountSigners)
+                {
+                    // Only reachable if the on-ledger SignerList is corrupt
+                    // (SignerListSet re-runs the same deserialize on write).
+                    // Exercised by testCorruptSignerList via an OpenLedger
+                    // overlay that produces the same failure modes.
+                    JLOG(ctx.j.fatal()) << "TransactionProposalCreate: unparseable SignerList: "
+                                        << transToken(accountSigners.error());
+                    return std::unexpected(tefBAD_LEDGER);
+                }
 
-            return std::ranges::any_of(
-                *accountSigners, [&](auto const& entry) { return entry.account == proposer; });
+                return std::ranges::any_of(
+                    *accountSigners, [&](auto const& entry) { return entry.account == proposer; });
+            }
+            catch (std::exception const& e)
+            {
+                // Same as above: only reachable via ledger corruption that
+                // makes an STObject accessor throw. Exercised by
+                // testCorruptSignerList.
+                JLOG(ctx.j.fatal())
+                    << "TransactionProposalCreate: unparseable SignerList: " << e.what();
+                return std::unexpected(tefBAD_LEDGER);
+            }
         };
 
         auto isSigner = isAuthorizedFor(target);
@@ -201,18 +235,29 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
             return isSigner.error();
 
         // A delegate that the target has granted permission over the
-        // proposed transaction's own type — or one of that delegate's own
-        // signers — is equally authorized: it will need to help complete
-        // the proposed transaction's own authorization anyway once the
-        // proposal is submitted.
+        // proposed transaction — or one of that delegate's own signers — is
+        // equally authorized: it will need to help complete the proposed
+        // transaction's own authorization anyway once the proposal is
+        // submitted. xrpl::invokeCheckPermission is the type-erased
+        // submission hierarchy (not checkTxPermission alone, which would
+        // reject a matching granular grant). Qualify xrpl:: so the inherited
+        // Transactor template is not chosen; it cannot deduce T here. A
+        // failed grant is still "not authorized" and becomes
+        // tecNO_PERMISSION below — Create is already signed, so do not leak
+        // the pre-sign terNO_DELEGATE_PERMISSION.
         if (!*isSigner && proposedTx.isFieldPresent(sfDelegate))
         {
             AccountID const delegateAccount = proposedTx.getAccountID(sfDelegate);
-            // NOLINTNEXTLINE(readability-suspicious-call-argument)
-            auto const sleDelegate = ctx.view.read(keylet::delegate(target, delegateAccount));
-            if (sleDelegate &&
-                isTesSuccess(checkTxPermission(sleDelegate, STTx{STObject{proposedTx}})))
+            STTx const proposedStTx{STObject{proposedTx}};
+            if (isTesSuccess(xrpl::invokeCheckPermission(ctx.view, proposedStTx)))
             {
+                // A grant cannot exist without a funded authorize (DelegateSet
+                // uses tecNO_TARGET; AccountDelete of the delegatee removes the
+                // Delegate SLE). Do not treat a missing account as a Create-time
+                // user error — that would extra-validate the proposed tx. If
+                // permission passed anyway, the ledger is corrupt.
+                if (!ctx.view.exists(keylet::account(delegateAccount)))
+                    return tefINTERNAL;  // LCOV_EXCL_LINE
                 isSigner = isAuthorizedFor(delegateAccount);
                 if (!isSigner)
                     return isSigner.error();

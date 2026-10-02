@@ -36,6 +36,15 @@
 namespace xrpl {
 
 namespace {
+// Returns true if the transaction's payment amount is malformed. A loan
+// payment must be strictly positive: zero would move nothing, and a negative
+// amount is not a payment at all.
+bool
+isPaymentAmountInvalid(STAmount const& amount)
+{
+    return amount <= beast::kZero;
+}
+
 // Returns the account's true, unclamped balance in `asset`, for use only in
 // fund-conservation checks. accountHolds(..., SpendableHandling::FullBalance)
 // cannot be used for this: for XRP it always defers to xrpLiquid, which
@@ -81,7 +90,7 @@ LoanPay::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfLoanID] == beast::kZero)
         return temINVALID;
 
-    if (ctx.tx[sfAmount] <= beast::kZero)
+    if (isPaymentAmountInvalid(ctx.tx[sfAmount]))
         return temBAD_AMOUNT;
 
     // The loan payment flags are all mutually exclusive. If more than one is
@@ -103,9 +112,18 @@ LoanPay::preflight(PreflightContext const& ctx)
 XRPAmount
 LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    auto fixEnabled313 = view.rules().enabled(fixCleanup3_1_3);
+    auto fixEnabled340 = view.rules().enabled(fixCleanup3_4_0);
+
     using namespace lending;
 
     auto const normalCost = Transactor::calculateBaseFee(view, tx);
+
+    if (fixEnabled340 && isPaymentAmountInvalid(tx[sfAmount]))
+    {
+        // Let preflight worry about the error for this
+        return normalCost;
+    }
 
     if (tx.isFlag(tfLoanFullPayment) || tx.isFlag(tfLoanLatePayment))
     {
@@ -179,8 +197,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     static constexpr std::int64_t kMaxFeeIncrements =
         kLoanMaximumPaymentsPerTransaction / kLoanPaymentsPerFeeIncrement;
 
-    if (view.rules().enabled(fixCleanup3_1_3) &&
-        amount >= regularPayment * kLoanMaximumPaymentsPerTransaction)
+    if (fixEnabled313 && amount >= regularPayment * kLoanMaximumPaymentsPerTransaction)
     {
         // The payment handler will never process more than
         // loanMaximumPaymentsPerTransaction payments (including overpayments),

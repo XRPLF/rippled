@@ -22,14 +22,17 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/transactors/lending/LoanSet.h>
 
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -595,6 +598,105 @@ private:
             nullptr);
     }
 
+    void
+    testLoanSetOriginationFeeTwoMptCreates(FeatureBitset features)
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        bool const fix340Enabled = features[fixCleanup3_4_0];
+        testcase << "LoanSet: borrower and broker owner missing MPToken"
+                 << (fix340Enabled ? "" : " pre-fixCleanup3_4_0");
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        Env env(*this, features);
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
+        env.close();
+
+        MPTTester mptt{env, issuer, kMptInitNoFund};
+        mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+        env.close();
+        PrettyAsset const asset = mptt.issuanceID();
+        mptt.authorize({.account = lender});
+        mptt.authorize({.account = borrower});
+        env.close();
+
+        env(pay(issuer, lender, asset(10'000'000)));
+        env.close();
+
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        // Delete borrower's asset MPToken.
+        mptt.authorize({.account = borrower, .flags = tfMPTUnauthorize});
+        env.close();
+
+        // Pay out and delete the broker owner's asset MPToken.
+        auto const lenderMPToken = keylet::mptoken(mptt.issuanceID(), lender);
+        auto const sleLenderMPT = env.le(lenderMPToken);
+        if (!BEAST_EXPECT(sleLenderMPT))
+            return;
+        env(pay(lender, issuer, asset(sleLenderMPT->at(sfMPTAmount))));
+        env.close();
+        mptt.authorize({.account = lender, .flags = tfMPTUnauthorize});
+        env.close();
+
+        auto const borrowerMPToken = keylet::mptoken(mptt.issuanceID(), borrower);
+        auto const brokerKeylet = keylet::loanBroker(broker.brokerID);
+        auto const sleBrokerBefore = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(sleBrokerBefore))
+            return;
+        auto const loanSequence = sleBrokerBefore->at(sfLoanSequence);
+        auto const debtTotalBefore = sleBrokerBefore->at(sfDebtTotal);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
+
+        auto const sleVaultBefore = env.le(keylet::vault(broker.vaultID));
+        if (!BEAST_EXPECT(sleVaultBefore))
+            return;
+        auto const assetsAvailableBefore = sleVaultBefore->at(sfAssetsAvailable);
+
+        env(set(borrower, broker.brokerID, asset(1'000).value()),
+            kLoanOriginationFee(asset(1).value()),
+            kCounterparty(lender),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 5),
+            Ter{fix340Enabled ? TER{tesSUCCESS} : TER{tecINVARIANT_FAILED}});
+        env.close();
+
+        auto const sleBorrowerAfter = env.le(borrowerMPToken);
+        auto const sleLenderAfter = env.le(lenderMPToken);
+        auto const sleLoanAfter = env.le(loanKeylet);
+        auto const sleBrokerAfter = env.le(brokerKeylet);
+        auto const sleVaultAfter = env.le(keylet::vault(broker.vaultID));
+        if (!BEAST_EXPECT(sleVaultAfter))
+            return;
+        if (fix340Enabled)
+        {
+            if (!BEAST_EXPECT(sleBorrowerAfter && sleLenderAfter && sleLoanAfter && sleBrokerAfter))
+                return;
+            BEAST_EXPECT(sleBorrowerAfter->at(sfMPTAmount) == 999);
+            BEAST_EXPECT(sleLenderAfter->at(sfMPTAmount) == 1);
+            BEAST_EXPECT(sleLoanAfter->at(sfPrincipalOutstanding) == Number{1'000});
+            BEAST_EXPECT(sleBrokerAfter->at(sfLoanSequence) == loanSequence + 1);
+            BEAST_EXPECT(
+                sleVaultAfter->at(sfAssetsAvailable) == assetsAvailableBefore - Number{1'000});
+        }
+        else
+        {
+            // The whole transaction must roll back.
+            BEAST_EXPECT(!sleBorrowerAfter);
+            BEAST_EXPECT(!sleLenderAfter);
+            BEAST_EXPECT(!sleLoanAfter);
+            if (!BEAST_EXPECT(sleBrokerAfter))
+                return;
+            BEAST_EXPECT(sleBrokerAfter->at(sfLoanSequence) == loanSequence);
+            BEAST_EXPECT(sleBrokerAfter->at(sfDebtTotal) == debtTotalBefore);
+            BEAST_EXPECT(sleVaultAfter->at(sfAssetsAvailable) == assetsAvailableBefore);
+        }
+    }
+
     // LoanSet in a closed-ended vault — phase gating and maturity bound.
     void
     testLoanSetClosedEnded()
@@ -602,6 +704,8 @@ private:
         testcase("LoanSet closed-ended: phase and maturity bound");
         using namespace jtx;
         using namespace loan;
+        using d = NetClock::duration;
+        using tp = NetClock::time_point;
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -663,9 +767,9 @@ private:
             setLoan(env, broker, tesSUCCESS);
         });
 
-        // 4. Rejected during Investment when the loan's final payment would land on or after
-        // RedemptionDate. Use a tight redemptionOffset and a schedule whose final payment is well
-        // past that boundary.
+        // 4. Rejected during Investment when the loan's final payment would land fewer than
+        // kLoanRedemptionBuffer seconds before RedemptionDate. Use a tight redemptionOffset and a
+        // schedule whose final payment is well past that boundary.
         withEnv([&](Env& env, PrettyAsset const& asset) {
             constexpr std::uint32_t kRedemptionOffset = 3u * 24u * 3600u;
             auto const broker = createVaultAndBroker(
@@ -684,16 +788,16 @@ private:
             env.close();
         });
 
-        // 5. Boundary: schedule whose finalPayment lands exactly (RedemptionDate - 1) is accepted,
-        // and one second later (== RedemptionDate) is rejected. Uses payTotal = 1 so the arithmetic
-        // is simple: finalPayment = startDate + interval.
+        // 5. Boundary: a finalPayment exactly kLoanRedemptionBuffer seconds before
+        // RedemptionDate is accepted; one second later is rejected. Uses payTotal = 1 so
+        // finalPayment = startDate + interval.
         withEnv([&](Env& env, PrettyAsset const& asset) {
             auto const broker = createVaultAndBroker(
                 env, asset, lender, BrokerParameters{.vaultKind = VaultKind::ClosedEnded});
             BEAST_EXPECT(broker.redemptionDate.has_value());
 
             auto const startDate = env.now().time_since_epoch().count();
-            auto const acceptInterval = *broker.redemptionDate - 1 - startDate;
+            auto const acceptInterval = *broker.redemptionDate - kLoanRedemptionBuffer - startDate;
             env(set(lender, broker.brokerID, broker.asset(100).value()),
                 kCounterparty(borrower),
                 Sig(sfCounterpartySignature, borrower),
@@ -703,8 +807,8 @@ private:
                 Ter(tesSUCCESS));
             env.close();
 
-            auto const rejectInterval =
-                *broker.redemptionDate - env.now().time_since_epoch().count();
+            auto const rejectInterval = *broker.redemptionDate - (kLoanRedemptionBuffer - 1) -
+                env.now().time_since_epoch().count();
             env(set(lender, broker.brokerID, broker.asset(100).value()),
                 kCounterparty(borrower),
                 Sig(sfCounterpartySignature, borrower),
@@ -714,6 +818,114 @@ private:
                 Ter(tecNO_PERMISSION));
             env.close();
         });
+
+        // 6. A vault whose Investment window is exactly kMinInvestmentPeriod can originate a
+        // minimum-interval, single-payment loan at the start of Investment, and rejects the same
+        // schedule once StartDate no longer leaves kLoanRedemptionBuffer before RedemptionDate.
+        // Do not pin an unrounded wall-clock instant: Env::close rounds to the close-time
+        // resolution. Read env.now() (the same clock LoanSet::preclaim uses) and assert the
+        // buffer relationship before each LoanSet.
+        withEnv([&](Env& env, PrettyAsset const& asset) {
+            auto const broker = createVaultAndBroker(
+                env,
+                asset,
+                lender,
+                BrokerParameters{
+                    .vaultKind = VaultKind::ClosedEnded,
+                    .subscriptionOffset = 300u,
+                    .redemptionOffset = kMinInvestmentPeriod,
+                    .skipPhaseAdvance = true});
+            BEAST_EXPECT(broker.subscriptionDate.has_value());
+            BEAST_EXPECT(broker.redemptionDate.has_value());
+
+            auto const red = *broker.redemptionDate;
+            auto const startDate = [&]() { return env.now().time_since_epoch().count(); };
+            auto const minLoan = [&](TER expected) {
+                env(set(lender, broker.brokerID, broker.asset(100).value()),
+                    kCounterparty(borrower),
+                    Sig(sfCounterpartySignature, borrower),
+                    Fee(env.current()->fees().base * 5),
+                    kPaymentTotal(1u),
+                    kPaymentInterval(LoanSet::kMinPaymentInterval),
+                    Ter(expected));
+                env.close();
+            };
+
+            // First Investment ledger: the minimum schedule still clears the buffer.
+            env.close(tp{d{*broker.subscriptionDate + 1}});
+            BEAST_EXPECT(startDate() > *broker.subscriptionDate);
+            BEAST_EXPECT(startDate() + LoanSet::kMinPaymentInterval + kLoanRedemptionBuffer <= red);
+            minLoan(tesSUCCESS);
+
+            // Still Investment, but the minimum schedule no longer clears the buffer.
+            while (startDate() + LoanSet::kMinPaymentInterval + kLoanRedemptionBuffer <= red)
+                env.close();
+            BEAST_EXPECT(startDate() < red);
+            minLoan(tecNO_PERMISSION);
+        });
+    }
+
+    // LoanSet used to call canAddHolding unconditionally, so an existing
+    // borrower line still failed with terNO_RIPPLE after the issuer cleared
+    // DefaultRipple. After fixCleanup3_4_0, skip that gate when the holding
+    // already exists.
+    void
+    testLoanSetExistingLineAfterIssuerClearsDefaultRipple()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        auto run = [this](FeatureBitset features, TER expected) {
+            testcase(
+                std::string(
+                    "LoanSet existing borrower line after issuer "
+                    "clears asfDefaultRipple (") +
+                (features[fixCleanup3_4_0] ? "post" : "pre") + "-fixCleanup3_4_0)");
+
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const lender{"lender"};
+            Account const borrower{"borrower"};
+
+            env.fund(XRP(10'000), issuer, lender, borrower);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            env(trust(lender, usd(10'000'000)));
+            env(trust(borrower, usd(10'000'000)));
+            env.close();
+            env(pay(issuer, lender, usd(2'000'000)));
+            env(pay(issuer, borrower, usd(1'000)));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::trustLine(borrower.id(), usd.raw().get<Issue>())));
+
+            auto const broker = createVaultAndBroker(env, usd, lender);
+
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+
+            Number const destBefore = env.balance(borrower, usd.raw()).number();
+            env(set(borrower, broker.brokerID, usd(100).value()),
+                Sig(sfCounterpartySignature, lender),
+                Fee(env.current()->fees().base * 2),
+                Ter(expected));
+            env.close();
+
+            Number const destAfter = env.balance(borrower, usd.raw()).number();
+            if (isTesSuccess(expected))
+            {
+                BEAST_EXPECT(destAfter == destBefore + Number{100});
+            }
+            else
+            {
+                BEAST_EXPECT(destAfter == destBefore);
+            }
+        };
+
+        run(all_ - fixCleanup3_4_0, terNO_RIPPLE);
+        run(all_, tesSUCCESS);
     }
 
 public:
@@ -725,6 +937,9 @@ public:
             testLoanSet(features);
 
         testLoanSetClosedEnded();
+        testLoanSetExistingLineAfterIssuerClearsDefaultRipple();
+        testLoanSetOriginationFeeTwoMptCreates(all_);
+        testLoanSetOriginationFeeTwoMptCreates(all_ - fixCleanup3_4_0);
     }
 };
 

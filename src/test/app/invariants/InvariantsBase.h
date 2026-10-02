@@ -4,7 +4,11 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 
+#include <xrpld/app/main/Application.h>
+
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/STObject.h>
@@ -14,6 +18,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 
+#include <cstdint>
 #include <functional>
 #include <initializer_list>
 #include <memory>
@@ -117,6 +122,13 @@ protected:
 
     Keylet
     createLoanBroker(jtx::Account const& a, jtx::Env& env, jtx::PrettyAsset const& asset);
+
+    // Build an ltLOAN SLE with every SoeRequired field explicitly set and
+    // every SoeDefault field the invariants read via `at()` materialized, so
+    // rawInsert-based tests don't accidentally trip an unrelated invariant
+    // or throw from a missing SoeDefault field.
+    static SLE::pointer
+    makeLoanSle(uint256 const& loanBrokerID, std::uint32_t loanSeq, AccountID const& borrower);
 };
 
 }  // namespace xrpl::test

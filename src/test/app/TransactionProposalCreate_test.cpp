@@ -6,6 +6,7 @@
 #include <test/jtx/delegate.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/offer.h>
@@ -20,14 +21,19 @@
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -36,6 +42,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -225,6 +232,17 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             json::Value tx = payload();
             tx[jss::Amount] = "0";
             reject(tx, temBAD_AMOUNT);
+        }
+
+        // A payload that fails passesLocalChecks (On-Chain Cosigner spec
+        // §5.3.1 rule 2) is rejected as temMALFORMED. An oversized Memos
+        // array trips isMemoOkay; no transactor preflight step bounds
+        // memo size.
+        {
+            json::Value tx = payload();
+            tx[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoData.jsonName] =
+                strHex(std::string(1100, 'A'));  // > 1024 bytes serialized
+            reject(tx, temMALFORMED);
         }
 
         // Expiration must be present and non-zero.
@@ -698,6 +716,119 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         }
     }
 
+    // An on-ledger ltSIGNER_LIST that cannot be read as signer entries is
+    // unexpected ledger state, not a malformed transaction. preclaim must
+    // surface tefBAD_LEDGER (not temMALFORMED, not tefINTERNAL which is
+    // reserved for truly unreachable paths, and not the tefEXCEPTION that
+    // applySteps would wrap an uncaught throw with).
+    //
+    // SignerEntries::deserialize returns unexpected(temMALFORMED) when
+    // sfSignerEntries is missing or an element is not named sfSignerEntry.
+    // It still throws from STObject accessors when an sfSignerEntry is
+    // missing required fields (getAccountID → "Field not found: Account").
+    // Do not close() after the synthetic corruption: a closed ledger would
+    // drop the overlay and restore a well-formed list.
+    void
+    testCorruptSignerList(FeatureBitset features)
+    {
+        testcase("unparseable on-ledger SignerList is tefBAD_LEDGER");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        auto setup = [&](Env& env, Account const& target, Account const& signer) {
+            env.fund(XRP(10000), target, signer);
+            env.close();
+            env(signers(target, 1, {{signer, 1}}));
+            env.close();
+            // Ticket first: createTicket closes, which would drop a later
+            // open-ledger overlay and restore a well-formed SignerList.
+            return proposal::createTicket(env, target);
+        };
+
+        auto proposeAsSigner =
+            [&](Env& env, Account const& target, Account const& signer, std::uint32_t ticketSeq) {
+                env(proposal::create(
+                        signer,
+                        proposal::unsignedPayload(env, pay(target, signer, XRP(1)), ticketSeq),
+                        proposal::expiration(env, 100s)),
+                    Ter(tefBAD_LEDGER),
+                    proposal::verify::create());
+                BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+            };
+
+        {
+            Env env{*this, features};
+            Account const target{"targetMissing"};
+            Account const signer{"signerMissing"};
+            std::uint32_t const ticketSeq = setup(env, target, signer);
+
+            auto const signerListKeylet = keylet::signerList(target.id());
+            BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const sle = view.read(signerListKeylet);
+                if (!sle)
+                    return false;
+                auto replacement = std::make_shared<SLE>(*sle);
+                if (!replacement->delField(sfSignerEntries))
+                    return false;
+                view.rawReplace(replacement);
+                return true;
+            }));
+            BEAST_EXPECT(env.le(signerListKeylet));
+
+            proposeAsSigner(env, target, signer, ticketSeq);
+        }
+
+        {
+            Env env{*this, features};
+            Account const target{"targetBadEntry"};
+            Account const signer{"signerBadEntry"};
+            std::uint32_t const ticketSeq = setup(env, target, signer);
+
+            auto const signerListKeylet = keylet::signerList(target.id());
+            BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const sle = view.read(signerListKeylet);
+                if (!sle)
+                    return false;
+                auto replacement = std::make_shared<SLE>(*sle);
+                STArray badEntries;
+                badEntries.pushBack(STObject{sfSigner});
+                replacement->setFieldArray(sfSignerEntries, badEntries);
+                view.rawReplace(replacement);
+                return true;
+            }));
+            BEAST_EXPECT(env.le(signerListKeylet));
+
+            proposeAsSigner(env, target, signer, ticketSeq);
+        }
+
+        {
+            Env env{*this, features};
+            Account const target{"targetMissingAccount"};
+            Account const signer{"signerMissingAccount"};
+            std::uint32_t const ticketSeq = setup(env, target, signer);
+
+            auto const signerListKeylet = keylet::signerList(target.id());
+            BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const sle = view.read(signerListKeylet);
+                if (!sle)
+                    return false;
+                auto replacement = std::make_shared<SLE>(*sle);
+                STArray badEntries;
+                // Right inner name, but no sfAccount: deserialize calls
+                // getAccountID and throws (Field not found), which the
+                // catch maps to tefBAD_LEDGER.
+                badEntries.pushBack(STObject{sfSignerEntry});
+                replacement->setFieldArray(sfSignerEntries, badEntries);
+                view.rawReplace(replacement);
+                return true;
+            }));
+            BEAST_EXPECT(env.le(signerListKeylet));
+
+            proposeAsSigner(env, target, signer, ticketSeq);
+        }
+    }
+
     // The target account may delegate authority over the proposed
     // transaction's own type to another account (Permission Delegation,
     // XLS-75); if it does, that delegate — or an account on the delegate's
@@ -779,6 +910,147 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             env.close();
             BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
         }
+    }
+
+    // A delegate holding only a granular permission (XLS-75) that would
+    // authorize submitting the proposed transaction may also create a
+    // proposal for it. A granular grant that fails checkGranularSandbox
+    // still cannot.
+    void
+    testDelegatedGranularProposedTx(FeatureBitset features)
+    {
+        testcase("proposer authorized through granular delegate permission");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const gw{"gw"};        // issuer / proposed-tx Account
+        Account const alice{"alice"};  // holder of the trust line being authorized
+        Account const bob{"bob"};      // delegate with TrustlineAuthorize only
+        env.fund(XRP(10000), gw, alice, bob);
+        env(fset(gw, asfRequireAuth));
+        env.close();
+
+        env(trust(alice, gw["USD"](50)));
+        env.close();
+        env(delegate::set(gw, bob, {"TrustlineAuthorize"}));
+        env.close();
+
+        auto delegatedTrustSet = [&](std::uint32_t ticketSeq, std::uint32_t flags) {
+            json::Value tx = trust(gw, gw["USD"](0), alice, flags);
+            tx[sfDelegate.jsonName] = bob.human();
+            return proposal::unsignedPayload(env, tx, ticketSeq);
+        };
+
+        // TrustlineAuthorize is sufficient for a tfSetfAuth TrustSet against
+        // an existing line whose limit is unchanged — the same shape that
+        // submits successfully under invokeCheckPermission.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, gw);
+            env(proposal::create(
+                    bob, delegatedTrustSet(ticketSeq, tfSetfAuth), proposal::expiration(env, 100s)),
+                proposal::verify::create());
+            env.close();
+            BEAST_EXPECT(proposal::entry(env, gw, ticketSeq));
+        }
+
+        // tfSetFreeze is not in TrustlineAuthorize's sandbox.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, gw);
+            env(proposal::create(
+                    bob,
+                    delegatedTrustSet(ticketSeq, tfSetFreeze),
+                    proposal::expiration(env, 100s)),
+                Ter(tecNO_PERMISSION),
+                proposal::verify::create());
+            env.close();
+            BEAST_EXPECT(!proposal::entry(env, gw, ticketSeq));
+        }
+
+        // sfQualityOut is a valid TrustSet field but not in the granular
+        // template, so checkGranularSandbox rejects it.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, gw);
+            json::Value tx = trust(gw, gw["USD"](0), alice, tfSetfAuth);
+            tx[sfDelegate.jsonName] = bob.human();
+            tx[sfQualityOut.jsonName] = 100;
+            env(proposal::create(
+                    bob,
+                    proposal::unsignedPayload(env, tx, ticketSeq),
+                    proposal::expiration(env, 100s)),
+                Ter(tecNO_PERMISSION),
+                proposal::verify::create());
+            env.close();
+            BEAST_EXPECT(!proposal::entry(env, gw, ticketSeq));
+        }
+    }
+
+    // Same failure mode as testCorruptSignerList, but reached through the
+    // delegate branch: preclaim looks up the delegate's own SignerList when
+    // the proposer is neither the target, on the target's SignerList, nor the
+    // delegate itself. If the delegate's SignerList is unparseable, preclaim
+    // must surface tefBAD_LEDGER — exercising the second isAuthorizedFor call
+    // that runs against the delegate rather than the target.
+    void
+    testCorruptDelegateSignerList(FeatureBitset features)
+    {
+        testcase("unparseable delegate SignerList is tefBAD_LEDGER");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const target{"target"};
+        Account const delegateAcct{"delegateAcct"};
+        Account const ds1{"ds1"};  // on delegateAcct's own SignerList, not target's
+        Account const bob{"bob"};
+        env.fund(XRP(10000), target, delegateAcct, ds1, bob);
+        env.close();
+
+        // Grant delegate Payment permission for target; give delegate its own
+        // SignerList so that isAuthorizedFor(delegateAccount) actually reads
+        // and deserializes it. Do not give target a SignerList: proposer ds1
+        // must fail isAuthorizedFor(target) before ever reaching the delegate
+        // branch.
+        env(delegate::set(target, delegateAcct, {"Payment"}));
+        env(signers(delegateAcct, 1, {{ds1, 1}}));
+        env.close();
+
+        // Ticket first: createTicket closes, which would drop a later
+        // open-ledger overlay and restore a well-formed SignerList.
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+        // Corrupt delegate's SignerList in the open ledger overlay only. Do
+        // not close() afterward: a closed ledger would drop the overlay.
+        auto const delegateSignerListKeylet = keylet::signerList(delegateAcct.id());
+        BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+            auto const sle = view.read(delegateSignerListKeylet);
+            if (!sle)
+                return false;
+            auto replacement = std::make_shared<SLE>(*sle);
+            // Right inner name, but no sfAccount: deserialize calls
+            // getAccountID and throws (Field not found), which the catch
+            // maps to tefBAD_LEDGER.
+            STArray badEntries;
+            badEntries.pushBack(STObject{sfSignerEntry});
+            replacement->setFieldArray(sfSignerEntries, badEntries);
+            view.rawReplace(replacement);
+            return true;
+        }));
+        BEAST_EXPECT(env.le(delegateSignerListKeylet));
+
+        json::Value tx = pay(target, bob, XRP(1));
+        tx[sfDelegate.jsonName] = delegateAcct.human();
+        env(proposal::create(
+                ds1,
+                proposal::unsignedPayload(env, tx, ticketSeq),
+                proposal::expiration(env, 100s)),
+            Ter(tefBAD_LEDGER),
+            proposal::verify::create());
+        BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
     }
 
     // The target account must be able to authorize a transaction through a
@@ -1282,6 +1554,75 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, target) == 1 + proposal::kBatchProposalOwnerCount);
     }
 
+    // A proposed Batch's inner preflight must receive TapProposal, or an
+    // unsigned account-reserve SponsorshipTransfer is rejected at Create
+    // (On-Chain Cosigner spec §6.1.1: an inner Sponsor is a collectable
+    // signature slot). Other inner types that do not key on TapProposal keep
+    // their existing preflight result.
+    void
+    testProposedBatchInnerSponsorship(FeatureBitset features)
+    {
+        testcase("proposed batch inner account-reserve SponsorshipTransfer");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const target{"target"};
+        Account const bob{"bob"};  // named as Sponsor; signature collected later
+        env.fund(XRP(10000), target, bob);
+        env.close();
+
+        auto unsignedInnerSponsorship = [&](Account const& account) {
+            json::Value tx = sponsor::transfer(account, tfSponsorshipCreate);
+            tx[sfSponsor.getJsonName()] = bob.human();
+            tx[sfSponsorFlags.getJsonName()] = spfSponsorReserve;
+            return tx;
+        };
+
+        // Payment (unaffected by TapProposal) plus an unsigned inner
+        // account-reserve SponsorshipTransfer. Create succeeds only if
+        // TapProposal reaches the inner.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            auto const seq = env.seq(target);
+            json::Value const proposedTx = proposal::unsignedBatch(
+                env,
+                target,
+                ticketSeq,
+                tfAllOrNothing,
+                {proposal::innerTx(pay(target, bob, XRP(1)), seq),
+                 proposal::innerTx(unsignedInnerSponsorship(target), seq + 1)});
+
+            env(proposal::create(target, proposedTx, proposal::expiration(env, 100s)),
+                proposal::verify::create());
+            env.close();
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+        }
+
+        // Structural inner failures are unchanged: missing sfSponsor is still
+        // temMALFORMED in SponsorshipTransfer::preflight, collapsed by Batch
+        // to temINVALID_INNER_BATCH. TapProposal does not skip that.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            auto const seq = env.seq(target);
+            json::Value const proposedTx = proposal::unsignedBatch(
+                env,
+                target,
+                ticketSeq,
+                tfAllOrNothing,
+                {proposal::innerTx(pay(target, bob, XRP(1)), seq),
+                 proposal::innerTx(sponsor::transfer(target, tfSponsorshipCreate), seq + 1)});
+
+            env(proposal::create(target, proposedTx, proposal::expiration(env, 100s)),
+                Ter(temINVALID_INNER_BATCH),
+                proposal::verify::create());
+            env.close();
+            BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+        }
+    }
+
     void
     run() override
     {
@@ -1299,7 +1640,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // Preclaim
         testPreclaim(all);
         testProposerAuthorization(all);
+        testCorruptSignerList(all);
         testDelegatedProposedTx(all);
+        testDelegatedGranularProposedTx(all);
+        testCorruptDelegateSignerList(all);
         testPseudoTarget(all);
 
         // Apply
@@ -1312,6 +1656,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         testFeeSponsored(all);
         testBatchReserve(all);
         testMultiAccountBatch(all);
+        testProposedBatchInnerSponsorship(all);
     }
 };
 

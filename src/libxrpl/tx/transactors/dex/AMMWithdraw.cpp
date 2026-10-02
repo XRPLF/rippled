@@ -527,6 +527,7 @@ AMMWithdraw::withdraw(
         tfee,
         issuerFreezeHandling(),
         AuthHandling::ZeroIfUnauthorized,
+        ReserveHandling::EnforceReserve,
         isWithdrawAll(ctx_.tx),
         preFeeBalance_,
         j_);
@@ -548,6 +549,7 @@ AMMWithdraw::withdraw(
     std::uint16_t tfee,
     FreezeHandling freezeHandling,
     AuthHandling authHandling,
+    ReserveHandling reserveHandling,
     WithdrawAll withdrawAll,
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
@@ -669,19 +671,26 @@ AMMWithdraw::withdraw(
         mptokenKey = std::nullopt;
         if (!enabledFixAmMv12 || isXRP(asset))
             return tesSUCCESS;
-        bool const isIssue = asset.holds<Issue>();
-        bool const assetNotExists = [&] {
-            if (isIssue)
-                return !view.exists(keylet::trustLine(account, asset.get<Issue>()));
-            auto const issuanceKey = keylet::mptokenIssuance(asset.get<MPTIssue>());
-            mptokenKey = keylet::mptoken(issuanceKey.key, account);
-            if (!view.exists(*mptokenKey))
-                return true;
-            mptokenKey = std::nullopt;
-            return false;
-        }();
+        bool const assetNotExists = asset.visit(
+            [&](Issue const& issue) { return !view.exists(keylet::trustLine(account, issue)); },
+            [&](MPTIssue const& issue) {
+                auto const issuanceKey = keylet::mptokenIssuance(issue);
+                mptokenKey = keylet::mptoken(issuanceKey.key, account);
+                if (!view.exists(*mptokenKey))
+                    return true;
+                mptokenKey = std::nullopt;
+                return false;
+            });
         if (assetNotExists)
         {
+            // Intentionally ignore the reserve check for AMMClawback, so the
+            // holder can not avoid clawback by deleting the trustline/MPToken
+            // and keeping a low spendable balance. AMMClawback has a higher
+            // priority than the reserve check.
+            if (view.rules().enabled(fixCleanup3_4_0) &&
+                reserveHandling == ReserveHandling::IgnoreReserve)
+                return tesSUCCESS;
+
             auto sleAccount = view.peek(keylet::account(account));
             if (!sleAccount)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -693,7 +702,7 @@ AMMWithdraw::withdraw(
                     ? XRPAmount(beast::kZero)
                     : accountReserve(view, sleAccount, journal, {.ownerCountDelta = 1}));
 
-            auto const balanceAdj = isIssue ? std::max(priorBalance, balance) : priorBalance;
+            auto const balanceAdj = std::max(priorBalance, balance);
             if (balanceAdj < reserve)
                 return tecINSUFFICIENT_RESERVE;
         }
@@ -851,6 +860,7 @@ AMMWithdraw::equalWithdrawTokens(
         tfee,
         issuerFreezeHandling(),
         AuthHandling::ZeroIfUnauthorized,
+        ReserveHandling::EnforceReserve,
         isWithdrawAll(ctx_.tx),
         preFeeBalance_,
         ctx_.journal);
@@ -904,6 +914,7 @@ AMMWithdraw::equalWithdrawTokens(
     std::uint16_t tfee,
     FreezeHandling freezeHandling,
     AuthHandling authHandling,
+    ReserveHandling reserveHandling,
     WithdrawAll withdrawAll,
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
@@ -927,6 +938,7 @@ AMMWithdraw::equalWithdrawTokens(
                 tfee,
                 freezeHandling,
                 authHandling,
+                reserveHandling,
                 WithdrawAll::Yes,
                 priorBalance,
                 journal);
@@ -963,6 +975,7 @@ AMMWithdraw::equalWithdrawTokens(
             tfee,
             freezeHandling,
             authHandling,
+            reserveHandling,
             withdrawAll,
             priorBalance,
             journal);

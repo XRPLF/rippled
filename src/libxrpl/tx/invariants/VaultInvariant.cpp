@@ -21,6 +21,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
 #include <algorithm>
@@ -235,21 +236,57 @@ ValidVault::deltaAssets(AccountID const& id) const
         vaultAsset.value());
 }
 
+std::optional<AccountID>
+ValidVault::feePayerAccountRoot(ReadView const& view, STTx const& tx)
+{
+    auto const feePayer = Transactor::getFeePayer(view, tx);
+    if (feePayer.type == FeePayerType::SponsorPreFunded)
+        return std::nullopt;
+    return feePayer.id;
+}
+
 std::optional<ValidVault::DeltaInfo>
-ValidVault::deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const
+ValidVault::deltaAssetsForParty(
+    ReadView const& view,
+    AccountID const& id,
+    STTx const& tx,
+    XRPAmount fee,
+    bool fix340Enabled) const
 {
     auto const& vaultAsset = afterVault_[0].asset;
-    auto ret = deltaAssets(tx[sfAccount]);
+    auto ret = deltaAssets(id);
     if (!ret.has_value() || !vaultAsset.native())
         return ret;
 
-    // Only add the fee back if tx[sfAccount] actually paid it. When the fee is
-    // paid by someone else (a delegate or a fee sponsor), the
-    // account's XRP balance moved only by the vault amount.
-    if (tx.getFeePayerID() != tx[sfAccount])
-        return ret;
+    if (!fix340Enabled)
+    {
+        // Legacy behaviour: only tx[sfAccount] was ever considered for a fee
+        // correction, and only when STTx::getFeePayerID identified it as the
+        // fee payer (which is never true for a sponsor, since
+        // self-sponsorship is disallowed). After that sender-only correction
+        // a zero delta is collapsed to absence; if the correction does not
+        // apply, a present-zero is returned as-is.
+        if (id != tx[sfAccount] || tx.getFeePayerID() != id)
+            return ret;
 
-    ret->delta += fee.drops();
+        ret->delta += fee.drops();
+        if (ret->delta == kZero)
+            return std::nullopt;
+
+        return ret;
+    }
+
+    // Add the fee back only onto the AccountRoot that actually paid it: an
+    // ordinary sender, a delegate, or a co-signed fee sponsor -- but never a
+    // pre-funded sponsorship, whose fee is drawn from the ltSponsorship
+    // object rather than the sponsor's own XRP balance.
+    if (auto const payer = feePayerAccountRoot(view, tx); payer && *payer == id)
+        ret->delta += fee.drops();
+
+    // Normalize an economically zero delta to absence regardless of who (if
+    // anyone) paid the fee, so a touched-but-unchanged AccountRoot (e.g. the
+    // sender in a third-party withdrawal, touched only for sequence/ticket
+    // processing) is never misread as a second payout recipient.
     if (ret->delta == kZero)
         return std::nullopt;
 
@@ -380,7 +417,7 @@ ValidVault::finalize(
     beast::Journal const& j)
 {
     bool const enforce = view.rules().enabled(featureSingleAssetVault);
-    bool const fixEnabled = view.rules().enabled(fixCleanup3_4_0);
+    bool const fix340Enabled = view.rules().enabled(fixCleanup3_4_0);
 
     if (!isTesSuccess(ret))
         return true;  // Do not perform checks
@@ -515,7 +552,8 @@ ValidVault::finalize(
     bool result = true;
 
     // Universal transaction checks
-    if (!beforeVault_.empty())
+    // From LendingProtocolV1_1 onwards, vault immutability check is moved to InvariantCheck.cpp
+    if (!beforeVault_.empty() && !view.rules().enabled(featureLendingProtocolV1_1))
     {
         auto const& beforeVault = beforeVault_[0];
         if (afterVault.asset != beforeVault.asset || afterVault.pseudoId != beforeVault.pseudoId ||
@@ -571,7 +609,7 @@ ValidVault::finalize(
     else
     {
         bool const gapExceeded = [&] {
-            if (!fixEnabled)
+            if (!fix340Enabled)
             {
                 return afterVault.lossUnrealized >
                     afterVault.assetsTotal - afterVault.assetsAvailable;
@@ -593,7 +631,7 @@ ValidVault::finalize(
         }
     }
 
-    if (fixEnabled && afterVault.lossUnrealized < kZero)
+    if (fix340Enabled && afterVault.lossUnrealized < kZero)
     {
         JLOG(j.fatal()) << "Invariant failed: loss unrealized must not be negative";
         result = false;
@@ -764,8 +802,13 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                // AssetsTotal may exceed AssetsMaximum when the excess is interest. After
+                // fixCleanup3_4_0, only reject a VaultSet that supplies sfAssetsMaximum or
+                // otherwise changes the cap to a nonzero value still below AssetsTotal.
                 if (afterVault.assetsMaximum > kZero &&
-                    afterVault.assetsTotal > afterVault.assetsMaximum)
+                    afterVault.assetsTotal > afterVault.assetsMaximum &&
+                    (!fix340Enabled || tx.isFieldPresent(sfAssetsMaximum) ||
+                     beforeVault.assetsMaximum != afterVault.assetsMaximum))
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: set assets outstanding must not "
@@ -854,7 +897,8 @@ ValidVault::finalize(
 
                 if (!issuerDeposit)
                 {
-                    auto const maybeAccDeltaAssets = deltaAssetsTxAccount(tx, fee);
+                    auto const maybeAccDeltaAssets =
+                        deltaAssetsForParty(view, tx[sfAccount], tx, fee, fix340Enabled);
                     if (!maybeAccDeltaAssets)
                     {
                         JLOG(j.fatal())
@@ -879,7 +923,7 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    bool const acctVaultAddsUp = fixEnabled
+                    bool const acctVaultAddsUp = fix340Enabled
                         ? agreesWithinOneUnit(
                               localVaultDeltaAssets * -1,
                               accountDeltaAssets,
@@ -934,7 +978,7 @@ ValidVault::finalize(
 
                 auto const assetTotalDelta = roundToAsset(
                     vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                bool const totalAddsUp = fixEnabled
+                bool const totalAddsUp = fix340Enabled
                     ? agreesWithinOneUnit(assetTotalDelta, vaultDeltaAssets, vaultAsset, minScale)
                     : assetTotalDelta == vaultDeltaAssets;
                 if (!totalAddsUp)
@@ -946,7 +990,7 @@ ValidVault::finalize(
 
                 auto const assetAvailableDelta = roundToAsset(
                     vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
-                bool const availableAddsUp = fixEnabled
+                bool const availableAddsUp = fix340Enabled
                     ? agreesWithinOneUnit(
                           assetAvailableDelta, vaultDeltaAssets, vaultAsset, minScale)
                     : assetAvailableDelta == vaultDeltaAssets;
@@ -992,7 +1036,7 @@ ValidVault::finalize(
                 // value merely rounds down to zero, so a missing delta while
                 // the pool still held positive effective value indicates a
                 // real accounting bug, not this exception.
-                bool const zeroDeltaIsLegitimate = fixEnabled && !maybeVaultDeltaAssets &&
+                bool const zeroDeltaIsLegitimate = fix340Enabled && !maybeVaultDeltaAssets &&
                     beforeVault.assetsTotal == beforeVault.lossUnrealized;
 
                 if (!maybeVaultDeltaAssets && !zeroDeltaIsLegitimate)
@@ -1027,21 +1071,39 @@ ValidVault::finalize(
 
                 if (!issuerWithdrawal)
                 {
-                    auto const maybeAccDelta = deltaAssetsTxAccount(tx, fee);
-                    auto const maybeOtherAccDelta = [&]() -> std::optional<DeltaInfo> {
-                        if (auto const destination = tx[~sfDestination];
-                            destination && *destination != tx[sfAccount])
-                            return deltaAssets(*destination);
-                        return std::nullopt;
-                    }();
+                    // Identify the intended recipient explicitly from
+                    // sfDestination (falling back to sfAccount for a
+                    // self-withdrawal), rather than inferring it from which
+                    // side happens to show a delta. When a distinct
+                    // destination is named, the sending account must not
+                    // also show a real economic delta -- that would mean two
+                    // accounts were paid, which is always a bug, regardless
+                    // of what (if anything) the named destination received.
+                    auto const destinationField = tx[~sfDestination];
+                    AccountID const recipient = destinationField.value_or(tx[sfAccount]);
+                    bool const distinctDestination =
+                        destinationField.has_value() && *destinationField != tx[sfAccount];
 
-                    if (maybeAccDelta.has_value() == maybeOtherAccDelta.has_value())
+                    // Intentionally ungated: `fix340Enabled &&` here would let the
+                    // pre-amendment sponsored case succeed and change consensus.
+                    if (distinctDestination &&
+                        deltaAssetsForParty(view, tx[sfAccount], tx, fee, fix340Enabled)
+                            .has_value())
                     {
-                        // Both changed is always a bug. Neither changed is
-                        // consistent only with a legitimate zero-value
-                        // withdrawal, which moves nothing on either side —
-                        // there is nothing left to cross-check.
-                        if (!zeroDeltaIsLegitimate || maybeAccDelta.has_value())
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: withdrawal must change one destination balance";
+                        return false;
+                    }
+
+                    auto const maybeRecipientDelta =
+                        deltaAssetsForParty(view, recipient, tx, fee, fix340Enabled);
+
+                    if (!maybeRecipientDelta.has_value())
+                    {
+                        // A legitimate zero-value withdrawal moves nothing to
+                        // the recipient either; there is nothing left to
+                        // cross-check.
+                        if (!zeroDeltaIsLegitimate)
                         {
                             JLOG(j.fatal()) <<  //
                                 "Invariant failed: withdrawal must change one destination balance";
@@ -1053,8 +1115,7 @@ ValidVault::finalize(
                         // A one-sided change is cross-checked even for a
                         // legitimate zero vault delta: the destination must
                         // then have moved by (rounded) zero as well.
-                        auto const destinationDelta =
-                            *maybeAccDelta.or_else([&] { return maybeOtherAccDelta; });
+                        auto const destinationDelta = *maybeRecipientDelta;
 
                         // the scale of destinationDelta can be coarser than
                         // minScale, so we take that into account when rounding
@@ -1068,9 +1129,7 @@ ValidVault::finalize(
                         // only. If the receiver's trust line sits at a coarser scale, the inflow
                         // may safely round down to zero.
                         //
-                        // XRP and MPT remain strict. Because they are integer-exact, a zero
-                        // destination delta indicates a true accounting bug, not a rounding
-                        // artifact.
+                        // XRP and MPT remain strict for rounding artifacts.
                         bool const tolerateZeroDelta =
                             view.rules().enabled(fixCleanup3_2_0) && !vaultAsset.integral();
                         auto const invalidBalanceChange = tolerateZeroDelta
@@ -1099,7 +1158,7 @@ ValidVault::finalize(
                                 vaultDeltaAssets.delta * -1 - destinationDelta.delta,
                                 destinationScale,
                                 Number::RoundingMode::Downward) == kZero;
-                        bool const withdrawAddsUp = fixEnabled
+                        bool const withdrawAddsUp = fix340Enabled
                             ? agreesWithinOneUnit(
                                   localPseudoDeltaAssets * -1,
                                   roundedDestinationDelta,
@@ -1149,7 +1208,7 @@ ValidVault::finalize(
                 auto const assetTotalDelta = roundToAsset(
                     vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
                 // Note, vaultBalance is negative (see check above)
-                bool const totalAddsUp = fixEnabled
+                bool const totalAddsUp = fix340Enabled
                     ? agreesWithinOneUnit(
                           assetTotalDelta, vaultPseudoDeltaAssets, vaultAsset, minScale)
                     : assetTotalDelta == vaultPseudoDeltaAssets;
@@ -1163,7 +1222,7 @@ ValidVault::finalize(
                 auto const assetAvailableDelta = roundToAsset(
                     vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
 
-                bool const availableAddsUp = fixEnabled
+                bool const availableAddsUp = fix340Enabled
                     ? agreesWithinOneUnit(
                           assetAvailableDelta, vaultPseudoDeltaAssets, vaultAsset, minScale)
                     : assetAvailableDelta == vaultPseudoDeltaAssets;
@@ -1212,7 +1271,7 @@ ValidVault::finalize(
 
                     auto const assetsTotalDelta = roundToAsset(
                         vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                    bool const totalAddsUp = fixEnabled
+                    bool const totalAddsUp = fix340Enabled
                         ? agreesWithinOneUnit(
                               assetsTotalDelta, vaultDeltaAssets, vaultAsset, minScale)
                         : assetsTotalDelta == vaultDeltaAssets;
@@ -1227,7 +1286,7 @@ ValidVault::finalize(
                         vaultAsset,
                         afterVault.assetsAvailable - beforeVault.assetsAvailable,
                         minScale);
-                    bool const availableAddsUp = fixEnabled
+                    bool const availableAddsUp = fix340Enabled
                         ? agreesWithinOneUnit(
                               assetAvailableDelta, vaultDeltaAssets, vaultAsset, minScale)
                         : assetAvailableDelta == vaultDeltaAssets;

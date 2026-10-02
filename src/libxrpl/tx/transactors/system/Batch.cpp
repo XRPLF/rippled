@@ -73,14 +73,23 @@ Batch::calculateBaseFeeImpl(ReadView const& view, STTx const& tx)
     for (auto const& stx : tx.getBatchTransactions())
     {
         auto const fee = xrpl::calculateBaseFee(view, *stx);
-        // LCOV_EXCL_START
-        if (txnFees > maxAmount - fee)
+        if (!fee)
         {
+            JLOG(debugLog().error())
+                << "BatchTrace: base fee of inner transaction " << stx->getTransactionID()
+                << " could not be computed: " << transToken(fee.error());
+            return std::nullopt;
+        }
+
+        // LCOV_EXCL_START
+        if (txnFees > maxAmount - *fee)
+        {
+            UNREACHABLE("XRPAmount overflow in txnFees calculation");
             JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in txnFees calculation.";
             return std::nullopt;
         }
         // LCOV_EXCL_STOP
-        txnFees += fee;
+        txnFees += *fee;
     }
 
     // Calculate the Signers/BatchSigners Fees
@@ -339,8 +348,20 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID_FLAG;
 
         auto const innerAccount = stx.getAccountID(sfAccount);
+        // TransactionProposalCreate preflights a proposed Batch with
+        // TapDryRun | TapProposal so signature-presence checks are deferred
+        // to collection time (On-Chain Cosigner spec §5.3.1.2). Inner
+        // preflight used to pass only TapBatch, so those bits never reached
+        // the inners: an unsigned account-reserve SponsorshipTransfer then
+        // demanded sfSponsorSignature and the Create failed with
+        // temINVALID_INNER_BATCH. Spec §6.1.1 names an inner Sponsor as a
+        // collectable slot, so forward TapProposal/TapDryRun. Always OR in
+        // TapBatch — PreflightContext with a parentBatchId requires it.
+        // LoanSet already short-circuits on tfInnerBatchTxn; it is also in
+        // kDisabledTxTypes, so it never reaches this call.
+        ApplyFlags const innerFlags = TapBatch | (ctx.flags & (TapProposal | TapDryRun));
         if (auto const preflightResult =
-                xrpl::preflight(ctx.registry, ctx.rules, parentBatchId, stx, TapBatch, ctx.j);
+                xrpl::preflight(ctx.registry, ctx.rules, parentBatchId, stx, innerFlags, ctx.j);
             !isTesSuccess(preflightResult.ter))
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
