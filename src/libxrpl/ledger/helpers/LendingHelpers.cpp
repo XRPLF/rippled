@@ -190,6 +190,23 @@ checkOptionalBrokerCoverInflow(SLE::ConstRef vault, SLE::ConstRef broker, STAmou
     return tesSUCCESS;
 }
 
+void
+adjustBrokerDebtTotal(
+    SLE::Ref brokerSle,
+    SLE::ConstRef vaultSle,
+    Number const& delta,
+    int vaultScale)
+{
+    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+    {
+        brokerSle->at(sfDebtTotal) += delta;
+    }
+    else
+    {
+        adjustImpreciseNumber(brokerSle->at(sfDebtTotal), delta, vaultSle->at(sfAsset), vaultScale);
+    }
+}
+
 Number
 minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::ConstRef vaultSle)
 {
