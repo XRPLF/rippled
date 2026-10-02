@@ -996,7 +996,6 @@ TRANSACTION(ttLOAN_SET, 80, LoanSet,
 #endif
 TRANSACTION(ttLOAN_DELETE, 81, LoanDelete,
     ({
-        .delegable = Delegation::NotDelegable,
         .amendment = featureLendingProtocol,
         .privileges = Privilege::MayModifyVault,
     }),

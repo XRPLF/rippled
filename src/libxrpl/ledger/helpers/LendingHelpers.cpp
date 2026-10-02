@@ -2395,7 +2395,7 @@ checkLoanFreeze(
 TER
 reserveLoanOwner(
     ApplyView& view,
-    AccountID const& borrower,
+    AccountID const& owner,
     SLE::ref loanOwnerSle,
     AccountID const& signingAccount,
     XRPAmount preFeeBalance,
@@ -2406,7 +2406,7 @@ reserveLoanOwner(
         "xrpl::reserveLoanOwner : valid AccountRoot");
     increaseOwnerCount(view, loanOwnerSle, {}, 1, j);
     auto const balance =
-        signingAccount == borrower ? preFeeBalance : loanOwnerSle->at(sfBalance).value().xrp();
+        signingAccount == owner ? preFeeBalance : loanOwnerSle->at(sfBalance).value().xrp();
     if (balance < accountReserve(view, loanOwnerSle, j))
         return tecINSUFFICIENT_RESERVE;
     return tesSUCCESS;

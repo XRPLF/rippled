@@ -30,16 +30,6 @@
 namespace xrpl {
 
 /**
- * The flow requested by a LoanSet transaction, determined from its fields.
- *
- * OneStep is the immediate flow, where the loan is created and disbursed in
- * a single transaction. TwoStep is the pending (Borrower) flow, where the
- * LoanBroker owner proposes a loan that the named Borrower must later accept.
- * Invalid indicates that the fields do not match either flow shape.
- */
-enum class LoanFlow { Invalid, OneStep, TwoStep };
-
-/**
  * Broker cover preclaim precision guard (fixCleanup3_2_0).
  *
  * Prevents a "silent sub-ULP no-op" where a deposit, withdrawal, or clawback
@@ -702,10 +692,6 @@ loanMakePayment(
 //------------------------------------------------------------------------------
 
 /**
- * Verify the loan asset can be held and that none of the accounts involved in
- * disbursing the loan are frozen in a way that would block the fund flows.
- * This function Implements items 8-12 of XLS-66 spec, section 3.8.5.2.
- *
  * Checks, in order: that a holding for the asset can be created, that the vault
  * pseudo-account (the sender) is not frozen, that the broker pseudo-account (a
  * fallback fee recipient) is not deep frozen, that the borrower (a future payer
@@ -714,6 +700,21 @@ loanMakePayment(
  *
  * The origination fee is passed in by the caller: LoanSet reads it from the
  * transaction, LoanAccept from the pending Loan entry.
+ *
+ * @param view           Read view used for the holding and freeze checks.
+ * @param asset          The vault asset being lent.
+ * @param originationFee The origination fee. When nonzero, the broker owner
+ *                       must also be able to hold the asset.
+ * @param vaultPseudo    The vault pseudo-account that will send the funds.
+ * @param brokerPseudo   The LoanBroker pseudo-account, the fallback recipient
+ *                       of LoanPay fees.
+ * @param borrower       The borrower, who receives the principal and later
+ *                       repays the loan.
+ * @param brokerOwner    The LoanBroker owner, who receives the origination fee.
+ * @param j              Journal for logging.
+ *
+ * @return `tesSUCCESS` if every check passes, otherwise the first failing
+ * check's error code.
  */
 [[nodiscard]] TER
 checkLoanFreeze(
@@ -727,13 +728,28 @@ checkLoanFreeze(
     beast::Journal j);
 
 /**
- * Increment the borrower's owner count for the new loan object and verify the
- * borrower still meets its reserve requirement.
+ * Increment the loan owner's owner count for the new loan object and verify
+ * that it still meets its reserve requirement.
+ *
+ * LoanSet charges the borrower in the immediate flow and the LoanBroker owner
+ * in the two-step flow; LoanAccept charges the borrower.
+ *
+ * @param view           Apply view to modify.
+ * @param owner          The account being charged the owner reserve.
+ * @param loanOwnerSle   The AccountRoot of `borrower`.
+ * @param signingAccount The transaction's signing account.
+ * @param preFeeBalance  The signing account's XRP balance before the
+ *                       transaction fee was deducted. Used in place of the
+ *                       ledger balance when `borrower` is the signing account.
+ * @param j              Journal for logging.
+ *
+ * @return `tecINSUFFICIENT_RESERVE` if the balance is below the reserve after
+ * the increment, otherwise `tesSUCCESS`.
  */
 [[nodiscard]] TER
 reserveLoanOwner(
     ApplyView& view,
-    AccountID const& borrower,
+    AccountID const& owner,
     SLE::ref loanOwnerSle,
     AccountID const& signingAccount,
     XRPAmount preFeeBalance,
@@ -742,7 +758,29 @@ reserveLoanOwner(
 /**
  * Transfer the loan principal to the borrower and the origination fee, if any,
  * to the LoanBroker owner. Creates holdings as necessary.
- * This function implements items 3-5 of XLS-66 spec, section 3.8.6.
+ *
+ * The borrower and the broker owner must each be either the signing account
+ * or the authorized counterparty, so that creating a holding on their behalf
+ * is permitted.
+ *
+ * @param viewContext           Apply view context to modify.
+ * @param borrowerSle           The borrower's AccountRoot.
+ * @param brokerOwnerSle        The LoanBroker owner's AccountRoot.
+ * @param vaultPseudo           The vault pseudo-account that sends the funds.
+ * @param vaultAsset            The vault asset being lent.
+ * @param loanAssetsToBorrower  The amount sent to the borrower, i.e. the
+ *                              principal requested less the origination fee.
+ * @param originationFee        The amount sent to the broker owner. May be
+ *                              zero, in which case no holding is created for
+ *                              the broker owner.
+ * @param signingAccount        The transaction's signing account.
+ * @param authorizedCounterparty The other party that authorized the
+ *                              transaction (the broker owner or the borrower,
+ *                              whichever did not sign).
+ * @param j                     Journal for logging.
+ *
+ * @return `tesSUCCESS` if the transfers succeed, otherwise the error from
+ * creating a holding, checking authorization, or sending the funds.
  */
 [[nodiscard]] TER
 disburseLoan(

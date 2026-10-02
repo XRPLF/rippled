@@ -22,18 +22,20 @@ namespace xrpl {
 
 namespace {
 
+/**
+ * Reverse the bookkeeping that LoanSet recorded when the pending loan was
+ * proposed, and release the owner reserve charged to the LoanBroker owner.
+ * A pending loan was never linked into the borrower's directory and the
+ * borrower was never charged a reserve.
+ */
 TER
-deletePendingLoan(
-    ApplyContext& ctx,
-    SLE::ref loanSle,
+reversePendingLoan(
+    ApplyView& view,
+    SLE::const_ref loanSle,
     SLE::ref brokerSle,
     SLE::ref vaultSle,
     beast::Journal const& j)
 {
-    auto& view = ctx.view();
-
-    auto const loanID = loanSle->key();
-    auto const brokerPseudoAccount = brokerSle->at(sfAccount);
     auto const vaultAsset = vaultSle->at(sfAsset);
 
     auto const brokerOwner = brokerSle->at(sfOwner);
@@ -52,93 +54,86 @@ deletePendingLoan(
     auto const [assetsTotalDelta, debtTotalDelta] =
         loanOriginationDeltas(vaultSle, principalOutstanding, state.interestDue);
 
-    // 3.10.4.1.1 Remove LoanID from the broker pseudo-account's directory.
-    if (!view.dirRemove(
-            keylet::ownerDir(brokerPseudoAccount), loanSle->at(sfLoanBrokerNode), loanID, false))
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-
-    // 3.10.4.1.2 Delete the Loan object
-    view.erase(loanSle);
-
-    // 3.10.4.1.3 Reverse the vault bookkeeping from the proposal.
+    // Reverse the vault bookkeeping from the proposal.
     vaultSle->at(sfAssetsAvailable) += principalOutstanding;
     vaultSle->at(sfAssetsReserved) -= principalOutstanding;
     vaultSle->at(sfAssetsTotal) -= assetsTotalDelta;
     view.update(vaultSle);
 
-    //  3.10.4.1.4 Reverse the broker debt and outstanding loan count.
+    // Reverse the broker debt.
     adjustImpreciseNumber(brokerSle->at(sfDebtTotal), -debtTotalDelta, vaultAsset, vaultScale);
-    // 3.10.4.1.4 Decrement LoanBroker.OwnerCount by 1.
-    adjustLoanBrokerOwnerCount(view, brokerSle, -1, j);
 
-    // 3.10.4.1.5 Release the reserve from the Loan Broker: Decrement
+    // Release the reserve from the Loan Broker: Decrement
     // AccountRoot(LoanBroker.Owner).OwnerCount by 1.
     decreaseOwnerCount(view, brokerOwnerSle, {}, 1, j);
-
-    associateAsset(*brokerSle, vaultAsset);
-    associateAsset(*vaultSle, vaultAsset);
 
     return tesSUCCESS;
 }
 
+/**
+ * Unlink an active (accepted) loan from the borrower and release the
+ * borrower's owner reserve.
+ */
 TER
-deleteActiveLoan(
-    ApplyContext& ctx,
-    SLE::ref loanSle,
-    SLE::ref brokerSle,
-    SLE::ref vaultSle,
-    beast::Journal const& j)
+releaseBorrower(ApplyView& view, SLE::ref loanSle, beast::Journal const& j)
 {
-    auto& view = ctx.view();
-
-    auto const loanID = loanSle->key();
-    auto const brokerPseudoAccount = brokerSle->at(sfAccount);
-    auto const vaultAsset = vaultSle->at(sfAsset);
-
     auto const borrower = loanSle->at(sfBorrower);
     auto const borrowerSle = view.peek(keylet::account(borrower));
     if (!borrowerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    // Remove LoanID from Directory of the LoanBroker pseudo-account.
-    if (!view.dirRemove(
-            keylet::ownerDir(brokerPseudoAccount), loanSle->at(sfLoanBrokerNode), loanID, false))
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     // Remove LoanID from Directory of the Borrower.
-    if (!view.dirRemove(keylet::ownerDir(borrower), loanSle->at(sfOwnerNode), loanID, false))
+    if (!view.dirRemove(
+            keylet::ownerDir(borrower), loanSle->at(sfOwnerNode), loanSle->key(), false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    // Delete the Loan object
-    view.erase(loanSle);
-
-    // Decrement the LoanBroker's owner count.
-    adjustLoanBrokerOwnerCount(view, brokerSle, -1, j);
-
-    // If there are no loans left, then any remaining debt must be forgiven,
-    // because there is no other way to pay it back.
-    if (brokerSle->at(sfOwnerCount) == 0)
-    {
-        auto debtTotalProxy = brokerSle->at(sfDebtTotal);
-        if (*debtTotalProxy != beast::kZero)
-        {
-            XRPL_ASSERT_PARTS(
-                roundToAsset(
-                    vaultSle->at(sfAsset),
-                    debtTotalProxy,
-                    getAssetsTotalScale(vaultSle),
-                    Number::RoundingMode::TowardsZero) == beast::kZero,
-                "xrpl::LoanDelete::deleteActiveLoan",
-                "last loan, remaining debt rounds to zero");
-            debtTotalProxy = 0;
-        }
-    }
     // Decrement the borrower's owner count
     decreaseOwnerCountForObject(view, borrowerSle, loanSle, 1, j);
 
-    associateAsset(*vaultSle, vaultAsset);
-
     return tesSUCCESS;
 }
+
+/**
+ * Release the loan from the LoanBroker: decrement its owner count and, if this
+ * was the broker's last loan, forgive whatever debt is left.
+ *
+ * Rounding at vault scale can leave dust in DebtTotal when a broker has had
+ * loans with different scales, and once no loans remain there is no other way
+ * to pay it back. This applies to the pending and active paths alike: if an
+ * active loan is deleted while a pending one is still outstanding, the dust
+ * survives that deletion, so the pending loan's deletion has to clear it, or
+ * LoanBrokerDelete will refuse the broker.
+ */
+void
+releaseLoanFromBroker(
+    ApplyView& view,
+    SLE::ref brokerSle,
+    SLE::const_ref vaultSle,
+    beast::Journal const& j)
+{
+    adjustLoanBrokerOwnerCount(view, brokerSle, -1, j);
+
+    if (brokerSle->at(sfOwnerCount) != 0)
+        return;
+
+    auto debtTotalProxy = brokerSle->at(sfDebtTotal);
+    if (*debtTotalProxy == beast::kZero)
+        return;
+
+    XRPL_ASSERT_PARTS(
+        roundToAsset(
+            vaultSle->at(sfAsset),
+            debtTotalProxy,
+            getAssetsTotalScale(vaultSle),
+            Number::RoundingMode::TowardsZero) == beast::kZero,
+        "xrpl::LoanDelete::releaseLoanFromBroker",
+        "last loan, remaining debt rounds to zero");
+    JLOG(j.debug()) << "LoanDelete: forgiving residual DebtTotal " << *debtTotalProxy
+                    << " on last loan of LoanBroker " << to_string(brokerSle->key());
+    debtTotalProxy = 0;
+    view.update(brokerSle);
+}
+
 }  // namespace
 
 bool
@@ -215,12 +210,32 @@ LoanDelete::doApply()
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
+    auto const brokerPseudoAccount = brokerSle->at(sfAccount);
+    Asset const vaultAsset = vaultSle->at(sfAsset);
+
+    // Remove LoanID from Directory of the LoanBroker pseudo-account.
+    if (!view.dirRemove(
+            keylet::ownerDir(brokerPseudoAccount), loanSle->at(sfLoanBrokerNode), loanID, false))
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
     // A pending loan reverses the bookkeeping performed by LoanSet at proposal
-    // time and releases the owner reserve charged to the LoanBroker owner. It is
-    // only linked into the broker pseudo-account's directory, and the borrower
-    // was never charged a reserve.
-    return isLoanPending(loanSle) ? deletePendingLoan(ctx_, loanSle, brokerSle, vaultSle, j_)
-                                  : deleteActiveLoan(ctx_, loanSle, brokerSle, vaultSle, j_);
+    // time and releases the owner reserve charged to the LoanBroker owner. An
+    // active loan is also linked into the borrower's directory and charged the
+    // borrower's reserve, both of which are released here.
+    if (auto const ter = isLoanPending(loanSle)
+            ? reversePendingLoan(view, loanSle, brokerSle, vaultSle, j_)
+            : releaseBorrower(view, loanSle, j_))
+        return ter;
+
+    // Delete the Loan object
+    view.erase(loanSle);
+
+    releaseLoanFromBroker(view, brokerSle, vaultSle, j_);
+
+    associateAsset(*brokerSle, vaultAsset);
+    associateAsset(*vaultSle, vaultAsset);
+
+    return tesSUCCESS;
 }
 
 void

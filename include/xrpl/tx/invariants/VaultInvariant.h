@@ -48,6 +48,11 @@ namespace xrpl {
  * - vault withdrawal may not succeed when the vault phase is Investment
  * - closed-ended loan origination (ttLOAN_SET) may only succeed when the
  *   vault phase is Investment
+ * - loan accept leaves assets available and assets total unchanged, does not
+ *   increase assets reserved, and releases from assets reserved at least the
+ *   assets disbursed from the vault
+ * - deleting a pending loan credits assets available by no more than it
+ *   releases from assets reserved
  *
  * Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced
  * by NoModifiedUnmodifiableFields (see InvariantCheck.cpp). From
@@ -219,6 +224,27 @@ private:
      */
     [[nodiscard]] bool
     finalizeLoanSet(ReadView const& view, beast::Journal const& j) const;
+
+    /**
+     * @brief Invariant check for @c ttLOAN_ACCEPT.
+     *
+     * Accepting a pending loan disburses the principal held in @c AssetsReserved from the vault
+     * pseudo-account. @c AssetsAvailable and @c AssetsTotal were settled when the pending loan was
+     * created and must not change; @c AssetsReserved must not increase, and must release at least
+     * what left the pseudo-account.
+     */
+    [[nodiscard]] bool
+    finalizeLoanAccept(ReadView const& view, beast::Journal const& j) const;
+
+    /**
+     * @brief Invariant check for @c ttLOAN_DELETE.
+     *
+     * A LoanDelete only modifies a vault when it deletes a pending loan, returning the principal
+     * from @c AssetsReserved to @c AssetsAvailable. It must not credit @c AssetsAvailable by more
+     * than it releases from @c AssetsReserved.
+     */
+    [[nodiscard]] bool
+    finalizeLoanDelete(beast::Journal const& j) const;
 
 public:
     // Compute the coarsest scale required to represent all numbers

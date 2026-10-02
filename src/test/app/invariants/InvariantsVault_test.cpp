@@ -965,6 +965,23 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
+        // The reserved principal is carved out of assets outstanding, so
+        // available plus reserved may never exceed it. The vault below has all
+        // of its assets available, so any reserved amount breaks the rule.
+        doInvariantCheck(
+            {"sum of assets available and reserved must not be greater than assets outstanding"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
+                                   sample.assetsReserved = 1;
+                               }));
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
         doInvariantCheck(
             {"set must not change shares outstanding",
              "updated zero sized vault must have no assets outstanding",
@@ -1699,6 +1716,7 @@ class InvariantsVault_test : public InvariantsBase
 
             STTx const acceptTx{
                 ttLOAN_ACCEPT, [&](STObject& tx) { tx.setAccountID(sfAccount, borrower.id()); }};
+            STTx const deleteTx{ttLOAN_DELETE, [](STObject&) {}};
 
             // ttLOAN_ACCEPT: modifying an active (non-pending) loan fails,
             // even if the modification is otherwise harmless.
@@ -1825,6 +1843,203 @@ class InvariantsVault_test : public InvariantsBase
                 0,
                 [](SLE::pointer const& sle) { sle->setAccountID(sfBorrower, AccountID{}); },
                 "Loan has no Borrower or StartDate");
+
+            // Vault bookkeeping of LoanAccept and of the LoanDelete of a pending
+            // loan. The base ledger holds a pending loan of kPrincipal drops
+            // against a real broker over an XRP vault with a deposit, with the
+            // vault's books as the pending LoanSet left them: the principal
+            // moved from assets available to assets reserved. The loan side is
+            // either accepted (its legitimate transition) or erased, and
+            // `mutateVault` performs the vault side under test on the vault,
+            // its pseudo-account and the borrower, all peeked for update.
+            constexpr std::int64_t kPrincipal = 100;
+            STAmount const principal{XRPAmount{kPrincipal}};
+            enum class LoanAction { Accept, Delete };
+            auto const testLoanVaultUpdate = [&, this](
+                                                 STTx const& tx,
+                                                 LoanAction action,
+                                                 auto&& mutateVault,
+                                                 std::optional<std::string> const& expected) {
+                Env env{*this, all_};
+                Account const a1{"A1"};
+                Account const a2{"A2"};
+                env.fund(XRP(10'000), a1, a2, borrower);
+                env.close();
+
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+                auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
+                auto const brokerSle = env.le(brokerKeylet);
+                if (!BEAST_EXPECT(brokerSle))
+                    return;
+                auto const vaultKeylet = keylet::vault(brokerSle->at(sfVaultID));
+                auto const baseVault = env.le(vaultKeylet);
+                if (!BEAST_EXPECT(baseVault))
+                    return;
+                AccountID const pseudoId = baseVault->at(sfAccount);
+                Vault const vault{env};
+                env(vault.deposit(
+                    {.depositor = a1, .id = vaultKeylet.key, .amount = xrpAsset(100)}));
+                env.close();
+
+                OpenView ov{*env.current()};
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+                {
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, borrower.id());
+                    sleLoan->at(sfPrincipalOutstanding) = Number(kPrincipal);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(kPrincipal);
+                    sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                    sleLoan->setFieldU32(sfStartDate, 0xFFFFFFFFu);
+                    sleLoan->setFieldU32(sfFlags, lsfLoanPending);
+                    sleLoan->makeFieldAbsent(sfOwnerNode);
+                    ov.rawInsert(sleLoan);
+
+                    auto sleVault = std::make_shared<SLE>(*ov.read(vaultKeylet));
+                    sleVault->at(sfAssetsAvailable) -= Number(kPrincipal);
+                    sleVault->at(sfAssetsReserved) += Number(kPrincipal);
+                    ov.rawReplace(sleVault);
+                }
+
+                test::StreamSink sink{beast::Severity::Warning};
+                beast::Journal const jlog{sink};
+                ApplyContext ac{
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                auto sleLoan = ac.view().peek(loanKeylet);
+                if (!BEAST_EXPECT(sleLoan))
+                    return;
+                if (action == LoanAction::Accept)
+                {
+                    sleLoan->clearFlag(lsfLoanPending);
+                    sleLoan->setFieldU64(sfOwnerNode, 0);
+                    ac.view().update(sleLoan);
+                }
+                else
+                {
+                    ac.view().erase(sleLoan);
+                }
+
+                auto sleVault = ac.view().peek(vaultKeylet);
+                auto slePseudo = ac.view().peek(keylet::account(pseudoId));
+                auto sleBorrower = ac.view().peek(keylet::account(borrower.id()));
+                if (!BEAST_EXPECT(sleVault && slePseudo && sleBorrower))
+                    return;
+                mutateVault(sleVault, slePseudo, sleBorrower);
+                ac.view().update(sleVault);
+                ac.view().update(slePseudo);
+                ac.view().update(sleBorrower);
+
+                auto transactor = makeTransactor(ac);
+                if (!BEAST_EXPECT(transactor))
+                    return;
+                TER const result = transactor->checkInvariants(
+                    tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+                if (expected)
+                {
+                    BEAST_EXPECT(result == tecINVARIANT_FAILED);
+                    BEAST_EXPECTS(sink.messages().str().contains(*expected), *expected);
+                }
+                else
+                {
+                    BEAST_EXPECTS(result == tesSUCCESS, sink.messages().str());
+                }
+            };
+
+            // Disburse `amount` drops from the vault pseudo-account to the
+            // borrower.
+            auto const disburse = [](SLE::pointer const& slePseudo,
+                                     SLE::pointer const& sleBorrower,
+                                     STAmount amount) {
+                (*slePseudo)[sfBalance] = *(*slePseudo)[sfBalance] - amount;
+                (*sleBorrower)[sfBalance] = *(*sleBorrower)[sfBalance] + amount;
+            };
+
+            // Vault side of a legitimate LoanAccept: the reserved principal is
+            // released and disbursed to the borrower.
+            auto const acceptVault = [&](SLE::pointer const& sleVault,
+                                         SLE::pointer const& slePseudo,
+                                         SLE::pointer const& sleBorrower) {
+                sleVault->at(sfAssetsReserved) -= Number(kPrincipal);
+                disburse(slePseudo, sleBorrower, principal);
+            };
+
+            // Vault side of a legitimate LoanDelete of a pending loan: the
+            // reserved principal returns to the available pool.
+            auto const deleteVault =
+                [&](SLE::pointer const& sleVault, SLE::pointer const&, SLE::pointer const&) {
+                    sleVault->at(sfAssetsReserved) -= Number(kPrincipal);
+                    sleVault->at(sfAssetsAvailable) += Number(kPrincipal);
+                };
+
+            // The legitimate accept passes.
+            testLoanVaultUpdate(acceptTx, LoanAction::Accept, acceptVault, std::nullopt);
+
+            // Assets available were settled when the pending loan was created
+            // and must not move on accept.
+            testLoanVaultUpdate(
+                acceptTx,
+                LoanAction::Accept,
+                [&](SLE::pointer const& sleVault,
+                    SLE::pointer const& slePseudo,
+                    SLE::pointer const& sleBorrower) {
+                    acceptVault(sleVault, slePseudo, sleBorrower);
+                    sleVault->at(sfAssetsAvailable) -= Number(1);
+                },
+                "loan accept must not change assets available");
+
+            // Likewise the interest booked at creation stands: assets
+            // outstanding must not move on accept.
+            testLoanVaultUpdate(
+                acceptTx,
+                LoanAction::Accept,
+                [&](SLE::pointer const& sleVault,
+                    SLE::pointer const& slePseudo,
+                    SLE::pointer const& sleBorrower) {
+                    acceptVault(sleVault, slePseudo, sleBorrower);
+                    sleVault->at(sfAssetsTotal) += Number(1);
+                },
+                "loan accept must not change assets outstanding");
+
+            // Accepting a loan only ever releases assets reserved.
+            testLoanVaultUpdate(
+                acceptTx,
+                LoanAction::Accept,
+                [&](SLE::pointer const& sleVault,
+                    SLE::pointer const& slePseudo,
+                    SLE::pointer const& sleBorrower) {
+                    sleVault->at(sfAssetsReserved) += Number(1);
+                    disburse(slePseudo, sleBorrower, principal);
+                },
+                "loan accept must not increase assets reserved");
+
+            // Disbursing more than was released from assets reserved.
+            testLoanVaultUpdate(
+                acceptTx,
+                LoanAction::Accept,
+                [&](SLE::pointer const& sleVault,
+                    SLE::pointer const& slePseudo,
+                    SLE::pointer const& sleBorrower) {
+                    sleVault->at(sfAssetsReserved) -= Number(kPrincipal - 1);
+                    disburse(slePseudo, sleBorrower, principal);
+                },
+                "loan accept must release at least the assets disbursed from the vault");
+
+            // The legitimate deletion of a pending loan passes.
+            testLoanVaultUpdate(deleteTx, LoanAction::Delete, deleteVault, std::nullopt);
+
+            // Crediting assets available with more than was released from
+            // assets reserved.
+            testLoanVaultUpdate(
+                deleteTx,
+                LoanAction::Delete,
+                [&](SLE::pointer const& sleVault,
+                    SLE::pointer const& slePseudo,
+                    SLE::pointer const& sleBorrower) {
+                    deleteVault(sleVault, slePseudo, sleBorrower);
+                    sleVault->at(sfAssetsAvailable) += Number(1);
+                },
+                "loan delete must not credit assets available by more than the assets "
+                "reserved released");
         }
 
         // LoanSet creation: a Loan created by LoanSet must be consistent with

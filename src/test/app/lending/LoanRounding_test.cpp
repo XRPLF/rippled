@@ -1214,8 +1214,8 @@ private:
         env.close();
     }
 
-    // LoanDelete::deleteActiveLoan clears any sub-scale residual left on
-    // LoanBroker.DebtTotal when the last active loan is removed. In production
+    // LoanDelete's releaseLoanFromBroker clears any sub-scale residual left
+    // on LoanBroker.DebtTotal when the last loan is removed. In production
     // the residual comes from cross-loan rounding when multiple loans on the
     // same broker operate at significantly different scales (see the comment
     // above the adjustImpreciseNumber call in LoanPay.cpp's doApply). Building
@@ -1328,8 +1328,8 @@ private:
         }
 
         // Delete against the mutated open view. The last-loan branch of
-        // deleteActiveLoan fires: DebtTotal is zeroed, OwnerCount goes to
-        // zero, and the loan SLE is erased.
+        // releaseLoanFromBroker fires: DebtTotal is zeroed, OwnerCount goes
+        // to zero, and the loan SLE is erased.
         env(del(lender, loanKeylet.key));
 
         if (auto const b = env.le(broker.brokerKeylet()); BEAST_EXPECT(b))

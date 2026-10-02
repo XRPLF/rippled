@@ -68,6 +68,13 @@
 namespace xrpl::test {
 
 /**
+ * The LoanSet flow a test scenario drives: the immediate one-step flow with a
+ * CounterpartySignature, or the two-step flow where the LoanBroker owner
+ * proposes and the Borrower later accepts.
+ */
+enum class LoanFlow { OneStep, TwoStep };
+
+/**
  * Shared base for the Loan*_test family under src/test/app/lending/.
  *
  * Run all suites in this family with
@@ -724,6 +731,21 @@ protected:
     }
 
     enum class AssetType { XRP = 0, IOU = 1, MPT = 2 };
+
+    static char const*
+    assetTypeName(AssetType t)
+    {
+        switch (t)
+        {
+            case AssetType::XRP:
+                return "XRP";
+            case AssetType::IOU:
+                return "IOU";
+            case AssetType::MPT:
+                return "MPT";
+        }
+        return "?";
+    }
 
     // Specify the accounts as params to allow other accounts to be used
     jtx::PrettyAsset
