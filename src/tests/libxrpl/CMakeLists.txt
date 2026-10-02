@@ -103,15 +103,19 @@ if(telemetry)
     # hardcoded _RELEASE hint is empty in any other config and the archive is
     # then only found by luck. Derive the suffix instead. An empty hint is not
     # fatal on its own: the Conan toolchain puts the package on
-    # CMAKE_PREFIX_PATH, which find_library searches anyway. REQUIRED turns a
-    # miss into a configure error rather than a link error.
+    # CMAKE_PREFIX_PATH, which find_library searches anyway. A miss stops the
+    # configure step instead of failing at link time. The check is explicit
+    # because find_library's REQUIRED needs CMake 3.18, and this project allows
+    # 3.16.
     string(TOUPPER "${CMAKE_BUILD_TYPE}" otel_build_type)
     find_library(
         OTEL_IN_MEMORY_EXPORTER_LIB
         NAMES opentelemetry_exporter_in_memory
         HINTS "${opentelemetry-cpp_LIB_DIRS_${otel_build_type}}"
-        REQUIRED
     )
+    if(NOT OTEL_IN_MEMORY_EXPORTER_LIB)
+        message(FATAL_ERROR "opentelemetry_exporter_in_memory not found")
+    endif()
     target_link_libraries(
         xrpl_tests
         PRIVATE

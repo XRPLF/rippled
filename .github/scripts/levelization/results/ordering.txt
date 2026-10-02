@@ -206,6 +206,7 @@ tests.libxrpl > xrpl.server
 tests.libxrpl > xrpl.shamap
 tests.libxrpl > xrpl.telemetry
 tests.libxrpl > xrpl.tx
+tests.xrpld > xrpl.basics
 tests.xrpld > xrpld.app
 tests.xrpld > xrpld.rpc
 tests.xrpld > xrpld.telemetry

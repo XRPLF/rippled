@@ -27,6 +27,41 @@ target_link_libraries(
     xrpld_tests
     PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl rpcspec::rpcspec
 )
+# The telemetry tests read ended spans back from an InMemorySpanExporter. The
+# OpenTelemetry package does not put that archive on the link line, so find
+# it by path, as src/tests/libxrpl/CMakeLists.txt does and explains. The
+# result is cached, so this finds the same file that xrpl_tests links.
+# This block follows the main link call so that the archives it adds come
+# after libxrpl, which uses OpenTelemetry.
+# GNU ld (gcc sanitizer builds) reads each archive once. The umbrella lists
+# the metrics archive after the common and resources archives it needs.
+# These tests use the metrics SDK, so that archive goes before the umbrella.
+if(telemetry)
+    string(TOUPPER "${CMAKE_BUILD_TYPE}" otel_build_type)
+    find_library(
+        OTEL_IN_MEMORY_EXPORTER_LIB
+        NAMES opentelemetry_exporter_in_memory
+        HINTS "${opentelemetry-cpp_LIB_DIRS_${otel_build_type}}"
+    )
+    if(NOT OTEL_IN_MEMORY_EXPORTER_LIB)
+        message(FATAL_ERROR "opentelemetry_exporter_in_memory not found")
+    endif()
+    find_library(
+        OTEL_METRICS_SDK_LIB
+        NAMES opentelemetry_metrics
+        HINTS "${opentelemetry-cpp_LIB_DIRS_${otel_build_type}}"
+    )
+    if(NOT OTEL_METRICS_SDK_LIB)
+        message(FATAL_ERROR "opentelemetry_metrics not found")
+    endif()
+    target_link_libraries(
+        xrpld_tests
+        PRIVATE
+            "${OTEL_IN_MEMORY_EXPORTER_LIB}"
+            "${OTEL_METRICS_SDK_LIB}"
+            opentelemetry-cpp::opentelemetry-cpp
+    )
+endif()
 
 set(test_modules rpc ledger telemetry)
 
