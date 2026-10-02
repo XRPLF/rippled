@@ -2484,43 +2484,35 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         Account const bobNewKey("bobNewKey");
         ct.mpt.generateKeyPair(bobNewKey);
 
-        // Neither Rotation nor Recovery nor Cancel flag set.
-        ct.mpt.holderKeyUpdate({
-            .account = bob,
-            .holderPubKey = ct.mpt.getPubKey(bobNewKey),
-            .flags = 0,
-            .err = temINVALID_FLAG,
-        });
+        // The flag contains a value outside the recognized mode bits. This is
+        // rejected by the flags-mask check
+        for (auto const flags : {0x00080000u, 0x00080000u | tfHolderKeyRecovery, 0x00100000u})
+        {
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+                .proof = gMakeZeroBuffer(1),
+                .flags = flags,
+                .err = temINVALID_FLAG,
+            });
+        }
 
-        // A flag that is not among Rotation/Recovery/Cancel.
-        ct.mpt.holderKeyUpdate({
-            .account = bob,
-            .holderPubKey = ct.mpt.getPubKey(bobNewKey),
-            .flags = 0x00080000,
-            .err = temINVALID_FLAG,
-        });
-
-        // Both Rotation and Recovery flags set.
-        ct.mpt.holderKeyUpdate({
-            .account = bob,
-            .holderPubKey = ct.mpt.getPubKey(bobNewKey),
-            .flags = tfHolderKeyRotation | tfHolderKeyRecovery,
-            .err = temINVALID_FLAG,
-        });
-
-        // Rotation and Cancel flags both set.
-        ct.mpt.holderKeyUpdate({
-            .account = bob,
-            .flags = tfHolderKeyRotation | tfCancelRecovery,
-            .err = temINVALID_FLAG,
-        });
-
-        // All three mode flags set.
-        ct.mpt.holderKeyUpdate({
-            .account = bob,
-            .flags = tfHolderKeyRotation | tfHolderKeyRecovery | tfCancelRecovery,
-            .err = temINVALID_FLAG,
-        });
+        // Exactly one of Rotation, Recovery, and Cancel must be set.
+        for (auto const flags :
+             {0u,
+              tfHolderKeyRotation | tfHolderKeyRecovery,
+              tfHolderKeyRotation | tfCancelRecovery,
+              tfHolderKeyRecovery | tfCancelRecovery,
+              tfHolderKeyRotation | tfHolderKeyRecovery | tfCancelRecovery})
+        {
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+                .proof = gMakeZeroBuffer(1),
+                .flags = flags,
+                .err = temINVALID_FLAG,
+            });
+        }
 
         // The issuer cannot rotate or recover a confidential balance it cannot hold.
         Account const aliceNewKey("aliceNewKey");
@@ -2536,7 +2528,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         // HolderEncryptionKey one byte short of the required length.
         ct.mpt.holderKeyUpdate({
             .account = bob,
-            .holderPubKey = Buffer(kEcPubKeyLength - 1),
+            .holderPubKey = gMakeZeroBuffer(kEcPubKeyLength - 1),
             .proof = gMakeZeroBuffer(1),
             .flags = tfHolderKeyRecovery,
             .err = temMALFORMED,
@@ -2561,25 +2553,50 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .err = temMALFORMED,
         });
 
-        // Rotation mode requires both spending and inbox ciphertexts.
-        ct.mpt.holderKeyUpdate({
-            .account = bob,
-            .holderPubKey = ct.mpt.getPubKey(bobNewKey),
-            .proof = gMakeZeroBuffer(1),
-            .flags = tfHolderKeyRotation,
-            .err = temMALFORMED,
-        });
+        std::optional<Buffer> const cipher = getTrivialCiphertext();
+        std::optional<Buffer> const none;
 
-        // Recovery mode must not include ciphertexts.
-        ct.mpt.holderKeyUpdate({
-            .account = bob,
-            .holderPubKey = ct.mpt.getPubKey(bobNewKey),
-            .spendingCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength),
-            .inboxCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength),
-            .proof = gMakeZeroBuffer(1),
-            .flags = tfHolderKeyRecovery,
-            .err = temMALFORMED,
-        });
+        // Rotation mode requires both the spending and inbox ciphertexts;
+        for (auto const& [spending, inbox] :
+             {std::pair{none, none}, std::pair{cipher, none}, std::pair{none, cipher}})
+        {
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+                .spendingCiphertext = spending,
+                .inboxCiphertext = inbox,
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRotation,
+                .err = temMALFORMED,
+            });
+        }
+
+        // Recovery and Cancel modes must not include either.
+        for (auto const& [spending, inbox] :
+             {std::pair{cipher, none}, std::pair{none, cipher}, std::pair{cipher, cipher}})
+        {
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+                .spendingCiphertext = spending,
+                .inboxCiphertext = inbox,
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+                .err = temMALFORMED,
+            });
+        }
+
+        for (auto const& [spending, inbox] :
+             {std::pair{cipher, none}, std::pair{none, cipher}, std::pair{cipher, cipher}})
+        {
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .spendingCiphertext = spending,
+                .inboxCiphertext = inbox,
+                .flags = tfCancelRecovery,
+                .err = temMALFORMED,
+            });
+        }
 
         // Spending ciphertext has the wrong length.
         ct.mpt.holderKeyUpdate({
@@ -2639,15 +2656,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         ct.mpt.holderKeyUpdate({
             .account = bob,
             .holderPubKey = ct.mpt.getPubKey(bobNewKey),
-            .flags = tfCancelRecovery,
-            .err = temMALFORMED,
-        });
-
-        // Cancel mode must not include ciphertexts.
-        ct.mpt.holderKeyUpdate({
-            .account = bob,
-            .spendingCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength),
-            .inboxCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength),
             .flags = tfCancelRecovery,
             .err = temMALFORMED,
         });
@@ -2820,41 +2828,22 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             });
         }
 
-        // A lock does not block rotation, recovery, or cancel.
-        {
-            Env env{*this, features};
-            Account const alice("alice");
-            Account const bob("bob");
-            ConfidentialEnv ct{
-                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
-            ct.mpt.set({.account = alice, .holder = bob, .flags = tfMPTLock});
-
+        // Runs rotation, recovery, and cancel in sequence and expects each to
+        // succeed.
+        auto const allModesSucceed = [&](ConfidentialEnv& ct, Account const& bob) {
             Account const bobNewKey("bobNewKey");
             ct.mpt.generateKeyPair(bobNewKey);
 
-            auto const prevSpendingCt =
-                ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending);
-            auto const prevInboxCt =
-                ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedInbox);
-            BEAST_EXPECT(prevSpendingCt);
-            BEAST_EXPECT(prevInboxCt);
-            if (!prevSpendingCt || !prevInboxCt)
-                return;
-
-            auto const prevSpendingAmt = ct.mpt.decryptAmount(bob, *prevSpendingCt);
-            auto const prevInboxAmt = ct.mpt.decryptAmount(bob, *prevInboxCt);
-            BEAST_EXPECT(prevSpendingAmt);
-            BEAST_EXPECT(prevInboxAmt);
-            if (!prevSpendingAmt || !prevInboxAmt)
+            auto const reEnc = reencryptHolderBalances(ct.mpt, bob, bob, bobNewKey);
+            BEAST_EXPECT(reEnc.has_value());
+            if (!reEnc)
                 return;
 
             ct.mpt.holderKeyUpdate({
                 .account = bob,
                 .holderPubKey = ct.mpt.getPubKey(bobNewKey),
-                .spendingCiphertext =
-                    ct.mpt.encryptAmount(bobNewKey, *prevSpendingAmt, generateBlindingFactor()),
-                .inboxCiphertext =
-                    ct.mpt.encryptAmount(bobNewKey, *prevInboxAmt, generateBlindingFactor()),
+                .spendingCiphertext = reEnc->first,
+                .inboxCiphertext = reEnc->second,
                 .proof = gMakeZeroBuffer(1),
                 .flags = tfHolderKeyRotation,
             });
@@ -2872,6 +2861,49 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .account = bob,
                 .flags = tfCancelRecovery,
             });
+        };
+
+        // Individual (per-holder) lock.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv ct{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+            ct.mpt.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+
+            allModesSucceed(ct, bob);
+        }
+
+        // Global (issuance-wide) lock.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv ct{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+            ct.mpt.set({.account = alice, .flags = tfMPTLock});
+
+            allModesSucceed(ct, bob);
+        }
+
+        // A stale mirror epoch does not block rotation, recovery, or cancel:
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv ct{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+
+            // Rotate the issuer's key without refreshing bob's mirror,
+            // leaving bob's mirror epoch stale relative to the issuance.
+            Account const aliceNewIssuerKey("aliceNewIssuerKey");
+            ct.mpt.generateKeyPair(aliceNewIssuerKey);
+            ct.mpt.set({.account = alice, .issuerPubKey = ct.mpt.getPubKey(aliceNewIssuerKey)});
+            BEAST_EXPECT(ct.mpt.checkKeyEpochs(1u, std::nullopt));
+            BEAST_EXPECT(ct.mpt.checkMirrorEpochs(bob, std::nullopt, std::nullopt));
+
+            allModesSucceed(ct, bob);
         }
     }
 
@@ -2895,31 +2927,16 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             Account const bobNewKey("bobNewKey");
             ct.mpt.generateKeyPair(bobNewKey);
 
-            // Decrypt the current balances under bob's still-registered key,
-            // then re-encrypt them under the new key
-            auto const prevSpendingCt =
-                ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending);
-            auto const prevInboxCt =
-                ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedInbox);
-            BEAST_EXPECT(prevSpendingCt);
-            BEAST_EXPECT(prevInboxCt);
-            if (!prevSpendingCt || !prevInboxCt)
-                return;
-
-            auto const prevSpendingAmt = ct.mpt.decryptAmount(bob, *prevSpendingCt);
-            auto const prevInboxAmt = ct.mpt.decryptAmount(bob, *prevInboxCt);
-            BEAST_EXPECT(prevSpendingAmt);
-            BEAST_EXPECT(prevInboxAmt);
-            if (!prevSpendingAmt || !prevInboxAmt)
+            auto const reEnc = reencryptHolderBalances(ct.mpt, bob, bob, bobNewKey);
+            BEAST_EXPECT(reEnc.has_value());
+            if (!reEnc)
                 return;
 
             ct.mpt.holderKeyUpdate({
                 .account = bob,
                 .holderPubKey = ct.mpt.getPubKey(bobNewKey),
-                .spendingCiphertext =
-                    ct.mpt.encryptAmount(bobNewKey, *prevSpendingAmt, generateBlindingFactor()),
-                .inboxCiphertext =
-                    ct.mpt.encryptAmount(bobNewKey, *prevInboxAmt, generateBlindingFactor()),
+                .spendingCiphertext = reEnc->first,
+                .inboxCiphertext = reEnc->second,
                 .proof = gMakeZeroBuffer(1),
                 .flags = tfHolderKeyRotation,
             });
@@ -2948,6 +2965,54 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             auto const inboxAmt = ct.mpt.decryptAmount(bobNewKey, *inboxCt);
             BEAST_EXPECT(spendingAmt && *spendingAmt == 40);
             BEAST_EXPECT(inboxAmt && *inboxAmt == 0);
+        }
+
+        // Rotation mode re-encrypts both balances correctly when spending and
+        // inbox are both non-zero and differ from each other.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            ConfidentialEnv ct{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 40},
+                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+
+            // carol sends 15 into bob's inbox, which is not merged into
+            // spending, leaving bob with spending=40, inbox=15.
+            ct.mpt.send({.account = carol, .dest = bob, .amt = 15});
+
+            Account const bobNewKey("bobNewKey");
+            ct.mpt.generateKeyPair(bobNewKey);
+
+            auto const reEnc = reencryptHolderBalances(ct.mpt, bob, bob, bobNewKey);
+            BEAST_EXPECT(reEnc.has_value());
+            if (!reEnc)
+                return;
+
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+                .spendingCiphertext = reEnc->first,
+                .inboxCiphertext = reEnc->second,
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRotation,
+            });
+
+            auto const spendingCt =
+                ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending);
+            auto const inboxCt = ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedInbox);
+            BEAST_EXPECT(spendingCt.has_value());
+            BEAST_EXPECT(inboxCt.has_value());
+            if (!spendingCt || !inboxCt)
+                return;
+
+            auto const spendingAmt = ct.mpt.decryptAmount(bobNewKey, *spendingCt);
+            auto const inboxAmt = ct.mpt.decryptAmount(bobNewKey, *inboxCt);
+            BEAST_EXPECT(spendingAmt && *spendingAmt == 40);
+            BEAST_EXPECT(inboxAmt && *inboxAmt == 15);
         }
 
         // Recovery mode only records the pending recovery key; the current
@@ -3066,29 +3131,16 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             Account const bobNewKey("bobNewKey");
             ct.mpt.generateKeyPair(bobNewKey);
 
-            auto const prevSpendingCt =
-                ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending);
-            auto const prevInboxCt =
-                ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedInbox);
-            BEAST_EXPECT(prevSpendingCt);
-            BEAST_EXPECT(prevInboxCt);
-            if (!prevSpendingCt || !prevInboxCt)
-                return;
-
-            auto const prevSpendingAmt = ct.mpt.decryptAmount(bob, *prevSpendingCt);
-            auto const prevInboxAmt = ct.mpt.decryptAmount(bob, *prevInboxCt);
-            BEAST_EXPECT(prevSpendingAmt);
-            BEAST_EXPECT(prevInboxAmt);
-            if (!prevSpendingAmt || !prevInboxAmt)
+            auto const reEnc = reencryptHolderBalances(ct.mpt, bob, bob, bobNewKey);
+            BEAST_EXPECT(reEnc.has_value());
+            if (!reEnc)
                 return;
 
             ct.mpt.holderKeyUpdate({
                 .account = bob,
                 .holderPubKey = ct.mpt.getPubKey(bobNewKey),
-                .spendingCiphertext =
-                    ct.mpt.encryptAmount(bobNewKey, *prevSpendingAmt, generateBlindingFactor()),
-                .inboxCiphertext =
-                    ct.mpt.encryptAmount(bobNewKey, *prevInboxAmt, generateBlindingFactor()),
+                .spendingCiphertext = reEnc->first,
+                .inboxCiphertext = reEnc->second,
                 .proof = gMakeZeroBuffer(1),
                 .flags = tfHolderKeyRotation,
             });
