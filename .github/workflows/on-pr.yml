@@ -85,6 +85,7 @@ jobs:
             .github/workflows/reusable-build-test.yml
             .github/workflows/reusable-check-autogen.yml
             .github/workflows/reusable-clang-tidy.yml
+            .github/workflows/reusable-package-test-install.yml
             .github/workflows/reusable-package.yml
             .github/workflows/reusable-rust.yml
             .github/workflows/reusable-strategy-matrix.yml
@@ -149,6 +150,27 @@ jobs:
     if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-check-rename.yml
 
+  # Runs regardless of the changed files.
+  # PRs into staging branches are skipped, since fixes may be cherry-picked between release lines.
+  check-release-commits:
+    needs: should-run
+    if: ${{ github.event.pull_request.base.ref == 'develop' || github.event.merge_group.base_ref == 'refs/heads/develop' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The check needs the full history of the release and staging branches.
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check for copied release commits
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+        run: .github/scripts/releasing/check-no-copied-release-commits.sh "${BASE}" "${HEAD}"
+
   clang-tidy:
     needs: should-run
     if: ${{ needs.should-run.outputs.go == 'true' }}
@@ -189,6 +211,12 @@ jobs:
     # matrix (i.e. not yet labeled "Ready to merge" or "Full CI build").
     if: ${{ needs.should-run.outputs.go == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Ready to merge') || contains(github.event.pull_request.labels.*.name, 'Full CI build')) }}
     uses: ./.github/workflows/reusable-package.yml
+    with:
+      # A pull request builds packages to prove they still build, and publishes
+      # nothing. Stated rather than left to the input's default, so that changing
+      # that default cannot start publishing from pull requests. No secrets are
+      # passed either, which is the second reason a publish here cannot succeed.
+      publish: false
 
   upload-recipe:
     needs:
@@ -223,6 +251,7 @@ jobs:
       - check-autogen
       - check-levelization
       - check-rename
+      - check-release-commits
       - clang-tidy
       - build-test
       - rust

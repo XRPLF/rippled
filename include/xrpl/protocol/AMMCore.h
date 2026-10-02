@@ -92,6 +92,17 @@ getFee(std::uint16_t tfee)
 }
 
 /**
+ * Minimum auction slot price: LPTokens * TradingFee / kAuctionSlotMinFeeFraction
+ * @param lptAMMBalance  AMM LP token balance
+ * @param tradingFee     trading fee in {0, 1000}
+ */
+inline Number
+ammAuctionMinSlotPrice(Number const& lptAMMBalance, std::uint16_t tradingFee)
+{
+    return lptAMMBalance * getFee(tradingFee) / kAuctionSlotMinFeeFraction;
+}
+
+/**
  * Get fee multiplier (1 - tfee)
  * @tfee trading fee in basis points
  */
