@@ -1199,7 +1199,7 @@ profile."`, and a comment above the `inputs:` block plus one at the
 - [x] Validation suite confirms the full span / attribute / metric inventory
       (counts computed dynamically from `expected_spans.json` and
       `expected_metrics.json`)
-- [x] All 15 provisioned Grafana dashboards are asserted to load — every uid on
+- [x] All provisioned Grafana dashboards are asserted to load — every uid on
       disk is now listed in `grafana_dashboards.uids`. Caveat: the check is
       load-and-panel-count only, so it does not prove every panel returns data
 - [ ] Benchmark shows < 3% CPU overhead, < 5MB memory overhead — needs a

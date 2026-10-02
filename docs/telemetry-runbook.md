@@ -2521,7 +2521,7 @@ enforces that in CI, because the two silently drifted once already.
 
 ## Alerting
 
-xrpld provisions fourteen Grafana alert rules on the health-critical metrics, so
+xrpld provisions Grafana alert rules on the health-critical metrics, so
 a stock stack loads them with no UI setup. Rules are provisioned from
 `docker/telemetry/grafana/provisioning/alerting/` and load automatically when
 the Grafana container starts. They appear under **Alerting → Alert rules**,

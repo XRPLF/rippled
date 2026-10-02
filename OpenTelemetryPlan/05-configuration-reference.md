@@ -338,7 +338,7 @@ The authoritative development stack lives in the repo at `docker/telemetry/docke
 Two corrections to earlier drafts:
 
 - **`prometheus` is not optional.** `grafana` lists it in `depends_on` (along
-  with `tempo`, `loki` and `renderer`), and 7 of the 15 dashboards query
+  with `tempo`, `loki` and `renderer`), and several dashboards query
   `span_calls_total` from it. Removing it blanks most panels.
 - **Port `13133` is not published.** The collector's `health_check` extension
   listens on `13133` inside the container, but the base compose file publishes
@@ -447,7 +447,7 @@ It sets **no** poll interval — Grafana's `updateIntervalSeconds` default
 applies; the "every 30s" figure in earlier drafts was invented.
 
 `docker-compose.yml` mounts `./grafana/dashboards` read-only at that path, so
-the 15 JSON files in `docker/telemetry/grafana/dashboards/` are what gets
+the JSON files in `docker/telemetry/grafana/dashboards/` are what gets
 provisioned.
 
 ### 5.8.3 Shipped Dashboards
@@ -470,10 +470,10 @@ are:
 > 17 data panels).
 
 Two examples described in earlier drafts do not exist and should not be looked
-for: `xrpld-rpc-performance` (the real board is `rpc-performance`, **17** data
-panels in 2 rows, mostly Prometheus span metrics) and `xrpld-tx-tracing` (the
-transaction board is `transaction-overview`, **18** data panels in 3 rows; its
-error panel filters `span_calls_total{span_name="tx.process",
+for: `xrpld-rpc-performance` (the real board is `rpc-performance`, mostly
+Prometheus span metrics) and `xrpld-tx-tracing` (the transaction board is
+`transaction-overview`; its error panel filters
+`span_calls_total{span_name="tx.process",
 ter_result!~"tesSUCCESS|"}`, since no `tx.validate` span was ever built — see
 [02 §2.3.2](./02-design-decisions.md)).
 
@@ -571,9 +571,9 @@ Fluentd or PerfLog change. Two pieces:
 > therefore lands in **structured metadata**, which cannot appear in a stream
 > selector, so `{job="xrpld"}` returns an empty result rather than an error.
 > Corroboration in-repo: `docs/telemetry-runbook.md:2533` states the same
-> ("`service_name="xrpld"` (not `job="xrpld"`)"), and **all 38 Loki queries** in
-> the shipped dashboards (35 panel targets + 3 Loki-backed template variables)
-> select on `service_name` — **zero** use `job`. Either drop the `job`
+> ("`service_name="xrpld"` (not `job="xrpld"`)"), and **every Loki query** in
+> the shipped dashboards (panel targets and Loki-backed template variables)
+> selects on `service_name` — **zero** use `job`. Either drop the `job`
 > upsert or add `job` to Loki's `distributor.otlp_config.resource_attributes`
 > allow-list via a mounted Loki config; until then, use `service_name`.
 
