@@ -23,7 +23,9 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/CoroTask.h>
 #include <xrpl/core/Job.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -223,7 +225,6 @@ findPathsRequest(
          .ledgerMaster = app.getLedgerMaster(),
          .consumer = c,
          .role = Role::USER,
-         .coro = {},
          .infoSub = {},
          .apiVersion = rpc::kApiVersionIfUnspecified},
         {},
@@ -250,11 +251,14 @@ findPathsRequest(
 
     json::Value result;
     Gate g;
-    app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+    // Safe capture: the caller blocks on g.waitFor() until the coroutine
+    // completes, so the captured locals outlive the coroutine.
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+    app.getJobQueue().postCoroTask(JtClient, "RPC-Client", [&](auto) -> CoroTask<void> {
         context.params = std::move(params);
-        context.coro = coro;
         rpc::doCommand(context, result);
         g.signal();
+        co_return;
     });
 
     using namespace std::chrono_literals;

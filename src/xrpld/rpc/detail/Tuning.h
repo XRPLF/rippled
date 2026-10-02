@@ -65,6 +65,12 @@ static constexpr int kDefaultAutoFillFeeMultiplier = 10;
 static constexpr int kDefaultAutoFillFeeDivisor = 1;
 static constexpr int kMaxPathfindsInProgress = 2;
 static constexpr int kMaxPathfindJobCount = 50;
+
+/**
+ * How long a blocking ripple_path_find call waits for the path-finding
+ * continuation before giving up and returning an internal error.
+ */
+constexpr auto kPathfindCompletionTimeout = std::chrono::seconds{30};
 static constexpr int kMaxJobQueueClients = 500;
 constexpr auto kMaxValidatedLedgerAge = std::chrono::minutes{2};
 static constexpr int kMaxRequestSize = 1000000;
