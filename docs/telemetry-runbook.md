@@ -1813,30 +1813,30 @@ Limits that matter for ledger sync, as set in the `JobTypes` constructor:
 
 These gauges are exported via the OTel Metrics SDK `PeriodicExportingMetricReader` (10s interval), NOT through beast::insight.
 
-| Prometheus Metric                                   | Source              | Description                                                                                                                                                                         |
-| --------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `server_info{metric="server_state"}`                | MetricsRegistry.cpp | Operating mode (0=DISCONNECTED .. 4=FULL)                                                                                                                                           |
-| `server_info{metric="uptime"}`                      | MetricsRegistry.cpp | Seconds since server start                                                                                                                                                          |
-| `server_info{metric="peers"}`                       | MetricsRegistry.cpp | Total connected peers                                                                                                                                                               |
-| `server_info{metric="validated_ledger_seq"}`        | MetricsRegistry.cpp | Validated ledger sequence number                                                                                                                                                    |
-| `server_info{metric="ledger_current_index"}`        | MetricsRegistry.cpp | Current open ledger sequence                                                                                                                                                        |
-| `server_info{metric="peer_disconnects_resources"}`  | MetricsRegistry.cpp | Cumulative resource-related peer disconnects                                                                                                                                        |
-| `server_info{metric="last_close_proposers"}`        | MetricsRegistry.cpp | Proposers in last closed round                                                                                                                                                      |
-| `server_info{metric="last_close_converge_time_ms"}` | MetricsRegistry.cpp | Last close convergence time (ms)                                                                                                                                                    |
-| `server_info{metric="last_close_time"}`             | MetricsRegistry.cpp | Network close time of last closed ledger (NetClock secs since XRPL epoch). Age = `time() - (value + 946684800)`; close interval = `1/rate(ledgers_closed_total)`, not a gauge delta |
-| `build_info{version="<ver>"}`                       | MetricsRegistry.cpp | Info-style metric (always 1)                                                                                                                                                        |
-| `complete_ledgers{bound="start\|end",index="<N>"}`  | MetricsRegistry.cpp | Complete ledger range start/end pairs                                                                                                                                               |
-| `db_metrics{metric="db_kb_total"}`                  | MetricsRegistry.cpp | Total database size (KB)                                                                                                                                                            |
-| `db_metrics{metric="db_kb_ledger"}`                 | MetricsRegistry.cpp | Ledger database size (KB)                                                                                                                                                           |
-| `db_metrics{metric="db_kb_transaction"}`            | MetricsRegistry.cpp | Transaction database size (KB)                                                                                                                                                      |
-| `db_metrics{metric="historical_perminute"}`         | MetricsRegistry.cpp | Historical ledger fetches per minute                                                                                                                                                |
-| `cache_metrics{metric="AL_size"}`                   | MetricsRegistry.cpp | AcceptedLedger cache size                                                                                                                                                           |
-| `nodestore_state{metric="node_reads_duration_us"}`  | MetricsRegistry.cpp | Cumulative read time (microseconds)                                                                                                                                                 |
-| `nodestore_state{metric="node_writes_duration_us"}` | MetricsRegistry.cpp | Cumulative write time (microseconds)                                                                                                                                                |
-| `nodestore_state{metric="read_request_bundle"}`     | MetricsRegistry.cpp | Read request bundle count                                                                                                                                                           |
-| `nodestore_state{metric="read_threads_running"}`    | MetricsRegistry.cpp | Active read threads                                                                                                                                                                 |
-| `nodestore_state{metric="read_threads_total"}`      | MetricsRegistry.cpp | Total read threads configured                                                                                                                                                       |
-| `rpc_in_flight_requests`                            | PerfLogImp.cpp      | RPC requests currently executing (UpDownCounter)                                                                                                                                    |
+| Prometheus Metric                                                       | Source              | Description                                                                                                                                                                         |
+| ----------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `server_info{metric="server_state"}`                                    | MetricsRegistry.cpp | Operating mode (0=DISCONNECTED .. 4=FULL)                                                                                                                                           |
+| `server_info{metric="uptime"}`                                          | MetricsRegistry.cpp | Seconds since server start                                                                                                                                                          |
+| `server_info{metric="peers"}`                                           | MetricsRegistry.cpp | Total connected peers                                                                                                                                                               |
+| `server_info{metric="validated_ledger_seq"}`                            | MetricsRegistry.cpp | Validated ledger sequence number                                                                                                                                                    |
+| `server_info{metric="ledger_current_index"}`                            | MetricsRegistry.cpp | Current open ledger sequence                                                                                                                                                        |
+| `server_info{metric="peer_disconnects_resources"}`                      | MetricsRegistry.cpp | Cumulative resource-related peer disconnects                                                                                                                                        |
+| `server_info{metric="last_close_proposers"}`                            | MetricsRegistry.cpp | Proposers in last closed round                                                                                                                                                      |
+| `server_info{metric="last_close_converge_time_ms"}`                     | MetricsRegistry.cpp | Last close convergence time (ms)                                                                                                                                                    |
+| `server_info{metric="last_close_time"}`                                 | MetricsRegistry.cpp | Network close time of last closed ledger (NetClock secs since XRPL epoch). Age = `time() - (value + 946684800)`; close interval = `1/rate(ledgers_closed_total)`, not a gauge delta |
+| `build_info{version="<ver>"}`                                           | MetricsRegistry.cpp | Info-style metric (always 1)                                                                                                                                                        |
+| `complete_ledgers{bound="start\|end",index="<N>"}`                      | MetricsRegistry.cpp | Complete ledger range start/end pairs                                                                                                                                               |
+| `db_metrics{metric="db_kb_total"}`                                      | MetricsRegistry.cpp | Total database size (KB)                                                                                                                                                            |
+| `db_metrics{metric="db_kb_ledger"}`                                     | MetricsRegistry.cpp | Ledger database size (KB)                                                                                                                                                           |
+| `db_metrics{metric="db_kb_transaction"}`                                | MetricsRegistry.cpp | Transaction database size (KB)                                                                                                                                                      |
+| `db_metrics{metric="historical_perminute"}`                             | MetricsRegistry.cpp | Historical ledger fetches per minute                                                                                                                                                |
+| `cache_metrics{metric="AL_size"}`                                       | MetricsRegistry.cpp | AcceptedLedger cache size                                                                                                                                                           |
+| `nodestore_state{metric="node_reads_duration_us",backend="<backend>"}`  | MetricsRegistry.cpp | Cumulative read time (microseconds)                                                                                                                                                 |
+| `nodestore_state{metric="node_writes_duration_us",backend="<backend>"}` | MetricsRegistry.cpp | Cumulative write time (microseconds)                                                                                                                                                |
+| `nodestore_state{metric="read_request_bundle",backend="<backend>"}`     | MetricsRegistry.cpp | Read request bundle count                                                                                                                                                           |
+| `nodestore_state{metric="read_threads_running",backend="<backend>"}`    | MetricsRegistry.cpp | Active read threads                                                                                                                                                                 |
+| `nodestore_state{metric="read_threads_total",backend="<backend>"}`      | MetricsRegistry.cpp | Total read threads configured                                                                                                                                                       |
+| `rpc_in_flight_requests`                                                | PerfLogImp.cpp      | RPC requests currently executing (UpDownCounter)                                                                                                                                    |
 
 #### Sync Diagnosis Signals
 
@@ -1846,23 +1846,25 @@ two different reasons a node is slow to reach `full` — see
 when the writable backend is NuDB; a memory or RocksDB backend omits those four
 label values rather than reporting them as zero.
 
-| Prometheus Metric                                    | Source              | Description                                                 |
-| ---------------------------------------------------- | ------------------- | ----------------------------------------------------------- |
-| `nodestore_state{metric="read_mean_us"}`             | MetricsRegistry.cpp | Mean time per backend read (microseconds)                   |
-| `nodestore_state{metric="write_mean_us"}`            | MetricsRegistry.cpp | Mean time per backend write (microseconds)                  |
-| `nodestore_state{metric="nudb_writers_in_flight"}`   | MetricsRegistry.cpp | Threads inside a NuDB insert right now                      |
-| `nodestore_state{metric="nudb_writer_depth_x100"}`   | MetricsRegistry.cpp | Mean queue depth at the NuDB insert mutex, ×100             |
-| `nodestore_state{metric="nudb_insert_mean_us"}`      | MetricsRegistry.cpp | Mean NuDB insert time, queueing included (microseconds)     |
-| `nodestore_state{metric="nudb_insert_max_us"}`       | MetricsRegistry.cpp | Slowest single NuDB insert seen (microseconds)              |
-| `nodestore_state{metric="acquire_deferrals"}`        | MetricsRegistry.cpp | Timer jobs skipped because the lane was full, **all lanes** |
-| `nodestore_state{metric="acquire_timeouts"}`         | MetricsRegistry.cpp | Timer bodies that ran and advanced retry, **all lanes**     |
-| `nodestore_state{metric="acquire_ledger_deferrals"}` | MetricsRegistry.cpp | Deferrals from ledger acquisition alone                     |
-| `nodestore_state{metric="acquire_ledger_timeouts"}`  | MetricsRegistry.cpp | Timeouts from ledger acquisition alone                      |
-| `nodestore_state{metric="acquire_give_ups"}`         | MetricsRegistry.cpp | Acquisitions that exhausted their retry budget              |
-| `nodestore_state{metric="acquire_aborts"}`           | MetricsRegistry.cpp | Acquisitions destroyed before finishing                     |
-| `nodestore_state{metric="acquire_aborts_partial"}`   | MetricsRegistry.cpp | Subset of aborts that discarded partly built maps           |
-| `nodestore_state{metric="acquire_completions"}`      | MetricsRegistry.cpp | Acquisitions that finished successfully                     |
-| `nodestore_state{metric="acquire_sweep_evictions"}`  | MetricsRegistry.cpp | Unfinished acquisitions evicted by the 1-minute sweep       |
+Every `nodestore_state` and `storage_detail` series also carries a `backend` label. It names the NodeStore backend that `type` in `[node_db]` selects, as its factory spells it: `NuDB`, `RocksDB`, `Memory` or `none`.
+
+| Prometheus Metric                                                        | Source              | Description                                                 |
+| ------------------------------------------------------------------------ | ------------------- | ----------------------------------------------------------- |
+| `nodestore_state{metric="read_mean_us",backend="<backend>"}`             | MetricsRegistry.cpp | Mean time per backend read (microseconds)                   |
+| `nodestore_state{metric="write_mean_us",backend="<backend>"}`            | MetricsRegistry.cpp | Mean time per backend write (microseconds)                  |
+| `nodestore_state{metric="nudb_writers_in_flight",backend="<backend>"}`   | MetricsRegistry.cpp | Threads inside a NuDB insert right now                      |
+| `nodestore_state{metric="nudb_writer_depth_x100",backend="<backend>"}`   | MetricsRegistry.cpp | Mean queue depth at the NuDB insert mutex, ×100             |
+| `nodestore_state{metric="nudb_insert_mean_us",backend="<backend>"}`      | MetricsRegistry.cpp | Mean NuDB insert time, queueing included (microseconds)     |
+| `nodestore_state{metric="nudb_insert_max_us",backend="<backend>"}`       | MetricsRegistry.cpp | Slowest single NuDB insert seen (microseconds)              |
+| `nodestore_state{metric="acquire_deferrals",backend="<backend>"}`        | MetricsRegistry.cpp | Timer jobs skipped because the lane was full, **all lanes** |
+| `nodestore_state{metric="acquire_timeouts",backend="<backend>"}`         | MetricsRegistry.cpp | Timer bodies that ran and advanced retry, **all lanes**     |
+| `nodestore_state{metric="acquire_ledger_deferrals",backend="<backend>"}` | MetricsRegistry.cpp | Deferrals from ledger acquisition alone                     |
+| `nodestore_state{metric="acquire_ledger_timeouts",backend="<backend>"}`  | MetricsRegistry.cpp | Timeouts from ledger acquisition alone                      |
+| `nodestore_state{metric="acquire_give_ups",backend="<backend>"}`         | MetricsRegistry.cpp | Acquisitions that exhausted their retry budget              |
+| `nodestore_state{metric="acquire_aborts",backend="<backend>"}`           | MetricsRegistry.cpp | Acquisitions destroyed before finishing                     |
+| `nodestore_state{metric="acquire_aborts_partial",backend="<backend>"}`   | MetricsRegistry.cpp | Subset of aborts that discarded partly built maps           |
+| `nodestore_state{metric="acquire_completions",backend="<backend>"}`      | MetricsRegistry.cpp | Acquisitions that finished successfully                     |
+| `nodestore_state{metric="acquire_sweep_evictions",backend="<backend>"}`  | MetricsRegistry.cpp | Unfinished acquisitions evicted by the 1-minute sweep       |
 
 `nudb_writer_depth_x100` is fixed-point: divide by 100 to read it. The depth sits
 just above 1.0 even under load, so an integer gauge would truncate the whole
@@ -3494,7 +3496,7 @@ Two more pairs from the same family:
   series.
 
 The _Ledger Data & Sync_ dashboard carries part of this picture in
-**NuDB Read Latency**, **NuDB Read Found Ratio** and **NuDB Read Pressure**.
+**NodeStore Mean Read Latency**, **NodeStore Read Found Ratio** and **NodeStore Read Pressure**.
 **Job Queue Backlog and Deferred by Type** adds the lane occupancy, which this
 procedure tells you not to trust on its own.
 
@@ -3503,7 +3505,7 @@ The pair this procedure asks for is on **Ledger Acquire Deferrals vs Timeouts
 **Acquire Deferrals vs Timeouts (All Lanes)** plots the pooled totals; read it only
 to see whether some other acquisition lane is also under pressure.
 
-**NuDB Read Found Ratio** plots `node_reads_hit / node_reads_total`. That is the
+**NodeStore Read Found Ratio** plots `node_reads_hit / node_reads_total`. That is the
 found rate, not a cache hit ratio: the underlying counter increments whenever a
 fetch returned an object, and a node with `online_delete` has no object cache at
 all. A rate near 1.0 alongside an expensive read time is the cold-read signature,

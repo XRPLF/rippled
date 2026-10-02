@@ -1111,13 +1111,13 @@ async callbacks for new categories.
 
 #### Extended NodeStore Metrics (additions to existing nodestore_state)
 
-| Prometheus Metric                                   | Type  | Labels   | Description                          |
-| --------------------------------------------------- | ----- | -------- | ------------------------------------ |
-| `nodestore_state{metric="node_reads_duration_us"}`  | Gauge | `metric` | Cumulative read time (microseconds)  |
-| `nodestore_state{metric="node_writes_duration_us"}` | Gauge | `metric` | Cumulative write time (microseconds) |
-| `nodestore_state{metric="read_request_bundle"}`     | Gauge | `metric` | Read request bundle count            |
-| `nodestore_state{metric="read_threads_running"}`    | Gauge | `metric` | Active read threads                  |
-| `nodestore_state{metric="read_threads_total"}`      | Gauge | `metric` | Total read threads configured        |
+| Prometheus Metric                                   | Type  | Labels              | Description                          |
+| --------------------------------------------------- | ----- | ------------------- | ------------------------------------ |
+| `nodestore_state{metric="node_reads_duration_us"}`  | Gauge | `metric`, `backend` | Cumulative read time (microseconds)  |
+| `nodestore_state{metric="node_writes_duration_us"}` | Gauge | `metric`, `backend` | Cumulative write time (microseconds) |
+| `nodestore_state{metric="read_request_bundle"}`     | Gauge | `metric`, `backend` | Read request bundle count            |
+| `nodestore_state{metric="read_threads_running"}`    | Gauge | `metric`, `backend` | Active read threads                  |
+| `nodestore_state{metric="read_threads_total"}`      | Gauge | `metric`, `backend` | Total read threads configured        |
 
 > **The cumulative duration pair truncates to whole microseconds.** Both values
 > are accumulated in nanoseconds internally and divided on read —
@@ -1307,15 +1307,17 @@ to the OTel Collector and scraped by Prometheus.
 
 #### NodeStore I/O (Observable Gauge — `nodestore_state`)
 
-| Prometheus Metric                              | Type  | Labels   | Description                                                   |
-| ---------------------------------------------- | ----- | -------- | ------------------------------------------------------------- |
-| `nodestore_state{metric="node_reads_total"}`   | Gauge | `metric` | Cumulative NodeStore read operations                          |
-| `nodestore_state{metric="node_reads_hit"}`     | Gauge | `metric` | Fetches that found an object (not a cache hit)                |
-| `nodestore_state{metric="node_writes"}`        | Gauge | `metric` | Cumulative write operations                                   |
-| `nodestore_state{metric="node_written_bytes"}` | Gauge | `metric` | Cumulative bytes written                                      |
-| `nodestore_state{metric="node_read_bytes"}`    | Gauge | `metric` | Cumulative bytes read                                         |
-| `nodestore_state{metric="write_load"}`         | Gauge | `metric` | Backend write-queue reading; on NuDB this is the writer depth |
-| `nodestore_state{metric="read_queue"}`         | Gauge | `metric` | Items in read prefetch queue                                  |
+| Prometheus Metric                              | Type  | Labels              | Description                                                   |
+| ---------------------------------------------- | ----- | ------------------- | ------------------------------------------------------------- |
+| `nodestore_state{metric="node_reads_total"}`   | Gauge | `metric`, `backend` | Cumulative NodeStore read operations                          |
+| `nodestore_state{metric="node_reads_hit"}`     | Gauge | `metric`, `backend` | Fetches that found an object (not a cache hit)                |
+| `nodestore_state{metric="node_writes"}`        | Gauge | `metric`, `backend` | Cumulative write operations                                   |
+| `nodestore_state{metric="node_written_bytes"}` | Gauge | `metric`, `backend` | Cumulative bytes written                                      |
+| `nodestore_state{metric="node_read_bytes"}`    | Gauge | `metric`, `backend` | Cumulative bytes read                                         |
+| `nodestore_state{metric="write_load"}`         | Gauge | `metric`, `backend` | Backend write-queue reading; on NuDB this is the writer depth |
+| `nodestore_state{metric="read_queue"}`         | Gauge | `metric`, `backend` | Items in read prefetch queue                                  |
+
+Every `nodestore_state` and `storage_detail` point also carries a `backend` label: the name of the NodeStore backend that `type` in `[node_db]` selects, as its factory spells it (`NuDB`, `RocksDB`, `Memory` or `none`), fixed for the life of the process.
 
 > **`node_reads_hit` is a found count, not a cache-hit rate.** `fetchHitCount_`
 > is incremented whenever the fetch returned an object
@@ -1347,23 +1349,23 @@ concurrency cap. Observed in `AppMetricGauges::observeNodeStoreTotals()`,
 `observeWritePathDetail()`, and `observeAcquireStats()`
 (`src/xrpld/telemetry/AppMetricGauges.cpp`).
 
-| Prometheus Metric                                    | Type  | Labels   | Description                                             |
-| ---------------------------------------------------- | ----- | -------- | ------------------------------------------------------- |
-| `nodestore_state{metric="read_mean_us"}`             | Gauge | `metric` | Mean time per backend read (microseconds)               |
-| `nodestore_state{metric="write_mean_us"}`            | Gauge | `metric` | Mean time per backend write (microseconds)              |
-| `nodestore_state{metric="nudb_writers_in_flight"}`   | Gauge | `metric` | Threads inside a NuDB insert at sample time             |
-| `nodestore_state{metric="nudb_writer_depth_x100"}`   | Gauge | `metric` | Mean queue depth at the NuDB insert mutex, scaled ×100  |
-| `nodestore_state{metric="nudb_insert_mean_us"}`      | Gauge | `metric` | Mean NuDB insert time incl. queueing (microseconds)     |
-| `nodestore_state{metric="nudb_insert_max_us"}`       | Gauge | `metric` | Slowest single NuDB insert observed (microseconds)      |
-| `nodestore_state{metric="acquire_deferrals"}`        | Gauge | `metric` | Timer jobs skipped because the lane was full, all lanes |
-| `nodestore_state{metric="acquire_timeouts"}`         | Gauge | `metric` | Timer bodies that ran and advanced retry, all lanes     |
-| `nodestore_state{metric="acquire_ledger_deferrals"}` | Gauge | `metric` | Deferrals from the `InboundLedger` lane alone           |
-| `nodestore_state{metric="acquire_ledger_timeouts"}`  | Gauge | `metric` | Timeouts from the `InboundLedger` lane alone            |
-| `nodestore_state{metric="acquire_give_ups"}`         | Gauge | `metric` | Acquisitions that exhausted their retry budget          |
-| `nodestore_state{metric="acquire_aborts"}`           | Gauge | `metric` | Acquisitions destroyed before finishing                 |
-| `nodestore_state{metric="acquire_aborts_partial"}`   | Gauge | `metric` | Subset of aborts that discarded partly built maps       |
-| `nodestore_state{metric="acquire_completions"}`      | Gauge | `metric` | Acquisitions that finished successfully                 |
-| `nodestore_state{metric="acquire_sweep_evictions"}`  | Gauge | `metric` | Unfinished acquisitions evicted by the 1-minute sweep   |
+| Prometheus Metric                                    | Type  | Labels              | Description                                             |
+| ---------------------------------------------------- | ----- | ------------------- | ------------------------------------------------------- |
+| `nodestore_state{metric="read_mean_us"}`             | Gauge | `metric`, `backend` | Mean time per backend read (microseconds)               |
+| `nodestore_state{metric="write_mean_us"}`            | Gauge | `metric`, `backend` | Mean time per backend write (microseconds)              |
+| `nodestore_state{metric="nudb_writers_in_flight"}`   | Gauge | `metric`, `backend` | Threads inside a NuDB insert at sample time             |
+| `nodestore_state{metric="nudb_writer_depth_x100"}`   | Gauge | `metric`, `backend` | Mean queue depth at the NuDB insert mutex, scaled ×100  |
+| `nodestore_state{metric="nudb_insert_mean_us"}`      | Gauge | `metric`, `backend` | Mean NuDB insert time incl. queueing (microseconds)     |
+| `nodestore_state{metric="nudb_insert_max_us"}`       | Gauge | `metric`, `backend` | Slowest single NuDB insert observed (microseconds)      |
+| `nodestore_state{metric="acquire_deferrals"}`        | Gauge | `metric`, `backend` | Timer jobs skipped because the lane was full, all lanes |
+| `nodestore_state{metric="acquire_timeouts"}`         | Gauge | `metric`, `backend` | Timer bodies that ran and advanced retry, all lanes     |
+| `nodestore_state{metric="acquire_ledger_deferrals"}` | Gauge | `metric`, `backend` | Deferrals from the `InboundLedger` lane alone           |
+| `nodestore_state{metric="acquire_ledger_timeouts"}`  | Gauge | `metric`, `backend` | Timeouts from the `InboundLedger` lane alone            |
+| `nodestore_state{metric="acquire_give_ups"}`         | Gauge | `metric`, `backend` | Acquisitions that exhausted their retry budget          |
+| `nodestore_state{metric="acquire_aborts"}`           | Gauge | `metric`, `backend` | Acquisitions destroyed before finishing                 |
+| `nodestore_state{metric="acquire_aborts_partial"}`   | Gauge | `metric`, `backend` | Subset of aborts that discarded partly built maps       |
+| `nodestore_state{metric="acquire_completions"}`      | Gauge | `metric`, `backend` | Acquisitions that finished successfully                 |
+| `nodestore_state{metric="acquire_sweep_evictions"}`  | Gauge | `metric`, `backend` | Unfinished acquisitions evicted by the 1-minute sweep   |
 
 **Three properties to know before querying these.**
 
@@ -1888,9 +1890,9 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 
 #### Storage Detail (Observable Gauge — `storage_detail`)
 
-| Prometheus Metric                              | Type  | Labels   | Description                                                |
-| ---------------------------------------------- | ----- | -------- | ---------------------------------------------------------- |
-| `storage_detail{metric="stored_object_bytes"}` | Int64 | `metric` | Cumulative object-payload bytes written (not on-disk size) |
+| Prometheus Metric                              | Type  | Labels              | Description                                                |
+| ---------------------------------------------- | ----- | ------------------- | ---------------------------------------------------------- |
+| `storage_detail{metric="stored_object_bytes"}` | Int64 | `metric`, `backend` | Cumulative object-payload bytes written (not on-disk size) |
 
 > **`stored_object_bytes` is not a file size.** It observes `getStoreSize()`
 > (in `AppMetricGauges::registerStorageDetailGauge()`), which sums the object payloads
@@ -1903,7 +1905,7 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 >
 > This label value was called `nudb_bytes` before Phase 9. The value comes from
 > `node_store::Database`, not from the NuDB backend, so it reads the same on
-> RocksDB and carries no backend prefix. Queries and dashboards pinned to the old
+> RocksDB and its name has no `nudb_` prefix. Queries and dashboards pinned to the old
 > name return no data.
 
 #### Synchronous Counters (Phase 7+)
