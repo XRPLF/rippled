@@ -72,8 +72,8 @@ public:
     // outlive the Rules; both are returned together.
     struct RulesFixture
     {
-        std::unordered_set<uint256, beast::Uhash<>> const noPresets;
-        std::unordered_set<uint256, beast::Uhash<>> const fixPresets{fixCleanup3_4_0};
+        std::unordered_set<UInt256, beast::Uhash<>> const noPresets;
+        std::unordered_set<UInt256, beast::Uhash<>> const fixPresets{fixCleanup3_4_0};
         Rules const legacy{noPresets};
         Rules const fixed{fixPresets};
     };
@@ -201,7 +201,7 @@ public:
                 obj.setFieldVL(sfSigningPubKey, keypair.first.slice());
                 if (counterparty)
                 {
-                    obj.setFieldH256(sfLoanBrokerID, uint256{1});
+                    obj.setFieldH256(sfLoanBrokerID, UInt256{1});
                     obj.setFieldNumber(
                         sfPrincipalRequested, STNumber{sfPrincipalRequested, Number{1}});
                 }
@@ -276,7 +276,7 @@ public:
                 obj.setFieldVL(sfSigningPubKey, Slice{});
                 if (counterparty)
                 {
-                    obj.setFieldH256(sfLoanBrokerID, uint256{1});
+                    obj.setFieldH256(sfLoanBrokerID, UInt256{1});
                     obj.setFieldNumber(
                         sfPrincipalRequested, STNumber{sfPrincipalRequested, Number{1}});
                 }
@@ -1391,7 +1391,7 @@ public:
 
             // Make an STObject that nests objects ten levels deep.  There's
             // a minimum transaction size we must meet, so include a hash256.
-            uint256 const hash{42u};
+            UInt256 const hash{42u};
             auto inner = std::make_unique<STObject>(recurse, sfTransactionMetaData);
             inner->setFieldH256(sfTransactionHash, hash);
 
@@ -1453,7 +1453,7 @@ public:
             // Make an STObject that nests ten levels deep alternating objects
             // and arrays.  Include a hash256 to meet the minimum transaction
             // size.
-            uint256 const hash{42u};
+            UInt256 const hash{42u};
             STObject inner = {recurse, sfTransactionMetaData};
             inner.setFieldH256(sfTransactionHash, hash);
 
@@ -1617,7 +1617,7 @@ public:
 
         // Rules store a reference to the presets. Create a local to guarantee
         // proper lifetime.
-        std::unordered_set<uint256, beast::Uhash<>> const presets;
+        std::unordered_set<UInt256, beast::Uhash<>> const presets;
         Rules const defaultRules{presets};
         BEAST_EXPECT(!defaultRules.enabled(featureAMM));
 

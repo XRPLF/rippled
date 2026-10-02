@@ -7,7 +7,7 @@
 
 namespace xrpl::test {
 
-TEST(AmendmentsEntryTests, Constructors)
+TEST(AmendmentsEntryTests, constructors)
 {
     EntryTestEnv e;
 

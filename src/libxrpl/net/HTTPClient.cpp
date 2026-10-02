@@ -308,7 +308,7 @@ public:
         else if (ssl_)
         {
             socket_.asyncHandshake(
-                AutoSocket::ssl_socket::client,
+                AutoSocket::SslSocket::client,
                 [self = shared_from_this()](boost::system::error_code const& ec) {
                     self->handleRequest(ec);
                 });

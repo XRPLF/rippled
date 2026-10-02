@@ -22,10 +22,10 @@ namespace detail {
 class GroupImp : public std::enable_shared_from_this<GroupImp>, public Group
 {
     std::string const name_;
-    Collector::ptr collector_;
+    Collector::Ptr collector_;
 
 public:
-    GroupImp(std::string name, Collector::ptr collector)
+    GroupImp(std::string name, Collector::Ptr collector)
         : name_(std::move(name)), collector_(std::move(collector))
     {
     }
@@ -85,20 +85,20 @@ class GroupsImp : public Groups
 public:
     using Items = std::unordered_map<std::string, std::shared_ptr<Group>, Uhash<>>;
 
-    Collector::ptr collector;
+    Collector::Ptr collector;
     Items items;
 
-    explicit GroupsImp(Collector::ptr collector) : collector(std::move(collector))
+    explicit GroupsImp(Collector::Ptr collector) : collector(std::move(collector))
     {
     }
 
     ~GroupsImp() override = default;
 
-    Group::ptr const&
+    Group::Ptr const&
     get(std::string const& name) override
     {
-        std::pair<Items::iterator, bool> const result(items.emplace(name, Group::ptr()));
-        Group::ptr& group(result.first->second);
+        std::pair<Items::iterator, bool> const result(items.emplace(name, Group::Ptr()));
+        Group::Ptr& group(result.first->second);
         if (result.second)
             group = std::make_shared<GroupImp>(name, collector);
         return group;
@@ -112,7 +112,7 @@ public:
 Groups::~Groups() = default;
 
 std::unique_ptr<Groups>
-makeGroups(Collector::ptr const& collector)
+makeGroups(Collector::Ptr const& collector)
 {
     return std::make_unique<detail::GroupsImp>(collector);
 }

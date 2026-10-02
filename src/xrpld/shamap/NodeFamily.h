@@ -70,10 +70,10 @@ public:
     reset() override;
 
     void
-    missingNodeAcquireBySeq(std::uint32_t seq, uint256 const& hash) override;
+    missingNodeAcquireBySeq(std::uint32_t seq, UInt256 const& hash) override;
 
     void
-    missingNodeAcquireByHash(uint256 const& hash, std::uint32_t seq) override
+    missingNodeAcquireByHash(UInt256 const& hash, std::uint32_t seq) override
     {
         acquire(hash, seq);
     }
@@ -91,7 +91,7 @@ private:
     std::mutex maxSeqMutex_;
 
     void
-    acquire(uint256 const& hash, std::uint32_t seq);
+    acquire(UInt256 const& hash, std::uint32_t seq);
 };
 
 }  // namespace xrpl

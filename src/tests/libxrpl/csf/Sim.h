@@ -26,10 +26,10 @@ namespace xrpl::test::csf {
  */
 class BasicSink : public beast::Journal::Sink
 {
-    Scheduler::clock_type const& clock_;
+    Scheduler::ClockType const& clock_;
 
 public:
-    BasicSink(Scheduler::clock_type const& clock)
+    BasicSink(Scheduler::ClockType const& clock)
         : Sink(beast::Severity::Disabled, false), clock_{clock}
     {
     }
