@@ -380,6 +380,12 @@ inline constexpr auto closeNormal = makeStr("normal");
 inline constexpr auto validationQueued = makeStr("queued");
 inline constexpr auto validationDroppedDiverged = makeStr("dropped_diverged");
 inline constexpr auto validationDroppedLoad = makeStr("dropped_load");
+/**
+ * The validation was dropped because the job queue is stopping. The server
+ * stops its job queue while it shuts down. From then on JobQueue::addJob()
+ * declines new jobs. The check job never runs.
+ */
+inline constexpr auto validationDroppedQueueStopping = makeStr("dropped_queue_stopping");
 }  // namespace val
 
 }  // namespace xrpl::telemetry::consensus::span
