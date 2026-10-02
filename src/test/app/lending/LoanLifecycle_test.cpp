@@ -75,8 +75,8 @@ private:
         // Do not fund alice
         Account const alice{"alice"};
 
-        // Fund the accounts and trust lines with the same amount so that
-        // tests can use the same values regardless of the asset.
+        // Fund the accounts and trust lines with the same amount for every
+        // asset.
         env.fund(XRP(100'000'000), issuer, noripple(lender, borrower, evan));
         env.close();
 
@@ -94,7 +94,7 @@ private:
 
         MPTTester mptt{env, issuer, kMptInitNoFund};
         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
-        // Scale the MPT asset a little bit so we can get some interest
+        // Scale the MPT asset so interest is non-zero.
         PrettyAsset const mptAsset{mptt.issuanceID(), 100};
         mptt.authorize({.account = lender});
         mptt.authorize({.account = borrower});
@@ -167,24 +167,18 @@ private:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        // Create 3 loan brokers: one for XRP, one for an IOU, and one for
-        // an MPT. That'll require three corresponding SAVs.
         Env env(*this, features);
 
         Account const issuer{"issuer"};
-        // For simplicity, lender will be the sole actor for the vault &
-        // brokers.
+        // The lender is the sole actor for the vault and broker.
         Account const lender{"lender"};
 
-        // Fund the accounts and trust lines with the same amount so that
-        // tests can use the same values regardless of the asset.
         env.fund(XRP(100'000'000), issuer, noripple(lender));
         env.close();
 
-        // Use an XRP asset for simplicity
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
 
-        // Create vaults and loan brokers
+        // Create the vault and loan broker
         BrokerInfo broker{createVaultAndBroker(env, xrpAsset, lender)};
 
         using namespace loan;
@@ -192,14 +186,13 @@ private:
         auto const loanSetFee = Fee(env.current()->fees().base * 2);
         Number const principalRequest{1, 3};
 
-        // The LoanSet json can be created without a counterparty signature,
-        // but it will not pass preflight
+        // A LoanSet without a counterparty signature fails preflight.
         auto createJson = env.json(
             set(lender, broker.brokerID, broker.asset(principalRequest).value()), Fee(loanSetFee));
         env(createJson, Ter(temBAD_SIGNER));
 
-        // Adding an empty counterparty signature object also fails, but
-        // at the RPC level.
+        // An empty counterparty signature object is rejected at the RPC
+        // level.
         createJson = env.json(createJson, Json(sfCounterpartySignature, json::ValueType::Object));
         env(createJson, Ter(telENV_RPC_FAILED));
 
@@ -224,13 +217,12 @@ private:
         if (!BEAST_EXPECT(!createJson.isMember(jss::Signers)))
             counterpartyJson[sfSigners] = createJson[sfSigners];
 
-        // The duplicated signature does not work: the counterparty signs a
-        // different prefix than the account.
+        // Copying the account signature into the counterparty signature is
+        // rejected.
         env(env.json(createJson, Json(sfCounterpartySignature, counterpartyJson)),
             Ter(telENV_RPC_FAILED));
 
-        // Signing the counterparty field itself works, even though the lender
-        // is both the borrower and the counterparty.
+        // The lender signing as counterparty for its own loan succeeds.
         createJson = env.json(createJson, Sig(sfCounterpartySignature, lender));
         env(createJson);
 
@@ -398,9 +390,8 @@ private:
             auto const& asset = debtMaximumRequest.asset();
             auto const initialVault = asset(debtMaximumRequest * 100);
 
-            // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim
-            // only accepts closed-ended vaults, so build one and advance
-            // past SubscriptionDate before creating broker/loan.
+            // Build a closed-ended vault and advance past SubscriptionDate
+            // before creating the broker and loan.
             auto [tx, vaultKeylet, subscriptionDate] =
                 vault.createClosedEnded({.owner = broker, .asset = asset});
             env(tx, txFee);
@@ -444,14 +435,13 @@ private:
                 if (auto const vaultSle = env.le(vaultKeylet); BEAST_EXPECT(vaultSle))
                 {
                     auto const expected = [&]() {
-                        // The service fee is transferred to the broker if
-                        // a borrower is not the broker
+                        // When the borrower is not the broker, the service
+                        // fee goes to the broker.
                         if (borrower != broker)
                             return brokerBalanceBefore.number() + serviceFee;
-                        // Since a borrower is the broker, the payment is
-                        // transferred to the Vault from the broker but not
-                        // the service fee.
-                        // If the asset is XRP then the broker pays the txFee.
+                        // When the borrower is the broker, the payment leaves
+                        // the broker and no service fee is received. For XRP
+                        // the broker also pays the tx fee.
                         if (asset.native())
                             return brokerBalanceBefore.number() - payment - xrpFee.number();
                         return brokerBalanceBefore.number() - payment;
@@ -460,8 +450,7 @@ private:
                 }
             }
         };
-        // Test when a borrower is the broker and is not to verify correct
-        // service fee transfer in both cases.
+        // Run with the borrower both equal to and different from the broker.
         for (auto const& borrowerAcct : {broker, borrower})
         {
             testLoanAsset(
@@ -580,19 +569,19 @@ private:
 
         forgedLoanSet[json::StaticString{"CounterpartySignature"}] = sigObject;
 
-        // ? Fails because the lender hasn't signed the tx
+        // Without the lender's signature, the forged LoanSet is rejected.
         env(env.json(forgedLoanSet, Fee(loanSetFee)), Ter(telENV_RPC_FAILED));
 
         auto const seq = env.seq(borrower);
         auto const batchFee = batch::calcBatchFee(env, 1, 2);
-        // ! Should fail because the lender hasn't signed the tx
+        // Without the lender's signature, the Batch is rejected.
         env(batch::outer(borrower, seq, batchFee, tfAllOrNothing),
             batch::Inner(forgedLoanSet, seq + 1),
             batch::Inner(pay(borrower, lender, XRP(1)), seq + 2),
             Ter(lendingBatchEnabled ? temBAD_SIGNATURE : temINVALID_INNER_BATCH));
         env.close();
 
-        // ? Check that the loan was NOT created
+        // The loan was not created.
         {
             json::Value params(json::ValueType::Object);
             params[jss::account] = borrower.human();
@@ -602,12 +591,8 @@ private:
             BEAST_EXPECT(objects.size() == 0);
         }
 
-        // XLS-66 spec 3.8.5.2.1 (Batch-inner refinement): a Batch inner
-        // LoanSet with no Counterparty and no Borrower is rejected with
-        // temBAD_SIGNER in preflight. Inside a Batch, the immediate flow
-        // still applies but the inner transaction cannot carry a
-        // CounterpartySignature, so the Counterparty must be named
-        // explicitly on the inner transaction.
+        // A Batch inner LoanSet with no Counterparty and no Borrower is
+        // rejected with temBAD_SIGNER in preflight.
         {
             auto const jtx =
                 env.jt(set(lender, broker.brokerID, principalRequest), Txflags(tfInnerBatchTxn));
@@ -619,10 +604,8 @@ private:
             }
         }
 
-        // XLS-66 flow (Batch + V1.2): a Batch inner LoanSet may name a
-        // Borrower (with a StartDate) instead of a Counterparty: the
-        // borrower is identified explicitly on the inner tx and no
-        // CounterpartySignature is required. Preflight must accept it.
+        // A Batch inner LoanSet with Borrower and StartDate, and no
+        // Counterparty, passes preflight.
         if (features[featureLendingProtocolV1_2])
         {
             auto const jtx = env.jt(
@@ -637,11 +620,8 @@ private:
                 BEAST_EXPECT(Transactor::invokePreflight<LoanSet>(pfCtx) == tesSUCCESS);
             }
 
-            // XLS-66 flow (Batch + V1.2): a Batch inner LoanSet with
-            // Borrower but no StartDate is not a valid two-step proposal
-            // and no longer masquerades as a missing-Counterparty error:
-            // it is rejected as temINVALID by getLoanFlow, past the
-            // Batch-specific check.
+            // A Batch inner LoanSet with Borrower but no StartDate is
+            // rejected with temINVALID.
             auto const jtxNoStart = env.jt(
                 set(lender, broker.brokerID, principalRequest),
                 Txflags(tfInnerBatchTxn),
@@ -659,13 +639,9 @@ private:
             }
         }
 
-        // XLS-66 flow (Batch + V1.2) success: a Batch containing an inner
-        // LoanSet that names a Counterparty (but carries no
-        // CounterpartySignature) is accepted when the counterparty signs
-        // the outer Batch. The immediate flow's counterparty consent is
-        // satisfied by the batch signature rather than an inner
-        // CounterpartySignature. Requires both the Batch and
-        // LendingProtocolV1_2 amendments.
+        // A Batch containing an inner LoanSet that names a Counterparty, with
+        // no CounterpartySignature, succeeds when the counterparty signs the
+        // outer Batch.
         if (lendingBatchEnabled)
         {
             auto const lenderSeq = env.seq(lender);
@@ -689,15 +665,9 @@ private:
         }
     }
 
-    // Integration test: full lifecycle of a $1B loan in the bug regime.
-    // Verifies that the vault collects the economically-correct interest
-    // income and that conservation holds at the trust-line level.
-    //
-    // Pre-fix (closed-form `power(1+r, n) - 1`): vault collected only
-    // ~$0.058 per $1B due to cancellation of `(1+r)^n - 1` at r*n ~ 5.7e-10.
-    // Post-fix (hybrid binomial path): vault collects ~$0.38 per $1B,
-    // matching the value computed independently with arbitrary-precision
-    // Decimal arithmetic.
+    // Full lifecycle of a $1B loan at a near-zero interest rate. The vault
+    // must collect the full interest, matching a reference value computed
+    // independently with arbitrary-precision Decimal arithmetic.
     void
     testFullLifecycleVaultPnLNearZeroRate()
     {
@@ -784,13 +754,9 @@ private:
         BEAST_EXPECT(vaultGain == expectedTotalInterest);
         BEAST_EXPECT(Number(borrowerNetOut) == expectedTotalInterest);
 
-        // Mathematical correctness: the total interest for this loan
-        // configuration is 0.38051750382930729983, calculated
-        // independently using 50-digit Decimal arithmetic (no
-        // cancellation possible at that precision). At Number's 19-digit
-        // mantissa this rounds to 0.38051750382930729 — the literal
-        // below. The vault's actual gain must agree to within
-        // sub-microcent precision.
+        // The total interest for this loan, computed independently with
+        // 50-digit Decimal arithmetic, is 0.38051750382930729983. The vault's
+        // gain must match it to within 1e-6.
         Number const decimalReference{38051750382930729LL, -17};
         Number const tolerance{1, -6};  // 1e-6 USD = sub-microcent
         Number const error = abs(vaultGain - decimalReference);

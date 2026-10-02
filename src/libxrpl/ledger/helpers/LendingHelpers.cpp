@@ -2330,17 +2330,21 @@ checkLoanFreeze(
     AccountID const& brokerOwner,
     beast::Journal j)
 {
+    // Run canAddHolding only when disburseLoan may have to create a
+    // holding: always before fixCleanup3_4_0, and after it only when the
+    // borrower has no holding, or a nonzero origination fee is due and the
+    // broker owner has no holding.
+    //
     // canAddHolding is an issuer-level check (DefaultRipple for IOU,
-    // lsfMPTCanTransfer for MPT); neither overload looks at the
-    // destination, so the holdingExists() clauses only decide whether a
-    // create path is reachable at all. It always runs before
-    // fixCleanup3_4_0: IOU addEmptyHolding checks DefaultRipple ahead of
-    // the existing-line case, so only preclaim can turn an existing line
-    // under a cleared DefaultRipple into terNO_RIPPLE rather than
-    // tecINTERNAL. After the amendment an existing line short-circuits to
-    // tecDUPLICATE, which doApply ignores, so run the check only when the
-    // borrower lacks a holding, or the origination fee is nonzero and the
-    // broker owner lacks one.
+    // lsfMPTCanTransfer for MPT). It never looks at the destination, so run
+    // unconditionally it would also reject an account that already holds
+    // the asset and needs no new holding. After the amendment
+    // addEmptyHolding short-circuits an existing holding to tecDUPLICATE,
+    // which disburseLoan ignores, so the check is only needed when a holding
+    // is missing. Before the amendment IOU addEmptyHolding tests
+    // DefaultRipple ahead of the existing-line case and fails with
+    // tecINTERNAL, so preclaim must always run the check to return
+    // terNO_RIPPLE instead.
     if (!view.rules().enabled(fixCleanup3_4_0) || !holdingExists(view, borrower, asset) ||
         (originationFee != beast::kZero && !holdingExists(view, brokerOwner, asset)))
     {
@@ -2434,11 +2438,11 @@ disburseLoan(
     AccountID const borrower = borrowerSle->at(sfAccount);
     AccountID const brokerOwner = brokerOwnerSle->at(sfAccount);
 
-    // Account for the origination fee using two payments
+    // Two transfers from the vault pseudo-account:
     //
-    // 1. Transfer loanAssetsAvailable (principalRequested - originationFee)
-    // from vault pseudo-account to the borrower.
-    // Create a holding for the borrower if one does not already exist.
+    // 1. loanAssetsToBorrower (principal requested less the origination fee)
+    // to the borrower. Create a holding for the borrower if one does not
+    // already exist.
 
     XRPL_ASSERT_PARTS(
         borrower == signingAccount || borrower == authorizedCounterparty,
@@ -2448,16 +2452,14 @@ disburseLoan(
             viewContext, borrower, borrowerSle->at(sfBalance).value().xrp(), vaultAsset, j);
         ter && ter != tecDUPLICATE)
     {
-        // ignore tecDUPLICATE. That means the holding already exists, and
-        // is fine here
+        // tecDUPLICATE means the holding already exists.
         return ter;
     }
 
     if (auto const ter = requireAuth(viewContext.view, vaultAsset, borrower, AuthType::StrongAuth))
         return ter;
 
-    // 2. Transfer originationFee, if any, from vault pseudo-account to
-    // LoanBroker owner.
+    // 2. originationFee, if any, to the LoanBroker owner.
     if (originationFee != beast::kZero)
     {
         // Create the holding if it doesn't already exist (necessary for MPTs).
@@ -2475,8 +2477,7 @@ disburseLoan(
                 j);
             ter && ter != tecDUPLICATE)
         {
-            // ignore tecDUPLICATE. That means the holding already exists,
-            // and is fine here
+            // tecDUPLICATE means the holding already exists.
             return ter;
         }
     }

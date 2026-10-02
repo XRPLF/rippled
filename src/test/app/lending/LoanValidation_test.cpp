@@ -52,10 +52,8 @@ private:
     testDisabled()
     {
         testcase("Disabled");
-        // Lending Protocol depends on Single Asset Vault (SAV). Test
-        // combinations of the two amendments.
-        // Single Asset Vault depends on MPTokensV1, but don't test every combo
-        // of that.
+        // Run with combinations of the Lending Protocol, Single Asset Vault
+        // and MPTokensV1 amendments disabled.
         using namespace jtx;
         auto failAll = [this](FeatureBitset features) {
             Env env(*this, features);
@@ -69,8 +67,8 @@ private:
             using namespace std::chrono_literals;
             using namespace loan;
 
-            // counter party signature is optional on LoanSet. Confirm that by
-            // sending transaction without one.
+            // LoanSet without a counterparty signature is rejected with
+            // temDISABLED.
             auto setTx = env.jt(set(alice, keylet.key, Number(10000)), Ter(temDISABLED));
             env(setTx);
 
@@ -78,8 +76,7 @@ private:
             // 1. LoanSet
             setTx = env.jt(setTx, Sig(sfCounterpartySignature, bob), Ter(temDISABLED));
             env(setTx);
-            // Actual sequence will be based off the loan broker, but we
-            // obviously don't have one of those if the amendment is disabled
+            // A placeholder loan keylet.
             auto const loanKeylet = keylet::loan(keylet.key, SeqProxy::rawSequence(env.seq(alice)));
             // Other Loan transactions are disabled, too.
             // 2. LoanDelete
@@ -136,15 +133,8 @@ private:
                     Ter(temINVALID_FLAG));
             }
 
-            // Direct-preflight coverage of LoanSet::preflight's reserve-sponsor guard.
-            // The env(...) submissions above go through the full Transactor pipeline;
-            // preflight1Sponsor runs before LoanSet::preflight and rejects
-            // spfSponsorReserve for any tx type not on isReserveSponsorAllowed's
-            // allow-list (LoanSet is not on the list). Both guards return
-            // temINVALID_FLAG, so the outer test cannot tell them apart and the
-            // LoanSet-specific branch would remain uncovered. Calling
-            // LoanSet::preflight(pfCtx) directly bypasses preflight1Sponsor and
-            // exercises the guard in isolation.
+            // LoanSet::preflight called directly rejects sponsored-reserve
+            // flags with temINVALID_FLAG.
             for (auto const sponsorFlags : {spfSponsorReserve, spfSponsorReserve | spfSponsorFee})
             {
                 auto const jtx = env.jt(
@@ -200,13 +190,12 @@ private:
                 };
                 // empty broker ID
                 testZeroBrokerID(std::string(""));
-                // zero broker ID
-                // needs a flag to distinguish the parsed STTx from the prior
-                // test
+                // zero broker ID; the flag makes the STTx distinct from the
+                // one above
                 testZeroBrokerID(to_string(UInt256{}), tfFullyCanonicalSig);
             }
 
-            // XLS-66 flow: Borrower + Counterparty is ambiguous (temINVALID).
+            // Borrower together with Counterparty is rejected with temINVALID.
             env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
                 kBorrower(borrower),
                 kCounterparty(lender),
@@ -214,18 +203,16 @@ private:
                 loanSetFee,
                 Ter(temINVALID));
 
-            // XLS-66 flow: Borrower + CounterpartySignature is ambiguous
-            // (temINVALID).
+            // Borrower together with CounterpartySignature is rejected with
+            // temINVALID.
             env(set(lender, brokerInfo.brokerID, debtMaximumRequest),
                 kBorrower(borrower),
                 Sig(sfCounterpartySignature, borrower),
                 loanSetFee,
                 Ter(temINVALID));
 
-            // preflightCheckSigningKey() failure:
-            // can it happen? the signature is checked before transactor
-            // executes
-
+            // A corrupted counterparty SigningPubKey fails local signature
+            // checks at submit.
             JTx const tx = env.jt(
                 set(borrower, brokerInfo.brokerID, debtMaximumRequest),
                 Sig(sfCounterpartySignature, lender),
@@ -250,9 +237,8 @@ private:
                         BrokerInfo const& brokerInfo,
                         jtx::Fee const& loanSetFee,
                         Number const& debtMaximumRequest) {
-            // canAddHoldingFailure (IOU only, if MPT doesn't have
-            // MPTCanTransfer set, then can't create Vault/LoanBroker,
-            // and LoanSet will fail with different error
+            // With the issuer's DefaultRipple cleared, LoanSet is rejected
+            // with terNO_RIPPLE (IOU only).
             env(fclear(issuer, asfDefaultRipple));
             env.close();
             env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
@@ -292,9 +278,8 @@ private:
                         BrokerInfo const& brokerInfo,
                         jtx::Fee const& loanSetFee,
                         Number const& debtMaximumRequest) {
-            // The broker's LoanSequence increments with every loan it creates.
-            // Force it to its maximum value on the open ledger so that the next
-            // LoanSet rolls it over back to zero, which must fail.
+            // With the broker's LoanSequence at its maximum, the next LoanSet
+            // is rejected with tecMAX_SEQUENCE_REACHED.
             auto const changed =
                 env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
                     Sandbox sb(&view, TapNone);
@@ -315,28 +300,10 @@ private:
         });
     }
 
-    // Coverage for LoanSet::doApply's per-value-field precision-loss guard
-    // (the "isRounded(vaultAsset, *value, properties.loanScale)" loop in
-    // setupLoan). The preclaim loop uses STAmount's own scale for the
-    // check, so any fractional value on an integral asset (XRP/MPT) trips
-    // preclaim first and the doApply loop is never reached. IOU is the
-    // only asset type where the two checks can disagree: an amount can be
-    // perfectly representable at IOU scale (up to 16 significant digits)
-    // but still coarser than the loan's computed loanScale.
-    //
-    // computeLoanProperties derives loanScale as
-    //     max(getAssetsTotalScale(vault), STAmount{iou, totalValue}.exponent())
-    // and getAssetsTotalScale returns the STAmount exponent of the vault's
-    // sfAssetsTotal. Depositing that much IOU through a normal path fails
-    // for scale reasons, so the vault's sfAssetsTotal is bumped directly
-    // on the open ledger to STAmount{iou, 1e15} (exponent = 0), pinning
-    // minimumScale (and therefore loanScale) to 0 — whole units. At that
-    // scale, isRounded(iou, 1.5, 0) is false — 1.5 rounds to 1 down / 2
-    // up — so the guard fires on any fractional fee value. The tx fails
-    // with tecPRECISION_LOSS, so the artificial sfAssetsTotal is rolled
-    // back and no invariant sees the divergence.
-    //
-    // One field per iteration to keep the failure attribution clear.
+    // A LoanSet with a fractional IOU value field, on a vault whose loanScale
+    // is whole units, is rejected with tecPRECISION_LOSS in doApply. The
+    // vault's sfAssetsTotal is set directly on the open ledger to pin
+    // loanScale to 0. One field per iteration.
     void
     testLoanSetDoApplyPrecisionLoss()
     {
@@ -347,9 +314,7 @@ private:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        // Fractional IOU units (1.5). STAmount{iou, 1.5} == 1.5 → passes
-        // preclaim. At loanScale=0, isRounded rounds 1.5 down to 1 and
-        // up to 2 → guard fires.
+        // 1.5 units: representable as an IOU amount, not at loanScale 0.
         Number const kFractionalUnits{15, -1};
 
         auto const runCase = [&, this](char const* label, auto const& fieldSetter) {
@@ -365,9 +330,7 @@ private:
                  .debtMax = 25'000,
                  .managementFeeRate = TenthBips16{1000}})};
 
-            // Inflate the vault's sfAssetsTotal (and sfAssetsAvailable to
-            // keep them consistent for the LoanSet capacity checks) so
-            // that STAmount{iou, sfAssetsTotal}.exponent() = 0, pinning
+            // Set sfAssetsTotal and sfAssetsAvailable to 1e15, pinning
             // loanScale to whole units.
             STAmount const inflated{iouAsset.raw(), Number{1, 15}};
             auto const changed =
@@ -446,30 +409,22 @@ private:
         using namespace jtx;
         using namespace loan;
 
-        // Mirrors testInvalidLoanSet/Delete/Manage/Pay for the
-        // transaction-level preflight/preclaim guards of LoanAccept.
-        // Two-step-specific failures (frozen, unauthorised, insufficient
-        // reserve, expired proposal) are covered inline in
-        // LoanTwoStep_test.cpp.
+        // Preflight and preclaim guards of LoanAccept. Two-step-specific
+        // failures are covered in LoanTwoStep_test.cpp.
         Account const alice{"alice"};
         Env env(*this);
         env.fund(XRP(1'000), alice);
         env.close();
 
-        // XLS-66 spec 3.9.3.1.1: LoanID is zero (temINVALID).
+        // A zero LoanID is rejected with temINVALID.
         env(accept(alice, beast::kZero), Ter(temINVALID));
 
         auto const bogusLoanID = keylet::loan(uint256{1}, SeqProxy::rawSequence(1)).key;
 
-        // preflight: temINVALID_FLAG. LoanAccept does not override
-        // getFlagsMask, so only universal flags (tfFullyCanonicalSig,
-        // tfInnerBatchTxn) are permitted. Any other bit must be rejected.
-        // Reuses tfLoanImpair (a LoanManage flag) as a stand-in for "any
-        // non-universal flag".
+        // Any non-universal flag is rejected with temINVALID_FLAG.
         env(accept(alice, bogusLoanID, tfLoanImpair), Ter(temINVALID_FLAG));
 
-        // XLS-66 spec 3.9.3.2.1: Loan with the specified LoanID does not
-        // exist (tecNO_ENTRY).
+        // A LoanID that does not exist is rejected with tecNO_ENTRY.
         env(accept(alice, bogusLoanID), Ter(tecNO_ENTRY));
     }
 
@@ -540,10 +495,8 @@ private:
         env(trust(issuer, lender["IOU"](1'000), tfClearFreeze | tfClearDeepFreeze));
         env.close();
 
-        // The payment is late by this point. With fixCleanup3_4_0,
-        // isPaymentLate() uses a strict (Exclusive) comparison, so advance
-        // one more ledger close to be sure the due date instant itself has
-        // passed, not merely reached.
+        // Advance one more close, past the due date. A late payment without
+        // tfLoanLatePayment is rejected with tecEXPIRED.
         env.close();
 
         env(pay(borrower, loanKeylet.key, debtMaximumRequest), Ter(tecEXPIRED));
@@ -552,8 +505,6 @@ private:
         env.close();
 
         // preclaim: tecKILLED
-        // note that tecKILLED in loanMakePayment()
-        // doesn't happen because of the preclaim check.
         env(pay(borrower, loanKeylet.key, debtMaximumRequest), Ter(tecKILLED));
     }
 
@@ -568,10 +519,8 @@ private:
         Account const issuer{"issuer"};
         Account const borrower{"borrower"};
 
-        // Exercise both creation flows where supported. In the two-step flow the
-        // borrower authorization is enforced up front, when the broker owner
-        // proposes the loan (LoanSet preclaim, via a WeakAuth requireAuth
-        // check), so an unauthorized borrower yields the same tecNO_AUTH.
+        // Run both creation flows. In each, an unauthorized borrower is
+        // rejected with tecNO_AUTH.
         for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
         {
             bool const twoStep = flow == LoanFlow::TwoStep;
@@ -631,9 +580,7 @@ private:
                 }
             });
 
-            // In the two-step flow the successful proposal only creates a
-            // pending loan; the (now authorized) borrower must accept it before
-            // it can be paid.
+            // In the two-step flow, the borrower accepts the pending loan.
             if (twoStep)
             {
                 env(accept(borrower, loanKeylet.key));
@@ -750,9 +697,7 @@ private:
         auto const loanSetFee = Fee(env.current()->fees().base * 2);
         Number const principalRequest{1, 3};
 
-        // The lender is both the borrower and the counterparty here, but the
-        // two roles sign different bytes, so each signature must be made for
-        // the field it goes into.
+        // The lender is both the borrower and the counterparty.
         auto const createJson = env.json(
             set(lender, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
@@ -762,13 +707,9 @@ private:
         env.close();
     }
 
-    // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim rejects
-    // attaching a broker to an open-ended vault. VaultCreate itself is
-    // not gated by the amendment, so the same open-ended vault can be
-    // built under either feature set; only the broker create is
-    // amendment-sensitive. Cover both branches: LP V1.1 disabled lets
-    // the broker create succeed, LP V1.1 enabled rejects it. The gate
-    // only fires on the create path; existing brokers keep working.
+    // Under featureLendingProtocolV1_1, creating a LoanBroker on an
+    // open-ended vault is rejected with tecNO_PERMISSION. With the amendment
+    // disabled it succeeds. Updating an existing broker is unaffected.
     void
     testLoanBrokerRequiresClosedEndedVault()
     {
@@ -796,10 +737,7 @@ private:
             env(loan_broker::set(owner, vaultKeylet.key), Ter(expected));
             env.close();
 
-            // The create-path gate is the only new check; updates to an
-            // existing broker on the same open-ended vault are not
-            // affected. Only exercise the update path when the create
-            // succeeded (so there is a broker to update).
+            // Updating an existing broker on the open-ended vault succeeds.
             if (updateExpected && expected == tesSUCCESS)
             {
                 env(loan_broker::set(owner, vaultKeylet.key),
@@ -810,10 +748,10 @@ private:
             }
         };
 
-        // Baseline: LP V1.1 disabled -> open-ended vault + broker succeeds.
+        // LP V1.1 disabled: broker create on an open-ended vault succeeds.
         build(all_, tesSUCCESS, tesSUCCESS);
 
-        // LP V1.1 enabled -> open-ended vault + broker rejected on create.
+        // LP V1.1 enabled: broker create on an open-ended vault is rejected.
         build(all_ | featureLendingProtocolV1_1, tecNO_PERMISSION);
     }
 

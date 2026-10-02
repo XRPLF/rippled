@@ -548,105 +548,6 @@ createLoan(
 
     return tesSUCCESS;
 }
-
-/**
- * Create a pending loan for the two-step flow: charge the broker owner the
- * owner reserve, then create the loan flagged pending with the principal
- * reserved in the vault. The borrower is not charged and receives no funds
- * until the loan is accepted (see LoanAccept).
- *
- * @param ctx The apply context for the transaction.
- * @param accountID The account that submitted the transaction.
- * @param preFeeBalance The account balance before the transaction fee.
- * @param plan The validated and computed values for the loan.
- * @param j Log.
- *
- * @return tesSUCCESS on success, otherwise the error code describing the
- * failure.
- */
-TER
-applyPendingLoan(
-    ApplyContext& ctx,
-    AccountID accountID,
-    XRPAmount preFeeBalance,
-    LoanPlan const& plan,
-    beast::Journal const& j)
-{
-    auto& view = ctx.view();
-
-    auto const entries = peekLoanEntries(view, plan.brokerID);
-    if (!entries)
-        return entries.error();  // LCOV_EXCL_LINE
-    auto const& [brokerSle, brokerOwnerSle, vaultSle] = *entries;
-
-    // In the two-step flow, the LoanBroker.Owner is charged the owner reserve
-    // for the pending loan.
-    AccountID const brokerOwner = brokerSle->at(sfOwner);
-    if (auto const ter =
-            reserveLoanOwner(view, brokerOwner, brokerOwnerSle, accountID, preFeeBalance, j))
-        return ter;
-
-    return createLoan(ctx, plan, brokerSle, vaultSle, IsLoanPending::Yes, j);
-}
-
-/**
- * Create an active loan for the immediate flow: charge the borrower the
- * owner reserve, disburse the funds, then create the loan owned by the
- * borrower.
- *
- * @param ctx The apply context for the transaction.
- * @param accountID The account that submitted the transaction.
- * @param preFeeBalance The account balance before the transaction fee.
- * @param plan The validated and computed values for the loan.
- * @param j Log.
- *
- * @return tesSUCCESS on success, otherwise the error code describing the
- * failure.
- */
-TER
-applyImmediateLoan(
-    ApplyContext& ctx,
-    AccountID accountID,
-    XRPAmount preFeeBalance,
-    LoanPlan const& plan,
-    beast::Journal const& j)
-{
-    auto& view = ctx.view();
-
-    auto const entries = peekLoanEntries(view, plan.brokerID);
-    if (!entries)
-        return entries.error();  // LCOV_EXCL_LINE
-    auto const& [brokerSle, brokerOwnerSle, vaultSle] = *entries;
-    auto const borrowerSle = view.peek(keylet::account(plan.borrower));
-    if (!borrowerSle)
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-
-    // In the immediate flow, the borrower is charged the owner reserve and the
-    // funds are disbursed now.
-    if (auto const ter =
-            reserveLoanOwner(view, plan.borrower, borrowerSle, accountID, preFeeBalance, j))
-        return ter;
-
-    // Disburse the principal to the borrower and the origination fee, if any,
-    // to the broker owner, creating holdings as necessary.
-    AccountID const vaultPseudo = vaultSle->at(sfAccount);
-    Asset const vaultAsset = vaultSle->at(sfAsset);
-    auto applyViewContext = ctx.getApplyViewContext();
-    if (auto const ter = disburseLoan(
-            applyViewContext,
-            borrowerSle,
-            brokerOwnerSle,
-            vaultPseudo,
-            vaultAsset,
-            plan.principalRequested - plan.originationFee,
-            plan.originationFee,
-            accountID,
-            plan.counterparty,
-            j))
-        return ter;
-
-    return createLoan(ctx, plan, brokerSle, vaultSle, IsLoanPending::No, j);
-}
 }  // namespace
 
 // StartDate is strictly after SubscriptionDate. A min-gap vault must still
@@ -707,7 +608,7 @@ LoanSet::preflight(PreflightContext const& ctx)
 
     if (getLoanFlow(tx, ctx.flags, ctx.rules) == LoanFlow::Invalid)
     {
-        // 3.8.5.1.2 CounterpartySignature is not present and the transaction is not part of a Batch
+        // CounterpartySignature is not present and the transaction is not part of a Batch
         // inner transaction and the Borrower field is not specified. (temBAD_SIGNER)
         if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig && !tx.isFieldPresent(sfBorrower))
         {
@@ -715,8 +616,8 @@ LoanSet::preflight(PreflightContext const& ctx)
             return temBAD_SIGNER;
         }
 
-        // 3.8.5.1.5 Both Borrower and Counterparty fields are specified. (temINVALID)
-        // 3.8.5.1.6 Both Borrower and CounterpartySignature fields are specified. (temINVALID)
+        // Both Borrower and Counterparty fields are specified. (temINVALID)
+        // Both Borrower and CounterpartySignature fields are specified. (temINVALID)
         JLOG(ctx.j.warn()) << "LoanSet transaction must specify either a Borrower with a "
                               "StartDate or a CounterpartySignature.";
         return temINVALID;
@@ -924,8 +825,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     auto const brokerSle = ctx.view.read(keylet::loanBroker(brokerID));
     if (!brokerSle)
     {
-        // This can only be hit if there's a counterparty specified, otherwise
-        // it'll fail in the signature check
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
         return tecNO_ENTRY;
     }
@@ -957,17 +856,13 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     auto const borrowerSle = ctx.view.read(keylet::account(borrower));
     if (!borrowerSle)
     {
-        // It may not be possible to hit this case, because it'll fail the
-        // signature check with terNO_ACCOUNT.
         JLOG(ctx.j.warn()) << "Borrower does not exist.";
         return terNO_ACCOUNT;
     }
     if (twoStepFlow && isPseudoAccount(borrowerSle))
     {
-        // In the immediate flow the Borrower must sign, which a pseudo-account
-        // can never do. The two-step flow only names the Borrower, so reject a
-        // pseudo-account here rather than creating a pending loan that can
-        // never be accepted and needlessly ties up the vault's AssetsReserved.
+        // A pseudo-account can never sign the LoanAccept, so it cannot be
+        // named as the Borrower.
         JLOG(ctx.j.warn()) << "Borrower is a pseudo-account.";
         return tecNO_PERMISSION;
     }
@@ -1077,9 +972,57 @@ LoanSet::doApply()
     if (!plan)
         return plan.error();
 
-    return flow == LoanFlow::TwoStep
-        ? applyPendingLoan(ctx_, accountID_, preFeeBalance_, *plan, j_)
-        : applyImmediateLoan(ctx_, accountID_, preFeeBalance_, *plan, j_);
+    auto& view = ctx_.view();
+
+    auto const entries = peekLoanEntries(view, plan->brokerID);
+    if (!entries)
+        return entries.error();  // LCOV_EXCL_LINE
+    auto const& [brokerSle, brokerOwnerSle, vaultSle] = *entries;
+
+    if (flow == LoanFlow::TwoStep)
+    {
+        // In the two-step flow, the LoanBroker.Owner is charged the owner
+        // reserve for the pending loan. The loan is created pending with the
+        // principal reserved in the vault; the borrower is not charged and
+        // receives no funds until the loan is accepted (see LoanAccept).
+        AccountID const brokerOwner = brokerSle->at(sfOwner);
+        if (auto const ter =
+                reserveLoanOwner(view, brokerOwner, brokerOwnerSle, accountID_, preFeeBalance_, j_))
+            return ter;
+
+        return createLoan(ctx_, *plan, brokerSle, vaultSle, IsLoanPending::Yes, j_);
+    }
+
+    auto const borrowerSle = view.peek(keylet::account(plan->borrower));
+    if (!borrowerSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    // In the immediate flow, the borrower is charged the owner reserve and the
+    // funds are disbursed now. The loan is created active and owned by the
+    // borrower.
+    if (auto const ter =
+            reserveLoanOwner(view, plan->borrower, borrowerSle, accountID_, preFeeBalance_, j_))
+        return ter;
+
+    // Disburse the principal to the borrower and the origination fee, if any,
+    // to the broker owner, creating holdings as necessary.
+    AccountID const vaultPseudo = vaultSle->at(sfAccount);
+    Asset const vaultAsset = vaultSle->at(sfAsset);
+    auto applyViewContext = ctx_.getApplyViewContext();
+    if (auto const ter = disburseLoan(
+            applyViewContext,
+            borrowerSle,
+            brokerOwnerSle,
+            vaultPseudo,
+            vaultAsset,
+            plan->principalRequested - plan->originationFee,
+            plan->originationFee,
+            accountID_,
+            plan->counterparty,
+            j_))
+        return ter;
+
+    return createLoan(ctx_, *plan, brokerSle, vaultSle, IsLoanPending::No, j_);
 }
 
 void

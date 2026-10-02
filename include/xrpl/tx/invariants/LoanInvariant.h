@@ -43,7 +43,8 @@ namespace xrpl {
  *          strictly decreases;
  *          `PaymentRemaining` strictly decreases;
  *          `NextPaymentDueDate` advances by N * `PaymentInterval`, N > 0.
- *       `PaymentRemaining == 0` after: pinned by checks 1 and 5b.
+ *       `PaymentRemaining == 0` after: `PrincipalOutstanding` and
+ *          `NextPaymentDueDate` are both zero.
  *
  * 6. Under `featureLendingProtocolV1_2` (the two-step "pending loan" flow):
  *    a. A loan's `OwnerNode` may only be added to an existing loan, and only
@@ -72,7 +73,8 @@ namespace xrpl {
  *    counterparty may instead authorize it by signing an outer `Batch` or a
  *    Cosign proposal, which the invariant cannot see.
  * 8. Without `featureLendingProtocolV1_2`, a `LoanSet` must not create a
- *    pending loan. The checks on existing loans in 6 do not apply.
+ *    pending loan, and the pending-loan checks on existing loans do not
+ *    apply.
  *
  */
 class ValidLoan

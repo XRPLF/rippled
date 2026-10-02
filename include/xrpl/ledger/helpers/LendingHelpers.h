@@ -736,11 +736,11 @@ checkLoanFreeze(
  *
  * @param view           Apply view to modify.
  * @param owner          The account being charged the owner reserve.
- * @param loanOwnerSle   The AccountRoot of `borrower`.
+ * @param loanOwnerSle   The AccountRoot of `owner`.
  * @param signingAccount The transaction's signing account.
  * @param preFeeBalance  The signing account's XRP balance before the
  *                       transaction fee was deducted. Used in place of the
- *                       ledger balance when `borrower` is the signing account.
+ *                       ledger balance when `owner` is the signing account.
  * @param j              Journal for logging.
  *
  * @return `tecINSUFFICIENT_RESERVE` if the balance is below the reserve after
@@ -760,8 +760,7 @@ reserveLoanOwner(
  * to the LoanBroker owner. Creates holdings as necessary.
  *
  * The borrower and the broker owner must each be either the signing account
- * or the authorized counterparty, so that creating a holding on their behalf
- * is permitted.
+ * or the authorized counterparty.
  *
  * @param viewContext           Apply view context to modify.
  * @param borrowerSle           The borrower's AccountRoot.
