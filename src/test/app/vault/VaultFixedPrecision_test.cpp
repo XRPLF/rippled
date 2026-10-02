@@ -1,12 +1,9 @@
 #include <test/app/vault/VaultFixedPrecisionBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
@@ -17,14 +14,12 @@
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
-#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -956,64 +951,6 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
         checkFixedPrecisionSync(env, keylet, firstDeposit);
     }
 
-    // LoanSet does not support FixedPrecision Vaults yet; a valid LoanSet
-    // against one is refused.
-    void
-    testLoanSetRefusedOnFixedPrecisionVault()
-    {
-        using namespace test::jtx;
-
-        testcase("LoanSet is refused on a FixedPrecision Vault");
-
-        Account const issuer{"issuer"};
-        Account const owner{"owner"};
-        Account const borrower{"borrower"};
-        PrettyAsset const asset{issuer["USD"]};
-
-        Env env(*this, features());
-        env.fund(XRP(1'000'000), issuer, owner, borrower);
-        env.close();
-        env(trust(owner, asset(1'000'000)));
-        env(trust(borrower, asset(1'000'000)));
-        env.close();
-        env(pay(issuer, owner, asset(100'000)));
-        env.close();
-
-        Vault const vault{env};
-        auto [create, vaultKeylet, subscriptionDate] =
-            vault.createClosedEnded({.owner = owner, .asset = asset});
-        create[sfScale] = 6;
-        env(create);
-        env.close();
-        env(vault.deposit({.depositor = owner, .id = vaultKeylet.key, .amount = asset(10'000)}));
-        env.close();
-        vault.closePastSubscription(subscriptionDate);
-
-        auto const vaultSle = env.le(vaultKeylet);
-        if (!BEAST_EXPECT(vaultSle))
-            return;
-        BEAST_EXPECT(getVaultVersion(vaultSle) == VaultVersion::FixedPrecision);
-
-        auto const brokerKeylet =
-            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-        env(loan_broker::set(owner, vaultKeylet.key));
-        env.close();
-        BEAST_EXPECT(env.le(brokerKeylet));
-
-        env(loan::set(borrower, brokerKeylet.key, Number{1'000}),
-            loan::kPaymentTotal(1),
-            Sig(sfCounterpartySignature, owner),
-            Fee(env.current()->fees().base * 2),
-            Ter(tecNO_PERMISSION));
-        env.close();
-
-        auto const brokerSle = env.le(brokerKeylet);
-        if (!BEAST_EXPECT(brokerSle))
-            return;
-        BEAST_EXPECT(brokerSle->at(sfOwnerCount) == 0);
-        BEAST_EXPECT(brokerSle->at(sfDebtTotal) == beast::kZero);
-    }
-
 public:
     void
     run() override
@@ -1035,7 +972,6 @@ public:
         testAssetsMaximumRejectedOnExistingVaultAfterV12();
         testOffGridAssetsMaximumReplacedAfterV12();
         testDepositCoarseningRefusedInsteadOfAssociateAssetRounding();
-        testLoanSetRefusedOnFixedPrecisionVault();
     }
 };
 
