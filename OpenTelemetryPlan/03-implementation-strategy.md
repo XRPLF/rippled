@@ -22,6 +22,7 @@ include/xrpl/telemetry/            # libxrpl layer: tracing SDK wrapper
 ├── Telemetry.h                    # Interface + Setup config struct + factories
 ├── SpanGuard.h                    # RAII span management, factory methods, discard()
 ├── SpanNames.h                    # StaticStr/join() + shared span & attr constants
+├── MetricNames.h                  # Metric name, label and value constants
 ├── DiscardFlag.h                  # Thread-local discard flag
 ├── FilteringSpanProcessor.h       # Drops discarded spans; exports each attribute key once
 ├── CoroAwareContextStorage.h      # RuntimeContextStorage override for coroutines
@@ -49,6 +50,7 @@ src/xrpld/telemetry/               # xrpld layer: native metrics + tx tracing he
 ├── ValidationTracker.h            # Validation-agreement tracking (impl in detail/)
 ├── detail/ValidationTracker.cpp
 ├── ConsensusReceiveTracing.h      # Peer proposal/validation receive spans
+├── MacroCounterPreRegistration.h  # Startup zeros for call-site counters with fixed label sets
 ├── PropagationHelpers.h           # Context inject/extract call-site helpers
 ├── TxSpanNames.h                  # tx.* span + attribute constants
 └── TxTracing.h                    # Transaction span helpers
