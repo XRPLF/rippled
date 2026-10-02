@@ -40,13 +40,15 @@ Follow [BUILD.md](../BUILD.md), adding `-o telemetry=True` so Conan pulls `opent
 
 ```bash
 conan install .. --output-folder . --build missing -o telemetry=True --settings build_type=Release
-cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtelemetry=ON ..
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON ..
 cmake --build . --target xrpld
 ```
 
-Conan also writes a `conan-release` CMake preset, so `cmake --preset conan-release -Dtelemetry=ON` works instead of the explicit toolchain line. There is no preset named `default`.
+The Conan option is the only telemetry switch. The toolchain file that `conan install` writes sets the `telemetry` CMake variable, and `CMakeLists.txt` reads it, so the CMake line needs no telemetry flag. Do not add `-Dtelemetry=`: it overrides the toolchain's value and can disagree with what Conan fetched. The toolchain sets `telemetry` only while the CMake cache has no value for it, so change the option in a fresh build directory.
 
-Both telemetry flags are the current default, so omitting them still gives you an instrumented build. Pass them anyway, so the build stays instrumented wherever the default moves.
+Conan also writes a `conan-release` preset. From the repo root, `cmake --preset conan-release -Dxrpld=ON` works instead of the explicit toolchain line. Then `cmake --build --preset conan-release --target xrpld` builds in `.build/build/Release`. There is no preset named `default`.
+
+`telemetry=True` is the current Conan default, so omitting it still gives you an instrumented build. Pass it anyway, so the build stays instrumented wherever the default moves.
 
 ## Configuration Reference
 
@@ -94,7 +96,7 @@ All spans instrumented in xrpld, grouped by subsystem:
 | Span Name       | Source File     | Attributes                                                                                                                                                                                                                                                     | Description                                                  |
 | --------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq`, `tx_account` and one `tx_<field>` per other account field the transaction carries (`tx_destination`, `tx_owner`, ...; keys in `TxAccountSpanNames.h`) | Transaction submission and processing                        |
-| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `tx_status`, `current_ledger_seq`                                                                                                                                                                             | Transaction this node will process, received from peer relay |
+| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `tx_status`, `current_ledger_seq`                                                                                                                                                                             | Peer-relayed transaction, received after the duplicate check |
 | `tx.apply`      | BuildLedger.cpp | `ledger_seq`, `tx_count`, `tx_failed`                                                                                                                                                                                                                          | Transaction set applied per ledger                           |
 | `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                                                                                                                                                                                               | Stateless checks stage                                       |
 | `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`, `current_ledger_seq`, `current_ledger_hash`                                                                                                                                                                                  | Ledger-aware checks stage                                    |
@@ -575,44 +577,44 @@ The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTe
 
 Do not set `prefix` on this path. `formatName()` never applies it, so the setting is silently ignored and the exported names are bare and lowercase — `jobq_job_count`, not `xrpld_jobq_job_count`. Queries written against a prefixed name return no series.
 
-> **Fallback**: Set `server=statsd` and `address=127.0.0.1:8125` to use the legacy StatsD UDP path. This requires re-enabling the `statsd` receiver in `otel-collector-config.yaml` and uncommenting port 8125 in `docker-compose.yml`. On that path `prefix` **is** applied to the metric name, which is why the StatsD examples elsewhere in this document keep it.
+> **Fallback**: Set `server=statsd` and `address=127.0.0.1:8125` to use the StatsD UDP path. `otel-collector-config.yaml` has no `statsd` receiver, so add one and list it in the `metrics` pipeline's `receivers`. Then uncomment the port 8125 line in `docker-compose.yml`. On that path `prefix` **is** applied to the metric name, which is why the StatsD examples elsewhere in this document keep it.
 
 ### Metric Reference
 
 #### Gauges
 
-| Prometheus Metric                     | Source                    | Description                                                                |
-| ------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
-| `ledgermaster_validated_ledger_age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                          |
-| `ledgermaster_published_ledger_age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                          |
-| `state_accounting_{Mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
-| `state_accounting_{Mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                  |
-| `peer_finder_active_inbound_peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
-| `peer_finder_active_outbound_peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
-| `overlay_peer_disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
-| `jobq_job_count`                      | JobQueue.cpp:26           | Current job queue depth                                                    |
-| `{category}_bytes_in/out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
-| `{category}_messages_in/out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
+| Prometheus Metric                     | Source                                       | Description                                                                |
+| ------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------- |
+| `ledgermaster_validated_ledger_age`   | `LedgerMaster::Stats` (LedgerMaster.h)       | Age of validated ledger (seconds)                                          |
+| `ledgermaster_published_ledger_age`   | `LedgerMaster::Stats` (LedgerMaster.h)       | Age of published ledger (seconds)                                          |
+| `state_accounting_{Mode}_duration`    | `NetworkOPsImp::Stats` (NetworkOPs.cpp)      | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
+| `state_accounting_{Mode}_transitions` | `NetworkOPsImp::Stats` (NetworkOPs.cpp)      | Transition count per mode                                                  |
+| `peer_finder_active_inbound_peers`    | `ManagerImp::Stats` (PeerfinderManager.cpp)  | Active inbound peer connections                                            |
+| `peer_finder_active_outbound_peers`   | `ManagerImp::Stats` (PeerfinderManager.cpp)  | Active outbound peer connections                                           |
+| `overlay_peer_disconnects`            | `OverlayImpl::Stats` (OverlayImpl.h)         | Peer disconnect count                                                      |
+| `jobq_job_count`                      | `JobQueue::JobQueue()` (JobQueue.cpp)        | Current job queue depth                                                    |
+| `{category}_bytes_in/out`             | `OverlayImpl::TrafficGauges` (OverlayImpl.h) | Overlay traffic bytes per category (57 categories)                         |
+| `{category}_messages_in/out`          | `OverlayImpl::TrafficGauges` (OverlayImpl.h) | Overlay traffic messages per category                                      |
 
 #### Counters
 
-| Prometheus Metric               | Source                | Description                    |
-| ------------------------------- | --------------------- | ------------------------------ |
-| `rpc_requests_total`            | ServerHandler.cpp:108 | Total RPC request count        |
-| `ledger_fetches_total`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
-| `ledger_history_mismatch_total` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
-| `warn_total`                    | Logic.h:33            | Resource manager warning count |
-| `drop_total`                    | Logic.h:34            | Resource manager drop count    |
+| Prometheus Metric               | Source                                                        | Description                               |
+| ------------------------------- | ------------------------------------------------------------- | ----------------------------------------- |
+| `rpc_requests_total`            | `ServerHandler::ServerHandler()` (ServerHandler.cpp)          | Total RPC request count                   |
+| `ledger_fetches_total`          | `InboundLedgersImp::InboundLedgersImp()` (InboundLedgers.cpp) | Ledger fetch request count                |
+| `ledger_history_mismatch_total` | `LedgerHistory::LedgerHistory()` (LedgerHistory.cpp)          | Built vs validated ledger hash mismatches |
+| `warn_total`                    | `resource::Logic::Stats` (Logic.h)                            | Resource manager warning count            |
+| `drop_total`                    | `resource::Logic::Stats` (Logic.h)                            | Resource manager drop count               |
 
 #### Histograms
 
-| Prometheus Metric | Source                | Description                    |
-| ----------------- | --------------------- | ------------------------------ |
-| `rpc_time`        | ServerHandler.cpp:110 | RPC response time (ms)         |
-| `rpc_size`        | ServerHandler.cpp:109 | RPC response size (bytes)      |
-| `ios_latency`     | Application.cpp:438   | I/O service loop latency (ms)  |
-| `pathfind_fast`   | PathRequests.h:23     | Fast pathfinding duration (ms) |
-| `pathfind_full`   | PathRequests.h:24     | Full pathfinding duration (ms) |
+| Prometheus Metric | Source                                                            | Description                    |
+| ----------------- | ----------------------------------------------------------------- | ------------------------------ |
+| `rpc_time`        | `ServerHandler::ServerHandler()` (ServerHandler.cpp)              | RPC response time (ms)         |
+| `rpc_size`        | `ServerHandler::ServerHandler()` (ServerHandler.cpp)              | RPC response size (bytes)      |
+| `ios_latency`     | `ApplicationImp::io_latency_sampler_` (Application.cpp)           | I/O service loop latency (ms)  |
+| `pathfind_fast`   | `PathRequestManager::PathRequestManager()` (PathRequestManager.h) | Fast pathfinding duration (ms) |
+| `pathfind_full`   | `PathRequestManager::PathRequestManager()` (PathRequestManager.h) | Full pathfinding duration (ms) |
 
 ## Deployment Tiers
 
@@ -722,7 +724,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Transaction Processing Rate        | timeseries     | `rate(span_calls_total{span_name="tx.process"}[$__rate_interval])` and `tx.receive`          | `span_name`                         |
 | Transaction Processing Latency     | timeseries     | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                              | —                                   |
 | Transaction Path Distribution      | piechart       | `sum by (local) (increase(span_calls_total{span_name="tx.process"}[$__rate_interval]))`      | `local`                             |
-| Transaction Receive vs Suppressed  | timeseries     | `rate(span_calls_total{span_name="tx.receive"}[$__rate_interval])`                           | —                                   |
+| Transaction Receive Rate           | timeseries     | `rate(span_calls_total{span_name="tx.receive"}[$__rate_interval])`                           | —                                   |
 | TX Processing Duration Heatmap     | heatmap        | `tx.process` histogram buckets                                                               | `le`                                |
 | TX Apply Duration per Ledger       | timeseries     | p95/p50 of `tx.apply`                                                                        | —                                   |
 | TX Apply Failed Rate               | stat           | `rate(span_calls_total{span_name="tx.transactor",stage="apply",ter_result!~"tesSUCCESS\|"})` | `stage`, `ter_result`               |
@@ -996,9 +998,9 @@ Set `enabled=0` in config (runtime disable), or compile telemetry out:
 
 ```bash
 conan install .. --output-folder . --build missing -o telemetry=False --settings build_type=Release
-cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dtelemetry=OFF ..
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON ..
 ```
 
-Both flags are needed, and both must be stated. The default is `ON`, so omitting a flag leaves telemetry compiled in.
+`-o telemetry=False` is the switch: Conan then skips `opentelemetry-cpp`, and its toolchain file sets the `telemetry` CMake variable to `False`. State it, because the Conan default is `True` and omitting it leaves telemetry compiled in. Run this in a fresh build directory: the toolchain sets `telemetry` only while the CMake cache has no value for it.
 
 When telemetry is compiled out, all trace macros expand to no-ops with zero overhead.
