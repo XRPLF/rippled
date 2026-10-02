@@ -334,6 +334,18 @@ vaultBaseScale(Asset const& asset, std::uint8_t scale);
 isOnVaultBaseGrid(Asset const& asset, Number const& value, int baseScale);
 
 /**
+ * Checks that a requested AssetsMaximum is exactly representable on the
+ * Vault's base grid, otherwise associateAsset would silently round the cap
+ * the owner asked for. Used by VaultSet::preclaim on an existing Vault.
+ *
+ * @param vault The vault ledger entry.
+ * @param amount The requested AssetsMaximum.
+ * @return tesSUCCESS, or tecPRECISION_LOSS if amount is not representable.
+ */
+[[nodiscard]] TER
+checkAssetsMaximum(SLE::ConstRef vault, Number const& amount);
+
+/**
  * Controls whether to truncate shares instead of rounding.
  */
 enum class TruncateShares : bool { No = false, Yes = true };
@@ -483,8 +495,9 @@ decodeVaultVersion(std::optional<std::uint8_t> leVersion);
  *
  * @param rules The active ledger rules.
  *
- * @return VaultVersion::FixedPrecision once featureLendingProtocolV1_2,
- * fixCleanup3_2_0 and fixCleanup3_4_0 are all enabled; VaultVersion::CashBasis
+ * @return VaultVersion::FixedPrecision once featureLendingProtocolV1_1,
+ * featureLendingProtocolV1_2 and fixCleanup3_4_0 are all enabled;
+ * VaultVersion::CashBasis
  * once featureLendingProtocolV1_1 is enabled; VaultVersion::Legacy otherwise.
  */
 [[nodiscard]] VaultVersion

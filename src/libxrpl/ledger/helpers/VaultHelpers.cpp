@@ -574,6 +574,14 @@ isOnVaultBaseGrid(Asset const& asset, Number const& value, int baseScale)
         roundToAsset(asset, value, baseScale, Number::RoundingMode::TowardsZero) == value;
 }
 
+[[nodiscard]] TER
+checkAssetsMaximum(SLE::ConstRef vault, Number const& amount)
+{
+    return isOnVaultBaseGrid(vault->at(sfAsset), amount, getVaultBaseScale(vault))
+        ? TER{tesSUCCESS}
+        : TER{tecPRECISION_LOSS};
+}
+
 [[nodiscard]] Number
 assetsTotalForWithdrawal(SLE::ConstRef vault, WaiveUnrealizedLoss waive)
 {
@@ -694,9 +702,10 @@ getVaultVersion(SLE::ConstRef vault)
 [[nodiscard]] VaultVersion
 vaultVersionFor(Rules const& rules)
 {
-    // FixedPrecision requires both cleanups, so a FixedPrecision Vault always
-    // sees them enabled.
-    if (rules.enabled(featureLendingProtocolV1_2) && rules.enabled(fixCleanup3_2_0) &&
+    // FixedPrecision requires featureLendingProtocolV1_1 (closed-ended Vaults and
+    // cash-basis accounting) and fixCleanup3_4_0, so a FixedPrecision Vault always
+    // sees both enabled. fixCleanup3_2_0 is already enabled on the network.
+    if (rules.enabled(featureLendingProtocolV1_1) && rules.enabled(featureLendingProtocolV1_2) &&
         rules.enabled(fixCleanup3_4_0))
         return VaultVersion::FixedPrecision;
     if (rules.enabled(featureLendingProtocolV1_1))
