@@ -1,0 +1,60 @@
+# This workflow checks that every final release on a release branch
+# has been merged back into develop, see RELEASING.md.
+name: Check releases merged
+
+on:
+  schedule:
+    # 06:47 UTC every Monday.
+    - cron: "47 6 * * 1"
+  push:
+    branches:
+      - "develop"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  OUTPUT_FILE: /tmp/releases-merged.txt
+  ISSUE_FILE: /tmp/releases-merged-issue.md
+
+jobs:
+  releases-merged:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Needed to open an issue on scheduled failures.
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The check needs the full history of develop, the release branches and tags.
+          fetch-depth: 0
+
+      - name: Check releases are merged into develop
+        run: |
+          set -o pipefail
+          .github/scripts/releasing/check-releases-merged.sh origin/develop | tee "${OUTPUT_FILE}"
+
+      - name: Prepare issue body
+        if: ${{ failure() && github.event_name == 'schedule' && github.repository == 'XRPLF/rippled' }}
+        run: |
+          {
+              echo '```'
+              cat "${OUTPUT_FILE}"
+              echo '```'
+          } >"${ISSUE_FILE}"
+
+      - name: Create issue
+        if: ${{ failure() && github.event_name == 'schedule' && github.repository == 'XRPLF/rippled' }}
+        uses: XRPLF/actions/create-issue@2b8bc36af85b88bca0dd7bfac2e2dc05f94ad712
+        with:
+          title: "Releases not merged back into develop"
+          body_file: ${{ env.ISSUE_FILE }}
+          labels: "Bug"
