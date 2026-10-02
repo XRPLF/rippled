@@ -582,12 +582,13 @@ CONSTANT_ARG_POSITIONS: Dict[str, Set[int]] = {
 }
 
 
-def is_test_path(path: Path) -> bool:
+def is_test_path(path: Path, root: Path) -> bool:
     """True if the path is test code. Tests legitimately pass arbitrary literal
     keys/names to exercise the API mechanics, so Rule F does not apply to them.
-    Matches a `test`/`tests` directory anywhere in the path (e.g. src/test/,
-    src/tests/, .../detail/tests/)."""
-    return any(part in ("test", "tests") for part in path.parts)
+    Matches a `test`/`tests` directory anywhere in the path below `root` (e.g.
+    src/test/, src/tests/, .../detail/tests/). Only the part below `root` is
+    read, so a checkout inside a folder named `test` is not all test code."""
+    return any(part in ("test", "tests") for part in path.relative_to(root).parts)
 
 
 # A constant reference passed at a call-site, e.g. `rpc_span::attr::command`
@@ -627,7 +628,7 @@ def run_rule_f(root: Path, report: Report, header_symbols: Set[str]) -> None:
         if p.is_file()
     ]
     for path in sorted(sources):
-        if path.name.endswith("SpanNames.h") or is_test_path(path):
+        if path.name.endswith("SpanNames.h") or is_test_path(path, root):
             continue
         text = read_source(path)
         rel = path.relative_to(root)
@@ -729,18 +730,30 @@ def run_rule_b_collector(root: Path, l1_keys: Set[str], report: Report) -> None:
 
 
 def extract_spanmetrics_dimensions(text: str) -> List[str]:
+    """The `- name: <dim>` entries listed under each `dimensions:` key.
+
+    Blank and comment lines are skipped, so a comment between entries never ends
+    the list, even when it holds a colon. The list ends at the first other line
+    indented no deeper than its `dimensions:` key. A `-` entry at the key's own
+    indentation still belongs to the list, as YAML allows."""
     dims: List[str] = []
-    in_dims = False
+    key_col: Optional[int] = None
     for line in text.splitlines():
-        if re.search(r"\bdimensions\s*:", line):
-            in_dims = True
+        content = line.strip()
+        if not content or content.startswith("#"):
             continue
-        if in_dims:
-            m = re.search(r"-\s*name\s*:\s*([A-Za-z0-9_.]+)", line)
-            if m:
-                dims.append(m.group(1))
-            elif line.strip() and not line.lstrip().startswith("-") and ":" in line:
-                in_dims = False
+        indent = len(line) - len(line.lstrip())
+        if key_col is not None:
+            is_entry = re.match(r"-(\s|$)", content) is not None
+            if indent > key_col or (indent == key_col and is_entry):
+                m = re.search(r"-\s*name\s*:\s*([A-Za-z0-9_.]+)", line)
+                if m:
+                    dims.append(m.group(1))
+                continue
+            key_col = None
+        key = re.match(r"(\s*(?:-\s+)?)dimensions\s*:", line)
+        if key:
+            key_col = len(key.group(1))
     return dims
 
 
