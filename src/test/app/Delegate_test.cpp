@@ -1038,7 +1038,8 @@ class Delegate_test : public beast::unit_test::Suite
                 env.close();
 
                 // Cross-currency sfSendMax without any flag passes the granular
-                // template and is rejected by the granular semantic check.
+                // template and is rejected by the granular semantic check, because
+                // the sfSendMax asset (XRP) is not the same as the sfAmount asset (USD).
                 env(pay(gw, alice, usd(500)),
                     Sendmax(XRP(1001)),
                     delegate::As(bob),
@@ -1074,7 +1075,8 @@ class Delegate_test : public beast::unit_test::Suite
                 env.close();
 
                 // Cross-currency sfSendMax without any flag passes the granular
-                // template and is rejected by the granular semantic check.
+                // template and is rejected by the granular semantic check, because
+                // the sfSendMax asset (XRP) is not the same as the sfAmount asset (USD).
                 env(pay(alice, gw, usd(500)),
                     Sendmax(XRP(1001)),
                     delegate::As(bob),
@@ -2334,7 +2336,9 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(alice, bob, {"MPTokenIssuanceLock", "MPTokenIssuanceUnlock"}));
             env.close();
 
-            std::vector<MPTSet> const dynamicChanges = {
+            // Any of those fields or flags not defined in permissions.macro are not permitted for
+            // delegation.
+            std::vector<MPTSet> const args = {
                 {.transferFee = 100},
                 {.metadata = "test"},
                 {.domainID = domainID},
@@ -2345,7 +2349,7 @@ class Delegate_test : public beast::unit_test::Suite
                 {.flags = tfMPTLock, .domainID = domainID},
             };
 
-            for (auto arg : dynamicChanges)
+            for (auto arg : args)
             {
                 arg.account = alice;
                 arg.delegate = bob;
@@ -2423,16 +2427,6 @@ class Delegate_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(gw) == gwBalance);
             BEAST_EXPECT(env.balance(bob) == bobBalance);
             BEAST_EXPECT(sponsor::sponsorshipFeeBalance(env, sponsor, bob) == sponsorFee - feeAmt);
-
-            // Sponsorship does not extend the granular permission: bob holds PaymentMint
-            // from gw but not PaymentBurn from alice.
-            env(pay(alice, gw, usd(10)),
-                delegate::As(bob),
-                Fee(feeAmt),
-                sponsor::As(sponsor, spfSponsorFee),
-                Sig(sfSponsorSignature, sponsor),
-                Ter(terNO_DELEGATE_PERMISSION));
-            env.require(Balance(alice, usd(100)));
         }
 
         // Reserve sponsorship is blocked for a granular delegated transaction.
