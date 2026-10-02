@@ -24,7 +24,8 @@
  *            valid (undefined flag bits zeroed)
  *              |
  *              v
- *     receive sites: isValidTraceContext() / isValidSpanId()
+ *     receive sites: isValidTraceContext(), or isValidSpanId()
+ *     and isSameTraceId() where the trace_id is derived locally
  *              |
  *              +--- valid ----> build child span from peer context
  *              |
@@ -47,8 +48,10 @@
  *     if (isValidTraceContext(msg->trace_context()))
  *         buildChildSpan(...);
  *
- *     // Span-only (trace_id is derived locally, not from the peer):
- *     if (tc.has_span_id() && isValidSpanId(tc.span_id()))
+ *     // Local trace_id (derived from a hash, not taken from the peer).
+ *     // The peer's span is the parent only inside that same trace:
+ *     if (tc.has_span_id() && isValidSpanId(tc.span_id()) &&
+ *         isSameTraceId(tc.trace_id(), localTraceId))
  *         buildChildSpan(..., traceFlagsByte(tc));
  * @endcode
  */
@@ -59,6 +62,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <span>
 #include <string_view>
 
 namespace xrpl::telemetry {
@@ -130,7 +134,7 @@ isValidTraceFlags(protocol::TraceContext const& tc)
  *
  * Use this where both ids are taken from the peer (consensus receive,
  * generic extraction). The transaction path derives its trace_id locally
- * from the txID, so it checks isValidSpanId() alone instead.
+ * from the txID, so it checks isValidSpanId() and isSameTraceId() instead.
  *
  * @param tc The protobuf TraceContext received from a peer.
  * @return true if both ids are present and valid and the flags fit, false
@@ -141,6 +145,24 @@ isValidTraceContext(protocol::TraceContext const& tc)
 {
     return tc.has_trace_id() && isValidTraceId(tc.trace_id()) && tc.has_span_id() &&
         isValidSpanId(tc.span_id()) && isValidTraceFlags(tc);
+}
+
+/**
+ * True if a peer's trace_id equals the trace_id of the span being started.
+ *
+ * A parent and its child share one trace. A receive site that derives its
+ * trace_id locally takes the peer's span as the parent only when this holds.
+ *
+ * @param traceId The raw trace_id bytes from a protobuf TraceContext. An
+ * absent field reads as empty.
+ * @param localTraceId The trace_id of the span being started.
+ * @return true if traceId is exactly the kTraceIdSize bytes of
+ * localTraceId, false otherwise.
+ */
+[[nodiscard]] inline bool
+isSameTraceId(std::string_view traceId, std::span<std::byte const, kTraceIdSize> localTraceId)
+{
+    return std::ranges::equal(std::as_bytes(std::span(traceId)), localTraceId);
 }
 
 /**
