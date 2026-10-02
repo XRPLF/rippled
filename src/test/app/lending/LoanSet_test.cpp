@@ -1041,8 +1041,9 @@ private:
         env.close();
 
         PrettyAsset const iou = issuer["IOU"];
-        env(trust(lender, iou(Number{10, 10})));
-        env(trust(borrower, iou(Number{10, 10})));
+        Number const trustLimit{10, 10};
+        env(trust(lender, iou(trustLimit)));
+        env(trust(borrower, iou(trustLimit)));
 
         Number const openLimit{9, 9};
         env(pay(issuer, lender, iou(openLimit)));
@@ -1050,13 +1051,17 @@ private:
         Vault const vault{env};
         auto [createTx, vaultKeylet, subscriptionDate] =
             vault.createClosedEnded({.owner = lender, .asset = iou});
-        createTx[sfScale] = 6;
+        std::uint8_t const vaultScale{6};
+        createTx[sfScale] = vaultScale;
         env(createTx);
 
         Number const principal{100};
         TenthBips32 const interestRate{100'000};
         constexpr std::uint32_t paymentTotal = 2;
         constexpr std::uint32_t paymentInterval = 24 * 60 * 60;
+        // The loan's scale mirrors the vault's: 6 fractional digits, expressed
+        // as a negative exponent.
+        std::int32_t const loanScale{-6};
         auto const properties = computeLoanProperties(
             env.current()->rules(),
             iou.raw(),
@@ -1065,10 +1070,10 @@ private:
             paymentInterval,
             paymentTotal,
             TenthBips16{0},
-            -6);
+            loanScale);
         Number const interestDue = properties.loanState.interestDue;
         BEAST_EXPECT(interestDue > beast::kZero);
-        BEAST_EXPECT(properties.loanScale == -6);
+        BEAST_EXPECT(properties.loanScale == loanScale);
 
         Number const deposit = openLimit - interestDue;
         env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = iou(deposit)}));
@@ -1116,7 +1121,7 @@ private:
             BEAST_EXPECT(loan);
             if (loan)
             {
-                BEAST_EXPECT(loan->at(sfLoanScale) == -6);
+                BEAST_EXPECT(loan->at(sfLoanScale) == loanScale);
                 BEAST_EXPECT(loan->at(sfPeriodicPayment) == properties.periodicPayment);
             }
         }
