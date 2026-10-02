@@ -46,7 +46,6 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
         return false;
 
     if (!ctx.rules.enabled(featureLendingProtocolV1_1) &&
-        !ctx.rules.enabled(featureLendingProtocolV1_2) &&
         (ctx.tx.isFieldPresent(sfVaultKind) || ctx.tx.isFieldPresent(sfSubscriptionDate) ||
          ctx.tx.isFieldPresent(sfRedemptionDate)))
         return false;
@@ -158,22 +157,6 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
             return tecOBJECT_NOT_FOUND;
     }
 
-    // FixedPrecision: AssetsMaximum must be exactly representable on the
-    // Vault's base grid, otherwise associateAsset would silently round the
-    // cap the owner asked for.
-    if (auto const assetMax = ctx.tx[~sfAssetsMaximum];
-        assetMax && vaultVersionFor(ctx.view.rules()) == VaultVersion::FixedPrecision)
-    {
-        int const baseScale =
-            vaultBaseScale(vaultAsset, ctx.tx[~sfScale].value_or(kVaultDefaultIouScale));
-        if (!isOnVaultBaseGrid(vaultAsset, *assetMax, baseScale))
-        {
-            JLOG(ctx.j.debug()) << "VaultCreate: AssetsMaximum " << *assetMax
-                                << " is not representable at the Vault scale.";
-            return tecPRECISION_LOSS;
-        }
-    }
-
     auto const sequence = ctx.tx.getSeqProxy();
     if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key);
         accountId == beast::kZero)
@@ -188,6 +171,21 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     if (hasExpired(ctx.view, ctx.tx[~sfSubscriptionDate]) ||
         hasExpired(ctx.view, ctx.tx[~sfRedemptionDate]))
         return tecEXPIRED;
+
+    // FixedPrecision: AssetsMaximum must be exactly representable on the Vault's base grid,
+    // otherwise associateAsset would silently round the cap the owner asked for.
+    if (auto const assetMax = ctx.tx[~sfAssetsMaximum];
+        assetMax && ctx.view.rules().enabled(featureLendingProtocolV1_2))
+    {
+        int const baseScale =
+            vaultBaseScale(vaultAsset, ctx.tx[~sfScale].value_or(kVaultDefaultIouScale));
+        if (!isOnVaultBaseGrid(vaultAsset, *assetMax, baseScale))
+        {
+            JLOG(ctx.j.debug()) << "VaultCreate: AssetsMaximum " << *assetMax
+                                << " is not representable at the Vault scale.";
+            return tecPRECISION_LOSS;
+        }
+    }
 
     return tesSUCCESS;
 }

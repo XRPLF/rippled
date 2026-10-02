@@ -4,7 +4,6 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
-#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -120,12 +119,11 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum];
         assetMax && ctx.view.rules().enabled(featureLendingProtocolV1_2))
     {
-        Asset const asset = vault->at(sfAsset);
-        if (!isOnVaultBaseGrid(asset, *assetMax, getVaultBaseScale(vault)))
+        if (auto const ter = checkAssetsMaximum(vault, *assetMax); !isTesSuccess(ter))
         {
             JLOG(ctx.j.debug()) << "VaultSet: AssetsMaximum " << *assetMax
                                 << " is not representable at the Vault scale.";
-            return tecPRECISION_LOSS;
+            return ter;
         }
     }
 
