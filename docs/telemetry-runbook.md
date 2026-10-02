@@ -363,10 +363,13 @@ either span can be filtered on it.
 | `consensus.round`            | `outcome.yes`      | --                                                          | Round settled with consensus reached                                                       |
 | `consensus.round`            | `outcome.moved_on` | --                                                          | Round abandoned; the network moved on without us                                           |
 | `consensus.round`            | `outcome.expired`  | --                                                          | Round expired without settling                                                             |
+| `consensus.round`            | `view.change`      | `prev_ledger_prefix`, `net_ledger_prefix`                   | The network prefers a different prior ledger; skipped while already in `WrongLedger`       |
 
-The nine events above are the complete set. The seven on `consensus.round`
-carry **no event attributes** — they are timestamps marking phase entry and the
-terminal outcome, so a round's whole life reads off one span's event list.
+The ten events above are the complete set on `consensus.*` spans. Seven of the
+eight on `consensus.round` carry **no event attributes**. They are timestamps
+marking phase entry and the terminal outcome, so a round's whole life reads off
+one span's event list. The exception is `view.change`:
+`RCLConsensus::Adaptor::getPrevLedger()` records both ledger-ID prefixes on it.
 Phase entry additionally rewrites the round's span-level `consensus_phase`
 attribute, which is why `phase.recovery` is the one phase event that leaves
 `consensus_phase` unchanged (it fires with an empty label). Evidence:
@@ -446,17 +449,18 @@ join on the trace, not on one span.
 
 > **Most `ledger.*` spans carry a ledger hash; `ledger.build` does not.**
 > `ledger_span::attr::ledgerHash`
-> ([LedgerSpanNames.h:95](../src/xrpld/app/ledger/detail/LedgerSpanNames.h#L95))
+> ([LedgerSpanNames.h](../src/xrpld/app/ledger/detail/LedgerSpanNames.h))
 > is set unconditionally on `ledger.validate` and `ledger.store` by
-> `LedgerMaster::makeLedgerTraceSpan`
-> ([LedgerMaster.cpp:187](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L187)),
-> and on `ledger.acquire` together with its three phase children, so
-> `span.ledger_hash` filters work over all of those. It is also the key the
-> per-ledger trace join hashes, which is why the validation harness now requires
-> it on both ends of that join. The exception is `ledger.build`, which carries
+> `LedgerMaster::makeLedgerTraceSpan()`
+> ([LedgerMaster.cpp](../src/xrpld/app/ledger/detail/LedgerMaster.cpp)).
+> It is also set on `ledger.acquire` and its three phase children, so
+> `span.ledger_hash` filters work over all of those. The per-ledger trace join
+> hashes this key, so the validation harness requires it on both ends of that
+> join. The exception is `ledger.build`, which carries
 > `ledger_seq` only — identify a build by sequence, or pull the whole ledger's
 > trace and read the hash off a sibling span. `ledger_hash` is likewise set on
-> `consensus.validation.send` and on the peer spans.
+> `consensus.validation.accept`, `consensus.validation.send` and
+> `peer.validation.receive`.
 
 ### Peer Spans
 
@@ -900,8 +904,9 @@ Consensus loops and branches (evidence):
   [1499](../include/xrpl/consensus/Consensus.h#L1499)); close time can
   "agree to disagree" at prior close + 1s ([docs/consensus.md:163](consensus.md)).
 - **acquireTxSet / gotTxSet loop**: a disagreeing peer position triggers an async
-  `acquireTxSet`; the later `gotTxSet` regenerates disputes and can extend the
-  establish phase ([Consensus.h:931](../include/xrpl/consensus/Consensus.h#L931)).
+  `acquireTxSet`. The later `gotTxSet` regenerates disputes and can extend the
+  establish phase (`Consensus::peerProposalInternal()` and
+  `Consensus::gotTxSet()` in [Consensus.h](../include/xrpl/consensus/Consensus.h)).
   The fetch is spanned as `txset.acquire` and records one `round.request` event
   per round that asked for the set; the `gotTxSet` delivery itself has no span,
   so a set arriving too late to be used leaves no trace of its own.
@@ -1079,20 +1084,22 @@ flowchart TB
 Side-flow evidence:
 
 - **Pathfind subscription lifecycle**: `path_find` create inserts a persistent
-  subscription (`makePathRequest`); `update_all` re-runs each active request every
-  close, removes dead subscribers (`doAborting` + `remove_if` erase), and takes an
-  extra pass when a new request arrived mid-run
-  ([PathRequestManager.cpp:103](../src/xrpld/rpc/detail/PathRequestManager.cpp#L103),
-  [169](../src/xrpld/rpc/detail/PathRequestManager.cpp#L169),
-  [181](../src/xrpld/rpc/detail/PathRequestManager.cpp#L181)).
-- **Acquire outcome fork**: `timeouts_ > kLedgerTimeoutRetriesMax` (= 6) sets
-  `failed_` → terminal `logFailure`, no store/checkAccept
-  ([InboundLedger.cpp:506](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L506)).
+  subscription (`makePathRequest`). `update_all` re-runs each active request every
+  close and removes dead subscribers (`doAborting` + `remove_if` erase). It takes
+  an extra pass when a new request arrived mid-run
+  (`PathRequestManager::updateAll()` in
+  [PathRequestManager.cpp](../src/xrpld/rpc/detail/PathRequestManager.cpp)).
+- **Acquire outcome fork**: when `timeouts_ > kLedgerTimeoutRetriesMax` (= 6),
+  `InboundLedger::onTimer()` sets `failed_` and calls `done()`. Its `AcqDone`
+  job then runs `logFailure`, with no store and no `checkAccept`
+  ([InboundLedger.cpp](../src/xrpld/app/ledger/detail/InboundLedger.cpp)).
   A third path never reaches `done()` at all: the destructor marks any acquisition
-  that is still neither `complete_` nor `failed_` as `outcome=abandoned`
-  ([InboundLedgers.cpp:396](../src/xrpld/app/ledger/detail/InboundLedgers.cpp#L396)
-  sweep eviction; [InboundLedger.cpp:309](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L309)
-  abort branch). Give-up fires at roughly **18s**, not 21s: `init()` enters the
+  that is still neither `complete_` nor `failed_` as `outcome=abandoned`. Sweep
+  eviction happens in `InboundLedgersImp::sweep()`
+  ([InboundLedgers.cpp](../src/xrpld/app/ledger/detail/InboundLedgers.cpp)); the
+  destructor stamps the outcome through `InboundLedger::finalizeAcquireSpan()`
+  ([InboundLedger.cpp](../src/xrpld/app/ledger/detail/InboundLedger.cpp)).
+  Give-up fires at roughly **18s**, not 21s: `init()` enters the
   retry loop through `queueJob()` with no preceding `setTimer()`, so the first
   `invokeOnTimer()` runs immediately with `progress_` still `false` and takes
   `timeouts_` to 1 at t≈0. The test needs `timeouts_ > 6` — the seventh invocation
@@ -1115,14 +1122,14 @@ Side-flow evidence:
   `acquire_sweep_evictions`.
 
 - **done() reason branch (store side only)**: `HISTORY` → `onLedgerFetched`, **no**
-  `storeLedger`; else → `storeLedger`. But `checkAccept` + `tryAdvance` run for
-  **any** `complete_ && !failed_` acquire regardless of reason
-  ([InboundLedger.cpp:841](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L841)
-  store switch; [853](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L853)
-  reason-independent checkAccept/tryAdvance on the `AcqDone` job).
-- **tryAdvance multi-ledger loop**: `doAdvance` runs `do { … } while (advanceWork_)`,
-  publishing a range of ledgers and recursively triggering further HISTORY acquire
-  ([LedgerMaster.cpp:1905](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1905)).
+  `storeLedger`; else → `storeLedger`. But the `AcqDone` job that `done()` posts
+  runs `checkAccept` + `tryAdvance` for **any** `complete_ && !failed_` acquire,
+  whatever its reason (`InboundLedger::done()` in
+  [InboundLedger.cpp](../src/xrpld/app/ledger/detail/InboundLedger.cpp)).
+- **tryAdvance multi-ledger loop**: `LedgerMaster::doAdvance()` runs
+  `do { … } while (advanceWork_)`, publishing a range of ledgers and recursively
+  triggering further HISTORY acquire
+  ([LedgerMaster.cpp](../src/xrpld/app/ledger/detail/LedgerMaster.cpp)).
 
 ### Where telemetry parenting differs from protocol flow
 
@@ -1130,16 +1137,16 @@ The graph above is protocol control flow. The OpenTelemetry span **parent links*
 are built differently and, in several places, do **not** represent a real
 call edge. Read a trace with these in mind:
 
-| Telemetry does this                                                                                                                   | Real protocol flow                                                                                                                                                                                                                                                                                                                                                                         |
-| ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `tx.process` is a `hashSpan` root from `txID` — an independent trace root ([TxTracing.h:63](../src/xrpld/telemetry/TxTracing.h#L63)). | The real edge is the synchronous `doSubmit → processTransaction` call; it is **not** a child of `rpc.command.submit`.                                                                                                                                                                                                                                                                      |
-| `tx.preflight` / `tx.preclaim` / `tx.transactor` share one `txID`-derived trace ID.                                                   | That shared ID is a correlation trick, not a call edge. The real order is the composed `apply()` at [apply.cpp:118](../src/libxrpl/tx/apply.cpp#L118). They are **not** children of `tx.process` or `tx.apply`. Because nothing else nests under it either, `tx.apply` is **always a leaf** — the stage spans for the transactions it applied sit in the txID-keyed trace, not beneath it. |
-| `consensus.round` uses a deterministic trace ID from the previous ledger hash.                                                        | This makes **all validators share one trace ID** (a cross-node shared root), not a per-node parent. The real round-to-round edge is `endConsensus → beginConsensus`.                                                                                                                                                                                                                       |
-| `consensus.accept` (main thread) and `consensus.accept.apply` (JtAccept worker) are wired via a captured context.                     | The real edge is the queued `JtAccept` job, a thread hand-off ([RCLConsensus.cpp:483](../src/xrpld/app/consensus/RCLConsensus.cpp#L483)). `consensus.accept.apply` is a scoped guard, so the spans `doAccept` creates after it (`ledger.build`, `txq.cleanup`, `txq.accept`, `ledger.store`, `ledger.validate`) nest under it; those are real containment edges.                           |
-| `pathfind.update_all` parents nothing from the original `pathfind.request`.                                                           | The causal link is the ledger-close job on `JtUpdatePf`, not span nesting.                                                                                                                                                                                                                                                                                                                 |
-| `ledger.acquire` and its downstream `ledger.store` / `ledger.validate`.                                                               | Reached via the `AcqDone` job, not parent inheritance. All three are `hashSpan` roots keyed on the ledger hash, so none of them parents the others and none inherits its caller's span; they share one trace instead.                                                                                                                                                                      |
-| `peer.*.receive` (fresh `kConsumer` root) and `consensus.*.receive` on the same message.                                              | Two **sequential stages of one synchronous handler**, not parent/child; on a duplicate/untrusted drop the `consensus.*.receive` is never created.                                                                                                                                                                                                                                          |
-| Receive spans adopt the sender's `trace_id` + `span_id` as a genuine cross-node parent.                                               | Deliberate: the receive span becomes a child of a **different node's** span (a cross-node context marker, not an in-process edge). `tx.receive` is asymmetric — it borrows only the sender's `span_id` and re-derives its own `trace_id` from `txID`.                                                                                                                                      |
+| Telemetry does this                                                                                                                                 | Real protocol flow                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tx.process` is a `hashSpan` root from `txID` — an independent trace root (`txProcessSpan()` in [TxTracing.h](../src/xrpld/telemetry/TxTracing.h)). | The real edge is the synchronous `doSubmit → processTransaction` call; it is **not** a child of `rpc.command.submit`.                                                                                                                                                                                                                                                                                                                         |
+| `tx.preflight` / `tx.preclaim` / `tx.transactor` share one `txID`-derived trace ID.                                                                 | That shared ID is a correlation trick, not a call edge. The real order is the composed `apply()` in [apply.cpp](../src/libxrpl/tx/apply.cpp). They are **not** children of `tx.process` or `tx.apply`. Because nothing else nests under it either, `tx.apply` is **always a leaf** — the stage spans for the transactions it applied sit in the txID-keyed trace, not beneath it.                                                             |
+| `consensus.round` uses a deterministic trace ID from the previous ledger hash.                                                                      | This makes **all validators share one trace ID** (a cross-node shared root), not a per-node parent. The real round-to-round edge is `endConsensus → beginConsensus`.                                                                                                                                                                                                                                                                          |
+| `consensus.accept` (main thread) and `consensus.accept.apply` (JtAccept worker) are wired via a captured context.                                   | The real edge is the queued `JtAccept` job, a thread hand-off (`RCLConsensus::Adaptor::onAccept()` in [RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp)). `consensus.accept.apply` is a scoped guard, so the spans `doAccept` creates after it (`ledger.build`, `txq.cleanup`, `txq.accept`) nest under it; those are real containment edges. The `ledger.store` and `ledger.validate` it reaches are `hashSpan` roots instead. |
+| `pathfind.update_all` parents nothing from the original `pathfind.request`.                                                                         | The causal link is the ledger-close job on `JtUpdatePf`, not span nesting.                                                                                                                                                                                                                                                                                                                                                                    |
+| `ledger.acquire` and its downstream `ledger.store` / `ledger.validate`.                                                                             | Reached via the `AcqDone` job, not parent inheritance. All three are `hashSpan` roots keyed on the ledger hash, so none of them parents the others and none inherits its caller's span; they share one trace instead.                                                                                                                                                                                                                         |
+| `peer.*.receive` (fresh `kConsumer` root) and `consensus.*.receive` on the same message.                                                            | Two **sequential stages of one synchronous handler**, not parent/child; on a duplicate/untrusted drop the `consensus.*.receive` is never created.                                                                                                                                                                                                                                                                                             |
+| Receive spans adopt the sender's `trace_id` + `span_id` as a genuine cross-node parent.                                                             | Deliberate: the receive span becomes a child of a **different node's** span (a cross-node context marker, not an in-process edge). `tx.receive` is asymmetric — it borrows only the sender's `span_id` and re-derives its own `trace_id` from `txID`.                                                                                                                                                                                         |
 
 > **Known telemetry artifacts**:
 > an RPC entry span's scope can leak across a reused coroutine worker, and the
@@ -1165,10 +1172,13 @@ are pending a code fix:
   appearing beneath an unrelated transaction's trace is this bug, not a real
   call edge.
 - **`ledger.acquire` / `ledger.store` / `ledger.validate` are true roots on the
-  ledger-hash trace.** All three use `SpanGuard::hashSpan`
-  ([InboundLedger.cpp:128](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L128),
-  [LedgerMaster.cpp:181](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L181)), which
-  derives the trace id from the ledger hash and never inherits the ambient span. So
+  ledger-hash trace.** All three use `SpanGuard::hashSpan`, which derives the
+  trace id from the ledger hash and never inherits the ambient span. The acquire
+  span is created in `InboundLedger::init()`
+  ([InboundLedger.cpp](../src/xrpld/app/ledger/detail/InboundLedger.cpp)). The
+  store and validate spans come from `LedgerMaster::makeLedgerTraceSpan()`, which
+  `LedgerMaster::storeLedger()` and `LedgerMaster::checkAccept()` call
+  ([LedgerMaster.cpp](../src/xrpld/app/ledger/detail/LedgerMaster.cpp)). So
   the caller does not matter: an acquire started from the `ledger_request` RPC, a
   store reached from `buildLCL` inside `doAccept`, and a validate reached from
   `checkAccept` all come out as roots of the same per-ledger trace. Two `ledger.store`
@@ -1317,19 +1327,21 @@ sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.tr
 > stage rather than on a single aggregate so the failing stage is obvious.
 
 > **Sampling caveat**: these stage metrics are span-derived, but head sampling
-> is **fixed at 100% and is not configurable** — the ratio is a compile-time
-> constant ([Telemetry.h:234](../include/xrpl/telemetry/Telemetry.h#L234)
-> `static constexpr double samplingRatio = 1.0;`) and there is no
-> `sampling_ratio` config key to set
-> ([TelemetryConfig.cpp:139](../src/libxrpl/telemetry/TelemetryConfig.cpp#L139)
-> — "nothing to parse"). So locally these counts are **exact**, not a sample.
-> Volume reduction is a collector-side **tail** sampling decision instead, and
-> the only policy shipped is a single 0.5% probabilistic one that lives **only**
-> in `otel-collector-config.grafanacloud.yaml` — the base
-> `otel-collector-config.yaml` has no tail sampling at all, so a stock local
-> stack retains every trace. Where that Cloud policy is in force it applies to
-> the trace-storage branch only; span_metrics run on a separate branch and still
-> see 100% of spans, so the derived RED metrics stay exact either way.
+> is **fixed at 100% and is not configurable**. The ratio is a compile-time
+> constant (`static constexpr double samplingRatio = 1.0;` in `Telemetry::Setup`,
+> [Telemetry.h](../include/xrpl/telemetry/Telemetry.h)). There is no
+> `sampling_ratio` config key to set (`makeTelemetrySetup()` in
+> [TelemetryConfig.cpp](../src/libxrpl/telemetry/TelemetryConfig.cpp) — "nothing
+> to parse"). So locally these counts are **exact**, not a sample.
+> Volume reduction is a collector-side **tail** sampling decision instead. The
+> only sampler shipped is one `tail_sampling` processor in
+> `otel-collector-config.grafanacloud.yaml`. It keeps 0.5% of traces at random,
+> plus every trace with a span whose name starts with `nodestore.rotate`. The
+> base `otel-collector-config.yaml` has **no** tail sampling, so a stock local
+> stack keeps every trace. Where the Cloud sampler is in force it applies to
+> the trace-storage branch only. The `spanmetrics` connector runs on a separate
+> branch and still sees 100% of spans, so the derived RED metrics stay exact
+> either way.
 
 ### Transaction Queue Health
 
@@ -2610,9 +2622,9 @@ or more. `server_info` reports the latest probe, fast ones included, as
 The rule counts `state_accounting_full_transitions`, which counts transitions
 _into_ `full` and is exported as a cumulative gauge — `increase()` is therefore
 correct, and its counter-reset correction turns a process restart into a small
-positive delta rather than a false spike. `state_changes_total` cannot be used
-here: it carries no from/to labels, so it cannot tell a flap from a normal
-startup walk.
+positive delta rather than a false spike. `state_changes_total{to="full"}`,
+summed over `from`, counts the same entries: `NetworkOPsImp::setMode()` records
+both on each mode change.
 
 **The `uptime > 3600` gate is load-bearing.** Every node walks
 `disconnected → connected → syncing → tracking → full` once at boot; without the
@@ -3422,25 +3434,27 @@ they are the pair this procedure means. The all-lane totals remain useful for on
 question only: whether _any_ lane is deferring.
 
 A deferral happens when the acquisition timer job finds its lane's job count at or
-above the acquisition's own limit — 5 for `InboundLedger`
-(`src/xrpld/app/ledger/detail/InboundLedger.cpp:96`), compared against
-`getJobCountTotal()` in `TimeoutCounter::queueJob()`
-(`src/xrpld/app/ledger/detail/TimeoutCounter.cpp:62-64`). That is not the same as
-the `ledgerData` lane's concurrency cap of 3 (`include/xrpl/core/JobTypes.h:63`):
-the gate counts running plus queued, so it fires at 3 running plus 2 queued. The
-timer is re-armed but its **body does not run**, so the retry counter never
-advances and the 6-timeout give-up becomes unreachable — the give-up path is
-disarmed and the acquisition can never end on its own. Neither counter alone shows
-this: deferrals rising looks like ordinary backpressure, and timeouts flat looks
-like health. Only the divergence is diagnostic. See the counter documentation in
+above the acquisition's own limit. For `InboundLedger` that limit is 5, set as
+`.jobLimit` by its constructor in `src/xrpld/app/ledger/detail/InboundLedger.cpp`.
+`TimeoutCounter::queueJob()` compares it against `getJobCountTotal()`
+(`src/xrpld/app/ledger/detail/TimeoutCounter.cpp`). That is not the same as the
+`ledgerData` lane's concurrency cap of 3, set by the `JtLedgerData` entry in
+`include/xrpl/core/JobTypes.h`. The gate counts running plus queued, so it fires
+at 3 running plus 2 queued. The timer is re-armed but its **body does not run**,
+so the retry counter never advances and the timeout give-up never fires. Only
+arriving data, the sweep, or clearing the whole map (`InboundLedgersImp::stop()`
+or `clearFailures()`) can then end the acquisition. Neither counter alone shows
+this: deferrals rising looks like ordinary
+backpressure, and timeouts flat looks like health. Only the divergence is
+diagnostic. See the counter documentation in
 `src/xrpld/app/ledger/AcquireStats.h`.
 
 Two more pairs from the same family:
 
 - `acquire_sweep_evictions` rising while `acquire_completions` stays at zero →
   partial work is being discarded and redone. The sweep drops any acquisition
-  idle for more than one minute
-  (`src/xrpld/app/ledger/detail/InboundLedgers.cpp:396`), taking whatever it had
+  idle for more than one minute (`InboundLedgersImp::sweep()` in
+  `src/xrpld/app/ledger/detail/InboundLedgers.cpp`), taking whatever it had
   built with it. Only the ones that had not finished are counted: a completed or
   failed acquisition also waits in the map for the sweep, and counting those
   would make this rate track ordinary cleanup instead of wasted work.
@@ -3654,22 +3668,23 @@ _Time to First Validated Ledger_ stays flat at zero.
 Ledger acquires are in flight, _Ledgers Behind Network_ is flat or rising, and
 `full` never arrives.
 
-| Look at                                                                                                       | Healthy                                           | Unhealthy                                                                                                  | Conclude                                                                                                                                                                                                                                    |
-| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| _Missing SHAMap Nodes per Acquire (state/tx)_                                                                 | falling toward zero (read the trend over minutes) | **flat and non-zero**                                                                                      | **no peer is serving that tree** — the node will sit here forever. Pinned at 256 is the per-sweep cap, meaningful only with the trend                                                                                                       |
-| _Acquire Stall Rate (no progress)_                                                                            | flat                                              | sustained rate **together with** a flat missing-node count                                                 | the definitive stuck-sync signature: requesting and nobody answering                                                                                                                                                                        |
-| _Peers Able to Serve Needed Sequence_                                                                         | `peers_serving_next` above zero                   | `peers_ahead` = 0 (sustained) while `peers_reporting` > 0 and `ledgermaster_validated_ledger_age` climbing | **decisive**: no peer offers anything newer than this node, so _Ledgers Behind Network_ reads 0 too (same peer ranges). Waiting cannot finish it — the peer set must change. Everything else in branch C will look starved; do not chase it |
-|                                                                                                               |                                                   | `peers_serving_next` = 0 while `peers_ahead` > 0                                                           | none of the peers ahead offers the ledger after this node's. Not a sync blocker — the node fetches the newest ledger by hash — but its history keeps a hole that only a peer holding those ledgers can fill. Keep reading the rows below    |
-| _Peer Supply Window Margin (history headroom vs tip gap)_                                                     | _History Headroom_ positive, _Tip Gap_ near zero  | _History Headroom_ **below zero**                                                                          | no peer offers this node's validated ledger or anything older. Not a sync blocker, but the ledgers between this node's and the lowest one offered can stay a hole that only a peer holding them can fill                                    |
-|                                                                                                               |                                                   | _Tip Gap_ growing steadily                                                                                 | the peer set lags the real network; not a history problem                                                                                                                                                                                   |
-| _Ledger Acquire Phase Outcomes (by phase & timeout)_ + _Ledger Acquire Phase Duration (p95 by phase)_ (row 9) | `header` short, `astree` the bulk                 | `astree` hot with `timed_out=true` and non-zero `missing_nodes`                                            | the common stuck shape — peers are not supplying account-state nodes                                                                                                                                                                        |
-|                                                                                                               |                                                   | `header` hot                                                                                               | the node is waiting to be **told what to fetch**; invisible in the missing-node counts, which are both still zero                                                                                                                           |
-| _Add-Node Outcomes_                                                                                           | `good` dominates                                  | `duplicate` swamps `good`                                                                                  | bandwidth busy, acquire standing still — peers re-sending known data                                                                                                                                                                        |
-|                                                                                                               |                                                   | `invalid` rising                                                                                           | a specific misbehaving peer, not a local fault                                                                                                                                                                                              |
-| _Received-Data Stash Depth & In-Flight Acquires_                                                              | stash drains                                      | stash growing                                                                                              | data arrives faster than it is applied — a job-queue or disk problem, the **opposite** conclusion from a stall rate, and only this panel separates them                                                                                     |
-| `jobq_<jobtype>_deferred`                                                                                     | flat at 0                                         | sustained non-zero on `ledgerdata`/`ledgerrequest`                                                         | a job the queue accepted then **withheld** at its concurrency limit of 3 — it appears in neither `waiting` nor `running`, so no other signal can show it. Starved `ledgerdata` is exactly why the stash grows while missing nodes stay flat |
-| _Worker Pool Saturation_ + _Worker Pool Capacity & Total Backlog_                                             | under 80%                                         | 100% with `total_waiting` climbing                                                                         | the pool is **exhausted** — every stage looks slow at once. Stop here; no per-subsystem fix helps while no thread is free                                                                                                                   |
-| Acquire outcome `abandoned` in Tempo (`{name="ledger.acquire" && span.outcome="abandoned"}`)                  | absent                                            | present                                                                                                    | the acquire was destroyed with no result: swept, shut down, or cleared by an admin `fetch_info` clear. Rule out the last two first                                                                                                          |
+| Look at                                                                                                       | Healthy                                                                        | Unhealthy                                                                                                  | Conclude                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _Missing SHAMap Nodes per Acquire (state/tx)_                                                                 | falling toward zero (read the trend over minutes)                              | **flat and non-zero**                                                                                      | **no peer is serving that tree** — the node will sit here forever. Pinned at 256 is the per-sweep cap, meaningful only with the trend                                                                                                       |
+| _Acquire Stall Rate (no progress)_                                                                            | flat                                                                           | sustained rate **together with** a flat missing-node count                                                 | the definitive stuck-sync signature: requesting and nobody answering                                                                                                                                                                        |
+| _Peers Able to Serve Needed Sequence_                                                                         | `peers_serving_next` above zero                                                | `peers_ahead` = 0 (sustained) while `peers_reporting` > 0 and `ledgermaster_validated_ledger_age` climbing | **decisive**: no peer offers anything newer than this node, so _Ledgers Behind Network_ reads 0 too (same peer ranges). Waiting cannot finish it — the peer set must change. Everything else in branch C will look starved; do not chase it |
+|                                                                                                               |                                                                                | `peers_serving_next` = 0 while `peers_ahead` > 0                                                           | none of the peers ahead offers the ledger after this node's. Not a sync blocker — the node fetches the newest ledger by hash — but its history keeps a hole that only a peer holding those ledgers can fill. Keep reading the rows below    |
+| _Peer Supply Window Margin (history headroom vs tip gap)_                                                     | _History Headroom_ positive, _Tip Gap_ near zero (−1 between rounds is normal) | _History Headroom_ **below zero**                                                                          | no peer offers this node's validated ledger or anything older. Not a sync blocker, but the ledgers between this node's and the lowest one offered can stay a hole that only a peer holding them can fill                                    |
+|                                                                                                               |                                                                                | _Tip Gap_ growing steadily                                                                                 | this node falls further behind the tip its peers already hold: it is not keeping up. Not a history problem                                                                                                                                  |
+|                                                                                                               |                                                                                | _Tip Gap_ **staying below −1**                                                                             | its peers lag behind this node. Peers advertise their published ledger, so −1 between rounds is normal                                                                                                                                      |
+| _Ledger Acquire Phase Outcomes (by phase & timeout)_ + _Ledger Acquire Phase Duration (p95 by phase)_ (row 9) | `header` short, `astree` the bulk                                              | `astree` hot with `timed_out=true` and non-zero `missing_nodes`                                            | the common stuck shape — peers are not supplying account-state nodes                                                                                                                                                                        |
+|                                                                                                               |                                                                                | `header` hot                                                                                               | the node is waiting to be **told what to fetch**; invisible in the missing-node counts, which are both still zero                                                                                                                           |
+| _Add-Node Outcomes_                                                                                           | `good` dominates                                                               | `duplicate` swamps `good`                                                                                  | bandwidth busy, acquire standing still — peers re-sending known data                                                                                                                                                                        |
+|                                                                                                               |                                                                                | `invalid` rising                                                                                           | a specific misbehaving peer, not a local fault                                                                                                                                                                                              |
+| _Received-Data Stash Depth & In-Flight Acquires_                                                              | stash drains                                                                   | stash growing                                                                                              | data arrives faster than it is applied — a job-queue or disk problem, the **opposite** conclusion from a stall rate, and only this panel separates them                                                                                     |
+| `jobq_<jobtype>_deferred`                                                                                     | flat at 0                                                                      | sustained non-zero on `ledgerdata`/`ledgerrequest`                                                         | a job the queue accepted then **withheld** at its concurrency limit of 3 — it appears in neither `waiting` nor `running`, so no other signal can show it. Starved `ledgerdata` is exactly why the stash grows while missing nodes stay flat |
+| _Worker Pool Saturation_ + _Worker Pool Capacity & Total Backlog_                                             | under 80%                                                                      | 100% with `total_waiting` climbing                                                                         | the pool is **exhausted** — every stage looks slow at once. Stop here; no per-subsystem fix helps while no thread is free                                                                                                                   |
+| Acquire outcome `abandoned` in Tempo (`{name="ledger.acquire" && span.outcome="abandoned"}`)                  | absent                                                                         | present                                                                                                    | the acquire was destroyed with no result: swept, shut down, or cleared by an admin `fetch_info` clear. Rule out the last two first                                                                                                          |
 
 **Conclusion:** distinguish "nobody is serving it" (peer supply) from "it arrives
 and we cannot process it" (job queue / disk). The two look identical in a log and
@@ -3711,9 +3726,9 @@ Read the **Back-fill & persistence** row.
 
 | Look at                                                     | Healthy                                                                                                                                                                     | Unhealthy                                                       | Conclude                                                                                                                                                                                                                                                                                                                                     |
 | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| _NodeStore Write vs Read Latency (us/op)_                   | write line flat and low                                                                                                                                                     | write line rising during back-fill                              | the backend cannot absorb writes. Adding peers will not help — check storage IOPS, the `[node_db]` backend and whether online-delete/rotation competes with the back-fill                                                                                                                                                                    |
+| _NodeStore Write vs Read Latency (µs/op)_                   | write line flat and low                                                                                                                                                     | write line rising during back-fill                              | the backend cannot absorb writes. Adding peers will not help — check storage IOPS, the `[node_db]` backend and whether online-delete/rotation competes with the back-fill                                                                                                                                                                    |
 |                                                             |                                                                                                                                                                             | read line far above write                                       | the read path is the cost; read with the cache-hit panel below                                                                                                                                                                                                                                                                               |
-| _NodeStore Operation Rate (writes vs reads)_                | write rate non-zero while behind                                                                                                                                            | write rate zero while still behind the network                  | nothing is being persisted — the stall is **upstream** of the node store. Go to branch C; storage is not the problem                                                                                                                                                                                                                         |
+| _NodeStore Operation Rate (Writes vs Reads)_                | write rate non-zero while behind                                                                                                                                            | write rate zero while still behind the network                  | nothing is being persisted — the stall is **upstream** of the node store. Go to branch C; storage is not the problem                                                                                                                                                                                                                         |
 | _SHAMap TreeNode Cache Hit Rate_                            | rising as the cache warms                                                                                                                                                   | persistently low                                                | the working set does not fit the cache, or re-acquisition churns it, so every tree walk pays disk latency                                                                                                                                                                                                                                    |
 | _Acquire Source (local vs network)_                         | `local` dominant on a warm node                                                                                                                                             | sustained `network` on a range the node should hold             | the local store is not retaining data                                                                                                                                                                                                                                                                                                        |
 | paired with _NuDB Cache Hit Ratio_ (Ledger Data Sync board) | both healthy                                                                                                                                                                | low on both                                                     | disk-bound sync                                                                                                                                                                                                                                                                                                                              |
@@ -3728,7 +3743,7 @@ Read the **Back-fill & persistence** row.
 | _Rotation Node Re-Store Rate_                               | flat at zero                                                                                                                                                                | any sustained rate                                              | an earlier rotation removed the only on-disk copy of clean nodes the current state map still reaches. Two consequences: each rescue is an extra write competing with sync, and without it the node would later hit an unresolvable missing-node error. Get the hashes from the `copyNode` warning in Loki — they are deliberately not labels |
 | _Rotation Phase Duration (p95 by stage)_                    | `freshen.keys` p95 well under one second on an idle node; other stages proportional to state-map size                                                                       | `freshen.keys` p95 in seconds                                   | a cache mutex (tree-node or transaction cache) is being held across the getKeys() copy for up to that long. For the tree-node cache, every job that fetches a SHAMap node during that window waits, and a `full`->`syncing` flap is likely for the round that overlaps it                                                                    |
 |                                                             |                                                                                                                                                                             | `copy` p95 approaching the rotation cadence                     | the state-map walk is not converging inside its own interval; the next rotation will overlap this one                                                                                                                                                                                                                                        |
-| _Cache Lock Hold Peak (us)_                                 | zero on an idle node; sub-millisecond values during a sweep                                                                                                                 | multi-second peak                                               | the `TaggedCache` for either the tree-node cache or the FullBelow cache held its mutex that long across `getKeys()` or `sweep()`. Correlate with the `rotating` log line and the `nodestore.rotate.freshen.keys` span: a rotation is the usual cause                                                                                         |
+| _Cache Lock Hold Peak (µs)_                                 | zero on an idle node; sub-millisecond values during a sweep                                                                                                                 | multi-second peak                                               | the `TaggedCache` for either the tree-node cache or the FullBelow cache held its mutex that long across `getKeys()` or `sweep()`. Correlate with the `rotating` log line and the `nodestore.rotate.freshen.keys` span: a rotation is the usual cause                                                                                         |
 | _Job Stalls ≥1 s (Count By Job Type)_                       | zero, or a very small count on a healthy busy node                                                                                                                          | several distinct job types crossing the bar in the same minute  | the whole worker pool froze at the same instant. This is a process-wide stall, not a per-type slowdown; the rotation spans point at what caused it                                                                                                                                                                                           |
 
 > **Proving a rotation stall from telemetry.** For a suspected rotation-driven
@@ -4105,9 +4120,12 @@ panel it reads.
       shapes of a supply gap apart, and zero is the boundary in both cases:
       _History Headroom_ **below zero** means no peer offers this node's
       validated ledger or anything older. That can leave a hole in its
-      history but does not stop the sync; a _Tip Gap_ that grows
-      steadily means it is chasing a tip its peers have not reached, which is a
-      peer set lagging the real network rather than a history problem. Both
+      history but does not stop the sync. A _Tip Gap_ that grows steadily
+      means its peers keep advancing while this node falls further behind
+      them. The node is not keeping up, which is not a history problem.
+      Peers advertise their published ledger, which trails validation, so a
+      _Tip Gap_ of −1 between rounds is normal. One that stays below −1
+      means its peers lag behind this node. Both
       lines stay blank until the node has a validated ledger and a peer has
       advertised a range, so an empty panel here is the `peers_reporting` = 0
       case above, not a healthy reading.
@@ -4230,10 +4248,11 @@ panel it reads.
     write-bound, so no read-side panel can show it; check this step whenever a
     node with existing history is the slow one. Both panels live in the
     **Back-fill & persistence** row.
-    Panel _NodeStore Write vs Read Latency (us/op)_ (`nodestore_state`,
-    `metric=node_writes_duration_us` / `node_reads_duration_us` rated against
-    their counts) with _NodeStore Operation Rate (writes vs reads)_
-    (`metric=node_writes` / `node_reads_total`) beside it:
+    Panel _NodeStore Write vs Read Latency (µs/op)_ rates
+    `metric=node_writes_duration_us` / `node_reads_duration_us`
+    (`nodestore_state`) against their counts. Read it with
+    _NodeStore Operation Rate (Writes vs Reads)_ (`metric=node_writes` /
+    `node_reads_total`) beside it:
     - **Write line rising during history back-fill** — the backend cannot
       absorb writes fast enough. Sync will stay slow however many peers are
       available, so adding peers will not help. Check storage IOPS, the
@@ -4351,9 +4370,9 @@ panel it reads.
       than at acquisition.
     - **Validation fine, publishing behind?** Panel _Publish Lag (validated
       minus published)_ (`ledger_quorum_publish`, `metric=publish_lag`). This
-      is the separate question, and the one no other panel can answer: the
-      published sequence was never exported before, so this gap was not
-      derivable from any other series. Publishing trails validation by
+      is the separate question. This panel counts the lag in ledgers;
+      _Ledger Publish Gap_ on Node Health shows the same lag in seconds.
+      Publishing trails validation by
       design, so a small lag that drains each round is normal.
       - **Lag flat at 0 or 1** — healthy.
       - **Lag positive and growing** — validation is healthy and the
@@ -4503,10 +4522,10 @@ panel it reads.
 18. **Are consensus rounds themselves slowing down?**
     Panels _Consensus Round Duration Distribution_ (heatmap) and _Consensus
     Round Duration (p50/p95/p99)_ (`consensus_round_duration_ms`). A round that
-    used to take 3-4 s and now takes 12 delays every ledger behind it, and
-    until now this was only a span attribute — answering it fleet-wide meant
-    raw trace queries. Being a native metric it is also **never sampled**,
-    unlike every span-derived panel above.
+    takes 12 s instead of 3-4 s delays every ledger behind it. As a native
+    metric this histogram answers that fleet-wide without trace queries.
+    `RCLConsensus::Adaptor::makeAcceptSpan()` records it before it checks for a
+    live accept span, so it is recorded even when consensus tracing is off.
     - **Band drifting upward, or a second band high up** — rounds are taking
       longer. Read it against the two panels that explain why: _Tx-Set Acquire
       Duration (p95)_ (step 16 — rounds waiting on data rather than on
@@ -4565,9 +4584,9 @@ Read it this way:
    validation), from the acquire-completion job, and from the consensus thread
    (`switchLCL`). A chain would assert an order that does not hold.
 3. **Compare the spans' durations,** which is the point of having them in one
-   trace: whether this ledger was slow to _arrive_, slow to be _accepted_, or
-   slow to be _stored_ is now one glance instead of three separate searches
-   that cannot be correlated.
+   trace. Whether this ledger was slow to _arrive_, slow to be _accepted_, or
+   slow to be _stored_ is then one glance. Three separate searches could not be
+   correlated.
 4. **If a validation span has no `ledger.validate` beside it,** check its
    `accept_gated` attribute. `true` means another thread was already accepting
    that ledger, so no acceptance followed this validation — that is normal, not
@@ -4671,14 +4690,14 @@ The counts are not hard-coded in the validator — it iterates the inventory fil
 so those files are authoritative. The figures below are the inventory as it
 stands today.
 
-| Category         | Checks                                                                                                                                                                                                                                                                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Spans            | Every **required** entry in `expected_spans.json` — 58 span types at the time of writing: 28 required, 30 marked `"optional": true`                                                                                                                                             | Span name found in Tempo carrying its `required_attributes`, plus the declared parent-child relationships. An `"optional": true` entry that does not fire is recorded as a skip, not a failure — it needs traffic the harness may not generate (HTTP/JSON-RPC client, gRPC client, missing-ledger fetch, mode transitions) or that it deliberately no longer generates (path-finding RPC — see "Pathfinding is not exercised" in [the workload README](../docker/telemetry/workload/README.md)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| Metrics          | Every entry in every asserted category of `expected_metrics.json` — 145 checks across 26 asserting categories at the time of writing: 140 metric names plus 5 `required_labels` checks, of which the 61 fresh-node `sync_diagnostics` names are asserted by their own validator | SpanMetrics, `beast::insight` gauges/counters exported over OTLP, and the `MetricsRegistry` OTLP metrics. Each must have > 0 Prometheus series; none are optional. A category may also declare `required_labels`, and each label there becomes one additional check that at least one of that category's series carries it with a non-empty value (matched as `<label>!=""`, because Prometheus cannot distinguish an absent label from an empty one). Those labels were declared but never actually read until the check was generalised, so they were documented as required while going unverified; `spanmetrics` contributes 4 and `job_queue` 1. The separate `not_asserted` group lists metrics deliberately left out of the gate because they are workload-gated or defect-gated; it has neither a `metrics` nor a `required_labels` key, so the validator skips it entirely.                                                                                                                                                                                                                                                                  |
-| Logs             | 2 checks                                                                                                                                                                                                                                                                        | `trace_id`/`span_id` present in Loki, and a logged trace id resolves in Tempo. Gated in CI. `run-full-validation.sh` prints a four-leg diagnostic (node, mount, collector, Loki) after the suite whenever these run, so a failure names the leg that broke.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Parity           | 10 checks                                                                                                                                                                                                                                                                       | 6 span attributes the external-parity dashboard panels read, plus 4 metric value-sanity bounds.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| Dashboards       | Every uid in `expected_metrics.json` under `grafana_dashboards.uids` — currently all 16 provisioned dashboards                                                                                                                                                                  | Each listed dashboard loads and reports a panel count. This is a provisioning check only: it does **not** execute the panels' queries, so a dashboard can pass while individual panels render empty. `log-derived-insights` is Loki-backed, so only its provisioning is covered here; its data path is covered by the two log checks instead.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| Reverse coverage | 2 checks — `metric.reverse_coverage` and `span.reverse_coverage`                                                                                                                                                                                                                | The only checks that run in the opposite direction: they read the full emitted inventory (the Prometheus `__name__` label values, the Tempo `name` intrinsic's tag values) and name everything the contract never mentions, sorted and one per line in the log. **Warn only — `passed` is hardcoded `True` in `_reverse_coverage_result`, so these can never fail CI.** Downstream branches legitimately add telemetry an upstream contract has not seen, and a hard failure would redden all of them. A metric family is accounted for by a `metrics` entry, by a `not_asserted.metrics_excluded` key, or by an anchored regex under the top-level `accounted_patterns` list — which exists for families whose membership is derived mechanically from a table in the code (the per-job-type job-queue instruments, the overlay per-category traffic cross product) plus the Prometheus scrape plumbing that is not xrpld telemetry. Histogram `_bucket`/`_count`/`_sum` names fold onto their base family before matching. Spans need no pattern list: the check reuses the forward matcher, so `rpc.command.*` covers every command it expands to. |
+| Category         | Checks                                                                                                                                                                                                                                                                                   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Spans            | Every **required** entry in `expected_spans.json` — 58 span types at the time of writing: 28 required, 30 marked `"optional": true`                                                                                                                                                      | Span name found in Tempo carrying its `required_attributes`, plus the declared parent-child relationships. An `"optional": true` entry that does not fire is recorded as a skip, not a failure. Such an entry needs traffic the harness may not generate: an HTTP/JSON-RPC client, a gRPC client, a missing-ledger fetch or a mode transition. The harness also sends no path-finding RPC, on purpose (see "Pathfinding is not exercised" in [the workload README](../docker/telemetry/workload/README.md)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Metrics          | Every entry in every asserted category of `expected_metrics.json`. At the time of writing that is 158 checks across 27 asserting categories: 153 metric names plus 5 `required_labels` checks. The 64 fresh-node `sync_diagnostics` names among them are asserted by their own validator | SpanMetrics, `beast::insight` gauges/counters exported over OTLP, and the `MetricsRegistry` OTLP metrics. Each must have > 0 Prometheus series; none are optional. A category may also declare `required_labels`, and each label there becomes one additional check that at least one of that category's series carries it with a non-empty value (matched as `<label>!=""`, because Prometheus cannot distinguish an absent label from an empty one). `spanmetrics` contributes 4 of these label checks and `job_queue` 1. The separate `not_asserted` group lists metrics deliberately left out of the gate because they are workload-gated or defect-gated; it has neither a `metrics` nor a `required_labels` key, so the validator skips it entirely.                                                                                                                                                                                                                                                                                                                                                                                            |
+| Logs             | 2 checks                                                                                                                                                                                                                                                                                 | `trace_id`/`span_id` present in Loki, and a logged trace id resolves in Tempo. Gated in CI. `run-full-validation.sh` prints a four-leg diagnostic (node, mount, collector, Loki) after the suite whenever these run, so a failure names the leg that broke.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Parity           | 10 checks                                                                                                                                                                                                                                                                                | 6 span attributes the external-parity dashboard panels read, plus 4 metric value-sanity bounds.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Dashboards       | Every uid in `expected_metrics.json` under `grafana_dashboards.uids` — currently all 16 provisioned dashboards                                                                                                                                                                           | Each listed dashboard loads and reports a panel count. This is a provisioning check only: it does **not** execute the panels' queries, so a dashboard can pass while individual panels render empty. `log-derived-insights` is Loki-backed, so only its provisioning is covered here; its data path is covered by the two log checks instead.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Reverse coverage | 2 checks — `metric.reverse_coverage` and `span.reverse_coverage`                                                                                                                                                                                                                         | The only checks that run in the opposite direction: they read the full emitted inventory (the Prometheus `__name__` label values, the Tempo `name` intrinsic's tag values) and name everything the contract never mentions, sorted and one per line in the log. **Warn only — `passed` is hardcoded `True` in `_reverse_coverage_result`, so these can never fail CI.** Downstream branches legitimately add telemetry an upstream contract has not seen, and a hard failure would redden all of them. A metric family is accounted for by a `metrics` entry, by a `not_asserted.metrics_excluded` key, or by an anchored regex under the top-level `accounted_patterns` list — which exists for families whose membership is derived mechanically from a table in the code (the per-job-type job-queue instruments, the overlay per-category traffic cross product) plus the Prometheus scrape plumbing that is not xrpld telemetry. Histogram `_bucket`/`_count`/`_sum` names fold onto their base family before matching. Spans need no pattern list: the check reuses the forward matcher, so `rpc.command.*` covers every command it expands to. |
 
 ### Running Individual Tools
 
@@ -4961,12 +4980,14 @@ If benchmarks exceed thresholds:
    `static constexpr double samplingRatio = 1.0;`), and
    [TelemetryConfig.cpp:139](../src/libxrpl/telemetry/TelemetryConfig.cpp#L139)
    explicitly parses nothing for it. Volume reduction is a collector decision.
-   The only policy shipped is a single 0.5% probabilistic `tail_sampling`
-   processor in `otel-collector-config.grafanacloud.yaml`; the base
-   `otel-collector-config.yaml` has **no** tail sampling, so a stock local
-   stack keeps every trace. Where the Cloud policy is in force it sits on the
-   trace-storage branch only — spanmetrics runs on a separate branch and still
-   sees 100% of spans, so the derived RED metrics stay exact.
+   The only sampler shipped is one `tail_sampling` processor in
+   `otel-collector-config.grafanacloud.yaml`. It keeps 0.5% of traces at
+   random, plus every trace with a span whose name starts with
+   `nodestore.rotate`. The base `otel-collector-config.yaml` has **no** tail
+   sampling, so a stock local stack keeps every trace. Where the Cloud sampler
+   is in force it sits on the trace-storage branch only. Spanmetrics runs on a
+   separate branch and still sees 100% of spans, so the derived RED metrics stay
+   exact.
 2. **Disable peer tracing**: `trace_peer=0` (highest volume category)
 3. **Increase batch delay**: `batch_delay_ms=10000` (less frequent exports)
 4. **Reduce queue size**: `max_queue_size=1024` (back-pressure earlier)
