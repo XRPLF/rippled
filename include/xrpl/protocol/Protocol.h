@@ -345,6 +345,12 @@ enum class VaultVersion : uint8_t {
     FixedPrecision,
 };
 
+// Code compares VaultVersion values with < and >= (e.g. "CashBasis or later"),
+// so each later version must stay numerically larger than the one before.
+static_assert(
+    VaultVersion::Legacy < VaultVersion::CashBasis &&
+    VaultVersion::CashBasis < VaultVersion::FixedPrecision);
+
 /**
  * Vault kind. Distinguishes closed-ended vaults from the default open-ended
  * kind. Persisted as sfVaultKind (UINT8); absent means OpenEnded.
