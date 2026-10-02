@@ -72,8 +72,8 @@ There are three independent telemetry pipelines entering a single **OTel Collect
 
 A third, narrower metrics path exists for instruments created at their call site through the
 `XRPL_METRIC_*` macros. These use the OTel Metrics SDK directly and reach the collector's OTLP
-receiver rather than the StatsD receiver, so their names carry no `xrpld_` prefix. The seven
-call-site instruments are documented with the families they belong to:
+receiver rather than the StatsD receiver, so their names carry no `xrpld_` prefix. The
+call-site instruments are documented with the families they belong to, for example
 `rpc_in_flight_requests` in
 [§Per-RPC Method Metrics](#per-rpc-method-metrics-synchronous-countershistogram), the five
 `getobject_*` in [§GetObject Request Path](#getobject-request-path-synchronous-countershistograms),
@@ -837,9 +837,11 @@ checks that every board loads.
 
 ### 3.3 Deployment-Tier Template Variables
 
-Every dashboard carries seven filtering template variables (each variable name
-matches its Prometheus label), letting one Grafana stack be sliced by tier and
-by perf-comparison run:
+Every Prometheus-backed dashboard carries these seven filtering template
+variables (the table gives each one's Prometheus label), letting one Grafana
+stack be sliced by tier and by perf-comparison run. `log-derived-insights`
+(Loki) carries only `service_name`, `deployment_environment`,
+`xrpl_network_type` and `node`.
 
 | Variable                  | Source label             | Description                                                      |
 | ------------------------- | ------------------------ | ---------------------------------------------------------------- |

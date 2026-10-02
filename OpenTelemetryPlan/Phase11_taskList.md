@@ -401,7 +401,7 @@ exported by this receiver.
 
 > **UID COLLISION — pick a different uid.** Phase 9 already ships
 > `docker/telemetry/grafana/dashboards/validator-health.json` with
-> **uid `validator-health`** (17 panels, backed by xrpld's own
+> **uid `validator-health`** (backed by xrpld's own
 > `validation_agreement` / `validator_health` / `state_tracking` OTLP metrics).
 > Provisioning a second dashboard with the same uid makes Grafana overwrite one
 > with the other — whichever the provisioner loads last wins, silently. Use a
