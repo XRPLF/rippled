@@ -286,7 +286,7 @@ TEST(TelemetryConfig, use_tls_with_the_default_endpoint_is_rejected)
     // http. This is what an operator gets by setting only use_tls=1.
     EXPECT_EQ(
         batchRejection({{key::enabled, "1"}, {key::useTls, "1"}}),
-        httpsRequiredMessage(Setup{}.tracesEndpoint));
+        httpsRequiredMessage(telemetry::Telemetry::Setup{}.tracesEndpoint));
 }
 
 TEST(TelemetryConfig, use_tls_scheme_check_is_case_sensitive_like_the_exporter)
