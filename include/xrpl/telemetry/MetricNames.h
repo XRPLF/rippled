@@ -477,6 +477,12 @@ namespace label {
  */
 inline constexpr char metric[] = "metric";
 /**
+ * NodeStore backend the node reads from, as its factory names it ("NuDB",
+ * "RocksDB", "Memory", "none"). One value per process: the type comes from
+ * `[node_db]` and does not change at runtime.
+ */
+inline constexpr char backend[] = "backend";
+/**
  * Job type, as produced by `JobTypes::name()`.
  */
 inline constexpr char jobType[] = "job_type";
@@ -499,7 +505,8 @@ inline constexpr char outcome[] = "outcome";
  */
 inline constexpr char reason[] = "reason";
 /**
- * Configured validator-list site URI. The one runtime-valued key here.
+ * Configured validator-list site URI. The one key bounded by the config
+ * rather than by the code: at most one value per configured site.
  */
 inline constexpr char site[] = "site";
 /**
