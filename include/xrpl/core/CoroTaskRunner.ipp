@@ -135,7 +135,9 @@ inline JobQueue::CoroTaskRunner::~CoroTaskRunner()
 {
 #ifndef NDEBUG
     join();
-    XRPL_ASSERT(finished_, "xrpl::JobQueue::CoroTaskRunner::~CoroTaskRunner : is finished");
+    XRPL_ASSERT(
+        finished_.load(std::memory_order_acquire),
+        "xrpl::JobQueue::CoroTaskRunner::~CoroTaskRunner : is finished");
 #endif
 }
 
@@ -353,7 +355,7 @@ JobQueue::CoroTaskRunner::resume()
     detail::getLocalValues().reset(saved);
     if (task_.done())
     {
-        finished_ = true;
+        finished_.store(true, std::memory_order_release);
         // An exception that escapes a top-level coroutine body is captured
         // by promise_type::unhandled_exception() but has no awaiter to
         // rethrow it, so it would vanish with the frame. Surface it in the
@@ -388,14 +390,16 @@ JobQueue::CoroTaskRunner::resume()
 }
 
 /**
- * @return true if the coroutine has not yet run to completion
+ * @return true if the coroutine has not yet run to completion.
+ *
+ * Uses the atomic finished_ flag instead of reading task_ directly,
+ * because task_ is modified in resume() under mutex_ and reading it
+ * here without a lock would be a data race visible to TSAN.
  */
 inline bool
 JobQueue::CoroTaskRunner::runnable() const
 {
-    // After normal completion, task_ is reset to break the shared_ptr cycle
-    // (handle_ becomes null). A null handle means the coroutine is done.
-    return task_.handle() && !task_.done();
+    return !finished_.load(std::memory_order_acquire);
 }
 
 /**
@@ -406,11 +410,11 @@ JobQueue::CoroTaskRunner::runnable() const
 inline void
 JobQueue::CoroTaskRunner::expectEarlyExit()
 {
-    if (!finished_)
+    if (!finished_.load(std::memory_order_acquire))
     {
         std::scoped_lock const lock(jq_.mutex_);
         --jq_.nSuspend_;
-        finished_ = true;
+        finished_.store(true, std::memory_order_release);
     }
     // Break the shared_ptr cycle: frame -> shared_ptr<runner> -> this.
     // The coroutine is at initial_suspend and never ran user code, so
@@ -442,7 +446,7 @@ inline void
 JobQueue::CoroTaskRunner::join()
 {
     std::unique_lock<std::mutex> lk(mutexRun_);
-    cv_.wait(lk, [this]() { return runCount_ == 0 || finished_; });
+    cv_.wait(lk, [this]() { return runCount_ == 0 || finished_.load(std::memory_order_acquire); });
 }
 
 }  // namespace xrpl
