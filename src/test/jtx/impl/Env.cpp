@@ -73,25 +73,25 @@ Env::AppBundle::AppBundle(
     beast::unit_test::Suite& suite,
     std::unique_ptr<Config> config,
     std::unique_ptr<Logs> logs,
-    beast::severities::Severity thresh)
+    beast::Severity thresh)
     : AppBundle()
 {
-    using namespace beast::severities;
+    using beast::Severity;
     if (logs)
     {
-        setDebugLogSink(logs->makeSink("Debug", KFatal));
+        setDebugLogSink(logs->makeSink("Debug", Severity::Fatal));
     }
     else
     {
         logs = std::make_unique<SuiteLogs>(suite);
         // Use kFatal threshold to reduce noise from STObject.
-        setDebugLogSink(std::make_unique<SuiteJournalSink>("Debug", KFatal, suite));
+        setDebugLogSink(std::make_unique<SuiteJournalSink>("Debug", Severity::Fatal, suite));
     }
     auto tk = std::make_unique<ManualTimeKeeper>();
     timeKeeper = tk.get();
     // Hack so we don't have to call Config::setup
     HTTPClient::initializeSSLContext(
-        config->SSL_VERIFY_DIR, config->SSL_VERIFY_FILE, config->SSL_VERIFY, debugLog());
+        config->sslVerifyDir, config->sslVerifyFile, config->sslVerify, debugLog());
     owned = makeApplication(std::move(config), std::move(logs), std::move(tk));
     app = owned.get();
     app->getLogs().threshold(thresh);
@@ -213,7 +213,7 @@ Env::balance(Account const& account, Asset const& asset) const
         [&](Issue const& issue) -> PrettyAmount {
             if (isXRP(issue.currency))
                 return balance(account);
-            auto const sle = le(keylet::line(account.id(), issue));
+            auto const sle = le(keylet::trustLine(account.id(), issue));
             if (!sle)
                 return {STAmount(issue, 0), account.name()};
             auto amount = sle->getFieldAmount(sfBalance);
@@ -231,7 +231,7 @@ Env::balance(Account const& account, Asset const& asset) const
             if (account.id() == issuer)
             {
                 // Issuer balance
-                auto const sle = le(keylet::mptIssuance(id));
+                auto const sle = le(keylet::mptokenIssuance(id));
                 if (!sle)
                     return {STAmount(mptIssue, 0), account.name()};
 
@@ -253,7 +253,7 @@ Env::balance(Account const& account, Asset const& asset) const
 PrettyAmount
 Env::limit(Account const& account, Issue const& issue) const
 {
-    auto const sle = le(keylet::line(account.id(), issue));
+    auto const sle = le(keylet::trustLine(account.id(), issue));
     if (!sle)
         return {STAmount(issue, 0), account.name()};
     auto const aHigh = account.id() > issue.account;
@@ -272,6 +272,33 @@ Env::ownerCount(Account const& account) const
 }
 
 std::uint32_t
+Env::sponsoredOwnerCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoredOwnerCount);
+}
+
+std::uint32_t
+Env::sponsoringOwnerCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoringOwnerCount);
+}
+
+std::uint32_t
+Env::sponsoringAccountCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoringAccountCount);
+}
+
+std::uint32_t
 Env::seq(Account const& account) const
 {
     auto const sle = le(account);
@@ -280,13 +307,13 @@ Env::seq(Account const& account) const
     return sle->getFieldU32(sfSequence);
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 Env::le(Account const& account) const
 {
     return le(keylet::account(account.id()));
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 Env::le(Keylet const& k) const
 {
     return current()->read(k);
@@ -301,23 +328,23 @@ Env::fund(bool setDefaultRipple, STAmount const& amount, Account const& account)
         // VFALCO NOTE Is the fee formula correct?
         apply(
             pay(master, account, amount + drops(current()->fees().base)),
-            jtx::Seq(jtx::kAUTOFILL),
-            Fee(jtx::kAUTOFILL),
-            Sig(jtx::kAUTOFILL));
+            jtx::Seq(jtx::kAutofill),
+            Fee(jtx::kAutofill),
+            Sig(jtx::kAutofill));
         apply(
             fset(account, asfDefaultRipple),
-            jtx::Seq(jtx::kAUTOFILL),
-            Fee(jtx::kAUTOFILL),
-            Sig(jtx::kAUTOFILL));
+            jtx::Seq(jtx::kAutofill),
+            Fee(jtx::kAutofill),
+            Sig(jtx::kAutofill));
         require(Flags(account, asfDefaultRipple));
     }
     else
     {
         apply(
             pay(master, account, amount),
-            jtx::Seq(jtx::kAUTOFILL),
-            Fee(jtx::kAUTOFILL),
-            Sig(jtx::kAUTOFILL));
+            jtx::Seq(jtx::kAutofill),
+            Fee(jtx::kAutofill),
+            Sig(jtx::kAutofill));
         require(Nflags(account, asfDefaultRipple));
     }
     require(jtx::Balance(account, amount));
@@ -331,14 +358,14 @@ Env::trust(STAmount const& amount, Account const& account)
     auto const start = balance(account);
     apply(
         jtx::trust(account, amount),
-        jtx::Seq(jtx::kAUTOFILL),
-        Fee(jtx::kAUTOFILL),
-        Sig(jtx::kAUTOFILL));
+        jtx::Seq(jtx::kAutofill),
+        Fee(jtx::kAutofill),
+        Sig(jtx::kAutofill));
     apply(
         pay(master, account, drops(current()->fees().base)),
-        jtx::Seq(jtx::kAUTOFILL),
-        Fee(jtx::kAUTOFILL),
-        Sig(jtx::kAUTOFILL));
+        jtx::Seq(jtx::kAutofill),
+        Fee(jtx::kAutofill),
+        Sig(jtx::kAutofill));
     test.expect(balance(account) == start);
 }
 
@@ -471,9 +498,9 @@ Env::postconditions(
          !test.expect(
              parsed.rpcCode == jt.rpcCode->first && parsed.rpcMessage == jt.rpcCode->second,
              "apply " + locStr + ": Got RPC result "s +
-                 (parsed.rpcCode ? RPC::getErrorInfo(*parsed.rpcCode).token.cStr() : "NO RESULT") +
+                 (parsed.rpcCode ? rpc::getErrorInfo(*parsed.rpcCode).token.cStr() : "NO RESULT") +
                  " (" + parsed.rpcMessage + "); Expected " +
-                 RPC::getErrorInfo(jt.rpcCode->first).token.cStr() + " (" + jt.rpcCode->second +
+                 rpc::getErrorInfo(jt.rpcCode->first).token.cStr() + " (" + jt.rpcCode->second +
                  ")")) ||
         bad;
     // If we have an rpcCode (just checked), then the rpcException check is
@@ -602,7 +629,7 @@ Env::autofill(JTx& jt)
     catch (ParseError const&)
     {
         if (!parseFailureExpected_)
-            test.log << "parse failed:\n" << pretty(jv) << std::endl;
+            test.log << "parse failure:\n" << pretty(jv) << std::endl;
         rethrow();
     }
 }
@@ -679,7 +706,7 @@ Env::doRpc(
 }
 
 void
-Env::enableFeature(uint256 const feature)
+Env::enableFeature(UInt256 const feature)
 {
     // Env::close() must be called for feature
     // enable to take place.
@@ -687,7 +714,7 @@ Env::enableFeature(uint256 const feature)
 }
 
 void
-Env::disableFeature(uint256 const feature)
+Env::disableFeature(UInt256 const feature)
 {
     // Env::close() must be called for feature
     // enable to take place.

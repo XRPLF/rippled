@@ -19,8 +19,8 @@ offer(
 {
     json::Value jv;
     jv[jss::Account] = account.human();
-    jv[jss::TakerPays] = takerPays.getJson(JsonOptions::KNone);
-    jv[jss::TakerGets] = takerGets.getJson(JsonOptions::KNone);
+    jv[jss::TakerPays] = takerPays.getJson(JsonOptions::Values::None);
+    jv[jss::TakerGets] = takerGets.getJson(JsonOptions::Values::None);
     if (flags != 0u)
         jv[jss::Flags] = flags;
     jv[jss::TransactionType] = jss::OfferCreate;

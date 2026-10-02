@@ -38,7 +38,7 @@ STVar::~STVar()
 STVar::STVar(STVar const& other)
 {
     if (other.p_ != nullptr)
-        p_ = other.p_->copy(kMAX_SIZE, &d_);
+        p_ = other.p_->copy(kMaxSize, &d_);
 }
 
 STVar::STVar(STVar&& other)
@@ -50,7 +50,7 @@ STVar::STVar(STVar&& other)
     }
     else
     {
-        p_ = other.p_->move(kMAX_SIZE, &d_);
+        p_ = other.p_->move(kMaxSize, &d_);
     }
 }
 
@@ -62,7 +62,7 @@ STVar::operator=(STVar const& rhs)
         destroy();
         if (rhs.p_ != nullptr)
         {
-            p_ = rhs.p_->copy(kMAX_SIZE, &d_);
+            p_ = rhs.p_->copy(kMaxSize, &d_);
         }
         else
         {
@@ -86,7 +86,7 @@ STVar::operator=(STVar&& rhs)
         }
         else
         {
-            p_ = rhs.p_->move(kMAX_SIZE, &d_);
+            p_ = rhs.p_->move(kMaxSize, &d_);
         }
     }
 
@@ -149,9 +149,9 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
         }
         else
         {
-            constexpr bool kALWAYS_FALSE =
+            static constexpr bool kAlwaysFalse =
                 !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
-            static_assert(kALWAYS_FALSE, "Invalid STVar constructor arguments");
+            static_assert(kAlwaysFalse, "Invalid STVar constructor arguments");
         }
     };
 

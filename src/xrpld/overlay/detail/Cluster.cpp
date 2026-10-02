@@ -2,11 +2,11 @@
 
 #include <xrpld/overlay/ClusterNode.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/tokens.h>
 
@@ -19,6 +19,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -35,6 +36,14 @@ Cluster::member(PublicKey const& identity) const
     if (iter == nodes_.end())
         return std::nullopt;
     return iter->name();
+}
+
+bool
+Cluster::isMember(PublicKey const& identity) const
+{
+    std::scoped_lock const lock(mutex_);
+
+    return nodes_.contains(identity);
 }
 
 std::size_t
@@ -67,7 +76,7 @@ Cluster::update(
         iter = nodes_.erase(iter);
     }
 
-    nodes_.emplace_hint(iter, identity, name, loadFee, reportTime);
+    nodes_.emplace_hint(iter, identity, std::move(name), loadFee, reportTime);
     return true;
 }
 

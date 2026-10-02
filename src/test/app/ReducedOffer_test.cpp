@@ -144,20 +144,6 @@ public:
                             Quality(Amounts{tweakedTakerPays, reducedTakerGets}).rate();
                         BEAST_EXPECT(tweakedRate > initialRate);
                     }
-#if 0
-                    std::cout << "Placed rate: " << initialRate
-                              << "; in-ledger rate: " << inLedgerRate
-                              << "; TakerPays: " << reducedTakerPays
-                              << "; TakerGets: " << reducedTakerGets
-                              << "; bob already got: " << bobGot << std::endl;
-// #else
-                    std::string_view filler =
-                        inLedgerRate > initialRate ? "**" : "  ";
-                    std::cout << "| `" << reducedTakerGets << "` | `"
-                              << reducedTakerPays << "` | `" << initialRate
-                              << "` | " << filler << "`" << inLedgerRate << "`"
-                              << filler << " |`" << std::endl;
-#endif
                 }
 
                 // In preparation for the next iteration make sure the two
@@ -275,21 +261,6 @@ public:
                             Quality(Amounts{tweakedTakerPays, reducedTakerGets}).rate();
                         BEAST_EXPECT(tweakedRate > initialRate);
                     }
-#if 0
-                    std::cout << "Placed rate: " << initialRate
-                              << "; in-ledger rate: " << inLedgerRate
-                              << "; TakerPays: " << reducedTakerPays
-                              << "; TakerGets: " << reducedTakerGets
-                              << "; alice already got: " << aliceGot
-                              << std::endl;
-// #else
-                    std::string_view filler = badRate ? "**" : "  ";
-                    std::cout << "| `" << reducedTakerGets << "` | `"
-                              << reducedTakerPays << "` | `" << initialRate
-                              << "` | " << filler << "`" << inLedgerRate << "`"
-                              << filler << " | `" << aliceGot << "` |"
-                              << std::endl;
-#endif
                 }
 
                 // In preparation for the next iteration make sure the two
@@ -452,7 +423,7 @@ public:
                 std::uint32_t bobOfferSeq = env.seq(bob);
                 env(offer(bob, eurOffer, usdOffer));
                 env.close();
-                env.require(offers(bob, 1));
+                env.require(Offers(bob, 1));
 
                 // alice places an offer that crosses bob's.
                 std::uint32_t aliceOfferSeq = env.seq(alice);
@@ -463,13 +434,6 @@ public:
                 {
                     bool const bobOfferGone = !offerInLedger(env, bob, bobOfferSeq);
                     STAmount const aliceBalanceUSD = env.balance(alice, usd);
-#if 0
-                    std::cout
-                        << "bob initial: " << initialBobUSD
-                        << "; alice final: " << aliceBalanceUSD
-                        << "; bob offer: " << bobOfferJson.toStyledString()
-                        << std::endl;
-#endif
                     // Sanity check the ledger if alice got USD.
                     if (aliceBalanceUSD.signum() > 0)
                     {
@@ -560,8 +524,8 @@ public:
                                          Amounts const& carolOffer) -> unsigned int {
                 // alice submits an offer that may become a blocker.
                 std::uint32_t const aliceOfferSeq = env.seq(alice);
-                static Amounts const kALICE_INITIAL_OFFER(usd(2), drops(3382562));
-                env(offer(alice, kALICE_INITIAL_OFFER.in, kALICE_INITIAL_OFFER.out));
+                static Amounts const kAliceInitialOffer(usd(2), drops(3382562));
+                env(offer(alice, kAliceInitialOffer.in, kAliceInitialOffer.out));
                 env.close();
                 STAmount const initialRate = Quality(jsonOfferToAmounts(ledgerEntryOffer(
                                                          env, alice, aliceOfferSeq)[jss::node]))
@@ -598,8 +562,8 @@ public:
 
                     Amounts const aliceReducedOffer = jsonOfferToAmounts(aliceOffer[jss::node]);
 
-                    BEAST_EXPECT(aliceReducedOffer.in < kALICE_INITIAL_OFFER.in);
-                    BEAST_EXPECT(aliceReducedOffer.out < kALICE_INITIAL_OFFER.out);
+                    BEAST_EXPECT(aliceReducedOffer.in < kAliceInitialOffer.in);
+                    BEAST_EXPECT(aliceReducedOffer.out < kAliceInitialOffer.out);
                     STAmount const inLedgerRate = Quality(aliceReducedOffer).rate();
                     badRate = inLedgerRate > initialRate ? 1 : 0;
 
@@ -619,19 +583,6 @@ public:
                             Quality(Amounts{aliceReducedOffer.in, tweakedTakerGets}).rate();
                         BEAST_EXPECT(tweakedRate > initialRate);
                     }
-#if 0
-                    std::cout << "Placed rate: " << initialRate
-                              << "; in-ledger rate: " << inLedgerRate
-                              << "; TakerPays: " << aliceReducedOffer.in
-                              << "; TakerGets: " << aliceReducedOffer.out
-                              << std::endl;
-// #else
-                    std::string_view filler = badRate ? "**" : "  ";
-                    std::cout << "| " << aliceReducedOffer.in << "` | `"
-                              << aliceReducedOffer.out << "` | `" << initialRate
-                              << "` | " << filler << "`" << inLedgerRate << "`"
-                              << filler << std::endl;
-#endif
                 }
 
                 // In preparation for the next iteration make sure all three
@@ -641,12 +592,12 @@ public:
                 return badRate;
             };
 
-            constexpr int kLOOP_COUNT = 100;
+            static constexpr int kLoopCount = 100;
             unsigned int blockedCount = 0;
             {
                 STAmount increaseGets = usd(0);
                 STAmount const step(increaseGets.asset(), 1, -8);
-                for (unsigned int i = 0; i < kLOOP_COUNT; ++i)
+                for (unsigned int i = 0; i < kLoopCount; ++i)
                 {
                     blockedCount +=
                         exerciseOfferTrio(Amounts(drops(1642020), usd(1) + increaseGets));

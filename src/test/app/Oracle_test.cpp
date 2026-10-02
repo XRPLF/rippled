@@ -60,7 +60,7 @@ private:
         // Insufficient reserve
         {
             Env env(*this);
-            env.fund(env.current()->fees().accountReserve(0), owner);
+            env.fund(env.current()->fees().accountReserve(0, 1), owner);
             Oracle const oracle(
                 env,
                 {.owner = owner,
@@ -71,7 +71,7 @@ private:
         {
             Env env(*this);
             env.fund(
-                env.current()->fees().accountReserve(1) + env.current()->fees().base * 2, owner);
+                env.current()->fees().accountReserve(1, 1) + env.current()->fees().base * 2, owner);
             Oracle oracle(
                 env, {.owner = owner, .fee = static_cast<int>(env.current()->fees().base.drops())});
             BEAST_EXPECT(oracle.exists());
@@ -286,7 +286,7 @@ private:
                     .err = Ter(tecINVALID_UPDATE_TIME)});
             oracle.set(UpdateArg{.series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
             BEAST_EXPECT(oracle.expectLastUpdateTime(
-                static_cast<std::uint32_t>(kTEST_START_TIME.count() + 450)));
+                static_cast<std::uint32_t>(kTestStartTime.count() + 450)));
             // Less than the previous lastUpdateTime
             oracle.set(
                 UpdateArg{
@@ -298,7 +298,7 @@ private:
             oracle.set(
                 UpdateArg{
                     .series = {{"XRP", "USD", 740, 1}},
-                    .lastUpdateTime = static_cast<int>(kEPOCH_OFFSET.count() - 1),
+                    .lastUpdateTime = static_cast<int>(kEpochOffset.count() - 1),
                     .fee = baseFee,
                     .err = Ter(tecINVALID_UPDATE_TIME)});
         }
@@ -344,7 +344,7 @@ private:
             Oracle const oracle(
                 env,
                 {.owner = owner,
-                 .series = {{"USD", "BTC", 740, kMAX_PRICE_SCALE + 1}},
+                 .series = {{"USD", "BTC", 740, kMaxPriceScale + 1}},
                  .fee = baseFee,
                  .err = Ter(temMALFORMED)});
         }
@@ -640,7 +640,7 @@ private:
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(
-                env.current()->fees().accountReserve(1) + env.current()->fees().base * 2, owner);
+                env.current()->fees().accountReserve(1, 1) + env.current()->fees().base * 2, owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
             oracle.set(UpdateArg{.series = {{"XRP", "USD", 742, 2}}, .fee = baseFee});
         }
@@ -748,7 +748,7 @@ private:
                 .series = {{"XRP", "USD", 741, 1}}, .msig = Msig(becky, bogie), .fee = baseFee});
         BEAST_EXPECT(oracle.expectPrice({{"XRP", "USD", 741, 1}}));
         // remove the signer list
-        env(signers(alice, jtx::kNONE), Sig(alie));
+        env(signers(alice, jtx::kNone), Sig(alie));
         env.close();
         env.require(Owners(alice, 1));
         // create new signer list

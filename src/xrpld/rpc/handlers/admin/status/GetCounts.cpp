@@ -47,7 +47,7 @@ getCountsJson(Application& app, int minObjectCount)
 {
     auto objectCounts = CountedObjects::getInstance().getCounts(minObjectCount);
 
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
 
     for (auto const& [k, v] : objectCounts)
     {
@@ -111,7 +111,7 @@ getCountsJson(Application& app, int minObjectCount)
 //   min_count: <number>  // optional, defaults to 10
 // }
 json::Value
-doGetCounts(RPC::JsonContext& context)
+doGetCounts(rpc::JsonContext& context)
 {
     int minCount = 10;
 

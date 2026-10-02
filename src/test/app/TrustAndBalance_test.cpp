@@ -215,9 +215,9 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         if (subscribe)
         {
             json::Value jvs;
-            jvs[jss::accounts] = json::ArrayValue;
+            jvs[jss::accounts] = json::ValueType::Array;
             jvs[jss::accounts].append(gw.human());
-            jvs[jss::streams] = json::ArrayValue;
+            jvs[jss::streams] = json::ValueType::Array;
             jvs[jss::streams].append("transactions");
             jvs[jss::streams].append("ledger");
             auto jv = wsc->invoke("subscribe", jvs);
@@ -400,9 +400,9 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         env.close();
 
         json::Value jvs;
-        jvs[jss::accounts] = json::ArrayValue;
+        jvs[jss::accounts] = json::ValueType::Array;
         jvs[jss::accounts].append(env.master.human());
-        jvs[jss::streams] = json::ArrayValue;
+        jvs[jss::streams] = json::ValueType::Array;
         jvs[jss::streams].append("transactions");
         BEAST_EXPECT(wsc->invoke("subscribe", jvs)[jss::status] == "success");
 

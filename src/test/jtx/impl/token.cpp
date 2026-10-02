@@ -50,10 +50,10 @@ Uri::operator()(Env& env, JTx& jt) const
 void
 Amount::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfAmount.jsonName] = amount_.getJson(JsonOptions::KNone);
+    jt.jv[sfAmount.jsonName] = amount_.getJson(JsonOptions::Values::None);
 }
 
-uint256
+UInt256
 getNextID(
     jtx::Env const& env,
     jtx::Account const& issuer,
@@ -66,7 +66,7 @@ getNextID(
     return token::getID(env, issuer, nfTokenTaxon, nftSeq, flags, xferFee);
 }
 
-uint256
+UInt256
 getID(
     jtx::Env const& env,
     jtx::Account const& issuer,
@@ -83,7 +83,7 @@ getID(
 }
 
 json::Value
-burn(jtx::Account const& account, uint256 const& nftokenID)
+burn(jtx::Account const& account, UInt256 const& nftokenID)
 {
     json::Value jv;
     jv[sfAccount.jsonName] = account.human();
@@ -93,12 +93,12 @@ burn(jtx::Account const& account, uint256 const& nftokenID)
 }
 
 json::Value
-createOffer(jtx::Account const& account, uint256 const& nftokenID, STAmount const& amount)
+createOffer(jtx::Account const& account, UInt256 const& nftokenID, STAmount const& amount)
 {
     json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfNFTokenID.jsonName] = to_string(nftokenID);
-    jv[sfAmount.jsonName] = amount.getJson(JsonOptions::KNone);
+    jv[sfAmount.jsonName] = amount.getJson(JsonOptions::Values::None);
     jv[jss::TransactionType] = jss::NFTokenCreateOffer;
     return jv;
 }
@@ -129,8 +129,8 @@ cancelOfferImpl(jtx::Account const& account, T const& nftokenOffers)
     jv[sfAccount.jsonName] = account.human();
     if (!empty(nftokenOffers))
     {
-        jv[sfNFTokenOffers.jsonName] = json::ArrayValue;
-        for (uint256 const& nftokenOffer : nftokenOffers)
+        jv[sfNFTokenOffers.jsonName] = json::ValueType::Array;
+        for (UInt256 const& nftokenOffer : nftokenOffers)
             jv[sfNFTokenOffers.jsonName].append(to_string(nftokenOffer));
     }
     jv[jss::TransactionType] = jss::NFTokenCancelOffer;
@@ -138,13 +138,13 @@ cancelOfferImpl(jtx::Account const& account, T const& nftokenOffers)
 }
 
 json::Value
-cancelOffer(jtx::Account const& account, std::initializer_list<uint256> const& nftokenOffers)
+cancelOffer(jtx::Account const& account, std::initializer_list<UInt256> const& nftokenOffers)
 {
     return cancelOfferImpl(account, nftokenOffers);
 }
 
 json::Value
-cancelOffer(jtx::Account const& account, std::vector<uint256> const& nftokenOffers)
+cancelOffer(jtx::Account const& account, std::vector<UInt256> const& nftokenOffers)
 {
     return cancelOfferImpl(account, nftokenOffers);
 }
@@ -156,7 +156,7 @@ RootIndex::operator()(Env& env, JTx& jt) const
 }
 
 json::Value
-acceptBuyOffer(jtx::Account const& account, uint256 const& offerIndex)
+acceptBuyOffer(jtx::Account const& account, UInt256 const& offerIndex)
 {
     json::Value jv;
     jv[sfAccount.jsonName] = account.human();
@@ -166,7 +166,7 @@ acceptBuyOffer(jtx::Account const& account, uint256 const& offerIndex)
 }
 
 json::Value
-acceptSellOffer(jtx::Account const& account, uint256 const& offerIndex)
+acceptSellOffer(jtx::Account const& account, UInt256 const& offerIndex)
 {
     json::Value jv;
     jv[sfAccount.jsonName] = account.human();
@@ -178,8 +178,8 @@ acceptSellOffer(jtx::Account const& account, uint256 const& offerIndex)
 json::Value
 brokerOffers(
     jtx::Account const& account,
-    uint256 const& buyOfferIndex,
-    uint256 const& sellOfferIndex)
+    UInt256 const& buyOfferIndex,
+    UInt256 const& sellOfferIndex)
 {
     json::Value jv;
     jv[sfAccount.jsonName] = account.human();
@@ -192,7 +192,7 @@ brokerOffers(
 void
 BrokerFee::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfNFTokenBrokerFee.jsonName] = brokerFee_.getJson(JsonOptions::KNone);
+    jt.jv[sfNFTokenBrokerFee.jsonName] = brokerFee_.getJson(JsonOptions::Values::None);
 }
 
 json::Value
@@ -210,7 +210,7 @@ clearMinter(jtx::Account const& account)
 }
 
 json::Value
-modify(jtx::Account const& account, uint256 const& nftokenID)
+modify(jtx::Account const& account, UInt256 const& nftokenID)
 {
     json::Value jv;
     jv[sfAccount.jsonName] = account.human();

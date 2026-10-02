@@ -56,7 +56,7 @@ SecretKey::toString() const
 namespace detail {
 
 void
-copyUint32(std::uint8_t* out, std::uint32_t v)
+copyUInt32(std::uint8_t* out, std::uint32_t v)
 {
     *out++ = v >> 24;
     *out++ = (v >> 16) & 0xff;
@@ -64,7 +64,7 @@ copyUint32(std::uint8_t* out, std::uint32_t v)
     *out = v & 0xff;
 }
 
-uint256
+UInt256
 deriveDeterministicRootKey(Seed const& seed)
 {
     // We fill this buffer with the seed and append a 32-bit "counter"
@@ -84,7 +84,7 @@ deriveDeterministicRootKey(Seed const& seed)
     // more iterations loop a few times.
     for (std::uint32_t seq = 0; seq != 128; ++seq)
     {
-        copyUint32(buf.data() + 16, seq);
+        copyUInt32(buf.data() + 16, seq);
 
         auto const ret = sha512Half(buf);
 
@@ -99,31 +99,32 @@ deriveDeterministicRootKey(Seed const& seed)
 }
 
 //------------------------------------------------------------------------------
-/** Produces a sequence of secp256k1 key pairs.
-
-    The reference implementation of the XRP Ledger uses a custom derivation
-    algorithm which enables the derivation of an entire family of secp256k1
-    keypairs from a single 128-bit seed. The algorithm predates widely-used
-    standards like BIP-32 and BIP-44.
-
-    Important note to implementers:
-
-        Using this algorithm is not required: all valid secp256k1 keypairs will
-        work correctly. Third party implementations can use whatever mechanisms
-        they prefer. However, implementers of wallets or other tools that allow
-        users to use existing accounts should consider at least supporting this
-        derivation technique to make it easier for users to 'import' accounts.
-
-    For more details, please check out:
-        https://xrpl.org/cryptographic-keys.html#secp256k1-key-derivation
+/**
+ * Produces a sequence of secp256k1 key pairs.
+ *
+ * The reference implementation of the XRP Ledger uses a custom derivation
+ * algorithm which enables the derivation of an entire family of secp256k1
+ * keypairs from a single 128-bit seed. The algorithm predates widely-used
+ * standards like BIP-32 and BIP-44.
+ *
+ * Important note to implementers:
+ *
+ *     Using this algorithm is not required: all valid secp256k1 keypairs will
+ *     work correctly. Third party implementations can use whatever mechanisms
+ *     they prefer. However, implementers of wallets or other tools that allow
+ *     users to use existing accounts should consider at least supporting this
+ *     derivation technique to make it easier for users to 'import' accounts.
+ *
+ * For more details, please check out:
+ *     https://xrpl.org/cryptographic-keys.html#secp256k1-key-derivation
  */
 class Generator
 {
 private:
-    uint256 root_;
+    UInt256 root_;
     std::array<std::uint8_t, 33> generator_{};
 
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     calculateTweak(std::uint32_t seq) const
     {
         // We fill the buffer with the generator, the provided sequence
@@ -137,13 +138,13 @@ private:
 
         std::array<std::uint8_t, 41> buf{};
         std::ranges::copy(generator_, buf.begin());
-        copyUint32(buf.data() + 33, seq);
+        copyUInt32(buf.data() + 33, seq);
 
         // The odds that this loop executes more than once are negligible
         // but we impose a maximum limit just in case.
         for (std::uint32_t subseq = 0; subseq != 128; ++subseq)
         {
-            copyUint32(buf.data() + 37, subseq);
+            copyUInt32(buf.data() + 37, subseq);
 
             auto const ret = sha512HalfS(buf);
 
@@ -177,7 +178,9 @@ public:
         secureErase(generator_.data(), generator_.size());
     }
 
-    /** Generate the nth key pair. */
+    /**
+     * Generate the nth key pair.
+     */
     std::pair<PublicKey, SecretKey>
     operator()(std::size_t ordinal) const
     {
@@ -202,7 +205,7 @@ public:
 }  // namespace detail
 
 Buffer
-signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& digest)
+signDigest(PublicKey const& pk, SecretKey const& sk, UInt256 const& digest)
 {
     if (publicKeyType(pk.slice()) != KeyType::Secp256k1)
         logicError("sign: secp256k1 required for digest signing");
@@ -240,9 +243,9 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
             return b;
         }
         case KeyType::Secp256k1: {
-            sha512_half_hasher h;
+            Sha512HalfHasher h;
             h(m.data(), m.size());
-            auto const digest = sha512_half_hasher::result_type(h);
+            auto const digest = Sha512HalfHasher::result_type(h);
 
             secp256k1_ecdsa_signature sigImp;
             if (secp256k1_ecdsa_sign(

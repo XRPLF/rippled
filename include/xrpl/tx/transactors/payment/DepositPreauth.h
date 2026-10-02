@@ -1,5 +1,14 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
@@ -7,7 +16,7 @@ namespace xrpl {
 class DepositPreauth : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit DepositPreauth(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -26,10 +35,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -41,7 +47,7 @@ public:
 
     // Interface used by AccountDelete
     static TER
-    removeFromLedger(ApplyView& view, uint256 const& delIndex, beast::Journal j);
+    removeFromLedger(ApplyView& view, UInt256 const& delIndex, beast::Journal j);
 };
 
 }  // namespace xrpl

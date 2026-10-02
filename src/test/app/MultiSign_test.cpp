@@ -24,17 +24,18 @@
 #include <test/jtx/txflags.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -143,7 +144,7 @@ public:
             env.require(Owners(alice, 1));
         }
         // Remove alice's signer list and get the owner count back.
-        env(signers(alice, jtx::kNONE));
+        env(signers(alice, jtx::kNone));
         env.close();
         env.require(Owners(alice, 0));
     }
@@ -496,7 +497,7 @@ public:
         Env env(
             *this,
             envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                cfg->loadFromString(std::string("[") + Sections::kSigningSupport + "]\ntrue");
                 return cfg;
             }),
             features);
@@ -692,7 +693,7 @@ public:
         {
             aliceSeq = env.seq(alice);
             json::Value jv = setupTx();
-            jv[jss::tx_json][sfSigners.fieldName] = json::Value{json::ArrayValue};
+            jv[jss::tx_json][sfSigners.fieldName] = json::Value{json::ValueType::Array};
             beckySign(jv);
             auto jrr = env.rpc("json", "submit_multisigned", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
@@ -826,7 +827,7 @@ public:
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // Remove alice's signer list and get the owner count back.
-        env(signers(alice, jtx::kNONE), Sig(alie));
+        env(signers(alice, jtx::kNone), Sig(alie));
         env.close();
         env.require(Owners(alice, 0));
     }
@@ -871,23 +872,23 @@ public:
         env(fset(alice, asfDisableMaster), Sig(alice));
 
         // R0: A lone regular key cannot be removed.
-        env(regkey(alice, kDISABLED), Sig(alie), Ter(tecNO_ALTERNATIVE_KEY));
+        env(regkey(alice, kDisabled), Sig(alie), Ter(tecNO_ALTERNATIVE_KEY));
 
         // Add a signer list.
         env(signers(alice, 1, {{bogie_, 1}}), Sig(alie));
 
         // R1: The regular key can be removed if there's a signer list.
-        env(regkey(alice, kDISABLED), Sig(alie));
+        env(regkey(alice, kDisabled), Sig(alie));
 
         // L0: A lone signer list cannot be removed.
         auto const baseFee = env.current()->fees().base;
-        env(signers(alice, jtx::kNONE), Msig(bogie_), Fee(2 * baseFee), Ter(tecNO_ALTERNATIVE_KEY));
+        env(signers(alice, jtx::kNone), Msig(bogie_), Fee(2 * baseFee), Ter(tecNO_ALTERNATIVE_KEY));
 
         // Enable the master key.
         env(fclear(alice, asfDisableMaster), Msig(bogie_), Fee(2 * baseFee));
 
         // L1: The signer list can be removed if the master key is enabled.
-        env(signers(alice, jtx::kNONE), Msig(bogie_), Fee(2 * baseFee));
+        env(signers(alice, jtx::kNone), Msig(bogie_), Fee(2 * baseFee));
 
         // Add a signer list.
         env(signers(alice, 1, {{bogie_, 1}}), Sig(alice));
@@ -899,13 +900,13 @@ public:
         env(regkey(alice, alie), Msig(bogie_), Fee(2 * baseFee));
 
         // L2: The signer list can be removed if there's a regular key.
-        env(signers(alice, jtx::kNONE), Sig(alie));
+        env(signers(alice, jtx::kNone), Sig(alie));
 
         // Enable the master key.
         env(fclear(alice, asfDisableMaster), Sig(alie));
 
         // R2: The regular key can be removed if the master key is enabled.
-        env(regkey(alice, kDISABLED), Sig(alie));
+        env(regkey(alice, kDisabled), Sig(alie));
     }
 
     // Verify that the first regular key can be made for free using the
@@ -996,7 +997,7 @@ public:
         env(trust("alice", usd(100)),
             Msig(becky, bogie_),
             Fee(3 * baseFee),
-            Require(lines("alice", 1)));
+            Require(Lines("alice", 1)));
         env.close();
         env.require(Owners(alice, 2));
 
@@ -1121,8 +1122,8 @@ public:
             // Signature should fail.
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
-                info[jss::result][jss::error_exception].asString().find(
-                    "Invalid signature on account r") != std::string::npos);
+                info[jss::result][jss::error_exception].asString().contains(
+                    "Invalid signature on account r"));
         }
         {
             // Multisign with an empty signers array should fail.
@@ -1308,7 +1309,7 @@ public:
         Env env(
             *this,
             envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                cfg->loadFromString(std::string("[") + Sections::kSigningSupport + "]\ntrue");
                 return cfg;
             }),
             features);
@@ -1387,20 +1388,20 @@ public:
         // Attach phantom signers to alice using a ticket.
         env(signers(alice, 1, {{bogie_, 1}, {demon_, 1}}), ticket::Use(aliceTicketSeq++));
         env.close();
-        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+        env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // This should work.
         auto const baseFee = env.current()->fees().base;
         env(noop(alice), Msig(bogie_, demon_), Fee(3 * baseFee), ticket::Use(aliceTicketSeq++));
         env.close();
-        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+        env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // Should also be able to remove the signer list using a ticket.
-        env(signers(alice, jtx::kNONE), ticket::Use(aliceTicketSeq++));
+        env(signers(alice, jtx::kNone), ticket::Use(aliceTicketSeq++));
         env.close();
-        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+        env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
     }
 
@@ -1420,8 +1421,8 @@ public:
 
         uint8_t tag2[] = "hello world some ascii 32b long";  // including 1 byte for NUL
 
-        uint256 bogieTag = xrpl::BaseUint<256>::fromVoid(tag1);
-        uint256 demonTag = xrpl::BaseUint<256>::fromVoid(tag2);
+        UInt256 bogieTag = xrpl::BaseUInt<256>::fromVoid(tag1);
+        UInt256 demonTag = xrpl::BaseUInt<256>::fromVoid(tag2);
 
         // Attach phantom signers to alice and use them for a transaction.
         env(signers(alice, 1, {{bogie_, 1, bogieTag}, {demon_, 1, demonTag}}));
@@ -1511,7 +1512,7 @@ public:
         env.close();
 
         // Verify that the SignerList object was created correctly.
-        auto const& sle = env.le(keylet::signers(alice.id()));
+        auto const& sle = env.le(keylet::signerList(alice.id()));
         BEAST_EXPECT(sle);
         BEAST_EXPECT(sle->getFieldArray(sfSignerEntries).size() == 2);
         if (features[fixIncludeKeyletFields])

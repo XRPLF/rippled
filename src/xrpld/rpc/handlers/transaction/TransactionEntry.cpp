@@ -21,10 +21,10 @@ namespace xrpl {
 // XXX In this case, not specify either ledger does not mean ledger current. It
 // means any ledger.
 json::Value
-doTransactionEntry(RPC::JsonContext& context)
+doTransactionEntry(rpc::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
-    json::Value jvResult = RPC::lookupLedger(lpLedger, context);
+    json::Value jvResult = rpc::lookupLedger(lpLedger, context);
 
     if (!lpLedger)
         return jvResult;
@@ -33,7 +33,7 @@ doTransactionEntry(RPC::JsonContext& context)
     {
         jvResult[jss::error] = "fieldNotFoundTransaction";
     }
-    else if (jvResult.get(jss::ledger_hash, json::NullValue).isNull())
+    else if (jvResult.get(jss::ledger_hash, json::ValueType::Null).isNull())
     {
         // We don't work on ledger current.
 
@@ -42,7 +42,7 @@ doTransactionEntry(RPC::JsonContext& context)
     }
     else
     {
-        uint256 uTransID;
+        UInt256 uTransID;
         // XXX Relying on trusted WSS client. Would be better to have a strict
         // routine, returning success or failure.
         if (!uTransID.parseHex(context.params[jss::tx_hash].asString()))
@@ -60,7 +60,7 @@ doTransactionEntry(RPC::JsonContext& context)
         {
             if (context.apiVersion > 1)
             {
-                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::KDisableApiPriorV2);
+                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::Values::DisableApiPriorV2);
                 jvResult[jss::hash] = to_string(sttx->getTransactionID());
 
                 if (!lpLedger->open())
@@ -81,14 +81,14 @@ doTransactionEntry(RPC::JsonContext& context)
             }
             else
             {
-                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::KNone);
+                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::Values::None);
             }
 
-            RPC::insertDeliverMax(jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
+            rpc::insertDeliverMax(jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
 
             auto const jsonMeta = (context.apiVersion > 1 ? jss::meta : jss::metadata);
             if (stobj)
-                jvResult[jsonMeta] = stobj->getJson(JsonOptions::KNone);
+                jvResult[jsonMeta] = stobj->getJson(JsonOptions::Values::None);
             // 'accounts'
             // 'engine_...'
             // 'ledger_...'

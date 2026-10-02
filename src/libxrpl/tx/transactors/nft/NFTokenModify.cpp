@@ -14,8 +14,6 @@
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
-
 namespace xrpl {
 
 NotTEC
@@ -26,7 +24,7 @@ NFTokenModify::preflight(PreflightContext const& ctx)
 
     if (auto uri = ctx.tx[~sfURI])
     {
-        if (uri->empty() || uri->length() > kMAX_TOKEN_URI_LENGTH)
+        if (uri->empty() || uri->length() > kMaxTokenUriLength)
             return temMALFORMED;
     }
 
@@ -43,7 +41,7 @@ NFTokenModify::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
 
     // Check if the NFT is mutable
-    if ((nft::getFlags(ctx.tx[sfNFTokenID]) & nft::kFLAG_MUTABLE) == 0)
+    if ((nft::getFlags(ctx.tx[sfNFTokenID]) & nft::kFlagMutable) == 0)
         return tecNO_PERMISSION;
 
     // Verify permissions for the issuer
@@ -62,18 +60,16 @@ NFTokenModify::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenModify::doApply()
 {
-    uint256 const nftokenID = ctx_.tx[sfNFTokenID];
+    UInt256 const nftokenID = ctx_.tx[sfNFTokenID];
     AccountID const owner = ctx_.tx[ctx_.tx.isFieldPresent(sfOwner) ? sfOwner : sfAccount];
 
     return nft::changeTokenURI(view(), owner, nftokenID, ctx_.tx[~sfURI]);
 }
 
 void
-NFTokenModify::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+NFTokenModify::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -84,6 +80,7 @@ NFTokenModify::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

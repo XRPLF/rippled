@@ -8,8 +8,9 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
-#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Protocol.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/Serializer.h>
@@ -135,13 +136,10 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
                     v[sfield] = target;
                 }
             };
-        vote(lastFees.base, target_.reference_fee, "base fee", sfBaseFeeDrops);
-        vote(lastFees.reserve, target_.account_reserve, "base reserve", sfReserveBaseDrops);
+        vote(lastFees.base, target_.referenceFee, "base fee", sfBaseFeeDrops);
+        vote(lastFees.reserve, target_.accountReserve, "base reserve", sfReserveBaseDrops);
         vote(
-            lastFees.increment,
-            target_.owner_reserve,
-            "reserve increment",
-            sfReserveIncrementDrops);
+            lastFees.increment, target_.ownerReserve, "reserve increment", sfReserveIncrementDrops);
     }
     else
     {
@@ -162,11 +160,11 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
             }
         };
 
-        vote(lastFees.base, target_.reference_fee, to64, "base fee", sfBaseFee);
-        vote(lastFees.reserve, target_.account_reserve, to32, "base reserve", sfReserveBase);
+        vote(lastFees.base, target_.referenceFee, to64, "base fee", sfBaseFee);
+        vote(lastFees.reserve, target_.accountReserve, to32, "base reserve", sfReserveBase);
         vote(
             lastFees.increment,
-            target_.owner_reserve,
+            target_.ownerReserve,
             to32,
             "reserve increment",
             sfReserveIncrement);
@@ -184,11 +182,11 @@ FeeVoteImpl::doVoting(
         lastClosedLedger && isFlagLedger(lastClosedLedger->seq()),
         "xrpl::FeeVoteImpl::doVoting : has a flag ledger");
 
-    detail::VotableValue baseFeeVote(lastClosedLedger->fees().base, target_.reference_fee);
+    detail::VotableValue baseFeeVote(lastClosedLedger->fees().base, target_.referenceFee);
 
-    detail::VotableValue baseReserveVote(lastClosedLedger->fees().reserve, target_.account_reserve);
+    detail::VotableValue baseReserveVote(lastClosedLedger->fees().reserve, target_.accountReserve);
 
-    detail::VotableValue incReserveVote(lastClosedLedger->fees().increment, target_.owner_reserve);
+    detail::VotableValue incReserveVote(lastClosedLedger->fees().increment, target_.ownerReserve);
 
     auto const& rules = lastClosedLedger->rules();
     if (rules.enabled(featureXRPFees))
@@ -262,44 +260,40 @@ FeeVoteImpl::doVoting(
     }
 
     // choose our positions
-    // TODO: Use structured binding once LLVM 16 is the minimum supported
-    // version. See also: https://github.com/llvm/llvm-project/issues/48582
-    // https://github.com/llvm/llvm-project/commit/127bf44385424891eb04cff8e52d3f157fc2cb7c
-    auto const baseFee = baseFeeVote.getVotes();
-    auto const baseReserve = baseReserveVote.getVotes();
-    auto const incReserve = incReserveVote.getVotes();
+    auto const [baseFee, baseFeeChanged] = baseFeeVote.getVotes();
+    auto const [baseReserve, baseReserveChanged] = baseReserveVote.getVotes();
+    auto const [incReserve, incReserveChanged] = incReserveVote.getVotes();
 
     auto const seq = lastClosedLedger->header().seq + 1;
 
     // add transactions to our position
-    if (baseFee.second || baseReserve.second || incReserve.second)
+    if (baseFeeChanged || baseReserveChanged || incReserveChanged)
     {
-        JLOG(journal_.warn()) << "We are voting for a fee change: " << baseFee.first << "/"
-                              << baseReserve.first << "/" << incReserve.first;
+        JLOG(journal_.warn()) << "We are voting for a fee change: " << baseFee << "/" << baseReserve
+                              << "/" << incReserve;
 
         STTx const feeTx(ttFEE, [=, &rules](auto& obj) {
             obj[sfAccount] = AccountID();
             obj[sfLedgerSequence] = seq;
             if (rules.enabled(featureXRPFees))
             {
-                obj[sfBaseFeeDrops] = baseFee.first;
-                obj[sfReserveBaseDrops] = baseReserve.first;
-                obj[sfReserveIncrementDrops] = incReserve.first;
+                obj[sfBaseFeeDrops] = baseFee;
+                obj[sfReserveBaseDrops] = baseReserve;
+                obj[sfReserveIncrementDrops] = incReserve;
             }
             else
             {
                 // Without the featureXRPFees amendment, these fields are
                 // required.
-                obj[sfBaseFee] = baseFee.first.dropsAs<std::uint64_t>(baseFeeVote.current());
-                obj[sfReserveBase] =
-                    baseReserve.first.dropsAs<std::uint32_t>(baseReserveVote.current());
+                obj[sfBaseFee] = baseFee.dropsAs<std::uint64_t>(baseFeeVote.current());
+                obj[sfReserveBase] = baseReserve.dropsAs<std::uint32_t>(baseReserveVote.current());
                 obj[sfReserveIncrement] =
-                    incReserve.first.dropsAs<std::uint32_t>(incReserveVote.current());
-                obj[sfReferenceFeeUnits] = kFEE_UNITS_DEPRECATED;
+                    incReserve.dropsAs<std::uint32_t>(incReserveVote.current());
+                obj[sfReferenceFeeUnits] = kFeeUnitsDeprecated;
             }
         });
 
-        uint256 const txID = feeTx.getTransactionID();
+        UInt256 const txID = feeTx.getTransactionID();
 
         JLOG(journal_.warn()) << "Vote: " << txID;
 

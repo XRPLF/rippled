@@ -22,7 +22,7 @@
 #include <string>
 #include <unordered_set>
 
-namespace beast::IP {
+namespace beast::ip {
 
 //------------------------------------------------------------------------------
 
@@ -305,6 +305,15 @@ public:
         BEAST_EXPECT(!isLoopback(ep));
         BEAST_EXPECTS(to_string(ep) == "fd00::1", to_string(ep));
 
+        // unspecified IPv6 (::)
+        ep = Endpoint(AddressV6{});
+        BEAST_EXPECT(isUnspecified(ep));
+        BEAST_EXPECT(!isPublic(ep));
+        BEAST_EXPECT(!isPrivate(ep));
+        BEAST_EXPECT(!isMulticast(ep));
+        BEAST_EXPECT(!isLoopback(ep));
+        BEAST_EXPECTS(to_string(ep) == "::", to_string(ep));
+
         {
             ep = Endpoint::fromString("192.0.2.112");
             BEAST_EXPECT(!isUnspecified(ep));
@@ -375,14 +384,14 @@ public:
 
         // test with hashed container
         std::unordered_set<Endpoint> eps;
-        constexpr auto kITEMS{100};
+        static constexpr auto kItems{100};
         float maxLf{0};
-        for (auto i = 0; i < kITEMS; ++i)
+        for (auto i = 0; i < kItems; ++i)
         {
             eps.insert(randomEP(xrpl::randInt(0, 1) == 1));
             maxLf = std::max(maxLf, eps.load_factor());
         }
-        BEAST_EXPECT(eps.bucket_count() >= kITEMS);
+        BEAST_EXPECT(eps.bucket_count() >= kItems);
         BEAST_EXPECT(maxLf > 0.90);
     }
 
@@ -466,4 +475,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(IPEndpoint, beast, beast);
 
-}  // namespace beast::IP
+}  // namespace beast::ip

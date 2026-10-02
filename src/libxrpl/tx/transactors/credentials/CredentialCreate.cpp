@@ -7,13 +7,13 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>  // IWYU pragma: keep
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -62,14 +62,14 @@ CredentialCreate::preflight(PreflightContext const& ctx)
     }
 
     auto const uri = tx[~sfURI];
-    if (uri && (uri->empty() || (uri->size() > kMAX_CREDENTIAL_URI_LENGTH)))
+    if (uri && (uri->empty() || (uri->size() > kMaxCredentialUriLength)))
     {
         JLOG(j.trace()) << "Malformed transaction: invalid size of URI.";
         return temMALFORMED;
     }
 
     auto const credType = tx[sfCredentialType];
-    if (credType.empty() || (credType.size() > kMAX_CREDENTIAL_TYPE_LENGTH))
+    if (credType.empty() || (credType.size() > kMaxCredentialTypeLength))
     {
         JLOG(j.trace()) << "Malformed transaction: invalid size of CredentialType.";
         return temMALFORMED;
@@ -84,7 +84,9 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
     auto const credType(ctx.tx[sfCredentialType]);
     auto const subject = ctx.tx[sfSubject];
 
-    if (!ctx.view.exists(keylet::account(subject)))
+    auto const subjectSle = ctx.view.read(keylet::account(subject));
+
+    if (!subjectSle)
     {
         JLOG(ctx.j.trace()) << "Subject doesn't exist.";
         return tecNO_TARGET;
@@ -96,6 +98,12 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
         return tecDUPLICATE;
     }
 
+    if (ctx.view.rules().enabled(fixCleanup3_3_0) && isPseudoAccount(subjectSle))
+    {
+        JLOG(ctx.j.trace()) << "Subject is a pseudo-account.";
+        return tecPSEUDO_ACCOUNT;
+    }
+
     return tesSUCCESS;
 }
 
@@ -104,7 +112,7 @@ CredentialCreate::doApply()
 {
     auto const subject = ctx_.tx[sfSubject];
     auto const credType(ctx_.tx[sfCredentialType]);
-    Keylet const credentialKey = keylet::credential(subject, account_, credType);
+    Keylet const credentialKey = keylet::credential(subject, accountID_, credType);
 
     auto const sleCred = std::make_shared<SLE>(credentialKey);
     if (!sleCred)
@@ -126,37 +134,36 @@ CredentialCreate::doApply()
         sleCred->setFieldU32(sfExpiration, *optExp);
     }
 
-    auto const sleIssuer = view().peek(keylet::account(account_));
+    auto const sleIssuer = view().peek(keylet::account(accountID_));
     if (!sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    {
-        STAmount const reserve{
-            view().fees().accountReserve(sleIssuer->getFieldU32(sfOwnerCount) + 1)};
-        if (preFeeBalance_ < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
+    if (auto const ret = checkReserve(
+            ctx_.getApplyViewContext(), sleIssuer, preFeeBalance_, {.ownerCountDelta = 1}, j_);
+        !isTesSuccess(ret))
+        return ret;
 
     sleCred->setAccountID(sfSubject, subject);
-    sleCred->setAccountID(sfIssuer, account_);
+    sleCred->setAccountID(sfIssuer, accountID_);
     sleCred->setFieldVL(sfCredentialType, credType);
 
     if (ctx_.tx.isFieldPresent(sfURI))
         sleCred->setFieldVL(sfURI, ctx_.tx.getFieldVL(sfURI));
 
     {
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), credentialKey, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), credentialKey, describeOwnerDir(accountID_));
         JLOG(j_.trace()) << "Adding Credential to owner directory " << to_string(credentialKey.key)
                          << ": " << (page ? "success" : "failure");
         if (!page)
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
-        adjustOwnerCount(view(), sleIssuer, 1, j_);
+        increaseOwnerCount(ctx_.getApplyViewContext(), sleIssuer, 1, j_);
+        addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred);
     }
 
-    if (subject == account_)
+    if (subject == accountID_)
     {
         sleCred->setFieldU32(sfFlags, lsfAccepted);
     }
@@ -179,11 +186,9 @@ CredentialCreate::doApply()
 }
 
 void
-CredentialCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+CredentialCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -194,6 +199,7 @@ CredentialCreate::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 }  // namespace xrpl

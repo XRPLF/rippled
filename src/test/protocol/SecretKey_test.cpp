@@ -33,7 +33,7 @@ class SecretKey_test : public beast::unit_test::Suite
     };
 
 public:
-    using blob = std::vector<std::uint8_t>;
+    using Blob = std::vector<std::uint8_t>;
 
     // Ensure that verification does the right thing with
     // respect to the matrix of canonicality variables.
@@ -73,7 +73,7 @@ public:
             0x89, 0x1C, 0x60, 0xBA, 0x63, 0x74, 0x44, 0xF7, 0x1A, 0x12, 0x9E, 0x47,
             0x13, 0x5D, 0x36, 0xD9, 0x2A, 0xFD, 0x39, 0xB8, 0x56, 0x60, 0x1A, 0x01};
 
-        auto const digest = uint256::fromVoid(digestData.data());
+        auto const digest = UInt256::fromVoid(digestData.data());
 
         PublicKey const pk{makeSlice(pkData)};
         SecretKey const sk{makeSlice(skData)};
@@ -116,7 +116,7 @@ public:
 
             for (std::size_t j = 0; j < 32; j++)
             {
-                uint256 digest;
+                UInt256 digest;
                 beast::rngfill(digest.data(), digest.size(), cryptoPrng());
 
                 auto sig = signDigest(pk, sk, digest);
@@ -301,7 +301,7 @@ public:
     {
         testcase("secp256k1: key derivation");
 
-        for (auto const& test : kSECP256K1_TEST_VECTORS)
+        for (auto const& test : kSecP256K1TestVectors)
         {
             auto const id = parseBase58<AccountID>(test.addr);
             BEAST_EXPECT(id);
@@ -320,7 +320,7 @@ public:
     {
         testcase("ed25519: key derivation");
 
-        for (auto const& test : kED25519_TEST_VECTORS)
+        for (auto const& test : kED25519TestVectors)
         {
             auto const id = parseBase58<AccountID>(test.addr);
             BEAST_EXPECT(id);
@@ -352,7 +352,7 @@ public:
 
 private:
     // clang-format off
-inline static TestKeyData const kSECP256K1_TEST_VECTORS[] = {
+inline static TestKeyData const kSecP256K1TestVectors[] = {
     {.seed={0xDE,0xDC,0xE9,0xCE,0x67,0xB4,0x51,0xD8,0x52,0xFD,0x4E,0x84,0x6F,0xCD,0xE3,0x1C},
      .pubkey={0x03,0x30,0xE7,0xFC,0x9D,0x56,0xBB,0x25,0xD6,0x89,0x3B,0xA3,0xF3,0x17,0xAE,0x5B,
       0xCF,0x33,0xB3,0x29,0x1B,0xD6,0x3D,0xB3,0x26,0x54,0xA3,0x13,0x22,0x2F,0x7F,0xD0,0x20},
@@ -925,7 +925,7 @@ inline static TestKeyData const kSECP256K1_TEST_VECTORS[] = {
      .addr="rsYryUWhbYRiQivh693pgjnseAwPHezNj1"}
 };
 
-inline static TestKeyData const kED25519_TEST_VECTORS[] = {
+inline static TestKeyData const kED25519TestVectors[] = {
     {.seed={0xAF,0x41,0xFF,0x66,0xF7,0x5E,0xBD,0x3A,0x6B,0x18,0xFB,0x7A,0x1D,0xF6,0x1C,0x97},
      .pubkey={0xED,0x48,0xCB,0xBB,0xE0,0xEE,0x7B,0x86,0x86,0xA7,0xDE,0x9F,0x0A,0x01,0x59,0x73,
       0x4E,0x65,0xF9,0xC3,0x69,0x94,0x7F,0x2E,0x26,0x96,0x23,0x2B,0x46,0x1E,0x55,0x32,0x13},

@@ -2,11 +2,14 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
+#include <string>
 #include <utility>
 
 namespace beast {
 
-/** Wraps a Journal::Sink to prefix its output with a string. */
+/**
+ * Wraps a Journal::Sink to prefix its output with a string.
+ */
 
 // A WrappedSink both is a Sink and has a Sink:
 //   o It inherits from Sink so it has the correct interface.
@@ -36,7 +39,7 @@ public:
     }
 
     [[nodiscard]] bool
-    active(beast::severities::Severity level) const override
+    active(beast::Severity level) const override
     {
         return sink_.active(level);
     }
@@ -53,27 +56,27 @@ public:
         sink_.console(output);
     }
 
-    [[nodiscard]] beast::severities::Severity
+    [[nodiscard]] beast::Severity
     threshold() const override
     {
         return sink_.threshold();
     }
 
     void
-    threshold(beast::severities::Severity thresh) override
+    threshold(beast::Severity thresh) override
     {
         sink_.threshold(thresh);
     }
 
     void
-    write(beast::severities::Severity level, std::string const& text) override
+    write(beast::Severity level, std::string const& text) override
     {
         using beast::Journal;
         sink_.write(level, prefix_ + text);
     }
 
     void
-    writeAlways(severities::Severity level, std::string const& text) override
+    writeAlways(Severity level, std::string const& text) override
     {
         using beast::Journal;
         sink_.writeAlways(level, prefix_ + text);

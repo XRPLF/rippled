@@ -3,15 +3,16 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/TxQ.h>
+#include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/DeliveredAmount.h>
-#include <xrpld/rpc/MPTokenIssuanceID.h>
+#include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -19,6 +20,7 @@
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -27,6 +29,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/serialize.h>
 
+#include <cstdint>
 #include <exception>
 #include <memory>
 #include <string>
@@ -38,19 +41,19 @@ namespace {
 bool
 isFull(LedgerFill const& fill)
 {
-    return (fill.options & LedgerFill::Full) != 0;
+    return (fill.options & static_cast<int>(LedgerFill::Options::Full)) != 0;
 }
 
 bool
 isExpanded(LedgerFill const& fill)
 {
-    return isFull(fill) || ((fill.options & LedgerFill::Expand) != 0);
+    return isFull(fill) || ((fill.options & static_cast<int>(LedgerFill::Options::Expand)) != 0);
 }
 
 bool
 isBinary(LedgerFill const& fill)
 {
-    return (fill.options & LedgerFill::Binary) != 0;
+    return (fill.options & static_cast<int>(LedgerFill::Options::Binary)) != 0;
 }
 
 void
@@ -119,7 +122,7 @@ fillJsonTx(
     if (!bExpanded)
         return to_string(txn->getTransactionID());
 
-    json::Value txJson{json::ObjectValue};
+    json::Value txJson{json::ValueType::Object};
     auto const txnType = txn->getTxnType();
     if (bBinary)
     {
@@ -133,27 +136,20 @@ fillJsonTx(
     }
     else if (fill.context->apiVersion > 1)
     {
-        copyFrom(txJson[jss::tx_json], txn->getJson(JsonOptions::KDisableApiPriorV2, false));
+        copyFrom(txJson[jss::tx_json], txn->getJson(JsonOptions::Values::DisableApiPriorV2, false));
         txJson[jss::hash] = to_string(txn->getTransactionID());
-        RPC::insertDeliverMax(txJson[jss::tx_json], txnType, fill.context->apiVersion);
+        rpc::insertDeliverMax(txJson[jss::tx_json], txnType, fill.context->apiVersion);
 
         if (stMeta)
         {
-            txJson[jss::meta] = stMeta->getJson(JsonOptions::KNone);
+            txJson[jss::meta] = stMeta->getJson(JsonOptions::Values::None);
 
-            // If applicable, insert delivered amount
-            if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
-            {
-                RPC::insertDeliveredAmount(
-                    txJson[jss::meta],
-                    fill.ledger,
-                    txn,
-                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
-            }
-
-            // If applicable, insert mpt issuance id
-            RPC::insertMPTokenIssuanceID(
-                txJson[jss::meta], txn, {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+            // Insert all synthetic fields
+            rpc::insertAllSyntheticInJson(
+                txJson[jss::meta],
+                fill.ledger,
+                txn,
+                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
 
         if (!fill.ledger.open())
@@ -171,29 +167,36 @@ fillJsonTx(
     }
     else
     {
-        copyFrom(txJson, txn->getJson(JsonOptions::KNone));
-        RPC::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
+        copyFrom(txJson, txn->getJson(JsonOptions::Values::None));
+        rpc::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
         if (stMeta)
         {
-            txJson[jss::metaData] = stMeta->getJson(JsonOptions::KNone);
+            txJson[jss::metaData] = stMeta->getJson(JsonOptions::Values::None);
 
-            // If applicable, insert delivered amount
-            if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
-            {
-                RPC::insertDeliveredAmount(
-                    txJson[jss::metaData],
-                    fill.ledger,
-                    txn,
-                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
-            }
-
-            // If applicable, insert mpt issuance id
-            RPC::insertMPTokenIssuanceID(
-                txJson[jss::metaData], txn, {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+            // Insert all synthetic fields
+            rpc::insertAllSyntheticInJson(
+                txJson[jss::metaData],
+                fill.ledger,
+                txn,
+                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
     }
 
-    if (((fill.options & LedgerFill::OwnerFunds) != 0) && txn->getTxnType() == ttOFFER_CREATE)
+    // compute outgoing CTID
+    if (stMeta && stMeta->isFieldPresent(sfTransactionIndex))
+    {
+        uint32_t const lgrSeq = fill.ledger.seq();
+        uint32_t const txnIdx = stMeta->getFieldU32(sfTransactionIndex);
+        uint32_t netID = fill.context->app.getNetworkIDService().getNetworkID();
+        if (txn->isFieldPresent(sfNetworkID))
+            netID = txn->getFieldU32(sfNetworkID);
+
+        if (auto ctid = rpc::encodeCTID(lgrSeq, txnIdx, netID))
+            txJson[jss::ctid] = *ctid;
+    }
+
+    if (((fill.options & static_cast<int>(LedgerFill::Options::OwnerFunds)) != 0) &&
+        txn->getTxnType() == ttOFFER_CREATE)
     {
         auto const account = txn->getAccountID(sfAccount);
         auto const amount = txn->getFieldAmount(sfTakerGets);
@@ -207,6 +210,7 @@ fillJsonTx(
                 account,
                 amount,
                 FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
                 beast::Journal{beast::Journal::getNullSink()});
             txJson[jss::owner_funds] = ownerFunds.getText();
         }
@@ -218,7 +222,7 @@ fillJsonTx(
 void
 fillJsonTx(json::Value& json, LedgerFill const& fill)
 {
-    auto& txns = json[jss::transactions] = json::ArrayValue;
+    auto& txns = json[jss::transactions] = json::ValueType::Array;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
@@ -247,7 +251,7 @@ void
 fillJsonState(json::Value& json, LedgerFill const& fill)
 {
     auto& ledger = fill.ledger;
-    auto& array = json[jss::accountState] = json::ArrayValue;
+    auto& array = json[jss::accountState] = json::ValueType::Array;
     auto expanded = isExpanded(fill);
     auto binary = isBinary(fill);
 
@@ -255,13 +259,13 @@ fillJsonState(json::Value& json, LedgerFill const& fill)
     {
         if (binary)
         {
-            auto& obj = array.append(json::ObjectValue);
+            auto& obj = array.append(json::ValueType::Object);
             obj[jss::hash] = to_string(sle->key());
             obj[jss::tx_blob] = serializeHex(*sle);
         }
         else if (expanded)
         {
-            array.append(sle->getJson(JsonOptions::KNone));
+            array.append(sle->getJson(JsonOptions::Values::None));
         }
         else
         {
@@ -273,13 +277,13 @@ fillJsonState(json::Value& json, LedgerFill const& fill)
 void
 fillJsonQueue(json::Value& json, LedgerFill const& fill)
 {
-    auto& queueData = json[jss::queue_data] = json::ArrayValue;
+    auto& queueData = json[jss::queue_data] = json::ValueType::Array;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
     for (auto const& tx : fill.txQueue)
     {
-        auto& txJson = queueData.append(json::ObjectValue);
+        auto& txJson = queueData.append(json::ValueType::Object);
         txJson[jss::fee_level] = to_string(tx.feeLevel);
         if (tx.lastValid)
             txJson[jss::LastLedgerSequence] = *tx.lastValid;
@@ -296,13 +300,24 @@ fillJsonQueue(json::Value& json, LedgerFill const& fill)
             txJson["last_result"] = transToken(*tx.lastResult);
 
         auto&& temp = fillJsonTx(fill, bBinary, bExpanded, tx.txn, nullptr);
-        if (fill.context->apiVersion > 1)
+        if (temp.isObject())
         {
-            copyFrom(txJson, temp);
+            if (fill.context->apiVersion > 1)
+            {
+                copyFrom(txJson, temp);
+            }
+            else
+            {
+                copyFrom(txJson[jss::tx], temp);
+            }
+        }
+        else if (fill.context->apiVersion > 1)
+        {
+            txJson[jss::hash] = temp;
         }
         else
         {
-            copyFrom(txJson[jss::tx], temp);
+            txJson[jss::tx] = temp;
         }
     }
 }
@@ -325,13 +340,13 @@ fillJson(json::Value& json, LedgerFill const& fill)
             fill.ledger.header(),
             bFull,
             ((fill.context != nullptr) ? fill.context->apiVersion
-                                       : RPC::kAPI_MAXIMUM_SUPPORTED_VERSION));
+                                       : rpc::kApiMaximumSupportedVersion));
     }
 
-    if (bFull || ((fill.options & LedgerFill::DumpTxrp) != 0))
+    if (bFull || ((fill.options & static_cast<int>(LedgerFill::Options::DumpTxrp)) != 0))
         fillJsonTx(json, fill);
 
-    if (bFull || ((fill.options & LedgerFill::DumpState) != 0))
+    if (bFull || ((fill.options & static_cast<int>(LedgerFill::Options::DumpState)) != 0))
         fillJsonState(json, fill);
 }
 
@@ -340,11 +355,14 @@ fillJson(json::Value& json, LedgerFill const& fill)
 void
 addJson(json::Value& json, LedgerFill const& fill)
 {
-    auto& object = json[jss::ledger] = json::ObjectValue;
+    auto& object = json[jss::ledger] = json::ValueType::Object;
     fillJson(object, fill);
 
-    if (((fill.options & LedgerFill::DumpQueue) != 0) && !fill.txQueue.empty())
+    if (((fill.options & static_cast<int>(LedgerFill::Options::DumpQueue)) != 0) &&
+        !fill.txQueue.empty())
+    {
         fillJsonQueue(json, fill);
+    }
 }
 
 json::Value

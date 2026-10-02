@@ -19,18 +19,18 @@ STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
 {
     auto const slice = sit.getSlice(sit.getVLDataLength());
 
-    if (slice.size() % uint256::size() != 0)
+    if (slice.size() % UInt256::size() != 0)
     {
         Throw<std::runtime_error>(
             "Bad serialization for STVector256: " + std::to_string(slice.size()));
     }
 
-    auto const cnt = slice.size() / uint256::size();
+    auto const cnt = slice.size() / UInt256::size();
 
     value_.reserve(cnt);
 
     for (std::size_t i = 0; i != cnt; ++i)
-        value_.emplace_back(slice.substr(i * uint256::size(), uint256::size()));
+        value_.push_back(UInt256::fromRaw(slice.substr(i * UInt256::size(), UInt256::size())));
 }
 
 STBase*
@@ -68,14 +68,14 @@ STVector256::add(Serializer& s) const
 bool
 STVector256::isEquivalent(STBase const& t) const
 {
-    STVector256 const* v = dynamic_cast<STVector256 const*>(&t);
+    auto const* v = dynamic_cast<STVector256 const*>(&t);
     return (v != nullptr) && (value_ == v->value_);
 }
 
 json::Value
 STVector256::getJson(JsonOptions) const
 {
-    json::Value ret(json::ArrayValue);
+    json::Value ret(json::ValueType::Array);
 
     for (auto const& vEntry : value_)
         ret.append(to_string(vEntry));

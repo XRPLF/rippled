@@ -12,7 +12,7 @@ namespace xrpl {
 std::vector<SOElement> const&
 TxFormats::getCommonFields()
 {
-    static auto const kCOMMON_FIELDS = std::vector<SOElement>{
+    static auto const kCommonFields = std::vector<SOElement>{
         {sfTransactionType, SoeRequired},
         {sfFlags, SoeOptional},
         {sfSourceTag, SoeOptional},
@@ -30,8 +30,11 @@ TxFormats::getCommonFields()
         {sfSigners, SoeOptional},  // submit_multisigned
         {sfNetworkID, SoeOptional},
         {sfDelegate, SoeOptional},
+        {sfSponsor, SoeOptional},
+        {sfSponsorFlags, SoeOptional},
+        {sfSponsorSignature, SoeOptional},
     };
-    return kCOMMON_FIELDS;
+    return kCommonFields;
 }
 
 TxFormats::TxFormats()
@@ -42,7 +45,7 @@ TxFormats::TxFormats()
 #undef TRANSACTION
 
 #define UNWRAP(...) __VA_ARGS__
-#define TRANSACTION(tag, value, name, delegable, amendment, privileges, fields) \
+#define TRANSACTION(tag, value, name, settings, fields) \
     add(jss::name, tag, UNWRAP fields, getCommonFields());
 
 #include <xrpl/protocol/detail/transactions.macro>
@@ -56,8 +59,8 @@ TxFormats::TxFormats()
 TxFormats const&
 TxFormats::getInstance()
 {
-    static TxFormats const kINSTANCE;
-    return kINSTANCE;
+    static TxFormats const kInstance;
+    return kInstance;
 }
 
 }  // namespace xrpl

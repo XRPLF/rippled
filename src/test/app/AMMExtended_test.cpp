@@ -65,10 +65,15 @@ namespace xrpl::test {
 /**
  * Tests of AMM that use offers too.
  */
-struct AMMExtended_test : public jtx::AMMTest
+class AMMExtended_test : public jtx::AMMTest
 {
     // Use small Number mantissas for the life of this test.
-    NumberMantissaScaleGuard const sg{xrpl::MantissaRange::MantissaScale::Small};
+    NumberMantissaScaleGuard const sg_{xrpl::MantissaRange::MantissaScale::Small};
+
+    // For now, just disable SAV entirely, which locks in the small Number
+    // mantissas
+    FeatureBitset const all_{
+        testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
 
 private:
     void
@@ -262,20 +267,39 @@ private:
             {features});
 
         // tfPassive -- place the offer without crossing it.
-        testAMM(
-            [&](AMM& ammAlice, Env& env) {
-                // Carol creates a passive offer that could cross AMM.
-                // Carol's offer should stay in the ledger.
-                env(offer(carol_, XRP(100), USD(100), tfPassive));
-                env.close();
-                BEAST_EXPECT(
-                    ammAlice.expectBalances(XRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
-                BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100), STAmount{USD, 100}}}}));
-            },
-            {{XRP(10'100), USD(10'000)}},
-            0,
-            std::nullopt,
-            {features});
+        if (features[featureMPTokensV2])
+        {
+            Env env{*this, features};
+            fund(env, gw_, {alice_, carol_}, XRP(30'000'000), {USD(30'000'000)});
+
+            AMM const ammAlice(env, alice_, XRP(10'100'000), USD(10'000'000));
+
+            // Scale the exact-quality fixture up so the visual relationship
+            // stays clear: the passive CLOB offer has the same 1:1 quality as
+            // the generated AMM offer, so it should not cross.
+            env(offer(carol_, XRP(100'000), USD(100'000), tfPassive));
+            env.close();
+            BEAST_EXPECT(
+                ammAlice.expectBalances(XRP(10'100'000), USD(10'000'000), ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100'000), USD(100'000)}}}));
+        }
+        else
+        {
+            testAMM(
+                [&](AMM& ammAlice, Env& env) {
+                    // Carol creates a passive offer that could cross AMM.
+                    // Carol's offer should stay in the ledger.
+                    env(offer(carol_, XRP(100), USD(100), tfPassive));
+                    env.close();
+                    BEAST_EXPECT(ammAlice.expectBalances(
+                        XRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
+                    BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100), STAmount{USD, 100}}}}));
+                },
+                {{XRP(10'100), USD(10'000)}},
+                0,
+                std::nullopt,
+                {features});
+        }
 
         // tfPassive -- cross only offers of better quality.
         testAMM(
@@ -506,7 +530,7 @@ private:
         env(offer(dan, XRP(500), euR1(50)));
         env.close();
 
-        json::Value jtp{json::ArrayValue};
+        json::Value jtp{json::ValueType::Array};
         jtp[0u][0u][jss::currency] = "XRP";
         env(pay(alice_, bob_, euR1(30)), Json(jss::Paths, jtp), Sendmax(usD1(333)));
         env.close();
@@ -541,7 +565,7 @@ private:
         //  1 for each trust limit == 3 (alice_ < mtgox/amazon/bitstamp) +
         //  1 for payment          == 4
         auto const startingXrp =
-            XRP(100) + env.current()->fees().accountReserve(3) + env.current()->fees().base * 4;
+            XRP(100) + env.current()->fees().accountReserve(3, 1) + env.current()->fees().base * 4;
 
         env.fund(startingXrp, gw1, gw2, gw3, localAlice);
         env.fund(XRP(2'000), localBob);
@@ -681,7 +705,8 @@ private:
         payment[jss::tx_json][jss::Sequence] =
             env.current()->read(keylet::account(bob_.id()))->getFieldU32(sfSequence);
         payment[jss::tx_json][jss::Fee] = to_string(env.current()->fees().base);
-        payment[jss::tx_json][jss::SendMax] = bob_["XTS"](1.5).value().getJson(JsonOptions::KNone);
+        payment[jss::tx_json][jss::SendMax] =
+            bob_["XTS"](1.5).value().getJson(JsonOptions::Values::None);
         payment[jss::tx_json][jss::Flags] = tfPartialPayment;
         auto const jrr = env.rpc("json", "submit", to_string(payment));
         BEAST_EXPECT(jrr[jss::result][jss::status] == "success");
@@ -1119,14 +1144,14 @@ private:
             env(pay(ann, cam, dBux(60)), Path(localBob, dan), Sendmax(aBux(200)));
             env.close();
 
-            BEAST_EXPECT(expectHolding(env, ann, aBux(kNONE)));
-            BEAST_EXPECT(expectHolding(env, ann, dBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, ann, aBux(kNone)));
+            BEAST_EXPECT(expectHolding(env, ann, dBux(kNone)));
             BEAST_EXPECT(expectHolding(env, localBob, aBux(72)));
             BEAST_EXPECT(expectHolding(env, localBob, dBux(40)));
-            BEAST_EXPECT(expectHolding(env, cam, aBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, cam, aBux(kNone)));
             BEAST_EXPECT(expectHolding(env, cam, dBux(60)));
-            BEAST_EXPECT(expectHolding(env, dan, aBux(kNONE)));
-            BEAST_EXPECT(expectHolding(env, dan, dBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, dan, aBux(kNone)));
+            BEAST_EXPECT(expectHolding(env, dan, dBux(kNone)));
 
             AMM const ammBob(env, localBob, aBux(30), dBux(30));
 
@@ -1138,12 +1163,12 @@ private:
             env.close();
 
             BEAST_EXPECT(ammBob.expectBalances(aBux(30), dBux(30), ammBob.tokens()));
-            BEAST_EXPECT(expectHolding(env, ann, aBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, ann, aBux(kNone)));
             BEAST_EXPECT(expectHolding(env, ann, dBux(0)));
-            BEAST_EXPECT(expectHolding(env, cam, aBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, cam, aBux(kNone)));
             BEAST_EXPECT(expectHolding(env, cam, dBux(60)));
             BEAST_EXPECT(expectHolding(env, dan, aBux(0)));
-            BEAST_EXPECT(expectHolding(env, dan, dBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, dan, dBux(kNone)));
         }
     }
 
@@ -1194,7 +1219,7 @@ private:
         env.close();
         env.require(Balance(cam, aBux(35)));
         env.require(Balance(cam, bBux(35)));
-        env.require(offers(cam, 1));
+        env.require(Offers(cam, 1));
 
         // This offer caused the assert.
         env(offer(cam, bBux(30), aBux(30)));
@@ -1278,6 +1303,78 @@ private:
         BEAST_EXPECT(expectHolding(env, bob_, USD(0)));
     }
 
+    // Same shape as testRequireAuth, except the issuer never authorizes the AMM's own trust line.
+    // An AMM holds the asset for its liquidity providers and cannot sign a TrustSet for itself, so
+    // once pseudo-accounts are implicitly authorized the pool keeps trading. Before that the offer
+    // stream drops it and the taker's offer stays on the book.
+    void
+    testPseudoAccountRequireAuth(FeatureBitset features)
+    {
+        testcase("lsfRequireAuth, unauthorized AMM pseudo-account");
+
+        using namespace jtx;
+
+        bool const pseudoExempt = features[fixCleanup3_4_0];
+
+        Env env{*this, features};
+
+        auto const aliceUSD = alice_["USD"];
+        auto const bobUSD = bob_["USD"];
+
+        env.fund(XRP(400'000), gw_, alice_, bob_);
+        env.close();
+
+        env(fset(gw_, asfRequireAuth));
+        env.close();
+
+        env(trust(gw_, bobUSD(100)), Txflags(tfSetfAuth));
+        env(trust(bob_, USD(100)));
+        env(trust(gw_, aliceUSD(100)), Txflags(tfSetfAuth));
+        env(trust(alice_, USD(2'000)));
+        env(pay(gw_, alice_, USD(1'000)));
+        env.close();
+
+        AMM const ammAlice(env, alice_, USD(1'000), XRP(1'050));
+
+        // The pool's own line stays unauthorized: AMMCreate opens it without the flag, and the
+        // pseudo-account has no key to ask for one.
+        auto const ammLineAuthorized = [&]() -> bool {
+            auto const line =
+                env.le(keylet::trustLine(ammAlice.ammAccount(), USD.issue().account, USD.currency));
+            if (!BEAST_EXPECT(line))
+                return false;
+            return line->isFlag(
+                ammAlice.ammAccount() > USD.issue().account ? lsfLowAuth : lsfHighAuth);
+        };
+        BEAST_EXPECT(!ammLineAuthorized());
+
+        env(pay(gw_, bob_, USD(50)));
+        env.close();
+        BEAST_EXPECT(expectHolding(env, bob_, USD(50)));
+
+        // Bob sells USD into the pool, so the pool is the side that has to be authorized to hold
+        // the asset.
+        env(offer(bob_, XRP(50), USD(50)));
+        env.close();
+
+        if (pseudoExempt)
+        {
+            BEAST_EXPECT(ammAlice.expectBalances(USD(1'050), XRP(1'000), ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(env, bob_, 0));
+            BEAST_EXPECT(expectHolding(env, bob_, USD(0)));
+        }
+        else
+        {
+            // The pool is skipped, so nothing crosses and the offer rests on the book.
+            BEAST_EXPECT(ammAlice.expectBalances(USD(1'000), XRP(1'050), ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(env, bob_, 1));
+            BEAST_EXPECT(expectHolding(env, bob_, USD(50)));
+        }
+
+        // Either way the exemption skips the check rather than setting the flag.
+        BEAST_EXPECT(!ammLineAuthorized());
+    }
+
     void
     testMissingAuth(FeatureBitset features)
     {
@@ -1348,37 +1445,36 @@ private:
     testOffers()
     {
         using namespace jtx;
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas
-        FeatureBitset const all{
-            testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
 
-        testRmFundedOffer(all);
-        testRmFundedOffer(all - fixAMMv1_1 - fixAMMv1_3);
-        testEnforceNoRipple(all);
-        testFillModes(all);
-        testOfferCrossWithXRP(all);
-        testOfferCrossWithLimitOverride(all);
-        testCurrencyConversionEntire(all);
-        testCurrencyConversionInParts(all);
-        testCrossCurrencyStartXRP(all);
-        testCrossCurrencyEndXRP(all);
-        testCrossCurrencyBridged(all);
-        testOfferFeesConsumeFunds(all);
-        testOfferCreateThenCross(all);
-        testSellFlagExceedLimit(all);
-        testGatewayCrossCurrency(all);
-        testGatewayCrossCurrency(all - fixAMMv1_1 - fixAMMv1_3);
-        testBridgedCross(all);
-        testSellWithFillOrKill(all);
-        testTransferRateOffer(all);
-        testSelfIssueOffer(all);
-        testBadPathAssert(all);
-        testSellFlagBasic(all);
-        testDirectToDirectPath(all);
-        testDirectToDirectPath(all - fixAMMv1_1 - fixAMMv1_3);
-        testRequireAuth(all);
-        testMissingAuth(all);
+        testRmFundedOffer(all_);
+        testRmFundedOffer(all_ - fixAMMv1_1 - fixAMMv1_3);
+        testEnforceNoRipple(all_);
+        testFillModes(all_);
+        testFillModes(all_ - featureMPTokensV2);
+        testOfferCrossWithXRP(all_);
+        testOfferCrossWithLimitOverride(all_);
+        testCurrencyConversionEntire(all_);
+        testCurrencyConversionInParts(all_);
+        testCrossCurrencyStartXRP(all_);
+        testCrossCurrencyEndXRP(all_);
+        testCrossCurrencyBridged(all_);
+        testOfferFeesConsumeFunds(all_);
+        testOfferCreateThenCross(all_);
+        testSellFlagExceedLimit(all_);
+        testGatewayCrossCurrency(all_);
+        testGatewayCrossCurrency(all_ - fixAMMv1_1 - fixAMMv1_3);
+        testBridgedCross(all_);
+        testSellWithFillOrKill(all_);
+        testTransferRateOffer(all_);
+        testSelfIssueOffer(all_);
+        testBadPathAssert(all_);
+        testSellFlagBasic(all_);
+        testDirectToDirectPath(all_);
+        testDirectToDirectPath(all_ - fixAMMv1_1 - fixAMMv1_3);
+        testRequireAuth(all_);
+        testPseudoAccountRequireAuth(all_);
+        testPseudoAccountRequireAuth(all_ - fixCleanup3_4_0);
+        testMissingAuth(all_);
     }
 
     void
@@ -2418,8 +2514,10 @@ private:
                 // 1,400 - 56.3368*1.25 = 1400 - 70.4210 = 1329.5789GBP
                 BEAST_EXPECT(
                     expectHolding(env, alice_, STAmount{GBP, UINT64_C(1'329'578947368421), -12}));
-                //// 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
-                ///= 70.4210EUR
+                /**
+                 * / 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
+                 * = 70.4210EUR
+                 */
                 // 56.3368GBP is swapped in for 53.3322EUR
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount{GBP, UINT64_C(1'056'336842105263), -12},
@@ -2433,8 +2531,10 @@ private:
                 // 1,400 - 56.3368*1.25 = 1400 - 70.4210 = 1329.5789GBP
                 BEAST_EXPECT(
                     expectHolding(env, alice_, STAmount{GBP, UINT64_C(1'329'57894736842), -11}));
-                //// 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
-                ///= 70.4210EUR
+                /**
+                 * / 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
+                 * = 70.4210EUR
+                 */
                 // 56.3368GBP is swapped in for 53.3322EUR
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount{GBP, UINT64_C(1'056'336842105264), -12},
@@ -2713,7 +2813,7 @@ private:
         // Carol offers to buy 1000 XRP for 1000 USD. She removes Bob's next
         // 1000 offers as unfunded and hits the step limit.
         env(offer(carol_, USD(1'000), XRP(1'000)));
-        env.require(Balance(carol_, USD(kNONE)));
+        env.require(Balance(carol_, USD(kNone)));
         env.require(Owners(carol_, 1));
         env.require(Balance(bob_, USD(0)));
         env.require(Owners(bob_, 1));
@@ -3084,12 +3184,14 @@ private:
             // Is cleared via a TrustSet with ClearFreeze flag
             //    test: sets LowFreeze | HighFreeze flags
             env(trust(g1, bob["USD"](0), tfClearFreeze));
-            auto affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+            auto affected =
+                env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
             if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
                 return;
             auto ff = affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
             BEAST_EXPECT(
-                ff[sfLowLimit.fieldName] == g1["USD"](0).value().getJson(JsonOptions::KNone));
+                ff[sfLowLimit.fieldName] ==
+                g1["USD"](0).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfLowFreeze));
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighFreeze));
             env.close();
@@ -3513,15 +3615,11 @@ private:
     testFlow()
     {
         using namespace jtx;
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas in the transaction engine
-        FeatureBitset const all{
-            testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
 
-        testFalseDry(all);
-        testBookStep(all);
-        testTransferRateNoOwnerFee(all);
-        testTransferRateNoOwnerFee(all - fixAMMv1_1 - fixAMMv1_3);
+        testFalseDry(all_);
+        testBookStep(all_);
+        testTransferRateNoOwnerFee(all_);
+        testTransferRateNoOwnerFee(all_ - fixAMMv1_1 - fixAMMv1_3);
         testLimitQuality();
         testXRPPathLoop();
     }
@@ -3530,34 +3628,22 @@ private:
     testCrossingLimits()
     {
         using namespace jtx;
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas in the transaction engine
-        FeatureBitset const all{
-            testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
-        testStepLimit(all);
-        testStepLimit(all - fixAMMv1_1 - fixAMMv1_3);
+        testStepLimit(all_);
+        testStepLimit(all_ - fixAMMv1_1 - fixAMMv1_3);
     }
 
     void
     testDeliverMin()
     {
         using namespace jtx;
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas in the transaction engine
-        FeatureBitset const all{
-            testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
-        testConvertAllOfAnAsset(all);
-        testConvertAllOfAnAsset(all - fixAMMv1_1 - fixAMMv1_3);
+        testConvertAllOfAnAsset(all_);
+        testConvertAllOfAnAsset(all_ - fixAMMv1_1 - fixAMMv1_3);
     }
 
     void
     testDepositAuth()
     {
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas in the transaction engine
-        FeatureBitset const all{
-            jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
-        testPayment(all);
+        testPayment(all_);
         testPayIOU();
     }
 
@@ -3565,13 +3651,9 @@ private:
     testFreeze()
     {
         using namespace test::jtx;
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas in the transaction engine
-        FeatureBitset const sa{
-            testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
-        testRippleState(sa);
-        testGlobalFreeze(sa);
-        testOffersWhenFrozen(sa);
+        testRippleState(all_);
+        testGlobalFreeze(all_);
+        testOffersWhenFrozen(all_);
     }
 
     void

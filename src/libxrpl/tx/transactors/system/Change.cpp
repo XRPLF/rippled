@@ -42,7 +42,7 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
         return ret;
 
     auto account = ctx.tx.getAccountID(sfAccount);
-    if (account != beast::kZERO)
+    if (account != beast::kZero)
     {
         JLOG(ctx.j.warn()) << "Change: Bad source id";
         return temBAD_SRC_ACCOUNT;
@@ -50,7 +50,7 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
 
     // No point in going any further if the transaction fee is malformed.
     auto const fee = ctx.tx.getFieldAmount(sfFee);
-    if (!fee.native() || fee != beast::kZERO)
+    if (!fee.native() || fee != beast::kZero)
     {
         JLOG(ctx.j.warn()) << "Change: invalid fee";
         return temBAD_FEE;
@@ -123,6 +123,12 @@ Change::preclaim(PreclaimContext const& ctx)
                     ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temDISABLED;
             }
+            // The ttFEE transaction format defines these fields as optional,
+            // but they are unconditionally forbidden until FeeVoteImpl is
+            // updated to populate them (SmartEscrow behavioral port).
+            if (ctx.tx.isFieldPresent(sfGasLimit) || ctx.tx.isFieldPresent(sfBytecodeSizeLimit) ||
+                ctx.tx.isFieldPresent(sfGasPrice))
+                return temDISABLED;
             return tesSUCCESS;
         case ttAMENDMENT:
         case ttUNL_MODIFY:
@@ -154,13 +160,13 @@ Change::doApply()
 void
 Change::preCompute()
 {
-    XRPL_ASSERT(account_ == beast::kZERO, "xrpl::Change::preCompute : zero account");
+    XRPL_ASSERT(accountID_ == beast::kZero, "xrpl::Change::preCompute : zero account");
 }
 
 TER
 Change::applyAmendment()
 {
-    uint256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
+    UInt256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
 
     auto const k = keylet::amendments();
 
@@ -177,10 +183,8 @@ Change::applyAmendment()
     if (std::ranges::find(amendments, amendment) != amendments.end())
         return tefALREADY;
 
-    auto flags = ctx_.tx.getFlags();
-
-    bool const gotMajority = (flags & tfGotMajority) != 0;
-    bool const lostMajority = (flags & tfLostMajority) != 0;
+    bool const gotMajority = ctx_.tx.isFlag(tfGotMajority);
+    bool const lostMajority = ctx_.tx.isFlag(tfLostMajority);
 
     if (gotMajority && lostMajority)
         return temINVALID_FLAG;
@@ -256,7 +260,7 @@ Change::applyAmendment()
 TER
 Change::applyFee()
 {
-    auto const k = keylet::fees();
+    auto const k = keylet::feeSettings();
 
     SLE::pointer feeObject = view().peek(k);
 
@@ -411,16 +415,15 @@ Change::applyUNLModify()
 }
 
 void
-Change::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+Change::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 Change::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

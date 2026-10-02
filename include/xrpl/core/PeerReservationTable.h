@@ -3,6 +3,7 @@
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 
 #include <mutex>
@@ -80,7 +81,7 @@ public:
 
     /**
      * @return the replaced reservation if it existed
-     * @throw soci::soci_error
+     * @throws soci::soci_error
      */
     std::optional<PeerReservation>
     insertOrAssign(PeerReservation const& reservation);

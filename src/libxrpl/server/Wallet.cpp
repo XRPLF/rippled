@@ -16,10 +16,11 @@
 #include <xrpl/rdb/SociDB.h>
 #include <xrpl/server/Manifest.h>
 
-#include <boost/format/free_funcs.hpp>
-#include <boost/optional/optional.hpp>
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
+#include <soci/blob-exchange.h>  // IWYU pragma: keep
 #include <soci/blob.h>
+#include <soci/boost-optional.h>  // IWYU pragma: keep
 #include <soci/into.h>
 #include <soci/session.h>
 #include <soci/statement.h>
@@ -27,6 +28,8 @@
 #include <soci/use.h>
 
 #include <array>
+#include <cstddef>
+#include <format>
 #include <functional>
 #include <memory>
 #include <string>
@@ -40,7 +43,7 @@ makeWalletDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
     // wallet database
     return std::make_unique<DatabaseCon>(
-        setup, kWALLET_DB_NAME, std::array<std::string, 0>(), kWALLET_DB_INIT, j);
+        setup, kWalletDbName, std::array<std::string, 0>(), kWalletDbInit, j);
 }
 
 std::unique_ptr<DatabaseCon>
@@ -48,7 +51,7 @@ makeTestWalletDB(DatabaseCon::Setup const& setup, std::string const& dbname, bea
 {
     // wallet database
     return std::make_unique<DatabaseCon>(
-        setup, dbname.data(), std::array<std::string, 0>(), kWALLET_DB_INIT, j);
+        setup, dbname.data(), std::array<std::string, 0>(), kWalletDbInit, j);
 }
 
 void
@@ -75,7 +78,9 @@ getManifests(
                 continue;
             }
 
-            cache.applyManifest(std::move(*mo));
+            // Only trusted manifests are persisted (see saveManifests), so
+            // anything loaded from the DB bypasses the untrusted cap.
+            cache.applyManifest(std::move(*mo), ManifestRateLimitCapPolicy::Uncapped);
         }
         else
         {
@@ -100,24 +105,32 @@ saveManifests(
     soci::session& session,
     std::string const& dbTable,
     std::function<bool(PublicKey const&)> const& isTrusted,
-    hash_map<PublicKey, Manifest> const& map,
+    HashMap<PublicKey, Manifest> const& map,
     beast::Journal j)
 {
     soci::transaction tr(session);
     session << "DELETE FROM " << dbTable;
+    // Count skipped untrusted manifests and log one summary afterwards, since
+    // the cache can hold many and per-entry logging would flood at shutdown.
+    std::size_t skipped = 0;
     for (auto const& v : map)
     {
-        // Save all revocation manifests,
-        // but only save trusted non-revocation manifests.
-        if (!v.second.revoked() && !isTrusted(v.second.masterKey))
+        // Persist only trusted keys. Untrusted gossip is left out so a flood
+        // cannot survive a restart on disk.
+        if (!isTrusted(v.second.masterKey))
         {
-            JLOG(j.info()) << "Untrusted manifest in cache not saved to db";
+            ++skipped;
             continue;
         }
 
         saveManifest(session, dbTable, v.second.serialized);
     }
     tr.commit();
+
+    if (skipped != 0)
+    {
+        JLOG(j.info()) << skipped << " untrusted manifest(s) in cache not saved to db";
+    }
 }
 
 void
@@ -159,11 +172,10 @@ getNodeIdentity(soci::session& session)
     // If a valid identity wasn't found, we randomly generate a new one:
     auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::Secp256k1);
 
-    session << str(
-        boost::format(
-            "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
-            "VALUES ('%s','%s');") %
-        toBase58(TokenType::NodePublic, newpublicKey) %
+    session << std::format(
+        "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
+        "VALUES ('{}','{}');",
+        toBase58(TokenType::NodePublic, newpublicKey),
         toBase58(TokenType::NodePrivate, newsecretKey));
 
     return {newpublicKey, newsecretKey};
@@ -287,7 +299,7 @@ readAmendments(
 void
 voteAmendment(
     soci::session& session,
-    uint256 const& amendment,
+    UInt256 const& amendment,
     std::string const& name,
     AmendmentVote vote)
 {

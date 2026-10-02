@@ -23,6 +23,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -95,12 +96,14 @@ class Freeze_test : public beast::unit_test::Suite
             // Is created via a TrustSet with SetFreeze flag
             //   test: sets LowFreeze | HighFreeze flags
             env(trust(g1, bob["USD"](0), tfSetFreeze));
-            auto affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+            auto affected =
+                env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
             if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
                 return;
             auto ff = affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
             BEAST_EXPECT(
-                ff[sfLowLimit.fieldName] == g1["USD"](0).value().getJson(JsonOptions::KNone));
+                ff[sfLowLimit.fieldName] ==
+                g1["USD"](0).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfLowFreeze);
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighFreeze));
             env.close();
@@ -110,14 +113,16 @@ class Freeze_test : public beast::unit_test::Suite
             // Account with line frozen by issuer
             //    test: can buy more assets on that line
             env(offer(bob, g1["USD"](5), XRP(25)));
-            auto affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+            auto affected =
+                env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
             if (!BEAST_EXPECT(checkArraySize(affected, 5u)))
                 return;
             auto ff = affected[3u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
             BEAST_EXPECT(
-                ff[sfHighLimit.fieldName] == bob["USD"](100).value().getJson(JsonOptions::KNone));
+                ff[sfHighLimit.fieldName] ==
+                bob["USD"](100).value().getJson(JsonOptions::Values::None));
             auto amt = STAmount{Issue{toCurrency("USD"), noAccount()}, -15}.value().getJson(
-                JsonOptions::KNone);
+                JsonOptions::Values::None);
             BEAST_EXPECT(ff[sfBalance.fieldName] == amt);
             env.close();
         }
@@ -174,12 +179,14 @@ class Freeze_test : public beast::unit_test::Suite
             // Is cleared via a TrustSet with ClearFreeze flag
             //    test: sets LowFreeze | HighFreeze flags
             env(trust(g1, bob["USD"](0), tfClearFreeze));
-            auto affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+            auto affected =
+                env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
             if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
                 return;
             auto ff = affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
             BEAST_EXPECT(
-                ff[sfLowLimit.fieldName] == g1["USD"](0).value().getJson(JsonOptions::KNone));
+                ff[sfLowLimit.fieldName] ==
+                g1["USD"](0).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfLowFreeze));
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighFreeze));
             env.close();
@@ -297,21 +304,21 @@ class Freeze_test : public beast::unit_test::Suite
             auto const flags = getTrustlineFlags(env, 5u, 3u, false);
             BEAST_EXPECT(flags & lsfLowFreeze);
             env.close();
-            env.require(lines(a1, 1));
+            env.require(Lines(a1, 1));
         }
 
         // Cleanup
         env(trust(g1, a1["USD"](0), tfClearFreeze));
         env.close();
-        env.require(lines(g1, 0));
-        env.require(lines(a1, 0));
+        env.require(Lines(g1, 0));
+        env.require(Lines(a1, 0));
 
         // test: cannot create deep frozen trustline without normal freeze
         if (features[featureDeepFreeze])
         {
             env(trust(g1, a1["USD"](1000), tfSetDeepFreeze), Ter(tecNO_PERMISSION));
             env.close();
-            env.require(lines(a1, 0));
+            env.require(Lines(a1, 0));
         }
 
         // test: can create deep frozen trustline together with normal freeze
@@ -322,7 +329,7 @@ class Freeze_test : public beast::unit_test::Suite
             BEAST_EXPECT(flags & lsfLowFreeze);
             BEAST_EXPECT(flags & lsfLowDeepFreeze);
             env.close();
-            env.require(lines(a1, 1));
+            env.require(Lines(a1, 1));
         }
     }
 
@@ -359,7 +366,8 @@ class Freeze_test : public beast::unit_test::Suite
             //  trust line
             env(trust(g1, a1["USD"](0), tfSetFreeze | tfClearFreeze));
             {
-                auto affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+                auto affected =
+                    env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
                 BEAST_EXPECT(checkArraySize(affected, 1u));  // means no trustline changes
             }
         }
@@ -599,7 +607,8 @@ class Freeze_test : public beast::unit_test::Suite
             //  test: previous functionality, checking there's no changes to a
             //  trust line
             env(trust(g1, a1["USD"](0), tfSetFreeze));
-            auto affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+            auto affected =
+                env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
             if (!BEAST_EXPECT(checkArraySize(affected, 1u)))
                 return;
 
@@ -665,7 +674,8 @@ class Freeze_test : public beast::unit_test::Suite
         if (!BEAST_EXPECT(checkArraySize(offers, 1u)))
             return;
         BEAST_EXPECT(
-            offers[0u][jss::taker_gets] == g1["USD"](999).value().getJson(JsonOptions::KNone));
+            offers[0u][jss::taker_gets] ==
+            g1["USD"](999).value().getJson(JsonOptions::Values::None));
 
         //    test: someone else creates an offer providing liquidity
         env(offer(a4, XRP(999), g1["USD"](999)));
@@ -673,11 +683,12 @@ class Freeze_test : public beast::unit_test::Suite
 
         //    test: owner of partially consumed offers line is frozen
         env(trust(g1, a3["USD"](0), tfSetFreeze));
-        auto affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+        auto affected = env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
         if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
             return;
         auto ff = affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
-        BEAST_EXPECT(ff[sfHighLimit.fieldName] == g1["USD"](0).value().getJson(JsonOptions::KNone));
+        BEAST_EXPECT(
+            ff[sfHighLimit.fieldName] == g1["USD"](0).value().getJson(JsonOptions::Values::None));
         BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfLowFreeze));
         BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfHighFreeze);
         env.close();
@@ -699,18 +710,19 @@ class Freeze_test : public beast::unit_test::Suite
         // removal buy successful OfferCreate
         //    test: freeze the new offer
         env(trust(g1, a4["USD"](0), tfSetFreeze));
-        affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+        affected = env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
         if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
             return;
         ff = affected[0u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
-        BEAST_EXPECT(ff[sfLowLimit.fieldName] == g1["USD"](0).value().getJson(JsonOptions::KNone));
+        BEAST_EXPECT(
+            ff[sfLowLimit.fieldName] == g1["USD"](0).value().getJson(JsonOptions::Values::None));
         BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfLowFreeze);
         BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighFreeze));
         env.close();
 
         //    test: can no longer create a crossing offer
         env(offer(a2, g1["USD"](999), XRP(999)));
-        affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+        affected = env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
         if (!BEAST_EXPECT(checkArraySize(affected, 8u)))
             return;
         auto created = affected[0u][sfCreatedNode.fieldName];
@@ -756,7 +768,7 @@ class Freeze_test : public beast::unit_test::Suite
         // Wants to buy 100 USD for 100 XRP
         env(offer(a3, usd(100), XRP(100)), Txflags(tfPassive));
         env.close();
-        env.require(offers(a2, 1), offers(a3, 1));
+        env.require(Offers(a2, 1), Offers(a3, 1));
 
         // Checking A1 can buy from A2 by crossing it's offer
         env(offer(a1, usd(1), XRP(2)), Txflags(tfFillOrKill));
@@ -777,26 +789,26 @@ class Freeze_test : public beast::unit_test::Suite
             // test: can still make passive buy offer
             env(offer(a1, usd(1), XRP(0.5)), Txflags(tfPassive));
             env.close();
-            env.require(Balance(a1, usd(1000)), offers(a1, 1));
+            env.require(Balance(a1, usd(1000)), Offers(a1, 1));
             // Cleanup
             env(offerCancel(a1, env.seq(a1) - 1));
-            env.require(offers(a1, 0));
+            env.require(Offers(a1, 0));
             env.close();
 
             // test: can still buy from A2
             env(offer(a1, usd(1), XRP(2)), Txflags(tfFillOrKill));
             env.close();
-            env.require(Balance(a1, usd(1001)), Balance(a2, usd(998)), offers(a1, 0));
+            env.require(Balance(a1, usd(1001)), Balance(a2, usd(998)), Offers(a1, 0));
 
             // test: cannot create passive sell offer
             env(offer(a1, XRP(2), usd(1)), Txflags(tfPassive), Ter(tecUNFUNDED_OFFER));
             env.close();
-            env.require(Balance(a1, usd(1001)), offers(a1, 0));
+            env.require(Balance(a1, usd(1001)), Offers(a1, 0));
 
             // test: cannot sell to A3
             env(offer(a1, XRP(1), usd(1)), Txflags(tfFillOrKill), Ter(tecUNFUNDED_OFFER));
             env.close();
-            env.require(Balance(a1, usd(1001)), offers(a1, 0));
+            env.require(Balance(a1, usd(1001)), Offers(a1, 0));
 
             env(trust(g1, a1["USD"](0), tfClearFreeze));
             env.close();
@@ -827,7 +839,7 @@ class Freeze_test : public beast::unit_test::Suite
 
             env(trust(g1, a1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
             env.close();
-            env.require(Balance(a1, usd(1001)), offers(a1, 0));
+            env.require(Balance(a1, usd(1001)), Offers(a1, 0));
         }
 
         // Testing already existing offers behavior after trustline is frozen by
@@ -837,7 +849,7 @@ class Freeze_test : public beast::unit_test::Suite
             env(offer(a1, XRP(1.9), usd(1)));
             env(offer(a1, usd(1), XRP(1.1)));
             env.close();
-            env.require(Balance(a1, usd(1001)), offers(a1, 2));
+            env.require(Balance(a1, usd(1001)), Offers(a1, 2));
 
             env(trust(g1, a1["USD"](0), tfSetFreeze));
             env.close();
@@ -846,13 +858,13 @@ class Freeze_test : public beast::unit_test::Suite
             env.require(Balance(a1, usd(1001)), Balance(a2, usd(998)));
             env(offer(a2, XRP(1.1), usd(1)), Txflags(tfFillOrKill));
             env.close();
-            env.require(Balance(a1, usd(1002)), Balance(a2, usd(997)), offers(a1, 1));
+            env.require(Balance(a1, usd(1002)), Balance(a2, usd(997)), Offers(a1, 1));
 
             // test: A3 wants to buy from A1, must fail
-            env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 1));
+            env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), Offers(a1, 1));
             env(offer(a3, usd(1), XRP(1.9)), Txflags(tfFillOrKill), Ter(tecKILLED));
             env.close();
-            env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 0));
+            env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), Offers(a1, 0));
 
             env(trust(g1, a1["USD"](0), tfClearFreeze));
             env.close();
@@ -866,7 +878,7 @@ class Freeze_test : public beast::unit_test::Suite
             env(offer(a1, XRP(1.9), usd(1)));
             env(offer(a1, usd(1), XRP(1.1)));
             env.close();
-            env.require(Balance(a1, usd(1002)), offers(a1, 2));
+            env.require(Balance(a1, usd(1002)), Offers(a1, 2));
 
             env(trust(g1, a1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
             env.close();
@@ -875,13 +887,13 @@ class Freeze_test : public beast::unit_test::Suite
             env.require(Balance(a1, usd(1002)), Balance(a2, usd(997)));
             env(offer(a2, XRP(1.1), usd(1)), Txflags(tfFillOrKill), Ter(tecKILLED));
             env.close();
-            env.require(Balance(a1, usd(1002)), Balance(a2, usd(997)), offers(a1, 1));
+            env.require(Balance(a1, usd(1002)), Balance(a2, usd(997)), Offers(a1, 1));
 
             // test: A3 wants to buy from A1, must fail
-            env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 1));
+            env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), Offers(a1, 1));
             env(offer(a3, usd(1), XRP(1.9)), Txflags(tfFillOrKill), Ter(tecKILLED));
             env.close();
-            env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 0));
+            env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), Offers(a1, 0));
 
             env(trust(g1, a1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
             env.close();
@@ -896,30 +908,30 @@ class Freeze_test : public beast::unit_test::Suite
             // test: A1 can make passive buy offer
             env(offer(a1, usd(1), XRP(0.5)), Txflags(tfPassive));
             env.close();
-            env.require(Balance(a1, usd(1002)), offers(a1, 1));
+            env.require(Balance(a1, usd(1002)), Offers(a1, 1));
             //  Cleanup
             env(offerCancel(a1, env.seq(a1) - 1));
-            env.require(offers(a1, 0));
+            env.require(Offers(a1, 0));
             env.close();
 
             // test: A1 wants to buy, must fail
             env(offer(a1, usd(1), XRP(2)), Txflags(tfFillOrKill), Ter(tecKILLED));
             env.close();
-            env.require(Balance(a1, usd(1002)), Balance(a2, usd(997)), offers(a1, 0));
+            env.require(Balance(a1, usd(1002)), Balance(a2, usd(997)), Offers(a1, 0));
 
             // test: A1 can create passive sell offer
             env(offer(a1, XRP(2), usd(1)), Txflags(tfPassive));
             env.close();
-            env.require(Balance(a1, usd(1002)), offers(a1, 1));
+            env.require(Balance(a1, usd(1002)), Offers(a1, 1));
             // Cleanup
             env(offerCancel(a1, env.seq(a1) - 1));
-            env.require(offers(a1, 0));
+            env.require(Offers(a1, 0));
             env.close();
 
             // test: A1 can sell to A3
             env(offer(a1, XRP(1), usd(1)), Txflags(tfFillOrKill));
             env.close();
-            env.require(Balance(a1, usd(1001)), offers(a1, 0));
+            env.require(Balance(a1, usd(1001)), Offers(a1, 0));
 
             env(trust(a1, limit, tfClearFreeze));
             env.close();
@@ -1077,7 +1089,7 @@ class Freeze_test : public beast::unit_test::Suite
 
         // Cleanup
         env(offerCancel(a1, env.seq(a1) - 1));
-        env.require(offers(a1, 0));
+        env.require(Offers(a1, 0));
         env.close();
 
         env(offer(a2, usd(100), XRP(100)), Txflags(tfPassive));
@@ -1174,7 +1186,7 @@ class Freeze_test : public beast::unit_test::Suite
 
         // Cleanup
         env(offerCancel(a1, env.seq(a1) - 1));
-        env.require(offers(a1, 0));
+        env.require(Offers(a1, 0));
         env.close();
     }
 
@@ -1326,7 +1338,7 @@ class Freeze_test : public beast::unit_test::Suite
 
         // Confirming we can write and cash checks
         {
-            uint256 const checkId{getCheckIndex(g1, env.seq(g1))};
+            UInt256 const checkId{getCheckIndex(g1, env.seq(g1))};
             env(check::create(g1, a1, usd(10)));
             env.close();
             env(check::cash(a1, checkId, usd(10)));
@@ -1334,7 +1346,7 @@ class Freeze_test : public beast::unit_test::Suite
         }
 
         {
-            uint256 const checkId{getCheckIndex(g1, env.seq(g1))};
+            UInt256 const checkId{getCheckIndex(g1, env.seq(g1))};
             env(check::create(g1, a2, usd(10)));
             env.close();
             env(check::cash(a2, checkId, usd(10)));
@@ -1342,7 +1354,7 @@ class Freeze_test : public beast::unit_test::Suite
         }
 
         {
-            uint256 const checkId{getCheckIndex(a1, env.seq(a1))};
+            UInt256 const checkId{getCheckIndex(a1, env.seq(a1))};
             env(check::create(a1, g1, usd(10)));
             env.close();
             env(check::cash(g1, checkId, usd(10)));
@@ -1350,7 +1362,7 @@ class Freeze_test : public beast::unit_test::Suite
         }
 
         {
-            uint256 const checkId{getCheckIndex(a1, env.seq(a1))};
+            UInt256 const checkId{getCheckIndex(a1, env.seq(a1))};
             env(check::create(a1, a2, usd(10)));
             env.close();
             env(check::cash(a2, checkId, usd(10)));
@@ -1358,7 +1370,7 @@ class Freeze_test : public beast::unit_test::Suite
         }
 
         {
-            uint256 const checkId{getCheckIndex(a2, env.seq(a2))};
+            UInt256 const checkId{getCheckIndex(a2, env.seq(a2))};
             env(check::create(a2, g1, usd(10)));
             env.close();
             env(check::cash(g1, checkId, usd(10)));
@@ -1366,7 +1378,7 @@ class Freeze_test : public beast::unit_test::Suite
         }
 
         {
-            uint256 const checkId{getCheckIndex(a2, env.seq(a2))};
+            UInt256 const checkId{getCheckIndex(a2, env.seq(a2))};
             env(check::create(a2, a1, usd(10)));
             env.close();
             env(check::cash(a1, checkId, usd(10)));
@@ -1381,7 +1393,7 @@ class Freeze_test : public beast::unit_test::Suite
 
             // test: issuer writes check to A1.
             {
-                uint256 const checkId{getCheckIndex(g1, env.seq(g1))};
+                UInt256 const checkId{getCheckIndex(g1, env.seq(g1))};
                 env(check::create(g1, a1, usd(10)));
                 env.close();
                 env(check::cash(a1, checkId, usd(10)), Ter(tecFROZEN));
@@ -1390,7 +1402,7 @@ class Freeze_test : public beast::unit_test::Suite
 
             // test: A2 writes check to A1.
             {
-                uint256 const checkId{getCheckIndex(a2, env.seq(a2))};
+                UInt256 const checkId{getCheckIndex(a2, env.seq(a2))};
                 env(check::create(a2, a1, usd(10)));
                 env.close();
                 // Same as previous test
@@ -1416,10 +1428,10 @@ class Freeze_test : public beast::unit_test::Suite
             env(trust(g1, a1["USD"](0), tfClearFreeze));
             env.close();
 
-            uint256 const checkId1{getCheckIndex(a1, env.seq(a1))};
+            UInt256 const checkId1{getCheckIndex(a1, env.seq(a1))};
             env(check::create(a1, g1, usd(10)));
             env.close();
-            uint256 const checkId2{getCheckIndex(a1, env.seq(a1))};
+            UInt256 const checkId2{getCheckIndex(a1, env.seq(a1))};
             env(check::create(a1, a2, usd(10)));
             env.close();
 
@@ -1451,7 +1463,7 @@ class Freeze_test : public beast::unit_test::Suite
 
             // test: issuer writes check to A1.
             {
-                uint256 const checkId{getCheckIndex(g1, env.seq(g1))};
+                UInt256 const checkId{getCheckIndex(g1, env.seq(g1))};
                 env(check::create(g1, a1, usd(10)));
                 env.close();
 
@@ -1461,7 +1473,7 @@ class Freeze_test : public beast::unit_test::Suite
 
             // test: A2 writes check to A1.
             {
-                uint256 const checkId{getCheckIndex(a2, env.seq(a2))};
+                UInt256 const checkId{getCheckIndex(a2, env.seq(a2))};
                 env(check::create(a2, a1, usd(10)));
                 env.close();
                 // Same as previous test
@@ -1487,10 +1499,10 @@ class Freeze_test : public beast::unit_test::Suite
             env(trust(g1, a1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
             env.close();
 
-            uint256 const checkId1{getCheckIndex(a1, env.seq(a1))};
+            UInt256 const checkId1{getCheckIndex(a1, env.seq(a1))};
             env(check::create(a1, g1, usd(10)));
             env.close();
-            uint256 const checkId2{getCheckIndex(a1, env.seq(a1))};
+            UInt256 const checkId2{getCheckIndex(a1, env.seq(a1))};
             env(check::create(a1, a2, usd(10)));
             env.close();
 
@@ -1533,7 +1545,7 @@ class Freeze_test : public beast::unit_test::Suite
 
             // test: A1 writes check to issuer
             {
-                uint256 const checkId{getCheckIndex(a1, env.seq(a1))};
+                UInt256 const checkId{getCheckIndex(a1, env.seq(a1))};
                 env(check::create(a1, g1, usd(10)));
                 env.close();
                 env(check::cash(g1, checkId, usd(10)));
@@ -1542,7 +1554,7 @@ class Freeze_test : public beast::unit_test::Suite
 
             // test: A1 writes check to A2
             {
-                uint256 const checkId{getCheckIndex(a1, env.seq(a1))};
+                UInt256 const checkId{getCheckIndex(a1, env.seq(a1))};
                 env(check::create(a1, a2, usd(10)));
                 env.close();
                 env(check::cash(a2, checkId, usd(10)));
@@ -1574,7 +1586,7 @@ class Freeze_test : public beast::unit_test::Suite
 
             // test: A1 writes check to issuer
             {
-                uint256 const checkId{getCheckIndex(a1, env.seq(a1))};
+                UInt256 const checkId{getCheckIndex(a1, env.seq(a1))};
                 env(check::create(a1, g1, usd(10)));
                 env.close();
                 env(check::cash(g1, checkId, usd(10)), Ter(tecPATH_PARTIAL));
@@ -1583,7 +1595,7 @@ class Freeze_test : public beast::unit_test::Suite
 
             // test: A1 writes check to A2
             {
-                uint256 const checkId{getCheckIndex(a1, env.seq(a1))};
+                UInt256 const checkId{getCheckIndex(a1, env.seq(a1))};
                 env(check::create(a1, a2, usd(10)));
                 env.close();
                 env(check::cash(a2, checkId, usd(10)), Ter(tecPATH_PARTIAL));
@@ -1773,11 +1785,11 @@ class Freeze_test : public beast::unit_test::Suite
             env(trust(g1, a2["USD"](0), tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
-            uint256 const nftID{token::getNextID(env, a2, 0u, tfTransferable)};
+            UInt256 const nftID{token::getNextID(env, a2, 0u, tfTransferable)};
             env(token::mint(a2, 0), Txflags(tfTransferable));
             env.close();
 
-            auto const buyIdx = keylet::nftoffer(a1, env.seq(a1)).key;
+            auto const buyIdx = keylet::nftokenOffer(a1, SeqProxy::rawSequence(env.seq(a1))).key;
             env(token::createOffer(a1, nftID, usd(10)), token::Owner(a2));
             env.close();
 
@@ -1859,14 +1871,15 @@ class Freeze_test : public beast::unit_test::Suite
             env(trust(g1, broker["USD"](1000), tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
-            uint256 const nftID{token::getNextID(env, a2, 0u, tfTransferable)};
+            UInt256 const nftID{token::getNextID(env, a2, 0u, tfTransferable)};
             env(token::mint(a2, 0), Txflags(tfTransferable));
             env.close();
 
-            uint256 const sellIdx = keylet::nftoffer(a2, env.seq(a2)).key;
+            UInt256 const sellIdx =
+                keylet::nftokenOffer(a2, SeqProxy::rawSequence(env.seq(a2))).key;
             env(token::createOffer(a2, nftID, usd(10)), Txflags(tfSellNFToken));
             env.close();
-            auto const buyIdx = keylet::nftoffer(a1, env.seq(a1)).key;
+            auto const buyIdx = keylet::nftokenOffer(a1, SeqProxy::rawSequence(env.seq(a1))).key;
             env(token::createOffer(a1, nftID, usd(11)), token::Owner(a2));
             env.close();
 
@@ -1885,17 +1898,19 @@ class Freeze_test : public beast::unit_test::Suite
             env(trust(g1, minter["USD"](1000)));
             env.close();
 
-            uint256 const nftID{token::getNextID(env, minter, 0u, tfTransferable, 1u)};
+            UInt256 const nftID{token::getNextID(env, minter, 0u, tfTransferable, 1u)};
             env(token::mint(minter, 0), token::XferFee(1u), Txflags(tfTransferable));
             env.close();
 
-            uint256 const minterSellIdx = keylet::nftoffer(minter, env.seq(minter)).key;
+            UInt256 const minterSellIdx =
+                keylet::nftokenOffer(minter, SeqProxy::rawSequence(env.seq(minter))).key;
             env(token::createOffer(minter, nftID, drops(1)), Txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(a2, minterSellIdx));
             env.close();
 
-            uint256 const sellIdx = keylet::nftoffer(a2, env.seq(a2)).key;
+            UInt256 const sellIdx =
+                keylet::nftokenOffer(a2, SeqProxy::rawSequence(env.seq(a2))).key;
             env(token::createOffer(a2, nftID, usd(100)), Txflags(tfSellNFToken));
             env.close();
             env(trust(g1, minter["USD"](1000), tfSetFreeze | tfSetDeepFreeze));
@@ -1914,7 +1929,8 @@ class Freeze_test : public beast::unit_test::Suite
         bool modified = true)
     {
         using namespace test::jtx;
-        auto const affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+        auto const affected =
+            env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
         if (!BEAST_EXPECT(checkArraySize(affected, expectedArraySize)))
             return 0;
 
@@ -1931,24 +1947,25 @@ class Freeze_test : public beast::unit_test::Suite
     }
 
     // Helper function that returns the index of the next check on account
-    static uint256
+    static UInt256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
     {
-        return keylet::check(account, uSequence).key;
+        return keylet::check(account, SeqProxy::rawSequence(uSequence)).key;
     }
 
-    static uint256
+    static UInt256
     createNFTSellOffer(
         test::jtx::Env& env,
         test::jtx::Account const& account,
         test::jtx::PrettyAmount const& currency)
     {
         using namespace test::jtx;
-        uint256 const nftID{token::getNextID(env, account, 0u, tfTransferable)};
+        UInt256 const nftID{token::getNextID(env, account, 0u, tfTransferable)};
         env(token::mint(account, 0), Txflags(tfTransferable));
         env.close();
 
-        uint256 const sellOfferIndex = keylet::nftoffer(account, env.seq(account)).key;
+        UInt256 const sellOfferIndex =
+            keylet::nftokenOffer(account, SeqProxy::rawSequence(env.seq(account))).key;
         env(token::createOffer(account, nftID, currency), Txflags(tfSellNFToken));
         env.close();
 

@@ -16,7 +16,7 @@
 #include <memory>
 #include <optional>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 /*
   GetLedgerIndex and GetCloseTime are lambdas that allow the close time and
@@ -100,7 +100,7 @@ insertDeliveredAmount(
         auto amt = getDeliveredAmount(getLedgerIndex, getCloseTime, serializedTx, transactionMeta);
         if (amt)
         {
-            meta[jss::delivered_amount] = amt->getJson(JsonOptions::KIncludeDate);
+            meta[jss::delivered_amount] = amt->getJson(JsonOptions::Values::IncludeDate);
         }
         else
         {
@@ -114,7 +114,7 @@ insertDeliveredAmount(
 template <class GetLedgerIndex>
 static std::optional<STAmount>
 getDeliveredAmount(
-    RPC::Context const& context,
+    rpc::Context const& context,
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta,
     GetLedgerIndex const& getLedgerIndex)
@@ -133,7 +133,7 @@ getDeliveredAmount(
 
 std::optional<STAmount>
 getDeliveredAmount(
-    RPC::Context const& context,
+    rpc::Context const& context,
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta,
     LedgerIndex const& ledgerIndex)
@@ -145,7 +145,7 @@ getDeliveredAmount(
 void
 insertDeliveredAmount(
     json::Value& meta,
-    RPC::JsonContext const& context,
+    rpc::JsonContext const& context,
     std::shared_ptr<Transaction> const& transaction,
     TxMeta const& transactionMeta)
 {
@@ -155,7 +155,7 @@ insertDeliveredAmount(
 void
 insertDeliveredAmount(
     json::Value& meta,
-    RPC::JsonContext const& context,
+    rpc::JsonContext const& context,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
@@ -167,7 +167,7 @@ insertDeliveredAmount(
 
         if (amt)
         {
-            meta[jss::delivered_amount] = amt->getJson(JsonOptions::KIncludeDate);
+            meta[jss::delivered_amount] = amt->getJson(JsonOptions::Values::IncludeDate);
         }
         else
         {
@@ -178,4 +178,4 @@ insertDeliveredAmount(
     }
 }
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

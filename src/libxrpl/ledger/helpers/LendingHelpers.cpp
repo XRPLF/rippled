@@ -1,6 +1,5 @@
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
@@ -8,9 +7,12 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
@@ -19,14 +21,50 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <expected>
+#include <optional>
+#include <string_view>
 #include <utility>
 
 namespace xrpl {
+
+[[nodiscard]] TER
+canApplyToBrokerCover(
+    ReadView const& view,
+    SLE::ConstRef sleBroker,
+    Asset const& vaultAsset,
+    STAmount const& amount,
+    beast::Journal j,
+    std::string_view logPrefix)
+{
+    XRPL_ASSERT(
+        sleBroker && sleBroker->getType() == ltLOAN_BROKER,
+        "xrpl::canApplyToBrokerCover : valid LoanBroker sle");
+    XRPL_ASSERT(vaultAsset == amount.asset(), "xrpl::canApplyToBrokerCover : valid asset");
+
+    if (!view.rules().enabled(fixCleanup3_2_0))
+        return tesSUCCESS;
+
+    if (amount == beast::kZero)
+        return tecPRECISION_LOSS;
+
+    int const coverScale = scale(sleBroker->at(sfCoverAvailable), vaultAsset);
+    if (amount.isZeroAtScale(coverScale))
+    {
+        JLOG(j.warn()) << logPrefix << ": amount " << amount.getFullText()
+                       << " rounds to zero at cover scale " << coverScale;
+        return tecPRECISION_LOSS;
+    }
+
+    return tesSUCCESS;
+}
 
 bool
 checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
@@ -43,20 +81,54 @@ checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
     return true;
 }
 
+std::optional<LoanDefaultFreezeExemptAccounts>
+getLoanDefaultFreezeExemptAccounts(ReadView const& view, STTx const& tx)
+{
+    if (tx.getTxnType() != ttLOAN_MANAGE || !tx.isFlag(tfLoanDefault) ||
+        !view.rules().enabled(fixCleanup3_4_0))
+        return std::nullopt;
+
+    // Unlike the broker/vault lookups below, the submitter picks the LoanID,
+    // so a nonexistent Loan is an ordinary (if unusual) input, not a
+    // structural impossibility -- exercised directly in LendingHelpers_test.
+    auto const loanSle = view.read(keylet::loan(tx[sfLoanID]));
+    if (!loanSle)
+        return std::nullopt;
+
+    // A Loan can't outlive its LoanBroker (LoanBrokerDelete's preclaim
+    // rejects deletion while DebtTotal != 0), and a LoanBroker can't outlive
+    // its Vault (VaultDelete's preclaim has the equivalent guard) -- so these
+    // two lookups are structurally guaranteed to succeed here.
+    auto const brokerSle = view.read(keylet::loanBroker(loanSle->at(sfLoanBrokerID)));
+    if (!brokerSle)
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID)));
+    if (!vaultSle)
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    Asset const vaultAsset = vaultSle->at(sfAsset);
+    return LoanDefaultFreezeExemptAccounts{
+        .issuer = vaultAsset.getIssuer(),
+        .broker = brokerSle->at(sfAccount),
+        .vault = vaultSle->at(sfAccount),
+        .asset = vaultAsset};
+}
+
 LoanPaymentParts&
 LoanPaymentParts::operator+=(LoanPaymentParts const& other)
 {
     XRPL_ASSERT(
 
-        other.principalPaid >= beast::kZERO,
+        other.principalPaid >= beast::kZero,
         "xrpl::LoanPaymentParts::operator+= : other principal "
         "non-negative");
     XRPL_ASSERT(
-        other.interestPaid >= beast::kZERO,
+        other.interestPaid >= beast::kZero,
         "xrpl::LoanPaymentParts::operator+= : other interest paid "
         "non-negative");
     XRPL_ASSERT(
-        other.feePaid >= beast::kZERO,
+        other.feePaid >= beast::kZero,
         "xrpl::LoanPaymentParts::operator+= : other fee paid "
         "non-negative");
 
@@ -83,7 +155,7 @@ Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
 {
     // Need floating point math, since we're dividing by a large number
-    return tenthBipsOfValue(Number(paymentInterval), interestRate) / kSECONDS_IN_YEAR;
+    return tenthBipsOfValue(Number(paymentInterval), interestRate) / kSecondsInYear;
 }
 
 /* Checks if a value is already rounded to the specified scale.
@@ -97,27 +169,223 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale)
         roundToAsset(asset, value, scale, Number::RoundingMode::Upward);
 }
 
+[[nodiscard]] bool
+isPaymentLate(ReadView const& view, SLE::ConstRef loanSle)
+{
+    return hasExpired(
+        view,
+        loanSle->at(sfNextPaymentDueDate),
+        view.rules().enabled(fixCleanup3_4_0) ? ExpiryComparison::Exclusive
+                                              : ExpiryComparison::Inclusive);
+}
+
+namespace instant_recognition {
+
+AccountingDeltas
+loanOriginationDeltas(Number const& principalRequested, Number const& interestDue)
+{
+    return {.assetsTotalDelta = interestDue, .debtTotalDelta = principalRequested + interestDue};
+}
+
+bool
+loanOriginationExceedsVaultMaximum(
+    Number const& vaultMaximum,
+    Number const& vaultTotal,
+    Number const& interestDue)
+{
+    return vaultMaximum != 0 && interestDue > vaultMaximum - vaultTotal;
+}
+
+/*
+XLS-66 section 3.2.3.2, defines the default amount as
+
+DefaultAmount = (Loan.PrincipalOutstanding + Loan.InterestOutstanding)
+
+Which is equivalent to (Loan.TotalValueOutstanding - Loan.ManagementFeeOutstanding)
+*/
+Number
+loanVaultExposure(SLE::ConstRef loanSle)
+{
+    return loanSle->at(sfTotalValueOutstanding) - loanSle->at(sfManagementFeeOutstanding);
+}
+
+AccountingDeltas
+loanPaymentDeltas(LoanPaymentParts const& parts)
+{
+    return {
+        .assetsTotalDelta = parts.valueChange,
+        .debtTotalDelta = (parts.principalPaid + parts.interestPaid) - parts.valueChange};
+}
+
+}  // namespace instant_recognition
+
+namespace cash_basis {
+
+AccountingDeltas
+loanOriginationDeltas(Number const& principalRequested)
+{
+    return {.assetsTotalDelta = kNumZero, .debtTotalDelta = principalRequested};
+}
+
+/*
+ * Under CashBasis accounting, Loan default amount is:
+ *
+ * DefaultAmount = Loan.PrincipalOutstanding
+ */
+Number
+loanVaultExposure(SLE::ConstRef loanSle)
+{
+    return loanSle->at(sfPrincipalOutstanding);
+}
+
+AccountingDeltas
+loanPaymentDeltas(LoanPaymentParts const& parts)
+{
+    return {.assetsTotalDelta = parts.interestPaid, .debtTotalDelta = parts.principalPaid};
+}
+
+}  // namespace cash_basis
+
+namespace {
+
+// Cash-basis accounting applies only when featureLendingProtocolV1_1 is
+// enabled AND the specific Vault was created under it (LEVersion ==
+// VaultVersion::CashBasis). Vaults created before activation keep instant
+// interest recognition forever, even after the amendment later turns on.
+bool
+cashBasisEnabled(SLE::ConstRef vaultSle)
+{
+    return getVaultVersion(vaultSle) == VaultVersion::CashBasis;
+}
+
+}  // namespace
+
+AccountingDeltas
+loanOriginationDeltas(
+    SLE::ConstRef vaultSle,
+    Number const& principalRequested,
+    Number const& interestDue)
+{
+    return cashBasisEnabled(vaultSle)
+        ? cash_basis::loanOriginationDeltas(principalRequested)
+        : instant_recognition::loanOriginationDeltas(principalRequested, interestDue);
+}
+
+bool
+loanOriginationExceedsVaultMaximum(
+    SLE::ConstRef vaultSle,
+    Number const& vaultTotal,
+    Number const& interestDue)
+{
+    // Cash-basis origination doesn't recognize interest into AssetsTotal, so
+    // interest due can never push the vault past AssetsMaximum at origination.
+    if (cashBasisEnabled(vaultSle))
+        return false;
+
+    auto const vaultMaximum = vaultSle->at(sfAssetsMaximum);
+    return instant_recognition::loanOriginationExceedsVaultMaximum(
+        vaultMaximum, vaultTotal, interestDue);
+}
+
+Number
+loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle)
+{
+    return cashBasisEnabled(vaultSle) ? cash_basis::loanVaultExposure(loanSle)
+                                      : instant_recognition::loanVaultExposure(loanSle);
+}
+
+AccountingDeltas
+loanPaymentDeltas(SLE::ConstRef vaultSle, LoanPaymentParts const& parts)
+{
+    return cashBasisEnabled(vaultSle) ? cash_basis::loanPaymentDeltas(parts)
+                                      : instant_recognition::loanPaymentDeltas(parts);
+}
+
 namespace detail {
 
 void
 LoanStateDeltas::nonNegative()
 {
-    if (principal < beast::kZERO)
-        principal = kNUM_ZERO;
-    if (interest < beast::kZERO)
-        interest = kNUM_ZERO;
-    if (managementFee < beast::kZERO)
-        managementFee = kNUM_ZERO;
+    if (principal < beast::kZero)
+        principal = kNumZero;
+    if (interest < beast::kZero)
+        interest = kNumZero;
+    if (managementFee < beast::kZero)
+        managementFee = kNumZero;
 }
 
-/* Computes (1 + periodicRate)^paymentsRemaining for amortization calculations.
+/* Computes (1 + r)^n - 1 accurately even for near-zero r, where direct
+ * subtraction of `power(1 + r, n) - 1` suffers catastrophic cancellation.
  *
- * Equation (5) from XLS-66 spec, Section A-2 Equation Glossary
+ * The binomial expansion gives
+ *   (1 + r)^n - 1 = sum_{k=1}^{n} C(n,k) r^k
+ *                 = nr + C(n,2) r^2 + ... + r^n
+ * which is a sum of positive terms when r >= 0, avoiding cancellation.
+ * Each term is computed from the previous via
+ *   term_{k+1} = term_k * r * (n - k) / (k + 1)
+ *
+ * The loop terminates early once the next term is below Number precision.
  */
 Number
-computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining)
+computePowerMinusOne(Number const& periodicRate, std::uint32_t paymentsRemaining)
 {
-    return power(1 + periodicRate, paymentsRemaining);
+    XRPL_ASSERT_PARTS(
+        periodicRate >= beast::kZero,
+        "xrpl::detail::computePowerMinusOne",
+        "periodicRate is non-negative");
+
+    if (paymentsRemaining == 0 || periodicRate == beast::kZero)
+        return kNumZero;
+
+    // k = 1 term: C(n, 1) * r = n * r
+    Number term = paymentsRemaining * periodicRate;
+    Number sum = term;
+    for (std::uint32_t k = 1; k < paymentsRemaining; ++k)
+    {
+        // term_{k+1} from term_k: multiply by r * (n - k) / (k + 1)
+        term = term * periodicRate * (paymentsRemaining - k) / (k + 1);
+        Number const next = sum + term;
+        // adding this term fell below Number's precision
+        if (next == sum)
+            break;
+        sum = next;
+    }
+    return sum;
+}
+
+/* Hybrid evaluator of (1 + r)^n - 1.
+ *
+ * The closed-form `power(1 + r, n) - 1` loses sig digits to cancellation
+ * when `r * n` is small: the result `~r*n` sits well below the `1` that
+ * dominates `(1+r)^n`, so most of Number's stored precision is consumed
+ * by the leading `1`.
+ *
+ * A threshold of `1e-9` preserves the closed-form path for any rate the
+ *  lending code actually sees in practice (fixtures at moderate rates are bit-exact),
+ * while routing the pathological near-zero regime through the binomial
+ * expansion where cancellation is severe.
+ */
+Number
+computePowerMinusOneHybrid(Number const& periodicRate, std::uint32_t paymentsRemaining)
+{
+    XRPL_ASSERT_PARTS(
+        periodicRate >= beast::kZero,
+        "xrpl::detail::computePowerMinusOneHybrid",
+        "periodicRate is non-negative");
+
+    if (paymentsRemaining == 0 || periodicRate == beast::kZero)
+        return kNumZero;
+
+    // Threshold 1e-9 retains ~10 sig digits of (1+r)^n - 1 against
+    // Number's 19-digit mantissa: the leading "1" of (1+r)^n consumes
+    // ~log10(1/(r*n)) digits before the subtraction. Above this point
+    // closed form is accurate and ~30-500x faster than the binomial
+    // expansion.
+    Number const cancellationThreshold{1, -9};
+    if (paymentsRemaining * periodicRate >= cancellationThreshold)
+        return power(1 + periodicRate, paymentsRemaining) - 1;
+
+    return computePowerMinusOne(periodicRate, paymentsRemaining);
 }
 
 /* Computes the payment factor used in standard amortization formulas.
@@ -126,16 +394,31 @@ computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining)
  * Equation (6) from XLS-66 spec, Section A-2 Equation Glossary
  */
 Number
-computePaymentFactor(Number const& periodicRate, std::uint32_t paymentsRemaining)
+computePaymentFactor(
+    Rules const& rules,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining)
 {
     if (paymentsRemaining == 0)
-        return kNUM_ZERO;
+        return kNumZero;
 
     // For zero interest, payment factor is simply 1/paymentsRemaining
-    if (periodicRate == beast::kZERO)
+    if (periodicRate == beast::kZero)
         return Number{1} / paymentsRemaining;
 
-    Number const raisedRate = computeRaisedRate(periodicRate, paymentsRemaining);
+    if (rules.enabled(fixCleanup3_2_0))
+    {
+        Number const raisedRateMinusOne =
+            computePowerMinusOneHybrid(periodicRate, paymentsRemaining);
+        Number const raisedRate = 1 + raisedRateMinusOne;
+
+        return (periodicRate * raisedRate) / raisedRateMinusOne;
+    }
+
+    // Pre-fixCleanup3_2_0: direct subtraction `(1+r)^n - 1` suffers
+    // catastrophic cancellation at near-zero rates. Retained for
+    // amendment-gated bit-exact pre-fix behavior.
+    Number const raisedRate = power(1 + periodicRate, paymentsRemaining);
 
     return (periodicRate * raisedRate) / (raisedRate - 1);
 }
@@ -147,6 +430,7 @@ computePaymentFactor(Number const& periodicRate, std::uint32_t paymentsRemaining
  */
 Number
 loanPeriodicPayment(
+    Rules const& rules,
     Number const& principalOutstanding,
     Number const& periodicRate,
     std::uint32_t paymentsRemaining)
@@ -155,10 +439,10 @@ loanPeriodicPayment(
         return 0;
 
     // Interest-free loans: equal principal payments
-    if (periodicRate == beast::kZERO)
+    if (periodicRate == beast::kZero)
         return principalOutstanding / paymentsRemaining;
 
-    return principalOutstanding * computePaymentFactor(periodicRate, paymentsRemaining);
+    return principalOutstanding * computePaymentFactor(rules, periodicRate, paymentsRemaining);
 }
 
 /* Reverse-calculates principal from periodic payment amount.
@@ -168,17 +452,18 @@ loanPeriodicPayment(
  */
 Number
 loanPrincipalFromPeriodicPayment(
+    Rules const& rules,
     Number const& periodicPayment,
     Number const& periodicRate,
     std::uint32_t paymentsRemaining)
 {
     if (paymentsRemaining == 0)
-        return kNUM_ZERO;
+        return kNumZero;
 
     if (periodicRate == 0)
         return periodicPayment * paymentsRemaining;
 
-    return periodicPayment / computePaymentFactor(periodicRate, paymentsRemaining);
+    return periodicPayment / computePaymentFactor(rules, periodicRate, paymentsRemaining);
 }
 
 /*
@@ -198,6 +483,25 @@ computeInterestAndFeeParts(
     return std::make_pair(interest - fee, fee);
 }
 
+/* Rounds a raw (unrounded) interest amount to the loan's scale, then splits
+ * the rounded amount into net interest (to the vault) and management fee (to
+ * the broker).
+ *
+ * This is the common "round then split" step shared by late payment, full
+ * payment, and overpayment interest calculations.
+ */
+std::pair<Number, Number>
+roundAndSplitInterest(
+    Asset const& asset,
+    Number const& rawInterest,
+    TenthBips16 managementFeeRate,
+    std::int32_t loanScale,
+    Number::RoundingMode mode = Number::getround())
+{
+    auto const interest = roundToAsset(asset, rawInterest, loanScale, mode);
+    return computeInterestAndFeeParts(asset, interest, managementFeeRate, loanScale);
+}
+
 /* Calculates penalty interest accrued on overdue payments.
  * Returns 0 if payment is not late.
  *
@@ -210,18 +514,18 @@ loanLatePaymentInterest(
     NetClock::time_point parentCloseTime,
     std::uint32_t nextPaymentDueDate)
 {
-    if (principalOutstanding == beast::kZERO)
-        return kNUM_ZERO;
+    if (principalOutstanding == beast::kZero)
+        return kNumZero;
 
     if (lateInterestRate == TenthBips32{0})
-        return kNUM_ZERO;
+        return kNumZero;
 
     auto const now = parentCloseTime.time_since_epoch().count();
 
     // If the payment is not late by any amount of time, then there's no late
     // interest
     if (now <= nextPaymentDueDate)
-        return 0;
+        return kNumZero;
 
     // Equation (3) from XLS-66 spec, Section A-2 Equation Glossary
     auto const secondsOverdue = now - nextPaymentDueDate;
@@ -245,11 +549,11 @@ loanAccruedInterest(
     std::uint32_t prevPaymentDate,
     std::uint32_t paymentInterval)
 {
-    if (periodicRate == beast::kZERO)
-        return kNUM_ZERO;
+    if (periodicRate == beast::kZero)
+        return kNumZero;
 
     if (paymentInterval == 0)
-        return kNUM_ZERO;
+        return kNumZero;
 
     auto const lastPaymentDate = std::max(prevPaymentDate, startDate);
     auto const now = parentCloseTime.time_since_epoch().count();
@@ -257,7 +561,7 @@ loanAccruedInterest(
     // If the loan has been paid ahead, then "lastPaymentDate" is in the future,
     // and no interest has accrued.
     if (now <= lastPaymentDate)
-        return kNUM_ZERO;
+        return kNumZero;
 
     // Equation (4) from XLS-66 spec, Section A-2 Equation Glossary
     auto const secondsSinceLastPayment = now - lastPaymentDate;
@@ -273,22 +577,18 @@ loanAccruedInterest(
  *
  * This is the core function that updates the Loan ledger object fields based on
  * a computed payment.
-
- * The function is templated to work with both direct Number/uint32_t values
- * (for testing/simulation) and ValueProxy types (for actual ledger updates).
  */
-template <class NumberProxy, class UInt32Proxy, class UInt32OptionalProxy>
 LoanPaymentParts
-doPayment(
-    ExtendedPaymentComponents const& payment,
-    NumberProxy& totalValueOutstandingProxy,
-    NumberProxy& principalOutstandingProxy,
-    NumberProxy& managementFeeOutstandingProxy,
-    UInt32Proxy& paymentRemainingProxy,
-    UInt32Proxy& prevPaymentDateProxy,
-    UInt32OptionalProxy& nextDueDateProxy,
-    std::uint32_t paymentInterval)
+doPayment(ExtendedPaymentComponents const& payment, SLE::Ref loan)
 {
+    auto totalValueOutstandingProxy = loan->at(sfTotalValueOutstanding);
+    auto principalOutstandingProxy = loan->at(sfPrincipalOutstanding);
+    auto managementFeeOutstandingProxy = loan->at(sfManagementFeeOutstanding);
+    auto paymentRemainingProxy = loan->at(sfPaymentRemaining);
+    auto prevPaymentDateProxy = loan->at(sfPreviousPaymentDueDate);
+    auto nextDueDateProxy = loan->at(sfNextPaymentDueDate);
+    std::uint32_t const paymentInterval = loan->at(sfPaymentInterval);
+
     XRPL_ASSERT_PARTS(nextDueDateProxy, "xrpl::detail::doPayment", "Next due date proxy set");
 
     if (payment.specialCase == PaymentSpecialCase::Final)
@@ -356,17 +656,13 @@ doPayment(
 
     // Principal can never exceed total value (principal is part of total value)
     XRPL_ASSERT_PARTS(
-        // Use an explicit cast because the template parameter can be
-        // ValueProxy<Number> or Number
         static_cast<Number>(principalOutstandingProxy) <=
             static_cast<Number>(totalValueOutstandingProxy),
         "xrpl::detail::doPayment",
         "principal does not exceed total");
 
     XRPL_ASSERT_PARTS(
-        // Use an explicit cast because the template parameter can be
-        // ValueProxy<Number> or Number
-        static_cast<Number>(managementFeeOutstandingProxy) >= beast::kZERO,
+        static_cast<Number>(managementFeeOutstandingProxy) >= beast::kZero,
         "xrpl::detail::doPayment",
         "fee outstanding stays valid");
 
@@ -400,8 +696,9 @@ doPayment(
  * The function preserves accumulated rounding errors across the re-amortization
  * to ensure the loan state remains consistent with its payment history.
  */
-Expected<std::pair<LoanPaymentParts, LoanProperties>, TER>
+std::expected<std::pair<LoanPaymentParts, LoanProperties>, TER>
 tryOverpayment(
+    Rules const& rules,
     Asset const& asset,
     std::int32_t loanScale,
     ExtendedPaymentComponents const& overpaymentComponents,
@@ -414,7 +711,7 @@ tryOverpayment(
 {
     // Calculate what the loan state SHOULD be theoretically (at full precision)
     auto const theoreticalState = computeTheoreticalLoanState(
-        periodicPayment, periodicRate, paymentRemaining, managementFeeRate);
+        rules, periodicPayment, periodicRate, paymentRemaining, managementFeeRate);
 
     // Calculate the accumulated rounding errors. These need to be preserved
     // across the re-amortization to maintain consistency with the loan's
@@ -432,6 +729,7 @@ tryOverpayment(
     // recalculates the periodic payment, total value, and management fees
     // for the remaining payment schedule.
     auto newLoanProperties = computeLoanProperties(
+        rules,
         asset,
         newTheoreticalPrincipal,
         periodicRate,
@@ -443,12 +741,34 @@ tryOverpayment(
                     << ", new total value: " << newLoanProperties.loanState.valueOutstanding
                     << ", first payment principal: " << newLoanProperties.firstPaymentPrincipal;
 
-    // Calculate what the new loan state should be with the new periodic payment
-    // including rounding errors
-    auto const newTheoreticalState =
-        computeTheoreticalLoanState(
-            newLoanProperties.periodicPayment, periodicRate, paymentRemaining, managementFeeRate) +
-        errors;
+    // Calculate what the new loan state should be with the new periodic payment,
+    // including the preserved rounding errors.
+
+    auto const newTheoreticalState = [&]() {
+        auto const state = computeTheoreticalLoanState(
+                               rules,
+                               newLoanProperties.periodicPayment,
+                               periodicRate,
+                               paymentRemaining,
+                               managementFeeRate) +
+            errors;
+
+        if (!rules.enabled(fixCleanup3_2_0))
+            return state;
+
+        // The new principal is known exactly: it is reduced by the overpayment's
+        // principal portion. computeTheoreticalLoanState instead derives the
+        // principal -- and, from it, the management fee and interest -- via a
+        // lossy (P * factor) / factor round-trip. Pin the principal to the exact
+        // value and re-derive the management fee from the exact interest gross
+        // (value - principal), so the intermediate state is fully consistent with
+        // the exact principal rather than the one-scale-unit-high round-trip.
+        Number const principal =
+            roundedOldState.principalOutstanding - overpaymentComponents.trackedPrincipalDelta;
+        Number const managementFee =
+            tenthBipsOfValue(state.valueOutstanding - principal, managementFeeRate);
+        return constructLoanState(state.valueOutstanding, principal, managementFee);
+    }();
 
     JLOG(j.debug()) << "new theoretical value: " << newTheoreticalState.valueOutstanding
                     << ", principal: " << newTheoreticalState.principalOutstanding
@@ -463,7 +783,7 @@ tryOverpayment(
             newTheoreticalState.principalOutstanding,
             loanScale,
             Number::RoundingMode::Upward),
-        kNUM_ZERO,
+        kNumZero,
         roundedOldState.principalOutstanding);
     auto const totalValueOutstanding = std::clamp(
         roundToAsset(
@@ -471,11 +791,11 @@ tryOverpayment(
             principalOutstanding + newTheoreticalState.interestOutstanding(),
             loanScale,
             Number::RoundingMode::Upward),
-        kNUM_ZERO,
+        kNumZero,
         roundedOldState.valueOutstanding);
     auto const managementFeeOutstanding = std::clamp(
         roundToAsset(asset, newTheoreticalState.managementFeeDue, loanScale),
-        kNUM_ZERO,
+        kNumZero,
         roundedOldState.managementFeeDue);
 
     auto const roundedNewState =
@@ -497,7 +817,7 @@ tryOverpayment(
             // small interest amounts, that may have already been paid
             // off. Check what's still outstanding. This should
             // guarantee that the interest checks pass.
-            roundedNewState.interestOutstanding() != beast::kZERO,
+            roundedNewState.interestOutstanding() != beast::kZero,
             paymentRemaining,
             newLoanProperties,
             j))
@@ -505,7 +825,7 @@ tryOverpayment(
         JLOG(j.warn()) << "Principal overpayment would cause the loan to be in "
                           "an invalid state. Ignore the overpayment";
 
-        return Unexpected(tesSUCCESS);
+        return std::unexpected(tesSUCCESS);
     }
 
     // Validate that all computed properties are reasonable. These checks should
@@ -522,7 +842,7 @@ tryOverpayment(
                        << ", PeriodicPayment : " << newLoanProperties.periodicPayment
                        << ", ManagementFeeOwedToBroker: "
                        << newLoanProperties.loanState.managementFeeDue;
-        return Unexpected(tesSUCCESS);
+        return std::unexpected(tesSUCCESS);
         // LCOV_EXCL_STOP
     }
 
@@ -547,7 +867,7 @@ tryOverpayment(
     {
         JLOG(j.warn()) << "Principal overpayment would increase the value of "
                           "the loan. Ignore the overpayment";
-        return Unexpected(tesSUCCESS);
+        return std::unexpected(tesSUCCESS);
     }
 
     return std::make_pair(
@@ -579,21 +899,23 @@ tryOverpayment(
  * overpayment would leave the loan in an invalid state, we can reject it
  * gracefully without corrupting the ledger data.
  */
-template <class NumberProxy>
-Expected<LoanPaymentParts, TER>
+std::expected<LoanPaymentParts, TER>
 doOverpayment(
+    Rules const& rules,
     Asset const& asset,
     std::int32_t loanScale,
     ExtendedPaymentComponents const& overpaymentComponents,
-    NumberProxy& totalValueOutstandingProxy,
-    NumberProxy& principalOutstandingProxy,
-    NumberProxy& managementFeeOutstandingProxy,
-    NumberProxy& periodicPaymentProxy,
+    SLE::Ref loan,
     Number const& periodicRate,
-    std::uint32_t const paymentRemaining,
     TenthBips16 const managementFeeRate,
     beast::Journal j)
 {
+    auto totalValueOutstandingProxy = loan->at(sfTotalValueOutstanding);
+    auto principalOutstandingProxy = loan->at(sfPrincipalOutstanding);
+    auto managementFeeOutstandingProxy = loan->at(sfManagementFeeOutstanding);
+    auto periodicPaymentProxy = loan->at(sfPeriodicPayment);
+    auto const paymentsRemaining = loan->at(sfPaymentRemaining);
+
     auto const loanState = constructLoanState(
         totalValueOutstandingProxy, principalOutstandingProxy, managementFeeOutstandingProxy);
     auto const periodicPayment = periodicPaymentProxy;
@@ -605,22 +927,23 @@ doOverpayment(
                     << ", interestPart: " << overpaymentComponents.trackedInterestPart()
                     << ", untrackedInterest: " << overpaymentComponents.untrackedInterest
                     << ", totalDue: " << overpaymentComponents.totalDue
-                    << ", payments remaining :" << paymentRemaining;
+                    << ", payments remaining :" << paymentsRemaining;
 
     // Attempt to re-amortize the loan with the overpayment applied.
     // This modifies the temporary copies, leaving the proxies unchanged.
     auto const ret = tryOverpayment(
+        rules,
         asset,
         loanScale,
         overpaymentComponents,
         loanState,
         periodicPayment,
         periodicRate,
-        paymentRemaining,
+        paymentsRemaining,
         managementFeeRate,
         j);
     if (!ret)
-        return Unexpected(ret.error());
+        return std::unexpected(ret.error());
 
     auto const& [loanPaymentParts, newLoanProperties] = *ret;
     auto const newRoundedLoanState = newLoanProperties.loanState;
@@ -634,23 +957,13 @@ doOverpayment(
         JLOG(j.warn()) << "Overpayment not allowed: principal "
                        << "outstanding did not decrease. Before: " << *principalOutstandingProxy
                        << ". After: " << newRoundedLoanState.principalOutstanding;
-        return Unexpected(tesSUCCESS);
+        return std::unexpected(tesSUCCESS);
         // LCOV_EXCL_STOP
     }
 
     // The proxies still hold the original (pre-overpayment) values, which
     // allows us to compute deltas and verify they match what we expect
     // from the overpaymentComponents and loanPaymentParts.
-
-    XRPL_ASSERT_PARTS(
-        overpaymentComponents.trackedPrincipalDelta ==
-            principalOutstandingProxy - newRoundedLoanState.principalOutstanding,
-        "xrpl::detail::doOverpayment",
-        "principal change agrees");
-
-    // I'm not 100% sure the following asserts are correct. If in doubt, and
-    // everything else works, remove any that cause trouble.
-
     JLOG(j.debug()) << "valueChange: " << loanPaymentParts.valueChange
                     << ", totalValue before: " << *totalValueOutstandingProxy
                     << ", totalValue after: " << newRoundedLoanState.valueOutstanding
@@ -662,18 +975,50 @@ doOverpayment(
                     << overpaymentComponents.trackedPrincipalDelta -
             (totalValueOutstandingProxy - newRoundedLoanState.valueOutstanding);
 
-    XRPL_ASSERT_PARTS(
-        loanPaymentParts.valueChange ==
-            newRoundedLoanState.valueOutstanding -
-                (totalValueOutstandingProxy - overpaymentComponents.trackedPrincipalDelta) +
-                overpaymentComponents.trackedInterestPart(),
-        "xrpl::detail::doOverpayment",
-        "interest paid agrees");
+    // The three assertions below are invariants that only hold once
+    // fixCleanup3_2_0 pins the new principal to the exact reduction
+    // (oldPrincipal - trackedPrincipalDelta). Before the amendment, the lossy
+    // (P * factor) / factor round-trip can leave the new principal one
+    // scale-unit high, so these equalities do not hold on the pre-amendment
+    // code path and must be gated to match the fix they verify.
+    //
+    // The valueChange returned by tryOverpayment satisfies
+    //   valueChange = (newInterestDue - oldInterestDue) + untrackedInterest.
+    // Using the loan-state identity v = p + i + m and the adjacent
+    // `principal change agrees` assertion (dp = oldP - newP), this
+    // rearranges into three independently-computable terms:
+    //
+    //   1. TVO change beyond what principal repayment alone explains:
+    //        newTVO - (oldTVO - dp)
+    //   2. Management fee released by re-amortization (positive when
+    //      mfee decreased; zero when managementFeeRate == 0):
+    //        oldMfee - newMfee
+    //   3. The overpayment's penalty interest part (= untrackedInterest
+    //      for the overpayment path; see computeOverpaymentComponents):
+    //        trackedInterestPart()
+    [[maybe_unused]] bool const fix320Enabled = rules.enabled(fixCleanup3_2_0);
+    XRPL_ASSERT_IF(
+        fix320Enabled,
+        overpaymentComponents.trackedPrincipalDelta ==
+            principalOutstandingProxy - newRoundedLoanState.principalOutstanding,
+        "xrpl::detail::doOverpayment : principal change agrees");
 
-    XRPL_ASSERT_PARTS(
+    XRPL_ASSERT_IF(
+        fix320Enabled,
+        [&] {
+            Number const tvoChange = newRoundedLoanState.valueOutstanding -
+                (totalValueOutstandingProxy - overpaymentComponents.trackedPrincipalDelta);
+            Number const managementFeeReleased =
+                managementFeeOutstandingProxy - newRoundedLoanState.managementFeeDue;
+            Number const interestPart = overpaymentComponents.trackedInterestPart();
+            return loanPaymentParts.valueChange == tvoChange + managementFeeReleased + interestPart;
+        }(),
+        "xrpl::detail::doOverpayment : interest paid agrees");
+
+    XRPL_ASSERT_IF(
+        fix320Enabled,
         overpaymentComponents.trackedPrincipalDelta == loanPaymentParts.principalPaid,
-        "xrpl::detail::doOverpayment",
-        "principal payment matches");
+        "xrpl::detail::doOverpayment : principal payment matches");
 
     // All validations passed, so update the proxy objects (which will
     // modify the actual Loan ledger object)
@@ -698,36 +1043,38 @@ doOverpayment(
  *
  * Implements equation (15) from XLS-66 spec, Section A-2 Equation Glossary
  */
-Expected<ExtendedPaymentComponents, TER>
+std::expected<ExtendedPaymentComponents, TER>
 computeLatePayment(
     Asset const& asset,
-    ApplyView const& view,
-    Number const& principalOutstanding,
-    std::int32_t nextDueDate,
+    ReadView const& view,
+    SLE::ConstRef loan,
     ExtendedPaymentComponents const& periodic,
-    TenthBips32 lateInterestRate,
-    std::int32_t loanScale,
-    Number const& latePaymentFee,
     STAmount const& amount,
     TenthBips16 managementFeeRate,
     beast::Journal j)
 {
+    std::int32_t const nextDueDate = loan->at(sfNextPaymentDueDate);
+    std::int32_t const loanScale = loan->at(sfLoanScale);
+
     // Check if the due date has passed. If not, reject the payment as
-    // being too soon
-    if (!hasExpired(view, nextDueDate))
-        return Unexpected(tecTOO_SOON);
+    // being too soon. Uses isPaymentLate() so this agrees with the
+    // regular payment path on whether the loan is actually late at the
+    // exact due date boundary (amendment-gated: Exclusive once
+    // fixCleanup3_4_0 is enabled, Inclusive otherwise).
+    if (!isPaymentLate(view, loan))
+        return std::unexpected(tecTOO_SOON);
 
     // Calculate the penalty interest based on how long the payment is overdue.
     auto const latePaymentInterest = loanLatePaymentInterest(
-        principalOutstanding, lateInterestRate, view.parentCloseTime(), nextDueDate);
+        loan->at(sfPrincipalOutstanding),
+        TenthBips32{loan->at(sfLateInterestRate)},
+        view.parentCloseTime(),
+        nextDueDate);
 
     // Round the late interest and split it between the vault (net interest)
-    // and the broker (management fee portion). This lambda ensures we
-    // round before splitting to maintain precision.
-    auto const [roundedLateInterest, roundedLateManagementFee] = [&]() {
-        auto const interest = roundToAsset(asset, latePaymentInterest, loanScale);
-        return computeInterestAndFeeParts(asset, interest, managementFeeRate, loanScale);
-    }();
+    // and the broker (management fee portion).
+    auto const [roundedLateInterest, roundedLateManagementFee] =
+        roundAndSplitInterest(asset, latePaymentInterest, managementFeeRate, loanScale);
 
     XRPL_ASSERT(roundedLateInterest >= 0, "xrpl::detail::computeLatePayment : valid late interest");
     XRPL_ASSERT_PARTS(
@@ -746,7 +1093,7 @@ computeLatePayment(
         // 1. Regular service fee (from periodic.untrackedManagementFee)
         // 2. Late payment fee (fixed penalty)
         // 3. Management fee portion of late interest
-        periodic.untrackedManagementFee + latePaymentFee + roundedLateManagementFee,
+        periodic.untrackedManagementFee + loan->at(sfLatePaymentFee) + roundedLateManagementFee,
 
         // Untracked interest includes:
         // 1. Any untracked interest from the regular payment (usually 0)
@@ -767,7 +1114,7 @@ computeLatePayment(
     {
         JLOG(j.warn()) << "Late loan payment amount is insufficient. Due: " << late.totalDue
                        << ", paid: " << amount;
-        return Unexpected(tecINSUFFICIENT_PAYMENT);
+        return std::unexpected(tecINSUFFICIENT_PAYMENT);
     }
 
     return late;
@@ -792,39 +1139,32 @@ computeLatePayment(
  *
  * Implements equation (26) from XLS-66 spec, Section A-2 Equation Glossary
  */
-Expected<ExtendedPaymentComponents, TER>
+std::expected<ExtendedPaymentComponents, TER>
 computeFullPayment(
     Asset const& asset,
-    ApplyView& view,
-    Number const& principalOutstanding,
-    Number const& managementFeeOutstanding,
-    Number const& periodicPayment,
-    std::uint32_t paymentRemaining,
-    std::uint32_t prevPaymentDate,
-    std::uint32_t const startDate,
-    std::uint32_t const paymentInterval,
-    TenthBips32 const closeInterestRate,
-    std::int32_t loanScale,
-    Number const& totalInterestOutstanding,
+    ReadView const& view,
+    SLE::ConstRef loan,
     Number const& periodicRate,
-    Number const& closePaymentFee,
     STAmount const& amount,
     TenthBips16 managementFeeRate,
     beast::Journal j)
 {
+    std::uint32_t const paymentRemaining = loan->at(sfPaymentRemaining);
+    std::int32_t const loanScale = loan->at(sfLoanScale);
+
     // Full payment must be made before the final scheduled payment.
     if (paymentRemaining <= 1)
     {
         // If this is the last payment, it has to be a regular payment
         JLOG(j.warn()) << "Last payment cannot be a full payment.";
-        return Unexpected(tecKILLED);
+        return std::unexpected(tecKILLED);
     }
 
     // Calculate the theoretical principal based on the payment schedule.
     // This theoretical (unrounded) value is used to compute interest and
     // penalties accurately.
-    Number const theoreticalPrincipalOutstanding =
-        loanPrincipalFromPeriodicPayment(periodicPayment, periodicRate, paymentRemaining);
+    Number const theoreticalPrincipalOutstanding = loanPrincipalFromPeriodicPayment(
+        view.rules(), loan->at(sfPeriodicPayment), periodicRate, paymentRemaining);
 
     // Full payment interest includes both accrued interest (time since last
     // payment) and prepayment penalty (for closing early).
@@ -832,18 +1172,21 @@ computeFullPayment(
         theoreticalPrincipalOutstanding,
         periodicRate,
         view.parentCloseTime(),
-        paymentInterval,
-        prevPaymentDate,
-        startDate,
-        closeInterestRate);
+        loan->at(sfPaymentInterval),
+        loan->at(sfPreviousPaymentDueDate),
+        loan->at(sfStartDate),
+        TenthBips32{loan->at(sfCloseInterestRate)});
 
-    // Split the full payment interest into net interest (to vault) and
-    // management fee (to broker), applying proper rounding.
-    auto const [roundedFullInterest, roundedFullManagementFee] = [&]() {
-        auto const interest =
-            roundToAsset(asset, fullPaymentInterest, loanScale, Number::RoundingMode::Downward);
-        return computeInterestAndFeeParts(asset, interest, managementFeeRate, loanScale);
-    }();
+    // Split the full payment interest into net interest (to vault) and management fee (to broker),
+    // applying proper rounding.
+    auto const [roundedFullInterest, roundedFullManagementFee] = roundAndSplitInterest(
+        asset, fullPaymentInterest, managementFeeRate, loanScale, Number::RoundingMode::Downward);
+
+    LoanState const loanState = constructLoanState(loan);
+    Number const principalOutstanding = loanState.principalOutstanding;
+    Number const managementFeeOutstanding = loanState.managementFeeDue;
+    Number const totalInterestOutstanding = loanState.interestDue;
+    Number const closePaymentFee = roundToAsset(asset, loan->at(sfClosePaymentFee), loanScale);
 
     ExtendedPaymentComponents const full{
         PaymentComponents{
@@ -884,8 +1227,7 @@ computeFullPayment(
         "xrpl::detail::computeFullPayment",
         "total due is rounded");
 
-    JLOG(j.trace()) << "computeFullPayment result: periodicPayment: " << periodicPayment
-                    << ", periodicRate: " << periodicRate
+    JLOG(j.trace()) << "computeFullPayment result: periodicRate: " << periodicRate
                     << ", paymentRemaining: " << paymentRemaining
                     << ", theoreticalPrincipalOutstanding: " << theoreticalPrincipalOutstanding
                     << ", fullPaymentInterest: " << fullPaymentInterest
@@ -897,7 +1239,7 @@ computeFullPayment(
     {
         // If the payment is less than the full payment amount, it's not
         // sufficient to be a full payment.
-        return Unexpected(tecINSUFFICIENT_PAYMENT);
+        return std::unexpected(tecINSUFFICIENT_PAYMENT);
     }
 
     return full;
@@ -929,6 +1271,7 @@ PaymentComponents::trackedInterestPart() const
  */
 PaymentComponents
 computePaymentComponents(
+    Rules const& rules,
     Asset const& asset,
     std::int32_t scale,
     Number const& totalValueOutstanding,
@@ -966,14 +1309,25 @@ computePaymentComponents(
     // Calculate what the loan state SHOULD be after this payment (the target).
     // This is computed at full precision using the theoretical amortization.
     LoanState const trueTarget = computeTheoreticalLoanState(
-        periodicPayment, periodicRate, paymentRemaining - 1, managementFeeRate);
+        rules, periodicPayment, periodicRate, paymentRemaining - 1, managementFeeRate);
 
     // Round the target to the loan's scale to match how actual loan values
-    // are stored.
+    // are stored. With fixCleanup3_2_0 enabled, principal is rounded upward
+    // and interest downward so that at coarse scale principal sticks at the
+    // floor (until the final payment clears it) while interest absorbs each
+    // periodic payment. Without the amendment the pre-existing round-to-
+    // nearest behavior is preserved (which can hit the "Partial principal
+    // payment" assertion on degenerate integer-scale loans).
+    bool const fixCleanup320Enabled = rules.enabled(fixCleanup3_2_0);
+    Number::RoundingMode const principalRounding =
+        fixCleanup320Enabled ? Number::RoundingMode::Upward : Number::getround();
+    Number::RoundingMode const interestRounding =
+        fixCleanup320Enabled ? Number::RoundingMode::Downward : Number::getround();
     LoanState const roundedTarget = LoanState{
         .valueOutstanding = roundToAsset(asset, trueTarget.valueOutstanding, scale),
-        .principalOutstanding = roundToAsset(asset, trueTarget.principalOutstanding, scale),
-        .interestDue = roundToAsset(asset, trueTarget.interestDue, scale),
+        .principalOutstanding =
+            roundToAsset(asset, trueTarget.principalOutstanding, scale, principalRounding),
+        .interestDue = roundToAsset(asset, trueTarget.interestDue, scale, interestRounding),
         .managementFeeDue = roundToAsset(asset, trueTarget.managementFeeDue, scale)};
 
     // Get the current actual loan state from the ledger values
@@ -997,16 +1351,18 @@ computePaymentComponents(
     // Cap each component to never exceed what's actually outstanding
     deltas.principal = std::min(deltas.principal, currentLedgerState.principalOutstanding);
 
-    XRPL_ASSERT_PARTS(
-        deltas.interest <= currentLedgerState.interestDue,
-        "xrpl::detail::computePaymentComponents",
-        "interest due delta not greater than outstanding");
-
+    if (fixCleanup320Enabled)
+    {
+        XRPL_ASSERT_PARTS(
+            deltas.interest <= currentLedgerState.interestDue,
+            "xrpl::detail::computePaymentComponents",
+            "interest due delta not greater than outstanding");
+    }
     // Cap interest to both the outstanding amount AND what's left of the
     // periodic payment after principal is paid
     deltas.interest = std::min(
         {deltas.interest,
-         std::max(kNUM_ZERO, roundedPeriodicPayment - deltas.principal),
+         std::max(kNumZero, roundedPeriodicPayment - deltas.principal),
          currentLedgerState.interestDue});
 
     XRPL_ASSERT_PARTS(
@@ -1026,14 +1382,14 @@ computePaymentComponents(
     // which indicates that we're not going to take the whole payment amount,
     // but if so, it must be small.
     auto takeFrom = [](Number& component, Number& excess) {
-        if (excess > beast::kZERO)
+        if (excess > beast::kZero)
         {
             auto part = std::min(component, excess);
             component -= part;
             excess -= part;
         }
         XRPL_ASSERT_PARTS(
-            excess >= beast::kZERO,
+            excess >= beast::kZero,
             "xrpl::detail::computePaymentComponents",
             "excess non-negative");
     };
@@ -1051,7 +1407,7 @@ computePaymentComponents(
     // happen due to earlier caps, but handle it defensively.
     Number totalOverpayment = deltas.total() - currentLedgerState.valueOutstanding;
 
-    if (totalOverpayment > beast::kZERO)
+    if (totalOverpayment > beast::kZero)
     {
         // LCOV_EXCL_START
         UNREACHABLE(
@@ -1069,7 +1425,7 @@ computePaymentComponents(
         "xrpl::detail::computePaymentComponents",
         "shortage is rounded");
 
-    if (shortage < beast::kZERO)
+    if (shortage < beast::kZero)
     {
         // Deltas exceed payment amount - reduce them proportionally
         Number excess = -shortage;
@@ -1081,7 +1437,7 @@ computePaymentComponents(
     // periodic payment (due to rounding or component caps).
     // shortage < 0 would mean we're trying to pay more than allowed (bug).
     XRPL_ASSERT_PARTS(
-        shortage >= beast::kZERO,
+        shortage >= beast::kZero,
         "xrpl::detail::computePaymentComponents",
         "no shortage or excess");
 
@@ -1092,34 +1448,62 @@ computePaymentComponents(
         "total value adds up");
 
     XRPL_ASSERT_PARTS(
-        deltas.principal >= beast::kZERO &&
+        deltas.principal >= beast::kZero &&
             deltas.principal <= currentLedgerState.principalOutstanding,
         "xrpl::detail::computePaymentComponents",
         "valid principal result");
     XRPL_ASSERT_PARTS(
-        deltas.interest >= beast::kZERO && deltas.interest <= currentLedgerState.interestDue,
+        deltas.interest >= beast::kZero && deltas.interest <= currentLedgerState.interestDue,
         "xrpl::detail::computePaymentComponents",
         "valid interest result");
     XRPL_ASSERT_PARTS(
-        deltas.managementFee >= beast::kZERO &&
+        deltas.managementFee >= beast::kZero &&
             deltas.managementFee <= currentLedgerState.managementFeeDue,
         "xrpl::detail::computePaymentComponents",
         "valid fee result");
 
     XRPL_ASSERT_PARTS(
-        deltas.principal + deltas.interest + deltas.managementFee > beast::kZERO,
+        deltas.principal + deltas.interest + deltas.managementFee > beast::kZero,
         "xrpl::detail::computePaymentComponents",
         "payment parts add to payment");
 
     // Final safety clamp to ensure no value exceeds its outstanding balance
     return PaymentComponents{
         .trackedValueDelta =
-            std::clamp(deltas.total(), kNUM_ZERO, currentLedgerState.valueOutstanding),
+            std::clamp(deltas.total(), kNumZero, currentLedgerState.valueOutstanding),
         .trackedPrincipalDelta =
-            std::clamp(deltas.principal, kNUM_ZERO, currentLedgerState.principalOutstanding),
+            std::clamp(deltas.principal, kNumZero, currentLedgerState.principalOutstanding),
         .trackedManagementFeeDelta =
-            std::clamp(deltas.managementFee, kNUM_ZERO, currentLedgerState.managementFeeDue),
+            std::clamp(deltas.managementFee, kNumZero, currentLedgerState.managementFeeDue),
     };
+}
+
+/* Thin overload of computePaymentComponents() that unwraps the tracked
+ * fields directly from the Loan ledger object. `periodicRate` is derived
+ * rather than stored, and `managementFeeRate` comes from the LoanBroker, not
+ * the Loan, so both remain explicit parameters. Kept separate from the
+ * value-based overload above, which is exercised directly by unit tests
+ * against simulated (non-ledger) loan states.
+ */
+PaymentComponents
+computePaymentComponents(
+    Rules const& rules,
+    Asset const& asset,
+    SLE::Ref loan,
+    Number const& periodicRate,
+    TenthBips16 managementFeeRate)
+{
+    return computePaymentComponents(
+        rules,
+        asset,
+        loan->at(sfLoanScale),
+        loan->at(sfTotalValueOutstanding),
+        loan->at(sfPrincipalOutstanding),
+        loan->at(sfManagementFeeOutstanding),
+        loan->at(sfPeriodicPayment),
+        periodicRate,
+        loan->at(sfPaymentRemaining),
+        managementFeeRate);
 }
 
 /* Computes payment components for an overpayment scenario.
@@ -1142,6 +1526,7 @@ computePaymentComponents(
  */
 ExtendedPaymentComponents
 computeOverpaymentComponents(
+    Rules const& rules,
     Asset const& asset,
     int32_t const loanScale,
     Number const& overpayment,
@@ -1149,7 +1534,8 @@ computeOverpaymentComponents(
     TenthBips32 const overpaymentFeeRate,
     TenthBips16 const managementFeeRate)
 {
-    XRPL_ASSERT(
+    XRPL_ASSERT_IF(
+        rules.enabled(fixCleanup3_2_0),
         overpayment > 0 && isRounded(asset, overpayment, loanScale),
         "xrpl::detail::computeOverpaymentComponents : valid overpayment "
         "amount");
@@ -1164,11 +1550,12 @@ computeOverpaymentComponents(
     // This interest doesn't follow the normal amortization schedule - it's
     // a one-time charge for paying early.
     // Equation (20) and (21) from XLS-66 spec, Section A-2 Equation Glossary
-    auto const [roundedOverpaymentInterest, roundedOverpaymentManagementFee] = [&]() {
-        auto const interest =
-            roundToAsset(asset, tenthBipsOfValue(overpayment, overpaymentInterestRate), loanScale);
-        return detail::computeInterestAndFeeParts(asset, interest, managementFeeRate, loanScale);
-    }();
+    auto const [roundedOverpaymentInterest, roundedOverpaymentManagementFee] =
+        roundAndSplitInterest(
+            asset,
+            tenthBipsOfValue(overpayment, overpaymentInterestRate),
+            managementFeeRate,
+            loanScale);
 
     auto const result = detail::ExtendedPaymentComponents{
         // Build the payment components, after fees and penalty
@@ -1193,6 +1580,265 @@ computeOverpaymentComponents(
         "xrpl::detail::computeOverpaymentComponents",
         "valid interest computation");
     return result;
+}
+
+/* Derives the two rate values every make*Payment() helper needs: the
+ * broker's management fee rate, and the loan's periodic (per-payment-period)
+ * interest rate.
+ */
+std::pair<TenthBips16, Number>
+loanRatesFor(SLE::ConstRef loan, SLE::ConstRef brokerSle)
+{
+    TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
+    TenthBips32 const interestRate{loan->at(sfInterestRate)};
+    Number const periodicRate = loanPeriodicRate(interestRate, loan->at(sfPaymentInterval));
+    XRPL_ASSERT(interestRate == 0 || periodicRate > 0, "xrpl::detail::loanRatesFor : valid rate");
+    return {managementFeeRate, periodicRate};
+}
+
+/* Handles a full (early payoff) payment. Implements the "full payment"
+ * branch of the make_payment function from the XLS-66 spec, Section
+ * 3.2.4.4.
+ */
+std::expected<LoanPaymentParts, TER>
+makeFullPayment(
+    Asset const& asset,
+    ApplyView& view,
+    SLE::Ref loan,
+    SLE::ConstRef brokerSle,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    auto const [managementFeeRate, periodicRate] = loanRatesFor(loan, brokerSle);
+
+    auto const fullPaymentComponents =
+        computeFullPayment(asset, view, loan, periodicRate, amount, managementFeeRate, j);
+
+    // computeFullPayment only ever fails with a genuine error TER (never
+    // tesSUCCESS), so there is no separate "no-op" outcome to handle here.
+    if (fullPaymentComponents.has_value())
+        return doPayment(*fullPaymentComponents, loan);
+    return std::unexpected(fullPaymentComponents.error());
+}
+
+/* Handles a late payment (past due date, with the late-payment flag set).
+ * Implements the "late payment" branch of the make_payment function from
+ * the XLS-66 spec, Section 3.2.4.4.
+ */
+std::expected<LoanPaymentParts, TER>
+makeLatePayment(
+    Asset const& asset,
+    ApplyView const& view,
+    SLE::Ref loan,
+    SLE::ConstRef brokerSle,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    auto const [managementFeeRate, periodicRate] = loanRatesFor(loan, brokerSle);
+
+    Number const serviceFee = loan->at(sfLoanServiceFee);
+    ExtendedPaymentComponents const periodic{
+        computePaymentComponents(view.rules(), asset, loan, periodicRate, managementFeeRate),
+        serviceFee};
+    XRPL_ASSERT_PARTS(
+        periodic.trackedPrincipalDelta >= 0,
+        "xrpl::detail::makeLatePayment",
+        "regular payment valid principal");
+
+    auto const latePaymentComponents =
+        computeLatePayment(asset, view, loan, periodic, amount, managementFeeRate, j);
+
+    // computeLatePayment only ever fails with a genuine error TER (never
+    // tesSUCCESS), so there is no separate "no-op" outcome to handle here.
+    if (latePaymentComponents.has_value())
+        return doPayment(*latePaymentComponents, loan);
+    return std::unexpected(latePaymentComponents.error());
+}
+
+/* Handles regular scheduled payments, including an optional overpayment tail.
+ * Implements the "regular" and "overpayment" branches of the make_payment
+ * function from the XLS-66 spec, Section 3.2.4.4.
+ */
+std::expected<LoanPaymentParts, TER>
+makeRegularPayment(
+    Asset const& asset,
+    ApplyView const& view,
+    SLE::Ref loan,
+    SLE::ConstRef brokerSle,
+    STAmount const& amount,
+    LoanPaymentType const paymentType,
+    beast::Journal j)
+{
+    using namespace lending;
+
+    XRPL_ASSERT_PARTS(
+        paymentType == LoanPaymentType::Regular || paymentType == LoanPaymentType::Overpayment,
+        "xrpl::detail::makeRegularPayment",
+        "regular payment type");
+
+    auto const [managementFeeRate, periodicRate] = loanRatesFor(loan, brokerSle);
+
+    std::int32_t const loanScale = loan->at(sfLoanScale);
+    Number const serviceFee = loan->at(sfLoanServiceFee);
+
+    ExtendedPaymentComponents periodic{
+        computePaymentComponents(view.rules(), asset, loan, periodicRate, managementFeeRate),
+        serviceFee};
+    XRPL_ASSERT_PARTS(
+        periodic.trackedPrincipalDelta >= 0,
+        "xrpl::detail::makeRegularPayment",
+        "regular payment valid principal");
+
+    // Keep a running total of the actual parts paid
+    LoanPaymentParts totalParts;
+    Number totalPaid = kNumZero;
+    std::size_t numPayments = 0;
+
+    // Cached here (rather than re-looking up loan->at(sfPaymentRemaining) at each use) since it's
+    // read multiple times below. It's a write-through proxy, so it still reflects doPayment's
+    // mutations each iteration.
+    auto paymentRemainingProxy = loan->at(sfPaymentRemaining);
+
+    while ((amount >= (totalPaid + periodic.totalDue)) && paymentRemainingProxy > 0 &&
+           numPayments < kLoanMaximumPaymentsPerTransaction)
+    {
+        // Try to make more payments
+        XRPL_ASSERT_PARTS(
+            periodic.trackedPrincipalDelta >= 0,
+            "xrpl::detail::makeRegularPayment",
+            "payment pays non-negative principal");
+
+        totalPaid += periodic.totalDue;
+        totalParts += doPayment(periodic, loan);
+        ++numPayments;
+
+        XRPL_ASSERT_PARTS(
+            (periodic.specialCase == PaymentSpecialCase::Final) == (paymentRemainingProxy == 0),
+            "xrpl::detail::makeRegularPayment",
+            "final payment is the final payment");
+
+        // Don't compute the next payment if this was the last payment
+        if (periodic.specialCase == PaymentSpecialCase::Final)
+            break;
+
+        periodic = ExtendedPaymentComponents{
+            computePaymentComponents(view.rules(), asset, loan, periodicRate, managementFeeRate),
+            serviceFee};
+    }
+
+    if (numPayments == 0)
+    {
+        JLOG(j.warn()) << "Regular loan payment amount is insufficient. Due: " << periodic.totalDue
+                       << ", paid: " << amount;
+        return std::unexpected(tecINSUFFICIENT_PAYMENT);
+    }
+
+    XRPL_ASSERT_PARTS(
+        totalParts.principalPaid + totalParts.interestPaid + totalParts.feePaid == totalPaid,
+        "xrpl::detail::makeRegularPayment",
+        "payment parts add up");
+    XRPL_ASSERT_PARTS(
+        totalParts.valueChange == 0, "xrpl::detail::makeRegularPayment", "no value change");
+
+    // -------------------------------------------------------------
+    // overpayment handling
+    //
+    // If the "fixCleanup3_1_3" amendment is enabled, truncate "amount",
+    // at the loan scale. If the raw value is used, the overpayment
+    // amount could be meaningless dust. Trying to process such a small
+    // amount will, at best, waste time when all the result values round
+    // to zero. At worst, it can cause logical errors with tiny amounts
+    // of interest that don't add up correctly.
+    auto const roundedAmount = view.rules().enabled(fixCleanup3_1_3)
+        ? roundToAsset(asset, amount, loanScale, Number::RoundingMode::TowardsZero)
+        : amount;
+
+    bool const overpaymentSupported =
+        paymentType == LoanPaymentType::Overpayment && loan->isFlag(lsfLoanOverpayment);
+
+    bool const overpaymentAllowed =   //
+        paymentRemainingProxy > 0 &&  //
+        totalPaid < roundedAmount &&  //
+        numPayments < kLoanMaximumPaymentsPerTransaction;
+
+    if (overpaymentSupported && overpaymentAllowed)
+    {
+        TenthBips32 const overpaymentInterestRate{loan->at(sfOverpaymentInterestRate)};
+        TenthBips32 const overpaymentFeeRate{loan->at(sfOverpaymentFee)};
+
+        // It shouldn't be possible for the overpayment to be greater than
+        // totalValueOutstanding, because that would have been processed as
+        // another normal payment. But cap it just in case.
+        Number const overpaymentRaw =
+            std::min(roundedAmount - totalPaid, *loan->at(sfTotalValueOutstanding));
+
+        bool const fixEnabled = view.rules().enabled(fixCleanup3_2_0);
+        Number const overpayment = fixEnabled
+            ? roundToAsset(asset, overpaymentRaw, loanScale, Number::RoundingMode::Downward)
+            : overpaymentRaw;
+
+        // Post-amendment, the rounded overpayment can be zero; pre-amendment
+        // it's always positive given the surrounding guards.
+        if (!fixEnabled || overpayment > 0)
+        {
+            ExtendedPaymentComponents const overpaymentComponents = computeOverpaymentComponents(
+                view.rules(),
+                asset,
+                loanScale,
+                overpayment,
+                overpaymentInterestRate,
+                overpaymentFeeRate,
+                managementFeeRate);
+
+            // Don't process an overpayment if the whole amount (or more!)
+            // gets eaten by fees and interest.
+            if (overpaymentComponents.trackedPrincipalDelta > 0)
+            {
+                XRPL_ASSERT_PARTS(
+                    overpaymentComponents.untrackedInterest >= beast::kZero,
+                    "xrpl::detail::makeRegularPayment",
+                    "overpayment penalty did not reduce value of loan");
+                if (auto const overResult = doOverpayment(
+                        view.rules(),
+                        asset,
+                        loanScale,
+                        overpaymentComponents,
+                        loan,
+                        periodicRate,
+                        managementFeeRate,
+                        j))
+                {
+                    totalParts += *overResult;
+                }
+                else if (overResult.error())
+                {
+                    // error() will be the TER returned if a payment is not
+                    // made. It will only evaluate to true if it's unsuccessful.
+                    // Otherwise, tesSUCCESS means nothing was done, so
+                    // continue.
+                    return std::unexpected(overResult.error());
+                }
+            }
+        }
+    }
+
+    // Check the final results are rounded, to double-check that the
+    // intermediate steps were rounded.
+    XRPL_ASSERT(
+        isRounded(asset, totalParts.principalPaid, loanScale) &&
+            totalParts.principalPaid >= beast::kZero,
+        "xrpl::detail::makeRegularPayment : total principal paid is valid");
+    XRPL_ASSERT(
+        isRounded(asset, totalParts.interestPaid, loanScale) &&
+            totalParts.interestPaid >= beast::kZero,
+        "xrpl::detail::makeRegularPayment : total interest paid is valid");
+    XRPL_ASSERT(
+        isRounded(asset, totalParts.valueChange, loanScale),
+        "xrpl::detail::makeRegularPayment : loan value change is valid");
+    XRPL_ASSERT(
+        isRounded(asset, totalParts.feePaid, loanScale) && totalParts.feePaid >= beast::kZero,
+        "xrpl::detail::makeRegularPayment : fee paid is valid");
+    return totalParts;
 }
 
 }  // namespace detail
@@ -1284,7 +1930,7 @@ checkLoanGuards(
     // avoids dividing by 0.
     auto const roundedPayment =
         roundPeriodicPayment(vaultAsset, properties.periodicPayment, properties.loanScale);
-    if (roundedPayment == beast::kZERO)
+    if (roundedPayment == beast::kZero)
     {
         JLOG(j.warn()) << "Loan Periodic payment (" << properties.periodicPayment
                        << ") rounds to 0. ";
@@ -1342,7 +1988,7 @@ computeFullPaymentInterest(
         "interest");
 
     // Equation (28) from XLS-66 spec, Section A-2 Equation Glossary
-    auto const prepaymentPenalty = closeInterestRate == beast::kZERO
+    auto const prepaymentPenalty = closeInterestRate == beast::kZero
         ? Number{}
         : tenthBipsOfValue(theoreticalPrincipalOutstanding, closeInterestRate);
 
@@ -1379,6 +2025,7 @@ computeFullPaymentInterest(
  */
 LoanState
 computeTheoreticalLoanState(
+    Rules const& rules,
     Number const& periodicPayment,
     Number const& periodicRate,
     std::uint32_t const paymentRemaining,
@@ -1396,8 +2043,8 @@ computeTheoreticalLoanState(
     // Equation (30) from XLS-66 spec, Section A-2 Equation Glossary
     Number const totalValueOutstanding = periodicPayment * paymentRemaining;
 
-    Number const principalOutstanding =
-        detail::loanPrincipalFromPeriodicPayment(periodicPayment, periodicRate, paymentRemaining);
+    Number const principalOutstanding = detail::loanPrincipalFromPeriodicPayment(
+        rules, periodicPayment, periodicRate, paymentRemaining);
 
     // Equation (31) from XLS-66 spec, Section A-2 Equation Glossary
     Number const interestOutstandingGross = totalValueOutstanding - principalOutstanding;
@@ -1453,8 +2100,10 @@ constructLoanState(
 }
 
 LoanState
-constructRoundedLoanState(SLE::const_ref loan)
+constructLoanState(SLE::ConstRef loan)
 {
+    XRPL_ASSERT(loan && loan->getType() == ltLOAN, "xrpl::constructLoanState : valid loan SLE");
+
     return constructLoanState(
         loan->at(sfTotalValueOutstanding),
         loan->at(sfPrincipalOutstanding),
@@ -1488,6 +2137,7 @@ computeManagementFee(
  */
 LoanProperties
 computeLoanProperties(
+    Rules const& rules,
     Asset const& asset,
     Number const& principalOutstanding,
     TenthBips32 interestRate,
@@ -1499,6 +2149,7 @@ computeLoanProperties(
     auto const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
     XRPL_ASSERT(interestRate == 0 || periodicRate > 0, "xrpl::computeLoanProperties : valid rate");
     return computeLoanProperties(
+        rules,
         asset,
         principalOutstanding,
         periodicRate,
@@ -1517,6 +2168,7 @@ computeLoanProperties(
  */
 LoanProperties
 computeLoanProperties(
+    Rules const& rules,
     Asset const& asset,
     Number const& principalOutstanding,
     Number const& periodicRate,
@@ -1525,7 +2177,7 @@ computeLoanProperties(
     std::int32_t minimumScale)
 {
     auto const periodicPayment =
-        detail::loanPeriodicPayment(principalOutstanding, periodicRate, paymentsRemaining);
+        detail::loanPeriodicPayment(rules, principalOutstanding, periodicRate, paymentsRemaining);
 
     auto const [totalValueOutstanding, loanScale] = [&]() {
         // only round up if there should be interest
@@ -1573,10 +2225,10 @@ computeLoanProperties(
         // Compute the parts for the first payment. Ensure that the
         // principal payment will actually change the principal.
         auto const startingState = computeTheoreticalLoanState(
-            periodicPayment, periodicRate, paymentsRemaining, managementFeeRate);
+            rules, periodicPayment, periodicRate, paymentsRemaining, managementFeeRate);
 
         auto const firstPaymentState = computeTheoreticalLoanState(
-            periodicPayment, periodicRate, paymentsRemaining - 1, managementFeeRate);
+            rules, periodicPayment, periodicRate, paymentsRemaining - 1, managementFeeRate);
 
         // The unrounded principal part needs to be large enough to affect
         // the principal. What to do if not is left to the caller
@@ -1598,350 +2250,67 @@ computeLoanProperties(
  * It is an implementation of the make_payment function from the XLS-66
  * spec. Section 3.2.4.4
  */
-Expected<LoanPaymentParts, TER>
+std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
     ApplyView& view,
-    SLE::ref loan,
-    SLE::const_ref brokerSle,
+    SLE::Ref loan,
+    SLE::ConstRef brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
     beast::Journal j)
 {
-    using namespace Lending;
-
-    auto principalOutstandingProxy = loan->at(sfPrincipalOutstanding);
-    auto paymentRemainingProxy = loan->at(sfPaymentRemaining);
-
-    if (paymentRemainingProxy == 0 || principalOutstandingProxy == 0)
+    if (loan->at(sfPaymentRemaining) == 0 || loan->at(sfPrincipalOutstanding) == 0)
     {
         // Loan complete this is already checked in LoanPay::preclaim()
         // LCOV_EXCL_START
         JLOG(j.warn()) << "Loan is already paid off.";
-        return Unexpected(tecKILLED);
+        return std::unexpected(tecKILLED);
         // LCOV_EXCL_STOP
     }
-
-    auto totalValueOutstandingProxy = loan->at(sfTotalValueOutstanding);
-    auto managementFeeOutstandingProxy = loan->at(sfManagementFeeOutstanding);
 
     // Next payment due date must be set unless the loan is complete
     auto nextDueDateProxy = loan->at(sfNextPaymentDueDate);
     if (*nextDueDateProxy == 0)
     {
         JLOG(j.warn()) << "Loan next payment due date is not set.";
-        return Unexpected(tecINTERNAL);
+        return std::unexpected(tecINTERNAL);
     }
 
-    std::int32_t const loanScale = loan->at(sfLoanScale);
-
-    TenthBips32 const interestRate{loan->at(sfInterestRate)};
-
-    Number const serviceFee = loan->at(sfLoanServiceFee);
-    TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
-
-    Number const periodicPayment = loan->at(sfPeriodicPayment);
-
-    auto prevPaymentDateProxy = loan->at(sfPreviousPaymentDueDate);
-    std::uint32_t const startDate = loan->at(sfStartDate);
-
-    std::uint32_t const paymentInterval = loan->at(sfPaymentInterval);
-
-    // Compute the periodic rate that will be used for calculations
-    // throughout
-    Number const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
-    XRPL_ASSERT(interestRate == 0 || periodicRate > 0, "xrpl::loanMakePayment : valid rate");
-
-    XRPL_ASSERT(*totalValueOutstandingProxy > 0, "xrpl::loanMakePayment : valid total value");
+    XRPL_ASSERT(
+        *loan->at(sfTotalValueOutstanding) > 0, "xrpl::loanMakePayment : valid total value");
 
     view.update(loan);
 
     // -------------------------------------------------------------
     // A late payment not flagged as late overrides all other options.
-    if (paymentType != LoanPaymentType::Late && hasExpired(view, nextDueDateProxy))
+    if (paymentType != LoanPaymentType::Late && isPaymentLate(view, loan))
     {
         // If the payment is late, and the late flag was not set, it's not
         // valid
-        JLOG(j.warn()) << "Loan payment is overdue. Use the tfLoanLatePayment "
-                          "transaction "
-                          "flag to make a late payment. Loan was created on "
-                       << startDate << ", prev payment due date is " << prevPaymentDateProxy
-                       << ", next payment due date is " << nextDueDateProxy << ", ledger time is "
+        JLOG(j.warn()) << "Loan payment is overdue. Use the tfLoanLatePayment transaction flag to "
+                          "make a late payment. Loan was created on "
+                       << loan->at(sfStartDate) << ", prev payment due date is "
+                       << loan->at(sfPreviousPaymentDueDate) << ", next payment due date is "
+                       << nextDueDateProxy << ", ledger time is "
                        << view.parentCloseTime().time_since_epoch().count();
-        return Unexpected(tecEXPIRED);
+        return std::unexpected(tecEXPIRED);
     }
 
-    // -------------------------------------------------------------
-    // full payment handling
-    if (paymentType == LoanPaymentType::Full)
+    switch (paymentType)
     {
-        TenthBips32 const closeInterestRate{loan->at(sfCloseInterestRate)};
-        Number const closePaymentFee = roundToAsset(asset, loan->at(sfClosePaymentFee), loanScale);
-
-        LoanState const roundedLoanState = constructLoanState(
-            totalValueOutstandingProxy, principalOutstandingProxy, managementFeeOutstandingProxy);
-
-        auto const fullPaymentComponents = detail::computeFullPayment(
-            asset,
-            view,
-            principalOutstandingProxy,
-            managementFeeOutstandingProxy,
-            periodicPayment,
-            paymentRemainingProxy,
-            prevPaymentDateProxy,
-            startDate,
-            paymentInterval,
-            closeInterestRate,
-            loanScale,
-            roundedLoanState.interestDue,
-            periodicRate,
-            closePaymentFee,
-            amount,
-            managementFeeRate,
-            j);
-
-        if (fullPaymentComponents.has_value())
-        {
-            return doPayment(
-                *fullPaymentComponents,
-                totalValueOutstandingProxy,
-                principalOutstandingProxy,
-                managementFeeOutstandingProxy,
-                paymentRemainingProxy,
-                prevPaymentDateProxy,
-                nextDueDateProxy,
-                paymentInterval);
-        }
-
-        if (fullPaymentComponents.error())
-        {
-            // error() will be the TER returned if a payment is not made. It
-            // will only evaluate to true if it's unsuccessful. Otherwise,
-            // tesSUCCESS means nothing was done, so continue.
-            return Unexpected(fullPaymentComponents.error());
-        }
-
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::loanMakePayment : invalid full payment result");
-        JLOG(j.error()) << "Full payment computation failed unexpectedly.";
-        return Unexpected(tecINTERNAL);
-        // LCOV_EXCL_STOP
+        case LoanPaymentType::Full:
+            return detail::makeFullPayment(asset, view, loan, brokerSle, amount, j);
+        case LoanPaymentType::Late:
+            return detail::makeLatePayment(asset, view, loan, brokerSle, amount, j);
+        case LoanPaymentType::Regular:
+        case LoanPaymentType::Overpayment:
+            return detail::makeRegularPayment(asset, view, loan, brokerSle, amount, paymentType, j);
     }
 
-    // -------------------------------------------------------------
-    // compute the periodic payment info that will be needed whether the
-    // payment is late or regular
-    detail::ExtendedPaymentComponents periodic{
-        detail::computePaymentComponents(
-            asset,
-            loanScale,
-            totalValueOutstandingProxy,
-            principalOutstandingProxy,
-            managementFeeOutstandingProxy,
-            periodicPayment,
-            periodicRate,
-            paymentRemainingProxy,
-            managementFeeRate),
-        serviceFee};
-    XRPL_ASSERT_PARTS(
-        periodic.trackedPrincipalDelta >= 0,
-        "xrpl::loanMakePayment",
-        "regular payment valid principal");
-
-    // -------------------------------------------------------------
-    // late payment handling
-    if (paymentType == LoanPaymentType::Late)
-    {
-        TenthBips32 const lateInterestRate{loan->at(sfLateInterestRate)};
-        Number const latePaymentFee = loan->at(sfLatePaymentFee);
-
-        auto const latePaymentComponents = detail::computeLatePayment(
-            asset,
-            view,
-            principalOutstandingProxy,
-            nextDueDateProxy,
-            periodic,
-            lateInterestRate,
-            loanScale,
-            latePaymentFee,
-            amount,
-            managementFeeRate,
-            j);
-
-        if (latePaymentComponents.has_value())
-        {
-            return doPayment(
-                *latePaymentComponents,
-                totalValueOutstandingProxy,
-                principalOutstandingProxy,
-                managementFeeOutstandingProxy,
-                paymentRemainingProxy,
-                prevPaymentDateProxy,
-                nextDueDateProxy,
-                paymentInterval);
-        }
-
-        if (latePaymentComponents.error())
-        {
-            // error() will be the TER returned if a payment is not made. It
-            // will only evaluate to true if it's unsuccessful.
-            return Unexpected(latePaymentComponents.error());
-        }
-
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::loanMakePayment : invalid late payment result");
-        JLOG(j.error()) << "Late payment computation failed unexpectedly.";
-        return Unexpected(tecINTERNAL);
-        // LCOV_EXCL_STOP
-    }
-
-    // -------------------------------------------------------------
-    // regular periodic payment handling
-
-    XRPL_ASSERT_PARTS(
-        paymentType == LoanPaymentType::Regular || paymentType == LoanPaymentType::Overpayment,
-        "xrpl::loanMakePayment",
-        "regular payment type");
-
-    // Keep a running total of the actual parts paid
-    LoanPaymentParts totalParts;
-    Number totalPaid;
-    std::size_t numPayments = 0;
-
-    while ((amount >= (totalPaid + periodic.totalDue)) && paymentRemainingProxy > 0 &&
-           numPayments < kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION)
-    {
-        // Try to make more payments
-        XRPL_ASSERT_PARTS(
-            periodic.trackedPrincipalDelta >= 0,
-            "xrpl::loanMakePayment",
-            "payment pays non-negative principal");
-
-        totalPaid += periodic.totalDue;
-        totalParts += detail::doPayment(
-            periodic,
-            totalValueOutstandingProxy,
-            principalOutstandingProxy,
-            managementFeeOutstandingProxy,
-            paymentRemainingProxy,
-            prevPaymentDateProxy,
-            nextDueDateProxy,
-            paymentInterval);
-        ++numPayments;
-
-        XRPL_ASSERT_PARTS(
-            (periodic.specialCase == detail::PaymentSpecialCase::Final) ==
-                (paymentRemainingProxy == 0),
-            "xrpl::loanMakePayment",
-            "final payment is the final payment");
-
-        // Don't compute the next payment if this was the last payment
-        if (periodic.specialCase == detail::PaymentSpecialCase::Final)
-            break;
-
-        periodic = detail::ExtendedPaymentComponents{
-            detail::computePaymentComponents(
-                asset,
-                loanScale,
-                totalValueOutstandingProxy,
-                principalOutstandingProxy,
-                managementFeeOutstandingProxy,
-                periodicPayment,
-                periodicRate,
-                paymentRemainingProxy,
-                managementFeeRate),
-            serviceFee};
-    }
-
-    if (numPayments == 0)
-    {
-        JLOG(j.warn()) << "Regular loan payment amount is insufficient. Due: " << periodic.totalDue
-                       << ", paid: " << amount;
-        return Unexpected(tecINSUFFICIENT_PAYMENT);
-    }
-
-    XRPL_ASSERT_PARTS(
-        totalParts.principalPaid + totalParts.interestPaid + totalParts.feePaid == totalPaid,
-        "xrpl::loanMakePayment",
-        "payment parts add up");
-    XRPL_ASSERT_PARTS(totalParts.valueChange == 0, "xrpl::loanMakePayment", "no value change");
-
-    // -------------------------------------------------------------
-    // overpayment handling
-    if (paymentType == LoanPaymentType::Overpayment && loan->isFlag(lsfLoanOverpayment) &&
-        paymentRemainingProxy > 0 && totalPaid < amount &&
-        numPayments < kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION)
-    {
-        TenthBips32 const overpaymentInterestRate{loan->at(sfOverpaymentInterestRate)};
-        TenthBips32 const overpaymentFeeRate{loan->at(sfOverpaymentFee)};
-
-        // It shouldn't be possible for the overpayment to be greater than
-        // totalValueOutstanding, because that would have been processed as
-        // another normal payment. But cap it just in case.
-        Number const overpayment = std::min(amount - totalPaid, *totalValueOutstandingProxy);
-
-        detail::ExtendedPaymentComponents const overpaymentComponents =
-            detail::computeOverpaymentComponents(
-                asset,
-                loanScale,
-                overpayment,
-                overpaymentInterestRate,
-                overpaymentFeeRate,
-                managementFeeRate);
-
-        // Don't process an overpayment if the whole amount (or more!)
-        // gets eaten by fees and interest.
-        if (overpaymentComponents.trackedPrincipalDelta > 0)
-        {
-            XRPL_ASSERT_PARTS(
-                overpaymentComponents.untrackedInterest >= beast::kZERO,
-                "xrpl::loanMakePayment",
-                "overpayment penalty did not reduce value of loan");
-            // Can't just use `periodicPayment` here, because it might
-            // change
-            auto periodicPaymentProxy = loan->at(sfPeriodicPayment);
-            if (auto const overResult = detail::doOverpayment(
-                    asset,
-                    loanScale,
-                    overpaymentComponents,
-                    totalValueOutstandingProxy,
-                    principalOutstandingProxy,
-                    managementFeeOutstandingProxy,
-                    periodicPaymentProxy,
-                    periodicRate,
-                    paymentRemainingProxy,
-                    managementFeeRate,
-                    j))
-            {
-                totalParts += *overResult;
-            }
-            else if (overResult.error())
-            {
-                // error() will be the TER returned if a payment is not
-                // made. It will only evaluate to true if it's unsuccessful.
-                // Otherwise, tesSUCCESS means nothing was done, so
-                // continue.
-                return Unexpected(overResult.error());
-            }
-        }
-    }
-
-    // Check the final results are rounded, to double-check that the
-    // intermediate steps were rounded.
-    XRPL_ASSERT(
-        isRounded(asset, totalParts.principalPaid, loanScale) &&
-            totalParts.principalPaid >= beast::kZERO,
-        "xrpl::loanMakePayment : total principal paid is valid");
-    XRPL_ASSERT(
-        isRounded(asset, totalParts.interestPaid, loanScale) &&
-            totalParts.interestPaid >= beast::kZERO,
-        "xrpl::loanMakePayment : total interest paid is valid");
-    XRPL_ASSERT(
-        isRounded(asset, totalParts.valueChange, loanScale),
-        "xrpl::loanMakePayment : loan value change is valid");
-    XRPL_ASSERT(
-        isRounded(asset, totalParts.feePaid, loanScale) && totalParts.feePaid >= beast::kZERO,
-        "xrpl::loanMakePayment : fee paid is valid");
-    return totalParts;
+    // LCOV_EXCL_START
+    UNREACHABLE("xrpl::loanMakePayment : invalid payment type");
+    return std::unexpected(tecINTERNAL);
+    // LCOV_EXCL_STOP
 }
 }  // namespace xrpl

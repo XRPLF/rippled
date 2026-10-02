@@ -3,6 +3,7 @@
 #include <boost/container/flat_map.hpp>
 
 #include <condition_variable>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -11,8 +12,10 @@
 
 namespace xrpl {
 
-/** Manages a set of objects performing asynchronous I/O. */
-class IoList final
+/**
+ * Manages a set of objects performing asynchronous I/O.
+ */
+class IOList final
 {
 public:
     class Work
@@ -21,8 +24,8 @@ public:
         void
         destroy();
 
-        friend class IoList;
-        IoList* ios_ = nullptr;
+        friend class IOList;
+        IOList* ios_ = nullptr;
 
     public:
         virtual ~Work()
@@ -30,13 +33,14 @@ public:
             destroy();
         }
 
-        /** Return the IoList associated with the work.
-
-            Requirements:
-                The call to IoList::emplace to
-                create the work has already returned.
-        */
-        IoList&
+        /**
+         * Return the IOList associated with the work.
+         *
+         * Requirements:
+         *     The call to IOList::emplace to
+         *     create the work has already returned.
+         */
+        IOList&
         ios()
         {
             return *ios_;
@@ -59,73 +63,76 @@ private:
     std::function<void(void)> f_;
 
 public:
-    IoList() = default;
+    IOList() = default;
 
-    /** Destroy the list.
-
-        Effects:
-            Closes the IoList if it was not previously
-                closed. No finisher is invoked in this case.
-
-            Blocks until all work is destroyed.
-    */
-    ~IoList()
+    /**
+     * Destroy the list.
+     *
+     * Effects:
+     *     Closes the IOList if it was not previously
+     *         closed. No finisher is invoked in this case.
+     *
+     *     Blocks until all work is destroyed.
+     */
+    ~IOList()
     {
         destroy();
     }
 
-    /** Return `true` if the list is closed.
-
-        Thread Safety:
-            Undefined result if called concurrently
-            with close().
-    */
+    /**
+     * Return `true` if the list is closed.
+     *
+     * Thread Safety:
+     *     Undefined result if called concurrently
+     *     with close().
+     */
     [[nodiscard]] bool
     closed() const
     {
         return closed_;
     }
 
-    /** Create associated work if not closed.
-
-        Requirements:
-            `std::is_base_of_v<Work, T> == true`
-
-        Thread Safety:
-            May be called concurrently.
-
-        Effects:
-            Atomically creates, inserts, and returns new
-            work T, or returns nullptr if the io_list is
-            closed,
-
-        If the call succeeds and returns a new object,
-        it is guaranteed that a subsequent call to close
-        will invoke Work::close on the object.
-
-    */
+    /**
+     * Create associated work if not closed.
+     *
+     * Requirements:
+     *     `std::is_base_of_v<Work, T> == true`
+     *
+     * Thread Safety:
+     *     May be called concurrently.
+     *
+     * Effects:
+     *     Atomically creates, inserts, and returns new
+     *     work T, or returns nullptr if the io_list is
+     *     closed,
+     *
+     * If the call succeeds and returns a new object,
+     * it is guaranteed that a subsequent call to close
+     * will invoke Work::close on the object.
+     */
     template <class T, class... Args>
     std::shared_ptr<T>
     emplace(Args&&... args);
 
-    /** Cancel active I/O.
-
-        Thread Safety:
-            May not be called concurrently.
-
-        Effects:
-            Associated work is closed.
-
-            Finisher if provided, will be called when
-            all associated work is destroyed. The finisher
-            may be called from a foreign thread, or within
-            the call to this function.
-
-            Only the first call to close will set the
-            finisher.
-
-            No effect after the first call.
-    */
+    /**
+     * Cancel active I/O.
+     *
+     * Thread Safety:
+     *     May not be called concurrently.
+     *
+     * Effects:
+     *     Associated work is closed.
+     *
+     *     Finisher if provided, will be called when
+     *     all associated work is destroyed. The finisher
+     *     may be called from a foreign thread, or within
+     *     the call to this function.
+     *
+     *     Only the first call to close will set the
+     *     finisher.
+     *
+     *     No effect after the first call.
+     */
     template <class Finisher>
     void
     close(Finisher&& f);
@@ -136,20 +143,21 @@ public:
         close([] {});
     }
 
-    /** Block until the io_list stops.
-
-        Effects:
-            The caller is blocked until the io_list is
-            closed and all associated work is destroyed.
-
-        Thread safety:
-            May be called concurrently.
-
-        Preconditions:
-            No call to io_context::run on any io_context
-            used by work objects associated with this io_list
-            exists in the caller's call stack.
-    */
+    /**
+     * Block until the io_list stops.
+     *
+     * Effects:
+     *     The caller is blocked until the io_list is
+     *     closed and all associated work is destroyed.
+     *
+     * Thread safety:
+     *     May be called concurrently.
+     *
+     * Preconditions:
+     *     No call to io_context::run on any io_context
+     *     used by work objects associated with this io_list
+     *     exists in the caller's call stack.
+     */
     template <class = void>
     void
     join();
@@ -159,7 +167,7 @@ public:
 
 template <class>
 void
-IoList::Work::destroy()
+IOList::Work::destroy()
 {
     if (!ios_)
         return;
@@ -179,7 +187,7 @@ IoList::Work::destroy()
 
 template <class>
 void
-IoList::destroy()
+IOList::destroy()
 {
     close();
     join();
@@ -187,9 +195,9 @@ IoList::destroy()
 
 template <class T, class... Args>
 std::shared_ptr<T>
-IoList::emplace(Args&&... args)
+IOList::emplace(Args&&... args)
 {
-    static_assert(std::is_base_of_v<Work, T>, "T must derive from IoList::Work");
+    static_assert(std::is_base_of_v<Work, T>, "T must derive from IOList::Work");
     if (closed_)
         return nullptr;
     auto sp = std::make_shared<T>(std::forward<Args>(args)...);
@@ -211,7 +219,7 @@ IoList::emplace(Args&&... args)
 
 template <class Finisher>
 void
-IoList::close(Finisher&& f)
+IOList::close(Finisher&& f)
 {
     std::unique_lock<std::mutex> lock(m_);
     if (closed_)
@@ -237,7 +245,7 @@ IoList::close(Finisher&& f)
 
 template <class>
 void
-IoList::join()
+IOList::join()
 {
     std::unique_lock<std::mutex> lock(m_);
     cv_.wait(lock, [&] { return closed_ && n_ == 0; });

@@ -2,6 +2,8 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/detail/PlainHTTPPeer.h>
 #include <xrpl/server/detail/SSLHTTPPeer.h>
 #include <xrpl/server/detail/io_list.h>
@@ -19,17 +21,18 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/predef.h>
 
+#include <exception>
+#include <stdexcept>
+
 #if !BOOST_OS_WINDOWS
 #include <sys/resource.h>
 
 #include <dirent.h>
-#include <unistd.h>
 #endif
 
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -37,31 +40,33 @@
 
 namespace xrpl {
 
-/** A listening socket. */
+/**
+ * A listening socket.
+ */
 template <class Handler>
-class Door : public IoList::Work, public std::enable_shared_from_this<Door<Handler>>
+class Door : public IOList::Work, public std::enable_shared_from_this<Door<Handler>>
 {
 private:
-    using clock_type = std::chrono::steady_clock;
-    using timer_type = boost::asio::basic_waitable_timer<clock_type>;
-    using error_code = boost::system::error_code;
-    using yield_context = boost::asio::yield_context;
-    using protocol_type = boost::asio::ip::tcp;
-    using acceptor_type = protocol_type::acceptor;
-    using endpoint_type = protocol_type::endpoint;
-    using socket_type = boost::asio::ip::tcp::socket;
-    using stream_type = boost::beast::tcp_stream;
+    using ClockType = std::chrono::steady_clock;
+    using TimerType = boost::asio::basic_waitable_timer<ClockType>;
+    using ErrorCode = boost::system::error_code;
+    using YieldContext = boost::asio::yield_context;
+    using ProtocolType = boost::asio::ip::tcp;
+    using AcceptorType = ProtocolType::acceptor;
+    using EndpointType = ProtocolType::endpoint;
+    using SocketType = boost::asio::ip::tcp::socket;
+    using StreamType = boost::beast::tcp_stream;
 
     // Detects SSL on a socket
-    class Detector : public IoList::Work, public std::enable_shared_from_this<Detector>
+    class Detector : public IOList::Work, public std::enable_shared_from_this<Detector>
     {
     private:
         Port const& port_;
         Handler& handler_;
         boost::asio::io_context& ioc_;
-        stream_type stream_;
-        socket_type& socket_;
-        endpoint_type remote_address_;
+        StreamType stream_;
+        SocketType& socket_;
+        EndpointType remoteAddress_;
         boost::asio::strand<boost::asio::io_context::executor_type> strand_;
         beast::Journal const j_;
 
@@ -70,8 +75,8 @@ private:
             Port const& port,
             Handler& handler,
             boost::asio::io_context& ioc,
-            stream_type&& stream,
-            endpoint_type remoteAddress,
+            StreamType&& stream,
+            EndpointType remoteAddress,
             beast::Journal j);
         void
         run();
@@ -80,26 +85,29 @@ private:
 
     private:
         void
-        doDetect(yield_context yield);
+        doDetect(YieldContext yield);
     };
 
     beast::Journal const j_;
     Port const& port_;
     Handler& handler_;
     boost::asio::io_context& ioc_;
-    acceptor_type acceptor_;
+    AcceptorType acceptor_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     bool ssl_{
-        port_.protocol.count("https") > 0 || port_.protocol.count("wss") > 0 ||
-        port_.protocol.count("wss2") > 0 || port_.protocol.count("peer") > 0};
+        port_.protocol.contains("https") || port_.protocol.contains("wss") ||
+        port_.protocol.contains("wss2") || port_.protocol.contains("peer")};
     bool plain_{
-        port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 ||
-        (port_.protocol.count("ws2") != 0u)};
-    static constexpr std::chrono::milliseconds kINITIAL_ACCEPT_DELAY{50};
-    static constexpr std::chrono::milliseconds kMAX_ACCEPT_DELAY{2000};
-    std::chrono::milliseconds accept_delay_{kINITIAL_ACCEPT_DELAY};
-    boost::asio::steady_timer backoff_timer_;
-    static constexpr double kFREE_FD_THRESHOLD = 0.70;
+        port_.protocol.contains("http") || port_.protocol.contains("ws") ||
+        (port_.protocol.contains("ws2"))};
+    static constexpr std::chrono::milliseconds kInitialAcceptDelay{50};
+    static constexpr std::chrono::milliseconds kMaxAcceptDelay{2000};
+    std::chrono::milliseconds acceptDelay_{kInitialAcceptDelay};
+    boost::asio::steady_timer backoffTimer_;
+    static constexpr std::uint64_t kMaxUsedFdPercent = 70;
+    static constexpr std::chrono::milliseconds kFdSampleInterval{250};
+    ClockType::time_point fdSampleAt_;
+    bool cachedThrottle_{false};
 
     struct FDStats
     {
@@ -123,16 +131,17 @@ public:
     void
     run();
 
-    /** Close the Door listening socket and connections.
-        The listening socket is closed, and all open connections
-        belonging to the Door are closed.
-        Thread Safety:
-            May be called concurrently
-    */
+    /**
+     * Close the Door listening socket and connections.
+     * The listening socket is closed, and all open connections
+     * belonging to the Door are closed.
+     * Thread Safety:
+     *     May be called concurrently
+     */
     void
     close() override;
 
-    [[nodiscard]] endpoint_type
+    [[nodiscard]] EndpointType
     getEndpoint() const
     {
         return acceptor_.local_endpoint();
@@ -144,11 +153,11 @@ private:
     create(
         bool ssl,
         ConstBufferSequence const& buffers,
-        stream_type&& stream,
-        endpoint_type remoteAddress);
+        StreamType&& stream,
+        EndpointType remoteAddress);
 
     void
-    doAccept(yield_context yield);
+    doAccept(YieldContext yield);
 };
 
 template <class Handler>
@@ -156,15 +165,15 @@ Door<Handler>::Detector::Detector(
     Port const& port,
     Handler& handler,
     boost::asio::io_context& ioc,
-    stream_type&& stream,
-    endpoint_type remoteAddress,
+    StreamType&& stream,
+    EndpointType remoteAddress,
     beast::Journal j)
     : port_(port)
     , handler_(handler)
     , ioc_(ioc)
     , stream_(std::move(stream))
     , socket_(stream_.socket())
-    , remote_address_(std::move(remoteAddress))
+    , remoteAddress_(std::move(remoteAddress))
     , strand_(boost::asio::make_strand(ioc_))
     , j_(j)
 {
@@ -175,7 +184,7 @@ void
 Door<Handler>::Detector::run()
 {
     util::spawn(
-        strand_, std::bind(&Detector::doDetect, this->shared_from_this(), std::placeholders::_1));
+        strand_, [self = this->shared_from_this()](YieldContext yield) { self->doDetect(yield); });
 }
 
 template <class Handler>
@@ -199,18 +208,18 @@ Door<Handler>::Detector::doDetect(boost::asio::yield_context doYield)
         if (ssl)
         {
             if (auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
-                    port_, handler_, ioc_, j_, remote_address_, buf.data(), std::move(stream_)))
+                    port_, handler_, ioc_, j_, remoteAddress_, buf.data(), std::move(stream_)))
                 sp->run();
             return;
         }
         if (auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
-                port_, handler_, ioc_, j_, remote_address_, buf.data(), std::move(stream_)))
+                port_, handler_, ioc_, j_, remoteAddress_, buf.data(), std::move(stream_)))
             sp->run();
         return;
     }
     if (ec != boost::asio::error::operation_aborted)
     {
-        JLOG(j_.trace()) << "Error detecting ssl: " << ec.message() << " from " << remote_address_;
+        JLOG(j_.trace()) << "Error detecting ssl: " << ec.message() << " from " << remoteAddress_;
     }
 }
 
@@ -220,7 +229,7 @@ template <class Handler>
 void
 Door<Handler>::reOpen()
 {
-    error_code ec;
+    ErrorCode ec;
 
     if (acceptor_.is_open())
     {
@@ -234,7 +243,7 @@ Door<Handler>::reOpen()
         }
     }
 
-    endpoint_type const localAddress = endpoint_type(port_.ip, port_.port);
+    EndpointType const localAddress = EndpointType(port_.ip, port_.port);
 
     acceptor_.open(localAddress.protocol(), ec);
     if (ec)
@@ -279,7 +288,8 @@ Door<Handler>::Door(
     , ioc_(ioContext)
     , acceptor_(ioContext)
     , strand_(boost::asio::make_strand(ioContext))
-    , backoff_timer_(ioContext)
+    , backoffTimer_(ioContext)
+    , fdSampleAt_(ClockType::now() - kFdSampleInterval)
 {
     reOpen();
 }
@@ -289,8 +299,7 @@ void
 Door<Handler>::run()
 {
     util::spawn(
-        strand_,
-        std::bind(&Door<Handler>::doAccept, this->shared_from_this(), std::placeholders::_1));
+        strand_, [self = this->shared_from_this()](YieldContext yield) { self->doAccept(yield); });
 }
 
 template <class Handler>
@@ -299,11 +308,10 @@ Door<Handler>::close()
 {
     if (!strand_.running_in_this_thread())
     {
-        return boost::asio::post(
-            strand_, std::bind(&Door<Handler>::close, this->shared_from_this()));
+        return boost::asio::post(strand_, [self = this->shared_from_this()] { self->close(); });
     }
-    backoff_timer_.cancel();
-    error_code ec;
+    backoffTimer_.cancel();
+    ErrorCode ec;
     acceptor_.close(ec);
 }
 
@@ -315,8 +323,8 @@ void
 Door<Handler>::create(
     bool ssl,
     ConstBufferSequence const& buffers,
-    stream_type&& stream,
-    endpoint_type remoteAddress)
+    StreamType&& stream,
+    EndpointType remoteAddress)
 {
     if (ssl)
     {
@@ -338,18 +346,18 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
     {
         if (shouldThrottleForFds())
         {
-            backoff_timer_.expires_after(accept_delay_);
+            JLOG(j_.warn()) << "Throttling do_accept for " << acceptDelay_.count() << "ms.";
+            backoffTimer_.expires_after(acceptDelay_);
             boost::system::error_code tec;
-            backoff_timer_.async_wait(doYield[tec]);
-            accept_delay_ = std::min(accept_delay_ * 2, kMAX_ACCEPT_DELAY);
-            JLOG(j_.warn()) << "Throttling do_accept for " << accept_delay_.count() << "ms.";
+            backoffTimer_.async_wait(doYield[tec]);
+            acceptDelay_ = std::min(acceptDelay_ * 2, kMaxAcceptDelay);
             continue;
         }
 
-        error_code ec;
-        endpoint_type remoteAddress;
-        stream_type stream(ioc_);
-        socket_type& socket = stream.socket();
+        ErrorCode ec;
+        EndpointType remoteAddress;
+        StreamType stream(ioc_);
+        SocketType& socket = stream.socket();
         acceptor_.async_accept(socket, remoteAddress, doYield[ec]);
         if (ec)
         {
@@ -359,14 +367,17 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
             if (ec == boost::asio::error::no_descriptors ||
                 ec == boost::asio::error::no_buffer_space)
             {
-                JLOG(j_.warn()) << "accept: Too many open files. Pausing for "
-                                << accept_delay_.count() << "ms.";
+                char const* const cause = (ec == boost::asio::error::no_descriptors)
+                    ? "too many open files"
+                    : "kernel buffer space exhausted";
+                JLOG(j_.warn()) << "accept: " << cause << ". Pausing for " << acceptDelay_.count()
+                                << "ms.";
 
-                backoff_timer_.expires_after(accept_delay_);
+                backoffTimer_.expires_after(acceptDelay_);
                 boost::system::error_code tec;
-                backoff_timer_.async_wait(doYield[tec]);
+                backoffTimer_.async_wait(doYield[tec]);
 
-                accept_delay_ = std::min(accept_delay_ * 2, kMAX_ACCEPT_DELAY);
+                acceptDelay_ = std::min(acceptDelay_ * 2, kMaxAcceptDelay);
             }
             else
             {
@@ -375,7 +386,7 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
             continue;
         }
 
-        accept_delay_ = kINITIAL_ACCEPT_DELAY;
+        acceptDelay_ = kInitialAcceptDelay;
 
         if (ssl_ && plain_)
         {
@@ -403,11 +414,11 @@ Door<Handler>::queryFdStats() const
         return std::nullopt;
     s.limit = static_cast<std::uint64_t>(rl.rlim_cur);
 #if BOOST_OS_LINUX
-    constexpr char const* kFD_DIR = "/proc/self/fd";
+    static constexpr char const* kFdDir = "/proc/self/fd";
 #else
-    constexpr char const* kFD_DIR = "/dev/fd";
+    static constexpr char const* kFdDir = "/dev/fd";
 #endif
-    if (DIR* d = ::opendir(kFD_DIR))
+    if (DIR* d = ::opendir(kFdDir))
     {
         std::uint64_t cnt = 0;
         while (::readdir(d) != nullptr)
@@ -428,14 +439,15 @@ Door<Handler>::shouldThrottleForFds()
 #if BOOST_OS_WINDOWS
     return false;
 #else
-    auto const stats = queryFdStats();
-    if (!stats || stats->limit == 0)
-        return false;
+    auto const now = ClockType::now();
+    if (now - fdSampleAt_ < kFdSampleInterval)
+        return cachedThrottle_;
 
-    auto const& s = *stats;
-    auto const free = (s.limit > s.used) ? (s.limit - s.used) : 0ull;
-    double const freeRatio = static_cast<double>(free) / static_cast<double>(s.limit);
-    return freeRatio < kFREE_FD_THRESHOLD;
+    fdSampleAt_ = now;
+    auto const stats = queryFdStats();
+    cachedThrottle_ =
+        stats && stats->limit > 0 && stats->used * 100 > stats->limit * kMaxUsedFdPercent;
+    return cachedThrottle_;
 #endif
 }
 

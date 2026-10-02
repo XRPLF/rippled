@@ -3,9 +3,13 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/detail/Entry.h>
 
-namespace xrpl::Resource {
+#include <vector>
 
-/** A set of imported consumer data from a gossip origin. */
+namespace xrpl::resource {
+
+/**
+ * A set of imported consumer data from a gossip origin.
+ */
 struct Import
 {
     struct Item
@@ -22,10 +26,10 @@ struct Import
     }
 
     // When the imported data expires
-    clock_type::time_point whenExpires;
+    ClockType::time_point whenExpires;
 
     // List of remote entries
     std::vector<Item> items;
 };
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource

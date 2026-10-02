@@ -13,13 +13,13 @@
 
 namespace xrpl {
 
-hash_set<PathAsset>
+HashSet<PathAsset>
 accountSourceAssets(
     AccountID const& account,
     std::shared_ptr<AssetCache> const& lrCache,
     bool includeXRP)
 {
-    hash_set<PathAsset> assets;
+    HashSet<PathAsset> assets;
 
     // YYY Only bother if they are above reserve
     if (includeXRP)
@@ -32,7 +32,7 @@ accountSourceAssets(
             auto& saBalance = rspEntry.getBalance();
 
             // Filter out non
-            if (saBalance > beast::kZERO
+            if (saBalance > beast::kZero
                 // Have IOUs to send.
                 || (rspEntry.getLimitPeer()
                     // Peer extends credit.
@@ -49,7 +49,7 @@ accountSourceAssets(
     {
         for (auto const& rspEntry : *mpts)
         {
-            if (!rspEntry.isZeroBalance() && !rspEntry.isMaxedOut())
+            if (rspEntry.canSend(account))
                 assets.insert(rspEntry.getMptID());
         }
     }
@@ -57,13 +57,13 @@ accountSourceAssets(
     return assets;
 }
 
-hash_set<PathAsset>
+HashSet<PathAsset>
 accountDestAssets(
     AccountID const& account,
     std::shared_ptr<AssetCache> const& lrCache,
     bool includeXRP)
 {
-    hash_set<PathAsset> assets;
+    HashSet<PathAsset> assets;
 
     if (includeXRP)
         assets.insert(xrpCurrency());
@@ -86,8 +86,10 @@ accountDestAssets(
     {
         for (auto const& rspEntry : *mpts)
         {
-            if (rspEntry.isZeroBalance() && !rspEntry.isMaxedOut())
-                assets.insert(rspEntry.getMptID());
+            // Any cached MPT entry means this account already has an issuance
+            // or MPToken object. A maxed-out issuance does not prevent
+            // receiving existing MPT from another holder.
+            assets.insert(rspEntry.getMptID());
         }
     }
 

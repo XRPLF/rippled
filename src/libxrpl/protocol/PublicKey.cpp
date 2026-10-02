@@ -5,6 +5,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/detail/secp256k1.h>
 #include <xrpl/protocol/digest.h>
@@ -86,38 +87,39 @@ sliceToHex(Slice const& slice)
         s.reserve(2 * (slice.size() + 1));
         s = "0x";
     }
-    for (int i = 0; i < slice.size(); ++i)
+    for (std::uint8_t const byte : slice)
     {
-        constexpr char kHEX[] = "0123456789ABCDEF";
-        s += kHEX[((slice[i] & 0xf0) >> 4)];
-        s += kHEX[((slice[i] & 0x0f) >> 0)];
+        static constexpr char kHex[] = "0123456789ABCDEF";
+        s += kHex[((byte & 0xf0) >> 4)];
+        s += kHex[((byte & 0x0f) >> 0)];
     }
     return s;
 }
 
-/** Determine whether a signature is canonical.
-    Canonical signatures are important to protect against signature morphing
-    attacks.
-    @param vSig the signature data
-    @param sigLen the length of the signature
-    @param strict_param whether to enforce strictly canonical semantics
-
-    @note For more details please see:
-    https://xrpl.org/transaction-malleability.html
-    https://bitcointalk.org/index.php?topic=8392.msg127623#msg127623
-    https://github.com/sipa/bitcoin/commit/58bc86e37fda1aec270bccb3df6c20fbd2a6591c
-*/
+/**
+ * Determine whether a signature is canonical.
+ * Canonical signatures are important to protect against signature morphing
+ * attacks.
+ * @param vSig the signature data
+ * @param sigLen the length of the signature
+ * @param strict_param whether to enforce strictly canonical semantics
+ *
+ * @note For more details please see:
+ * https://xrpl.org/transaction-malleability.html
+ * https://bitcointalk.org/index.php?topic=8392.msg127623#msg127623
+ * https://github.com/sipa/bitcoin/commit/58bc86e37fda1aec270bccb3df6c20fbd2a6591c
+ */
 std::optional<ECDSACanonicality>
 ecdsaCanonicality(Slice const& sig)
 {
-    using uint264 = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<
+    using UInt264 = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<
         264,
         264,
         boost::multiprecision::signed_magnitude,
         boost::multiprecision::unchecked,
         void>>;
 
-    static uint264 const kG(
+    static UInt264 const kG(
         "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");  // NOLINT(readability-identifier-naming)
 
     // The format of a signature should be:
@@ -132,11 +134,11 @@ ecdsaCanonicality(Slice const& sig)
     if (!r || !s || !p.empty())
         return std::nullopt;
 
-    uint264 const rNum(sliceToHex(*r));
+    UInt264 const rNum(sliceToHex(*r));
     if (rNum >= kG)
         return std::nullopt;
 
-    uint264 const sNum(sliceToHex(*s));
+    UInt264 const sNum(sliceToHex(*s));
     if (sNum >= kG)
         return std::nullopt;
 
@@ -173,7 +175,7 @@ ed25519Canonical(Slice const& sig)
 
 PublicKey::PublicKey(Slice const& slice)
 {
-    if (slice.size() < kSIZE)
+    if (slice.size() < kSize)
     {
         logicError(
             "PublicKey::PublicKey - Input slice cannot be an undersized "
@@ -182,12 +184,12 @@ PublicKey::PublicKey(Slice const& slice)
 
     if (!publicKeyType(slice))
         logicError("PublicKey::PublicKey invalid type");
-    std::memcpy(buf_, slice.data(), kSIZE);
+    std::memcpy(buf_, slice.data(), kSize);
 }
 
 PublicKey::PublicKey(PublicKey const& other)
 {
-    std::memcpy(buf_, other.buf_, kSIZE);
+    std::memcpy(buf_, other.buf_, kSize);
 }
 
 PublicKey&
@@ -195,7 +197,7 @@ PublicKey::operator=(PublicKey const& other)
 {
     if (this != &other)
     {
-        std::memcpy(buf_, other.buf_, kSIZE);
+        std::memcpy(buf_, other.buf_, kSize);
     }
 
     return *this;
@@ -211,7 +213,7 @@ publicKeyType(Slice const& slice)
         if (slice[0] == 0xED)
             return KeyType::Ed25519;
 
-        if (slice[0] == 0x02 || slice[0] == 0x03)
+        if (slice[0] == kEcCompressedPrefixEvenY || slice[0] == kEcCompressedPrefixOddY)
             return KeyType::Secp256k1;
     }
 
@@ -221,7 +223,7 @@ publicKeyType(Slice const& slice)
 bool
 verifyDigest(
     PublicKey const& publicKey,
-    uint256 const& digest,
+    UInt256 const& digest,
     Slice const& sig,
     bool mustBeFullyCanonical) noexcept
 {
@@ -293,11 +295,11 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
 NodeID
 calcNodeID(PublicKey const& pk)
 {
-    static_assert(NodeID::kBYTES == sizeof(RipeshaHasher::result_type));
+    static_assert(NodeID::kBytes == sizeof(RipeshaHasher::result_type));
 
     RipeshaHasher h;
     h(pk.data(), pk.size());
-    return NodeID{static_cast<RipeshaHasher::result_type>(h)};
+    return NodeID::fromRaw(static_cast<RipeshaHasher::result_type>(h));
 }
 
 }  // namespace xrpl

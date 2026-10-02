@@ -1,13 +1,20 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+
+#include <xrpl/json/json_value.h>
+
+#include <source_location>
+#include <utility>
 
 namespace xrpl::test::jtx {
 
-/** A transaction testing environment wrapper.
-    Transactions submitted in sign-and-submit mode
-    by default.
-*/
+/**
+ * A transaction testing environment wrapper.
+ * Transactions submitted in sign-and-submit mode
+ * by default.
+ */
 class EnvSs
 {
 private:
@@ -27,7 +34,7 @@ private:
         }
 
         void
-        operator()(json::Value const& params = json::NullValue)
+        operator()(json::Value const& params = json::ValueType::Null)
         {
             env_.signAndSubmit(jt_, params, loc_);
         }

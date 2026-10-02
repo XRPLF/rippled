@@ -3,7 +3,9 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/partitioned_unordered_map.h>
 
+#include <cstddef>
 #include <ostream>
+#include <string>
 
 namespace xrpl {
 
@@ -12,21 +14,21 @@ namespace xrpl {
 
 class SHAMapHash
 {
-    uint256 hash_;
+    UInt256 hash_;
 
 public:
     SHAMapHash() = default;
-    explicit SHAMapHash(uint256 const& hash) : hash_(hash)
+    explicit SHAMapHash(UInt256 const& hash) : hash_(hash)
     {
     }
 
-    [[nodiscard]] uint256 const&
-    asUint256() const
+    [[nodiscard]] UInt256 const&
+    asUInt256() const
     {
         return hash_;
     }
-    uint256&
-    asUint256()
+    UInt256&
+    asUInt256()
     {
         return hash_;
     }
@@ -83,17 +85,11 @@ public:
     }
 };
 
-inline bool
-operator!=(SHAMapHash const& x, SHAMapHash const& y)
-{
-    return !(x == y);
-}
-
 template <>
 inline std::size_t
 extract(SHAMapHash const& key)
 {
-    return *reinterpret_cast<std::size_t const*>(key.asUint256().data());
+    return *reinterpret_cast<std::size_t const*>(key.asUInt256().data());
 }
 
 }  // namespace xrpl

@@ -8,13 +8,13 @@
 
 namespace xrpl {
 
-std::unordered_map<protocol::MessageType, TrafficCount::Category> const kTYPE_LOOKUP = {
+std::unordered_map<protocol::MessageType, TrafficCount::Category> const kTypeLookup = {
     {protocol::mtPING, TrafficCount::Category::Base},
     {protocol::mtSTATUS_CHANGE, TrafficCount::Category::Base},
+    {protocol::mtCLUSTER, TrafficCount::Category::Cluster},
     {protocol::mtMANIFESTS, TrafficCount::Category::Manifests},
     {protocol::mtENDPOINTS, TrafficCount::Category::Overlay},
     {protocol::mtTRANSACTION, TrafficCount::Category::Transaction},
-    {protocol::mtVALIDATOR_LIST, TrafficCount::Category::Validatorlist},
     {protocol::mtVALIDATOR_LIST_COLLECTION, TrafficCount::Category::Validatorlist},
     {protocol::mtVALIDATION, TrafficCount::Category::Validation},
     {protocol::mtPROPOSE_LEDGER, TrafficCount::Category::Proposal},
@@ -33,7 +33,7 @@ TrafficCount::categorize(
     protocol::MessageType type,
     bool inbound)
 {
-    if (auto item = kTYPE_LOOKUP.find(type); item != kTYPE_LOOKUP.end())
+    if (auto item = kTypeLookup.find(type); item != kTypeLookup.end())
         return item->second;
 
     if (type == protocol::mtHAVE_SET)
@@ -133,5 +133,14 @@ TrafficCount::categorize(
     }
 
     return TrafficCount::Category::Unknown;
+}
+
+TrafficCount::Category
+TrafficCount::attribute(Category cat, IsFromCluster isFromCluster)
+{
+    if (cat != Category::Cluster)
+        return cat;
+
+    return (isFromCluster == IsFromCluster::Yes) ? Category::Cluster : Category::Unknown;
 }
 }  // namespace xrpl

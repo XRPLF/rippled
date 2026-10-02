@@ -30,12 +30,12 @@ Paths::operator()(Env& env, JTx& jt) const
     auto const to = env.lookup(jv[jss::Destination].asString());
     auto const amount = amountFromJson(sfAmount, jv[jss::Amount]);
 
-    std::optional<uint256> domain;
+    std::optional<UInt256> domain;
     if (jv.isMember(sfDomainID.jsonName))
     {
         if (!jv[sfDomainID.jsonName].isString())
             return;
-        uint256 num;
+        UInt256 num;
         auto const s = jv[sfDomainID.jsonName].asString();
         if (num.parseHex(s))
             domain = num;
@@ -61,20 +61,20 @@ Paths::operator()(Env& env, JTx& jt) const
     // VFALCO TODO API to allow caller to examine the STPathSet
     // VFALCO isDefault should be renamed to empty()
     if (!found.isDefault())
-        jv[jss::Paths] = found.getJson(JsonOptions::KNone);
+        jv[jss::Paths] = found.getJson(JsonOptions::Values::None);
 }
 
 //------------------------------------------------------------------------------
 
 Path::Path(STPath const& p)
 {
-    jv_ = p.getJson(JsonOptions::KNone);
+    jv_ = p.getJson(JsonOptions::Values::None);
 }
 
 json::Value&
 Path::create()
 {
-    return jv_.append(json::ObjectValue);
+    return jv_.append(json::ValueType::Object);
 }
 
 void

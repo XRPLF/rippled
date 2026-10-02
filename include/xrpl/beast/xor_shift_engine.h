@@ -26,12 +26,14 @@ public:
     result_type
     operator()();
 
-    static result_type constexpr min()
+    static constexpr result_type
+    min()
     {
         return std::numeric_limits<result_type>::min();
     }
 
-    static result_type constexpr max()
+    static constexpr result_type
+    max()
     {
         return std::numeric_limits<result_type>::max();
     }
@@ -83,14 +85,15 @@ XorShiftEngine<Unused>::murmurhash3(result_type x) -> result_type
 
 }  // namespace detail
 
-/** XOR-shift Generator.
-
-    Meets the requirements of UniformRandomNumberGenerator.
-
-    Simple and fast RNG based on:
-    http://xorshift.di.unimi.it/xorshift128plus.c
-    does not accept seed==0
-*/
-using xor_shift_engine = detail::XorShiftEngine<>;
+/**
+ * XOR-shift Generator.
+ *
+ * Meets the requirements of UniformRandomNumberGenerator.
+ *
+ * Simple and fast RNG based on:
+ * http://xorshift.di.unimi.it/xorshift128plus.c
+ * does not accept seed==0
+ */
+using XorShiftEngine = detail::XorShiftEngine<>;
 
 }  // namespace beast

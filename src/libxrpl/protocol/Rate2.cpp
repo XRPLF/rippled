@@ -9,7 +9,7 @@
 
 namespace xrpl {
 
-Rate const kPARITY_RATE(QUALITY_ONE);
+Rate const kParityRate(QUALITY_ONE);
 
 namespace detail {
 
@@ -35,7 +35,7 @@ multiply(STAmount const& amount, Rate const& rate)
 {
     XRPL_ASSERT(rate.value, "xrpl::nft::multiply : nonzero rate input");
 
-    if (rate == kPARITY_RATE)
+    if (rate == kParityRate)
         return amount;
 
     return multiply(amount, detail::asAmount(rate), amount.asset());
@@ -46,7 +46,7 @@ multiplyRound(STAmount const& amount, Rate const& rate, bool roundUp)
 {
     XRPL_ASSERT(rate.value, "xrpl::nft::multiplyRound : nonzero rate input");
 
-    if (rate == kPARITY_RATE)
+    if (rate == kParityRate)
         return amount;
 
     return mulRound(amount, detail::asAmount(rate), amount.asset(), roundUp);
@@ -57,7 +57,7 @@ multiplyRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool
 {
     XRPL_ASSERT(rate.value, "xrpl::nft::multiplyRound(Issue) : nonzero rate input");
 
-    if (rate == kPARITY_RATE)
+    if (rate == kParityRate)
     {
         return amount;
     }
@@ -70,7 +70,7 @@ divide(STAmount const& amount, Rate const& rate)
 {
     XRPL_ASSERT(rate.value, "xrpl::nft::divide : nonzero rate input");
 
-    if (rate == kPARITY_RATE)
+    if (rate == kParityRate)
         return amount;
 
     return divide(amount, detail::asAmount(rate), amount.asset());
@@ -81,7 +81,7 @@ divideRound(STAmount const& amount, Rate const& rate, bool roundUp)
 {
     XRPL_ASSERT(rate.value, "xrpl::nft::divideRound : nonzero rate input");
 
-    if (rate == kPARITY_RATE)
+    if (rate == kParityRate)
         return amount;
 
     return divRound(amount, detail::asAmount(rate), amount.asset(), roundUp);
@@ -92,7 +92,7 @@ divideRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool r
 {
     XRPL_ASSERT(rate.value, "xrpl::nft::divideRound(Issue) : nonzero rate input");
 
-    if (rate == kPARITY_RATE)
+    if (rate == kParityRate)
         return amount;
 
     return divRound(amount, detail::asAmount(rate), asset, roundUp);

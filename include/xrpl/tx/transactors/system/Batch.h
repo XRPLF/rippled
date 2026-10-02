@@ -1,15 +1,25 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <array>
+#include <cstdint>
+#include <optional>
 
 namespace xrpl {
 
 class Batch : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit Batch(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -30,14 +40,14 @@ public:
     static NotTEC
     checkSign(PreclaimContext const& ctx);
 
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
     TER
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -47,7 +57,7 @@ public:
         ReadView const& view,
         beast::Journal const& j) override;
 
-    static constexpr auto kDISABLED_TX_TYPES = std::to_array<TxType>({
+    static constexpr auto kDisabledTxTypes = std::to_array<TxType>({
         ttVAULT_CREATE,
         ttVAULT_SET,
         ttVAULT_DELETE,
@@ -64,6 +74,16 @@ public:
         ttLOAN_MANAGE,
         ttLOAN_PAY,
     });
+
+private:
+    // Skips signature verification for inner txns, so keep it private: it must
+    // only be reached through Batch::checkSign.
+    static NotTEC
+    checkBatchSign(PreclaimContext const& ctx);
+
+    // nullopt on overflow or oversized signer arrays.
+    static std::optional<XRPAmount>
+    calculateBaseFeeImpl(ReadView const& view, STTx const& tx);
 };
 
 }  // namespace xrpl

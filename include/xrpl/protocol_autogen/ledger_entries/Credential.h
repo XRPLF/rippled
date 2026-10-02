@@ -33,7 +33,7 @@ public:
      * @brief Construct a Credential ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Credential(std::shared_ptr<SLE const> sle)
+    explicit Credential(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -219,7 +219,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    CredentialBuilder(std::shared_ptr<SLE const> sle)
+    CredentialBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltCREDENTIAL)
         {
@@ -228,7 +228,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfSubject (SoeRequired)
@@ -335,7 +337,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     Credential
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return Credential{std::make_shared<SLE>(std::move(object_), index)};
     }

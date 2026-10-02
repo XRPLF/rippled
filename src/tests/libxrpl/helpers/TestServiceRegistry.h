@@ -1,7 +1,9 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -13,28 +15,34 @@
 #include <helpers/TestFamily.h>
 #include <helpers/TestSink.h>
 
+#include <cstdint>
+#include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-/** Logs implementation that creates TestSink instances. */
+/**
+ * Logs implementation that creates TestSink instances.
+ */
 class TestLogs : public Logs
 {
 public:
-    explicit TestLogs(beast::severities::Severity level = beast::severities::KWarning) : Logs(level)
+    explicit TestLogs(beast::Severity level = beast::Severity::Warning) : Logs(level)
     {
     }
 
     std::unique_ptr<beast::Journal::Sink>
-    makeSink(std::string const&, beast::severities::Severity threshold) override
+    makeSink(std::string const&, beast::Severity threshold) override
     {
         return std::make_unique<TestSink>(threshold);
     }
 };
 
-/** Simple NetworkIDService implementation for tests. */
+/**
+ * Simple NetworkIDService implementation for tests.
+ */
 class TestNetworkIDService final : public NetworkIDService
 {
 public:
@@ -52,18 +60,19 @@ private:
     std::uint32_t networkID_;
 };
 
-/** Test implementation of ServiceRegistry for unit tests.
-
-    This class provides real implementations for services that can be
-    instantiated from libxrpl (such as Logs, io_context, caches), and
-    throws std::logic_error for services that require the full Application.
-
-    Tests can subclass this to provide additional services they need.
-*/
+/**
+ * Test implementation of ServiceRegistry for unit tests.
+ *
+ * This class provides real implementations for services that can be
+ * instantiated from libxrpl (such as Logs, io_context, caches), and
+ * throws std::logic_error for services that require the full Application.
+ *
+ * Tests can subclass this to provide additional services they need.
+ */
 class TestServiceRegistry : public ServiceRegistry
 {
-    TestLogs logs_{beast::severities::KWarning};
-    boost::asio::io_context io_context_;
+    TestLogs logs_{beast::Severity::Warning};
+    boost::asio::io_context ioContext_;
     TestFamily family_{logs_.journal("TestFamily")};
     LoadFeeTrack feeTrack_{logs_.journal("LoadFeeTrack")};
     TestNetworkIDService networkIDService_;
@@ -81,7 +90,7 @@ class TestServiceRegistry : public ServiceRegistry
         stopwatch(),
         logs_.journal("TaggedCache")};
     PendingSaves pendingSaves_;
-    std::optional<uint256> trapTxID_;
+    std::optional<UInt256> trapTxID_;
 
 public:
     TestServiceRegistry() = default;
@@ -204,14 +213,14 @@ public:
         throw std::logic_error("TestServiceRegistry::peerReservations() not implemented");
     }
 
-    Resource::Manager&
+    resource::Manager&
     getResourceManager() override
     {
         throw std::logic_error("TestServiceRegistry::getResourceManager() not implemented");
     }
 
     // Storage services
-    NodeStore::Database&
+    node_store::Database&
     getNodeStore() override
     {
         throw std::logic_error("TestServiceRegistry::getNodeStore() not implemented");
@@ -242,7 +251,7 @@ public:
         throw std::logic_error("TestServiceRegistry::getInboundTransactions() not implemented");
     }
 
-    TaggedCache<uint256, AcceptedLedger>&
+    TaggedCache<UInt256, AcceptedLedger>&
     getAcceptedLedgerCache() override
     {
         throw std::logic_error("TestServiceRegistry::getAcceptedLedgerCache() not implemented");
@@ -344,7 +353,7 @@ public:
     boost::asio::io_context&
     getIOContext() override
     {
-        return io_context_;
+        return ioContext_;
     }
 
     Logs&
@@ -353,7 +362,7 @@ public:
         return logs_;
     }
 
-    std::optional<uint256> const&
+    std::optional<UInt256> const&
     getTrapTxID() const override
     {
         return trapTxID_;
@@ -374,5 +383,4 @@ public:
     }
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

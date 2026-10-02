@@ -1,13 +1,24 @@
 #pragma once
 
 #include <xrpld/app/rdb/PeerFinder.h>
-#include <xrpld/peerfinder/detail/Store.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/peerfinder/detail/Store.h>
 #include <xrpl/rdb/SociDB.h>
 
-namespace xrpl::PeerFinder {
+#include <soci/session.h>
 
-/** Database persistence for PeerFinder using SQLite */
+#include <cstddef>
+#include <string>
+#include <vector>
+
+namespace xrpl::peer_finder {
+
+/**
+ * Database persistence for PeerFinder using SQLite
+ */
 class StoreSqdb : public Store
 {
 private:
@@ -15,12 +26,7 @@ private:
     soci::session sqlDb_;
 
 public:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum {
-        // This determines the on-database format of the data
-        CurrentSchemaVersion = 4
-    };
+    static constexpr auto kCurrentSchemaVersion = 4;  // on-database format version
 
     explicit StoreSqdb(beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
         : journal_(journal)
@@ -39,12 +45,12 @@ public:
     // Loads the bootstrap cache, calling the callback for each entry
     //
     std::size_t
-    load(load_callback const& cb) override
+    load(LoadCallback const& cb) override
     {
         std::size_t n(0);
 
         readPeerFinderDB(sqlDb_, [&](std::string const& s, int valence) {
-            beast::IP::Endpoint const endpoint(beast::IP::Endpoint::fromString(s));
+            beast::ip::Endpoint const endpoint(beast::ip::Endpoint::fromString(s));
 
             if (!isUnspecified(endpoint))
             {
@@ -73,7 +79,7 @@ public:
     void
     update()
     {
-        updatePeerFinderDB(sqlDb_, CurrentSchemaVersion, journal_);
+        updatePeerFinderDB(sqlDb_, kCurrentSchemaVersion, journal_);
     }
 
 private:
@@ -84,4 +90,4 @@ private:
     }
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

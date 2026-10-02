@@ -7,8 +7,11 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <new>
 #include <optional>
 #include <span>
+#include <type_traits>
 
 namespace beast {
 
@@ -21,9 +24,9 @@ private:
     static_assert(sizeof(std::size_t) == 8, "requires 64-bit std::size_t");
     // Have an internal buffer to avoid the streaming API
     // A 64-byte buffer should to be big enough for us
-    static constexpr std::size_t kINTERNAL_BUFFER_SIZE = 64;
+    static constexpr std::size_t kInternalBufferSize = 64;
 
-    alignas(64) std::array<std::uint8_t, kINTERNAL_BUFFER_SIZE> buffer_{};
+    alignas(64) std::array<std::uint8_t, kInternalBufferSize> buffer_{};
     std::span<std::uint8_t> readBuffer_;
     std::span<std::uint8_t> writeBuffer_;
 
@@ -102,7 +105,7 @@ private:
     }
 
 public:
-    static constexpr auto const kENDIAN = boost::endian::order::native;
+    static constexpr auto kEndian = boost::endian::order::native;
 
     Xxhasher(Xxhasher const&) = delete;
     Xxhasher&
@@ -121,14 +124,18 @@ public:
         }
     }
 
-    template <class Seed, std::enable_if_t<std::is_unsigned_v<Seed>>* = nullptr>
-    explicit Xxhasher(Seed seed) : seed_(seed)
+    template <class Seed>
+    explicit Xxhasher(Seed seed)
+        requires(std::is_unsigned_v<Seed>)
+        : seed_(seed)
     {
         resetBuffers();
     }
 
-    template <class Seed, std::enable_if_t<std::is_unsigned_v<Seed>>* = nullptr>
-    Xxhasher(Seed seed, Seed) : seed_(seed)
+    template <class Seed>
+    Xxhasher(Seed seed, Seed)
+        requires(std::is_unsigned_v<Seed>)
+        : seed_(seed)
     {
         resetBuffers();
     }

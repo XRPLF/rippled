@@ -137,9 +137,9 @@ InnerObjectFormats::InnerObjectFormats()
             {sfCredentialType, SoeRequired},
         });
 
-    add(sfPermission.jsonName.cStr(), sfPermission.getCode(), {{sfPermissionValue, SoeRequired}});
+    add(sfPermission.jsonName, sfPermission.getCode(), {{sfPermissionValue, SoeRequired}});
 
-    add(sfBatchSigner.jsonName.cStr(),
+    add(sfBatchSigner.jsonName,
         sfBatchSigner.getCode(),
         {{sfAccount, SoeRequired},
          {sfSigningPubKey, SoeOptional},
@@ -160,13 +160,21 @@ InnerObjectFormats::InnerObjectFormats()
             {sfTxnSignature, SoeOptional},
             {sfSigners, SoeOptional},
         });
+
+    add(sfSponsorSignature.jsonName,
+        sfSponsorSignature.getCode(),
+        {
+            {sfSigningPubKey, SoeOptional},
+            {sfTxnSignature, SoeOptional},
+            {sfSigners, SoeOptional},
+        });
 }
 
 InnerObjectFormats const&
 InnerObjectFormats::getInstance()
 {
-    static InnerObjectFormats const kINSTANCE;
-    return kINSTANCE;
+    static InnerObjectFormats const kInstance;
+    return kInstance;
 }
 
 SOTemplate const*

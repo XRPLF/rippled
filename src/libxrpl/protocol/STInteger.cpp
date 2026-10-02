@@ -16,7 +16,7 @@
 #include <cstdint>
 #include <iterator>
 #include <string>
-#include <system_error>
+#include <system_error>  // IWYU pragma: keep
 
 namespace xrpl {
 
@@ -209,7 +209,7 @@ STUInt64::getJson(JsonOptions) const
         return str;
     };
 
-    if (auto const& fName = getFName(); fName.shouldMeta(SField::SMdBaseTen))
+    if (auto const& fName = getFName(); fName.shouldMeta(SField::kSmdBaseTen))
     {
         return convertToString(value_, 10);  // Convert to base 10
     }

@@ -33,17 +33,17 @@ namespace xrpl {
 
 // FIXME: Need to clean up ledgers by index at some point
 
-LedgerHistory::LedgerHistory(beast::insight::Collector::ptr const& collector, Application& app)
+LedgerHistory::LedgerHistory(beast::insight::Collector::Ptr const& collector, Application& app)
     : app_(app)
     , collector_(collector)
-    , mismatch_counter_(collector->makeCounter("ledger.history", "mismatch"))
-    , ledgers_by_hash_(
+    , mismatchCounter_(collector->makeCounter("ledger.history", "mismatch"))
+    , ledgersByHash_(
           "LedgerCache",
           app_.config().getValueFor(SizedItem::LedgerSize),
           std::chrono::seconds{app_.config().getValueFor(SizedItem::LedgerAge)},
           stopwatch(),
           app_.getJournal("TaggedCache"))
-    , consensus_validated_(
+    , consensusValidated_(
           "ConsensusValidated",
           64,
           std::chrono::minutes{5},
@@ -62,10 +62,9 @@ LedgerHistory::insert(std::shared_ptr<Ledger const> const& ledger, bool validate
     XRPL_ASSERT(
         ledger->stateMap().getHash().isNonZero(), "xrpl::LedgerHistory::insert : nonzero hash");
 
-    std::unique_lock const sl(ledgers_by_hash_.peekMutex());
+    std::unique_lock const sl(ledgersByHash_.peekMutex());
 
-    bool const alreadyHad =
-        ledgers_by_hash_.canonicalizeReplaceCache(ledger->header().hash, ledger);
+    bool const alreadyHad = ledgersByHash_.canonicalizeReplaceCache(ledger->header().hash, ledger);
     if (validated)
         ledgersByIndex_[ledger->header().seq] = ledger->header().hash;
 
@@ -75,7 +74,7 @@ LedgerHistory::insert(std::shared_ptr<Ledger const> const& ledger, bool validate
 LedgerHash
 LedgerHistory::getLedgerHash(LedgerIndex index)
 {
-    std::unique_lock const sl(ledgers_by_hash_.peekMutex());
+    std::unique_lock const sl(ledgersByHash_.peekMutex());
     if (auto it = ledgersByIndex_.find(index); it != ledgersByIndex_.end())
         return it->second;
     return {};
@@ -85,19 +84,19 @@ std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerBySeq(LedgerIndex index)
 {
     {
-        std::unique_lock sl(ledgers_by_hash_.peekMutex());
+        std::unique_lock sl(ledgersByHash_.peekMutex());
         auto it = ledgersByIndex_.find(index);
 
         if (it != ledgersByIndex_.end())
         {
-            uint256 const hash = it->second;
+            UInt256 const hash = it->second;
             sl.unlock();
             return getLedgerByHash(hash);
         }
     }
 
     Rules const rules{app_.config().features};
-    Fees const fees = app_.config().FEES.toFees();
+    Fees const fees = app_.config().fees.toFees();
     std::shared_ptr<Ledger const> ret = loadByIndex(index, rules, fees, app_);
 
     if (!ret)
@@ -108,11 +107,11 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 
     {
         // Add this ledger to the local tracking by index
-        std::unique_lock const sl(ledgers_by_hash_.peekMutex());
+        std::unique_lock const sl(ledgersByHash_.peekMutex());
 
         XRPL_ASSERT(
             ret->isImmutable(), "xrpl::LedgerHistory::getLedgerBySeq : immutable result ledger");
-        ledgers_by_hash_.canonicalizeReplaceClient(ret->header().hash, ret);
+        ledgersByHash_.canonicalizeReplaceClient(ret->header().hash, ret);
         ledgersByIndex_[ret->header().seq] = ret->header().hash;
         return (ret->header().seq == index) ? ret : nullptr;
     }
@@ -121,7 +120,7 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 {
-    auto ret = ledgers_by_hash_.fetch(hash);
+    auto ret = ledgersByHash_.fetch(hash);
 
     if (ret)
     {
@@ -137,7 +136,7 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
     }
 
     Rules const rules{app_.config().features};
-    Fees const fees = app_.config().FEES.toFees();
+    Fees const fees = app_.config().fees.toFees();
     ret = loadByHash(hash, rules, fees, app_);
 
     if (!ret)
@@ -148,7 +147,7 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
     XRPL_ASSERT(
         ret->header().hash == hash,
         "xrpl::LedgerHistory::getLedgerByHash : loaded ledger hash match");
-    ledgers_by_hash_.canonicalizeReplaceClient(ret->header().hash, ret);
+    ledgersByHash_.canonicalizeReplaceClient(ret->header().hash, ret);
     XRPL_ASSERT(
         ret->header().hash == hash, "xrpl::LedgerHistory::getLedgerByHash : result hash match");
 
@@ -156,7 +155,7 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 }
 
 static void
-logOne(ReadView const& ledger, uint256 const& tx, char const* msg, beast::Journal& j)
+logOne(ReadView const& ledger, UInt256 const& tx, char const* msg, beast::Journal& j)
 {
     auto metaData = ledger.txRead(tx).second;
 
@@ -164,7 +163,7 @@ logOne(ReadView const& ledger, uint256 const& tx, char const* msg, beast::Journa
     {
         JLOG(j.debug()) << "MISMATCH on TX " << tx << ": " << msg
                         << " is missing this transaction:\n"
-                        << metaData->getJson(JsonOptions::KNone);
+                        << metaData->getJson(JsonOptions::Values::None);
     }
     else
     {
@@ -177,10 +176,10 @@ static void
 logMetadataDifference(
     ReadView const& builtLedger,
     ReadView const& validLedger,
-    uint256 const& tx,
+    UInt256 const& tx,
     beast::Journal j)
 {
-    auto getMeta = [](ReadView const& ledger, uint256 const& txID) {
+    auto getMeta = [](ReadView const& ledger, UInt256 const& txID) {
         std::optional<TxMeta> ret;
         if (auto meta = ledger.txRead(txID).second)
             ret.emplace(txID, ledger.seq(), *meta);
@@ -245,38 +244,38 @@ logMetadataDifference(
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx
                                 << ": Different result, index and nodes!";
-                JLOG(j.debug()) << " Built:\n" << builtMetaData->getJson(JsonOptions::KNone);
-                JLOG(j.debug()) << " Valid:\n" << validMetaData->getJson(JsonOptions::KNone);
+                JLOG(j.debug()) << " Built:\n" << builtMetaData->getJson(JsonOptions::Values::None);
+                JLOG(j.debug()) << " Valid:\n" << validMetaData->getJson(JsonOptions::Values::None);
             }
             else if (resultDiff)
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx << ": Different result and nodes!";
                 JLOG(j.debug()) << " Built:"
                                 << " Result: " << builtMetaData->getResult() << " Nodes:\n"
-                                << builtNodes.getJson(JsonOptions::KNone);
+                                << builtNodes.getJson(JsonOptions::Values::None);
                 JLOG(j.debug()) << " Valid:"
                                 << " Result: " << validMetaData->getResult() << " Nodes:\n"
-                                << validNodes.getJson(JsonOptions::KNone);
+                                << validNodes.getJson(JsonOptions::Values::None);
             }
             else if (indexDiff)
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx << ": Different index and nodes!";
                 JLOG(j.debug()) << " Built:"
                                 << " Index: " << builtMetaData->getIndex() << " Nodes:\n"
-                                << builtNodes.getJson(JsonOptions::KNone);
+                                << builtNodes.getJson(JsonOptions::Values::None);
                 JLOG(j.debug()) << " Valid:"
                                 << " Index: " << validMetaData->getIndex() << " Nodes:\n"
-                                << validNodes.getJson(JsonOptions::KNone);
+                                << validNodes.getJson(JsonOptions::Values::None);
             }
             else  // nodes_diff
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx << ": Different nodes!";
                 JLOG(j.debug()) << " Built:"
                                 << " Nodes:\n"
-                                << builtNodes.getJson(JsonOptions::KNone);
+                                << builtNodes.getJson(JsonOptions::Values::None);
                 JLOG(j.debug()) << " Valid:"
                                 << " Nodes:\n"
-                                << validNodes.getJson(JsonOptions::KNone);
+                                << validNodes.getJson(JsonOptions::Values::None);
             }
         }
 
@@ -286,13 +285,13 @@ logMetadataDifference(
     if (validMetaData)
     {
         JLOG(j.error()) << "MISMATCH on TX " << tx << ": Metadata Difference. Valid=\n"
-                        << validMetaData->getJson(JsonOptions::KNone);
+                        << validMetaData->getJson(JsonOptions::Values::None);
     }
 
     if (builtMetaData)
     {
         JLOG(j.error()) << "MISMATCH on TX " << tx << ": Metadata Difference. Built=\n"
-                        << builtMetaData->getJson(JsonOptions::KNone);
+                        << builtMetaData->getJson(JsonOptions::Values::None);
     }
 }
 
@@ -314,12 +313,12 @@ void
 LedgerHistory::handleMismatch(
     LedgerHash const& built,
     LedgerHash const& valid,
-    std::optional<uint256> const& builtConsensusHash,
-    std::optional<uint256> const& validatedConsensusHash,
+    std::optional<UInt256> const& builtConsensusHash,
+    std::optional<UInt256> const& validatedConsensusHash,
     json::Value const& consensus)
 {
     XRPL_ASSERT(built != valid, "xrpl::LedgerHistory::handleMismatch : unequal hashes");
-    ++mismatch_counter_;
+    ++mismatchCounter_;
 
     auto builtLedger = getLedgerByHash(built);
     auto validLedger = getLedgerByHash(valid);
@@ -369,8 +368,10 @@ LedgerHistory::handleMismatch(
                              << " validated: " << to_string(*validatedConsensusHash);
         }
         else
+        {
             JLOG(j_.error()) << "MISMATCH with same consensus transaction set: "
                              << to_string(*builtConsensusHash);
+        }
     }
 
     // Find differences between built and valid ledgers
@@ -382,8 +383,10 @@ LedgerHistory::handleMismatch(
         JLOG(j_.error()) << "MISMATCH with same " << builtTx.size() << " transactions";
     }
     else
+    {
         JLOG(j_.error()) << "MISMATCH with " << builtTx.size() << " built and " << validTx.size()
                          << " valid transactions.";
+    }
 
     JLOG(j_.error()) << "built\n" << getJson({*builtLedger, {}});
     JLOG(j_.error()) << "valid\n" << getJson({*validLedger, {}});
@@ -423,17 +426,17 @@ LedgerHistory::handleMismatch(
 void
 LedgerHistory::builtLedger(
     std::shared_ptr<Ledger const> const& ledger,
-    uint256 const& consensusHash,
+    UInt256 const& consensusHash,
     json::Value consensus)
 {
     LedgerIndex const index = ledger->header().seq;
     LedgerHash const hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::builtLedger : nonzero hash");
 
-    std::unique_lock const sl(consensus_validated_.peekMutex());
+    std::unique_lock const sl(consensusValidated_.peekMutex());
 
     auto entry = std::make_shared<CvEntry>();
-    consensus_validated_.canonicalizeReplaceClient(index, entry);
+    consensusValidated_.canonicalizeReplaceClient(index, entry);
 
     if (entry->validated && !entry->built)
     {
@@ -463,16 +466,16 @@ LedgerHistory::builtLedger(
 void
 LedgerHistory::validatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
-    std::optional<uint256> const& consensusHash)
+    std::optional<UInt256> const& consensusHash)
 {
     LedgerIndex const index = ledger->header().seq;
     LedgerHash const hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::validatedLedger : nonzero hash");
 
-    std::unique_lock const sl(consensus_validated_.peekMutex());
+    std::unique_lock const sl(consensusValidated_.peekMutex());
 
     auto entry = std::make_shared<CvEntry>();
-    consensus_validated_.canonicalizeReplaceClient(index, entry);
+    consensusValidated_.canonicalizeReplaceClient(index, entry);
 
     if (entry->built && !entry->validated)
     {
@@ -499,12 +502,13 @@ LedgerHistory::validatedLedger(
     entry->validatedConsensusHash = consensusHash;
 }
 
-/** Ensure ledgers_by_hash_ doesn't have the wrong hash for a particular index
+/**
+ * Ensure ledgers_by_hash_ doesn't have the wrong hash for a particular index
  */
 bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
-    std::unique_lock const sl(ledgers_by_hash_.peekMutex());
+    std::unique_lock const sl(ledgersByHash_.peekMutex());
     auto it = ledgersByIndex_.find(ledgerIndex);
 
     if ((it != ledgersByIndex_.end()) && (it->second != ledgerHash))
@@ -518,11 +522,11 @@ LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 void
 LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
 {
-    for (LedgerHash const it : ledgers_by_hash_.getKeys())
+    for (LedgerHash const it : ledgersByHash_.getKeys())
     {
         auto const ledger = getLedgerByHash(it);
         if (!ledger || ledger->header().seq < seq)
-            ledgers_by_hash_.del(it, false);
+            ledgersByHash_.del(it, false);
     }
 }
 

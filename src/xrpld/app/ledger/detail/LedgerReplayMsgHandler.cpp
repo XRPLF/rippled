@@ -45,7 +45,7 @@ LedgerReplayMsgHandler::processProofPathRequest(
     protocol::TMProofPathResponse reply;
 
     if (!packet.has_key() || !packet.has_ledgerhash() || !packet.has_type() ||
-        packet.ledgerhash().size() != uint256::size() || packet.key().size() != uint256::size() ||
+        packet.ledgerhash().size() != UInt256::size() || packet.key().size() != UInt256::size() ||
         !protocol::TMLedgerMapType_IsValid(packet.type()))
     {
         JLOG(journal_.debug()) << "getProofPath: Invalid request";
@@ -56,8 +56,8 @@ LedgerReplayMsgHandler::processProofPathRequest(
     reply.set_ledgerhash(packet.ledgerhash());
     reply.set_type(packet.type());
 
-    uint256 const key(packet.key());
-    uint256 const ledgerHash(packet.ledgerhash());
+    UInt256 const key = UInt256::fromRaw(packet.key());
+    UInt256 const ledgerHash = UInt256::fromRaw(packet.ledgerhash());
     auto ledger = app_.getLedgerMaster().getLedgerByHash(ledgerHash);
     if (!ledger)
     {
@@ -101,41 +101,54 @@ LedgerReplayMsgHandler::processProofPathRequest(
     return reply;
 }
 
-bool
+ReplayMsgStatus
 LedgerReplayMsgHandler::processProofPathResponse(
     std::shared_ptr<protocol::TMProofPathResponse> const& msg)
 {
     protocol::TMProofPathResponse const& reply = *msg;
-    if (reply.has_error() || !reply.has_key() || !reply.has_ledgerhash() || !reply.has_type() ||
-        !reply.has_ledgerheader() || reply.path_size() == 0)
+    if (reply.has_error())
     {
-        JLOG(journal_.debug()) << "Bad message: Error reply";
-        return false;
+        JLOG(journal_.debug()) << "ProofPathResponse: peer reported error";
+        return ReplayMsgStatus::BadData;
+    }
+    if (!reply.has_key() || !reply.has_ledgerhash() || !reply.has_type() ||
+        !reply.has_ledgerheader() || reply.path_size() == 0 ||
+        reply.ledgerhash().size() != UInt256::size() || reply.key().size() != UInt256::size())
+    {
+        JLOG(journal_.debug()) << "ProofPathResponse: malformed (missing or wrong-size fields)";
+        return ReplayMsgStatus::Malformed;
     }
 
     if (reply.type() != protocol::lmACCOUNT_STATE)
     {
-        JLOG(journal_.debug()) << "Bad message: we only support the state ShaMap for now";
-        return false;
+        JLOG(journal_.debug()) << "ProofPathResponse: malformed (unsupported map type)";
+        return ReplayMsgStatus::Malformed;
     }
 
     // deserialize the header
-    auto info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
-    uint256 const replyHash(reply.ledgerhash());
+    LedgerHeader info;
+    try
+    {
+        info = deserializeHeader(makeSlice(reply.ledgerheader()));
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(journal_.debug()) << "ProofPathResponse: malformed header (" << e.what() << ")";
+        return ReplayMsgStatus::Malformed;
+    }
+    UInt256 const replyHash = UInt256::fromRaw(reply.ledgerhash());
     if (calculateLedgerHash(info) != replyHash)
     {
-        JLOG(journal_.debug()) << "Bad message: Hash mismatch";
-        return false;
+        JLOG(journal_.debug()) << "ProofPathResponse: malformed (hash mismatch)";
+        return ReplayMsgStatus::Malformed;
     }
     info.hash = replyHash;
 
-    uint256 const key(reply.key());
+    UInt256 const key = UInt256::fromRaw(reply.key());
     if (key != keylet::skip().key)
     {
-        JLOG(journal_.debug()) << "Bad message: we only support the short skip list for now. "
-                                  "Key in reply "
-                               << key;
-        return false;
+        JLOG(journal_.debug()) << "ProofPathResponse: malformed (unexpected key " << key << ")";
+        return ReplayMsgStatus::Malformed;
     }
 
     // verify the skip list
@@ -148,26 +161,35 @@ LedgerReplayMsgHandler::processProofPathResponse(
 
     if (!SHAMap::verifyProofPath(info.accountHash, key, path))
     {
-        JLOG(journal_.debug()) << "Bad message: Proof path verify failed";
-        return false;
+        JLOG(journal_.debug()) << "ProofPathResponse: malformed (proof path verify failed)";
+        return ReplayMsgStatus::Malformed;
     }
 
     // deserialize the SHAMapItem
-    auto node = SHAMapTreeNode::makeFromWire(makeSlice(path.front()));
+    SHAMapTreeNodePtr node;
+    try
+    {
+        node = SHAMapTreeNode::makeFromWire(makeSlice(path.front()));
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(journal_.debug()) << "ProofPathResponse: malformed SHAMap node (" << e.what() << ")";
+        return ReplayMsgStatus::Malformed;
+    }
     if (!node || !node->isLeaf())
     {
-        JLOG(journal_.debug()) << "Bad message: Cannot deserialize";
-        return false;
+        JLOG(journal_.debug()) << "ProofPathResponse: malformed (not a leaf node)";
+        return ReplayMsgStatus::Malformed;
     }
 
     if (auto item = safeDowncast<SHAMapLeafNode*>(node.get())->peekItem())
     {
         replayer_.gotSkipList(info, item);
-        return true;
+        return ReplayMsgStatus::Ok;
     }
 
-    JLOG(journal_.debug()) << "Bad message: Cannot get ShaMapItem";
-    return false;
+    JLOG(journal_.debug()) << "ProofPathResponse: malformed (no SHAMapItem)";
+    return ReplayMsgStatus::Malformed;
 }
 
 protocol::TMReplayDeltaResponse
@@ -177,7 +199,7 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
     protocol::TMReplayDeltaRequest const& packet = *msg;
     protocol::TMReplayDeltaResponse reply;
 
-    if (!packet.has_ledgerhash() || packet.ledgerhash().size() != uint256::size())
+    if (!packet.has_ledgerhash() || packet.ledgerhash().size() != UInt256::size())
     {
         JLOG(journal_.debug()) << "getReplayDelta: Invalid request";
         reply.set_error(protocol::TMReplyError::reBAD_REQUEST);
@@ -185,7 +207,7 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
     }
     reply.set_ledgerhash(packet.ledgerhash());
 
-    uint256 const ledgerHash{packet.ledgerhash()};
+    UInt256 const ledgerHash = UInt256::fromRaw(packet.ledgerhash());
     auto ledger = app_.getLedgerMaster().getLedgerByHash(ledgerHash);
     if (!ledger || !ledger->isImmutable())
     {
@@ -205,27 +227,42 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
     });
 
     JLOG(journal_.debug()) << "getReplayDelta for ledger " << ledgerHash << " txMap hash "
-                           << txMap.getHash().asUint256();
+                           << txMap.getHash().asUInt256();
     return reply;
 }
 
-bool
+ReplayMsgStatus
 LedgerReplayMsgHandler::processReplayDeltaResponse(
     std::shared_ptr<protocol::TMReplayDeltaResponse> const& msg)
 {
     protocol::TMReplayDeltaResponse const& reply = *msg;
-    if (reply.has_error() || !reply.has_ledgerheader())
+    if (reply.has_error())
     {
-        JLOG(journal_.debug()) << "Bad message: Error reply";
-        return false;
+        JLOG(journal_.debug()) << "ReplayDeltaResponse: peer reported error";
+        return ReplayMsgStatus::BadData;
+    }
+    if (!reply.has_ledgerheader() || !reply.has_ledgerhash() ||
+        reply.ledgerhash().size() != UInt256::size())
+    {
+        JLOG(journal_.debug()) << "ReplayDeltaResponse: malformed (missing or wrong-size fields)";
+        return ReplayMsgStatus::Malformed;
     }
 
-    auto info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
-    uint256 const replyHash(reply.ledgerhash());
+    LedgerHeader info;
+    try
+    {
+        info = deserializeHeader(makeSlice(reply.ledgerheader()));
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(journal_.debug()) << "ReplayDeltaResponse: malformed header (" << e.what() << ")";
+        return ReplayMsgStatus::Malformed;
+    }
+    UInt256 const replyHash = UInt256::fromRaw(reply.ledgerhash());
     if (calculateLedgerHash(info) != replyHash)
     {
-        JLOG(journal_.debug()) << "Bad message: Hash mismatch";
-        return false;
+        JLOG(journal_.debug()) << "ReplayDeltaResponse: malformed (hash mismatch)";
+        return ReplayMsgStatus::Malformed;
     }
     info.hash = replyHash;
 
@@ -250,8 +287,8 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
             auto tx = std::make_shared<STTx const>(txSit);
             if (!tx)
             {
-                JLOG(journal_.debug()) << "Bad message: Cannot deserialize";
-                return false;
+                JLOG(journal_.debug()) << "ReplayDeltaResponse: malformed (tx deserialize)";
+                return ReplayMsgStatus::Malformed;
             }
             auto tid = tx->getTransactionID();
             STObject meta(metaSit, sfMetadata);
@@ -260,25 +297,26 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
             if (!txMap.addGiveItem(
                     SHAMapNodeType::TnTransactionMd, makeShamapitem(tid, shaMapItemData.slice())))
             {
-                JLOG(journal_.debug()) << "Bad message: Cannot deserialize";
-                return false;
+                JLOG(journal_.debug()) << "ReplayDeltaResponse: malformed (tx map add)";
+                return ReplayMsgStatus::Malformed;
             }
         }
     }
-    catch (std::exception const&)
+    catch (std::exception const& e)
     {
-        JLOG(journal_.debug()) << "Bad message: Cannot deserialize";
-        return false;
+        JLOG(journal_.debug()) << "ReplayDeltaResponse: malformed transactions (" << e.what()
+                               << ")";
+        return ReplayMsgStatus::Malformed;
     }
 
-    if (txMap.getHash().asUint256() != info.txHash)
+    if (txMap.getHash().asUInt256() != info.txHash)
     {
-        JLOG(journal_.debug()) << "Bad message: Transactions verify failed";
-        return false;
+        JLOG(journal_.debug()) << "ReplayDeltaResponse: malformed (transactions verify failed)";
+        return ReplayMsgStatus::Malformed;
     }
 
     replayer_.gotReplayDelta(info, std::move(orderedTxns));
-    return true;
+    return ReplayMsgStatus::Ok;
 }
 
 }  // namespace xrpl

@@ -7,13 +7,13 @@
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <xrpl.pb.h>
 
@@ -29,23 +29,19 @@ namespace xrpl {
 using namespace std::chrono_literals;
 
 // Timeout interval in milliseconds
-auto constexpr kTX_ACQUIRE_TIMEOUT = 250ms;
+constexpr auto kTxAcquireTimeout = 250ms;
 
-// Need to be named before converting
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum {
-    NormTimeouts = 4,
-    MaxTimeouts = 20,
-};
+static constexpr auto kNormTimeouts = 4;
+static constexpr auto kMaxTimeouts = 20;
 
 TransactionAcquire::TransactionAcquire(
     Application& app,
-    uint256 const& hash,
+    UInt256 const& hash,
     std::unique_ptr<PeerSet> peerSet)
     : TimeoutCounter(
           app,
           hash,
-          kTX_ACQUIRE_TIMEOUT,
+          kTxAcquireTimeout,
           {.jobType = JtTxnData, .jobName = "TxAcq", .jobLimit = {}},
           app.getJournal("TransactionAcquire"))
     , peerSet_(std::move(peerSet))
@@ -68,7 +64,7 @@ TransactionAcquire::done()
         JLOG(journal_.debug()) << "Acquired TX set " << hash_;
         map_->setImmutable();
 
-        uint256 const& hash(hash_);
+        UInt256 const& hash(hash_);
         std::shared_ptr<SHAMap> const& map(map_);
         auto const pap = &app_;
         // Note that, when we're in the process of shutting down, addJob()
@@ -85,14 +81,14 @@ TransactionAcquire::done()
 void
 TransactionAcquire::onTimer(bool progress, ScopedLockType& psl)
 {
-    if (timeouts_ > MaxTimeouts)
+    if (timeouts_ > kMaxTimeouts)
     {
         failed_ = true;
         done();
         return;
     }
 
-    if (timeouts_ >= NormTimeouts)
+    if (timeouts_ >= kNormTimeouts)
         trigger(nullptr);
 
     addPeers(1);
@@ -175,7 +171,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
 
 SHAMapAddNode
 TransactionAcquire::takeNodes(
-    std::vector<std::pair<SHAMapNodeID, Slice>> const& data,
+    std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
     std::shared_ptr<Peer> const& peer)
 {
     ScopedLockType const sl(mtx_);
@@ -199,7 +195,7 @@ TransactionAcquire::takeNodes(
 
         ConsensusTransSetSF sf(app_, app_.getTempNodeCache());
 
-        for (auto const& d : data)
+        for (auto& d : data)
         {
             if (d.first.isRoot())
             {
@@ -207,18 +203,22 @@ TransactionAcquire::takeNodes(
                 {
                     JLOG(journal_.debug()) << "Got root TXS node, already have it";
                 }
-                else if (!map_->addRootNode(SHAMapHash{hash_}, d.second, nullptr).isGood())
+                else if (!map_->addRootNode(SHAMapHash{hash_}, std::move(d.second), nullptr)
+                              .isGood())
                 {
-                    JLOG(journal_.warn()) << "TX acquire got bad root node";
+                    JLOG(journal_.warn()) << "TX acquire got bad root node for TX set " << hash_
+                                          << " from peer " << peer->id();
+                    return SHAMapAddNode::invalid();
                 }
                 else
                 {
                     haveRoot_ = true;
                 }
             }
-            else if (!map_->addKnownNode(d.first, d.second, &sf).isGood())
+            else if (!map_->addKnownNode(d.first, std::move(d.second), &sf).isGood())
             {
-                JLOG(journal_.warn()) << "TX acquire got bad non-root node";
+                JLOG(journal_.warn()) << "TX acquire got bad non-root node " << d.first
+                                      << " for TX set " << hash_ << " from peer " << peer->id();
                 return SHAMapAddNode::invalid();
             }
         }
@@ -259,7 +259,7 @@ TransactionAcquire::stillNeed()
 {
     ScopedLockType const sl(mtx_);
 
-    timeouts_ = std::min<int>(timeouts_, NormTimeouts);
+    timeouts_ = std::min<int>(timeouts_, kNormTimeouts);
     failed_ = false;
 }
 

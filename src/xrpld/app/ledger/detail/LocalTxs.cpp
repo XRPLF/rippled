@@ -8,6 +8,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -48,7 +49,7 @@ class LocalTx
 public:
     LocalTx(LedgerIndex index, std::shared_ptr<STTx const> const& txn)
         : txn_(txn)
-        , expire_(index + LocalTxs::kHOLD_LEDGERS)
+        , expire_(index + LocalTxs::kHoldLedgers)
         , id_(txn->getTransactionID())
         , account_(txn->getAccountID(sfAccount))
         , seqProxy_(txn->getSeqProxy())
@@ -57,7 +58,7 @@ public:
             expire_ = std::min(expire_, txn->getFieldU32(sfLastLedgerSequence) + 1);
     }
 
-    [[nodiscard]] uint256 const&
+    [[nodiscard]] UInt256 const&
     getID() const
     {
         return id_;
@@ -90,7 +91,7 @@ public:
 private:
     std::shared_ptr<STTx const> txn_;
     LedgerIndex expire_;
-    uint256 id_;
+    UInt256 id_;
     AccountID account_;
     SeqProxy seqProxy_;
 };
@@ -114,7 +115,7 @@ public:
     CanonicalTXSet
     getTxSet() override
     {
-        CanonicalTXSet tset(uint256{});
+        CanonicalTXSet tset(UInt256{});
 
         // Get the set of local transactions as a canonical
         // set (so they apply in a valid order)
@@ -147,7 +148,7 @@ public:
             if (!sleAcct)
                 return false;
 
-            SeqProxy const acctSeq = SeqProxy::sequence(sleAcct->getFieldU32(sfSequence));
+            SeqProxy const acctSeq = SeqProxy::rawSequence(sleAcct->getFieldU32(sfSequence));
             SeqProxy const seqProx = txn.getSeqProxy();
 
             if (seqProx.isSeq())
@@ -163,7 +164,7 @@ public:
 
             // Ticket should have been created by now.  Remove if ticket
             // does not exist.
-            return !view.exists(keylet::kTICKET(acctID, seqProx));
+            return !view.exists(keylet::ticket(acctID, seqProx));
         });
     }
 

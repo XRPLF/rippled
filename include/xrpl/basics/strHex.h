@@ -3,6 +3,9 @@
 #include <boost/algorithm/hex.hpp>
 #include <boost/endian/conversion.hpp>
 
+#include <iterator>
+#include <string>
+
 namespace xrpl {
 
 template <class FwdIt>

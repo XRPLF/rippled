@@ -1,16 +1,17 @@
 #pragma once
 
-#include <xrpl/basics/BasicConfig.h>
-#include <xrpl/core/JobTypes.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/json/json_value.h>
-
-#include <boost/filesystem.hpp>
 
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <memory>
-#include <string>
+#include <span>
+#include <string_view>
 
 namespace beast {
 class Journal;
@@ -18,6 +19,7 @@ class Journal;
 
 namespace xrpl {
 class Application;
+class Section;
 namespace perf {
 
 /**
@@ -30,22 +32,22 @@ namespace perf {
 class PerfLog
 {
 public:
-    using steady_clock = std::chrono::steady_clock;
-    using system_clock = std::chrono::system_clock;
-    using steady_time_point = std::chrono::time_point<steady_clock>;
-    using system_time_point = std::chrono::time_point<system_clock>;
-    using seconds = std::chrono::seconds;
-    using milliseconds = std::chrono::milliseconds;
-    using microseconds = std::chrono::microseconds;
+    using SteadyClock = std::chrono::steady_clock;
+    using SystemClock = std::chrono::system_clock;
+    using SteadyTimePoint = std::chrono::time_point<SteadyClock>;
+    using SystemTimePoint = std::chrono::time_point<SystemClock>;
+    using Seconds = std::chrono::seconds;
+    using Milliseconds = std::chrono::milliseconds;
+    using Microseconds = std::chrono::microseconds;
 
     /**
      * Configuration from [perf] section of xrpld.cfg.
      */
     struct Setup
     {
-        boost::filesystem::path perfLog;
+        std::filesystem::path perfLog;
         // log_interval is in milliseconds to support faster testing.
-        milliseconds logInterval{seconds(1)};
+        Milliseconds logInterval{Seconds(1)};
     };
 
     virtual ~PerfLog() = default;
@@ -67,7 +69,7 @@ public:
      * @param requestId Unique identifier to track command
      */
     virtual void
-    rpcStart(std::string const& method, std::uint64_t requestId) = 0;
+    rpcStart(std::string_view method, std::uint64_t requestId) = 0;
 
     /**
      * Log successful finish of RPC call
@@ -76,7 +78,7 @@ public:
      * @param requestId Unique identifier to track command
      */
     virtual void
-    rpcFinish(std::string const& method, std::uint64_t requestId) = 0;
+    rpcFinish(std::string_view method, std::uint64_t requestId) = 0;
 
     /**
      * Log errored RPC call
@@ -85,7 +87,7 @@ public:
      * @param requestId Unique identifier to track command
      */
     virtual void
-    rpcError(std::string const& method, std::uint64_t requestId) = 0;
+    rpcError(std::string_view method, std::uint64_t requestId) = 0;
 
     /**
      * Log queued job
@@ -104,7 +106,7 @@ public:
      * @param instance JobQueue worker thread instance
      */
     virtual void
-    jobStart(JobType const type, microseconds dur, steady_time_point startTime, int instance) = 0;
+    jobStart(JobType const type, Microseconds dur, SteadyTimePoint startTime, int instance) = 0;
 
     /**
      * Log job finishing
@@ -114,7 +116,7 @@ public:
      * @param instance Jobqueue worker thread instance
      */
     virtual void
-    jobFinish(JobType const type, microseconds dur, int instance) = 0;
+    jobFinish(JobType const type, Microseconds dur, int instance) = 0;
 
     /**
      * Render performance counters in Json
@@ -148,12 +150,22 @@ public:
 };
 
 PerfLog::Setup
-setupPerfLog(Section const& section, boost::filesystem::path const& configDir);
+setupPerfLog(Section const& section, std::filesystem::path const& configDir);
 
+/**
+ * @param methodNames The RPC methods to count, one counter per name. Reported
+ *        as JSON keys that borrow each name and read it as a C string, which is
+ *        why the parameter type requires one that reaches its terminating null.
+ *        The names must outlive the returned object, which holds views of them.
+ *        The range itself need not: it is copied.
+ *        Passed in rather than looked up here, so that this layer needs no
+ *        knowledge of the dispatch table.
+ */
 std::unique_ptr<PerfLog>
 makePerfLog(
     PerfLog::Setup const& setup,
     Application& app,
+    std::span<NullTerminatedView const> methodNames,
     beast::Journal journal,
     std::function<void()>&& signalStop);
 
@@ -161,7 +173,7 @@ template <typename Func, class Rep, class Period>
 auto
 measureDurationAndLog(
     Func&& func,
-    std::string const& actionDescription,
+    std::string_view actionDescription,
     std::chrono::duration<Rep, Period> maxDelay,
     beast::Journal const& journal)
 {

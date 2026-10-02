@@ -51,7 +51,7 @@ public:
         // Carol offers to buy 1000 XRP for 1000 USD. She removes Bob's next
         // 1000 offers as unfunded and hits the step limit.
         env(offer("carol", usd(1000), XRP(1000)));
-        env.require(Balance("carol", usd(kNONE)));
+        env.require(Balance("carol", usd(kNone)));
         env.require(Owners("carol", 1));
         env.require(Balance("bob", usd(0)));
         env.require(Owners("bob", 1));
@@ -253,16 +253,16 @@ public:
 
             env.require(Balance(bob, usd(1500)));
             env.require(Balance(bob, eur(900)));
-            env.require(offers(bob, 1));
+            env.require(Offers(bob, 1));
             env.require(Owners(bob, 3));
 
             env.require(Balance(alice, usd(2503)));
             env.require(Balance(alice, eur(1100)));
-            auto const numAOffers = 2000 + 100 + 1000 + 1 - (2 * 100 + 2 * 199 + 1 + 1);
-            env.require(offers(alice, numAOffers));
+            auto const numAOffers = 2000 + 100 + 1000 + 1 - ((2 * 100) + (2 * 199) + 1 + 1);
+            env.require(Offers(alice, numAOffers));
             env.require(Owners(alice, numAOffers + 2));
 
-            env.require(offers(carol, 0));
+            env.require(Offers(carol, 0));
         }
         {
             Env env(*this, features);
@@ -324,16 +324,16 @@ public:
 
             env.require(Balance(bob, usd(1509)));
             env.require(Balance(bob, eur(900)));
-            env.require(offers(bob, 1));
+            env.require(Offers(bob, 1));
             env.require(Owners(bob, 3));
 
             env.require(Balance(alice, usd(2494)));
             env.require(Balance(alice, eur(1100)));
-            auto const numAOffers = 1 + 2000 + 100 + 1000 + 1 - (1 + 2 * 100 + 2 * 199 + 1 + 1);
-            env.require(offers(alice, numAOffers));
+            auto const numAOffers = 1 + 2000 + 100 + 1000 + 1 - (1 + (2 * 100) + (2 * 199) + 1 + 1);
+            env.require(Offers(alice, numAOffers));
             env.require(Owners(alice, numAOffers + 2));
 
-            env.require(offers(carol, 0));
+            env.require(Offers(carol, 0));
         }
     }
 

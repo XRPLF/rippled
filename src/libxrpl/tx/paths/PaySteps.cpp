@@ -178,7 +178,7 @@ toStrand(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
-    std::optional<uint256> const& domainID,
+    std::optional<UInt256> const& domainID,
     beast::Journal j)
 {
     if (isXRP(src) || isXRP(dst) || !isConsistent(deliver) ||
@@ -189,9 +189,9 @@ toStrand(
         (dst == noAccount()) || (deliver.getIssuer() == noAccount()))
         return {temBAD_PATH, Strand{}};
 
-    if ((deliver.holds<MPTIssue>() && deliver.getIssuer() == beast::kZERO) ||
+    if ((deliver.holds<MPTIssue>() && deliver.getIssuer() == beast::kZero) ||
         (sendMaxAsset && sendMaxAsset->holds<MPTIssue>() &&
-         sendMaxAsset->getIssuer() == beast::kZERO))
+         sendMaxAsset->getIssuer() == beast::kZero))
         return {temBAD_PATH, Strand{}};
 
     for (std::size_t i = 0; i < path.size(); ++i)
@@ -583,7 +583,7 @@ toStrands(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
-    std::optional<uint256> const& domainID,
+    std::optional<UInt256> const& domainID,
     beast::Journal j)
 {
     std::vector<Strand> result;
@@ -662,7 +662,7 @@ toStrands(
         {
             lastFailTer = ter;
             JLOG(j.trace()) << "failed to add path: ter: " << ter
-                            << "path: " << p.getJson(JsonOptions::KNone);
+                            << "path: " << p.getJson(JsonOptions::Values::None);
             if (isTemMalformed(ter))
                 return {ter, std::vector<Strand>{}};
         }
@@ -699,7 +699,7 @@ StrandContext::StrandContext(
     std::array<boost::container::flat_set<Asset>, 2>& seenDirectAssets,
     boost::container::flat_set<Asset>& seenBookOuts,
     AMMContext& ammContext,
-    std::optional<uint256> const& domainId,
+    std::optional<UInt256> const& domainId,
     beast::Journal j)
     : view(view)
     , strandSrc(strandSrc)

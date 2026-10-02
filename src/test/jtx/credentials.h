@@ -2,7 +2,18 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/owners.h>
+#include <test/jtx/JTx.h>
+
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/SField.h>
+
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace xrpl::test::jtx::credentials {
 
@@ -40,14 +51,14 @@ private:
     std::vector<std::string> const credentials_;
 
 public:
-    explicit Ids(std::vector<std::string> const& creds) : credentials_(creds)
+    explicit Ids(std::vector<std::string> creds) : credentials_(std::move(creds))
     {
     }
 
     void
     operator()(jtx::Env&, jtx::JTx& jtx) const
     {
-        auto& arr(jtx.jv[sfCredentialIDs.jsonName] = json::ArrayValue);
+        auto& arr(jtx.jv[sfCredentialIDs.jsonName] = json::ValueType::Array);
         for (auto const& hash : credentials_)
             arr.append(hash);
     }

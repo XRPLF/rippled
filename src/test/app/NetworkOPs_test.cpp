@@ -38,8 +38,7 @@ public:
         {
             using namespace jtx;
             auto const alice = Account{"alice"};
-            Env env{
-                *this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::severities::KAll};
+            Env env{*this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::Severity::All};
             env.memoize(env.master);
             env.memoize(alice);
 
@@ -55,7 +54,7 @@ public:
             env.close();
         }
 
-        BEAST_EXPECT(logs.find("No transaction to process!") != std::string::npos);
+        BEAST_EXPECT(logs.contains("No transaction to process!"));
     }
 };
 

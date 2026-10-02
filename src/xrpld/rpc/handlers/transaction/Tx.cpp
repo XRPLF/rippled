@@ -5,8 +5,9 @@
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
-#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/Status.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/RangeSet.h>
@@ -18,7 +19,6 @@
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
@@ -38,7 +38,7 @@
 namespace xrpl {
 
 static bool
-isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, uint256 const& hash)
+isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, UInt256 const& hash)
 {
     if (!ledgerMaster.haveLedger(seq))
         return false;
@@ -56,20 +56,20 @@ struct TxResult
     bool validated = false;
     std::optional<std::string> ctid;
     std::optional<NetClock::time_point> closeTime;
-    std::optional<uint256> ledgerHash;
+    std::optional<UInt256> ledgerHash;
     TxSearched searchedAll = TxSearched::Unknown;
 };
 
 struct TxArgs
 {
-    std::optional<uint256> hash;
+    std::optional<UInt256> hash;
     std::optional<std::pair<uint32_t, uint16_t>> ctid;
     bool binary = false;
     std::optional<std::pair<uint32_t, uint32_t>> ledgerRange;
 };
 
-std::pair<TxResult, RPC::Status>
-doTxHelp(RPC::Context& context, TxArgs args)
+std::pair<TxResult, rpc::Status>
+doTxHelp(rpc::Context& context, TxArgs args)
 {
     TxResult result;
 
@@ -77,12 +77,12 @@ doTxHelp(RPC::Context& context, TxArgs args)
 
     if (args.ledgerRange)
     {
-        constexpr uint16_t kMAX_RANGE = 1000;
+        static constexpr uint16_t kMaxRange = 1000;
 
         if (args.ledgerRange->second < args.ledgerRange->first)
             return {result, RpcInvalidLgrRange};
 
-        if (args.ledgerRange->second - args.ledgerRange->first > kMAX_RANGE)
+        if (args.ledgerRange->second - args.ledgerRange->first > kMaxRange)
             return {result, RpcExcessiveLgrRange};
 
         range = ClosedInterval<uint32_t>(args.ledgerRange->first, args.ledgerRange->second);
@@ -169,7 +169,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
             uint32_t const netID = context.app.getNetworkIDService().getNetworkID();
 
             if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0x0FFF'FFFFUL)
-                result.ctid = RPC::encodeCTID(lgrSeq, txnIdx, netID);
+                result.ctid = rpc::encodeCTID(lgrSeq, txnIdx, netID);
         }
     }
 
@@ -178,19 +178,19 @@ doTxHelp(RPC::Context& context, TxArgs args)
 
 json::Value
 populateJsonResponse(
-    std::pair<TxResult, RPC::Status> const& res,
+    std::pair<TxResult, rpc::Status> const& res,
     TxArgs const& args,
-    RPC::JsonContext const& context)
+    rpc::JsonContext const& context)
 {
     json::Value response;
-    RPC::Status const& error = res.second;
+    rpc::Status const& error = res.second;
     TxResult const& result = res.first;
     // handle errors
     if (error.toErrorCode() != RpcSuccess)
     {
         if (error.toErrorCode() == RpcTxnNotFound && result.searchedAll != TxSearched::Unknown)
         {
-            response = json::Value(json::ObjectValue);
+            response = json::Value(json::ValueType::Object);
             response[jss::searched_all] = (result.searchedAll == TxSearched::All);
             error.inject(response);
         }
@@ -205,16 +205,17 @@ populateJsonResponse(
         auto const& sttx = result.txn->getSTransaction();
         if (context.apiVersion > 1)
         {
-            constexpr auto kOPTIONS_JSON =
-                JsonOptions::KIncludeDate | JsonOptions::KDisableApiPriorV2;
+            static constexpr auto kOptionsJson =
+                static_cast<JsonOptions::UnderlyingT>(JsonOptions::Values::IncludeDate) |
+                static_cast<JsonOptions::UnderlyingT>(JsonOptions::Values::DisableApiPriorV2);
             if (args.binary)
             {
-                response[jss::tx_blob] = result.txn->getJson(kOPTIONS_JSON, true);
+                response[jss::tx_blob] = result.txn->getJson(kOptionsJson, true);
             }
             else
             {
-                response[jss::tx_json] = result.txn->getJson(kOPTIONS_JSON);
-                RPC::insertDeliverMax(
+                response[jss::tx_json] = result.txn->getJson(kOptionsJson);
+                rpc::insertDeliverMax(
                     response[jss::tx_json], sttx->getTxnType(), context.apiVersion);
             }
 
@@ -233,9 +234,9 @@ populateJsonResponse(
         }
         else
         {
-            response = result.txn->getJson(JsonOptions::KIncludeDate, args.binary);
+            response = result.txn->getJson(JsonOptions::Values::IncludeDate, args.binary);
             if (!args.binary)
-                RPC::insertDeliverMax(response, sttx->getTxnType(), context.apiVersion);
+                rpc::insertDeliverMax(response, sttx->getTxnType(), context.apiVersion);
         }
 
         // populate binary metadata
@@ -251,10 +252,8 @@ populateJsonResponse(
             auto& meta = *m;
             if (meta)
             {
-                response[jss::meta] = meta->getJson(JsonOptions::KNone);
-                insertDeliveredAmount(response[jss::meta], context, result.txn, *meta);
-                RPC::insertNFTSyntheticInJson(response, sttx, *meta);
-                RPC::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);
+                response[jss::meta] = meta->getJson(JsonOptions::Values::None);
+                rpc::insertAllSyntheticInJson(response[jss::meta], context, sttx, *meta);
             }
         }
         response[jss::validated] = result.validated;
@@ -266,7 +265,7 @@ populateJsonResponse(
 }
 
 json::Value
-doTxJson(RPC::JsonContext& context)
+doTxJson(rpc::JsonContext& context)
 {
     if (!context.app.config().useTxTables())
         return rpcError(RpcNotEnabled);
@@ -283,14 +282,14 @@ doTxJson(RPC::JsonContext& context)
 
     if (context.params.isMember(jss::transaction))
     {
-        uint256 hash;
+        UInt256 hash;
         if (!hash.parseHex(context.params[jss::transaction].asString()))
             return rpcError(RpcNotImpl);
         args.hash = hash;
     }
     else if (context.params.isMember(jss::ctid))
     {
-        auto ctid = RPC::decodeCTID(context.params[jss::ctid].asString());
+        auto ctid = rpc::decodeCTID(context.params[jss::ctid].asString());
         if (!ctid)
             return rpcError(RpcInvalidParams);
 
@@ -301,7 +300,7 @@ doTxJson(RPC::JsonContext& context)
             out << "Wrong network. You should submit this request to a node "
                    "running on NetworkID: "
                 << net_id;
-            return RPC::makeError(RpcWrongNetwork, out.str());
+            return rpc::makeError(RpcWrongNetwork, out.str());
         }
         args.ctid = {lgr_seq, txn_idx};
     }
@@ -326,7 +325,7 @@ doTxJson(RPC::JsonContext& context)
         }
     }
 
-    std::pair<TxResult, RPC::Status> const res = doTxHelp(context, args);
+    std::pair<TxResult, rpc::Status> const res = doTxHelp(context, args);
     return populateJsonResponse(res, args, context);
 }
 

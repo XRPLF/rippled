@@ -19,7 +19,7 @@ namespace xrpl {
 class PublicKey_test : public beast::unit_test::Suite
 {
 public:
-    using blob = std::vector<std::uint8_t>;
+    using Blob = std::vector<std::uint8_t>;
 
     template <class FwdIter, class Container>
     static void
@@ -46,20 +46,20 @@ public:
             }
         };
 
-        static Table kLUT;
+        static Table kLut;
         out.reserve(std::distance(first, last) / 2);
         while (first != last)
         {
-            auto const hi(kLUT[(*first++)]);
-            auto const lo(kLUT[(*first++)]);
+            auto const hi(kLut[(*first++)]);
+            auto const lo(kLut[(*first++)]);
             out.push_back((hi * 16) + lo);
         }
     }
 
-    static blob
+    static Blob
     sig(std::string const& hex)
     {
-        blob b;
+        Blob b;
         hexToBinary(hex.begin(), hex.end(), b);
         return b;
     }

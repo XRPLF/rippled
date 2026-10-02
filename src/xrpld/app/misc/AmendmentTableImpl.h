@@ -1,8 +1,12 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/nodestore/Database.h>
 
-#include <optional>
+#include <chrono>
+#include <memory>
+#include <vector>
 
 namespace xrpl {
 

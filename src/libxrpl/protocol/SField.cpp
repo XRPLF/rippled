@@ -8,7 +8,7 @@
 namespace xrpl {
 
 // Storage for static const members.
-SField::IsSigning const SField::kNOT_SIGNING;
+SField::IsSigning const SField::kNotSigning;
 int SField::num = 0;
 std::unordered_map<int, SField const*> SField::knownCodeToField;
 std::unordered_map<std::string, SField const*> SField::knownNameToField;
@@ -39,26 +39,18 @@ TypedField<T>::TypedField(PrivateAccessTagT pat, Args&&... args)
 
 #define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
     SField const sfName(                                   \
-        access,                                            \
-        STI_##stiSuffix,                                   \
-        fieldValue,                                        \
-        std::string_view(#sfName).substr(2).data(),        \
-        ##__VA_ARGS__);
+        access, STI_##stiSuffix, fieldValue, std::string_view(#sfName).substr(2).data(), ##__VA_ARGS__);
 #define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
     SF_##stiSuffix const sfName(                         \
-        access,                                          \
-        STI_##stiSuffix,                                 \
-        fieldValue,                                      \
-        std::string_view(#sfName).substr(2).data(),      \
-        ##__VA_ARGS__);
+        access, STI_##stiSuffix, fieldValue, std::string_view(#sfName).substr(2).data(), ##__VA_ARGS__);
 
 // SFields which, for historical reasons, do not follow naming conventions.
-SField const kSF_INVALID(access, -1, "");
-SField const kSF_GENERIC(access, 0, "Generic");
+SField const sfInvalid(access, -1, "");
+SField const sfGeneric(access, 0, "Generic");
 // The following two fields aren't used anywhere, but they break tests/have
 // downstream effects.
-SField const kSF_HASH(access, STI_UINT256, 257, "hash");
-SField const kSF_INDEX(access, STI_UINT256, 258, "index");
+SField const kSfHash(access, STI_UINT256, 257, "hash");
+SField const kSfIndex(access, STI_UINT256, 258, "index");
 
 #include <xrpl/protocol/detail/sfields.macro>
 
@@ -98,7 +90,7 @@ SField::SField(PrivateAccessTagT, int fc, char const* fn)
     , fieldType(STI_UNKNOWN)
     , fieldValue(0)
     , fieldName(fn)
-    , fieldMeta(SMdNever)
+    , fieldMeta(kSmdNever)
     , fieldNum(++num)
     , signingField(IsSigning::Yes)
     , jsonName(fieldName.c_str())
@@ -121,7 +113,7 @@ SField::getField(int code)
     {
         return *(it->second);
     }
-    return kSF_INVALID;
+    return sfInvalid;
 }
 
 int
@@ -149,7 +141,7 @@ SField::getField(std::string const& fieldName)
     {
         return *(it->second);
     }
-    return kSF_INVALID;
+    return sfInvalid;
 }
 
 }  // namespace xrpl

@@ -1,12 +1,19 @@
 #pragma once
 
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <mutex>
 #include <optional>
+#include <vector>
 
 namespace xrpl {
 
@@ -32,26 +39,26 @@ public:
      * An unreliable validator is a candidate to be disabled by the NegativeUNL
      * protocol.
      */
-    static constexpr size_t kNEGATIVE_UNL_LOW_WATER_MARK = kFLAG_LEDGER_INTERVAL * 50 / 100;
+    static constexpr size_t kNegativeUnlLowWaterMark = kFlagLedgerInterval * 50 / 100;
     /**
      * An unreliable validator must have more than negativeUNLHighWaterMark
      * validations in the last flag ledger period to be re-enabled.
      */
-    static constexpr size_t kNEGATIVE_UNL_HIGH_WATER_MARK = kFLAG_LEDGER_INTERVAL * 80 / 100;
+    static constexpr size_t kNegativeUnlHighWaterMark = kFlagLedgerInterval * 80 / 100;
     /**
      * The minimum number of validations of the local node for it to
      * participate in the voting.
      */
-    static constexpr size_t kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE = kFLAG_LEDGER_INTERVAL * 90 / 100;
+    static constexpr size_t kNegativeUnlMinLocalValsToVote = kFlagLedgerInterval * 90 / 100;
     /**
      * We don't want to disable new validators immediately after adding them.
      * So we skip voting for disabling them for 2 flag ledgers.
      */
-    static constexpr size_t kNEW_VALIDATOR_DISABLE_SKIP = kFLAG_LEDGER_INTERVAL * 2;
+    static constexpr size_t kNewValidatorDisableSkip = kFlagLedgerInterval * 2;
     /**
      * We only want to put 25% of the UNL on the NegativeUNL.
      */
-    static constexpr float kNEGATIVE_UNL_MAX_LISTED = 0.25;
+    static constexpr float kNegativeUnlMaxListed = 0.25;
 
     /**
      * A flag indicating whether a UNLModify Tx is to disable or to re-enable
@@ -86,7 +93,7 @@ public:
     void
     doVoting(
         std::shared_ptr<Ledger const> const& prevLedger,
-        hash_set<PublicKey> const& unlKeys,
+        HashSet<PublicKey> const& unlKeys,
         RCLValidations& validations,
         std::shared_ptr<SHAMap> const& initialSet);
 
@@ -98,13 +105,13 @@ public:
      * @param nowTrusted the new validators
      */
     void
-    newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrusted);
+    newValidators(LedgerIndex seq, HashSet<NodeID> const& nowTrusted);
 
 private:
     NodeID const myId_;
     beast::Journal j_;
     mutable std::mutex mutex_;
-    hash_map<NodeID, LedgerIndex> newValidators_;
+    HashMap<NodeID, LedgerIndex> newValidators_;
 
     /**
      * UNLModify Tx candidates
@@ -134,13 +141,13 @@ private:
      * Pick one candidate from a vector of candidates.
      *
      * @param randomPadData the data used for picking a candidate.
-     *        @note Nodes must use the same randomPadData for picking the same
-     *        candidate. The hash of the parent ledger is used.
+     * @note Nodes must use the same randomPadData for picking the same
+     *       candidate. The hash of the parent ledger is used.
      * @param candidates the vector of candidates
      * @return the picked candidate
      */
     static NodeID
-    choose(uint256 const& randomPadData, std::vector<NodeID> const& candidates);
+    choose(UInt256 const& randomPadData, std::vector<NodeID> const& candidates);
 
     /**
      * Build a reliability measurement score table of validators' validation
@@ -156,10 +163,10 @@ private:
      * @return the built scoreTable or empty optional if table could not be
      * built
      */
-    std::optional<hash_map<NodeID, std::uint32_t>>
+    std::optional<HashMap<NodeID, std::uint32_t>>
     buildScoreTable(
         std::shared_ptr<Ledger const> const& prevLedger,
-        hash_set<NodeID> const& unl,
+        HashSet<NodeID> const& unl,
         RCLValidations& validations);
 
     /**
@@ -173,9 +180,9 @@ private:
      */
     Candidates
     findAllCandidates(
-        hash_set<NodeID> const& unl,
-        hash_set<NodeID> const& negUnl,
-        hash_map<NodeID, std::uint32_t> const& scoreTable);
+        HashSet<NodeID> const& unl,
+        HashSet<NodeID> const& negUnl,
+        HashMap<NodeID, std::uint32_t> const& scoreTable);
 
     /**
      * Purge validators that are not new anymore.

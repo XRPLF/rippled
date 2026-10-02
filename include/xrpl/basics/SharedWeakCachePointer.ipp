@@ -57,10 +57,10 @@ template <class T>
 std::shared_ptr<T> const&
 SharedWeakCachePointer<T>::getStrong() const
 {
-    static std::shared_ptr<T> const kEMPTY;
+    static std::shared_ptr<T> const kEmpty;
     if (auto p = std::get_if<std::shared_ptr<T>>(&combo_))
         return *p;
-    return kEMPTY;
+    return kEmpty;
 }
 
 template <class T>

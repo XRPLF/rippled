@@ -6,11 +6,10 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-
-#include <memory>
 
 namespace xrpl {
 
@@ -55,11 +54,12 @@ OfferCancel::doApply()
 {
     auto const offerSequence = ctx_.tx[sfOfferSequence];
 
-    auto const sle = view().read(keylet::account(account_));
+    auto const sle = view().read(keylet::account(accountID_));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (auto sleOffer = view().peek(keylet::offer(account_, offerSequence)))
+    auto const seqProxy = SeqProxy::rawSequence(offerSequence);
+    if (auto sleOffer = view().peek(keylet::offer(accountID_, seqProxy)))
     {
         JLOG(j_.debug()) << "Trying to cancel offer #" << offerSequence;
         return offerDelete(view(), sleOffer, ctx_.registry.get().getJournal("View"));
@@ -70,16 +70,15 @@ OfferCancel::doApply()
 }
 
 void
-OfferCancel::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+OfferCancel::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 OfferCancel::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

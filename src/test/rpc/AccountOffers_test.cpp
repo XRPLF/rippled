@@ -212,9 +212,9 @@ public:
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(json::Value(json::NullValue));
-            testInvalidAccountParam(json::Value(json::ObjectValue));
-            testInvalidAccountParam(json::Value(json::ArrayValue));
+            testInvalidAccountParam(json::Value(json::ValueType::Null));
+            testInvalidAccountParam(json::Value(json::ValueType::Object));
+            testInvalidAccountParam(json::Value(json::ValueType::Array));
         }
 
         {

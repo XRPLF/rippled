@@ -2,6 +2,7 @@
 
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
@@ -23,7 +24,7 @@ namespace xrpl {
 
 LedgerReplayTask::TaskParameter::TaskParameter(
     InboundLedger::Reason r,
-    uint256 const& finishLedgerHash,
+    UInt256 const& finishLedgerHash,
     std::uint32_t totalNumLedgers)
     : reason(r), finishHash(finishLedgerHash), totalLedgers(totalNumLedgers)
 {
@@ -35,9 +36,9 @@ LedgerReplayTask::TaskParameter::TaskParameter(
 
 bool
 LedgerReplayTask::TaskParameter::update(
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t seq,
-    std::vector<uint256> const& sList)
+    std::vector<UInt256> const& sList)
 {
     if (finishHash != hash || sList.size() + 1 < totalLedgers || full)
         return false;
@@ -86,18 +87,18 @@ LedgerReplayTask::LedgerReplayTask(
     : TimeoutCounter(
           app,
           parameter.finishHash,
-          LedgerReplayParameters::kTASK_TIMEOUT,
+          ledger_replay_parameters::kTaskTimeout,
           {.jobType = JtReplayTask,
            .jobName = "LedReplTask",
-           .jobLimit = LedgerReplayParameters::kMAX_QUEUED_TASKS},
+           .jobLimit = ledger_replay_parameters::kMaxQueuedTasks},
           app.getJournal("LedgerReplayTask"))
     , inboundLedgers_(inboundLedgers)
     , replayer_(replayer)
     , parameter_(parameter)
     , maxTimeouts_(
           std::max(
-              LedgerReplayParameters::kTASK_MAX_TIMEOUTS_MINIMUM,
-              parameter.totalLedgers * LedgerReplayParameters::kTASK_MAX_TIMEOUTS_MULTIPLIER))
+              ledger_replay_parameters::kTaskMaxTimeoutsMinimum,
+              parameter.totalLedgers * ledger_replay_parameters::kTaskMaxTimeoutsMultiplier))
     , skipListAcquirer_(skipListAcquirer)
 {
     JLOG(journal_.trace()) << "Create " << hash_;
@@ -114,7 +115,7 @@ LedgerReplayTask::init()
     JLOG(journal_.debug()) << "Task start " << hash_;
 
     std::weak_ptr<LedgerReplayTask> const wptr = shared_from_this();
-    skipListAcquirer_->addDataCallback([wptr](bool good, uint256 const& hash) {
+    skipListAcquirer_->addDataCallback([wptr](bool good, UInt256 const& hash) {
         if (auto sptr = wptr.lock(); sptr)
         {
             if (!good)
@@ -163,7 +164,7 @@ LedgerReplayTask::trigger(ScopedLockType& sl)
 }
 
 void
-LedgerReplayTask::deltaReady(uint256 const& deltaHash)
+LedgerReplayTask::deltaReady(UInt256 const& deltaHash)
 {
     JLOG(journal_.trace()) << "Delta " << deltaHash << " ready for task " << hash_;
     ScopedLockType sl(mtx_);
@@ -177,7 +178,7 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
     JLOG(journal_.trace()) << "tryAdvance task " << hash_
                            << (parameter_.full ? ", full parameter" : ", waiting to fill parameter")
                            << ", deltaIndex=" << deltaToBuild_ << ", totalDeltas=" << deltas_.size()
-                           << ", parent " << (parent_ ? parent_->header().hash : uint256());
+                           << ", parent " << (parent_ ? parent_->header().hash : UInt256());
 
     bool const shouldTry =
         parent_ && parameter_.full && parameter_.totalLedgers - 1 == deltas_.size();
@@ -216,9 +217,9 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
 
 void
 LedgerReplayTask::updateSkipList(
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t seq,
-    std::vector<uint256> const& sList)
+    std::vector<UInt256> const& sList)
 {
     {
         ScopedLockType const sl(mtx_);
@@ -263,7 +264,7 @@ void
 LedgerReplayTask::addDelta(std::shared_ptr<LedgerDeltaAcquire> const& delta)
 {
     std::weak_ptr<LedgerReplayTask> const wptr = shared_from_this();
-    delta->addDataCallback(parameter_.reason, [wptr](bool good, uint256 const& hash) {
+    delta->addDataCallback(parameter_.reason, [wptr](bool good, UInt256 const& hash) {
         if (auto sptr = wptr.lock(); sptr)
         {
             if (!good)

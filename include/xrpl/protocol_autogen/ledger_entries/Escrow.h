@@ -33,7 +33,7 @@ public:
      * @brief Construct a Escrow ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Escrow(std::shared_ptr<SLE const> sle)
+    explicit Escrow(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -172,6 +172,54 @@ public:
     hasFinishAfter() const
     {
         return this->sle_->isFieldPresent(sfFinishAfter);
+    }
+
+    /**
+     * @brief Get sfBytecode (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getBytecode() const
+    {
+        if (hasBytecode())
+            return this->sle_->at(sfBytecode);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfBytecode is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasBytecode() const
+    {
+        return this->sle_->isFieldPresent(sfBytecode);
+    }
+
+    /**
+     * @brief Get sfData (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getData() const
+    {
+        if (hasData())
+            return this->sle_->at(sfData);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfData is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasData() const
+    {
+        return this->sle_->isFieldPresent(sfData);
     }
 
     /**
@@ -363,7 +411,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    EscrowBuilder(std::shared_ptr<SLE const> sle)
+    EscrowBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltESCROW)
         {
@@ -372,7 +420,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfAccount (SoeRequired)
@@ -448,6 +498,28 @@ public:
     setFinishAfter(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfFinishAfter] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfBytecode (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    EscrowBuilder&
+    setBytecode(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfBytecode] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfData (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    EscrowBuilder&
+    setData(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfData] = value;
         return *this;
     }
 
@@ -545,7 +617,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     Escrow
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return Escrow{std::make_shared<SLE>(std::move(object_), index)};
     }

@@ -1,28 +1,28 @@
 #pragma once
 
-#include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/TxQ.h>  // IWYU pragma: keep
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/MethodNames.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Handler.h>
 
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ApiVersion.h>
-#include <xrpl/protocol/jss.h>
 
-namespace json {
-class Object;
-}  // namespace json
+#include <memory>
+#include <string_view>
+#include <vector>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 struct JsonContext;
 
 // ledger [id|index|current|closed] [full]
 // {
-//    ledger: 'current' | 'closed' | <uint256> | <number>,  // optional
+//    ledger: 'current' | 'closed' | <UInt256> | <number>,  // optional
 //    full: true | false    // optional, defaults to false.
 // }
 
@@ -38,15 +38,15 @@ public:
     writeResult(json::Value&);
 
     // NOLINTBEGIN(readability-identifier-naming)
-    static constexpr char name[] = "ledger";
+    static constexpr std::string_view name = method::kLedger;
 
-    static constexpr unsigned minApiVer = RPC::kAPI_MINIMUM_SUPPORTED_VERSION;
+    static constexpr unsigned minApiVer = rpc::kApiMinimumSupportedVersion;
 
-    static constexpr unsigned maxApiVer = RPC::kAPI_MAXIMUM_VALID_VERSION;
+    static constexpr unsigned maxApiVer = rpc::kApiMaximumValidVersion;
 
     static constexpr Role role = Role::USER;
 
-    static constexpr Condition condition = NoCondition;
+    static constexpr Condition condition = Condition::NoCondition;
     // NOLINTEND(readability-identifier-naming)
 
 private:
@@ -57,4 +57,4 @@ private:
     int options_ = 0;
 };
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

@@ -7,9 +7,9 @@
 namespace xrpl {
 
 json::Value
-doConsensusInfo(RPC::JsonContext& context)
+doConsensusInfo(rpc::JsonContext& context)
 {
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
 
     ret[jss::info] = context.netOps.getConsensusInfo();
 

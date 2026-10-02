@@ -1,9 +1,12 @@
 #pragma once
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/Serializer.h>
 
+#include <concepts>
+#include <cstddef>
 #include <ostream>
 #include <string>
 #include <type_traits>
@@ -12,31 +15,33 @@
 
 namespace xrpl {
 
-/// Note, should be treated as flags that can be | and &
+/**
+ * Note, should be treated as flags that can be | and &
+ */
 struct JsonOptions
 {
-    using underlying_t = unsigned int;
-    underlying_t value;
+    using UnderlyingT = unsigned int;
+    UnderlyingT value;
 
-    // Bitwise flags with operator~
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum Values : underlying_t {
-        // clang-format off
-        KNone                       = 0b0000'0000,
-        KIncludeDate               = 0b0000'0001,
-        KDisableApiPriorV2       = 0b0000'0010,
+    enum class Values : UnderlyingT {
+        None = 0b0000'0000,
+        IncludeDate = 0b0000'0001,
+        DisableApiPriorV2 = 0b0000'0010,
 
-        // IMPORTANT `kALL` must be union of all of the above; see also operator~
-        KAll                        = 0b0000'0011
-        // clang-format on
+        // IMPORTANT `All` must be union of all of the above; see also operator~
+        All = IncludeDate | DisableApiPriorV2  // 0b0000'0011
     };
 
-    constexpr JsonOptions(underlying_t v) noexcept : value(v)
+    constexpr JsonOptions(UnderlyingT v) noexcept : value(v)
+    {
+    }
+
+    constexpr JsonOptions(Values v) noexcept : value(static_cast<JsonOptions::UnderlyingT>(v))
     {
     }
 
     [[nodiscard]] constexpr explicit
-    operator underlying_t() const noexcept
+    operator UnderlyingT() const noexcept
     {
         return value;
     }
@@ -50,37 +55,43 @@ struct JsonOptions
     [[nodiscard]] constexpr auto friend
     operator!=(JsonOptions lh, JsonOptions rh) noexcept -> bool = default;
 
-    /// Returns JsonOptions union of lh and rh
+    /**
+     * Returns JsonOptions union of lh and rh
+     */
     [[nodiscard]] constexpr JsonOptions friend
     operator|(JsonOptions lh, JsonOptions rh) noexcept
     {
         return {lh.value | rh.value};
     }
 
-    /// Returns JsonOptions intersection of lh and rh
+    /**
+     * Returns JsonOptions intersection of lh and rh
+     */
     [[nodiscard]] constexpr JsonOptions friend
     operator&(JsonOptions lh, JsonOptions rh) noexcept
     {
         return {lh.value & rh.value};
     }
 
-    /// Returns JsonOptions binary negation, can be used with & (above) for set
-    /// difference e.g. `(options & ~JsonOptions::kINCLUDE_DATE)`
+    /**
+     * Returns JsonOptions binary negation, can be used with & (above) for set
+     * difference e.g. `(options & ~JsonOptions::kIncludeDate)`
+     */
     [[nodiscard]] constexpr JsonOptions friend
     operator~(JsonOptions v) noexcept
     {
-        return {~v.value & static_cast<underlying_t>(KAll)};
+        return {~v.value & static_cast<UnderlyingT>(Values::All)};
     }
 };
 
 template <typename T>
     requires requires(T const& t) {
-        { t.getJson(JsonOptions::KNone) } -> std::convertible_to<json::Value>;
+        { t.getJson(JsonOptions::Values::None) } -> std::convertible_to<json::Value>;
     }
 json::Value
 toJson(T const& t)
 {
-    return t.getJson(JsonOptions::KNone);
+    return t.getJson(JsonOptions::Values::None);
 }
 
 namespace detail {
@@ -100,19 +111,20 @@ class STVar;
 
 //------------------------------------------------------------------------------
 
-/** A type which can be exported to a well known binary format.
-
-    A STBase:
-        - Always a field
-        - Can always go inside an eligible enclosing STBase
-            (such as STArray)
-        - Has a field name
-
-    Like JSON, a SerializedObject is a basket which has rules
-    on what it can hold.
-
-    @note "ST" stands for "Serialized Type."
-*/
+/**
+ * A type which can be exported to a well known binary format.
+ *
+ * A STBase:
+ *     - Always a field
+ *     - Can always go inside an eligible enclosing STBase
+ *         (such as STArray)
+ *     - Has a field name
+ *
+ * Like JSON, a SerializedObject is a basket which has rules
+ * on what it can hold.
+ *
+ * @note "ST" stands for "Serialized Type."
+ */
 class STBase
 {
     SField const* fName_;
@@ -128,8 +140,6 @@ public:
 
     bool
     operator==(STBase const& t) const;
-    bool
-    operator!=(STBase const& t) const;
 
     template <class D>
     D&
@@ -148,7 +158,7 @@ public:
     [[nodiscard]] virtual std::string
     getText() const;
 
-    [[nodiscard]] virtual json::Value getJson(JsonOptions = JsonOptions::KNone) const;
+    [[nodiscard]] virtual json::Value getJson(JsonOptions = JsonOptions::Values::None) const;
 
     virtual void
     add(Serializer& s) const;
@@ -159,9 +169,10 @@ public:
     [[nodiscard]] virtual bool
     isDefault() const;
 
-    /** A STBase is a field.
-        This sets the name.
-    */
+    /**
+     * A STBase is a field.
+     * This sets the name.
+     */
     void
     setFName(SField const& n);
 

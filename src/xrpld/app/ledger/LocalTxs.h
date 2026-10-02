@@ -2,7 +2,10 @@
 
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/STTx.h>
 
+#include <cstddef>
 #include <memory>
 
 namespace xrpl {
@@ -17,7 +20,7 @@ public:
     // The number of ledgers to hold a transaction is essentially
     // arbitrary. It should be sufficient to allow the transaction to
     // get into a fully-validated ledger.
-    static constexpr int kHOLD_LEDGERS = 5;
+    static constexpr int kHoldLedgers = 5;
 
     virtual ~LocalTxs() = default;
 

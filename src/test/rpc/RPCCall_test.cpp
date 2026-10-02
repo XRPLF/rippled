@@ -3,6 +3,9 @@
 #include <test/jtx/utility.h>
 
 #include <xrpld/core/Config.h>
+#include <xrpld/rpc/MethodNames.h>
+#include <xrpld/rpc/RPCCall.h>
+#include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_reader.h>
@@ -12,12 +15,14 @@
 
 #include <boost/algorithm/string/replace.hpp>
 
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstring>
-#include <functional>
 #include <initializer_list>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <typeinfo>
 #include <vector>
 
@@ -66,7 +71,7 @@ struct RPCCallTestData
     operator=(RPCCallTestData&&) = delete;
 };
 
-static RPCCallTestData const kRPC_CALL_TEST_ARRAY[] = {
+static RPCCallTestData const kRpcCallTestArray[] = {
     // account_channels
     // ------------------------------------------------------------
     {"account_channels: minimal.",
@@ -5832,9 +5837,9 @@ std::string
 updateAPIVersionString(char const* const req, unsigned apiVersion)
 {
     std::string const versionStr = std::to_string(apiVersion);
-    static auto const kPLACE_HOLDER = "%API_VER%";
+    static auto const kPlaceHolder = "%API_VER%";
     std::string jr(req);
-    boost::replace_all(jr, kPLACE_HOLDER, versionStr);
+    boost::replace_all(jr, kPlaceHolder, versionStr);
     return jr;
 }
 
@@ -5843,7 +5848,7 @@ makeNetworkConfig(uint32_t networkID)
 {
     using namespace test::jtx;
     return envconfig([&](std::unique_ptr<Config> cfg) {
-        cfg->NETWORK_ID = networkID;
+        cfg->networkId = networkID;
         return cfg;
     });
 }
@@ -5856,14 +5861,14 @@ public:
     {
         testcase << "RPCCall API version " << apiVersion;
         if (!BEAST_EXPECT(
-                apiVersion >= RPC::kAPI_MINIMUM_SUPPORTED_VERSION &&
-                apiVersion <= RPC::kAPI_MAXIMUM_VALID_VERSION))
+                apiVersion >= rpc::kApiMinimumSupportedVersion &&
+                apiVersion <= rpc::kApiMaximumValidVersion))
             return;
 
         test::jtx::Env const env(*this, makeNetworkConfig(11111));  // Used only for its Journal.
 
         // For each RPCCall test.
-        for (RPCCallTestData const& rpcCallTest : kRPC_CALL_TEST_ARRAY)
+        for (RPCCallTestData const& rpcCallTest : kRpcCallTestArray)
         {
             if (!BEAST_EXPECT(!rpcCallTest.exp.empty()))
                 break;
@@ -5871,11 +5876,11 @@ public:
             std::vector<std::string> const args{rpcCallTest.args.begin(), rpcCallTest.args.end()};
 
             char const* const expVersioned =
-                (apiVersion - RPC::kAPI_MINIMUM_SUPPORTED_VERSION) < rpcCallTest.exp.size()
-                ? rpcCallTest.exp[apiVersion - RPC::kAPI_MINIMUM_SUPPORTED_VERSION]
+                (apiVersion - rpc::kApiMinimumSupportedVersion) < rpcCallTest.exp.size()
+                ? rpcCallTest.exp[apiVersion - rpc::kApiMinimumSupportedVersion]
                 : rpcCallTest.exp.back();
 
-            // Note that, over the long term, kNONE of these tests should
+            // Note that, over the long term, kNone of these tests should
             // throw.  But, for the moment, some of them do.  So handle it.
             json::Value got;
             try
@@ -5924,10 +5929,67 @@ public:
         }
     }
 
+    // The command-line table and the dispatch table must agree.
+    //
+    // Forwards: every name the command line accepts must reach a handler at the
+    // version the command-line client requests. Presence in the dispatch table is
+    // not enough: a handler whose API range excludes kApiCommandLineVersion parses
+    // the command and then answers RpcUnknownCommand.
+    //
+    // Backwards: a handler that claims a command-line form must have one, and
+    // one that denies it must not, so that Handler::hasCommandLineForm cannot go
+    // stale.
+    //
+    // Three command-line names are exempt from the forward check because they
+    // are wrappers that forward a caller-supplied method rather than naming one
+    // themselves, so they have no handler of their own.
+    void
+    testCommandLineTableMatchesHandlers()
+    {
+        testcase("Command-line and dispatch tables agree");
+
+        static constexpr std::array kWrappers{
+            rpc::method::kInternal, rpc::method::kJson, rpc::method::kJson2};
+
+        auto const commandLine = commandLineMethodNames();
+        auto const handlers = rpc::getHandlerNames();
+        BEAST_EXPECT(!commandLine.empty());
+        BEAST_EXPECT(!handlers.empty());
+
+        // The command-line client always requests this version, so this is the
+        // only version at which its commands have to be dispatchable. Beta
+        // methods are off: a command must work against a stock server.
+        auto const handlerFor = [](std::string_view name) {
+            return rpc::getHandler(rpc::kApiCommandLineVersion, false, name);
+        };
+
+        for (auto const& name : commandLine)
+        {
+            if (std::ranges::find(kWrappers, name) != kWrappers.end())
+                continue;
+
+            auto const* handler = handlerFor(name);
+            if (BEAST_EXPECTS(handler != nullptr, std::string{name}))
+                BEAST_EXPECTS(handler->hasCommandLineForm, std::string{name});
+        }
+
+        for (auto const& name : handlers)
+        {
+            auto const* handler = handlerFor(name);
+            bool const claimsCommandLine = handler != nullptr && handler->hasCommandLineForm;
+
+            // Both name lists are sorted, so a binary search suffices.
+            BEAST_EXPECTS(
+                claimsCommandLine == std::ranges::binary_search(commandLine, name.view()),
+                std::string{name});
+        }
+    }
+
     void
     run() override
     {
-        forAllApiVersions(std::bind_front(&RPCCall_test::testRPCCall, this));
+        forAllApiVersions([this](unsigned apiVersion) { testRPCCall(apiVersion); });
+        testCommandLineTableMatchesHandlers();
     }
 };
 

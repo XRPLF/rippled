@@ -27,7 +27,7 @@ namespace xrpl::test::jtx::pdomain {
 // helpers
 // Make json for PermissionedDomainSet transaction
 json::Value
-setTx(AccountID const& account, Credentials const& credentials, std::optional<uint256> domain)
+setTx(AccountID const& account, Credentials const& credentials, std::optional<UInt256> domain)
 {
     json::Value jv;
     jv[sfTransactionType] = jss::PermissionedDomainSet;
@@ -35,10 +35,10 @@ setTx(AccountID const& account, Credentials const& credentials, std::optional<ui
     if (domain)
         jv[sfDomainID] = to_string(*domain);
 
-    json::Value acceptedCredentials(json::ArrayValue);
+    json::Value acceptedCredentials(json::ValueType::Array);
     for (auto const& credential : credentials)
     {
-        json::Value object(json::ObjectValue);
+        json::Value object(json::ValueType::Object);
         object[sfCredential] = credential.toJson();
         acceptedCredentials.append(std::move(object));
     }
@@ -49,9 +49,9 @@ setTx(AccountID const& account, Credentials const& credentials, std::optional<ui
 
 // Make json for PermissionedDomainDelete transaction
 json::Value
-deleteTx(AccountID const& account, uint256 const& domain)
+deleteTx(AccountID const& account, UInt256 const& domain)
 {
-    json::Value jv{json::ObjectValue};
+    json::Value jv{json::ValueType::Object};
     jv[sfTransactionType] = jss::PermissionedDomainDelete;
     jv[sfAccount] = to_string(account);
     jv[sfDomainID] = to_string(domain);
@@ -59,17 +59,17 @@ deleteTx(AccountID const& account, uint256 const& domain)
 }
 
 // Get PermissionedDomain objects by type from account_objects rpc call
-std::map<uint256, json::Value>
+std::map<UInt256, json::Value>
 getObjects(Account const& account, Env& env, bool withType)
 {
-    std::map<uint256, json::Value> ret;
+    std::map<UInt256, json::Value> ret;
     json::Value params;
     params[jss::account] = account.human();
     if (withType)
         params[jss::type] = jss::permissioned_domain;
 
     auto const& resp = env.rpc("json", "account_objects", to_string(params));
-    json::Value objects(json::ArrayValue);
+    json::Value objects(json::ValueType::Array);
     objects = resp[jss::result][jss::account_objects];
     for (auto const& object : objects)
     {
@@ -84,7 +84,7 @@ getObjects(Account const& account, Env& env, bool withType)
             continue;
         }
 
-        uint256 index;
+        UInt256 index;
         std::ignore = index.parseHex(object[jss::index].asString());
         ret[index] = object;
     }
@@ -94,7 +94,7 @@ getObjects(Account const& account, Env& env, bool withType)
 
 // Check if ledger object is there
 bool
-objectExists(uint256 const& objID, Env& env)
+objectExists(UInt256 const& objID, Env& env)
 {
     json::Value params;
     params[jss::index] = to_string(objID);
@@ -120,17 +120,19 @@ credentialsFromJson(
     std::unordered_map<std::string, Account> const& human2Acc)
 {
     Credentials ret;
-    json::Value credentials(json::ArrayValue);
+    json::Value credentials(json::ValueType::Array);
     credentials = object["AcceptedCredentials"];
     for (auto const& credential : credentials)
     {
-        json::Value obj(json::ObjectValue);
+        json::Value obj(json::ValueType::Object);
         obj = credential[jss::Credential];
         auto const& issuer = obj[jss::Issuer];
         auto const& credentialType = obj["CredentialType"];
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access): used only in tests
         auto blob = strUnHex(credentialType.asString()).value();
-        ret.push_back({human2Acc.at(issuer.asString()), std::string(blob.begin(), blob.end())});
+        ret.push_back(
+            {.issuer = human2Acc.at(issuer.asString()),
+             .credType = std::string(blob.begin(), blob.end())});
     }
     return ret;
 }
@@ -146,12 +148,12 @@ sortCredentials(Credentials const& input)
     return {credentialsSet.begin(), credentialsSet.end()};
 }
 
-uint256
+UInt256
 getNewDomain(std::shared_ptr<STObject const> const& meta)
 {
-    uint256 ret;
-    auto metaJson = meta->getJson(JsonOptions::KNone);
-    json::Value a(json::ArrayValue);
+    UInt256 ret;
+    auto metaJson = meta->getJson(JsonOptions::Values::None);
+    json::Value a(json::ValueType::Array);
     a = metaJson["AffectedNodes"];
 
     for (auto const& node : a)

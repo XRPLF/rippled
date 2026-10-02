@@ -55,8 +55,8 @@ template <class = void>
 boost::thread_specific_ptr<detail::LocalValues>&
 getLocalValues()
 {
-    static boost::thread_specific_ptr<detail::LocalValues> kTSP(&detail::LocalValues::cleanup);
-    return kTSP;
+    static boost::thread_specific_ptr<detail::LocalValues> kTsp(&detail::LocalValues::cleanup);
+    return kTsp;
 }
 
 }  // namespace detail
@@ -70,11 +70,15 @@ public:
     {
     }
 
-    /** Stores instance of T specific to the calling coroutine or thread. */
+    /**
+     * Stores instance of T specific to the calling coroutine or thread.
+     */
     T&
     operator*();
 
-    /** Stores instance of T specific to the calling coroutine or thread. */
+    /**
+     * Stores instance of T specific to the calling coroutine or thread.
+     */
     T*
     operator->()
     {

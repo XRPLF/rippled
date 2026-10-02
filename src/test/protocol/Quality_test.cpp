@@ -22,17 +22,19 @@ public:
 
     template <class Integer>
     static STAmount
-    amount(Integer integer, std::enable_if_t<std::is_signed_v<Integer>>* = 0)
+    amount(Integer integer)
+        requires(std::is_signed_v<Integer>)
     {
-        static_assert(std::is_integral_v<Integer>, "");
+        static_assert(std::is_integral_v<Integer>);
         return STAmount(integer, false);
     }
 
     template <class Integer>
     static STAmount
-    amount(Integer integer, std::enable_if_t<!std::is_signed_v<Integer>>* = 0)
+    amount(Integer integer)
+        requires(!std::is_signed_v<Integer>)
     {
-        static_assert(std::is_integral_v<Integer>, "");
+        static_assert(std::is_integral_v<Integer>);
         if (integer < 0)
             return STAmount(-integer, true);
         return STAmount(integer, false);
@@ -263,7 +265,7 @@ public:
                 raw(2755280000000000ull, -15));                // 2.75528
             STAmount const limit(raw(4131113916555555, -16));  // .4131113916555555
             Amounts const result(q.ceilOut(value, limit));
-            BEAST_EXPECT(result.in != beast::kZERO);
+            BEAST_EXPECT(result.in != beast::kZero);
         }
     }
 

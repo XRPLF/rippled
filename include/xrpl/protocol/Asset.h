@@ -2,10 +2,19 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/UintTypes.h>
+
+#include <compare>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <variant>
 
 namespace xrpl {
 
@@ -17,7 +26,7 @@ template <typename T>
         std::is_same_v<T, MPTAmount>)
 struct AmountType
 {
-    using amount_type = T;
+    using Amount = T;
 };
 
 /* Used to check for an asset with either badCurrency()
@@ -43,7 +52,7 @@ class Asset
 {
 public:
     using value_type = std::variant<Issue, MPTIssue>;
-    using token_type = std::variant<Currency, MPTID>;
+    using TokenType = std::variant<Currency, MPTID>;
     using AmtType =
         std::variant<AmountType<XRPAmount>, AmountType<IOUAmount>, AmountType<MPTAmount>>;
 
@@ -53,7 +62,8 @@ private:
 public:
     Asset() = default;
 
-    /** Conversions to Asset are implicit and conversions to specific issue
+    /**
+     * Conversions to Asset are implicit and conversions to specific issue
      *  type are explicit. This design facilitates the use of Asset.
      */
     Asset(Issue const& issue) : issue_(issue)
@@ -89,7 +99,7 @@ public:
     [[nodiscard]] constexpr value_type const&
     value() const;
 
-    [[nodiscard]] constexpr token_type
+    [[nodiscard]] constexpr TokenType
     token() const;
 
     void
@@ -140,7 +150,8 @@ public:
     friend constexpr bool
     operator==(BadAsset const& lhs, Asset const& rhs);
 
-    /** Return true if both assets refer to the same currency (regardless of
+    /**
+     * Return true if both assets refer to the same currency (regardless of
      * issuer) or MPT issuance. Otherwise return false.
      */
     friend constexpr bool
@@ -148,10 +159,10 @@ public:
 };
 
 template <ValidIssueType TIss>
-constexpr bool kIS_ISSUE_V = std::is_same_v<TIss, Issue>;
+constexpr bool kIsIssueV = std::is_same_v<TIss, Issue>;
 
 template <ValidIssueType TIss>
-constexpr bool kIS_MPTISSUE_V = std::is_same_v<TIss, MPTIssue>;
+constexpr bool kIsMptissueV = std::is_same_v<TIss, MPTIssue>;
 
 inline json::Value
 toJson(Asset const& asset)
@@ -192,12 +203,12 @@ Asset::value() const
     return issue_;
 }
 
-constexpr Asset::token_type
+constexpr Asset::TokenType
 Asset::token() const
 {
     return visit(
-        [&](Issue const& issue) -> Asset::token_type { return issue.currency; },
-        [&](MPTIssue const& issue) -> Asset::token_type { return issue.getMptID(); });
+        [&](Issue const& issue) -> Asset::TokenType { return issue.currency; },
+        [&](MPTIssue const& issue) -> Asset::TokenType { return issue.getMptID(); });
 }
 
 constexpr Asset::AmtType
@@ -242,7 +253,7 @@ operator<=>(Asset const& lhs, Asset const& rhs)
             {
                 return std::weak_ordering(lhs <=> rhs);
             }
-            else if constexpr (kIS_ISSUE_V<TLhs> && kIS_MPTISSUE_V<TRhs>)
+            else if constexpr (kIsIssueV<TLhs> && kIsMptissueV<TRhs>)
             {
                 return std::weak_ordering::greater;
             }

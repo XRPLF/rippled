@@ -11,9 +11,8 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/format/free_funcs.hpp>
-
 #include <cstddef>
+#include <format>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -64,11 +63,12 @@ STXChainBridge::STXChainBridge(SField const& name, json::Value const& v) : STBas
     }
 
     auto checkExtra = [](json::Value const& v) {
-        static auto const kBRIDGE_JSON = xrpl::STXChainBridge().getJson(xrpl::JsonOptions::KNone);
+        static auto const kBridgeJson =
+            xrpl::STXChainBridge().getJson(xrpl::JsonOptions::Values::None);
         for (auto it = v.begin(); it != v.end(); ++it)
         {
             std::string const name = it.memberName();
-            if (!kBRIDGE_JSON.isMember(name))
+            if (!kBridgeJson.isMember(name))
             {
                 Throw<std::runtime_error>("STXChainBridge extra field detected: " + name);
             }
@@ -140,10 +140,15 @@ STXChainBridge::getJson(JsonOptions jo) const
 std::string
 STXChainBridge::getText() const
 {
-    return str(
-        boost::format("{ %s = %s, %s = %s, %s = %s, %s = %s }") % sfLockingChainDoor.getName() %
-        lockingChainDoor_.getText() % sfLockingChainIssue.getName() % lockingChainIssue_.getText() %
-        sfIssuingChainDoor.getName() % issuingChainDoor_.getText() % sfIssuingChainIssue.getName() %
+    return std::format(
+        "{{ {} = {}, {} = {}, {} = {}, {} = {} }}",
+        sfLockingChainDoor.getName(),
+        lockingChainDoor_.getText(),
+        sfLockingChainIssue.getName(),
+        lockingChainIssue_.getText(),
+        sfIssuingChainDoor.getName(),
+        issuingChainDoor_.getText(),
+        sfIssuingChainIssue.getName(),
         issuingChainIssue_.getText());
 }
 
@@ -167,7 +172,7 @@ STXChainBridge::getSType() const
 bool
 STXChainBridge::isEquivalent(STBase const& t) const
 {
-    STXChainBridge const* v = dynamic_cast<STXChainBridge const*>(&t);
+    auto const* v = dynamic_cast<STXChainBridge const*>(&t);
     return (v != nullptr) && (*v == *this);
 }
 

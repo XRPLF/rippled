@@ -1,12 +1,13 @@
 #include <xrpl/nodestore/Database.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
@@ -29,7 +30,7 @@
 #include <thread>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 Database::Database(
     Scheduler& scheduler,
@@ -38,11 +39,11 @@ Database::Database(
     beast::Journal journal)
     : j_(journal)
     , scheduler_(scheduler)
-    , earliestLedgerSeq_(get<std::uint32_t>(config, "earliest_seq", kXRP_LEDGER_EARLIEST_SEQ))
-    , requestBundle_(get<int>(config, "rq_bundle", 4))
+    , earliestLedgerSeq_(get<std::uint32_t>(config, Keys::kEarliestSeq, kXrpLedgerEarliestSeq))
+    , requestBundle_(get<int>(config, Keys::kRqBundle, 4))
     , readThreads_(std::max(1, readThreads))
 {
-    XRPL_ASSERT(readThreads, "xrpl::NodeStore::Database::Database : nonzero threads input");
+    XRPL_ASSERT(readThreads, "xrpl::node_store::Database::Database : nonzero threads input");
 
     if (earliestLedgerSeq_ < 1)
         Throw<std::runtime_error>("Invalid earliest_seq");
@@ -88,7 +89,7 @@ Database::Database(
                     {
                         XRPL_ASSERT(
                             !it->second.empty(),
-                            "xrpl::NodeStore::Database::Database : non-empty "
+                            "xrpl::node_store::Database::Database : non-empty "
                             "data");
 
                         auto const& hash = it->first;
@@ -163,7 +164,7 @@ Database::stop()
     {
         XRPL_ASSERT(
             steady_clock::now() - start < 30s,
-            "xrpl::NodeStore::Database::stop : maximum stop duration");
+            "xrpl::node_store::Database::stop : maximum stop duration");
         std::this_thread::yield();
     }
 
@@ -175,7 +176,7 @@ Database::stop()
 
 void
 Database::asyncFetch(
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t ledgerSeq,
     std::function<void(std::shared_ptr<NodeObject> const&)>&& cb)
 {
@@ -192,7 +193,7 @@ void
 Database::importInternal(Backend& dstBackend, Database& srcDB)
 {
     Batch batch;
-    batch.reserve(BatchWritePreallocationSize);
+    batch.reserve(kBatchWritePreallocationSize);
     auto storeBatch = [&, fname = __func__]() {
         try
         {
@@ -212,12 +213,12 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
     };
 
     srcDB.forEach([&](std::shared_ptr<NodeObject> nodeObject) {
-        XRPL_ASSERT(nodeObject, "xrpl::NodeStore::Database::importInternal : non-null node");
+        XRPL_ASSERT(nodeObject, "xrpl::node_store::Database::importInternal : non-null node");
         if (!nodeObject)  // This should never happen
             return;
 
         batch.emplace_back(std::move(nodeObject));
-        if (batch.size() >= BatchWritePreallocationSize)
+        if (batch.size() >= kBatchWritePreallocationSize)
             storeBatch();
     });
 
@@ -228,7 +229,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
 // Perform a fetch and report the time it took
 std::shared_ptr<NodeObject>
 Database::fetchNodeObject(
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t ledgerSeq,
     FetchType fetchType,
     bool duplicate)
@@ -256,7 +257,7 @@ Database::fetchNodeObject(
 void
 Database::getCountsJson(json::Value& obj)
 {
-    XRPL_ASSERT(obj.isObject(), "xrpl::NodeStore::Database::getCountsJson : valid input type");
+    XRPL_ASSERT(obj.isObject(), "xrpl::node_store::Database::getCountsJson : valid input type");
 
     {
         std::unique_lock<std::mutex> const lock(readLock_);
@@ -275,4 +276,4 @@ Database::getCountsJson(json::Value& obj)
     obj[jss::node_reads_duration_us] = std::to_string(fetchDurationUs_);
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

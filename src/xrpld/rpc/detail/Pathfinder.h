@@ -4,38 +4,41 @@
 #include <xrpld/rpc/detail/AssetCache.h>
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/LoadEvent.h>
-#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 
-#include <unordered_set>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <optional>
+#include <vector>
 
 namespace xrpl {
 
-struct STPathHash
-{
-    std::size_t
-    operator()(STPath const& path) const noexcept
-    {
-        std::size_t h = path.size();
-        for (auto const& elem : path)
-            h ^= elem.hash() + 0x9e3779b9 + (h << 6) + (h >> 2);
-        return h;
-    }
-};
-
-/** Calculates payment paths.
-
-    The @ref RippleCalc determines the quality of the found paths.
-
-    @see RippleCalc
-*/
+/**
+ * Calculates payment paths.
+ *
+ * The @ref RippleCalc determines the quality of the found paths.
+ *
+ * @see RippleCalc
+ */
 class Pathfinder : public CountedObject<Pathfinder>
 {
 public:
-    /** Construct a pathfinder without an issuer.*/
+    /**
+     * Construct a pathfinder without an issuer.
+     */
     Pathfinder(
         std::shared_ptr<AssetCache> const& cache,
         AccountID const& srcAccount,
@@ -44,7 +47,7 @@ public:
         std::optional<AccountID> const& uSrcIssuer,
         STAmount const& dstAmount,
         std::optional<STAmount> const& srcAmount,
-        std::optional<uint256> const& domain,
+        std::optional<UInt256> const& domain,
         Application& app);
     Pathfinder(Pathfinder const&) = delete;
     Pathfinder&
@@ -57,7 +60,9 @@ public:
     bool
     findPaths(int searchLevel, std::function<bool(void)> const& continueCallback = {});
 
-    /** Compute the rankings of the paths. */
+    /**
+     * Compute the rankings of the paths.
+     */
     void
     computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback = {});
 
@@ -189,41 +194,42 @@ private:
     PathAsset srcPathAsset_;
     std::optional<AccountID> srcIssuer_;
     STAmount srcAmount_;
-    /** The amount remaining from srcAccount_ after the default liquidity has
-        been removed. */
+    /**
+     * The amount remaining from srcAccount_ after the default liquidity has
+     * been removed.
+     */
     STAmount remainingAmount_;
-    bool convert_all_;
-    std::optional<uint256> domain_;
+    bool convertAll_;
+    std::optional<UInt256> domain_;
 
     std::shared_ptr<ReadView const> ledger_;
     std::unique_ptr<LoadEvent> loadEvent_;
     std::shared_ptr<AssetCache> rLCache_;
 
     STPathElement source_;
-    STPathSet completePaths_;
-    std::unordered_set<STPath, STPathHash> completePathsIndex_;
+    STPathSet completePaths_{STPathSet::DeduplicationTag{}};
     std::vector<PathRank> pathRanks_;
     std::map<PathType, STPathSet> paths_;
 
-    hash_map<Asset, int> pathsOutCountMap_;
+    HashMap<Asset, int> pathsOutCountMap_;
 
     Application& app_;
     beast::Journal const j_;
 
     // Add ripple paths
-    static std::uint32_t const kAF_ADD_ACCOUNTS = 0x001;
+    static std::uint32_t const kAfAddAccounts = 0x001;
 
     // Add order books
-    static std::uint32_t const kAF_ADD_BOOKS = 0x002;
+    static std::uint32_t const kAfAddBooks = 0x002;
 
     // Add order book to XRP only
-    static std::uint32_t const kAF_OB_XRP = 0x010;
+    static std::uint32_t const kAfObXrp = 0x010;
 
     // Must link to destination currency
-    static std::uint32_t const kAF_OB_LAST = 0x040;
+    static std::uint32_t const kAfObLast = 0x040;
 
     // Destination account only
-    static std::uint32_t const kAF_AC_LAST = 0x080;
+    static std::uint32_t const kAfAcLast = 0x080;
 };
 
 }  // namespace xrpl

@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
@@ -21,9 +22,10 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
 
+#include <algorithm>
 #include <cstdint>
+#include <expected>
 #include <limits>
-#include <memory>
 #include <set>
 #include <unordered_set>
 #include <utility>
@@ -33,15 +35,16 @@ namespace xrpl {
 namespace credentials {
 
 bool
-checkExpired(std::shared_ptr<SLE const> const& sleCredential, NetClock::time_point const& closed)
+checkExpired(SLE const& sleCredential, NetClock::time_point const& closed)
 {
     std::uint32_t const exp =
-        (*sleCredential)[~sfExpiration].value_or(std::numeric_limits<std::uint32_t>::max());
+        sleCredential[~sfExpiration].value_or(std::numeric_limits<std::uint32_t>::max());
     std::uint32_t const now = closed.time_since_epoch().count();
     return now > exp;
 }
 
-bool
+[[nodiscard]]
+static std::expected<bool, TER>
 removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 {
     auto const closeTime = view.header().parentCloseTime;
@@ -50,14 +53,19 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
     for (auto const& h : arr)
     {
         // Credentials already checked in preclaim. Look only for expired here.
+        if (view.rules().enabled(fixCleanup3_4_0) && h.isZero())
+            return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+
         auto const k = keylet::credential(h);
         auto const sleCred = view.peek(k);
 
-        if (sleCred && checkExpired(sleCred, closeTime))
+        if (sleCred && checkExpired(*sleCred, closeTime))
         {
             JLOG(j.trace()) << "Credentials are expired. Cred: " << sleCred->getText();
             // delete expired credentials even if the transaction failed
-            deleteSLE(view, sleCred, j);
+            auto const err = deleteSLE(view, sleCred, j);
+            if (view.rules().enabled(fixCleanup3_1_3) && !isTesSuccess(err))
+                return std::unexpected(err);
             foundExpired = true;
         }
     }
@@ -66,7 +74,7 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 }
 
 TER
-deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Journal j)
+deleteSLE(ApplyView& view, SLE::Ref sleCredential, beast::Journal j)
 {
     if (!sleCredential)
         return tecNO_ENTRY;
@@ -93,14 +101,14 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
         }
 
         if (isOwner)
-            adjustOwnerCount(view, sleAccount, -1, j);
+            decreaseOwnerCountForObject(view, sleAccount, sleCredential, 1, j);
 
         return tesSUCCESS;
     };
 
     auto const issuer = sleCredential->getAccountID(sfIssuer);
     auto const subject = sleCredential->getAccountID(sfSubject);
-    bool const accepted = (sleCredential->getFlags() & lsfAccepted) != 0u;
+    bool const accepted = sleCredential->isFlag(lsfAccepted);
 
     auto err = delSLE(issuer, sfIssuerNode, !accepted || (subject == issuer));
     if (!isTesSuccess(err))
@@ -120,20 +128,27 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
 }
 
 NotTEC
-checkFields(STTx const& tx, beast::Journal j)
+checkFields(STTx const& tx, Rules const& rules, beast::Journal j)
 {
     if (!tx.isFieldPresent(sfCredentialIDs))
         return tesSUCCESS;
 
     auto const& credentials = tx.getFieldV256(sfCredentialIDs);
-    if (credentials.empty() || (credentials.size() > kMAX_CREDENTIALS_ARRAY_SIZE))
+    if (credentials.empty() || (credentials.size() > kMaxCredentialsArraySize))
     {
         JLOG(j.trace()) << "Malformed transaction: Credentials array size is invalid: "
                         << credentials.size();
         return temMALFORMED;
     }
 
-    std::unordered_set<uint256> duplicates;
+    if (rules.enabled(fixCleanup3_4_0) &&
+        std::ranges::any_of(credentials, [](UInt256 const& id) { return id.isZero(); }))
+    {
+        JLOG(j.trace()) << "Malformed transaction: zero credential ID.";
+        return temMALFORMED;
+    }
+
+    std::unordered_set<UInt256> duplicates;
     for (auto const& cred : credentials)
     {
         auto [it, ins] = duplicates.insert(cred);
@@ -156,6 +171,14 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
     auto const& credIDs(tx.getFieldV256(sfCredentialIDs));
     for (auto const& h : credIDs)
     {
+        if (view.rules().enabled(fixCleanup3_4_0) && h.isZero())
+        {
+            // LCOV_EXCL_START
+            JLOG(j.trace()) << "Zero credential ID.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+
         auto const sleCred = view.read(keylet::credential(h));
         if (!sleCred)
         {
@@ -169,7 +192,7 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
             return tecBAD_CREDENTIALS;
         }
 
-        if ((sleCred->getFlags() & lsfAccepted) == 0u)
+        if (!sleCred->isFlag(lsfAccepted))
         {
             JLOG(j.trace()) << "Credential isn't accepted. Cred: " << h;
             return tecBAD_CREDENTIALS;
@@ -182,7 +205,7 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
 }
 
 TER
-validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
+validDomain(ReadView const& view, UInt256 domainID, AccountID const& subject)
 {
     // Note, permissioned domain objects can be deleted at any time
     auto const slePD = view.read(keylet::permissionedDomain(domainID));
@@ -205,12 +228,12 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
         // allows expired credentials to be deleted by any transaction.
         if (sleCredential)
         {
-            if (checkExpired(sleCredential, closeTime))
+            if (checkExpired(*sleCredential, closeTime))
             {
                 foundExpired = true;
                 continue;
             }
-            if ((sleCredential->getFlags() & lsfAccepted) != 0u)
+            if (sleCredential->isFlag(lsfAccepted))
             {
                 return tesSUCCESS;
             }
@@ -226,10 +249,13 @@ TER
 authorizedDepositPreauth(ReadView const& view, STVector256 const& credIDs, AccountID const& dst)
 {
     std::set<std::pair<AccountID, Slice>> sorted;
-    std::vector<std::shared_ptr<SLE const>> lifeExtender;
+    std::vector<SLE::const_pointer> lifeExtender;
     lifeExtender.reserve(credIDs.size());
     for (auto const& h : credIDs)
     {
+        if (view.rules().enabled(fixCleanup3_4_0) && h.isZero())
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
         auto sleCred = view.read(keylet::credential(h));
         if (!sleCred)            // already checked in preclaim
             return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -270,7 +296,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
         return credentials.empty() ? temARRAY_EMPTY : temARRAY_TOO_LARGE;
     }
 
-    std::unordered_set<uint256> duplicates;
+    std::unordered_set<UInt256> duplicates;
     for (auto const& credential : credentials)
     {
         auto const& issuer = credential[sfIssuer];
@@ -283,7 +309,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
         }
 
         auto const ct = credential[sfCredentialType];
-        if (ct.empty() || (ct.size() > kMAX_CREDENTIAL_TYPE_LENGTH))
+        if (ct.empty() || (ct.size() > kMaxCredentialTypeLength))
         {
             JLOG(j.trace()) << "Malformed transaction: "
                                "Invalid credentialType size: "
@@ -306,7 +332,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
 }  // namespace credentials
 
 TER
-verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, beast::Journal j)
+verifyValidDomain(ApplyView& view, AccountID const& account, UInt256 domainID, beast::Journal j)
 {
     auto const slePD = view.read(keylet::permissionedDomain(domainID));
     if (!slePD)
@@ -324,27 +350,30 @@ verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, b
             credentials.pushBack(keyletCredential.key);
     }
 
-    bool const foundExpired = credentials::removeExpired(view, credentials, j);
+    auto const foundExpired = credentials::removeExpired(view, credentials, j);
+    if (!foundExpired.has_value())
+        return foundExpired.error();
+
     for (auto const& h : credentials)
     {
         auto sleCredential = view.read(keylet::credential(h));
         if (!sleCredential)
             continue;  // expired, i.e. deleted in credentials::removeExpired
 
-        if ((sleCredential->getFlags() & lsfAccepted) != 0u)
+        if (sleCredential->isFlag(lsfAccepted))
             return tesSUCCESS;
     }
 
-    return foundExpired ? tecEXPIRED : tecNO_PERMISSION;
+    return *foundExpired ? tecEXPIRED : tecNO_PERMISSION;
 }
 
 TER
-verifyDepositPreauth(
+checkDepositPreauth(
     STTx const& tx,
-    ApplyView& view,
+    ReadView const& view,
     AccountID const& src,
     AccountID const& dst,
-    std::shared_ptr<SLE const> const& sleDst,
+    SLE::ConstRef sleDst,
     beast::Journal j)
 {
     // If depositPreauth is enabled, then an account that requires
@@ -353,25 +382,52 @@ verifyDepositPreauth(
     //  2. If src is deposit preauthorized by dst (either by account or by
     //  credentials).
 
-    bool const credentialsPresent = tx.isFieldPresent(sfCredentialIDs);
-
-    if (credentialsPresent && credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j))
-        return tecEXPIRED;
-
     if (sleDst && ((sleDst->getFlags() & lsfDepositAuth) != 0u))
     {
         if (src != dst)
         {
             if (!view.exists(keylet::depositPreauth(dst, src)))
             {
-                return !credentialsPresent ? tecNO_PERMISSION
-                                           : credentials::authorizedDepositPreauth(
-                                                 view, tx.getFieldV256(sfCredentialIDs), dst);
+                return !tx.isFieldPresent(sfCredentialIDs)
+                    ? tecNO_PERMISSION
+                    : credentials::authorizedDepositPreauth(
+                          view, tx.getFieldV256(sfCredentialIDs), dst);
             }
         }
     }
 
     return tesSUCCESS;
+}
+
+TER
+cleanupExpiredCredentials(STTx const& tx, ApplyView& view, beast::Journal j)
+{
+    if (tx.isFieldPresent(sfCredentialIDs))
+    {
+        auto const foundExpired =
+            credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j);
+        if (!foundExpired.has_value())
+            return foundExpired.error();
+        if (*foundExpired)
+            return tecEXPIRED;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+verifyDepositPreauth(
+    STTx const& tx,
+    ApplyView& view,
+    AccountID const& src,
+    AccountID const& dst,
+    SLE::ConstRef sleDst,
+    beast::Journal j)
+{
+    if (auto const err = cleanupExpiredCredentials(tx, view, j); !isTesSuccess(err))
+        return err;
+
+    return checkDepositPreauth(tx, view, src, dst, sleDst, j);
 }
 
 }  // namespace xrpl

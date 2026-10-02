@@ -33,7 +33,7 @@ public:
      * @brief Construct a FeeSettings ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit FeeSettings(std::shared_ptr<SLE const> sle)
+    explicit FeeSettings(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -214,6 +214,78 @@ public:
     }
 
     /**
+     * @brief Get sfGasLimit (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getGasLimit() const
+    {
+        if (hasGasLimit())
+            return this->sle_->at(sfGasLimit);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfGasLimit is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasGasLimit() const
+    {
+        return this->sle_->isFieldPresent(sfGasLimit);
+    }
+
+    /**
+     * @brief Get sfBytecodeSizeLimit (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getBytecodeSizeLimit() const
+    {
+        if (hasBytecodeSizeLimit())
+            return this->sle_->at(sfBytecodeSizeLimit);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfBytecodeSizeLimit is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasBytecodeSizeLimit() const
+    {
+        return this->sle_->isFieldPresent(sfBytecodeSizeLimit);
+    }
+
+    /**
+     * @brief Get sfGasPrice (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getGasPrice() const
+    {
+        if (hasGasPrice())
+            return this->sle_->at(sfGasPrice);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfGasPrice is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasGasPrice() const
+    {
+        return this->sle_->isFieldPresent(sfGasPrice);
+    }
+
+    /**
      * @brief Get sfPreviousTxnID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -285,7 +357,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    FeeSettingsBuilder(std::shared_ptr<SLE const> sle)
+    FeeSettingsBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltFEE_SETTINGS)
         {
@@ -294,7 +366,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfBaseFee (SoeOptional)
@@ -374,6 +448,39 @@ public:
     }
 
     /**
+     * @brief Set sfGasLimit (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    FeeSettingsBuilder&
+    setGasLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfGasLimit] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfBytecodeSizeLimit (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    FeeSettingsBuilder&
+    setBytecodeSizeLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfBytecodeSizeLimit] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfGasPrice (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    FeeSettingsBuilder&
+    setGasPrice(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfGasPrice] = value;
+        return *this;
+    }
+
+    /**
      * @brief Set sfPreviousTxnID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
@@ -401,7 +508,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     FeeSettings
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return FeeSettings{std::make_shared<SLE>(std::move(object_), index)};
     }

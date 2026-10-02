@@ -3,6 +3,7 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -22,9 +23,6 @@
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Fees.h>
 
-#include <boost/lexical_cast.hpp>
-#include <boost/lexical_cast/bad_lexical_cast.hpp>
-
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -38,7 +36,7 @@ namespace xrpl {
 void
 addChannel(json::Value& jsonLines, SLE const& line)
 {
-    json::Value& jDst(jsonLines.append(json::ObjectValue));
+    json::Value& jDst(jsonLines.append(json::ValueType::Object));
     jDst[jss::channel_id] = to_string(line.key());
     jDst[jss::account] = to_string(line[sfAccount]);
     jDst[jss::destination_account] = to_string(line[sfDestination]);
@@ -69,17 +67,17 @@ addChannel(json::Value& jsonLines, SLE const& line)
 //   marker: opaque                 // optional, resume previous query
 // }
 json::Value
-doAccountChannels(RPC::JsonContext& context)
+doAccountChannels(rpc::JsonContext& context)
 {
     auto const& params(context.params);
     if (!params.isMember(jss::account))
-        return RPC::missingFieldError(jss::account);
+        return rpc::missingFieldError(jss::account);
 
     if (!params[jss::account].isString())
-        return RPC::invalidFieldError(jss::account);
+        return rpc::invalidFieldError(jss::account);
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
+    auto result = rpc::lookupLedger(ledger, context);
     if (!ledger)
         return result;
 
@@ -97,7 +95,7 @@ doAccountChannels(RPC::JsonContext& context)
     if (params.isMember(jss::destination_account))
     {
         if (!params[jss::destination_account].isString())
-            return RPC::invalidFieldError(jss::destination_account);
+            return rpc::invalidFieldError(jss::destination_account);
         strDst = params[jss::destination_account].asString();
     }
 
@@ -108,28 +106,28 @@ doAccountChannels(RPC::JsonContext& context)
         return rpcError(RpcActMalformed);
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kACCOUNT_CHANNELS, context))
+    if (auto err = readLimitField(limit, rpc::tuning::kAccountChannels, context))
         return *err;
 
-    json::Value jsonChannels{json::ArrayValue};
+    json::Value jsonChannels{json::ValueType::Array};
     struct VisitData
     {
-        std::vector<std::shared_ptr<SLE const>> items;
+        std::vector<SLE::const_pointer> items;
         AccountID const& accountID;
         std::optional<AccountID> const& raDstAccount;
     };
     VisitData visitData = {.items = {}, .accountID = accountID, .raDstAccount = raDstAccount};
     visitData.items.reserve(limit);
-    uint256 startAfter = beast::kZERO;
+    UInt256 startAfter = beast::kZero;
     std::uint64_t startHint = 0;
 
     if (params.isMember(jss::marker))
     {
         if (!params[jss::marker].isString())
-            return RPC::expectedFieldError(jss::marker, "string");
+            return rpc::expectedFieldError(jss::marker, "string");
 
         // Marker is composed of a comma separated index and start hint. The
-        // former will be read as hex, and the latter using boost lexical cast.
+        // former will be read as hex, and the latter as a decimal integer.
         std::stringstream marker(params[jss::marker].asString());
         std::string value;
         if (!std::getline(marker, value, ','))
@@ -141,14 +139,10 @@ doAccountChannels(RPC::JsonContext& context)
         if (!std::getline(marker, value, ','))
             return rpcError(RpcInvalidParams);
 
-        try
-        {
-            startHint = boost::lexical_cast<std::uint64_t>(value);
-        }
-        catch (boost::bad_lexical_cast&)
-        {
+        auto const hint = toUInt64(value);
+        if (!hint.has_value())
             return rpcError(RpcInvalidParams);
-        }
+        startHint = *hint;
 
         // We then must check if the object pointed to by the marker is actually
         // owned by the account in the request.
@@ -157,12 +151,12 @@ doAccountChannels(RPC::JsonContext& context)
         if (!sle)
             return rpcError(RpcInvalidParams);
 
-        if (!RPC::isRelatedToAccount(*ledger, sle, accountID))
+        if (!rpc::isRelatedToAccount(*ledger, sle, accountID))
             return rpcError(RpcInvalidParams);
     }
 
     auto count = 0;
-    std::optional<uint256> marker = {};
+    std::optional<UInt256> marker = {};
     std::uint64_t nextHint = 0;
     if (!forEachItemAfter(
             *ledger,
@@ -170,8 +164,7 @@ doAccountChannels(RPC::JsonContext& context)
             startAfter,
             startHint,
             limit + 1,
-            [&visitData, &accountID, &count, &limit, &marker, &nextHint](
-                std::shared_ptr<SLE const> const& sleCur) {
+            [&visitData, &accountID, &count, &limit, &marker, &nextHint](SLE::ConstRef sleCur) {
                 if (!sleCur)
                 {
                     // LCOV_EXCL_START
@@ -183,7 +176,7 @@ doAccountChannels(RPC::JsonContext& context)
                 if (++count == limit)
                 {
                     marker = sleCur->key();
-                    nextHint = RPC::getStartHint(sleCur, visitData.accountID);
+                    nextHint = rpc::getStartHint(sleCur, visitData.accountID);
                 }
 
                 if (count <= limit && sleCur->getType() == ltPAYCHAN &&
@@ -214,7 +207,7 @@ doAccountChannels(RPC::JsonContext& context)
     for (auto const& item : visitData.items)
         addChannel(jsonChannels, *item);
 
-    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+    context.loadType = resource::kFeeMediumBurdenRpc;
     result[jss::channels] = std::move(jsonChannels);
     return result;
 }

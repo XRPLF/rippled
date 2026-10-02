@@ -113,13 +113,6 @@ SharedIntrusive<T>::operator=(SharedIntrusive<TT>&& rhs)
 
 template <class T>
 bool
-SharedIntrusive<T>::operator!=(std::nullptr_t) const
-{
-    return this->get() != nullptr;
-}
-
-template <class T>
-bool
 SharedIntrusive<T>::operator==(std::nullptr_t) const
 {
     return this->get() == nullptr;
@@ -567,14 +560,14 @@ template <class T>
 bool
 SharedWeakUnion<T>::isStrong() const
 {
-    return (tp_ & kTAG_MASK) == 0u;
+    return (tp_ & kTagMask) == 0u;
 }
 
 template <class T>
 bool
 SharedWeakUnion<T>::isWeak() const
 {
-    return (tp_ & kTAG_MASK) != 0u;
+    return (tp_ & kTagMask) != 0u;
 }
 
 template <class T>
@@ -625,13 +618,16 @@ SharedWeakUnion<T>::convertToWeak()
             unsafeSetRawPtr(nullptr);
             return true;  // Should never happen
             // LCOV_EXCL_STOP
-        case PartialDestroy:
-            // This is a weird case. We just converted the last strong
-            // pointer to a weak pointer.
+        case PartialDestroy: {
+            // We just converted the last strong pointer to a weak pointer.
+            // The weak ref we now hold keeps the object from being fully
+            // destroyed, so `p` stays valid; only the copy passed to
+            // `partialDestructorFinished` is nulled.
             p->partialDestructor();
-            partialDestructorFinished(&p);
-            // p is null and may no longer be used
+            auto finished = p;
+            partialDestructorFinished(&finished);
             break;
+        }
     }
     unsafeSetRawPtr(p, RefStrength::Weak);
     return true;
@@ -641,7 +637,10 @@ template <class T>
 T*
 SharedWeakUnion<T>::unsafeGetRawPtr() const
 {
-    return reinterpret_cast<T*>(tp_ & kPTR_MASK);
+    // tp_ packs a raw pointer together with a strength bit; recovering the
+    // pointer inherently requires an integer-to-pointer cast.
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
+    return reinterpret_cast<T*>(tp_ & kPtrMask);
 }
 
 template <class T>
@@ -650,7 +649,7 @@ SharedWeakUnion<T>::unsafeSetRawPtr(T* p, RefStrength rs)
 {
     tp_ = reinterpret_cast<std::uintptr_t>(p);
     if (tp_ && rs == RefStrength::Weak)
-        tp_ |= kTAG_MASK;
+        tp_ |= kTagMask;
 }
 
 template <class T>

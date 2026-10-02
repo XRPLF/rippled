@@ -53,8 +53,8 @@ public:
         // alice and becky, both of them will be charged an owner reserve
         // Irrespective of whether the issuer or the customer initiated
         // the trust-line creation, both will be charged
-        env.require(lines(alice, 1));
-        env.require(lines(becky, 1));
+        env.require(Lines(alice, 1));
+        env.require(Lines(becky, 1));
 
         // Fetch the trust-lines via RPC for verification
         json::Value jv;
@@ -74,8 +74,8 @@ public:
         // the reset of the trust line limits deletes the trust-line
         // this occurs despite the authorization of the trust-line by the
         // issuer(alice, in this unit test)
-        env.require(lines(becky, 0));
-        env.require(lines(alice, 0));
+        env.require(Lines(becky, 0));
+        env.require(Lines(alice, 0));
 
         // second verification check via RPC calls
         jv["account"] = becky.human();
@@ -131,8 +131,8 @@ public:
         // alice and becky, both of them will be charged an owner reserve
         // Irrespective of whether the issuer or the customer initiated
         // the trust-line creation, both will be charged
-        env.require(lines(alice, 1));
-        env.require(lines(becky, 1));
+        env.require(Lines(alice, 1));
+        env.require(Lines(becky, 1));
 
         // Fetch the trust-lines via RPC for verification
         json::Value jv;
@@ -152,8 +152,8 @@ public:
         // the reset of the trust line limits deletes the trust-line
         // this occurs despite the authorization of the trust-line by the
         // issuer(alice, in this unit test)
-        env.require(lines(becky, 0));
-        env.require(lines(alice, 0));
+        env.require(Lines(becky, 0));
+        env.require(Lines(alice, 0));
 
         // second verification check via RPC calls
         jv["account"] = becky.human();
@@ -191,7 +191,7 @@ public:
 
         auto const txFee = env.current()->fees().base;
         auto const baseReserve = env.current()->fees().reserve;
-        auto const threelineReserve = env.current()->fees().accountReserve(3);
+        auto const threelineReserve = env.current()->fees().accountReserve(3, 1);
 
         env.fund(XRP(10000), gwA, gwB, assistor);
 
@@ -201,20 +201,20 @@ public:
                 + drops(3 * txFee) /* and to pay for 3 transactions */,
             creator);
 
-        env(trust(creator, gwA["USD"](100)), Require(lines(creator, 1)));
-        env(trust(creator, gwB["USD"](100)), Require(lines(creator, 2)));
+        env(trust(creator, gwA["USD"](100)), Require(Lines(creator, 1)));
+        env(trust(creator, gwB["USD"](100)), Require(Lines(creator, 2)));
 
         if (thirdLineCreatesLE)
         {
             // creator does not have enough for the third trust line
             env(trust(creator, assistor["USD"](100)),
                 Ter(tecNO_LINE_INSUF_RESERVE),
-                Require(lines(creator, 2)));
+                Require(Lines(creator, 2)));
         }
         else
         {
             // First establish opposite trust direction from assistor
-            env(trust(assistor, creator["USD"](100)), Require(lines(creator, 3)));
+            env(trust(assistor, creator["USD"](100)), Require(Lines(creator, 3)));
 
             // creator does not have enough to create the other direction on
             // the existing trust line ledger entry
@@ -226,11 +226,11 @@ public:
 
         if (thirdLineCreatesLE)
         {
-            env(trust(creator, assistor["USD"](100)), Require(lines(creator, 3)));
+            env(trust(creator, assistor["USD"](100)), Require(Lines(creator, 3)));
         }
         else
         {
-            env(trust(creator, assistor["USD"](100)), Require(lines(creator, 3)));
+            env(trust(creator, assistor["USD"](100)), Require(Lines(creator, 3)));
 
             json::Value jv;
             jv["account"] = creator.human();
@@ -284,7 +284,7 @@ public:
     {
         json::Value jv;
         jv[jss::Account] = a.human();
-        jv[jss::LimitAmount] = amt.getJson(JsonOptions::KNone);
+        jv[jss::LimitAmount] = amt.getJson(JsonOptions::Values::None);
         jv[jss::TransactionType] = jss::TrustSet;
         jv[jss::Flags] = 0;
         return jv;
@@ -467,11 +467,43 @@ public:
             BEAST_EXPECT(lines[jss::result][jss::lines][0u][jss::quality_out] == quality);
         };
 
-        env(tx1, Require(lines(toAcct, 1)), Require(lines(fromAcct, 1)));
+        env(tx1, Require(Lines(toAcct, 1)), Require(Lines(fromAcct, 1)));
         checkQuality(createQuality);
 
-        env(tx2, Require(lines(toAcct, 1)), Require(lines(fromAcct, 1)));
+        env(tx2, Require(Lines(toAcct, 1)), Require(Lines(fromAcct, 1)));
         checkQuality(!createQuality);
+    }
+
+    void
+    testDisallowIncomingWithRequireAuth()
+    {
+        testcase("Create trustline with disallow incoming requiring auth");
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        auto const dist = Account("dist");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        auto const distUSD = dist["USD"];
+
+        env.fund(XRP(1000), gw, dist);
+        env.close();
+
+        env(fset(gw, asfRequireAuth));
+        env.close();
+
+        env(fset(dist, asfDisallowIncomingTrustline));
+        env.close();
+
+        env(trust(dist, usd(10000)));
+        env.close();
+
+        env(trust(gw, distUSD(10000)), Txflags(tfSetfAuth), Ter(tesSUCCESS));
+        env.close();
+
+        env(pay(gw, dist, usd(1000)), Ter(tesSUCCESS));
+        env.close();
     }
 
     void
@@ -480,42 +512,6 @@ public:
         testcase("Create trustline with disallow incoming");
 
         using namespace test::jtx;
-
-        // fixDisallowIncomingV1
-        {
-            for (bool const withFix : {true, false})
-            {
-                auto const amend = withFix ? features : features - fixDisallowIncomingV1;
-
-                Env env{*this, amend};
-                auto const dist = Account("dist");
-                auto const gw = Account("gw");
-                auto const usd = gw["USD"];
-                auto const distUSD = dist["USD"];
-
-                env.fund(XRP(1000), gw, dist);
-                env.close();
-
-                env(fset(gw, asfRequireAuth));
-                env.close();
-
-                env(fset(dist, asfDisallowIncomingTrustline));
-                env.close();
-
-                env(trust(dist, usd(10000)));
-                env.close();
-
-                // withFix: can set trustline
-                // withOutFix: cannot set trustline
-                auto const trustResult = withFix ? Ter(tesSUCCESS) : Ter(tecNO_PERMISSION);
-                env(trust(gw, distUSD(10000)), Txflags(tfSetfAuth), trustResult);
-                env.close();
-
-                auto const txResult = withFix ? Ter(tesSUCCESS) : Ter(tecPATH_DRY);
-                env(pay(gw, dist, usd(1000)), txResult);
-                env.close();
-            }
-        }
 
         Env env{*this, features};
 
@@ -601,6 +597,7 @@ public:
         testModifyQualityOfTrustline(features, false, true);
         testModifyQualityOfTrustline(features, true, false);
         testModifyQualityOfTrustline(features, true, true);
+        testDisallowIncomingWithRequireAuth();
         testDisallowIncoming(features);
         testTrustLineResetWithAuthFlag();
         testTrustLineDelete();

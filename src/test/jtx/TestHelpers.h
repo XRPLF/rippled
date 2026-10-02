@@ -1,32 +1,66 @@
 #pragma once
 
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
 
 #include <xrpld/app/misc/TxQ.h>
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/PathAsset.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <algorithm>
+#include <array>
+#include <chrono>
+#include <condition_variable>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <mutex>
+#include <optional>
 #include <source_location>
+#include <string>
+#include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 namespace xrpl::test::jtx {
 
-/** Generic helper class for helper classes that set a field on a JTx.
-
- Not every helper will be able to use this because of conversions and other
- issues, but for classes where it's straightforward, this can simplify things.
-*/
+/**
+ * Generic helper class for helper classes that set a field on a JTx.
+ *
+ * Not every helper will be able to use this because of conversions and other
+ * issues, but for classes where it's straightforward, this can simplify things.
+ */
 template <
     class SField,
+    // NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
     class StoredValue = typename SField::type::value_type,
     class OutputValue = StoredValue>
 struct JTxField
@@ -84,10 +118,10 @@ struct TimePointField : public JTxField<SF_UINT32, NetClock::time_point, NetCloc
     using SF = SF_UINT32;
     using SV = NetClock::time_point;
     using OV = NetClock::rep;
-    using base = JTxField<SF, SV, OV>;
+    using Base = JTxField<SF, SV, OV>;
 
 protected:
-    using base::value_;
+    using Base::value_;
 
 public:
     explicit TimePointField(SF const& sfield, SV const& value) : JTxField(sfield, value)
@@ -101,18 +135,18 @@ public:
     }
 };
 
-struct Uint256Field : public JTxField<SF_UINT256, uint256, std::string>
+struct UInt256Field : public JTxField<SF_UINT256, UInt256, std::string>
 {
     using SF = SF_UINT256;
-    using SV = uint256;
+    using SV = UInt256;
     using OV = std::string;
-    using base = JTxField<SF, SV, OV>;
+    using Base = JTxField<SF, SV, OV>;
 
 protected:
-    using base::value_;
+    using Base::value_;
 
 public:
-    explicit Uint256Field(SF const& sfield, SV const& value) : JTxField(sfield, value)
+    explicit UInt256Field(SF const& sfield, SV const& value) : JTxField(sfield, value)
     {
     }
 
@@ -128,10 +162,10 @@ struct AccountIdField : public JTxField<SF_ACCOUNT, AccountID, std::string>
     using SF = SF_ACCOUNT;
     using SV = AccountID;
     using OV = std::string;
-    using base = JTxField<SF, SV, OV>;
+    using Base = JTxField<SF, SV, OV>;
 
 protected:
-    using base::value_;
+    using Base::value_;
 
 public:
     explicit AccountIdField(SF const& sfield, SV const& value) : JTxField(sfield, value)
@@ -150,10 +184,10 @@ struct StAmountField : public JTxField<SF_AMOUNT, STAmount, json::Value>
     using SF = SF_AMOUNT;
     using SV = STAmount;
     using OV = json::Value;
-    using base = JTxField<SF, SV, OV>;
+    using Base = JTxField<SF, SV, OV>;
 
 protected:
-    using base::value_;
+    using Base::value_;
 
 public:
     explicit StAmountField(SF const& sfield, SV const& value) : JTxField(sfield, value)
@@ -163,7 +197,7 @@ public:
     [[nodiscard]] OV
     value() const override
     {
-        return value_.getJson(JsonOptions::KNone);
+        return value_.getJson(JsonOptions::Values::None);
     }
 };
 
@@ -171,7 +205,7 @@ struct BlobField : public JTxField<SF_VL, std::string>
 {
     using SF = SF_VL;
     using SV = std::string;
-    using base = JTxField<SF, SV, SV>;
+    using Base = JTxField<SF, SV, SV>;
 
     using JTxField::JTxField;
 
@@ -192,12 +226,12 @@ struct ValueUnitField : public JTxField<SField, unit::ValueUnit<UnitTag, ValueTy
     using SF = SField;
     using SV = unit::ValueUnit<UnitTag, ValueType>;
     using OV = ValueType;
-    using base = JTxField<SF, SV, OV>;
+    using Base = JTxField<SF, SV, OV>;
 
     static_assert(std::is_same_v<OV, typename SField::type::value_type>);
 
 protected:
-    using base::value_;
+    using Base::value_;
 
 public:
     using JTxField<SF, SV, OV>::JTxField;
@@ -213,8 +247,8 @@ template <class JTxField>
 struct JTxFieldWrapper
 {
     using JF = JTxField;
-    using SF = typename JF::SF;
-    using SV = typename JF::SV;
+    using SF = JF::SF;
+    using SV = JF::SV;
 
 protected:
     SF const& sfield_;
@@ -266,32 +300,20 @@ public:
     }
 };
 
+// NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
 template <class SField, class UnitTag, class ValueType = typename SField::type::value_type>
-using valueUnitWrapper = JTxFieldWrapper<ValueUnitField<SField, UnitTag, ValueType>>;
+using ValueUnitWrapper = JTxFieldWrapper<ValueUnitField<SField, UnitTag, ValueType>>;
 
+// NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
 template <class SField, class StoredValue = typename SField::type::value_type>
-using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
+using SimpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
 
-/** General field definitions, or fields used in multiple transaction namespaces
+/**
+ * General field definitions, or fields used in multiple transaction namespaces
  */
-auto const kDATA = JTxFieldWrapper<BlobField>(sfData);
+auto const kData = JTxFieldWrapper<BlobField>(sfData);
 
-auto const kAMOUNT = JTxFieldWrapper<StAmountField>(sfAmount);
-
-// TODO We only need this long "requires" clause as polyfill, for C++20
-// implementations which are missing <ranges> header. Replace with
-// `std::ranges::range<Input>`, and accordingly use std::ranges::begin/end
-// when we have moved to better compilers.
-template <typename Input>
-auto
-makeVector(Input const& input)
-    requires requires(Input& v) {
-        std::begin(v);
-        std::end(v);
-    }
-{
-    return std::vector(std::begin(input), std::end(input));
-}
+auto const kAmount = JTxFieldWrapper<StAmountField>(sfAmount);
 
 // Functions used in debugging
 json::Value
@@ -345,6 +367,18 @@ checkArraySize(json::Value const& val, unsigned int size);
 std::uint32_t
 ownerCount(test::jtx::Env const& env, test::jtx::Account const& account);
 
+// Helper function that returns the sponsored owner count on an account.
+std::uint32_t
+sponsoredOwnerCount(test::jtx::Env const& env, test::jtx::Account const& account);
+
+// Helper function that returns the sponsoring owner count on an account.
+std::uint32_t
+sponsoringOwnerCount(test::jtx::Env const& env, test::jtx::Account const& account);
+
+// Helper function that returns the sponsoring account count on an account.
+std::uint32_t
+sponsoringAccountCount(test::jtx::Env const& env, test::jtx::Account const& account);
+
 [[nodiscard]]
 inline bool
 checkVL(Slice const& result, std::string const& expected)
@@ -356,7 +390,7 @@ checkVL(Slice const& result, std::string const& expected)
 
 [[nodiscard]]
 inline bool
-checkVL(std::shared_ptr<SLE const> const& sle, SField const& field, std::string const& expected)
+checkVL(SLE::ConstRef sle, SField const& field, std::string const& expected)
 {
     return strHex(expected) == strHex(sle->getFieldVL(field));
 }
@@ -367,8 +401,9 @@ void
 stpathAppendOne(STPath& st, Account const& account);
 
 template <class T>
-std::enable_if_t<std::is_constructible_v<Account, T>>
+void
 stpathAppendOne(STPath& st, T const& t)
+    requires(std::is_constructible_v<Account, T>)
 {
     stpathAppendOne(st, Account{t});
 }
@@ -415,12 +450,8 @@ same(STPathSet const& st1, Args const&... args)
     if (st1.size() != st2.size())
         return false;
 
-    for (auto const& p : st2)
-    {
-        if (std::ranges::find(st1, p) == st1.end())
-            return false;
-    }
-    return true;
+    return std::ranges::all_of(
+        st2, [&st1](auto const& p) { return std::ranges::find(st1, p) != st1.end(); });
 }
 
 json::Value
@@ -472,7 +503,7 @@ findPathsRequest(
     std::optional<STAmount> const& saSendMax = std::nullopt,
     std::optional<PathAsset> const& srcAsset = std::nullopt,
     std::optional<AccountID> const& srcIssuer = std::nullopt,
-    std::optional<uint256> const& domain = std::nullopt);
+    std::optional<UInt256> const& domain = std::nullopt);
 
 std::tuple<STPathSet, STAmount, STAmount>
 findPaths(
@@ -483,7 +514,7 @@ findPaths(
     std::optional<STAmount> const& saSendMax = std::nullopt,
     std::optional<PathAsset> const& srcAsset = std::nullopt,
     std::optional<AccountID> const& srcIssuer = std::nullopt,
-    std::optional<uint256> const& domain = std::nullopt);
+    std::optional<UInt256> const& domain = std::nullopt);
 
 std::tuple<STPathSet, STAmount, STAmount>
 findPathsByElement(
@@ -494,7 +525,7 @@ findPathsByElement(
     std::optional<STAmount> const& saSendMax = std::nullopt,
     std::optional<STPathElement> const& srcElement = std::nullopt,
     std::optional<AccountID> const& srcIssuer = std::nullopt,
-    std::optional<uint256> const& domain = std::nullopt);
+    std::optional<UInt256> const& domain = std::nullopt);
 
 /******************************************************************************/
 
@@ -582,33 +613,33 @@ create(
 json::Value
 fund(
     AccountID const& account,
-    uint256 const& channel,
+    UInt256 const& channel,
     STAmount const& amount,
     std::optional<NetClock::time_point> const& expiration = std::nullopt);
 
 json::Value
 claim(
     AccountID const& account,
-    uint256 const& channel,
+    UInt256 const& channel,
     std::optional<STAmount> const& balance = std::nullopt,
     std::optional<STAmount> const& amount = std::nullopt,
     std::optional<Slice> const& signature = std::nullopt,
     std::optional<PublicKey> const& pk = std::nullopt);
 
-uint256
+UInt256
 channel(AccountID const& account, AccountID const& dst, std::uint32_t seqProxyValue);
 
-inline uint256
+inline UInt256
 channel(Account const& account, Account const& dst, std::uint32_t seqProxyValue)
 {
     return channel(account.id(), dst.id(), seqProxyValue);
 }
 
 STAmount
-channelBalance(ReadView const& view, uint256 const& chan);
+channelBalance(ReadView const& view, UInt256 const& chan);
 
 bool
-channelExists(ReadView const& view, uint256 const& chan);
+channelExists(ReadView const& view, UInt256 const& chan);
 
 }  // namespace paychan
 
@@ -706,7 +737,9 @@ equal(Strand const& strand, Args&&... args)
 /***************************************************************/
 namespace check {
 
-/** Create a check. */
+/**
+ * Create a check.
+ */
 template <typename A>
     requires std::is_same_v<A, AccountID>
 json::Value
@@ -714,7 +747,7 @@ create(A const& account, A const& dest, STAmount const& sendMax)
 {
     json::Value jv;
     jv[sfAccount.jsonName] = to_string(account);
-    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::KNone);
+    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::Values::None);
     jv[sfDestination.jsonName] = to_string(dest);
     jv[sfTransactionType.jsonName] = jss::CheckCreate;
     return jv;
@@ -728,13 +761,13 @@ create(jtx::Account const& account, jtx::Account const& dest, STAmount const& se
 
 }  // namespace check
 
-static constexpr FeeLevel64 kBASE_FEE_LEVEL{TxQ::kBASE_LEVEL};
-static constexpr FeeLevel64 kMIN_ESCALATION_FEE_LEVEL = kBASE_FEE_LEVEL * 500;
+inline constexpr FeeLevel64 kBaseFeeLevel{TxQ::kBaseLevel};
+inline constexpr FeeLevel64 kMinEscalationFeeLevel = kBaseFeeLevel * 500;
 
-inline uint256
-getCheckIndex(AccountID const& account, std::uint32_t uSequence)
+inline UInt256
+getCheckIndex(AccountID const& account, std::uint32_t const sequence)
 {
-    return keylet::check(account, uSequence).key;
+    return keylet::check(account, SeqProxy::rawSequence(sequence)).key;
 }
 
 template <class Suite>
@@ -746,8 +779,8 @@ checkMetrics(
     std::optional<std::size_t> expectedMaxCount,
     std::size_t expectedInLedger,
     std::size_t expectedPerLedger,
-    std::uint64_t expectedMinFeeLevel = kBASE_FEE_LEVEL.fee(),
-    std::uint64_t expectedMedFeeLevel = kMIN_ESCALATION_FEE_LEVEL.fee(),
+    std::uint64_t expectedMinFeeLevel = kBaseFeeLevel.fee(),
+    std::uint64_t expectedMedFeeLevel = kMinEscalationFeeLevel.fee(),
     std::source_location const location = std::source_location::current())
 {
     int const line = location.line();
@@ -757,11 +790,11 @@ checkMetrics(
     auto const metrics = env.app().getTxQ().getMetrics(*env.current());
     using namespace std::string_literals;
 
-    metrics.referenceFeeLevel == kBASE_FEE_LEVEL
+    metrics.referenceFeeLevel == kBaseFeeLevel
         ? test.pass()
         : test.fail(
               "reference: "s + std::to_string(metrics.referenceFeeLevel.value()) + "/" +
-                  std::to_string(kBASE_FEE_LEVEL.value()),
+                  std::to_string(kBaseFeeLevel.value()),
               file,
               line);
 
@@ -829,26 +862,26 @@ checkMetrics(
 /* LoanBroker */
 /******************************************************************************/
 
-namespace loanBroker {
+namespace loan_broker {
 
 json::Value
-set(AccountID const& account, uint256 const& vaultId, std::uint32_t flags = 0);
+set(AccountID const& account, UInt256 const& vaultId, std::uint32_t flags = 0);
 
 // Use "del" because "delete" is a reserved word in C++.
 json::Value
-del(AccountID const& account, uint256 const& brokerID, std::uint32_t flags = 0);
+del(AccountID const& account, UInt256 const& brokerID, std::uint32_t flags = 0);
 
 json::Value
 coverDeposit(
     AccountID const& account,
-    uint256 const& brokerID,
+    UInt256 const& brokerID,
     STAmount const& amount,
     std::uint32_t flags = 0);
 
 json::Value
 coverWithdraw(
     AccountID const& account,
-    uint256 const& brokerID,
+    UInt256 const& brokerID,
     STAmount const& amount,
     std::uint32_t flags = 0);
 
@@ -856,22 +889,21 @@ coverWithdraw(
 json::Value
 coverClawback(AccountID const& account, std::uint32_t flags = 0);
 
-auto const kLOAN_BROKER_ID = JTxFieldWrapper<Uint256Field>(sfLoanBrokerID);
+auto const kLoanBrokerId = JTxFieldWrapper<UInt256Field>(sfLoanBrokerID);
 
-auto const kMANAGEMENT_FEE_RATE =
-    valueUnitWrapper<SF_UINT16, unit::TenthBipsTag>(sfManagementFeeRate);
+auto const kManagementFeeRate =
+    ValueUnitWrapper<SF_UINT16, unit::TenthBipsTag>(sfManagementFeeRate);
 
-auto const kDEBT_MAXIMUM = simpleField<SF_NUMBER>(sfDebtMaximum);
+auto const kDebtMaximum = SimpleField<SF_NUMBER>(sfDebtMaximum);
 
-auto const kCOVER_RATE_MINIMUM =
-    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateMinimum);
+auto const kCoverRateMinimum = ValueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateMinimum);
 
-auto const kCOVER_RATE_LIQUIDATION =
-    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateLiquidation);
+auto const kCoverRateLiquidation =
+    ValueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateLiquidation);
 
-auto const kDESTINATION = JTxFieldWrapper<AccountIdField>(sfDestination);
+auto const kDestination = JTxFieldWrapper<AccountIdField>(sfDestination);
 
-}  // namespace loanBroker
+}  // namespace loan_broker
 
 /* Loan */
 /******************************************************************************/
@@ -879,56 +911,57 @@ namespace loan {
 
 json::Value
 set(AccountID const& account,
-    uint256 const& loanBrokerID,
+    UInt256 const& loanBrokerID,
     Number principalRequested,
     std::uint32_t flags = 0);
 
-auto const kCOUNTERPARTY = JTxFieldWrapper<AccountIdField>(sfCounterparty);
+auto const kCounterparty = JTxFieldWrapper<AccountIdField>(sfCounterparty);
 
 // For `CounterPartySignature`, use `Sig(sfCounterpartySignature, ...)`
 
-auto const kLOAN_ORIGINATION_FEE = simpleField<SF_NUMBER>(sfLoanOriginationFee);
+auto const kLoanOriginationFee = SimpleField<SF_NUMBER>(sfLoanOriginationFee);
 
-auto const kLOAN_SERVICE_FEE = simpleField<SF_NUMBER>(sfLoanServiceFee);
+auto const kLoanServiceFee = SimpleField<SF_NUMBER>(sfLoanServiceFee);
 
-auto const kLATE_PAYMENT_FEE = simpleField<SF_NUMBER>(sfLatePaymentFee);
+auto const kLatePaymentFee = SimpleField<SF_NUMBER>(sfLatePaymentFee);
 
-auto const kCLOSE_PAYMENT_FEE = simpleField<SF_NUMBER>(sfClosePaymentFee);
+auto const kClosePaymentFee = SimpleField<SF_NUMBER>(sfClosePaymentFee);
 
-auto const kOVERPAYMENT_FEE = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentFee);
+auto const kOverpaymentFee = ValueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentFee);
 
-auto const kINTEREST_RATE = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfInterestRate);
+auto const kInterestRate = ValueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfInterestRate);
 
-auto const kLATE_INTEREST_RATE =
-    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfLateInterestRate);
+auto const kLateInterestRate = ValueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfLateInterestRate);
 
-auto const kCLOSE_INTEREST_RATE =
-    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCloseInterestRate);
+auto const kCloseInterestRate =
+    ValueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCloseInterestRate);
 
-auto const kOVERPAYMENT_INTEREST_RATE =
-    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentInterestRate);
+auto const kOverpaymentInterestRate =
+    ValueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentInterestRate);
 
-auto const kPAYMENT_TOTAL = simpleField<SF_UINT32>(sfPaymentTotal);
+auto const kPaymentTotal = SimpleField<SF_UINT32>(sfPaymentTotal);
 
-auto const kPAYMENT_INTERVAL = simpleField<SF_UINT32>(sfPaymentInterval);
+auto const kPaymentInterval = SimpleField<SF_UINT32>(sfPaymentInterval);
 
-auto const kGRACE_PERIOD = simpleField<SF_UINT32>(sfGracePeriod);
-
-json::Value
-manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags);
+auto const kGracePeriod = SimpleField<SF_UINT32>(sfGracePeriod);
 
 json::Value
-del(AccountID const& account, uint256 const& loanID, std::uint32_t flags = 0);
+manage(AccountID const& account, UInt256 const& loanID, std::uint32_t flags);
+
+json::Value
+del(AccountID const& account, UInt256 const& loanID, std::uint32_t flags = 0);
 
 json::Value
 pay(AccountID const& account,
-    uint256 const& loanID,
+    UInt256 const& loanID,
     STAmount const& amount,
     std::uint32_t flags = 0);
 
 }  // namespace loan
 
-/** Set Expiration on a JTx. */
+/**
+ * Set Expiration on a JTx.
+ */
 class Expiration
 {
 private:
@@ -947,7 +980,9 @@ public:
     }
 };
 
-/** Set SourceTag on a JTx. */
+/**
+ * Set SourceTag on a JTx.
+ */
 class SourceTag
 {
 private:
@@ -965,7 +1000,9 @@ public:
     }
 };
 
-/** Set DestinationTag on a JTx. */
+/**
+ * Set DestinationTag on a JTx.
+ */
 class DestTag
 {
 private:

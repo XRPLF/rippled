@@ -130,12 +130,12 @@ STArray::getText() const
 json::Value
 STArray::getJson(JsonOptions p) const
 {
-    json::Value v = json::ArrayValue;
+    json::Value v = json::ValueType::Array;
     for (auto const& object : v_)
     {
         if (object.getSType() != STI_NOTPRESENT)
         {
-            json::Value& inner = v.append(json::ObjectValue);
+            json::Value& inner = v.append(json::ValueType::Object);
             inner[object.getFName().getJsonName()] = object.getJson(p);
         }
     }
