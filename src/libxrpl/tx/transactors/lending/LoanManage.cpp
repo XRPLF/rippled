@@ -133,12 +133,58 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+STAmount
+LoanManage::calculateDefaultCover(SLE::Ref loanSle, SLE::Ref brokerSle, SLE::Ref vaultSle)
+{
+    auto const vaultAsset = vaultSle->at(sfAsset);
+
+    Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
+
+    TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
+    TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
+
+    Number const rawCover = [&]() {
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+        // Compute minimum cover
+        Number const minimumCover =
+            tenthBipsOfValue(brokerSle->at(sfDebtTotal).value(), coverRateMinimum);
+
+        // Apply coverRateLiquidation
+        return std::min(tenthBipsOfValue(minimumCover, coverRateLiquidation), principalOutstanding);
+    }();
+
+    STAmount cappedCover = [&]() -> STAmount {
+        // rawCover is a product of multiplication and can carry more digits than STAmount's;
+        // fix the mode so the STAmount conversion truncates
+        NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
+        return STAmount{vaultAsset, std::min(rawCover, *brokerSle->at(sfCoverAvailable))};
+    }();
+
+    if (cappedCover.integral())
+        return cappedCover;
+
+    // Round once, at the coarser of the two posterior grids (CoverAvailable - cover and
+    // AssetsAvailable + cover). When the grids differ the update lands on the coarser one.
+    // CoverAvailable - cover is then exact. If AssetsAvailable is finer than its posterior grid,
+    // the writer's round-to-nearest of AssetsAvailable + cover can credit up to half a posterior
+    // ulp more than the cover; no cover on the broker's grid avoids that, so it is accepted.
+    int const coarserScale = std::max(
+        detail::getPosteriorBrokerCoverScale(vaultSle, brokerSle, -Number(cappedCover)),
+        detail::posteriorAssetScale(
+            getVaultVersion(vaultSle),
+            vaultAsset,
+            getVaultBaseScale(vaultSle),
+            vaultSle->at(sfAssetsAvailable),
+            cappedCover));
+    return roundToScale(cappedCover, coarserScale, Number::RoundingMode::TowardsZero);
+}
+
 namespace {
 
 // Defaults a Loan on a FixedPrecision Vault. Cover is the raw XLS-66
 // First-Loss Capital amount, capped at the LoanBroker's CoverAvailable and
-// rounded toward zero at the broker's posterior cover grid (a no-op for
-// integral assets). AssetsAvailable rises by cover through the cash writer;
+// rounded toward zero at the coarser of the broker's and the vault's posterior
+// grids (a no-op for integral assets). AssetsAvailable rises by cover through the cash writer;
 // AssetsDeployed drops by the Loan's full PrincipalOutstanding exactly, and
 // AssetsTotal is re-derived from AssetsAvailable + AssetsDeployed by the
 // writer's sync -- this function never touches sfAssetsTotal directly.
@@ -148,97 +194,28 @@ defaultLoanFixedPrecision(
     SLE::Ref loanSle,
     SLE::Ref brokerSle,
     SLE::Ref vaultSle,
-    Asset const& vaultAsset,
     beast::Journal j)
 {
+    auto const vaultAsset = vaultSle->at(sfAsset);
+
     Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
     Number const scheduledInterest = loanSle->at(sfTotalValueOutstanding) - principalOutstanding -
         loanSle->at(sfManagementFeeOutstanding);
 
-    TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
-    TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
-    Number const rawCover = [&]() {
-        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-        Number const minimumCover =
-            tenthBipsOfValue(brokerSle->at(sfDebtTotal).value(), coverRateMinimum);
-        return std::min(tenthBipsOfValue(minimumCover, coverRateLiquidation), principalOutstanding);
-    }();
-
-    Number const coverAvailable = *brokerSle->at(sfCoverAvailable);
-    Number const cappedCover = std::min(rawCover, coverAvailable);
-    Number const brokerRoundedCover = [&] {
-        // rawCover is a product of tenth-bips multiplications and can carry
-        // more digits than STAmount's 16; fix the mode so the
-        // STAmount{vaultAsset, cappedCover} conversion below truncates
-        // instead of depending on whatever mode is ambient here.
-        NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
-        return Number{debitToPosteriorBrokerCoverScale(
-            vaultSle,
-            brokerSle,
-            STAmount{vaultAsset, cappedCover},
-            Number::RoundingMode::TowardsZero)};
-    }();
-    // Floor the sum at AssetsAvailable's own posterior grid too: rounding at
-    // the broker's cover grid above keeps CoverAvailable itself at 16
-    // digits, but crediting that same amount into AssetsAvailable can still
-    // need a 17th digit there.
-    STAmount coverAmount = creditToPosteriorAvailableScale(
-        vaultSle, STAmount{vaultAsset, brokerRoundedCover}, Number::RoundingMode::Downward);
-
-    // Defensive re-round: should never disagree with the vault-side floor
-    // above, but if it ever does, re-apply that floor so both rails settle on
-    // the same, doubly-representable value.
-    {
-        STAmount const brokerRoundedAgain = debitToPosteriorBrokerCoverScale(
-            vaultSle, brokerSle, coverAmount, Number::RoundingMode::TowardsZero);
-        if (brokerRoundedAgain != coverAmount)
-        {
-            // LCOV_EXCL_START
-            UNREACHABLE(
-                "xrpl::defaultLoanFixedPrecision : broker-grid re-round agrees with the vault "
-                "floor");
-            coverAmount = creditToPosteriorAvailableScale(
-                vaultSle, brokerRoundedAgain, Number::RoundingMode::Downward);
-            // LCOV_EXCL_STOP
-        }
-    }
+    STAmount const coverAmount = LoanManage::calculateDefaultCover(loanSle, brokerSle, vaultSle);
 
     // The broker's CoverAvailable decrease and the broker-to-vault transfer
-    // both use this final amount so all three rails move by the same
-    // representable delta.
-    XRPL_ASSERT(
-        (STAmount{vaultAsset, Number(vaultSle->at(sfAssetsAvailable)) + Number(coverAmount)} ==
-         Number(vaultSle->at(sfAssetsAvailable)) + Number(coverAmount)),
-        "xrpl::defaultLoanFixedPrecision : AssetsAvailable + cover is exactly 16-digit "
-        "representable");
+    // both use this amount. It is on the coarser of the two posterior grids,
+    // so CoverAvailable - cover is exact. AssetsAvailable + cover may need
+    // finer digits than the posterior grid when AssetsAvailable is on a finer
+    // grid; adjustVaultBalances rounds that sum.
     XRPL_ASSERT(
         (STAmount{vaultAsset, Number(brokerSle->at(sfCoverAvailable)) - Number(coverAmount)} ==
          Number(brokerSle->at(sfCoverAvailable)) - Number(coverAmount)),
         "xrpl::defaultLoanFixedPrecision : CoverAvailable - cover is exactly 16-digit "
         "representable");
 
-    // Guard the LoanBroker-side fields before any writes, so a failure here
-    // leaves nothing written -- matching adjustVaultBalances's own
-    // atomicity for the Vault-side fields below.
-    if (brokerSle->at(sfDebtTotal) < principalOutstanding)
-    {
-        // LCOV_EXCL_START
-        JLOG(j.fatal()) << "LoanBroker DebtTotal is less than the defaulted Loan's "
-                           "outstanding principal. LoanBroker DebtTotal: "
-                        << Number(brokerSle->at(sfDebtTotal))
-                        << ", Principal: " << principalOutstanding;
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-    if (brokerSle->at(sfCoverAvailable) < Number(coverAmount))
-    {
-        // LCOV_EXCL_START
-        JLOG(j.warn()) << "LoanBroker cover available is less than amount covered";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    Number const loss = loanSle->isFlag(lsfLoanImpaired) ? -principalOutstanding : Number{0};
+    Number const loss = loanSle->isFlag(lsfLoanImpaired) ? -principalOutstanding : 0;
     if (auto const ter = adjustVaultBalances(
             vaultSle,
             {.cash = coverAmount,
@@ -251,7 +228,7 @@ defaultLoanFixedPrecision(
     view.update(vaultSle);
 
     brokerSle->at(sfDebtTotal) -= principalOutstanding;
-    brokerSle->at(sfCoverAvailable) -= Number(coverAmount);
+    brokerSle->at(sfCoverAvailable) -= coverAmount;
     view.update(brokerSle);
 
     loanSle->setFlag(lsfLoanDefault);
@@ -283,12 +260,12 @@ LoanManage::defaultLoan(
     SLE::Ref loanSle,
     SLE::Ref brokerSle,
     SLE::Ref vaultSle,
-    Asset const& vaultAsset,
     beast::Journal j)
 {
     if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
-        return defaultLoanFixedPrecision(view, loanSle, brokerSle, vaultSle, vaultAsset, j);
+        return defaultLoanFixedPrecision(view, loanSle, brokerSle, vaultSle, j);
 
+    auto const vaultAsset = *vaultSle->at(sfAsset);
     // Calculate the amount of the Default that First-Loss Capital covers:
 
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
@@ -587,7 +564,7 @@ LoanManage::doApply()
         // Valid flag combinations are checked in preflight. No flags is valid -
         // just a noop.
         if (tx.isFlag(tfLoanDefault))
-            return defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
+            return defaultLoan(view, loanSle, brokerSle, vaultSle, j_);
         if (tx.isFlag(tfLoanImpair))
             return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
         if (tx.isFlag(tfLoanUnimpair))
