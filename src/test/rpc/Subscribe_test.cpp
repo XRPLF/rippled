@@ -2450,6 +2450,7 @@ public:
             Fee(baseFee * 150));
         env.close();
         expectTransaction("EscrowCreate");
+    }
 
     void
     testReportFeeChangeRace()
@@ -2541,6 +2542,59 @@ public:
     }
 
     void
+    testNoSubscriberFeeChange()
+    {
+        // With no server-stream subscribers, reportFeeChange() should enqueue
+        // a JtClientFeeChange job on the first call but not on a subsequent
+        // call with the same fee summary (no-subscriber update fix).
+        // When a subscriber then connects, the next reportFeeChange() tick
+        // should publish a full serverStatus immediately.
+        testcase("no-subscriber fee change");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, envconfig()};
+        env.app().getLoadManager().stop();
+
+        auto& ops = env.app().getOPs();
+        auto& feeTrack = env.app().getFeeTrack();
+
+        // Raise fee so summary differs from default
+        feeTrack.raiseLocalFee();
+        feeTrack.raiseLocalFee();
+
+        // No subscribers yet — reportFeeChange() should enqueue one job
+        ops.reportFeeChange();
+
+        // Now subscribe
+        auto wsc = makeWSClient(env.app().config());
+        {
+            json::Value stream;
+            stream[jss::streams] = json::ValueType::Array;
+            stream[jss::streams].append("server");
+            auto jv = wsc->invoke("subscribe", stream);
+            BEAST_EXPECT(jv[jss::status] == "success");
+        }
+
+        // Trigger another fee change — should publish serverStatus
+        // with load_factor fields now that a subscriber exists
+        ops.reportFeeChange();
+
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::type] == "serverStatus" &&
+                jv.isMember(jss::load_factor);
+        }));
+
+        // Unsubscribe
+        {
+            json::Value stream;
+            stream[jss::streams] = json::ValueType::Array;
+            stream[jss::streams].append("server");
+            wsc->invoke("unsubscribe", stream);
+        }
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -2549,6 +2603,7 @@ public:
 
         testServer();
         testReportFeeChangeRace();
+        testNoSubscriberFeeChange();
         testLedger();
         testTransactionsAPIv1();
         testTransactionsAPIv2();
