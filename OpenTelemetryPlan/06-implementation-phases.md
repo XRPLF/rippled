@@ -980,10 +980,9 @@ Before the telemetry stack (Phases 1-9) can be considered production-ready, we n
 > harness hard-codes none of them. `validate_telemetry.py` iterates
 > `expected_spans.json` and `expected_metrics.json`, so those two files are the
 > only authority, and `grafana_dashboards.uids` in `expected_metrics.json` is the
-> authority for dashboards. As of this branch all **15** dashboards on disk
-> (`ls docker/telemetry/grafana/dashboards/*.json`) are listed in `uids`,
-> `log-derived-insights` included. See
-> [Phase10_taskList.md](./Phase10_taskList.md) for the live figures.
+> authority for dashboards. Every dashboard on disk
+> (`ls docker/telemetry/grafana/dashboards/*.json`) is listed in `uids`,
+> `log-derived-insights` included.
 
 ### Architecture
 
@@ -1089,9 +1088,8 @@ later metric families. The categories are:
 - **Metric existence** — every entry in `expected_metrics.json`, queried through
   the Prometheus `/api/v1/series` endpoint
 - **Dashboard loads** — every uid in `expected_metrics.json` under
-  `grafana_dashboards.uids` (currently all 15 provisioned dashboards). Note this
-  only asks Grafana for the dashboard and its panel count; it does not run the
-  panel queries.
+  `grafana_dashboards.uids`. Note this only asks Grafana for the dashboard and
+  its panel count; it does not run the panel queries.
 - **Log-trace correlation** — `trace_id` present in Loki plus a Tempo reverse
   lookup (gated in CI; `run-full-validation.sh` prints a node/mount/collector/Loki
   diagnostic alongside them so a failure names the leg that broke)
@@ -2412,15 +2410,11 @@ Document the external dashboard's "fast path" pattern as a future optimization f
 > Ledger economy is a **row on `node-health`**, not a dashboard of its own, so it
 > falls under that already-documented section rather than the six above.
 
-> Still open. The runbook itself records the gap at its dashboard reference
-> section, and it names **six** dashboards, not four: "Nine dashboards have a
-> reference section below. `fee-market`, `job-queue`, `ledger-data-sync`,
-> `overlay-traffic-detail`, `peer-quality`, and `validator-health` are
-> provisioned but not yet documented here — their panel descriptions carry the
-> same six-heading reference format, so open the panel info icon in Grafana until
-> a section is written." (15 dashboards on disk − 6 undocumented = 9 documented.)
-> So the remaining runbook work is **six** dashboard guides, plus the Validation
-> Agreement explainer listed above.
+> Still open. The runbook records the gap at its dashboard reference section:
+> `fee-market`, `job-queue`, `ledger-data-sync`, `overlay-traffic-detail`,
+> `peer-quality` and `validator-health` are provisioned but have no section
+> there yet. So the remaining runbook work is **six** dashboard guides, plus the
+> Validation Agreement explainer listed above.
 
 #### `OpenTelemetryPlan/09-data-collection-reference.md` (on Phase 9 branch) — done
 
