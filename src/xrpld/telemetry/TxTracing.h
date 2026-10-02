@@ -18,20 +18,24 @@
 #include <xrpl/telemetry/SpanGuard.h>
 
 #ifdef XRPL_ENABLE_TELEMETRY
-// The trace-context helpers and std::uint8_t are named only by the
-// telemetry-enabled branches below.
+// The trace-context helpers, std::span and std::uint8_t are named only by
+// the telemetry-enabled branches below.
 #include <xrpl/telemetry/TraceContextValidation.h>
 
 #include <cstdint>
+#include <span>
 #endif
 
 namespace xrpl::telemetry {
 
 /**
  * Create a "tx.receive" span for a transaction received from a peer.
- *  trace_id is derived from txID[0:16]. If the incoming message carries
- *  a protobuf TraceContext with a valid span_id, it is used as the
- *  parent to preserve relay ordering.
+ *
+ * The trace_id is txID[0:16]. The sender's span becomes the parent when
+ * the message's TraceContext carries a valid span_id and this same
+ * trace_id. A parent and its child share one trace. A context that names
+ * another trace leaves the span a root in the txID trace.
+ *
  * @param txID  Transaction id; its first 16 bytes become the trace_id.
  * @param msg   The received message, read only for its trace context.
  * @return An active guard, or a null guard when the Transactions category
@@ -44,10 +48,12 @@ txReceiveSpan(uint256 const& txID, [[maybe_unused]] protocol::TMTransaction cons
     if (msg.has_trace_context())
     {
         auto const& tc = msg.trace_context();
-        // Only the span_id is taken from the peer; the trace_id comes from
-        // txID. A message from the parser is already clean (both ids
-        // valid); this check covers a message built elsewhere.
-        if (tc.has_span_id() && isValidSpanId(tc.span_id()))
+        // The parent comes from the peer only when the peer's trace_id is
+        // txID[0:16]. A message from the parser is already clean (both ids
+        // valid). The span_id check covers a message built elsewhere.
+        auto const txTraceId = std::as_bytes(std::span(txID)).first<kTraceIdSize>();
+        if (tc.has_span_id() && isValidSpanId(tc.span_id()) &&
+            isSameTraceId(tc.trace_id(), txTraceId))
         {
             return SpanGuard::hashSpan(
                 TraceCategory::Transactions,

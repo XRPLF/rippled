@@ -608,12 +608,7 @@ uint256 txHash:  A1B2C3D4 E5F6A7B8 C9D0E1F2 A3B4C5D6  E7F8A9B0 C1D2E3F4 A5B6C7D8
                  |---------- trace_id (16 bytes) ---------|  (remaining 16 bytes unused)
 ```
 
-Each node generates a **random 8-byte `span_id`** so its span is unique within the
-shared trace. When protobuf `TraceContext` is present in the incoming `TMTransaction`,
-the sender's `span_id` is extracted and used as the parent — preserving the relay
-chain as a parent-child tree. When absent (older peers, first hop from client), the
-span appears as a root in the same trace — correlation is preserved, only the tree
-structure degrades.
+Each node generates a **random 8-byte `span_id`** so its span is unique within the shared trace. When the incoming `TMTransaction` carries a protobuf `TraceContext` whose `trace_id` is `txID[0:16]`, the sender's `span_id` becomes the parent. This keeps the relay chain as a parent-child tree. A parent and its child share one trace. A context that names another trace is not used. When the context is absent (older peers, first hop from client) or not used, the span appears as a root in the same trace. Correlation is preserved. Only the tree structure degrades.
 
 ```
 Node A (submitter)        Node B (relay)          Node C (relay)
