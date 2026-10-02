@@ -98,6 +98,10 @@ and all later changes reach `develop` with the [final release](#final-release).
 
 ### Final Release
 
+Security fixes become public as soon as they reach the public repo,
+so these steps happen only once the release is ready to be published,
+one right after the other.
+
 1. Unpublished security fixes, if any, are merged into `staging/X.Y.x`.
 2. `release/X.Y.x` is fast-forwarded to `staging/X.Y.x`,
    and the release is tagged on it.
