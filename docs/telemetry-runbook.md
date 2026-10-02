@@ -1791,30 +1791,30 @@ Limits that matter for ledger sync, as set in the `JobTypes` constructor:
 
 These gauges are exported via the OTel Metrics SDK `PeriodicExportingMetricReader` (10s interval), NOT through beast::insight.
 
-| Prometheus Metric                                   | Source              | Description                                                                                                                                                                         |
-| --------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `server_info{metric="server_state"}`                | AppMetricGauges.cpp | Operating mode (0=DISCONNECTED .. 4=FULL)                                                                                                                                           |
-| `server_info{metric="uptime"}`                      | AppMetricGauges.cpp | Seconds since server start                                                                                                                                                          |
-| `server_info{metric="peers"}`                       | AppMetricGauges.cpp | Total connected peers                                                                                                                                                               |
-| `server_info{metric="validated_ledger_seq"}`        | AppMetricGauges.cpp | Validated ledger sequence number                                                                                                                                                    |
-| `server_info{metric="ledger_current_index"}`        | AppMetricGauges.cpp | Current open ledger sequence                                                                                                                                                        |
-| `server_info{metric="peer_disconnects_resources"}`  | AppMetricGauges.cpp | Cumulative resource-related peer disconnects                                                                                                                                        |
-| `server_info{metric="last_close_proposers"}`        | AppMetricGauges.cpp | Proposers in last closed round                                                                                                                                                      |
-| `server_info{metric="last_close_converge_time_ms"}` | AppMetricGauges.cpp | Last close convergence time (ms)                                                                                                                                                    |
-| `server_info{metric="last_close_time"}`             | AppMetricGauges.cpp | Network close time of last closed ledger (NetClock secs since XRPL epoch). Age = `time() - (value + 946684800)`; close interval = `1/rate(ledgers_closed_total)`, not a gauge delta |
-| `build_info{version="<ver>"}`                       | AppMetricGauges.cpp | Info-style metric (always 1)                                                                                                                                                        |
-| `complete_ledgers{bound="start\|end",index="<N>"}`  | AppMetricGauges.cpp | Complete ledger range start/end pairs                                                                                                                                               |
-| `db_metrics{metric="db_kb_total"}`                  | AppMetricGauges.cpp | Total database size (KB)                                                                                                                                                            |
-| `db_metrics{metric="db_kb_ledger"}`                 | AppMetricGauges.cpp | Ledger database size (KB)                                                                                                                                                           |
-| `db_metrics{metric="db_kb_transaction"}`            | AppMetricGauges.cpp | Transaction database size (KB)                                                                                                                                                      |
-| `db_metrics{metric="historical_perminute"}`         | AppMetricGauges.cpp | Historical ledger fetches per minute                                                                                                                                                |
-| `cache_metrics{metric="AL_size"}`                   | AppMetricGauges.cpp | AcceptedLedger cache size                                                                                                                                                           |
-| `nodestore_state{metric="node_reads_duration_us"}`  | AppMetricGauges.cpp | Cumulative read time (microseconds)                                                                                                                                                 |
-| `nodestore_state{metric="node_writes_duration_us"}` | AppMetricGauges.cpp | Cumulative write time (microseconds)                                                                                                                                                |
-| `nodestore_state{metric="read_request_bundle"}`     | AppMetricGauges.cpp | Read request bundle count                                                                                                                                                           |
-| `nodestore_state{metric="read_threads_running"}`    | AppMetricGauges.cpp | Active read threads                                                                                                                                                                 |
-| `nodestore_state{metric="read_threads_total"}`      | AppMetricGauges.cpp | Total read threads configured                                                                                                                                                       |
-| `rpc_in_flight_requests`                            | PerfLogImp.cpp      | RPC requests currently executing (UpDownCounter)                                                                                                                                    |
+| Prometheus Metric                                                       | Source              | Description                                                                                                                                                                         |
+| ----------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `server_info{metric="server_state"}`                                    | AppMetricGauges.cpp | Operating mode (0=DISCONNECTED .. 4=FULL)                                                                                                                                           |
+| `server_info{metric="uptime"}`                                          | AppMetricGauges.cpp | Seconds since server start                                                                                                                                                          |
+| `server_info{metric="peers"}`                                           | AppMetricGauges.cpp | Total connected peers                                                                                                                                                               |
+| `server_info{metric="validated_ledger_seq"}`                            | AppMetricGauges.cpp | Validated ledger sequence number                                                                                                                                                    |
+| `server_info{metric="ledger_current_index"}`                            | AppMetricGauges.cpp | Current open ledger sequence                                                                                                                                                        |
+| `server_info{metric="peer_disconnects_resources"}`                      | AppMetricGauges.cpp | Cumulative resource-related peer disconnects                                                                                                                                        |
+| `server_info{metric="last_close_proposers"}`                            | AppMetricGauges.cpp | Proposers in last closed round                                                                                                                                                      |
+| `server_info{metric="last_close_converge_time_ms"}`                     | AppMetricGauges.cpp | Last close convergence time (ms)                                                                                                                                                    |
+| `server_info{metric="last_close_time"}`                                 | AppMetricGauges.cpp | Network close time of last closed ledger (NetClock secs since XRPL epoch). Age = `time() - (value + 946684800)`; close interval = `1/rate(ledgers_closed_total)`, not a gauge delta |
+| `build_info{version="<ver>"}`                                           | AppMetricGauges.cpp | Info-style metric (always 1)                                                                                                                                                        |
+| `complete_ledgers{bound="start\|end",index="<N>"}`                      | AppMetricGauges.cpp | Complete ledger range start/end pairs                                                                                                                                               |
+| `db_metrics{metric="db_kb_total"}`                                      | AppMetricGauges.cpp | Total database size (KB)                                                                                                                                                            |
+| `db_metrics{metric="db_kb_ledger"}`                                     | AppMetricGauges.cpp | Ledger database size (KB)                                                                                                                                                           |
+| `db_metrics{metric="db_kb_transaction"}`                                | AppMetricGauges.cpp | Transaction database size (KB)                                                                                                                                                      |
+| `db_metrics{metric="historical_perminute"}`                             | AppMetricGauges.cpp | Historical ledger fetches per minute                                                                                                                                                |
+| `cache_metrics{metric="AL_size"}`                                       | AppMetricGauges.cpp | AcceptedLedger cache size                                                                                                                                                           |
+| `nodestore_state{metric="node_reads_duration_us",backend="<backend>"}`  | AppMetricGauges.cpp | Cumulative read time (microseconds)                                                                                                                                                 |
+| `nodestore_state{metric="node_writes_duration_us",backend="<backend>"}` | AppMetricGauges.cpp | Cumulative write time (microseconds)                                                                                                                                                |
+| `nodestore_state{metric="read_request_bundle",backend="<backend>"}`     | AppMetricGauges.cpp | Read request bundle count                                                                                                                                                           |
+| `nodestore_state{metric="read_threads_running",backend="<backend>"}`    | AppMetricGauges.cpp | Active read threads                                                                                                                                                                 |
+| `nodestore_state{metric="read_threads_total",backend="<backend>"}`      | AppMetricGauges.cpp | Total read threads configured                                                                                                                                                       |
+| `rpc_in_flight_requests`                                                | PerfLogImp.cpp      | RPC requests currently executing (UpDownCounter)                                                                                                                                    |
 
 #### Sync Diagnosis Signals
 
@@ -1824,23 +1824,25 @@ two different reasons a node is slow to reach `full` — see
 when the writable backend is NuDB; a memory or RocksDB backend omits those four
 label values rather than reporting them as zero.
 
-| Prometheus Metric                                    | Source              | Description                                                 |
-| ---------------------------------------------------- | ------------------- | ----------------------------------------------------------- |
-| `nodestore_state{metric="read_mean_us"}`             | AppMetricGauges.cpp | Mean time per backend read (microseconds)                   |
-| `nodestore_state{metric="write_mean_us"}`            | AppMetricGauges.cpp | Mean time per backend write (microseconds)                  |
-| `nodestore_state{metric="nudb_writers_in_flight"}`   | AppMetricGauges.cpp | Threads inside a NuDB insert right now                      |
-| `nodestore_state{metric="nudb_writer_depth_x100"}`   | AppMetricGauges.cpp | Mean queue depth at the NuDB insert mutex, ×100             |
-| `nodestore_state{metric="nudb_insert_mean_us"}`      | AppMetricGauges.cpp | Mean NuDB insert time, queueing included (microseconds)     |
-| `nodestore_state{metric="nudb_insert_max_us"}`       | AppMetricGauges.cpp | Slowest single NuDB insert seen (microseconds)              |
-| `nodestore_state{metric="acquire_deferrals"}`        | AppMetricGauges.cpp | Timer jobs skipped because the lane was full, **all lanes** |
-| `nodestore_state{metric="acquire_timeouts"}`         | AppMetricGauges.cpp | Timer bodies that ran and advanced retry, **all lanes**     |
-| `nodestore_state{metric="acquire_ledger_deferrals"}` | AppMetricGauges.cpp | Deferrals from ledger acquisition alone                     |
-| `nodestore_state{metric="acquire_ledger_timeouts"}`  | AppMetricGauges.cpp | Timeouts from ledger acquisition alone                      |
-| `nodestore_state{metric="acquire_give_ups"}`         | AppMetricGauges.cpp | Acquisitions that exhausted their retry budget              |
-| `nodestore_state{metric="acquire_aborts"}`           | AppMetricGauges.cpp | Acquisitions destroyed before finishing                     |
-| `nodestore_state{metric="acquire_aborts_partial"}`   | AppMetricGauges.cpp | Subset of aborts that discarded partly built maps           |
-| `nodestore_state{metric="acquire_completions"}`      | AppMetricGauges.cpp | Acquisitions that finished successfully                     |
-| `nodestore_state{metric="acquire_sweep_evictions"}`  | AppMetricGauges.cpp | Unfinished acquisitions evicted by the 1-minute sweep       |
+Every `nodestore_state` and `storage_detail` series also carries a `backend` label. It names the NodeStore backend that `type` in `[node_db]` selects, as its factory spells it: `NuDB`, `RocksDB`, `Memory` or `none`.
+
+| Prometheus Metric                                                        | Source              | Description                                                 |
+| ------------------------------------------------------------------------ | ------------------- | ----------------------------------------------------------- |
+| `nodestore_state{metric="read_mean_us",backend="<backend>"}`             | AppMetricGauges.cpp | Mean time per backend read (microseconds)                   |
+| `nodestore_state{metric="write_mean_us",backend="<backend>"}`            | AppMetricGauges.cpp | Mean time per backend write (microseconds)                  |
+| `nodestore_state{metric="nudb_writers_in_flight",backend="<backend>"}`   | AppMetricGauges.cpp | Threads inside a NuDB insert right now                      |
+| `nodestore_state{metric="nudb_writer_depth_x100",backend="<backend>"}`   | AppMetricGauges.cpp | Mean queue depth at the NuDB insert mutex, ×100             |
+| `nodestore_state{metric="nudb_insert_mean_us",backend="<backend>"}`      | AppMetricGauges.cpp | Mean NuDB insert time, queueing included (microseconds)     |
+| `nodestore_state{metric="nudb_insert_max_us",backend="<backend>"}`       | AppMetricGauges.cpp | Slowest single NuDB insert seen (microseconds)              |
+| `nodestore_state{metric="acquire_deferrals",backend="<backend>"}`        | AppMetricGauges.cpp | Timer jobs skipped because the lane was full, **all lanes** |
+| `nodestore_state{metric="acquire_timeouts",backend="<backend>"}`         | AppMetricGauges.cpp | Timer bodies that ran and advanced retry, **all lanes**     |
+| `nodestore_state{metric="acquire_ledger_deferrals",backend="<backend>"}` | AppMetricGauges.cpp | Deferrals from ledger acquisition alone                     |
+| `nodestore_state{metric="acquire_ledger_timeouts",backend="<backend>"}`  | AppMetricGauges.cpp | Timeouts from ledger acquisition alone                      |
+| `nodestore_state{metric="acquire_give_ups",backend="<backend>"}`         | AppMetricGauges.cpp | Acquisitions that exhausted their retry budget              |
+| `nodestore_state{metric="acquire_aborts",backend="<backend>"}`           | AppMetricGauges.cpp | Acquisitions destroyed before finishing                     |
+| `nodestore_state{metric="acquire_aborts_partial",backend="<backend>"}`   | AppMetricGauges.cpp | Subset of aborts that discarded partly built maps           |
+| `nodestore_state{metric="acquire_completions",backend="<backend>"}`      | AppMetricGauges.cpp | Acquisitions that finished successfully                     |
+| `nodestore_state{metric="acquire_sweep_evictions",backend="<backend>"}`  | AppMetricGauges.cpp | Unfinished acquisitions evicted by the 1-minute sweep       |
 
 `nudb_writer_depth_x100` is fixed-point: divide by 100 to read it. The depth sits
 just above 1.0 even under load, so an integer gauge would truncate the whole
@@ -3548,7 +3550,7 @@ Two more pairs from the same family:
   series.
 
 The _Ledger Data & Sync_ dashboard carries part of this picture in
-**NuDB Read Latency**, **NuDB Read Found Ratio** and **NuDB Read Pressure**.
+**NodeStore Mean Read Latency**, **NodeStore Read Found Ratio** and **NodeStore Read Pressure**.
 **Job Queue Backlog and Deferred by Type** adds the lane occupancy, which this
 procedure tells you not to trust on its own.
 
@@ -3557,7 +3559,7 @@ The pair this procedure asks for is on **Ledger Acquire Deferrals vs Timeouts
 **Acquire Deferrals vs Timeouts (All Lanes)** plots the pooled totals; read it only
 to see whether some other acquisition lane is also under pressure.
 
-**NuDB Read Found Ratio** plots `node_reads_hit / node_reads_total`. That is the
+**NodeStore Read Found Ratio** plots `node_reads_hit / node_reads_total`. That is the
 found rate, not a cache hit ratio: the underlying counter increments whenever a
 fetch returned an object, and a node with `online_delete` has no object cache at
 all. A rate near 1.0 alongside an expensive read time is the cold-read signature,

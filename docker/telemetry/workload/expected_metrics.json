@@ -86,7 +86,8 @@
     ]
   },
   "nodestore_io": {
-    "description": "NodeStore I/O observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label distinguishing sub-metrics.",
+    "description": "NodeStore I/O observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label distinguishing sub-metrics. Every series also carries a constant 'backend' label naming the NodeStore backend ([node_db] type, as its factory spells it, e.g. NuDB); required_labels checks that it reaches Prometheus.",
+    "required_labels": ["backend"],
     "metrics": ["nodestore_state"]
   },
   "cache_hit_rates": {
@@ -224,7 +225,8 @@
     ]
   },
   "parity_storage": {
-    "description": "External dashboard parity: storage detail metrics (MetricsRegistry).",
+    "description": "External dashboard parity: storage detail metrics (MetricsRegistry). Every series also carries a constant 'backend' label naming the NodeStore backend ([node_db] type, as its factory spells it, e.g. NuDB); required_labels checks that it reaches Prometheus.",
+    "required_labels": ["backend"],
     "metrics": ["storage_detail{metric=\"stored_object_bytes\"}"]
   },
   "sync_diagnostics": {
