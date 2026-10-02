@@ -98,11 +98,12 @@ Rules (each FAILS the build, when its inputs are present)
      Scoped by metric FAMILY (first underscore segment) so the metric surface
      can be converted subsystem by subsystem -- declaring a constant for a
      family opts that family into enforcement. See Rule L.
-  J  Metric instrument names follow the naming and suffix conventions:
-     lower_snake_case, no xrpld_/xrpl_ prefix (the exporter adds it), a counter
-     ends in _total, a histogram ends in _us/_ms/_seconds, and a gauge does not
-     end in _total. The instrument KIND is read from the emit site, never
-     guessed from words in the name.
+  J  Metric instrument names follow the naming and suffix conventions. A name
+     is lower_snake_case with no xrpld_/xrpl_ prefix: nothing in the export
+     path adds a prefix, so queries use the bare name. A counter ends in
+     _total, a histogram ends in _us/_ms/_seconds, and a gauge does not end in
+     _total. The instrument KIND is read from the emit site, never guessed from
+     words in the name.
   K  Every metric named in expected_metrics.json resolves to a *MetricNames.h
      constant, so a rename in code cannot leave the workload validator
      asserting a name nothing emits. PromQL selectors and exporter-appended
@@ -1632,8 +1633,8 @@ METRIC_PAIR_KEY = re.compile(r"\{\s*(\"(?:[^\"\\]|\\.)*\"|[A-Za-z_][\w:]*)\s*,")
 
 # The unit/kind suffix convention every instrument name must satisfy (Rule J).
 # A cumulative counter reads correctly under rate() only if a reader can tell it
-# from a gauge, and a duration is ambiguous unless it carries its unit -- the
-# OTel `unit` argument is not surfaced on the Prometheus metric name.
+# from a gauge, and a duration is ambiguous unless it carries its unit. These
+# instruments set no OTel `unit`, so the name is the only place the unit shows.
 METRIC_COUNTER_SUFFIX = "_total"
 METRIC_DURATION_SUFFIXES = ("_us", "_ms", "_seconds")
 
@@ -1857,13 +1858,13 @@ def run_rule_j_metric_suffixes(root: Path, report: Report) -> None:
     Rule I makes the only place an instrument name can be spelled. Enforced:
 
       * lower_snake_case (same shape as Rule G for span attributes);
-      * no `xrpld_`/`xrpl_` prefix -- the Prometheus exporter adds the namespace
-        itself, so a name carrying it would emit `xrpld_xrpld_*` on the wire;
+      * no `xrpld_`/`xrpl_` prefix -- nothing in the export path adds one, so
+        queries use the bare name;
       * a monotonic COUNTER ends in `_total`, so `rate()` over it reads
         correctly and a reader can tell it from a gauge;
-      * a HISTOGRAM ends in `_us`, `_ms` or `_seconds`: histograms in this repo
-        are all durations, and the OTel `unit` argument is not surfaced on the
-        Prometheus metric name, so an unlabelled duration is ambiguous;
+      * a HISTOGRAM ends in `_us`, `_ms` or `_seconds`. Every histogram named
+        in `namespace metric` is a duration. These instruments set no OTel
+        `unit`, so the name is the only place the unit shows;
       * a GAUGE does not end in `_total`, which is reserved for counters.
 
     The instrument KIND comes from the emit site (see `instrument_kinds`), not
@@ -1891,7 +1892,7 @@ def run_rule_j_metric_suffixes(root: Path, report: Report) -> None:
             flag(name, "must be lower_snake_case")
             continue
         if name.startswith(("xrpld_", "xrpl_")):
-            flag(name, "drop the prefix; the exporter adds it")
+            flag(name, "drop the prefix; metric names are bare")
             continue
         found_kinds = kinds.get(name) or set()
         if len(found_kinds) > 1:

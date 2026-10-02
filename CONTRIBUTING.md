@@ -466,14 +466,13 @@ silently at runtime — a metric that never appears, or a label that never joins
 The constants in the `*MetricNames.h` headers are the single source of truth for
 the C++ layers; a CI check validates the layers that cannot reference a constant.
 
-1. Instrument names are bare `lower_snake_case` with **no `xrpld_` prefix**. The
-   Prometheus exporter adds the namespace itself, so a name carrying it emits
-   `xrpld_xrpld_*` on the wire.
+1. Instrument names are bare `lower_snake_case` with **no `xrpld_` prefix**.
+   Nothing in the export path adds a prefix, so queries use the bare name.
 2. A monotonic counter ends in `_total`, so `rate()` over it reads correctly and
    a reader can tell it from a gauge at a glance.
 3. A duration carries its unit as the suffix — `_us`, `_ms` or `_seconds`. The
-   unit belongs in the name because the OTel `unit` argument is not surfaced on
-   the Prometheus metric name.
+   instruments these rules cover set no OTel `unit`, so the name is the only
+   place the unit shows.
 4. A gauge that snapshots current state takes no suffix (`jobq_saturation`,
    `sync_state`), and never `_total`.
 5. Label keys are `lower_snake_case` and must have **bounded** cardinality. A
