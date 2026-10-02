@@ -2195,7 +2195,7 @@ class RuleJMetricSuffixes(unittest.TestCase):
     def test_prefixed_name_flagged(self):
         self.assertEqual(
             self._run(_mc("prefixed", "xrpld_sync_state")),
-            [("xrpld_sync_state", "drop the prefix; the exporter adds it")],
+            [("xrpld_sync_state", "drop the prefix; metric names are bare")],
         )
 
     def test_non_snake_case_flagged(self):

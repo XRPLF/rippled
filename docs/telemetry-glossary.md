@@ -1069,7 +1069,7 @@ A cluster is a set of servers run by the same operator that trust each other, ex
 
 ### Disconnect reason
 
-The cause recorded when a peer connection is torn down, kept alongside the direction the connection was originally opened in. A single disconnect count cannot separate the situations that matter, because they all add to the same number. This node drops a peer on purpose for two reasons. If its send queue to that peer stays full, the cause is a slow peer or network path; on many peers at once, it is this node's own uplink. If the peer's own traffic uses up its resource allowance, the fault is the peer's. A network or topology fault is different: the peer became unreachable, stopped answering keepalives, or turned out to be following a different chain, and the fix is the peer set. A further group is neither — clean teardown at shutdown and peers closing their own side are ordinary churn, and a count dominated by those is healthy. The direction matters separately, since churn among the peers a node dials points somewhere different from churn among the peers that dial it.
+The cause recorded when a peer connection is torn down, kept alongside the direction the connection was originally opened in. A single disconnect count cannot separate the situations that matter, because they all add to the same number. This node drops a peer on purpose for two reasons. If its send queue to that peer stays full, the cause is a slow peer or network path; on many peers at once, it is this node's own uplink. If the peer's own traffic uses up its resource allowance, the fault is the peer's. A network or topology fault is different: the peer became unreachable, stopped answering keepalives, or turned out to be following a different chain, and the fix is the peer set. A further group is neither — clean teardown at shutdown and peers closing their own side are ordinary churn, and a count dominated by those is healthy. Between xrpld nodes, a peer closing its side is counted as a read error, not a clean close, because xrpld drops a peer without starting a TLS shutdown; a read error can also be a network fault. The direction matters separately, since churn among the peers a node dials points somewhere different from churn among the peers that dial it.
 
 **Scope:** per node — measured on and specific to this individual server.
 
@@ -1265,7 +1265,7 @@ xrpld keeps several caches: SLE (ledger entries), Ledger, AcceptedLedger, TreeNo
 
 ### NodeStore
 
-The NodeStore is xrpld's content-addressed object database holding all ledger tree nodes, keyed by hash. It is the main on-disk store read during queries and sync and written as new ledgers are stored; NuDB is the default backend.
+The NodeStore is xrpld's content-addressed object database holding all ledger tree nodes, keyed by hash. It is the main on-disk store read during queries and sync and written as new ledgers are stored. Its backend is set by `type` in `[node_db]`, for example NuDB or RocksDB.
 
 **Scope:** per node — measured on and specific to this individual server.
 
@@ -1281,7 +1281,7 @@ A lookup is one attempt to fetch an object from the NodeStore by its hash. A hit
 
 ### NuDB
 
-NuDB is a fast append-only key-value store used as the NodeStore backend. Its on-disk size grows steadily with retained ledger history; the growth slope is the data growth rate.
+NuDB is a fast append-only key-value store, one of the NodeStore backends that `type` in `[node_db]` can select. Its on-disk size grows steadily with retained ledger history; the growth slope is the data growth rate.
 
 **Scope:** per node — measured on and specific to this individual server.
 

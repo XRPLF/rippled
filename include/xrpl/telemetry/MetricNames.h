@@ -6,34 +6,41 @@
  *  The metric-side counterpart of the `*SpanNames.h` headers: one constant per
  *  emitted string, so a rename is one edit and a typo is a compile error rather
  *  than a metric that silently never appears. Each instrument name, label key
- *  and bounded label value added by the sync-diagnostics work is declared here
- *  exactly once, so the emit site, the gauge registration in MetricsRegistry.cpp
- *  and the startup pre-registration can share one spelling. So is the
- *  description of each pre-registered counter, because its recording site and
- *  the pre-registration must pass the same text.
+ *  and bounded label value these signals define is declared here exactly
+ *  once. The emit sites, the gauge registration in AppMetricGauges.cpp and
+ *  the startup pre-registration use these constants. MetricsRegistry.cpp uses
+ *  them for the counters and histogram views it registers for these signals.
+ *  There are three exceptions. AppMetricGauges.cpp writes the `nodestore_state`
+ *  sub-series names as literals. MetricsRegistry.cpp keeps the
+ *  `consensus_round_duration_ms` view name in a local constant.
+ *  `MetricsRegistry::addWithReason()` also writes the `reason` label key as a
+ *  literal for `ledger_hash_mismatch_total`, although `label::reason` is
+ *  declared here. The description of each pre-registered counter is declared
+ *  here too. Its recording site and the pre-registration must pass the same
+ *  text.
  *
  *  Layer map -- who references these constants:
  *
  * @code
- *      +-------------------------------------------------------------+
- *      |            MetricNames.h  (this file, L1-metrics)           |
- *      |   namespace metric, *Desc, namespace label, namespace lval  |
- *      +-------------------------------------------------------------+
- *          ^                     ^                       ^
- *          |                     |                       |
- *   +--------------+   +-------------------+   +---------------------+
- *   | emit sites   |   | MetricsRegistry   |   | unit test           |
- *   | XRPL_METRIC_ |   | Create*Gauge +    |   | tests/libxrpl/      |
- *   | macros under |   | AddCallback       |   |  telemetry/         |
- *   | src/xrpld/   |   | observe(...)      |   |  MetricMacros.cpp   |
- *   +--------------+   +-------------------+   +---------------------+
- *          ^
- *          |  same name, description and label values
- *   +------------------------------------------+
- *   | startup pre-registration                 |
- *   | xrpld/telemetry/                         |
- *   |   MacroCounterPreRegistration.h          |
- *   +------------------------------------------+
+ * +---------------------------------------------------------------------------+
+ * |                   MetricNames.h  (this file, L1-metrics)                  |
+ * |          namespace metric, *Desc, namespace label, namespace lval         |
+ * +---------------------------------------------------------------------------+
+ *         ^                 ^                   ^                    ^
+ *         |                 |                   |                    |
+ * +--------------+ +-----------------+ +-----------------+ +------------------+
+ * | emit sites   | | AppMetricGauges | | MetricsRegistry | | unit test        |
+ * | XRPL_METRIC_ | | Create*Gauge +  | | counters and    | | tests/libxrpl/   |
+ * | macros under | | AddCallback     | | histogram       | | telemetry/       |
+ * | src/xrpld/   | | observe(...)    | | views           | | MetricMacros.cpp |
+ * +--------------+ +-----------------+ +-----------------+ +------------------+
+ *         ^
+ *         |  same name, description and label values
+ * +------------------------------------------+
+ * | startup pre-registration                 |
+ * | xrpld/telemetry/                         |
+ * |   MacroCounterPreRegistration.h          |
+ * +------------------------------------------+
  * @endcode
  *
  *  Layers that CANNOT reference a C++ constant -- the collector config, the
@@ -50,14 +57,13 @@
  *    adding one, and shows the declare-then-emit pattern.
  *
  *  Naming rules (enforced by the checker's Rule J):
- *  - Bare `lower_snake_case`. No `xrpld_` prefix in code: the Prometheus
- *    exporter adds the namespace prefix itself, so writing it here would
- *    produce `xrpld_xrpld_*` on the wire.
+ *  - Bare `lower_snake_case`, with no `xrpld_` prefix. Nothing in the export
+ *    path adds a prefix, so queries use the bare name.
  *  - A monotonic counter ends in `_total`, so `rate()` over it reads correctly
  *    and a reader can tell it from a gauge at a glance.
  *  - A duration carries its unit as the suffix: `_us`, `_ms` or `_seconds`.
- *    The unit belongs in the name because the OTel `unit` argument is not
- *    surfaced on the Prometheus metric name.
+ *    These instruments set no OTel `unit`, so the name is the only place the
+ *    unit shows.
  *  - A gauge that is a snapshot of current state takes no suffix
  *    (`jobq_saturation`, `sync_state`).
  *  - Label VALUES are declared here only when they come from a fixed set that
@@ -76,7 +82,7 @@
  *  position -- both were tried and both fail with "no viable conversion".
  *  A `constexpr char[]` decays to `char const*` and binds directly. This also
  *  matches the precedent already in MetricsRegistry.cpp
- *  (`kJobQueuedDurationUs`), which this header absorbs.
+ *  (`kJobQueuedDurationUs`).
  *
  * Example usage -- a labelled counter at an emit site:
  * @code
@@ -91,7 +97,7 @@
  *
  * Example usage -- an observable gauge and its sub-metric discriminators:
  * @code
- * syncStateGauge_ = meter_->CreateInt64ObservableGauge(
+ * syncStateGauge_ = core_.meter()->CreateInt64ObservableGauge(
  *     metric::syncState, "Sync-pipeline health signals");
  * // ... inside the callback:
  * observe(lval::sync_state::ledgersBehind, ops.getLedgersBehindNetwork());
@@ -112,8 +118,8 @@
  * @endcode
  *
  * @note Header-only and dependency-free: nothing here includes an OTel or an
- *       xrpld header, so `src/tests/libxrpl/telemetry/MetricMacros.cpp` can
- *       include it even though `xrpl_tests` links only `xrpl.libxrpl`. The
+ *       xrpld header, so `src/tests/xrpld/telemetry/MetricMacros.cpp` can
+ *       include it although its test binary links no xrpld code. The
  *       constants are `inline constexpr`, so they contribute no symbol to link
  *       against.
  * @note Not guarded by `XRPL_ENABLE_TELEMETRY`, for the same reason
@@ -132,10 +138,14 @@ namespace xrpl::telemetry {
 /**
  * Instrument names -- the metric name as it reaches the OTel meter.
  *
- * Grouped by the subsystem that emits them, matching how the sync-diagnostics
- * work was staged. A name is declared here whether it is created lazily by an
- * `XRPL_METRIC_*` macro at a call site or eagerly by a `meter_->Create*` call
- * in MetricsRegistry.cpp, because the dashboards cannot tell the two apart.
+ * Grouped by the question each set of signals answers. The last group holds
+ * instruments that share a name family with a set above, plus
+ * `nodestore_state`.
+ *
+ * A name is declared here however its instrument is created. A call-site
+ * `XRPL_METRIC_*` macro creates it lazily, and a `Create*` call in
+ * MetricsRegistry.cpp or AppMetricGauges.cpp creates it eagerly. The
+ * dashboards cannot tell the two apart.
  */
 namespace metric {
 
@@ -314,9 +324,9 @@ inline constexpr char sweepMallocTrimUs[] = "sweep_malloc_trim_us";
 /**
  * Minor page faults taken *inside* the `malloc_trim` call.
  *
- * Cumulative, so `rate()` gives faults/sec. Scoped to the trim call only -- see
- * the limitation noted on the runbook branch: this proves the trim itself
- * faults, not that the trim causes later faults as the caches refill.
+ * Cumulative, so `rate()` gives faults/sec. Scoped to the trim call only. So it
+ * proves the trim itself faults, not that the trim causes later faults as the
+ * caches refill.
  */
 inline constexpr char sweepMallocTrimMinorFaultsTotal[] = "sweep_malloc_trim_minor_faults_total";
 /**
@@ -333,9 +343,9 @@ inline constexpr char sweepMallocTrimReclaimedKbTotal[] = "sweep_malloc_trim_rec
 /**
  * Nodes re-stored by `copyNode` because they were missing from both backends.
  *
- * The genuinely unmeasured extra write of a rotation: a clean node reachable
- * from the validated state map whose only on-disk copy lived in a backend an
- * earlier rotation removed. Was warn-log-only.
+ * Each is a clean node reachable from the validated state map. Its only
+ * on-disk copy lived in a backend an earlier rotation removed, so the rotation
+ * writes it again.
  */
 inline constexpr char rotationCopyNodeRestoreTotal[] = "rotation_copy_node_restore_total";
 /**
@@ -343,9 +353,10 @@ inline constexpr char rotationCopyNodeRestoreTotal[] = "rotation_copy_node_resto
  *
  * A gauge, not a counter, because the two readings are polled from the node
  * store rather than pushed: `in_flight` is current state and `copy_forward` is a
- * cumulative total the nodestore already keeps. Observed from the existing
- * `registerNodeStoreGauge` callback, which is how everything else reads the node
- * store from xrpld without libxrpl having to know about telemetry.
+ * cumulative total the nodestore already keeps. Observed by its own callback,
+ * `AppMetricGauges::registerRotationStateGauge()`, which polls the
+ * `DatabaseRotating` accessors the way `registerNodeStoreGauge` polls the node
+ * store. So the libxrpl nodestore needs no telemetry code.
  */
 inline constexpr char rotationState[] = "rotation_state";
 
@@ -365,19 +376,17 @@ inline constexpr char rotationPhaseDurationSeconds[] = "rotation_phase_duration_
  */
 inline constexpr char rotationFreshenKeysTotal[] = "rotation_freshen_keys_total";
 
-// ===== Pre-existing instruments pulled in by the family ratchet ==============
+// ===== Instruments pulled in by the family ratchet ===========================
 //
-// These predate the sync-diagnostics work. They are declared here because the
-// checker's Rule I enforces literal-freedom per metric FAMILY (first
-// underscore segment), and each of these shares a family with a name above --
-// `ledger_`, `nodestore_`, `server_`, `peer_`, `state_`. Leaving them as
-// literals would either weaken the rule to per-name (letting a typo'd sibling
-// through) or require an exemption list. Declaring them is the honest option:
-// no behaviour changes, and the next author editing these families finds the
-// constant rather than inventing a second spelling.
+// The checker's Rule I bans literal metric names per FAMILY (the first
+// underscore segment), and one constant opts its whole family in. So once a
+// name above is declared, its siblings must be declared too. Most of these
+// share a family with a name above: `ledger_`, `server_`, `peer_` and
+// `state_`. `nodestore_state` has no sibling above, and declaring it puts
+// the `nodestore_` family under Rule I as well.
 //
-// The remaining unconverted families are reported as Rule L warnings, so the
-// outstanding work stays visible rather than silently accepted.
+// A literal name in a family with no constant is reported as a Rule L
+// warning, so those families stay visible.
 
 /**
  * Built-vs-validated ledger mismatches, by reason. Not
@@ -473,10 +482,9 @@ namespace label {
 /**
  * Sub-metric discriminator on a multi-series gauge.
  *
- * The pattern every observable gauge in MetricsRegistry.cpp already uses: one
- * instrument carries several related readings, told apart by this label rather
- * than by being separate instruments. Pre-dates the sync-diagnostics work;
- * named here because the new gauges are its heaviest users.
+ * A pattern many observable gauges in AppMetricGauges.cpp use: one instrument
+ * carries several related readings, told apart by this label rather than by
+ * being separate instruments.
  */
 inline constexpr char metric[] = "metric";
 /**
@@ -964,9 +972,11 @@ inline constexpr std::array all{success, buildFailed, parameterFailed, timeout};
  * `peer_disconnect_total` reasons -- why a peer connection closed.
  *
  * The split separates a slow peer or path (`large_sendq`), a peer that used
- * up its resource allowance (`charge_resources`), and a topology or network
- * fault (`not_useful`, `ping_timeout`, `read_error`); each calls for a
- * different response.
+ * up its resource allowance (`charge_resources`), a topology or network
+ * fault (`not_useful`, `ping_timeout`), and a failed read (`read_error`);
+ * each calls for a different response. A failed read includes a peer
+ * closing the link, since PeerImp drops a peer without starting a TLS
+ * shutdown; that is why `graceful` is rare between xrpld nodes.
  * `unknown` is the initial value and appears when a teardown path set no
  * cause, so an unattributed disconnect is visible rather than absent.
  */

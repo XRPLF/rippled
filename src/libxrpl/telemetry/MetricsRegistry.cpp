@@ -28,7 +28,6 @@
 #ifdef XRPL_ENABLE_TELEMETRY
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/core/JobTypeInfo.h>
 #include <xrpl/core/JobTypes.h>
 #include <xrpl/telemetry/GetObjectMetricNames.h>
 #include <xrpl/telemetry/HistogramBuckets.h>

@@ -335,10 +335,9 @@ TEST(LedgerSpanNames, round_identity_keys_are_re_exports_not_copies)
     // time one of them is edited.
     //
     // The shared side is spelled out in full rather than as bare `attr::`. A
-    // unity build compiles this file alongside the consensus span-name tests,
-    // whose own directive imports consensus::span::attr, and a bare `attr::`
-    // then matches both that and the xrpl::telemetry::attr this file's
-    // directive supplies.
+    // unity build can compile this file next to a test whose directive imports
+    // another `attr` namespace, and a bare `attr::` then matches both that one
+    // and the xrpl::telemetry::attr this file's directive supplies.
     EXPECT_EQ(
         static_cast<void const*>(&ledger_span::attr::currentLedgerHash),
         static_cast<void const*>(&xrpl::telemetry::attr::currentLedgerHash));
