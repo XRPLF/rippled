@@ -776,6 +776,50 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
             BEAST_EXPECT(Number(sle2->at(sfAssetsMaximum)) == offGrid2);
     }
 
+    // With featureLendingProtocolV1_2 enabled, VaultSet rejects an
+    // AssetsMaximum that is not representable at the Vault's scale on an
+    // existing pre-V1.2 (CashBasis) Vault too. A Legacy/CashBasis Vault's scale
+    // follows its AssetsTotal, so this uses a cap with more digits than an
+    // STAmount holds.
+    void
+    testAssetsMaximumRejectedOnExistingVaultAfterV12()
+    {
+        using namespace test::jtx;
+
+        testcase("Existing CashBasis vault after V1.2: VaultSet rejects an unrepresentable cap");
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        PrettyAsset const asset{issuer["USD"]};
+
+        Env env(*this, features() - featureLendingProtocolV1_2);
+        env.fund(XRP(1'000'000), issuer, owner);
+        env.close();
+
+        Vault const vault{env};
+        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(create, Ter(tesSUCCESS));
+        env.close();
+
+        env.enableFeature(featureLendingProtocolV1_2);
+        env.close();
+
+        // 17 significant digits.
+        Number const unrepresentable{12'345'678'901'234'567, -1};
+        auto tx = vault.set({.owner = owner, .id = keylet.key});
+        tx[sfAssetsMaximum] = unrepresentable;
+        env(tx, Ter(tecPRECISION_LOSS));
+        env.close();
+
+        auto ok = vault.set({.owner = owner, .id = keylet.key});
+        ok[sfAssetsMaximum] = Number{1'000};
+        env(ok, Ter(tesSUCCESS));
+        env.close();
+        auto const sle = env.le(keylet);
+        if (BEAST_EXPECT(sle))
+            BEAST_EXPECT(Number(sle->at(sfAssetsMaximum)) == Number{1'000});
+    }
+
     // Reproduces a reported issue: the end-of-transaction associateAsset pass is not
     // a no-op. The original witness (VaultDepositAssociateAsset_test.cpp) grows a
     // vault's running total by two decades so the exact sum needs 18 digits, more
@@ -864,6 +908,7 @@ public:
         testAssetsMaximumNotRepresentableOnSet();
         testAssetsMaximumIntegralAssets();
         testAssetsMaximumOffGridAcceptedPreV12();
+        testAssetsMaximumRejectedOnExistingVaultAfterV12();
         testDepositCoarseningRefusedInsteadOfAssociateAssetRounding();
     }
 };

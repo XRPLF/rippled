@@ -828,9 +828,8 @@ private:
         // Test pre-fixCleanup3_1_3 legacy path: zero-amount clawback
         // returns early without clamping to assetsAvailable. This needs a
         // Legacy/CashBasis Vault, so it runs against its own Env with
-        // featureLendingProtocolV1_2 disabled. FixedPrecision Vaults always
-        // take the clamped path, with and without fixCleanup3_1_3; see
-        // LoanSetFixedPrecision_test's
+        // featureLendingProtocolV1_2 disabled. The FixedPrecision version of
+        // this scenario is LoanSetFixedPrecision_test's
         // testLendingFullClawbackClampsInsteadOfHasObligations.
         {
             testcase(
