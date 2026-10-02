@@ -9,10 +9,20 @@ set_target_properties(
     xrpld_tests
     PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
 )
+target_include_directories(
+    xrpld_tests
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} "${CMAKE_SOURCE_DIR}/src"
+)
+target_link_libraries(
+    xrpld_tests
+    PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl rpcspec::rpcspec
+)
 # The telemetry tests read ended spans back from an InMemorySpanExporter. The
 # OpenTelemetry package does not put that archive on the link line, so find
 # it by path, as src/tests/libxrpl/CMakeLists.txt does and explains. The
 # result is cached, so this finds the same file that xrpl_tests links.
+# This block follows the main link call so that the archives it adds come
+# after libxrpl, which uses OpenTelemetry.
 if(telemetry)
     string(TOUPPER "${CMAKE_BUILD_TYPE}" otel_build_type)
     find_library(
@@ -30,14 +40,6 @@ if(telemetry)
             opentelemetry-cpp::opentelemetry-cpp
     )
 endif()
-target_include_directories(
-    xrpld_tests
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} "${CMAKE_SOURCE_DIR}/src"
-)
-target_link_libraries(
-    xrpld_tests
-    PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl rpcspec::rpcspec
-)
 
 set(test_modules rpc telemetry)
 
