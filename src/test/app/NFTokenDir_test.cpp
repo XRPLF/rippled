@@ -128,7 +128,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         // Mint 100 sequential NFTs.  Tweak the taxon so zero is always stored.
         // That's what makes them sequential.
         static constexpr std::size_t kNftCount = 100;
-        std::vector<uint256> nftIDs;
+        std::vector<UInt256> nftIDs;
         nftIDs.reserve(kNftCount);
         for (int i = 0; i < kNftCount; ++i)
         {
@@ -140,8 +140,8 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // Create an offer for each of the NFTs.  This verifies that the ledger
         // can find all of the minted NFTs.
-        std::vector<uint256> offers;
-        for (uint256 const& nftID : nftIDs)
+        std::vector<UInt256> offers;
+        for (UInt256 const& nftID : nftIDs)
         {
             offers.emplace_back(
                 keylet::nftokenOffer(issuer, SeqProxy::rawSequence(env.seq(issuer))).key);
@@ -151,7 +151,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // Buyer accepts all of the offers in reverse order.
         std::ranges::reverse(offers);
-        for (uint256 const& offer : offers)
+        for (UInt256 const& offer : offers)
         {
             env(token::acceptSellOffer(buyer, offer));
             env.close();
@@ -204,13 +204,13 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
             // All of the accounts create one NFT and and offer that NFT to
             // buyer.
-            std::vector<uint256> nftIDs;
-            std::vector<uint256> offers;
+            std::vector<UInt256> nftIDs;
+            std::vector<UInt256> offers;
             offers.reserve(accounts.size());
             for (Account const& account : accounts)
             {
                 // Mint the NFT.
-                uint256 const& nftID =
+                UInt256 const& nftID =
                     nftIDs.emplace_back(token::getNextID(env, account, 0, tfTransferable));
                 env(token::mint(account, 0), Txflags(tfTransferable));
                 env.close();
@@ -225,7 +225,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             env.close();
 
             // buyer accepts all of the offers.
-            for (uint256 const& offer : offers)
+            for (UInt256 const& offer : offers)
             {
                 env(token::acceptSellOffer(buyer, offer));
                 env.close();
@@ -238,9 +238,9 @@ class NFTokenDir_test : public beast::unit_test::Suite
             // ledger by having buyer create sell offers for all of their
             // NFTs. Attempting to sell an offer that the ledger can't find
             // generates a non-tesSUCCESS error code.
-            for (uint256 const& nftID : nftIDs)
+            for (UInt256 const& nftID : nftIDs)
             {
-                uint256 const offerID =
+                UInt256 const offerID =
                     keylet::nftokenOffer(buyer, SeqProxy::rawSequence(env.seq(buyer))).key;
                 env(token::createOffer(buyer, nftID, XRP(100)), Txflags(tfSellNFToken));
                 env.close();
@@ -259,7 +259,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             BEAST_EXPECT(buyerNFTs[jss::result][jss::account_nfts].size() == nftIDs.size());
             for (json::Value const& ownedNFT : buyerNFTs[jss::result][jss::account_nfts])
             {
-                uint256 ownedID;
+                UInt256 ownedID;
                 BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
                 auto const foundIter = std::ranges::find(nftIDs, ownedID);
 
@@ -410,13 +410,13 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
             // All of the accounts create one NFT and and offer that NFT to
             // buyer.
-            std::vector<uint256> nftIDs;
-            std::vector<uint256> offers;
+            std::vector<UInt256> nftIDs;
+            std::vector<UInt256> offers;
             offers.reserve(accounts.size());
             for (Account const& account : accounts)
             {
                 // Mint the NFT.
-                uint256 const& nftID =
+                UInt256 const& nftID =
                     nftIDs.emplace_back(token::getNextID(env, account, 0, tfTransferable));
                 env(token::mint(account, 0), Txflags(tfTransferable));
                 env.close();
@@ -448,9 +448,9 @@ class NFTokenDir_test : public beast::unit_test::Suite
             // ledger by having buyer create sell offers for all of their
             // NFTs. Attempting to sell an offer that the ledger can't find
             // generates a non-tesSUCCESS error code.
-            for (uint256 const& nftID : nftIDs)
+            for (UInt256 const& nftID : nftIDs)
             {
-                uint256 const offerID =
+                UInt256 const offerID =
                     keylet::nftokenOffer(buyer, SeqProxy::rawSequence(env.seq(buyer))).key;
                 env(token::createOffer(buyer, nftID, XRP(100)), Txflags(tfSellNFToken));
                 env.close();
@@ -469,7 +469,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             BEAST_EXPECT(buyerNFTs[jss::result][jss::account_nfts].size() == nftIDs.size());
             for (json::Value const& ownedNFT : buyerNFTs[jss::result][jss::account_nfts])
             {
-                uint256 ownedID;
+                UInt256 ownedID;
                 BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
                 auto const foundIter = std::ranges::find(nftIDs, ownedID);
 
@@ -642,13 +642,13 @@ class NFTokenDir_test : public beast::unit_test::Suite
         env.close();
 
         // All of the accounts create one NFT and and offer that NFT to buyer.
-        std::vector<uint256> nftIDs;
-        std::vector<uint256> offers;
+        std::vector<UInt256> nftIDs;
+        std::vector<UInt256> offers;
         offers.reserve(accounts.size());
         for (Account const& account : accounts)
         {
             // Mint the NFT.
-            uint256 const& nftID =
+            UInt256 const& nftID =
                 nftIDs.emplace_back(token::getNextID(env, account, 0, tfTransferable));
             env(token::mint(account, 0), Txflags(tfTransferable));
             env.close();
@@ -663,8 +663,8 @@ class NFTokenDir_test : public beast::unit_test::Suite
         env.close();
 
         // Verify that the low 96 bits of all generated NFTs is identical.
-        uint256 const expectLowBits = nftIDs.front() & nft::kPageMask;
-        for (uint256 const& nftID : nftIDs)
+        UInt256 const expectLowBits = nftIDs.front() & nft::kPageMask;
+        for (UInt256 const& nftID : nftIDs)
         {
             BEAST_EXPECT(expectLowBits == (nftID & nft::kPageMask));
         }
@@ -672,11 +672,11 @@ class NFTokenDir_test : public beast::unit_test::Suite
         // Remove one NFT and offer from the vectors.  This offer is the one
         // that will overflow the page.
         nftIDs.pop_back();
-        uint256 const offerForPageOverflow = offers.back();
+        UInt256 const offerForPageOverflow = offers.back();
         offers.pop_back();
 
         // buyer accepts all of the offers but one.
-        for (uint256 const& offer : offers)
+        for (UInt256 const& offer : offers)
         {
             env(token::acceptSellOffer(buyer, offer));
             env.close();
@@ -689,9 +689,9 @@ class NFTokenDir_test : public beast::unit_test::Suite
         // the ledger by having buyer create sell offers for all of their NFTs.
         // Attempting to sell an offer that the ledger can't find generates
         // a non-tesSUCCESS error code.
-        for (uint256 const& nftID : nftIDs)
+        for (UInt256 const& nftID : nftIDs)
         {
-            uint256 const offerID =
+            UInt256 const offerID =
                 keylet::nftokenOffer(buyer, SeqProxy::rawSequence(env.seq(buyer))).key;
             env(token::createOffer(buyer, nftID, XRP(100)), Txflags(tfSellNFToken));
             env.close();
@@ -710,7 +710,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         BEAST_EXPECT(buyerNFTs[jss::result][jss::account_nfts].size() == nftIDs.size());
         for (json::Value const& ownedNFT : buyerNFTs[jss::result][jss::account_nfts])
         {
-            uint256 ownedID;
+            UInt256 ownedID;
             BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
             auto const foundIter = std::ranges::find(nftIDs, ownedID);
 
@@ -809,10 +809,10 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // All of the accounts create seven consecutive NFTs and and offer
         // those NFTs to buyer.
-        std::array<std::vector<uint256>, 7> nftIDsByPage;
+        std::array<std::vector<UInt256>, 7> nftIDsByPage;
         for (auto& vec : nftIDsByPage)
             vec.reserve(accounts.size());
-        std::array<std::vector<uint256>, 7> offers;
+        std::array<std::vector<UInt256>, 7> offers;
         for (auto& vec : offers)
             vec.reserve(accounts.size());
         for (std::size_t i = 0; i < nftIDsByPage.size(); ++i)
@@ -822,7 +822,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
                 // Mint the NFT.  Tweak the taxon so zero is always stored.
                 std::uint32_t const taxon = toUInt32(nft::cipheredTaxon(i, nft::toTaxon(0)));
 
-                uint256 const& nftID = nftIDsByPage[i].emplace_back(
+                UInt256 const& nftID = nftIDsByPage[i].emplace_back(
                     token::getNextID(env, account, taxon, tfTransferable));
                 env(token::mint(account, taxon), Txflags(tfTransferable));
                 env.close();
@@ -841,8 +841,8 @@ class NFTokenDir_test : public beast::unit_test::Suite
         // sequence is identical.
         for (auto const& vec : nftIDsByPage)
         {
-            uint256 const expectLowBits = vec.front() & nft::kPageMask;
-            for (uint256 const& nftID : vec)
+            UInt256 const expectLowBits = vec.front() & nft::kPageMask;
+            for (UInt256 const& nftID : vec)
             {
                 BEAST_EXPECT(expectLowBits == (nftID & nft::kPageMask));
             }
@@ -850,9 +850,9 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // Remove one NFT and offer from each of the vectors.  These offers
         // are the ones that will overflow the page.
-        std::vector<uint256> overflowNFTs;
+        std::vector<UInt256> overflowNFTs;
         overflowNFTs.reserve(nftIDsByPage.size());
-        std::vector<uint256> overflowOffers;
+        std::vector<UInt256> overflowOffers;
         overflowOffers.reserve(nftIDsByPage.size());
 
         for (std::size_t i = 0; i < nftIDsByPage.size(); ++i)
@@ -871,7 +871,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         // cases.
         for (int const i : std::initializer_list<int>{3, 6, 0, 1, 2, 5, 4})
         {
-            for (uint256 const& offer : offers[i])
+            for (UInt256 const& offer : offers[i])
             {
                 env(token::acceptSellOffer(buyer, offer));
                 env.close();
@@ -880,7 +880,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // buyer accepts the seven offers that would cause page overflows if
         // the transaction succeeded.
-        for (uint256 const& offer : overflowOffers)
+        for (UInt256 const& offer : overflowOffers)
         {
             env(token::acceptSellOffer(buyer, offer), Ter(tecNO_SUITABLE_NFTOKEN_PAGE));
             env.close();
@@ -892,7 +892,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         // a non-tesSUCCESS error code.
         for (auto const& vec : nftIDsByPage)
         {
-            for (uint256 const& nftID : vec)
+            for (UInt256 const& nftID : vec)
             {
                 env(token::createOffer(buyer, nftID, XRP(100)), Txflags(tfSellNFToken));
                 env.close();
@@ -942,14 +942,14 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
             // Cancel all the offers.
             {
-                std::vector<uint256> cancelOffers;
+                std::vector<UInt256> cancelOffers;
                 cancelOffers.reserve(ownedNftOffers.size());
 
                 for (auto const& offer : ownedNftOffers)
                 {
                     if (offer.isMember(jss::index))
                     {
-                        uint256 offerIndex;
+                        UInt256 offerIndex;
                         if (offerIndex.parseHex(offer[jss::index].asString()))
                             cancelOffers.push_back(offerIndex);
                     }
@@ -1006,7 +1006,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         } while (!marker.empty());
 
         // Copy all of the nftIDs into a set to make validation easier.
-        std::set<uint256> allNftIDs;
+        std::set<UInt256> allNftIDs;
         for (auto& vec : nftIDsByPage)
             allNftIDs.insert(vec.begin(), vec.end());
 
@@ -1016,7 +1016,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         {
             if (ownedNFT.isMember(sfNFTokenID.jsonName))
             {
-                uint256 ownedID;
+                UInt256 ownedID;
                 BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
                 auto const foundIter = allNftIDs.find(ownedID);
 

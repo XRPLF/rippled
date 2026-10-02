@@ -3,6 +3,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/TxQ.h>
+#include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/SyntheticFields.h>
 
@@ -11,6 +12,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -27,6 +29,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/serialize.h>
 
+#include <cstdint>
 #include <exception>
 #include <memory>
 #include <string>
@@ -177,6 +180,19 @@ fillJsonTx(
                 txn,
                 {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
+    }
+
+    // compute outgoing CTID
+    if (stMeta && stMeta->isFieldPresent(sfTransactionIndex))
+    {
+        uint32_t const lgrSeq = fill.ledger.seq();
+        uint32_t const txnIdx = stMeta->getFieldU32(sfTransactionIndex);
+        uint32_t netID = fill.context->app.getNetworkIDService().getNetworkID();
+        if (txn->isFieldPresent(sfNetworkID))
+            netID = txn->getFieldU32(sfNetworkID);
+
+        if (auto ctid = rpc::encodeCTID(lgrSeq, txnIdx, netID))
+            txJson[jss::ctid] = *ctid;
     }
 
     if (((fill.options & static_cast<int>(LedgerFill::Options::OwnerFunds)) != 0) &&
