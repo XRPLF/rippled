@@ -33,62 +33,66 @@
 
 namespace xrpl {
 
-// LoanSet-focused FixedPrecision tests: origination's effect on AssetsDeployed,
-// the Open-zone coarsening guard, LoanSet's transfer-leg shapes, and the Vault
-// transactors (Set/Delete/Clawback/Withdraw) when their setup needs an
-// originated (but not yet defaulted or impaired) loan.
 class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
 {
     void
-    testLendingAssetsDeployedOrigination()
+    testAssetsDeployedOrigination()
     {
         using namespace test::jtx;
 
-        testcase(
-            "Lending: LoanSet on a FixedPrecision vault increments AssetsDeployed by the "
-            "principal");
+        struct Row
+        {
+            char const* name = nullptr;
+            std::vector<Number> principals;
+        };
+        Row const rows[] = {
+            {.name = "LoanSet on a FixedPrecision vault increments AssetsDeployed by the principal",
+             .principals = {Number{300}}},
+            {.name = "Two Loans on the same FixedPrecision vault sum into AssetsDeployed",
+             .principals = {Number{100}, Number{200}}},
+        };
+        for (auto const& row : rows)
+        {
+            testcase(row.name);
 
-        Env env(*this, features());
-        auto const [issuer, owner, depositor, asset] = setupIou(env);
+            Number const vaultDeposit{1'000};
+            constexpr std::uint32_t paymentTotal = 2;
 
-        auto const fixture = setupLendingVault(env, owner, depositor, asset, Number{1'000});
+            Env env(*this, features());
+            auto const [issuer, owner, depositor, asset] = setupIou(env);
 
-        checkFixedPrecisionSync(env, fixture.vaultKeylet, Number{1'000});
+            auto const fixture = setupLendingVault(env, owner, depositor, asset, vaultDeposit);
 
-        auto const loanKeylet = openLoan(env, fixture, Number{300}, 3);
+            checkFixedPrecisionSync(env, fixture.vaultKeylet, vaultDeposit);
 
-        auto const sle = expectVault(
-            env, fixture.vaultKeylet, {.available = Number{700}, .assetsDeployed = Number{300}});
-        if (!sle)
-            return;
-        // Origination books principal as debt only; AssetsTotal is unchanged.
-        BEAST_EXPECT(sle->at(sfAssetsTotal) == Number{1'000});
+            std::vector<Keylet> loanKeylets;
+            Number totalPrincipal{0};
+            for (auto const& principal : row.principals)
+            {
+                loanKeylets.push_back(openLoan(env, fixture, principal, paymentTotal));
+                totalPrincipal += principal;
+            }
 
-        auto const loanSle = env.le(loanKeylet);
-        if (!BEAST_EXPECT(loanSle))
-            return;
-        BEAST_EXPECT(sle->at(sfAssetsDeployed) == loanSle->at(sfPrincipalOutstanding));
-        checkVaultLoanSums(env, fixture, {loanKeylet}, "origination");
-    }
+            auto const sle = expectVault(
+                env,
+                fixture.vaultKeylet,
+                {.available = vaultDeposit - totalPrincipal, .assetsDeployed = totalPrincipal});
+            if (!sle)
+                return;
+            // Origination books principal as debt only; AssetsTotal is unchanged.
+            BEAST_EXPECT(sle->at(sfAssetsTotal) == vaultDeposit);
 
-    void
-    testLendingAssetsDeployedTwoLoans()
-    {
-        using namespace test::jtx;
-
-        testcase("Lending: two Loans on the same FixedPrecision vault sum into AssetsDeployed");
-
-        Env env(*this, features());
-        auto const [issuer, owner, depositor, asset] = setupIou(env);
-
-        auto const fixture = setupLendingVault(env, owner, depositor, asset, Number{1'000});
-
-        auto const loanAKeylet = openLoan(env, fixture, Number{100}, 2);
-        auto const loanBKeylet = openLoan(env, fixture, Number{200}, 2);
-
-        expectVault(
-            env, fixture.vaultKeylet, {.available = Number{700}, .assetsDeployed = Number{300}});
-        checkVaultLoanSums(env, fixture, {loanAKeylet, loanBKeylet}, "two loans");
+            Number principalOutstanding{0};
+            for (auto const& loanKeylet : loanKeylets)
+            {
+                auto const loanSle = env.le(loanKeylet);
+                if (!BEAST_EXPECT(loanSle))
+                    return;
+                principalOutstanding += loanSle->at(sfPrincipalOutstanding);
+            }
+            BEAST_EXPECT(sle->at(sfAssetsDeployed) == principalOutstanding);
+            checkVaultLoanSums(env, fixture, loanKeylets, row.name);
+        }
     }
 
     void
@@ -96,14 +100,21 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
     {
         using namespace test::jtx;
 
-        testcase("Lending: VaultClawback and partial VaultWithdraw succeed while a Loan is open");
+        testcase("VaultClawback and partial VaultWithdraw succeed while a Loan is open");
+
+        Number const vaultDeposit{1'000};
+        std::chrono::seconds const investmentWindow{600};
+        Number const principal{400};
+        constexpr std::uint32_t paymentTotal = 2;
+        Number const clawbackAmount{100};
+        Number const withdrawAmount{100};
 
         Env env(*this, features());
         auto const [issuer, owner, depositor, asset] = setupIou(env, {.clawback = true});
 
-        auto const fixture = setupLendingVault(
-            env, owner, depositor, asset, Number{1'000}, std::chrono::seconds{600});
-        auto const loanKeylet = openLoan(env, fixture, Number{400}, 2);
+        auto const fixture =
+            setupLendingVault(env, owner, depositor, asset, vaultDeposit, investmentWindow);
+        auto const loanKeylet = openLoan(env, fixture, principal, paymentTotal);
 
         // Withdrawals need the Redemption phase; open loans are not phase-gated.
         env.close(fixture.redemptionDate + std::chrono::seconds{1});
@@ -115,28 +126,36 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
             {.issuer = issuer,
              .id = fixture.vaultKeylet.key,
              .holder = depositor,
-             .amount = asset(100).value()}));
+             .amount = asset(clawbackAmount).value()}));
         env.close();
 
+        Number const availableAfterClawback = vaultDeposit - principal - clawbackAmount;
+        Number const totalAfterClawback = vaultDeposit - clawbackAmount;
         auto sle = expectVault(
             env,
             fixture.vaultKeylet,
-            {.available = Number{500}, .assetsDeployed = Number{400}, .total = Number{900}});
+            {.available = availableAfterClawback,
+             .assetsDeployed = principal,
+             .total = totalAfterClawback});
         if (!sle)
             return;
         checkVaultLoanSums(env, fixture, {loanKeylet}, "after clawback");
 
         env(fixture.vault.withdraw(
-            {.depositor = depositor, .id = fixture.vaultKeylet.key, .amount = asset(100)}));
+            {.depositor = depositor,
+             .id = fixture.vaultKeylet.key,
+             .amount = asset(withdrawAmount)}));
         env.close();
 
         sle = env.le(fixture.vaultKeylet);
         if (!BEAST_EXPECT(sle))
             return;
-        BEAST_EXPECT(sle->at(sfAssetsAvailable) == Number{400});
-        BEAST_EXPECT(sle->at(sfAssetsDeployed) == Number{400});
+        Number const availableAfterWithdraw = availableAfterClawback - withdrawAmount;
+        Number const totalAfterWithdraw = totalAfterClawback - withdrawAmount;
+        BEAST_EXPECT(sle->at(sfAssetsAvailable) == availableAfterWithdraw);
+        BEAST_EXPECT(sle->at(sfAssetsDeployed) == principal);
         BEAST_EXPECT(sle->at(sfAssetsTotal) == getAssetsTotal(sle));
-        BEAST_EXPECT(sle->at(sfAssetsTotal) == Number{800});
+        BEAST_EXPECT(sle->at(sfAssetsTotal) == totalAfterWithdraw);
         checkVaultLoanSums(env, fixture, {loanKeylet}, "after withdraw");
     }
 
@@ -156,7 +175,7 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
             bool fixedPrecision = false;
         };
         Row const rows[] = {
-            {.name = "Lending: full-value VaultWithdraw while AssetsDeployed is non-zero hits the "
+            {.name = "full-value VaultWithdraw while AssetsDeployed is non-zero hits the "
                      "FixedPrecision tecHAS_OBLIGATIONS guard",
              .amendments = features(),
              .ter = tecHAS_OBLIGATIONS,
@@ -167,6 +186,11 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
              .ter = tecINSUFFICIENT_FUNDS,
              .fixedPrecision = false},
         };
+        Number const vaultDeposit{1'000};
+        std::chrono::seconds const investmentWindow{600};
+        Number const principal{400};
+        constexpr std::uint32_t paymentTotal = 2;
+
         for (auto const& row : rows)
         {
             testcase(row.name);
@@ -174,8 +198,8 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
             Env env(*this, row.amendments);
             auto const [issuer, owner, depositor, asset] = setupIou(env);
 
-            auto const fixture = setupLendingVault(
-                env, owner, depositor, asset, Number{1'000}, std::chrono::seconds{600});
+            auto const fixture =
+                setupLendingVault(env, owner, depositor, asset, vaultDeposit, investmentWindow);
             if (!row.fixedPrecision)
             {
                 auto const sleBefore = env.le(fixture.vaultKeylet);
@@ -183,7 +207,7 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
                     return;
                 BEAST_EXPECT(!sleBefore->isFieldPresent(sfAssetsDeployed));
             }
-            auto const loanKeylet = openLoan(env, fixture, Number{400}, 2);
+            auto const loanKeylet = openLoan(env, fixture, principal, paymentTotal);
 
             // Withdrawals need the Redemption phase.
             env.close(fixture.redemptionDate + std::chrono::seconds{1});
@@ -193,7 +217,7 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
             env(fixture.vault.withdraw(
                     {.depositor = depositor,
                      .id = fixture.vaultKeylet.key,
-                     .amount = asset(1'000)}),
+                     .amount = asset(vaultDeposit)}),
                 Ter(row.ter));
             env.close();
 
@@ -202,7 +226,7 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
                 expectVault(
                     env,
                     fixture.vaultKeylet,
-                    {.available = Number{600}, .assetsDeployed = Number{400}});
+                    {.available = vaultDeposit - principal, .assetsDeployed = principal});
             }
             checkVaultLoanSums(env, fixture, {loanKeylet}, "final withdrawal rejected");
         }
@@ -219,15 +243,20 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
         using namespace test::jtx;
 
         testcase(
-            "Lending: full-value VaultClawback with a large AssetsDeployed clamps to "
+            "full-value VaultClawback with a large AssetsDeployed clamps to "
             "AssetsAvailable instead of tecHAS_OBLIGATIONS");
+
+        Number const vaultDeposit{1'000};
+        std::chrono::seconds const investmentWindow{600};
+        Number const principal{400};
+        constexpr std::uint32_t paymentTotal = 2;
 
         Env env(*this, features());
         auto const [issuer, owner, depositor, asset] = setupIou(env, {.clawback = true});
 
-        auto const fixture = setupLendingVault(
-            env, owner, depositor, asset, Number{1'000}, std::chrono::seconds{600});
-        auto const loanKeylet = openLoan(env, fixture, Number{400}, 2);
+        auto const fixture =
+            setupLendingVault(env, owner, depositor, asset, vaultDeposit, investmentWindow);
+        auto const loanKeylet = openLoan(env, fixture, principal, paymentTotal);
 
         env.close(fixture.redemptionDate + std::chrono::seconds{1});
 
@@ -235,8 +264,8 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
         if (!BEAST_EXPECT(sleBefore))
             return;
         Number const assetsDeployed = sleBefore->at(sfAssetsDeployed);
-        BEAST_EXPECT(assetsDeployed == Number{400});
-        BEAST_EXPECT(Number(sleBefore->at(sfAssetsAvailable)) == Number{600});
+        BEAST_EXPECT(assetsDeployed == principal);
+        BEAST_EXPECT(Number(sleBefore->at(sfAssetsAvailable)) == vaultDeposit - principal);
 
         auto const shareMPTID = sleBefore->at(sfShareMPTID);
         auto const tokenBefore = env.le(keylet::mptoken(shareMPTID, depositor.id()));
@@ -277,13 +306,19 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
         using namespace loan;
 
         testcase(
-            "Lending: CashBasis vault never gets an AssetsDeployed field through the same loan "
+            "CashBasis vault never gets an AssetsDeployed field through the same loan "
             "flow");
+
+        Number const vaultDeposit{1'000};
+        Number const principal{300};
+        constexpr std::uint32_t paymentTotal = 2;
+        // Two equal repayments that together retire the whole principal.
+        Number const repaymentInstallment = principal / 2;
 
         Env env(*this, features() - featureLendingProtocolV1_2);
         auto const [issuer, owner, depositor, asset] = setupIou(env);
 
-        auto const fixture = setupLendingVault(env, owner, depositor, asset, Number{1'000});
+        auto const fixture = setupLendingVault(env, owner, depositor, asset, vaultDeposit);
 
         auto const sleAtCreate = env.le(fixture.vaultKeylet);
         if (!BEAST_EXPECT(sleAtCreate))
@@ -291,30 +326,30 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
         BEAST_EXPECT(sleAtCreate->at(sfLEVersion) == std::to_underlying(VaultVersion::CashBasis));
         BEAST_EXPECT(!sleAtCreate->isFieldPresent(sfAssetsDeployed));
 
-        auto const loanKeylet = openLoan(env, fixture, Number{300}, 2);
+        auto const loanKeylet = openLoan(env, fixture, principal, paymentTotal);
 
         auto sle = env.le(fixture.vaultKeylet);
         if (!BEAST_EXPECT(sle))
             return;
         BEAST_EXPECT(!sle->isFieldPresent(sfAssetsDeployed));
-        BEAST_EXPECT(sle->at(sfAssetsAvailable) == Number{700});
-        BEAST_EXPECT(sle->at(sfAssetsTotal) == Number{1'000});
+        BEAST_EXPECT(sle->at(sfAssetsAvailable) == vaultDeposit - principal);
+        BEAST_EXPECT(sle->at(sfAssetsTotal) == vaultDeposit);
 
-        env(pay(depositor, loanKeylet.key, asset(150).value()));
+        env(pay(depositor, loanKeylet.key, asset(repaymentInstallment).value()));
         env.close();
         sle = env.le(fixture.vaultKeylet);
         if (!BEAST_EXPECT(sle))
             return;
         BEAST_EXPECT(!sle->isFieldPresent(sfAssetsDeployed));
 
-        env(pay(depositor, loanKeylet.key, asset(150).value()));
+        env(pay(depositor, loanKeylet.key, asset(repaymentInstallment).value()));
         env.close();
         sle = env.le(fixture.vaultKeylet);
         if (!BEAST_EXPECT(sle))
             return;
         BEAST_EXPECT(!sle->isFieldPresent(sfAssetsDeployed));
-        BEAST_EXPECT(sle->at(sfAssetsAvailable) == Number{1'000});
-        BEAST_EXPECT(sle->at(sfAssetsTotal) == Number{1'000});
+        BEAST_EXPECT(sle->at(sfAssetsAvailable) == vaultDeposit);
+        BEAST_EXPECT(sle->at(sfAssetsTotal) == vaultDeposit);
     }
 
     void
@@ -327,11 +362,16 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
         using namespace test::jtx;
         using namespace loan;
 
+        auto const interestRate = percentageToTenthBips(100);
+        constexpr std::uint32_t gracePeriod = 60;
+        constexpr std::uint32_t paymentInterval = 31'536'000;  // one year, in seconds
+        constexpr std::uint32_t paymentTotal = 1;
+
         env(set(fixture.depositor, fixture.brokerKeylet.key, principal),
-            kInterestRate(percentageToTenthBips(100)),
-            kGracePeriod(60),
-            kPaymentInterval(31'536'000),
-            kPaymentTotal(1),
+            kInterestRate(interestRate),
+            kGracePeriod(gracePeriod),
+            kPaymentInterval(paymentInterval),
+            kPaymentTotal(paymentTotal),
             Sig(sfCounterpartySignature, fixture.owner),
             Fee(env.current()->fees().base * 2),
             Ter(tecLIMIT_EXCEEDED));
@@ -386,6 +426,13 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
                  .depositorFunds = row.depositAmount,
                  .ownerFunds = row.withCover ? std::optional<Number>{90'000} : std::nullopt});
 
+            std::chrono::seconds const investmentWindow{63'072'000};  // two years
+            std::uint8_t const vaultScale{10};
+            auto const coverRateMinimum =
+                row.withCover ? percentageToTenthBips(10) : TenthBips32(0);
+            auto const coverRateLiquidation =
+                row.withCover ? percentageToTenthBips(50) : TenthBips32(0);
+
             // With cover, a 10% minimum leaves CoverAvailable to liquidate.
             auto const fixture = setupLendingVault(
                 env,
@@ -393,10 +440,10 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
                 depositor,
                 asset,
                 row.depositAmount,
-                std::chrono::seconds{63'072'000},
-                std::uint8_t{10},
-                row.withCover ? percentageToTenthBips(10) : TenthBips32(0),
-                row.withCover ? percentageToTenthBips(50) : TenthBips32(0));
+                investmentWindow,
+                vaultScale,
+                coverRateMinimum,
+                coverRateLiquidation);
 
             auto const vaultSle = env.le(fixture.vaultKeylet);
             if (!BEAST_EXPECT(vaultSle))
@@ -406,7 +453,10 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
 
             if (row.withCover)
             {
-                env(coverDeposit(owner, fixture.brokerKeylet.key, asset(principal / 10)));
+                // The vault's 10% CoverRateMinimum: cover deposit equals a
+                // tenth of the loan principal.
+                Number const coverDepositAmount = principal / 10;
+                env(coverDeposit(owner, fixture.brokerKeylet.key, asset(coverDepositAmount)));
                 env.close();
             }
 
@@ -452,6 +502,12 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
              .issuerIsBorrower = false,
              .issuerIsBrokerOwner = true},
         };
+        Number const vaultDeposit{1'000};
+        Number const principal{300};
+        constexpr std::uint32_t gracePeriod = 60;
+        constexpr std::uint32_t paymentInterval = 120;
+        constexpr std::uint32_t paymentTotal = 2;
+
         for (auto const& row : rows)
         {
             testcase(row.name);
@@ -462,19 +518,18 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
             Account const& borrower = row.issuerIsBorrower ? issuer : depositor;
 
             auto const fixture =
-                setupLendingVault(env, brokerOwner, depositor, asset, Number{1'000});
+                setupLendingVault(env, brokerOwner, depositor, asset, vaultDeposit);
             auto const before = snapshotVault(env, fixture.vaultKeylet, asset);
             Number const ownerBalanceBefore = env.balance(brokerOwner, asset).value();
 
-            Number const principal{300};
             auto const loanKeylet =
                 keylet::loan(fixture.brokerKeylet.key, SeqProxy::rawSequence(1));
             auto const submit = [&](auto&&... extra) {
                 env(set(borrower, fixture.brokerKeylet.key, principal),
                     kInterestRate(TenthBips32(0)),
-                    kGracePeriod(60),
-                    kPaymentInterval(120),
-                    kPaymentTotal(2),
+                    kGracePeriod(gracePeriod),
+                    kPaymentInterval(paymentInterval),
+                    kPaymentTotal(paymentTotal),
                     Sig(sfCounterpartySignature, brokerOwner),
                     Fee(env.current()->fees().base * 2),
                     Ter(tesSUCCESS),
@@ -508,55 +563,48 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
     {
         using namespace test::jtx;
 
-        testcase(
-            "Lending: VaultSet AssetsMaximum below the derived total (AA + DT) is refused on FP");
+        testcase("VaultSet AssetsMaximum below the derived total (AA + DT) is refused on FP");
+
+        Number const vaultDeposit{1'000};
+        Number const principal{300};
+        constexpr std::uint32_t paymentTotal = 2;
 
         Env env(*this, features());
         auto const [issuer, owner, depositor, asset] = setupIou(env);
 
-        auto const fixture = setupLendingVault(env, owner, depositor, asset, Number{1'000});
-        Number const principal{300};
-        auto const loanKeylet = openLoan(env, fixture, principal, 2);
+        auto const fixture = setupLendingVault(env, owner, depositor, asset, vaultDeposit);
+        auto const loanKeylet = openLoan(env, fixture, principal, paymentTotal);
 
         auto const vaultSle = env.le(fixture.vaultKeylet);
         if (!BEAST_EXPECT(vaultSle))
             return;
         Number const derivedTotal = getAssetsTotal(vaultSle);
-        BEAST_EXPECT(derivedTotal == Number{1'000});
+        BEAST_EXPECT(derivedTotal == vaultDeposit);
 
         test::jtx::Vault const vault{env};
-        // Below the derived total: refused.
+        struct Row
+        {
+            Number max;
+            TER ter;
+        };
+        // Below the derived total is refused; at or above it is allowed.
+        Row const rows[] = {
+            {.max = Number{999}, .ter = tecLIMIT_EXCEEDED},
+            {.max = Number{1'000}, .ter = tesSUCCESS},
+            {.max = Number{1'001}, .ter = tesSUCCESS},
+        };
+        for (auto const& row : rows)
         {
             auto tx = vault.set({.owner = owner, .id = fixture.vaultKeylet.key});
-            tx[sfAssetsMaximum] = Number{999};
-            env(tx, Ter(tecLIMIT_EXCEEDED));
+            tx[sfAssetsMaximum] = row.max;
+            env(tx, Ter(row.ter));
             env.close();
-        }
 
-        // Exactly at the derived total: allowed.
-        {
-            auto tx = vault.set({.owner = owner, .id = fixture.vaultKeylet.key});
-            tx[sfAssetsMaximum] = Number{1'000};
-            env(tx, Ter(tesSUCCESS));
-            env.close();
-        }
-        {
+            if (row.ter != tesSUCCESS)
+                continue;
             auto const sle = env.le(fixture.vaultKeylet);
             if (BEAST_EXPECT(sle))
-                BEAST_EXPECT(Number(sle->at(sfAssetsMaximum)) == Number{1'000});
-        }
-
-        // Above the derived total: allowed.
-        {
-            auto tx = vault.set({.owner = owner, .id = fixture.vaultKeylet.key});
-            tx[sfAssetsMaximum] = Number{1'001};
-            env(tx, Ter(tesSUCCESS));
-            env.close();
-        }
-        {
-            auto const sle = env.le(fixture.vaultKeylet);
-            if (BEAST_EXPECT(sle))
-                BEAST_EXPECT(Number(sle->at(sfAssetsMaximum)) == Number{1'001});
+                BEAST_EXPECT(Number(sle->at(sfAssetsMaximum)) == row.max);
         }
 
         checkVaultLoanSums(env, fixture, {loanKeylet}, "testAssetsMaximumBelowDerivedTotalRefused");
@@ -569,15 +617,20 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
         using namespace loan;
 
         testcase(
-            "Lending: VaultDelete on FP with AssetsAvailable == 0 and AssetsDeployed > 0 is "
+            "VaultDelete on FP with AssetsAvailable == 0 and AssetsDeployed > 0 is "
             "refused");
+
+        Number const vaultDeposit{1'000};
+        // Borrow the whole vault, in a single payment, so AssetsAvailable is
+        // left at 0.
+        Number const principal = vaultDeposit;
+        constexpr std::uint32_t paymentTotal = 1;
 
         Env env(*this, features());
         auto const [issuer, owner, depositor, asset] = setupIou(env);
 
-        auto const fixture = setupLendingVault(env, owner, depositor, asset, Number{1'000});
-        Number const principal{1'000};
-        openLoan(env, fixture, principal, 1);
+        auto const fixture = setupLendingVault(env, owner, depositor, asset, vaultDeposit);
+        openLoan(env, fixture, principal, paymentTotal);
 
         auto const vaultSle = env.le(fixture.vaultKeylet);
         if (!BEAST_EXPECT(vaultSle))
@@ -595,8 +648,7 @@ public:
     void
     run() override
     {
-        testLendingAssetsDeployedOrigination();
-        testLendingAssetsDeployedTwoLoans();
+        testAssetsDeployedOrigination();
         testLendingClawbackAndWithdrawWhileLoanOpen();
         testLendingFinalWithdrawalWhileLoanOpen();
         testLendingFullClawbackClampsInsteadOfHasObligations();
