@@ -206,11 +206,12 @@ To return to local-only export, bring the stack up with just the base
 
 ### Files
 
-| File                                      | Role                                                                                         |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `otel-collector-config.grafanacloud.yaml` | Collector config: local backends **plus** Grafana Cloud OTLP exporters for all three signals |
-| `docker-compose.grafanacloud.yaml`        | Override that mounts that config and injects the credentials                                 |
-| `.env.grafanacloud.example`               | Credential template (copy to `.env.grafanacloud`)                                            |
+| File                                           | Role                                                                                                                             |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `otel-collector-config.grafanacloud.yaml`      | Collector config: local backends **plus** Grafana Cloud OTLP exporters for all three signals                                     |
+| `otel-collector-filestorage.grafanacloud.yaml` | Cloud copy of the file_log offset overlay. It also names `basicauth/grafanacloud`, because the collector replaces lists on merge |
+| `docker-compose.grafanacloud.yaml`             | Override that mounts both cloud files over the base ones and injects the credentials                                             |
+| `.env.grafanacloud.example`                    | Credential template (copy to `.env.grafanacloud`)                                                                                |
 
 ### Local + cloud vs cloud-only
 
@@ -2908,7 +2909,7 @@ The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. 
 
 That subdirectory is load-bearing, not cosmetic. Docker creates a missing bind-mount source as root, and `Config::getDebugLogFile()` only warns when it cannot create the log directory, so a root-owned log root produces a healthy-looking node that writes no `debug.log` and an empty Loki with no error at any layer. The `xrpld-logdir-init` service creates the directory and hands it to `XRPLD_UID`/`XRPLD_GID` (default 1000) to prevent that. The receiver also lifts the subdirectory name onto the resource attribute `service.instance.id`, which Loki indexes as the label `service_instance_id`, so each emitter must name its log directory after its own `[telemetry] service_instance_id` or log lines carry a node name that no trace or metric shares.
 
-Each file is read from the beginning, because the receiver's own default (`end`) would skip anything a node wrote before the collector's first poll and would never read a log that has stopped being written to. Read offsets are held in memory by default, so a restarted collector re-reads the files it already ingested. The developer stack avoids that by layering `otel-collector-filestorage.yaml` as a second `--config`, which adds a `file_storage` extension that keeps the offsets on a named volume; a one-shot init service prepares that volume, because the collector runs as a non-root user and a fresh Docker volume is owned by root. Ephemeral stacks such as the workload validation harness create a fresh log directory per run, so they have nothing to resume from and deliberately omit the overlay.
+Each file is read from the beginning, because the receiver's own default (`end`) would skip anything a node wrote before the collector's first poll and would never read a log that has stopped being written to. Read offsets are held in memory by default, so a restarted collector re-reads the files it already ingested. The developer stack avoids that by layering `otel-collector-filestorage.yaml` as a second `--config`, which adds a `file_storage` extension that keeps the offsets on a named volume; a one-shot init service prepares that volume, because the collector runs as a non-root user and a fresh Docker volume is owned by root. The Grafana Cloud stack mounts `otel-collector-filestorage.grafanacloud.yaml` in its place: the collector replaces lists on merge, so that copy must also name `basicauth/grafanacloud`, or the cloud exporters cannot start. Ephemeral stacks such as the workload validation harness create a fresh log directory per run, so they have nothing to resume from and deliberately omit the overlay.
 
 ### LogQL Query Examples
 
