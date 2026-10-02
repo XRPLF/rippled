@@ -303,8 +303,8 @@ the process be killed and losing every buffered trace.
 > shipped, and described three hypothetical boards (`xrpld-consensus-health`,
 > `xrpld-node-overview`, `xrpld-unified`) and three TraceQL alert rules in a
 > group called `xrpld-tracing-alerts`. **None of those uids or rule names exist
-> anywhere in the repo.** What actually ships is 15 dashboards and 14 alert
-> rules, and both are Prometheus-first rather than TraceQL-first. The
+> anywhere in the repo.** What actually ships is the dashboards and alert rules
+> below, and both are Prometheus-first rather than TraceQL-first. The
 > authoritative references are:
 >
 > | For                                              | See                                                                                                       |
@@ -318,7 +318,7 @@ the process be killed and losing every buffered trace.
 
 ### 7.6.1 Shipped Dashboards
 
-15 JSON dashboards are provisioned into Grafana folder `xrpld`. The uids are
+The JSON dashboards are provisioned into Grafana folder `xrpld`. The uids are
 bare — there is no `xrpld-` prefix:
 
 `consensus-health`, `fee-market`, `job-queue`, `ledger-data-sync`,
@@ -339,8 +339,8 @@ used for trace _drill-down_; the time series come from span metrics.
 
 ### 7.6.2 Shipped Alert Rules
 
-`docker/telemetry/grafana/provisioning/alerting/rules.yaml` provisions **14
-rules in 5 groups**, all in folder `xrpld`, all `interval: 1m`, and all
+`docker/telemetry/grafana/provisioning/alerting/rules.yaml` provisions the
+rules in the groups below, all in folder `xrpld`, all `interval: 1m`, and all
 **PromQL** — there are zero TraceQL alert rules.
 
 | Group              | Rules                                                                                                   |
@@ -367,8 +367,8 @@ If you add a span-metric alert, the metric is **`span_calls_total`**. This stack
 sets the `span_metrics` connector's `namespace: "span"`
 (`otel-collector-config.yaml:114`); the connector's own default namespace is
 **empty**, so without that setting the names would be the bare `calls_total` /
-`duration_milliseconds_*`. 7 of the 15 dashboards already query the `span_`
-names. Durations are likewise `span_duration_milliseconds_bucket`.
+`duration_milliseconds_*`. Several dashboards already query the `span_` names.
+Durations are likewise `span_duration_milliseconds_bucket`.
 
 > **`traces_spanmetrics_*` is a different producer, not the connector's
 > default.** That family is emitted by **Tempo's** `metrics_generator`
@@ -395,7 +395,7 @@ sum(rate(span_calls_total{service_name="xrpld", span_name=~"rpc.command.*"}[5m])
 > (`avg(duration)`, `rate()`) need Tempo 2.3+ with TraceQL metrics enabled, are
 > slower, and are distorted by any tail sampling in the path (§7.4.2). Span
 > metrics are computed pre-sampling and cost nothing extra to query. That is
-> why all 14 shipped rules are PromQL.
+> why every shipped rule is PromQL.
 
 ---
 
@@ -511,9 +511,9 @@ These are journal (`debug.log`) lines, not PerfLog lines — see §7.7.2.
 > built-in `local-config.yaml`), so `job` lands in **structured metadata** —
 > queryable only with a `|` filter after a selector, never as the selector
 > itself. A `{job="xrpld"}` query returns empty with no error, which is why this
-> is easy to miss. `docs/telemetry-runbook.md:2533` says the same, and all 38
-> Loki queries in the shipped dashboards (35 panel targets + 3 template
-> variables) select on `service_name` — zero use `job`. Fix options:
+> is easy to miss. `docs/telemetry-runbook.md:2533` says the same, and every
+> Loki query in the shipped dashboards (panel targets and template
+> variables) selects on `service_name` — zero use `job`. Fix options:
 > drop the ineffective `job` upsert, or mount a Loki config adding `job` to
 > `distributor.otlp_config.resource_attributes`.
 
@@ -556,9 +556,7 @@ sum(rate(span_calls_total{span_name="tx.process"}[5m]))
 
 > **Superseded.** No `xrpld-unified` dashboard exists. The single-pane view it
 > described is instead delivered by two things that did ship: the
-> **`log-derived-insights`** dashboard (31 data panels in 10 rows, all
-> Loki-backed — 41 `panels` array entries; see the counting convention in
-> §7.6.1) plus the
+> **`log-derived-insights`** dashboard (all Loki-backed) plus the
 > bidirectional datasource links (Tempo `tracesToLogs` → Loki, `loki.yaml`
 > derived fields → Tempo), which let you cross signals from _any_ board rather
 > than only from one dedicated dashboard.

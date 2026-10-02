@@ -288,7 +288,7 @@
     }
   ],
   "grafana_dashboards": {
-    "description": "All 15 Grafana dashboards provisioned on disk under docker/telemetry/grafana/dashboards/ (UID == file stem for every one). validate_dashboards() checks that each UID resolves via GET /api/dashboards/uid/<uid> and reports its panel count — it verifies provisioning and loadability, not panel data. log-derived-insights is included on that basis even though its panels are Loki-backed and CI runs with --skip-loki: the dashboard itself must still provision cleanly. Its panel data is not asserted anywhere.",
+    "description": "Every Grafana dashboard provisioned on disk under docker/telemetry/grafana/dashboards/ (UID == file stem for every one). validate_dashboards() checks that each UID resolves via GET /api/dashboards/uid/<uid> and reports its panel count — it verifies provisioning and loadability, not panel data. log-derived-insights is included on that basis even though its panels are Loki-backed: the dashboard itself must still provision cleanly. Its panel data is not asserted anywhere.",
     "uids": [
       "rpc-performance",
       "transaction-overview",

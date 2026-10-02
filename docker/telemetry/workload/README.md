@@ -295,9 +295,9 @@ Per-run tuning:
   re-derive the bounds. See `_absolute_bound_derivation` in that file;
   `.github/scripts/telemetry/check_regression_bounds.py` enforces it in CI.
 - That bound budgets for **quantization** noise only, so a key whose run-to-run
-  variance is larger than it cannot be gated at all. **Five keys are excluded**
+  variance is larger than it cannot be gated at all. **Six keys are excluded**
   for that reason: `span.ledger.validate.p95` and `.p99`, plus
-  `span.tx.apply.p50`, `span.ledger.build.p50` and
+  `span.tx.apply.p50`, `span.ledger.build.p50` and `.p99`, and
   `span.consensus.ledger_close.p50`. Each carries
   its measurements in `excluded_keys` in `regression-metrics.json`. Check a key's
   observed maximum across runs against `baseline + bound` before gating it;
