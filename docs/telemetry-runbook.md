@@ -601,7 +601,7 @@ flowchart TB
     RELAYOUT(["Overlay::relay fan-out to N peers<br/>(no span; if applied / terQUEUED,<br/>shouldRelay, not tfInnerBatchTxn)"]):::plain
     PREDROP(["dropped before tx.receive (no span)"]):::drop
     RCV["tx.receive<br/>(peer TMTransaction in)"]:::span
-    RCVDROP["tx.receive<br/>tx_status = dropped_no_sync /<br/>dropped_queue_full"]:::drop
+    RCVDROP["tx.receive<br/>tx_status = dropped_no_sync /<br/>dropped_queue_full /<br/>dropped_queue_stopping"]:::drop
     CHK(["checkTransaction<br/>(JtTransaction worker, no span)"]):::plain
     PRELAY_IN(["TMTransaction in (no span)"]):::plain
 
@@ -616,8 +616,8 @@ flowchart TB
 
     PRELAY_IN -.->|Diverged / needNetworkLedger / malformed / inner-batch / dup| PREDROP
     PRELAY_IN -->|else| RCV
-    RCV -.->|age>4min / JtTransaction full| RCVDROP
-    RCV -->|tx_status = queued_for_check, addJob JtTransaction| CHK
+    RCV -.->|age>4min / JtTransaction full / addJob declined| RCVDROP
+    RCV -->|addJob JtTransaction accepted, tx_status = queued_for_check| CHK
     CHK -->|processTransaction, trusted=peer| TXP
 
     RELAYOUT -. "tx.process ⇢ tx.receive (span_id over TMTransaction)" .-> RCV
@@ -639,11 +639,8 @@ Ingress branches (all evidence in code):
   is an `STTx` throw that the function's own `catch` handles. A duplicate is the
   same tx seen in the last 10 s, and it is charged a fee if marked `BAD`. All
   come before `txReceiveSpan()` opens the span.
-- **Post-span peer drops** in the same function set `tx_status` on the span and
-  enqueue no job. `dropped_no_sync` fires when validated-ledger age > 4 min.
-  `dropped_queue_full` fires when `JtTransaction` jobs > `maxTransactions`.
-- **Queued** in the same function (span exists): otherwise `tx_status` is
-  `queued_for_check` and `addJob(JtTransaction)` is called.
+- **Post-span peer drops** in the same function set `tx_status` on the span and enqueue no job. `dropped_no_sync` fires when validated-ledger age > 4 min. `dropped_queue_full` fires when `JtTransaction` jobs > `maxTransactions`. `dropped_queue_stopping` fires when `addJob(JtTransaction)` returns false. The job queue declines every job once it starts to stop at shutdown.
+- **Queued** in the same function (span exists): otherwise `addJob(JtTransaction)` is called. `tx_status` is `queued_for_check` when the job queue takes the job.
 - **Relay fan-out**: an accepted/queued `tx.process` relays to N peers via
   `Overlay::relay`. The gate is `applied || (non-FULL local) || terQUEUED`,
   HashRouter `shouldRelay`, and not `tfInnerBatchTxn`. A fail-hard submit that
@@ -1171,7 +1168,7 @@ call edge. Read a trace with these in mind:
 | `pathfind.update_all` parents nothing from the original `pathfind.request`.                                                                         | The causal link is the ledger-close job on `JtUpdatePf`, not span nesting.                                                                                                                                                                                                                                                                                                                                                                    |
 | `ledger.acquire` and its downstream `ledger.store` / `ledger.validate`.                                                                             | Reached via the `AcqDone` job, not parent inheritance. All three are `hashSpan` roots keyed on the ledger hash, so none of them parents the others and none inherits its caller's span; they share one trace instead.                                                                                                                                                                                                                         |
 | `peer.*.receive` (fresh `kConsumer` root) and `consensus.*.receive` on the same message.                                                            | Two **sequential stages of one synchronous handler**, not parent/child; on a duplicate/untrusted drop the `consensus.*.receive` is never created.                                                                                                                                                                                                                                                                                             |
-| Receive spans adopt the sender's `trace_id` + `span_id` as a genuine cross-node parent.                                                             | Deliberate: the receive span becomes a child of a **different node's** span (a cross-node context marker, not an in-process edge). `tx.receive` is asymmetric — it borrows only the sender's `span_id` and re-derives its own `trace_id` from `txID`.                                                                                                                                                                                         |
+| Receive spans adopt the sender's `trace_id` + `span_id` as a genuine cross-node parent.                                                             | Deliberate: the receive span becomes a child of a **different node's** span (a cross-node context marker, not an in-process edge). `tx.receive` is asymmetric — it re-derives its own `trace_id` from `txID`. It borrows the sender's `span_id` only when the sender's `trace_id` is that same one. Otherwise it is a root.                                                                                                                   |
 
 > **Known telemetry artifacts**:
 > an RPC entry span's scope can leak across a reused coroutine worker, and the
