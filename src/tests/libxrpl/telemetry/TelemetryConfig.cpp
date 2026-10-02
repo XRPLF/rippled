@@ -876,6 +876,21 @@ TEST(TelemetryConfig, mtls_scheme_check_is_case_sensitive_like_the_exporter)
         ThrowsMessage<std::runtime_error>(HasSubstr(mtls::schemeError)));
 }
 
+TEST(TelemetryConfig, one_way_tls_on_an_https_scheme_without_slashes_throws)
+{
+    // The guard requires the whole "https://" prefix. This URL has "https:"
+    // but no slashes, so a guard cut down to "https:" or "https" accepts it
+    // and this test fails. No client certificate or CA is set, so the scheme
+    // guard is the only check that can throw here.
+    EXPECT_EQ(
+        batchRejection(
+            {{"enabled", "1"},
+             {"use_tls", "1"},
+             {mtls::keyEndpoint, "https:collector:4318/v1/traces"}}),
+        "Invalid value 'traces_endpoint' in [telemetry]: must start with 'https://' when "
+        "use_tls=1, but is 'https:collector:4318/v1/traces'.");
+}
+
 TEST(TelemetryConfig, one_way_tls_on_a_plain_http_endpoint_throws)
 {
     // use_tls=1 with no client certificate, on an http:// endpoint. The
