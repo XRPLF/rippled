@@ -33,7 +33,7 @@ graph LR
     end
 
     subgraph viz["Visualization"]
-        F["Grafana  :3000<br/>16 dashboards"]
+        F["Grafana  :3000"]
     end
 
     A -->|"OTLP/HTTP :4318<br/>(traces + attributes)"| R1
@@ -92,12 +92,7 @@ Code in `libxrpl` cannot use these macros and always goes through `beast::insigh
 
 ### 1.1 Complete Span Inventory (42 spans)
 
-> **42 emitted span-name families.** The count is derived from the `*SpanNames.h`
-> headers and their call sites, one family per distinct span name
-> (`rpc.command.<name>` and `grpc.<MethodName>` each count once, since the
-> command / method name is a parameter of a single family). The tables below list
-> all 42: RPC 6, gRPC 1, transaction 6, TxQ 6, consensus 13, ledger 4, peer 2,
-> pathfind 4. The Phase-10 validation harness lists the families it checks in `docker/telemetry/workload/expected_spans.json`, and its `total_span_types` field gives their number.
+> **Emitted span-name families.** The tables below list one row per distinct span name, taken from the `*SpanNames.h` headers and their call sites. `rpc.command.<name>` and `grpc.<MethodName>` are one family each, because the command or method name is a parameter. The Phase-10 validation harness lists the families it checks in `docker/telemetry/workload/expected_spans.json`, and its `total_span_types` field gives their number. This branch also emits the sync-diagnostic spans (`nodestore.rotate.*`, the `ledger.acquire.*` children, `ledger.serve`, `txset.acquire`, `peer.dial` and `consensus.validation.accept`). `expected_spans.json` lists them, but these tables do not; [Fresh-node sync diagnostics](#fresh-node-sync-diagnostics) describes them.
 
 > **See also**: [02-design-decisions.md §2.3](./02-design-decisions.md#23-span-naming-conventions) for naming conventions and the full span catalog with rationale. [docs/telemetry-runbook.md § Protocol Span Flow](../docs/telemetry-runbook.md#protocol-span-flow) for the span flow diagrams (the former `04-code-samples.md` §4.6 was deleted).
 
@@ -803,22 +798,22 @@ sampled at the same instant.
 
 > **See also**: [05-configuration-reference.md](./05-configuration-reference.md) §5.8 for Grafana data source provisioning (Tempo, Prometheus) and TraceQL query examples.
 
-Fifteen dashboards are provisioned in total. §3.1 and §3.2 below cover the
-original ten; the remaining five were added by later phases and are catalogued
-where they were introduced, so this section is not the full inventory:
+§3.1 and §3.2 below cover the original dashboards. The ones added by later
+phases are catalogued where they were introduced, so this section is not the
+full inventory:
 
-| Dashboard          | UID                  | Catalogued in                                        |
-| ------------------ | -------------------- | ---------------------------------------------------- |
-| Fee Market & TxQ   | `fee-market`         | §5b "New Grafana Dashboards (Phase 9)"               |
-| Job Queue Analysis | `job-queue`          | §5b "New Grafana Dashboards (Phase 9)"               |
-| Validator Health   | `validator-health`   | §5d "New Grafana Dashboards (Phase 9)"               |
-| Peer Quality       | `peer-quality`       | §5d "New Grafana Dashboards (Phase 9)"               |
-| Ledger Sync Health | `ledger-sync-health` | "Fresh-node sync diagnostics" (end of this document) |
+| Dashboard            | UID                    | Catalogued in                                                                                          |
+| -------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------ |
+| Fee Market & TxQ     | `fee-market`           | §5b "New Grafana Dashboards (Phase 9)"                                                                 |
+| Job Queue Analysis   | `job-queue`            | §5b "New Grafana Dashboards (Phase 9)"                                                                 |
+| Validator Health     | `validator-health`     | §5d "New Grafana Dashboards (Phase 9)"                                                                 |
+| Peer Quality         | `peer-quality`         | §5d "New Grafana Dashboards (Phase 9)"                                                                 |
+| Ledger Sync Health   | `ledger-sync-health`   | "Fresh-node sync diagnostics" (end of this document)                                                   |
+| Log-Derived Insights | `log-derived-insights` | runbook [Log-Derived Insights](../docs/telemetry-runbook.md#log-derived-insights-log-derived-insights) |
 
-The authoritative count is whatever
-`docker/telemetry/grafana/dashboards/*.json` holds;
-`validate_dashboards.py` prints it and the workload harness asserts every
-board renders.
+The authoritative list is whatever `docker/telemetry/grafana/dashboards/*.json`
+holds. `validate_dashboards.py` checks each file, and the workload harness
+checks that every board loads.
 
 ### 3.1 Span-Derived Dashboards (5)
 
@@ -868,10 +863,9 @@ for how the tier attributes are set and reach metrics.
 
 1. Open Grafana at **http://localhost:3000**
 2. Navigate to **Dashboards → xrpld** folder
-3. All 16 dashboards are auto-provisioned from `docker/telemetry/grafana/dashboards/`
-   (the workload harness checks that all 16 provision and load; 15 of them also have
-   metric-data assertions — `log-derived-insights` is Loki-backed, so only its
-   provisioning is checked)
+3. All dashboards are auto-provisioned from `docker/telemetry/grafana/dashboards/`
+   (the workload harness checks that each one provisions and loads, but runs no panel
+   query)
 
 ---
 
@@ -1218,8 +1212,8 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 | Trace spans                    | One per entry       | Tempo API query                             | `expected_spans.json`   |
 | Span attributes                | Required, per span  | Per-span attribute assertion                | `expected_spans.json`   |
 | Legacy beast::insight families | ~270 (≈224 traffic) | Named subset asserted; rest regex-accounted | `expected_metrics.json` |
-| Native MetricsRegistry         | 35 instruments      | Prometheus query                            | `expected_metrics.json` |
-| Call-site `XRPL_METRIC_*`      | 7 instruments       | Prometheus query                            | `expected_metrics.json` |
+| Native MetricsRegistry         | Each listed name    | Prometheus query                            | `expected_metrics.json` |
+| Call-site `XRPL_METRIC_*`      | Each listed name    | Prometheus query                            | `expected_metrics.json` |
 | Per-job-type gauges            | 105 (35 types × 3)  | 6 by literal name; rest regex-accounted     | `expected_metrics.json` |
 | SpanMetrics RED                | 4 per span          | Prometheus query                            | `expected_metrics.json` |
 | Grafana dashboards             | Each listed uid     | Dashboard API load + panel count            | `expected_metrics.json` |
