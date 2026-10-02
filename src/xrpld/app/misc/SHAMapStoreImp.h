@@ -271,18 +271,17 @@ private:
     private:
         SHAMapStoreImp& owner_;
         /**
-         * Stage label for the duration record. Read only inside the metric
-         * macro, so a telemetry-off build never reads it. An owned copy: the
+         * Stage label for the duration record. An owned copy: the
          * constructor takes a view so callers can pass the label constants,
          * and a stored view would only live as long as the caller's text.
          */
-        [[maybe_unused]] std::string const stage_;
+        std::string const stage_;
         /**
          * The cache a freshen phase worked on, empty for every other phase.
          * Labels the duration record and, when set, the span. An owned copy,
          * like stage_.
          */
-        [[maybe_unused]] std::string const cache_;
+        std::string const cache_;
         /**
          * The phase this one runs inside, or null.
          */
