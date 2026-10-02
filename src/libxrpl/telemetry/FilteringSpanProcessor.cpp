@@ -52,7 +52,7 @@ namespace trace_sdk = opentelemetry::sdk::trace;
  * takes. The view lasts only for the call, and the recordable copies it.
  *
  * @code
- * opentelemetry::nostd::visit(ForwardOwnedValue{recordable, key}, ownedValue);
+ * opentelemetry::nostd::visit(ForwardOwnedValue{.target = recordable, .key = key}, ownedValue);
  * @endcode
  *
  * @note The key and the owned value must outlive the call.
@@ -186,7 +186,7 @@ public:
         for (auto const& [key, value] : attributes_)
         {
             opentelemetry::nostd::visit(
-                ForwardOwnedValue{*inner_, {key.data(), key.size()}}, value);
+                ForwardOwnedValue{.target = *inner_, .key = {key.data(), key.size()}}, value);
         }
         return std::move(inner_);
     }
