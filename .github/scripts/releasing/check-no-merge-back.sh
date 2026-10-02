@@ -16,11 +16,10 @@ fi
 BASE=$1
 HEAD=$2
 
-mapfile -t BRANCHES < <(git for-each-ref --format='%(refname)' 'refs/remotes/*/release/*' 'refs/remotes/*/staging/*')
-if [ "${#BRANCHES[@]}" -eq 0 ]; then
-    echo "Error: No release or staging branches found."
-    exit 1
-fi
+SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
+# shellcheck source=.github/scripts/releasing/common.sh
+source "${SCRIPT_DIR}/common.sh"
+load_release_branches
 
 RELEASE_COMMITS=$(git rev-list "${BRANCHES[@]}" --not "${BASE}" | sort)
 HEAD_COMMITS=$(git rev-list "${HEAD}" --not "${BASE}" | sort)
