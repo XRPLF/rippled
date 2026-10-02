@@ -65,34 +65,37 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
         }
 
         {
-            testcase("VaultCreate treats V1.2 as implying V1.1");
+            testcase(
+                "VaultCreate without V1.1: V1.2 alone creates neither FixedPrecision nor "
+                "closed-ended Vaults");
             Env env(*this, features() - featureLendingProtocolV1_1);
             env.fund(XRP(1'000'000), issuer, owner);
             env.close();
 
             Vault const vault{env};
-            auto [tx, keylet] = vault.create(
+            // VaultKind and the closed-ended dates need featureLendingProtocolV1_1.
+            auto [kindTx, kindKeylet] = vault.create(
                 {.owner = owner,
                  .asset = asset,
                  .vaultKind = std::to_underlying(VaultKind::OpenEnded)});
-            tx[sfScale] = kVaultMaximumFixedPrecisionIouScale;
+            env(kindTx, Ter(temDISABLED));
+            BEAST_EXPECT(!env.le(kindKeylet));
+
+            // A plain VaultCreate makes a Legacy Vault, with the legacy Scale maximum.
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            tx[sfScale] = static_cast<std::uint8_t>(kVaultMaximumFixedPrecisionIouScale + 1);
             env(tx);
             env.close();
 
             auto const sle = env.le(keylet);
             if (!BEAST_EXPECT(sle))
                 return;
-            BEAST_EXPECT(sle->at(sfLEVersion) == std::to_underlying(VaultVersion::FixedPrecision));
-            BEAST_EXPECT(sle->at(sfVaultKind) == std::to_underlying(VaultKind::OpenEnded));
-
-            auto [invalid, invalidKeylet] = vault.create({.owner = owner, .asset = asset});
-            invalid[sfScale] = static_cast<std::uint8_t>(kVaultMaximumFixedPrecisionIouScale + 1);
-            env(invalid, Ter(temMALFORMED));
-            BEAST_EXPECT(!env.le(invalidKeylet));
+            BEAST_EXPECT(!sle->isFieldPresent(sfLEVersion));
+            BEAST_EXPECT(getVaultVersion(sle) == VaultVersion::Legacy);
         }
 
-        // Without fixCleanup3_2_0 and fixCleanup3_4_0, V1_2 alone leaves a vault on the
-        // CashBasis rules, including the legacy Scale maximum.
+        // Without fixCleanup3_4_0, V1_2 alone leaves a vault on the CashBasis rules,
+        // including the legacy Scale maximum.
         struct Row
         {
             char const* name = nullptr;
@@ -118,18 +121,6 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
             {.name = "CashBasis Vault retains legacy Scale maximum",
              .amendments = features() - featureLendingProtocolV1_2,
              .scale = kVaultMaximumLegacyIouScale,
-             .ter = tesSUCCESS,
-             .version = cashVersion},
-            {.name =
-                 "VaultCreate: V1_2 on, fixCleanup3_2_0 off falls back to the legacy Scale maximum",
-             .amendments = features() - fixCleanup3_2_0,
-             .scale = kVaultMaximumLegacyIouScale,
-             .ter = tesSUCCESS,
-             .version = cashVersion},
-            {.name =
-                 "VaultCreate: V1_2 on, fixCleanup3_2_0 off accepts Scale above the fixed maximum",
-             .amendments = features() - fixCleanup3_2_0,
-             .scale = aboveFixed,
              .ter = tesSUCCESS,
              .version = cashVersion},
             {.name =
@@ -820,6 +811,76 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
             BEAST_EXPECT(Number(sle->at(sfAssetsMaximum)) == Number{1'000});
     }
 
+    // A Vault created before featureLendingProtocolV1_2 keeps an AssetsMaximum
+    // that is off the 10^-Scale grid. After V1.2 the stored cap does not block
+    // VaultSet, the owner can replace it with an on-grid cap, and the new cap is
+    // enforced on deposit.
+    void
+    testOffGridAssetsMaximumReplacedAfterV12()
+    {
+        using namespace test::jtx;
+
+        testcase("Existing vault with an off-grid cap: VaultSet replaces it after V1.2");
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        PrettyAsset const asset{issuer["USD"]};
+
+        Env env(*this, features() - featureLendingProtocolV1_2);
+        env.fund(XRP(1'000'000), issuer, owner);
+        env.close();
+        env.trust(asset(1'000), owner);
+        env.close();
+        env(pay(issuer, owner, asset(1'000)));
+        env.close();
+
+        Vault const vault{env};
+        // Off the 10^0 grid.
+        Number const offGrid{100'000'001, -7};
+
+        auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
+        create[sfScale] = 0;
+        create[sfAssetsMaximum] = offGrid;
+        env(create, Ter(tesSUCCESS));
+        env.close();
+
+        env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(1)}));
+        env.close();
+
+        env.enableFeature(featureLendingProtocolV1_2);
+        env.close();
+
+        auto const before = env.le(keylet);
+        if (!BEAST_EXPECT(before))
+            return;
+        BEAST_EXPECT(Number(before->at(sfAssetsMaximum)) == offGrid);
+        BEAST_EXPECT(getVaultVersion(before) == VaultVersion::CashBasis);
+
+        // A VaultSet that does not touch AssetsMaximum is not affected by the
+        // stored off-grid cap.
+        auto data = vault.set({.owner = owner, .id = keylet.key});
+        data[sfData] = "AB";
+        env(data, Ter(tesSUCCESS));
+        env.close();
+
+        auto onGrid = vault.set({.owner = owner, .id = keylet.key});
+        onGrid[sfAssetsMaximum] = Number{5};
+        env(onGrid, Ter(tesSUCCESS));
+        env.close();
+
+        auto const after = env.le(keylet);
+        if (!BEAST_EXPECT(after))
+            return;
+        BEAST_EXPECT(Number(after->at(sfAssetsMaximum)) == Number{5});
+
+        env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(4)}));
+        env.close();
+        env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(1)}),
+            Ter(tecLIMIT_EXCEEDED));
+        env.close();
+        BEAST_EXPECT(getAssetsTotal(env.le(keylet)) == Number{5});
+    }
+
     // Reproduces a reported issue: the end-of-transaction associateAsset pass is not
     // a no-op. The original witness (VaultDepositAssociateAsset_test.cpp) grows a
     // vault's running total by two decades so the exact sum needs 18 digits, more
@@ -909,6 +970,7 @@ public:
         testAssetsMaximumIntegralAssets();
         testAssetsMaximumOffGridAcceptedPreV12();
         testAssetsMaximumRejectedOnExistingVaultAfterV12();
+        testOffGridAssetsMaximumReplacedAfterV12();
         testDepositCoarseningRefusedInsteadOfAssociateAssetRounding();
     }
 };
