@@ -201,9 +201,12 @@ tests.libxrpl > xrpl.server
 tests.libxrpl > xrpl.shamap
 tests.libxrpl > xrpl.telemetry
 tests.libxrpl > xrpl.tx
+tests.xrpld > xrpl.basics
 tests.xrpld > xrpld.rpc
+tests.xrpld > xrpld.telemetry
 tests.xrpld > xrpl.json
 tests.xrpld > xrpl.protocol
+tests.xrpld > xrpl.telemetry
 xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol
 xrpl.config > xrpl.basics
