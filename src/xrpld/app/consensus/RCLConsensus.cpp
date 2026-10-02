@@ -1143,9 +1143,9 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
         // Record our validation for the agreement tracker so it can
         // compare against network-validated ledgers.
         //
-        // Only when enabled: recording takes the tracker's lock and inserts an
-        // entry, and nothing reconciles or drains those entries unless the
-        // observable gauges are running.
+        // Only when enabled: nothing reconciles or drains the tracker unless
+        // the observable gauges are running. Without them the ring fills, and
+        // every later event is dropped.
         if (mr->isEnabled())
             mr->getValidationTracker().recordOurValidation(ledger.id(), ledger.seq());
 #endif
