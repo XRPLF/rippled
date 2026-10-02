@@ -700,7 +700,7 @@ three signals' attributes over OTLP directly.
 
 ## Grafana Dashboards
 
-Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
+The dashboards below are pre-provisioned in `docker/telemetry/grafana/dashboards/`. Not every provisioned board has a section here:
 
 ### RPC Performance (`rpc-performance`)
 
