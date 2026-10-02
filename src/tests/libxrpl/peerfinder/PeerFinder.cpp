@@ -60,7 +60,7 @@ endpoint(std::string const& value)
 class MockStore : public Store
 {
 public:
-    MOCK_METHOD(std::size_t, load, (Store::load_callback const& cb), (override));
+    MOCK_METHOD(std::size_t, load, (Store::LoadCallback const& cb), (override));
     MOCK_METHOD(void, save, (std::vector<Store::Entry> const& entries), (override));
 };
 
@@ -71,7 +71,7 @@ public:
     std::vector<std::vector<Store::Entry>> saves;
 
     std::size_t
-    load(Store::load_callback const& cb) override
+    load(Store::LoadCallback const& cb) override
     {
         for (auto const& entry : entriesToLoad)
             cb(entry.endpoint, entry.valence);
@@ -1214,6 +1214,9 @@ TEST(PeerFinderConfig, applies_legacy_and_explicit_peer_limits)
          .expectedOut = 10,
          .expectedIn = 0,
          .expectedIpLimit = 1},
+        // A port of zero disables incoming connections, so the configured
+        // inbound limit is dropped and the per-IP inbound limit collapses to
+        // one, exactly as in the legacy private case above.
         {.name = "new in 100/out 10, private",
          .maxPeers = {},
          .maxIn = 100,
@@ -1221,7 +1224,7 @@ TEST(PeerFinderConfig, applies_legacy_and_explicit_peer_limits)
          .port = 0,
          .expectedOut = 10,
          .expectedIn = 0,
-         .expectedIpLimit = 6}};
+         .expectedIpLimit = 1}};
 
     for (auto const& testCase : cases)
     {
@@ -1238,6 +1241,13 @@ TEST(PeerFinderConfig, applies_legacy_and_explicit_peer_limits)
         EXPECT_EQ(counts.outMax(), testCase.expectedOut);
         EXPECT_EQ(counts.inMax(), testCase.expectedIn);
         EXPECT_EQ(config.ipLimit, testCase.expectedIpLimit);
+
+        // The configuration itself carries the same per-direction allowances
+        // that the slot counts derive, and `maxPeers` is their total. Callers
+        // such as `Overlay::limit` read `maxPeers` directly.
+        EXPECT_EQ(config.outPeers, testCase.expectedOut);
+        EXPECT_EQ(config.inPeers, testCase.expectedIn);
+        EXPECT_EQ(config.maxPeers, config.inPeers + config.outPeers);
 
         NiceMock<MockStore> store;
         allowEmptyStore(store);
