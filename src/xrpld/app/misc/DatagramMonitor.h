@@ -116,6 +116,9 @@ struct [[gnu::packed]] DebugCounters
     std::uint64_t nodeFetchCount{0};
     std::uint64_t nodeFetchHitCount{0};
     std::uint64_t nodeFetchSize{0};
+
+    // Job queue metrics
+    std::uint64_t jobQueueOverflow{0};
 };
 
 // Core server metrics in the fixed header
@@ -238,16 +241,17 @@ private:
                 max_samples * 1000000ULL;  // window in seconds * 1,000,000 for microseconds
         }
 
+        // Get the oldest valid sample. Once the ring fills, the slot the
+        // next write will overwrite (current_index % max_samples) is the one
+        // that has gone longest without being refreshed.
+        size_t oldest_index = (current_index >= max_samples) ? (current_index % max_samples) : 0;
+        auto const& oldest = samples[oldest_index];
+
         // For any window where we don't have full data, we should scale the
         // rate based on the actual time we have data for
-        uint64_t actual_window_micros = current.timestamp - samples[0].timestamp;
+        uint64_t actual_window_micros = current.timestamp - oldest.timestamp;
         double window_scale =
             std::min(1.0, static_cast<double>(actual_window_micros) / expected_window_micros);
-
-        // Get the oldest valid sample
-        size_t oldest_index =
-            (current_index >= max_samples) ? ((current_index + 1) % max_samples) : 0;
-        auto const& oldest = samples[oldest_index];
 
         double elapsed = actual_window_micros / 1000000.0;  // Convert microseconds to seconds
 
@@ -443,6 +447,8 @@ private:
         counters.nodeFetchHitCount = app_.getNodeStore().getFetchHitCount();
         counters.nodeFetchSize = app_.getNodeStore().getFetchSize();
 
+        counters.jobQueueOverflow = app_.getOverlay().getJqTransOverflow();
+
         return {counters, objectCounts};
     }
 
@@ -493,6 +499,9 @@ private:
         if (sysctlbyname("hw.physicalcpu", &value, &size, NULL, 0) == 0)
             count = value;
         return count > 0 ? count : (count = 1);
+#else
+        count = std::thread::hardware_concurrency();
+        return count > 0 ? count : (count = 1);
 #endif
     }
 
@@ -536,10 +545,12 @@ private:
 
                     uint64_t bytes_in, bytes_out;
                     std::istringstream iss(line.substr(line.find(':') + 1));
-                    iss >> bytes_in;  // First field after : is bytes_in
-                    for (int i = 0; i < 8; ++i)
-                        iss >> std::ws;  // Skip 8 fields
-                    iss >> bytes_out;    // 9th field is bytes_out
+                    iss >> bytes_in;  // rx bytes
+                    // Skip rx packets, errs, drop, fifo, frame, compressed, multicast
+                    uint64_t rx_field;
+                    for (int i = 0; i < 7; ++i)
+                        iss >> rx_field;
+                    iss >> bytes_out;  // tx bytes
 
                     total_bytes_in += bytes_in;
                     total_bytes_out += bytes_out;
@@ -676,7 +687,8 @@ private:
                                 std::chrono::system_clock::now().time_since_epoch())
                                 .count();
         header->uptime = UptimeClock::now().time_since_epoch().count();
-        header->io_latency_us = app_.getIOLatency().count();
+        header->io_latency_us =
+            std::chrono::duration_cast<std::chrono::microseconds>(app_.getIOLatency()).count();
         header->validation_quorum = app_.getValidators().quorum();
         header->server_state = static_cast<std::uint32_t>(ops.getOperatingMode());
         header->peer_count = app_.getOverlay().size();
@@ -758,7 +770,12 @@ private:
         // Get process memory usage
         struct rusage usage;
         getrusage(RUSAGE_SELF, &usage);
-        header->process_memory_pages = usage.ru_maxrss;
+#if defined(__linux__)
+        // ru_maxrss is in KiB on Linux; macOS already reports bytes.
+        header->process_memory_pages = static_cast<uint64_t>(usage.ru_maxrss) * 1024;
+#else
+        header->process_memory_pages = static_cast<uint64_t>(usage.ru_maxrss);
+#endif
 
         // Get disk usage
 #if defined(__linux__)
@@ -818,10 +835,19 @@ private:
     {
         std::vector<std::pair<EndpointInfo, int>> endpoints;
 
-        for (auto const& epStr : app_.config().DATAGRAM_MONITOR)
+        try
         {
-            auto endpoint = parseEndpoint(epStr);
-            endpoints.push_back(std::make_pair(endpoint, createSocket(endpoint)));
+            for (auto const& epStr : app_.config().DATAGRAM_MONITOR)
+            {
+                auto endpoint = parseEndpoint(epStr);
+                endpoints.push_back(std::make_pair(endpoint, createSocket(endpoint)));
+            }
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(j_.error()) << "Invalid [datagram_monitor] configuration: " << e.what();
+            running_ = false;
+            return;
         }
 
         while (running_)

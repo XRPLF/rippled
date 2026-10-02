@@ -1553,6 +1553,12 @@ ApplicationImp::run()
 
     JLOG(journal_.debug()) << "Application stopping";
 
+    // Stop the datagram monitor before nodeStore_, networkOPs_, overlay_ and
+    // ledgerMaster_ stop below; datagramMonitor_ is declared ahead of them,
+    // so its implicit destruction would otherwise run after theirs.
+    if (datagramMonitor_)
+        datagramMonitor_->stop();
+
     io_latency_sampler_.cancelAsync();
 
     // VFALCO Enormous hack, we have to force the probe to cancel
