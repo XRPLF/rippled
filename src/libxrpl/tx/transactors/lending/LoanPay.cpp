@@ -543,7 +543,7 @@ LoanPay::doApply()
     // Despite our best efforts, it's possible for rounding errors to accumulate
     // in the loan broker's debt total on Legacy/CashBasis Vaults. This is because
     // the broker may have more than one loan with significantly different scales.
-    adjustBrokerDebtTotal(debtTotalProxy, vaultSle, -debtTotalDelta, vaultScale);
+    adjustBrokerDebtTotal(brokerSle, vaultSle, -debtTotalDelta, vaultScale);
 
     //------------------------------------------------------
     // Vault object state changes
