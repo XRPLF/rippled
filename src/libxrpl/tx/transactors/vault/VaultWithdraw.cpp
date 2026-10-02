@@ -489,7 +489,7 @@ VaultWithdraw::doApply()
             // re-derived: any trimmed residue stays with remaining shareholders.
             auto const maybeClamped = clampVaultOutflow(vault, -assetsWithdrawn);
             if (!maybeClamped)
-                return maybeClamped.error();
+                return maybeClamped.error();  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeClamped;
         }
         // LCOV_EXCL_START
