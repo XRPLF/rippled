@@ -15,6 +15,7 @@
 
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 
 #include <xrpl/basics/Buffer.h>
@@ -1210,6 +1211,51 @@ struct PayChan_test : public beast::unit_test::Suite
     }
 
     void
+    testAccountChannelsRPCMarkerCredentialGap(FeatureBitset features)
+    {
+        testcase("Account channels RPC marker across owner directory types");
+
+        using namespace jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw1 = Account("gw1");
+        Env env{*this, features};
+        env.fund(XRP(10000), alice, bob, gw1);
+        env.close();
+
+        // gw1, the credential issuer, can unilaterally place a Credential
+        // into alice's owner directory. alice's consent isn't required for
+        // the object to exist there.
+        env(credentials::create(alice, gw1, "termsandconditions"));
+        env.close();
+
+        auto const settleDelay = 3600s;
+        env(create(alice, bob, XRP(1), settleDelay, alice.pk()));
+        env.close();
+
+        {
+            json::Value params;
+            params[jss::account] = alice.human();
+            auto const result = env.rpc("json", "account_channels", to_string(params))[jss::result];
+            BEAST_EXPECT(!result.isMember(jss::error_message));
+            BEAST_EXPECT(result[jss::channels].size() == 1);
+            BEAST_EXPECT(
+                result[jss::channels][0u][jss::destination_account].asString() == bob.human());
+        }
+
+        // The marker points directly at the Credential entry
+        auto const credKey = credentials::keylet(alice, gw1, "termsandconditions").key;
+        json::Value params;
+        params[jss::account] = alice.human();
+        params[jss::marker] = to_string(credKey) + ",0";
+        auto const result = env.rpc("json", "account_channels", to_string(params))[jss::result];
+        BEAST_EXPECT(!result.isMember(jss::error_message));
+        BEAST_EXPECT(result[jss::channels].isArray());
+    }
+
+    void
     testAccountChannelsRPCSenderOnly(FeatureBitset features)
     {
         // Check that the account_channels command only returns channels owned
@@ -2125,6 +2171,7 @@ struct PayChan_test : public beast::unit_test::Suite
         testMultiple(features);
         testAccountChannelsRPC(features);
         testAccountChannelsRPCMarkers(features);
+        testAccountChannelsRPCMarkerCredentialGap(features);
         testAccountChannelsRPCSenderOnly(features);
         testAccountChannelAuthorize(features);
         testAuthVerifyRPC(features);

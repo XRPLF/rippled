@@ -173,14 +173,8 @@ doAccountLines(rpc::JsonContext& context)
             return rpcError(RpcInvalidParams);
         startHint = *hint;
 
-        // We then must check if the object pointed to by the marker is actually
-        // owned by the account in the request.
-        auto const sle = ledger->read({ltANY, startAfter});
-
-        if (!sle)
-            return rpcError(RpcInvalidParams);
-
-        if (!rpc::isRelatedToAccount(*ledger, sle, accountID))
+        // Reject a marker that doesn't exist
+        if (!ledger->read({ltANY, startAfter}))
             return rpcError(RpcInvalidParams);
     }
 

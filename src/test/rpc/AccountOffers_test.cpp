@@ -3,11 +3,13 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/pay.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -287,12 +289,55 @@ public:
     }
 
     void
+    testAccountOffersMarkerAcrossTypes()
+    {
+        testcase("Marker pointing to a non-offer owner directory entry");
+        using namespace jtx;
+        Env env{*this};
+
+        Account const alice{"alice"};
+        Account const gw1{"gw1"};
+        env.fund(XRP(10000), alice, gw1);
+        env.close();
+
+        // gw1, the credential issuer, can place a Credential
+        // into alice's owner directory. alice's consent isn't required for
+        // the object to exist there.
+        env(credentials::create(alice, gw1, "termsandconditions"));
+        env.close();
+
+        // A buy order for USD doesn't require alice to already hold a USD
+        // trust line, so this is the only other entry in alice's directory.
+        auto const usdGw1 = gw1["USD"];
+        env(offer(alice, usdGw1(10), XRP(100)));
+        env.close();
+
+        {
+            json::Value params;
+            params[jss::account] = alice.human();
+            auto const result = env.rpc("json", "account_offers", to_string(params))[jss::result];
+            BEAST_EXPECT(!result.isMember(jss::error_message));
+            BEAST_EXPECT(result[jss::offers].size() == 1);
+        }
+
+        // The marker points directly at the Credential entry
+        auto const credKey = credentials::keylet(alice, gw1, "termsandconditions").key;
+        json::Value params;
+        params[jss::account] = alice.human();
+        params[jss::marker] = to_string(credKey) + ",0";
+        auto const result = env.rpc("json", "account_offers", to_string(params))[jss::result];
+        BEAST_EXPECT(!result.isMember(jss::error_message));
+        BEAST_EXPECT(result[jss::offers].isArray());
+    }
+
+    void
     run() override
     {
         testSequential(true);
         testSequential(false);
         testBadInput();
         testNonAdminMinLimit();
+        testAccountOffersMarkerAcrossTypes();
     }
 };
 

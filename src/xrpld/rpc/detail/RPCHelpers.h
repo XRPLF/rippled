@@ -17,7 +17,6 @@
 #include <xrpl/protocol/STLedgerEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
-#include <xrpl/server/NetworkOPs.h>
 
 #include <cstdint>
 #include <optional>
@@ -45,20 +44,6 @@ struct JsonContext;
  */
 std::uint64_t
 getStartHint(SLE::ConstRef sle, AccountID const& accountID);
-
-/**
- * @brief Tests if a ledger entry (SLE) is owned by the specified account.
- *
- * Determines whether the given SLE is related to or owned by the provided
- * account ID within the context of the specified ledger.
- *
- * @param ledger The ledger view used to search for the SLE.
- * @param sle Shared pointer to the SLE to test for ownership.
- * @param accountID The account being tested for SLE ownership.
- * @return true if the SLE is owned by the account, false otherwise.
- */
-bool
-isRelatedToAccount(ReadView const& ledger, SLE::ConstRef sle, AccountID const& accountID);
 
 /**
  * @brief Parses an array of account IDs from a JSON value.

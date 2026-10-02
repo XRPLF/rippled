@@ -3,6 +3,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/flags.h>
@@ -1320,12 +1321,55 @@ public:
     }
 
     void
+    testAccountLinesMarkerAcrossTypes()
+    {
+        testcase("Marker pointing to a non-trust-line owner directory entry");
+        using namespace test::jtx;
+        Env env(*this);
+
+        Account const alice{"alice"};
+        Account const gw1{"gw1"};
+        env.fund(XRP(10000), alice, gw1);
+        env.close();
+
+        // gw1, the credential issuer, can unilaterally place a Credential
+        // into alice's owner directory. alice's consent isn't required for
+        // the object to exist there (only for CredentialAccept to flip the
+        // "accepted" flag).
+        env(credentials::create(alice, gw1, "termsandconditions"));
+        env.close();
+
+        auto const eur = gw1["EUR"];
+        env(trust(alice, eur(200)));
+        env.close();
+
+        {
+            json::Value params;
+            params[jss::account] = alice.human();
+            auto const result = env.rpc("json", "account_lines", to_string(params));
+            BEAST_EXPECT(!result[jss::result].isMember(jss::error_message));
+            BEAST_EXPECT(result[jss::result][jss::lines].size() == 1);
+            BEAST_EXPECT(result[jss::result][jss::lines][0u][jss::currency] == "EUR");
+        }
+
+        // The marker points directly at the Credential entry
+        auto const credKey = credentials::keylet(alice, gw1, "termsandconditions").key;
+        json::Value params;
+        params[jss::account] = alice.human();
+        params[jss::marker] = to_string(credKey) + ",0";
+        auto const result = env.rpc("json", "account_lines", to_string(params));
+        BEAST_EXPECT(!result[jss::result].isMember(jss::error_message));
+        BEAST_EXPECT(result[jss::result][jss::lines].isArray());
+    }
+
+    void
     run() override
     {
         testAccountLines();
         testAccountLinesMarker();
         testAccountLineDelete();
         testAccountLinesWalkMarkers();
+        testAccountLinesMarkerAcrossTypes();
         testAccountLines2();
         testAccountLineDelete2();
     }
