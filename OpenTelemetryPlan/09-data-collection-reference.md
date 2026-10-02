@@ -823,12 +823,12 @@ component returned by `computeGetObjectByHashFee()`; the admission-time base cha
 
 ### 3.3 Deployment-Tier Template Variables
 
-Every dashboard carries four filtering template variables (each variable name
-matches its Prometheus label), letting one Grafana stack be sliced by tier:
+Every dashboard carries four filtering template variables (the table gives
+each one's Prometheus label), letting one Grafana stack be sliced by tier:
 
 | Variable                  | Source label             | Description                                                  |
 | ------------------------- | ------------------------ | ------------------------------------------------------------ |
-| `$node`                   | `exported_instance`      | Filter by xrpld node instance                                |
+| `$node`                   | `service_instance_id`    | Filter by xrpld node instance                                |
 | `$service_name`           | `service_name`           | Filter by service (`service.name`, e.g. `xrpld`)             |
 | `$deployment_environment` | `deployment_environment` | Filter by deployment tier (`local` / `test` / `ci` / `prod`) |
 | `$xrpl_network_type`      | `xrpl_network_type`      | Filter by network (`mainnet` / `testnet` / `devnet`)         |
