@@ -377,6 +377,41 @@ TEST_F(SpanGuardScopeTest, span_guard_fresh_root_is_true_root_ignoring_ambient)
     EXPECT_NE(root->GetTraceId(), ambient->GetTraceId());
 }
 
+// ScopedSpanGuard::freshRoot() also starts a brand-new trace, and its span is the
+// ambient parent while the guard lives.
+TEST_F(SpanGuardScopeTest, scoped_guard_fresh_root_is_true_root_and_ambient)
+{
+    {
+        ScopedSpanGuard const ambient(TraceCategory::Rpc, "rpc", "command");
+        ASSERT_TRUE(static_cast<bool>(ambient));
+        {
+            auto const root =
+                ScopedSpanGuard::freshRoot(TraceCategory::Peer, "peer", "proposal.receive");
+            ASSERT_TRUE(static_cast<bool>(root));
+
+            // A span created here takes the fresh root as its parent, not ambient.
+            auto const child = SpanGuard::span(TraceCategory::Peer, "peer", "proposal.check");
+            ASSERT_TRUE(static_cast<bool>(child));
+        }  // child ends first, then root pops its scope and ends.
+    }
+
+    auto spans = spanData()->GetSpans();
+    auto* ambient = findSpan(spans, "rpc.command");
+    auto* root = findSpan(spans, "peer.proposal.receive");
+    auto* child = findSpan(spans, "peer.proposal.check");
+    ASSERT_NE(ambient, nullptr);
+    ASSERT_NE(root, nullptr);
+    ASSERT_NE(child, nullptr);
+
+    // The fresh root has no parent and lives in a different trace.
+    EXPECT_FALSE(root->GetParentSpanId().IsValid());
+    EXPECT_NE(root->GetTraceId(), ambient->GetTraceId());
+
+    // While it lived, it was the ambient parent.
+    EXPECT_EQ(child->GetParentSpanId(), root->GetSpanId());
+    EXPECT_EQ(child->GetTraceId(), root->GetTraceId());
+}
+
 // A ScopedSpanGuard is the ambient active span on its thread the moment it is
 // constructed: a child created while it is alive parents to its span.
 TEST_F(SpanGuardScopeTest, scoped_guard_is_ambient_on_construct)
