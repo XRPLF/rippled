@@ -18,13 +18,16 @@ using namespace xrpl;
 namespace {
 
 /**
- * Batch-setting keys of the [telemetry] section.
+ * Keys of the [telemetry] section that the batch and use_tls cases write.
  *
  * Spelled once so every case below matches what the parser reads. A
  * misspelling cannot hide: the accepting cases would see the default instead
  * of the value they wrote, and the rejecting cases would stop rejecting.
  */
 namespace key {
+constexpr char const* enabled = "enabled";
+constexpr char const* useTls = "use_tls";
+constexpr char const* tracesEndpoint = "traces_endpoint";
 constexpr char const* batchSize = "batch_size";
 constexpr char const* batchDelayMs = "batch_delay_ms";
 constexpr char const* maxQueueSize = "max_queue_size";
@@ -207,7 +210,7 @@ TEST(TelemetryConfig, parse_full_section)
     section.set("service_name", "my-rippled");
     section.set("service_instance_id", "custom-id");
     section.set("exporter", "otlp_http");
-    section.set("traces_endpoint", "http://collector:4318/v1/traces");
+    section.set("traces_endpoint", "https://collector:4318/v1/traces");
     section.set("use_tls", "1");
     section.set("tls_ca_cert", "/etc/ssl/ca.pem");
     section.set("batch_size", "256");
@@ -224,7 +227,7 @@ TEST(TelemetryConfig, parse_full_section)
     EXPECT_TRUE(setup.enabled);
     EXPECT_EQ(setup.serviceName, "my-rippled");
     EXPECT_EQ(setup.serviceInstanceId, "custom-id");
-    EXPECT_EQ(setup.tracesEndpoint, "http://collector:4318/v1/traces");
+    EXPECT_EQ(setup.tracesEndpoint, "https://collector:4318/v1/traces");
     EXPECT_TRUE(setup.useTls);
     EXPECT_EQ(setup.tlsCertPath, "/etc/ssl/ca.pem");
     EXPECT_EQ(setup.batchSize, 256u);
@@ -235,6 +238,107 @@ TEST(TelemetryConfig, parse_full_section)
     EXPECT_TRUE(setup.traceRpc);
     EXPECT_TRUE(setup.tracePeer);
     EXPECT_FALSE(setup.traceLedger);
+}
+
+namespace {
+
+/**
+ * Endpoint URLs for the use_tls cases below.
+ *
+ * The two differ only in scheme, so a case that swaps one for the other
+ * changes nothing else.
+ */
+constexpr char const* kHttpEndpoint = "http://collector:4318/v1/traces";
+constexpr char const* kHttpsEndpoint = "https://collector:4318/v1/traces";
+
+/**
+ * Build the message the parser gives when use_tls=1 meets an endpoint that
+ * does not start with "https://".
+ *
+ * @param endpoint The endpoint URL the parser read, which the message quotes.
+ * @return The full expected message.
+ */
+std::string
+httpsRequiredMessage(std::string const& endpoint)
+{
+    return "Invalid value 'traces_endpoint' in [telemetry]: must start with 'https://' when "
+           "use_tls=1, but is '" +
+        endpoint + "'.";
+}
+
+}  // namespace
+
+TEST(TelemetryConfig, use_tls_on_an_http_endpoint_is_rejected_naming_the_key)
+{
+    // The exporter picks TLS from the URL scheme, so use_tls=1 needs an
+    // https endpoint. The message names the key and quotes the URL.
+    EXPECT_EQ(
+        batchRejection(
+            {{key::enabled, "1"}, {key::useTls, "1"}, {key::tracesEndpoint, kHttpEndpoint}}),
+        httpsRequiredMessage(kHttpEndpoint));
+}
+
+TEST(TelemetryConfig, use_tls_with_the_default_endpoint_is_rejected)
+{
+    // With traces_endpoint left out the default applies, and it is plain
+    // http. This is what an operator gets by setting only use_tls=1.
+    EXPECT_EQ(
+        batchRejection({{key::enabled, "1"}, {key::useTls, "1"}}),
+        httpsRequiredMessage(Setup{}.tracesEndpoint));
+}
+
+TEST(TelemetryConfig, use_tls_scheme_check_is_case_sensitive_like_the_exporter)
+{
+    // The exporter matches "https:" byte for byte, so an upper-case scheme
+    // does not turn TLS on and is rejected too.
+    constexpr char const* upperCaseEndpoint = "HTTPS://collector:4318/v1/traces";
+    EXPECT_EQ(
+        batchRejection(
+            {{key::enabled, "1"}, {key::useTls, "1"}, {key::tracesEndpoint, upperCaseEndpoint}}),
+        httpsRequiredMessage(upperCaseEndpoint));
+}
+
+TEST(TelemetryConfig, use_tls_on_an_https_scheme_without_slashes_is_rejected)
+{
+    // The check needs the whole "https://" prefix. This URL has "https:"
+    // but no slashes, so a check cut down to "https:" or "https" would
+    // accept it and fail this case.
+    constexpr char const* noSlashEndpoint = "https:collector:4318/v1/traces";
+    EXPECT_EQ(
+        batchRejection(
+            {{key::enabled, "1"}, {key::useTls, "1"}, {key::tracesEndpoint, noSlashEndpoint}}),
+        httpsRequiredMessage(noSlashEndpoint));
+}
+
+TEST(TelemetryConfig, use_tls_on_an_https_endpoint_is_accepted)
+{
+    auto const setup = parseBatch(
+        {{key::enabled, "1"}, {key::useTls, "1"}, {key::tracesEndpoint, kHttpsEndpoint}});
+    EXPECT_TRUE(setup.enabled);
+    EXPECT_TRUE(setup.useTls);
+    EXPECT_EQ(setup.tracesEndpoint, kHttpsEndpoint);
+}
+
+TEST(TelemetryConfig, http_endpoint_is_accepted_when_use_tls_is_off)
+{
+    // use_tls=0, so the scheme is not checked and plain http stays valid.
+    auto const setup =
+        parseBatch({{key::enabled, "1"}, {key::useTls, "0"}, {key::tracesEndpoint, kHttpEndpoint}});
+    EXPECT_TRUE(setup.enabled);
+    EXPECT_FALSE(setup.useTls);
+    EXPECT_EQ(setup.tracesEndpoint, kHttpEndpoint);
+}
+
+TEST(TelemetryConfig, use_tls_scheme_not_checked_when_telemetry_disabled)
+{
+    // With enabled=0 a leftover use_tls=1 line must not stop the node from
+    // booting. use_tls stays 1 here, so the `enabled` gate is the only thing
+    // that can be skipping the check.
+    auto const setup =
+        parseBatch({{key::enabled, "0"}, {key::useTls, "1"}, {key::tracesEndpoint, kHttpEndpoint}});
+    EXPECT_FALSE(setup.enabled);
+    EXPECT_TRUE(setup.useTls);
+    EXPECT_EQ(setup.tracesEndpoint, kHttpEndpoint);
 }
 
 TEST(TelemetryConfig, batch_settings_accept_the_lower_bound_exactly)
