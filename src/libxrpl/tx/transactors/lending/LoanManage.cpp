@@ -163,28 +163,21 @@ LoanManage::calculateDefaultCover(SLE::Ref loanSle, SLE::Ref brokerSle, SLE::Ref
     if (cappedCover.integral())
         return cappedCover;
 
-    // Round once, at the coarser of the two posterior grids (CoverAvailable - cover and
-    // AssetsAvailable + cover). When the grids differ the update lands on the coarser one.
-    // CoverAvailable - cover is then exact. If AssetsAvailable is finer than its posterior grid,
-    // the writer's round-to-nearest of AssetsAvailable + cover can credit up to half a posterior
-    // ulp more than the cover; no cover on the broker's grid avoids that, so it is accepted.
-    int const coarserScale = std::max(
-        detail::getPosteriorBrokerCoverScale(vaultSle, brokerSle, -Number(cappedCover)),
-        detail::posteriorAssetScale(
-            getVaultVersion(vaultSle),
-            vaultAsset,
-            getVaultBaseScale(vaultSle),
-            vaultSle->at(sfAssetsAvailable),
-            cappedCover));
-    return roundToScale(cappedCover, coarserScale, Number::RoundingMode::TowardsZero);
+    // Floor AssetsAvailable + cover at its posterior grid so the Vault side is exact, unless
+    // AssetsAvailable has digits finer than the 16-digit cover can carry. The LoanBroker absorbs
+    // the rounding: CoverAvailable - cover may need finer digits than its posterior grid and
+    // rounds to nearest, as the broker's trust line does. Downward also keeps the 19-digit
+    // AssetsAvailable + cover sum from rounding up past cappedCover.
+    NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+    return creditToPosteriorAvailableScale(vaultSle, cappedCover, Number::RoundingMode::Downward);
 }
 
 namespace {
 
 // Defaults a Loan on a FixedPrecision Vault. Cover is the raw XLS-66
 // First-Loss Capital amount, capped at the LoanBroker's CoverAvailable and
-// rounded toward zero at the coarser of the broker's and the vault's posterior
-// grids (a no-op for integral assets). AssetsAvailable rises by cover through the cash writer;
+// floored so AssetsAvailable + cover lands exactly on its posterior grid (a
+// no-op for integral assets). AssetsAvailable rises by cover through the cash writer;
 // AssetsDeployed drops by the Loan's full PrincipalOutstanding exactly, and
 // AssetsTotal is re-derived from AssetsAvailable + AssetsDeployed by the
 // writer's sync -- this function never touches sfAssetsTotal directly.
@@ -196,8 +189,6 @@ defaultLoanFixedPrecision(
     SLE::Ref vaultSle,
     beast::Journal j)
 {
-    auto const vaultAsset = vaultSle->at(sfAsset);
-
     Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
     Number const scheduledInterest = loanSle->at(sfTotalValueOutstanding) - principalOutstanding -
         loanSle->at(sfManagementFeeOutstanding);
@@ -205,15 +196,11 @@ defaultLoanFixedPrecision(
     STAmount const coverAmount = LoanManage::calculateDefaultCover(loanSle, brokerSle, vaultSle);
 
     // The broker's CoverAvailable decrease and the broker-to-vault transfer
-    // both use this amount. It is on the coarser of the two posterior grids,
-    // so CoverAvailable - cover is exact. AssetsAvailable + cover may need
-    // finer digits than the posterior grid when AssetsAvailable is on a finer
-    // grid; adjustVaultBalances rounds that sum.
-    XRPL_ASSERT(
-        (STAmount{vaultAsset, Number(brokerSle->at(sfCoverAvailable)) - Number(coverAmount)} ==
-         Number(brokerSle->at(sfCoverAvailable)) - Number(coverAmount)),
-        "xrpl::defaultLoanFixedPrecision : CoverAvailable - cover is exactly 16-digit "
-        "representable");
+    // both use this amount. AssetsAvailable + cover is exact unless
+    // AssetsAvailable has digits finer than the 16-digit cover can carry; then
+    // adjustVaultBalances rounds the sum. CoverAvailable - cover may need finer
+    // digits than the broker's posterior grid; it rounds to nearest, as the
+    // broker's trust line does.
 
     Number const loss = loanSle->isFlag(lsfLoanImpaired) ? -principalOutstanding : 0;
     if (auto const ter = adjustVaultBalances(

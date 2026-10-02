@@ -50,16 +50,17 @@ public:
 
     /**
      * @brief Compute the First-Loss Capital cover amount for a defaulted Loan on a FixedPrecision
-     * Vault, capped at the LoanBroker's CoverAvailable and rounded toward zero at the coarser of
-     * the vault's AssetsAvailable and the broker's CoverAvailable posterior grids.
-     * CoverAvailable - cover is exactly representable; AssetsAvailable + cover is rounded by the
-     * balance writer.
+     * Vault, capped at the LoanBroker's CoverAvailable and floored so that AssetsAvailable + cover
+     * is exactly on its posterior grid.
      *
-     * When AssetsAvailable is on a finer grid than the posterior sum, that rounding (to nearest,
-     * as the trust line or MPT transfer does) can credit the Vault up to half a posterior ulp more
-     * than the cover the broker pays. The cover must stay on the broker's grid, so no cover can
-     * remove this. It is accepted: AssetsAvailable still equals the pseudo-account balance, and
-     * the extra amount is below the Vault's own precision.
+     * The LoanBroker absorbs the rounding. When CoverAvailable - cover needs finer digits than the
+     * broker's posterior grid, it rounds to nearest, as the broker's trust line does, so
+     * CoverAvailable can move by up to half a posterior ulp more or less than the cover. When the
+     * two grids differ, no cover is exact on both sides; the Vault side is kept exact.
+     *
+     * The one exception: when AssetsAvailable has digits finer than the 16-digit cover can carry,
+     * no cover cancels them, and the balance writer rounds AssetsAvailable + cover to nearest,
+     * by at most half a posterior ulp. VaultDeposit and LoanPay credits have the same limit.
      * @param loanSle The Loan being defaulted.
      * @param brokerSle The Loan's LoanBroker.
      * @param vaultSle The LoanBroker's Vault.

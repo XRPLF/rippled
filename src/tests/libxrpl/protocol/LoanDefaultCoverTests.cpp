@@ -87,9 +87,10 @@ struct CoverCase
 // Builds the ledger entries for one case, calls calculateDefaultCover, and
 // checks every invariant defaultLoanFixedPrecision itself asserts right after
 // the call: cover is non-negative, never exceeds the uncapped XLS-66 amount
-// or the broker's CoverAvailable, and leaves both AssetsAvailable + cover and
-// CoverAvailable - cover exactly representable (STAmount round-trips to the
-// same Number).
+// or the broker's CoverAvailable, leaves AssetsAvailable + cover exactly
+// representable (STAmount round-trips to the same Number) whenever the cover
+// can carry AssetsAvailable's digits, and rounds CoverAvailable - cover by at
+// most half an ulp.
 void
 checkCoverCase(Asset const& asset, std::uint8_t scale, CoverCase const& in)
 {
@@ -122,17 +123,37 @@ checkCoverCase(Asset const& asset, std::uint8_t scale, CoverCase const& in)
     EXPECT_LE(Number(cover), in.coverAvailable)
         << "cover exceeds CoverAvailable: " << context.str();
 
-    // When AssetsAvailable is on a finer grid than the posterior sum, the
-    // sum is rounded by the balance writer; the loss must stay below one ulp of
-    // the posterior grid.
+    // AssetsAvailable + cover is exact unless AssetsAvailable has digits finer
+    // than the 16-digit cover can carry; then no cover cancels them, and the
+    // sum rounds by at most half an ulp of its posterior grid.
     Number const vaultSum = in.assetsAvailable + Number(cover);
-    Number const vaultRoundingLoss = abs(Number(STAmount{asset, vaultSum}) - vaultSum);
-    EXPECT_LE(vaultRoundingLoss, Number(1, xrpl::scale(vaultSum, asset)))
-        << "AssetsAvailable + cover rounding loss exceeds one posterior ulp: " << context.str();
+    STAmount const vaultRounded{asset, vaultSum};
+    bool const coverCanCarryAssetsAvailable =
+        roundToAsset(
+            asset,
+            in.assetsAvailable,
+            xrpl::scale(Number(cover), asset),
+            Number::RoundingMode::TowardsZero) == in.assetsAvailable;
+    if (coverCanCarryAssetsAvailable)
+    {
+        EXPECT_EQ(Number(vaultRounded), vaultSum)
+            << "AssetsAvailable + cover not exactly 16-digit representable: " << context.str();
+    }
+    else
+    {
+        Number const vaultRoundingError = abs(Number(vaultRounded) - vaultSum);
+        EXPECT_LE(vaultRoundingError, Number(5, xrpl::scale(Number(vaultRounded), asset) - 1))
+            << "AssetsAvailable + cover rounding error exceeds half a posterior ulp: "
+            << context.str();
+    }
 
+    // The LoanBroker absorbs the rounding: CoverAvailable - cover rounds to
+    // nearest, so the error stays within half an ulp of its posterior grid.
     Number const brokerSum = in.coverAvailable - Number(cover);
-    EXPECT_EQ(Number(STAmount{asset, brokerSum}), brokerSum)
-        << "CoverAvailable - cover not exactly 16-digit representable: " << context.str();
+    STAmount const brokerRounded{asset, brokerSum};
+    Number const brokerRoundingError = abs(Number(brokerRounded) - brokerSum);
+    EXPECT_LE(brokerRoundingError, Number(5, xrpl::scale(Number(brokerRounded), asset) - 1))
+        << "CoverAvailable - cover rounding error exceeds half a posterior ulp: " << context.str();
 }
 
 }  // namespace

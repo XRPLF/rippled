@@ -3,9 +3,11 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/fee.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
@@ -22,6 +24,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -786,6 +789,114 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
         checkVaultLoanSums(env, coarsened, "testCoarsenedVaultDefaultCoverCrossesPowerOfTenUpward");
     }
 
+    // A default whose cover needs finer digits than CoverAvailable's posterior
+    // grid. The Vault side stays exact and CoverAvailable rounds to nearest,
+    // the same way the broker pseudo-account's trust line does, so the
+    // LoanBroker invariant (CoverAvailable equals the pseudo-account balance)
+    // holds.
+    //
+    // CoverAvailable passes the Open limit only through LoanPay's fee redirect,
+    // which has no Open-limit check: the owner's trust line is deep frozen, so
+    // a large service fee lands in cover and coarsens its grid to 1e-5 while
+    // AssetsAvailable stays on the 1e-6 base grid.
+    void
+    testDefaultCoverRoundsOnCoarsenedBrokerGrid()
+    {
+        using namespace test::jtx;
+        using namespace loan;
+        using namespace loan_broker;
+
+        testcase("Lending: default cover rounds on a coarsened CoverAvailable grid");
+
+        Env env(*this, features());
+        auto const [issuer, owner, depositor, asset] = setupIou(
+            env,
+            {.depositorTrust = 100'000'000'000,
+             .ownerTrust = 1'000'000,
+             .depositorFunds = 30'000'000'000,
+             .ownerFunds = 10'000});
+
+        auto const fixture = setupLendingVault(
+            env,
+            owner,
+            depositor,
+            asset,
+            Number{1'000'000},
+            std::chrono::seconds{1'000'000},
+            std::uint8_t{6},
+            percentageToTenthBips(10),
+            percentageToTenthBips(50));
+        env(coverDeposit(owner, fixture.brokerKeylet.key, asset(1'000)));
+        env.close();
+
+        // Loan A carries the large service fee; loan B is the one defaulted.
+        // B's principal has a 1e-6 digit, so its cover does too.
+        Number const serviceFee{20'000'000'000};
+        auto const brokerSle0 = env.le(fixture.brokerKeylet);
+        if (!BEAST_EXPECT(brokerSle0))
+            return;
+        auto const loanAKeylet = keylet::loan(
+            fixture.brokerKeylet.key, SeqProxy::rawSequence(brokerSle0->at(sfLoanSequence)));
+        env(set(depositor, fixture.brokerKeylet.key, Number{1'000}),
+            kLoanServiceFee(serviceFee),
+            kGracePeriod(60),
+            kPaymentInterval(120),
+            kPaymentTotal(1),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+        Number const principalB{1234567891, -6};
+        auto const loanBKeylet = openLoan(env, fixture, principalB, 1);
+
+        // Deep freeze the owner so the service fee is redirected into cover.
+        env(trust(issuer, owner["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+        env.close();
+
+        auto const loanASle = env.le(loanAKeylet);
+        if (!BEAST_EXPECT(loanASle))
+            return;
+        Number const paymentA = Number(loanASle->at(sfPeriodicPayment)) + serviceFee;
+        env(pay(depositor, loanAKeylet.key, asset(paymentA).value()));
+        env.close();
+
+        auto const brokerSleBefore = env.le(fixture.brokerKeylet);
+        auto const vaultSleBefore = env.le(fixture.vaultKeylet);
+        if (!BEAST_EXPECT(brokerSleBefore) || !BEAST_EXPECT(vaultSleBefore))
+            return;
+        Number const coverBefore = brokerSleBefore->at(sfCoverAvailable);
+        // CoverAvailable is past 1e10, so its grid is 1e-5; AssetsAvailable
+        // is still on the 1e-6 base grid.
+        BEAST_EXPECT(coverBefore > Number(1, 10));
+        BEAST_EXPECT(Number(vaultSleBefore->at(sfAssetsAvailable)) < Number(1, 10));
+
+        closePastGrace(env, loanBKeylet);
+        auto const before = snapshotVault(env, fixture.vaultKeylet, asset);
+
+        env(manage(owner, loanBKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+
+        auto const after = snapshotVault(env, fixture.vaultKeylet, asset);
+        auto const brokerSleAfter = env.le(fixture.brokerKeylet);
+        if (!BEAST_EXPECT(brokerSleAfter))
+            return;
+        Number const coverAfter = brokerSleAfter->at(sfCoverAvailable);
+
+        // DebtTotal is principalB alone (loan A is paid off): cover is
+        // 5% of 1234.567891 = 61.72839455, floored on the 1e-6 grid.
+        Number const expectedCover{61728394, -6};
+        BEAST_EXPECT(after.available - before.available == expectedCover);
+        // CoverAvailable - cover needs a 1e-6 digit its 1e-5 grid cannot hold,
+        // so the broker absorbs the rounding.
+        BEAST_EXPECT(coverBefore - coverAfter != expectedCover);
+        BEAST_EXPECT(abs((coverBefore - coverAfter) - expectedCover) <= Number(5, -6));
+        // The broker pseudo-account's trust line rounds the same way.
+        Account const brokerPseudo{"brokerPseudo", brokerSleAfter->at(sfAccount)};
+        BEAST_EXPECT(Number(env.balance(brokerPseudo, asset).value()) == coverAfter);
+
+        checkVaultLoanSums(
+            env, fixture, {loanBKeylet}, "testDefaultCoverRoundsOnCoarsenedBrokerGrid");
+    }
+
     // Like VaultFixedPrecisionBase::setupMpt, but the issuance also allows
     // clawback (tfMPTCanClawback), needed for VaultClawback against an MPT
     // vault asset. Only the owner and depositor are funded; the depositor
@@ -1027,6 +1138,7 @@ public:
         testCoarsenedVaultSmallAssetsDeployedFinalWithdrawalRejected();
         testCoarsenedVaultSmallAssetsDeployedFullClawbackRejected();
         testCoarsenedVaultDefaultCoverCrossesPowerOfTenUpward();
+        testDefaultCoverRoundsOnCoarsenedBrokerGrid();
         testSoleHolderClawbackBelowOneShareIsPrecisionLoss();
         testSoleHolderClawbackClampsToWholeShares();
         testSoleHolderFullClawbackClampsWithLiquidAndIlliquidSplit();
