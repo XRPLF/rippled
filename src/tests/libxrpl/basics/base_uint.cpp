@@ -128,7 +128,7 @@ struct BaseUintTest : public ::testing::Test
 
 using BaseUintDeathTest = BaseUintTest;
 
-TEST_F(BaseUintDeathTest, fromRaw_size_mismatch)
+TEST_F(BaseUintDeathTest, from_raw_size_mismatch)
 {
     // ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts. Rather than twist
     // these tests into knots to make them work, just skip them.

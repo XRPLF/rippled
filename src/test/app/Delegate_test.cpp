@@ -47,6 +47,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxSettings.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
@@ -624,7 +625,7 @@ class Delegate_test : public beast::unit_test::Suite
             auto const delegateKey = keylet::delegate(alice.id(), bob.id());
             BEAST_EXPECT(env.closed()->exists(delegateKey));
 
-            auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
+            auto hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
                 return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
@@ -673,7 +674,7 @@ class Delegate_test : public beast::unit_test::Suite
             auto const delegateKey = keylet::delegate(alice.id(), bob.id());
             BEAST_EXPECT(env.closed()->exists(delegateKey));
 
-            auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
+            auto hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
                 return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
@@ -742,7 +743,7 @@ class Delegate_test : public beast::unit_test::Suite
             auto const aliceBobKey = keylet::delegate(alice.id(), bob.id());
             auto const carolBobKey = keylet::delegate(carol.id(), bob.id());
 
-            auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
+            auto hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
                 return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
@@ -1143,6 +1144,88 @@ class Delegate_test : public beast::unit_test::Suite
             env.require(Balance(gw, aliceUSD(-20)));
         }
 
+        // PaymentBurn must not exceed the balance the account holds. Redeeming past
+        // zero makes the payment engine issue the account's own IOUs, which is a mint.
+        {
+            Env env(*this, features);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gateway"};
+            auto const gwUSD = gw["USD"];
+            auto const aliceUSD = alice["USD"];
+
+            env.fund(XRP(10000), alice, bob, gw);
+            env.trust(gwUSD(200), alice);
+            env.close();
+
+            env(pay(gw, alice, gwUSD(50)));
+            env.close();
+            env.require(Balance(alice, gwUSD(50)));
+
+            // gw accepts alice-issued USD, so the engine has issuing liquidity
+            // available once the trustline reaches zero.
+            env(trust(gw, aliceUSD(200)));
+            env.close();
+
+            env(delegate::set(alice, bob, {"PaymentBurn"}));
+            env.close();
+
+            if (!features[fixCleanup3_4_0])
+            {
+                // Pre-fixCleanup3_4_0: the balance direction alone authorizes the payment, so it
+                // redeems alice's 50 and then mints 50 alice-issued USD.
+                env(pay(alice, gw, gwUSD(100)), delegate::As(bob));
+                env.require(Balance(alice, gwUSD(-50)));
+                env.require(Balance(gw, aliceUSD(50)));
+            }
+            else
+            {
+                // Post-fixCleanup3_4_0: Rejected because it exceeds what alice holds.
+                env(pay(alice, gw, gwUSD(100)), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
+                env.require(Balance(alice, gwUSD(50)));
+                env.require(Balance(gw, aliceUSD(-50)));
+
+                // Allowed because it is less than what alice holds.
+                env(pay(alice, gw, gwUSD(20)), delegate::As(bob));
+                env.require(Balance(alice, gwUSD(30)));
+                env.close();
+
+                // Exactly what alice holds: allowed, and settles at zero.
+                env(pay(alice, gw, gwUSD(30)), delegate::As(bob));
+                env.require(Balance(alice, gwUSD(0)));
+                env.close();
+
+                // Nothing left to burn: rejected.
+                env(pay(alice, gw, gwUSD(1)), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
+                env.require(Balance(gw, aliceUSD(0)));
+            }
+        }
+
+        // A delegate holding both PaymentMint and PaymentBurn may cross zero.
+        {
+            Env env(*this, features);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gateway"};
+            auto const gwUSD = gw["USD"];
+            auto const aliceUSD = alice["USD"];
+
+            env.fund(XRP(10000), alice, bob, gw);
+            env.trust(gwUSD(200), alice);
+            env.close();
+
+            env(pay(gw, alice, gwUSD(50)));
+            env(trust(gw, aliceUSD(200)));
+            env.close();
+
+            env(delegate::set(alice, bob, {"PaymentBurn", "PaymentMint"}));
+            env.close();
+
+            env(pay(alice, gw, gwUSD(100)), delegate::As(bob));
+            env.require(Balance(alice, gwUSD(-50)));
+            env.require(Balance(gw, aliceUSD(50)));
+        }
+
         // Test invalid fields or flags not allowed in granular permission template
         {
             Env env(*this, features);
@@ -1173,11 +1256,11 @@ class Delegate_test : public beast::unit_test::Suite
 
             // sfDomainID is not in the PaymentMint or PaymentBurn template.
             env(pay(gw, alice, usd(100)),
-                Domain(uint256{1}),
+                Domain(UInt256{1}),
                 delegate::As(bob),
                 Ter(terNO_DELEGATE_PERMISSION));
             env(pay(alice, gw, usd(50)),
-                Domain(uint256{1}),
+                Domain(UInt256{1}),
                 delegate::As(bob),
                 Ter(terNO_DELEGATE_PERMISSION));
         }
@@ -2583,7 +2666,7 @@ class Delegate_test : public beast::unit_test::Suite
         // non-delegable tx are not included.
         // NFTokenMint, NFTokenBurn, NFTokenCreateOffer, NFTokenCancelOffer,
         // NFTokenAcceptOffer are not included, they are tested separately.
-        std::unordered_map<std::string, uint256> txRequiredFeatures{
+        std::unordered_map<std::string, UInt256> txRequiredFeatures{
             {"AMMClawback", featureAMMClawback},
             {"AMMCreate", featureAMM},
             {"AMMDeposit", featureAMM},
@@ -2718,19 +2801,24 @@ class Delegate_test : public beast::unit_test::Suite
 
         std::size_t delegableCount = 0;
 
+#pragma push_macro("UNWRAP")
+#undef UNWRAP
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, txDelegable, ...) \
-    if (txDelegable == xrpl::Delegable)                 \
-    {                                                   \
-        delegableCount++;                               \
+#define UNWRAP(...) __VA_ARGS__
+#define TRANSACTION(tag, value, name, settings, ...)                                 \
+    if ((xrpl::TxSettings UNWRAP settings).delegable == xrpl::Delegation::Delegable) \
+    {                                                                                \
+        delegableCount++;                                                            \
     }
 
 #include <xrpl/protocol/detail/transactions.macro>
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
+#undef UNWRAP
+#pragma pop_macro("UNWRAP")
 
         // ====================================================================
         // IMPORTANT NOTICE:
@@ -2750,7 +2838,7 @@ class Delegate_test : public beast::unit_test::Suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        std::size_t const expectedDelegableCount = 56;
+        std::size_t const expectedDelegableCount = 57;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,
@@ -2910,6 +2998,7 @@ class Delegate_test : public beast::unit_test::Suite
         testAccountDelete();
         testDelegateTransaction();
         testPaymentGranular(all);
+        testPaymentGranular(all - fixCleanup3_4_0);
         testTrustSetGranular();
         testAccountSetGranular();
         testMPTokenIssuanceSetGranular();

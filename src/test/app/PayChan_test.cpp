@@ -23,7 +23,6 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/CoroTask.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
@@ -68,7 +67,7 @@ using namespace jtx::paychan;
 
 struct PayChan_test : public beast::unit_test::Suite
 {
-    static std::pair<uint256, SLE::const_pointer>
+    static std::pair<UInt256, SLE::const_pointer>
     channelKeyAndSle(ReadView const& view, jtx::Account const& account, jtx::Account const& dst)
     {
         auto const sle = view.read(keylet::account(account));
@@ -83,7 +82,7 @@ struct PayChan_test : public beast::unit_test::Suite
     signClaimAuth(
         PublicKey const& pk,
         SecretKey const& sk,
-        uint256 const& channel,
+        UInt256 const& channel,
         STAmount const& authAmt)
     {
         Serializer msg;
@@ -92,7 +91,7 @@ struct PayChan_test : public beast::unit_test::Suite
     }
 
     static STAmount
-    channelAmount(ReadView const& view, uint256 const& chan)
+    channelAmount(ReadView const& view, UInt256 const& chan)
     {
         auto const slep = view.read({ltPAYCHAN, chan});
         if (!slep)
@@ -101,7 +100,7 @@ struct PayChan_test : public beast::unit_test::Suite
     }
 
     static std::optional<std::int64_t>
-    channelExpiration(ReadView const& view, uint256 const& chan)
+    channelExpiration(ReadView const& view, UInt256 const& chan)
     {
         auto const slep = view.read({ltPAYCHAN, chan});
         if (!slep)
@@ -1821,8 +1820,7 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const settleDelay = 100s;
         auto const pk = alice.pk();
 
-        auto inOwnerDir =
-            [](ReadView const& view, Account const& acc, SLE::const_ref chan) -> bool {
+        auto inOwnerDir = [](ReadView const& view, Account const& acc, SLE::ConstRef chan) -> bool {
             xrpl::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
             // NOLINTNEXTLINE(modernize-use-ranges)
             return std::find(ownerDir.begin(), ownerDir.end(), chan) != ownerDir.end();
@@ -1991,7 +1989,7 @@ struct PayChan_test : public beast::unit_test::Suite
 
         env(create(alice, bob, XRP(1000), settleDelay, pk), ticket::Use(aliceTicketSeq++));
 
-        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+        env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         BEAST_EXPECT(channelBalance(*env.current(), chan) == XRP(0));
@@ -2001,7 +1999,7 @@ struct PayChan_test : public beast::unit_test::Suite
             auto const preAlice = env.balance(alice);
             env(fund(alice, chan, XRP(1000)), ticket::Use(aliceTicketSeq++));
 
-            env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+            env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
             auto const feeDrops = env.current()->fees().base;
@@ -2022,7 +2020,7 @@ struct PayChan_test : public beast::unit_test::Suite
             assert(reqBal <= chanAmt);
             env(claim(alice, chan, reqBal, authAmt), ticket::Use(aliceTicketSeq++));
 
-            env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+            env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
             BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
@@ -2041,7 +2039,7 @@ struct PayChan_test : public beast::unit_test::Suite
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()),
                 ticket::Use(bobTicketSeq++));
 
-            env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
+            env.require(Tickets(bob, env.seq(bob) - bobTicketSeq));
             BEAST_EXPECT(env.seq(bob) == bobSeq);
 
             BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
@@ -2057,7 +2055,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 ticket::Use(bobTicketSeq++),
                 Ter(tecUNFUNDED_PAYMENT));
 
-            env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
+            env.require(Tickets(bob, env.seq(bob) - bobTicketSeq));
             BEAST_EXPECT(env.seq(bob) == bobSeq);
 
             BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
@@ -2077,7 +2075,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 ticket::Use(bobTicketSeq),
                 Ter(temBAD_AMOUNT));
 
-            env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
+            env.require(Tickets(bob, env.seq(bob) - bobTicketSeq));
             BEAST_EXPECT(env.seq(bob) == bobSeq);
 
             BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
@@ -2088,7 +2086,7 @@ struct PayChan_test : public beast::unit_test::Suite
         // Dst tries to fund the channel
         env(fund(bob, chan, XRP(1000)), ticket::Use(bobTicketSeq++), Ter(tecNO_PERMISSION));
 
-        env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
+        env.require(Tickets(bob, env.seq(bob) - bobTicketSeq));
         BEAST_EXPECT(env.seq(bob) == bobSeq);
 
         BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
@@ -2100,7 +2098,7 @@ struct PayChan_test : public beast::unit_test::Suite
             auto const preBob = env.balance(bob);
             env(claim(bob, chan), Txflags(tfClose), ticket::Use(bobTicketSeq++));
 
-            env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
+            env.require(Tickets(bob, env.seq(bob) - bobTicketSeq));
             BEAST_EXPECT(env.seq(bob) == bobSeq);
 
             BEAST_EXPECT(!channelExists(*env.current(), chan));
@@ -2110,9 +2108,9 @@ struct PayChan_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(alice) == preAlice + delta);
             BEAST_EXPECT(env.balance(bob) == preBob - feeDrops);
         }
-        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+        env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
-        env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
+        env.require(Tickets(bob, env.seq(bob) - bobTicketSeq));
         BEAST_EXPECT(env.seq(bob) == bobSeq);
     }
 

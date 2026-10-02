@@ -4,6 +4,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/TxSettings.h>
 
 #include <cstdint>
 #include <functional>
@@ -38,11 +39,6 @@ enum GranularPermissionType : std::uint32_t {
 #pragma pop_macro("GRANULAR_PERMISSION")
 };
 
-// Injected bare enumerators (xrpl::delegable / xrpl::notDelegable) are required by preprocessor
-// tricks in tests and macro-generated code; enum class would break that.
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum Delegation { Delegable, NotDelegable };
-
 class Permission
 {
 private:
@@ -64,8 +60,8 @@ private:
 
     struct TxDelegationEntry
     {
-        uint256 amendment;
-        Delegation delegable{NotDelegable};
+        UInt256 amendment;
+        Delegation delegable{Delegation::NotDelegable};
     };
 
     std::unordered_set<TxType> granularTxTypes_;
@@ -93,9 +89,9 @@ public:
     [[nodiscard]] std::optional<TxType>
     getGranularTxType(GranularPermissionType gpType) const;
 
-    // Returns a reference to avoid copying uint256 - 32 bytes. std::optional
+    // Returns a reference to avoid copying UInt256 - 32 bytes. std::optional
     // cannot hold references directly, so std::reference_wrapper is used.
-    [[nodiscard]] std::optional<std::reference_wrapper<uint256 const>>
+    [[nodiscard]] std::optional<std::reference_wrapper<UInt256 const>>
     getTxFeature(TxType txType) const;
 
     [[nodiscard]] bool

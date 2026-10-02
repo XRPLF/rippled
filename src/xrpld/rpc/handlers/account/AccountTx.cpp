@@ -4,12 +4,11 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/DeliveredAmount.h>
-#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/SyntheticFields.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
@@ -22,7 +21,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerShortcut.h>
-#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/jss.h>
@@ -83,7 +81,7 @@ parseDelegateFilter(json::Value const& delegateNode)
 
 using TxnsData = RelationalDatabase::AccountTxs;
 using TxnsDataBinary = RelationalDatabase::MetaTxsList;
-using TxnDataBinary = RelationalDatabase::txnMetaLedgerType;
+using TxnDataBinary = RelationalDatabase::TxnMetaLedgerType;
 using AccountTxArgs = RelationalDatabase::AccountTxArgs;
 using AccountTxResult = RelationalDatabase::AccountTxResult;
 using LedgerSpecifier = RelationalDatabase::LedgerSpecifier;
@@ -354,9 +352,9 @@ populateJsonResponse(
                     if (context.apiVersion > 1)
                     {
                         jvObj[jsonTx] = txn->getJson(
-                            static_cast<JsonOptions::underlying_t>(
+                            static_cast<JsonOptions::UnderlyingT>(
                                 JsonOptions::Values::IncludeDate) |
-                                static_cast<JsonOptions::underlying_t>(
+                                static_cast<JsonOptions::UnderlyingT>(
                                     JsonOptions::Values::DisableApiPriorV2),
                             false);
                         jvObj[jss::hash] = to_string(txn->getID());
@@ -378,9 +376,7 @@ populateJsonResponse(
                     if (txnMeta)
                     {
                         jvObj[jss::meta] = txnMeta->getJson(JsonOptions::Values::IncludeDate);
-                        insertDeliveredAmount(jvObj[jss::meta], context, txn, *txnMeta);
-                        rpc::insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
-                        rpc::insertMPTokenIssuanceID(jvObj[jss::meta], sttx, *txnMeta);
+                        rpc::insertAllSyntheticInJson(jvObj[jss::meta], context, sttx, *txnMeta);
                     }
                     else
                     {

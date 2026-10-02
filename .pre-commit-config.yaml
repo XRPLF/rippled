@@ -53,9 +53,14 @@ repos:
         entry: ./bin/pre-commit/check_doxygen_style.py
         language: python
         types_or: [c++, c]
+      - id: fix-gtest-names
+        name: "fix gtest names: CamelCase suite, snake_case test case"
+        entry: ./bin/pre-commit/fix_gtest_names.py
+        language: python
+        types_or: [c++, c]
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: f4d7745e17a28aad7eed2f4874ca8d1568c11c4c # frozen: v22.1.8
+    rev: e2b496dc2bd8340c2524cb9a2d2a943cde1bb6df # frozen: v23.1.1
     hooks:
       - id: clang-format
         args: [--style=file]
@@ -70,25 +75,46 @@ repos:
         language: system
         types: [rust]
         pass_filenames: false # rustfmt formats the whole workspace
+      - id: check-coverage-attrs
+        name: check Rust coverage attributes
+        entry: ./bin/pre-commit/check_rust_coverage_attrs.py
+        language: python
+        files: ^crates/.*\.rs$
 
   - repo: https://github.com/BlankSpruce/gersemi-pre-commit
-    rev: e98930bdc210d3387007f9252d8c1694ea7e410f # frozen: 0.27.7
+    rev: f1c4833f8cf23c6d952673abc73525411a5719e8 # frozen: 0.29.1
     hooks:
       - id: gersemi
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: 9337a74165b178ae2c766f60bee7252a0f06f3e8 # frozen: v3.9.5
+    rev: ef4a397f916211b4a39ccf9d3d9cbb6562157251 # frozen: v3.9.9
     hooks:
       - id: prettier
         args: [--end-of-line=auto]
+
+  # Scoped to package/: the rest of the repo's Python has pre-existing findings,
+  # so widening these is its own change.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: a56c0b927e6465d37cae3e97d35d4d18ab2b96cd # frozen: v0.16.9
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        files: ^package/.*\.py$
 
   - repo: https://github.com/psf/black-pre-commit-mirror
     rev: 4160603246a6b365d4a2af661c6d71b0a0f50478 # frozen: 26.5.1
     hooks:
       - id: black
 
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 7ff8d35ae36a7d2b968f2f90b4c723e292e594ee # frozen: v2.3.1
+    hooks:
+      - id: mypy
+        args: [--strict]
+        files: ^package/.*\.py$
+
   - repo: https://github.com/scop/pre-commit-shfmt
-    rev: 05c1426671b9237fb5e1444dd63aa5731bec0dfb # frozen: v3.13.1-1
+    rev: 479be5958357ba5ab65ce47172117348516860e9 # frozen: v3.14.1-1
     hooks:
       - id: shfmt
         args: [--write, --indent=4, --case-indent=true]
@@ -107,7 +133,7 @@ repos:
         files: \.md$
 
   - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: ea11f9efc0bec520073405bc30552da887ba71bc # frozen: v10.0.1
+    rev: f5c5d72342f35643988a9ffa0705c05bd3ff8383 # frozen: v10.3.0
     hooks:
       - id: cspell
         name: check changed files spelling

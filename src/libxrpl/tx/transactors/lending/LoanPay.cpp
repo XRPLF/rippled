@@ -7,7 +7,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -37,6 +36,15 @@
 namespace xrpl {
 
 namespace {
+// Returns true if the transaction's payment amount is malformed. A loan
+// payment must be strictly positive: zero would move nothing, and a negative
+// amount is not a payment at all.
+bool
+isPaymentAmountInvalid(STAmount const& amount)
+{
+    return amount <= beast::kZero;
+}
+
 // Returns the account's true, unclamped balance in `asset`, for use only in
 // fund-conservation checks. accountHolds(..., SpendableHandling::FullBalance)
 // cannot be used for this: for XRP it always defers to xrpLiquid, which
@@ -82,7 +90,7 @@ LoanPay::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfLoanID] == beast::kZero)
         return temINVALID;
 
-    if (ctx.tx[sfAmount] <= beast::kZero)
+    if (isPaymentAmountInvalid(ctx.tx[sfAmount]))
         return temBAD_AMOUNT;
 
     // The loan payment flags are all mutually exclusive. If more than one is
@@ -104,9 +112,18 @@ LoanPay::preflight(PreflightContext const& ctx)
 XRPAmount
 LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    auto fixEnabled313 = view.rules().enabled(fixCleanup3_1_3);
+    auto fixEnabled340 = view.rules().enabled(fixCleanup3_4_0);
+
     using namespace lending;
 
     auto const normalCost = Transactor::calculateBaseFee(view, tx);
+
+    if (fixEnabled340 && isPaymentAmountInvalid(tx[sfAmount]))
+    {
+        // Let preflight worry about the error for this
+        return normalCost;
+    }
 
     if (tx.isFlag(tfLoanFullPayment) || tx.isFlag(tfLoanLatePayment))
     {
@@ -134,10 +151,13 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         return normalCost;
     }
 
-    if (hasExpired(view, loanSle->at(sfNextPaymentDueDate)))
+    if (isPaymentLate(view, loanSle))
     {
         // If the payment is late, and the late payment flag is not set, it'll
-        // fail
+        // fail. Uses isPaymentLate() so the fee matches apply at the exact
+        // NextPaymentDueDate boundary (Exclusive once fixCleanup3_4_0 is
+        // enabled): a catch-up at that instant can still process up to
+        // kLoanMaximumPaymentsPerTransaction payments.
         return normalCost;
     }
 
@@ -177,8 +197,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     static constexpr std::int64_t kMaxFeeIncrements =
         kLoanMaximumPaymentsPerTransaction / kLoanPaymentsPerFeeIncrement;
 
-    if (view.rules().enabled(fixCleanup3_1_3) &&
-        amount >= regularPayment * kLoanMaximumPaymentsPerTransaction)
+    if (fixEnabled313 && amount >= regularPayment * kLoanMaximumPaymentsPerTransaction)
     {
         // The payment handler will never process more than
         // loanMaximumPaymentsPerTransaction payments (including overpayments),
@@ -620,7 +639,12 @@ LoanPay::doApply()
         ? STAmount{asset, 0}
         : conservationBalance(view, brokerPayee, asset, j_);
 
-    if (totalPaidToVaultRounded != beast::kZero)
+    // Only ledgers without the rule below reach these payee checks. Once it is in force
+    // requireAuth can no longer reject a pseudo-account, so the whole block goes away with the
+    // gate.
+    bool const skipPayeeAuth = view.rules().enabled(fixCleanup3_4_0);
+
+    if (!skipPayeeAuth && totalPaidToVaultRounded != beast::kZero)
     {
         if (auto const ter = requireAuth(view, asset, vaultPseudoAccount, AuthType::StrongAuth))
             return ter;
@@ -644,8 +668,11 @@ LoanPay::doApply()
                 return ter;
             }
         }
-        if (auto const ter = requireAuth(view, asset, brokerPayee, AuthType::StrongAuth))
-            return ter;
+        if (!skipPayeeAuth)
+        {
+            if (auto const ter = requireAuth(view, asset, brokerPayee, AuthType::StrongAuth))
+                return ter;
+        }
     }
 
     if (auto const ter = accountSendMulti(
@@ -821,7 +848,7 @@ LoanPay::doApply()
 }
 
 void
-LoanPay::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanPay::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -25,6 +25,7 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/CoroTask.h>
 #include <xrpl/core/Job.h>
@@ -47,16 +48,20 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
 
+#include <algorithm>
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 namespace xrpl::test {
 
@@ -148,7 +153,8 @@ public:
         STAmount const& saDstAmount,
         std::optional<STAmount> const& saSendMax = std::nullopt,
         std::optional<Currency> const& saSrcCurrency = std::nullopt,
-        std::optional<uint256> const& domain = std::nullopt)
+        std::optional<UInt256> const& domain = std::nullopt,
+        std::optional<AccountID> const& saSrcIssuer = std::nullopt)
     {
         using namespace jtx;
 
@@ -181,6 +187,10 @@ public:
             auto& sc = params[jss::source_currencies] = json::ValueType::Array;
             json::Value j = json::ValueType::Object;
             j[jss::currency] = to_string(saSrcCurrency.value());
+            // Optional issuer for tests that need to exercise
+            // source_currencies entries more precisely than currency alone.
+            if (saSrcIssuer)
+                j[jss::issuer] = toBase58(*saSrcIssuer);
             sc.append(j);
         }
         if (domain)
@@ -212,10 +222,11 @@ public:
         STAmount const& saDstAmount,
         std::optional<STAmount> const& saSendMax = std::nullopt,
         std::optional<Currency> const& saSrcCurrency = std::nullopt,
-        std::optional<uint256> const& domain = std::nullopt)
+        std::optional<UInt256> const& domain = std::nullopt,
+        std::optional<AccountID> const& saSrcIssuer = std::nullopt)
     {
-        json::Value result =
-            findPathsRequest(env, src, dst, saDstAmount, saSendMax, saSrcCurrency, domain);
+        json::Value result = findPathsRequest(
+            env, src, dst, saDstAmount, saSendMax, saSrcCurrency, domain, saSrcIssuer);
         BEAST_EXPECT(!result.isMember(jss::error));
 
         STAmount da;
@@ -340,6 +351,53 @@ public:
     }
 
     void
+    sourceCurrencyIssuerSelection()
+    {
+        testcase("source currency issuer selection");
+        using namespace jtx;
+
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gateway = Account("gateway");
+
+        env.fund(XRP(10000), alice, bob, gateway);
+        env.close();
+
+        auto const usd = gateway["USD"];
+        env.trust(usd(600), alice);
+        env.trust(usd(700), bob);
+        env.trust(alice["USD"](700), bob);
+        env(pay(gateway, alice, usd(70)));
+        env(pay(gateway, bob, usd(50)));
+        env.close();
+
+        // Ask for USD from an explicit source issuer while send_max is
+        // Alice-issued USD. The parser should choose gateway-issued USD
+        // because gateway is the issuer in source_currencies.
+        //
+        // The Alice/Bob trust line is intentional: if Alice-issued USD is also
+        // considered as a source asset, pathfinding can produce an additional
+        // alternative. The single expected alternative below verifies that only
+        // the explicit issuer is selected.
+        auto const result = findPathsRequest(
+            env,
+            alice,
+            bob,
+            bob["USD"](-1),
+            alice["USD"](100).value(),
+            usd.currency,
+            std::nullopt,
+            gateway.id());
+        auto const& alternatives = result[jss::alternatives];
+        BEAST_EXPECT(alternatives.size() == 1);
+        auto const sa = amountFromJson(sfGeneric, alternatives[0u][jss::source_amount]);
+        auto const da = amountFromJson(sfGeneric, alternatives[0u][jss::destination_amount]);
+        BEAST_EXPECTS(equal(sa, usd(100)), sa.getFullText());
+        BEAST_EXPECTS(equal(da, bob["USD"](100)), da.getFullText());
+    }
+
+    void
     noDirectPathNoIntermediaryNoAlternatives()
     {
         testcase("no direct path no intermediary no alternatives");
@@ -404,7 +462,7 @@ public:
         env(pay(gw, "alice", usd(70)));
         env(pay(gw, "bob", usd(50)));
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
             domainID = setupDomain(env, {"alice", "bob", gw});
 
@@ -425,7 +483,7 @@ public:
         env.fund(XRP(10000), "alice", "bob");
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
             domainID = setupDomain(env, {"alice", "bob"});
 
@@ -451,7 +509,7 @@ public:
             env.trust(Account("alice")["USD"](100), "dan");
             env.trust(Account("dan")["USD"](100), "edward");
 
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
                 domainID = setupDomain(env, {"alice", "bob", "carol", "dan", "edward"});
 
@@ -482,7 +540,7 @@ public:
             env(pay(gw, "carol", usd(100)));
             env.close();
 
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {"alice", "bob", "carol", "gateway"});
@@ -553,7 +611,7 @@ public:
         env.trust(usd(700), "bob");
         env.trust(gw2Usd(900), "bob");
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "gateway", "gateway2"});
@@ -600,7 +658,7 @@ public:
         env.trust(usd(700), "bob");
         env.trust(gw2Usd(900), "bob");
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "gateway", "gateway2"});
@@ -685,7 +743,7 @@ public:
         env(pay(gw, "alice", usd(100)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "carol", "dan", gw, gw2});
@@ -717,7 +775,7 @@ public:
         env.require(Balance("carol", Account("bob")["USD"](75)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "carol", "dan"});
@@ -812,7 +870,7 @@ public:
         env(pay(gw, "carol", aud(50)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "carol", gw});
@@ -1035,7 +1093,7 @@ public:
         env(pay(g3, m1, g3["ABC"](25000)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {a1, a2, a3, g1, g2, g3, m1});
@@ -1125,7 +1183,7 @@ public:
         env(pay(g3, m1, g3["ABC"](1200)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {a1, a2, g3, m1});
@@ -1192,7 +1250,7 @@ public:
         env(pay(g2Sw, m1, g2Sw["HKD"](5000)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
             domainID = setupDomain(env, {a1, a2, g1Bs, g2Sw, m1});
 
@@ -1287,7 +1345,7 @@ public:
         env(pay(g2, m2, g2["HKD"](5000)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {a1, a2, a3, a4, g1, g2, g3, g4, m1, m2});
@@ -1420,7 +1478,7 @@ public:
         env(pay(g2, m1, g2["HKD"](5000)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {a1, a2, a3, g1, g2, m1});
@@ -1464,7 +1522,7 @@ public:
             env(pay(gw, charlie, usd(10)));
             env.close();
 
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});
@@ -1499,7 +1557,7 @@ public:
             env(pay(gw, alice, usd(10)));
             env.close();
 
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});
@@ -1620,7 +1678,7 @@ public:
             env(pay(g2, m2, g2["HKD"](5000)));
             env.close();
 
-            std::optional<uint256> domainID =
+            std::optional<UInt256> domainID =
                 setupDomain(env, {a1, a2, a3, a4, g1, g2, g3, g4, m1, m2});
             BEAST_EXPECT(domainID);
 
@@ -1753,7 +1811,7 @@ public:
         // order book
         {
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         Domain(domainID),
                         Txflags(tfHybrid));
@@ -1762,7 +1820,7 @@ public:
                 });
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         Domain(domainID),
                         Txflags(tfHybrid));
@@ -1773,7 +1831,7 @@ public:
                 });
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         Domain(domainID),
                         Txflags(tfHybrid));
@@ -1786,7 +1844,7 @@ public:
                 });
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)));
                     env(offer(m2, XRP(10000), g2["HKD"](1000)));
                     env(offer(m2, g1["HKD"](1000), XRP(10000)),
@@ -1795,7 +1853,7 @@ public:
                 });
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)));
                     env(offer(m2, XRP(10000), g2["HKD"](1000)),
                         Domain(domainID),
@@ -1811,7 +1869,7 @@ public:
         // order book
         {
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         Domain(domainID),
                         Txflags(tfHybrid));
@@ -1821,7 +1879,7 @@ public:
                 true);
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         Domain(domainID),
                         Txflags(tfHybrid));
@@ -1833,7 +1891,7 @@ public:
                 true);
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)), Domain(domainID));
                     env(offer(m2, XRP(10000), g2["HKD"](1000)), Domain(domainID));
                     env(offer(m2, g1["HKD"](1000), XRP(10000)),
@@ -1843,7 +1901,7 @@ public:
                 true);
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)), Domain(domainID));
                     env(offer(m2, XRP(10000), g2["HKD"](1000)),
                         Domain(domainID),
@@ -1904,7 +1962,7 @@ public:
         static constexpr AccountID kAccountID7{kAccount7};
         static constexpr AccountID kAccountID8{kAccount8};
 
-        auto ps = STPathSet{};
+        auto ps = STPathSet{STPathSet::DeduplicationTag{}};
 
         auto createPathElements = [](auto const& account1, auto const& account2) {
             auto base = STPath{};
@@ -1979,9 +2037,219 @@ public:
     }
 
     void
+    testPushBackDeduplication()
+    {
+        testcase("STPathSet::pushBack/emplaceBack deduplication");
+
+        // pushBack and emplaceBack reject duplicates on a set built with the
+        // DeduplicationTag, and append unconditionally without it.  Both
+        // report which happened.  The unconditional case is the one the wire
+        // and JSON paths rely on: collapsing duplicates there would change the
+        // signed content of a transaction.
+
+        static constexpr AccountID kAccountID1{"A3F19C7B2E5D08146FB93A7C0E2D5184BC6F3A09"};
+        static constexpr AccountID kAccountID2{"1D7E4B90C2A6F3851E0B9D47A2C5F8136E0A4B7D"};
+        static constexpr AccountID kAccountID3{"F08C36A1D95E27B40CA1F63E8D204B7950E1C3A6"};
+
+        auto makePath = [](AccountID const& account) {
+            auto p = STPath{};
+            p.pushBack(STPathElement{STPathElement::TypeAccount, account, xrpCurrency(), account});
+            return p;
+        };
+
+        auto const first = makePath(kAccountID1);
+        auto const second = makePath(kAccountID2);
+        auto const third = makePath(kAccountID3);
+
+        // Deduplicating set: the second insert of a path is rejected, and the
+        // rejection is reported rather than silently swallowed.
+        {
+            auto ps = STPathSet{STPathSet::DeduplicationTag{}};
+
+            BEAST_EXPECT(ps.pushBack(first));
+            BEAST_EXPECT(ps.size() == 1);
+
+            BEAST_EXPECT(!ps.pushBack(first));
+            BEAST_EXPECT(ps.size() == 1);
+
+            // emplaceBack sees paths registered by pushBack...
+            BEAST_EXPECT(!ps.emplaceBack(first));
+            BEAST_EXPECT(ps.size() == 1);
+
+            BEAST_EXPECT(ps.emplaceBack(second));
+            BEAST_EXPECT(ps.size() == 2);
+
+            // ...and pushBack sees paths registered by emplaceBack.
+            BEAST_EXPECT(!ps.pushBack(second));
+            BEAST_EXPECT(ps.size() == 2);
+
+            // emplaceBack's forwarding form registers the same way.
+            BEAST_EXPECT(ps.emplaceBack(std::vector<STPathElement>{third.front()}));
+            BEAST_EXPECT(ps.size() == 3);
+            BEAST_EXPECT(!ps.pushBack(third));
+            BEAST_EXPECT(ps.size() == 3);
+
+            // A rejected duplicate must not disturb what is already stored.
+            BEAST_EXPECT(ps[0] == first);
+            BEAST_EXPECT(ps[1] == second);
+            BEAST_EXPECT(ps[2] == third);
+        }
+
+        // Without the tag there is no index, so duplicates are appended and
+        // both methods report success every time.
+        {
+            auto plain = STPathSet{};
+            BEAST_EXPECT(plain.pushBack(first));
+            BEAST_EXPECT(plain.pushBack(first));
+            BEAST_EXPECT(plain.emplaceBack(first));
+            BEAST_EXPECT(plain.size() == 3);
+
+            auto named = STPathSet{sfPaths};
+            BEAST_EXPECT(named.pushBack(first));
+            BEAST_EXPECT(named.pushBack(first));
+            BEAST_EXPECT(named.size() == 2);
+        }
+    }
+
+    void
+    testPathHashInjectivity()
+    {
+        testcase("STPathElement hash injectivity");
+
+        auto const zeroCurrency =
+            STPathElement{AccountID{}, PathAsset{Currency{}}, AccountID{}, true};
+        auto const zeroMPT = STPathElement{AccountID{}, PathAsset{MPTID{}}, AccountID{}, true};
+
+        BEAST_EXPECT(!(zeroCurrency == zeroMPT));
+
+        auto path = [](std::vector<STPathElement> const& elements) {
+            auto p = STPath{};
+            for (auto const& element : elements)
+                p.pushBack(element);
+            return p;
+        };
+
+        auto const currencyFirst = path({zeroCurrency, zeroMPT});
+        auto const mptFirst = path({zeroMPT, zeroCurrency});
+
+        BEAST_EXPECT(!(currencyFirst == mptFirst));
+
+        auto const hasher = HardenedHash<>{};
+        BEAST_EXPECT(hasher(currencyFirst) != hasher(mptFirst));
+
+        auto mask = std::vector<int>{0, 0, 1, 1};
+        auto hashes = std::set<std::size_t>{};
+        auto orderings = 0uz;
+        do
+        {
+            auto elements = std::vector<STPathElement>{};
+            for (auto const isMPT : mask)
+            {
+                elements.push_back(isMPT != 0 ? zeroMPT : zeroCurrency);
+            }
+            hashes.insert(hasher(path(elements)));
+            ++orderings;
+        } while (std::ranges::next_permutation(mask).found);
+
+        BEAST_EXPECT(orderings == 6);
+        BEAST_EXPECT(hashes.size() == orderings);
+
+        auto seen = HardenedHashSet<STPath>{};
+        for (auto const& p : {currencyFirst, mptFirst})
+        {
+            seen.emplace(p);
+        }
+        BEAST_EXPECT(seen.size() == 2);
+
+        // The other half of the invariant: equal elements must hash equally.
+        // STPathElement::operator== masks type_ down to the TypeAccount bit, so
+        // elements whose remaining type bits differ still compare equal --
+        // hashing the full type_ would give them distinct hashes and silently
+        // defeat deduplication.
+        static constexpr AccountID kAccount{"A3F19C7B2E5D08146FB93A7C0E2D5184BC6F3A09"};
+        static constexpr AccountID kIssuer{"1D7E4B90C2A6F3851E0B9D47A2C5F8136E0A4B7D"};
+
+        auto const equivalent = std::vector<std::pair<STPathElement, STPathElement>>{
+            // forceAsset toggles TypeCurrency on an XRP asset.
+            {STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, true},
+             STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, false}},
+            // An explicit type mask vs. one derived from the populated fields.
+            {STPathElement{STPathElement::TypeAccount, kAccount, xrpCurrency(), kIssuer},
+             STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, false}},
+        };
+
+        for (auto const& [lhs, rhs] : equivalent)
+        {
+            BEAST_EXPECT(lhs.getNodeType() != rhs.getNodeType());
+            BEAST_EXPECT(lhs == rhs);
+
+            auto const lhsPath = path({lhs});
+            auto const rhsPath = path({rhs});
+            BEAST_EXPECT(hasher(lhsPath) == hasher(rhsPath));
+
+            auto equal = HardenedHashSet<STPath>{};
+            equal.emplace(lhsPath);
+            equal.emplace(rhsPath);
+            BEAST_EXPECT(equal.size() == 1);
+        }
+    }
+
+    void
+    testDeserializationPreservesDuplicates()
+    {
+        testcase("STPathSet deserialization preserves duplicate paths");
+
+        // The `Paths` field of a signed transaction must round-trip byte for
+        // byte.  The deduplication index exists solely for pathfinding, so the
+        // deserializing constructor must never engage it: collapsing duplicates
+        // on parse would silently change the signed content of a transaction.
+
+        static constexpr AccountID kAccountID1{"A3F19C7B2E5D08146FB93A7C0E2D5184BC6F3A09"};
+        static constexpr AccountID kAccountID2{"1D7E4B90C2A6F3851E0B9D47A2C5F8136E0A4B7D"};
+
+        auto const element =
+            STPathElement{kAccountID1, PathAsset{xrpCurrency()}, kAccountID2, true};
+
+        auto path = STPath{};
+        path.pushBack(element);
+
+        static constexpr auto kDuplicates = 64uz;
+
+        auto original = STPathSet{sfPaths};
+        for (auto i = 0uz; i < kDuplicates; ++i)
+        {
+            original.pushBack(path);
+        }
+
+        // No index was requested, so nothing is deduplicated on the way in.
+        BEAST_EXPECT(original.size() == kDuplicates);
+
+        auto s = Serializer{};
+        original.add(s);
+
+        auto sit = SerialIter{s.slice()};
+        auto const parsed = STPathSet{sit, sfPaths};
+
+        // The duplicates survive the round trip...
+        BEAST_EXPECT(parsed.size() == kDuplicates);
+        BEAST_EXPECT(parsed.isEquivalent(original));
+
+        // ...and re-serializing reproduces the original bytes exactly.
+        auto serialized = Serializer{};
+        parsed.add(serialized);
+        BEAST_EXPECT(serialized.getData() == s.getData());
+
+        // A parsed set holds no index, so appending to it stays append-only.
+        auto appended = parsed;
+        appended.pushBack(path);
+        BEAST_EXPECT(appended.size() == kDuplicates + 1);
+    }
+
+    void
     run() override
     {
         sourceCurrenciesLimit();
+        sourceCurrencyIssuerSelection();
         noDirectPathNoIntermediaryNoAlternatives();
         directPathNoIntermediary();
         paymentAutoPathFind();
@@ -1991,6 +2259,9 @@ public:
         issuesPathNegativeRippleClientIssue23Larger();
         qualityPathsQualitySetAndTest();
         testAssembleAddDeduplication();
+        testPushBackDeduplication();
+        testPathHashInjectivity();
+        testDeserializationPreservesDuplicates();
         trustAutoClearTrustNormalClear();
         trustAutoClearTrustAutoClear();
         norippleCombinations();

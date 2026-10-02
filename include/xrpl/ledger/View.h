@@ -24,6 +24,7 @@
 #include <optional>
 #include <set>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -113,12 +114,12 @@ canTransferLPToken(
     AccountID const& lpTokenIssuer);
 
 // Return the list of enabled amendments
-[[nodiscard]] std::set<uint256>
+[[nodiscard]] std::set<UInt256>
 getEnabledAmendments(ReadView const& view);
 
 // Return a map of amendments that have achieved majority
-using majorityAmendments_t = std::map<uint256, NetClock::time_point>;
-[[nodiscard]] majorityAmendments_t
+using MajorityAmendmentsT = std::map<UInt256, NetClock::time_point>;
+[[nodiscard]] MajorityAmendmentsT
 getMajorityAmendments(ReadView const& view);
 
 /**
@@ -131,7 +132,7 @@ getMajorityAmendments(ReadView const& view);
  * @return The hash of the ledger with the
  *         given sequence number or std::nullopt.
  */
-[[nodiscard]] std::optional<uint256>
+[[nodiscard]] std::optional<UInt256>
 hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal);
 
 /**
@@ -168,7 +169,7 @@ areCompatible(
 
 [[nodiscard]] bool
 areCompatible(
-    uint256 const& validHash,
+    UInt256 const& validHash,
     LedgerIndex validIndex,
     ReadView const& testLedger,
     beast::Journal::Stream& s,
@@ -198,7 +199,10 @@ dirLink(
  *      if withdrawing to self.
  *    - If withdrawing to self, succeed.
  *    - If not, checks if the receiver requires deposit authorization, and if
- *      the sender has it.
+ *      the sender has it (account-based or credential-based).
+ *    - Expects any credentials passed in to already exist in the ledger, and
+ *      returns an internal error otherwise. Validate them beforehand with
+ *      credentials::valid().
  *    - Checks that the receiver will not exceed the limit (IOU trustline limit
  *      or MPT MaximumAmount).
  */
@@ -207,9 +211,10 @@ canWithdraw(
     ReadView const& view,
     AccountID const& from,
     AccountID const& to,
-    SLE::const_ref toSle,
+    SLE::ConstRef toSle,
     STAmount const& amount,
-    bool hasDestinationTag);
+    bool hasDestinationTag,
+    std::optional<std::vector<UInt256>> const& credentialIDs = std::nullopt);
 
 /**
  * Checks that can withdraw funds from an object to itself or a destination.
@@ -222,7 +227,10 @@ canWithdraw(
  *      if withdrawing to self.
  *    - If withdrawing to self, succeed.
  *    - If not, checks if the receiver requires deposit authorization, and if
- *      the sender has it.
+ *      the sender has it (account-based or credential-based).
+ *    - Expects any credentials passed in to already exist in the ledger, and
+ *      returns an internal error otherwise. Validate them beforehand with
+ *      credentials::valid().
  *    - Checks that the receiver will not exceed the limit (IOU trustline limit
  *      or MPT MaximumAmount).
  */
@@ -232,20 +240,25 @@ canWithdraw(
     AccountID const& from,
     AccountID const& to,
     STAmount const& amount,
-    bool hasDestinationTag);
+    bool hasDestinationTag,
+    std::optional<std::vector<UInt256>> const& credentialIDs = std::nullopt);
 
 /**
  * Checks that can withdraw funds from an object to itself or a destination.
  *
  * The receiver may be either the submitting account (sfAccount) or a different
- * destination account (sfDestination).
+ * destination account (sfDestination). Credentials, if any, are taken from the
+ * transaction's sfCredentialIDs field.
  *
  *    - Checks that the receiver account exists.
  *    - If the receiver requires a destination tag, check that one exists, even
  *      if withdrawing to self.
  *    - If withdrawing to self, succeed.
  *    - If not, checks if the receiver requires deposit authorization, and if
- *      the sender has it.
+ *      the sender has it (account-based or credential-based).
+ *    - Expects any credentials in sfCredentialIDs to already exist in the
+ *      ledger, and returns an internal error otherwise. Validate them
+ *      beforehand with credentials::valid().
  *    - Checks that the receiver will not exceed the limit (IOU trustline limit
  *      or MPT MaximumAmount).
  */
@@ -268,7 +281,7 @@ doWithdraw(
  * is always tesSUCCESS if the entry should be skipped.
  */
 using EntryDeleter =
-    std::function<std::pair<TER, SkipEntry>(LedgerEntryType, uint256 const&, SLE::pointer&)>;
+    std::function<std::pair<TER, SkipEntry>(LedgerEntryType, UInt256 const&, SLE::pointer&)>;
 /**
  * Cleanup owner directory entries on account delete.
  * Used for a regular and AMM accounts deletion. The caller
