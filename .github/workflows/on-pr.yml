@@ -167,8 +167,9 @@ jobs:
             **/*SpanNames.h
             **/*MetricNames.h
 
-            # The GTests that pin those same constants.
+            # The GTests that pin those same constants, in both test binaries.
             src/tests/libxrpl/telemetry/**
+            src/tests/xrpld/telemetry/**
 
             # The checkers that gate this surface. otel-naming derives the legal
             # attribute and metric names from the headers above; the telemetry
