@@ -2,7 +2,7 @@
 
 #include <xrpld/app/misc/detail/Work.h>
 
-#include <xrpl/basics/random.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/BuildInfo.h>
 
 #include <boost/asio.hpp>
@@ -12,51 +12,55 @@
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/write.hpp>
 
-namespace xrpl {
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <utility>
 
-namespace detail {
+namespace xrpl::detail {
 
 template <class Impl>
 class WorkBase : public Work
 {
 protected:
-    using error_code = boost::system::error_code;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
+    using ErrorCode = boost::system::error_code;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
 
 public:
-    using callback_type =
-        std::function<void(error_code const&, endpoint_type const&, response_type&&)>;
+    using CallbackType = std::function<void(ErrorCode const&, EndpointType const&, ResponseType&&)>;
 
 protected:
-    using socket_type = boost::asio::ip::tcp::socket;
-    using resolver_type = boost::asio::ip::tcp::resolver;
-    using results_type = boost::asio::ip::tcp::resolver::results_type;
-    using request_type = boost::beast::http::request<boost::beast::http::empty_body>;
+    using SocketType = boost::asio::ip::tcp::socket;
+    using ResolverType = boost::asio::ip::tcp::resolver;
+    using ResultsType = boost::asio::ip::tcp::resolver::results_type;
+    using RequestType = boost::beast::http::request<boost::beast::http::empty_body>;
 
     std::string host_;
     std::string path_;
     std::string port_;
-    callback_type cb_;
+    CallbackType cb_;
     boost::asio::io_context& ios_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
-    resolver_type resolver_;
-    socket_type socket_;
-    request_type req_;
-    response_type res_;
+    ResolverType resolver_;
+    SocketType socket_;
+    RequestType req_;
+    ResponseType res_;
     boost::beast::multi_buffer readBuf_;
-    endpoint_type lastEndpoint_;
+    EndpointType lastEndpoint_;
     bool lastStatus_;
 
-public:
+private:
     WorkBase(
-        std::string const& host,
-        std::string const& path,
-        std::string const& port,
+        std::string host,
+        std::string path,
+        std::string port,
         boost::asio::io_context& ios,
-        endpoint_type const& lastEndpoint,
+        EndpointType lastEndpoint,
         bool lastStatus,
-        callback_type cb);
-    ~WorkBase();
+        CallbackType cb);
+
+public:
+    ~WorkBase() override;
 
     Impl&
     impl()
@@ -71,48 +75,50 @@ public:
     cancel() override;
 
     void
-    fail(error_code const& ec);
+    fail(ErrorCode const& ec);
 
     void
-    onResolve(error_code const& ec, results_type results);
+    onResolve(ErrorCode const& ec, ResultsType results);
 
     void
-    onConnect(error_code const& ec, endpoint_type const& endpoint);
+    onConnect(ErrorCode const& ec, EndpointType const& endpoint);
 
     void
     onStart();
 
     void
-    onRequest(error_code const& ec);
+    onRequest(ErrorCode const& ec);
 
     void
-    onResponse(error_code const& ec);
+    onResponse(ErrorCode const& ec);
 
 private:
     void
     close();
+
+    friend Impl;
 };
 
 //------------------------------------------------------------------------------
 
 template <class Impl>
 WorkBase<Impl>::WorkBase(
-    std::string const& host,
-    std::string const& path,
-    std::string const& port,
+    std::string host,
+    std::string path,
+    std::string port,
     boost::asio::io_context& ios,
-    endpoint_type const& lastEndpoint,
+    EndpointType lastEndpoint,
     bool lastStatus,
-    callback_type cb)
-    : host_(host)
-    , path_(path)
-    , port_(port)
+    CallbackType cb)
+    : host_(std::move(host))
+    , path_(std::move(path))
+    , port_(std::move(port))
     , cb_(std::move(cb))
     , ios_(ios)
     , strand_(boost::asio::make_strand(ios))
     , resolver_(ios)
     , socket_(ios)
-    , lastEndpoint_{lastEndpoint}
+    , lastEndpoint_{std::move(lastEndpoint)}
     , lastStatus_(lastStatus)
 {
 }
@@ -130,21 +136,20 @@ void
 WorkBase<Impl>::run()
 {
     if (!strand_.running_in_this_thread())
+    {
         return boost::asio::post(
-            ios_,
-            boost::asio::bind_executor(
-                strand_, std::bind(&WorkBase::run, impl().shared_from_this())));
+            ios_, boost::asio::bind_executor(strand_, [self = impl().shared_from_this()] {
+                self->run();
+            }));
+    }
 
     resolver_.async_resolve(
         host_,
         port_,
         boost::asio::bind_executor(
-            strand_,
-            std::bind(
-                &WorkBase::onResolve,
-                impl().shared_from_this(),
-                std::placeholders::_1,
-                std::placeholders::_2)));
+            strand_, [self = impl().shared_from_this()](ErrorCode const& ec, ResultsType results) {
+                self->onResolve(ec, results);
+            }));
 }
 
 template <class Impl>
@@ -157,17 +162,17 @@ WorkBase<Impl>::cancel()
             ios_,
 
             boost::asio::bind_executor(
-                strand_, std::bind(&WorkBase::cancel, impl().shared_from_this())));
+                strand_, [self = impl().shared_from_this()] { self->cancel(); }));
     }
 
-    error_code ec;
+    ErrorCode ec;
     resolver_.cancel();
     socket_.cancel(ec);
 }
 
 template <class Impl>
 void
-WorkBase<Impl>::fail(error_code const& ec)
+WorkBase<Impl>::fail(ErrorCode const& ec)
 {
     if (cb_)
     {
@@ -178,7 +183,7 @@ WorkBase<Impl>::fail(error_code const& ec)
 
 template <class Impl>
 void
-WorkBase<Impl>::onResolve(error_code const& ec, results_type results)
+WorkBase<Impl>::onResolve(ErrorCode const& ec, ResultsType results)
 {
     if (ec)
         return fail(ec);
@@ -188,16 +193,16 @@ WorkBase<Impl>::onResolve(error_code const& ec, results_type results)
         results,
         boost::asio::bind_executor(
             strand_,
-            std::bind(
-                &WorkBase::onConnect,
-                impl().shared_from_this(),
-                std::placeholders::_1,
-                std::placeholders::_2)));
+            [self = impl().shared_from_this()](ErrorCode const& ec, EndpointType const& endpoint) {
+                // Call the base-class overload explicitly: the derived Impl
+                // hides it with its own single-argument onConnect(ec).
+                self->WorkBase::onConnect(ec, endpoint);
+            }));
 }
 
 template <class Impl>
 void
-WorkBase<Impl>::onConnect(error_code const& ec, endpoint_type const& endpoint)
+WorkBase<Impl>::onConnect(ErrorCode const& ec, EndpointType const& endpoint)
 {
     lastEndpoint_ = endpoint;
 
@@ -215,19 +220,20 @@ WorkBase<Impl>::onStart()
     req_.target(path_.empty() ? "/" : path_);
     req_.version(11);
     req_.set("Host", host_ + ":" + port_);
-    req_.set("User-Agent", BuildInfo::getFullVersionString());
+    req_.set("User-Agent", build_info::getFullVersionString());
     req_.prepare_payload();
     boost::beast::http::async_write(
         impl().stream(),
         req_,
         boost::asio::bind_executor(
-            strand_,
-            std::bind(&WorkBase::onRequest, impl().shared_from_this(), std::placeholders::_1)));
+            strand_, [self = impl().shared_from_this()](ErrorCode const& ec, std::size_t) {
+                self->onRequest(ec);
+            }));
 }
 
 template <class Impl>
 void
-WorkBase<Impl>::onRequest(error_code const& ec)
+WorkBase<Impl>::onRequest(ErrorCode const& ec)
 {
     if (ec)
         return fail(ec);
@@ -237,13 +243,14 @@ WorkBase<Impl>::onRequest(error_code const& ec)
         readBuf_,
         res_,
         boost::asio::bind_executor(
-            strand_,
-            std::bind(&WorkBase::onResponse, impl().shared_from_this(), std::placeholders::_1)));
+            strand_, [self = impl().shared_from_this()](ErrorCode const& ec, std::size_t) {
+                self->onResponse(ec);
+            }));
 }
 
 template <class Impl>
 void
-WorkBase<Impl>::onResponse(error_code const& ec)
+WorkBase<Impl>::onResponse(ErrorCode const& ec)
 {
     if (ec)
         return fail(ec);
@@ -260,7 +267,7 @@ WorkBase<Impl>::close()
 {
     if (socket_.is_open())
     {
-        error_code ec;
+        ErrorCode ec;
         socket_.shutdown(boost::asio::socket_base::shutdown_send, ec);
         if (ec)
             return;
@@ -268,6 +275,4 @@ WorkBase<Impl>::close()
     }
 }
 
-}  // namespace detail
-
-}  // namespace xrpl
+}  // namespace xrpl::detail

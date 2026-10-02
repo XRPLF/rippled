@@ -14,9 +14,9 @@ The following branches exist in the main project repository:
 
 - `develop`: The latest set of unreleased features, and the most common
   starting point for contributions.
-- `release`: The latest beta release or release candidate.
-- `master`: The latest stable release.
-- `gh-pages`: The documentation for this project, built by Doxygen.
+- `release/*` (e.g. `release/3.2.x`): Release branches, one per release line,
+  holding the latest release candidate, or stable release for that line.
+  Stable releases are published as [tagged releases](https://github.com/XRPLF/rippled/releases).
 
 The tip of each branch must be signed. In order for GitHub to sign a
 squashed commit that it builds from your pull request, GitHub must know
@@ -59,6 +59,17 @@ to an existing XLS. Neither change will be released (in an amendment's
 case, marked as `Supported::yes`) until the corresponding XLS's status
 is `Final`.
 
+## AI coding agents
+
+[`AGENTS.md`](./AGENTS.md) (and its `CLAUDE.md` symlink, for Claude Code) holds shared, checked-in guidance for AI coding agents working in this repository — build/test/lint commands and architecture notes. Additional `AGENTS.md` files may exist in subdirectories to give agents context specific to that part of the codebase; whenever you add one, also add a `CLAUDE.md` symlink pointing to it (`ln -s AGENTS.md CLAUDE.md`) so Claude Code picks it up too.
+
+If you want to give an agent personal instructions that shouldn't be shared with other contributors (e.g. your own workflow preferences), those are gitignored, not checked in:
+
+- `CLAUDE.local.md` — read by Claude Code alongside `CLAUDE.md`.
+- `AGENTS.override.md` — read by AGENTS.md-compatible tools that support a personal override file layered on top of `AGENTS.md`.
+
+Likewise, `.claude/settings.local.json` is for personal, untracked Claude Code settings, while `.claude/settings.json` is shared.
+
 ## Before making a pull request
 
 (Or marking a draft pull request as ready.)
@@ -82,9 +93,12 @@ If you create new source files, they must be organized as follows:
   under `include/xrpl`, and source (`.cpp`) files must go under
   `src/libxrpl`.
 - All other non-test files must go under `src/xrpld`.
-- All test source files must go under `src/test`.
+- New test source files should use `gtest` and go under `src/tests`, unless that isn't possible, in which case they should use our legacy test framework and go under `src/test`.
+- All benchmark source files must go under `src/benchmarks`.
 
-The source must be formatted according to the style guide below.
+The source must be formatted according to the style guide below. The easiest
+way to satisfy this is to install the [`pre-commit`](#pre-commit-hooks) hooks,
+which format and lint your changes automatically on every commit.
 
 Header includes must be [levelized](.github/scripts/levelization).
 
@@ -127,34 +141,12 @@ tl;dr
 > 6. Wrap the body at 72 characters.
 > 7. Use the body to explain what and why vs. how.
 
-In addition to those guidelines, please add one of the following
-prefixes to the subject line if appropriate.
-
-- `fix:` - The primary purpose is to fix an existing bug.
-- `perf:` - The primary purpose is performance improvements.
-- `refactor:` - The changes refactor code without affecting
-  functionality.
-- `test:` - The changes _only_ affect unit tests.
-- `docs:` - The changes _only_ affect documentation. This can
-  include code comments in addition to `.md` files like this one.
-- `build:` - The changes _only_ affect the build process,
-  including CMake and/or Conan settings.
-- `chore:` - Other tasks that don't affect the binary, but don't fit
-  any of the other cases. e.g. formatting, git settings, updating
-  Github Actions jobs.
-
-Whenever possible, when updating commits after the PR is open, please
-add the PR number to the end of the subject line. e.g. `test: Add
-unit tests for Feature X (#1234)`.
-
 ## Pull requests
 
 In general, pull requests use `develop` as the base branch.
-The exceptions are
 
-- Fixes and improvements to a release candidate use `release` as the
-  base.
-- Hotfixes use `master` as the base.
+The exceptions are fixes, improvements, and hotfixes for an existing release,
+which use that release's branch (e.g. `release/3.2.x`) as the base.
 
 If your changes are not quite ready, but you want to make it easily available
 for preliminary examination or review, you can create a "Draft" pull request.
@@ -179,6 +171,23 @@ credibility of the existing approvals is insufficient.
 
 Pull requests must be merged by [squash-and-merge][squash]
 to preserve a linear history for the `develop` branch.
+
+### Type of Change
+
+In addition to those guidelines, please start your PR title with one of the following:
+
+- `build:` - The changes _only_ affect the build process, including CMake and/or Conan settings.
+- `feat`: New feature (change which adds functionality).
+- `fix:` - The primary purpose is to fix an existing bug.
+- `docs:` - The changes _only_ affect documentation.
+- `test:` - The changes _only_ affect unit tests.
+- `ci`: Continuous Integration (changes to our CI configuration files and scripts).
+- `style`: Code style (formatting).
+- `refactor:` - The changes refactor code without affecting functionality.
+- `perf:` - The primary purpose is performance improvements.
+- `chore:` - Other tasks that don't affect the binary, but don't fit any of the other cases. e.g. `git` settings, `clang-tidy`, removing dead code, dropping support for older tooling.
+
+First letter after the type prefix should be capitalized, and the type prefix should be followed by a colon and a space. e.g. `feat: Add support for Borrowing Protocol`.
 
 ### "Ready to merge"
 
@@ -217,13 +226,63 @@ This is a non-exhaustive list of recommended style guidelines. These are
 not always strictly enforced and serve as a way to keep the codebase
 coherent rather than a set of _thou shalt not_ commandments.
 
+## Pre-commit hooks
+
+We use the [`pre-commit`](https://pre-commit.com/) framework to run the
+formatting and linting tools that keep the codebase consistent. `pre-commit`
+runs each tool configured in
+[`.pre-commit-config.yaml`](./.pre-commit-config.yaml) in its own isolated
+environment, so you don't need to install most of the individual tools
+yourself. The version of each hook sourced from an external repository
+(`clang-format`, `gersemi`, etc.) is pinned in that file, so running the hooks
+locally uses exactly the same versions as CI. A few `local` hooks — most notably
+`clang-tidy` and `cargo fmt` — run tools from your own environment; see
+[Installing clang-tidy](#installing-clang-tidy) and
+[Rust](./docs/build/environment.md#rust) for how to get those.
+
+To get started, install `pre-commit` and enable the git hook scripts:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Once installed, the hooks run automatically on your staged files every time you
+`git commit`. You can also run them on demand:
+
+```bash
+# Run all hooks against only the staged files
+pre-commit run
+
+# Run all hooks against every file in the repository
+pre-commit run --all-files
+
+# Run a single hook (e.g. clang-format) against all files
+pre-commit run clang-format --all-files
+```
+
+The hooks configured in this repository include, among others:
+
+- `clang-format` — C++/proto formatting (see [Formatting](#formatting))
+- `clang-tidy` — C++ static analysis (see [Clang-tidy](#clang-tidy)); opt in with `TIDY=1`
+- `fix-include-style`, `fix-pragma-once`, `check-doxygen-style` — C++ hygiene
+- `gersemi` — CMake formatting
+- `cargo fmt` — Rust formatting for the crates in `crates/`
+- `prettier`, `black`, `shfmt` — formatting for JavaScript/JSON/Markdown, Python, and shell
+- `cspell` — spell checking
+
+The same hooks run in CI on every pull request, so running them locally before
+you push helps you avoid CI failures.
+
 ## Formatting
 
-All code must conform to `clang-format` version 21,
-according to the settings in [`.clang-format`](./.clang-format),
-unless the result would be unreasonably difficult to read or maintain.
-To demarcate lines that should be left as-is, surround them with comments like
-this:
+All code must conform to `clang-format`, according to the settings in
+[`.clang-format`](./.clang-format), unless the result would be unreasonably
+difficult to read or maintain. The `clang-format` version is pinned in
+[`.pre-commit-config.yaml`](./.pre-commit-config.yaml), so the
+[`pre-commit`](#pre-commit-hooks) hook always formats with the same version as
+CI. To demarcate lines that should be left as-is, surround them with comments
+like this:
 
 ```
 // clang-format off
@@ -231,8 +290,20 @@ this:
 // clang-format on
 ```
 
-You can format individual files in place by running `clang-format -i <file>...`
+The easiest way to format your changes is to let the `pre-commit` hook run
+automatically on commit, or to run it manually:
+
+```bash
+pre-commit run clang-format --all-files
+```
+
+You can also format individual files in place by running `clang-format -i <file>...`
 from any directory within this project.
+
+> [!NOTE]
+> This uses whatever `clang-format` version is installed locally, which may
+> differ from the pinned version used by `pre-commit` and CI, so the results
+> can vary.
 
 There is a Continuous Integration job that runs clang-format on pull requests. If the code doesn't comply, a patch file that corrects auto-fixable formatting issues is generated.
 
@@ -244,12 +315,63 @@ To download the patch file:
 4. Download the zip file and extract it to your local git repository. Run `git apply [patch-file-name]`.
 5. Commit and push.
 
-You can install a pre-commit hook to automatically run `clang-format` before every commit:
+## Clang-tidy
+
+All code must pass `clang-tidy` checks according to the settings in [`.clang-tidy`](./.clang-tidy).
+
+There is a Continuous Integration job that runs clang-tidy on pull requests. The CI will check:
+
+- All changed C++ files (`.cpp`, `.h`, `.ipp`) when only code files are modified
+- **All files in the repository** when the `.clang-tidy` configuration file is changed
+
+This ensures that configuration changes don't introduce new warnings across the codebase.
+
+### Installing clang-tidy
+
+See the [environment setup guide](./docs/build/environment.md#clang-tidy) for how to get clang-tidy.
+
+### Running clang-tidy locally
+
+Before running clang-tidy, you must generate the files it depends on (protobuf headers, and, when the project is configured with `-Drust=ON`, the cxxbridge headers from the Rust crates). Configure the project as described in [`BUILD.md`](./BUILD.md), then build the `tidy_prerequisites` target, which generates all of them:
+
+```bash
+cmake --build build --target tidy_prerequisites
+```
+
+#### Via pre-commit (recommended)
+
+If you have already installed the [`pre-commit`](#pre-commit-hooks) hooks, you can run clang-tidy on your staged files using:
 
 ```
-pip3 install pre-commit
-pre-commit install
+TIDY=1 pre-commit run clang-tidy
 ```
+
+This runs clang-tidy locally with the same configuration/flags as CI, scoped to your staged C++ files. The `TIDY=1` environment variable is required to opt in — without it the hook is skipped.
+
+You can also have clang-tidy run automatically on every `git commit` by setting `TIDY=1` in your shell environment:
+
+```
+export TIDY=1
+```
+
+With this set, the hook will run as part of `git commit` alongside the other pre-commit checks.
+
+#### Manually
+
+Then run clang-tidy on your local changes:
+
+```
+run-clang-tidy -p build -allow-no-checks src tests
+```
+
+This will check all source files in the `src`, `include` and `tests` directories using the compile commands from your `build` directory.
+If you wish to automatically fix whatever clang-tidy finds _and_ is capable of fixing, add `-fix -format` to the above command:
+
+```
+run-clang-tidy -p build -quiet -fix -format -allow-no-checks src tests
+```
+
+`-format` reformats the fixed code with [`.clang-format`](./.clang-format); without it the fixes are inserted in LLVM style and the `clang-format` hook rewrites them afterwards.
 
 ## Contracts and instrumentation
 
@@ -299,8 +421,8 @@ For this reason:
 - Contract description for `UNREACHABLE` should describe the _unexpected_
   situation which caused the line to have been reached.
 - Example good name for an
-  `UNREACHABLE` macro `"Json::operator==(Value, Value) : invalid type"`; example
-  good name for an `XRPL_ASSERT` macro `"Json::Value::asCString : valid type"`.
+  `UNREACHABLE` macro `"json::operator==(Value, Value) : invalid type"`; example
+  good name for an `XRPL_ASSERT` macro `"json::Value::asCString : valid type"`.
 - Example **bad** name
   `"RFC1751::insert(char* s, int x, int start, int length) : length is greater than or equal zero"`
   (missing namespace, unnecessary full function signature, description too verbose).
@@ -357,8 +479,12 @@ exists, then no other unit test will be executed, apart from `TestSuiteName`.
     elsewhere in the codebase.
 12. Use clear and self-explanatory names for functions, variables,
     structs and classes.
-13. Use TitleCase for classes, structs and filenames, camelCase for
-    function and variable names, lower case for namespaces and folders.
+13. Use TitleCase for classes, structs, type aliases and filenames,
+    camelCase for function and variable names, lower case for namespaces and
+    folders. The exception is a type alias that generic code looks up by name
+    (`value_type`, `iterator`, `result_type`, and the rest of the standard
+    container, hash and clock members), which keeps its snake_case spelling;
+    `.clang-tidy` lists the names that are allowed.
 14. Provide as many comments as you feel that a competent programmer
     would need to understand what your code does.
 
@@ -504,7 +630,7 @@ All releases, including release candidates and betas, are handled
 differently from typical PRs. Most importantly, never use
 the Github UI to merge a release.
 
-Rippled uses a linear workflow model that can be summarized as:
+Xrpld uses a linear workflow model that can be summarized as:
 
 1. In between releases, developers work against the `develop` branch.
 2. Periodically, a maintainer will build and tag a beta version from

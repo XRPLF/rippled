@@ -3,14 +3,16 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <cstdint>
 
-/** Delete account.  If successful transfer remaining XRP to dest. */
-Json::Value
+namespace xrpl::test::jtx {
+
+/**
+ * Delete account.  If successful transfer remaining XRP to dest.
+ */
+json::Value
 acctdelete(Account const& account, Account const& dest);
 
 // Close the ledger until the ledger sequence is large enough to close
@@ -19,7 +21,4 @@ acctdelete(Account const& account, Account const& dest);
 void
 incLgrSeqForAccDel(jtx::Env& env, jtx::Account const& acc, std::uint32_t margin = 0);
 
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

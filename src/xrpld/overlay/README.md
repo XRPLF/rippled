@@ -3,11 +3,11 @@
 ## Introduction
 
 The _XRP Ledger network_ consists of a collection of _peers_ running
-**`rippled`** or other compatible software. Each peer maintains multiple
+**`xrpld`** or other compatible software. Each peer maintains multiple
 outgoing connections and optional incoming connections to other peers.
 These connections are made over both the public Internet and private local
 area networks. This network defines a connected directed graph of nodes
-where vertices are instances of `rippled` and edges are persistent TCP/IP
+where vertices are instances of `xrpld` and edges are persistent TCP/IP
 connections. Peers send and receive messages to other connected peers. This
 peer to peer network, layered on top of the public and private Internet,
 forms an [_overlay network_][overlay_network]. The contents of the messages
@@ -56,7 +56,7 @@ failed (e.g. by sending HTTP 400 "Bad Request" or HTTP 503 "Service Unavailable"
 
 ```
 GET / HTTP/1.1
-User-Agent: rippled-1.4.0-b1+DEBUG
+User-Agent: xrpld-1.4.0-b1+DEBUG
 Upgrade: RTXP/1.2, XRPL/2.0
 Connection: Upgrade
 Connect-As: Peer
@@ -77,7 +77,7 @@ HTTP/1.1 101 Switching Protocols
 Connection: Upgrade
 Upgrade: RTXP/1.2
 Connect-As: Peer
-Server: rippled-1.3.1
+Server: xrpld-1.3.1
 Crawl: public
 Public-Key: n9K1ZXXXzzA3dtgKBuQUnZXkhygMRgZbSo3diFNPVHLMsUG5osJM
 Session-Signature: MEQCIHMlLGTcGyPvHji7WY2nRM2B0iSBnw9xeDUGW7bPq7IjAiAmy+ofEu+8nOq2eChRTr3wjoKi3EYRqLgzP+q+ORFcig==
@@ -90,7 +90,7 @@ Previous-Ledger: EPvIpAD2iavGFyyZYi8REexAXyKGXsi1jMF7OIBY6/Y=
 
 ```
 HTTP/1.1 503 Service Unavailable
-Server: rippled-0.27.0
+Server: xrpld-0.27.0
 Remote-Address: 63.104.209.13
 Content-Length: 253
 Content-Type: application/json
@@ -354,9 +354,9 @@ transferred between A and B and will not be able to intelligently tamper with th
 message stream between Alice and Bob, although she may be still be able to inject
 delays or terminate the link.
 
-# Ripple Clustering
+# XRPL clustering
 
-A cluster consists of more than one Ripple server under common
+A cluster consists of more than one XRPL server under common
 administration that share load information, distribute cryptography
 operations, and provide greater response consistency.
 

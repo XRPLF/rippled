@@ -1,6 +1,18 @@
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 
+#include <xrpld/app/main/Application.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/JobQueue.h>
+
+#include <boost/asio/error.hpp>
+#include <boost/system/detail/error_code.hpp>
+
+#include <chrono>
+#include <utility>
 
 namespace xrpl {
 
@@ -8,17 +20,13 @@ using namespace std::chrono_literals;
 
 TimeoutCounter::TimeoutCounter(
     Application& app,
-    uint256 const& hash,
+    UInt256 const& hash,
     std::chrono::milliseconds interval,
     QueueJobParameter&& jobParameter,
     beast::Journal journal)
     : app_(app)
     , journal_(journal)
     , hash_(hash)
-    , timeouts_(0)
-    , complete_(false)
-    , failed_(false)
-    , progress_(false)
     , timerInterval_(interval)
     , queueJobParameter_(std::move(jobParameter))
     , timer_(app_.getIOContext())
@@ -96,7 +104,7 @@ TimeoutCounter::invokeOnTimer()
 void
 TimeoutCounter::cancel()
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
     if (!isDone())
     {
         failed_ = true;

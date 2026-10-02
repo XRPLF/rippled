@@ -1,19 +1,22 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <cstdint>
 
-/** Set the flags on a JTx. */
-class txflags
+namespace xrpl::test::jtx {
+
+/**
+ * Set the flags on a JTx.
+ */
+class Txflags
 {
 private:
     std::uint32_t v_;
 
 public:
-    explicit txflags(std::uint32_t v) : v_(v)
+    explicit Txflags(std::uint32_t v) : v_(v)
     {
     }
 
@@ -21,6 +24,4 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

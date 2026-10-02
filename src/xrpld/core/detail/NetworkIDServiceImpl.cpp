@@ -1,5 +1,6 @@
-#include <xrpld/core/Config.h>
 #include <xrpld/core/NetworkIDServiceImpl.h>
+
+#include <cstdint>
 
 namespace xrpl {
 

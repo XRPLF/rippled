@@ -1,4 +1,4 @@
-## Heap profiling of rippled with jemalloc
+## Heap profiling of xrpld with jemalloc
 
 The jemalloc library provides a good API for doing heap analysis,
 including a mechanism to dump a description of the heap from within the
@@ -7,26 +7,26 @@ activity in general, as well as how to acquire the software, are available on
 the jemalloc site:
 [https://github.com/jemalloc/jemalloc/wiki/Use-Case:-Heap-Profiling](https://github.com/jemalloc/jemalloc/wiki/Use-Case:-Heap-Profiling)
 
-jemalloc is acquired separately from rippled, and is not affiliated
+jemalloc is acquired separately from xrpld, and is not affiliated
 with Ripple Labs. If you compile and install jemalloc from the
 source release with default options, it will install the library and header
 under `/usr/local/lib` and `/usr/local/include`, respectively. Heap
-profiling has been tested with rippled on a Linux platform. It should
-work on platforms on which both rippled and jemalloc are available.
+profiling has been tested with xrpld on a Linux platform. It should
+work on platforms on which both xrpld and jemalloc are available.
 
-To link rippled with jemalloc, the argument
+To link xrpld with jemalloc, the argument
 `profile-jemalloc=<jemalloc_dir>` is provided after the optional target.
 The `<jemalloc_dir>` argument should be the same as that of the
 `--prefix` parameter passed to the jemalloc configure script when building.
 
 ## Examples:
 
-Build rippled with jemalloc library under /usr/local/lib and
+Build xrpld with jemalloc library under /usr/local/lib and
 header under /usr/local/include:
 
     $ scons profile-jemalloc=/usr/local
 
-Build rippled using clang with the jemalloc library under /opt/local/lib
+Build xrpld using clang with the jemalloc library under /opt/local/lib
 and header under /opt/local/include:
 
     $ scons clang profile-jemalloc=/opt/local

@@ -1,9 +1,11 @@
 #pragma once
 
-#include <xrpld/app/misc/CanonicalTXSet.h>
-
+#include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/STTx.h>
 
+#include <cstddef>
 #include <memory>
 
 namespace xrpl {
@@ -18,13 +20,13 @@ public:
     // The number of ledgers to hold a transaction is essentially
     // arbitrary. It should be sufficient to allow the transaction to
     // get into a fully-validated ledger.
-    static constexpr int holdLedgers = 5;
+    static constexpr int kHoldLedgers = 5;
 
     virtual ~LocalTxs() = default;
 
     // Add a new local transaction
     virtual void
-    push_back(LedgerIndex index, std::shared_ptr<STTx const> const& txn) = 0;
+    pushBack(LedgerIndex index, std::shared_ptr<STTx const> const& txn) = 0;
 
     // Return the set of local transactions to a new open ledger
     virtual CanonicalTXSet
@@ -39,6 +41,6 @@ public:
 };
 
 std::unique_ptr<LocalTxs>
-make_LocalTxs();
+makeLocalTxs();
 
 }  // namespace xrpl

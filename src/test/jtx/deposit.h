@@ -1,21 +1,30 @@
 #pragma once
 
 #include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/jss.h>
 
-/** Deposit preauthorize operations */
-namespace deposit {
+#include <string>
+#include <vector>
 
-/** Preauthorize for deposit.  Invoke as deposit::auth. */
-Json::Value
+/**
+ * Deposit preauthorize operations
+ */
+namespace xrpl::test::jtx::deposit {
+
+/**
+ * Preauthorize for deposit.  Invoke as deposit::auth.
+ */
+json::Value
 auth(Account const& account, Account const& auth);
 
-/** Remove pre-authorization for deposit.  Invoke as deposit::unauth. */
-Json::Value
+/**
+ * Remove pre-authorization for deposit.  Invoke as deposit::unauth.
+ */
+json::Value
 unauth(Account const& account, Account const& unauth);
 
 struct AuthorizeCredentials
@@ -26,35 +35,30 @@ struct AuthorizeCredentials
     auto
     operator<=>(AuthorizeCredentials const&) const = default;
 
-    Json::Value
+    [[nodiscard]] json::Value
     toJson() const
     {
-        Json::Value jv;
+        json::Value jv;
         jv[jss::Issuer] = issuer.human();
         jv[sfCredentialType.jsonName] = strHex(credType);
         return jv;
     }
 
     // "ledger_entry" uses a different naming convention
-    Json::Value
+    [[nodiscard]] json::Value
     toLEJson() const
     {
-        Json::Value jv;
+        json::Value jv;
         jv[jss::issuer] = issuer.human();
         jv[jss::credential_type] = strHex(credType);
         return jv;
     }
 };
 
-Json::Value
+json::Value
 authCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials> const& auth);
 
-Json::Value
+json::Value
 unauthCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials> const& auth);
 
-}  // namespace deposit
-
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::deposit

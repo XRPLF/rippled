@@ -4,28 +4,30 @@
 
 namespace beast {
 
-/** A clock whose minimum resolution is one second.
-
-    The purpose of this class is to optimize the performance of the now()
-    member function call. It uses a dedicated thread that wakes up at least
-    once per second to sample the requested trivial clock.
-
-    @tparam Clock A type meeting these requirements:
-        http://en.cppreference.com/w/cpp/concept/Clock
-*/
-class basic_seconds_clock
+/**
+ * A clock whose minimum resolution is one second.
+ *
+ * The purpose of this class is to optimize the performance of the now()
+ * member function call. It uses a dedicated thread that wakes up at least
+ * once per second to sample the requested trivial clock.
+ *
+ * @tparam Clock A type meeting these requirements:
+ *     http://en.cppreference.com/w/cpp/concept/Clock
+ */
+class BasicSecondsClock
 {
 public:
     using Clock = std::chrono::steady_clock;
 
-    explicit basic_seconds_clock() = default;
+    explicit BasicSecondsClock() = default;
 
-    using rep = typename Clock::rep;
-    using period = typename Clock::period;
-    using duration = typename Clock::duration;
-    using time_point = typename Clock::time_point;
+    using rep = Clock::rep;
+    using period = Clock::period;
+    using duration = Clock::duration;
+    using time_point = Clock::time_point;
 
-    static bool const is_steady = Clock::is_steady;
+    static bool const is_steady =  // NOLINT(readability-identifier-naming)
+        Clock::is_steady;
 
     static time_point
     now();

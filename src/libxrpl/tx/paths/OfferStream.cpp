@@ -1,9 +1,39 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/tx/paths/OfferStream.h>
-#include <xrpl/tx/transactors/PermissionedDEXHelpers.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/paths/detail/Steps.h>
+
+#include <algorithm>
+#include <optional>
+#include <stdexcept>
+#include <type_traits>
 
 namespace xrpl {
 
@@ -11,14 +41,15 @@ namespace {
 bool
 checkIssuers(ReadView const& view, Book const& book)
 {
-    auto issuerExists = [](ReadView const& view, Issue const& iss) -> bool {
-        return isXRP(iss.account) || view.read(keylet::account(iss.account));
+    auto issuerExists = [](ReadView const& view, Asset const& asset) -> bool {
+        auto const& issuer = asset.getIssuer();
+        return isXRP(issuer) || view.exists(keylet::account(issuer));
     };
     return issuerExists(view, book.in) && issuerExists(view, book.out);
 }
 }  // namespace
 
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 TOfferStreamBase<TIn, TOut>::TOfferStreamBase(
     ApplyView& view,
     ApplyView& cancelView,
@@ -40,7 +71,7 @@ TOfferStreamBase<TIn, TOut>::TOfferStreamBase(
 
 // Handle the case where a directory item with no corresponding ledger entry
 // is found. This shouldn't happen but if it does we clean it up.
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 void
 TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
 {
@@ -57,7 +88,7 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
     }
 
     auto v(p->getFieldV256(sfIndexes));
-    auto it(std::find(v.begin(), v.end(), tip_.index()));
+    auto it(std::ranges::find(v, tip_.index()));
 
     if (it == v.end())
     {
@@ -73,99 +104,84 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
                      << tip_.dir();
 }
 
-static STAmount
+template <StepAmount T>
+static T
 accountFundsHelper(
     ReadView const& view,
     AccountID const& id,
-    STAmount const& saDefault,
-    Issue const&,
+    T const& amtDefault,
+    Asset const& asset,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal j)
 {
-    return accountFunds(view, id, saDefault, freezeHandling, j);
+    if constexpr (std::is_same_v<T, IOUAmount>)
+    {
+        if (id == asset.getIssuer())
+        {
+            // self funded
+            return amtDefault;
+        }
+    }
+    else if constexpr (std::is_same_v<T, MPTAmount>)
+    {
+        if (id == asset.getIssuer())
+        {
+            return toAmount<T>(issuerFundsToSelfIssue(view, asset.get<MPTIssue>()));
+        }
+    }
+
+    return toAmount<T>(accountHolds(view, id, asset, freezeHandling, authHandling, j));
 }
 
-static IOUAmount
-accountFundsHelper(
-    ReadView const& view,
-    AccountID const& id,
-    IOUAmount const& amtDefault,
-    Issue const& issue,
-    FreezeHandling freezeHandling,
-    beast::Journal j)
-{
-    if (issue.account == id)
-        // self funded
-        return amtDefault;
-
-    return toAmount<IOUAmount>(
-        accountHolds(view, id, issue.currency, issue.account, freezeHandling, j));
-}
-
-static XRPAmount
-accountFundsHelper(
-    ReadView const& view,
-    AccountID const& id,
-    XRPAmount const& amtDefault,
-    Issue const& issue,
-    FreezeHandling freezeHandling,
-    beast::Journal j)
-{
-    return toAmount<XRPAmount>(
-        accountHolds(view, id, issue.currency, issue.account, freezeHandling, j));
-}
-
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 template <class TTakerPays, class TTakerGets>
-bool
+    requires ValidTaker<TTakerPays, TTakerGets>
+[[nodiscard]] bool
 TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
 {
-    static_assert(
-        std::is_same_v<TTakerPays, IOUAmount> || std::is_same_v<TTakerPays, XRPAmount>,
-        "STAmount is not supported");
-
-    static_assert(
-        std::is_same_v<TTakerGets, IOUAmount> || std::is_same_v<TTakerGets, XRPAmount>,
-        "STAmount is not supported");
-
-    static_assert(
-        !std::is_same_v<TTakerPays, XRPAmount> || !std::is_same_v<TTakerGets, XRPAmount>,
-        "Cannot have XRP/XRP offers");
-
     // Consider removing the offer if:
-    //  o `TakerPays` is XRP (because of XRP drops granularity) or
+    //  o `TakerPays` is integral (because XRP/MPT have indivisible units) or
     //  o `TakerPays` and `TakerGets` are both IOU and `TakerPays`<`TakerGets`
-    constexpr bool const inIsXRP = std::is_same_v<TTakerPays, XRPAmount>;
-    constexpr bool const outIsXRP = std::is_same_v<TTakerGets, XRPAmount>;
+    constexpr bool const kInIsIntegral = !std::is_same_v<TTakerPays, IOUAmount>;
+    constexpr bool const kOutIsIntegral = !std::is_same_v<TTakerGets, IOUAmount>;
 
-    if constexpr (outIsXRP)
+    if constexpr (!kInIsIntegral && kOutIsIntegral)
     {
-        // If `TakerGets` is XRP, the worst this offer's quality can change is
-        // to about 10^-81 `TakerPays` and 1 drop `TakerGets`. This will be
-        // remarkably good quality for any realistic asset, so these offers
-        // don't need this extra check.
+        // If only `TakerGets` is integral, the worst this offer's quality can
+        // change is to about 10^-81 `TakerPays` and 1 unit `TakerGets`. This
+        // will be perfect quality for any realistic asset, so these
+        // offers don't need this extra check.
         return false;
     }
+
+    if (!ownerFunds_)
+        return false;
 
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
         toAmount<TTakerPays>(offer_.amount().in), toAmount<TTakerGets>(offer_.amount().out)};
 
-    if constexpr (!inIsXRP && !outIsXRP)
+    if constexpr (!kInIsIntegral && !kOutIsIntegral)
     {
-        if (ofrAmts.in >= ofrAmts.out)
+        if (Number(ofrAmts.in) >= Number(ofrAmts.out))
             return false;
     }
 
     TTakerGets const ownerFunds = toAmount<TTakerGets>(*ownerFunds_);
 
     auto const effectiveAmounts = [&] {
-        if (offer_.owner() != offer_.issueOut().account && ownerFunds < ofrAmts.out)
+        // Issuer-owned IOU offers are self-funded without a limit. MPT issuer
+        // offers are bounded by remaining issuance capacity, so they still need
+        // to be clipped by ownerFunds.
+        bool const issuerHasUnlimitedFunds = offer_.owner() == offer_.assetOut().getIssuer() &&
+            offer_.assetOut().template holds<Issue>();
+        if (!issuerHasUnlimitedFunds && ownerFunds < ofrAmts.out)
         {
             // adjust the amounts by owner funds.
             //
             // It turns out we can prevent order book blocking by rounding down
             // the ceil_out() result.
-            return offer_.quality().ceil_out_strict(ofrAmts, ownerFunds, /* roundUp */ false);
+            return offer_.quality().ceilOutStrict(ofrAmts, ownerFunds, /* roundUp */ false);
         }
         return ofrAmts;
     }();
@@ -181,7 +197,7 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     return effectiveQuality < offer_.quality();
 }
 
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 bool
 TOfferStreamBase<TIn, TOut>::step()
 {
@@ -199,7 +215,7 @@ TOfferStreamBase<TIn, TOut>::step()
         if (!tip_.step(j_))
             return false;
 
-        std::shared_ptr<SLE> entry = tip_.entry();
+        SLE::pointer const entry = tip_.entry();
 
         // If we exceed the maximum number of allowed steps, we're done.
         if (!counter_.step())
@@ -214,9 +230,9 @@ TOfferStreamBase<TIn, TOut>::step()
         }
 
         // Remove if expired
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
-        if (entry->isFieldPresent(sfExpiration) && tp{d{(*entry)[sfExpiration]}} <= expire_)
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
+        if (entry->isFieldPresent(sfExpiration) && Tp{D{(*entry)[sfExpiration]}} <= expire_)
         {
             JLOG(j_.trace()) << "Removing expired offer " << entry->key();
             permRmOffer(entry->key());
@@ -236,9 +252,7 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        bool const deepFrozen = isDeepFrozen(
-            view_, offer_.owner(), offer_.issueIn().currency, offer_.issueIn().account);
-        if (deepFrozen)
+        if (isDeepFrozen(view_, offer_.owner(), offer_.assetIn()))
         {
             JLOG(j_.trace()) << "Removing deep frozen unfunded offer " << entry->key();
             permRmOffer(entry->key());
@@ -246,7 +260,30 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        if (entry->isFieldPresent(sfDomainID) &&
+        // Post-fixCleanup3_4_0 defensive check: an offer indexed in a domain
+        // book must claim that same domain. This can only happen if the book
+        // directory is corrupt (i.e. a separate book indexing bug). An offer
+        // with no sfDomainID at all is just as wrong here: the domain
+        // membership check below is gated on that field being present, so
+        // such an offer would otherwise be consumed from a domain book
+        // without any credential check.
+        if (view_.rules().enabled(fixCleanup3_4_0) && book_.domain.has_value() &&
+            (!entry->isFieldPresent(sfDomainID) ||
+             entry->getFieldH256(sfDomainID) != *book_.domain))
+        {
+            JLOG(j_.error()) << "Offer " << entry->key()
+                             << " domain missing or does not match book domain";
+            Throw<FlowException>(
+                tecINTERNAL, "Offer domain missing or does not match book domain.");
+        }
+
+        // Pre-fixCleanup3_3_0: validate domain membership for any book.
+        // Post-fixCleanup3_3_0: only validate when walking a domain book.
+        // Hybrid offers carry sfDomainID but also participate in the open
+        // book; expiry of the owner's domain credential should not evict
+        // the offer from the open book.
+        if ((!view_.rules().enabled(fixCleanup3_3_0) || book_.domain.has_value()) &&
+            entry->isFieldPresent(sfDomainID) &&
             !permissioned_dex::offerInDomain(
                 view_, entry->key(), entry->getFieldH256(sfDomainID), j_))
         {
@@ -258,18 +295,30 @@ TOfferStreamBase<TIn, TOut>::step()
 
         // Calculate owner funds
         ownerFunds_ = accountFundsHelper(
-            view_, offer_.owner(), amount.out, offer_.issueOut(), fhZERO_IF_FROZEN, j_);
+            view_,
+            offer_.owner(),
+            amount.out,
+            offer_.assetOut(),
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
+            j_);
 
         // Check for unfunded offer
-        if (*ownerFunds_ <= beast::zero)
+        if (*ownerFunds_ <= beast::kZero)
         {
             // If the owner's balance in the pristine view is the same,
             // we haven't modified the balance and therefore the
             // offer is "found unfunded" versus "became unfunded"
-            auto const original_funds = accountFundsHelper(
-                cancelView_, offer_.owner(), amount.out, offer_.issueOut(), fhZERO_IF_FROZEN, j_);
+            auto const originalFunds = accountFundsHelper(
+                cancelView_,
+                offer_.owner(),
+                amount.out,
+                offer_.assetOut(),
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::ZeroIfUnauthorized,
+                j_);
 
-            if (original_funds == *ownerFunds_)
+            if (originalFunds == *ownerFunds_)
             {
                 permRmOffer(entry->key());
                 JLOG(j_.trace()) << "Removing unfunded offer " << entry->key();
@@ -283,46 +332,52 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        bool const rmSmallIncreasedQOffer = [&] {
-            bool const inIsXRP = isXRP(offer_.issueIn());
-            bool const outIsXRP = isXRP(offer_.issueOut());
-            if (inIsXRP && !outIsXRP)
-            {
-                // Without the `if constexpr`, the
-                // `shouldRmSmallIncreasedQOffer` template will be instantiated
-                // even if it is never used. This can cause compiler errors in
-                // some cases, hence the `if constexpr` guard.
-                // Note that TIn can be XRPAmount or STAmount, and TOut can be
-                // IOUAmount or STAmount.
-                if constexpr (!(std::is_same_v<TIn, IOUAmount> || std::is_same_v<TOut, XRPAmount>))
-                    return shouldRmSmallIncreasedQOffer<XRPAmount, IOUAmount>();
-            }
-            if (!inIsXRP && outIsXRP)
-            {
-                // See comment above for `if constexpr` rationale
-                if constexpr (!(std::is_same_v<TIn, XRPAmount> || std::is_same_v<TOut, IOUAmount>))
-                    return shouldRmSmallIncreasedQOffer<IOUAmount, XRPAmount>();
-            }
-            if (!inIsXRP && !outIsXRP)
-            {
-                // See comment above for `if constexpr` rationale
-                if constexpr (!(std::is_same_v<TIn, XRPAmount> || std::is_same_v<TOut, XRPAmount>))
-                    return shouldRmSmallIncreasedQOffer<IOUAmount, IOUAmount>();
-            }
-            // LCOV_EXCL_START
-            UNREACHABLE(
-                "xrpl::TOfferStreamBase::step::rmSmallIncreasedQOffer : XRP "
-                "vs XRP offer");
-            return false;
-            // LCOV_EXCL_STOP
-        }();
-
-        if (rmSmallIncreasedQOffer)
+        // Partially funded offers can be reduced before BookStep sees them.
+        // If that strict reduction overflows under MPTokensV2, remove the
+        // unusable offer instead of leaving it at the book tip.
+        bool shouldRemoveSmallIncreasedQOffer = false;
+        try
         {
-            auto const original_funds = accountFundsHelper(
-                cancelView_, offer_.owner(), amount.out, offer_.issueOut(), fhZERO_IF_FROZEN, j_);
+            shouldRemoveSmallIncreasedQOffer = shouldRmSmallIncreasedQOffer<TIn, TOut>();
+        }
+        catch (std::overflow_error const&)
+        {
+            if (view_.rules().enabled(featureMPTokensV2))
+            {
+                SOMETIMES(
+                    true,
+                    "OfferStream::step removed MPT offer with overflowing "
+                    "reduced quality");
+                permRmOffer(entry->key());
+                JLOG(j_.warn()) << "Removing offer with overflowing reduced quality "
+                                << entry->key();
+                offer_ = TOffer<TIn, TOut>{};
+                continue;
+            }
+            // The strict reduction only overflows for a crafted MPT offer, and
+            // MPT offers require featureMPTokensV2 (enforced at OfferCreate
+            // preflight). So the amendment is always enabled here and this
+            // legacy re-throw is unreachable in practice.
+            // LCOV_EXCL_START
+            XRPL_ASSERT(
+                view_.rules().enabled(featureMPTokensV2),
+                "xrpl::TOfferStreamBase::step : overflow implies MPTokensV2");
+            throw;
+            // LCOV_EXCL_STOP
+        }
 
-            if (original_funds == *ownerFunds_)
+        if (shouldRemoveSmallIncreasedQOffer)
+        {
+            auto const originalFunds = accountFundsHelper(
+                cancelView_,
+                offer_.owner(),
+                amount.out,
+                offer_.assetOut(),
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::ZeroIfUnauthorized,
+                j_);
+
+            if (originalFunds == *ownerFunds_)
             {
                 permRmOffer(entry->key());
                 JLOG(j_.trace()) << "Removing tiny offer due to reduced quality " << entry->key();
@@ -344,26 +399,28 @@ TOfferStreamBase<TIn, TOut>::step()
     return true;
 }
 
+template <StepAmount TIn, StepAmount TOut>
 void
-OfferStream::permRmOffer(uint256 const& offerIndex)
-{
-    offerDelete(cancelView_, cancelView_.peek(keylet::offer(offerIndex)), j_);
-}
-
-template <class TIn, class TOut>
-void
-FlowOfferStream<TIn, TOut>::permRmOffer(uint256 const& offerIndex)
+FlowOfferStream<TIn, TOut>::permRmOffer(UInt256 const& offerIndex)
 {
     permToRemove_.insert(offerIndex);
 }
 
-template class FlowOfferStream<STAmount, STAmount>;
 template class FlowOfferStream<IOUAmount, IOUAmount>;
 template class FlowOfferStream<XRPAmount, IOUAmount>;
 template class FlowOfferStream<IOUAmount, XRPAmount>;
+template class FlowOfferStream<MPTAmount, MPTAmount>;
+template class FlowOfferStream<XRPAmount, MPTAmount>;
+template class FlowOfferStream<MPTAmount, XRPAmount>;
+template class FlowOfferStream<IOUAmount, MPTAmount>;
+template class FlowOfferStream<MPTAmount, IOUAmount>;
 
-template class TOfferStreamBase<STAmount, STAmount>;
 template class TOfferStreamBase<IOUAmount, IOUAmount>;
 template class TOfferStreamBase<XRPAmount, IOUAmount>;
 template class TOfferStreamBase<IOUAmount, XRPAmount>;
+template class TOfferStreamBase<MPTAmount, MPTAmount>;
+template class TOfferStreamBase<XRPAmount, MPTAmount>;
+template class TOfferStreamBase<MPTAmount, XRPAmount>;
+template class TOfferStreamBase<IOUAmount, MPTAmount>;
+template class TOfferStreamBase<MPTAmount, IOUAmount>;
 }  // namespace xrpl

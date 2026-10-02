@@ -3,15 +3,11 @@
 #include <functional>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class Env;
 
-using require_t = std::function<void(Env&)>;
-using requires_t = std::vector<require_t>;
+using RequireT = std::function<void(Env&)>;
+using RequiresT = std::vector<RequireT>;
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

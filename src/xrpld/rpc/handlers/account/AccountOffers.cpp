@@ -1,0 +1,177 @@
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/Tuning.h>
+
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Fees.h>
+
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <vector>
+
+namespace xrpl {
+
+void
+appendOfferJson(SLE::ConstRef offer, json::Value& offers)
+{
+    STAmount const dirRate = amountFromQuality(getQuality(offer->getFieldH256(sfBookDirectory)));
+    json::Value& obj(offers.append(json::ValueType::Object));
+    offer->getFieldAmount(sfTakerPays).setJson(obj[jss::taker_pays]);
+    offer->getFieldAmount(sfTakerGets).setJson(obj[jss::taker_gets]);
+    obj[jss::seq] = offer->getFieldU32(sfSequence);
+    obj[jss::flags] = offer->getFieldU32(sfFlags);
+    obj[jss::quality] = dirRate.getText();
+    if (offer->isFieldPresent(sfExpiration))
+        obj[jss::expiration] = offer->getFieldU32(sfExpiration);
+};
+
+// {
+//   account: <account>
+//   ledger_hash : <ledger>
+//   ledger_index : <ledger_index>
+//   limit: integer                 // optional
+//   marker: opaque                 // optional, resume previous query
+// }
+json::Value
+doAccountOffers(rpc::JsonContext& context)
+{
+    auto const& params(context.params);
+    if (!params.isMember(jss::account))
+        return rpc::missingFieldError(jss::account);
+
+    if (!params[jss::account].isString())
+        return rpc::invalidFieldError(jss::account);
+
+    std::shared_ptr<ReadView const> ledger;
+    auto result = rpc::lookupLedger(ledger, context);
+    if (!ledger)
+        return result;
+
+    auto id = parseBase58<AccountID>(params[jss::account].asString());
+    if (!id)
+    {
+        rpc::injectError(RpcActMalformed, result);
+        return result;
+    }
+    auto const accountID{id.value()};
+
+    // Get info on account.
+    result[jss::account] = toBase58(accountID);
+
+    if (!ledger->exists(keylet::account(accountID)))
+        return rpcError(RpcActNotFound);
+
+    unsigned int limit = 0;
+    if (auto err = readLimitField(limit, rpc::tuning::kAccountOffers, context))
+        return *err;
+
+    json::Value& jsonOffers(result[jss::offers] = json::ValueType::Array);
+    std::vector<SLE::const_pointer> offers;
+    UInt256 startAfter = beast::kZero;
+    std::uint64_t startHint = 0;
+
+    if (params.isMember(jss::marker))
+    {
+        if (!params[jss::marker].isString())
+            return rpc::expectedFieldError(jss::marker, "string");
+
+        // Marker is composed of a comma separated index and start hint. The
+        // former will be read as hex, and the latter as a decimal integer.
+        std::stringstream marker(params[jss::marker].asString());
+        std::string value;
+        if (!std::getline(marker, value, ','))
+            return rpc::invalidFieldError(jss::marker);
+
+        if (!startAfter.parseHex(value))
+            return rpc::invalidFieldError(jss::marker);
+
+        if (!std::getline(marker, value, ','))
+            return rpc::invalidFieldError(jss::marker);
+
+        auto const hint = toUInt64(value);
+        if (!hint.has_value())
+            return rpc::invalidFieldError(jss::marker);
+        startHint = *hint;
+
+        // We then must check if the object pointed to by the marker is actually
+        // owned by the account in the request.
+        auto const sle = ledger->read({ltANY, startAfter});
+
+        if (!sle)
+            return rpcError(RpcInvalidParams);
+
+        if (!rpc::isRelatedToAccount(*ledger, sle, accountID))
+            return rpcError(RpcInvalidParams);
+    }
+
+    auto count = 0;
+    std::optional<UInt256> marker = {};
+    std::uint64_t nextHint = 0;
+    if (!forEachItemAfter(
+            *ledger,
+            accountID,
+            startAfter,
+            startHint,
+            limit + 1,
+            [&offers, &count, &marker, &limit, &nextHint, &accountID](SLE::ConstRef sle) {
+                if (!sle)
+                {
+                    // LCOV_EXCL_START
+                    UNREACHABLE("xrpl::doAccountOffers : null SLE");
+                    return false;
+                    // LCOV_EXCL_STOP
+                }
+
+                if (++count == limit)
+                {
+                    marker = sle->key();
+                    nextHint = rpc::getStartHint(sle, accountID);
+                }
+
+                if (count <= limit && sle->getType() == ltOFFER)
+                {
+                    offers.emplace_back(sle);
+                }
+
+                return true;
+            }))
+    {
+        return rpcError(RpcInvalidParams);
+    }
+
+    // Both conditions need to be checked because marker is set on the limit-th
+    // item, but if there is no item on the limit + 1 iteration, then there is
+    // no need to return a marker.
+    if (count == limit + 1 && marker)
+    {
+        result[jss::limit] = limit;
+        result[jss::marker] = to_string(*marker) + "," + std::to_string(nextHint);
+    }
+
+    for (auto const& offer : offers)
+        appendOfferJson(offer, jsonOffers);
+
+    context.loadType = resource::kFeeMediumBurdenRpc;
+    return result;
+}
+
+}  // namespace xrpl

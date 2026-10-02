@@ -1,17 +1,22 @@
+#include <xrpl/server/LoadFeeTrack.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Units.h>
-#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
 #include <cstdint>
+#include <mutex>
+#include <stdexcept>
 
 namespace xrpl {
 
 bool
 LoadFeeTrack::raiseLocalFee()
 {
-    std::lock_guard sl(lock_);
+    std::scoped_lock const sl(lock_);
 
     if (++raiseCount_ < 2)
         return false;
@@ -19,14 +24,12 @@ LoadFeeTrack::raiseLocalFee()
     std::uint32_t const origFee = localTxnLoadFee_;
 
     // make sure this fee takes effect
-    if (localTxnLoadFee_ < remoteTxnLoadFee_)
-        localTxnLoadFee_ = remoteTxnLoadFee_;
+    localTxnLoadFee_ = std::max(localTxnLoadFee_, remoteTxnLoadFee_);
 
     // Increase slowly
-    localTxnLoadFee_ += (localTxnLoadFee_ / lftFeeIncFraction);
+    localTxnLoadFee_ += (localTxnLoadFee_ / kLftFeeIncFraction);
 
-    if (localTxnLoadFee_ > lftFeeMax)
-        localTxnLoadFee_ = lftFeeMax;
+    localTxnLoadFee_ = std::min(localTxnLoadFee_, kLftFeeMax);
 
     if (origFee == localTxnLoadFee_)
         return false;
@@ -38,15 +41,14 @@ LoadFeeTrack::raiseLocalFee()
 bool
 LoadFeeTrack::lowerLocalFee()
 {
-    std::lock_guard sl(lock_);
+    std::scoped_lock const sl(lock_);
     std::uint32_t const origFee = localTxnLoadFee_;
     raiseCount_ = 0;
 
     // Reduce slowly
-    localTxnLoadFee_ -= (localTxnLoadFee_ / lftFeeDecFraction);
+    localTxnLoadFee_ -= (localTxnLoadFee_ / kLftFeeDecFraction);
 
-    if (localTxnLoadFee_ < lftNormalFee)
-        localTxnLoadFee_ = lftNormalFee;
+    localTxnLoadFee_ = std::max(localTxnLoadFee_, kLftNormalFee);
 
     if (origFee == localTxnLoadFee_)
         return false;
@@ -76,7 +78,7 @@ scaleFeeLoad(XRPAmount fee, LoadFeeTrack const& feeTrack, Fees const& fees, bool
     // fee = fee * feeFactor / (lftNormalFee);
     // without overflow, and as accurately as possible
 
-    auto const result = mulDiv(fee, feeFactor, safe_cast<std::uint64_t>(feeTrack.getLoadBase()));
+    auto const result = mulDiv(fee, feeFactor, safeCast<std::uint64_t>(feeTrack.getLoadBase()));
     if (!result)
         Throw<std::overflow_error>("scaleFeeLoad");
     return *result;

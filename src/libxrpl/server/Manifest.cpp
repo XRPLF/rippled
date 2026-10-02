@@ -1,0 +1,681 @@
+#include <xrpl/server/Manifest.h>
+
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base64.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STExchange.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/tokens.h>
+#include <xrpl/rdb/DatabaseCon.h>
+#include <xrpl/server/Wallet.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <limits>
+#include <mutex>
+#include <numeric>
+#include <optional>
+#include <shared_mutex>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace xrpl {
+
+std::string
+to_string(Manifest const& m)
+{
+    auto const mk = toBase58(TokenType::NodePublic, m.masterKey);
+
+    if (m.revoked())
+        return "Revocation Manifest " + mk;
+
+    if (!m.signingKey)
+        Throw<std::runtime_error>("No SigningKey in manifest " + mk);
+
+    return "Manifest " + mk + " (" + std::to_string(m.sequence) + ": " +
+        toBase58(TokenType::NodePublic, *m.signingKey) + ")";
+}
+
+std::optional<Manifest>
+deserializeManifest(Slice s, beast::Journal journal)
+{
+    if (s.empty())
+        return std::nullopt;
+
+    // A valid manifest has a fixed maximum size, so reject anything larger
+    // before parsing it.
+    if (s.size() > kMaxManifestBytes)
+        return std::nullopt;
+
+    static SOTemplate const kManifestFormat{
+        // A manifest must include:
+        // - the master public key
+        {sfPublicKey, SoeRequired},
+
+        // - a signature with that public key
+        {sfMasterSignature, SoeRequired},
+
+        // - a sequence number
+        {sfSequence, SoeRequired},
+
+        // It may, optionally, contain:
+        // - a version number which defaults to 0
+        {sfVersion, SoeDefault},
+
+        // - a domain name
+        {sfDomain, SoeOptional},
+
+        // - an ephemeral signing key that can be changed as necessary
+        {sfSigningPubKey, SoeOptional},
+
+        // - a signature using the ephemeral signing key, if it is present
+        {sfSignature, SoeOptional},
+    };
+
+    try
+    {
+        SerialIter sit{s};
+        STObject st{sit, sfGeneric};
+
+        st.applyTemplate(kManifestFormat);
+
+        // We only understand "version 0" manifests at this time:
+        if (st.isFieldPresent(sfVersion) && st.getFieldU16(sfVersion) != 0)
+            return std::nullopt;
+
+        auto const pk = st.getFieldVL(sfPublicKey);
+
+        if (!publicKeyType(makeSlice(pk)))
+            return std::nullopt;
+
+        PublicKey const masterKey = PublicKey(makeSlice(pk));
+        std::uint32_t const seq = st.getFieldU32(sfSequence);
+
+        std::string domain;
+
+        std::optional<PublicKey> signingKey;
+
+        if (st.isFieldPresent(sfDomain))
+        {
+            auto const d = st.getFieldVL(sfDomain);
+
+            domain.assign(reinterpret_cast<char const*>(d.data()), d.size());
+
+            if (!isProperlyFormedTomlDomain(domain))
+                return std::nullopt;
+        }
+
+        bool const hasEphemeralKey = st.isFieldPresent(sfSigningPubKey);
+        bool const hasEphemeralSig = st.isFieldPresent(sfSignature);
+
+        if (Manifest::revoked(seq))
+        {
+            // Revocation manifests should not specify a new signing key
+            // or a signing key signature.
+            if (hasEphemeralKey)
+                return std::nullopt;
+
+            if (hasEphemeralSig)
+                return std::nullopt;
+        }
+        else
+        {
+            // Regular manifests should contain a signing key and an
+            // associated signature.
+            if (!hasEphemeralKey)
+                return std::nullopt;
+
+            if (!hasEphemeralSig)
+                return std::nullopt;
+
+            auto const spk = st.getFieldVL(sfSigningPubKey);
+
+            if (!publicKeyType(makeSlice(spk)))
+                return std::nullopt;
+
+            signingKey.emplace(makeSlice(spk));
+
+            // The signing and master keys can't be the same
+            if (*signingKey == masterKey)
+                return std::nullopt;
+        }
+
+        std::string const serialized(reinterpret_cast<char const*>(s.data()), s.size());
+
+        // If the manifest is revoked, then the signingKey will be unseated
+        return Manifest(serialized, masterKey, signingKey, seq, domain);
+    }
+    catch (std::exception const& ex)
+    {
+        JLOG(journal.error()) << "Exception in " << __func__ << ": " << ex.what();
+        return std::nullopt;
+    }
+}
+
+template <class Stream>
+Stream&
+logMftAct(Stream& s, std::string const& action, PublicKey const& pk, std::uint32_t seq)
+{
+    s << "Manifest: " << action << ";Pk: " << toBase58(TokenType::NodePublic, pk) << ";Seq: " << seq
+      << ";";
+    return s;
+}
+
+template <class Stream>
+Stream&
+logMftAct(
+    Stream& s,
+    std::string const& action,
+    PublicKey const& pk,
+    std::uint32_t seq,
+    std::uint32_t oldSeq)
+{
+    s << "Manifest: " << action << ";Pk: " << toBase58(TokenType::NodePublic, pk) << ";Seq: " << seq
+      << ";OldSeq: " << oldSeq << ";";
+    return s;
+}
+
+bool
+Manifest::verify() const
+{
+    STObject st(sfGeneric);
+    SerialIter sit(serialized.data(), serialized.size());
+    st.set(sit);
+
+    // The manifest must either have a signing key or be revoked.  This check
+    // prevents us from accessing an unseated signingKey in the next check.
+    if (!revoked() && !signingKey)
+        return false;
+
+    // Signing key and signature are not required for
+    // master key revocations
+    if (!revoked() && !xrpl::verify(st, HashPrefix::Manifest, *signingKey))
+        return false;
+
+    return xrpl::verify(st, HashPrefix::Manifest, masterKey, sfMasterSignature);
+}
+
+UInt256
+Manifest::hash() const
+{
+    STObject st(sfGeneric);
+    SerialIter sit(serialized.data(), serialized.size());
+    st.set(sit);
+    return st.getHash(HashPrefix::Manifest);
+}
+
+bool
+Manifest::revoked() const
+{
+    /*
+        The maximum possible sequence number means that the master key
+        has been revoked.
+    */
+    return revoked(sequence);
+}
+
+bool
+Manifest::revoked(std::uint32_t sequence)
+{
+    // The maximum possible sequence number means that the master key has
+    // been revoked.
+    return sequence == std::numeric_limits<std::uint32_t>::max();
+}
+
+std::optional<Blob>
+Manifest::getSignature() const
+{
+    STObject st(sfGeneric);
+    SerialIter sit(serialized.data(), serialized.size());
+    st.set(sit);
+    if (!get(st, sfSignature))
+        return std::nullopt;
+    return st.getFieldVL(sfSignature);
+}
+
+Blob
+Manifest::getMasterSignature() const
+{
+    STObject st(sfGeneric);
+    SerialIter sit(serialized.data(), serialized.size());
+    st.set(sit);
+    return st.getFieldVL(sfMasterSignature);
+}
+
+std::optional<ValidatorToken>
+loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
+{
+    try
+    {
+        std::string tokenStr;
+
+        tokenStr.reserve(
+            std::accumulate(
+                blob.cbegin(),
+                blob.cend(),
+                std::size_t(0),
+                [](std::size_t init, std::string const& s) { return init + s.size(); }));
+
+        for (auto const& line : blob)
+            tokenStr += trimWhitespace(line);
+
+        tokenStr = base64Decode(tokenStr);
+
+        json::Reader r;
+        json::Value token;
+
+        if (r.parse(tokenStr, token))
+        {
+            auto const m = token.get("manifest", json::Value{});
+            auto const k = token.get("validation_secret_key", json::Value{});
+
+            if (m.isString() && k.isString())
+            {
+                auto const key = strUnHex(k.asString());
+
+                if (key && key->size() == 32)
+                {
+                    return ValidatorToken{
+                        .manifest = m.asString(), .validationSecret = makeSlice(*key)};
+                }
+            }
+        }
+
+        return std::nullopt;
+    }
+    catch (std::exception const& ex)
+    {
+        JLOG(journal.error()) << "Exception in " << __func__ << ": " << ex.what();
+        return std::nullopt;
+    }
+}
+
+std::optional<PublicKey>
+ManifestCache::getSigningKey(PublicKey const& pk) const
+{
+    std::shared_lock const lock{mutex_};
+    auto const iter = map_.find(pk);
+
+    if (iter != map_.end() && !iter->second.revoked())
+        return iter->second.signingKey;
+
+    return pk;
+}
+
+PublicKey
+ManifestCache::getMasterKey(PublicKey const& pk) const
+{
+    std::shared_lock const lock{mutex_};
+
+    if (auto const iter = signingToMasterKeys_.find(pk); iter != signingToMasterKeys_.end())
+        return iter->second;
+
+    return pk;
+}
+
+std::optional<std::uint32_t>
+ManifestCache::getSequence(PublicKey const& pk) const
+{
+    std::shared_lock const lock{mutex_};
+    auto const iter = map_.find(pk);
+
+    if (iter != map_.end() && !iter->second.revoked())
+        return iter->second.sequence;
+
+    return std::nullopt;
+}
+
+std::optional<std::string>
+ManifestCache::getDomain(PublicKey const& pk) const
+{
+    std::shared_lock const lock{mutex_};
+    auto const iter = map_.find(pk);
+
+    if (iter != map_.end() && !iter->second.revoked())
+        return iter->second.domain;
+
+    return std::nullopt;
+}
+
+std::optional<std::string>
+ManifestCache::getManifest(PublicKey const& pk) const
+{
+    std::shared_lock const lock{mutex_};
+    auto const iter = map_.find(pk);
+
+    if (iter != map_.end() && !iter->second.revoked())
+        return iter->second.serialized;
+
+    return std::nullopt;
+}
+
+bool
+ManifestCache::revoked(PublicKey const& pk) const
+{
+    std::shared_lock const lock{mutex_};
+    auto const iter = map_.find(pk);
+
+    if (iter != map_.end())
+        return iter->second.revoked();
+
+    return false;
+}
+
+ManifestDisposition
+ManifestCache::applyManifest(Manifest m, ManifestRateLimitCapPolicy const cap)
+{
+    bool const uncapped = cap == ManifestRateLimitCapPolicy::Uncapped;
+
+    // The signature is checked only on the first `prewriteCheck` run (under the
+    // read lock). It is expensive, so `checkSignature` is cleared the first
+    // time it is read; the second run (under the write lock) skips it.
+    bool checkSignature = true;
+
+    // Check the manifest against the conditions that do not require a
+    // `unique_lock` (write lock) on the `mutex_`.
+    auto prewriteCheck = [this, &m, &checkSignature](
+                             auto const& iter,
+                             auto const& lock) -> std::optional<ManifestDisposition> {
+        XRPL_ASSERT(lock.owns_lock(), "xrpl::ManifestCache::applyManifest::prewriteCheck : locked");
+        (void)lock;  // not used. parameter is present to ensure the mutex is
+                     // locked when the lambda is called.
+        if (iter != map_.end() && m.sequence <= iter->second.sequence)
+        {
+            // We received a manifest whose sequence number is not strictly
+            // greater than the one we already know about. This can happen in
+            // several cases including when we receive manifests from a peer who
+            // doesn't have the latest data.
+            if (auto stream = j_.debug())
+                logMftAct(stream, "Stale", m.masterKey, m.sequence, iter->second.sequence);
+            return ManifestDisposition::Stale;
+        }
+
+        if (checkSignature)
+        {
+            checkSignature = false;
+            if (!m.verify())
+            {
+                if (auto stream = j_.warn())
+                    logMftAct(stream, "Invalid", m.masterKey, m.sequence);
+                return ManifestDisposition::Invalid;
+            }
+        }
+
+        // If the master key associated with a manifest is or might be
+        // compromised and is, therefore, no longer trustworthy.
+        //
+        // A manifest revocation essentially marks a manifest as compromised. By
+        // setting the sequence number to the highest value possible, the
+        // manifest is effectively neutered and cannot be superseded by a forged
+        // one.
+        bool const revoked = m.revoked();
+
+        if (auto stream = j_.warn(); stream && revoked)
+            logMftAct(stream, "Revoked", m.masterKey, m.sequence);
+
+        // Sanity check: the master key of this manifest should not be used as
+        // the ephemeral key of another manifest:
+        if (auto const x = signingToMasterKeys_.find(m.masterKey); x != signingToMasterKeys_.end())
+        {
+            JLOG(j_.warn()) << to_string(m) << ": Master key already used as ephemeral key for "
+                            << toBase58(TokenType::NodePublic, x->second);
+
+            return ManifestDisposition::BadMasterKey;
+        }
+
+        if (!revoked)
+        {
+            if (!m.signingKey)
+            {
+                JLOG(j_.warn()) << to_string(m)
+                                << ": is not revoked and the manifest has no "
+                                   "signing key. Hence, the manifest is "
+                                   "invalid";
+                return ManifestDisposition::Invalid;
+            }
+
+            // Sanity check: the ephemeral key of this manifest should not be
+            // used as the master or ephemeral key of another manifest:
+            if (auto const x = signingToMasterKeys_.find(*m.signingKey);
+                x != signingToMasterKeys_.end())
+            {
+                JLOG(j_.warn()) << to_string(m)
+                                << ": Ephemeral key already used as ephemeral key for "
+                                << toBase58(TokenType::NodePublic, x->second);
+
+                return ManifestDisposition::BadEphemeralKey;
+            }
+
+            if (auto const x = map_.find(*m.signingKey); x != map_.end())
+            {
+                JLOG(j_.warn()) << to_string(m) << ": Ephemeral key used as master key for "
+                                << to_string(x->second);
+
+                return ManifestDisposition::BadEphemeralKey;
+            }
+        }
+
+        return std::nullopt;
+    };
+
+    // Reject a brand-new manifest for an unlisted key once the untrusted cap
+    // is full. Updates to a cached key and uncapped manifests always pass.
+    // Called under both the read and write lock, since the cap can be reached
+    // between the two. The lock param enforces that.
+    auto atUntrustedCap = [this, &m, uncapped](auto const& iter, auto const& lock) {
+        XRPL_ASSERT(
+            lock.owns_lock(), "xrpl::ManifestCache::applyManifest::atUntrustedCap : locked");
+        (void)lock;  // not used. parameter is present to ensure the mutex is
+                     // locked when the lambda is called.
+        if (iter == map_.end() && !uncapped && untrustedKeys_.size() >= maxUntrustedCount_)
+        {
+            // Log each rejection at debug, but warn only once per interval so a
+            // flood does not fill the log.
+            if (auto stream = j_.debug())
+                logMftAct(stream, "UntrustedCapacity", m.masterKey, m.sequence);
+            if (auto const n = untrustedRejectCount_.fetch_add(1) + 1;
+                n % kUntrustedRejectCount == 0)
+            {
+                JLOG(j_.warn()) << "Untrusted manifest cap reached; " << n
+                                << " manifests rejected so far";
+            }
+            return true;
+        }
+        return false;
+    };
+
+    {
+        std::shared_lock const sl{mutex_};
+        auto const iter = map_.find(m.masterKey);
+
+        if (atUntrustedCap(iter, sl))
+            return ManifestDisposition::UntrustedCapacity;
+
+        if (auto d = prewriteCheck(iter, sl); d.has_value())
+            return *d;
+    }
+
+    std::unique_lock const sl{mutex_};
+    auto const iter = map_.find(m.masterKey);
+
+    // Re-check the cap under the write lock: the cache may have grown while the
+    // read lock above was released.
+    if (atUntrustedCap(iter, sl))
+        return ManifestDisposition::UntrustedCapacity;
+
+    // Since we released the previously held read lock, it's possible that the
+    // collections have been written to. This means we need to run
+    // `prewriteCheck` again. This re-does work, but `prewriteCheck` is
+    // relatively inexpensive to run, and doing it this way allows us to run
+    // `prewriteCheck` under a `shared_lock` above.
+    // Note, the signature has already been checked above, so it
+    // doesn't need to happen again (signature checks are somewhat expensive).
+    // Note: It's a mistake to use an upgradable lock. This is a recipe for
+    // deadlock.
+    if (auto d = prewriteCheck(iter, sl); d.has_value())
+        return *d;
+
+    bool const revoked = m.revoked();
+    // This is the first manifest we are seeing for a master key. This should
+    // only ever happen once per validator run.
+    if (iter == map_.end())
+    {
+        if (auto stream = j_.info())
+            logMftAct(stream, "AcceptedNew", m.masterKey, m.sequence);
+
+        if (!revoked)
+        {
+            signingToMasterKeys_.emplace(
+                *m.signingKey, m.masterKey);  // NOLINT(bugprone-unchecked-optional-access)
+                                              // non-revoked manifest always has signingKey
+        }
+
+        auto masterKey = m.masterKey;
+
+        // Count this key against the untrusted cap. Uncapped keys (listed,
+        // configured, or DB-loaded) are not tracked.
+        if (!uncapped)
+            untrustedKeys_.insert(masterKey);
+
+        map_.emplace(std::move(masterKey), std::move(m));
+
+        // Something has changed. Keep track of it.
+        seq_++;
+
+        return ManifestDisposition::Accepted;
+    }
+
+    // An ephemeral key was revoked and superseded by a new key. This is
+    // expected, but should happen infrequently.
+    if (auto stream = j_.info())
+        logMftAct(stream, "AcceptedUpdate", m.masterKey, m.sequence, iter->second.sequence);
+
+    // If this key was counted against the cap but now arrives uncapped, free
+    // its slot without waiting for promoteToTrusted.
+    if (uncapped)
+        untrustedKeys_.erase(m.masterKey);
+
+    signingToMasterKeys_.erase(
+        *iter->second.signingKey);  // NOLINT(bugprone-unchecked-optional-access) prewriteCheck
+                                    // ensures old manifest is not revoked
+
+    if (!revoked)
+    {
+        signingToMasterKeys_.emplace(
+            *m.signingKey, m.masterKey);  // NOLINT(bugprone-unchecked-optional-access)
+                                          // non-revoked manifest always has signingKey
+    }
+
+    iter->second = std::move(m);
+
+    // Something has changed. Keep track of it.
+    seq_++;
+
+    return ManifestDisposition::Accepted;
+}
+
+void
+ManifestCache::promoteToTrusted(PublicKey const& pk)
+{
+    // Frees the key's untrusted slot; a no-op (and idempotent) if the key was
+    // never counted. Not re-added on de-listing, so list/de-list cannot grow
+    // the count.
+    std::unique_lock const sl{mutex_};
+    untrustedKeys_.erase(pk);
+}
+
+void
+ManifestCache::load(DatabaseCon& dbCon, std::string const& dbTable)
+{
+    auto db = dbCon.checkoutDb();
+    xrpl::getManifests(*db, dbTable, *this, j_);
+}
+
+bool
+ManifestCache::load(
+    DatabaseCon& dbCon,
+    std::string const& dbTable,
+    std::string const& configManifest,
+    std::vector<std::string> const& configRevocation)
+{
+    load(dbCon, dbTable);
+
+    if (!configManifest.empty())
+    {
+        auto mo = deserializeManifest(base64Decode(configManifest));
+        if (!mo)
+        {
+            JLOG(j_.error()) << "Malformed validator_token in config";
+            return false;
+        }
+
+        if (mo->revoked())
+        {
+            JLOG(j_.warn()) << "Configured manifest revokes public key";
+        }
+
+        if (applyManifest(std::move(*mo), ManifestRateLimitCapPolicy::Uncapped) ==
+            ManifestDisposition::Invalid)
+        {
+            JLOG(j_.error()) << "Manifest in config was rejected";
+            return false;
+        }
+    }
+
+    if (!configRevocation.empty())
+    {
+        std::string revocationStr;
+        revocationStr.reserve(
+            std::accumulate(
+                configRevocation.cbegin(),
+                configRevocation.cend(),
+                std::size_t(0),
+                [](std::size_t init, std::string const& s) { return init + s.size(); }));
+
+        for (auto const& line : configRevocation)
+            revocationStr += trimWhitespace(line);
+
+        auto mo = deserializeManifest(base64Decode(revocationStr));
+
+        if (!mo || !mo->revoked() ||
+            applyManifest(std::move(*mo), ManifestRateLimitCapPolicy::Uncapped) ==
+                ManifestDisposition::Invalid)
+        {
+            JLOG(j_.error()) << "Invalid validator key revocation in config";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void
+ManifestCache::save(
+    DatabaseCon& dbCon,
+    std::string const& dbTable,
+    std::function<bool(PublicKey const&)> const& isTrusted)
+{
+    std::shared_lock const lock{mutex_};
+    auto db = dbCon.checkoutDb();
+
+    saveManifests(*db, dbTable, isTrusted, map_, j_);
+}
+}  // namespace xrpl

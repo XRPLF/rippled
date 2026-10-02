@@ -1,14 +1,16 @@
-#include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/protocol/messages.h>
+#include <xrpl/beast/unit_test/suite.h>
 
-namespace xrpl {
+#include <xrpl.pb.h>
 
-namespace test {
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
 
-class traffic_count_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+class traffic_count_test : public beast::unit_test::Suite
 {
 public:
     traffic_count_test() = default;
@@ -22,12 +24,56 @@ public:
 
         // a known message is categorized to a proper category
         auto const known = TrafficCount::categorize(message, protocol::mtPING, false);
-        BEAST_EXPECT(known == TrafficCount::category::base);
+        BEAST_EXPECT(known == TrafficCount::Category::Base);
+
+        // cluster messages have a category of their own, in both directions; the same lookup
+        // serves outbound traffic, so a missing entry would hide them from a node's report
+        // whichever way they traveled
+        BEAST_EXPECT(
+            TrafficCount::categorize(message, protocol::mtCLUSTER, true) ==
+            TrafficCount::Category::Cluster);
+        BEAST_EXPECT(
+            TrafficCount::categorize(message, protocol::mtCLUSTER, false) ==
+            TrafficCount::Category::Cluster);
 
         // an unknown message type is categorized as unknown
         auto const unknown =
             TrafficCount::categorize(message, static_cast<protocol::MessageType>(99), false);
-        BEAST_EXPECT(unknown == TrafficCount::category::unknown);
+        BEAST_EXPECT(unknown == TrafficCount::Category::Unknown);
+    }
+
+    void
+    testAttribute()
+    {
+        testcase("attribute");
+
+        auto const outsider = TrafficCount::IsFromCluster::No;
+        auto const member = TrafficCount::IsFromCluster::Yes;
+
+        // Cluster is read as traffic between configured cluster members, and any
+        // peer can send that type, so a sender outside the cluster is held to
+        // unknown rather than counted as one.
+        BEAST_EXPECT(
+            TrafficCount::attribute(TrafficCount::Category::Cluster, outsider) ==
+            TrafficCount::Category::Unknown);
+        BEAST_EXPECT(
+            TrafficCount::attribute(TrafficCount::Category::Cluster, member) ==
+            TrafficCount::Category::Cluster);
+
+        // Every other category is derived from the message alone, so membership
+        // does not enter into it either way. Base is the first category and
+        // Unknown the last, so the walk covers all of them.
+        for (auto i = static_cast<std::size_t>(TrafficCount::Category::Base);
+             i <= static_cast<std::size_t>(TrafficCount::Category::Unknown);
+             ++i)
+        {
+            auto const cat = static_cast<TrafficCount::Category>(i);
+            if (cat == TrafficCount::Category::Cluster)
+                continue;
+
+            BEAST_EXPECT(TrafficCount::attribute(cat, outsider) == cat);
+            BEAST_EXPECT(TrafficCount::attribute(cat, member) == cat);
+        }
     }
 
     struct TestCase
@@ -47,16 +93,16 @@ public:
     {
         auto run = [&](TestCase const& tc) {
             testcase(tc.name);
-            TrafficCount m_traffic;
+            TrafficCount traffic;
 
-            auto const counts = m_traffic.getCounts();
-            std::for_each(counts.begin(), counts.end(), [&](auto const& pair) {
+            auto const counts = traffic.getCounts();
+            std::ranges::for_each(counts, [&](auto const& pair) {
                 for (auto i = 0; i < tc.messageCount; ++i)
-                    m_traffic.addCount(pair.first, tc.inbound, tc.size);
+                    traffic.addCount(pair.first, tc.inbound, tc.size);
             });
 
-            auto const counts_new = m_traffic.getCounts();
-            std::for_each(counts_new.begin(), counts_new.end(), [&](auto const& pair) {
+            auto const countsNew = traffic.getCounts();
+            std::ranges::for_each(countsNew, [&](auto const& pair) {
                 BEAST_EXPECT(pair.second.bytesIn.load() == tc.expectedBytesIn);
                 BEAST_EXPECT(pair.second.bytesOut.load() == tc.expectedBytesOut);
                 BEAST_EXPECT(pair.second.messagesIn.load() == tc.expectedMessagesIn);
@@ -107,17 +153,18 @@ public:
         testcase("category-to-string");
 
         // known category returns known string value
-        BEAST_EXPECT(TrafficCount::to_string(TrafficCount::category::total) == "total");
+        BEAST_EXPECT(TrafficCount::toString(TrafficCount::Category::Total) == "total");
 
         // return "unknown" for unknown categories
         BEAST_EXPECT(
-            TrafficCount::to_string(static_cast<TrafficCount::category>(1000)) == "unknown");
+            TrafficCount::toString(static_cast<TrafficCount::Category>(1000)) == "unknown");
     }
 
     void
     run() override
     {
         testCategorize();
+        testAttribute();
         testAddCount();
         testToString();
     }
@@ -125,5 +172,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(traffic_count, overlay, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

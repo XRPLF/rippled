@@ -1,3 +1,5 @@
+#include <xrpl/beast/insight/NullCollector.h>
+
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Counter.h>
 #include <xrpl/beast/insight/CounterImpl.h>
@@ -9,13 +11,11 @@
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/Meter.h>
 #include <xrpl/beast/insight/MeterImpl.h>
-#include <xrpl/beast/insight/NullCollector.h>
 
 #include <memory>
 #include <string>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 namespace detail {
 
@@ -24,9 +24,8 @@ class NullHookImpl : public HookImpl
 public:
     explicit NullHookImpl() = default;
 
-private:
     NullHookImpl&
-    operator=(NullHookImpl const&);
+    operator=(NullHookImpl const&) = delete;
 };
 
 //------------------------------------------------------------------------------
@@ -41,9 +40,8 @@ public:
     {
     }
 
-private:
     NullCounterImpl&
-    operator=(NullCounterImpl const&);
+    operator=(NullCounterImpl const&) = delete;
 };
 
 //------------------------------------------------------------------------------
@@ -58,9 +56,8 @@ public:
     {
     }
 
-private:
     NullEventImpl&
-    operator=(NullEventImpl const&);
+    operator=(NullEventImpl const&) = delete;
 };
 
 //------------------------------------------------------------------------------
@@ -80,9 +77,8 @@ public:
     {
     }
 
-private:
     NullGaugeImpl&
-    operator=(NullGaugeImpl const&);
+    operator=(NullGaugeImpl const&) = delete;
 };
 
 //------------------------------------------------------------------------------
@@ -97,9 +93,8 @@ public:
     {
     }
 
-private:
     NullMeterImpl&
-    operator=(NullMeterImpl const&);
+    operator=(NullMeterImpl const&) = delete;
 };
 
 //------------------------------------------------------------------------------
@@ -110,34 +105,34 @@ private:
 public:
     NullCollectorImp() = default;
 
-    ~NullCollectorImp() = default;
+    ~NullCollectorImp() override = default;
 
     Hook
-    make_hook(HookImpl::HandlerType const&) override
+    makeHook(HookImpl::HandlerType const&) override
     {
         return Hook(std::make_shared<detail::NullHookImpl>());
     }
 
     Counter
-    make_counter(std::string const&) override
+    makeCounter(std::string const&) override
     {
         return Counter(std::make_shared<detail::NullCounterImpl>());
     }
 
     Event
-    make_event(std::string const&) override
+    makeEvent(std::string const&) override
     {
         return Event(std::make_shared<detail::NullEventImpl>());
     }
 
     Gauge
-    make_gauge(std::string const&) override
+    makeGauge(std::string const&) override
     {
         return Gauge(std::make_shared<detail::NullGaugeImpl>());
     }
 
     Meter
-    make_meter(std::string const&) override
+    makeMeter(std::string const&) override
     {
         return Meter(std::make_shared<detail::NullMeterImpl>());
     }
@@ -148,10 +143,9 @@ public:
 //------------------------------------------------------------------------------
 
 std::shared_ptr<Collector>
-NullCollector::New()
+NullCollector::make()
 {
     return std::make_shared<detail::NullCollectorImp>();
 }
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight

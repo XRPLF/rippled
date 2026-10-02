@@ -1,15 +1,18 @@
 #include <xrpl/basics/UnorderedContainers.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
 
-#include <sys/types.h>
-
+#include <functional>
 #include <map>
 #include <optional>
 #include <set>
-#include <typeinfo>
-#include <unordered_set>
+#include <utility>
 
 #if BEAST_MSVC
 #define STL_SET_HAS_EMPLACE 1
@@ -19,10 +22,10 @@
 
 namespace xrpl {
 
-class Issue_test : public beast::unit_test::suite
+class Issue_test : public beast::unit_test::Suite
 {
 public:
-    using Domain = uint256;
+    using Domain = UInt256;
 
     // Comparison, hash tests for uint60 (via base_uint)
     template <typename Unsigned>
@@ -42,7 +45,7 @@ public:
         BEAST_EXPECT(u3 >= u2);
         BEAST_EXPECT(u3 > u2);
 
-        std::hash<Unsigned> hash;
+        std::hash<Unsigned> const hash;
 
         BEAST_EXPECT(hash(u1) == hash(u1));
         BEAST_EXPECT(hash(u2) == hash(u2));
@@ -83,7 +86,7 @@ public:
         BEAST_EXPECT(Issue(c1, i3) >= Issue(c1, i2));
         BEAST_EXPECT(Issue(c1, i3) > Issue(c1, i2));
 
-        std::hash<Issue> hash;
+        std::hash<Issue> const hash;
 
         BEAST_EXPECT(hash(Issue(c1, i1)) == hash(Issue(c1, i1)));
         BEAST_EXPECT(hash(Issue(c1, i2)) == hash(Issue(c1, i2)));
@@ -227,8 +230,8 @@ public:
         AccountID const i2(2);
         Issue const a1(c1, i1);
         Issue const a2(c2, i2);
-        uint256 const domain1{1};
-        uint256 const domain2{2};
+        UInt256 const domain1{1};
+        UInt256 const domain2{2};
 
         Set c;
 
@@ -264,8 +267,8 @@ public:
         AccountID const i2(2);
         Issue const a1(c1, i1);
         Issue const a2(c2, i2);
-        uint256 const domain1{1};
-        uint256 const domain2{2};
+        UInt256 const domain1{1};
+        UInt256 const domain2{2};
 
         Map c;
 
@@ -301,10 +304,10 @@ public:
         testIssueDomainSet<std::set<std::pair<Issue, Domain>>>();
 
         testcase("hash_set <std::pair<Issue, Domain>>");
-        testIssueDomainSet<hash_set<std::pair<Issue, Domain>>>();
+        testIssueDomainSet<HashSet<std::pair<Issue, Domain>>>();
 
         testcase("hash_set <std::pair<Issue, Domain>>");
-        testIssueDomainSet<hash_set<std::pair<Issue, Domain>>>();
+        testIssueDomainSet<HashSet<std::pair<Issue, Domain>>>();
     }
 
     void
@@ -318,16 +321,16 @@ public:
 
 #if XRPL_ASSETS_ENABLE_STD_HASH
         testcase("hash_map <std::pair<Issue, Domain>, int>");
-        testIssueDomainMap<hash_map<std::pair<Issue, Domain>, int>>();
+        testIssueDomainMap<HashMap<std::pair<Issue, Domain>, int>>();
 
         testcase("hash_map <std::pair<Issue, Domain>, int>");
-        testIssueDomainMap<hash_map<std::pair<Issue, Domain>, int>>();
+        testIssueDomainMap<HashMap<std::pair<Issue, Domain>, int>>();
 
         testcase("hardened_hash_map <std::pair<Issue, Domain>, int>");
-        testIssueDomainMap<hardened_hash_map<std::pair<Issue, Domain>, int>>();
+        testIssueDomainMap<HardenedHashMap<std::pair<Issue, Domain>, int>>();
 
         testcase("hardened_hash_map <std::pair<Issue, Domain>, int>");
-        testIssueDomainMap<hardened_hash_map<std::pair<Issue, Domain>, int>>();
+        testIssueDomainMap<HardenedHashMap<std::pair<Issue, Domain>, int>>();
 #endif
     }
 
@@ -349,10 +352,10 @@ public:
 #endif
 
         testcase("hash_set <Issue>");
-        testIssueSet<hash_set<Issue>>();
+        testIssueSet<HashSet<Issue>>();
 
         testcase("hash_set <Issue>");
-        testIssueSet<hash_set<Issue>>();
+        testIssueSet<HashSet<Issue>>();
     }
 
     void
@@ -372,10 +375,10 @@ public:
         testIssueMap<std::unordered_map<Issue, int>>();
 
         testcase("hash_map <Issue, int>");
-        testIssueMap<hash_map<Issue, int>>();
+        testIssueMap<HashMap<Issue, int>>();
 
         testcase("hash_map <Issue, int>");
-        testIssueMap<hash_map<Issue, int>>();
+        testIssueMap<HashMap<Issue, int>>();
 
 #endif
     }
@@ -394,12 +397,12 @@ public:
         Currency const c3(3);
         AccountID const i3(3);
 
-        Issue a1(c1, i1);
-        Issue a2(c1, i2);
-        Issue a3(c2, i2);
-        Issue a4(c3, i2);
-        uint256 const domain1{1};
-        uint256 const domain2{2};
+        Issue const a1(c1, i1);
+        Issue const a2(c1, i2);
+        Issue const a3(c2, i2);
+        Issue const a4(c3, i2);
+        UInt256 const domain1{1};
+        UInt256 const domain2{2};
 
         // Books without domains
         BEAST_EXPECT(Book(a1, a2, std::nullopt) != Book(a2, a3, std::nullopt));
@@ -477,7 +480,7 @@ public:
             BEAST_EXPECT(Book(a3, a4, domain2) > Book(a2, a3, domain1));
         }
 
-        std::hash<Book> hash;
+        std::hash<Book> const hash;
 
         //         log << std::hex << hash (Book (a1, a2));
         //         log << std::hex << hash (Book (a1, a2));
@@ -559,13 +562,13 @@ public:
         Book const b1(a1, a2, std::nullopt);
         Book const b2(a2, a1, std::nullopt);
 
-        uint256 const domain1{1};
-        uint256 const domain2{2};
+        UInt256 const domain1{1};
+        UInt256 const domain2{2};
 
-        Book const b1_d1(a1, a2, domain1);
-        Book const b2_d1(a2, a1, domain1);
-        Book const b1_d2(a1, a2, domain2);
-        Book const b2_d2(a2, a1, domain2);
+        Book const b1D1(a1, a2, domain1);
+        Book const b2D1(a2, a1, domain1);
+        Book const b1D2(a1, a2, domain2);
+        Book const b2D2(a2, a1, domain2);
 
         {
             Set c;
@@ -619,16 +622,16 @@ public:
         {
             Set c;
 
-            c.insert(b1_d1);
+            c.insert(b1D1);
             if (!BEAST_EXPECT(c.size() == 1))
                 return;
-            c.insert(b2_d1);
+            c.insert(b2D1);
             if (!BEAST_EXPECT(c.size() == 2))
                 return;
-            c.insert(b1_d2);
+            c.insert(b1D2);
             if (!BEAST_EXPECT(c.size() == 3))
                 return;
-            c.insert(b2_d2);
+            c.insert(b2D2);
             if (!BEAST_EXPECT(c.size() == 4))
                 return;
 
@@ -656,8 +659,8 @@ public:
 
             c.insert(b1);
             c.insert(b2);
-            c.insert(b1_d1);
-            c.insert(b2_d1);
+            c.insert(b1D1);
+            c.insert(b2D1);
             if (!BEAST_EXPECT(c.size() == 4))
                 return;
 
@@ -690,13 +693,13 @@ public:
         Book const b1(a1, a2, std::nullopt);
         Book const b2(a2, a1, std::nullopt);
 
-        uint256 const domain1{1};
-        uint256 const domain2{2};
+        UInt256 const domain1{1};
+        UInt256 const domain2{2};
 
-        Book const b1_d1(a1, a2, domain1);
-        Book const b2_d1(a2, a1, domain1);
-        Book const b1_d2(a1, a2, domain2);
-        Book const b2_d2(a2, a1, domain2);
+        Book const b1D1(a1, a2, domain1);
+        Book const b2D1(a2, a1, domain1);
+        Book const b1D2(a1, a2, domain2);
+        Book const b2D2(a2, a1, domain2);
 
         // typename Map::value_type value_type;
         // std::pair <Book const, int> value_type;
@@ -748,16 +751,16 @@ public:
         {
             Map c;
 
-            c.insert(std::make_pair(b1_d1, 10));
+            c.insert(std::make_pair(b1D1, 10));
             if (!BEAST_EXPECT(c.size() == 1))
                 return;
-            c.insert(std::make_pair(b2_d1, 20));
+            c.insert(std::make_pair(b2D1, 20));
             if (!BEAST_EXPECT(c.size() == 2))
                 return;
-            c.insert(std::make_pair(b1_d2, 30));
+            c.insert(std::make_pair(b1D2, 30));
             if (!BEAST_EXPECT(c.size() == 3))
                 return;
-            c.insert(std::make_pair(b2_d2, 40));
+            c.insert(std::make_pair(b2D2, 40));
             if (!BEAST_EXPECT(c.size() == 4))
                 return;
 
@@ -785,8 +788,8 @@ public:
 
             c.insert(std::make_pair(b1, 1));
             c.insert(std::make_pair(b2, 2));
-            c.insert(std::make_pair(b1_d1, 3));
-            c.insert(std::make_pair(b2_d1, 4));
+            c.insert(std::make_pair(b1D1, 3));
+            c.insert(std::make_pair(b2D1, 4));
             if (!BEAST_EXPECT(c.size() == 4))
                 return;
 
@@ -830,10 +833,10 @@ public:
 #endif
 
         testcase("hash_set <Book>");
-        testBookSet<hash_set<Book>>();
+        testBookSet<HashSet<Book>>();
 
         testcase("hash_set <Book>");
-        testBookSet<hash_set<Book>>();
+        testBookSet<HashSet<Book>>();
     }
 
     void
@@ -853,14 +856,109 @@ public:
         testBookMap<std::unordered_map<Book, int>>();
 
         testcase("hash_map <Book, int>");
-        testBookMap<hash_map<Book, int>>();
+        testBookMap<HashMap<Book, int>>();
 
         testcase("hash_map <Book, int>");
-        testBookMap<hash_map<Book, int>>();
+        testBookMap<HashMap<Book, int>>();
 #endif
     }
 
     //--------------------------------------------------------------------------
+
+    void
+    testIssueFromJson()
+    {
+        testcase("issueFromJson");
+
+        // Valid XRP — no issuer field
+        {
+            json::Value jv;
+            jv[jss::currency] = "XRP";
+            auto const issue = issueFromJson(jv);
+            BEAST_EXPECT(isXRP(issue));
+        }
+
+        // Valid IOU — legitimate issuer
+        {
+            json::Value jv;
+            jv[jss::currency] = "USD";
+            jv[jss::issuer] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            auto const issue = issueFromJson(jv);
+            BEAST_EXPECT(!isXRP(issue));
+            BEAST_EXPECT(issue.account != noAccount());
+        }
+
+        // noAccount() is the MPT sentinel in binary serialization - must be
+        // rejected
+        try
+        {
+            json::Value jv;
+            jv[jss::currency] = "USD";
+            jv[jss::issuer] = to_string(noAccount());
+            issueFromJson(jv);
+            fail("noAccount() accepted as IOU issuer");
+        }
+        catch (...)
+        {
+            pass();
+        }
+
+        // xrpAccount() is the XRP sentinel (all zeros) - must be rejected
+        // as IOU issuer
+        try
+        {
+            json::Value jv;
+            jv[jss::currency] = "USD";
+            jv[jss::issuer] = to_string(xrpAccount());
+            issueFromJson(jv);
+            fail("xrpAccount() accepted as IOU issuer");
+        }
+        catch (...)
+        {
+            pass();
+        }
+
+        // Invalid base58 — must be rejected
+        try
+        {
+            json::Value jv;
+            jv[jss::currency] = "USD";
+            jv[jss::issuer] = "not_a_valid_address";
+            issueFromJson(jv);
+            fail("invalid base58 accepted as IOU issuer");
+        }
+        catch (...)
+        {
+            pass();
+        }
+
+        // Non-XRP currency with no issuer field — must be rejected
+        try
+        {
+            json::Value jv;
+            jv[jss::currency] = "USD";
+            issueFromJson(jv);
+            fail("missing issuer accepted");
+        }
+        catch (...)
+        {
+            pass();
+        }
+
+        // XRP with an issuer field — must be rejected
+        try
+        {
+            json::Value jv;
+            jv[jss::currency] = "XRP";
+            jv[jss::issuer] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            issueFromJson(jv);
+            fail("XRP with issuer accepted");
+        }
+        catch (...)
+        {
+            pass();
+        }
+    }
 
     void
     run() override
@@ -896,6 +994,9 @@ public:
         // ---
         testIssueDomainSets();
         testIssueDomainMaps();
+
+        // ---
+        testIssueFromJson();
     }
 };
 

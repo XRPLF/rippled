@@ -1,10 +1,25 @@
 #pragma once
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TxSearched.h>
+#include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
+#include <stdexcept>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -55,7 +70,7 @@ public:
      * @return Ledger if found, otherwise no value.
      */
     std::optional<LedgerHeader>
-    getLedgerInfoByHash(uint256 const& ledgerHash) override;
+    getLedgerInfoByHash(UInt256 const& ledgerHash) override;
 
     /**
      * @brief getHashByIndex Returns the hash of the ledger with the given
@@ -63,7 +78,7 @@ public:
      * @param ledgerIndex Ledger sequence.
      * @return Hash of the ledger.
      */
-    uint256
+    UInt256
     getHashByIndex(LedgerIndex ledgerIndex) override;
 
     /**
@@ -327,19 +342,19 @@ public:
      * @param id Hash of the transaction.
      * @param range Range of ledgers to check, if present.
      * @param ec Default error code value.
-     * @return Transaction and its metadata if found, otherwise TxSearched::all
+     * @return Transaction and its metadata if found, otherwise TxSearched::All
      *         if a range is provided and all ledgers from the range are present
-     *         in the database, TxSearched::some if a range is provided and not
-     *         all ledgers are present, TxSearched::unknown if the range is not
+     *         in the database, TxSearched::Some if a range is provided and not
+     *         all ledgers are present, TxSearched::Unknown if the range is not
      *         provided or a deserializing error occurred. In the last case the
      *         error code is returned via the ec parameter, in other cases the
      *         default error code is not changed.
      */
     std::variant<AccountTx, TxSearched>
     getTransaction(
-        uint256 const& id,
+        UInt256 const& id,
         std::optional<ClosedInterval<std::uint32_t>> const& range,
-        error_code_i& ec) override;
+        ErrorCodeI& ec) override;
 
     /**
      * @brief getKBUsedAll Returns the amount of space used by all databases.
@@ -396,7 +411,7 @@ public:
     transactionDbHasSpace(Config const& config);
 
 private:
-    ServiceRegistry& registry_;
+    std::reference_wrapper<ServiceRegistry> registry_;
     bool useTxTables_;
     beast::Journal j_;
     std::unique_ptr<DatabaseCon> ledgerDb_, txdb_;
@@ -487,7 +502,7 @@ private:
 };
 
 /**
- * @brief setup_RelationalDatabase Creates and returns a SQLiteDatabase
+ * @brief setupRelationalDatabase Creates and returns a SQLiteDatabase
  *        instance based on configuration. It's recommended to use it as
  *        a singleton, but it's not enforced (e.g. if you have more than one
  *        database).
@@ -497,6 +512,6 @@ private:
  * @return SQLiteDatabase instance.
  */
 SQLiteDatabase
-setup_RelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue);
+setupRelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue);
 
 }  // namespace xrpl

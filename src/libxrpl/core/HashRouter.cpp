@@ -1,9 +1,21 @@
 #include <xrpl/core/HashRouter.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/container/detail/aged_unordered_container.h>
+#include <xrpl/beast/utility/instrumentation.h>
+
+#include <chrono>
+#include <functional>
+#include <mutex>
+#include <optional>
+#include <set>
+#include <utility>
+
 namespace xrpl {
 
 auto
-HashRouter::emplace(uint256 const& key) -> std::pair<Entry&, bool>
+HashRouter::emplace(UInt256 const& key) -> std::pair<Entry&, bool>
 {
     auto iter = suppressionMap_.find(key);
 
@@ -20,23 +32,23 @@ HashRouter::emplace(uint256 const& key) -> std::pair<Entry&, bool>
 }
 
 void
-HashRouter::addSuppression(uint256 const& key)
+HashRouter::addSuppression(UInt256 const& key)
 {
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     emplace(key);
 }
 
 bool
-HashRouter::addSuppressionPeer(uint256 const& key, PeerShortID peer)
+HashRouter::addSuppressionPeer(UInt256 const& key, PeerShortID peer)
 {
     return addSuppressionPeerWithStatus(key, peer).first;
 }
 
 std::pair<bool, std::optional<Stopwatch::time_point>>
-HashRouter::addSuppressionPeerWithStatus(uint256 const& key, PeerShortID peer)
+HashRouter::addSuppressionPeerWithStatus(UInt256 const& key, PeerShortID peer)
 {
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto result = emplace(key);
     result.first.addPeer(peer);
@@ -44,9 +56,9 @@ HashRouter::addSuppressionPeerWithStatus(uint256 const& key, PeerShortID peer)
 }
 
 bool
-HashRouter::addSuppressionPeer(uint256 const& key, PeerShortID peer, HashRouterFlags& flags)
+HashRouter::addSuppressionPeer(UInt256 const& key, PeerShortID peer, HashRouterFlags& flags)
 {
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto [s, created] = emplace(key);
     s.addPeer(peer);
@@ -56,34 +68,34 @@ HashRouter::addSuppressionPeer(uint256 const& key, PeerShortID peer, HashRouterF
 
 bool
 HashRouter::shouldProcess(
-    uint256 const& key,
+    UInt256 const& key,
     PeerShortID peer,
     HashRouterFlags& flags,
-    std::chrono::seconds tx_interval)
+    std::chrono::seconds txInterval)
 {
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto result = emplace(key);
     auto& s = result.first;
     s.addPeer(peer);
     flags = s.getFlags();
-    return s.shouldProcess(suppressionMap_.clock().now(), tx_interval);
+    return s.shouldProcess(suppressionMap_.clock().now(), txInterval);
 }
 
 HashRouterFlags
-HashRouter::getFlags(uint256 const& key)
+HashRouter::getFlags(UInt256 const& key)
 {
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     return emplace(key).first.getFlags();
 }
 
 bool
-HashRouter::setFlags(uint256 const& key, HashRouterFlags flags)
+HashRouter::setFlags(UInt256 const& key, HashRouterFlags flags)
 {
     XRPL_ASSERT(static_cast<bool>(flags), "xrpl::HashRouter::setFlags : valid input");
 
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto& s = emplace(key).first;
 
@@ -95,9 +107,9 @@ HashRouter::setFlags(uint256 const& key, HashRouterFlags flags)
 }
 
 auto
-HashRouter::shouldRelay(uint256 const& key) -> std::optional<std::set<PeerShortID>>
+HashRouter::shouldRelay(UInt256 const& key) -> std::optional<std::set<PeerShortID>>
 {
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto& s = emplace(key).first;
 

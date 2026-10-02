@@ -1,38 +1,56 @@
 #include <test/jtx/TestSuite.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
+
+#include <soci/boost-optional.h>  // IWYU pragma: keep
+#include <soci/into.h>
+#include <soci/session.h>
+#include <soci/use.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <exception>
+#include <filesystem>
+#include <iterator>
+#include <limits>
+#include <stdexcept>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 class SociDB_test final : public TestSuite
 {
 private:
     static void
-    setupSQLiteConfig(BasicConfig& config, boost::filesystem::path const& dbPath)
+    setupSQLiteConfig(BasicConfig& config, std::filesystem::path const& dbPath)
     {
-        config.overwrite("sqdb", "backend", "sqlite");
+        config.overwrite(Sections::kSqdb, Keys::kBackend, "sqlite");
         auto value = dbPath.string();
         if (!value.empty())
-            config.legacy("database_path", value);
+            config.legacy(Sections::kDatabasePath, value);
     }
 
     static void
-    cleanupDatabaseDir(boost::filesystem::path const& dbPath)
+    cleanupDatabaseDir(std::filesystem::path const& dbPath)
     {
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         if (!exists(dbPath) || !is_directory(dbPath) || !is_empty(dbPath))
             return;
         remove(dbPath);
     }
 
     static void
-    setupDatabaseDir(boost::filesystem::path const& dbPath)
+    setupDatabaseDir(std::filesystem::path const& dbPath)
     {
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         if (!exists(dbPath))
         {
             create_directory(dbPath);
@@ -45,10 +63,10 @@ private:
             Throw<std::runtime_error>("Cannot create directory: " + dbPath.string());
         }
     }
-    static boost::filesystem::path
+    static std::filesystem::path
     getDatabasePath()
     {
-        return boost::filesystem::current_path() / "socidb_test_databases";
+        return std::filesystem::current_path() / "socidb_test_databases";
     }
 
 public:
@@ -58,17 +76,17 @@ public:
         {
             setupDatabaseDir(getDatabasePath());
         }
-        catch (std::exception const&)
+        catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
         {
         }
     }
-    ~SociDB_test()
+    ~SociDB_test() override
     {
         try
         {
             cleanupDatabaseDir(getDatabasePath());
         }
-        catch (std::exception const&)
+        catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
         {
         }
     }
@@ -87,8 +105,8 @@ public:
 
         for (auto const& i : d)
         {
-            DBConfig sc(c, i.first);
-            BEAST_EXPECT(boost::ends_with(sc.connectionString(), i.first + i.second));
+            DBConfig const sc(c, i.first);
+            BEAST_EXPECT(sc.connectionString().ends_with(i.first + i.second));
         }
     }
     void
@@ -97,7 +115,7 @@ public:
         testcase("open");
         BasicConfig c;
         setupSQLiteConfig(c, getDatabasePath());
-        DBConfig sc(c, "SociTestDB");
+        DBConfig const sc(c, "SociTestDB");
         std::vector<std::string> const stringData({"String1", "String2", "String3"});
         std::vector<int> const intData({1, 2, 3});
         auto checkValues = [this, &stringData, &intData](soci::session& s) {
@@ -111,10 +129,8 @@ public:
             for (int i = 0; i < stringResult.size(); ++i)
             {
                 auto si = std::distance(
-                    stringData.begin(),
-                    std::find(stringData.begin(), stringData.end(), stringResult[i]));
-                auto ii = std::distance(
-                    intData.begin(), std::find(intData.begin(), intData.end(), intResult[i]));
+                    stringData.begin(), std::ranges::find(stringData, stringResult[i]));
+                auto ii = std::distance(intData.begin(), std::ranges::find(intData, intResult[i]));
                 BEAST_EXPECT(si == ii && si < stringResult.size());
             }
         };
@@ -140,9 +156,9 @@ public:
             checkValues(s);
         }
         {
-            namespace bfs = boost::filesystem;
+            namespace bfs = std::filesystem;
             // Remove the database
-            bfs::path dbPath(sc.connectionString());
+            bfs::path const dbPath(sc.connectionString());
             if (bfs::is_regular_file(dbPath))
                 bfs::remove(dbPath);
         }
@@ -154,7 +170,7 @@ public:
         testcase("select");
         BasicConfig c;
         setupSQLiteConfig(c, getDatabasePath());
-        DBConfig sc(c, "SociTestDB");
+        DBConfig const sc(c, "SociTestDB");
         std::vector<std::uint64_t> const ubid(
             {(std::uint64_t)std::numeric_limits<std::int64_t>::max(), 20, 30});
         std::vector<std::int64_t> const bid({-10, -20, -30});
@@ -211,68 +227,12 @@ public:
                 fail();
             }
             // There are too many issues when working with soci::row and
-            // boost::tuple. DO NOT USE soci row! I had a set of workarounds to
-            // make soci row less error prone, I'm keeping these tests in case I
-            // try to add soci::row and boost::tuple back into soci.
-#if 0
-            try
-            {
-                std::int32_t ig = 0;
-                std::uint32_t uig = 0;
-                std::int64_t big = 0;
-                std::uint64_t ubig = 0;
-                soci::row r;
-                s << "SELECT I, UI, BI, UBI from STT", soci::into (r);
-                ig = r.get<std::int32_t>(0);
-                uig = r.get<std::uint32_t>(1);
-                big = r.get<std::int64_t>(2);
-                ubig = r.get<std::uint64_t>(3);
-                BEAST_EXPECT(ig == id[0] && uig == uid[0] && big == bid[0] &&
-                        ubig == ubid[0]);
-            }
-            catch (std::exception&)
-            {
-                fail ();
-            }
-            try
-            {
-                std::int32_t ig = 0;
-                std::uint32_t uig = 0;
-                std::int64_t big = 0;
-                std::uint64_t ubig = 0;
-                soci::row r;
-                s << "SELECT I, UI, BI, UBI from STT", soci::into (r);
-                ig = r.get<std::int32_t>("I");
-                uig = r.get<std::uint32_t>("UI");
-                big = r.get<std::int64_t>("BI");
-                ubig = r.get<std::uint64_t>("UBI");
-                BEAST_EXPECT(ig == id[0] && uig == uid[0] && big == bid[0] &&
-                        ubig == ubid[0]);
-            }
-            catch (std::exception&)
-            {
-                fail ();
-            }
-            try
-            {
-                boost::tuple<std::int32_t,
-                             std::uint32_t,
-                             std::int64_t,
-                             std::uint64_t> d;
-                s << "SELECT I, UI, BI, UBI from STT", soci::into (d);
-                BEAST_EXPECT(get<0>(d) == id[0] && get<1>(d) == uid[0] &&
-                        get<2>(d) == bid[0] && get<3>(d) == ubid[0]);
-            }
-            catch (std::exception&)
-            {
-                fail ();
-            }
-#endif
+            // boost::tuple. DO NOT USE soci row!
         }
         {
-            namespace bfs = boost::filesystem;
+            namespace bfs = std::filesystem;
             // Remove the database
-            bfs::path dbPath(sc.connectionString());
+            bfs::path const dbPath(sc.connectionString());
             if (bfs::is_regular_file(dbPath))
                 bfs::remove(dbPath);
         }
@@ -283,11 +243,12 @@ public:
         testcase("deleteWithSubselect");
         BasicConfig c;
         setupSQLiteConfig(c, getDatabasePath());
-        DBConfig sc(c, "SociTestDB");
+        DBConfig const sc(c, "SociTestDB");
         {
             soci::session s;
             sc.open(s);
-            char const* dbInit[] = {
+
+            std::string_view const dbInit[] = {
                 "BEGIN TRANSACTION;",
                 "CREATE TABLE Ledgers (                     \
                 LedgerHash      CHARACTER(64) PRIMARY KEY,  \
@@ -321,9 +282,9 @@ public:
             s << "SELECT LedgerSeq FROM Ledgers;", soci::into(ledgersLS);
             BEAST_EXPECT(ledgersLS.size() == numRows);
         }
-        namespace bfs = boost::filesystem;
+        namespace bfs = std::filesystem;
         // Remove the database
-        bfs::path dbPath(sc.connectionString());
+        bfs::path const dbPath(sc.connectionString());
         if (bfs::is_regular_file(dbPath))
             bfs::remove(dbPath);
     }

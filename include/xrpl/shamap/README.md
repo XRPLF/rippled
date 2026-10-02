@@ -112,7 +112,7 @@ When a `SHAMap` decides that it is safe to share a node of its own, it sets the
 node's sequence number to 0 (a `SHAMap` never has a sequence number of 0). This
 is done for every node in the trie when `SHAMap::walkSubTree` is executed.
 
-Note that other objects in rippled also have sequence numbers (e.g. ledgers).
+Note that other objects in xrpld also have sequence numbers (e.g. ledgers).
 The `SHAMap` and node sequence numbers should not be confused with these other
 sequence numbers (no relation).
 
@@ -168,7 +168,7 @@ a `SHAMap`, and the various functions that call `walkTowardsKey` are good exampl
 of _why_ one would want to walk a `SHAMap` (e.g. `SHAMap::findKey`).
 `walkTowardsKey` always starts at the root of the `SHAMap` and traverses down
 through the inner nodes, looking for a leaf node along a path in the trie
-designated by a `uint256`.
+designated by a `UInt256`.
 
 As one walks the trie, one can _optionally_ keep a stack of nodes that one has
 passed through. This isn't necessary for walking the trie, but many clients
@@ -180,7 +180,7 @@ To assist in walking the trie, `SHAMap::walkTowardsKey` uses a `SHAMapNodeID`
 that identifies a node by its path from the root and its depth in the trie. The
 path is just a "list" of numbers, each in the range [0 .. 15], depicting which
 child was chosen at each node starting from the root. Each choice is represented
-by 4 bits, and then packed in sequence into a `uint256` (such that the longest
+by 4 bits, and then packed in sequence into a `UInt256` (such that the longest
 path possible has 256 / 4 = 64 steps). The high 4 bits of the first byte
 identify which child of the root is chosen, the lower 4 bits of the first byte
 identify the child of that node, and so on. The `SHAMapNodeID` identifying the
@@ -231,7 +231,7 @@ The `fetchNodeNT()` method goes through three phases:
     will be 0.
 
 2.  If the node is not in the TreeNodeCache, we attempt to locate the node
-    in the historic data stored by the data base. The call to to
+    in the historic data stored by the data base. The call to
     `fetchNodeFromDB(hash)` does that work for us.
 
 3.  Finally if a filter exists, we check if it can supply the node. This is
@@ -332,5 +332,5 @@ associated with this transaction in a state map.
 
 This holds the following data:
 
-1.  uint256. The hash of the data.
+1.  UInt256. The hash of the data.
 2.  vector<unsigned char>. The data (transactions, account info).

@@ -2,9 +2,10 @@
 
 #include <xrpld/app/misc/detail/WorkBase.h>
 
-namespace xrpl {
+#include <memory>
+#include <string>
 
-namespace detail {
+namespace xrpl::detail {
 
 // Work over TCP/IP
 class WorkPlain : public WorkBase<WorkPlain>, public std::enable_shared_from_this<WorkPlain>
@@ -17,16 +18,16 @@ public:
         std::string const& path,
         std::string const& port,
         boost::asio::io_context& ios,
-        endpoint_type const& lastEndpoint,
+        EndpointType const& lastEndpoint,
         bool lastStatus,
-        callback_type cb);
-    ~WorkPlain() = default;
+        CallbackType cb);
+    ~WorkPlain() override = default;
 
 private:
     void
-    onConnect(error_code const& ec);
+    onConnect(ErrorCode const& ec);
 
-    socket_type&
+    SocketType&
     stream()
     {
         return socket_;
@@ -35,27 +36,28 @@ private:
 
 //------------------------------------------------------------------------------
 
-WorkPlain::WorkPlain(
+inline WorkPlain::WorkPlain(
     std::string const& host,
     std::string const& path,
     std::string const& port,
     boost::asio::io_context& ios,
-    endpoint_type const& lastEndpoint,
+    EndpointType const& lastEndpoint,
     bool lastStatus,
-    callback_type cb)
+    CallbackType cb)
     : WorkBase(host, path, port, ios, lastEndpoint, lastStatus, cb)
 {
 }
 
-void
-WorkPlain::onConnect(error_code const& ec)
+inline void
+WorkPlain::onConnect(ErrorCode const& ec)
 {
     if (ec)
-        return fail(ec);
+    {
+        fail(ec);
+        return;
+    }
 
     onStart();
 }
 
-}  // namespace detail
-
-}  // namespace xrpl
+}  // namespace xrpl::detail

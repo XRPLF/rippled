@@ -1,13 +1,9 @@
 #include <xrpl/protocol/IOUAmount.h>
-// Do not remove. Forces IOUAmount.h to stay first, to verify it can compile
-// without any hidden dependencies
-#include <xrpl/basics/LocalValue.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/STAmount.h>
-
-#include <boost/multiprecision/cpp_int.hpp>
 
 #include <algorithm>
 #include <cstdint>
@@ -15,41 +11,19 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace xrpl {
 
-namespace {
-
-// Use a static inside a function to help prevent order-of-initialization issues
-LocalValue<bool>&
-getStaticSTNumberSwitchover()
-{
-    static LocalValue<bool> r{true};
-    return r;
-}
-}  // namespace
-
-bool
-getSTNumberSwitchover()
-{
-    return *getStaticSTNumberSwitchover();
-}
-
-void
-setSTNumberSwitchover(bool v)
-{
-    *getStaticSTNumberSwitchover() = v;
-}
-
 /* The range for the mantissa when normalized */
 // log(2^63,10) ~ 18.96
 //
-static std::int64_t constexpr minMantissa = STAmount::cMinValue;
-static std::int64_t constexpr maxMantissa = STAmount::cMaxValue;
+static constexpr std::int64_t kMinMantissa = STAmount::kMinValue;
+static constexpr std::int64_t kMaxMantissa = STAmount::kMaxValue;
 /* The range for the exponent when normalized */
-static int constexpr minExponent = STAmount::cMinOffset;
-static int constexpr maxExponent = STAmount::cMaxOffset;
+static constexpr int kMinExponent = STAmount::kMinOffset;
+static constexpr int kMaxExponent = STAmount::kMaxOffset;
 
 IOUAmount
 IOUAmount::fromNumber(Number const& number)
@@ -58,14 +32,14 @@ IOUAmount::fromNumber(Number const& number)
     // to normalize, which calls fromNumber
     IOUAmount result{};
     std::tie(result.mantissa_, result.exponent_) =
-        number.normalizeToRange(minMantissa, maxMantissa);
+        number.normalizeToRange<kMinMantissa, kMaxMantissa>();
     return result;
 }
 
 IOUAmount
 IOUAmount::minPositiveAmount()
 {
-    return IOUAmount(minMantissa, minExponent);
+    return IOUAmount(kMinMantissa, kMinExponent);
 }
 
 void
@@ -73,105 +47,39 @@ IOUAmount::normalize()
 {
     if (mantissa_ == 0)
     {
-        *this = beast::zero;
+        *this = beast::kZero;
         return;
     }
 
-    if (getSTNumberSwitchover())
-    {
-        Number const v{mantissa_, exponent_};
-        *this = fromNumber(v);
-        if (exponent_ > maxExponent)
-            Throw<std::overflow_error>("value overflow");
-        if (exponent_ < minExponent)
-            *this = beast::zero;
-        return;
-    }
-
-    bool const negative = (mantissa_ < 0);
-
-    if (negative)
-        mantissa_ = -mantissa_;
-
-    while ((mantissa_ < minMantissa) && (exponent_ > minExponent))
-    {
-        mantissa_ *= 10;
-        --exponent_;
-    }
-
-    while (mantissa_ > maxMantissa)
-    {
-        if (exponent_ >= maxExponent)
-            Throw<std::overflow_error>("IOUAmount::normalize");
-
-        mantissa_ /= 10;
-        ++exponent_;
-    }
-
-    if ((exponent_ < minExponent) || (mantissa_ < minMantissa))
-    {
-        *this = beast::zero;
-        return;
-    }
-
-    if (exponent_ > maxExponent)
-        Throw<std::overflow_error>("value overflow");
-
-    if (negative)
-        mantissa_ = -mantissa_;
+    Number const v{mantissa_, exponent_};
+    *this = IOUAmount(v);
 }
 
 IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
 {
-    if (exponent_ > maxExponent)
+    if (exponent_ > kMaxExponent)
+    {
         Throw<std::overflow_error>("value overflow");
-    if (exponent_ < minExponent)
-        *this = beast::zero;
+    }
+    if (exponent_ < kMinExponent)
+    {
+        *this = beast::kZero;
+    }
 }
 
 IOUAmount&
 IOUAmount::operator+=(IOUAmount const& other)
 {
-    if (other == beast::zero)
+    if (other == beast::kZero)
         return *this;
 
-    if (*this == beast::zero)
+    if (*this == beast::kZero)
     {
         *this = other;
         return *this;
     }
 
-    if (getSTNumberSwitchover())
-    {
-        *this = IOUAmount{Number{*this} + Number{other}};
-        return *this;
-    }
-    auto m = other.mantissa_;
-    auto e = other.exponent_;
-
-    while (exponent_ < e)
-    {
-        mantissa_ /= 10;
-        ++exponent_;
-    }
-
-    while (e < exponent_)
-    {
-        m /= 10;
-        ++e;
-    }
-
-    // This addition cannot overflow an std::int64_t but we may throw from
-    // normalize if the result isn't representable.
-    mantissa_ += m;
-
-    if (mantissa_ >= -10 && mantissa_ <= 10)
-    {
-        *this = beast::zero;
-        return *this;
-    }
-
-    normalize();
+    *this = IOUAmount{Number{*this} + Number{other}};
     return *this;
 }
 
@@ -186,13 +94,13 @@ mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
 {
     using namespace boost::multiprecision;
 
-    if (!den)
+    if (den == 0u)
         Throw<std::runtime_error>("division by zero");
 
     // A vector with the value 10^index for indexes from 0 to 29
     // The largest intermediate value we expect is 2^96, which
     // is less than 10^29
-    static auto const powerTable = [] {
+    static auto const kPowerTable = [] {
         std::vector<uint128_t> result;
         result.reserve(30);  // 2^96 is largest intermediate result size
         uint128_t cur(1);
@@ -206,11 +114,11 @@ mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
 
     // Return floor(log10(v))
     // Note: Returns -1 for v == 0
-    static auto log10Floor = [](uint128_t const& v) {
+    static auto kLoG10Floor = [](uint128_t const& v) {
         // Find the index of the first element >= the requested element, the
         // index is the log of the element in the log table.
-        auto const l = std::lower_bound(powerTable.begin(), powerTable.end(), v);
-        int index = std::distance(powerTable.begin(), l);
+        auto const l = std::ranges::lower_bound(kPowerTable, v);
+        int index = std::distance(kPowerTable.begin(), l);
         // If we're not equal, subtract to get the floor
         if (*l != v)
             --index;
@@ -218,14 +126,14 @@ mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
     };
 
     // Return ceil(log10(v))
-    static auto log10Ceil = [](uint128_t const& v) {
+    static auto kLoG10Ceil = [](uint128_t const& v) {
         // Find the index of the first element >= the requested element, the
         // index is the log of the element in the log table.
-        auto const l = std::lower_bound(powerTable.begin(), powerTable.end(), v);
-        return int(std::distance(powerTable.begin(), l));
+        auto const l = std::ranges::lower_bound(kPowerTable, v);
+        return int(std::distance(kPowerTable.begin(), l));
     };
 
-    static auto const fl64 = log10Floor(std::numeric_limits<std::int64_t>::max());
+    static auto const kFl64 = kLoG10Floor(std::numeric_limits<std::int64_t>::max());
 
     bool const neg = amt.mantissa() < 0;
     uint128_t const den128(den);
@@ -246,12 +154,12 @@ mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
         // and (rem/den128) is as large as possible. Scale by multiplying low
         // and rem by 10 and subtracting one from the exponent. We could do this
         // with a loop, but it's more efficient to use logarithms.
-        auto const roomToGrow = fl64 - log10Ceil(low);
+        auto const roomToGrow = kFl64 - kLoG10Ceil(low);
         if (roomToGrow > 0)
         {
             exponent -= roomToGrow;
-            low *= powerTable[roomToGrow];
-            rem *= powerTable[roomToGrow];
+            low *= kPowerTable[roomToGrow];
+            rem *= kPowerTable[roomToGrow];
         }
         auto const addRem = rem / den128;
         low += addRem;
@@ -263,17 +171,17 @@ mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
     // and adding one to the exponent until the low will fit in the 64-bit
     // mantissa. Use logarithms to avoid looping.
     bool hasRem = bool(rem);
-    auto const mustShrink = log10Ceil(low) - fl64;
+    auto const mustShrink = kLoG10Ceil(low) - kFl64;
     if (mustShrink > 0)
     {
         uint128_t const sav(low);
         exponent += mustShrink;
-        low /= powerTable[mustShrink];
+        low /= kPowerTable[mustShrink];
         if (!hasRem)
-            hasRem = bool(sav - low * powerTable[mustShrink]);
+            hasRem = bool(sav - low * kPowerTable[mustShrink]);
     }
 
-    std::int64_t mantissa = low.convert_to<std::int64_t>();
+    auto mantissa = low.convert_to<std::int64_t>();
 
     // normalize before rounding
     if (neg)
@@ -299,7 +207,7 @@ mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
         {
             if (!result)
             {
-                return IOUAmount(-minMantissa, minExponent);
+                return IOUAmount(-kMinMantissa, kMinExponent);
             }
             // This subtraction cannot underflow because `result` is not zero
             return IOUAmount(result.mantissa() - 1, result.exponent());

@@ -2,16 +2,27 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Handler.h>
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 #include <xrpl/resource/Charge.h>
-#include <xrpl/server/InfoSub.h>
+#include <xrpl/resource/Consumer.h>
 
 #include <grpcpp/grpcpp.h>
+#include <grpcpp/support/status.h>
+
+#include <atomic>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -66,6 +77,13 @@ private:
 
     std::vector<boost::asio::ip::address> secureGatewayIPs_;
 
+    // TLS certificate paths
+    std::optional<std::string> sslCertPath_;
+    std::optional<std::string> sslKeyPath_;
+    std::optional<std::string> sslCertChainPath_;  // Intermediate CA certs for server cert chain
+    std::optional<std::string>
+        sslClientCAPath_;  // CA cert for client certificate verification (mTLS)
+
     beast::Journal journal_;
 
     // typedef for function to bind a listener
@@ -84,9 +102,9 @@ private:
     // typedef for actual handler (that populates a response)
     // handlers are defined in rpc/GRPCHandlers.h
     template <class Request, class Response>
-    using Handler = std::function<std::pair<Response, grpc::Status>(RPC::GRPCContext<Request>&)>;
+    using Handler = std::function<std::pair<Response, grpc::Status>(rpc::GRPCContext<Request>&)>;
     // This implementation is currently limited to v1 of the API
-    static unsigned constexpr apiVersion = 1;
+    static constexpr unsigned kApiVersion = 1;
 
     template <class Request, class Response>
     using Forward = std::function<grpc::Status(
@@ -120,10 +138,14 @@ public:
     setupListeners();
 
     // Obtaining actually binded endpoint (if port 0 was used for server setup).
-    boost::asio::ip::tcp::endpoint
+    [[nodiscard]] boost::asio::ip::tcp::endpoint
     getEndpoint() const;
 
 private:
+    // Create server credentials (TLS or insecure) based on configuration
+    std::shared_ptr<grpc::ServerCredentials>
+    createServerCredentials();
+
     // Class encompassing the state and logic needed to serve a request.
     template <class Request, class Response>
     class CallData : public Processor,
@@ -167,15 +189,15 @@ private:
         Forward<Request, Response> forward_;
 
         // Condition required for this RPC
-        RPC::Condition requiredCondition_;
+        rpc::Condition requiredCondition_;
 
         // Load type for this RPC
-        Resource::Charge loadType_;
+        resource::Charge loadType_;
 
         std::vector<boost::asio::ip::address> const& secureGatewayIPs_;
 
     public:
-        virtual ~CallData() = default;
+        ~CallData() override = default;
 
         // Take in the "service" instance (in this case representing an
         // asynchronous server) and the completion queue "cq" used for
@@ -187,8 +209,8 @@ private:
             BindListener<Request, Response> bindListener,
             Handler<Request, Response> handler,
             Forward<Request, Response> forward,
-            RPC::Condition requiredCondition,
-            Resource::Charge loadType,
+            rpc::Condition requiredCondition,
+            resource::Charge loadType,
             std::vector<boost::asio::ip::address> const& secureGatewayIPs);
 
         CallData(CallData const&) = delete;
@@ -196,10 +218,10 @@ private:
         CallData&
         operator=(CallData const&) = delete;
 
-        virtual void
+        void
         process() override;
 
-        virtual bool
+        bool
         isFinished() override;
 
         std::shared_ptr<Processor>
@@ -211,7 +233,7 @@ private:
         process(std::shared_ptr<JobQueue::Coro> coro);
 
         // return load type of this RPC
-        Resource::Charge
+        resource::Charge
         getLoadType();
 
         // return the Role used for this RPC
@@ -219,7 +241,7 @@ private:
         getRole(bool isUnlimited);
 
         // register endpoint with ResourceManager and return usage
-        Resource::Consumer
+        resource::Consumer
         getUsage();
 
         // Returns the ip of the client
@@ -234,14 +256,14 @@ private:
         getClientEndpoint();
 
         // If the request was proxied through
-        // another rippled node, returns the ip of the originating client.
+        // another xrpld node, returns the ip of the originating client.
         // Empty optional if request was not proxied or there was an error
         // decoding the client ip
         std::optional<boost::asio::ip::address>
         getProxiedClientIpAddress();
 
         // If the request was proxied through
-        // another rippled node, returns the endpoint of the originating client.
+        // another xrpld node, returns the endpoint of the originating client.
         // Empty optional if request was not proxied or there was an error
         // decoding the client endpoint
         std::optional<boost::asio::ip::tcp::endpoint>
@@ -261,14 +283,14 @@ private:
         bool
         clientIsUnlimited();
 
-        // True if the request was proxied through another rippled node prior
+        // True if the request was proxied through another xrpld node prior
         // to arriving here
         bool
         wasForwarded();
 
         // forward request to a p2p node
         void
-        forwardToP2p(RPC::GRPCContext<Request>& context);
+        forwardToP2p(rpc::GRPCContext<Request>& context);
 
     };  // CallData
 
@@ -294,7 +316,7 @@ public:
 
     ~GRPCServer();
 
-    boost::asio::ip::tcp::endpoint
+    [[nodiscard]] boost::asio::ip::tcp::endpoint
     getEndpoint() const;
 
 private:

@@ -14,33 +14,42 @@ include(XrplSanitizers)
 # add a single global dependency on this interface lib
 link_libraries(Xrpl::common)
 # Respect CMAKE_POSITION_INDEPENDENT_CODE setting (may be set by Conan toolchain)
-if (NOT DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
+if(NOT DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-endif ()
-set_target_properties(common PROPERTIES INTERFACE_POSITION_INDEPENDENT_CODE
-                                        ${CMAKE_POSITION_INDEPENDENT_CODE})
+endif()
+set_target_properties(
+    common
+    PROPERTIES
+        INTERFACE_POSITION_INDEPENDENT_CODE ${CMAKE_POSITION_INDEPENDENT_CODE}
+)
 set(CMAKE_CXX_EXTENSIONS OFF)
 target_compile_definitions(
     common
-    INTERFACE $<$<CONFIG:Debug>:DEBUG
-              _DEBUG>
-              #[===[
+    INTERFACE
+        $<$<CONFIG:Debug>:DEBUG
+        _DEBUG>
+        #[===[
     NOTE: CMAKE release builds already have NDEBUG defined, so no need to add it
     explicitly except for the special case of (profile ON) and (assert OFF).
     Presumably this is because we don't want profile builds asserting unless
     asserts were specifically requested.
     ]===]
-              $<$<AND:$<BOOL:${profile}>,$<NOT:$<BOOL:${assert}>>>:NDEBUG>
-              # TODO: Remove once we have migrated functions from OpenSSL 1.x to 3.x.
-              OPENSSL_SUPPRESS_DEPRECATED)
+        $<$<AND:$<BOOL:${profile}>,$<NOT:$<BOOL:${assert}>>>:NDEBUG>
+        # TODO: Remove once we have migrated functions from OpenSSL 1.x to 3.x.
+        OPENSSL_SUPPRESS_DEPRECATED
+)
 
-if (MSVC)
+if(MSVC)
     # remove existing exception flag since we set it to -EHa
     string(REGEX REPLACE "[-/]EH[a-z]+" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
-    foreach (var_ CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_CXX_FLAGS_DEBUG
-                  CMAKE_CXX_FLAGS_RELEASE)
-
+    foreach(
+        var_
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+    )
         # also remove dynamic runtime
         string(REGEX REPLACE "[-/]MD[d]*" " " ${var_} "${${var_}}")
 
@@ -48,120 +57,180 @@ if (MSVC)
         string(REPLACE "/ZI" "/Zi" ${var_} "${${var_}}")
 
         # omit debug info completely under CI (not needed)
-        if (is_ci)
+        if(is_ci)
             string(REPLACE "/Zi" " " ${var_} "${${var_}}")
             string(REPLACE "/Z7" " " ${var_} "${${var_}}")
-        endif ()
-    endforeach ()
+        endif()
+    endforeach()
 
     target_compile_options(
         common
         INTERFACE # Increase object file max size
-                  -bigobj
-                  # Floating point behavior
-                  -fp:precise
-                  # __cdecl calling convention
-                  -Gd
-                  # Minimal rebuild: disabled
-                  -Gm-
-                  # Function level linking: disabled
-                  -Gy-
-                  # Multiprocessor compilation
-                  -MP
-                  # pragma omp: disabled
-                  -openmp-
-                  # No error reporting to Internet
-                  -errorReport:none
-                  # Suppress login banner
-                  -nologo
-                  # Disable signed/unsigned comparison warnings
-                  -wd4018
-                  # Disable float to int possible loss of data warnings
-                  -wd4244
-                  # Disable size_t to T possible loss of data warnings
-                  -wd4267
-                  # Disable C4800(int to bool performance)
-                  -wd4800
-                  # Decorated name length exceeded, name was truncated
-                  -wd4503
-                  $<$<COMPILE_LANGUAGE:CXX>:
-                  -EHa
-                  -GR
-                  >
-                  $<$<CONFIG:Release>:-Ox>
-                  $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:Debug>>:
-                  -GS
-                  -Zc:forScope
-                  >
-                  # static runtime
-                  $<$<CONFIG:Debug>:-MTd>
-                  $<$<NOT:$<CONFIG:Debug>>:-MT>
-                  $<$<BOOL:${werr}>:-WX>)
+            -bigobj
+            # Floating point behavior
+            -fp:precise
+            # __cdecl calling convention
+            -Gd
+            # Minimal rebuild: disabled
+            -Gm-
+            # Function level linking: disabled
+            -Gy-
+            # Multiprocessor compilation
+            -MP
+            # pragma omp: disabled
+            -openmp-
+            # No error reporting to Internet
+            -errorReport:none
+            # Suppress login banner
+            -nologo
+            # Disable signed/unsigned comparison warnings
+            -wd4018
+            # Disable float to int possible loss of data warnings
+            -wd4244
+            # Disable size_t to T possible loss of data warnings
+            -wd4267
+            # Disable C4800(int to bool performance)
+            -wd4800
+            # Decorated name length exceeded, name was truncated
+            -wd4503
+            $<$<COMPILE_LANGUAGE:CXX>:
+            -EHa
+            -GR
+            >
+            $<$<CONFIG:Release>:-Ox>
+            $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:Debug>>:
+            -GS
+            -Zc:forScope
+            >
+            # static runtime
+            $<$<CONFIG:Debug>:-MTd>
+            $<$<NOT:$<CONFIG:Debug>>:-MT>
+            $<$<BOOL:${werr}>:-WX>
+    )
     target_compile_definitions(
         common
-        INTERFACE _WIN32_WINNT=0x6000
-                  _SCL_SECURE_NO_WARNINGS
-                  _CRT_SECURE_NO_WARNINGS
-                  WIN32_CONSOLE
-                  WIN32_LEAN_AND_MEAN
-                  NOMINMAX
-                  # TODO: Resolve these warnings, don't just silence them
-                  _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
-                  $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:Debug>>:_CRTDBG_MAP_ALLOC>)
-    target_link_libraries(common INTERFACE -errorreport:none -machine:X64)
-else ()
-    target_compile_options(
-        common
-        INTERFACE -Wall
-                  -Wdeprecated
-                  $<$<BOOL:${is_clang}>:-Wno-deprecated-declarations>
-                  $<$<BOOL:${wextra}>:-Wextra
-                  -Wno-unused-parameter>
-                  $<$<BOOL:${werr}>:-Werror>
-                  -fstack-protector
-                  -Wno-sign-compare
-                  -Wno-unused-but-set-variable
-                  $<$<NOT:$<CONFIG:Debug>>:-fno-strict-aliasing>
-                  # tweak gcc optimization for debug
-                  $<$<AND:$<BOOL:${is_gcc}>,$<CONFIG:Debug>>:-O0>
-                  # Add debug symbols to release config
-                  $<$<CONFIG:Release>:-g>)
+        INTERFACE
+            _WIN32_WINNT=0x6000
+            _SCL_SECURE_NO_WARNINGS
+            _CRT_SECURE_NO_WARNINGS
+            WIN32_CONSOLE
+            WIN32_LEAN_AND_MEAN
+            NOMINMAX
+            # TODO: Resolve these warnings, don't just silence them
+            _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
+            $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:Debug>>:_CRTDBG_MAP_ALLOC>
+    )
     target_link_libraries(
         common
-        INTERFACE -rdynamic
-                  $<$<BOOL:${is_linux}>:-Wl,-z,relro,-z,now,--build-id>
-                  # link to static libc/c++ iff: * static option set and * NOT APPLE (AppleClang does not support static
-                  # libc/c++) and * NOT SANITIZERS (sanitizers typically don't work with static libc/c++)
-                  $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>,$<NOT:$<BOOL:${SANITIZERS_ENABLED}>>>:
-                  -static-libstdc++
-                  -static-libgcc
-                  >)
-endif ()
+        INTERFACE -errorreport:none -machine:X64 -ignore:4099
+    )
+else()
+    target_compile_options(
+        common
+        INTERFACE
+            -Wall
+            -Wdeprecated
+            $<$<BOOL:${is_clang}>:-Wno-deprecated-declarations>
+            $<$<BOOL:${wextra}>:-Wextra
+            -Wno-unused-parameter>
+            $<$<BOOL:${werr}>:-Werror>
+            -fstack-protector
+            -Wno-sign-compare
+            -Wno-unused-but-set-variable
+            $<$<NOT:$<CONFIG:Debug>>:-fno-strict-aliasing>
+            # tweak gcc optimization for debug
+            $<$<AND:$<BOOL:${is_gcc}>,$<CONFIG:Debug>>:-O0>
+            # Add debug symbols to release config
+            $<$<CONFIG:Release>:-g>
+    )
+    target_link_libraries(
+        common
+        INTERFACE
+            -rdynamic
+            $<$<BOOL:${is_linux}>:-Wl,-z,relro,-z,now,--build-id>
+            # link to static libc/c++ if:
+            # * static option set and
+            # * NOT APPLE (AppleClang does not support static libc/c++)
+            $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>>:
+            -static-libstdc++
+            -static-libgcc
+            >
+    )
+
+    # On aarch64, libatomic is required for atomic operations. It is not needed on x86_64.
+    # Linking it statically on Linux
+    if(is_arm64 AND is_linux)
+        target_link_options(
+            common
+            INTERFACE -Wl,--push-state -Wl,-Bstatic -latomic -Wl,--pop-state
+        )
+    endif()
+
+    # Keep -stdlib=libstdc++ off the compile commands, but preserve it for linking.
+    #
+    # Conan turns `compiler.libcxx=libstdc++` into `-stdlib=libstdc++` and puts it in
+    # CMAKE_CXX_FLAGS, which CMake passes to BOTH compile and link steps. On a normal Clang
+    # the compile step consumes it while choosing the C++ stdlib include paths. The Nixpkgs
+    # Clang wrapper supplies those paths itself (via -nostdinc++), so at compile time the
+    # flag is unused -> Clang errors under our -Werror. At link time the flag IS consumed
+    # (it selects the C++ runtime), so we move it there instead of dropping it entirely.
+    if(
+        is_nix_compiler
+        AND is_linux
+        AND is_clang
+        AND CMAKE_CXX_FLAGS MATCHES "stdlib=libstdc"
+    )
+        string(
+            REPLACE "-stdlib=libstdc++"
+            ""
+            CMAKE_CXX_FLAGS
+            "${CMAKE_CXX_FLAGS}"
+        )
+        string(STRIP "${CMAKE_CXX_FLAGS}" CMAKE_CXX_FLAGS)
+        add_link_options($<$<LINK_LANGUAGE:CXX>:-stdlib=libstdc++>)
+    endif()
+endif()
 
 # Antithesis instrumentation will only be built and deployed using machines running Linux.
-if (voidstar)
-    if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-        message(FATAL_ERROR "Antithesis instrumentation requires Debug build type, aborting...")
-    elseif (NOT is_linux)
-        message(FATAL_ERROR "Antithesis instrumentation requires Linux, aborting...")
-    elseif (NOT (is_clang AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0))
-        message(FATAL_ERROR "Antithesis instrumentation requires Clang version 16 or later, aborting..."
+if(voidstar)
+    if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+        message(
+            FATAL_ERROR
+            "Antithesis instrumentation requires Debug build type, aborting..."
         )
-    endif ()
-endif ()
+    elseif(NOT is_linux)
+        message(
+            FATAL_ERROR
+            "Antithesis instrumentation requires Linux, aborting..."
+        )
+    elseif(
+        NOT (is_clang AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
+    )
+        message(
+            FATAL_ERROR
+            "Antithesis instrumentation requires Clang version 16 or later, aborting..."
+        )
+    endif()
+endif()
 
-if (use_mold)
+if(use_mold)
     # use mold linker if available
-    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=mold -Wl,--version ERROR_QUIET
-                    OUTPUT_VARIABLE LD_VERSION)
-    if ("${LD_VERSION}" MATCHES "mold")
+    execute_process(
+        COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=mold -Wl,--version
+        ERROR_QUIET
+        OUTPUT_VARIABLE LD_VERSION
+    )
+    if("${LD_VERSION}" MATCHES "mold")
         target_link_libraries(common INTERFACE -fuse-ld=mold)
-    endif ()
+    endif()
     unset(LD_VERSION)
-elseif (use_gold AND is_gcc)
+elseif(use_gold AND is_gcc)
     # use gold linker if available
-    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=gold -Wl,--version ERROR_QUIET
-                    OUTPUT_VARIABLE LD_VERSION)
+    execute_process(
+        COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=gold -Wl,--version
+        ERROR_QUIET
+        OUTPUT_VARIABLE LD_VERSION
+    )
     #[=========================================================[
        NOTE: THE gold linker inserts -rpath as DT_RUNPATH by
        default instead of DT_RPATH, so you might have slightly
@@ -175,32 +244,77 @@ elseif (use_gold AND is_gcc)
        disabling would be to figure out all the settings
        required to make gold play nicely with jemalloc.
     #]=========================================================]
-    if (("${LD_VERSION}" MATCHES "GNU gold") AND (NOT jemalloc))
+    if(("${LD_VERSION}" MATCHES "GNU gold") AND (NOT jemalloc))
         target_link_libraries(
             common
-            INTERFACE -fuse-ld=gold
-                      -Wl,--no-as-needed
-                      #[=========================================================[
+            INTERFACE
+                -fuse-ld=gold
+                -Wl,--no-as-needed
+                #[=========================================================[
            see https://bugs.launchpad.net/ubuntu/+source/eglibc/+bug/1253638/comments/5
            DT_RUNPATH does not work great for transitive
            dependencies (of which boost has a few) - so just
            switch to DT_RPATH if doing dynamic linking with gold
         #]=========================================================]
-                      $<$<NOT:$<BOOL:${static}>>:-Wl,--disable-new-dtags>)
-    endif ()
+                $<$<NOT:$<BOOL:${static}>>:-Wl,--disable-new-dtags>
+        )
+    endif()
     unset(LD_VERSION)
-elseif (use_lld)
+elseif(use_lld)
     # use lld linker if available
-    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=lld -Wl,--version ERROR_QUIET
-                    OUTPUT_VARIABLE LD_VERSION)
-    if ("${LD_VERSION}" MATCHES "LLD")
+    execute_process(
+        COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=lld -Wl,--version
+        ERROR_QUIET
+        OUTPUT_VARIABLE LD_VERSION
+    )
+    if("${LD_VERSION}" MATCHES "LLD")
         target_link_libraries(common INTERFACE -fuse-ld=lld)
-    endif ()
+        # remembered for the linker flag probe below
+        set(fuse_ld_flag "-fuse-ld=lld")
+    endif()
     unset(LD_VERSION)
-endif ()
+endif()
 
-if (assert)
-    foreach (var_ CMAKE_C_FLAGS_RELEASE CMAKE_CXX_FLAGS_RELEASE)
+# Linker warnings are errors where we control the toolchain and the dependencies: CI and the Nix dev shell.
+# On non-Nix macOS we suppress the deployment target warning: an old Conan profile may not pin os.version.
+# Only the new Apple linker understands the flag, so probe the actual linker (lld may be selected above).
+if(is_macos OR is_linux)
+    if(is_ci OR is_nix_compiler)
+        if(is_macos)
+            set(fatal_warnings_flag "-Wl,-fatal_warnings")
+        else()
+            set(fatal_warnings_flag "-Wl,--fatal-warnings")
+        endif()
+        message(
+            STATUS
+            "Treating all linker warnings as errors (${fatal_warnings_flag})"
+        )
+        target_link_options(common INTERFACE "${fatal_warnings_flag}")
+        unset(fatal_warnings_flag)
+    elseif(is_macos)
+        set(silence_flag "-Wl,-deployment_target_mismatches,suppress")
+        set(probe_flags ${fuse_ld_flag} "${silence_flag}")
+        include(CheckLinkerFlag)
+        check_linker_flag(
+            CXX
+            "${probe_flags}"
+            have_deployment_target_mismatches
+        )
+        if(have_deployment_target_mismatches)
+            message(
+                STATUS
+                "Silencing macOS deployment target mismatch warnings (${silence_flag})"
+            )
+            target_link_options(common INTERFACE "${silence_flag}")
+        endif()
+        unset(probe_flags)
+        unset(silence_flag)
+    endif()
+endif()
+unset(fuse_ld_flag)
+
+if(assert)
+    foreach(var_ CMAKE_C_FLAGS_RELEASE CMAKE_CXX_FLAGS_RELEASE)
         string(REGEX REPLACE "[-/]DNDEBUG" "" ${var_} "${${var_}}")
-    endforeach ()
-endif ()
+    endforeach()
+endif()

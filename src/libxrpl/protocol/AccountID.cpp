@@ -1,8 +1,9 @@
+#include <xrpl/protocol/AccountID.h>
+
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/basics/spinlock.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
@@ -20,7 +21,9 @@ namespace xrpl {
 
 namespace detail {
 
-/** Caches the base58 representations of AccountIDs */
+/**
+ * Caches the base58 representations of AccountIDs
+ */
 class AccountIdCache
 {
 private:
@@ -34,7 +37,7 @@ private:
     std::vector<CachedAccountID> cache_;
 
     // We use a hash function designed to resist algorithmic complexity attacks
-    hardened_hash<> hasher_;
+    HardenedHash<> hasher_;
 
     // 64 spinlocks, packed into a single 64-bit value
     std::atomic<std::uint64_t> locks_ = 0;
@@ -52,10 +55,10 @@ public:
     {
         auto const index = hasher_(id) % cache_.size();
 
-        packed_spinlock sl(locks_, index % 64);
+        PackedSpinlock sl(locks_, index % 64);
 
         {
-            std::lock_guard lock(sl);
+            std::scoped_lock const lock(sl);
 
             // The check against the first character of the encoding ensures
             // that we don't mishandle the case of the all-zero account:
@@ -68,7 +71,7 @@ public:
         XRPL_ASSERT(ret.size() <= 38, "xrpl::detail::AccountIdCache : maximum result size");
 
         {
-            std::lock_guard lock(sl);
+            std::scoped_lock const lock(sl);
             cache_[index].id = id;
             std::strcpy(cache_[index].encoding, ret.c_str());
         }
@@ -79,20 +82,20 @@ public:
 
 }  // namespace detail
 
-static std::unique_ptr<detail::AccountIdCache> accountIdCache;
+static std::unique_ptr<detail::AccountIdCache> gAccountIdCache;
 
 void
 initAccountIdCache(std::size_t count)
 {
-    if (!accountIdCache && count != 0)
-        accountIdCache = std::make_unique<detail::AccountIdCache>(count);
+    if (!gAccountIdCache && count != 0)
+        gAccountIdCache = std::make_unique<detail::AccountIdCache>(count);
 }
 
 std::string
 toBase58(AccountID const& v)
 {
-    if (accountIdCache)
-        return accountIdCache->toBase58(v);
+    if (gAccountIdCache)
+        return gAccountIdCache->toBase58(v);
 
     return encodeBase58Token(TokenType::AccountID, v.data(), v.size());
 }
@@ -102,9 +105,9 @@ std::optional<AccountID>
 parseBase58(std::string const& s)
 {
     auto const result = decodeBase58Token(s, TokenType::AccountID);
-    if (result.size() != AccountID::bytes)
+    if (result.size() != AccountID::kBytes)
         return std::nullopt;
-    return AccountID{result};
+    return AccountID::fromRaw(result);
 }
 
 //------------------------------------------------------------------------------
@@ -145,29 +148,29 @@ parseBase58(std::string const& s)
 AccountID
 calcAccountID(PublicKey const& pk)
 {
-    static_assert(AccountID::bytes == sizeof(ripesha_hasher::result_type));
+    static_assert(AccountID::kBytes == sizeof(RipeshaHasher::result_type));
 
-    ripesha_hasher rsh;
+    RipeshaHasher rsh;
     rsh(pk.data(), pk.size());
-    return AccountID{static_cast<ripesha_hasher::result_type>(rsh)};
+    return AccountID::fromRaw(static_cast<RipeshaHasher::result_type>(rsh));
 }
 
 AccountID const&
 xrpAccount()
 {
-    static AccountID const account(beast::zero);
-    return account;
+    static AccountID const kAccount(beast::kZero);
+    return kAccount;
 }
 
 AccountID const&
 noAccount()
 {
-    static AccountID const account(1);
-    return account;
+    static AccountID const kAccount(1);
+    return kAccount;
 }
 
 bool
-to_issuer(AccountID& issuer, std::string const& s)
+toIssuer(AccountID& issuer, std::string const& s)
 {
     if (issuer.parseHex(s))
         return true;

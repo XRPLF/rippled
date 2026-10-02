@@ -1,14 +1,36 @@
 #include <xrpld/app/rdb/PeerFinder.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/peerfinder/detail/Store.h>
+#include <xrpl/rdb/SociDB.h>
+
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
+
+#include <soci/boost-optional.h>  // IWYU pragma: keep
+#include <soci/into.h>
+#include <soci/session.h>
+#include <soci/statement.h>
+#include <soci/transaction.h>
+#include <soci/use.h>
+
+#include <cstddef>
+#include <functional>
+#include <stdexcept>
+#include <vector>
+
 namespace xrpl {
 
 void
 initPeerFinderDB(soci::session& session, BasicConfig const& config, beast::Journal j)
 {
-    DBConfig m_sociConfig(config, "peerfinder");
-    m_sociConfig.open(session);
+    DBConfig const sociConfig(config, "peerfinder");
+    sociConfig.open(session);
 
-    JLOG(j.info()) << "Opening database at '" << m_sociConfig.connectionString() << "'";
+    JLOG(j.info()) << "Opening database at '" << sociConfig.connectionString() << "'";
 
     soci::transaction tr(session);
     session << "PRAGMA encoding=\"UTF-8\";";
@@ -83,15 +105,15 @@ updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Jour
                    "    PeerFinder_BootstrapCache_Next "
                    "  ( address ); ";
 
-        std::size_t count;
+        std::size_t count = 0;
         session << "SELECT COUNT(*) FROM PeerFinder_BootstrapCache;", soci::into(count);
 
-        std::vector<PeerFinder::Store::Entry> list;
+        std::vector<peer_finder::Store::Entry> list;
 
         {
             list.reserve(count);
             std::string s;
-            int valence;
+            int valence = 0;
             soci::statement st =
                 (session.prepare << "SELECT "
                                     " address, "
@@ -103,9 +125,9 @@ updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Jour
             st.execute();
             while (st.fetch())
             {
-                PeerFinder::Store::Entry entry;
-                entry.endpoint = beast::IP::Endpoint::from_string(s);
-                if (!is_unspecified(entry.endpoint))
+                peer_finder::Store::Entry entry;
+                entry.endpoint = beast::ip::Endpoint::fromString(s);
+                if (!isUnspecified(entry.endpoint))
                 {
                     entry.valence = valence;
                     list.push_back(entry);
@@ -124,10 +146,10 @@ updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Jour
             s.reserve(list.size());
             valence.reserve(list.size());
 
-            for (auto iter(list.cbegin()); iter != list.cend(); ++iter)
+            for (auto const& entry : list)
             {
-                s.emplace_back(to_string(iter->endpoint));
-                valence.emplace_back(iter->valence);
+                s.emplace_back(to_string(entry.endpoint));
+                valence.emplace_back(entry.valence);
             }
 
             session << "INSERT INTO PeerFinder_BootstrapCache_Next ( "
@@ -187,7 +209,7 @@ void
 readPeerFinderDB(soci::session& session, std::function<void(std::string const&, int)> const& func)
 {
     std::string s;
-    int valence;
+    int valence = 0;
     soci::statement st =
         (session.prepare << "SELECT "
                             " address, "
@@ -204,7 +226,7 @@ readPeerFinderDB(soci::session& session, std::function<void(std::string const&, 
 }
 
 void
-savePeerFinderDB(soci::session& session, std::vector<PeerFinder::Store::Entry> const& v)
+savePeerFinderDB(soci::session& session, std::vector<peer_finder::Store::Entry> const& v)
 {
     soci::transaction tr(session);
     session << "DELETE FROM PeerFinder_BootstrapCache;";

@@ -1,39 +1,41 @@
 #pragma once
 
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/net/IPEndpoint.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/resource/detail/Kind.h>
 
-namespace xrpl {
-namespace Resource {
+#include <cstddef>
+#include <utility>
+
+namespace xrpl::resource {
 
 // The consumer key
 struct Key
 {
     Kind kind;
-    beast::IP::Endpoint address;
+    beast::ip::Endpoint address;
 
     Key() = delete;
 
-    Key(Kind k, beast::IP::Endpoint const& addr) : kind(k), address(addr)
+    Key(Kind k, beast::ip::Endpoint addr) : kind(k), address(std::move(addr))
     {
     }
 
-    struct hasher
+    struct Hasher
     {
         std::size_t
         operator()(Key const& v) const
         {
-            return m_addr_hash(v.address);
+            return addrHash_(v.address);
         }
 
     private:
-        beast::uhash<> m_addr_hash;
+        beast::Uhash<> addrHash_;
     };
 
-    struct key_equal
+    struct KeyEqual
     {
-        key_equal() = default;
+        KeyEqual() = default;
 
         bool
         operator()(Key const& lhs, Key const& rhs) const
@@ -45,5 +47,4 @@ struct Key
     };
 };
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::resource

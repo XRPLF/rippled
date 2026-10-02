@@ -1,19 +1,22 @@
+#include <xrpl/protocol/STValidation.h>
+
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/KeyType.h>  // IWYU pragma: keep
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>
+#include <exception>
 #include <utility>
 
 namespace xrpl {
@@ -37,46 +40,50 @@ STValidation::validationFormat()
     // it relies on the SField's below being initialized, and we can't
     // guarantee the initialization order.
     // clang-format off
-    static SOTemplate const format{
-        {sfFlags,               soeREQUIRED},
-        {sfLedgerHash,          soeREQUIRED},
-        {sfLedgerSequence,      soeREQUIRED},
-        {sfCloseTime,           soeOPTIONAL},
-        {sfLoadFee,             soeOPTIONAL},
-        {sfAmendments,          soeOPTIONAL},
-        {sfBaseFee,             soeOPTIONAL},
-        {sfReserveBase,         soeOPTIONAL},
-        {sfReserveIncrement,    soeOPTIONAL},
-        {sfSigningTime,         soeREQUIRED},
-        {sfSigningPubKey,       soeREQUIRED},
-        {sfSignature,           soeREQUIRED},
-        {sfConsensusHash,       soeOPTIONAL},
-        {sfCookie,              soeDEFAULT},
-        {sfValidatedHash,       soeOPTIONAL},
-        {sfServerVersion,       soeOPTIONAL},
+    static SOTemplate const kFormat{
+        {sfFlags,               SoeRequired},
+        {sfLedgerHash,          SoeRequired},
+        {sfLedgerSequence,      SoeRequired},
+        {sfCloseTime,           SoeOptional},
+        {sfLoadFee,             SoeOptional},
+        {sfAmendments,          SoeOptional},
+        {sfBaseFee,             SoeOptional},
+        {sfReserveBase,         SoeOptional},
+        {sfReserveIncrement,    SoeOptional},
+        {sfSigningTime,         SoeRequired},
+        {sfSigningPubKey,       SoeRequired},
+        {sfSignature,           SoeRequired},
+        {sfConsensusHash,       SoeOptional},
+        {sfCookie,              SoeDefault},
+        {sfValidatedHash,       SoeOptional},
+        {sfServerVersion,       SoeOptional},
         // featureXRPFees
-        {sfBaseFeeDrops,          soeOPTIONAL},
-        {sfReserveBaseDrops,      soeOPTIONAL},
-        {sfReserveIncrementDrops, soeOPTIONAL},
+        {sfBaseFeeDrops,          SoeOptional},
+        {sfReserveBaseDrops,      SoeOptional},
+        {sfReserveIncrementDrops, SoeOptional},
+        // featureSmartEscrow
+        {sfGasLimit,               SoeOptional},
+        {sfBytecodeSizeLimit,      SoeOptional},
+        {sfGasPrice,               SoeOptional},
     };
     // clang-format on
 
-    return format;
+    return kFormat;
 };
 
-uint256
+UInt256
 STValidation::getSigningHash() const
 {
-    return STObject::getSigningHash(HashPrefix::validation);
+    return STObject::getSigningHash(HashPrefix::Validation);
 }
 
-uint256
+UInt256
 STValidation::getLedgerHash() const
 {
     return getFieldH256(sfLedgerHash);
 }
 
-uint256
+UInt256
 STValidation::getConsensusHash() const
 {
     return getFieldH256(sfConsensusHash);
@@ -100,14 +107,45 @@ STValidation::isValid() const noexcept
     if (!valid_)
     {
         XRPL_ASSERT(
-            publicKeyType(getSignerPublic()) == KeyType::secp256k1,
+            publicKeyType(getSignerPublic()) == KeyType::Secp256k1,
             "xrpl::STValidation::isValid : valid key type");
 
-        valid_ = verifyDigest(
-            getSignerPublic(),
-            getSigningHash(),
-            makeSlice(getFieldVL(sfSignature)),
-            getFlags() & vfFullyCanonicalSig);
+        // Log that the signature was never checked, so an operator does not
+        // read this as a bad key. The log is guarded because it can throw too.
+        auto reportUncheckable = [this](char const* reason) noexcept {
+            try
+            {
+                JLOG(debugLog().error())
+                    << "Cannot check the signature of the validation for ledger " << getLedgerHash()
+                    << ": " << reason;
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Nothing can be reported when reporting is what failed.
+            }
+        };
+
+        // The signing hash re-serializes the fields, which can fail. This
+        // function is noexcept, so report the validation as invalid instead of
+        // throwing. valid_ stays unset, so a later call checks again.
+        try
+        {
+            valid_ = verifyDigest(
+                getSignerPublic(),
+                getSigningHash(),
+                makeSlice(getFieldVL(sfSignature)),
+                (getFlags() & kVfFullyCanonicalSig) != 0u);
+        }
+        catch (std::exception const& e)
+        {
+            reportUncheckable(e.what());
+            return false;
+        }
+        catch (...)
+        {
+            reportUncheckable("unknown exception");
+            return false;
+        }
     }
 
     return valid_.value();
@@ -116,7 +154,7 @@ STValidation::isValid() const noexcept
 bool
 STValidation::isFull() const noexcept
 {
-    return (getFlags() & vfFullValidation) != 0;
+    return (getFlags() & kVfFullValidation) != 0;
 }
 
 Blob

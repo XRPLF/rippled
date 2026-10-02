@@ -1,21 +1,24 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 
 #include <xrpl/protocol/STAmount.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <utility>
 
-/** Sets the SendMax on a JTx. */
-class sendmax
+namespace xrpl::test::jtx {
+
+/**
+ * Sets the SendMax on a JTx.
+ */
+class Sendmax
 {
 private:
     STAmount amount_;
 
 public:
-    sendmax(STAmount const& amount) : amount_(amount)
+    Sendmax(STAmount amount) : amount_(std::move(amount))
     {
     }
 
@@ -23,6 +26,4 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

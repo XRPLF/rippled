@@ -3,8 +3,7 @@
 #include <cstdint>
 #include <memory>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 class Meter;
 
@@ -18,5 +17,4 @@ public:
     increment(value_type amount) = 0;
 };
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight

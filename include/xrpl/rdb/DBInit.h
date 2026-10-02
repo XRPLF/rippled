@@ -2,6 +2,9 @@
 
 #include <array>
 #include <cstdint>
+#include <format>
+#include <string>
+#include <string_view>
 
 namespace xrpl {
 
@@ -9,20 +12,40 @@ namespace xrpl {
 
 // These pragmas are built at startup and applied to all database
 // connections, unless otherwise noted.
-inline constexpr char const* CommonDBPragmaJournal{"PRAGMA journal_mode=%s;"};
-inline constexpr char const* CommonDBPragmaSync{"PRAGMA synchronous=%s;"};
-inline constexpr char const* CommonDBPragmaTemp{"PRAGMA temp_store=%s;"};
+//
+// They are exposed as functions rather than as format-string constants so
+// that the un-substituted template can never reach sqlite: an unrecognized
+// pragma value is silently ignored, so forgetting to interpolate would
+// leave the setting at its default instead of failing loudly.
+[[nodiscard]] inline std::string
+commonDbPragmaJournal(std::string_view journalMode)
+{
+    return std::format("PRAGMA journal_mode={};", journalMode);
+}
+
+[[nodiscard]] inline std::string
+commonDbPragmaSync(std::string_view synchronous)
+{
+    return std::format("PRAGMA synchronous={};", synchronous);
+}
+
+[[nodiscard]] inline std::string
+commonDbPragmaTemp(std::string_view tempStore)
+{
+    return std::format("PRAGMA temp_store={};", tempStore);
+}
+
 // A warning will be logged if any lower-safety sqlite tuning settings
 // are used and at least this much ledger history is configured. This
 // includes full history nodes. This is because such a large amount of
 // data will be more difficult to recover if a rare failure occurs,
 // which are more likely with some of the other available tuning settings.
-inline constexpr std::uint32_t SQLITE_TUNING_CUTOFF = 10'000'000;
+inline constexpr std::uint32_t kSqliteTuningCutoff = 10'000'000;
 
 // Ledger database holds ledgers and ledger confirmations
-inline constexpr auto LgrDBName{"ledger.db"};
+inline constexpr auto kLgrDbName{"ledger.db"};
 
-inline constexpr std::array<char const*, 5> LgrDBInit{
+inline constexpr std::array<char const*, 5> kLgrDbInit{
     {"BEGIN TRANSACTION;",
 
      "CREATE TABLE IF NOT EXISTS Ledgers (           \
@@ -47,9 +70,9 @@ inline constexpr std::array<char const*, 5> LgrDBInit{
 ////////////////////////////////////////////////////////////////////////////////
 
 // Transaction database holds transactions and public keys
-inline constexpr auto TxDBName{"transaction.db"};
+inline constexpr auto kTxDbName{"transaction.db"};
 
-inline constexpr std::array<char const*, 8> TxDBInit{
+inline constexpr std::array<char const*, 8> kTxDbInit{
     {"BEGIN TRANSACTION;",
 
      "CREATE TABLE IF NOT EXISTS Transactions (          \
@@ -82,9 +105,9 @@ inline constexpr std::array<char const*, 8> TxDBInit{
 
 ////////////////////////////////////////////////////////////////////////////////
 
-inline constexpr auto WalletDBName{"wallet.db"};
+inline constexpr auto kWalletDbName{"wallet.db"};
 
-inline constexpr std::array<char const*, 6> WalletDBInit{
+inline constexpr std::array<char const*, 6> kWalletDbInit{
     {"BEGIN TRANSACTION;",
 
      // A node's identity must be persisted, including

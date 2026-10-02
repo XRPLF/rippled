@@ -1,19 +1,24 @@
 #pragma once
 
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
+
+#include <compare>
+#include <ostream>
+#include <string>
 
 namespace xrpl {
 
-/** A currency issued by an account.
-    @see Currency, AccountID, Issue, Book
-*/
+/**
+ * A currency issued by an account.
+ * @see Currency, AccountID, Issue, Book
+ */
 class Issue
 {
 public:
-    Currency currency{};
-    AccountID account{};
+    Currency currency;
+    AccountID account;
 
     Issue() = default;
 
@@ -21,22 +26,22 @@ public:
     {
     }
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getIssuer() const
     {
         return account;
     }
 
-    std::string
+    [[nodiscard]] std::string
     getText() const;
 
     void
-    setJson(Json::Value& jv) const;
+    setJson(json::Value& jv) const;
 
-    bool
+    [[nodiscard]] bool
     native() const;
 
-    bool
+    [[nodiscard]] bool
     integral() const;
 
     friend constexpr std::weak_ordering
@@ -49,11 +54,11 @@ isConsistent(Issue const& ac);
 std::string
 to_string(Issue const& ac);
 
-Json::Value
-to_json(Issue const& is);
+json::Value
+toJson(Issue const& is);
 
 Issue
-issueFromJson(Json::Value const& v);
+issueFromJson(json::Value const& v);
 
 std::ostream&
 operator<<(std::ostream& os, Issue const& x);
@@ -66,21 +71,25 @@ hash_append(Hasher& h, Issue const& r)
     hash_append(h, r.currency, r.account);
 }
 
-/** Equality comparison. */
+/**
+ * Equality comparison.
+ */
 /** @{ */
-[[nodiscard]] inline constexpr bool
+[[nodiscard]] constexpr bool
 operator==(Issue const& lhs, Issue const& rhs)
 {
     return (lhs.currency == rhs.currency) && (isXRP(lhs.currency) || lhs.account == rhs.account);
 }
 /** @} */
 
-/** Strict weak ordering. */
+/**
+ * Strict weak ordering.
+ */
 /** @{ */
 [[nodiscard]] constexpr std::weak_ordering
 operator<=>(Issue const& lhs, Issue const& rhs)
 {
-    if (auto const c{lhs.currency <=> rhs.currency}; c != 0)
+    if (auto const c{lhs.currency <=> rhs.currency}; c != 0)  // NOLINT(modernize-use-nullptr)
         return c;
 
     if (isXRP(lhs.currency))
@@ -92,20 +101,24 @@ operator<=>(Issue const& lhs, Issue const& rhs)
 
 //------------------------------------------------------------------------------
 
-/** Returns an asset specifier that represents XRP. */
+/**
+ * Returns an asset specifier that represents XRP.
+ */
 inline Issue const&
 xrpIssue()
 {
-    static Issue issue{xrpCurrency(), xrpAccount()};
-    return issue;
+    static Issue const kIssue{xrpCurrency(), xrpAccount()};
+    return kIssue;
 }
 
-/** Returns an asset specifier that represents no account and currency. */
+/**
+ * Returns an asset specifier that represents no account and currency.
+ */
 inline Issue const&
 noIssue()
 {
-    static Issue issue{noCurrency(), noAccount()};
-    return issue;
+    static Issue const kIssue{noCurrency(), noAccount()};
+    return kIssue;
 }
 
 inline bool

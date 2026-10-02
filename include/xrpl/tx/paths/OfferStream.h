@@ -1,17 +1,23 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/tx/paths/BookTip.h>
 #include <xrpl/tx/paths/Offer.h>
 
 #include <boost/container/flat_set.hpp>
 
+#include <cstdint>
+#include <optional>
+
 namespace xrpl {
 
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 class TOfferStreamBase
 {
 public:
@@ -19,11 +25,11 @@ public:
     {
     private:
         std::uint32_t const limit_;
-        std::uint32_t count_;
+        std::uint32_t count_{0};
         beast::Journal j_;
 
     public:
-        StepCounter(std::uint32_t limit, beast::Journal j) : limit_(limit), count_(0), j_(j)
+        StepCounter(std::uint32_t limit, beast::Journal j) : limit_(limit), j_(j)
         {
         }
 
@@ -38,7 +44,7 @@ public:
             count_++;
             return true;
         }
-        std::uint32_t
+        [[nodiscard]] std::uint32_t
         count() const
         {
             return count_;
@@ -61,10 +67,11 @@ protected:
     erase(ApplyView& view);
 
     virtual void
-    permRmOffer(uint256 const& offerIndex) = 0;
+    permRmOffer(UInt256 const& offerIndex) = 0;
 
     template <class TTakerPays, class TTakerGets>
-    bool
+        requires ValidTaker<TTakerPays, TTakerGets>
+    [[nodiscard]] bool
     shouldRmSmallIncreasedQOffer() const;
 
 public:
@@ -78,82 +85,60 @@ public:
 
     virtual ~TOfferStreamBase() = default;
 
-    /** Returns the offer at the tip of the order book.
-        Offers are always presented in decreasing quality.
-        Only valid if step() returned `true`.
-    */
-    TOffer<TIn, TOut>&
+    /**
+     * Returns the offer at the tip of the order book.
+     * Offers are always presented in decreasing quality.
+     * Only valid if step() returned `true`.
+     */
+    [[nodiscard]] TOffer<TIn, TOut>&
     tip() const
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
         return const_cast<TOfferStreamBase*>(this)->offer_;
     }
 
-    /** Advance to the next valid offer.
-        This automatically removes:
-            - Offers with missing ledger entries
-            - Offers found unfunded
-            - expired offers
-        @return `true` if there is a valid offer.
-    */
+    /**
+     * Advance to the next valid offer.
+     * This automatically removes:
+     *     - Offers with missing ledger entries
+     *     - Offers found unfunded
+     *     - expired offers
+     * @return `true` if there is a valid offer.
+     */
     bool
     step();
 
-    TOut
+    [[nodiscard]] TOut
     ownerFunds() const
     {
-        return *ownerFunds_;
+        return *ownerFunds_;  // NOLINT(bugprone-unchecked-optional-access) always set after step()
+                              // is called
     }
 };
 
-/** Presents and consumes the offers in an order book.
-
-    Two `ApplyView` objects accumulate changes to the ledger. `view`
-    is applied when the calling transaction succeeds. If the calling
-    transaction fails, then `view_cancel` is applied.
-
-    Certain invalid offers are automatically removed:
-    - Offers with missing ledger entries
-    - Offers that expired
-    - Offers found unfunded:
-    An offer is found unfunded when the corresponding balance is zero
-    and the caller has not modified the balance. This is accomplished
-    by also looking up the balance in the cancel view.
-
-    When an offer is removed, it is removed from both views. This grooms the
-    order book regardless of whether or not the transaction is successful.
-*/
-class OfferStream : public TOfferStreamBase<STAmount, STAmount>
-{
-protected:
-    void
-    permRmOffer(uint256 const& offerIndex) override;
-
-public:
-    using TOfferStreamBase<STAmount, STAmount>::TOfferStreamBase;
-};
-
-/** Presents and consumes the offers in an order book.
-
-    The `view_' ` `ApplyView` accumulates changes to the ledger.
-    The `cancelView_` is used to determine if an offer is found
-    unfunded or became unfunded.
-    The `permToRemove` collection identifies offers that should be
-    removed even if the strand associated with this OfferStream
-    is not applied.
-
-    Certain invalid offers are added to the `permToRemove` collection:
-    - Offers with missing ledger entries
-    - Offers that expired
-    - Offers found unfunded:
-    An offer is found unfunded when the corresponding balance is zero
-    and the caller has not modified the balance. This is accomplished
-    by also looking up the balance in the cancel view.
-*/
-template <class TIn, class TOut>
+/**
+ * Presents and consumes the offers in an order book.
+ *
+ * The `view_' ` `ApplyView` accumulates changes to the ledger.
+ * The `cancelView_` is used to determine if an offer is found
+ * unfunded or became unfunded.
+ * The `permToRemove` collection identifies offers that should be
+ * removed even if the strand associated with this OfferStream
+ * is not applied.
+ *
+ * Certain invalid offers are added to the `permToRemove` collection:
+ * - Offers with missing ledger entries
+ * - Offers that expired
+ * - Offers found unfunded:
+ * An offer is found unfunded when the corresponding balance is zero
+ * and the caller has not modified the balance. This is accomplished
+ * by also looking up the balance in the cancel view.
+ */
+template <StepAmount TIn, StepAmount TOut>
 class FlowOfferStream : public TOfferStreamBase<TIn, TOut>
 {
 private:
-    boost::container::flat_set<uint256> permToRemove_;
+    boost::container::flat_set<UInt256> permToRemove_;
 
 public:
     using TOfferStreamBase<TIn, TOut>::TOfferStreamBase;
@@ -163,9 +148,9 @@ public:
     // unintuitive.  See the discussion in the comments for
     // BookOfferCrossingStep::limitSelfCrossQuality().
     void
-    permRmOffer(uint256 const& offerIndex) override;
+    permRmOffer(UInt256 const& offerIndex) override;
 
-    boost::container::flat_set<uint256> const&
+    [[nodiscard]] boost::container::flat_set<UInt256> const&
     permToRemove() const
     {
         return permToRemove_;

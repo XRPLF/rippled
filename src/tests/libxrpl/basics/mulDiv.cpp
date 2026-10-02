@@ -7,37 +7,37 @@
 
 using namespace xrpl;
 
-TEST(mulDiv, mulDiv)
+TEST(MulDiv, mul_div)
 {
     auto const max = std::numeric_limits<std::uint64_t>::max();
     std::uint64_t const max32 = std::numeric_limits<std::uint32_t>::max();
 
     auto result = mulDiv(85, 20, 5);
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(*result, 340);
+    EXPECT_EQ(*result, 340);  // NOLINT(bugprone-unchecked-optional-access)
     result = mulDiv(20, 85, 5);
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(*result, 340);
+    EXPECT_EQ(*result, 340);  // NOLINT(bugprone-unchecked-optional-access)
 
     result = mulDiv(0, max - 1, max - 3);
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(*result, 0);
+    EXPECT_EQ(*result, 0);  // NOLINT(bugprone-unchecked-optional-access)
     result = mulDiv(max - 1, 0, max - 3);
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(*result, 0);
+    EXPECT_EQ(*result, 0);  // NOLINT(bugprone-unchecked-optional-access)
 
     result = mulDiv(max, 2, max / 2);
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(*result, 4);
+    EXPECT_EQ(*result, 4);  // NOLINT(bugprone-unchecked-optional-access)
     result = mulDiv(max, 1000, max / 1000);
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(*result, 1000000);
+    EXPECT_EQ(*result, 1000000);  // NOLINT(bugprone-unchecked-optional-access)
     result = mulDiv(max, 1000, max / 1001);
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(*result, 1001000);
+    EXPECT_EQ(*result, 1001000);  // NOLINT(bugprone-unchecked-optional-access)
     result = mulDiv(max32 + 1, max32 + 1, 5);
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(*result, 3689348814741910323);
+    EXPECT_EQ(*result, 3689348814741910323);  // NOLINT(bugprone-unchecked-optional-access)
 
     // Overflow
     result = mulDiv(max - 1, max - 2, 5);

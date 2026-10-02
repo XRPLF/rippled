@@ -1,0 +1,90 @@
+#pragma once
+
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <map>
+#include <optional>
+#include <vector>
+
+namespace xrpl {
+
+/**
+ * @brief Invariant: frozen trust line balance change is not allowed.
+ *
+ * We iterate all affected trust lines and ensure that they don't have
+ * unexpected change of balance if they're frozen.
+ */
+class TransfersNotFrozen
+{
+    struct BalanceChange
+    {
+        SLE::const_pointer const line;
+        int const balanceChangeSign;
+    };
+
+    struct IssuerChanges
+    {
+        std::vector<BalanceChange> senders;
+        std::vector<BalanceChange> receivers;
+    };
+
+    using ByIssuer = std::map<Issue, IssuerChanges>;
+    ByIssuer balanceChanges_;
+
+    std::map<AccountID, SLE::const_pointer const> possibleIssuers_;
+
+public:
+    void
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
+
+    bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+
+private:
+    bool
+    isValidEntry(SLE::ConstRef before, SLE::ConstRef after);
+
+    static STAmount
+    calculateBalanceChange(SLE::ConstRef before, SLE::ConstRef after, bool isDelete);
+
+    void
+    recordBalance(Issue const& issue, BalanceChange change);
+
+    void
+    recordBalanceChanges(SLE::ConstRef after, STAmount const& balanceChange);
+
+    SLE::const_pointer
+    findIssuer(AccountID const& issuerID, ReadView const& view);
+
+    static bool
+    validateIssuerChanges(
+        SLE::ConstRef issuer,
+        IssuerChanges const& changes,
+        STTx const& tx,
+        beast::Journal const& j,
+        bool enforce,
+        bool fixOverrideFreeze,
+        std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts);
+
+    static bool
+    validateFrozenState(
+        BalanceChange const& change,
+        bool high,
+        STTx const& tx,
+        beast::Journal const& j,
+        bool enforce,
+        bool globalFreeze,
+        bool fixOverrideFreeze,
+        std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts);
+};
+
+}  // namespace xrpl

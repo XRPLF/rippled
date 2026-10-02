@@ -1,22 +1,47 @@
-#include <xrpld/app/ledger/InboundLedger.h>
-#include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
+
+#include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerReplayer.h>
+#include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/PeerSet.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/shamap/SHAMapItem.h>
+
+#include <boost/smart_ptr/intrusive_ptr.hpp>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
 SkipListAcquire::SkipListAcquire(
     Application& app,
     InboundLedgers& inboundLedgers,
-    uint256 const& ledgerHash,
+    UInt256 const& ledgerHash,
     std::unique_ptr<PeerSet> peerSet)
     : TimeoutCounter(
           app,
           ledgerHash,
-          LedgerReplayParameters::SUB_TASK_TIMEOUT,
-          {jtREPLAY_TASK, "SkipListAcq", LedgerReplayParameters::MAX_QUEUED_TASKS},
-          app.journal("LedgerReplaySkipList"))
+          ledger_replay_parameters::kSubTaskTimeout,
+          {.jobType = JtReplayTask,
+           .jobName = "SkipListAcq",
+           .jobLimit = ledger_replay_parameters::kMaxQueuedTasks},
+          app.getJournal("LedgerReplaySkipList"))
     , inboundLedgers_(inboundLedgers)
     , peerSet_(std::move(peerSet))
 {
@@ -71,10 +96,10 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                 {
                     JLOG(journal_.trace())
                         << "Add a no feature peer " << peer->id() << " for " << hash_;
-                    if (++noFeaturePeerCount_ >= LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
+                    if (++noFeaturePeerCount_ >= ledger_replay_parameters::kMaxNoFeaturePeerCount)
                     {
                         JLOG(journal_.debug()) << "Fall back for " << hash_;
-                        timerInterval_ = LedgerReplayParameters::SUB_TASK_FALLBACK_TIMEOUT;
+                        timerInterval_ = ledger_replay_parameters::kSubTaskFallbackTimeout;
                         fallBack_ = true;
                     }
                 }
@@ -88,8 +113,8 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
 void
 SkipListAcquire::onTimer(bool progress, ScopedLockType& sl)
 {
-    JLOG(journal_.trace()) << "mTimeouts=" << timeouts_ << " for " << hash_;
-    if (timeouts_ > LedgerReplayParameters::SUB_TASK_MAX_TIMEOUTS)
+    JLOG(journal_.trace()) << "timeouts_=" << timeouts_ << " for " << hash_;
+    if (timeouts_ > ledger_replay_parameters::kSubTaskMaxTimeouts)
     {
         failed_ = true;
         JLOG(journal_.debug()) << "too many timeouts " << hash_;
@@ -127,7 +152,7 @@ SkipListAcquire::processData(
             return;
         }
     }
-    catch (...)
+    catch (...)  // NOLINT(bugprone-empty-catch)
     {
     }
 
@@ -151,7 +176,7 @@ SkipListAcquire::addDataCallback(OnSkipListDataCB&& cb)
 std::shared_ptr<SkipListAcquire::SkipListData const>
 SkipListAcquire::getData() const
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
     return data_;
 }
 
@@ -176,7 +201,7 @@ SkipListAcquire::retrieveSkipList(std::shared_ptr<Ledger const> const& ledger, S
 
 void
 SkipListAcquire::onSkipListAcquired(
-    std::vector<uint256> const& skipList,
+    std::vector<UInt256> const& skipList,
     std::uint32_t ledgerSeq,
     ScopedLockType& sl)
 {

@@ -5,13 +5,16 @@
 
 #include <boost/asio/buffer.hpp>
 
+#include <deque>
+#include <istream>
 #include <stack>
+#include <string>
 
-namespace Json {
+namespace json {
 
-/** \brief Unserialize a <a HREF="http://www.json.org">JSON</a> document into a
+/**
+ * @brief Unserialize a <a HREF="http://www.json.org">JSON</a> document into a
  * Value.
- *
  */
 class Reader
 {
@@ -19,73 +22,80 @@ public:
     using Char = char;
     using Location = Char const*;
 
-    /** \brief Constructs a Reader allowing all features
+    /**
+     * @brief Constructs a Reader allowing all features
      * for parsing.
      */
     Reader() = default;
 
-    /** \brief Read a Value from a <a HREF="http://www.json.org">JSON</a>
-     * document. \param document UTF-8 encoded string containing the document to
-     * read. \param root [out] Contains the root value of the document if it was
+    /**
+     * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a>
+     * document. @param document UTF-8 encoded string containing the document to
+     * read. @param root [out] Contains the root value of the document if it was
      *             successfully parsed.
-     * \return \c true if the document was successfully parsed, \c false if an
+     * @return @c true if the document was successfully parsed, @c false if an
      * error occurred.
      */
     bool
     parse(std::string const& document, Value& root);
 
-    /** \brief Read a Value from a <a HREF="http://www.json.org">JSON</a>
-     * document. \param document UTF-8 encoded string containing the document to
-     * read. \param root [out] Contains the root value of the document if it was
+    /**
+     * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a>
+     * document. @param document UTF-8 encoded string containing the document to
+     * read. @param root [out] Contains the root value of the document if it was
      *             successfully parsed.
-     * \return \c true if the document was successfully parsed, \c false if an
+     * @return @c true if the document was successfully parsed, @c false if an
      * error occurred.
      */
     bool
     parse(char const* beginDoc, char const* endDoc, Value& root);
 
-    /// \brief Parse from input stream.
-    /// \see Json::operator>>(std::istream&, Json::Value&).
+    /**
+     * @brief Parse from input stream.
+     * @see json::operator>>(std::istream&, json::Value&).
+     */
     bool
     parse(std::istream& is, Value& root);
 
-    /** \brief Read a Value from a <a HREF="http://www.json.org">JSON</a> buffer
-     * sequence. \param root [out] Contains the root value of the document if it
-     * was successfully parsed. \param UTF-8 encoded buffer sequence. \return \c
-     * true if the buffer was successfully parsed, \c false if an error
+    /**
+     * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a> buffer
+     * sequence. @param root [out] Contains the root value of the document if it
+     * was successfully parsed. @param UTF-8 encoded buffer sequence. @return @c
+     * true if the buffer was successfully parsed, @c false if an error
      * occurred.
      */
     template <class BufferSequence>
     bool
     parse(Value& root, BufferSequence const& bs);
 
-    /** \brief Returns a user friendly string that list errors in the parsed
-     * document. \return Formatted error message with the list of errors with
+    /**
+     * @brief Returns a user friendly string that list errors in the parsed
+     * document. @return Formatted error message with the list of errors with
      * their location in the parsed document. An empty string is returned if no
      * error occurred during parsing.
      */
-    std::string
+    [[nodiscard]] std::string
     getFormattedErrorMessages() const;
 
-    static constexpr unsigned nest_limit{25};
+    static constexpr unsigned kNestLimit{25};
 
 private:
-    enum TokenType {
-        tokenEndOfStream = 0,
-        tokenObjectBegin,
-        tokenObjectEnd,
-        tokenArrayBegin,
-        tokenArrayEnd,
-        tokenString,
-        tokenInteger,
-        tokenDouble,
-        tokenTrue,
-        tokenFalse,
-        tokenNull,
-        tokenArraySeparator,
-        tokenMemberSeparator,
-        tokenComment,
-        tokenError
+    enum class TokenType {
+        EndOfStream = 0,
+        ObjectBegin,
+        ObjectEnd,
+        ArrayBegin,
+        ArrayEnd,
+        String,
+        Integer,
+        Double,
+        True,
+        False,
+        Null,
+        ArraySeparator,
+        MemberSeparator,
+        Comment,
+        Error
     };
 
     class Token
@@ -93,9 +103,9 @@ private:
     public:
         explicit Token() = default;
 
-        TokenType type_;
-        Location start_;
-        Location end_;
+        TokenType type;
+        Location start;
+        Location end;
     };
 
     class ErrorInfo
@@ -103,9 +113,9 @@ private:
     public:
         explicit ErrorInfo() = default;
 
-        Token token_;
-        std::string message_;
-        Location extra_;
+        Token token{};
+        std::string message;
+        Location extra{};
     };
 
     using Errors = std::deque<ErrorInfo>;
@@ -151,7 +161,7 @@ private:
         Location end,
         unsigned int& unicode);
     bool
-    addError(std::string const& message, Token& token, Location extra = 0);
+    addError(std::string const& message, Token& token, Location extra = nullptr);
     bool
     recoverFromError(TokenType skipUntilToken);
     bool
@@ -173,11 +183,11 @@ private:
     Nodes nodes_;
     Errors errors_;
     std::string document_;
-    Location begin_;
-    Location end_;
-    Location current_;
-    Location lastValueEnd_;
-    Value* lastValue_;
+    Location begin_{};
+    Location end_{};
+    Location current_{};
+    Location lastValueEnd_{};
+    Value* lastValue_{};
 };
 
 template <class BufferSequence>
@@ -192,31 +202,32 @@ Reader::parse(Value& root, BufferSequence const& bs)
     return parse(s, root);
 }
 
-/** \brief Read from 'sin' into 'root'.
-
- Always keep comments from the input JSON.
-
- This can be used to read a file into a particular sub-object.
- For example:
- \code
- Json::Value root;
- cin >> root["dir"]["file"];
- cout << root;
- \endcode
- Result:
- \verbatim
- {
-"dir": {
-    "file": {
- // The input stream JSON would be nested here.
-    }
-}
- }
- \endverbatim
- \throw std::exception on parse error.
- \see Json::operator<<()
-*/
+/**
+ * @brief Read from 'sin' into 'root'.
+ *
+ * Always keep comments from the input JSON.
+ *
+ * This can be used to read a file into a particular sub-object.
+ * For example:
+ * @code
+ * json::Value root;
+ * cin >> root["dir"]["file"];
+ * cout << root;
+ * @endcode
+ * Result:
+ * @verbatim
+ * {
+ * "dir": {
+ *    "file": {
+ * // The input stream JSON would be nested here.
+ *    }
+ * }
+ * }
+ * @endverbatim
+ * @throws std::exception on parse error.
+ * @see json::operator<<()
+ */
 std::istream&
 operator>>(std::istream&, Value&);
 
-}  // namespace Json
+}  // namespace json

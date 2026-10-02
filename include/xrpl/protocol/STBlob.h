@@ -3,10 +3,14 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Slice.h>
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
 
+#include <cstdint>
 #include <cstring>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -26,31 +30,31 @@ public:
     STBlob(SField const& n);
     STBlob(SerialIter&, SField const& name = sfGeneric);
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const;
 
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const;
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
     STBlob&
     operator=(Slice const& slice);
 
-    value_type
+    [[nodiscard]] value_type
     value() const noexcept;
 
     STBlob&
@@ -95,7 +99,7 @@ STBlob::size() const
 inline std::uint8_t const*
 STBlob::data() const
 {
-    return reinterpret_cast<std::uint8_t const*>(value_.data());
+    return value_.data();
 }
 
 inline STBlob&

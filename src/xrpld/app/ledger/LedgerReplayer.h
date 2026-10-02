@@ -1,11 +1,20 @@
 #pragma once
 
-#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerReplayTask.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/PeerSet.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/shamap/SHAMapItem.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory>
 #include <mutex>
 #include <vector>
 
@@ -15,36 +24,36 @@ namespace test {
 class LedgerReplayClient;
 }  // namespace test
 
-namespace LedgerReplayParameters {
+namespace ledger_replay_parameters {
 // timeout value for LedgerReplayTask
-auto constexpr TASK_TIMEOUT = std::chrono::milliseconds{500};
+constexpr auto kTaskTimeout = std::chrono::milliseconds{500};
 
 // for LedgerReplayTask to calculate max allowed timeouts
-// = max( TASK_MAX_TIMEOUTS_MINIMUM,
-//        (# of ledger to replay) * TASK_MAX_TIMEOUTS_MULTIPLIER)
-std::uint32_t constexpr TASK_MAX_TIMEOUTS_MULTIPLIER = 2;
-std::uint32_t constexpr TASK_MAX_TIMEOUTS_MINIMUM = 10;
+// = max( kTaskMaxTimeoutsMinimum,
+//        (# of ledger to replay) * kTaskMaxTimeoutsMultiplier)
+constexpr std::uint32_t kTaskMaxTimeoutsMultiplier = 2;
+constexpr std::uint32_t kTaskMaxTimeoutsMinimum = 10;
 
 // timeout value for subtasks: LedgerDeltaAcquire and SkipListAcquire
-auto constexpr SUB_TASK_TIMEOUT = std::chrono::milliseconds{250};
+constexpr auto kSubTaskTimeout = std::chrono::milliseconds{250};
 // max of allowed subtask timeouts
-std::uint32_t constexpr SUB_TASK_MAX_TIMEOUTS = 10;
+constexpr std::uint32_t kSubTaskMaxTimeouts = 10;
 
 // max number of peers that do not support the ledger replay feature
 // returned by the PeerSet before switch to fallback
-auto constexpr MAX_NO_FEATURE_PEER_COUNT = 2;
+constexpr auto kMaxNoFeaturePeerCount = 2;
 // subtask timeout value after fallback
-auto constexpr SUB_TASK_FALLBACK_TIMEOUT = std::chrono::milliseconds{1000};
+constexpr auto kSubTaskFallbackTimeout = std::chrono::milliseconds{1000};
 
 // for LedgerReplayer to limit the number of LedgerReplayTask
-std::uint32_t constexpr MAX_TASKS = 10;
+constexpr std::uint32_t kMaxTasks = 10;
 
 // for LedgerReplayer to limit the number of ledgers to replay in one task
-std::uint32_t constexpr MAX_TASK_SIZE = 256;
+constexpr std::uint32_t kMaxTaskSize = 256;
 
 // to limit the number of LedgerReplay related jobs in JobQueue
-std::uint32_t constexpr MAX_QUEUED_TASKS = 100;
-}  // namespace LedgerReplayParameters
+constexpr std::uint32_t kMaxQueuedTasks = 100;
+}  // namespace ledger_replay_parameters
 
 /**
  * Manages the lifetime of ledger replay tasks.
@@ -67,9 +76,11 @@ public:
      * @note totalNumLedgers must > 0 && totalNumLedgers must <= 256
      */
     void
-    replay(InboundLedger::Reason r, uint256 const& finishLedgerHash, std::uint32_t totalNumLedgers);
+    replay(InboundLedger::Reason r, UInt256 const& finishLedgerHash, std::uint32_t totalNumLedgers);
 
-    /** Create LedgerDeltaAcquire subtasks for the LedgerReplayTask task */
+    /**
+     * Create LedgerDeltaAcquire subtasks for the LedgerReplayTask task
+     */
     void
     createDeltas(std::shared_ptr<LedgerReplayTask> task);
 
@@ -93,7 +104,9 @@ public:
         LedgerHeader const& info,
         std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
 
-    /** Remove completed tasks */
+    /**
+     * Remove completed tasks
+     */
     void
     sweep();
 
@@ -103,29 +116,29 @@ public:
     std::size_t
     tasksSize() const
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::scoped_lock const lock(mtx_);
         return tasks_.size();
     }
 
     std::size_t
     deltasSize() const
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::scoped_lock const lock(mtx_);
         return deltas_.size();
     }
 
     std::size_t
     skipListsSize() const
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::scoped_lock const lock(mtx_);
         return skipLists_.size();
     }
 
 private:
     mutable std::mutex mtx_;
     std::vector<std::shared_ptr<LedgerReplayTask>> tasks_;
-    hash_map<uint256, std::weak_ptr<LedgerDeltaAcquire>> deltas_;
-    hash_map<uint256, std::weak_ptr<SkipListAcquire>> skipLists_;
+    HashMap<UInt256, std::weak_ptr<LedgerDeltaAcquire>> deltas_;
+    HashMap<UInt256, std::weak_ptr<SkipListAcquire>> skipLists_;
 
     Application& app_;
     InboundLedgers& inboundLedgers_;

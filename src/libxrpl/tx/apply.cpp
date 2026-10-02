@@ -1,19 +1,60 @@
+#include <xrpl/tx/apply.h>
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/apply.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/applySteps.h>
+
+#include <exception>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
-// These are the same flags defined as HashRouterFlags::PRIVATE1-4 in
-// HashRouter.h
-constexpr HashRouterFlags SF_SIGBAD = HashRouterFlags::PRIVATE1;     // Signature is bad
-constexpr HashRouterFlags SF_SIGGOOD = HashRouterFlags::PRIVATE2;    // Signature is good
-constexpr HashRouterFlags SF_LOCALBAD = HashRouterFlags::PRIVATE3;   // Local checks failed
-constexpr HashRouterFlags SF_LOCALGOOD = HashRouterFlags::PRIVATE4;  // Local checks passed
+// This file owns HashRouterFlags::PRIVATE1-4 and PRIVATE7-8 in HashRouter.h.
+// These are the first four; the other two are below.
+constexpr HashRouterFlags kSfSigbad = HashRouterFlags::PRIVATE1;     // Signature is bad
+constexpr HashRouterFlags kSfSiggood = HashRouterFlags::PRIVATE2;    // Signature is good
+constexpr HashRouterFlags kSfLocalbad = HashRouterFlags::PRIVATE3;   // Local checks failed
+constexpr HashRouterFlags kSfLocalgood = HashRouterFlags::PRIVATE4;  // Local checks passed
+
+// Before fixCleanup3_4_0, a signature in an alternate role field, such as
+// sfSponsorSignature, covered the same bytes as the top level signature. Which
+// bytes a role signature must cover therefore depends on whether the fix is
+// enabled, but the four flags above record only the verdict, not the rules that
+// produced it. A verdict reached under one prefix would otherwise be reused
+// under the other.
+//
+// The two flags below hold the verdict for the pre-fix prefixes, so the pre-fix
+// and post-fix verdicts occupy separate slots and neither is ever read in the
+// other's era. Nothing is cleared when the amendment activates: setFlags only
+// sets bits, so a stale pre-fix verdict simply stops being read and ages out
+// with the rest of the routing table.
+//
+// This is not one switchover at a single instant. The era is chosen per call
+// from the rules passed in, and callers do not agree on the rules: relay and
+// submit verify against the validated rules, which lag the open ledger rules
+// that preflight2 verifies against. At the amendment's flag ledger the same
+// transaction can therefore be checked under both prefixes, on the same node,
+// at the same time.
+//
+// Remove these two flags, and oldPrefixSig below, when Cleanup3_4_0 is retired
+// in features.macro.
+constexpr HashRouterFlags kSfSigbadOldPrefix = HashRouterFlags::PRIVATE7;
+constexpr HashRouterFlags kSfSiggoodOldPrefix = HashRouterFlags::PRIVATE8;
 
 //------------------------------------------------------------------------------
 
@@ -23,80 +64,103 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
 
-    // Ignore signature check on batch inner transactions
-    if (tx.isFlag(tfInnerBatchTxn) && rules.enabled(featureBatch))
+    // Batch inner transactions are never independently valid: they are applied
+    // within their batch, not through checkValidity. Reaching here means one was
+    // relayed or submitted on its own, so mark it bad regardless of the
+    // amendment (like PeerImp and NetworkOPs).
+    if (tx.isFlag(tfInnerBatchTxn))
     {
-        // Defensive Check: These values are also checked in Batch::preflight
-        if (tx.isFieldPresent(sfTxnSignature) || !tx.getSigningPubKey().empty() ||
-            tx.isFieldPresent(sfSigners))
-            return {Validity::SigBad, "Malformed: Invalid inner batch transaction."};
-
-        // This block should probably have never been included in the
-        // original `Batch` implementation. An inner transaction never
-        // has a valid signature.
-        bool const neverValid = rules.enabled(fixBatchInnerSigs);
-        if (!neverValid)
-        {
-            std::string reason;
-            if (!passesLocalChecks(tx, reason))
-            {
-                router.setFlags(id, SF_LOCALBAD);
-                return {Validity::SigGoodOnly, reason};
-            }
-
-            router.setFlags(id, SF_SIGGOOD);
-            return {Validity::Valid, ""};
-        }
+        router.setFlags(id, kSfSigbad);
+        return {Validity::SigBad, "Batch inner transactions are never considered validly signed."};
     }
 
-    if (any(flags & SF_SIGBAD))
+    // Pick the cache slot for this call's era; see kSfSiggoodOldPrefix above.
+    // Only a transaction that carries a role signature, and only while the fix
+    // is disabled, uses the separate slot. Every other transaction, and every
+    // transaction once the fix is enabled, uses the ordinary flags and verifies
+    // exactly once, so there is no steady state cost.
+    //
+    // Both directions matter. A good verdict from before the fix must not let a
+    // signature moved between roles survive the amendment, and a bad verdict
+    // from before the fix must not condemn a transaction that the new prefixes
+    // accept.
+    //
+    // Whether a transaction carries a role signature is fixed for its ID: the
+    // fields are kNotSigning, so they are excluded from the signed bytes, but
+    // they are still covered by the transaction ID. Repeat calls for one ID
+    // therefore always agree on which slot pair to use.
+    bool const oldPrefixSig = !rules.enabled(fixCleanup3_4_0) &&
+        (tx.isFieldPresent(sfSponsorSignature) || tx.isFieldPresent(sfCounterpartySignature));
+    auto const sigbadFlag = oldPrefixSig ? kSfSigbadOldPrefix : kSfSigbad;
+    auto const siggoodFlag = oldPrefixSig ? kSfSiggoodOldPrefix : kSfSiggood;
+
+    if (any(flags & sigbadFlag))
+    {
         // Signature is known bad
         return {Validity::SigBad, "Transaction has bad signature."};
+    }
 
-    if (!any(flags & SF_SIGGOOD))
+    if (!any(flags & siggoodFlag))
     {
         auto const sigVerify = tx.checkSign(rules);
         if (!sigVerify)
         {
-            router.setFlags(id, SF_SIGBAD);
+            router.setFlags(id, sigbadFlag);
             return {Validity::SigBad, sigVerify.error()};
         }
-        router.setFlags(id, SF_SIGGOOD);
+        router.setFlags(id, siggoodFlag);
     }
 
     // Signature is now known good
-    if (any(flags & SF_LOCALBAD))
+    if (any(flags & kSfLocalbad))
+    {
         // ...but the local checks
         // are known bad.
         return {Validity::SigGoodOnly, "Local checks failed."};
+    }
 
-    if (any(flags & SF_LOCALGOOD))
+    if (any(flags & kSfLocalgood))
+    {
         // ...and the local checks
         // are known good.
         return {Validity::Valid, ""};
+    }
 
     // Do the local checks
     std::string reason;
     if (!passesLocalChecks(tx, reason))
     {
-        router.setFlags(id, SF_LOCALBAD);
+        router.setFlags(id, kSfLocalbad);
         return {Validity::SigGoodOnly, reason};
     }
-    router.setFlags(id, SF_LOCALGOOD);
+    router.setFlags(id, kSfLocalgood);
     return {Validity::Valid, ""};
 }
 
 void
-forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
+forceValidity(HashRouter& router, UInt256 const& txid, Validity validity)
 {
+    // Callers reach here when they deliberately skip signature verification,
+    // such as a cluster peer that trusts its neighbor's checks, or a
+    // configuration that turns signature checks off. Nothing was verified, so
+    // there is no prefix era to record. Mark both of checkValidity's signature
+    // slots good: otherwise the forced verdict is ignored for a role-signature
+    // transaction until fixCleanup3_4_0 is enabled, and the signature the
+    // caller meant to skip gets verified after all. Marking both cannot leak a
+    // verdict across eras, because no verdict was reached, and this is the only
+    // place the distinction can be recorded: kSfSiggood alone does not say
+    // whether checkValidity verified a post-fix signature or a caller forced
+    // the result. An already cached bad verdict still wins, since checkValidity
+    // tests its bad flag first. Drop kSfSiggoodOldPrefix when Cleanup3_4_0 is
+    // retired.
     HashRouterFlags flags = HashRouterFlags::UNDEFINED;
     switch (validity)
     {
         case Validity::Valid:
-            flags |= SF_LOCALGOOD;
+            flags |= kSfLocalgood;
             [[fallthrough]];
         case Validity::SigGoodOnly:
-            flags |= SF_SIGGOOD;
+            flags |= kSfSiggood | kSfSiggoodOldPrefix;
             [[fallthrough]];
         case Validity::SigBad:
             // would be silly to call directly
@@ -110,7 +174,6 @@ template <typename PreflightChecks>
 ApplyResult
 apply(ServiceRegistry& registry, OpenView& view, PreflightChecks&& preflightChecks)
 {
-    NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
     return doApply(preclaim(preflightChecks(), registry, view), registry, view);
 }
 
@@ -125,7 +188,7 @@ ApplyResult
 apply(
     ServiceRegistry& registry,
     OpenView& view,
-    uint256 const& parentBatchId,
+    UInt256 const& parentBatchId,
     STTx const& tx,
     ApplyFlags flags,
     beast::Journal j)
@@ -143,16 +206,16 @@ applyBatchTransactions(
     beast::Journal j)
 {
     XRPL_ASSERT(
-        batchTxn.getTxnType() == ttBATCH && batchTxn.getFieldArray(sfRawTransactions).size() != 0,
+        batchTxn.getTxnType() == ttBATCH && !batchTxn.getFieldArray(sfRawTransactions).empty(),
         "Batch transaction missing sfRawTransactions");
 
     auto const parentBatchId = batchTxn.getTransactionID();
     auto const mode = batchTxn.getFlags();
 
-    auto applyOneTransaction = [&registry, &j, &parentBatchId, &batchView](STTx&& tx) {
-        OpenView perTxBatchView(batch_view, batchView);
+    auto applyOneTransaction = [&registry, &j, &parentBatchId, &batchView](STTx const& tx) {
+        OpenView perTxBatchView(kBatchView, batchView);
 
-        auto const ret = apply(registry, perTxBatchView, parentBatchId, tx, tapBATCH, j);
+        auto const ret = apply(registry, perTxBatchView, parentBatchId, tx, TapBatch, j);
         XRPL_ASSERT(
             ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
             "Inner transaction should not be applied");
@@ -162,6 +225,9 @@ applyBatchTransactions(
 
         // If the transaction should be applied push its changes to the
         // whole-batch view.
+        // NOTE: each inner tx is individually capped at kOversizeMetaDataCap;
+        // there is no aggregate cap here. Bounded by kMaxBatchTxCount * cap,
+        // which standalone txns can already produce in one ledger.
         if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
             perTxBatchView.apply(batchView);
 
@@ -170,9 +236,9 @@ applyBatchTransactions(
 
     int applied = 0;
 
-    for (STObject rb : batchTxn.getFieldArray(sfRawTransactions))
+    for (auto const& stx : batchTxn.getBatchTransactions())
     {
-        auto const result = applyOneTransaction(STTx{std::move(rb)});
+        auto const result = applyOneTransaction(*stx);
         XRPL_ASSERT(
             result.applied == (isTesSuccess(result.ter) || isTecClaim(result.ter)),
             "Outer Batch failure, inner transaction should not be applied");
@@ -182,14 +248,16 @@ applyBatchTransactions(
 
         if (!isTesSuccess(result.ter))
         {
-            if (mode & tfAllOrNothing)
+            if ((mode & tfAllOrNothing) != 0u)
                 return false;
 
-            if (mode & tfUntilFailure)
+            if ((mode & tfUntilFailure) != 0u)
                 break;
         }
-        else if (mode & tfOnlyOne)
+        else if ((mode & tfOnlyOne) != 0u)
+        {
             break;
+        }
     }
 
     return applied != 0;
@@ -206,7 +274,7 @@ applyTransaction(
 {
     // Returns false if the transaction has need not be retried.
     if (retryAssured)
-        flags = flags | tapRETRY;
+        flags = flags | TapRetry;
 
     JLOG(j.debug()) << "TXN " << txn.getTransactionID() << (retryAssured ? "/retry" : "/final");
 
@@ -222,7 +290,7 @@ applyTransaction(
             // its inner transactions as necessary.
             if (isTesSuccess(result.ter) && txn.getTxnType() == ttBATCH)
             {
-                OpenView wholeBatchView(batch_view, view);
+                OpenView wholeBatchView(kBatchView, view);
 
                 if (applyBatchTransactions(registry, wholeBatchView, txn, j))
                     wholeBatchView.apply(view);

@@ -1,24 +1,59 @@
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/overlay/Overlay.h>
 
+#include <xrpld/core/TimeKeeper.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/Peer.h>
+
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/FileUtilities.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/messages.h>
+#include <xrpl/protocol/tokens.h>
+#include <xrpl/server/Manifest.h>
 #include <xrpl/server/NetworkOPs.h>
 
-#include <boost/regex.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
 
+#include <xrpl.pb.h>
+
+#include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <functional>
+#include <iterator>
+#include <limits>
+#include <map>
+#include <memory>
+#include <mutex>
 #include <numeric>
+#include <optional>
 #include <shared_mutex>
+#include <string>
+#include <string_view>
+#include <system_error>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -27,23 +62,23 @@ to_string(ListDisposition disposition)
 {
     switch (disposition)
     {
-        case ListDisposition::accepted:
+        case ListDisposition::Accepted:
             return "accepted";
-        case ListDisposition::expired:
+        case ListDisposition::Expired:
             return "expired";
-        case ListDisposition::same_sequence:
+        case ListDisposition::SameSequence:
             return "same_sequence";
-        case ListDisposition::pending:
+        case ListDisposition::Pending:
             return "pending";
-        case ListDisposition::known_sequence:
+        case ListDisposition::KnownSequence:
             return "known_sequence";
-        case ListDisposition::unsupported_version:
+        case ListDisposition::UnsupportedVersion:
             return "unsupported_version";
-        case ListDisposition::untrusted:
+        case ListDisposition::Untrusted:
             return "untrusted";
-        case ListDisposition::stale:
+        case ListDisposition::Stale:
             return "stale";
-        case ListDisposition::invalid:
+        case ListDisposition::Invalid:
             return "invalid";
     }
     return "unknown";
@@ -67,13 +102,13 @@ ValidatorList::PublisherListStats::PublisherListStats(
 ListDisposition
 ValidatorList::PublisherListStats::bestDisposition() const
 {
-    return dispositions.empty() ? ListDisposition::invalid : dispositions.begin()->first;
+    return dispositions.empty() ? ListDisposition::Invalid : dispositions.begin()->first;
 }
 
 ListDisposition
 ValidatorList::PublisherListStats::worstDisposition() const
 {
-    return dispositions.empty() ? ListDisposition::invalid : dispositions.rbegin()->first;
+    return dispositions.empty() ? ListDisposition::Invalid : dispositions.rbegin()->first;
 }
 
 void
@@ -86,14 +121,14 @@ ValidatorList::PublisherListStats::mergeDispositions(PublisherListStats const& s
 }
 
 ValidatorList::MessageWithHash::MessageWithHash(
-    std::shared_ptr<Message> const& message_,
-    uint256 hash_,
-    std::size_t num_)
-    : message(message_), hash(hash_), numVLs(num_)
+    std::shared_ptr<Message> const& message,
+    UInt256 hash,
+    std::size_t num)
+    : message(message), hash(hash), numVLs(num)
 {
 }
 
-std::string const ValidatorList::filePrefix_ = "cache.";
+std::string const ValidatorList::kFilePrefix = "cache.";
 
 ValidatorList::ValidatorList(
     ManifestCache& validatorManifests,
@@ -109,7 +144,7 @@ ValidatorList::ValidatorList(
     , j_(j)
     , quorum_(minimumQuorum.value_or(1))  // Genesis ledger quorum
     , minimumQuorum_(minimumQuorum)
-    , listThreshold_(1)
+
 {
 }
 
@@ -120,7 +155,7 @@ ValidatorList::load(
     std::vector<std::string> const& publisherKeys,
     std::optional<std::size_t> listThreshold)
 {
-    static boost::regex const re(
+    static boost::regex const kRE(
         "[[:space:]]*"       // skip leading whitespace
         "([[:alnum:]]+)"     // node identity
         "(?:"                // begin optional comment block
@@ -132,12 +167,12 @@ ValidatorList::load(
         ")?"                 // end optional comment block
     );
 
-    std::lock_guard lock{mutex_};
+    std::scoped_lock const lock{mutex_};
 
     JLOG(j_.debug()) << "Loading configured trusted validator list publisher keys";
 
     std::size_t count = 0;
-    for (auto key : publisherKeys)
+    for (auto const& key : publisherKeys)
     {
         JLOG(j_.trace()) << "Processing '" << key << "'";
 
@@ -150,15 +185,15 @@ ValidatorList::load(
         }
 
         auto id = PublicKey(makeSlice(*ret));
-        auto status = PublisherStatus::unavailable;
+        auto status = PublisherStatus::Unavailable;
 
         if (publisherManifests_.revoked(id))
         {
             JLOG(j_.warn()) << "Configured validator list publisher key is revoked: " << key;
-            status = PublisherStatus::revoked;
+            status = PublisherStatus::Revoked;
         }
 
-        if (publisherLists_.count(id))
+        if (publisherLists_.contains(id))
         {
             JLOG(j_.warn()) << "Duplicate validator list publisher key: " << key;
             continue;
@@ -181,7 +216,7 @@ ValidatorList::load(
     {
         // Want truncated result when dividing an odd integer
         listThreshold_ = (publisherLists_.size() < 3) ? 1  //
-                                                      : publisherLists_.size() / 2 + 1;
+                                                      : (publisherLists_.size() / 2) + 1;
         JLOG(j_.debug()) << "Validator list threshold computed as " << listThreshold_;
     }
 
@@ -212,7 +247,7 @@ ValidatorList::load(
 
         boost::smatch match;
 
-        if (!boost::regex_match(n, match, re))
+        if (!boost::regex_match(n, match, kRE))
         {
             JLOG(j_.error()) << "Malformed entry: '" << n << "'";
             return false;
@@ -236,7 +271,7 @@ ValidatorList::load(
             JLOG(j_.warn()) << "Duplicate node identity: " << match[1];
             continue;
         }
-        localPublisherList.list.emplace_back(*id);
+        localPublisherList_.list.emplace_back(*id);
         ++count;
     }
 
@@ -244,21 +279,21 @@ ValidatorList::load(
     // set the expiration time for the newly created publisher list
     // exactly once
     if (count > 0)
-        localPublisherList.validUntil = TimeKeeper::time_point::max();
+        localPublisherList_.validUntil = TimeKeeper::time_point::max();
 
     JLOG(j_.debug()) << "Loaded " << count << " entries";
 
     return true;
 }
 
-boost::filesystem::path
-ValidatorList::getCacheFileName(ValidatorList::lock_guard const&, PublicKey const& pubKey) const
+std::filesystem::path
+ValidatorList::getCacheFileName(ValidatorList::ScopedLock const&, PublicKey const& pubKey) const
 {
-    return dataPath_ / (filePrefix_ + strHex(pubKey));
+    return dataPath_ / (kFilePrefix + strHex(pubKey));
 }
 
 // static
-Json::Value
+json::Value
 ValidatorList::buildFileData(
     std::string const& pubKey,
     ValidatorList::PublisherListCollection const& pubCollection,
@@ -268,14 +303,14 @@ ValidatorList::buildFileData(
 }
 
 // static
-Json::Value
+json::Value
 ValidatorList::buildFileData(
     std::string const& pubKey,
     ValidatorList::PublisherListCollection const& pubCollection,
     std::optional<std::uint32_t> forceVersion,
     beast::Journal j)
 {
-    Json::Value value(Json::objectValue);
+    json::Value value(json::ValueType::Object);
 
     XRPL_ASSERT(
         pubCollection.rawVersion == 2 || pubCollection.remaining.empty(),
@@ -299,11 +334,11 @@ ValidatorList::buildFileData(
             break;
         }
         case 2: {
-            Json::Value blobs(Json::arrayValue);
+            json::Value blobs(json::ValueType::Array);
 
             auto add = [&blobs,
                         &outerManifest = pubCollection.rawManifest](PublisherList const& pubList) {
-                auto& blob = blobs.append(Json::objectValue);
+                auto& blob = blobs.append(json::ValueType::Object);
                 blob[jss::blob] = pubList.rawBlob;
                 blob[jss::signature] = pubList.rawSignature;
                 if (pubList.rawManifest && *pubList.rawManifest != outerManifest)
@@ -322,25 +357,25 @@ ValidatorList::buildFileData(
         }
         default:
             JLOG(j.trace()) << "Invalid VL version provided: " << effectiveVersion;
-            value = Json::nullValue;
+            value = json::ValueType::Null;
     }
 
     return value;
 }
 
 void
-ValidatorList::cacheValidatorFile(ValidatorList::lock_guard const& lock, PublicKey const& pubKey)
+ValidatorList::cacheValidatorFile(ValidatorList::ScopedLock const& lock, PublicKey const& pubKey)
     const
 {
     if (dataPath_.empty())
         return;
 
-    boost::filesystem::path const filename = getCacheFileName(lock, pubKey);
+    std::filesystem::path const filename = getCacheFileName(lock, pubKey);
 
-    boost::system::error_code ec;
+    std::error_code ec;
 
-    Json::Value value = buildFileData(strHex(pubKey), publisherLists_.at(pubKey), j_);
-    // rippled should be the only process writing to this file, so
+    json::Value value = buildFileData(strHex(pubKey), publisherLists_.at(pubKey), j_);
+    // xrpld should be the only process writing to this file, so
     // if it ever needs to be read, it is not expected to change externally, so
     // delay the refresh as long as possible: 24 hours. (See also
     // `ValidatorSite::missingSite()`)
@@ -358,7 +393,7 @@ ValidatorList::cacheValidatorFile(ValidatorList::lock_guard const& lock, PublicK
 
 // static
 std::vector<ValidatorBlobInfo>
-ValidatorList::parseBlobs(std::uint32_t version, Json::Value const& body)
+ValidatorList::parseBlobs(std::uint32_t version, json::Value const& body)
 {
     std::vector<ValidatorBlobInfo> result;
     switch (version)
@@ -383,7 +418,7 @@ ValidatorList::parseBlobs(std::uint32_t version, Json::Value const& body)
         case 2:
         default: {
             if (!body.isMember(jss::blobs_v2) || !body[jss::blobs_v2].isArray() ||
-                body[jss::blobs_v2].size() > maxSupportedBlobs ||
+                body[jss::blobs_v2].size() > kMaxSupportedBlobs ||
                 // If any of the v1 fields are present, the VL is malformed
                 body.isMember(jss::blob) || body.isMember(jss::signature))
                 return {};
@@ -416,16 +451,9 @@ ValidatorList::parseBlobs(std::uint32_t version, Json::Value const& body)
 
 // static
 std::vector<ValidatorBlobInfo>
-ValidatorList::parseBlobs(protocol::TMValidatorList const& body)
-{
-    return {{body.blob(), body.signature(), {}}};
-}
-
-// static
-std::vector<ValidatorBlobInfo>
 ValidatorList::parseBlobs(protocol::TMValidatorListCollection const& body)
 {
-    if (body.blobs_size() > maxSupportedBlobs)
+    if (body.blobs_size() > kMaxSupportedBlobs)
         return {};
     std::vector<ValidatorBlobInfo> result;
     result.reserve(body.blobs_size());
@@ -441,7 +469,7 @@ ValidatorList::parseBlobs(protocol::TMValidatorListCollection const& body)
     }
     XRPL_ASSERT(
         result.size() == body.blobs_size(),
-        "xrpl::ValidatorList::parseBlobs(TMValidatorList) : result size "
+        "xrpl::ValidatorList::parseBlobs(TMValidatorListCollection) : result size "
         "match");
     return result;
 }
@@ -485,88 +513,45 @@ splitMessageParts(
 {
     if (end <= begin)
         return 0;
-    if (end - begin == 1)
+
+    std::optional<protocol::TMValidatorListCollection> smallMsg;
+    smallMsg.emplace();
+    smallMsg->set_version(largeMsg.version());
+    smallMsg->set_manifest(largeMsg.manifest());
+
+    for (std::size_t i = begin; i < end; ++i)
     {
-        protocol::TMValidatorList smallMsg;
-        smallMsg.set_version(1);
-        smallMsg.set_manifest(largeMsg.manifest());
-
-        auto const& blob = largeMsg.blobs(begin);
-        smallMsg.set_blob(blob.blob());
-        smallMsg.set_signature(blob.signature());
-        // This is only possible if "downgrading" a v2 UNL to v1.
-        if (blob.has_manifest())
-            smallMsg.set_manifest(blob.manifest());
-
-        XRPL_ASSERT(
-            Message::totalSize(smallMsg) <= maximumMessageSize,
-            "xrpl::splitMessageParts : maximum message size");
-
-        messages.emplace_back(
-            std::make_shared<Message>(smallMsg, protocol::mtVALIDATOR_LIST),
-            sha512Half(smallMsg),
-            1);
-        return messages.back().numVLs;
+        *smallMsg->add_blobs() = largeMsg.blobs(i);
     }
-    else
+
+    auto const size = Message::totalSize(*smallMsg);
+
+    // Split until each message fits, but a single blob can't be split any
+    // further, so stop recursing at that point regardless of maxSize.
+    if (size > maxSize && end - begin > 1)
     {
-        std::optional<protocol::TMValidatorListCollection> smallMsg;
-        smallMsg.emplace();
-        smallMsg->set_version(largeMsg.version());
-        smallMsg->set_manifest(largeMsg.manifest());
-
-        for (std::size_t i = begin; i < end; ++i)
-        {
-            *smallMsg->add_blobs() = largeMsg.blobs(i);
-        }
-
-        if (Message::totalSize(*smallMsg) > maxSize)
-        {
-            // free up the message space
-            smallMsg.reset();
-            return splitMessage(messages, largeMsg, maxSize, begin, end);
-        }
-        else
-        {
-            messages.emplace_back(
-                std::make_shared<Message>(*smallMsg, protocol::mtVALIDATOR_LIST_COLLECTION),
-                sha512Half(*smallMsg),
-                smallMsg->blobs_size());
-            return messages.back().numVLs;
-        }
+        // free up the message space
+        smallMsg.reset();
+        return splitMessage(messages, largeMsg, maxSize, begin, end);
     }
-    return 0;
-}
 
-// Build a v1 protocol message using only the current VL
-std::size_t
-buildValidatorListMessage(
-    std::vector<ValidatorList::MessageWithHash>& messages,
-    std::uint32_t rawVersion,
-    std::string const& rawManifest,
-    ValidatorBlobInfo const& currentBlob,
-    std::size_t maxSize)
-{
-    XRPL_ASSERT(
-        messages.empty(),
-        "xrpl::buildValidatorListMessage(ValidatorBlobInfo) : empty messages "
-        "input");
-    protocol::TMValidatorList msg;
-    auto const manifest = currentBlob.manifest ? *currentBlob.manifest : rawManifest;
-    auto const version = 1;
-    msg.set_manifest(manifest);
-    msg.set_blob(currentBlob.blob);
-    msg.set_signature(currentBlob.signature);
-    // Override the version
-    msg.set_version(version);
+    // An unsplittable blob is still bounded by the protocol limit: peers drop
+    // messages exceeding it on receipt, so don't waste the bandwidth. maxSize
+    // only ever tightens this (it defaults to kMaximumMessageSize), so a blob
+    // reaching here can exceed maxSize but never the protocol limit.
+    if (size > kMaximumMessageSize)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::splitMessageParts : maximum message size exceeded");
+        return 0;
+        // LCOV_EXCL_STOP
+    }
 
-    XRPL_ASSERT(
-        Message::totalSize(msg) <= maximumMessageSize,
-        "xrpl::buildValidatorListMessage(ValidatorBlobInfo) : maximum "
-        "message size");
     messages.emplace_back(
-        std::make_shared<Message>(msg, protocol::mtVALIDATOR_LIST), sha512Half(msg), 1);
-    return 1;
+        std::make_shared<Message>(*smallMsg, protocol::mtVALIDATOR_LIST_COLLECTION),
+        sha512Half(*smallMsg),
+        smallMsg->blobs_size());
+    return messages.back().numVLs;
 }
 
 // Build a v2 protocol message using all the VLs with sequence larger than the
@@ -608,73 +593,49 @@ buildValidatorListMessage(
         // split into smaller messages
         return splitMessage(messages, msg, maxSize);
     }
-    else
-    {
-        messages.emplace_back(
-            std::make_shared<Message>(msg, protocol::mtVALIDATOR_LIST_COLLECTION),
-            sha512Half(msg),
-            msg.blobs_size());
-        return messages.back().numVLs;
-    }
+
+    messages.emplace_back(
+        std::make_shared<Message>(msg, protocol::mtVALIDATOR_LIST_COLLECTION),
+        sha512Half(msg),
+        msg.blobs_size());
+    return messages.back().numVLs;
 }
 
 [[nodiscard]]
 // static
 std::pair<std::size_t, std::size_t>
 ValidatorList::buildValidatorListMessages(
-    std::size_t messageVersion,
     std::uint64_t peerSequence,
     std::size_t maxSequence,
     std::uint32_t rawVersion,
     std::string const& rawManifest,
     std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
     std::vector<ValidatorList::MessageWithHash>& messages,
-    std::size_t maxSize /*= maximumMessageSize*/)
+    std::size_t maxSize /*= kMaximumMessageSize*/)
 {
     XRPL_ASSERT(
         !blobInfos.empty(),
         "xrpl::ValidatorList::buildValidatorListMessages : empty messages "
         "input");
-    auto const& [currentSeq, currentBlob] = *blobInfos.begin();
     auto numVLs = std::accumulate(
         messages.begin(), messages.end(), 0, [](std::size_t total, MessageWithHash const& m) {
             return total + m.numVLs;
         });
-    if (messageVersion == 2 && peerSequence < maxSequence)
+    if (peerSequence < maxSequence)
     {
-        // Version 2
         if (messages.empty())
         {
             numVLs = buildValidatorListMessage(
                 messages, peerSequence, rawVersion, rawManifest, blobInfos, maxSize);
             if (messages.empty())
+            {
                 // No message was generated. Create an empty placeholder so we
-                // dont' repeat the work later.
+                // don't repeat the work later.
                 messages.emplace_back();
+            }
         }
 
-        // Don't send it next time.
         return {maxSequence, numVLs};
-    }
-    else if (messageVersion == 1 && peerSequence < currentSeq)
-    {
-        // Version 1
-        if (messages.empty())
-        {
-            numVLs = buildValidatorListMessage(
-                messages,
-                rawVersion,
-                currentBlob.manifest ? *currentBlob.manifest : rawManifest,
-                currentBlob,
-                maxSize);
-            if (messages.empty())
-                // No message was generated. Create an empty placeholder so we
-                // dont' repeat the work later.
-                messages.emplace_back();
-        }
-
-        // Don't send it next time.
-        return {currentSeq, numVLs};
     }
     return {0, 0};
 }
@@ -693,15 +654,9 @@ ValidatorList::sendValidatorList(
     HashRouter& hashRouter,
     beast::Journal j)
 {
-    std::size_t const messageVersion =
-        peer.supportsFeature(ProtocolFeature::ValidatorList2Propagation)  ? 2
-        : peer.supportsFeature(ProtocolFeature::ValidatorListPropagation) ? 1
-                                                                          : 0;
-    if (!messageVersion)
-        return;
     auto const [newPeerSequence, numVLs] = buildValidatorListMessages(
-        messageVersion, peerSequence, maxSequence, rawVersion, rawManifest, blobInfos, messages);
-    if (newPeerSequence)
+        peerSequence, maxSequence, rawVersion, rawManifest, blobInfos, messages);
+    if (newPeerSequence != 0u)
     {
         XRPL_ASSERT(
             !messages.empty(),
@@ -727,22 +682,11 @@ ValidatorList::sendValidatorList(
             "xrpl::ValidatorList::sendValidatorList : sent or one message");
         if (sent)
         {
-            if (messageVersion > 1)
-                JLOG(j.debug()) << "Sent " << messages.size()
-                                << " validator list collection(s) containing " << numVLs
-                                << " validator list(s) for " << strHex(publisherKey)
-                                << " with sequence range " << peerSequence << ", "
-                                << newPeerSequence << " to " << peer.fingerprint();
-            else
-            {
-                XRPL_ASSERT(
-                    numVLs == 1,
-                    "xrpl::ValidatorList::sendValidatorList : one validator "
-                    "list");
-                JLOG(j.debug()) << "Sent validator list for " << strHex(publisherKey)
-                                << " with sequence " << newPeerSequence << " to "
-                                << peer.fingerprint();
-            }
+            JLOG(j.debug()) << "Sent " << messages.size()
+                            << " validator list collection(s) containing " << numVLs
+                            << " validator list(s) for " << strHex(publisherKey)
+                            << " with sequence range " << peerSequence << ", " << newPeerSequence
+                            << " to " << peer.fingerprint();
         }
     }
 }
@@ -782,10 +726,14 @@ ValidatorList::buildBlobInfos(
 {
     auto const& current = lists.current;
     auto const& remaining = lists.remaining;
-    blobInfos[current.sequence] = {current.rawBlob, current.rawSignature, current.rawManifest};
+    blobInfos[current.sequence] = {
+        .blob = current.rawBlob,
+        .signature = current.rawSignature,
+        .manifest = current.rawManifest};
     for (auto const& [sequence, vl] : remaining)
     {
-        blobInfos[sequence] = {vl.rawBlob, vl.rawSignature, vl.rawManifest};
+        blobInfos[sequence] = {
+            .blob = vl.rawBlob, .signature = vl.rawSignature, .manifest = vl.rawManifest};
     }
 }
 
@@ -804,7 +752,7 @@ ValidatorList::broadcastBlobs(
     PublicKey const& publisherKey,
     ValidatorList::PublisherListCollection const& lists,
     std::size_t maxSequence,
-    uint256 const& hash,
+    UInt256 const& hash,
     Overlay& overlay,
     HashRouter& hashRouter,
     beast::Journal j)
@@ -813,16 +761,9 @@ ValidatorList::broadcastBlobs(
 
     if (toSkip)
     {
-        // We don't know what messages or message versions we're sending
-        // until we examine our peer's properties. Build the message(s) on
-        // demand, but reuse them when possible.
-
-        // This will hold a v1 message with only the current VL if we have
-        // any peers that don't support v2
-        std::vector<ValidatorList::MessageWithHash> messages1;
-        // This will hold v2 messages indexed by the peer's
-        // `publisherListSequence`. For each `publisherListSequence`, we'll
-        // only send the VLs with higher sequences.
+        // Build v2 messages on demand and reuse them when possible. Messages
+        // are indexed by the peer's `publisherListSequence`; for each sequence,
+        // we only send VLs with higher sequences.
         std::map<std::size_t, std::vector<ValidatorList::MessageWithHash>> messages2;
         // If any peers are found that are worth considering, this list will
         // be built to hold info for all of the valid VLs.
@@ -835,15 +776,13 @@ ValidatorList::broadcastBlobs(
         // the peer, and foreach provides a const&
         for (auto& peer : overlay.getActivePeers())
         {
-            if (toSkip->count(peer->id()) == 0)
+            if (!toSkip->contains(peer->id()))
             {
                 auto const peerSequence = peer->publisherListSequence(publisherKey).value_or(0);
                 if (peerSequence < maxSequence)
                 {
                     if (blobInfos.empty())
                         buildBlobInfos(blobInfos, lists);
-                    auto const v2 =
-                        peer->supportsFeature(ProtocolFeature::ValidatorList2Propagation);
                     sendValidatorList(
                         *peer,
                         peerSequence,
@@ -852,11 +791,10 @@ ValidatorList::broadcastBlobs(
                         lists.rawVersion,
                         lists.rawManifest,
                         blobInfos,
-                        v2 ? messages2[peerSequence] : messages1,
+                        messages2[peerSequence],
                         hashRouter,
                         j);
-                    // Even if the peer doesn't support the messages,
-                    // suppress it so it'll be ignored next time.
+                    // Don't send it next time.
                     hashRouter.addSuppressionPeer(hash, peer->id());
                 }
             }
@@ -870,7 +808,7 @@ ValidatorList::applyListsAndBroadcast(
     std::uint32_t version,
     std::vector<ValidatorBlobInfo> const& blobs,
     std::string siteUri,
-    uint256 const& hash,
+    UInt256 const& hash,
     Overlay& overlay,
     HashRouter& hashRouter,
     NetworkOPs& networkOPs)
@@ -878,7 +816,7 @@ ValidatorList::applyListsAndBroadcast(
     auto const result = applyLists(manifest, version, blobs, std::move(siteUri), hash);
     auto const disposition = result.bestDisposition();
 
-    if (disposition == ListDisposition::accepted)
+    if (disposition == ListDisposition::Accepted)
     {
         bool good = true;
 
@@ -886,7 +824,7 @@ ValidatorList::applyListsAndBroadcast(
         // from the below check.
         for (auto const& [_, listCollection] : publisherLists_)
         {
-            if (listCollection.status != PublisherStatus::available)
+            if (listCollection.status != PublisherStatus::Available)
             {
                 good = false;
                 break;
@@ -897,14 +835,18 @@ ValidatorList::applyListsAndBroadcast(
             networkOPs.clearUNLBlocked();
         }
     }
-    bool broadcast = disposition <= ListDisposition::known_sequence;
+    bool const broadcast = disposition <= ListDisposition::KnownSequence;
 
     // this function is only called for PublicKeys which are not specified
     // in the config file (Note: Keys specified in the local config file are
     // stored in ValidatorList::localPublisherList data member).
-    if (broadcast && result.status <= PublisherStatus::expired && result.publisherKey &&
+    if (broadcast && result.status <= PublisherStatus::Expired && result.publisherKey &&
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) publisherKey checked in condition
+        // above
         publisherLists_[*result.publisherKey].maxSequence)
     {
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) publisherKey and maxSequence checked in
+        // condition above
         auto const& pubCollection = publisherLists_[*result.publisherKey];
 
         broadcastBlobs(
@@ -915,6 +857,7 @@ ValidatorList::applyListsAndBroadcast(
             overlay,
             hashRouter,
             j_);
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     return result;
@@ -926,13 +869,13 @@ ValidatorList::applyLists(
     std::uint32_t version,
     std::vector<ValidatorBlobInfo> const& blobs,
     std::string siteUri,
-    std::optional<uint256> const& hash /* = {} */)
+    std::optional<UInt256> const& hash /* = {} */)
 {
-    if (std::count(std::begin(supportedListVersions), std::end(supportedListVersions), version) !=
+    if (std::count(std::begin(kSupportedListVersions), std::end(kSupportedListVersions), version) !=
         1)
-        return PublisherListStats{ListDisposition::unsupported_version};
+        return PublisherListStats{ListDisposition::UnsupportedVersion};
 
-    std::lock_guard lock{mutex_};
+    std::scoped_lock const lock{mutex_};
 
     PublisherListStats result;
     for (auto const& blobInfo : blobs)
@@ -955,14 +898,17 @@ ValidatorList::applyLists(
             result = std::move(stats);
         }
         else
+        {
             result.mergeDispositions(stats);
+        }
         /////////
     }
 
     // Clean up the collection, because some of the processing may have made it
     // inconsistent
-    if (result.publisherKey && publisherLists_.count(*result.publisherKey))
+    if (result.publisherKey && publisherLists_.contains(*result.publisherKey))
     {
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) publisherKey checked in condition above
         auto& pubCollection = publisherLists_[*result.publisherKey];
         auto& remaining = pubCollection.remaining;
         auto const& current = pubCollection.current;
@@ -988,6 +934,7 @@ ValidatorList::applyLists(
         pubCollection.fullHash = sha512Half(pubCollection);
 
         result.sequence = *pubCollection.maxSequence;
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     return result;
@@ -998,7 +945,7 @@ ValidatorList::updatePublisherList(
     PublicKey const& pubKey,
     PublisherList const& current,
     std::vector<PublicKey> const& oldList,
-    ValidatorList::lock_guard const&)
+    ValidatorList::ScopedLock const&)
 {
     // Update keyListings_ for added and removed keys
     std::vector<PublicKey> const& publisherList = current.list;
@@ -1011,15 +958,21 @@ ValidatorList::updatePublisherList(
         {
             // Increment list count for added keys
             ++keyListings_[*iNew];
+            // Key is now listed: free its untrusted slot if it had one.
+            validatorManifests_.promoteToTrusted(*iNew);
             ++iNew;
         }
         else if (iNew == publisherList.end() || (iOld != oldList.end() && *iOld < *iNew))
         {
             // Decrement list count for removed keys
             if (keyListings_[*iOld] <= 1)
+            {
                 keyListings_.erase(*iOld);
+            }
             else
+            {
                 --keyListings_[*iOld];
+            }
             ++iOld;
         }
         else
@@ -1036,17 +989,18 @@ ValidatorList::updatePublisherList(
 
     for (auto const& valManifest : manifests)
     {
-        auto m = deserializeManifest(base64_decode(valManifest));
+        auto m = deserializeManifest(base64Decode(valManifest));
 
-        if (!m || !keyListings_.count(m->masterKey))
+        if (!m || !keyListings_.contains(m->masterKey))
         {
             JLOG(j_.warn()) << "List for " << strHex(pubKey)
                             << " contained untrusted validator manifest";
             continue;
         }
 
-        if (auto const r = validatorManifests_.applyManifest(std::move(*m));
-            r == ManifestDisposition::invalid)
+        if (auto const r = validatorManifests_.applyManifest(
+                std::move(*m), ManifestRateLimitCapPolicy::Uncapped);
+            r == ManifestDisposition::Invalid)
         {
             JLOG(j_.warn()) << "List for " << strHex(pubKey)
                             << " contained invalid validator manifest";
@@ -1062,18 +1016,27 @@ ValidatorList::applyList(
     std::string const& signature,
     std::uint32_t version,
     std::string siteUri,
-    std::optional<uint256> const& hash,
-    ValidatorList::lock_guard const& lock)
+    std::optional<UInt256> const& hash,
+    ValidatorList::ScopedLock const& lock)
 {
     using namespace std::string_literals;
 
-    Json::Value list;
+    json::Value list;
     auto const& manifest = localManifest ? *localManifest : globalManifest;
-    auto m = deserializeManifest(base64_decode(manifest));
+    // Reject an oversized manifest before decoding it, so we do not allocate
+    // memory for an input that cannot be a valid manifest. deserializeManifest
+    // also enforces the decoded-byte limit, but checking here avoids the
+    // base64 decode entirely.
+    if (manifest.size() > kMaxManifestBase64)
+    {
+        JLOG(j_.warn()) << "UNL manifest exceeds maximum size";
+        return PublisherListStats{ListDisposition::Invalid};
+    }
+    auto m = deserializeManifest(base64Decode(manifest));
     if (!m)
     {
         JLOG(j_.warn()) << "UNL manifest cannot be deserialized";
-        return PublisherListStats{ListDisposition::invalid};
+        return PublisherListStats{ListDisposition::Invalid};
     }
 
     auto [result, pubKeyOpt] = verify(lock, list, std::move(*m), blob, signature);
@@ -1096,15 +1059,15 @@ ValidatorList::applyList(
         // LCOV_EXCL_STOP
     }
 
-    PublicKey pubKey = *pubKeyOpt;
-    if (result > ListDisposition::pending)
+    PublicKey const pubKey = *pubKeyOpt;
+    if (result > ListDisposition::Pending)
     {
-        if (publisherLists_.count(pubKey))
+        if (publisherLists_.contains(pubKey))
         {
             auto const& pubCollection = publisherLists_[pubKey];
             if (pubCollection.maxSequence &&
-                (result == ListDisposition::same_sequence ||
-                 result == ListDisposition::known_sequence))
+                (result == ListDisposition::SameSequence ||
+                 result == ListDisposition::KnownSequence))
             {
                 // We've seen something valid list for this publisher
                 // already, so return what we know about it.
@@ -1119,18 +1082,20 @@ ValidatorList::applyList(
     auto& pubCollection = publisherLists_[pubKey];
     auto const sequence = list[jss::sequence].asUInt();
     auto const accepted =
-        (result == ListDisposition::accepted || result == ListDisposition::expired);
+        (result == ListDisposition::Accepted || result == ListDisposition::Expired);
 
     if (accepted)
-        pubCollection.status = result == ListDisposition::accepted ? PublisherStatus::available
-                                                                   : PublisherStatus::expired;
+    {
+        pubCollection.status = result == ListDisposition::Accepted ? PublisherStatus::Available
+                                                                   : PublisherStatus::Expired;
+    }
     pubCollection.rawManifest = globalManifest;
     if (!pubCollection.maxSequence || sequence > *pubCollection.maxSequence)
         pubCollection.maxSequence = sequence;
 
-    Json::Value const& newList = list[jss::validators];
+    json::Value const& newList = list[jss::validators];
     std::vector<PublicKey> oldList;
-    if (accepted && pubCollection.remaining.count(sequence) != 0)
+    if (accepted && pubCollection.remaining.contains(sequence))
     {
         // We've seen this list before and stored it in "remaining". The
         // normal expected process is that the processed list would have
@@ -1187,7 +1152,7 @@ ValidatorList::applyList(
                 }
                 else
                 {
-                    publisherList.push_back(PublicKey(Slice{ret->data(), ret->size()}));
+                    publisherList.emplace_back(Slice{ret->data(), ret->size()});
                 }
 
                 if (val.isMember(jss::manifest) && val[jss::manifest].isString())
@@ -1196,7 +1161,7 @@ ValidatorList::applyList(
         }
 
         // Standardize the list order by sorting
-        std::sort(publisherList.begin(), publisherList.end());
+        std::sort(publisherList.begin(), publisherList.end());  // NOLINT(modernize-use-ranges)
     }
     // If this publisher has ever sent a more updated version than the one
     // in this file, keep it. This scenario is unlikely, but legal.
@@ -1223,32 +1188,31 @@ std::vector<std::string>
 ValidatorList::loadLists()
 {
     using namespace std::string_literals;
-    using namespace boost::filesystem;
-    using namespace boost::system::errc;
+    using namespace std::filesystem;
 
-    std::lock_guard lock{mutex_};
+    std::scoped_lock const lock{mutex_};
 
     std::vector<std::string> sites;
     sites.reserve(publisherLists_.size());
     for (auto const& [pubKey, publisherCollection] : publisherLists_)
     {
-        boost::system::error_code ec;
+        std::error_code ec;
 
-        if (publisherCollection.status == PublisherStatus::available)
+        if (publisherCollection.status == PublisherStatus::Available)
             continue;
 
-        boost::filesystem::path const filename = getCacheFileName(lock, pubKey);
+        std::filesystem::path const filename = getCacheFileName(lock, pubKey);
 
         auto const fullPath{canonical(filename, ec)};
         if (ec)
             continue;
 
         auto size = file_size(fullPath, ec);
-        if (!ec && !size)
+        if (!ec && (size == 0u))
         {
             // Treat an empty file as a missing file, because
             // nobody else is going to write it.
-            ec = make_error_code(no_such_file_or_directory);
+            ec = make_error_code(std::errc::no_such_file_or_directory);
         }
         if (ec)
             continue;
@@ -1276,40 +1240,43 @@ ValidatorList::loadLists()
 // contain the default-constructed public keys
 std::pair<ListDisposition, std::optional<PublicKey>>
 ValidatorList::verify(
-    ValidatorList::lock_guard const& lock,
-    Json::Value& list,
+    ValidatorList::ScopedLock const& lock,
+    json::Value& list,
     Manifest manifest,
     std::string const& blob,
     std::string const& signature)
 {
-    if (!publisherLists_.count(manifest.masterKey))
-        return {ListDisposition::untrusted, {}};
+    if (!publisherLists_.contains(manifest.masterKey))
+        return {ListDisposition::Untrusted, {}};
 
     PublicKey masterPubKey = manifest.masterKey;
     auto const revoked = manifest.revoked();
 
-    auto const result = publisherManifests_.applyManifest(std::move(manifest));
+    // Publisher keys are configured/trusted (checked above), so bypass the
+    // untrusted cap.
+    auto const result = publisherManifests_.applyManifest(
+        std::move(manifest), ManifestRateLimitCapPolicy::Uncapped);
 
-    if (revoked && result == ManifestDisposition::accepted)
+    if (revoked && result == ManifestDisposition::Accepted)
     {
-        removePublisherList(lock, masterPubKey, PublisherStatus::revoked);
+        removePublisherList(lock, masterPubKey, PublisherStatus::Revoked);
         // If the manifest is revoked, no future list is valid either
         publisherLists_[masterPubKey].remaining.clear();
     }
 
     auto const signingKey = publisherManifests_.getSigningKey(masterPubKey);
 
-    if (revoked || !signingKey || result == ManifestDisposition::invalid)
-        return {ListDisposition::untrusted, masterPubKey};
+    if (revoked || !signingKey || result == ManifestDisposition::Invalid)
+        return {ListDisposition::Untrusted, masterPubKey};
 
     auto const sig = strUnHex(signature);
-    auto const data = base64_decode(blob);
+    auto const data = base64Decode(blob);
     if (!sig || !xrpl::verify(*signingKey, makeSlice(data), makeSlice(*sig)))
-        return {ListDisposition::invalid, masterPubKey};
+        return {ListDisposition::Invalid, masterPubKey};
 
-    Json::Reader r;
+    json::Reader r;
     if (!r.parse(data, list))
-        return {ListDisposition::invalid, masterPubKey};
+        return {ListDisposition::Invalid, masterPubKey};
 
     if (list.isMember(jss::sequence) && list[jss::sequence].isInt() &&
         list.isMember(jss::expiration) && list[jss::expiration].isInt() &&
@@ -1324,14 +1291,23 @@ ValidatorList::verify(
         auto const now = timeKeeper_.now();
         auto const& listCollection = publisherLists_[masterPubKey];
         if (validUntil <= validFrom)
-            return {ListDisposition::invalid, masterPubKey};
-        else if (sequence < listCollection.current.sequence)
-            return {ListDisposition::stale, masterPubKey};
-        else if (sequence == listCollection.current.sequence)
-            return {ListDisposition::same_sequence, masterPubKey};
-        else if (validUntil <= now)
-            return {ListDisposition::expired, masterPubKey};
-        else if (validFrom > now)
+        {
+            return {ListDisposition::Invalid, masterPubKey};
+        }
+        if (sequence < listCollection.current.sequence)
+        {
+            return {ListDisposition::Stale, masterPubKey};
+        }
+        if (sequence == listCollection.current.sequence)
+        {
+            return {ListDisposition::SameSequence, masterPubKey};
+        }
+        if (validUntil <= now)
+        {
+            return {ListDisposition::Expired, masterPubKey};
+        }
+        if (validFrom > now)
+        {
             // Not yet valid. Return pending if one of the following is true
             // * There's no maxSequence, indicating this is the first blob seen
             //   for this publisher
@@ -1343,58 +1319,59 @@ ValidatorList::verify(
             //   prevents the risk of missing valid data. Else return
             //   known_sequence
             return !listCollection.maxSequence || sequence > *listCollection.maxSequence ||
-                    (listCollection.remaining.count(sequence) == 0 &&
+                    (!listCollection.remaining.contains(sequence) &&
                      validFrom < listCollection.remaining.at(*listCollection.maxSequence).validFrom)
-                ? std::make_pair(ListDisposition::pending, masterPubKey)
-                : std::make_pair(ListDisposition::known_sequence, masterPubKey);
+                ? std::make_pair(ListDisposition::Pending, masterPubKey)
+                : std::make_pair(ListDisposition::KnownSequence, masterPubKey);
+        }
     }
     else
     {
-        return {ListDisposition::invalid, masterPubKey};
+        return {ListDisposition::Invalid, masterPubKey};
     }
 
-    return {ListDisposition::accepted, masterPubKey};
+    return {ListDisposition::Accepted, masterPubKey};
 }
 
 bool
 ValidatorList::listed(PublicKey const& identity) const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock const readLock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey(identity);
-    return keyListings_.find(pubKey) != keyListings_.end();
+    return keyListings_.contains(pubKey);
 }
 
 bool
-ValidatorList::trusted(ValidatorList::shared_lock const&, PublicKey const& identity) const
+ValidatorList::trusted(ValidatorList::SharedLock const&, PublicKey const& identity) const
 {
     auto const pubKey = validatorManifests_.getMasterKey(identity);
-    return trustedMasterKeys_.find(pubKey) != trustedMasterKeys_.end();
+    return trustedMasterKeys_.contains(pubKey);
 }
 
 bool
 ValidatorList::trusted(PublicKey const& identity) const
 {
-    std::shared_lock read_lock{mutex_};
-    return trusted(read_lock, identity);
+    std::shared_lock const readLock{mutex_};
+    return trusted(readLock, identity);
 }
 
 std::optional<PublicKey>
 ValidatorList::getListedKey(PublicKey const& identity) const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock const readLock{mutex_};
 
-    auto const pubKey = validatorManifests_.getMasterKey(identity);
-    if (keyListings_.find(pubKey) != keyListings_.end())
+    auto pubKey = validatorManifests_.getMasterKey(identity);
+    if (keyListings_.contains(pubKey))
         return pubKey;
     return std::nullopt;
 }
 
 std::optional<PublicKey>
-ValidatorList::getTrustedKey(ValidatorList::shared_lock const&, PublicKey const& identity) const
+ValidatorList::getTrustedKey(ValidatorList::SharedLock const&, PublicKey const& identity) const
 {
-    auto const pubKey = validatorManifests_.getMasterKey(identity);
-    if (trustedMasterKeys_.find(pubKey) != trustedMasterKeys_.end())
+    auto pubKey = validatorManifests_.getMasterKey(identity);
+    if (trustedMasterKeys_.contains(pubKey))
         return pubKey;
     return std::nullopt;
 }
@@ -1402,34 +1379,34 @@ ValidatorList::getTrustedKey(ValidatorList::shared_lock const&, PublicKey const&
 std::optional<PublicKey>
 ValidatorList::getTrustedKey(PublicKey const& identity) const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock const readLock{mutex_};
 
-    return getTrustedKey(read_lock, identity);
+    return getTrustedKey(readLock, identity);
 }
 
 bool
 ValidatorList::trustedPublisher(PublicKey const& identity) const
 {
-    std::shared_lock read_lock{mutex_};
-    return identity.size() && publisherLists_.count(identity) &&
-        publisherLists_.at(identity).status < PublisherStatus::revoked;
+    std::shared_lock const readLock{mutex_};
+    return (identity.size() != 0u) && publisherLists_.contains(identity) &&
+        publisherLists_.at(identity).status < PublisherStatus::Revoked;
 }
 
 std::optional<PublicKey>
 ValidatorList::localPublicKey() const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock const readLock{mutex_};
     return localPubKey_;
 }
 
 bool
 ValidatorList::removePublisherList(
-    ValidatorList::lock_guard const&,
+    ValidatorList::ScopedLock const&,
     PublicKey const& publisherKey,
     PublisherStatus reason)
 {
     XRPL_ASSERT(
-        reason != PublisherStatus::available && reason != PublisherStatus::unavailable,
+        reason != PublisherStatus::Available && reason != PublisherStatus::Unavailable,
         "xrpl::ValidatorList::removePublisherList : valid reason input");
     auto const iList = publisherLists_.find(publisherKey);
     if (iList == publisherLists_.end())
@@ -1444,9 +1421,13 @@ ValidatorList::removePublisherList(
             continue;
 
         if (iVal->second <= 1)
+        {
             keyListings_.erase(iVal);
+        }
         else
+        {
             --iVal->second;
+        }
     }
 
     iList->second.current.list.clear();
@@ -1456,20 +1437,20 @@ ValidatorList::removePublisherList(
 }
 
 std::size_t
-ValidatorList::count(ValidatorList::shared_lock const&) const
+ValidatorList::count(ValidatorList::SharedLock const&) const
 {
-    return publisherLists_.size() + (localPublisherList.list.size() > 0);
+    return publisherLists_.size() + static_cast<size_t>(!localPublisherList_.list.empty());
 }
 
 std::size_t
 ValidatorList::count() const
 {
-    std::shared_lock read_lock{mutex_};
-    return count(read_lock);
+    std::shared_lock const readLock{mutex_};
+    return count(readLock);
 }
 
 std::optional<TimeKeeper::time_point>
-ValidatorList::expires(ValidatorList::shared_lock const&) const
+ValidatorList::expires(ValidatorList::SharedLock const&) const
 {
     std::optional<TimeKeeper::time_point> res{};
     for (auto const& [_, collection] : publisherLists_)
@@ -1489,9 +1470,13 @@ ValidatorList::expires(ValidatorList::shared_lock const&) const
         {
             (void)sequence;
             if (check.validFrom <= chainedExpiration)
+            {
                 chainedExpiration = check.validUntil;
+            }
             else
+            {
                 break;
+            }
         }
 
         // Earliest
@@ -1501,9 +1486,9 @@ ValidatorList::expires(ValidatorList::shared_lock const&) const
         }
     }
 
-    if (localPublisherList.list.size() > 0)
+    if (!localPublisherList_.list.empty())
     {
-        PublisherList collection = localPublisherList;
+        PublisherList const collection = localPublisherList_;
         // Unfetched
         auto const& current = collection;
         auto chainedExpiration = current.validUntil;
@@ -1520,25 +1505,25 @@ ValidatorList::expires(ValidatorList::shared_lock const&) const
 std::optional<TimeKeeper::time_point>
 ValidatorList::expires() const
 {
-    std::shared_lock read_lock{mutex_};
-    return expires(read_lock);
+    std::shared_lock const readLock{mutex_};
+    return expires(readLock);
 }
 
-Json::Value
+json::Value
 ValidatorList::getJson() const
 {
-    Json::Value res(Json::objectValue);
+    json::Value res(json::ValueType::Object);
 
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock const readLock{mutex_};
 
-    res[jss::validation_quorum] = static_cast<Json::UInt>(quorum_);
+    res[jss::validation_quorum] = static_cast<json::UInt>(quorum_);
 
     {
-        auto& x = (res[jss::validator_list] = Json::objectValue);
+        auto& x = (res[jss::validator_list] = json::ValueType::Object);
 
-        x[jss::count] = static_cast<Json::UInt>(count(read_lock));
+        x[jss::count] = static_cast<json::UInt>(count(readLock));
 
-        if (auto when = expires(read_lock))
+        if (auto when = expires(readLock))
         {
             if (*when == TimeKeeper::time_point::max())
             {
@@ -1550,9 +1535,13 @@ ValidatorList::getJson() const
                 x[jss::expiration] = to_string(*when);
 
                 if (*when > timeKeeper_.now())
+                {
                     x[jss::status] = "active";
+                }
                 else
+                {
                     x[jss::status] = "expired";
+                }
             }
         }
         else
@@ -1561,33 +1550,33 @@ ValidatorList::getJson() const
             x[jss::expiration] = "unknown";
         }
 
-        x[jss::validator_list_threshold] = Json::UInt(listThreshold_);
+        x[jss::validator_list_threshold] = json::UInt(listThreshold_);
     }
 
     // Validator keys listed in the local config file
-    Json::Value& jLocalStaticKeys = (res[jss::local_static_keys] = Json::arrayValue);
+    json::Value& jLocalStaticKeys = (res[jss::local_static_keys] = json::ValueType::Array);
 
-    for (auto const& key : localPublisherList.list)
+    for (auto const& key : localPublisherList_.list)
         jLocalStaticKeys.append(toBase58(TokenType::NodePublic, key));
 
     // Publisher lists
-    Json::Value& jPublisherLists = (res[jss::publisher_lists] = Json::arrayValue);
+    json::Value& jPublisherLists = (res[jss::publisher_lists] = json::ValueType::Array);
     for (auto const& [publicKey, pubCollection] : publisherLists_)
     {
-        Json::Value& curr = jPublisherLists.append(Json::objectValue);
+        json::Value& curr = jPublisherLists.append(json::ValueType::Object);
         curr[jss::pubkey_publisher] = strHex(publicKey);
-        curr[jss::available] = pubCollection.status == PublisherStatus::available;
+        curr[jss::available] = pubCollection.status == PublisherStatus::Available;
 
-        auto appendList = [](PublisherList const& publisherList, Json::Value& target) {
+        auto appendList = [](PublisherList const& publisherList, json::Value& target) {
             target[jss::uri] = publisherList.siteUri;
             if (publisherList.validUntil != TimeKeeper::time_point{})
             {
-                target[jss::seq] = static_cast<Json::UInt>(publisherList.sequence);
+                target[jss::seq] = static_cast<json::UInt>(publisherList.sequence);
                 target[jss::expiration] = to_string(publisherList.validUntil);
             }
             if (publisherList.validFrom != TimeKeeper::time_point{})
                 target[jss::effective] = to_string(publisherList.validFrom);
-            Json::Value& keys = (target[jss::list] = Json::arrayValue);
+            json::Value& keys = (target[jss::list] = json::ValueType::Array);
             for (auto const& key : publisherList.list)
             {
                 keys.append(toBase58(TokenType::NodePublic, key));
@@ -1602,33 +1591,33 @@ ValidatorList::getJson() const
             }
         }
 
-        Json::Value remaining(Json::arrayValue);
+        json::Value remaining(json::ValueType::Array);
         for (auto const& [sequence, future] : pubCollection.remaining)
         {
             using namespace std::chrono_literals;
 
             (void)sequence;
-            Json::Value& r = remaining.append(Json::objectValue);
+            json::Value& r = remaining.append(json::ValueType::Object);
             appendList(future, r);
             // Race conditions can happen, so make this check "fuzzy"
             XRPL_ASSERT(
                 future.validFrom > timeKeeper_.now() + 600s,
                 "xrpl::ValidatorList::getJson : minimum valid from");
         }
-        if (remaining.size())
+        if (remaining.size() != 0u)
             curr[jss::remaining] = std::move(remaining);
     }
 
     // Trusted validator keys
-    Json::Value& jValidatorKeys = (res[jss::trusted_validator_keys] = Json::arrayValue);
+    json::Value& jValidatorKeys = (res[jss::trusted_validator_keys] = json::ValueType::Array);
     for (auto const& k : trustedMasterKeys_)
     {
         jValidatorKeys.append(toBase58(TokenType::NodePublic, k));
     }
 
     // signing keys
-    Json::Value& jSigningKeys = (res[jss::signing_keys] = Json::objectValue);
-    validatorManifests_.for_each_manifest([&jSigningKeys, this](Manifest const& manifest) {
+    json::Value& jSigningKeys = (res[jss::signing_keys] = json::ValueType::Object);
+    validatorManifests_.forEachManifest([&jSigningKeys, this](Manifest const& manifest) {
         auto it = keyListings_.find(manifest.masterKey);
         if (it != keyListings_.end() && manifest.signingKey)
         {
@@ -1640,7 +1629,7 @@ ValidatorList::getJson() const
     // Negative UNL
     if (!negativeUNL_.empty())
     {
-        Json::Value& jNegativeUNL = (res[jss::NegativeUNL] = Json::arrayValue);
+        json::Value& jNegativeUNL = (res[jss::NegativeUNL] = json::ValueType::Array);
         for (auto const& k : negativeUNL_)
         {
             jNegativeUNL.append(toBase58(TokenType::NodePublic, k));
@@ -1651,32 +1640,32 @@ ValidatorList::getJson() const
 }
 
 void
-ValidatorList::for_each_listed(std::function<void(PublicKey const&, bool)> func) const
+ValidatorList::forEachListed(std::function<void(PublicKey const&, bool)> func) const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock const readLock{mutex_};
 
     for (auto const& v : keyListings_)
-        func(v.first, trusted(read_lock, v.first));
+        func(v.first, trusted(readLock, v.first));
 }
 
 void
-ValidatorList::for_each_available(
+ValidatorList::forEachAvailable(
     std::function<void(
         std::string const& manifest,
         std::uint32_t version,
         std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
         PublicKey const& pubKey,
         std::size_t maxSequence,
-        uint256 const& hash)> func) const
+        UInt256 const& hash)> func) const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock const readLock{mutex_};
 
     for (auto const& [key, plCollection] : publisherLists_)
     {
-        if (plCollection.status != PublisherStatus::available)
+        if (plCollection.status != PublisherStatus::Available)
             continue;
         XRPL_ASSERT(
-            plCollection.maxSequence != 0,
+            plCollection.maxSequence.value_or(0) != 0,
             "xrpl::ValidatorList::for_each_available : nonzero maxSequence");
         func(
             plCollection.rawManifest,
@@ -1688,14 +1677,14 @@ ValidatorList::for_each_available(
     }
 }
 
-std::optional<Json::Value>
+std::optional<json::Value>
 ValidatorList::getAvailable(
     std::string_view pubKey,
     std::optional<std::uint32_t> forceVersion /* = {} */)
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock const readLock{mutex_};
 
-    auto const keyBlob = strViewUnHex(pubKey);
+    auto const keyBlob = strUnHex(pubKey);
 
     if (!keyBlob || !publicKeyType(makeSlice(*keyBlob)))
     {
@@ -1707,10 +1696,10 @@ ValidatorList::getAvailable(
 
     auto const iter = publisherLists_.find(id);
 
-    if (iter == publisherLists_.end() || iter->second.status != PublisherStatus::available)
+    if (iter == publisherLists_.end() || iter->second.status != PublisherStatus::Available)
         return {};
 
-    Json::Value value = buildFileData(std::string{pubKey}, iter->second, forceVersion, j_);
+    json::Value value = buildFileData(std::string{pubKey}, iter->second, forceVersion, j_);
 
     return value;
 }
@@ -1724,9 +1713,11 @@ ValidatorList::calculateQuorum(
     // Use quorum if specified via command line.
     if (minimumQuorum_ > 0)
     {
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) minimumQuorum_ > 0 implies it has a value
         JLOG(j_.warn()) << "Using potentially unsafe quorum of " << *minimumQuorum_
                         << " as specified on the command line";
         return *minimumQuorum_;
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     if (!publisherLists_.empty())
@@ -1736,7 +1727,7 @@ ValidatorList::calculateQuorum(
         std::size_t unavailable = 0;
         for (auto const& list : publisherLists_)
         {
-            if (list.second.status != PublisherStatus::available)
+            if (list.second.status != PublisherStatus::Available)
                 unavailable += 1;
         }
         // There are two, subtly different, sides to list threshold:
@@ -1807,7 +1798,7 @@ ValidatorList::calculateQuorum(
 
 TrustChanges
 ValidatorList::updateTrusted(
-    hash_set<NodeID> const& seenValidators,
+    HashSet<NodeID> const& seenValidators,
     NetClock::time_point closeTime,
     NetworkOPs& ops,
     Overlay& overlay,
@@ -1817,7 +1808,7 @@ ValidatorList::updateTrusted(
     if (timeKeeper_.now() > closeTime + 30s)
         closeTime = timeKeeper_.now();
 
-    std::lock_guard lock{mutex_};
+    std::scoped_lock const lock{mutex_};
 
     // Rotate pending and remove expired published lists
     bool good = true;
@@ -1857,8 +1848,8 @@ ValidatorList::updateTrusted(
 
                 auto const oldList = current.list;
                 current = std::move(candidate);
-                if (collection.status != PublisherStatus::available)
-                    collection.status = PublisherStatus::available;
+                if (collection.status != PublisherStatus::Available)
+                    collection.status = PublisherStatus::Available;
                 XRPL_ASSERT(
                     current.sequence == sequence,
                     "xrpl::ValidatorList::updateTrusted : sequence match");
@@ -1884,13 +1875,13 @@ ValidatorList::updateTrusted(
         // Remove if expired
         // ValidatorLists specified in the local config file never expire.
         // Hence, the below steps are not relevant for localPublisherList
-        if (collection.status == PublisherStatus::available &&
+        if (collection.status == PublisherStatus::Available &&
             collection.current.validUntil <= closeTime)
         {
-            removePublisherList(lock, pubKey, PublisherStatus::expired);
+            removePublisherList(lock, pubKey, PublisherStatus::Expired);
             ops.setUNLBlocked();
         }
-        if (collection.status != PublisherStatus::available)
+        if (collection.status != PublisherStatus::Available)
             good = false;
     }
     if (good)
@@ -1937,7 +1928,8 @@ ValidatorList::updateTrusted(
         {
             std::optional<PublicKey> const signingKey = validatorManifests_.getSigningKey(k);
             XRPL_ASSERT(signingKey, "xrpl::ValidatorList::updateTrusted : found signing key");
-            trustedSigningKeys_.insert(*signingKey);
+            trustedSigningKeys_.insert(
+                *signingKey);  // NOLINT(bugprone-unchecked-optional-access) assert above
         }
     }
 
@@ -1951,17 +1943,17 @@ ValidatorList::updateTrusted(
     {
         for (auto const& k : trustedMasterKeys_)
         {
-            if (negativeUNL_.count(k))
+            if (negativeUNL_.contains(k))
                 --effectiveUnlSize;
         }
-        hash_set<NodeID> negUnlNodeIDs;
+        HashSet<NodeID> negUnlNodeIDs;
         for (auto const& k : negativeUNL_)
         {
             negUnlNodeIDs.emplace(calcNodeID(k));
         }
         for (auto const& nid : seenValidators)
         {
-            if (negUnlNodeIDs.count(nid))
+            if (negUnlNodeIDs.contains(nid))
                 --seenSize;
         }
     }
@@ -1977,7 +1969,7 @@ ValidatorList::updateTrusted(
                         << " exceeds the number of trusted validators (" << unlSize << ")";
     }
 
-    if ((publisherLists_.size() || localPublisherList.list.size()) && unlSize == 0)
+    if ((!publisherLists_.empty() || !localPublisherList_.list.empty()) && unlSize == 0)
     {
         // No validators. Lock down.
         ops.setUNLBlocked();
@@ -1986,31 +1978,31 @@ ValidatorList::updateTrusted(
     return trustChanges;
 }
 
-hash_set<PublicKey>
+HashSet<PublicKey>
 ValidatorList::getTrustedMasterKeys() const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock const readLock{mutex_};
     return trustedMasterKeys_;
 }
 
 std::size_t
 ValidatorList::getListThreshold() const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock const readLock{mutex_};
     return listThreshold_;
 }
 
-hash_set<PublicKey>
+HashSet<PublicKey>
 ValidatorList::getNegativeUNL() const
 {
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock const readLock{mutex_};
     return negativeUNL_;
 }
 
 void
-ValidatorList::setNegativeUNL(hash_set<PublicKey> const& negUnl)
+ValidatorList::setNegativeUNL(HashSet<PublicKey> const& negUnl)
 {
-    std::lock_guard lock{mutex_};
+    std::scoped_lock const lock{mutex_};
     negativeUNL_ = negUnl;
 }
 
@@ -2020,24 +2012,22 @@ ValidatorList::negativeUNLFilter(std::vector<std::shared_ptr<STValidation>>&& va
     // Remove validations that are from validators on the negative UNL.
     auto ret = std::move(validations);
 
-    std::shared_lock read_lock{mutex_};
+    std::shared_lock readLock{mutex_};
     if (!negativeUNL_.empty())
     {
         ret.erase(
-            std::remove_if(
-                ret.begin(),
-                ret.end(),
+            std::ranges::remove_if(
+                ret,
                 [&](auto const& v) -> bool {
-                    if (auto const masterKey = getTrustedKey(read_lock, v->getSignerPublic());
+                    if (auto const masterKey = getTrustedKey(readLock, v->getSignerPublic());
                         masterKey)
                     {
-                        return negativeUNL_.count(*masterKey);
+                        return negativeUNL_.contains(*masterKey);
                     }
-                    else
-                    {
-                        return false;
-                    }
-                }),
+
+                    return false;
+                })
+                .begin(),
             ret.end());
     }
 

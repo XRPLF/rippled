@@ -1,24 +1,77 @@
-#include <xrpld/app/ledger/AcceptedLedger.h>
-#include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/ledger/LedgerToJson.h>
-#include <xrpld/app/ledger/PendingSaves.h>
-#include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>
 
-#include <xrpl/basics/BasicConfig.h>
-#include <xrpl/basics/StringUtilities.h>
+#include <xrpld/app/ledger/AcceptedLedger.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
+#include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/NetworkIDService.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/core/StartUpType.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/TxSearched.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/range/adaptor/transformed.hpp>
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
+#include <boost/system/detail/error_code.hpp>
 
-#include <soci/sqlite3/soci-sqlite3.h>
+#include <soci/blob-exchange.h>  // IWYU pragma: keep
+#include <soci/blob.h>
+#include <soci/boost-optional.h>  // IWYU pragma: keep
+#include <soci/into.h>
+#include <soci/soci-backend.h>
+#include <soci/statement.h>
+#include <soci/transaction.h>
+#include <soci/use.h>
 
-namespace xrpl {
-namespace detail {
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <filesystem>
+#include <format>
+#include <functional>
+#include <limits>
+#include <map>
+#include <memory>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <system_error>
+#include <utility>
+#include <variant>
+#include <vector>
+
+namespace xrpl::detail {
 
 /**
  * @brief to_string Returns the name of a table according to its TableType.
@@ -26,9 +79,9 @@ namespace detail {
  * @return Name of the table.
  */
 static std::string
-to_string(TableType type)
+toString(TableType type)
 {
-    static_assert(TableTypeCount == 3, "Need to modify switch statement if enum is modified");
+    static_assert(kTableTypeCount == 3, "Need to modify switch statement if enum is modified");
 
     switch (type)
     {
@@ -40,7 +93,7 @@ to_string(TableType type)
             return "AccountTransactions";
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("xrpl::detail::to_string : invalid TableType");
+            UNREACHABLE("xrpl::detail::toString : invalid TableType");
             return "Unknown";
             // LCOV_EXCL_STOP
     }
@@ -55,34 +108,32 @@ makeLedgerDBs(
 {
     // ledger database
     auto lgr{std::make_unique<DatabaseCon>(
-        setup, LgrDBName, setup.lgrPragma, LgrDBInit, checkpointerSetup, j)};
-    lgr->getSession() << boost::str(
-        boost::format("PRAGMA cache_size=-%d;") %
-        kilobytes(config.getValueFor(SizedItem::lgrDBCache)));
+        setup, kLgrDbName, setup.lgrPragma, kLgrDbInit, checkpointerSetup, j)};
+    lgr->getSession() << std::format(
+        "PRAGMA cache_size=-{};", kilobytes(config.getValueFor(SizedItem::LgrDbCache)));
 
     if (config.useTxTables())
     {
         // transaction database
         auto tx{std::make_unique<DatabaseCon>(
-            setup, TxDBName, setup.txPragma, TxDBInit, checkpointerSetup, j)};
-        tx->getSession() << boost::str(
-            boost::format("PRAGMA cache_size=-%d;") %
-            kilobytes(config.getValueFor(SizedItem::txnDBCache)));
+            setup, kTxDbName, setup.txPragma, kTxDbInit, checkpointerSetup, j)};
+        tx->getSession() << std::format(
+            "PRAGMA cache_size=-{};", kilobytes(config.getValueFor(SizedItem::TxnDbCache)));
 
-        if (!setup.standAlone || setup.startUp == StartUpType::LOAD ||
-            setup.startUp == StartUpType::LOAD_FILE || setup.startUp == StartUpType::REPLAY)
+        if (!setup.standAlone || setup.startUp == StartUpType::Load ||
+            setup.startUp == StartUpType::LoadFile || setup.startUp == StartUpType::Replay)
         {
             // Check if AccountTransactions has primary key
             std::string cid, name, type;
-            std::size_t notnull, dflt_value, pk;
-            soci::indicator ind;
+            std::size_t notnull = 0, dfltValue = 0, pk = 0;
+            soci::indicator ind = soci::i_null;
             soci::statement st =
-                (tx->getSession().prepare << ("PRAGMA table_info(AccountTransactions);"),
+                (tx->getSession().prepare << "PRAGMA table_info(AccountTransactions);",
                  soci::into(cid),
                  soci::into(name),
                  soci::into(type),
                  soci::into(notnull),
-                 soci::into(dflt_value, ind),
+                 soci::into(dfltValue, ind),
                  soci::into(pk));
 
             st.execute();
@@ -90,21 +141,22 @@ makeLedgerDBs(
             {
                 if (pk == 1)
                 {
-                    return {std::move(lgr), std::move(tx), false};
+                    return {
+                        .ledgerDb = std::move(lgr), .transactionDb = std::move(tx), .valid = false};
                 }
             }
         }
 
-        return {std::move(lgr), std::move(tx), true};
+        return {.ledgerDb = std::move(lgr), .transactionDb = std::move(tx), .valid = true};
     }
-    else
-        return {std::move(lgr), {}, true};
+
+    return {.ledgerDb = std::move(lgr), .transactionDb = {}, .valid = true};
 }
 
 std::optional<LedgerIndex>
 getMinLedgerSeq(soci::session& session, TableType type)
 {
-    std::string query = "SELECT MIN(LedgerSeq) FROM " + to_string(type) + ";";
+    std::string const query = "SELECT MIN(LedgerSeq) FROM " + toString(type) + ";";
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<LedgerIndex> m;
     session << query, soci::into(m);
@@ -114,7 +166,7 @@ getMinLedgerSeq(soci::session& session, TableType type)
 std::optional<LedgerIndex>
 getMaxLedgerSeq(soci::session& session, TableType type)
 {
-    std::string query = "SELECT MAX(LedgerSeq) FROM " + to_string(type) + ";";
+    std::string const query = "SELECT MAX(LedgerSeq) FROM " + toString(type) + ";";
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<LedgerIndex> m;
     session << query, soci::into(m);
@@ -124,22 +176,22 @@ getMaxLedgerSeq(soci::session& session, TableType type)
 void
 deleteByLedgerSeq(soci::session& session, TableType type, LedgerIndex ledgerSeq)
 {
-    session << "DELETE FROM " << to_string(type) << " WHERE LedgerSeq == " << ledgerSeq << ";";
+    session << "DELETE FROM " << toString(type) << " WHERE LedgerSeq == " << ledgerSeq << ";";
 }
 
 void
 deleteBeforeLedgerSeq(soci::session& session, TableType type, LedgerIndex ledgerSeq)
 {
-    session << "DELETE FROM " << to_string(type) << " WHERE LedgerSeq < " << ledgerSeq << ";";
+    session << "DELETE FROM " << toString(type) << " WHERE LedgerSeq < " << ledgerSeq << ";";
 }
 
 std::size_t
 getRows(soci::session& session, TableType type)
 {
-    std::size_t rows;
+    std::size_t rows = 0;
     session << "SELECT COUNT(*) AS rows "
                "FROM "
-            << to_string(type) << ";",
+            << toString(type) << ";",
         soci::into(rows);
 
     return rows;
@@ -148,12 +200,12 @@ getRows(soci::session& session, TableType type)
 RelationalDatabase::CountMinMax
 getRowsMinMax(soci::session& session, TableType type)
 {
-    RelationalDatabase::CountMinMax res;
+    RelationalDatabase::CountMinMax res{};
     session << "SELECT COUNT(*) AS rows, "
                "MIN(LedgerSeq) AS first, "
                "MAX(LedgerSeq) AS last "
                "FROM "
-            << to_string(type) << ";",
+            << toString(type) << ";",
         soci::into(res.numberOfRows), soci::into(res.minLedgerSequence),
         soci::into(res.maxLedgerSequence);
 
@@ -168,7 +220,7 @@ saveValidatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     bool current)
 {
-    auto j = app.journal("Ledger");
+    auto j = app.getJournal("Ledger");
     auto seq = ledger->header().seq;
 
     // TODO(tom): Fix this hard-coded SQL!
@@ -182,7 +234,7 @@ saveValidatedLedger(
         // LCOV_EXCL_STOP
     }
 
-    if (ledger->header().accountHash != ledger->stateMap().getHash().as_uint256())
+    if (ledger->header().accountHash != ledger->stateMap().getHash().asUInt256())
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "sAL: " << ledger->header().accountHash
@@ -193,15 +245,16 @@ saveValidatedLedger(
     }
 
     XRPL_ASSERT(
-        ledger->header().txHash == ledger->txMap().getHash().as_uint256(),
+        ledger->header().txHash == ledger->txMap().getHash().asUInt256(),
         "xrpl::detail::saveValidatedLedger : transaction hash match");
 
     // Save the ledger header in the hashed object store
     {
         Serializer s(128);
-        s.add32(HashPrefix::ledgerMaster);
+        s.add32(HashPrefix::LedgerMaster);
         addRaw(ledger->header(), s);
-        app.getNodeStore().store(hotLEDGER, std::move(s.modData()), ledger->header().hash, seq);
+        app.getNodeStore().store(
+            NodeObjectType::Ledger, std::move(s.modData()), ledger->header().hash, seq);
     }
 
     std::shared_ptr<AcceptedLedger> aLedger;
@@ -211,8 +264,7 @@ saveValidatedLedger(
         if (!aLedger)
         {
             aLedger = std::make_shared<AcceptedLedger>(ledger);
-            app.getAcceptedLedgerCache().canonicalize_replace_client(
-                ledger->header().hash, aLedger);
+            app.getAcceptedLedgerCache().canonicalizeReplaceClient(ledger->header().hash, aLedger);
         }
     }
     catch (std::exception const&)
@@ -221,20 +273,22 @@ saveValidatedLedger(
         app.getLedgerMaster().failedSave(seq, ledger->header().hash);
         // Clients can now trust the database for information about this
         // ledger sequence.
-        app.pendingSaves().finishWork(seq);
+        app.getPendingSaves().finishWork(seq);
         return false;
     }
 
     {
-        static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %u;");
-        static boost::format deleteTrans1("DELETE FROM Transactions WHERE LedgerSeq = %u;");
-        static boost::format deleteTrans2("DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
-        static boost::format deleteAcctTrans(
-            "DELETE FROM AccountTransactions WHERE TransID = '%s';");
+        static constexpr char const* kDeleteLedger = "DELETE FROM Ledgers WHERE LedgerSeq = {};";
+        static constexpr char const* kDeleteTranS1 =
+            "DELETE FROM Transactions WHERE LedgerSeq = {};";
+        static constexpr char const* kDeleteTranS2 =
+            "DELETE FROM AccountTransactions WHERE LedgerSeq = {};";
+        static constexpr char const* kDeleteAcctTrans =
+            "DELETE FROM AccountTransactions WHERE TransID = '{}';";
 
         {
             auto db = ldgDB.checkoutDb();
-            *db << boost::str(deleteLedger % seq);
+            *db << std::format(kDeleteLedger, seq);
         }
 
         if (app.config().useTxTables())
@@ -251,19 +305,19 @@ saveValidatedLedger(
 
             soci::transaction tr(*db);
 
-            *db << boost::str(deleteTrans1 % seq);
-            *db << boost::str(deleteTrans2 % seq);
+            *db << std::format(kDeleteTranS1, seq);
+            *db << std::format(kDeleteTranS2, seq);
 
             std::string const ledgerSeq(std::to_string(seq));
 
             for (auto const& acceptedLedgerTx : *aLedger)
             {
-                uint256 transactionID = acceptedLedgerTx->getTransactionID();
+                UInt256 const transactionID = acceptedLedgerTx->getTransactionID();
 
                 std::string const txnId(to_string(transactionID));
                 std::string const txnSeq(std::to_string(acceptedLedgerTx->getTxnSeq()));
 
-                *db << boost::str(deleteAcctTrans % transactionID);
+                *db << std::format(kDeleteAcctTrans, txnId);
 
                 auto const& accts = acceptedLedgerTx->getAffected();
 
@@ -282,7 +336,9 @@ saveValidatedLedger(
                     for (auto const& account : accts)
                     {
                         if (!first)
+                        {
                             sql += ", ('";
+                        }
                         else
                         {
                             sql += "('";
@@ -307,7 +363,7 @@ saveValidatedLedger(
                     // It's okay for pseudo transactions to not affect any
                     // accounts.  But otherwise...
                     JLOG(j.warn()) << "Transaction in ledger " << seq << " affects no accounts";
-                    JLOG(j.warn()) << sleTxn->getJson(JsonOptions::none);
+                    JLOG(j.warn()) << sleTxn->getJson(JsonOptions::Values::None);
                 }
 
                 *db
@@ -327,7 +383,7 @@ saveValidatedLedger(
         }
 
         {
-            static std::string addLedger(
+            static std::string const kAddLedger(
                 R"sql(INSERT OR REPLACE INTO Ledgers
                 (LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,
                 CloseTimeRes,CloseFlags,AccountSetHash,TransSetHash)
@@ -350,7 +406,7 @@ saveValidatedLedger(
             auto const accountHash = to_string(ledger->header().accountHash);
             auto const txHash = to_string(ledger->header().txHash);
 
-            *db << addLedger, soci::use(hash), soci::use(seq), soci::use(parentHash),
+            *db << kAddLedger, soci::use(hash), soci::use(seq), soci::use(parentHash),
                 soci::use(drops), soci::use(closeTime), soci::use(parentCloseTime),
                 soci::use(closeTimeResolution), soci::use(closeFlags), soci::use(accountHash),
                 soci::use(txHash);
@@ -470,17 +526,17 @@ getLimitedNewestLedgerInfo(soci::session& session, LedgerIndex ledgerFirstIndex,
 }
 
 std::optional<LedgerHeader>
-getLedgerInfoByHash(soci::session& session, uint256 const& ledgerHash, beast::Journal j)
+getLedgerInfoByHash(soci::session& session, UInt256 const& ledgerHash, beast::Journal j)
 {
     std::ostringstream s;
     s << "WHERE LedgerHash = '" << ledgerHash << "'";
     return getLedgerInfo(session, s.str(), j);
 }
 
-uint256
+UInt256
 getHashByIndex(soci::session& session, LedgerIndex ledgerIndex)
 {
-    uint256 ret;
+    UInt256 ret;
 
     std::string sql = "SELECT LedgerHash FROM Ledgers INDEXED BY SeqLedger WHERE LedgerSeq='";
     sql.append(std::to_string(ledgerIndex));
@@ -543,7 +599,7 @@ getHashesByIndex(soci::session& session, LedgerIndex minSeq, LedgerIndex maxSeq,
     sql.append(std::to_string(maxSeq));
     sql.append(";");
 
-    std::uint64_t ls;
+    std::uint64_t ls = 0;
     std::string lh;
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<std::string> ph;
@@ -573,11 +629,11 @@ getHashesByIndex(soci::session& session, LedgerIndex minSeq, LedgerIndex maxSeq,
 std::pair<std::vector<std::shared_ptr<Transaction>>, int>
 getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, int quantity)
 {
-    std::string sql = boost::str(
-        boost::format(
-            "SELECT LedgerSeq, Status, RawTxn "
-            "FROM Transactions ORDER BY LedgerSeq DESC LIMIT %u,%u;") %
-        startIndex % quantity);
+    std::string const sql = std::format(
+        "SELECT LedgerSeq, Status, RawTxn "
+        "FROM Transactions ORDER BY LedgerSeq DESC LIMIT {},{};",
+        startIndex,
+        quantity);
 
     std::vector<std::shared_ptr<Transaction>> txs;
     int total = 0;
@@ -587,7 +643,7 @@ getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, i
         boost::optional<std::uint64_t> ledgerSeq;
         boost::optional<std::string> status;
         soci::blob sociRawTxnBlob(session);
-        soci::indicator rti;
+        soci::indicator rti = soci::i_null;
         Blob rawTxn;
 
         soci::statement st =
@@ -600,9 +656,13 @@ getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, i
         while (st.fetch())
         {
             if (soci::i_ok == rti)
+            {
                 convert(sociRawTxnBlob, rawTxn);
+            }
             else
+            {
                 rawTxn.clear();
+            }
 
             if (auto trans = Transaction::transactionFromSQL(ledgerSeq, status, rawTxn, app))
             {
@@ -642,10 +702,10 @@ transactionsSQL(
     bool count,
     beast::Journal j)
 {
-    constexpr std::uint32_t NONBINARY_PAGE_LENGTH = 200;
-    constexpr std::uint32_t BINARY_PAGE_LENGTH = 500;
+    static constexpr std::uint32_t kNonbinaryPageLength = 200;
+    static constexpr std::uint32_t kBinaryPageLength = 500;
 
-    std::uint32_t numberOfResults;
+    std::uint32_t numberOfResults = 0;
 
     if (count)
     {
@@ -653,55 +713,68 @@ transactionsSQL(
     }
     else if (options.limit == UINT32_MAX)
     {
-        numberOfResults = binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH;
+        numberOfResults = binary ? kBinaryPageLength : kNonbinaryPageLength;
     }
     else if (!options.bUnlimited)
     {
         numberOfResults =
-            std::min(binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH, options.limit);
+            std::min(binary ? kBinaryPageLength : kNonbinaryPageLength, options.limit);
     }
     else
     {
         numberOfResults = options.limit;
     }
 
-    std::string maxClause = "";
-    std::string minClause = "";
+    std::string maxClause;
+    std::string minClause;
 
-    if (options.maxLedger)
+    if (options.ledgerRange.max != 0u)
     {
-        maxClause = boost::str(
-            boost::format("AND AccountTransactions.LedgerSeq <= '%u'") % options.maxLedger);
+        maxClause =
+            std::format("AND AccountTransactions.LedgerSeq <= '{}'", options.ledgerRange.max);
     }
 
-    if (options.minLedger)
+    if (options.ledgerRange.min != 0u)
     {
-        minClause = boost::str(
-            boost::format("AND AccountTransactions.LedgerSeq >= '%u'") % options.minLedger);
+        minClause =
+            std::format("AND AccountTransactions.LedgerSeq >= '{}'", options.ledgerRange.min);
     }
 
     std::string sql;
 
     if (count)
-        sql = boost::str(
-            boost::format(
-                "SELECT %s FROM AccountTransactions "
-                "WHERE Account = '%s' %s %s LIMIT %u, %u;") %
-            selection % toBase58(options.account) % maxClause % minClause % options.offset %
+    {
+        sql = std::format(
+            "SELECT {} FROM AccountTransactions "
+            "WHERE Account = '{}' {} {} LIMIT {}, {};",
+            selection,
+            toBase58(options.account),
+            maxClause,
+            minClause,
+            options.offset,
             numberOfResults);
+    }
     else
-        sql = boost::str(
-            boost::format(
-                "SELECT %s FROM "
-                "AccountTransactions INNER JOIN Transactions "
-                "ON Transactions.TransID = AccountTransactions.TransID "
-                "WHERE Account = '%s' %s %s "
-                "ORDER BY AccountTransactions.LedgerSeq %s, "
-                "AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
-                "LIMIT %u, %u;") %
-            selection % toBase58(options.account) % maxClause % minClause %
-            (descending ? "DESC" : "ASC") % (descending ? "DESC" : "ASC") %
-            (descending ? "DESC" : "ASC") % options.offset % numberOfResults);
+    {
+        char const* const order = descending ? "DESC" : "ASC";
+        sql = std::format(
+            "SELECT {} FROM "
+            "AccountTransactions INNER JOIN Transactions "
+            "ON Transactions.TransID = AccountTransactions.TransID "
+            "WHERE Account = '{}' {} {} "
+            "ORDER BY AccountTransactions.LedgerSeq {}, "
+            "AccountTransactions.TxnSeq {}, AccountTransactions.TransID {} "
+            "LIMIT {}, {};",
+            selection,
+            toBase58(options.account),
+            maxClause,
+            minClause,
+            order,
+            order,
+            order,
+            options.offset,
+            numberOfResults);
+    }
     JLOG(j.trace()) << "txSQL query: " << sql;
     return sql;
 }
@@ -738,7 +811,7 @@ getAccountTxs(
 {
     RelationalDatabase::AccountTxs ret;
 
-    std::string sql = transactionsSQL(
+    std::string const sql = transactionsSQL(
         app,
         "AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta",
         options,
@@ -746,7 +819,7 @@ getAccountTxs(
         false,
         false,
         j);
-    if (sql == "")
+    if (sql.empty())
         return {ret, 0};
 
     int total = 0;
@@ -755,7 +828,7 @@ getAccountTxs(
         boost::optional<std::uint64_t> ledgerSeq;
         boost::optional<std::string> status;
         soci::blob sociTxnBlob(session), sociTxnMetaBlob(session);
-        soci::indicator rti, tmi;
+        soci::indicator rti = soci::i_null, tmi = soci::i_null;
         Blob rawTxn, txnMeta;
 
         soci::statement st =
@@ -769,14 +842,22 @@ getAccountTxs(
         while (st.fetch())
         {
             if (soci::i_ok == rti)
+            {
                 convert(sociTxnBlob, rawTxn);
+            }
             else
+            {
                 rawTxn.clear();
+            }
 
             if (soci::i_ok == tmi)
+            {
                 convert(sociTxnMetaBlob, txnMeta);
+            }
             else
+            {
                 txnMeta.clear();
+            }
 
             auto txn = Transaction::transactionFromSQL(ledgerSeq, status, rawTxn, app);
 
@@ -844,7 +925,7 @@ getNewestAccountTxs(
  *         number of transactions skipped. We need to skip some number of
  *         transactions if option offset is > 0 in the options structure.
  */
-static std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
+static std::pair<std::vector<RelationalDatabase::TxnMetaLedgerType>, int>
 getAccountTxsB(
     soci::session& session,
     Application& app,
@@ -852,9 +933,9 @@ getAccountTxsB(
     bool descending,
     beast::Journal j)
 {
-    std::vector<RelationalDatabase::txnMetaLedgerType> ret;
+    std::vector<RelationalDatabase::TxnMetaLedgerType> ret;
 
-    std::string sql = transactionsSQL(
+    std::string const sql = transactionsSQL(
         app,
         "AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta",
         options,
@@ -862,7 +943,7 @@ getAccountTxsB(
         true /*binary*/,
         false,
         j);
-    if (sql == "")
+    if (sql.empty())
         return {ret, 0};
 
     int total = 0;
@@ -872,7 +953,7 @@ getAccountTxsB(
         boost::optional<std::uint64_t> ledgerSeq;
         boost::optional<std::string> status;
         soci::blob sociTxnBlob(session), sociTxnMetaBlob(session);
-        soci::indicator rti, tmi;
+        soci::indicator rti = soci::i_null, tmi = soci::i_null;
 
         soci::statement st =
             (session.prepare << sql,
@@ -901,7 +982,7 @@ getAccountTxsB(
     return {ret, total};
 }
 
-std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
+std::pair<std::vector<RelationalDatabase::TxnMetaLedgerType>, int>
 getOldestAccountTxsB(
     soci::session& session,
     Application& app,
@@ -911,7 +992,7 @@ getOldestAccountTxsB(
     return getAccountTxsB(session, app, options, false, j);
 }
 
-std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
+std::pair<std::vector<RelationalDatabase::TxnMetaLedgerType>, int>
 getNewestAccountTxsB(
     soci::session& session,
     Application& app,
@@ -919,6 +1000,57 @@ getNewestAccountTxsB(
     beast::Journal j)
 {
     return getAccountTxsB(session, app, options, true, j);
+}
+
+/**
+ * @brief Determines whether a transaction should be included in account_tx
+ *        results based on a delegation filter.
+ * @param rawData Serialized transaction blob.
+ * @param filter The delegate filter specifying the role of the queried account
+ *        (Actor or Authorizer) and an optional counterparty to match against.
+ * @param contextAccount The account passed to account_tx (the queried account).
+ * @return True if the transaction passes the filter and should be included,
+ *         false if it should be skipped.
+ */
+static bool
+passesDelegateFilter(
+    Blob const& rawData,
+    DelegateFilter const& filter,
+    AccountID const& contextAccount)
+{
+    SerialIter sit{makeSlice(rawData)};
+    STTx const tx{sit};
+
+    AccountID const txOwner = tx.getAccountID(sfAccount);
+
+    if (!tx.isFieldPresent(sfDelegate))
+        return false;
+
+    AccountID const txSigner = tx.getAccountID(sfDelegate);
+
+    switch (filter.type)
+    {
+        case DelegateType::Actor: {
+            // Keep txns where the queried account (A) is the owner but
+            // another account (C) was the delegatee that signed.
+            bool const isDelegated = (txOwner == contextAccount) && (txSigner != contextAccount);
+            if (!isDelegated)
+                return false;
+            return !filter.counterparty || (txSigner == *filter.counterparty);
+        }
+
+        case DelegateType::Authorizer: {
+            // Keep txns where the queried account (C) is the signer acting
+            // on behalf of another account (A, the delegator/owner).
+            bool const isActingAsDelegate =
+                (txSigner == contextAccount) && (txOwner != contextAccount);
+            if (!isActingAsDelegate)
+                return false;
+            return !filter.counterparty || (txOwner == *filter.counterparty);
+        }
+    }
+
+    return false;  // LCOV_EXCL_LINE
 }
 
 /**
@@ -933,7 +1065,7 @@ getNewestAccountTxsB(
  *        match: the account, the ledger search range, the marker of the first
  *        returned entry, the number of transactions to return, and a flag if
  *        this number unlimited.
- * @param page_length Total number of transactions to return.
+ * @param pageLength Total number of transactions to return.
  * @param forward True for ascending order, false for descending.
  * @return Vector of tuples of found transactions, their metadata and account
  *         sequences sorted in the specified order by account sequence, a marker
@@ -946,20 +1078,25 @@ accountTxPage(
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
     std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction,
     RelationalDatabase::AccountTxPageOptions const& options,
-    std::uint32_t page_length,
+    std::uint32_t pageLength,
     bool forward)
 {
     int total = 0;
 
+    bool const hasDelegateFilter = options.delegate.has_value();
     bool lookingForMarker = options.marker.has_value();
 
-    std::uint32_t numberOfResults;
+    std::uint32_t numberOfResults = 0;
 
     if (options.limit == 0 || options.limit == UINT32_MAX ||
-        (options.limit > page_length && !options.bAdmin))
-        numberOfResults = page_length;
+        (options.limit > pageLength && !options.bAdmin))
+    {
+        numberOfResults = pageLength;
+    }
     else
+    {
         numberOfResults = options.limit;
+    }
 
     // As an account can have many thousands of transactions, there is a limit
     // placed on the amount of transactions returned. If the limit is reached
@@ -977,14 +1114,6 @@ accountTxPage(
 
     std::optional<RelationalDatabase::AccountTxMarker> newmarker;
 
-    static std::string const prefix(
-        R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
-          Status,RawTxn,TxnMeta
-          FROM AccountTransactions INNER JOIN Transactions
-          ON Transactions.TransID = AccountTransactions.TransID
-          AND AccountTransactions.Account = '%s' WHERE
-          )");
-
     std::string sql;
 
     // SQL's BETWEEN uses a closed interval ([a,b])
@@ -993,47 +1122,68 @@ accountTxPage(
 
     if (findLedger == 0)
     {
-        sql = boost::str(
-            boost::format(prefix + (R"(AccountTransactions.LedgerSeq BETWEEN %u AND %u
-             ORDER BY AccountTransactions.LedgerSeq %s,
-             AccountTransactions.TxnSeq %s
-             LIMIT %u;)")) %
-            toBase58(options.account) % options.minLedger % options.maxLedger % order % order %
+        sql = std::format(
+            R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
+          Status,RawTxn,TxnMeta
+          FROM AccountTransactions INNER JOIN Transactions
+          ON Transactions.TransID = AccountTransactions.TransID
+          AND AccountTransactions.Account = '{}' WHERE
+          AccountTransactions.LedgerSeq BETWEEN {} AND {}
+             ORDER BY AccountTransactions.LedgerSeq {},
+             AccountTransactions.TxnSeq {}
+             LIMIT {};)",
+            toBase58(options.account),
+            options.ledgerRange.min,
+            options.ledgerRange.max,
+            order,
+            order,
             queryLimit);
     }
     else
     {
         char const* const compare = forward ? ">=" : "<=";
-        std::uint32_t const minLedger = forward ? findLedger + 1 : options.minLedger;
-        std::uint32_t const maxLedger = forward ? options.maxLedger : findLedger - 1;
+        std::uint32_t const minLedger = forward ? findLedger + 1 : options.ledgerRange.min;
+        std::uint32_t const maxLedger = forward ? options.ledgerRange.max : findLedger - 1;
 
         auto b58acct = toBase58(options.account);
-        sql = boost::str(
-            boost::format((
-                R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
+        sql = std::format(
+            R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
             Status,RawTxn,TxnMeta
             FROM AccountTransactions, Transactions WHERE
             (AccountTransactions.TransID = Transactions.TransID AND
-            AccountTransactions.Account = '%s' AND
-            AccountTransactions.LedgerSeq BETWEEN %u AND %u)
+            AccountTransactions.Account = '{}' AND
+            AccountTransactions.LedgerSeq BETWEEN {} AND {})
             UNION
             SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,Status,RawTxn,TxnMeta
             FROM AccountTransactions, Transactions WHERE
             (AccountTransactions.TransID = Transactions.TransID AND
-            AccountTransactions.Account = '%s' AND
-            AccountTransactions.LedgerSeq = %u AND
-            AccountTransactions.TxnSeq %s %u)
-            ORDER BY AccountTransactions.LedgerSeq %s,
-            AccountTransactions.TxnSeq %s
-            LIMIT %u;
-            )")) %
-            b58acct % minLedger % maxLedger % b58acct % findLedger % compare % findSeq % order %
-            order % queryLimit);
+            AccountTransactions.Account = '{}' AND
+            AccountTransactions.LedgerSeq = {} AND
+            AccountTransactions.TxnSeq {} {})
+            ORDER BY AccountTransactions.LedgerSeq {},
+            AccountTransactions.TxnSeq {}
+            LIMIT {};
+            )",
+            b58acct,
+            minLedger,
+            maxLedger,
+            b58acct,
+            findLedger,
+            compare,
+            findSeq,
+            order,
+            order,
+            queryLimit);
     }
 
     {
         Blob rawData;
         Blob rawMeta;
+        // Delegate filtering happens after SQL, so skipped rows need their own
+        // continuation marker accounting.
+        std::uint32_t fetchedRows = 0;
+        std::optional<RelationalDatabase::AccountTxMarker> lastEmitted;
+        std::optional<RelationalDatabase::AccountTxMarker> lastScanned;
 
         // SOCI requires boost::optional (not std::optional) as parameters.
         boost::optional<std::uint64_t> ledgerSeq;
@@ -1041,7 +1191,7 @@ accountTxPage(
         boost::optional<std::string> status;
         soci::blob txnData(session);
         soci::blob txnMeta(session);
-        soci::indicator dataPresent, metaPresent;
+        soci::indicator dataPresent = soci::i_null, metaPresent = soci::i_null;
 
         soci::statement st =
             (session.prepare << sql,
@@ -1055,34 +1205,75 @@ accountTxPage(
 
         while (st.fetch())
         {
+            if (hasDelegateFilter)
+            {
+                ++fetchedRows;
+                lastScanned = {
+                    .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
+                    .txnSeq = txnSeq.value_or(0)};
+            }
+
             if (lookingForMarker)
             {
                 if (findLedger == ledgerSeq.value_or(0) && findSeq == txnSeq.value_or(0))
                 {
                     lookingForMarker = false;
+                    // Delegate markers are continuation cursors for the last
+                    // scanned row, so resume after the marker row.
+                    if (hasDelegateFilter)
+                        continue;
                 }
                 else
+                {
                     continue;
+                }
             }
-            else if (numberOfResults == 0)
+
+            if (!hasDelegateFilter && numberOfResults == 0)
             {
                 newmarker = {
-                    rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)), txnSeq.value_or(0)};
+                    .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
+                    .txnSeq = txnSeq.value_or(0)};
                 break;
             }
 
             if (dataPresent == soci::i_ok)
+            {
                 convert(txnData, rawData);
+            }
             else
+            {
                 rawData.clear();
+            }
 
             if (metaPresent == soci::i_ok)
+            {
                 convert(txnMeta, rawMeta);
+            }
             else
+            {
                 rawMeta.clear();
+            }
+
+            if (hasDelegateFilter)
+            {
+                if (rawData.empty() ||
+                    !passesDelegateFilter(rawData, options.delegate.value(), options.account))
+                {
+                    rawData.clear();
+                    rawMeta.clear();
+                    continue;
+                }
+
+                if (numberOfResults == 0)
+                {
+                    newmarker = lastEmitted;
+                    break;
+                }
+            }
 
             // Work around a bug that could leave the metadata missing
-            if (rawMeta.size() == 0)
+            if (rawMeta.empty())
                 onUnsavedLedger(ledgerSeq.value_or(0));
 
             // `rawData` and `rawMeta` will be used after they are moved.
@@ -1102,7 +1293,18 @@ accountTxPage(
 
             --numberOfResults;
             total++;
+            if (hasDelegateFilter)
+            {
+                lastEmitted = {
+                    .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
+                    .txnSeq = txnSeq.value_or(0)};
+            }
         }
+
+        // If this filtered page did not fill the requested number of results,
+        // still return a marker so the caller can continue scanning later rows.
+        if (hasDelegateFilter && !newmarker && !lookingForMarker && fetchedRows == queryLimit)
+            newmarker = lastScanned;
     }
 
     return {newmarker, total};
@@ -1114,9 +1316,9 @@ oldestAccountTxPage(
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
     std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction,
     RelationalDatabase::AccountTxPageOptions const& options,
-    std::uint32_t page_length)
+    std::uint32_t pageLength)
 {
-    return accountTxPage(session, onUnsavedLedger, onTransaction, options, page_length, true);
+    return accountTxPage(session, onUnsavedLedger, onTransaction, options, pageLength, true);
 }
 
 std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
@@ -1125,18 +1327,18 @@ newestAccountTxPage(
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
     std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction,
     RelationalDatabase::AccountTxPageOptions const& options,
-    std::uint32_t page_length)
+    std::uint32_t pageLength)
 {
-    return accountTxPage(session, onUnsavedLedger, onTransaction, options, page_length, false);
+    return accountTxPage(session, onUnsavedLedger, onTransaction, options, pageLength, false);
 }
 
 std::variant<RelationalDatabase::AccountTx, TxSearched>
 getTransaction(
     soci::session& session,
     Application& app,
-    uint256 const& id,
+    UInt256 const& id,
     std::optional<ClosedInterval<uint32_t>> const& range,
-    error_code_i& ec)
+    ErrorCodeI& ec)
 {
     std::string sql =
         "SELECT LedgerSeq,Status,RawTxn,TxnMeta "
@@ -1151,20 +1353,20 @@ getTransaction(
     Blob rawTxn, rawMeta;
     {
         soci::blob sociRawTxnBlob(session), sociRawMetaBlob(session);
-        soci::indicator txn, meta;
+        soci::indicator txn = soci::i_null, meta = soci::i_null;
 
         session << sql, soci::into(ledgerSeq), soci::into(status), soci::into(sociRawTxnBlob, txn),
             soci::into(sociRawMetaBlob, meta);
 
-        auto const got_data = session.got_data();
+        auto const gotData = session.got_data();
 
-        if ((!got_data || txn != soci::i_ok || meta != soci::i_ok) && !range)
-            return TxSearched::unknown;
+        if ((!gotData || txn != soci::i_ok || meta != soci::i_ok) && !range)
+            return TxSearched::Unknown;
 
-        if (!got_data)
+        if (!gotData)
         {
             uint64_t count = 0;
-            soci::indicator rti;
+            soci::indicator rti = soci::i_null;
 
             session << "SELECT COUNT(DISTINCT LedgerSeq) FROM Transactions WHERE "
                        "LedgerSeq BETWEEN "
@@ -1172,10 +1374,10 @@ getTransaction(
                 soci::into(count, rti);
 
             if (!session.got_data() || rti != soci::i_ok)
-                return TxSearched::some;
+                return TxSearched::Some;
 
-            return count == (range->last() - range->first() + 1) ? TxSearched::all
-                                                                 : TxSearched::some;
+            return count == (range->last() - range->first() + 1) ? TxSearched::All
+                                                                 : TxSearched::Some;
         }
 
         convert(sociRawTxnBlob, rawTxn);
@@ -1189,7 +1391,7 @@ getTransaction(
         if (!ledgerSeq)
             return std::pair{std::move(txn), nullptr};
 
-        std::uint32_t inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value());
+        auto const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value());
 
         auto txMeta = std::make_shared<TxMeta>(id, inLedger, rawMeta);
 
@@ -1197,19 +1399,20 @@ getTransaction(
     }
     catch (std::exception& e)
     {
-        JLOG(app.journal("Ledger").warn())
+        JLOG(app.getJournal("Ledger").warn())
             << "Unable to deserialize transaction from raw SQL value. Error: " << e.what();
 
-        ec = rpcDB_DESERIALIZATION;
+        ec = RpcDbDeserialization;
     }
 
-    return TxSearched::unknown;
+    return TxSearched::Unknown;
 }
 
 bool
 dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 {
-    boost::filesystem::space_info space = boost::filesystem::space(config.legacy("database_path"));
+    std::filesystem::space_info const space =
+        std::filesystem::space(config.legacy(Sections::kDatabasePath));
 
     if (space.available < megabytes(512))
     {
@@ -1219,33 +1422,33 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 
     if (config.useTxTables())
     {
-        DatabaseCon::Setup dbSetup = setup_DatabaseCon(config);
-        boost::filesystem::path dbPath = dbSetup.dataDir / TxDBName;
-        boost::system::error_code ec;
-        std::optional<std::uint64_t> dbSize = boost::filesystem::file_size(dbPath, ec);
+        DatabaseCon::Setup const dbSetup = setupDatabaseCon(config);
+        std::filesystem::path const dbPath = dbSetup.dataDir / kTxDbName;
+        std::error_code ec;
+        std::optional<std::uint64_t> dbSize = std::filesystem::file_size(dbPath, ec);
         if (ec)
         {
             JLOG(j.error()) << "Error checking transaction db file size: " << ec.message();
             dbSize.reset();
         }
 
-        static auto const pageSize = [&] {
-            std::uint32_t ps;
+        static auto const kPageSize = [&] {
+            std::uint32_t ps = 0;
             session << "PRAGMA page_size;", soci::into(ps);
             return ps;
         }();
-        static auto const maxPages = [&] {
-            std::uint32_t mp;
+        static auto const kMaxPages = [&] {
+            std::uint32_t mp = 0;
             session << "PRAGMA max_page_count;", soci::into(mp);
             return mp;
         }();
-        std::uint32_t pageCount;
+        std::uint32_t pageCount = 0;
         session << "PRAGMA page_count;", soci::into(pageCount);
-        std::uint32_t freePages = maxPages - pageCount;
-        std::uint64_t freeSpace = safe_cast<std::uint64_t>(freePages) * pageSize;
+        std::uint32_t const freePages = kMaxPages - pageCount;
+        std::uint64_t const freeSpace = safeCast<std::uint64_t>(freePages) * kPageSize;
         JLOG(j.info()) << "Transaction DB pathname: " << dbPath.string()
                        << "; file size: " << dbSize.value_or(-1) << " bytes"
-                       << "; SQLite page size: " << pageSize << " bytes"
+                       << "; SQLite page size: " << kPageSize << " bytes"
                        << "; Free pages: " << freePages << "; Free space: " << freeSpace
                        << " bytes; "
                        << "Note that this does not take into account available disk "
@@ -1254,7 +1457,7 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
         if (freeSpace < megabytes(512))
         {
             JLOG(j.fatal()) << "Free SQLite space for transaction db is less than "
-                               "512MB. To fix this, rippled must be executed with the "
+                               "512MB. To fix this, xrpld must be executed with the "
                                "vacuum parameter before restarting. "
                                "Note that this activity can take multiple days, "
                                "depending on database size.";
@@ -1265,5 +1468,4 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
     return true;
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

@@ -5,18 +5,18 @@
 
 #include <xrpl/json/json_value.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
-/** Disable the regular key. */
-Json::Value
-regkey(Account const& account, disabled_t);
+/**
+ * Disable the regular key.
+ */
+json::Value
+regkey(Account const& account, DisabledT);
 
-/** Set a regular key. */
-Json::Value
+/**
+ * Set a regular key.
+ */
+json::Value
 regkey(Account const& account, Account const& signer);
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

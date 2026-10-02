@@ -1,0 +1,8 @@
+detect_container_overflow=false
+detect_stack_use_after_return=false
+debug=true
+halt_on_error=false
+print_stats=true
+print_cmdline=true
+use_sigaltstack=0
+print_stacktrace=1

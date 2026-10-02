@@ -10,24 +10,27 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
-namespace xrpl {
+#include <functional>
+#include <memory>
+#include <string>
+#include <utility>
 
-namespace detail {
+namespace xrpl::detail {
 
 // Work with files
 class WorkFile : public Work, public std::enable_shared_from_this<WorkFile>
 {
 protected:
-    using error_code = boost::system::error_code;
+    using ErrorCode = boost::system::error_code;
     // Override the definition in Work.h
-    using response_type = std::string;
+    using ResponseType = std::string;
 
 public:
-    using callback_type = std::function<void(error_code const&, response_type const&)>;
+    using CallbackType = std::function<void(ErrorCode const&, ResponseType const&)>;
 
 public:
-    WorkFile(std::string const& path, boost::asio::io_context& ios, callback_type cb);
-    ~WorkFile();
+    WorkFile(std::string path, boost::asio::io_context& ios, CallbackType cb);
+    ~WorkFile() override;
 
     void
     run() override;
@@ -37,33 +40,36 @@ public:
 
 private:
     std::string path_;
-    callback_type cb_;
+    CallbackType cb_;
     boost::asio::io_context& ios_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
 };
 
 //------------------------------------------------------------------------------
 
-WorkFile::WorkFile(std::string const& path, boost::asio::io_context& ios, callback_type cb)
-    : path_(path), cb_(std::move(cb)), ios_(ios), strand_(boost::asio::make_strand(ios))
+inline WorkFile::WorkFile(std::string path, boost::asio::io_context& ios, CallbackType cb)
+    : path_(std::move(path)), cb_(std::move(cb)), ios_(ios), strand_(boost::asio::make_strand(ios))
 {
 }
 
-WorkFile::~WorkFile()
+inline WorkFile::~WorkFile()
 {
     if (cb_)
         cb_(make_error_code(boost::system::errc::interrupted), {});
 }
 
-void
+inline void
 WorkFile::run()
 {
     if (!strand_.running_in_this_thread())
-        return boost::asio::post(
-            ios_,
-            boost::asio::bind_executor(strand_, std::bind(&WorkFile::run, shared_from_this())));
+    {
+        boost::asio::post(ios_, boost::asio::bind_executor(strand_, [self = shared_from_this()] {
+                              self->run();
+                          }));
+        return;
+    }
 
-    error_code ec;
+    ErrorCode ec;
     auto const fileContents = getFileContents(ec, path_, megabytes(1));
 
     XRPL_ASSERT(cb_, "xrpl::detail::WorkFile::run : callback is set");
@@ -71,12 +77,10 @@ WorkFile::run()
     cb_ = nullptr;
 }
 
-void
+inline void
 WorkFile::cancel()
 {
     // Nothing to do. Either it finished in run, or it didn't start.
 }
 
-}  // namespace detail
-
-}  // namespace xrpl
+}  // namespace xrpl::detail

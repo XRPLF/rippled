@@ -50,20 +50,21 @@ ForEachMacros: [Q_FOREACH, BOOST_FOREACH]
 IncludeBlocks: Regroup
 IncludeCategories:
   - Regex: "^<(test)/"
-    Priority: 0
-  - Regex: "^<(xrpld)/"
     Priority: 1
-  - Regex: "^<(xrpl)/"
+  - Regex: "^<(xrpld)/"
     Priority: 2
-  - Regex: "^<(boost)/"
+  - Regex: "^<(xrpl)/"
     Priority: 3
-  - Regex: "^.*/"
+  - Regex: "^<(boost)/"
     Priority: 4
-  - Regex: '^.*\.h'
+  - Regex: "^.*/"
     Priority: 5
-  - Regex: ".*"
+  - Regex: '^.*\.h'
     Priority: 6
+  - Regex: ".*"
+    Priority: 7
 IncludeIsMainRegex: "$"
+MainIncludeChar: AngleBracket
 IndentCaseLabels: true
 IndentFunctionDeclarationAfterType: false
 IndentRequiresClause: true

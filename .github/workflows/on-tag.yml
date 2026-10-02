@@ -1,11 +1,18 @@
-# This workflow uploads the libxrpl recipe to the Conan remote when a versioned
-# tag is pushed.
+# When a versioned tag is pushed, this workflow:
+#
+#   - builds and tests the release binaries
+#   - uploads the libxrpl recipe to the Conan remote
+#   - builds the DEB and RPM packages
+#   - publishes those packages to the XRPLF package repositories
+#
+# Nothing is published unless the build passes, which is also where CMake
+# rejects a tag that is not a valid version, e.g. 3.2.01.
 name: Tag
 
 on:
   push:
     tags:
-      - "v*"
+      - "[0-9]+.[0-9]+.[0-9]*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,9 +24,37 @@ defaults:
 
 jobs:
   upload-recipe:
-    # Only run when a tag is pushed to the XRPLF repository.
-    if: ${{ github.repository_owner == 'XRPLF' }}
+    if: ${{ github.repository == 'XRPLF/rippled' }}
+    needs: build-test
     uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:
-      remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+      remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
+
+  build-test:
+    if: ${{ github.repository_owner == 'XRPLF' }}
+    uses: ./.github/workflows/reusable-build-test.yml
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [linux]
+    with:
+      ccache_enabled: false
+      os: ${{ matrix.os }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  package:
+    if: ${{ github.repository_owner == 'XRPLF' }}
+    needs: build-test
+    uses: ./.github/workflows/reusable-package.yml
+    with:
+      publish: true
+    secrets:
+      remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
+      signing_key: ${{ secrets.NEXUS_PACKAGES_PRIVATE_KEY }}
+      dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
+      antithesis_docker_host: ${{ secrets.ANTITHESIS_DOCKER_HOST }}
+      antithesis_docker_path: ${{ secrets.ANTITHESIS_DOCKER_PATH }}
+      antithesis_docker_credentials: ${{ secrets.ANTITHESIS_DOCKER_CREDENTIALS }}

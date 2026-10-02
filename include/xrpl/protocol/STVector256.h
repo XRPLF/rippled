@@ -1,94 +1,99 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STBitString.h>
-#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstddef>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
 class STVector256 : public STBase, public CountedObject<STVector256>
 {
-    std::vector<uint256> mValue;
+    std::vector<UInt256> value_;
 
 public:
-    using value_type = std::vector<uint256> const&;
+    using value_type = std::vector<UInt256> const&;
 
     STVector256() = default;
 
     explicit STVector256(SField const& n);
-    explicit STVector256(std::vector<uint256> const& vector);
-    STVector256(SField const& n, std::vector<uint256> const& vector);
+    explicit STVector256(std::vector<UInt256> vector);
+    STVector256(SField const& n, std::vector<UInt256> vector);
     STVector256(SerialIter& sit, SField const& name);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
     void
     add(Serializer& s) const override;
 
-    Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
     STVector256&
-    operator=(std::vector<uint256> const& v);
+    operator=(std::vector<UInt256> const& v);
 
     STVector256&
-    operator=(std::vector<uint256>&& v);
+    operator=(std::vector<UInt256>&& v);
 
     void
     setValue(STVector256 const& v);
 
-    /** Retrieve a copy of the vector we contain */
+    /**
+     * Retrieve a copy of the vector we contain
+     */
     explicit
-    operator std::vector<uint256>() const;
+    operator std::vector<UInt256>() const;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const;
 
     void
     resize(std::size_t n);
 
-    bool
+    [[nodiscard]] bool
     empty() const;
 
-    std::vector<uint256>::reference
-    operator[](std::vector<uint256>::size_type n);
+    std::vector<UInt256>::reference
+    operator[](std::vector<UInt256>::size_type n);
 
-    std::vector<uint256>::const_reference
-    operator[](std::vector<uint256>::size_type n) const;
+    std::vector<UInt256>::const_reference
+    operator[](std::vector<UInt256>::size_type n) const;
 
-    std::vector<uint256> const&
+    [[nodiscard]] std::vector<UInt256> const&
     value() const;
 
-    std::vector<uint256>::iterator
-    insert(std::vector<uint256>::const_iterator pos, uint256 const& value);
-
-    std::vector<uint256>::iterator
-    insert(std::vector<uint256>::const_iterator pos, uint256&& value);
+    std::vector<UInt256>::iterator
+    insert(std::vector<UInt256>::const_iterator pos, UInt256 const& value);
 
     void
-    push_back(uint256 const& v);
+    pushBack(UInt256 const& v);
 
-    std::vector<uint256>::iterator
+    std::vector<UInt256>::iterator
     begin();
 
-    std::vector<uint256>::const_iterator
+    [[nodiscard]] std::vector<UInt256>::const_iterator
     begin() const;
 
-    std::vector<uint256>::iterator
+    std::vector<UInt256>::iterator
     end();
 
-    std::vector<uint256>::const_iterator
+    [[nodiscard]] std::vector<UInt256>::const_iterator
     end() const;
 
-    std::vector<uint256>::iterator
-    erase(std::vector<uint256>::iterator position);
+    std::vector<UInt256>::iterator
+    erase(std::vector<UInt256>::iterator position);
 
     void
     clear() noexcept;
@@ -106,130 +111,126 @@ inline STVector256::STVector256(SField const& n) : STBase(n)
 {
 }
 
-inline STVector256::STVector256(std::vector<uint256> const& vector) : mValue(vector)
+inline STVector256::STVector256(std::vector<UInt256> vector) : value_(std::move(vector))
 {
 }
 
-inline STVector256::STVector256(SField const& n, std::vector<uint256> const& vector)
-    : STBase(n), mValue(vector)
+inline STVector256::STVector256(SField const& n, std::vector<UInt256> vector)
+    : STBase(n), value_(std::move(vector))
 {
 }
 
 inline STVector256&
-STVector256::operator=(std::vector<uint256> const& v)
+STVector256::operator=(std::vector<UInt256> const& v)
 {
-    mValue = v;
+    value_ = v;
     return *this;
 }
 
 inline STVector256&
-STVector256::operator=(std::vector<uint256>&& v)
+STVector256::operator=(std::vector<UInt256>&& v)
 {
-    mValue = std::move(v);
+    value_ = std::move(v);
     return *this;
 }
 
 inline void
 STVector256::setValue(STVector256 const& v)
 {
-    mValue = v.mValue;
+    value_ = v.value_;
 }
 
-/** Retrieve a copy of the vector we contain */
+/**
+ * Retrieve a copy of the vector we contain
+ */
 inline STVector256::
-operator std::vector<uint256>() const
+operator std::vector<UInt256>() const
 {
-    return mValue;
+    return value_;
 }
 
 inline std::size_t
 STVector256::size() const
 {
-    return mValue.size();
+    return value_.size();
 }
 
 inline void
 STVector256::resize(std::size_t n)
 {
-    return mValue.resize(n);
+    value_.resize(n);
 }
 
 inline bool
 STVector256::empty() const
 {
-    return mValue.empty();
+    return value_.empty();
 }
 
-inline std::vector<uint256>::reference
-STVector256::operator[](std::vector<uint256>::size_type n)
+inline std::vector<UInt256>::reference
+STVector256::operator[](std::vector<UInt256>::size_type n)
 {
-    return mValue[n];
+    return value_[n];
 }
 
-inline std::vector<uint256>::const_reference
-STVector256::operator[](std::vector<uint256>::size_type n) const
+inline std::vector<UInt256>::const_reference
+STVector256::operator[](std::vector<UInt256>::size_type n) const
 {
-    return mValue[n];
+    return value_[n];
 }
 
-inline std::vector<uint256> const&
+inline std::vector<UInt256> const&
 STVector256::value() const
 {
-    return mValue;
+    return value_;
 }
 
-inline std::vector<uint256>::iterator
-STVector256::insert(std::vector<uint256>::const_iterator pos, uint256 const& value)
+inline std::vector<UInt256>::iterator
+STVector256::insert(std::vector<UInt256>::const_iterator pos, UInt256 const& value)
 {
-    return mValue.insert(pos, value);
-}
-
-inline std::vector<uint256>::iterator
-STVector256::insert(std::vector<uint256>::const_iterator pos, uint256&& value)
-{
-    return mValue.insert(pos, std::move(value));
+    return value_.insert(pos, value);
 }
 
 inline void
-STVector256::push_back(uint256 const& v)
+STVector256::pushBack(UInt256 const& v)
 {
-    mValue.push_back(v);
+    value_.push_back(v);
 }
 
-inline std::vector<uint256>::iterator
+inline std::vector<UInt256>::iterator
 STVector256::begin()
 {
-    return mValue.begin();
+    return value_.begin();
 }
 
-inline std::vector<uint256>::const_iterator
+inline std::vector<UInt256>::const_iterator
 STVector256::begin() const
 {
-    return mValue.begin();
+    return value_.begin();
 }
 
-inline std::vector<uint256>::iterator
+inline std::vector<UInt256>::iterator
 STVector256::end()
 {
-    return mValue.end();
+    return value_.end();
 }
 
-inline std::vector<uint256>::const_iterator
+inline std::vector<UInt256>::const_iterator
 STVector256::end() const
 {
-    return mValue.end();
+    return value_.end();
 }
 
-inline std::vector<uint256>::iterator
-STVector256::erase(std::vector<uint256>::iterator position)
+inline std::vector<UInt256>::iterator
+STVector256::erase(std::vector<UInt256>::iterator position)
 {
-    return mValue.erase(position);
+    return value_.erase(position);
 }
 
 inline void
 STVector256::clear() noexcept
 {
-    return mValue.clear();
+    value_.clear();
 }
 
 }  // namespace xrpl

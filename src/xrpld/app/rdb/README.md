@@ -2,7 +2,7 @@
 
 The guiding principles of the Relational Database Interface are summarized below:
 
-- All hard-coded SQL statements should be stored in the [files](#source-files) under the `xrpld/app/rdb` directory. With the exception of test modules, no hard-coded SQL should be added to any other file in rippled.
+- All hard-coded SQL statements should be stored in the [files](#source-files) under the `xrpld/app/rdb` directory. With the exception of test modules, no hard-coded SQL should be added to any other file in xrpld.
 - The base class `RelationalDatabase` is inherited by derived classes that each provide an interface for operating on distinct relational database systems.
 
 ## Overview

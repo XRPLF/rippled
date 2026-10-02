@@ -1,35 +1,56 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/Credit.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/QualityFunction.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/Flow.h>
-#include <xrpl/tx/paths/detail/AmountSpec.h>
 #include <xrpl/tx/paths/detail/FlatSets.h>
 #include <xrpl/tx/paths/detail/FlowDebugInfo.h>
 #include <xrpl/tx/paths/detail/Steps.h>
-#include <xrpl/tx/transactors/AMM/AMMContext.h>
-#include <xrpl/tx/transactors/AMM/AMMHelpers.h>
+#include <xrpl/tx/transactors/dex/AMMContext.h>
 
 #include <boost/container/flat_set.hpp>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <iterator>
+#include <memory>
 #include <numeric>
+#include <optional>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
-/** Result of flow() execution of a single Strand. */
+/**
+ * Result of flow() execution of a single Strand.
+ */
 template <class TInAmt, class TOutAmt>
 struct StrandResult
 {
-    bool success;                                  ///< Strand succeeded
-    TInAmt in = beast::zero;                       ///< Currency amount in
-    TOutAmt out = beast::zero;                     ///< Currency amount out
+    bool success = false;                          ///< Strand succeeded
+    TInAmt in = beast::kZero;                      ///< Currency amount in
+    TOutAmt out = beast::kZero;                    ///< Currency amount out
     std::optional<PaymentSandbox> sandbox;         ///< Resulting Sandbox state
-    boost::container::flat_set<uint256> ofrsToRm;  ///< Offers to remove
+    boost::container::flat_set<UInt256> ofrsToRm;  ///< Offers to remove
     // Num offers consumed or partially consumed (includes expired and unfunded
     // offers)
     std::uint32_t ofrsUsed = 0;
@@ -38,42 +59,44 @@ struct StrandResult
     bool inactive = false;  ///< Strand should not considered as a further
                             ///< source of liquidity (dry)
 
-    /** Strand result constructor */
+    /**
+     * Strand result constructor
+     */
     StrandResult() = default;
 
     StrandResult(
         Strand const& strand,
-        TInAmt const& in_,
-        TOutAmt const& out_,
-        PaymentSandbox&& sandbox_,
-        boost::container::flat_set<uint256> ofrsToRm_,
-        bool inactive_)
+        TInAmt const& in,
+        TOutAmt const& out,
+        PaymentSandbox&& sandbox,
+        boost::container::flat_set<UInt256> ofrsToRemoveMember,
+        bool inactive)
         : success(true)
-        , in(in_)
-        , out(out_)
-        , sandbox(std::move(sandbox_))
-        , ofrsToRm(std::move(ofrsToRm_))
+        , in(in)
+        , out(out)
+        , sandbox(std::move(sandbox))
+        , ofrsToRm(std::move(ofrsToRemoveMember))
         , ofrsUsed(offersUsed(strand))
-        , inactive(inactive_)
+        , inactive(inactive)
     {
     }
 
-    StrandResult(Strand const& strand, boost::container::flat_set<uint256> ofrsToRm_)
-        : success(false), ofrsToRm(std::move(ofrsToRm_)), ofrsUsed(offersUsed(strand))
+    StrandResult(Strand const& strand, boost::container::flat_set<UInt256> ofrsToRemoveMember)
+        : ofrsToRm(std::move(ofrsToRemoveMember)), ofrsUsed(offersUsed(strand))
     {
     }
 };
 
 /**
-   Request `out` amount from a strand
-
-   @param baseView Trust lines and balances
-   @param strand Steps of Accounts to ripple through and offer books to use
-   @param maxIn Max amount of input allowed
-   @param out Amount of output requested from the strand
-   @param j Journal to write log messages to
-   @return Actual amount in and out from the strand, errors, offers to remove,
-           and payment sandbox
+ * Request `out` amount from a strand
+ *
+ * @param baseView Trust lines and balances
+ * @param strand Steps of Accounts to ripple through and offer books to use
+ * @param maxIn Max amount of input allowed
+ * @param out Amount of output requested from the strand
+ * @param j Journal to write log messages to
+ * @return Actual amount in and out from the strand, errors, offers to remove,
+ *         and payment sandbox
  */
 template <class TInAmt, class TOutAmt>
 StrandResult<TInAmt, TOutAmt>
@@ -91,7 +114,7 @@ flow(
         return {};
     }
 
-    boost::container::flat_set<uint256> ofrsToRm;
+    boost::container::flat_set<UInt256> ofrsToRm;
 
     if (isDirectXrpToXrp<TInAmt, TOutAmt>(strand))
     {
@@ -232,8 +255,11 @@ flow(
             }
         }
 
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) cachedIn/Out set after strand is stepped
+        // above
         auto const strandIn = *strand.front()->cachedIn();
         auto const strandOut = *strand.back()->cachedOut();
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
 #ifndef NDEBUG
         {
@@ -241,10 +267,11 @@ flow(
             // Re-executing the strand will change the cached values
             PaymentSandbox checkSB(&baseView);
             PaymentSandbox checkAfView(&baseView);
-            EitherAmount stepIn(*strand[0]->cachedIn());
+            EitherAmount stepIn(
+                *strand[0]->cachedIn());  // NOLINT(bugprone-unchecked-optional-access)
             for (auto i = 0; i < s; ++i)
             {
-                bool valid;
+                bool valid = false;
                 std::tie(valid, stepIn) = strand[i]->validFwd(checkSB, checkAfView, stepIn);
                 if (!valid)
                 {
@@ -274,67 +301,72 @@ flow(
     }
 }
 
-/// @cond INTERNAL
+/** @cond INTERNAL */
 template <class TInAmt, class TOutAmt>
 struct FlowResult
 {
-    TInAmt in = beast::zero;
-    TOutAmt out = beast::zero;
+    TInAmt in = beast::kZero;
+    TOutAmt out = beast::kZero;
     std::optional<PaymentSandbox> sandbox;
-    boost::container::flat_set<uint256> removableOffers;
+    boost::container::flat_set<UInt256> removableOffers;
     TER ter = temUNKNOWN;
 
     FlowResult() = default;
 
     FlowResult(
-        TInAmt const& in_,
-        TOutAmt const& out_,
-        PaymentSandbox&& sandbox_,
-        boost::container::flat_set<uint256> ofrsToRm)
-        : in(in_)
-        , out(out_)
-        , sandbox(std::move(sandbox_))
+        TInAmt const& in,
+        TOutAmt const& out,
+        PaymentSandbox&& sandbox,
+        boost::container::flat_set<UInt256> ofrsToRm)
+        : in(in)
+        , out(out)
+        , sandbox(std::move(sandbox))
         , removableOffers(std::move(ofrsToRm))
         , ter(tesSUCCESS)
     {
     }
 
-    FlowResult(TER ter_, boost::container::flat_set<uint256> ofrsToRm)
-        : removableOffers(std::move(ofrsToRm)), ter(ter_)
+    FlowResult(TER ter, boost::container::flat_set<UInt256> ofrsToRm)
+        : removableOffers(std::move(ofrsToRm)), ter(ter)
     {
     }
 
     FlowResult(
-        TER ter_,
-        TInAmt const& in_,
-        TOutAmt const& out_,
-        boost::container::flat_set<uint256> ofrsToRm)
-        : in(in_), out(out_), removableOffers(std::move(ofrsToRm)), ter(ter_)
+        TER ter,
+        TInAmt const& in,
+        TOutAmt const& out,
+        boost::container::flat_set<UInt256> ofrsToRm)
+        : in(in), out(out), removableOffers(std::move(ofrsToRm)), ter(ter)
     {
     }
 };
-/// @endcond
+/** @endcond */
 
-/// @cond INTERNAL
+/** @cond INTERNAL */
 inline std::optional<Quality>
 qualityUpperBound(ReadView const& v, Strand const& strand)
 {
-    Quality q{STAmount::uRateOne};
+    Quality q{STAmount::kURateOne};
     std::optional<Quality> stepQ;
-    DebtDirection dir = DebtDirection::issues;
+    DebtDirection dir = DebtDirection::Issues;
     for (auto const& step : strand)
     {
         if (std::tie(stepQ, dir) = step->qualityUpperBound(v, dir); stepQ)
-            q = composed_quality(q, *stepQ);
+        {
+            q = composedQuality(q, *stepQ);
+        }
         else
+        {
             return std::nullopt;
+        }
     }
     return q;
 };
-/// @endcond
+/** @endcond */
 
-/// @cond INTERNAL
-/** Limit remaining out only if one strand and limitQuality is included.
+/** @cond INTERNAL */
+/**
+ * Limit remaining out only if one strand and limitQuality is included.
  * Targets one path payment with AMM where the average quality is linear
  * and instant quality is quadratic function of output. Calculating quality
  * function for the whole strand enables figuring out required output
@@ -342,7 +374,7 @@ qualityUpperBound(ReadView const& v, Strand const& strand)
  * increases quality of AMM steps, increasing the strand's composite
  * quality as the result.
  */
-template <typename TOutAmt>
+template <StepAmount TOutAmt>
 inline TOutAmt
 limitOut(
     ReadView const& v,
@@ -352,18 +384,24 @@ limitOut(
 {
     std::optional<QualityFunction> stepQualityFunc;
     std::optional<QualityFunction> qf;
-    DebtDirection dir = DebtDirection::issues;
+    DebtDirection dir = DebtDirection::Issues;
     for (auto const& step : strand)
     {
         if (std::tie(stepQualityFunc, dir) = step->getQualityFunc(v, dir); stepQualityFunc)
         {
             if (!qf)
+            {
                 qf = stepQualityFunc;
+            }
             else
+            {
                 qf->combine(*stepQualityFunc);
+            }
         }
         else
+        {
             return remainingOut;
+        }
     }
 
     // QualityFunction is constant
@@ -371,23 +409,42 @@ limitOut(
         return remainingOut;
 
     auto const out = [&]() {
-        if (auto const out = qf->outFromAvgQ(limitQuality); !out)
+        auto const out = qf->outFromAvgQ(limitQuality);
+        if (!out)
             return remainingOut;
-        else if constexpr (std::is_same_v<TOutAmt, XRPAmount>)
-            return XRPAmount{*out};
+        if constexpr (std::is_same_v<TOutAmt, XRPAmount> || std::is_same_v<TOutAmt, MPTAmount>)
+        {
+            auto const roundedOut = TOutAmt{*out};
+            // Integral outputs that round above the continuous target can
+            // realize worse average quality than the requested limit. Keep the
+            // default rounded value when it still satisfies the limit, since it
+            // is the largest matching offer; otherwise round down.
+            if (v.rules().enabled(featureMPTokensV2) && roundedOut > *out &&
+                !qf->satisfiesAvgQ(limitQuality, roundedOut))
+            {
+                NumberRoundModeGuard const g(Number::RoundingMode::Downward);
+                return TOutAmt{*out};
+            }
+            return roundedOut;
+        }
         else if constexpr (std::is_same_v<TOutAmt, IOUAmount>)
+        {
             return IOUAmount{*out};
+        }
         else
-            return STAmount{remainingOut.issue(), out->mantissa(), out->exponent()};
+        {
+            static constexpr bool kAlwaysFalse = !std::is_same_v<TOutAmt, TOutAmt>;
+            static_assert(kAlwaysFalse, "Unhandled StepAmount type");
+        }
     }();
     // A tiny difference could be due to the round off
     if (withinRelativeDistance(out, remainingOut, Number(1, -9)))
         return remainingOut;
     return std::min(out, remainingOut);
 };
-/// @endcond
+/** @endcond */
 
-/// @cond INTERNAL
+/** @cond INTERNAL */
 /* Track the non-dry strands
 
    flow will search the non-dry strands (stored in `cur_`) for the best
@@ -428,7 +485,7 @@ public:
             {
                 for (Strand const* strand : next_)
                 {
-                    if (!strand)
+                    if (strand == nullptr)
                     {
                         // should not happen
                         continue;
@@ -445,14 +502,14 @@ public:
                             // an unusual corner case.
                             continue;
                         }
-                        strandQualities.push_back({*qual, strand});
+                        strandQualities.emplace_back(*qual, strand);
                     }
                 }
                 // must stable sort for deterministic order across different c++
                 // standard library implementations
-                std::stable_sort(
-                    strandQualities.begin(),
-                    strandQualities.end(),
+                std::ranges::stable_sort(
+                    strandQualities,
+
                     [](auto const& lhs, auto const& rhs) {
                         // higher qualities first
                         return std::get<Quality>(lhs) > std::get<Quality>(rhs);
@@ -468,7 +525,7 @@ public:
         std::swap(cur_, next_);
     }
 
-    Strand const*
+    [[nodiscard]] Strand const*
     get(size_t i) const
     {
         if (i >= cur_.size())
@@ -496,43 +553,35 @@ public:
         next_.insert(next_.end(), std::next(cur_.begin(), i), cur_.end());
     }
 
-    auto
+    [[nodiscard]] auto
     size() const
     {
         return cur_.size();
     }
-
-    void
-    removeIndex(std::size_t i)
-    {
-        if (i >= next_.size())
-            return;
-        next_.erase(next_.begin() + i);
-    }
 };
-/// @endcond
+/** @endcond */
 
 /**
-   Request `out` amount from a collection of strands
-
-   Attempt to fulfill the payment by using liquidity from the strands in order
-   from least expensive to most expensive
-
-   @param baseView Trust lines and balances
-   @param strands Each strand contains the steps of accounts to ripple through
-                  and offer books to use
-   @param outReq Amount of output requested from the strand
-   @param partialPayment If true allow less than the full payment
-   @param offerCrossing If true offer crossing, not handling a standard payment
-   @param limitQuality If present, the minimum quality for any strand taken
-   @param sendMaxST If present, the maximum STAmount to send
-   @param j Journal to write journal messages to
-   @param ammContext counts iterations with AMM offers
-   @param flowDebugInfo If pointer is non-null, write flow debug info here
-   @return Actual amount in and out from the strands, errors, and payment
-   sandbox
-*/
-template <class TInAmt, class TOutAmt>
+ * Request `out` amount from a collection of strands
+ *
+ * Attempt to fulfill the payment by using liquidity from the strands in order
+ * from least expensive to most expensive
+ *
+ * @param baseView Trust lines and balances
+ * @param strands Each strand contains the steps of accounts to ripple through
+ *                and offer books to use
+ * @param outReq Amount of output requested from the strand
+ * @param partialPayment If true allow less than the full payment
+ * @param offerCrossing If true offer crossing, not handling a standard payment
+ * @param limitQuality If present, the minimum quality for any strand taken
+ * @param sendMaxST If present, the maximum STAmount to send
+ * @param j Journal to write journal messages to
+ * @param ammContext counts iterations with AMM offers
+ * @param flowDebugInfo If pointer is non-null, write flow debug info here
+ * @return Actual amount in and out from the strands, errors, and payment
+ * sandbox
+ */
+template <StepAmount TInAmt, StepAmount TOutAmt>
 FlowResult<TInAmt, TOutAmt>
 flow(
     PaymentSandbox const& baseView,
@@ -557,28 +606,28 @@ flow(
         Quality quality;
 
         BestStrand(
-            TInAmt const& in_,
-            TOutAmt const& out_,
-            PaymentSandbox&& sb_,
-            Strand const& strand_,
-            Quality const& quality_)
-            : in(in_), out(out_), sb(std::move(sb_)), strand(strand_), quality(quality_)
+            TInAmt const& in,
+            TOutAmt const& out,
+            PaymentSandbox&& sb,
+            Strand const& strand,
+            Quality const& quality)
+            : in(in), out(out), sb(std::move(sb)), strand(strand), quality(quality)
         {
         }
     };
 
     std::size_t const maxTries = 1000;
     std::size_t curTry = 0;
-    std::uint32_t maxOffersToConsider = 1500;
+    std::uint32_t const maxOffersToConsider = 1500;
     std::uint32_t offersConsidered = 0;
 
     // There is a bug in gcc that incorrectly warns about using uninitialized
     // values if `remainingIn` is initialized through a copy constructor. We can
     // get similar warnings for `sendMax` if it is initialized in the most
     // natural way. Using `make_optional`, allows us to work around this bug.
-    TInAmt const sendMaxInit = sendMaxST ? toAmount<TInAmt>(*sendMaxST) : TInAmt{beast::zero};
+    TInAmt const sendMaxInit = sendMaxST ? toAmount<TInAmt>(*sendMaxST) : TInAmt{beast::kZero};
     std::optional<TInAmt> const sendMax =
-        (sendMaxST && sendMaxInit >= beast::zero) ? std::make_optional(sendMaxInit) : std::nullopt;
+        (sendMaxST && sendMaxInit >= beast::kZero) ? std::make_optional(sendMaxInit) : std::nullopt;
     std::optional<TInAmt> remainingIn = !!sendMax ? std::make_optional(sendMaxInit) : std::nullopt;
     // std::optional<TInAmt> remainingIn{sendMax};
 
@@ -600,15 +649,15 @@ flow(
     auto sum = [](auto const& col) {
         using TResult = std::decay_t<decltype(*col.begin())>;
         if (col.empty())
-            return TResult{beast::zero};
+            return TResult{beast::kZero};
         return std::accumulate(col.begin() + 1, col.end(), *col.begin());
     };
 
     // These offers only need to be removed if the payment is not
     // successful
-    boost::container::flat_set<uint256> ofrsToRmOnFail;
+    boost::container::flat_set<UInt256> ofrsToRmOnFail;
 
-    while (remainingOut > beast::zero && (!remainingIn || *remainingIn > beast::zero))
+    while (remainingOut > beast::kZero && (!remainingIn || *remainingIn > beast::kZero))
     {
         ++curTry;
         if (curTry >= maxTries)
@@ -623,21 +672,18 @@ flow(
         // Limit only if one strand and limitQuality
         auto const limitRemainingOut = [&]() {
             if (activeStrands.size() == 1 && limitQuality)
+            {
                 if (auto const strand = activeStrands.get(0))
                     return limitOut(sb, *strand, remainingOut, *limitQuality);
+            }
             return remainingOut;
         }();
         auto const adjustedRemOut = limitRemainingOut != remainingOut;
 
-        boost::container::flat_set<uint256> ofrsToRm;
+        boost::container::flat_set<UInt256> ofrsToRm;
         std::optional<BestStrand> best;
         if (flowDebugInfo)
             flowDebugInfo->newLiquidityPass();
-        // Index of strand to mark as inactive (remove from the active list) if
-        // the liquidity is used. This is used for strands that consume too many
-        // offers Constructed as `false,0` to workaround a gcc warning about
-        // uninitialized variables
-        std::optional<std::size_t> markInactiveOnUse;
         for (size_t strandIndex = 0, sie = activeStrands.size(); strandIndex != sie; ++strandIndex)
         {
             Strand const* strand = activeStrands.get(strandIndex);
@@ -650,7 +696,7 @@ flow(
             // the previous strand execution failed. It has to be reset
             // since this strand might not have AMM liquidity.
             ammContext.clear();
-            if (offerCrossing && limitQuality)
+            if (offerCrossing != OfferCrossing::No && limitQuality)
             {
                 auto const strandQ = qualityUpperBound(sb, *strand);
                 if (!strandQ || *strandQ < *limitQuality)
@@ -659,11 +705,11 @@ flow(
             auto f = flow<TInAmt, TOutAmt>(sb, *strand, remainingIn, limitRemainingOut, j);
 
             // rm bad offers even if the strand fails
-            SetUnion(ofrsToRm, f.ofrsToRm);
+            setUnion(ofrsToRm, f.ofrsToRm);
 
             offersConsidered += f.ofrsUsed;
 
-            if (!f.success || f.out == beast::zero)
+            if (!f.success || f.out == beast::kZero)
                 continue;
 
             if (flowDebugInfo)
@@ -701,11 +747,6 @@ flow(
 
         if (best)
         {
-            if (markInactiveOnUse)
-            {
-                activeStrands.removeIndex(*markInactiveOnUse);
-                markInactiveOnUse.reset();
-            }
             savedIns.insert(best->in);
             savedOuts.insert(best->out);
             remainingOut = outReq - sum(savedOuts);
@@ -713,8 +754,10 @@ flow(
                 remainingIn = *sendMax - sum(savedIns);
 
             if (flowDebugInfo)
+            {
                 flowDebugInfo->pushPass(
                     EitherAmount(best->in), EitherAmount(best->out), activeStrands.size());
+            }
 
             JLOG(j.trace()) << "Best path: in: " << to_string(best->in)
                             << " out: " << to_string(best->out)
@@ -728,11 +771,10 @@ flow(
             JLOG(j.trace()) << "All strands dry.";
         }
 
-        best.reset();  // view in best must be destroyed before modifying base
-                       // view
+        best.reset();  // view in best must be destroyed before modifying base view
         if (!ofrsToRm.empty())
         {
-            SetUnion(ofrsToRmOnFail, ofrsToRm);
+            setUnion(ofrsToRmOnFail, ofrsToRm);
             for (auto const& o : ofrsToRm)
             {
                 if (auto ok = sb.peek(keylet::offer(o)))
@@ -767,34 +809,34 @@ flow(
     {
         if (actualOut > outReq)
         {
-            // Rounding in the payment engine is causing this assert to
-            // sometimes fire with "dust" amounts. This is causing issues when
-            // running debug builds of rippled. While this issue still needs to
-            // be resolved, the assert is causing more harm than good at this
-            // point.
+            // Rounding in the payment engine is causing this assert to sometimes fire with "dust"
+            // amounts. This is causing issues when running debug builds of xrpld.
+            // While this issue still needs to be resolved, the assert is causing more harm than
+            // good at this point.
             // UNREACHABLE("xrpl::flow : rounding error");
 
             return {tefEXCEPTION, std::move(ofrsToRmOnFail)};
         }
         if (!partialPayment)
         {
-            // If we're offerCrossing a !partialPayment, then we're
-            // handling tfFillOrKill.
+            // If we're offerCrossing a !partialPayment, then we're handling tfFillOrKill.
             // Pre-fixFillOrKill amendment:
             //   That case is handled below; not here.
             // fixFillOrKill amendment:
-            //   That case is handled here if tfSell is also not set; i.e,
-            //   case 1.
-            if (!offerCrossing || (fillOrKillEnabled && offerCrossing != OfferCrossing::sell))
+            //   That case is handled here if tfSell is also not set; i.e, case 1.
+            if (offerCrossing == OfferCrossing::No ||
+                (fillOrKillEnabled && offerCrossing != OfferCrossing::Sell))
+            {
                 return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
+            }
         }
-        else if (actualOut == beast::zero)
+        else if (actualOut == beast::kZero)
         {
             return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
         }
     }
-    if (offerCrossing &&
-        (!partialPayment && (!fillOrKillEnabled || offerCrossing == OfferCrossing::sell)))
+    if (offerCrossing != OfferCrossing::No &&
+        (!partialPayment && (!fillOrKillEnabled || offerCrossing == OfferCrossing::Sell)))
     {
         // If we're offer crossing and partialPayment is *not* true, then
         // we're handling a FillOrKill offer.  In this case remainingIn must
@@ -804,7 +846,7 @@ flow(
         // fixFillOrKill amendment:
         //   Handles 2. 1. is handled above and falls through for tfSell.
         XRPL_ASSERT(remainingIn, "xrpl::flow : nonzero remainingIn");
-        if (remainingIn && *remainingIn != beast::zero)
+        if (remainingIn && *remainingIn != beast::kZero)
             return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
     }
 

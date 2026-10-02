@@ -1,33 +1,41 @@
 #pragma once
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/core/StartUpType.h>
-#include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/filesystem/path.hpp>
+#include <soci/statement.h>
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <functional>
+#include <memory>
 #include <mutex>
-#include <optional>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace soci {
 class session;
-}
+}  // namespace soci
 
 namespace xrpl {
 
 class LockedSociSession
 {
 public:
-    using mutex = std::recursive_mutex;
+    using Mutex = std::recursive_mutex;
 
 private:
     std::shared_ptr<soci::session> session_;
-    std::unique_lock<mutex> lock_;
+    std::unique_lock<Mutex> lock_;
 
 public:
-    LockedSociSession(std::shared_ptr<soci::session> it, mutex& m)
+    LockedSociSession(std::shared_ptr<soci::session> it, Mutex& m)
         : session_(std::move(it)), lock_(m)
     {
     }
@@ -69,14 +77,14 @@ public:
     {
         explicit Setup() = default;
 
-        StartUpType startUp = StartUpType::NORMAL;
+        StartUpType startUp = StartUpType::Normal;
         bool standAlone = false;
-        boost::filesystem::path dataDir;
+        std::filesystem::path dataDir;
         // Indicates whether or not to return the `globalPragma`
         // from commonPragma()
         bool useGlobalPragma = false;
 
-        std::vector<std::string> const*
+        [[nodiscard]] std::vector<std::string> const*
         commonPragma() const
         {
             XRPL_ASSERT(
@@ -91,10 +99,11 @@ public:
         std::array<std::string, 1> lgrPragma;
     };
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     struct CheckpointerSetup
     {
-        JobQueue* jobQueue;
-        Logs* logs;
+        JobQueue* jobQueue{};
+        std::reference_wrapper<ServiceRegistry> registry;
     };
 
     template <std::size_t N, std::size_t M>
@@ -106,9 +115,8 @@ public:
         beast::Journal journal)
         // Use temporary files or regular DB files?
         : DatabaseCon(
-              setup.standAlone && setup.startUp != StartUpType::LOAD &&
-                      setup.startUp != StartUpType::LOAD_FILE &&
-                      setup.startUp != StartUpType::REPLAY
+              setup.standAlone && setup.startUp != StartUpType::Load &&
+                      setup.startUp != StartUpType::LoadFile && setup.startUp != StartUpType::Replay
                   ? ""
                   : (setup.dataDir / dbName),
               setup.commonPragma(),
@@ -129,12 +137,12 @@ public:
         beast::Journal journal)
         : DatabaseCon(setup, dbName, pragma, initSQL, journal)
     {
-        setupCheckpointing(checkpointerSetup.jobQueue, *checkpointerSetup.logs);
+        setupCheckpointing(checkpointerSetup.jobQueue, checkpointerSetup.registry.get());
     }
 
     template <std::size_t N, std::size_t M>
     DatabaseCon(
-        boost::filesystem::path const& dataDir,
+        std::filesystem::path const& dataDir,
         std::string const& dbName,
         std::array<std::string, N> const& pragma,
         std::array<char const*, M> const& initSQL,
@@ -146,7 +154,7 @@ public:
     // Use this constructor to setup checkpointing
     template <std::size_t N, std::size_t M>
     DatabaseCon(
-        boost::filesystem::path const& dataDir,
+        std::filesystem::path const& dataDir,
         std::string const& dbName,
         std::array<std::string, N> const& pragma,
         std::array<char const*, M> const& initSQL,
@@ -154,7 +162,7 @@ public:
         beast::Journal journal)
         : DatabaseCon(dataDir, dbName, pragma, initSQL, journal)
     {
-        setupCheckpointing(checkpointerSetup.jobQueue, *checkpointerSetup.logs);
+        setupCheckpointing(checkpointerSetup.jobQueue, checkpointerSetup.registry.get());
     }
 
     ~DatabaseCon();
@@ -177,11 +185,11 @@ public:
 
 private:
     void
-    setupCheckpointing(JobQueue*, Logs&);
+    setupCheckpointing(JobQueue*, ServiceRegistry&);
 
     template <std::size_t N, std::size_t M>
     DatabaseCon(
-        boost::filesystem::path const& pPath,
+        std::filesystem::path const& pPath,
         std::vector<std::string> const* commonPragma,
         std::array<std::string, N> const& pragma,
         std::array<char const*, M> const& initSQL,
@@ -212,7 +220,7 @@ private:
         }
     }
 
-    LockedSociSession::mutex lock_;
+    LockedSociSession::Mutex lock_;
 
     // checkpointer may outlive the DatabaseCon when the checkpointer jobQueue
     // callback locks a weak pointer and the DatabaseCon is then destroyed. In
