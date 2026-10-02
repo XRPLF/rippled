@@ -171,6 +171,12 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: .github/scripts/releasing/check-no-copied-release-commits.sh "${BASE}" "${HEAD}"
+      - name: Check merge-back has no new commits
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: .github/scripts/releasing/check-merge-back-commits.sh "${BASE}" "${HEAD}"
       # The queue squashes PRs, so check the PR's own branch, named in the queue branch.
       - name: Check the merge queue doesn't merge a release back
         if: ${{ github.event_name == 'merge_group' }}
