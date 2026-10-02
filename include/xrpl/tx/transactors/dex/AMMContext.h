@@ -6,7 +6,8 @@
 
 namespace xrpl {
 
-/** Maintains AMM info per overall payment engine execution and
+/**
+ * Maintains AMM info per overall payment engine execution and
  * individual iteration.
  * Only one instance of this class is created in Flow.cpp::flow().
  * The reference is percolated through calls to AMMLiquidity class,
@@ -18,11 +19,11 @@ public:
     // Restrict number of AMM offers. If this restriction is removed
     // then need to restrict in some other way because AMM offers are
     // not counted in the BookStep offer counter.
-    constexpr static std::uint8_t MaxIterations = 30;
+    static constexpr std::uint8_t kMaxIterations = 30;
 
 private:
     // Tx account owner is required to get the AMM trading fee in BookStep
-    AccountID account_;
+    AccountID accountID_;
     // true if payment has multiple paths
     bool multiPath_{false};
     // Is true if AMM offer is consumed during a payment engine iteration.
@@ -31,7 +32,8 @@ private:
     std::uint16_t ammIters_{0};
 
 public:
-    AMMContext(AccountID const& account, bool multiPath) : account_(account), multiPath_(multiPath)
+    AMMContext(AccountID const& account, bool multiPath)
+        : accountID_(account), multiPath_(multiPath)
     {
     }
     ~AMMContext() = default;
@@ -39,7 +41,7 @@ public:
     AMMContext&
     operator=(AMMContext const&) = delete;
 
-    bool
+    [[nodiscard]] bool
     multiPath() const
     {
         return multiPath_;
@@ -65,25 +67,26 @@ public:
         ammUsed_ = false;
     }
 
-    bool
+    [[nodiscard]] bool
     maxItersReached() const
     {
-        return ammIters_ >= MaxIterations;
+        return ammIters_ >= kMaxIterations;
     }
 
-    std::uint16_t
+    [[nodiscard]] std::uint16_t
     curIters() const
     {
         return ammIters_;
     }
 
-    AccountID
+    [[nodiscard]] AccountID
     account() const
     {
-        return account_;
+        return accountID_;
     }
 
-    /** Strand execution may fail. Reset the flag at the start
+    /**
+     * Strand execution may fail. Reset the flag at the start
      * of each payment engine iteration.
      */
     void

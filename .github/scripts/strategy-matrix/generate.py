@@ -1,333 +1,402 @@
 #!/usr/bin/env python3
 import argparse
+import dataclasses
 import itertools
 import json
-from dataclasses import dataclass
 from pathlib import Path
 
 THIS_DIR = Path(__file__).parent.resolve()
 
+_BASE_CMAKE_ARGS = [
+    "-Dtests=ON",
+    "-Dwerr=ON",
+    "-Dxrpld=ON",
+    "-Dwextra=ON",
+    "-Drust=ON",
+]
 
-@dataclass
-class Config:
-    architecture: list[dict]
-    os: list[dict]
-    build_type: list[str]
-    cmake_args: list[str]
+# The package formats a config can be packaged as, each with its own
+# install-test job in reusable-package.yml.
+PACKAGE_TYPES = ("deb", "rpm")
+
+# The package name a variant suffixes, as build_pkg.py's BASE_NAME spells it:
+# the two have to agree, or the artifact globs miss what was built.
+BASE_NAME = "xrpld"
+
+# Maps sanitizer names (as used in cmake) to short config-name suffixes.
+_SANITIZER_SUFFIX: dict[str, str] = {
+    "address": "asan",
+    "undefinedbehavior": "ubsan",
+    "thread": "tsan",
+}
 
 
-"""
-Generate a strategy matrix for GitHub Actions CI.
-
-On each PR commit we will build a selection of Debian, RHEL, Ubuntu, MacOS, and
-Windows configurations, while upon merge into the develop or release branches,
-we will build all configurations, and test most of them.
-
-We will further set additional CMake arguments as follows:
-- All builds will have the `tests`, `werr`, and `xrpld` options.
-- All builds will have the `wextra` option except for GCC 12 and Clang 16.
-- All release builds will have the `assert` option.
-- Certain Debian Bookworm configurations will change the reference fee, enable
-  codecov, and enable voidstar in PRs.
-"""
+def config_name(
+    distro: str,
+    compiler: str,
+    build_type: str,
+    arch: str,
+    suffix: str = "",
+    sanitizer: str = "",
+) -> str:
+    """Name a config. Its artifacts are named after it, so packaging reuses this."""
+    parts = [s for s in [suffix, _SANITIZER_SUFFIX.get(sanitizer, "")] if s]
+    return "-".join([f"{distro}-{compiler}-{build_type.lower()}-{arch}", *parts])
 
 
-def generate_strategy_matrix(all: bool, config: Config) -> list:
-    configurations = []
-    for architecture, os, build_type, cmake_args in itertools.product(
-        config.architecture, config.os, config.build_type, config.cmake_args
-    ):
-        # The default CMake target is 'all' for Linux and MacOS and 'install'
-        # for Windows, but it can get overridden for certain configurations.
-        cmake_target = "install" if os["distro_name"] == "windows" else "all"
+def get_cmake_args(build_type: str, extra_args: str) -> str:
+    """Get the full list of CMake arguments for a config."""
+    args = _BASE_CMAKE_ARGS.copy()
+    if extra_args:
+        args.extend(extra_args.split())
+    return " ".join(args)
 
-        # We build and test all configurations by default, except for Windows in
-        # Debug, because it is too slow, as well as when code coverage is
-        # enabled as that mode already runs the tests.
-        build_only = False
-        if os["distro_name"] == "windows" and build_type == "Debug":
-            build_only = True
 
-        # Only generate a subset of configurations in PRs.
-        if not all:
-            # Debian:
-            # - Bookworm using GCC 13: Release on linux/amd64, set the reference
-            #   fee to 500.
-            # - Bookworm using GCC 15: Debug on linux/amd64, enable code
-            #   coverage (which will be done below).
-            # - Bookworm using Clang 16: Debug on linux/amd64, enable voidstar.
-            # - Bookworm using Clang 17: Release on linux/amd64, set the
-            #   reference fee to 1000.
-            # - Bookworm using Clang 20: Debug on linux/amd64.
-            if os["distro_name"] == "debian":
-                skip = True
-                if os["distro_version"] == "bookworm":
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-13"
-                        and build_type == "Release"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        cmake_args = f"-DUNIT_TEST_REFERENCE_FEE=500 {cmake_args}"
-                        skip = False
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
-                        and build_type == "Debug"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        skip = False
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-16"
-                        and build_type == "Debug"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        cmake_args = f"-Dvoidstar=ON {cmake_args}"
-                        skip = False
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-17"
-                        and build_type == "Release"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        cmake_args = f"-DUNIT_TEST_REFERENCE_FEE=1000 {cmake_args}"
-                        skip = False
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-20"
-                        and build_type == "Debug"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        skip = False
-                if skip:
-                    continue
+# ---------------------------------------------------------------------------
+# Input types — shapes of the JSON config files
+# ---------------------------------------------------------------------------
 
-            # RHEL:
-            # - 9 using GCC 12: Debug on linux/amd64.
-            # - 10 using Clang: Release on linux/amd64.
-            if os["distro_name"] == "rhel":
-                skip = True
-                if os["distro_version"] == "9":
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-12"
-                        and build_type == "Debug"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        skip = False
-                elif os["distro_version"] == "10":
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-any"
-                        and build_type == "Release"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        skip = False
-                if skip:
-                    continue
 
-            # Ubuntu:
-            # - Jammy using GCC 12: Debug on linux/arm64.
-            # - Noble using GCC 14: Release on linux/amd64.
-            # - Noble using Clang 18: Debug on linux/amd64.
-            # - Noble using Clang 19: Release on linux/arm64.
-            if os["distro_name"] == "ubuntu":
-                skip = True
-                if os["distro_version"] == "jammy":
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-12"
-                        and build_type == "Debug"
-                        and architecture["platform"] == "linux/arm64"
-                    ):
-                        skip = False
-                elif os["distro_version"] == "noble":
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-14"
-                        and build_type == "Release"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        skip = False
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-18"
-                        and build_type == "Debug"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        skip = False
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-19"
-                        and build_type == "Release"
-                        and architecture["platform"] == "linux/arm64"
-                    ):
-                        skip = False
-                if skip:
-                    continue
+# Every config must declare 'minimal'. Minimal configs form the reduced matrix
+# built for pull requests by default; the full matrix adds the rest.
+#
+# Configs may also opt into 'benchmark' to smoke-run the benchmarks, or carry a
+# 'package' map to be packaged as well. Note that either applies to every entry
+# a config expands into, so only set them on configs that expand to a single
+# combination.
 
-            # MacOS:
-            # - Debug on macos/arm64.
-            if os["distro_name"] == "macos" and not (
-                build_type == "Debug" and architecture["platform"] == "macos/arm64"
-            ):
-                continue
 
-            # Windows:
-            # - Release on windows/amd64.
-            if os["distro_name"] == "windows" and not (
-                build_type == "Release" and architecture["platform"] == "windows/amd64"
-            ):
-                continue
+@dataclasses.dataclass
+class PackageConfig:
+    """The 'package' map of a config whose binaries are also packaged."""
 
-        # Additional CMake arguments.
-        cmake_args = f"{cmake_args} -Dtests=ON -Dwerr=ON -Dxrpld=ON"
-        if not f"{os['compiler_name']}-{os['compiler_version']}" in [
-            "gcc-12",
-            "clang-16",
-        ]:
-            cmake_args = f"{cmake_args} -Dwextra=ON"
-        if build_type == "Release":
-            cmake_args = f"{cmake_args} -Dassert=ON"
+    type: str  # has to match what the image provides
+    # The packaging container image: a vanilla distro image, not the nix image
+    # the config itself builds in.
+    image: str
+    # A flavour of the package, named xrpld-<variant>, for a config whose
+    # binaries are not the plain release build. A variant needs no counterpart
+    # in the other format.
+    variant: str = ""
 
-        # We skip all RHEL on arm64 due to a build failure that needs further
-        # investigation.
-        if os["distro_name"] == "rhel" and architecture["platform"] == "linux/arm64":
-            continue
-
-        # We skip all clang 20+ on arm64 due to Boost build error.
-        if (
-            f"{os['compiler_name']}-{os['compiler_version']}"
-            in ["clang-20", "clang-21"]
-            and architecture["platform"] == "linux/arm64"
-        ):
-            continue
-
-        # Enable code coverage for Debian Bookworm using GCC 15 in Debug on
-        # linux/amd64
-        if (
-            f"{os['distro_name']}-{os['distro_version']}" == "debian-bookworm"
-            and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
-            and build_type == "Debug"
-            and architecture["platform"] == "linux/amd64"
-        ):
-            cmake_args = f"{cmake_args} -Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0"
-
-        # Enable unity build for Ubuntu Jammy using GCC 12 in Debug on
-        # linux/amd64.
-        if (
-            f"{os['distro_name']}-{os['distro_version']}" == "ubuntu-jammy"
-            and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-12"
-            and build_type == "Debug"
-            and architecture["platform"] == "linux/amd64"
-        ):
-            cmake_args = f"{cmake_args} -Dunity=ON"
-
-        # Generate a unique name for the configuration, e.g. macos-arm64-debug
-        # or debian-bookworm-gcc-12-amd64-release.
-        config_name = os["distro_name"]
-        if (n := os["distro_version"]) != "":
-            config_name += f"-{n}"
-        if (n := os["compiler_name"]) != "":
-            config_name += f"-{n}"
-        if (n := os["compiler_version"]) != "":
-            config_name += f"-{n}"
-        config_name += (
-            f"-{architecture['platform'][architecture['platform'].find('/')+1:]}"
+    def __post_init__(self) -> None:
+        assert self.type in PACKAGE_TYPES, (
+            f"unsupported package type {self.type!r}: "
+            f"use one of {', '.join(PACKAGE_TYPES)}."
         )
-        config_name += f"-{build_type.lower()}"
-        if "-Dcoverage=ON" in cmake_args:
-            config_name += "-coverage"
-        if "-Dunity=ON" in cmake_args:
-            config_name += "-unity"
 
-        # Add the configuration to the list, with the most unique fields first,
-        # so that they are easier to identify in the GitHub Actions UI, as long
-        # names get truncated.
-        # Add Address and Thread (both coupled with UB) sanitizers for specific bookworm distros.
-        # GCC-Asan xrpld-embedded tests are failing because of https://github.com/google/sanitizers/issues/856
-        if (
-            os["distro_version"] == "bookworm"
-            and f"{os['compiler_name']}-{os['compiler_version']}" == "clang-20"
-        ):
-            # Add ASAN + UBSAN configuration.
-            configurations.append(
-                {
-                    "config_name": config_name + "-asan-ubsan",
-                    "cmake_args": cmake_args,
-                    "cmake_target": cmake_target,
-                    "build_only": build_only,
-                    "build_type": build_type,
-                    "os": os,
-                    "architecture": architecture,
-                    "sanitizers": "address,undefinedbehavior",
-                }
-            )
-            # TSAN is deactivated due to seg faults with latest compilers.
-            activate_tsan = False
-            if activate_tsan:
-                configurations.append(
-                    {
-                        "config_name": config_name + "-tsan-ubsan",
-                        "cmake_args": cmake_args,
-                        "cmake_target": cmake_target,
-                        "build_only": build_only,
-                        "build_type": build_type,
-                        "os": os,
-                        "architecture": architecture,
-                        "sanitizers": "thread,undefinedbehavior",
-                    }
+
+@dataclasses.dataclass
+class LinuxConfig:
+    """One entry in a linux.json 'configs' array."""
+
+    compiler: list[str]
+    build_type: list[str]
+    arch: list[str]
+    minimal: bool
+    benchmark: bool = False  # if true, smoke-run the benchmarks after testing
+    sanitizers: list[str] = dataclasses.field(default_factory=list)
+    suffix: str = ""
+    extra_cmake_args: str = ""
+    package: PackageConfig | None = None  # set to also package this config
+
+    def __post_init__(self) -> None:
+        if isinstance(self.package, dict):
+            self.package = PackageConfig(**self.package)
+
+
+@dataclasses.dataclass
+class LinuxFile:
+    """Shape of linux.json."""
+
+    image_tag: str
+    configs: dict[str, list[LinuxConfig]]  # distro → configs
+
+    @classmethod
+    def load(cls, path: Path) -> "LinuxFile":
+        data = json.loads(path.read_text())
+        return cls(
+            image_tag=data["image_tag"],
+            configs={
+                distro: [LinuxConfig(**c) for c in cfgs]
+                for distro, cfgs in data["configs"].items()
+            },
+        )
+
+
+@dataclasses.dataclass
+class PlatformConfig:
+    """One entry in macos.json's or windows.json's 'configs' array."""
+
+    build_type: list[str]
+    minimal: bool
+    build_only: bool = False  # if true, skip tests (e.g. macos/Windows Debug)
+    benchmark: bool = False  # if true, smoke-run the benchmarks after testing
+    extra_cmake_args: str = ""
+    # "" is the runner's system compiler, "nix" the flake's CI environment.
+    # macOS only: Linux always builds in a Nix image, Windows has no Nix.
+    toolchain: str = ""
+
+    def __post_init__(self) -> None:
+        if isinstance(self.build_type, str):
+            self.build_type = [self.build_type]
+
+
+@dataclasses.dataclass
+class PlatformFile:
+    """Shape of macos.json and windows.json."""
+
+    platform: str  # e.g. "macos/arm64" or "windows/amd64"
+    runner: list[str]  # GitHub Actions runner labels
+    configs: list[PlatformConfig]
+
+    @classmethod
+    def load(cls, path: Path) -> "PlatformFile":
+        data = json.loads(path.read_text())
+        return cls(
+            platform=data["platform"],
+            runner=data["runner"],
+            configs=[PlatformConfig(**c) for c in data["configs"]],
+        )
+
+
+# ---------------------------------------------------------------------------
+# Output types — shapes of the generated GitHub Actions matrix entries
+# ---------------------------------------------------------------------------
+
+
+@dataclasses.dataclass
+class Architecture:
+    platform: str
+    runner: list[str]
+
+
+@dataclasses.dataclass
+class MatrixEntry:
+    """One entry in the generated build/test strategy matrix."""
+
+    config_name: str
+    cmake_args: str
+    cmake_target: str
+    build_only: bool
+    benchmark: bool
+    build_type: str
+    architecture: Architecture
+    sanitizers: str
+    image: str = ""  # container image; empty for macOS/Windows (runs natively)
+    compiler: str = ""  # compiler name ("gcc" or "clang"); empty for macOS/Windows
+    toolchain: str = ""  # "nix" for the flake's CI environment; see PlatformConfig
+
+
+@dataclasses.dataclass
+class PackagingEntry:
+    """One entry in the generated packaging strategy matrix."""
+
+    xrpld_artifact_name: str
+    validator_keys_artifact_name: str
+    image: str
+    package_type: str  # "deb" or "rpm"; drives the format-specific steps
+    package_variant: str  # passed to build_pkg.py --variant; empty for xrpld
+    package_name: str  # the name it builds under, which the artifact globs use
+
+
+# ---------------------------------------------------------------------------
+# Matrix expansion
+# ---------------------------------------------------------------------------
+
+_ARCHS: dict[str, Architecture] = {
+    "amd64": Architecture(
+        platform="linux/amd64", runner=["self-hosted", "Linux", "X64", "heavy"]
+    ),
+    "arm64": Architecture(
+        platform="linux/arm64",
+        runner=["self-hosted", "Linux", "ARM64", "heavy-arm64"],
+    ),
+}
+
+
+def expand_linux_matrix(linux: LinuxFile, minimal: bool) -> list[MatrixEntry]:
+    """Expand a LinuxFile into a flat list of matrix entries.
+
+    Each config entry is expanded over the cross-product of its
+    compiler, build_type, sanitizers, and architecture lists. When 'minimal' is
+    true, only configs flagged as minimal are included.
+    """
+    entries: list[MatrixEntry] = []
+
+    for distro, configs in linux.configs.items():
+        for cfg in configs:
+            if minimal and not cfg.minimal:
+                continue
+            # An empty sanitizers list means "one entry with no sanitizer".
+            effective_sanitizers = cfg.sanitizers or [""]
+            effective_archs = {arch: _ARCHS[arch] for arch in cfg.arch}
+
+            for compiler, build_type, sanitizer, (arch, arch_info) in itertools.product(
+                cfg.compiler,
+                cfg.build_type,
+                effective_sanitizers,
+                effective_archs.items(),
+            ):
+                name = config_name(
+                    distro, compiler, build_type, arch, cfg.suffix, sanitizer
                 )
-        else:
-            configurations.append(
-                {
-                    "config_name": config_name,
-                    "cmake_args": cmake_args,
-                    "cmake_target": cmake_target,
-                    "build_only": build_only,
-                    "build_type": build_type,
-                    "os": os,
-                    "architecture": architecture,
-                    "sanitizers": "",
-                }
+                entries.append(
+                    MatrixEntry(
+                        config_name=name,
+                        image=f"ghcr.io/xrplf/xrpld/nix-{distro}:{linux.image_tag}",
+                        cmake_args=get_cmake_args(build_type, cfg.extra_cmake_args),
+                        cmake_target="all",
+                        build_only=False,
+                        benchmark=cfg.benchmark,
+                        build_type=build_type,
+                        architecture=arch_info,
+                        sanitizers=sanitizer,
+                        compiler=compiler,
+                    )
+                )
+
+    return entries
+
+
+def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
+    """Generate the packaging matrix from the configs that carry a 'package' map.
+
+    Packaging consumes the binaries that config's build job uploaded, so the
+    artifact names come from the same config name, and a packaged config is one
+    that passes -Dvalidator_keys=ON.
+
+    Packaging itself runs in vanilla distro images (debian:trixie, almalinux:10)
+    instead of the nix-based build images, because deb/rpm tooling (debhelper,
+    rpm-build) is taken from the distro's archive rather than from nixpkgs.
+    """
+    entries = []
+    for distro, configs in linux.configs.items():
+        for cfg in configs:
+            if cfg.package is None:
+                continue
+            for compiler, build_type, arch in itertools.product(
+                cfg.compiler, cfg.build_type, cfg.arch
+            ):
+                # The packaging workflow hardcodes an amd64 runner.
+                assert arch == "amd64", f"cannot package {distro} on {arch}"
+                name = config_name(distro, compiler, build_type, arch, cfg.suffix)
+                entries.append(
+                    PackagingEntry(
+                        xrpld_artifact_name=f"xrpld-{name}",
+                        validator_keys_artifact_name=f"validator-keys-{name}",
+                        image=cfg.package.image,
+                        package_type=cfg.package.type,
+                        package_variant=cfg.package.variant,
+                        package_name=(
+                            f"{BASE_NAME}-{cfg.package.variant}"
+                            if cfg.package.variant
+                            else BASE_NAME
+                        ),
+                    )
+                )
+
+    return entries
+
+
+def package_names_by_type(entries: list[PackagingEntry]) -> dict[str, list[str]]:
+    """The names of the packages in 'entries', keyed by format.
+
+    Derived from the packaging matrix rather than listed again, so the packages
+    the install-test jobs look for are the packages that were built.
+    """
+    return {
+        package_type: sorted(
+            {e.package_name for e in entries if e.package_type == package_type}
+        )
+        for package_type in PACKAGE_TYPES
+    }
+
+
+def expand_platform_matrix(pf: PlatformFile, minimal: bool) -> list[MatrixEntry]:
+    """Expand a PlatformFile (macOS or Windows) into matrix entries.
+
+    When 'minimal' is true, only configs flagged as minimal are included.
+    """
+    platform_name, arch = pf.platform.split("/")
+    is_windows = platform_name == "windows"
+
+    entries: list[MatrixEntry] = []
+    for cfg in pf.configs:
+        if minimal and not cfg.minimal:
+            continue
+        for build_type in cfg.build_type:
+            name = f"{platform_name}-{arch}-{build_type.lower()}"
+            if cfg.toolchain:
+                name += f"-{cfg.toolchain}"
+            entries.append(
+                MatrixEntry(
+                    config_name=name,
+                    cmake_args=get_cmake_args(build_type, cfg.extra_cmake_args),
+                    cmake_target="install" if is_windows else "all",
+                    build_only=cfg.build_only,
+                    benchmark=cfg.benchmark,
+                    build_type=build_type,
+                    architecture=Architecture(platform=pf.platform, runner=pf.runner),
+                    sanitizers="",
+                    toolchain=cfg.toolchain,
+                )
             )
+    return entries
 
-    return configurations
 
-
-def read_config(file: Path) -> Config:
-    config = json.loads(file.read_text())
-    if (
-        config["architecture"] is None
-        or config["os"] is None
-        or config["build_type"] is None
-        or config["cmake_args"] is None
-    ):
-        raise Exception("Invalid configuration file.")
-
-    return Config(**config)
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-a",
-        "--all",
-        help="Set to generate all configurations (generally used when merging a PR) or leave unset to generate a subset of configurations (generally used when committing to a PR).",
-        action="store_true",
+    parser = argparse.ArgumentParser(
+        description="Generate a CI strategy matrix for all platforms or a specific one."
     )
     parser.add_argument(
         "-c",
         "--config",
-        help="Path to the JSON file containing the strategy matrix configurations.",
-        required=False,
-        type=Path,
+        help="Platform to generate for ('linux', 'macos', or 'windows'). Defaults to all platforms.",
+        choices=["linux", "macos", "windows"],
+        default=None,
+    )
+    parser.add_argument(
+        "-p",
+        "--packaging",
+        help="Emit the Linux packaging matrix instead of the build/test matrix.",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-m",
+        "--minimal",
+        help="Emit only the minimal matrix (the configs flagged 'minimal'), "
+        "used for pull requests by default. If omitted, the full matrix is "
+        "emitted.",
+        action="store_true",
     )
     args = parser.parse_args()
 
-    matrix = []
-    if args.config is None or args.config == "":
-        matrix += generate_strategy_matrix(
-            args.all, read_config(THIS_DIR / "linux.json")
-        )
-        matrix += generate_strategy_matrix(
-            args.all, read_config(THIS_DIR / "macos.json")
-        )
-        matrix += generate_strategy_matrix(
-            args.all, read_config(THIS_DIR / "windows.json")
-        )
-    else:
-        matrix += generate_strategy_matrix(args.all, read_config(args.config))
+    matrix: list[MatrixEntry] | list[PackagingEntry] = []
 
-    # Generate the strategy matrix.
-    print(f"matrix={json.dumps({'include': matrix})}")
+    if args.packaging:
+        matrix = expand_linux_packaging(LinuxFile.load(THIS_DIR / "linux.json"))
+        # One list per format, so each install-test job installs the packages its
+        # own format produced.
+        for package_type, names in package_names_by_type(matrix).items():
+            print(f"{package_type}_package_names={json.dumps(names)}")
+    else:
+        if args.config in ("linux", None):
+            matrix += expand_linux_matrix(
+                LinuxFile.load(THIS_DIR / "linux.json"), args.minimal
+            )
+        if args.config in ("macos", None):
+            matrix += expand_platform_matrix(
+                PlatformFile.load(THIS_DIR / "macos.json"), args.minimal
+            )
+        if args.config in ("windows", None):
+            matrix += expand_platform_matrix(
+                PlatformFile.load(THIS_DIR / "windows.json"), args.minimal
+            )
+
+    print(f"matrix={json.dumps({'include': [dataclasses.asdict(e) for e in matrix]})}")

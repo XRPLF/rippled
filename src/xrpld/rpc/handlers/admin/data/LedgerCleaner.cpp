@@ -8,11 +8,11 @@
 
 namespace xrpl {
 
-Json::Value
-doLedgerCleaner(RPC::JsonContext& context)
+json::Value
+doLedgerCleaner(rpc::JsonContext& context)
 {
     context.app.getLedgerCleaner().clean(context.params);
-    return RPC::makeObjectValue("Cleaner configured");
+    return rpc::makeObjectValue("Cleaner configured");
 }
 
 }  // namespace xrpl

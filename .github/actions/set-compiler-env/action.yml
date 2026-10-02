@@ -1,0 +1,34 @@
+name: Set compiler environment
+description: "Set CC and CXX environment variables for the given compiler."
+
+inputs:
+  compiler:
+    description: 'The compiler to use ("gcc" or "clang").'
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+    - name: Set CC and CXX for gcc
+      if: ${{ inputs.compiler == 'gcc' }}
+      shell: bash
+      run: |
+        echo "CC=gcc" >>"${GITHUB_ENV}"
+        echo "CXX=g++" >>"${GITHUB_ENV}"
+
+    - name: Set CC and CXX for clang
+      if: ${{ inputs.compiler == 'clang' }}
+      shell: bash
+      run: |
+        echo "CC=clang" >>"${GITHUB_ENV}"
+        echo "CXX=clang++" >>"${GITHUB_ENV}"
+
+    - name: Fail on unknown compiler
+      if: ${{ inputs.compiler != 'gcc' && inputs.compiler != 'clang' }}
+      shell: bash
+      env:
+        COMPILER: ${{ inputs.compiler }}
+      run: |
+        echo "Unknown compiler: $COMPILER" >&2
+        exit 1

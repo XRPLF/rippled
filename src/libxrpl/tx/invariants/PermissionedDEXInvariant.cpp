@@ -1,11 +1,13 @@
 #include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -14,41 +16,49 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <memory>
-
 namespace xrpl {
 
 void
-ValidPermissionedDEX::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidPermissionedDEX::visitEntry(bool isDelete, SLE::ConstRef, SLE::ConstRef after)
 {
+    // Post-fixCleanup3_4_0: skip when after is null (defensive).
+    // Pre-amendment: original after-only path via the `if (after && ...)` checks below.
+    if (isFeatureEnabled(fixCleanup3_4_0) && !after)
+        return;
+
+    auto trackDomain = [this, isDelete](UInt256 const& domain) {
+        domainsOld_.insert(domain);
+        if (!isDelete)
+            domains_.insert(domain);
+    };
+
     if (after && after->getType() == ltDIR_NODE)
     {
         if (after->isFieldPresent(sfDomainID))
-            domains_.insert(after->getFieldH256(sfDomainID));
+            trackDomain(after->getFieldH256(sfDomainID));
     }
 
     if (after && after->getType() == ltOFFER)
     {
         if (after->isFieldPresent(sfDomainID))
         {
-            domains_.insert(after->getFieldH256(sfDomainID));
+            trackDomain(after->getFieldH256(sfDomainID));
         }
         else
         {
-            regularOffers_ = true;
+            regularOffersOld_ = true;
+            if (!isDelete)
+                regularOffers_ = true;
         }
 
-        // pre-fixSecurity3_1_3: hybrid offer missing domain, missing
+        // pre-fixCleanup3_1_3: hybrid offer missing domain, missing
         // sfAdditionalBooks, or sfAdditionalBooks has more than one entry
         if (after->isFlag(lsfHybrid) &&
             (!after->isFieldPresent(sfDomainID) || !after->isFieldPresent(sfAdditionalBooks) ||
              after->getFieldArray(sfAdditionalBooks).size() > 1))
             badHybridsOld_ = true;
 
-        // post-fixSecurity3_1_3: same as above but also catches size == 0
+        // post-fixCleanup3_1_3: same as above but also catches size == 0
         if (after->isFlag(lsfHybrid) &&
             (!after->isFieldPresent(sfDomainID) || !after->isFieldPresent(sfAdditionalBooks) ||
              after->getFieldArray(sfAdditionalBooks).size() != 1))
@@ -70,7 +80,7 @@ ValidPermissionedDEX::finalize(
 
     // For each offercreate transaction, check if
     // permissioned offers are valid
-    bool const isMalformed = view.rules().enabled(fixSecurity3_1_3) ? badHybrids_ : badHybridsOld_;
+    bool const isMalformed = view.rules().enabled(fixCleanup3_1_3) ? badHybrids_ : badHybridsOld_;
     if (txType == ttOFFER_CREATE && isMalformed)
     {
         JLOG(j.fatal()) << "Invariant failed: hybrid offer is malformed";
@@ -90,7 +100,8 @@ ValidPermissionedDEX::finalize(
 
     // for both payment and offercreate, there shouldn't be another domain
     // that's different from the domain specified
-    for (auto const& d : domains_)
+    auto const& domains = view.rules().enabled(fixCleanup3_4_0) ? domains_ : domainsOld_;
+    for (auto const& d : domains)
     {
         if (d != domain)
         {
@@ -100,7 +111,9 @@ ValidPermissionedDEX::finalize(
         }
     }
 
-    if (regularOffers_)
+    bool const hasRegularOffers =
+        view.rules().enabled(fixCleanup3_2_0) ? regularOffers_ : regularOffersOld_;
+    if (hasRegularOffers)
     {
         JLOG(j.fatal()) << "Invariant failed: domain transaction"
                            " affected regular offers";

@@ -20,16 +20,16 @@
 namespace xrpl {
 
 // This interface is deprecated.
-Json::Value
-doRipplePathFind(RPC::JsonContext& context)
+json::Value
+doRipplePathFind(rpc::JsonContext& context)
 {
-    if (context.app.config().PATH_SEARCH_MAX == 0)
-        return rpcError(rpcNOT_SUPPORTED);
+    if (context.app.config().pathSearchMax == 0)
+        return rpcError(RpcNotSupported);
 
-    context.loadType = Resource::feeHeavyBurdenRPC;
+    context.loadType = resource::kFeeHeavyBurdenRpc;
 
     std::shared_ptr<ReadView const> lpLedger;
-    Json::Value jvResult;
+    json::Value jvResult;
 
     if (!context.app.config().standalone() && !context.params.isMember(jss::ledger) &&
         !context.params.isMember(jss::ledger_index) && !context.params.isMember(jss::ledger_hash))
@@ -37,11 +37,11 @@ doRipplePathFind(RPC::JsonContext& context)
         // No ledger specified, use pathfinding defaults
         // and dispatch to pathfinding engine
         if (context.app.getLedgerMaster().getValidatedLedgerAge() >
-            RPC::Tuning::maxValidatedLedgerAge)
+            rpc::tuning::kMaxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
-                return rpcError(rpcNO_NETWORK);
-            return rpcError(rpcNOT_SYNCED);
+                return rpcError(RpcNoNetwork);
+            return rpcError(RpcNotSynced);
         }
 
         PathRequest::pointer request;
@@ -146,13 +146,13 @@ doRipplePathFind(RPC::JsonContext& context)
     }
 
     // The caller specified a ledger
-    jvResult = RPC::lookupLedger(lpLedger, context);
+    jvResult = rpc::lookupLedger(lpLedger, context);
     if (!lpLedger)
         return jvResult;
 
-    RPC::LegacyPathFind const lpf(isUnlimited(context.role), context.app);
+    rpc::LegacyPathFind const lpf(isUnlimited(context.role), context.app);
     if (!lpf.isOk())
-        return rpcError(rpcTOO_BUSY);
+        return rpcError(RpcTooBusy);
 
     auto result = context.app.getPathRequestManager().doLegacyPathRequest(
         context.consumer, lpLedger, context.params);

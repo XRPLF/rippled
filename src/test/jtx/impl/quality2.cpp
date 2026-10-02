@@ -10,15 +10,13 @@
 
 namespace xrpl::test::jtx {
 
-qualityInPercent::qualityInPercent(double percent)
-    // NOLINTNEXTLINE(cppcoreguidelines-use-default-member-init)
+QualityInPercent::QualityInPercent(double percent)
     : qIn_(static_cast<std::uint32_t>((percent / 100) * QUALITY_ONE))
 {
     assert(percent <= 400 && percent >= 0);
 }
 
-qualityOutPercent::qualityOutPercent(double percent)
-    // NOLINTNEXTLINE(cppcoreguidelines-use-default-member-init)
+QualityOutPercent::QualityOutPercent(double percent)
     : qOut_(static_cast<std::uint32_t>((percent / 100) * QUALITY_ONE))
 {
     assert(percent <= 400 && percent >= 0);
@@ -31,25 +29,25 @@ insertQualityIntoJtx(SField const& field, std::uint32_t value, JTx& jt)
 }
 
 void
-qualityIn::operator()(Env&, JTx& jt) const
+QualityIn::operator()(Env&, JTx& jt) const
 {
     insertQualityIntoJtx(sfQualityIn, qIn_, jt);
 }
 
 void
-qualityInPercent::operator()(Env&, JTx& jt) const
+QualityInPercent::operator()(Env&, JTx& jt) const
 {
     insertQualityIntoJtx(sfQualityIn, qIn_, jt);
 }
 
 void
-qualityOut::operator()(Env&, JTx& jt) const
+QualityOut::operator()(Env&, JTx& jt) const
 {
     insertQualityIntoJtx(sfQualityOut, qOut_, jt);
 }
 
 void
-qualityOutPercent::operator()(Env&, JTx& jt) const
+QualityOutPercent::operator()(Env&, JTx& jt) const
 {
     insertQualityIntoJtx(sfQualityOut, qOut_, jt);
 }

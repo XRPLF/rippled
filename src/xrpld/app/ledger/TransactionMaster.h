@@ -4,9 +4,18 @@
 
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/TxSearched.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <utility>
+#include <variant>
 
 namespace xrpl {
 
@@ -24,10 +33,10 @@ public:
     operator=(TransactionMaster const&) = delete;
 
     std::shared_ptr<Transaction>
-    fetch_from_cache(uint256 const&);
+    fetchFromCache(UInt256 const&);
 
     std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
-    fetch(uint256 const&, error_code_i& ec);
+    fetch(UInt256 const&, ErrorCodeI& ec);
 
     /**
      * Fetch transaction from the cache or database.
@@ -39,7 +48,7 @@ public:
      *         the database while the search was conducted.
      */
     std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
-    fetch(uint256 const&, ClosedInterval<uint32_t> const& range, error_code_i& ec);
+    fetch(UInt256 const&, ClosedInterval<uint32_t> const& range, ErrorCodeI& ec);
 
     std::shared_ptr<STTx const>
     fetch(
@@ -50,7 +59,7 @@ public:
     // return value: true = we had the transaction already
     bool
     inLedger(
-        uint256 const& hash,
+        UInt256 const& hash,
         std::uint32_t ledger,
         std::optional<uint32_t> tseq,
         std::optional<uint32_t> netID);
@@ -59,14 +68,14 @@ public:
     canonicalize(std::shared_ptr<Transaction>* pTransaction);
 
     void
-    sweep(void);
+    sweep();
 
-    TaggedCache<uint256, Transaction>&
+    TaggedCache<UInt256, Transaction>&
     getCache();
 
 private:
-    Application& mApp;
-    TaggedCache<uint256, Transaction> mCache;
+    Application& app_;
+    TaggedCache<UInt256, Transaction> cache_;
 };
 
 }  // namespace xrpl

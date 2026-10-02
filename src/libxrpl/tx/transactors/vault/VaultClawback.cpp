@@ -1,12 +1,12 @@
 #include <xrpl/tx/transactors/vault/VaultClawback.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -18,13 +18,15 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <cstdint>
-#include <memory>
+#include <expected>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -33,7 +35,7 @@ namespace xrpl {
 NotTEC
 VaultClawback::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::zero)
+    if (ctx.tx[sfVaultID] == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "VaultClawback: zero/empty vault ID.";
         return temMALFORMED;
@@ -43,7 +45,7 @@ VaultClawback::preflight(PreflightContext const& ctx)
     if (amount)
     {
         // Note, zero amount is valid, it means "all". It is also the default.
-        if (*amount < beast::zero)
+        if (*amount < beast::kZero)
         {
             return temBAD_AMOUNT;
         }
@@ -59,7 +61,7 @@ VaultClawback::preflight(PreflightContext const& ctx)
 
 [[nodiscard]] STAmount
 clawbackAmount(
-    std::shared_ptr<SLE const> const& vault,
+    SLE::ConstRef vault,
     std::optional<STAmount> const& maybeAmount,
     AccountID const& account)
 {
@@ -85,13 +87,24 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     auto const holder = ctx.tx[sfHolder];
     auto const maybeAmount = ctx.tx[~sfAmount];
     auto const mptIssuanceID = vault->at(sfShareMPTID);
-    auto const sleShareIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleShareIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleShareIssuance)
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultClawback: missing issuance of vault shares.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
+    }
+
+    // A pseudo-account holds no vault shares, so a clawback naming one is a no-op: the vault's own
+    // pseudo-account issues the shares, and no flow hands them to another one.
+    // Pre-fixCleanup3_4_0: an implicit amount ends in tecPRECISION_LOSS, an explicit one debits the
+    // vault and trips the "shares must move" invariant.
+    // Post-fixCleanup3_4_0: refused here.
+    if (ctx.view.rules().enabled(fixCleanup3_4_0) && isPseudoAccount(ctx.view, holder))
+    {
+        JLOG(ctx.j.debug()) << "VaultClawback: holder is a pseudo-account.";
+        return tecPSEUDO_ACCOUNT;
     }
 
     Asset const share = MPTIssue{mptIssuanceID};
@@ -131,14 +144,14 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         }
 
         // If amount is non-zero, the VaultOwner must burn all shares
-        if (amount != beast::zero)
+        if (amount != beast::kZero)
         {
             Number const& sharesHeld = accountHolds(
                 ctx.view,
                 holder,
                 share,
-                FreezeHandling::fhIGNORE_FREEZE,
-                AuthHandling::ahIGNORE_AUTH,
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
                 ctx.j);
 
             // The VaultOwner must burn all shares
@@ -179,12 +192,11 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 
         return vaultAsset.visit(
             [&](MPTIssue const& issue) -> TER {
-                auto const mptIssue = ctx.view.read(keylet::mptIssuance(issue.getMptID()));
+                auto const mptIssue = ctx.view.read(keylet::mptokenIssuance(issue.getMptID()));
                 if (mptIssue == nullptr)
                     return tecOBJECT_NOT_FOUND;
 
-                std::uint32_t const issueFlags = mptIssue->getFieldU32(sfFlags);
-                if ((issueFlags & lsfMPTCanClawback) == 0u)
+                if (!mptIssue->isFlag(lsfMPTCanClawback))
                 {
                     JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
                                            "MPT vault asset.";
@@ -203,9 +215,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                     // LCOV_EXCL_STOP
                 }
 
-                std::uint32_t const issuerFlags = issuerSle->getFieldU32(sfFlags);
-                if (((issuerFlags & lsfAllowTrustLineClawback) == 0u) ||
-                    ((issuerFlags & lsfNoFreeze) != 0u))
+                if (!issuerSle->isFlag(lsfAllowTrustLineClawback) || issuerSle->isFlag(lsfNoFreeze))
                 {
                     JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
                                            "IOU vault asset.";
@@ -220,19 +230,20 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     return tecWRONG_ASSET;
 }
 
-Expected<std::pair<STAmount, STAmount>, TER>
+std::expected<std::pair<STAmount, STAmount>, TER>
 VaultClawback::assetsToClawback(
-    std::shared_ptr<SLE> const& vault,
-    std::shared_ptr<SLE const> const& sleShareIssuance,
+    SLE::Ref vault,
+    SLE::ConstRef sleShareIssuance,
     AccountID const& holder,
     STAmount const& clawbackAmount)
 {
+    bool const fix340Enabled = ctx_.view().rules().enabled(fixCleanup3_4_0);
     if (clawbackAmount.asset() != vault->at(sfAsset))
     {
         // preclaim should have blocked this , now it's an internal error
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultClawback: asset mismatch in clawback.";
-        return Unexpected(tecINTERNAL);
+        return std::unexpected(tecINTERNAL);
         // LCOV_EXCL_STOP
     }
 
@@ -240,22 +251,17 @@ VaultClawback::assetsToClawback(
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
 
-    // Pre-fixSecurity3_1_3: zero-amount clawback returned early without
+    // Pre-fixCleanup3_1_3: zero-amount clawback returned early without
     // clamping to assetsAvailable, allowing more assets to be recovered
     // than available when there was an outstanding loan. Retained for
     // ledger replay compatibility.
-    if (!ctx_.view().rules().enabled(fixSecurity3_1_3) && clawbackAmount == beast::zero)
+    if (!ctx_.view().rules().enabled(fixCleanup3_1_3) && clawbackAmount == beast::kZero)
     {
         auto const sharesDestroyed = accountHolds(
-            view(),
-            holder,
-            share,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j_);
+            view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
         auto const maybeAssets = sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
         if (!maybeAssets)
-            return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+            return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
         return std::make_pair(*maybeAssets, sharesDestroyed);
     }
@@ -263,65 +269,103 @@ VaultClawback::assetsToClawback(
     STAmount sharesDestroyed;
     STAmount assetsRecovered;
 
+    // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
     try
     {
-        if (clawbackAmount == beast::zero)
+        // Do not discount a sole holder's shares: clawing back AssetsAvailable
+        // at the discounted rate can burn every share while loan assets remain.
+        auto const waiveUnrealizedLoss =
+            fix340Enabled && isSoleShareholder(view(), holder, sleShareIssuance)
+            ? WaiveUnrealizedLoss::Yes
+            : WaiveUnrealizedLoss::No;
+
+        if (clawbackAmount == beast::kZero)
         {
-            sharesDestroyed = accountHolds(
-                view(),
-                holder,
-                share,
-                FreezeHandling::fhIGNORE_FREEZE,
-                AuthHandling::ahIGNORE_AUTH,
-                j_);
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
+            // Zero amount means clawback all shares the holder has; derive the corresponding asset
+            // amount from the share balance.
+            // isSoleShareholder already established that the holder owns the
+            // entire outstanding share supply whenever the waiver applies, so
+            // sfOutstandingAmount gives sharesDestroyed directly, avoiding a
+            // redundant MPToken read via accountHolds.
+            sharesDestroyed = waiveUnrealizedLoss == WaiveUnrealizedLoss::Yes
+                ? STAmount{share, sleShareIssuance->at(sfOutstandingAmount)}
+                : accountHolds(
+                      view(),
+                      holder,
+                      share,
+                      FreezeHandling::IgnoreFreeze,
+                      AuthHandling::IgnoreAuth,
+                      j_);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault, sleShareIssuance, sharesDestroyed, waiveUnrealizedLoss);
             if (!maybeAssets)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
             assetsRecovered = *maybeAssets;
         }
         else
         {
-            auto const maybeShares =
-                assetsToSharesWithdraw(vault, sleShareIssuance, clawbackAmount);
+            // Pre-fixCleanup3_4_0: shares were rounded to nearest, so the
+            // round-trip back to assets could exceed clawbackAmount.
+            // Post-amendment: truncate shares so assetsRecovered <=
+            // clawbackAmount by construction (matches the clamp branch
+            // below).
+            auto const truncate = fix340Enabled ? TruncateShares::Yes : TruncateShares::No;
+            auto const maybeShares = assetsToSharesWithdraw(
+                vault, sleShareIssuance, clawbackAmount, truncate, waiveUnrealizedLoss);
             if (!maybeShares)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             sharesDestroyed = *maybeShares;
 
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault, sleShareIssuance, sharesDestroyed, waiveUnrealizedLoss);
             if (!maybeAssets)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             assetsRecovered = *maybeAssets;
         }
-        // Clamp to maximum.
+        // Clamp assetsRecovered to sfAssetsAvailable, then re-derive shares and assets so the pair
+        // stays consistent.
         if (assetsRecovered > *assetsAvailable)
         {
             assetsRecovered = *assetsAvailable;
-            // Note, it is important to truncate the number of shares,
-            // otherwise the corresponding assets might breach the
-            // AssetsAvailable
             {
                 auto const maybeShares = assetsToSharesWithdraw(
-                    vault, sleShareIssuance, assetsRecovered, TruncateShares::yes);
+                    vault,
+                    sleShareIssuance,
+                    assetsRecovered,
+                    TruncateShares::Yes,
+                    waiveUnrealizedLoss);
                 if (!maybeShares)
-                    return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                    return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
                 sharesDestroyed = *maybeShares;
             }
 
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault, sleShareIssuance, sharesDestroyed, waiveUnrealizedLoss);
             if (!maybeAssets)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             assetsRecovered = *maybeAssets;
+            // Truncation should guarantee the invariant holds. If it does not, a conversion
+            // helper is broken; refuse rather than over-recover.
             if (assetsRecovered > *assetsAvailable)
             {
                 // LCOV_EXCL_START
                 JLOG(j_.error()) << "VaultClawback: invalid rounding of shares.";
-                return Unexpected(tecINTERNAL);
+                return std::unexpected(tecINTERNAL);
                 // LCOV_EXCL_STOP
             }
+        }
+
+        // Post-fixCleanup3_4_0: round the recovery down at the posterior sfAssetsTotal scale so all
+        // rails change by the same representable delta. sharesDestroyed is intentionally NOT
+        // re-derived here: the holder's shares are burned for their pre-clamp value, so any
+        // sub-ULP trimmed off stays in the vault for the remaining shareholders.
+        if (ctx_.view().rules().enabled(fixCleanup3_4_0) && assetsRecovered > beast::kZero)
+        {
+            auto const maybeClamped = clampToAssetsTotalScale(vault, -assetsRecovered);
+            if (!maybeClamped)
+                return std::unexpected(maybeClamped.error());
+            assetsRecovered = *maybeClamped;
         }
     }
     catch (std::overflow_error const&)
@@ -334,7 +378,9 @@ VaultClawback::assetsToClawback(
             << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
             << ", sharesTotal=" << sleShareIssuance->at(sfOutstandingAmount)
             << ", amount=" << clawbackAmount.value();
-        return Unexpected(tecPATH_DRY);
+        // Overflow means this transaction cannot apply, but ledger state is still consistent.
+        // Return tecPATH_DRY rather than a hard internal error.
+        return std::unexpected(tecPATH_DRY);
     }
 
     return std::make_pair(assetsRecovered, sharesDestroyed);
@@ -349,7 +395,7 @@ VaultClawback::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
-    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -360,30 +406,20 @@ VaultClawback::doApply()
     MPTIssue const share{mptIssuanceID};
 
     Asset const vaultAsset = vault->at(sfAsset);
-    STAmount const amount = clawbackAmount(vault, tx[~sfAmount], account_);
+    STAmount const amount = clawbackAmount(vault, tx[~sfAmount], accountID_);
 
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
-
-    [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
-    XRPL_ASSERT(
-        lossUnrealized <= (assetsTotal - assetsAvailable),
-        "xrpl::VaultClawback::doApply : loss and assets do balance");
 
     AccountID const holder = tx[sfHolder];
     STAmount sharesDestroyed = {share};
     STAmount assetsRecovered = {vault->at(sfAsset)};
 
     // The Owner is burning shares
-    if (account_ == vault->at(sfOwner) && amount.asset() == share)
+    if (accountID_ == vault->at(sfOwner) && amount.asset() == share)
     {
         sharesDestroyed = accountHolds(
-            view(),
-            holder,
-            share,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j_);
+            view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
     }
     else  // The Issuer is clawbacking vault assets
     {
@@ -397,8 +433,45 @@ VaultClawback::doApply()
         sharesDestroyed = clawbackParts->second;
     }
 
-    if (sharesDestroyed == beast::zero)
+    // The holder has no shares (or the recovery clamped to zero). Nothing to burn; refuse rather
+    // than modifying vault state.
+    if (sharesDestroyed == beast::kZero)
         return tecPRECISION_LOSS;
+
+    // Number arithmetic can throw overflow_error when Scale and totals are large.
+    if (view().rules().enabled(fixCleanup3_4_0))
+    {
+        try
+        {
+            // A non-zero recovery can be too small to change the stored sfAssetsTotal at
+            // STAmount's precision. Shares would still be burned, reject it instead.
+            if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsRecovered))
+            {
+                // LCOV_EXCL_START
+                JLOG(j_.debug())
+                    << "VaultClawback: clawback amount too small to change stored vault"
+                       " balance";
+                return tecPRECISION_LOSS;
+                // LCOV_EXCL_STOP
+            }
+        }
+        // LCOV_EXCL_START
+        catch (std::overflow_error const&)
+        {
+            // It's easy to hit this exception from Number with large enough Scale
+            // so we avoid spamming the log and only use debug here.
+            JLOG(j_.debug())  //
+                << "VaultClawback: overflow error with"
+                << " scale=" << (int)vault->at(sfScale).value()  //
+                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+                << ", amount=" << amount.value();
+            // Overflow means this transaction cannot apply, but ledger state is still
+            // consistent. Return tecPATH_DRY rather than a hard internal error.
+            return tecPATH_DRY;
+        }
+        // LCOV_EXCL_STOP
+    }
 
     assetsTotal -= assetsRecovered;
     assetsAvailable -= assetsRecovered;
@@ -406,8 +479,8 @@ VaultClawback::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from holder to vault.
-    if (auto const ter =
-            accountSend(view(), holder, vaultAccount, sharesDestroyed, j_, WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(
+            view(), holder, vaultAccount, sharesDestroyed, j_, {}, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
@@ -416,7 +489,8 @@ VaultClawback::doApply()
     // Keep MPToken if holder is the vault owner.
     if (holder != vault->at(sfOwner))
     {
-        if (auto const ter = removeEmptyHolding(view(), holder, sharesDestroyed.asset(), j_);
+        if (auto const ter =
+                removeEmptyHolding(ctx_.getApplyViewContext(), holder, sharesDestroyed.asset(), j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
@@ -438,11 +512,11 @@ VaultClawback::doApply()
         // else quietly ignore, holder balance is not zero
     }
 
-    if (assetsRecovered > beast::zero)
+    if (assetsRecovered > beast::kZero)
     {
         // Transfer assets from vault to issuer.
         if (auto const ter = accountSend(
-                view(), vaultAccount, account_, assetsRecovered, j_, WaiveTransferFee::Yes);
+                view(), vaultAccount, accountID_, assetsRecovered, j_, {}, WaiveTransferFee::Yes);
             !isTesSuccess(ter))
             return ter;
 
@@ -451,9 +525,9 @@ VaultClawback::doApply()
                 view(),
                 vaultAccount,
                 assetsRecovered.asset(),
-                FreezeHandling::fhIGNORE_FREEZE,
-                AuthHandling::ahIGNORE_AUTH,
-                j_) < beast::zero)
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
+                j_) < beast::kZero)
         {
             // LCOV_EXCL_START
             JLOG(j_.error()) << "VaultClawback: negative balance of vault assets.";
@@ -465,6 +539,24 @@ VaultClawback::doApply()
     associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;
+}
+
+void
+VaultClawback::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+VaultClawback::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

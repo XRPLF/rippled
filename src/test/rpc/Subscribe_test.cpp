@@ -18,15 +18,16 @@
 
 #include <xrpld/app/main/LoadManager.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
@@ -34,6 +35,7 @@
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
@@ -56,7 +58,7 @@
 
 namespace xrpl::test {
 
-class Subscribe_test : public beast::unit_test::suite
+class Subscribe_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -64,13 +66,13 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env{*this, single_thread_io(envconfig())};
+        Env env{*this, singleThreadIo(envconfig())};
         auto wsc = makeWSClient(env.app().config());
-        Json::Value stream;
+        json::Value stream;
 
         {
             // RPC subscribe to server stream
-            stream[jss::streams] = Json::arrayValue;
+            stream[jss::streams] = json::ValueType::Array;
             stream[jss::streams].append("server");
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
@@ -130,13 +132,13 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env{*this, single_thread_io(envconfig())};
+        Env env{*this, singleThreadIo(envconfig())};
         auto wsc = makeWSClient(env.app().config());
-        Json::Value stream;
+        json::Value stream;
 
         {
             // RPC subscribe to ledger stream
-            stream[jss::streams] = Json::arrayValue;
+            stream[jss::streams] = json::ValueType::Array;
             stream[jss::streams].append("ledger");
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
@@ -184,18 +186,18 @@ public:
     }
 
     void
-    testTransactions_APIv1()
+    testTransactionsAPIv1()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this, single_thread_io(envconfig()));
+        Env env(*this, singleThreadIo(envconfig()));
         auto baseFee = env.current()->fees().base.drops();
         auto wsc = makeWSClient(env.app().config());
-        Json::Value stream;
+        json::Value stream;
 
         {
             // RPC subscribe to transactions stream
-            stream[jss::streams] = Json::arrayValue;
+            stream[jss::streams] = json::ValueType::Array;
             stream[jss::streams].append("transactions");
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
@@ -214,16 +216,12 @@ public:
             // Check stream update for payment transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]["NewFields"]
-                         [jss::Account]  //
-                    == Account("alice").human() &&
-                    jv[jss::transaction][jss::TransactionType]  //
-                    == jss::Payment &&
-                    jv[jss::transaction][jss::DeliverMax]  //
-                    == std::to_string(10000000000 + baseFee) &&
-                    jv[jss::transaction][jss::Fee]  //
-                    == std::to_string(baseFee) &&
-                    jv[jss::transaction][jss::Sequence]  //
-                    == 1;
+                         [jss::Account] == Account("alice").human() &&
+                    jv[jss::transaction][jss::TransactionType] == jss::Payment &&
+                    jv[jss::transaction][jss::DeliverMax] ==
+                    std::to_string(10000000000 + baseFee) &&
+                    jv[jss::transaction][jss::Fee] == std::to_string(baseFee) &&
+                    jv[jss::transaction][jss::Sequence] == 1;
             }));
 
             // Check stream update for accountset transaction
@@ -271,8 +269,8 @@ public:
 
         {
             // RPC subscribe to accounts stream
-            stream = Json::objectValue;
-            stream[jss::accounts] = Json::arrayValue;
+            stream = json::ValueType::Object;
+            stream[jss::accounts] = json::ValueType::Array;
             stream[jss::accounts].append(Account("alice").human());
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
@@ -318,24 +316,24 @@ public:
     }
 
     void
-    testTransactions_APIv2()
+    testTransactionsAPIv2()
     {
         testcase("transactions API version 2");
 
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FEES.reference_fee = 10;
-            cfg = single_thread_io(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            cfg = singleThreadIo(std::move(cfg));
             return cfg;
         }));
         auto wsc = makeWSClient(env.app().config());
-        Json::Value stream{Json::objectValue};
+        json::Value stream{json::ValueType::Object};
 
         {
             // RPC subscribe to transactions stream
             stream[jss::api_version] = 2;
-            stream[jss::streams] = Json::arrayValue;
+            stream[jss::streams] = json::ValueType::Array;
             stream[jss::streams].append("transactions");
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
@@ -399,13 +397,13 @@ public:
     testManifests()
     {
         using namespace jtx;
-        Env env(*this, single_thread_io(envconfig()));
+        Env env(*this, singleThreadIo(envconfig()));
         auto wsc = makeWSClient(env.app().config());
-        Json::Value stream;
+        json::Value stream;
 
         {
             // RPC subscribe to manifests stream
-            stream[jss::streams] = Json::arrayValue;
+            stream[jss::streams] = json::ValueType::Array;
             stream[jss::streams].append("manifests");
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
@@ -433,25 +431,26 @@ public:
     {
         using namespace jtx;
 
-        Env env{*this, single_thread_io(envconfig(validator, "")), features};
+        Env env{*this, singleThreadIo(envconfig(validator, "")), features};
         auto& cfg = env.app().config();
-        if (!BEAST_EXPECT(cfg.section(SECTION_VALIDATION_SEED).empty()))
+        if (!BEAST_EXPECT(cfg.section(Sections::kValidationSeed).empty()))
             return;
-        auto const parsedseed = parseBase58<Seed>(cfg.section(SECTION_VALIDATION_SEED).values()[0]);
+        auto const parsedseed =
+            parseBase58<Seed>(cfg.section(Sections::kValidationSeed).values()[0]);
         if (BEAST_EXPECT(parsedseed); not parsedseed.has_value())
             return;
 
         std::string const valPublicKey = toBase58(
             TokenType::NodePublic,
             derivePublicKey(
-                KeyType::secp256k1, generateSecretKey(KeyType::secp256k1, *parsedseed)));
+                KeyType::Secp256k1, generateSecretKey(KeyType::Secp256k1, *parsedseed)));
 
         auto wsc = makeWSClient(env.app().config());
-        Json::Value stream;
+        json::Value stream;
 
         {
             // RPC subscribe to validations stream
-            stream[jss::streams] = Json::arrayValue;
+            stream[jss::streams] = json::ValueType::Array;
             stream[jss::streams].append("validations");
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
@@ -465,7 +464,7 @@ public:
 
         {
             // Lambda to check ledger validations from the stream.
-            auto validValidationFields = [&env, &valPublicKey](Json::Value const& jv) {
+            auto validValidationFields = [&env, &valPublicKey](json::Value const& jv) {
                 if (jv[jss::type] != "validationReceived")
                     return false;
 
@@ -478,7 +477,7 @@ public:
                 if (jv[jss::ledger_index] != std::to_string(env.closed()->header().seq))
                     return false;
 
-                if (jv[jss::flags] != (vfFullyCanonicalSig | vfFullValidation))
+                if (jv[jss::flags] != (kVfFullyCanonicalSig | kVfFullValidation))
                     return false;
 
                 if (jv[jss::full] != true)
@@ -544,13 +543,13 @@ public:
     {
         using namespace jtx;
         testcase("Subscribe by url");
-        Env env{*this, single_thread_io(envconfig())};
+        Env env{*this, singleThreadIo(envconfig())};
 
-        Json::Value jv;
+        json::Value jv;
         jv[jss::url] = "http://localhost/events";
         jv[jss::url_username] = "admin";
         jv[jss::url_password] = "password";
-        jv[jss::streams] = Json::arrayValue;
+        jv[jss::streams] = json::ValueType::Array;
         jv[jss::streams][0u] = "validations";
         auto jr = env.rpc("json", "subscribe", to_string(jv))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");
@@ -575,21 +574,21 @@ public:
         auto const method = subscribe ? "subscribe" : "unsubscribe";
         testcase << "Error cases for " << method;
 
-        Env env{*this, single_thread_io(envconfig())};
+        Env env{*this, singleThreadIo(envconfig())};
         auto wsc = makeWSClient(env.app().config());
 
         {
-            auto jr = env.rpc("json", method, "{}")[jss::result];
+            auto const jr = env.rpc("json", method, "{}")[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
 
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::url] = "not-a-url";
             jv[jss::username] = "admin";
             jv[jss::password] = "password";
-            auto jr = env.rpc("json", method, to_string(jv))[jss::result];
+            auto const jr = env.rpc("json", method, to_string(jv))[jss::result];
             if (subscribe)
             {
                 BEAST_EXPECT(jr[jss::error] == "invalidParams");
@@ -600,9 +599,9 @@ public:
         }
 
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::url] = "ftp://scheme.not.supported.tld";
-            auto jr = env.rpc("json", method, to_string(jv))[jss::result];
+            auto const jr = env.rpc("json", method, to_string(jv))[jss::result];
             if (subscribe)
             {
                 BEAST_EXPECT(jr[jss::error] == "invalidParams");
@@ -611,38 +610,38 @@ public:
         }
 
         {
-            Env env_nonadmin{*this, single_thread_io(no_admin(envconfig()))};
-            Json::Value jv;
+            Env envNonadmin{*this, singleThreadIo(noAdmin(envconfig()))};
+            json::Value jv;
             jv[jss::url] = "no-url";
-            auto jr = env_nonadmin.rpc("json", method, to_string(jv))[jss::result];
+            auto const jr = envNonadmin.rpc("json", method, to_string(jv))[jss::result];
             BEAST_EXPECT(jr[jss::error] == "noPermission");
             BEAST_EXPECT(jr[jss::error_message] == "You don't have permission for this command.");
         }
 
-        std::initializer_list<Json::Value> const nonArrays{
-            Json::nullValue,
-            Json::intValue,
-            Json::uintValue,
-            Json::realValue,
+        std::initializer_list<json::Value> const nonArrays{
+            json::ValueType::Null,
+            json::ValueType::Int,
+            json::ValueType::UInt,
+            json::ValueType::Real,
             "",
-            Json::booleanValue,
-            Json::objectValue};
+            json::ValueType::Boolean,
+            json::ValueType::Object};
 
         for (auto const& f : {jss::accounts_proposed, jss::accounts})
         {
             for (auto const& nonArray : nonArrays)
             {
-                Json::Value jv;
+                json::Value jv;
                 jv[f] = nonArray;
-                auto jr = wsc->invoke(method, jv)[jss::result];
+                auto const jr = wsc->invoke(method, jv)[jss::result];
                 BEAST_EXPECT(jr[jss::error] == "invalidParams");
                 BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
             }
 
             {
-                Json::Value jv;
-                jv[f] = Json::arrayValue;
-                auto jr = wsc->invoke(method, jv)[jss::result];
+                json::Value jv;
+                jv[f] = json::ValueType::Array;
+                auto const jr = wsc->invoke(method, jv)[jss::result];
                 BEAST_EXPECT(jr[jss::error] == "actMalformed");
                 BEAST_EXPECT(jr[jss::error_message] == "Account malformed.");
             }
@@ -650,94 +649,94 @@ public:
 
         for (auto const& nonArray : nonArrays)
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::books] = nonArray;
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::arrayValue;
+            json::Value jv;
+            jv[jss::books] = json::ValueType::Array;
             jv[jss::books][0u] = 1;
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::arrayValue;
-            jv[jss::books][0u] = Json::objectValue;
-            jv[jss::books][0u][jss::taker_gets] = Json::objectValue;
-            jv[jss::books][0u][jss::taker_pays] = Json::objectValue;
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            json::Value jv;
+            jv[jss::books] = json::ValueType::Array;
+            jv[jss::books][0u] = json::ValueType::Object;
+            jv[jss::books][0u][jss::taker_gets] = json::ValueType::Object;
+            jv[jss::books][0u][jss::taker_pays] = json::ValueType::Object;
+            auto const jr = wsc->invoke(method, jv)[jss::result];
+
             BEAST_EXPECT(jr[jss::error] == "srcCurMalformed");
             BEAST_EXPECT(jr[jss::error_message] == "Source currency is malformed.");
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::arrayValue;
-            jv[jss::books][0u] = Json::objectValue;
-            jv[jss::books][0u][jss::taker_gets] = Json::objectValue;
-            jv[jss::books][0u][jss::taker_pays] = Json::objectValue;
+            json::Value jv;
+            jv[jss::books] = json::ValueType::Array;
+            jv[jss::books][0u] = json::ValueType::Object;
+            jv[jss::books][0u][jss::taker_gets] = json::ValueType::Object;
+            jv[jss::books][0u][jss::taker_pays] = json::ValueType::Object;
             jv[jss::books][0u][jss::taker_pays][jss::currency] = "ZZZZ";
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "srcCurMalformed");
             BEAST_EXPECT(jr[jss::error_message] == "Source currency is malformed.");
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::arrayValue;
-            jv[jss::books][0u] = Json::objectValue;
-            jv[jss::books][0u][jss::taker_gets] = Json::objectValue;
-            jv[jss::books][0u][jss::taker_pays] = Json::objectValue;
+            json::Value jv;
+            jv[jss::books] = json::ValueType::Array;
+            jv[jss::books][0u] = json::ValueType::Object;
+            jv[jss::books][0u][jss::taker_gets] = json::ValueType::Object;
+            jv[jss::books][0u][jss::taker_pays] = json::ValueType::Object;
             jv[jss::books][0u][jss::taker_pays][jss::currency] = "USD";
             jv[jss::books][0u][jss::taker_pays][jss::issuer] = 1;
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "srcIsrMalformed");
             BEAST_EXPECT(jr[jss::error_message] == "Source issuer is malformed.");
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::arrayValue;
-            jv[jss::books][0u] = Json::objectValue;
-            jv[jss::books][0u][jss::taker_gets] = Json::objectValue;
-            jv[jss::books][0u][jss::taker_pays] = Json::objectValue;
+            json::Value jv;
+            jv[jss::books] = json::ValueType::Array;
+            jv[jss::books][0u] = json::ValueType::Object;
+            jv[jss::books][0u][jss::taker_gets] = json::ValueType::Object;
+            jv[jss::books][0u][jss::taker_pays] = json::ValueType::Object;
             jv[jss::books][0u][jss::taker_pays][jss::currency] = "USD";
             jv[jss::books][0u][jss::taker_pays][jss::issuer] = Account{"gateway"}.human() + "DEAD";
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "srcIsrMalformed");
             BEAST_EXPECT(jr[jss::error_message] == "Source issuer is malformed.");
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::arrayValue;
-            jv[jss::books][0u] = Json::objectValue;
+            json::Value jv;
+            jv[jss::books] = json::ValueType::Array;
+            jv[jss::books][0u] = json::ValueType::Object;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
-            jv[jss::books][0u][jss::taker_gets] = Json::objectValue;
-            auto jr = wsc->invoke(method, jv)[jss::result];
-            // NOTE: this error is slightly incongruous with the
-            // equivalent source currency error
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
+            jv[jss::books][0u][jss::taker_gets] = json::ValueType::Object;
+            auto const jr = wsc->invoke(method, jv)[jss::result];
+            // NOTE: this error is slightly incongruous with the equivalent source currency error
             BEAST_EXPECT(jr[jss::error] == "dstAmtMalformed");
             BEAST_EXPECT(
                 jr[jss::error_message] == "Destination amount/currency/issuer is malformed.");
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::arrayValue;
-            jv[jss::books][0u] = Json::objectValue;
+            json::Value jv;
+            jv[jss::books] = json::ValueType::Array;
+            jv[jss::books][0u] = json::ValueType::Object;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "ZZZZ";
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             // NOTE: this error is slightly incongruous with the
             // equivalent source currency error
             BEAST_EXPECT(jr[jss::error] == "dstAmtMalformed");
@@ -746,69 +745,114 @@ public:
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::arrayValue;
-            jv[jss::books][0u] = Json::objectValue;
+            json::Value jv;
+            jv[jss::books] = json::ValueType::Array;
+            jv[jss::books][0u] = json::ValueType::Object;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "USD";
             jv[jss::books][0u][jss::taker_gets][jss::issuer] = 1;
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "dstIsrMalformed");
             BEAST_EXPECT(jr[jss::error_message] == "Destination issuer is malformed.");
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::arrayValue;
-            jv[jss::books][0u] = Json::objectValue;
+            json::Value jv;
+            jv[jss::books] = json::ValueType::Array;
+            jv[jss::books][0u] = json::ValueType::Object;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "USD";
             jv[jss::books][0u][jss::taker_gets][jss::issuer] = Account{"gateway"}.human() + "DEAD";
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "dstIsrMalformed");
             BEAST_EXPECT(jr[jss::error_message] == "Destination issuer is malformed.");
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::arrayValue;
-            jv[jss::books][0u] = Json::objectValue;
+            json::Value jv;
+            jv[jss::books] = json::ValueType::Array;
+            jv[jss::books][0u] = json::ValueType::Object;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
             jv[jss::books][0u][jss::taker_gets] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
-            auto jr = wsc->invoke(method, jv)[jss::result];
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "badMarket");
             BEAST_EXPECT(jr[jss::error_message] == "No such market.");
         }
 
         for (auto const& nonArray : nonArrays)
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::streams] = nonArray;
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
 
         {
-            Json::Value jv;
-            jv[jss::streams] = Json::arrayValue;
+            json::Value jv;
+            jv[jss::streams] = json::ValueType::Array;
             jv[jss::streams][0u] = 1;
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "malformedStream");
             BEAST_EXPECT(jr[jss::error_message] == "Stream malformed.");
         }
 
         {
-            Json::Value jv;
-            jv[jss::streams] = Json::arrayValue;
+            json::Value jv;
+            jv[jss::streams] = json::ValueType::Array;
             jv[jss::streams][0u] = "not_a_stream";
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "malformedStream");
             BEAST_EXPECT(jr[jss::error_message] == "Stream malformed.");
+        }
+
+        if (subscribe)
+        {
+            // invalid taker - not a string
+            {
+                json::Value jv;
+                jv[jss::books] = json::ValueType::Array;
+                jv[jss::books][0u] = json::ValueType::Object;
+                jv[jss::books][0u][jss::taker_pays] =
+                    Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
+                jv[jss::books][0u][jss::taker_gets][jss::currency] = "XRP";
+                jv[jss::books][0u][jss::taker] = 1;
+                auto const jr = wsc->invoke(method, jv)[jss::result];
+                BEAST_EXPECTS(jr[jss::error] == "actMalformed", jr.toStyledString());
+                BEAST_EXPECT(jr[jss::error_message] == "Account malformed.");
+            }
+
+            // invalid taker - malformed account string
+            {
+                json::Value jv;
+                jv[jss::books] = json::ValueType::Array;
+                jv[jss::books][0u] = json::ValueType::Object;
+                jv[jss::books][0u][jss::taker_pays] =
+                    Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
+                jv[jss::books][0u][jss::taker_gets][jss::currency] = "XRP";
+                jv[jss::books][0u][jss::taker] = "not_an_account";
+                auto const jr = wsc->invoke(method, jv)[jss::result];
+                BEAST_EXPECTS(jr[jss::error] == "actMalformed", jr.toStyledString());
+                BEAST_EXPECT(jr[jss::error_message] == "Account malformed.");
+            }
+
+            // invalid taker - account string with extra characters
+            {
+                json::Value jv;
+                jv[jss::books] = json::ValueType::Array;
+                jv[jss::books][0u] = json::ValueType::Object;
+                jv[jss::books][0u][jss::taker_pays] =
+                    Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
+                jv[jss::books][0u][jss::taker_gets][jss::currency] = "XRP";
+                jv[jss::books][0u][jss::taker] = Account{"alice"}.human() + "DEAD";
+                auto const jr = wsc->invoke(method, jv)[jss::result];
+                BEAST_EXPECTS(jr[jss::error] == "actMalformed", jr.toStyledString());
+                BEAST_EXPECT(jr[jss::error_message] == "Account malformed.");
+            }
         }
     }
 
@@ -830,7 +874,7 @@ public:
         /*
          * return true if the subscribe or unsubscribe result is a success
          */
-        auto goodSubRPC = [](Json::Value const& subReply) -> bool {
+        auto goodSubRPC = [](json::Value const& subReply) -> bool {
             return subReply.isMember(jss::result) && subReply[jss::result].isMember(jss::status) &&
                 subReply[jss::result][jss::status] == jss::success;
         };
@@ -845,7 +889,7 @@ public:
                             int numReplies,
                             std::chrono::milliseconds timeout =
                                 std::chrono::milliseconds{5000}) -> std::pair<bool, bool> {
-            bool first_flag = false;
+            bool firstFlag = false;
 
             for (int i = 0; i < numReplies; ++i)
             {
@@ -857,20 +901,20 @@ public:
                     if (r.isMember(jss::account_history_tx_index))
                         idx = r[jss::account_history_tx_index].asInt();
                     if (r.isMember(jss::account_history_tx_first))
-                        first_flag = true;
+                        firstFlag = true;
                     bool const boundary = r.isMember(jss::account_history_boundary);
-                    int const ledger_idx = r[jss::ledger_index].asInt();
+                    int const ledgerIdx = r[jss::ledger_index].asInt();
                     if (r.isMember(jss::transaction) && r[jss::transaction].isMember(jss::hash))
                     {
                         auto t{r[jss::transaction]};
-                        v.emplace_back(idx, t[jss::hash].asString(), boundary, ledger_idx);
+                        v.emplace_back(idx, t[jss::hash].asString(), boundary, ledgerIdx);
                         continue;
                     }
                 }
-                return {false, first_flag};
+                return {false, firstFlag};
             }
 
-            return {true, first_flag};
+            return {true, firstFlag};
         };
 
         /*
@@ -891,9 +935,9 @@ public:
                 auto& from = (i % 2 == 0) ? a : b;
                 auto& to = (i % 2 == 0) ? b : a;
                 env(pay(from, to, jtx::XRP(numXRP)),
-                    jtx::seq(jtx::autofill),
-                    jtx::fee(jtx::autofill),
-                    jtx::sig(jtx::autofill));
+                    jtx::Seq(jtx::kAutofill),
+                    jtx::Fee(jtx::kAutofill),
+                    jtx::Sig(jtx::kAutofill));
             }
             for (int i = 0; i < ledgersToClose; ++i)
                 BEAST_EXPECT(env.syncClose());
@@ -913,7 +957,7 @@ public:
             if (sizeCompare && accountVec.size() != (txHistoryVec.size()))
                 return false;
 
-            hash_map<std::string, int> txHistoryMap;
+            HashMap<std::string, int> txHistoryMap;
             for (auto const& tx : txHistoryVec)
             {
                 txHistoryMap.emplace(std::get<1>(tx), std::get<0>(tx));
@@ -970,11 +1014,11 @@ public:
         // (-10, "E5B8B...", true, 4
 
         auto checkBoundary = [](IdxHashVec const& vec, bool /* forward */) {
-            size_t const num_tx = vec.size();
-            for (size_t i = 0; i < num_tx; ++i)
+            size_t const numTx = vec.size();
+            for (size_t i = 0; i < numTx; ++i)
             {
                 auto [idx, hash, boundary, ledger] = vec[i];
-                if ((i + 1 == num_tx || ledger != std::get<3>(vec[i + 1])) != boundary)
+                if ((i + 1 == numTx || ledger != std::get<3>(vec[i + 1])) != boundary)
                     return false;
             }
             return true;
@@ -989,10 +1033,10 @@ public:
              *
              * also test subscribe to the account before it is created
              */
-            Env env(*this, single_thread_io(envconfig()));
+            Env env(*this, singleThreadIo(envconfig()));
             auto wscTxHistory = makeWSClient(env.app().config());
-            Json::Value request;
-            request[jss::account_history_tx_stream] = Json::objectValue;
+            json::Value request;
+            request[jss::account_history_tx_stream] = json::ValueType::Object;
             request[jss::account_history_tx_stream][jss::account] = alice.human();
             auto jv = wscTxHistory->invoke("subscribe", request);
             if (!BEAST_EXPECT(goodSubRPC(jv)))
@@ -1032,10 +1076,10 @@ public:
              * subscribe genesis account tx history without txns
              * subscribe to bob's account after it is created
              */
-            Env env(*this, single_thread_io(envconfig()));
+            Env env(*this, singleThreadIo(envconfig()));
             auto wscTxHistory = makeWSClient(env.app().config());
-            Json::Value request;
-            request[jss::account_history_tx_stream] = Json::objectValue;
+            json::Value request;
+            request[jss::account_history_tx_stream] = json::ValueType::Object;
             request[jss::account_history_tx_stream][jss::account] =
                 "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             auto jv = wscTxHistory->invoke("subscribe", request);
@@ -1109,7 +1153,7 @@ public:
              * subscribe account and subscribe account tx history
              * and compare txns streamed
              */
-            Env env(*this, single_thread_io(envconfig()));
+            Env env(*this, singleThreadIo(envconfig()));
             auto wscAccount = makeWSClient(env.app().config());
             auto wscTxHistory = makeWSClient(env.app().config());
 
@@ -1118,8 +1162,8 @@ public:
             BEAST_EXPECT(env.syncClose());
 
             // subscribe account
-            Json::Value stream = Json::objectValue;
-            stream[jss::accounts] = Json::arrayValue;
+            json::Value stream = json::ValueType::Object;
+            stream[jss::accounts] = json::ValueType::Array;
             stream[jss::accounts].append(alice.human());
             auto jv = wscAccount->invoke("subscribe", stream);
 
@@ -1130,8 +1174,8 @@ public:
                 return;
 
             // subscribe account tx history
-            Json::Value request;
-            request[jss::account_history_tx_stream] = Json::objectValue;
+            json::Value request;
+            request[jss::account_history_tx_stream] = json::ValueType::Object;
             request[jss::account_history_tx_stream][jss::account] = alice.human();
             jv = wscTxHistory->invoke("subscribe", request);
 
@@ -1178,24 +1222,24 @@ public:
              * alice issues USD to carol
              * mix USD and XRP payments
              */
-            Env env(*this, single_thread_io(envconfig()));
-            auto const USD_a = alice["USD"];
+            Env env(*this, singleThreadIo(envconfig()));
+            auto const usdA = alice["USD"];
 
             std::array<Account, 2> const accounts = {alice, carol};
             env.fund(XRP(333333), accounts);
-            env.trust(USD_a(20000), carol);
+            env.trust(usdA(20000), carol);
             BEAST_EXPECT(env.syncClose());
 
             auto mixedPayments = [&]() -> int {
                 sendPayments(env, alice, carol, 1, 0);
-                env(pay(alice, carol, USD_a(100)));
+                env(pay(alice, carol, usdA(100)));
                 BEAST_EXPECT(env.syncClose());
                 return 2;
             };
 
             // subscribe
-            Json::Value request;
-            request[jss::account_history_tx_stream] = Json::objectValue;
+            json::Value request;
+            request[jss::account_history_tx_stream] = json::ValueType::Object;
             request[jss::account_history_tx_stream][jss::account] = carol.human();
             auto ws = makeWSClient(env.app().config());
             auto jv = ws->invoke("subscribe", request);
@@ -1217,7 +1261,7 @@ public:
             /*
              * long transaction history
              */
-            Env env(*this, single_thread_io(envconfig()));
+            Env env(*this, singleThreadIo(envconfig()));
             std::array<Account, 2> const accounts = {alice, carol};
             env.fund(XRP(444444), accounts);
             BEAST_EXPECT(env.syncClose());
@@ -1228,8 +1272,8 @@ public:
             };
 
             // subscribe
-            Json::Value request;
-            request[jss::account_history_tx_stream] = Json::objectValue;
+            json::Value request;
+            request[jss::account_history_tx_stream] = json::ValueType::Object;
             request[jss::account_history_tx_stream][jss::account] = carol.human();
             auto wscLong = makeWSClient(env.app().config());
             auto jv = wscLong->invoke("subscribe", request);
@@ -1268,31 +1312,31 @@ public:
         using namespace jtx;
         using namespace std::chrono_literals;
         FeatureBitset const all{
-            jtx::testable_amendments() | featurePermissionedDomains | featureCredentials |
+            jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
             featurePermissionedDEX};
 
-        Env env(*this, single_thread_io(envconfig()), all);
+        Env env(*this, singleThreadIo(envconfig()), all);
         PermissionedDEX const permDex(env);
         auto const alice = permDex.alice;
         auto const bob = permDex.bob;
         auto const carol = permDex.carol;
         auto const domainID = permDex.domainID;
         auto const gw = permDex.gw;
-        auto const USD = permDex.USD;
+        auto const usd = permDex.usd;
 
         auto wsc = makeWSClient(env.app().config());
 
-        Json::Value streams;
-        streams[jss::streams] = Json::arrayValue;
+        json::Value streams;
+        streams[jss::streams] = json::ValueType::Array;
         streams[jss::streams][0u] = "book_changes";
 
         auto jv = wsc->invoke("subscribe", streams);
         if (!BEAST_EXPECT(jv[jss::status] == "success"))
             return;
-        env(offer(alice, XRP(10), USD(10)), domain(domainID), txflags(tfHybrid));
+        env(offer(alice, XRP(10), usd(10)), Domain(domainID), Txflags(tfHybrid));
         BEAST_EXPECT(env.syncClose());
 
-        env(pay(bob, carol, USD(5)), path(~USD), sendmax(XRP(5)), domain(domainID));
+        env(pay(bob, carol, usd(5)), Path(~usd), Sendmax(XRP(5)), Domain(domainID));
         BEAST_EXPECT(env.syncClose());
 
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
@@ -1333,22 +1377,22 @@ public:
         Account const bob{"bob"};
         Account const broker{"broker"};
 
-        Env env{*this, single_thread_io(envconfig()), features};
+        Env env{*this, singleThreadIo(envconfig()), features};
         env.fund(XRP(10000), alice, bob, broker);
         BEAST_EXPECT(env.syncClose());
 
         auto wsc = test::makeWSClient(env.app().config());
-        Json::Value stream;
-        stream[jss::streams] = Json::arrayValue;
+        json::Value stream;
+        stream[jss::streams] = json::ValueType::Array;
         stream[jss::streams].append("transactions");
         auto jv = wsc->invoke("subscribe", stream);
 
         // Verify `nftoken_id` value equals to the NFTokenID that was
         // changed in the most recent NFTokenMint or NFTokenAcceptOffer
         // transaction
-        auto verifyNFTokenID = [&](uint256 const& actualNftID) {
+        auto verifyNFTokenID = [&](UInt256 const& actualNftID) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                uint256 nftID;
+                UInt256 nftID;
                 BEAST_EXPECT(nftID.parseHex(jv[jss::meta][jss::nftoken_id].asString()));
                 return nftID == actualNftID;
             }));
@@ -1356,15 +1400,15 @@ public:
 
         // Verify `nftoken_ids` value equals to the NFTokenIDs that were
         // changed in the most recent NFTokenCancelOffer transaction
-        auto verifyNFTokenIDsInCancelOffer = [&](std::vector<uint256> actualNftIDs) {
+        auto verifyNFTokenIDsInCancelOffer = [&](std::vector<UInt256> actualNftIDs) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                std::vector<uint256> metaIDs;
+                std::vector<UInt256> metaIDs;
                 std::transform(
                     jv[jss::meta][jss::nftoken_ids].begin(),
                     jv[jss::meta][jss::nftoken_ids].end(),
                     std::back_inserter(metaIDs),
-                    [this](Json::Value id) {
-                        uint256 nftID;
+                    [this](json::Value id) {
+                        UInt256 nftID;
                         BEAST_EXPECT(nftID.parseHex(id.asString()));
                         return nftID;
                     });
@@ -1385,9 +1429,9 @@ public:
 
         // Verify `offer_id` value equals to the offerID that was
         // changed in the most recent NFTokenCreateOffer tx
-        auto verifyNFTokenOfferID = [&](uint256 const& offerID) {
+        auto verifyNFTokenOfferID = [&](UInt256 const& offerID) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                uint256 metaOfferID;
+                UInt256 metaOfferID;
                 BEAST_EXPECT(metaOfferID.parseHex(jv[jss::meta][jss::offer_id].asString()));
                 return metaOfferID == offerID;
             }));
@@ -1397,26 +1441,28 @@ public:
         {
             // Alice mints 2 NFTs
             // Verify the NFTokenIDs are correct in the NFTokenMint tx meta
-            uint256 const nftId1{token::getNextID(env, alice, 0u, tfTransferable)};
-            env(token::mint(alice, 0u), txflags(tfTransferable));
+            UInt256 const nftId1{token::getNextID(env, alice, 0u, tfTransferable)};
+            env(token::mint(alice, 0u), Txflags(tfTransferable));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId1);
 
-            uint256 const nftId2{token::getNextID(env, alice, 0u, tfTransferable)};
-            env(token::mint(alice, 0u), txflags(tfTransferable));
+            UInt256 const nftId2{token::getNextID(env, alice, 0u, tfTransferable)};
+            env(token::mint(alice, 0u), Txflags(tfTransferable));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId2);
 
             // Alice creates one sell offer for each NFT
             // Verify the offer indexes are correct in the NFTokenCreateOffer tx
             // meta
-            uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::createOffer(alice, nftId1, drops(1)), txflags(tfSellNFToken));
+            UInt256 const aliceOfferIndex1 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
+            env(token::createOffer(alice, nftId1, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::createOffer(alice, nftId2, drops(1)), txflags(tfSellNFToken));
+            UInt256 const aliceOfferIndex2 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
+            env(token::createOffer(alice, nftId2, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex2);
 
@@ -1429,8 +1475,9 @@ public:
 
             // Bobs creates a buy offer for nftId1
             // Verify the offer id is correct in the NFTokenCreateOffer tx meta
-            auto const bobBuyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
-            env(token::createOffer(bob, nftId1, drops(1)), token::owner(alice));
+            auto const bobBuyOfferIndex =
+                keylet::nftokenOffer(bob, SeqProxy::rawSequence(env.seq(bob))).key;
+            env(token::createOffer(bob, nftId1, drops(1)), token::Owner(alice));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(bobBuyOfferIndex);
 
@@ -1444,22 +1491,24 @@ public:
         // Check `nftoken_ids` in brokered mode
         {
             // Alice mints a NFT
-            uint256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
-            env(token::mint(alice, 0u), txflags(tfTransferable));
+            UInt256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
+            env(token::mint(alice, 0u), Txflags(tfTransferable));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId);
 
             // Alice creates sell offer and set broker as destination
-            uint256 const offerAliceToBroker = keylet::nftoffer(alice, env.seq(alice)).key;
+            UInt256 const offerAliceToBroker =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId, drops(1)),
-                token::destination(broker),
-                txflags(tfSellNFToken));
+                token::Destination(broker),
+                Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(offerAliceToBroker);
 
             // Bob creates buy offer
-            uint256 const offerBobToBroker = keylet::nftoffer(bob, env.seq(bob)).key;
-            env(token::createOffer(bob, nftId, drops(1)), token::owner(alice));
+            UInt256 const offerBobToBroker =
+                keylet::nftokenOffer(bob, SeqProxy::rawSequence(env.seq(bob))).key;
+            env(token::createOffer(bob, nftId, drops(1)), token::Owner(alice));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(offerBobToBroker);
 
@@ -1473,19 +1522,21 @@ public:
         // multiple offers are cancelled for the same NFT
         {
             // Alice mints a NFT
-            uint256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
-            env(token::mint(alice, 0u), txflags(tfTransferable));
+            UInt256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
+            env(token::mint(alice, 0u), Txflags(tfTransferable));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId);
 
             // Alice creates 2 sell offers for the same NFT
-            uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::createOffer(alice, nftId, drops(1)), txflags(tfSellNFToken));
+            UInt256 const aliceOfferIndex1 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
+            env(token::createOffer(alice, nftId, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::createOffer(alice, nftId, drops(1)), txflags(tfSellNFToken));
+            UInt256 const aliceOfferIndex2 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
+            env(token::createOffer(alice, nftId, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex2);
 
@@ -1498,24 +1549,432 @@ public:
 
         if (features[featureNFTokenMintOffer])
         {
-            uint256 const aliceMintWithOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::mint(alice), token::amount(XRP(0)));
+            UInt256 const aliceMintWithOfferIndex1 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
+            env(token::mint(alice), token::Amount(XRP(0)));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceMintWithOfferIndex1);
         }
+    }
+
+    // ----- Subscription limit / teardown verification ----------------------
+    //
+    // The helpers and tests below exercise:
+    //   * the per-connection subscription cap + proportional charge enforced
+    //     in doSubscribe (Subscribe.cpp), and
+    //   * the asynchronous, chunked teardown of a disconnecting connection's
+    //     account subscriptions (~InfoSub -> scheduleAccountCleanup -> JobQueue).
+    //
+    // The cap-exceeded error is rpcINVALID_PARAMS with the message "Too many
+    // subscriptions for this connection."; the tests assert that exactly.
+    //
+    // There is no public accessor for the server-side per-connection count, so
+    // the async cleanup is verified behaviorally: publishing still flows to a
+    // live subscriber, rather than by reading a count to zero.
+
+    // Build `count` distinct, valid, base58-encoded account strings cheaply by
+    // incrementing an AccountID. parseAccountIds dedups into a HashSet, so the
+    // strings MUST be distinct for the cap arithmetic to be exact; incrementing
+    // guarantees distinctness without deriving `count` keypairs.
+    static std::vector<std::string>
+    makeAccountStrings(std::size_t count, std::uint32_t seed = 1)
+    {
+        std::vector<std::string> out;
+        out.reserve(count);
+        // Start at `seed` so separate calls produce non-overlapping ranges,
+        // letting a test subscribe disjoint batches across requests.
+        AccountID id{static_cast<std::uint64_t>(seed)};
+        for (std::size_t i = 0; i < count; ++i)
+        {
+            out.push_back(toBase58(id));
+            ++id;
+        }
+        return out;
+    }
+
+    // Append the given account strings as a jss::accounts array onto a fresh
+    // subscribe request object.
+    static json::Value
+    accountsRequest(std::vector<std::string> const& accts)
+    {
+        json::Value jv{json::ValueType::Object};
+        jv[jss::accounts] = json::ValueType::Array;
+        for (auto const& a : accts)
+            jv[jss::accounts].append(a);
+        return jv;
+    }
+
+    // Append the given account strings as a jss::accounts_proposed array onto a
+    // fresh subscribe request object.
+    static json::Value
+    accountsProposedRequest(std::vector<std::string> const& accts)
+    {
+        json::Value jv{json::ValueType::Object};
+        jv[jss::accounts_proposed] = json::ValueType::Array;
+        for (auto const& a : accts)
+            jv[jss::accounts_proposed].append(a);
+        return jv;
+    }
+
+    // A single, valid XRP/USD order book request, as one entry of a
+    // jss::books array.
+    static json::Value
+    oneBookRequest()
+    {
+        using namespace jtx;
+        json::Value jv{json::ValueType::Object};
+        jv[jss::books] = json::ValueType::Array;
+        json::Value& book = jv[jss::books][0u];
+        book[jss::taker_gets] = json::ValueType::Object;
+        book[jss::taker_gets][jss::currency] = "XRP";
+        book[jss::taker_pays] = json::ValueType::Object;
+        book[jss::taker_pays][jss::currency] = "USD";
+        book[jss::taker_pays][jss::issuer] = Account("alice").human();
+        return jv;
+    }
+
+    // A single account_history_tx_stream subscribe request for `acct`.
+    static json::Value
+    accountHistoryRequest(std::string const& acct)
+    {
+        json::Value jv{json::ValueType::Object};
+        jv[jss::account_history_tx_stream] = json::ValueType::Object;
+        jv[jss::account_history_tx_stream][jss::account] = acct;
+        return jv;
+    }
+
+    // An envconfig modifier that lowers the per-connection subscription cap to
+    // `cap`, so the cap logic in doSubscribe can be driven without subscribing
+    // the production default (100'000) entries. (Env is non-movable, so this
+    // returns the config modifier rather than a ready-made Env.)
+    static auto
+    cappedConfig(std::size_t cap)
+    {
+        return [cap](std::unique_ptr<Config> cfg) {
+            cfg->maxSubscriptionsPerConnection = cap;
+            return jtx::singleThreadIo(std::move(cfg));
+        };
+    }
+
+    void
+    testSubscriptionCapRejects()
+    {
+        // A request that alone exceeds the cap is rejected with the exact
+        // cap error, before any state is recorded. Baseline negative path.
+        testcase("subscription cap rejects an over-cap request");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        auto wsc = makeWSClient(env.app().config());
+
+        // Six accounts against a cap of five: rejected.
+        auto const jr =
+            wsc->invoke("subscribe", accountsRequest(makeAccountStrings(6)))[jss::result];
+        BEAST_EXPECT(jr[jss::error] == "invalidParams");
+        BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+    }
+
+    void
+    testReSubscribeNotOvercounted()
+    {
+        // Re-subscribing accounts already held by this connection adds no new
+        // tracked state, so it must be admitted even at the cap. The cap check
+        // must count only NET-NEW accounts, not the raw request size.
+        testcase("re-subscribe at the cap is not over-counted");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        auto wsc = makeWSClient(env.app().config());
+
+        // Fill the cap exactly with five distinct accounts.
+        auto const five = makeAccountStrings(5);
+        {
+            auto const r = wsc->invoke("subscribe", accountsRequest(five));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // Re-subscribe the same five: net-new is zero, so it stays within the
+        // cap and must succeed. (Pre-fix this was wrongly rejected.)
+        {
+            auto const r = wsc->invoke("subscribe", accountsRequest(five));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+    }
+
+    void
+    testBooksCapIndependentOfAccounts()
+    {
+        // Book subscriptions are tracked separately (OrderBookDB) and are not
+        // part of totalSubscriptionCount(). An account set at the cap must not
+        // block an unrelated book subscription.
+        testcase("books cap is independent of account count");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        BEAST_EXPECT(env.syncClose());
+
+        auto wsc = makeWSClient(env.app().config());
+
+        // Fill the account cap exactly.
+        {
+            auto const r = wsc->invoke("subscribe", accountsRequest(makeAccountStrings(5)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // A single book subscription must still be admitted: it does not count
+        // against the account cap. (Pre-fix this was wrongly rejected.)
+        {
+            auto const r = wsc->invoke("subscribe", oneBookRequest());
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+    }
+
+    void
+    testMultiFieldNoPartialSubscribe()
+    {
+        // A single request mixing fields must be all-or-nothing: if a later
+        // field trips the cap, an earlier field must NOT have subscribed. The
+        // leak is detected through the cap arithmetic itself - a follow-up
+        // request succeeds only if no state leaked from the rejected one.
+        testcase("multi-field subscribe does not partially subscribe");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        auto wsc = makeWSClient(env.app().config());
+
+        // accounts_proposed (3, evaluated first, would subscribe) +
+        // accounts (3): combined 6 exceeds the cap of 5, so the request is
+        // rejected. The proposed branch must not have leaked its 3 entries.
+        json::Value req = accountsProposedRequest(makeAccountStrings(3, 1));
+        for (auto const& a : makeAccountStrings(3, 100))
+            req[jss::accounts].append(a);
+        {
+            auto const jr = wsc->invoke("subscribe", req)[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+        }
+
+        // If the rejected request leaked its 3 proposed subscriptions, the
+        // connection's count is already 3 and this 3-account request would be
+        // rejected (3 + 3 > 5). With no leak the count is 0 and it succeeds.
+        {
+            auto const r = wsc->invoke("subscribe", accountsRequest(makeAccountStrings(3, 200)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+    }
+
+    void
+    testHistoryReSubscribeNotOvercounted()
+    {
+        // An account_history_tx_stream subscribe is charged against the cap only
+        // when it is net-new, matching the account branches. Re-subscribing an
+        // account-history already held on this connection adds no tracked entry,
+        // so it must NOT be rejected at the cap. The two rejection causes are
+        // told apart by their exact error_message: the cap check yields "Too
+        // many subscriptions for this connection."; a duplicate that gets past
+        // the cap and is rejected downstream by subAccountHistory yields the
+        // generic "Invalid parameters.".
+        testcase("account_history re-subscribe at the cap is not over-counted");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(1))};
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        BEAST_EXPECT(env.syncClose());
+
+        auto wsc = makeWSClient(env.app().config());
+
+        // First account-history subscribe is net-new: charge 1 fills the cap of
+        // 1 exactly, so it is admitted. Positive path.
+        {
+            auto const r = wsc->invoke("subscribe", accountHistoryRequest(alice.human()));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // Re-subscribe the same account-history while sitting exactly at the
+        // cap. Net-new is zero, so the cap check must pass; the request is then
+        // rejected by subAccountHistory as a duplicate, NOT by the cap. Proven
+        // by the exact message: it is the duplicate error, not the cap error.
+        // (Pre-fix, the flat charge of 1 made the cap check reject this with the
+        // cap message instead.)
+        {
+            auto const jr =
+                wsc->invoke("subscribe", accountHistoryRequest(alice.human()))[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
+            BEAST_EXPECT(jr[jss::error_message] != "Too many subscriptions for this connection.");
+        }
+    }
+
+    void
+    testHistoryCapRejectsNetNew()
+    {
+        // A genuinely net-new account-history subscribe on a connection already
+        // at the cap IS rejected, with the cap error. Negative path, and the
+        // counterpart to testHistoryReSubscribeNotOvercounted: it confirms the
+        // net-new charge still rejects when the entry really is new.
+        testcase("account_history net-new subscribe is rejected at the cap");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(1))};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        BEAST_EXPECT(env.syncClose());
+
+        auto wsc = makeWSClient(env.app().config());
+
+        // Fill the cap of 1 with alice's account-history.
+        {
+            auto const r = wsc->invoke("subscribe", accountHistoryRequest(alice.human()));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // A different account-history (bob) is net-new: charge 1 over a cap of 1
+        // already full, so it is rejected with the cap error.
+        {
+            auto const jr =
+                wsc->invoke("subscribe", accountHistoryRequest(bob.human()))[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+        }
+    }
+
+    void
+    testAsyncTeardownDoesNotStall()
+    {
+        // Test C (core regression): disconnecting a connection with many
+        // account subscriptions must NOT block subsequent operations or
+        // publishing. The teardown is now posted to a JobQueue job
+        // (scheduleAccountCleanup), so it runs off the disconnect thread.
+        testcase("async teardown does not stall publishing");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env{*this, singleThreadIo(envconfig())};
+
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        BEAST_EXPECT(env.syncClose());
+
+        // A second, long-lived subscriber to alice that must keep receiving
+        // publishes after the first connection disconnects.
+        auto wscLive = makeWSClient(env.app().config());
+        {
+            json::Value jv{json::ValueType::Object};
+            jv[jss::accounts] = json::ValueType::Array;
+            jv[jss::accounts].append(alice.human());
+            auto const r = wscLive->invoke("subscribe", jv);
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // A connection that subscribes to many accounts, then disconnects. A
+        // few thousand entries is enough to be a real teardown while still
+        // running fast in CI.
+        constexpr std::size_t kBulk = 3000;
+        {
+            auto wscBulk = makeWSClient(env.app().config());
+            auto const r =
+                wscBulk->invoke("subscribe", accountsRequest(makeAccountStrings(kBulk, 10)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+            // Destroying the client closes the WS connection, which destroys
+            // the server-side InfoSub and posts the chunked async cleanup job.
+            // WSClient exposes no explicit close(); resetting the owning
+            // unique_ptr is the disconnect path.
+            wscBulk.reset();
+        }
+
+        // Immediately after the disconnect, an unrelated operation completes
+        // promptly (it would block for seconds with inline teardown). This is a
+        // cheap liveness check; the publish assertion below is the real proof.
+        {
+            auto const info = env.app().getOPs().getServerInfo(false, true, false);
+            BEAST_EXPECT(info.isMember(jss::server_state));
+        }
+
+        // The live subscriber still receives a published transaction for alice
+        // within a short timeout, proving account-publishing was not stalled by
+        // the concurrent teardown.
+        {
+            env(pay(env.master, alice, XRP(100)));
+            BEAST_EXPECT(env.syncClose());
+            BEAST_EXPECT(wscLive->findMsg(5s, [&](auto const& jv) {
+                return jv.isMember(jss::transaction) &&
+                    jv[jss::transaction][jss::TransactionType] == jss::Payment &&
+                    jv[jss::transaction][jss::Destination] == alice.human();
+            }));
+        }
+
+        wscLive->invoke("unsubscribe", accountsRequest({alice.human()}));
+    }
+
+    void
+    testResubscribeAfterDisconnect()
+    {
+        // Test D (Phase 3 correctness): connection A subscribes to account X
+        // and disconnects (async cleanup pending, keyed on A's seq). A new
+        // connection B subscribes to X and MUST still receive publishes for X -
+        // A's deferred, seq-keyed cleanup must not remove B's subscription.
+        testcase("re-subscribe after disconnect still delivers");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env{*this, singleThreadIo(envconfig())};
+
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        BEAST_EXPECT(env.syncClose());
+
+        // Connection A subscribes to alice, then disconnects. A also subscribes
+        // to a bulk set so its deferred cleanup is non-trivial and races with B.
+        {
+            auto wscA = makeWSClient(env.app().config());
+            auto bulk = makeAccountStrings(2000, 10);
+            bulk.push_back(alice.human());
+            auto const r = wscA->invoke("subscribe", accountsRequest(bulk));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+            // Disconnect A by destroying its client (no explicit close()).
+            wscA.reset();
+        }
+
+        // Connection B (a new InfoSub with a distinct seq) subscribes to alice.
+        auto wscB = makeWSClient(env.app().config());
+        {
+            json::Value jv{json::ValueType::Object};
+            jv[jss::accounts] = json::ValueType::Array;
+            jv[jss::accounts].append(alice.human());
+            auto const r = wscB->invoke("subscribe", jv);
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // A publish for alice must reach B. If A's seq-keyed cleanup had wrongly
+        // removed the shared alice entry, B would receive nothing.
+        {
+            env(pay(env.master, alice, XRP(100)));
+            BEAST_EXPECT(env.syncClose());
+            BEAST_EXPECT(wscB->findMsg(5s, [&](auto const& jv) {
+                return jv.isMember(jss::transaction) &&
+                    jv[jss::transaction][jss::TransactionType] == jss::Payment &&
+                    jv[jss::transaction][jss::Destination] == alice.human();
+            }));
+        }
+
+        wscB->invoke("unsubscribe", accountsRequest({alice.human()}));
     }
 
     void
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testable_amendments()};
+        FeatureBitset const all{testableAmendments()};
         FeatureBitset const xrpFees{featureXRPFees};
 
         testServer();
         testLedger();
-        testTransactions_APIv1();
-        testTransactions_APIv2();
+        testTransactionsAPIv1();
+        testTransactionsAPIv2();
         testManifests();
         testValidations(all - xrpFees);
         testValidations(all);
@@ -1526,6 +1985,14 @@ public:
         testSubBookChanges();
         testNFToken(all);
         testNFToken(all - featureNFTokenMintOffer);
+        testAsyncTeardownDoesNotStall();
+        testResubscribeAfterDisconnect();
+        testSubscriptionCapRejects();
+        testReSubscribeNotOvercounted();
+        testBooksCapIndependentOfAccounts();
+        testMultiFieldNoPartialSubscribe();
+        testHistoryReSubscribeNotOvercounted();
+        testHistoryCapRejectsNetNew();
     }
 };
 

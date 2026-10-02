@@ -6,16 +6,21 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
 #include <memory>
 #include <vector>
@@ -25,25 +30,25 @@ namespace xrpl {
 bool
 LoanBrokerSet::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx);
+    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 NotTEC
 LoanBrokerSet::preflight(PreflightContext const& ctx)
 {
-    using namespace Lending;
+    using namespace lending;
 
     auto const& tx = ctx.tx;
     if (auto const data = tx[~sfData];
-        data && !data->empty() && !validDataLength(tx[~sfData], maxDataPayloadLength))
+        data && !data->empty() && !validDataLength(tx[~sfData], kMaxDataPayloadLength))
         return temINVALID;
-    if (!validNumericRange(tx[~sfManagementFeeRate], maxManagementFeeRate))
+    if (!validNumericRange(tx[~sfManagementFeeRate], kMaxManagementFeeRate))
         return temINVALID;
-    if (!validNumericRange(tx[~sfCoverRateMinimum], maxCoverRate))
+    if (!validNumericRange(tx[~sfCoverRateMinimum], kMaxCoverRate))
         return temINVALID;
-    if (!validNumericRange(tx[~sfCoverRateLiquidation], maxCoverRate))
+    if (!validNumericRange(tx[~sfCoverRateLiquidation], kMaxCoverRate))
         return temINVALID;
-    if (!validNumericRange(tx[~sfDebtMaximum], Number(maxMPTokenAmount), Number(0)))
+    if (!validNumericRange(tx[~sfDebtMaximum], Number(kMaxMpTokenAmount), Number(0)))
         return temINVALID;
 
     if (tx.isFieldPresent(sfLoanBrokerID))
@@ -54,13 +59,13 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
             tx.isFieldPresent(sfCoverRateLiquidation))
             return temINVALID;
 
-        if (tx[sfLoanBrokerID] == beast::zero)
+        if (tx[sfLoanBrokerID] == beast::kZero)
             return temINVALID;
     }
 
     if (auto const vaultID = tx.at(~sfVaultID))
     {
-        if (*vaultID == beast::zero)
+        if (*vaultID == beast::kZero)
             return temINVALID;
     }
 
@@ -80,9 +85,9 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
 std::vector<OptionaledField<STNumber>> const&
 LoanBrokerSet::getValueFields()
 {
-    static std::vector<OptionaledField<STNumber>> const valueFields{~sfDebtMaximum};
+    static std::vector<OptionaledField<STNumber>> const kValueFields{~sfDebtMaximum};
 
-    return valueFields;
+    return kValueFields;
 }
 
 TER
@@ -111,7 +116,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     {
         // Updating an existing Broker
 
-        auto const sleBroker = ctx.view.read(keylet::loanbroker(*brokerID));
+        auto const sleBroker = ctx.view.read(keylet::loanBroker(*brokerID));
         if (!sleBroker)
         {
             JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -141,6 +146,20 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     }
     else
     {
+        // LP V1.1: only closed-ended vaults may host a loan broker. The
+        // lending protocol relies on the closed-ended Subscription /
+        // Investment / Redemption phase structure; attaching a broker to
+        // an open-ended vault has no well-defined lifecycle. VaultCreate
+        // stays unrestricted so existing open-ended flows keep working;
+        // the constraint is enforced here, at the point where the vault
+        // is first bound to the lending protocol.
+        if (ctx.view.rules().enabled(featureLendingProtocolV1_1) &&
+            getVaultKind(sleVault) != VaultKind::ClosedEnded)
+        {
+            JLOG(ctx.j.warn()) << "LoanBroker requires a closed-ended Vault.";
+            return tecNO_PERMISSION;
+        }
+
         if (auto const ter = canAddHolding(ctx.view, asset))
             return ter;
 
@@ -175,7 +194,7 @@ LoanBrokerSet::doApply()
     if (auto const brokerID = tx[~sfLoanBrokerID])
     {
         // Modify an existing LoanBroker
-        auto broker = view.peek(keylet::loanbroker(*brokerID));
+        auto broker = view.peek(keylet::loanBroker(*brokerID));
         if (!broker)
         {
             // This should be impossible
@@ -215,9 +234,9 @@ LoanBrokerSet::doApply()
         }
         auto const vaultPseudoID = sleVault->at(sfAccount);
         auto const vaultAsset = sleVault->at(sfAsset);
-        auto const sequence = tx.getSeqValue();
+        auto const sequence = tx.getSeqProxy();
 
-        auto owner = view.peek(keylet::account(account_));
+        auto owner = view.peek(keylet::account(accountID_));
         if (!owner)
         {
             // This should be impossible
@@ -226,18 +245,17 @@ LoanBrokerSet::doApply()
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
-        auto broker = std::make_shared<SLE>(keylet::loanbroker(account_, sequence));
+        auto broker = std::make_shared<SLE>(keylet::loanBroker(accountID_, sequence));
 
-        if (auto const ter = dirLink(view, account_, broker))
+        if (auto const ter = dirLink(view, accountID_, broker))
             return ter;  // LCOV_EXCL_LINE
         if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
             return ter;  // LCOV_EXCL_LINE
 
         // Increases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        adjustOwnerCount(view, owner, 2, j_);
-        auto const ownerCount = owner->at(sfOwnerCount);
-        if (preFeeBalance_ < view.fees().accountReserve(ownerCount))
+        increaseOwnerCount(view, owner, {}, 2, j_);
+        if (preFeeBalance_ < accountReserve(view, owner, j_))
             return tecINSUFFICIENT_RESERVE;
 
         auto maybePseudo = createPseudoAccount(view, broker->key(), sfLoanBrokerID);
@@ -246,13 +264,14 @@ LoanBrokerSet::doApply()
         auto& pseudo = *maybePseudo;
         auto pseudoId = pseudo->at(sfAccount);
 
-        if (auto ter = addEmptyHolding(view, pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
+        if (auto ter = addEmptyHolding(
+                ctx_.getApplyViewContext(), pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
             return ter;
 
         // Initialize data fields:
-        broker->at(sfSequence) = sequence;
+        broker->at(sfSequence) = sequence.value();
         broker->at(sfVaultID) = vaultID;
-        broker->at(sfOwner) = account_;
+        broker->at(sfOwner) = accountID_;
         broker->at(sfAccount) = pseudoId;
         // The LoanSequence indexes loans created by this broker, starting at 1
         broker->at(sfLoanSequence) = 1;
@@ -273,6 +292,24 @@ LoanBrokerSet::doApply()
     }
 
     return tesSUCCESS;
+}
+
+void
+LoanBrokerSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+LoanBrokerSet::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 //------------------------------------------------------------------------------

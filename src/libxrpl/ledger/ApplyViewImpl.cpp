@@ -13,7 +13,6 @@
 
 #include <cstddef>
 #include <functional>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -27,7 +26,7 @@ ApplyViewImpl::apply(
     OpenView& to,
     STTx const& tx,
     TER ter,
-    std::optional<uint256> parentBatchId,
+    std::optional<UInt256> parentBatchId,
     bool isDryRun,
     beast::Journal j)
 {
@@ -43,11 +42,9 @@ ApplyViewImpl::size()
 void
 ApplyViewImpl::visit(
     OpenView& to,
-    std::function<void(
-        uint256 const& key,
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after)> const& func)
+    std::function<
+        void(UInt256 const& key, bool isDelete, SLE::ConstRef before, SLE::ConstRef after)> const&
+        func)
 {
     items_.visit(to, func);
 }

@@ -26,16 +26,16 @@
 
 namespace xrpl::test {
 
-class LedgerHistory_test : public beast::unit_test::suite
+class LedgerHistory_test : public beast::unit_test::Suite
 {
 public:
-    /** Generate a new ledger by hand, applying a specific close time offset
-        and optionally inserting a transaction.
-
-        If prev is nullptr, then the genesis ledger is made and no offset or
-        transaction is applied.
-
-    */
+    /**
+     * Generate a new ledger by hand, applying a specific close time offset
+     * and optionally inserting a transaction.
+     *
+     * If prev is nullptr, then the genesis ledger is made and no offset or
+     * transaction is applied.
+     */
     static std::shared_ptr<Ledger>
     makeLedger(
         std::shared_ptr<Ledger const> const& prev,
@@ -48,10 +48,10 @@ public:
         {
             assert(!stx);
             return std::make_shared<Ledger>(
-                create_genesis,
+                kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
-                std::vector<uint256>{},
+                env.app().config().fees.toFees(),
+                std::vector<UInt256>{},
                 env.app().getNodeFamily());
         }
         auto res = std::make_shared<Ledger>(*prev, prev->header().closeTime + closeOffset);
@@ -59,14 +59,14 @@ public:
         if (stx)
         {
             OpenView accum(&*res);
-            applyTransaction(env.app(), accum, *stx, false, tapNONE, env.journal);
+            applyTransaction(env.app(), accum, *stx, false, TapNone, env.journal);
             accum.apply(*res);
         }
         res->updateSkipList();
 
         {
-            res->stateMap().flushDirty(hotACCOUNT_NODE);
-            res->txMap().flushDirty(hotTRANSACTION_NODE);
+            res->stateMap().flushDirty(NodeObjectType::AccountNode);
+            res->txMap().flushDirty(NodeObjectType::TransactionNode);
         }
         res->unshare();
 
@@ -90,9 +90,9 @@ public:
         {
             bool found = false;
             Env env{*this, envconfig(), std::make_unique<CheckMessageLogs>("MISMATCH ", &found)};
-            LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
-            uint256 const dummyTxHash{1};
+            UInt256 const dummyTxHash{1};
             lh.builtLedger(genesis, dummyTxHash, {});
             lh.validatedLedger(genesis, dummyTxHash);
 
@@ -106,12 +106,12 @@ public:
                 *this,
                 envconfig(),
                 std::make_unique<CheckMessageLogs>("MISMATCH on close time", &found)};
-            LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
             auto const ledgerA = makeLedger(genesis, env, lh, 4s);
             auto const ledgerB = makeLedger(genesis, env, lh, 40s);
 
-            uint256 const dummyTxHash{1};
+            UInt256 const dummyTxHash{1};
             lh.builtLedger(ledgerA, dummyTxHash, {});
             lh.validatedLedger(ledgerB, dummyTxHash);
 
@@ -125,14 +125,14 @@ public:
                 *this,
                 envconfig(),
                 std::make_unique<CheckMessageLogs>("MISMATCH on prior ledger", &found)};
-            LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
             auto const ledgerA = makeLedger(genesis, env, lh, 4s);
             auto const ledgerB = makeLedger(genesis, env, lh, 40s);
             auto const ledgerAC = makeLedger(ledgerA, env, lh, 4s);
             auto const ledgerBD = makeLedger(ledgerB, env, lh, 4s);
 
-            uint256 const dummyTxHash{1};
+            UInt256 const dummyTxHash{1};
             lh.builtLedger(ledgerAC, dummyTxHash, {});
             lh.validatedLedger(ledgerBD, dummyTxHash);
 
@@ -147,7 +147,7 @@ public:
                                           : "MISMATCH on consensus transaction set";
             bool found = false;
             Env env{*this, envconfig(), std::make_unique<CheckMessageLogs>(msg, &found)};
-            LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
 
             Account const alice{"A1"};
             Account const bob{"A2"};

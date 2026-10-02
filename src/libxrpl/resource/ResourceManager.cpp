@@ -23,7 +23,7 @@
 #include <string_view>
 #include <thread>
 
-namespace xrpl::Resource {
+namespace xrpl::resource {
 
 class ManagerImp : public Manager
 {
@@ -36,7 +36,7 @@ private:
     std::condition_variable cond_;
 
 public:
-    ManagerImp(beast::insight::Collector::ptr const& collector, beast::Journal journal)
+    ManagerImp(beast::insight::Collector::Ptr const& collector, beast::Journal journal)
         : journal_(journal), logic_(collector, stopwatch(), journal)
     {
         thread_ = std::thread{&ManagerImp::run, this};
@@ -50,7 +50,7 @@ public:
     ~ManagerImp() override
     {
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             stop_ = true;
             cond_.notify_one();
         }
@@ -58,14 +58,14 @@ public:
     }
 
     Consumer
-    newInboundEndpoint(beast::IP::Endpoint const& address) override
+    newInboundEndpoint(beast::ip::Endpoint const& address) override
     {
         return logic_.newInboundEndpoint(address);
     }
 
     Consumer
     newInboundEndpoint(
-        beast::IP::Endpoint const& address,
+        beast::ip::Endpoint const& address,
         bool const proxy,
         std::string_view forwardedFor) override
     {
@@ -77,21 +77,21 @@ public:
         if (ec)
         {
             journal_.warn() << "forwarded for (" << forwardedFor << ") from proxy "
-                            << address.to_string()
+                            << address.toString()
                             << " doesn't convert to IP endpoint: " << ec.message();
             return newInboundEndpoint(address);
         }
-        return newInboundEndpoint(beast::IPAddressConversion::from_asio(proxiedIp));
+        return newInboundEndpoint(beast::IPAddressConversion::fromAsio(proxiedIp));
     }
 
     Consumer
-    newOutboundEndpoint(beast::IP::Endpoint const& address) override
+    newOutboundEndpoint(beast::ip::Endpoint const& address) override
     {
         return logic_.newOutboundEndpoint(address);
     }
 
     Consumer
-    newUnlimitedEndpoint(beast::IP::Endpoint const& address) override
+    newUnlimitedEndpoint(beast::ip::Endpoint const& address) override
     {
         return logic_.newUnlimitedEndpoint(address);
     }
@@ -110,13 +110,13 @@ public:
 
     //--------------------------------------------------------------------------
 
-    Json::Value
+    json::Value
     getJson() override
     {
         return logic_.getJson();
     }
 
-    Json::Value
+    json::Value
     getJson(int threshold) override
     {
         return logic_.getJson(threshold);
@@ -136,7 +136,7 @@ private:
     void
     run()
     {
-        beast::setCurrentThreadName("Resource::Mngr");
+        beast::setCurrentThreadName("resource::Mngr");
         for (;;)
         {
             logic_.periodicActivity();
@@ -159,9 +159,9 @@ Manager::~Manager() = default;
 //------------------------------------------------------------------------------
 
 std::unique_ptr<Manager>
-make_Manager(beast::insight::Collector::ptr const& collector, beast::Journal journal)
+makeManager(beast::insight::Collector::Ptr const& collector, beast::Journal journal)
 {
     return std::make_unique<ManagerImp>(collector, journal);
 }
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource

@@ -4,15 +4,16 @@
 
 namespace xrpl {
 
-/** Given two flat sets dst and src, compute dst = dst union src
-
-    @param dst set to store the resulting union, and also a source of elements
-   for the union
-    @param src second source of elements for the union
+/**
+ * Given two flat sets dst and src, compute dst = dst union src
+ *
+ * @param dst set to store the resulting union, and also a source of elements
+ * for the union
+ * @param src second source of elements for the union
  */
 template <class T>
 void
-SetUnion(boost::container::flat_set<T>& dst, boost::container::flat_set<T> const& src)
+setUnion(boost::container::flat_set<T>& dst, boost::container::flat_set<T> const& src)
 {
     if (src.empty())
         return;

@@ -13,33 +13,29 @@
 #include <string>
 #include <string_view>
 
-namespace xrpl::BuildInfo {
+#ifndef XRPLD_VERSION
+#error "XRPLD_VERSION must be defined"
+#endif
+
+namespace xrpl::build_info {
 
 namespace {
 
-//--------------------------------------------------------------------------
-//  The build version number. You must edit this for each release
-//  and follow the format described at http://semver.org/
-//------------------------------------------------------------------------------
-// clang-format off
-char const* const versionString = "3.2.0-b0"
-    // clang-format on
-    ;
-
-//
-// Don't touch anything below this line
-//
+// Set by cmake/XrplVersion.cmake, see http://semver.org/
+constexpr char kVersionString[] = XRPLD_VERSION;
 
 std::string
 buildVersionString()
 {
-    std::string version = versionString;
+    std::string version = kVersionString;
 
 #if defined(DEBUG) || defined(SANITIZERS)
+    // A version derived from git already names its commit in the metadata.
+    bool const hasMetadata = version.contains('+');
     std::string metadata;
 
     std::string const& commitHash = xrpl::git::getCommitHash();
-    if (!commitHash.empty())
+    if (!hasMetadata && !commitHash.empty())
         metadata += commitHash + ".";
 
 #ifdef DEBUG
@@ -55,7 +51,7 @@ buildVersionString()
 #endif
 
     if (!metadata.empty())
-        version += "+" + metadata;
+        version += (hasMetadata ? "." : "+") + metadata;
 #endif
 
     return version;
@@ -66,31 +62,31 @@ buildVersionString()
 std::string const&
 getVersionString()
 {
-    static std::string const value = [] {
+    static std::string const kValue = [] {
         std::string const s = buildVersionString();
 
         beast::SemanticVersion v;
         if (!v.parse(s) || v.print() != s)
-            LogicError(s + ": Bad server version string");
+            logicError(s + ": Bad server version string");
         return s;
     }();
-    return value;
+    return kValue;
 }
 
 std::string const&
 getFullVersionString()
 {
-    static std::string const value = systemName() + "-" + getVersionString();
-    return value;
+    static std::string const kValue = systemName() + "-" + getVersionString();
+    return kValue;
 }
 
-static constexpr std::uint64_t implementationVersionIdentifier = 0x183B'0000'0000'0000LLU;
-static constexpr std::uint64_t implementationVersionIdentifierMask = 0xFFFF'0000'0000'0000LLU;
+static constexpr std::uint64_t kImplementationVersionIdentifier = 0x183B'0000'0000'0000LLU;
+static constexpr std::uint64_t kImplementationVersionIdentifierMask = 0xFFFF'0000'0000'0000LLU;
 
 std::uint64_t
 encodeSoftwareVersion(std::string_view versionStr)
 {
-    std::uint64_t c = implementationVersionIdentifier;
+    std::uint64_t c = kImplementationVersionIdentifier;
 
     beast::SemanticVersion v;
 
@@ -154,14 +150,14 @@ encodeSoftwareVersion(std::string_view versionStr)
 std::uint64_t
 getEncodedVersion()
 {
-    static std::uint64_t const cookie = {encodeSoftwareVersion(getVersionString())};
-    return cookie;
+    static std::uint64_t const kCookie = {encodeSoftwareVersion(getVersionString())};
+    return kCookie;
 }
 
 bool
 isXrpldVersion(std::uint64_t version)
 {
-    return (version & implementationVersionIdentifierMask) == implementationVersionIdentifier;
+    return (version & kImplementationVersionIdentifierMask) == kImplementationVersionIdentifier;
 }
 
 bool
@@ -172,4 +168,4 @@ isNewerVersion(std::uint64_t version)
     return false;
 }
 
-}  // namespace xrpl::BuildInfo
+}  // namespace xrpl::build_info

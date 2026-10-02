@@ -4,7 +4,7 @@
 
 namespace xrpl::test {
 
-struct DetectCrash_test : public beast::unit_test::suite
+struct DetectCrash_test : public beast::unit_test::Suite
 {
     void
     testDetectCrash()

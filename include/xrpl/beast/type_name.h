@@ -13,7 +13,7 @@ namespace beast {
 
 template <typename T>
 std::string
-type_name()
+typeName()
 {
     using TR = std::remove_reference_t<T>;
 
@@ -23,6 +23,7 @@ type_name()
     if (auto s = abi::__cxa_demangle(name.c_str(), nullptr, nullptr, nullptr))
     {
         name = s;
+        // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
         std::free(s);
     }
 #endif

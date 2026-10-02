@@ -17,7 +17,11 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <variant>
@@ -69,7 +73,7 @@ escrowCancelPreclaimHelper<MPTIssue>(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -89,7 +93,8 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
 {
     if (ctx.view.rules().enabled(featureTokenEscrow))
     {
-        auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
+        auto const seqProxy = SeqProxy::rawSequence(ctx.tx[sfOfferSequence]);
+        auto const k = keylet::escrow(ctx.tx[sfOwner], seqProxy);
         auto const slep = ctx.view.read(k);
         if (!slep)
             return tecNO_TARGET;
@@ -114,7 +119,8 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
 TER
 EscrowCancel::doApply()
 {
-    auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
+    auto const seqProxy = SeqProxy::rawSequence(ctx_.tx[sfOfferSequence]);
+    auto const k = keylet::escrow(ctx_.tx[sfOwner], seqProxy);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
     {
@@ -163,6 +169,12 @@ EscrowCancel::doApply()
     auto const sle = ctx_.view().peek(keylet::account(account));
     STAmount const amount = slep->getFieldAmount(sfAmount);
 
+    // The return can re-create a holding the owner deleted while the escrow
+    // was pending; the removed escrow must not be counted against its reserve.
+    bool const recycleReserve = ctx_.view().rules().enabled(fixCleanup3_4_0);
+    if (recycleReserve)
+        decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);
+
     // Transfer amount back to the owner
     if (isXRP(amount))
     {
@@ -174,13 +186,13 @@ EscrowCancel::doApply()
             return temDISABLED;  // LCOV_EXCL_LINE
 
         auto const issuer = amount.getIssuer();
-        bool const createAsset = account == account_;
+        bool const createAsset = account == accountID_;
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
-                        ctx_.view(),
-                        parityRate,
-                        slep,
+                        ctx_.getApplyViewContext(),
+                        kParityRate,
+                        ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle : slep,
                         preFeeBalance_,
                         amount,
                         issuer,
@@ -206,8 +218,8 @@ EscrowCancel::doApply()
         }
     }
 
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
-    ctx_.view().update(sle);
+    if (!recycleReserve)
+        decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);
@@ -215,4 +227,21 @@ EscrowCancel::doApply()
     return tesSUCCESS;
 }
 
+void
+EscrowCancel::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+EscrowCancel::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
 }  // namespace xrpl

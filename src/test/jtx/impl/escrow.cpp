@@ -9,30 +9,33 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
 
-/** Escrow operations. */
+/**
+ * Escrow operations.
+ */
 namespace xrpl::test::jtx::escrow {
 
-Json::Value
+json::Value
 create(AccountID const& account, AccountID const& to, STAmount const& amount)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::EscrowCreate;
     jv[jss::Flags] = tfFullyCanonicalSig;
     jv[jss::Account] = to_string(account);
     jv[jss::Destination] = to_string(to);
-    jv[jss::Amount] = amount.getJson(JsonOptions::none);
+    jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
     return jv;
 }
 
-Json::Value
+json::Value
 finish(AccountID const& account, AccountID const& from, std::uint32_t seq)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::EscrowFinish;
     jv[jss::Flags] = tfFullyCanonicalSig;
     jv[jss::Account] = to_string(account);
@@ -41,10 +44,10 @@ finish(AccountID const& account, AccountID const& from, std::uint32_t seq)
     return jv;
 }
 
-Json::Value
+json::Value
 cancel(AccountID const& account, Account const& from, std::uint32_t seq)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::EscrowCancel;
     jv[jss::Flags] = tfFullyCanonicalSig;
     jv[jss::Account] = to_string(account);
@@ -56,7 +59,7 @@ cancel(AccountID const& account, Account const& from, std::uint32_t seq)
 Rate
 rate(Env& env, Account const& account, std::uint32_t const& seq)
 {
-    auto const sle = env.le(keylet::escrow(account.id(), seq));
+    auto const sle = env.le(keylet::escrow(account.id(), SeqProxy::rawSequence(seq)));
     if (sle->isFieldPresent(sfTransferRate))
         return xrpl::Rate((*sle)[sfTransferRate]);
     return Rate{0};

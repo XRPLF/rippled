@@ -1,42 +1,54 @@
 #pragma once
 
+#include <xrpld/app/main/Application.h>  // IWYU pragma: keep
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/MethodNames.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/Status.h>
+#include <xrpld/rpc/detail/Handler.h>
+
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 
-namespace xrpl::RPC {
+#include <string_view>
+
+namespace xrpl::rpc {
 
 class VersionHandler
 {
 public:
     explicit VersionHandler(JsonContext& c)
-        : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().BETA_RPC_API)
+        : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().betaRpcApi)
     {
     }
 
     static Status
     check()
     {
-        return Status::OK;
+        return Status::kOK;
     }
 
     void
-    writeResult(Json::Value& obj) const
+    writeResult(json::Value& obj) const
     {
         setVersion(obj, apiVersion_, betaEnabled_);
     }
 
-    static constexpr char const* name = "version";
+    // NOLINTBEGIN(readability-identifier-naming)
+    static constexpr std::string_view name = method::kVersion;
 
-    static constexpr unsigned minApiVer = RPC::apiMinimumSupportedVersion;
+    static constexpr unsigned minApiVer = rpc::kApiMinimumSupportedVersion;
 
-    static constexpr unsigned maxApiVer = RPC::apiMaximumValidVersion;
+    static constexpr unsigned maxApiVer = rpc::kApiMaximumValidVersion;
 
     static constexpr Role role = Role::USER;
 
-    static constexpr Condition condition = NO_CONDITION;
+    static constexpr Condition condition = Condition::NoCondition;
+    // NOLINTEND(readability-identifier-naming)
 
 private:
     unsigned int apiVersion_;
     bool betaEnabled_;
 };
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

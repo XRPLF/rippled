@@ -20,21 +20,21 @@ namespace xrpl {
 //   port: <number>
 // }
 // XXX Might allow domain for manual connections.
-Json::Value
-doConnect(RPC::JsonContext& context)
+json::Value
+doConnect(rpc::JsonContext& context)
 {
     if (context.app.config().standalone())
     {
-        return RPC::make_error(rpcNOT_SYNCED);
+        return rpc::makeError(RpcNotSynced);
     }
 
     if (!context.params.isMember(jss::ip))
-        return RPC::missing_field_error(jss::ip);
+        return rpc::missingFieldError(jss::ip);
 
     if (context.params.isMember(jss::port) &&
-        !context.params[jss::port].isConvertibleTo(Json::intValue))
+        !context.params[jss::port].isConvertibleTo(json::ValueType::Int))
     {
-        return rpcError(rpcINVALID_PARAMS);
+        return rpcError(RpcInvalidParams);
     }
 
     int iPort = 0;
@@ -45,17 +45,17 @@ doConnect(RPC::JsonContext& context)
     }
     else
     {
-        iPort = DEFAULT_PEER_PORT;
+        iPort = kDefaultPeerPort;
     }
 
-    auto const ip_str = context.params[jss::ip].asString();
-    auto ip = beast::IP::Endpoint::from_string(ip_str);
+    auto const ipStr = context.params[jss::ip].asString();
+    auto ip = beast::ip::Endpoint::fromString(ipStr);
 
-    if (!is_unspecified(ip))
-        context.app.getOverlay().connect(ip.at_port(iPort));
+    if (!isUnspecified(ip))
+        context.app.getOverlay().connect(ip.atPort(iPort));
 
-    return RPC::makeObjectValue(
-        "attempting connection to IP:" + ip_str + " port: " + std::to_string(iPort));
+    return rpc::makeObjectValue(
+        "attempting connection to IP:" + ipStr + " port: " + std::to_string(iPort));
 }
 
 }  // namespace xrpl

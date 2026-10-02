@@ -6,24 +6,28 @@
 
 #include <google/protobuf/io/zero_copy_stream.h>
 
+#include <cstddef>
+#include <cstdint>
+
 namespace xrpl {
 
-/** Implements ZeroCopyInputStream around a buffer sequence.
-    @tparam Buffers A type meeting the requirements of ConstBufferSequence.
-    @see
-   https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.io.zero_copy_stream
-*/
+/**
+ * Implements ZeroCopyInputStream around a buffer sequence.
+ * @tparam Buffers A type meeting the requirements of ConstBufferSequence.
+ * @see
+ * https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.io.zero_copy_stream
+ */
 template <class Buffers>
 class ZeroCopyInputStream : public ::google::protobuf::io::ZeroCopyInputStream
 {
 private:
-    using iterator = typename Buffers::const_iterator;
-    using const_buffer = boost::asio::const_buffer;
+    using iterator = Buffers::const_iterator;
+    using ConstBuffer = boost::asio::const_buffer;
 
-    google::protobuf::int64 count_ = 0;
+    std::int64_t count_ = 0;
     iterator last_;
-    iterator first_;    // Where pos_ comes from
-    const_buffer pos_;  // What Next() will return
+    iterator first_;   // Where pos_ comes from
+    ConstBuffer pos_;  // What Next() will return
 
 public:
     explicit ZeroCopyInputStream(Buffers const& buffers);
@@ -37,7 +41,7 @@ public:
     bool
     Skip(int count) override;
 
-    google::protobuf::int64
+    [[nodiscard]] std::int64_t
     ByteCount() const override
     {
         return count_;
@@ -50,7 +54,7 @@ template <class Buffers>
 ZeroCopyInputStream<Buffers>::ZeroCopyInputStream(Buffers const& buffers)
     : last_(buffers.end())
     , first_(buffers.begin())
-    , pos_((first_ != last_) ? *first_ : const_buffer(nullptr, 0))
+    , pos_((first_ != last_) ? *first_ : ConstBuffer(nullptr, 0))
 {
 }
 
@@ -63,7 +67,7 @@ ZeroCopyInputStream<Buffers>::Next(void const** data, int* size)
     if (first_ == last_)
         return false;
     count_ += *size;
-    pos_ = (++first_ != last_) ? *first_ : const_buffer(nullptr, 0);
+    pos_ = (++first_ != last_) ? *first_ : ConstBuffer(nullptr, 0);
     return true;
 }
 
@@ -102,23 +106,24 @@ ZeroCopyInputStream<Buffers>::Skip(int count)
 
 //------------------------------------------------------------------------------
 
-/** Implements ZeroCopyOutputStream around a Streambuf.
-    Streambuf matches the public interface defined by boost::asio::streambuf.
-    @tparam Streambuf A type meeting the requirements of Streambuf.
-*/
+/**
+ * Implements ZeroCopyOutputStream around a Streambuf.
+ * Streambuf matches the public interface defined by boost::asio::streambuf.
+ * @tparam Streambuf A type meeting the requirements of Streambuf.
+ */
 template <class Streambuf>
 class ZeroCopyOutputStream : public ::google::protobuf::io::ZeroCopyOutputStream
 {
 private:
-    using buffers_type = typename Streambuf::mutable_buffers_type;
-    using iterator = typename buffers_type::const_iterator;
-    using mutable_buffer = boost::asio::mutable_buffer;
+    using BuffersType = Streambuf::mutable_buffers_type;
+    using iterator = BuffersType::const_iterator;
+    using MutableBuffer = boost::asio::mutable_buffer;
 
     Streambuf& streambuf_;
     std::size_t blockSize_;
-    google::protobuf::int64 count_ = 0;
+    std::int64_t count_ = 0;
     std::size_t commit_ = 0;
-    buffers_type buffers_;
+    BuffersType buffers_;
     iterator pos_;
 
 public:
@@ -132,7 +137,7 @@ public:
     void
     BackUp(int count) override;
 
-    google::protobuf::int64
+    [[nodiscard]] std::int64_t
     ByteCount() const override
     {
         return count_;

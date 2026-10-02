@@ -1,12 +1,16 @@
 #pragma once
 
 #include <xrpl/beast/rfc2616.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Port.h>
+#include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/BaseHTTPPeer.h>
 #include <xrpl/server/detail/PlainWSPeer.h>
 
 #include <boost/beast/core/tcp_stream.hpp>
 
 #include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -16,12 +20,12 @@ class PlainHTTPPeer : public BaseHTTPPeer<Handler, PlainHTTPPeer<Handler>>,
 {
 private:
     friend class BaseHTTPPeer<Handler, PlainHTTPPeer>;
-    using socket_type = boost::asio::ip::tcp::socket;
-    using stream_type = boost::beast::tcp_stream;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
+    using SocketType = boost::asio::ip::tcp::socket;
+    using StreamType = boost::beast::tcp_stream;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
 
-    stream_type stream_;
-    socket_type& socket_;
+    StreamType stream_;
+    SocketType& socket_;
 
 public:
     template <class ConstBufferSequence>
@@ -30,9 +34,9 @@ public:
         Handler& handler,
         boost::asio::io_context& ioc,
         beast::Journal journal,
-        endpoint_type remote_address,
+        EndpointType remoteAddress,
         ConstBufferSequence const& buffers,
-        stream_type&& stream);
+        StreamType&& stream);
 
     void
     run();
@@ -42,10 +46,10 @@ public:
 
 private:
     void
-    do_request() override;
+    doRequest() override;
 
     void
-    do_close() override;
+    doClose() override;
 };
 
 //------------------------------------------------------------------------------
@@ -57,15 +61,15 @@ PlainHTTPPeer<Handler>::PlainHTTPPeer(
     Handler& handler,
     boost::asio::io_context& ioc,
     beast::Journal journal,
-    endpoint_type remote_endpoint,
+    EndpointType remoteEndpoint,
     ConstBufferSequence const& buffers,
-    stream_type&& stream)
+    StreamType&& stream)
     : BaseHTTPPeer<Handler, PlainHTTPPeer>(
           port,
           handler,
           ioc.get_executor(),
           journal,
-          remote_endpoint,
+          remoteEndpoint,
           buffers)
     , stream_(std::move(stream))
     , socket_(stream_.socket())
@@ -74,7 +78,7 @@ PlainHTTPPeer<Handler>::PlainHTTPPeer(
     // otherwise Nagle's algorithm makes Env
     // tests run slower on Linux systems.
     //
-    if (remote_endpoint.address().is_loopback())
+    if (remoteEndpoint.address().is_loopback())
         socket_.set_option(boost::asio::ip::tcp::no_delay{true});
 }
 
@@ -82,9 +86,11 @@ template <class Handler>
 void
 PlainHTTPPeer<Handler>::run()
 {
-    if (!this->handler_.onAccept(this->session(), this->remote_address_))
+    if (!this->handler_.onAccept(this->session(), this->remoteAddress_))
     {
-        util::spawn(this->strand_, std::bind(&PlainHTTPPeer::do_close, this->shared_from_this()));
+        util::spawn(this->strand_, [self = this->shared_from_this()](boost::asio::yield_context) {
+            self->doClose();
+        });
         return;
     }
 
@@ -92,8 +98,9 @@ PlainHTTPPeer<Handler>::run()
         return;
 
     util::spawn(
-        this->strand_,
-        std::bind(&PlainHTTPPeer::do_read, this->shared_from_this(), std::placeholders::_1));
+        this->strand_, [self = this->shared_from_this()](boost::asio::yield_context doYield) {
+            self->doRead(doYield);
+        });
 }
 
 template <class Handler>
@@ -103,7 +110,7 @@ PlainHTTPPeer<Handler>::websocketUpgrade()
     auto ws = this->ios().template emplace<PlainWSPeer<Handler>>(
         this->port_,
         this->handler_,
-        this->remote_address_,
+        this->remoteAddress_,
         std::move(this->message_),
         std::move(stream_),
         this->journal_);
@@ -112,27 +119,27 @@ PlainHTTPPeer<Handler>::websocketUpgrade()
 
 template <class Handler>
 void
-PlainHTTPPeer<Handler>::do_request()
+PlainHTTPPeer<Handler>::doRequest()
 {
-    ++this->request_count_;
+    ++this->requestCount_;
     auto const what =
-        this->handler_.onHandoff(this->session(), std::move(this->message_), this->remote_address_);
+        this->handler_.onHandoff(this->session(), std::move(this->message_), this->remoteAddress_);
     if (what.moved)
         return;
     boost::system::error_code ec;
     if (what.response)
     {
         // half-close on Connection: close
-        if (!what.keep_alive)
-            socket_.shutdown(socket_type::shutdown_receive, ec);
+        if (!what.keepAlive)
+            socket_.shutdown(SocketType::shutdown_receive, ec);
         if (ec)
             return this->fail(ec, "request");
-        return this->write(what.response, what.keep_alive);
+        return this->write(what.response, what.keepAlive);
     }
 
     // Perform half-close when Connection: close and not SSL
-    if (!beast::rfc2616::is_keep_alive(this->message_))
-        socket_.shutdown(socket_type::shutdown_receive, ec);
+    if (!beast::rfc2616::isKeepAlive(this->message_))
+        socket_.shutdown(SocketType::shutdown_receive, ec);
     if (ec)
         return this->fail(ec, "request");
     // legacy
@@ -141,10 +148,10 @@ PlainHTTPPeer<Handler>::do_request()
 
 template <class Handler>
 void
-PlainHTTPPeer<Handler>::do_close()
+PlainHTTPPeer<Handler>::doClose()
 {
     boost::system::error_code ec;
-    socket_.shutdown(socket_type::shutdown_send, ec);
+    socket_.shutdown(SocketType::shutdown_send, ec);
 }
 
 }  // namespace xrpl

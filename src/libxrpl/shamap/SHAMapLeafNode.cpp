@@ -19,7 +19,7 @@ SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std:
     : SHAMapTreeNode(cowid), item_(std::move(item))
 {
     XRPL_ASSERT(
-        item_->size() >= 12,
+        item_->size() >= kMinShaMapItemBytes,
         "xrpl::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
         "SHAMapItem const>, std::uint32_t) : minimum input size");
 }
@@ -31,7 +31,7 @@ SHAMapLeafNode::SHAMapLeafNode(
     : SHAMapTreeNode(cowid, hash), item_(std::move(item))
 {
     XRPL_ASSERT(
-        item_->size() >= 12,
+        item_->size() >= kMinShaMapItemBytes,
         "xrpl::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
         "SHAMapItem const>, std::uint32_t, SHAMapHash const&) : minimum input "
         "size");
@@ -63,15 +63,15 @@ SHAMapLeafNode::getString(SHAMapNodeID const& id) const
 
     auto const type = getType();
 
-    if (type == SHAMapNodeType::tnTRANSACTION_NM)
+    if (type == SHAMapNodeType::TnTransactionNm)
     {
         ret += ",txn\n";
     }
-    else if (type == SHAMapNodeType::tnTRANSACTION_MD)
+    else if (type == SHAMapNodeType::TnTransactionMd)
     {
         ret += ",txn+md\n";
     }
-    else if (type == SHAMapNodeType::tnACCOUNT_STATE)
+    else if (type == SHAMapNodeType::TnAccountState)
     {
         ret += ",as\n";
     }

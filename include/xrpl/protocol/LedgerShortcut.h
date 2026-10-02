@@ -9,13 +9,19 @@ namespace xrpl {
  * without needing to specify their exact hash or sequence number.
  */
 enum class LedgerShortcut {
-    /** The current working ledger (open, not yet closed) */
+    /**
+     * The current working ledger (open, not yet closed)
+     */
     Current,
 
-    /** The most recently closed ledger (may not be validated) */
+    /**
+     * The most recently closed ledger (may not be validated)
+     */
     Closed,
 
-    /** The most recently validated ledger */
+    /**
+     * The most recently validated ledger
+     */
     Validated
 };
 

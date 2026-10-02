@@ -11,23 +11,23 @@
 namespace xrpl {
 
 /**
-   Add an `offer_id` field to the `meta` output parameter.
-   The field is only added to successful NFTokenCreateOffer transactions.
-
-   Helper functions are not static because they can be used by Clio.
-   @{
+ * Add an `offer_id` field to the `meta` output parameter.
+ * The field is only added to successful NFTokenCreateOffer transactions.
+ *
+ * Helper functions are not static because they can be used by Clio.
  */
+/** @{ */
 bool
 canHaveNFTokenOfferID(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta);
 
-std::optional<uint256>
+std::optional<UInt256>
 getOfferIDFromCreatedOffer(TxMeta const& transactionMeta);
 
 void
 insertNFTokenOfferID(
-    Json::Value& response,
+    json::Value& response,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta);
 /** @} */

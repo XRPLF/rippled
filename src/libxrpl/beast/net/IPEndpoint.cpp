@@ -14,18 +14,18 @@
 #include <string>
 #include <utility>
 
-namespace beast::IP {
+namespace beast::ip {
 
-Endpoint::Endpoint() : m_port(0)
+Endpoint::Endpoint() : port_(0)
 {
 }
 
-Endpoint::Endpoint(Address addr, Port port) : m_addr(std::move(addr)), m_port(port)
+Endpoint::Endpoint(Address addr, Port port) : addr_(std::move(addr)), port_(port)
 {
 }
 
 std::optional<Endpoint>
-Endpoint::from_string_checked(std::string const& s)
+Endpoint::fromStringChecked(std::string const& s)
 {
     if (s.size() <= 64)
     {
@@ -39,15 +39,15 @@ Endpoint::from_string_checked(std::string const& s)
 }
 
 Endpoint
-Endpoint::from_string(std::string const& s)
+Endpoint::fromString(std::string const& s)
 {
-    if (std::optional<Endpoint> const result = from_string_checked(s))
+    if (std::optional<Endpoint> const result = fromStringChecked(s))
         return *result;
     return Endpoint{};
 }
 
 std::string
-Endpoint::to_string() const
+Endpoint::toString() const
 {
     std::string s;
     s.reserve(
@@ -176,4 +176,4 @@ operator>>(std::istream& is, Endpoint& endpoint)
     return is;
 }
 
-}  // namespace beast::IP
+}  // namespace beast::ip

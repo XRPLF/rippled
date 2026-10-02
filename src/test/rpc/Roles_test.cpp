@@ -12,7 +12,7 @@
 
 namespace xrpl::test {
 
-class Roles_test : public beast::unit_test::suite
+class Roles_test : public beast::unit_test::Suite
 {
     static bool
     isValidIpAddress(std::string const& addr)
@@ -25,6 +25,7 @@ class Roles_test : public beast::unit_test::suite
     void
     testRoles()
     {
+        testcase("Roles");
         using namespace test::jtx;
 
         {
@@ -35,14 +36,14 @@ class Roles_test : public beast::unit_test::suite
                 makeWSClient(env.app().config())->invoke("ping")["result"]["unlimited"].asBool());
         }
         {
-            Env env{*this, envconfig(no_admin)};
+            Env env{*this, envconfig(noAdmin)};
 
             BEAST_EXPECT(!env.rpc("ping")["result"].isMember("role"));
             auto wsRes = makeWSClient(env.app().config())->invoke("ping")["result"];
             BEAST_EXPECT(!wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
         }
         {
-            Env env{*this, envconfig(secure_gateway)};
+            Env env{*this, envconfig(secureGateway)};
 
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "proxied");
             BEAST_EXPECT(!env.rpc("ping")["result"].isMember("ip"));
@@ -50,7 +51,7 @@ class Roles_test : public beast::unit_test::suite
             BEAST_EXPECT(!wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
 
             std::unordered_map<std::string, std::string> headers;
-            Json::Value rpcRes;
+            json::Value rpcRes;
 
             // IPv4 tests.
             headers["X-Forwarded-For"] = "12.34.56.78";
@@ -224,24 +225,39 @@ class Roles_test : public beast::unit_test::suite
             BEAST_EXPECT(rpcRes["role"] == "proxied");
             BEAST_EXPECT(rpcRes["ip"] == "::11:22:33:44:45.55.65.75");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
+
+            // Test: "for=" not at the beginning AND no trailing delimiter.
+            // This exercises the fix for the buffer over-read bug where
+            // the remaining length was incorrectly calculated.
+            headers["Forwarded"] = "by=203.0.113.43;for=1.2.3.4";
+            rpcRes = env.rpc(headers, "ping")["result"];
+            BEAST_EXPECT(rpcRes["role"] == "proxied");
+            BEAST_EXPECT(rpcRes["ip"] == "1.2.3.4");
+            BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
+
+            headers["Forwarded"] = "proto=https;by=proxy.example.com;for=5.6.7.8";
+            rpcRes = env.rpc(headers, "ping")["result"];
+            BEAST_EXPECT(rpcRes["role"] == "proxied");
+            BEAST_EXPECT(rpcRes["ip"] == "5.6.7.8");
+            BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
         }
 
         {
-            Env env{*this, envconfig(admin_localnet)};
+            Env env{*this, envconfig(adminLocalnet)};
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "admin");
             BEAST_EXPECT(
                 makeWSClient(env.app().config())->invoke("ping")["result"]["unlimited"].asBool());
         }
 
         {
-            Env env{*this, envconfig(secure_gateway_localnet)};
+            Env env{*this, envconfig(secureGatewayLocalnet)};
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "proxied");
             auto wsRes = makeWSClient(env.app().config())->invoke("ping")["result"];
             BEAST_EXPECT(!wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
 
             std::unordered_map<std::string, std::string> headers;
             headers["X-Forwarded-For"] = "12.34.56.78";
-            Json::Value rpcRes = env.rpc(headers, "ping")["result"];
+            json::Value rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["role"] == "proxied");
             BEAST_EXPECT(rpcRes["ip"] == "12.34.56.78");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
@@ -252,12 +268,13 @@ class Roles_test : public beast::unit_test::suite
     testInvalidIpAddresses()
     {
         using namespace test::jtx;
+        testcase("Invalid IP addresses");
 
         {
             Env env(*this);
 
             std::unordered_map<std::string, std::string> headers;
-            Json::Value rpcRes;
+            json::Value rpcRes;
 
             // No "for=" in Forwarded.
             headers["Forwarded"] = "for 88.77.66.55";

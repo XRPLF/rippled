@@ -12,18 +12,18 @@ namespace xrpl {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value
-doLedgerRequest(RPC::JsonContext& context)
+json::Value
+doLedgerRequest(rpc::JsonContext& context)
 {
-    context.loadType = Resource::feeHeavyBurdenRPC;
-    auto res = RPC::getOrAcquireLedger(context);
+    context.loadType = resource::kFeeHeavyBurdenRpc;
+    auto res = rpc::getOrAcquireLedger(context);
 
     if (!res.has_value())
         return res.error();
 
     auto const& ledger = res.value();
 
-    Json::Value jvResult;
+    json::Value jvResult;
     jvResult[jss::ledger_index] = ledger->header().seq;
     addJson(jvResult, {*ledger, &context, 0});
     return jvResult;

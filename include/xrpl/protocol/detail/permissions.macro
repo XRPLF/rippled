@@ -1,49 +1,74 @@
-#if !defined(PERMISSION)
-#error "undefined macro: PERMISSION"
+#if !defined(GRANULAR_PERMISSION)
+#error "undefined macro: GRANULAR_PERMISSION"
 #endif
 
 /**
- * PERMISSION(name, type, txType, value)
+ * GRANULAR_PERMISSION(name, txType, value, allowedFlags, allowedFields)
  *
- * This macro defines a permission:
- * name: the name of the permission.
- * type: the GranularPermissionType enum.
- * txType: the corresponding TxType for this permission.
- * value: the uint32 numeric value for the enum type.
+ * Defines a granular permission:
+ *   name:          the granular permission name.
+ *   txType:        the corresponding TxType for this permission.
+ *   value:         the uint32 numeric value for the enum type.
+ *   allowedFlags:  transaction flags permitted under this permission.
+ *   allowedFields: transaction fields permitted under this permission.
  */
 
-/** This permission grants the delegated account the ability to authorize a trustline. */
-PERMISSION(TrustlineAuthorize, ttTRUST_SET, 65537)
+/** Grants the ability to authorize a trustline. */
+GRANULAR_PERMISSION(TrustlineAuthorize, ttTRUST_SET, 65537, tfUniversal | tfSetfAuth,
+    ({{sfLimitAmount, SoeRequired}}))
 
-/** This permission grants the delegated account the ability to freeze a trustline. */
-PERMISSION(TrustlineFreeze, ttTRUST_SET, 65538)
+/** Grants the ability to freeze a trustline. */
+GRANULAR_PERMISSION(TrustlineFreeze, ttTRUST_SET, 65538, tfUniversal | tfSetFreeze,
+    ({{sfLimitAmount, SoeRequired}}))
 
-/** This permission grants the delegated account the ability to unfreeze a trustline. */
-PERMISSION(TrustlineUnfreeze, ttTRUST_SET, 65539)
+/** Grants the ability to unfreeze a trustline. */
+GRANULAR_PERMISSION(TrustlineUnfreeze, ttTRUST_SET, 65539, tfUniversal | tfClearFreeze,
+    ({{sfLimitAmount, SoeRequired}}))
 
-/** This permission grants the delegated account the ability to set Domain. */
-PERMISSION(AccountDomainSet, ttACCOUNT_SET, 65540)
+/** Grants the ability to set Domain. */
+GRANULAR_PERMISSION(AccountDomainSet, ttACCOUNT_SET, 65540, tfUniversal,
+    ({{sfDomain, SoeOptional}}))
 
-/** This permission grants the delegated account the ability to set EmailHashSet. */
-PERMISSION(AccountEmailHashSet, ttACCOUNT_SET, 65541)
+/** Grants the ability to set EmailHash. */
+GRANULAR_PERMISSION(AccountEmailHashSet, ttACCOUNT_SET, 65541, tfUniversal,
+    ({{sfEmailHash, SoeOptional}}))
 
-/** This permission grants the delegated account the ability to set MessageKey. */
-PERMISSION(AccountMessageKeySet, ttACCOUNT_SET, 65542)
+/** Grants the ability to set MessageKey. */
+GRANULAR_PERMISSION(AccountMessageKeySet, ttACCOUNT_SET, 65542, tfUniversal,
+    ({{sfMessageKey, SoeOptional}}))
 
-/** This permission grants the delegated account the ability to set TransferRate. */
-PERMISSION(AccountTransferRateSet, ttACCOUNT_SET, 65543)
+/** Grants the ability to set TransferRate. */
+GRANULAR_PERMISSION(AccountTransferRateSet, ttACCOUNT_SET, 65543, tfUniversal,
+    ({{sfTransferRate, SoeOptional}}))
 
-/** This permission grants the delegated account the ability to set TickSize. */
-PERMISSION(AccountTickSizeSet, ttACCOUNT_SET, 65544)
+/** Grants the ability to set TickSize. */
+GRANULAR_PERMISSION(AccountTickSizeSet, ttACCOUNT_SET, 65544, tfUniversal,
+    ({{sfTickSize, SoeOptional}}))
 
-/** This permission grants the delegated account the ability to mint payment, which means sending a payment for a currency where the sending account is the issuer. */
-PERMISSION(PaymentMint, ttPAYMENT, 65545)
+/** Grants the ability to mint payment (sending account is the issuer). Cross-currency payments are disallowed. */
+GRANULAR_PERMISSION(PaymentMint, ttPAYMENT, 65545, tfUniversal,
+    ({{sfDestination, SoeRequired},
+      {sfAmount, SoeRequired},
+      {sfSendMax, SoeOptional},
+      {sfInvoiceID, SoeOptional},
+      {sfDestinationTag, SoeOptional},
+      {sfCredentialIDs, SoeOptional}}))
 
-/** This permission grants the delegated account the ability to burn payment, which means sending a payment for a currency where the destination account is the issuer */
-PERMISSION(PaymentBurn, ttPAYMENT, 65546)
+/** Grants the ability to burn payment (destination account is the issuer). Cross-currency payments are disallowed. */
+GRANULAR_PERMISSION(PaymentBurn, ttPAYMENT, 65546, tfUniversal,
+    ({{sfDestination, SoeRequired},
+      {sfAmount, SoeRequired},
+      {sfSendMax, SoeOptional},
+      {sfInvoiceID, SoeOptional},
+      {sfDestinationTag, SoeOptional},
+      {sfCredentialIDs, SoeOptional}}))
 
-/** This permission grants the delegated account the ability to lock MPToken. */
-PERMISSION(MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET, 65547)
+/** Grants the ability to lock an MPToken. */
+GRANULAR_PERMISSION(MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET, 65547, tfUniversal | tfMPTLock,
+    ({{sfMPTokenIssuanceID, SoeRequired},
+      {sfHolder, SoeOptional}}))
 
-/** This permission grants the delegated account the ability to unlock MPToken. */
-PERMISSION(MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548)
+/** Grants the ability to unlock an MPToken. */
+GRANULAR_PERMISSION(MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548, tfUniversal | tfMPTUnlock,
+    ({{sfMPTokenIssuanceID, SoeRequired},
+      {sfHolder, SoeOptional}}))

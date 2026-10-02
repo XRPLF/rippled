@@ -13,7 +13,7 @@
 
 namespace xrpl::test {
 
-class SkipList_test : public beast::unit_test::suite
+class SkipList_test : public beast::unit_test::Suite
 {
     void
     testSkipList()
@@ -23,10 +23,10 @@ class SkipList_test : public beast::unit_test::suite
         {
             Config const config;
             auto prev = std::make_shared<Ledger>(
-                create_genesis,
+                kCreateGenesis,
                 Rules{config.features},
-                config.FEES.toFees(),
-                std::vector<uint256>{},
+                config.fees.toFees(),
+                std::vector<UInt256>{},
                 env.app().getNodeFamily());
             history.push_back(prev);
             for (auto i = 0; i < 1023; ++i)

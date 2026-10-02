@@ -16,7 +16,7 @@
 #include <memory>
 #include <optional>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 bool
 canHaveMPTokenIssuanceID(
@@ -55,7 +55,7 @@ getIDFromCreatedIssuance(TxMeta const& transactionMeta)
 
 void
 insertMPTokenIssuanceID(
-    Json::Value& response,
+    json::Value& response,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
@@ -67,4 +67,4 @@ insertMPTokenIssuanceID(
         response[jss::mpt_issuance_id] = to_string(result.value());
 }
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

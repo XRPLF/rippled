@@ -1,18 +1,20 @@
 #pragma once
 
-#include <xrpl/basics/chrono.h>
-#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
+#include <algorithm>
 #include <chrono>
+#include <iterator>
 
 namespace xrpl {
 
-/**  Possible ledger close time resolutions.
-
-    Values should not be duplicated.
-    @see getNextLedgerTimeResolution
-*/
-std::chrono::seconds constexpr ledgerPossibleTimeResolutions[] = {
+/**
+ * Possible ledger close time resolutions.
+ *
+ * Values should not be duplicated.
+ * @see getNextLedgerTimeResolution
+ */
+constexpr std::chrono::seconds kLedgerPossibleTimeResolutions[] = {
     std::chrono::seconds{10},
     std::chrono::seconds{20},
     std::chrono::seconds{30},
@@ -20,41 +22,50 @@ std::chrono::seconds constexpr ledgerPossibleTimeResolutions[] = {
     std::chrono::seconds{90},
     std::chrono::seconds{120}};
 
-//! Initial resolution of ledger close time.
-auto constexpr ledgerDefaultTimeResolution = ledgerPossibleTimeResolutions[2];
+/**
+ * Initial resolution of ledger close time.
+ */
+constexpr auto kLedgerDefaultTimeResolution = kLedgerPossibleTimeResolutions[2];
 
-//! Close time resolution in genesis ledger
-auto constexpr ledgerGenesisTimeResolution = ledgerPossibleTimeResolutions[0];
+/**
+ * Close time resolution in genesis ledger
+ */
+constexpr auto kLedgerGenesisTimeResolution = kLedgerPossibleTimeResolutions[0];
 
-//! How often we increase the close time resolution (in numbers of ledgers)
-auto constexpr increaseLedgerTimeResolutionEvery = 8;
+/**
+ * How often we increase the close time resolution (in numbers of ledgers)
+ */
+constexpr auto kIncreaseLedgerTimeResolutionEvery = 8;
 
-//! How often we decrease the close time resolution (in numbers of ledgers)
-auto constexpr decreaseLedgerTimeResolutionEvery = 1;
+/**
+ * How often we decrease the close time resolution (in numbers of ledgers)
+ */
+constexpr auto kDecreaseLedgerTimeResolutionEvery = 1;
 
-/** Calculates the close time resolution for the specified ledger.
-
-    The XRPL protocol uses binning to represent time intervals using only one
-    timestamp. This allows servers to derive a common time for the next ledger,
-    without the need for perfectly synchronized clocks.
-    The time resolution (i.e. the size of the intervals) is adjusted dynamically
-    based on what happened in the last ledger, to try to avoid disagreements.
-
-    @param previousResolution the resolution used for the prior ledger
-    @param previousAgree whether consensus agreed on the close time of the prior
-    ledger
-    @param ledgerSeq the sequence number of the new ledger
-
-    @pre previousResolution must be a valid bin
-         from @ref ledgerPossibleTimeResolutions
-
-    @tparam Rep Type representing number of ticks in std::chrono::duration
-    @tparam Period An std::ratio representing tick period in
-                   std::chrono::duration
-    @tparam Seq Unsigned integer-like type corresponding to the ledger sequence
-                number. It should be comparable to 0 and support modular
-                division. Built-in and tagged_integers are supported.
-*/
+/**
+ * Calculates the close time resolution for the specified ledger.
+ *
+ * The XRPL protocol uses binning to represent time intervals using only one
+ * timestamp. This allows servers to derive a common time for the next ledger,
+ * without the need for perfectly synchronized clocks.
+ * The time resolution (i.e. the size of the intervals) is adjusted dynamically
+ * based on what happened in the last ledger, to try to avoid disagreements.
+ *
+ * @tparam Rep Type representing number of ticks in std::chrono::duration
+ * @tparam Period An std::ratio representing tick period in
+ *                std::chrono::duration
+ * @tparam Seq Unsigned integer-like type corresponding to the ledger sequence
+ *             number. It should be comparable to 0 and support modular
+ *             division. Built-in and tagged_integers are supported.
+ *
+ * @param previousResolution the resolution used for the prior ledger
+ * @param previousAgree whether consensus agreed on the close time of the prior
+ * ledger
+ * @param ledgerSeq the sequence number of the new ledger
+ *
+ * @pre previousResolution must be a valid bin
+ *      from @ref kLedgerPossibleTimeResolutions
+ */
 template <class Rep, class Period, class Seq>
 std::chrono::duration<Rep, Period>
 getNextLedgerTimeResolution(
@@ -67,43 +78,44 @@ getNextLedgerTimeResolution(
     using namespace std::chrono;
     // Find the current resolution:
     auto iter = std::find(
-        std::begin(ledgerPossibleTimeResolutions),
-        std::end(ledgerPossibleTimeResolutions),
+        std::begin(kLedgerPossibleTimeResolutions),
+        std::end(kLedgerPossibleTimeResolutions),
         previousResolution);
     XRPL_ASSERT(
-        iter != std::end(ledgerPossibleTimeResolutions),
+        iter != std::end(kLedgerPossibleTimeResolutions),
         "xrpl::getNextLedgerTimeResolution : found time resolution");
 
     // This should never happen, but just as a precaution
-    if (iter == std::end(ledgerPossibleTimeResolutions))
+    if (iter == std::end(kLedgerPossibleTimeResolutions))
         return previousResolution;
 
     // If we did not previously agree, we try to decrease the resolution to
     // improve the chance that we will agree now.
-    if (!previousAgree && (ledgerSeq % Seq{decreaseLedgerTimeResolutionEvery} == Seq{0}))
+    if (!previousAgree && (ledgerSeq % Seq{kDecreaseLedgerTimeResolutionEvery} == Seq{0}))
     {
-        if (++iter != std::end(ledgerPossibleTimeResolutions))
+        if (++iter != std::end(kLedgerPossibleTimeResolutions))
             return *iter;
     }
 
     // If we previously agreed, we try to increase the resolution to determine
     // if we can continue to agree.
-    if (previousAgree && (ledgerSeq % Seq{increaseLedgerTimeResolutionEvery} == Seq{0}))
+    if (previousAgree && (ledgerSeq % Seq{kIncreaseLedgerTimeResolutionEvery} == Seq{0}))
     {
-        if (iter-- != std::begin(ledgerPossibleTimeResolutions))
+        if (iter-- != std::begin(kLedgerPossibleTimeResolutions))
             return *iter;
     }
 
     return previousResolution;
 }
 
-/** Calculates the close time for a ledger, given a close time resolution.
-
-    @param closeTime The time to be rounded
-    @param closeResolution The resolution
-    @return @b closeTime rounded to the nearest multiple of @b closeResolution.
-    Rounds up if @b closeTime is midway between multiples of @b closeResolution.
-*/
+/**
+ * Calculates the close time for a ledger, given a close time resolution.
+ *
+ * @param closeTime The time to be rounded
+ * @param closeResolution The resolution
+ * @return @b closeTime rounded to the nearest multiple of @b closeResolution.
+ * Rounds up if @b closeTime is midway between multiples of @b closeResolution.
+ */
 template <class Clock, class Duration, class Rep, class Period>
 std::chrono::time_point<Clock, Duration>
 roundCloseTime(
@@ -118,15 +130,16 @@ roundCloseTime(
     return closeTime - (closeTime.time_since_epoch() % closeResolution);
 }
 
-/** Calculate the effective ledger close time
-
-    After adjusting the ledger close time based on the current resolution, also
-    ensure it is sufficiently separated from the prior close time.
-
-    @param closeTime The raw ledger close time
-    @param resolution The current close time resolution
-    @param priorCloseTime The close time of the prior ledger
-*/
+/**
+ * Calculate the effective ledger close time
+ *
+ * After adjusting the ledger close time based on the current resolution, also
+ * ensure it is sufficiently separated from the prior close time.
+ *
+ * @param closeTime The raw ledger close time
+ * @param resolution The current close time resolution
+ * @param priorCloseTime The close time of the prior ledger
+ */
 template <class Clock, class Duration, class Rep, class Period>
 std::chrono::time_point<Clock, Duration>
 effCloseTime(

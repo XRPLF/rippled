@@ -21,7 +21,7 @@ TEST(TransactionsPaymentChannelCreateTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPaymentChannelCreate"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPaymentChannelCreate"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -114,7 +114,7 @@ TEST(TransactionsPaymentChannelCreateTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPaymentChannelCreateFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPaymentChannelCreateFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -205,7 +205,7 @@ TEST(TransactionsPaymentChannelCreateTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -219,7 +219,7 @@ TEST(TransactionsPaymentChannelCreateTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -233,7 +233,7 @@ TEST(TransactionsPaymentChannelCreateTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPaymentChannelCreateNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPaymentChannelCreateNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);

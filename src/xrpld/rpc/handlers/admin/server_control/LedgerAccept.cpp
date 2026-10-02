@@ -11,10 +11,10 @@
 
 namespace xrpl {
 
-Json::Value
-doLedgerAccept(RPC::JsonContext& context)
+json::Value
+doLedgerAccept(rpc::JsonContext& context)
 {
-    Json::Value jvResult;
+    json::Value jvResult;
 
     if (!context.app.config().standalone())
     {

@@ -7,18 +7,23 @@
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/write.hpp>
 
-#include <utility>
+#include <cstddef>
+#include <functional>
+#include <iterator>
+#include <vector>
 
 namespace xrpl {
 
-/// Deprecated: Writer that serializes a HTTP/1 message
+/**
+ * Deprecated: Writer that serializes a HTTP/1 message
+ */
 class SimpleWriter : public Writer
 {
     boost::beast::multi_buffer sb_;
 
 public:
-    template <bool isRequest, class Body, class Fields>
-    explicit SimpleWriter(boost::beast::http::message<isRequest, Body, Fields> const& msg)
+    template <bool IsRequest, class Body, class Fields>
+    explicit SimpleWriter(boost::beast::http::message<IsRequest, Body, Fields> const& msg)
     {
         boost::beast::ostream(sb_) << msg;
     }

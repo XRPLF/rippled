@@ -10,31 +10,31 @@
 
 namespace xrpl {
 
-namespace RPC {
+namespace rpc {
 struct JsonContext;
-}  // namespace RPC
+}  // namespace rpc
 
 // Result:
 // {
-//   random: <uint256>
+//   random: <UInt256>
 // }
-Json::Value
-doRandom(RPC::JsonContext& context)
+json::Value
+doRandom(rpc::JsonContext& context)
 {
     // TODO(tom): the try/catch is almost certainly redundant, we catch at the
     // top level too.
     try
     {
-        uint256 rand;
-        beast::rngfill(rand.begin(), rand.size(), crypto_prng());
+        UInt256 rand;
+        beast::rngfill(rand.begin(), rand.size(), cryptoPrng());
 
-        Json::Value jvResult;
+        json::Value jvResult;
         jvResult[jss::random] = to_string(rand);
         return jvResult;
     }
     catch (std::exception const&)
     {
-        return rpcError(rpcINTERNAL);  // LCOV_EXCL_LINE
+        return rpcError(RpcInternal);  // LCOV_EXCL_LINE
     }
 }
 

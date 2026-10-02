@@ -12,10 +12,10 @@
 
 namespace xrpl::test::jtx::credentials {
 
-Json::Value
+json::Value
 create(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::CredentialCreate;
 
     jv[jss::Account] = issuer.human();
@@ -25,10 +25,10 @@ create(jtx::Account const& subject, jtx::Account const& issuer, std::string_view
     return jv;
 }
 
-Json::Value
+json::Value
 accept(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::CredentialAccept;
     jv[jss::Account] = subject.human();
     jv[jss::Issuer] = issuer.human();
@@ -36,14 +36,14 @@ accept(jtx::Account const& subject, jtx::Account const& issuer, std::string_view
     return jv;
 }
 
-Json::Value
+json::Value
 deleteCred(
     jtx::Account const& acc,
     jtx::Account const& subject,
     jtx::Account const& issuer,
     std::string_view credType)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::CredentialDelete;
     jv[jss::Account] = acc.human();
     jv[jss::Subject] = subject.human();
@@ -52,14 +52,14 @@ deleteCred(
     return jv;
 }
 
-Json::Value
+json::Value
 ledgerEntry(
     jtx::Env& env,
     jtx::Account const& subject,
     jtx::Account const& issuer,
     std::string_view credType)
 {
-    Json::Value jvParams;
+    json::Value jvParams;
     jvParams[jss::ledger_index] = jss::validated;
     jvParams[jss::credential][jss::subject] = subject.human();
     jvParams[jss::credential][jss::issuer] = issuer.human();
@@ -67,10 +67,10 @@ ledgerEntry(
     return env.rpc("json", "ledger_entry", to_string(jvParams));
 }
 
-Json::Value
+json::Value
 ledgerEntry(jtx::Env& env, std::string const& credIdx)
 {
-    Json::Value jvParams;
+    json::Value jvParams;
     jvParams[jss::ledger_index] = jss::validated;
     jvParams[jss::credential] = credIdx;
     return env.rpc("json", "ledger_entry", to_string(jvParams));

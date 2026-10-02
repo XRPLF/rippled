@@ -9,14 +9,15 @@
 #include <set>  // IWYU pragma: keep
 #include <stack>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
-namespace Json {
+namespace json {
 
 namespace {
 
-std::map<char, char const*> jsonSpecialCharacterEscape = {
+std::map<char, char const*> gJsonSpecialCharacterEscape = {
     {'"', "\\\""},
     {'\\', "\\\\"},
     {'/', "\\/"},
@@ -26,18 +27,18 @@ std::map<char, char const*> jsonSpecialCharacterEscape = {
     {'\r', "\\r"},
     {'\t', "\\t"}};
 
-size_t const jsonEscapeLength = 2;
+size_t const kJsonEscapeLength = 2;
 
 // All other JSON punctuation.
-char const closeBrace = '}';
-char const closeBracket = ']';
-char const colon = ':';
-char const comma = ',';
-char const openBrace = '{';
-char const openBracket = '[';
-char const quote = '"';
+char const kCloseBrace = '}';
+char const kCloseBracket = ']';
+char const kColon = ':';
+char const kComma = ',';
+char const kOpenBrace = '{';
+char const kOpenBracket = '[';
+char const kQuote = '"';
 
-auto const integralFloatsBecomeInts = false;
+auto const kIntegralFloatsBecomeInts = false;
 
 size_t
 lengthWithoutTrailingZeros(std::string const& s)
@@ -52,7 +53,7 @@ lengthWithoutTrailingZeros(std::string const& s)
     if (hasDecimals)
         return lastNonZero + 1;
 
-    if (integralFloatsBecomeInts || lastNonZero + 2 > s.size())
+    if (kIntegralFloatsBecomeInts || lastNonZero + 2 > s.size())
         return lastNonZero;
 
     return lastNonZero + 2;
@@ -72,7 +73,7 @@ public:
     Impl&
     operator=(Impl&&) = delete;
 
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return stack_.empty();
@@ -81,42 +82,42 @@ public:
     void
     start(CollectionType ct)
     {
-        char const ch = (ct == array) ? openBracket : openBrace;
+        char const ch = (ct == CollectionType::Array) ? kOpenBracket : kOpenBrace;
         output({&ch, 1});
         stack_.emplace(Collection{.type = ct});
     }
 
     void
-    output(boost::beast::string_view const& bytes)
+    output(std::string_view bytes)
     {
         markStarted();
         output_(bytes);
     }
 
     void
-    stringOutput(boost::beast::string_view const& bytes)
+    stringOutput(std::string_view bytes)
     {
         markStarted();
         std::size_t position = 0, writtenUntil = 0;
 
-        output_({&quote, 1});
+        output_({&kQuote, 1});
         auto data = bytes.data();
         for (; position < bytes.size(); ++position)
         {
-            auto i = jsonSpecialCharacterEscape.find(data[position]);
-            if (i != jsonSpecialCharacterEscape.end())
+            auto i = gJsonSpecialCharacterEscape.find(data[position]);
+            if (i != gJsonSpecialCharacterEscape.end())
             {
                 if (writtenUntil < position)
                 {
                     output_({data + writtenUntil, position - writtenUntil});
                 }
-                output_({i->second, jsonEscapeLength});
+                output_({i->second, kJsonEscapeLength});
                 writtenUntil = position + 1;
             };
         }
         if (writtenUntil < position)
             output_({data + writtenUntil, position - writtenUntil});
-        output_({&quote, 1});
+        output_({&kQuote, 1});
     }
 
     void
@@ -134,7 +135,9 @@ public:
         auto t = stack_.top().type;
         if (t != type)
         {
-            check(false, "Not an " + ((type == array ? "array: " : "object: ") + message));
+            check(
+                false,
+                "Not an " + ((type == CollectionType::Array ? "array: " : "object: ") + message));
         }
         if (stack_.top().isFirst)
         {
@@ -142,7 +145,7 @@ public:
         }
         else
         {
-            output_({&comma, 1});
+            output_({&kComma, 1});
         }
     }
 
@@ -157,10 +160,10 @@ public:
 #endif
 
         stringOutput(tag);
-        output_({&colon, 1});
+        output_({&kColon, 1});
     }
 
-    bool
+    [[nodiscard]] bool
     isFinished() const
     {
         return isStarted_ && empty();
@@ -171,8 +174,8 @@ public:
     {
         check(!empty(), "Empty stack in finish()");
 
-        auto isArray = stack_.top().type == array;
-        auto ch = isArray ? closeBracket : closeBrace;
+        auto isArray = stack_.top().type == CollectionType::Array;
+        auto ch = isArray ? kCloseBracket : kCloseBrace;
         output_({&ch, 1});
         stack_.pop();
     }
@@ -187,7 +190,7 @@ public:
         }
     }
 
-    Output const&
+    [[nodiscard]] Output const&
     getOutput() const
     {
         return output_;
@@ -197,15 +200,21 @@ private:
     // JSON collections are either arrays, or objects.
     struct Collection
     {
-        /** What type of collection are we in? */
-        Writer::CollectionType type = Writer::CollectionType::array;
+        /**
+         * What type of collection are we in?
+         */
+        Writer::CollectionType type = Writer::CollectionType::Array;
 
-        /** Is this the first entry in a collection?
-         *  If false, we have to emit a , before we write the next entry. */
+        /**
+         * Is this the first entry in a collection?
+         *  If false, we have to emit a , before we write the next entry.
+         */
         bool isFirst = true;
 
 #ifndef NDEBUG
-        /** What tags have we already seen in this collection? */
+        /**
+         * What tags have we already seen in this collection?
+         */
         std::set<std::string> tags{};  // NOLINT(readability-redundant-member-init)
 #endif
     };
@@ -228,9 +237,8 @@ Writer::~Writer()
         impl_->finishAll();
 }
 
-Writer::Writer(Writer&& w) noexcept
+Writer::Writer(Writer&& w) noexcept : impl_(std::move(w.impl_))
 {
-    impl_ = std::move(w.impl_);
 }
 
 Writer&
@@ -253,7 +261,7 @@ Writer::output(std::string const& s)
 }
 
 void
-Writer::output(Json::Value const& value)
+Writer::output(json::Value const& value)
 {
     impl_->markStarted();
     outputJson(value, impl_->getOutput());
@@ -301,7 +309,7 @@ Writer::finishAll()
 void
 Writer::rawAppend()
 {
-    impl_->nextCollectionEntry(array, "append");
+    impl_->nextCollectionEntry(CollectionType::Array, "append");
 }
 
 void
@@ -309,7 +317,7 @@ Writer::rawSet(std::string const& tag)
 {
     check(!tag.empty(), "Tag can't be empty");
 
-    impl_->nextCollectionEntry(object, "set");
+    impl_->nextCollectionEntry(CollectionType::Object, "set");
     impl_->writeObjectTag(tag);
 }
 
@@ -322,14 +330,14 @@ Writer::startRoot(CollectionType type)
 void
 Writer::startAppend(CollectionType type)
 {
-    impl_->nextCollectionEntry(array, "startAppend");
+    impl_->nextCollectionEntry(CollectionType::Array, "startAppend");
     impl_->start(type);
 }
 
 void
 Writer::startSet(CollectionType type, std::string const& key)
 {
-    impl_->nextCollectionEntry(object, "startSet");
+    impl_->nextCollectionEntry(CollectionType::Object, "startSet");
     impl_->writeObjectTag(key);
     impl_->start(type);
 }
@@ -341,4 +349,4 @@ Writer::finish()
         impl_->finish();
 }
 
-}  // namespace Json
+}  // namespace json
