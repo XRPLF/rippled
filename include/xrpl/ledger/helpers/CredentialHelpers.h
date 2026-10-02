@@ -71,6 +71,16 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j);
 TER
 verifyValidDomain(ApplyView& view, AccountID const& account, UInt256 domainID, beast::Journal j);
 
+// Like verifyValidDomain, but the domain owner is always considered a member
+// and does not need a credential. For any other account, expired credentials
+// are deleted. Returns tecOBJECT_NOT_FOUND if the domain does not exist.
+TER
+verifyDomainAndPurgeExpired(
+    ApplyView& view,
+    AccountID const& account,
+    uint256 domainID,
+    beast::Journal j);
+
 /**
  * @brief Check whether src is authorized to deposit to dst.
  *

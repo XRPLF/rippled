@@ -368,6 +368,23 @@ verifyValidDomain(ApplyView& view, AccountID const& account, UInt256 domainID, b
 }
 
 TER
+verifyDomainAndPurgeExpired(
+    ApplyView& view,
+    AccountID const& account,
+    uint256 domainID,
+    beast::Journal j)
+{
+    auto const slePD = view.read(keylet::permissionedDomain(domainID));
+    if (!slePD)
+        return tecOBJECT_NOT_FOUND;
+
+    if (slePD->at(sfOwner) == account)
+        return tesSUCCESS;
+
+    return verifyValidDomain(view, account, domainID, j);
+}
+
+TER
 checkDepositPreauth(
     STTx const& tx,
     ReadView const& view,

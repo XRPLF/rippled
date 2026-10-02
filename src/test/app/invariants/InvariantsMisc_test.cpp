@@ -738,6 +738,7 @@ class InvariantsMisc_test : public InvariantsBase
                 [](SLE::pointer& sle) { sle->at(sfManagementFeeRate) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfCoverRateMinimum) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfCoverRateLiquidation) += 1; },
+                [](SLE::pointer& sle) { sle->setFlag(lsfLoanBrokerPrivate); },
                 [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = sle->at(sfVaultID).value(); },
             });
@@ -759,6 +760,26 @@ class InvariantsMisc_test : public InvariantsBase
                     {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                     createLoanBroker);
             }
+        }
+
+        // LoanBroker sfFlags immutability is gated on featureLendingProtocolV1_2,
+        // so without it a flag change is not caught by this invariant.
+        {
+            doInvariantCheck(
+                Env{*this, all_ - featureLendingProtocolV1_2},
+                {},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(loanBrokerKeylet);
+                    if (!sle)
+                        return false;
+                    sle->setFlag(lsfLoanBrokerPrivate);
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS},
+                createLoanBroker);
         }
 
         // Loan flag immutability lives in NoModifiedUnmodifiableFields's
