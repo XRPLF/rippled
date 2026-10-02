@@ -230,7 +230,7 @@ The appendix contains a glossary of OpenTelemetry and xrpld-specific terms, refe
 
 ## 9. Data Collection Reference
 
-A single-source-of-truth reference documenting every piece of telemetry data collected by xrpld: the OpenTelemetry span inventory with per-span attributes, the `beast::insight` and native `XRPL_METRIC_*` instruments (gauges, counters, histograms, overlay traffic), the SpanMetrics-derived Prometheus metrics, and the **15** Grafana dashboards. Includes Tempo search guides and Prometheus query examples. Consult that document rather than this index for any count — it tracks the code, this summary does not.
+A single-source-of-truth reference documenting every piece of telemetry data collected by xrpld: the OpenTelemetry span inventory with per-span attributes, the `beast::insight` and native `XRPL_METRIC_*` instruments (gauges, counters, histograms, overlay traffic), the SpanMetrics-derived Prometheus metrics, and the Grafana dashboards. Includes Tempo search guides and Prometheus query examples. Consult that document rather than this index for any count — it tracks the code, this summary does not.
 
 ➡️ **[View Data Collection Reference](./09-data-collection-reference.md)**
 

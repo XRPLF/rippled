@@ -2252,8 +2252,9 @@ three signals' attributes over OTLP directly.
 ## Grafana Dashboards
 
 The dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`.
-All but `log-derived-insights` are Prometheus-backed. It is the only Loki/LogQL
-board and is documented last, together with the LogQL-specific traps it exposed.
+Most panels query Prometheus. `consensus-health` also has TraceQL panels that
+query Tempo, and `peer-quality` has a Loki logs panel. `log-derived-insights`
+queries only Loki (LogQL). Its section also covers the LogQL traps it exposed.
 
 > **Not every dashboard has a reference section.** This chapter covers
 > `rpc-performance`, `transaction-overview`, `consensus-health`,
@@ -2520,7 +2521,7 @@ enforces that in CI, because the two silently drifted once already.
 
 ## Alerting
 
-xrpld provisions fourteen Grafana alert rules on the health-critical metrics, so
+xrpld provisions Grafana alert rules on the health-critical metrics, so
 a stock stack loads them with no UI setup. Rules are provisioned from
 `docker/telemetry/grafana/provisioning/alerting/` and load automatically when
 the Grafana container starts. They appear under **Alerting → Alert rules**,
