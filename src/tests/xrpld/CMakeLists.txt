@@ -33,9 +33,10 @@ target_link_libraries(
 # result is cached, so this finds the same file that xrpl_tests links.
 # This block follows the main link call so that the archives it adds come
 # after libxrpl, which uses OpenTelemetry.
-# GNU ld (gcc sanitizer builds) reads each archive once. The umbrella lists
-# the metrics archive after the common and resources archives it needs.
-# These tests use the metrics SDK, so that archive goes before the umbrella.
+# GNU ld reads each archive once, and the umbrella lists the metrics archive,
+# which these tests use, after the common and resources archives it needs.
+# So on Linux it also goes before the umbrella. Apple ld and MSVC search all
+# archives, and Apple ld, with fatal warnings here, rejects one listed twice.
 if(telemetry)
     string(TOUPPER "${CMAKE_BUILD_TYPE}" otel_build_type)
     find_library(
@@ -46,19 +47,23 @@ if(telemetry)
     if(NOT OTEL_IN_MEMORY_EXPORTER_LIB)
         message(FATAL_ERROR "opentelemetry_exporter_in_memory not found")
     endif()
-    find_library(
-        OTEL_METRICS_SDK_LIB
-        NAMES opentelemetry_metrics
-        HINTS "${opentelemetry-cpp_LIB_DIRS_${otel_build_type}}"
-    )
-    if(NOT OTEL_METRICS_SDK_LIB)
-        message(FATAL_ERROR "opentelemetry_metrics not found")
+    set(otel_libs_before_umbrella "")
+    if(is_linux)
+        find_library(
+            OTEL_METRICS_SDK_LIB
+            NAMES opentelemetry_metrics
+            HINTS "${opentelemetry-cpp_LIB_DIRS_${otel_build_type}}"
+        )
+        if(NOT OTEL_METRICS_SDK_LIB)
+            message(FATAL_ERROR "opentelemetry_metrics not found")
+        endif()
+        set(otel_libs_before_umbrella "${OTEL_METRICS_SDK_LIB}")
     endif()
     target_link_libraries(
         xrpld_tests
         PRIVATE
             "${OTEL_IN_MEMORY_EXPORTER_LIB}"
-            "${OTEL_METRICS_SDK_LIB}"
+            ${otel_libs_before_umbrella}
             opentelemetry-cpp::opentelemetry-cpp
     )
 endif()
