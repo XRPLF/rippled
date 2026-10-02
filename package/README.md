@@ -286,7 +286,8 @@ tag name, a develop image as `develop`. With `publish: true`:
 
 - `xrpld` is pushed to `xrplf/xrpld` on Docker Hub using the `DOCKERHUB_TOKEN`
   secret, an organization access token for `xrplf`. Builds of a non-public
-  codebase, even `stable` ones, are never pushed there.
+  codebase are pushed there only for `stable` releases, whose packages are
+  public too.
 - `voidstar` replaces `/usr/bin/xrpld` with the binary of the `voidstar` build
   config, adds `libvoidstar.so` and links the binary into `/symbols`, as
   Antithesis expects. It is pushed as `xrpld-voidstar` to the Antithesis
