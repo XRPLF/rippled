@@ -2295,15 +2295,11 @@ Document the external dashboard's "fast path" pattern as a future optimization f
 > Ledger economy is a **row on `node-health`**, not a dashboard of its own, so it
 > falls under that already-documented section rather than the six above.
 
-> Still open. The runbook itself records the gap at its dashboard reference
-> section, and it names **six** dashboards, not four: "Nine dashboards have a
-> reference section below. `fee-market`, `job-queue`, `ledger-data-sync`,
-> `overlay-traffic-detail`, `peer-quality`, and `validator-health` are
-> provisioned but not yet documented here — their panel descriptions carry the
-> same six-heading reference format, so open the panel info icon in Grafana until
-> a section is written." (15 dashboards on disk − 6 undocumented = 9 documented.)
-> So the remaining runbook work is **six** dashboard guides, plus the Validation
-> Agreement explainer listed above.
+> Still open. The runbook records the gap at its dashboard reference section:
+> `fee-market`, `job-queue`, `ledger-data-sync`, `overlay-traffic-detail`,
+> `peer-quality` and `validator-health` are provisioned but have no section
+> there yet. So the remaining runbook work is **six** dashboard guides, plus the
+> Validation Agreement explainer listed above.
 
 #### `OpenTelemetryPlan/09-data-collection-reference.md` (on Phase 9 branch) — done
 
