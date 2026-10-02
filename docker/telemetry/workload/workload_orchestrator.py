@@ -646,7 +646,7 @@ def parse_args() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Profiles:
-  full-validation  Full 15-dashboard coverage (~5 min load + 1 min propagation)
+  full-validation  Load for the dashboards (~5 min load + 1 min propagation)
   quick-smoke      Fast CI smoke test (~30s load + 30s propagation)
   stress           Heavy sustained load for benchmarking (~3.5 min + 1 min)
 

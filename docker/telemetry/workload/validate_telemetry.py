@@ -215,11 +215,10 @@ class ValidationReport:
 # back against the contract.
 #
 # These helpers close the loop. They are deliberately WARN-ONLY. Downstream
-# branches legitimately add telemetry that an upstream contract has not seen
-# (the sync-diagnostics branch emits 7 spans this contract does not list), so a
-# hard failure here would redden every one of them for doing the right thing.
-# The value is visibility: name the gaps, in a form a human can read in a CI
-# log and diff between runs, and let a person decide.
+# branches legitimately add telemetry that an upstream contract has not seen,
+# so a hard failure here would redden every one of them for doing the right
+# thing. The value is visibility: name the gaps, in a form a human can read in
+# a CI log and diff between runs, and let a person decide.
 
 
 def _log_name_list(header: str, names: list[str]) -> None:

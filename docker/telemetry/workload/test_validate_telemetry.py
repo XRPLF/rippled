@@ -1065,7 +1065,7 @@ def test_validate_span_parents_checks_every_contract_entry() -> None:
 
     _validate_span_parents_for is well covered on its own, but nothing proved
     that the caller iterates -- a loop that returned after the first entry, or
-    read a different key than 'spans', would leave 40 spans unchecked while the
+    read a different key than 'spans', would leave spans unchecked while the
     report still looked healthy. Driven through a real file so the loader is
     exercised too, rather than by stubbing _load_expected_spans.
     """
