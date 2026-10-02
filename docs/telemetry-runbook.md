@@ -171,9 +171,9 @@ The collector can ship traces, metrics, and logs to a hosted **Grafana
 Cloud** stack instead of (or alongside) the local Tempo/Prometheus/Loki
 backends. This is a runtime choice — no xrpld rebuild and no change to the
 base stack. xrpld still exports to the local collector exactly as before;
-the collector adds one OTLP/HTTP exporter that forwards all three signals to
-the Grafana Cloud OTLP gateway, which fans them out to hosted Tempo, Mimir,
-and Loki.
+the collector adds two OTLP/HTTP exporters to the Grafana Cloud OTLP
+gateway, one for stored traces and one for metrics and logs. The gateway fans
+them out to hosted Tempo, Mimir, and Loki.
 
 ### Credentials
 
@@ -206,20 +206,21 @@ To return to local-only export, bring the stack up with just the base
 
 ### Files
 
-| File                                      | Role                                                                                           |
-| ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `otel-collector-config.grafanacloud.yaml` | Collector config: local backends **plus** a Grafana Cloud OTLP exporter on all three pipelines |
-| `docker-compose.grafanacloud.yaml`        | Override that mounts that config and injects the credentials                                   |
-| `.env.grafanacloud.example`               | Credential template (copy to `.env.grafanacloud`)                                              |
+| File                                      | Role                                                                                         |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `otel-collector-config.grafanacloud.yaml` | Collector config: local backends **plus** Grafana Cloud OTLP exporters for all three signals |
+| `docker-compose.grafanacloud.yaml`        | Override that mounts that config and injects the credentials                                 |
+| `.env.grafanacloud.example`               | Credential template (copy to `.env.grafanacloud`)                                            |
 
 ### Local + cloud vs cloud-only
 
 The prepared config **dual-exports**: data goes to both the local stack and
-Grafana Cloud, so the on-box backends remain a fallback. For cloud-only,
-remove the local exporters (`debug`, `otlp/tempo`, `prometheus`,
-`otlp_http/loki`) from the respective pipelines in
-`otel-collector-config.grafanacloud.yaml`, leaving only
-`otlp_http/grafanacloud`.
+Grafana Cloud, so the on-box backends remain a fallback. For cloud-only, edit
+`otel-collector-config.grafanacloud.yaml`: remove `otlp/tempo` from
+`traces/store` and `otlp_http/loki` from `logs`, and delete the
+`metrics/local` pipeline, whose only exporter is `prometheus`. The two Grafana
+Cloud exporters, `otlp_http/grafanacloud` and
+`otlp_http/grafanacloud-traces`, remain.
 
 > **Note**: shipping logs to Grafana Cloud requires keeping xrpld file
 > logging on (at least `warning` level) so the collector's file_log receiver
@@ -2655,7 +2656,7 @@ variation.
 exceeding resource budgets. Sustained disconnects starve the node of peers and
 precede sync loss.
 
-**UntrustedValidationFlood** — Validations from untrusted validators are arriving at more than 3x their baseline rate. Peers relay untrusted validations by default, so the normal rate depends on the network's validator count and on this node's peer count. The rule therefore divides the last 2m rate of `validations_untrusted_messages_in` by a baseline: the average rate over the hour that ended 10m earlier. This lets one threshold fit any network with more than 50 msg/s of untrusted traffic. On a healthy node the ratio stays near 1, or below it where the 50 msg/s floor applies. The ratio must stay above 3 on two evaluations in a row before the rule fires. When it fires, check peer latency, consensus round time and whether the node left `full`. After it resolves, confirm on the Network Traffic dashboard's "Validation Traffic" panel (Untrusted In series) that the flood has ended.
+**UntrustedValidationFlood** — Validations from untrusted validators are arriving at more than 3x their baseline rate. Peers relay untrusted validations by default, so the normal rate depends on the network's validator count and on this node's peer count. The rule therefore divides the last 2m rate of `validations_untrusted_messages_in` by a baseline: the average rate over the hour that ended 10m earlier. This lets one threshold fit any network with more than 50 msg/s of untrusted traffic. On a healthy node the ratio stays near 1, or below it where the 50 msg/s floor applies. The ratio must stay above 3 on two evaluations in a row before the rule fires. When it fires, check peer latency, consensus round time and whether the node left `full`. After it resolves, confirm on the Network Traffic dashboard's "Validation Traffic" panel (Untrusted In series) that the flood has ended. To see whether one peer carries the flood, and which one, open the Validation Load row of the Peer Quality dashboard: an untrusted "Busiest Peer Share" near 1 means one peer sends almost all of it, "Top-3 Peer Validation Rates" shows how far that peer stands above the next two, and "Validation Load Warnings" names the busiest peer when it is over the per-peer limit, by connection id and node public key. The throttle is per connection: one connection is named at most once every five minutes, and a reconnect gets a new id. The `peers` admin command shows that public key's address while the peer is connected.
 
 > **Two guards keep this rule quiet on healthy nodes.** The baseline has a floor of 50 msg/s (`clamp_min(..., 50)`), so on a network with almost no untrusted traffic the rule does not divide by zero, and needs more than 150 msg/s to fire. An `uptime > 4200` gate (the 1h baseline plus its 10m offset) skips the first 70 minutes after boot. After a stop of an hour or more, the baseline hour holds only minutes of samples, so it reads far too low, and without the gate the ratio could pass 3 for many minutes.
 
@@ -3785,7 +3786,8 @@ the only one with a deadline.
 | _Amendment Warned_             | 0                                                                                                      | 1                                 | the same condition as a flag: an unsupported amendment reached majority                                                                                                                                                                                           |
 | _Byzantine Ledger Jumps_       | flat at zero                                                                                           | a single jump during a fresh sync | benign — the node is settling onto the network's chain                                                                                                                                                                                                            |
 |                                |                                                                                                        | repeated jumps                    | wrong-chain thrash: the node keeps switching chains and never settles. Check the peer set (branch A) and the configured network id. Nothing in the acquire pipeline can fix it                                                                                    |
-| _Ledger/Object Serve Refusals_ | near zero                                                                                              | `sendq_full`/`load_shed` climbing | self-inflicted: this node is too loaded to answer. It does not explain **this** node's sync — it explains its peers', and is the serving-side symptom of the same overload branches C-E cover                                                                     |
+| _Ledger/Object Serve Refusals_ | near zero                                                                                              | `load_shed` climbing              | self-inflicted: this node is too loaded, or for a fetch pack too far behind the network, to answer. It does not explain **this** node's sync — it explains its peers', and is the serving-side symptom of the same overload branches C-E cover                    |
+|                                |                                                                                                        | `sendq_full` climbing             | this node's send queue to the asking peer has reached its limit: that peer, the path to it, or this node's own uplink is slow                                                                                                                                     |
 |                                |                                                                                                        | `not_found` climbing              | a genuine history gap — a retention and configuration question, not a load one                                                                                                                                                                                    |
 
 **Conclusion:** the countdown is the only actionable amendment signal. The
@@ -4173,10 +4175,13 @@ panel it reads.
       (`serve_refused_total`, by `request` and `reason`) is what **this node
       refuses to serve OTHERS**. It does not explain this node's own sync, but
       it explains its peers' — and a node that refuses everything is why some
-      other operator is reading step 11 on their side. `sendq_full` and
-      `load_shed` are self-inflicted: this node is too loaded or too far
-      behind on its send queue to answer, so treat them as the serving-side
-      symptom of the same overload steps 3, 9 and 10 cover. `not_found` is
+      other operator is reading step 11 on their side. `load_shed` is
+      self-inflicted: this node is too loaded, or for a fetch pack too far
+      behind the network, to answer, so treat it as the serving-side symptom
+      of the same overload steps 3, 9 and 10 cover. `sendq_full` is not:
+      this node's send queue to the asking peer has reached its limit, so
+      that peer, the path to it, or this node's own uplink is slow.
+      `not_found` is
       different — it is a genuine history gap, meaning the data was asked for
       and this node simply does not hold it, which is a configuration and
       retention question rather than a load one.
