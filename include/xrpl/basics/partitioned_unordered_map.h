@@ -243,7 +243,7 @@ public:
     /**
      * Read-only access to the partitions, for a const walk over one at a time.
      */
-    partition_map_type const&
+    PartitionMapType const&
     map() const
     {
         return map_;
