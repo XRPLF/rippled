@@ -13,6 +13,9 @@
 # The developer stack benefits because its log directory and this volume both
 # survive `docker compose down`, so a restart resumes at the last offset
 # instead of re-reading debug.log from the top.
+#
+# The Grafana Cloud stack mounts otel-collector-filestorage.grafanacloud.yaml
+# over this file, because it needs one more extension. Keep the two in step.
 
 extensions:
   file_storage/file_log:

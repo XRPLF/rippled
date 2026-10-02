@@ -6,8 +6,8 @@
  * - Registration of every observable instrument whose callback samples live
  *   server state: cache hit rates, TxQ state, CountedObject instances, load
  *   factors, NodeStore I/O, server info, complete ledger ranges, validator
- *   health, peer quality, reduce-relay efficiency, ledger economy, state
- *   tracking, storage detail and validation agreement.
+ *   health, peer quality, per-peer validation load, reduce-relay efficiency,
+ *   ledger economy, state tracking, storage detail and validation agreement.
  * - The nodestore_state helpers those callbacks publish values through.
  * - The arm and disarm entry points for the whole set.
  */
@@ -37,8 +37,8 @@
 // cycles, rather than an acyclic ordering.txt entry placing telemetry strictly
 // below both. The observable gauges are pull-model: their callbacks sample live
 // state when the reader thread fires, so they need the concrete types to call
-// getJqTransOverflow(), size(), getPeerDisconnectCharges(), foreach() and
-// txMetrics().
+// getJqTransOverflow(), size(), getPeerDisconnectCharges(), foreach(),
+// getActivePeers(), validationCounts() and txMetrics().
 //
 // The cycle is confined to this translation unit. No telemetry header includes
 // app or overlay -- the callbacks reach every service through the
@@ -57,6 +57,8 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/Peer.h>
+#include <xrpld/telemetry/PeerValidationLoad.h>
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Log.h>
@@ -65,7 +67,9 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
@@ -184,6 +188,7 @@ AppMetricGauges::registerAsyncGauges()
     registerDbMetricsGauge();
     registerValidatorHealthGauge();
     registerPeerQualityGauge();
+    registerPeerValidationLoadGauge();
     registerReduceRelayGauge();
     registerLedgerEconomyGauge();
     registerStateTrackingGauge();
@@ -934,6 +939,63 @@ AppMetricGauges::registerPeerQualityGauge()
 
                 // Binary flag: recommend upgrade if >60% run a newer version.
                 observe("upgrade_recommended", higherPct > 60.0 ? 1.0 : 0.0);
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+AppMetricGauges::registerPeerValidationLoadGauge()
+{
+    // --- Per-peer validation load ---
+    // Ranked per-peer validation rates, by signer trust. Every label value is
+    // a constant, so the series count does not grow with the peer count. The
+    // busiest peer's identity goes only to the throttled warning below.
+    peerValidationLoadGauge_ = createValidationLoadGauge(*core_.meter());
+    peerValidationLoadGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<AppMetricGauges*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+
+            try
+            {
+                auto const peers = self->app_.getOverlay().getActivePeers();
+                std::vector<PeerValidationReading> readings;
+                readings.reserve(peers.size());
+                for (auto const& peer : peers)
+                {
+                    auto const counts = peer->validationCounts();
+                    readings.push_back(
+                        {.peerId = peer->id(),
+                         .trusted = counts.trusted,
+                         .untrusted = counts.untrusted});
+                }
+
+                auto const sample =
+                    self->validationLoad_.sample(readings, std::chrono::steady_clock::now());
+                observeValidationLoad(result, sample);
+
+                // Names the peer by connection id and node public key only,
+                // never by address. While the peer is connected, the peers
+                // admin command lists the address beside that public key.
+                if (sample.warning.has_value())
+                {
+                    auto const warning = *sample.warning;
+                    auto const peer =
+                        std::ranges::find_if(peers, [&warning](auto const& candidate) {
+                            return candidate->id() == warning.peerId;
+                        });
+                    if (peer != peers.end())
+                    {
+                        JLOG(self->journal_.warn()) << formatValidationLoadWarning(
+                            warning, toBase58(TokenType::NodePublic, (*peer)->getNodePublic()));
+                    }
+                }
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {

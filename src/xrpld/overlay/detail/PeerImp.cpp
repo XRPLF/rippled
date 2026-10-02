@@ -2656,6 +2656,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // suppression for 30 seconds to avoid doing a relatively expensive
         // lookup every time a spam packet is received
         auto const isTrusted = app_.getValidators().trusted(val->getSignerPublic());
+        // Counted before the drops below, so duplicates and dropped untrusted
+        // validations count too: each has already cost a parse and a lookup.
+        (isTrusted ? validationsTrusted_ : validationsUntrusted_)
+            .fetch_add(1, std::memory_order_relaxed);
         validationReceiveSpan.setAttribute(peer_span::attr::validationTrusted, isTrusted);
 
         // If the operator has specified that untrusted validations be

@@ -226,14 +226,15 @@ flowchart LR
 - **Tail Sampling (Collector)** — the base config
   (`docker/telemetry/otel-collector-config.yaml`) has **no** `tail_sampling`
   processor, so the local and CI stacks keep 100% of traces. The only shipped
-  policy lives in `otel-collector-config.grafanacloud.yaml:60-67`, wired into
-  the **`traces/store`** pipeline (`:259-261`) — the overlay has no pipeline
+  policy lives in the `tail_sampling` processor of
+  `otel-collector-config.grafanacloud.yaml`, wired into the **`traces/store`**
+  pipeline — the overlay has no pipeline
   named `traces`; it splits the trace stream into `traces/metrics` (unsampled,
   feeds `spanmetrics`) and `traces/store` (sampled, feeds Tempo and Grafana
   Cloud). See [05 §5.5.2](./05-configuration-reference.md) for the full overlay
   delta. The policy is a single `probabilistic` at **0.5%**,
-  `decision_wait: 10s`, `num_traces: 50000`. There are no error or latency
-  carve-outs.
+  `decision_wait: 10s`, `num_traces: 300000`, with a decision cache. There
+  are no error or latency carve-outs.
 - **Why 0.5% does not damage the dashboards**: the policy is applied on the
   trace-storage branch only. The `spanmetrics` connector runs on a separate
   branch that still sees every span, so `span_calls_total` and
@@ -247,8 +248,8 @@ flowchart LR
 
 Tail sampling bounds what the collector **stores**; it does not bound what the
 collector **buffers**. `tail_sampling` is the opposite of cheap here — it holds
-up to `num_traces` (50 000) traces in memory for `decision_wait` before
-deciding — and the `spanmetrics` connector keeps a live series cache on top of
+up to `num_traces` (300 000) traces in memory for `decision_wait` before
+deciding (a few KB each, about 1 GB when full) — and the `spanmetrics` connector keeps a live series cache on top of
 that. A production gateway collector should therefore also run a
 [`memory_limiter`](https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md)
 processor as an OOM guard: it applies backpressure (refusing new data with a

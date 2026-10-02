@@ -3,8 +3,7 @@
 # Identical to otel-collector-config.yaml (local Tempo/Prometheus/Loki) but
 # ALSO ships all three signals to Grafana Cloud over a single OTLP/HTTP
 # endpoint. Local backends are kept so the on-box stack still works as a
-# fallback; remove the local exporters from the pipelines below if you want
-# cloud-only.
+# fallback; for cloud-only, see the comment at the start of service.pipelines.
 #
 # Selecting this config is a RUNTIME choice — no code or image changes:
 #   Local only (default):
@@ -78,6 +77,15 @@ processors:
   batch:
     timeout: 1s
     send_batch_size: 100
+  # Batching for the trace-storage pipeline only. Each request to Grafana
+  # Cloud costs a network round trip, so 100-span requests cap how fast
+  # stored traces can leave, and at high sampling the cloud exporter's queue
+  # fills and drops spans. send_batch_max_size caps one request: keep a full
+  # batch under the local Tempo receiver's 4 MiB gRPC message limit.
+  batch/store:
+    timeout: 1s
+    send_batch_size: 2048
+    send_batch_max_size: 2048
   # Probabilistic tail sampling, on the trace-storage branch only. The
   # spanmetrics branch sees every span, so span-derived RED metrics stay
   # exact while stored trace volume is cut to bound cost on a long-running
@@ -87,7 +95,24 @@ processors:
   # logs, and log-to-trace links for those resolve to nothing.
   tail_sampling:
     decision_wait: 10s
-    num_traces: 50000
+    # A trace waits in memory for decision_wait plus up to one 1s tick
+    # before it is decided. If more than num_traces new traces arrive in that
+    # time, the oldest are dropped undecided and counted in
+    # sampling_trace_dropped_too_early. Size it as peak new traces per second
+    # x (decision_wait + 1s) x 2. Spans per second is a safe stand-in for new
+    # traces per second, since every trace has at least one span. 300000
+    # covers a peak of about 13,600 new traces per second. Each waiting trace
+    # costs a few KB, so a full table is about 1 GB.
+    num_traces: 300000
+    # With a decision cache, a decided trace is freed at once and only its id
+    # is kept here, which is smaller. Without one, decided traces stay until
+    # newer traces push them out, so sampling_traces_on_memory sits at
+    # num_traces and cannot warn before drops start. A late span still gets
+    # its trace's decision. Keep each cache at least num_traces, so a late
+    # span is matched for at least as long as it would be without a cache.
+    decision_cache:
+      sampled_cache_size: 300000
+      non_sampled_cache_size: 300000
     policies:
       - name: half-percent
         type: probabilistic
@@ -248,6 +273,11 @@ exporters:
     endpoint: tempo:4317
     tls:
       insecure: true
+    # Fed by batch/store, so size the queue in spans: 1000 requests of 2048
+    # spans would let a stalled Tempo hold about two million spans in memory.
+    sending_queue:
+      sizer: items
+      queue_size: 100000
   otlp_http/loki:
     endpoint: http://loki:3100/otlp
   prometheus:
@@ -258,9 +288,10 @@ exporters:
     # attributes natively via OTLP, so this only affects the local export.)
     resource_to_telemetry_conversion:
       enabled: true
-  # Single OTLP/HTTP exporter to Grafana Cloud. The gateway fans the three
-  # signals out to hosted Tempo (traces), Mimir/Prometheus (metrics), and
-  # Loki (logs). Retry + queue guard against transient gateway errors.
+  # OTLP/HTTP exporter to Grafana Cloud for metrics and logs; stored traces
+  # use otlp_http/grafanacloud-traces below. The gateway fans the signals out
+  # to hosted Tempo (traces), Mimir/Prometheus (metrics), and Loki (logs).
+  # Retry + queue guard against transient gateway errors.
   otlp_http/grafanacloud:
     endpoint: ${env:GRAFANA_CLOUD_OTLP_ENDPOINT}
     auth:
@@ -269,13 +300,29 @@ exporters:
       enabled: true
     sending_queue:
       enabled: true
+  # Stored traces get their own Grafana Cloud exporter, so their queue can be
+  # sized in spans without shrinking the metrics and logs queues above, whose
+  # requests vary in size. Throughput is about num_consumers x batch size per
+  # round trip to the gateway. The queue counts spans still being sent, so
+  # more consumers do not add memory.
+  otlp_http/grafanacloud-traces:
+    endpoint: ${env:GRAFANA_CLOUD_OTLP_ENDPOINT}
+    auth:
+      authenticator: basicauth/grafanacloud
+    retry_on_failure:
+      enabled: true
+    sending_queue:
+      enabled: true
+      sizer: items
+      queue_size: 100000
+      num_consumers: 20
 
 service:
   extensions: [health_check, basicauth/grafanacloud]
   pipelines:
-    # Each pipeline keeps its local exporter(s) AND adds Grafana Cloud.
-    # For cloud-only, drop debug/otlp/tempo, prometheus, and otlp_http/loki
-    # from the respective exporter lists.
+    # Local and Grafana Cloud exporters run side by side. For cloud-only,
+    # remove otlp/tempo from traces/store and otlp_http/loki from logs, and
+    # delete metrics/local (its only exporter is prometheus).
     # 100% of spans feed the spanmetrics connector so span-derived RED
     # metrics stay exact. No tail sampling on this branch.
     traces/metrics:
@@ -286,8 +333,8 @@ service:
     # and Grafana Cloud, so stored trace volume is ~1/200 of ingested spans.
     traces/store:
       receivers: [otlp]
-      processors: [tail_sampling, resource/tier, resource/stripsdk, batch]
-      exporters: [otlp/tempo, otlp_http/grafanacloud]
+      processors: [tail_sampling, resource/tier, resource/stripsdk, batch/store]
+      exporters: [otlp/tempo, otlp_http/grafanacloud-traces]
     # The local Prometheus scrape promotes tier/instance resource attrs to
     # labels via resource_to_telemetry_conversion; Grafana Cloud (OTLP) does
     # not, so it runs a separate pipeline that copies them onto datapoint
@@ -306,3 +353,35 @@ service:
       receivers: [file_log]
       processors: [resource/logs, resource/tier, resource/stripsdk, batch]
       exporters: [otlp_http/loki, otlp_http/grafanacloud]
+  # The collector's own metrics (dropped traces, export queues and more).
+  # The periodic reader posts them to this collector's OTLP receiver, so they
+  # take the node metrics' path: resource/tier stamps deployment.environment
+  # on them, metrics/local serves them to the local Prometheus scrape and
+  # metrics/cloud sends them to Grafana Cloud. Naming the receiver by its
+  # compose service name, like the tempo and loki exporters, works whichever
+  # interface it binds. Declaring readers drops the default one, so the pull
+  # reader keeps the in-container localhost:8888 page. At shutdown the
+  # receiver stops first, so the reader's last push fails and the collector
+  # exits with status 1.
+  telemetry:
+    resource:
+      attributes:
+        # A fixed id, so a restart keeps the same series. The default is a new
+        # random id per start. Give each collector that shares a
+        # deployment.environment its own value.
+        - name: service.instance.id
+          value: otel-collector
+    metrics:
+      readers:
+        # 15s, the same as the spanmetrics flush and for the same reason.
+        - periodic:
+            interval: 15000
+            exporter:
+              otlp:
+                protocol: http/protobuf
+                endpoint: http://otel-collector:4318
+        - pull:
+            exporter:
+              prometheus:
+                host: localhost
+                port: 8888

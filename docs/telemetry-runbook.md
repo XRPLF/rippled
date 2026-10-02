@@ -171,9 +171,9 @@ The collector can ship traces, metrics, and logs to a hosted **Grafana
 Cloud** stack instead of (or alongside) the local Tempo/Prometheus/Loki
 backends. This is a runtime choice — no xrpld rebuild and no change to the
 base stack. xrpld still exports to the local collector exactly as before;
-the collector adds one OTLP/HTTP exporter that forwards all three signals to
-the Grafana Cloud OTLP gateway, which fans them out to hosted Tempo, Mimir,
-and Loki.
+the collector adds two OTLP/HTTP exporters to the Grafana Cloud OTLP
+gateway, one for stored traces and one for metrics and logs. The gateway fans
+them out to hosted Tempo, Mimir, and Loki.
 
 ### Credentials
 
@@ -206,20 +206,22 @@ To return to local-only export, bring the stack up with just the base
 
 ### Files
 
-| File                                      | Role                                                                                           |
-| ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `otel-collector-config.grafanacloud.yaml` | Collector config: local backends **plus** a Grafana Cloud OTLP exporter on all three pipelines |
-| `docker-compose.grafanacloud.yaml`        | Override that mounts that config and injects the credentials                                   |
-| `.env.grafanacloud.example`               | Credential template (copy to `.env.grafanacloud`)                                              |
+| File                                           | Role                                                                                                                             |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `otel-collector-config.grafanacloud.yaml`      | Collector config: local backends **plus** Grafana Cloud OTLP exporters for all three signals                                     |
+| `otel-collector-filestorage.grafanacloud.yaml` | Cloud copy of the file_log offset overlay. It also names `basicauth/grafanacloud`, because the collector replaces lists on merge |
+| `docker-compose.grafanacloud.yaml`             | Override that mounts both cloud files over the base ones and injects the credentials                                             |
+| `.env.grafanacloud.example`                    | Credential template (copy to `.env.grafanacloud`)                                                                                |
 
 ### Local + cloud vs cloud-only
 
 The prepared config **dual-exports**: data goes to both the local stack and
-Grafana Cloud, so the on-box backends remain a fallback. For cloud-only,
-remove the local exporters (`debug`, `otlp/tempo`, `prometheus`,
-`otlp_http/loki`) from the respective pipelines in
-`otel-collector-config.grafanacloud.yaml`, leaving only
-`otlp_http/grafanacloud`.
+Grafana Cloud, so the on-box backends remain a fallback. For cloud-only, edit
+`otel-collector-config.grafanacloud.yaml`: remove `otlp/tempo` from
+`traces/store` and `otlp_http/loki` from `logs`, and delete the
+`metrics/local` pipeline, whose only exporter is `prometheus`. The two Grafana
+Cloud exporters, `otlp_http/grafanacloud` and
+`otlp_http/grafanacloud-traces`, remain.
 
 > **Note**: shipping logs to Grafana Cloud requires keeping xrpld file
 > logging on (at least `warning` level) so the collector's file_log receiver
@@ -2659,7 +2661,7 @@ variation.
 exceeding resource budgets. Sustained disconnects starve the node of peers and
 precede sync loss.
 
-**UntrustedValidationFlood** — Validations from untrusted validators are arriving at more than 3x their baseline rate. Peers relay untrusted validations by default, so the normal rate depends on the network's validator count and on this node's peer count. The rule therefore divides the last 2m rate of `validations_untrusted_messages_in` by a baseline: the average rate over the hour that ended 10m earlier. This lets one threshold fit any network with more than 50 msg/s of untrusted traffic. On a healthy node the ratio stays near 1, or below it where the 50 msg/s floor applies. The ratio must stay above 3 on two evaluations in a row before the rule fires. When it fires, check peer latency, consensus round time and whether the node left `full`. After it resolves, confirm on the Network Traffic dashboard's "Validation Traffic" panel (Untrusted In series) that the flood has ended.
+**UntrustedValidationFlood** — Validations from untrusted validators are arriving at more than 3x their baseline rate. Peers relay untrusted validations by default, so the normal rate depends on the network's validator count and on this node's peer count. The rule therefore divides the last 2m rate of `validations_untrusted_messages_in` by a baseline: the average rate over the hour that ended 10m earlier. This lets one threshold fit any network with more than 50 msg/s of untrusted traffic. On a healthy node the ratio stays near 1, or below it where the 50 msg/s floor applies. The ratio must stay above 3 on two evaluations in a row before the rule fires. When it fires, check peer latency, consensus round time and whether the node left `full`. After it resolves, confirm on the Network Traffic dashboard's "Validation Traffic" panel (Untrusted In series) that the flood has ended. To see whether one peer carries the flood, and which one, open the Validation Load row of the Peer Quality dashboard: an untrusted "Busiest Peer Share" near 1 means one peer sends almost all of it, "Top-3 Peer Validation Rates" shows how far that peer stands above the next two, and "Validation Load Warnings" names the busiest peer when it is over the per-peer limit, by connection id and node public key. The throttle is per connection: one connection is named at most once every five minutes, and a reconnect gets a new id. The `peers` admin command shows that public key's address while the peer is connected.
 
 > **Two guards keep this rule quiet on healthy nodes.** The baseline has a floor of 50 msg/s (`clamp_min(..., 50)`), so on a network with almost no untrusted traffic the rule does not divide by zero, and needs more than 150 msg/s to fire. An `uptime > 4200` gate (the 1h baseline plus its 10m offset) skips the first 70 minutes after boot. After a stop of an hour or more, the baseline hour holds only minutes of samples, so it reads far too low, and without the gate the ratio could pass 3 for many minutes.
 
@@ -2907,7 +2909,7 @@ The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. 
 
 That subdirectory is load-bearing, not cosmetic. Docker creates a missing bind-mount source as root, and `Config::getDebugLogFile()` only warns when it cannot create the log directory, so a root-owned log root produces a healthy-looking node that writes no `debug.log` and an empty Loki with no error at any layer. The `xrpld-logdir-init` service creates the directory and hands it to `XRPLD_UID`/`XRPLD_GID` (default 1000) to prevent that. The receiver also lifts the subdirectory name onto the resource attribute `service.instance.id`, which Loki indexes as the label `service_instance_id`, so each emitter must name its log directory after its own `[telemetry] service_instance_id` or log lines carry a node name that no trace or metric shares.
 
-Each file is read from the beginning, because the receiver's own default (`end`) would skip anything a node wrote before the collector's first poll and would never read a log that has stopped being written to. Read offsets are held in memory by default, so a restarted collector re-reads the files it already ingested. The developer stack avoids that by layering `otel-collector-filestorage.yaml` as a second `--config`, which adds a `file_storage` extension that keeps the offsets on a named volume; a one-shot init service prepares that volume, because the collector runs as a non-root user and a fresh Docker volume is owned by root. Ephemeral stacks such as the workload validation harness create a fresh log directory per run, so they have nothing to resume from and deliberately omit the overlay.
+Each file is read from the beginning, because the receiver's own default (`end`) would skip anything a node wrote before the collector's first poll and would never read a log that has stopped being written to. Read offsets are held in memory by default, so a restarted collector re-reads the files it already ingested. The developer stack avoids that by layering `otel-collector-filestorage.yaml` as a second `--config`, which adds a `file_storage` extension that keeps the offsets on a named volume; a one-shot init service prepares that volume, because the collector runs as a non-root user and a fresh Docker volume is owned by root. The Grafana Cloud stack mounts `otel-collector-filestorage.grafanacloud.yaml` in its place: the collector replaces lists on merge, so that copy must also name `basicauth/grafanacloud`, or the cloud exporters cannot start. Ephemeral stacks such as the workload validation harness create a fresh log directory per run, so they have nothing to resume from and deliberately omit the overlay.
 
 ### LogQL Query Examples
 
