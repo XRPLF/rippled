@@ -185,6 +185,34 @@ networkTypeFromId(std::uint32_t networkId)
 }
 
 /**
+ * Throw unless an endpoint URL is one TLS can actually be used on.
+ *
+ * The OTLP/HTTP exporter turns TLS on from the URL scheme alone, and matches
+ * "https:" exactly and case-sensitively. So the certificate settings only mean
+ * anything on an https endpoint, and this check is what holds that invariant:
+ * with TLS asked for, the endpoint is an https URL. "https://" is required in
+ * full, which is stricter than the exporter's own test, so anything this
+ * accepts the exporter also treats as TLS.
+ *
+ * @param endpoint   Endpoint URL from the config, or the built-in default.
+ * @param configKey  Config key the URL came from, named in the message.
+ * @throws std::runtime_error  If the URL does not begin with "https://".
+ */
+void
+requireHttpsEndpoint(std::string const& endpoint, char const* configKey)
+{
+    constexpr std::string_view kHttpsPrefix{"https://"};
+
+    if (std::string_view{endpoint}.starts_with(kHttpsPrefix))
+        return;
+
+    Throw<std::runtime_error>(
+        std::string("Invalid value '") + configKey + "' in " + kSectionLabel +
+        ": must start with '" + std::string{kHttpsPrefix} + "' when " + key::useTls +
+        "=1, but is '" + endpoint + "'.");
+}
+
+/**
  * Map a `consensus_trace_strategy` value onto its enumerator.
  *
  * Only the two documented spellings are accepted. A typo would otherwise pick
@@ -231,6 +259,14 @@ makeTelemetrySetup(
 
     setup.useTls = readFlag(section, key::useTls, false);
     setup.tlsCertPath = section.valueOr<std::string>(key::tlsCaCert, "");
+    // Checked only when `enabled` is 1, so a leftover TLS line never stops a
+    // node with telemetry off from booting. The exporter reads TLS off the
+    // endpoint scheme alone, so use_tls=1 takes effect only on an https
+    // endpoint. An operator who asks for TLS gets TLS or a startup error.
+    if (setup.enabled && setup.useTls)
+    {
+        requireHttpsEndpoint(setup.tracesEndpoint, key::tracesEndpoint);
+    }
 
     // Head sampling is intentionally fixed at 1.0 (sample everything) and is
     // not read from config. A per-node ratio would let nodes make divergent
