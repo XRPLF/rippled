@@ -148,7 +148,15 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     AuthType authType = AuthType::WeakAuth;
     if (account != dstAcct)
     {
-        if (auto const ret = canWithdraw(ctx.view, tx))
+        // Check the amount actually sent: on FixedPrecision it is the rounded
+        // amount, not sfAmount.
+        if (auto const ret = canWithdraw(
+                ctx.view,
+                account,
+                dstAcct,
+                roundedAmount,
+                tx.isFieldPresent(sfDestinationTag),
+                tx[~sfCredentialIDs]))
             return ret;
 
         // The destination account must have consented to receive the asset by
