@@ -129,7 +129,7 @@ getLoanFlow(STTx const& tx, ApplyFlags applyFlags, Rules const& rules)
     bool const hasStartDate = tx.isFieldPresent(sfStartDate);
     bool const hasBorrowerOrStartDate = hasBorrower || hasStartDate;
 
-    bool twoStepFlowEnabled = isTwoStepFlowEnabled(rules);
+    bool const twoStepFlowEnabled = isTwoStepFlowEnabled(rules);
 
     if (twoStepFlowEnabled && hasBorrower && hasStartDate && !hasCounterparty &&
         !hasCounterpartySignature)
@@ -175,7 +175,7 @@ getStartDate(ReadView const& view, STTx const& tx, LoanFlow flow)
 Participants
 resolveParticipants(
     STTx const& tx,
-    SLE::const_ref brokerSle,
+    SLE::ConstRef brokerSle,
     AccountID const& signingAccount,
     LoanFlow flow)
 {
@@ -371,7 +371,7 @@ setupLoan(ApplyContext& ctx, AccountID const& accountID, LoanFlow flow, beast::J
  * @return The newly built Loan ledger entry.
  */
 SLE::pointer
-buildLoan(ApplyContext& ctx, LoanPlan const& plan, SLE::ref brokerSle, IsLoanPending pending)
+buildLoan(ApplyContext& ctx, LoanPlan const& plan, SLE::Ref brokerSle, IsLoanPending pending)
 {
     auto const& tx = ctx.tx;
 
@@ -488,8 +488,8 @@ TER
 createLoan(
     ApplyContext& ctx,
     LoanPlan const& plan,
-    SLE::ref brokerSle,
-    SLE::ref vaultSle,
+    SLE::Ref brokerSle,
+    SLE::Ref vaultSle,
     IsLoanPending pending,
     beast::Journal const& j)
 {
@@ -503,7 +503,7 @@ createLoan(
     view.insert(loan);
 
     // Update the balances in the vault. Decrement the available assets and
-    // apply the assets-total delta (instant recognition recognises the
+    // apply the assets-total delta (instant recognition recognizes the
     // interest here; cash-basis leaves the total untouched). A pending loan
     // also moves the principal into the reserved bucket until the borrower
     // accepts.
@@ -692,7 +692,7 @@ LoanSet::preflight(PreflightContext const& ctx)
     if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatchV1_1) &&
         !tx.isFieldPresent(sfCounterparty) && !tx.isFieldPresent(sfBorrower))
     {
-        auto const parentBatchId = ctx.parentBatchId.value_or(uint256{0});
+        auto const parentBatchId = ctx.parentBatchId.value_or(UInt256{0});
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                             << "no Counterparty for inner LoanSet transaction.";
         return temBAD_SIGNER;
@@ -880,9 +880,9 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         //     startDate + (paymentInterval * paymentTotal) + gracePeriod.
         // If that value is larger than "maxTime", the value
         // overflows, and we kill the transaction.
-        using timeType = decltype(sfNextPaymentDueDate)::type::value_type;
-        static_assert(std::is_same_v<timeType, std::uint32_t>);
-        constexpr timeType kMaxTime = std::numeric_limits<timeType>::max();
+        using TimeType = decltype(sfNextPaymentDueDate)::type::value_type;
+        static_assert(std::is_same_v<TimeType, std::uint32_t>);
+        constexpr TimeType kMaxTime = std::numeric_limits<TimeType>::max();
         static_assert(kMaxTime == 4'294'967'295);
 
         auto const timeAvailable = kMaxTime - startDate;
@@ -1083,7 +1083,7 @@ LoanSet::doApply()
 }
 
 void
-LoanSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

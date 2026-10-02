@@ -2,11 +2,14 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>  // IWYU pragma: keep
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>  // IWYU pragma: keep
@@ -31,9 +34,9 @@ namespace {
 TER
 reversePendingLoan(
     ApplyView& view,
-    SLE::const_ref loanSle,
-    SLE::ref brokerSle,
-    SLE::ref vaultSle,
+    SLE::ConstRef loanSle,
+    SLE::Ref brokerSle,
+    SLE::Ref vaultSle,
     beast::Journal const& j)
 {
     auto const vaultAsset = vaultSle->at(sfAsset);
@@ -75,7 +78,7 @@ reversePendingLoan(
  * borrower's owner reserve.
  */
 TER
-releaseBorrower(ApplyView& view, SLE::ref loanSle, beast::Journal const& j)
+releaseBorrower(ApplyView& view, SLE::Ref loanSle, beast::Journal const& j)
 {
     auto const borrower = loanSle->at(sfBorrower);
     auto const borrowerSle = view.peek(keylet::account(borrower));
@@ -107,8 +110,8 @@ releaseBorrower(ApplyView& view, SLE::ref loanSle, beast::Journal const& j)
 void
 releaseLoanFromBroker(
     ApplyView& view,
-    SLE::ref brokerSle,
-    SLE::const_ref vaultSle,
+    SLE::Ref brokerSle,
+    SLE::ConstRef vaultSle,
     beast::Journal const& j)
 {
     adjustLoanBrokerOwnerCount(view, brokerSle, -1, j);
@@ -239,7 +242,7 @@ LoanDelete::doApply()
 }
 
 void
-LoanDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

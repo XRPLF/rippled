@@ -76,17 +76,17 @@ private:
 
     // Shared context used by every two-step scenario. The accounts and loan
     // terms are fixed; `features` is set by testTwoStep for each run.
-    FeatureBitset features;
-    jtx::Account const issuer{"issuer"};  // Issues the IOU / MPT assets
-    jtx::Account const lender{"lender"};  // Vault + LoanBroker owner
-    jtx::Account const borrower{"borrower"};
-    jtx::Account const evan{"evan"};  // unrelated third party
+    FeatureBitset features_;
+    jtx::Account const issuer_{"issuer"};  // Issues the IOU / MPT assets
+    jtx::Account const lender_{"lender"};  // Vault + LoanBroker owner
+    jtx::Account const borrower_{"borrower"};
+    jtx::Account const evan_{"evan"};  // unrelated third party
 
     // Loan terms shared across the scenarios. The principal is derived
     // from the broker's asset, so it adapts to XRP, IOU and MPT.
-    TenthBips32 const interest{50'000};
-    std::uint32_t const payTotal{10};
-    std::uint32_t const payInterval{200};
+    TenthBips32 const interest_{50'000};
+    std::uint32_t const payTotal_{10};
+    std::uint32_t const payInterval_{200};
 
     // Build a funded environment with a Vault + LoanBroker owned by
     // `lender`, using the requested asset type, and return the broker.
@@ -96,23 +96,23 @@ private:
     makeBroker(jtx::Env& env, AssetType assetType, bool enableClawback = false)
     {
         using namespace jtx;
-        env.fund(XRP(100'000'000), noripple(lender));
-        env.fund(XRP(1'000'000), borrower, evan);
+        env.fund(XRP(100'000'000), noripple(lender_));
+        env.fund(XRP(1'000'000), borrower_, evan_);
         if (assetType != AssetType::XRP)
-            env.fund(XRP(1'000'000), issuer);
+            env.fund(XRP(1'000'000), issuer_);
         env.close();
         if (enableClawback && assetType == AssetType::IOU)
         {
-            env(fset(issuer, asfAllowTrustLineClawback));
+            env(fset(issuer_, asfAllowTrustLineClawback));
             env.close();
         }
         BrokerParameters const params{};
-        auto const asset = createAsset(env, assetType, params, issuer, lender, borrower);
+        auto const asset = createAsset(env, assetType, params, issuer_, lender_, borrower_);
         env.close();
         if (!asset.native())
-            env(pay(issuer, lender, asset(params.vaultDeposit + params.coverDeposit)));
+            env(pay(issuer_, lender_, asset(params.vaultDeposit + params.coverDeposit)));
         env.close();
-        return createVaultAndBroker(env, asset, lender, params);
+        return createVaultAndBroker(env, asset, lender_, params);
     }
 
     // Like makeBroker(AssetType::IOU), except the issuer sets asfRequireAuth
@@ -122,24 +122,24 @@ private:
     makeRequireAuthIouBroker(jtx::Env& env)
     {
         using namespace jtx;
-        env.fund(XRP(100'000'000), noripple(lender));
-        env.fund(XRP(1'000'000), issuer, borrower, evan);
+        env.fund(XRP(100'000'000), noripple(lender_));
+        env.fund(XRP(1'000'000), issuer_, borrower_, evan_);
         env.close();
         // asfRequireAuth must be set before the issuer owns any trust lines.
-        env(fset(issuer, asfRequireAuth));
+        env(fset(issuer_, asfRequireAuth));
         env.close();
 
         BrokerParameters const params{};
-        PrettyAsset const asset{issuer[iouCurrency_]};
+        PrettyAsset const asset{issuer_[iouCurrency_]};
         auto const limit = asset(100 * (params.vaultDeposit + params.coverDeposit));
-        env(trust(lender, limit));
-        env(trust(borrower, limit));
+        env(trust(lender_, limit));
+        env(trust(borrower_, limit));
         env.close();
-        env(trust(issuer, asset(0), lender, tfSetfAuth));
-        env(trust(issuer, asset(0), borrower, tfSetfAuth));
-        env(pay(issuer, lender, asset(params.vaultDeposit + params.coverDeposit)));
+        env(trust(issuer_, asset(0), lender_, tfSetfAuth));
+        env(trust(issuer_, asset(0), borrower_, tfSetfAuth));
+        env(pay(issuer_, lender_, asset(params.vaultDeposit + params.coverDeposit)));
         env.close();
-        return createVaultAndBroker(env, asset, lender, params);
+        return createVaultAndBroker(env, asset, lender_, params);
     }
 
     // Rewrites the vault's LEVersion to Legacy (accrual accounting) to
@@ -204,9 +204,9 @@ private:
         env(set(proposer, broker.brokerID, broker.asset(200).number()),
             kBorrower(theBorrower),
             kStartDate(startDate),
-            kInterestRate(interest),
-            kPaymentTotal(payTotal),
-            kPaymentInterval(payInterval),
+            kInterestRate(interest_),
+            kPaymentTotal(payTotal_),
+            kPaymentInterval(payInterval_),
             extra...);
     }
 
@@ -228,24 +228,24 @@ private:
 
         testcase("Two-step: rejected as before");
 
-        Env env(*this, features);
+        Env env(*this, features_);
         auto const broker = makeBroker(env, AssetType::XRP);
         // With the amendment disabled, a LoanSet carrying Borrower/StartDate
         // is rejected with temDISABLED.
         propose(
             env,
             broker,
-            lender,
-            borrower,
+            lender_,
+            borrower_,
             (env.now() + 1h).time_since_epoch().count(),
             Ter(temDISABLED));
 
         // With the amendment disabled, a LoanSet without CounterpartySignature
         // is rejected with temBAD_SIGNER.
-        env(set(lender, broker.brokerID, broker.asset(200).number()), Ter(temBAD_SIGNER));
+        env(set(lender_, broker.brokerID, broker.asset(200).number()), Ter(temBAD_SIGNER));
 
         // With the amendment disabled, LoanAccept is rejected with temDISABLED.
-        env(accept(borrower, keylet::loan(broker.brokerID, SeqProxy::rawSequence(1)).key),
+        env(accept(borrower_, keylet::loan(broker.brokerID, SeqProxy::rawSequence(1)).key),
             Ter(temDISABLED));
     }
 
@@ -273,7 +273,7 @@ private:
                 testcase << "Two-step: propose then accept (" << versionName << ", "
                          << assetTypeName(assetType) << ")";
 
-                Env env(*this, features);
+                Env env(*this, features_);
                 auto const broker = makeBroker(env, assetType);
                 // The Legacy LEVersion rewrite does not survive env.close().
                 // Under Legacy, skip the close until the accept has been
@@ -293,12 +293,13 @@ private:
 
                 auto const vault0 = readVault(env, broker);
                 auto const broker0 = readBroker(env, broker);
-                auto const lenderOwners0 = env.ownerCount(lender);
-                auto const borrowerOwners0 = env.ownerCount(borrower);
+                auto const lenderOwners0 = env.ownerCount(lender_);
+                auto const borrowerOwners0 = env.ownerCount(borrower_);
 
                 auto const loanKeylet = nextLoanKeylet(env, broker);
                 // A StartDate comfortably in the future.
-                propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+                propose(
+                    env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
                 closeIfCashBasis();
 
                 // The proposal creates a pending Loan, linked only into the
@@ -306,15 +307,15 @@ private:
                 if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
                 {
                     BEAST_EXPECT(loan->isFlag(lsfLoanPending));
-                    BEAST_EXPECT(loan->at(sfBorrower) == borrower.id());
+                    BEAST_EXPECT(loan->at(sfBorrower) == borrower_.id());
                     BEAST_EXPECT(loan->isFieldPresent(sfLoanBrokerNode));
                     BEAST_EXPECT(!loan->isFieldPresent(sfOwnerNode));
                 }
 
                 // The owner reserve is charged to the broker owner, not the
                 // borrower.
-                BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0 + 1);
-                BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwners0);
+                BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0 + 1);
+                BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners0);
 
                 // Vault bookkeeping: Available -= P, Reserved += P. Total
                 // grows by InterestDue under accrual and is unchanged under
@@ -349,9 +350,9 @@ private:
                     return Account("vault pseudo-account", v->at(sfAccount));
                 }();
                 STAmount const pseudoBal0 = env.balance(vaultPseudo, broker.asset).value();
-                STAmount const borrowerBal0 = env.balance(borrower, broker.asset).value();
+                STAmount const borrowerBal0 = env.balance(borrower_, broker.asset).value();
 
-                env(accept(borrower, loanKeylet.key));
+                env(accept(borrower_, loanKeylet.key));
                 closeIfCashBasis();
 
                 // The loan is now active and linked into the borrower's
@@ -365,8 +366,8 @@ private:
 
                 // The reserve is swapped from the broker owner to the
                 // borrower.
-                BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0);
-                BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwners0 + 1);
+                BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0);
+                BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners0 + 1);
 
                 // Reserved principal is released; Available and Total are
                 // unchanged from the proposal.
@@ -387,7 +388,7 @@ private:
                 BEAST_EXPECT(
                     env.balance(vaultPseudo, broker.asset).value() ==
                     pseudoBal0 - broker.asset(200).value());
-                BEAST_EXPECT(env.balance(borrower, broker.asset).value() > borrowerBal0);
+                BEAST_EXPECT(env.balance(borrower_, broker.asset).value() > borrowerBal0);
             }
         }
 
@@ -399,7 +400,7 @@ private:
             testcase << "Two-step: propose then accept with origination fee ("
                      << assetTypeName(assetType) << ")";
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, assetType);
             Number const principal = broker.asset(200).number();
             Number const originationFee = broker.asset(5).number();
@@ -408,8 +409,8 @@ private:
             propose(
                 env,
                 broker,
-                lender,
-                borrower,
+                lender_,
+                borrower_,
                 (env.now() + 1h).time_since_epoch().count(),
                 kLoanOriginationFee(originationFee));
             env.close();
@@ -426,10 +427,10 @@ private:
                 return Account("vault pseudo-account", v->at(sfAccount));
             }();
             STAmount const pseudoBal0 = env.balance(vaultPseudo, broker.asset).value();
-            STAmount const borrowerBal0 = env.balance(borrower, broker.asset).value();
-            STAmount const lenderBal0 = env.balance(lender, broker.asset).value();
+            STAmount const borrowerBal0 = env.balance(borrower_, broker.asset).value();
+            STAmount const lenderBal0 = env.balance(lender_, broker.asset).value();
 
-            env(accept(borrower, loanKeylet.key));
+            env(accept(borrower_, loanKeylet.key));
             env.close();
 
             STAmount const netToBorrower{broker.asset, principal - originationFee};
@@ -441,9 +442,9 @@ private:
                 pseudoBal0 - broker.asset(200).value());
             // The borrower receives the principal net of the origination fee.
             BEAST_EXPECT(
-                env.balance(borrower, broker.asset).value() == borrowerBal0 + netToBorrower);
+                env.balance(borrower_, broker.asset).value() == borrowerBal0 + netToBorrower);
             // The broker owner receives the origination fee.
-            BEAST_EXPECT(env.balance(lender, broker.asset).value() == lenderBal0 + feeToOwner);
+            BEAST_EXPECT(env.balance(lender_, broker.asset).value() == lenderBal0 + feeToOwner);
         }
 
         {
@@ -451,57 +452,57 @@ private:
 
             // An accepted two-step loan can be paid, impaired, unimpaired and
             // deleted like a one-step loan.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
             std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
-            propose(env, broker, lender, borrower, startDate);
+            propose(env, broker, lender_, borrower_, startDate);
             env.close();
 
-            env(accept(borrower, loanKeylet.key));
+            env(accept(borrower_, loanKeylet.key));
             env.close();
 
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
             {
                 BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
-                BEAST_EXPECT(loan->at(sfPaymentRemaining) == payTotal);
+                BEAST_EXPECT(loan->at(sfPaymentRemaining) == payTotal_);
             }
 
             // LoanPay: a regular payment within the first payment interval
             // succeeds.
             env.close(NetClock::time_point{NetClock::duration{startDate}} + 30s);
-            env(pay(borrower, loanKeylet.key, broker.asset(30)));
+            env(pay(borrower_, loanKeylet.key, broker.asset(30)));
             env.close();
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
-                BEAST_EXPECT(loan->at(sfPaymentRemaining) < payTotal);
+                BEAST_EXPECT(loan->at(sfPaymentRemaining) < payTotal_);
 
             // LoanManage: once the payment is late, the loan can be impaired
             // and then unimpaired.
             advancePastDueDate(env, loanKeylet);
-            env(manage(lender, loanKeylet.key, tfLoanImpair));
+            env(manage(lender_, loanKeylet.key, tfLoanImpair));
             env.close();
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
                 BEAST_EXPECT(loan->isFlag(lsfLoanImpaired));
 
-            env(manage(lender, loanKeylet.key, tfLoanUnimpair));
+            env(manage(lender_, loanKeylet.key, tfLoanUnimpair));
             env.close();
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
                 BEAST_EXPECT(!loan->isFlag(lsfLoanImpaired));
 
             // The loan is still overdue after unimpairing: catch it up with a
             // late payment, then pay it off.
-            env(pay(borrower, loanKeylet.key, broker.asset(400), tfLoanLatePayment));
+            env(pay(borrower_, loanKeylet.key, broker.asset(400), tfLoanLatePayment));
             env.close();
 
             // A generous upper bound (2x principal) clears principal + interest.
-            env(pay(borrower, loanKeylet.key, broker.asset(400), tfLoanFullPayment));
+            env(pay(borrower_, loanKeylet.key, broker.asset(400), tfLoanFullPayment));
             env.close();
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
                 BEAST_EXPECT(loan->at(sfPaymentRemaining) == 0);
 
             // LoanDelete succeeds once the loan is fully paid.
-            env(del(borrower, loanKeylet.key));
+            env(del(borrower_, loanKeylet.key));
             env.close();
             BEAST_EXPECT(!env.le(loanKeylet));
         }
@@ -511,30 +512,30 @@ private:
 
             // A LoanPay on an accepted loan must succeed while another loan is
             // pending and AssetsReserved is non-zero.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             // L1: accepted (borrower) — disburses principal, drains
             // AssetsReserved back to 0.
             auto const l1Keylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
-            env(accept(borrower, l1Keylet.key));
+            env(accept(borrower_, l1Keylet.key));
             env.close();
             if (auto const l1 = env.le(l1Keylet); BEAST_EXPECT(l1))
                 BEAST_EXPECT(!l1->isFlag(lsfLoanPending));
 
             // L2: still pending (evan) — leaves AssetsReserved > 0.
-            propose(env, broker, lender, evan, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, evan_, (env.now() + 1h).time_since_epoch().count());
             env.close();
             if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
                 BEAST_EXPECT(v->at(sfAssetsReserved) > beast::kZero);
 
             // A payment on L1 must succeed with L2 still pending.
-            env(pay(borrower, l1Keylet.key, broker.asset(30)));
+            env(pay(borrower_, l1Keylet.key, broker.asset(30)));
             env.close();
             if (auto const l1 = env.le(l1Keylet); BEAST_EXPECT(l1))
-                BEAST_EXPECT(l1->at(sfPaymentRemaining) < payTotal);
+                BEAST_EXPECT(l1->at(sfPaymentRemaining) < payTotal_);
         }
     }
 
@@ -553,7 +554,7 @@ private:
         {
             testcase("Two-step: proposal failures");
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const epoch = env.now();
             auto const broker = makeBroker(env, AssetType::XRP);
 
@@ -562,8 +563,8 @@ private:
             propose(
                 env,
                 broker,
-                evan,
-                borrower,
+                evan_,
+                borrower_,
                 (env.now() + 1h).time_since_epoch().count(),
                 Ter(tecNO_PERMISSION));
 
@@ -572,8 +573,8 @@ private:
             propose(
                 env,
                 broker,
-                lender,
-                lender,
+                lender_,
+                lender_,
                 (env.now() + 1h).time_since_epoch().count(),
                 Ter(temINVALID));
 
@@ -582,14 +583,14 @@ private:
             propose(
                 env,
                 broker,
-                evan,
-                evan,
+                evan_,
+                evan_,
                 (env.now() + 1h).time_since_epoch().count(),
                 Ter(temINVALID));
 
             // A StartDate in the past is rejected with tecEXPIRED.
             std::uint32_t const pastDate = epoch.time_since_epoch().count();
-            propose(env, broker, lender, borrower, pastDate, Ter(tecEXPIRED));
+            propose(env, broker, lender_, borrower_, pastDate, Ter(tecEXPIRED));
 
             // Naming a pseudo-account as the Borrower is rejected with
             // tecNO_PERMISSION.
@@ -603,71 +604,71 @@ private:
                     return Account("broker pseudo-account", b->at(sfAccount));
                 }();
                 std::uint32_t const futureDate = (env.now() + 1h).time_since_epoch().count();
-                propose(env, broker, lender, vaultPseudo, futureDate, Ter(tecNO_PERMISSION));
-                propose(env, broker, lender, brokerPseudo, futureDate, Ter(tecNO_PERMISSION));
+                propose(env, broker, lender_, vaultPseudo, futureDate, Ter(tecNO_PERMISSION));
+                propose(env, broker, lender_, brokerPseudo, futureDate, Ter(tecNO_PERMISSION));
             }
 
             // No CounterpartySignature, not a Batch inner, no Borrower:
             // rejected with temBAD_SIGNER.
-            env(set(lender, broker.brokerID, broker.asset(200).number()), Ter(temBAD_SIGNER));
+            env(set(lender_, broker.brokerID, broker.asset(200).number()), Ter(temBAD_SIGNER));
 
             // Borrower without StartDate is rejected with temINVALID.
-            env(set(lender, broker.brokerID, broker.asset(200).number()),
-                kBorrower(borrower),
+            env(set(lender_, broker.brokerID, broker.asset(200).number()),
+                kBorrower(borrower_),
                 Ter(temINVALID));
 
             // StartDate without Borrower is rejected with temBAD_SIGNER.
-            env(set(lender, broker.brokerID, broker.asset(200).number()),
+            env(set(lender_, broker.brokerID, broker.asset(200).number()),
                 kStartDate((env.now() + 1h).time_since_epoch().count()),
                 Ter(temBAD_SIGNER));
 
             // Borrower together with Counterparty is rejected with temINVALID.
-            env(set(lender, broker.brokerID, broker.asset(200).number()),
-                kBorrower(borrower),
+            env(set(lender_, broker.brokerID, broker.asset(200).number()),
+                kBorrower(borrower_),
                 kStartDate((env.now() + 1h).time_since_epoch().count()),
-                kCounterparty(borrower),
+                kCounterparty(borrower_),
                 Ter(temINVALID));
 
             // Borrower together with CounterpartySignature is rejected with
             // temINVALID.
-            env(set(lender, broker.brokerID, broker.asset(200).number()),
-                kBorrower(borrower),
+            env(set(lender_, broker.brokerID, broker.asset(200).number()),
+                kBorrower(borrower_),
                 kStartDate((env.now() + 1h).time_since_epoch().count()),
-                Sig(sfCounterpartySignature, borrower),
+                Sig(sfCounterpartySignature, borrower_),
                 Ter(temINVALID));
         }
 
         {
             testcase("Two-step: LoanAccept validation");
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             // A zero LoanID is rejected with temINVALID.
-            env(accept(borrower, uint256{}), Ter(temINVALID));
+            env(accept(borrower_, uint256{}), Ter(temINVALID));
 
             // A LoanID that does not exist is rejected with tecNO_ENTRY.
-            env(accept(borrower, keylet::loan(broker.brokerID, SeqProxy::rawSequence(999)).key),
+            env(accept(borrower_, keylet::loan(broker.brokerID, SeqProxy::rawSequence(999)).key),
                 Ter(tecNO_ENTRY));
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
             // A StartDate comfortably in the future.
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             // An account other than the Loan's Borrower is rejected with
             // tecNO_PERMISSION.
-            env(accept(evan, loanKeylet.key), Ter(tecNO_PERMISSION));
-            env(accept(lender, loanKeylet.key), Ter(tecNO_PERMISSION));
+            env(accept(evan_, loanKeylet.key), Ter(tecNO_PERMISSION));
+            env(accept(lender_, loanKeylet.key), Ter(tecNO_PERMISSION));
             expectStillPending(env, loanKeylet);
 
             // The borrower accepts successfully.
-            env(accept(borrower, loanKeylet.key));
+            env(accept(borrower_, loanKeylet.key));
             env.close();
 
             // Accepting a loan that is no longer pending is rejected with
             // tecNO_PERMISSION.
-            env(accept(borrower, loanKeylet.key), Ter(tecNO_PERMISSION));
+            env(accept(borrower_, loanKeylet.key), Ter(tecNO_PERMISSION));
         }
 
         {
@@ -675,11 +676,11 @@ private:
 
             // A pending loan rejects every loan transaction other than
             // LoanAccept and LoanDelete.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             // The loan is pending.
@@ -687,17 +688,17 @@ private:
                 BEAST_EXPECT(loan->isFlag(lsfLoanPending));
 
             // LoanManage can not impair, unimpair, or default a pending loan.
-            env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tecNO_PERMISSION));
-            env(manage(lender, loanKeylet.key, tfLoanUnimpair), Ter(tecNO_PERMISSION));
-            env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tecNO_PERMISSION));
+            env(manage(lender_, loanKeylet.key, tfLoanImpair), Ter(tecNO_PERMISSION));
+            env(manage(lender_, loanKeylet.key, tfLoanUnimpair), Ter(tecNO_PERMISSION));
+            env(manage(lender_, loanKeylet.key, tfLoanDefault), Ter(tecNO_PERMISSION));
 
             // LoanPay can not pay a pending loan, even from the borrower.
-            env(pay(borrower, loanKeylet.key, broker.asset(50)), Ter(tecNO_PERMISSION));
-            env(pay(borrower, loanKeylet.key, broker.asset(50), tfLoanFullPayment),
+            env(pay(borrower_, loanKeylet.key, broker.asset(50)), Ter(tecNO_PERMISSION));
+            env(pay(borrower_, loanKeylet.key, broker.asset(50), tfLoanFullPayment),
                 Ter(tecNO_PERMISSION));
 
             // The borrower can still accept the pending loan.
-            env(accept(borrower, loanKeylet.key));
+            env(accept(borrower_, loanKeylet.key));
             env.close();
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
                 BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
@@ -710,12 +711,12 @@ private:
             testcase << "Two-step: pending loan rejects LoanManage after due date ("
                      << assetTypeName(assetType) << ")";
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, assetType);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
             std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
-            propose(env, broker, lender, borrower, startDate);
+            propose(env, broker, lender_, borrower_, startDate);
             env.close();
 
             // Advance well past StartDate + PaymentInterval + GracePeriod.
@@ -729,26 +730,26 @@ private:
                                     loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod)}});
             }
 
-            env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tecNO_PERMISSION));
-            env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tecNO_PERMISSION));
-            env(manage(lender, loanKeylet.key, tfLoanUnimpair), Ter(tecNO_PERMISSION));
+            env(manage(lender_, loanKeylet.key, tfLoanDefault), Ter(tecNO_PERMISSION));
+            env(manage(lender_, loanKeylet.key, tfLoanImpair), Ter(tecNO_PERMISSION));
+            env(manage(lender_, loanKeylet.key, tfLoanUnimpair), Ter(tecNO_PERMISSION));
         }
 
         {
             testcase("Two-step: LoanAccept after expiry");
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
             std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
-            propose(env, broker, lender, borrower, startDate);
+            propose(env, broker, lender_, borrower_, startDate);
             env.close();
 
             // Advance the ledger beyond the StartDate.
             env.close(NetClock::time_point{NetClock::duration{startDate}} + 1h);
 
-            env(accept(borrower, loanKeylet.key), Ter(tecEXPIRED));
+            env(accept(borrower_, loanKeylet.key), Ter(tecEXPIRED));
             expectStillPending(env, loanKeylet);
         }
 
@@ -757,29 +758,29 @@ private:
 
             // StartDate == parentCloseTime counts as expired;
             // StartDate == parentCloseTime + 1 does not.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             Number const principal = broker.asset(200).number();
             auto const parentClose = env.current()->parentCloseTime().time_since_epoch().count();
 
             // StartDate == parentCloseTime is rejected with tecEXPIRED.
-            env(set(lender, broker.brokerID, principal),
-                kBorrower(borrower),
+            env(set(lender_, broker.brokerID, principal),
+                kBorrower(borrower_),
                 kStartDate(parentClose),
-                kInterestRate(interest),
-                kPaymentTotal(payTotal),
-                kPaymentInterval(payInterval),
+                kInterestRate(interest_),
+                kPaymentTotal(payTotal_),
+                kPaymentInterval(payInterval_),
                 Ter(tecEXPIRED));
 
             // StartDate == parentCloseTime + 1 succeeds.
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            env(set(lender, broker.brokerID, principal),
-                kBorrower(borrower),
+            env(set(lender_, broker.brokerID, principal),
+                kBorrower(borrower_),
                 kStartDate(parentClose + 1),
-                kInterestRate(interest),
-                kPaymentTotal(payTotal),
-                kPaymentInterval(payInterval));
+                kInterestRate(interest_),
+                kPaymentTotal(payTotal_),
+                kPaymentInterval(payInterval_));
             env.close();
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
                 BEAST_EXPECT(loan->isFlag(lsfLoanPending));
@@ -790,32 +791,32 @@ private:
 
             // A StartDate near kMaxTime that makes the payment schedule
             // overflow is rejected with tecKILLED.
-            using timeType = decltype(sfNextPaymentDueDate)::type::value_type;
-            static_assert(std::is_same_v<timeType, std::uint32_t>);
-            constexpr timeType kMaxTime = std::numeric_limits<timeType>::max();
+            using TimeType = decltype(sfNextPaymentDueDate)::type::value_type;
+            static_assert(std::is_same_v<TimeType, std::uint32_t>);
+            constexpr TimeType kMaxTime = std::numeric_limits<TimeType>::max();
             static_assert(kMaxTime == 4'294'967'295);
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
             Number const principal = broker.asset(200).number();
 
             // PaymentInterval alone exceeds kMaxTime - StartDate.
-            env(set(lender, broker.brokerID, principal),
-                kBorrower(borrower),
-                kStartDate(kMaxTime - (payInterval - 1)),
-                kInterestRate(interest),
-                kPaymentTotal(payTotal),
-                kPaymentInterval(payInterval),
+            env(set(lender_, broker.brokerID, principal),
+                kBorrower(borrower_),
+                kStartDate(kMaxTime - (payInterval_ - 1)),
+                kInterestRate(interest_),
+                kPaymentTotal(payTotal_),
+                kPaymentInterval(payInterval_),
                 Ter(tecKILLED));
 
             // Interval fits but interval * total exceeds the remaining
             // time available for the schedule.
-            env(set(lender, broker.brokerID, principal),
-                kBorrower(borrower),
-                kStartDate(kMaxTime - (payInterval * payTotal / 2)),
-                kInterestRate(interest),
-                kPaymentTotal(payTotal),
-                kPaymentInterval(payInterval),
+            env(set(lender_, broker.brokerID, principal),
+                kBorrower(borrower_),
+                kStartDate(kMaxTime - (payInterval_ * payTotal_ / 2)),
+                kInterestRate(interest_),
+                kPaymentTotal(payTotal_),
+                kPaymentInterval(payInterval_),
                 Ter(tecKILLED));
         }
 
@@ -826,37 +827,37 @@ private:
             // accepted (LoanAccept returns tecEXPIRED), but it can still be
             // cleaned up with LoanDelete, releasing the reserve and reversing
             // the vault bookkeeping.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             auto const vault0 = readVault(env, broker);
-            auto const lenderOwners0 = env.ownerCount(lender);
-            auto const borrowerOwners0 = env.ownerCount(borrower);
+            auto const lenderOwners0 = env.ownerCount(lender_);
+            auto const borrowerOwners0 = env.ownerCount(borrower_);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
             std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
-            propose(env, broker, lender, borrower, startDate);
+            propose(env, broker, lender_, borrower_, startDate);
             env.close();
 
             BEAST_EXPECT(env.le(loanKeylet));
-            BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0 + 1);
+            BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0 + 1);
 
             // Advance the ledger beyond the StartDate.
             env.close(NetClock::time_point{NetClock::duration{startDate}} + 1h);
 
             // The expired proposal can no longer be accepted.
-            env(accept(borrower, loanKeylet.key), Ter(tecEXPIRED));
+            env(accept(borrower_, loanKeylet.key), Ter(tecEXPIRED));
             expectStillPending(env, loanKeylet);
 
             // But it can still be deleted.
-            env(del(lender, loanKeylet.key));
+            env(del(lender_, loanKeylet.key));
             env.close();
 
             // The loan is gone, the reserve is released, and the vault
             // bookkeeping is fully reversed.
             BEAST_EXPECT(!env.le(loanKeylet));
-            BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0);
-            BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwners0);
+            BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0);
+            BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners0);
 
             auto const vault1 = readVault(env, broker);
             BEAST_EXPECT(vault1.available == vault0.available);
@@ -869,20 +870,20 @@ private:
 
             // A LoanBroker owner without reserve for the new Loan object is
             // rejected with tecINSUFFICIENT_RESERVE.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::IOU);
 
             // Drain the lender's XRP down to its current reserve.
             auto const amt =
-                env.balance(lender) - accountReserve(*env.current(), lender.id(), env.journal);
-            env(pay(lender, issuer, amt));
+                env.balance(lender_) - accountReserve(*env.current(), lender_.id(), env.journal);
+            env(pay(lender_, issuer_, amt));
             env.close();
 
             propose(
                 env,
                 broker,
-                lender,
-                borrower,
+                lender_,
+                borrower_,
                 (env.now() + 1h).time_since_epoch().count(),
                 Ter(tecINSUFFICIENT_RESERVE));
         }
@@ -907,7 +908,7 @@ private:
             testcase << "Two-step: LoanSet with frozen vault pseudo-account ("
                      << assetTypeName(assetType) << ")";
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, assetType);
             auto const loanKeylet = nextLoanKeylet(env, broker);
 
@@ -919,14 +920,14 @@ private:
             TER expected = tesSUCCESS;
             if (assetType == AssetType::IOU)
             {
-                env(trust(issuer, vaultPseudo[iouCurrency_](0), tfSetFreeze));
+                env(trust(issuer_, vaultPseudo[iouCurrency_](0), tfSetFreeze));
                 env.close();
                 expected = TER{tecFROZEN};
             }
             else
             {
-                MPTTester mptt{env, issuer, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer, .holder = vaultPseudo, .flags = tfMPTLock});
+                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
+                mptt.set({.account = issuer_, .holder = vaultPseudo, .flags = tfMPTLock});
                 env.close();
                 expected = TER{tecLOCKED};
             }
@@ -934,8 +935,8 @@ private:
             propose(
                 env,
                 broker,
-                lender,
-                borrower,
+                lender_,
+                borrower_,
                 (env.now() + 1h).time_since_epoch().count(),
                 Ter(expected));
             BEAST_EXPECT(!env.le(loanKeylet));
@@ -948,7 +949,7 @@ private:
             testcase << "Two-step: LoanSet with deep frozen broker pseudo-account ("
                      << assetTypeName(assetType) << ")";
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, assetType);
             auto const loanKeylet = nextLoanKeylet(env, broker);
 
@@ -960,14 +961,14 @@ private:
             TER expected = tesSUCCESS;
             if (assetType == AssetType::IOU)
             {
-                env(trust(issuer, brokerPseudo[iouCurrency_](0), tfSetFreeze | tfSetDeepFreeze));
+                env(trust(issuer_, brokerPseudo[iouCurrency_](0), tfSetFreeze | tfSetDeepFreeze));
                 env.close();
                 expected = TER{tecFROZEN};
             }
             else
             {
-                MPTTester mptt{env, issuer, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer, .holder = brokerPseudo, .flags = tfMPTLock});
+                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
+                mptt.set({.account = issuer_, .holder = brokerPseudo, .flags = tfMPTLock});
                 env.close();
                 expected = TER{tecLOCKED};
             }
@@ -975,8 +976,8 @@ private:
             propose(
                 env,
                 broker,
-                lender,
-                borrower,
+                lender_,
+                borrower_,
                 (env.now() + 1h).time_since_epoch().count(),
                 Ter(expected));
             BEAST_EXPECT(!env.le(loanKeylet));
@@ -988,21 +989,21 @@ private:
             testcase << "Two-step: LoanSet with frozen borrower (" << assetTypeName(assetType)
                      << ")";
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, assetType);
             auto const loanKeylet = nextLoanKeylet(env, broker);
 
             TER expected = tesSUCCESS;
             if (assetType == AssetType::IOU)
             {
-                env(trust(issuer, borrower[iouCurrency_](0), tfSetFreeze));
+                env(trust(issuer_, borrower_[iouCurrency_](0), tfSetFreeze));
                 env.close();
                 expected = TER{tecFROZEN};
             }
             else
             {
-                MPTTester mptt{env, issuer, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer, .holder = borrower, .flags = tfMPTLock});
+                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
+                mptt.set({.account = issuer_, .holder = borrower_, .flags = tfMPTLock});
                 env.close();
                 expected = TER{tecLOCKED};
             }
@@ -1010,8 +1011,8 @@ private:
             propose(
                 env,
                 broker,
-                lender,
-                borrower,
+                lender_,
+                borrower_,
                 (env.now() + 1h).time_since_epoch().count(),
                 Ter(expected));
             BEAST_EXPECT(!env.le(loanKeylet));
@@ -1023,21 +1024,21 @@ private:
             testcase << "Two-step: LoanSet with deep frozen broker owner ("
                      << assetTypeName(assetType) << ")";
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, assetType);
             auto const loanKeylet = nextLoanKeylet(env, broker);
 
             TER expected = tesSUCCESS;
             if (assetType == AssetType::IOU)
             {
-                env(trust(issuer, lender[iouCurrency_](0), tfSetFreeze | tfSetDeepFreeze));
+                env(trust(issuer_, lender_[iouCurrency_](0), tfSetFreeze | tfSetDeepFreeze));
                 env.close();
                 expected = TER{tecFROZEN};
             }
             else
             {
-                MPTTester mptt{env, issuer, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer, .holder = lender, .flags = tfMPTLock});
+                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
+                mptt.set({.account = issuer_, .holder = lender_, .flags = tfMPTLock});
                 env.close();
                 expected = TER{tecLOCKED};
             }
@@ -1045,8 +1046,8 @@ private:
             propose(
                 env,
                 broker,
-                lender,
-                borrower,
+                lender_,
+                borrower_,
                 (env.now() + 1h).time_since_epoch().count(),
                 Ter(expected));
             BEAST_EXPECT(!env.le(loanKeylet));
@@ -1057,20 +1058,20 @@ private:
 
             // A Borrower without reserve for the Loan object is rejected with
             // tecINSUFFICIENT_RESERVE and the loan stays pending.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::IOU);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             // Drain the borrower's XRP down to its current reserve.
-            auto const amt =
-                env.balance(borrower) - accountReserve(*env.current(), borrower.id(), env.journal);
-            env(pay(borrower, issuer, amt));
+            auto const amt = env.balance(borrower_) -
+                accountReserve(*env.current(), borrower_.id(), env.journal);
+            env(pay(borrower_, issuer_, amt));
             env.close();
 
-            env(accept(borrower, loanKeylet.key), Ter(tecINSUFFICIENT_RESERVE));
+            env(accept(borrower_, loanKeylet.key), Ter(tecINSUFFICIENT_RESERVE));
             expectStillPending(env, loanKeylet);
         }
 
@@ -1083,11 +1084,11 @@ private:
             testcase << "Two-step: LoanAccept with frozen vault pseudo-account ("
                      << assetTypeName(assetType) << ")";
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, assetType);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             auto const vaultPseudo = [&]() {
@@ -1098,19 +1099,19 @@ private:
             TER expected = tesSUCCESS;
             if (assetType == AssetType::IOU)
             {
-                env(trust(issuer, vaultPseudo[iouCurrency_](0), tfSetFreeze));
+                env(trust(issuer_, vaultPseudo[iouCurrency_](0), tfSetFreeze));
                 env.close();
                 expected = TER{tecFROZEN};
             }
             else
             {
-                MPTTester mptt{env, issuer, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer, .holder = vaultPseudo, .flags = tfMPTLock});
+                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
+                mptt.set({.account = issuer_, .holder = vaultPseudo, .flags = tfMPTLock});
                 env.close();
                 expected = TER{tecLOCKED};
             }
 
-            env(accept(borrower, loanKeylet.key), Ter(expected));
+            env(accept(borrower_, loanKeylet.key), Ter(expected));
             expectStillPending(env, loanKeylet);
         }
 
@@ -1121,11 +1122,11 @@ private:
             testcase << "Two-step: LoanAccept with deep frozen broker pseudo-account ("
                      << assetTypeName(assetType) << ")";
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, assetType);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             auto const brokerPseudo = [&]() {
@@ -1136,19 +1137,19 @@ private:
             TER expected = tesSUCCESS;
             if (assetType == AssetType::IOU)
             {
-                env(trust(issuer, brokerPseudo[iouCurrency_](0), tfSetFreeze | tfSetDeepFreeze));
+                env(trust(issuer_, brokerPseudo[iouCurrency_](0), tfSetFreeze | tfSetDeepFreeze));
                 env.close();
                 expected = TER{tecFROZEN};
             }
             else
             {
-                MPTTester mptt{env, issuer, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer, .holder = brokerPseudo, .flags = tfMPTLock});
+                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
+                mptt.set({.account = issuer_, .holder = brokerPseudo, .flags = tfMPTLock});
                 env.close();
                 expected = TER{tecLOCKED};
             }
 
-            env(accept(borrower, loanKeylet.key), Ter(expected));
+            env(accept(borrower_, loanKeylet.key), Ter(expected));
             expectStillPending(env, loanKeylet);
         }
 
@@ -1158,29 +1159,29 @@ private:
             testcase << "Two-step: LoanAccept with frozen borrower (" << assetTypeName(assetType)
                      << ")";
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, assetType);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             TER expected = tesSUCCESS;
             if (assetType == AssetType::IOU)
             {
-                env(trust(issuer, borrower[iouCurrency_](0), tfSetFreeze));
+                env(trust(issuer_, borrower_[iouCurrency_](0), tfSetFreeze));
                 env.close();
                 expected = TER{tecFROZEN};
             }
             else
             {
-                MPTTester mptt{env, issuer, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer, .holder = borrower, .flags = tfMPTLock});
+                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
+                mptt.set({.account = issuer_, .holder = borrower_, .flags = tfMPTLock});
                 env.close();
                 expected = TER{tecLOCKED};
             }
 
-            env(accept(borrower, loanKeylet.key), Ter(expected));
+            env(accept(borrower_, loanKeylet.key), Ter(expected));
             expectStillPending(env, loanKeylet);
         }
 
@@ -1190,29 +1191,29 @@ private:
             testcase << "Two-step: LoanAccept with deep frozen broker owner ("
                      << assetTypeName(assetType) << ")";
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, assetType);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             TER expected = tesSUCCESS;
             if (assetType == AssetType::IOU)
             {
-                env(trust(issuer, lender[iouCurrency_](0), tfSetFreeze | tfSetDeepFreeze));
+                env(trust(issuer_, lender_[iouCurrency_](0), tfSetFreeze | tfSetDeepFreeze));
                 env.close();
                 expected = TER{tecFROZEN};
             }
             else
             {
-                MPTTester mptt{env, issuer, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer, .holder = lender, .flags = tfMPTLock});
+                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
+                mptt.set({.account = issuer_, .holder = lender_, .flags = tfMPTLock});
                 env.close();
                 expected = TER{tecLOCKED};
             }
 
-            env(accept(borrower, loanKeylet.key), Ter(expected));
+            env(accept(borrower_, loanKeylet.key), Ter(expected));
             expectStillPending(env, loanKeylet);
         }
 
@@ -1222,24 +1223,24 @@ private:
             // If the borrower has no trust line and the issuer has cleared
             // asfDefaultRipple when LoanAccept runs, the acceptance is
             // rejected with terNO_RIPPLE and the loan stays pending.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::IOU);
             Issue const iou = broker.asset.raw().get<Issue>();
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             // Remove the borrower's trust line.
-            auto const borrowerLine = keylet::trustLine(borrower, iou);
-            env.trust(broker.asset(0), borrower);
+            auto const borrowerLine = keylet::trustLine(borrower_, iou);
+            env.trust(broker.asset(0), borrower_);
             env.close();
             BEAST_EXPECT(!env.le(borrowerLine));
 
-            env(fclear(issuer, asfDefaultRipple));
+            env(fclear(issuer_, asfDefaultRipple));
             env.close();
 
-            env(accept(borrower, loanKeylet.key), Ter(terNO_RIPPLE));
+            env(accept(borrower_, loanKeylet.key), Ter(terNO_RIPPLE));
             expectStillPending(env, loanKeylet);
         }
 
@@ -1251,7 +1252,7 @@ private:
             // LoanAccept runs, the acceptance is rejected with terNO_RIPPLE,
             // both through the full pipeline and from LoanAccept::preclaim
             // called directly. The borrower keeps its line throughout.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::IOU);
             Issue const iou = broker.asset.raw().get<Issue>();
 
@@ -1259,31 +1260,31 @@ private:
             propose(
                 env,
                 broker,
-                lender,
-                borrower,
+                lender_,
+                borrower_,
                 (env.now() + 1h).time_since_epoch().count(),
                 kLoanOriginationFee(broker.asset(5).number()));
             env.close();
 
             // Remove the lender's trust line. Its balance is already zero, and
             // tfSetNoRipple puts the line in its default state.
-            auto const lenderLine = keylet::trustLine(lender, iou);
-            env(trust(lender, broker.asset(0), tfSetNoRipple));
+            auto const lenderLine = keylet::trustLine(lender_, iou);
+            env(trust(lender_, broker.asset(0), tfSetNoRipple));
             env.close();
             BEAST_EXPECT(!env.le(lenderLine));
             // The borrower's line is untouched.
-            BEAST_EXPECT(env.le(keylet::trustLine(borrower, iou)));
+            BEAST_EXPECT(env.le(keylet::trustLine(borrower_, iou)));
 
-            env(fclear(issuer, asfDefaultRipple));
+            env(fclear(issuer_, asfDefaultRipple));
             env.close();
 
             // Full pipeline: rejected, and the loan stays pending.
-            env(accept(borrower, loanKeylet.key), Ter(terNO_RIPPLE));
+            env(accept(borrower_, loanKeylet.key), Ter(terNO_RIPPLE));
             expectStillPending(env, loanKeylet);
 
             // Direct preclaim against a scratch view of the same ledger.
             STTx const tx{ttLOAN_ACCEPT, [&](STObject& obj) {
-                              obj.setAccountID(sfAccount, borrower.id());
+                              obj.setAccountID(sfAccount, borrower_.id());
                               obj.setFieldH256(sfLoanID, loanKeylet.key);
                           }};
             OpenView ov{*env.current()};
@@ -1301,32 +1302,32 @@ private:
             // If the issuer revokes the borrower's MPToken authorization
             // between the LoanSet proposal and LoanAccept, LoanAccept fails
             // with tecNO_AUTH and the loan stays pending.
-            Env env(*this, features);
+            Env env(*this, features_);
 
-            env.fund(XRP(1'000'000), issuer, noripple(lender), borrower);
+            env.fund(XRP(1'000'000), issuer_, noripple(lender_), borrower_);
             env.close();
 
             MPTTester asset(
                 {.env = env,
-                 .issuer = issuer,
-                 .holders = {lender, borrower},
+                 .issuer = issuer_,
+                 .holders = {lender_, borrower_},
                  .flags = kMptDexFlags | tfMPTRequireAuth | tfMPTCanClawback | tfMPTCanLock,
                  .authHolder = true});
 
-            env(pay(issuer, lender, asset(2'000'000)));
+            env(pay(issuer_, lender_, asset(2'000'000)));
             env.close();
 
-            auto const broker = createVaultAndBroker(env, asset, lender);
+            auto const broker = createVaultAndBroker(env, asset, lender_);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             // Issuer revokes the borrower's MPToken authorization.
-            asset.authorize({.account = issuer, .holder = borrower, .flags = tfMPTUnauthorize});
+            asset.authorize({.account = issuer_, .holder = borrower_, .flags = tfMPTUnauthorize});
             env.close();
 
-            env(accept(borrower, loanKeylet.key), Ter(tecNO_AUTH));
+            env(accept(borrower_, loanKeylet.key), Ter(tecNO_AUTH));
             expectStillPending(env, loanKeylet);
         }
 
@@ -1336,32 +1337,32 @@ private:
             // If the issuer revokes the broker owner's MPToken authorization
             // between the LoanSet proposal and LoanAccept, LoanAccept fails
             // with tecNO_AUTH and the loan stays pending.
-            Env env(*this, features);
+            Env env(*this, features_);
 
-            env.fund(XRP(1'000'000), issuer, noripple(lender), borrower);
+            env.fund(XRP(1'000'000), issuer_, noripple(lender_), borrower_);
             env.close();
 
             MPTTester asset(
                 {.env = env,
-                 .issuer = issuer,
-                 .holders = {lender, borrower},
+                 .issuer = issuer_,
+                 .holders = {lender_, borrower_},
                  .flags = kMptDexFlags | tfMPTRequireAuth | tfMPTCanClawback | tfMPTCanLock,
                  .authHolder = true});
 
-            env(pay(issuer, lender, asset(2'000'000)));
+            env(pay(issuer_, lender_, asset(2'000'000)));
             env.close();
 
-            auto const broker = createVaultAndBroker(env, asset, lender);
+            auto const broker = createVaultAndBroker(env, asset, lender_);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             // Issuer revokes the broker owner's MPToken authorization.
-            asset.authorize({.account = issuer, .holder = lender, .flags = tfMPTUnauthorize});
+            asset.authorize({.account = issuer_, .holder = lender_, .flags = tfMPTUnauthorize});
             env.close();
 
-            env(accept(borrower, loanKeylet.key), Ter(tecNO_AUTH));
+            env(accept(borrower_, loanKeylet.key), Ter(tecNO_AUTH));
             expectStillPending(env, loanKeylet);
         }
 
@@ -1374,27 +1375,27 @@ private:
             // unauthorised: LoanAccept fails with tecNO_AUTH. Once the issuer
             // authorises the new line, LoanAccept succeeds. The loan stays
             // pending across both rejections.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeRequireAuthIouBroker(env);
             Issue const iou = broker.asset.raw().get<Issue>();
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             // Zeroing the limit deletes the borrower's line.
-            auto const borrowerLine = keylet::trustLine(borrower, iou);
-            env(trust(borrower, broker.asset(0)));
+            auto const borrowerLine = keylet::trustLine(borrower_, iou);
+            env(trust(borrower_, broker.asset(0)));
             env.close();
             BEAST_EXPECT(!env.le(borrowerLine));
 
-            env(accept(borrower, loanKeylet.key), Ter(tecNO_LINE));
+            env(accept(borrower_, loanKeylet.key), Ter(tecNO_LINE));
             expectStillPending(env, loanKeylet);
 
-            env(trust(borrower, broker.asset(1'000'000)));
+            env(trust(borrower_, broker.asset(1'000'000)));
             env.close();
             BEAST_EXPECT(env.le(borrowerLine));
-            env(accept(borrower, loanKeylet.key), Ter(tecNO_AUTH));
+            env(accept(borrower_, loanKeylet.key), Ter(tecNO_AUTH));
             expectStillPending(env, loanKeylet);
             // Close before the issuer authorises the line. Otherwise the
             // rejected LoanAccept and the TrustSet share an open ledger and
@@ -1402,13 +1403,13 @@ private:
             // succeed on replay.
             env.close();
 
-            env(trust(issuer, broker.asset(0), borrower, tfSetfAuth));
+            env(trust(issuer_, broker.asset(0), borrower_, tfSetfAuth));
             env.close();
-            env(accept(borrower, loanKeylet.key));
+            env(accept(borrower_, loanKeylet.key));
             env.close();
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
                 BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
-            BEAST_EXPECT(env.balance(borrower, broker.asset).value() == broker.asset(200).value());
+            BEAST_EXPECT(env.balance(borrower_, broker.asset).value() == broker.asset(200).value());
         }
 
         {
@@ -1419,27 +1420,27 @@ private:
             // with tecNO_LINE while the owner has no line, with tecNO_AUTH on
             // an unauthorised replacement, and succeeds once the issuer
             // authorises it.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeRequireAuthIouBroker(env);
             Issue const iou = broker.asset.raw().get<Issue>();
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
-            auto const lenderLine = keylet::trustLine(lender, iou);
-            env(trust(lender, broker.asset(0), tfSetNoRipple));
+            auto const lenderLine = keylet::trustLine(lender_, iou);
+            env(trust(lender_, broker.asset(0), tfSetNoRipple));
             env.close();
             BEAST_EXPECT(!env.le(lenderLine));
-            BEAST_EXPECT(env.le(keylet::trustLine(borrower, iou)));
+            BEAST_EXPECT(env.le(keylet::trustLine(borrower_, iou)));
 
-            env(accept(borrower, loanKeylet.key), Ter(tecNO_LINE));
+            env(accept(borrower_, loanKeylet.key), Ter(tecNO_LINE));
             expectStillPending(env, loanKeylet);
 
-            env(trust(lender, broker.asset(1'000'000)));
+            env(trust(lender_, broker.asset(1'000'000)));
             env.close();
             BEAST_EXPECT(env.le(lenderLine));
-            env(accept(borrower, loanKeylet.key), Ter(tecNO_AUTH));
+            env(accept(borrower_, loanKeylet.key), Ter(tecNO_AUTH));
             expectStillPending(env, loanKeylet);
             // Close before the issuer authorises the line. Otherwise the
             // rejected LoanAccept and the TrustSet share an open ledger and
@@ -1447,9 +1448,9 @@ private:
             // succeed on replay.
             env.close();
 
-            env(trust(issuer, broker.asset(0), lender, tfSetfAuth));
+            env(trust(issuer_, broker.asset(0), lender_, tfSetfAuth));
             env.close();
-            env(accept(borrower, loanKeylet.key));
+            env(accept(borrower_, loanKeylet.key));
             env.close();
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
                 BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
@@ -1461,47 +1462,47 @@ private:
             // With an origination fee, and neither the borrower nor the broker
             // owner holding an MPToken, LoanAccept creates both MPTokens and
             // succeeds.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::MPT);
             auto const mptID = broker.asset.raw().get<MPTIssue>().getMptID();
-            MPTTester mptt{env, issuer, mptID};
+            MPTTester mptt{env, issuer_, mptID};
 
-            auto const borrowerMPToken = keylet::mptoken(mptID, borrower);
-            auto const lenderMPToken = keylet::mptoken(mptID, lender);
+            auto const borrowerMPToken = keylet::mptoken(mptID, borrower_);
+            auto const lenderMPToken = keylet::mptoken(mptID, lender_);
 
             Number const originationFee = broker.asset(5).number();
             auto const loanKeylet = nextLoanKeylet(env, broker);
             propose(
                 env,
                 broker,
-                lender,
-                borrower,
+                lender_,
+                borrower_,
                 (env.now() + 1h).time_since_epoch().count(),
                 kLoanOriginationFee(originationFee));
             env.close();
 
             // Delete both holdings after the proposal. The broker owner's
             // remaining balance goes back to the issuer first.
-            mptt.authorize({.account = borrower, .flags = tfMPTUnauthorize});
-            if (auto const lenderBalance = env.balance(lender, broker.asset);
+            mptt.authorize({.account = borrower_, .flags = tfMPTUnauthorize});
+            if (auto const lenderBalance = env.balance(lender_, broker.asset);
                 lenderBalance.value() != beast::kZero)
-                env(pay(lender, issuer, lenderBalance));
+                env(pay(lender_, issuer_, lenderBalance));
             env.close();
-            mptt.authorize({.account = lender, .flags = tfMPTUnauthorize});
+            mptt.authorize({.account = lender_, .flags = tfMPTUnauthorize});
             env.close();
             BEAST_EXPECT(!env.le(borrowerMPToken));
             BEAST_EXPECT(!env.le(lenderMPToken));
 
-            env(accept(borrower, loanKeylet.key));
+            env(accept(borrower_, loanKeylet.key));
             env.close();
 
             // Both holdings exist again and hold the disbursed amounts.
             if (!BEAST_EXPECT(env.le(borrowerMPToken) && env.le(lenderMPToken)))
                 return;
             STAmount const netToBorrower{broker.asset, broker.asset(200).number() - originationFee};
-            BEAST_EXPECT(env.balance(borrower, broker.asset).value() == netToBorrower);
+            BEAST_EXPECT(env.balance(borrower_, broker.asset).value() == netToBorrower);
             BEAST_EXPECT(
-                env.balance(lender, broker.asset).value() ==
+                env.balance(lender_, broker.asset).value() ==
                 STAmount(broker.asset, originationFee));
 
             auto const loan = env.le(loanKeylet);
@@ -1516,31 +1517,31 @@ private:
             // If the broker owner's MPToken authorization has been revoked
             // when LoanSet runs, the proposal is rejected with tecNO_AUTH and
             // no pending loan is created. The borrower stays authorised.
-            Env env(*this, features);
+            Env env(*this, features_);
 
-            env.fund(XRP(1'000'000), issuer, noripple(lender), borrower);
+            env.fund(XRP(1'000'000), issuer_, noripple(lender_), borrower_);
             env.close();
 
             MPTTester asset(
                 {.env = env,
-                 .issuer = issuer,
-                 .holders = {lender, borrower},
+                 .issuer = issuer_,
+                 .holders = {lender_, borrower_},
                  .flags = kMptDexFlags | tfMPTRequireAuth | tfMPTCanClawback | tfMPTCanLock,
                  .authHolder = true});
 
-            env(pay(issuer, lender, asset(2'000'000)));
+            env(pay(issuer_, lender_, asset(2'000'000)));
             env.close();
 
-            auto const broker = createVaultAndBroker(env, asset, lender);
+            auto const broker = createVaultAndBroker(env, asset, lender_);
 
             // Zero the broker owner's MPT balance before revoking its
             // authorization.
-            auto const lenderBalance = env.balance(lender, broker.asset);
-            env(pay(lender, issuer, lenderBalance));
+            auto const lenderBalance = env.balance(lender_, broker.asset);
+            env(pay(lender_, issuer_, lenderBalance));
             env.close();
 
             // Issuer revokes the broker owner's MPToken authorization.
-            asset.authorize({.account = issuer, .holder = lender, .flags = tfMPTUnauthorize});
+            asset.authorize({.account = issuer_, .holder = lender_, .flags = tfMPTUnauthorize});
             env.close();
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
@@ -1548,8 +1549,8 @@ private:
             propose(
                 env,
                 broker,
-                lender,
-                borrower,
+                lender_,
+                borrower_,
                 (env.now() + 1h).time_since_epoch().count(),
                 Ter(tecNO_AUTH));
 
@@ -1574,24 +1575,24 @@ private:
         // releases the broker owner's reserve. It can be done by either the
         // broker owner or the borrower.
         auto const testDeletePending = [&](AssetType assetType, Account const& deleter) {
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, assetType);
 
             auto const vault0 = readVault(env, broker);
             auto const broker0 = readBroker(env, broker);
-            auto const lenderOwners0 = env.ownerCount(lender);
-            auto const borrowerOwners0 = env.ownerCount(borrower);
+            auto const lenderOwners0 = env.ownerCount(lender_);
+            auto const borrowerOwners0 = env.ownerCount(borrower_);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
             // A StartDate comfortably in the future.
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             BEAST_EXPECT(env.le(loanKeylet));
-            BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0 + 1);
+            BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0 + 1);
 
             // An unrelated account cannot delete the loan.
-            env(del(evan, loanKeylet.key), Ter(tecNO_PERMISSION));
+            env(del(evan_, loanKeylet.key), Ter(tecNO_PERMISSION));
 
             env(del(deleter, loanKeylet.key));
             env.close();
@@ -1599,8 +1600,8 @@ private:
             // The loan is gone, the reserve is released, and the vault
             // bookkeeping is fully reversed.
             BEAST_EXPECT(!env.le(loanKeylet));
-            BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0);
-            BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwners0);
+            BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0);
+            BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners0);
 
             auto const vault1 = readVault(env, broker);
             BEAST_EXPECT(vault1.available == vault0.available);
@@ -1620,11 +1621,11 @@ private:
         {
             testcase << "Two-step: LoanDelete of pending loan by broker owner ("
                      << assetTypeName(assetType) << ")";
-            testDeletePending(assetType, lender);
+            testDeletePending(assetType, lender_);
 
             testcase << "Two-step: LoanDelete of pending loan by borrower ("
                      << assetTypeName(assetType) << ")";
-            testDeletePending(assetType, borrower);
+            testDeletePending(assetType, borrower_);
         }
 
         {
@@ -1633,18 +1634,18 @@ private:
             // While a pending loan is outstanding, LoanBrokerDelete is rejected
             // with tecHAS_OBLIGATIONS. Once the pending loan is deleted, the
             // broker can be deleted.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             // The loan is pending; the broker's OwnerCount is non-zero.
             if (auto const b = env.le(broker.brokerKeylet()); BEAST_EXPECT(b))
                 BEAST_EXPECT(b->at(sfOwnerCount) != 0u);
 
-            env(jtx::loan_broker::del(lender, broker.brokerID), Ter(tecHAS_OBLIGATIONS));
+            env(jtx::loan_broker::del(lender_, broker.brokerID), Ter(tecHAS_OBLIGATIONS));
             env.close();
 
             // Broker and loan are both still present.
@@ -1652,9 +1653,9 @@ private:
             BEAST_EXPECT(env.le(loanKeylet));
 
             // Delete the pending loan, then the broker can be deleted.
-            env(del(lender, loanKeylet.key));
+            env(del(lender_, loanKeylet.key));
             env.close();
-            env(jtx::loan_broker::del(lender, broker.brokerID));
+            env(jtx::loan_broker::del(lender_, broker.brokerID));
             env.close();
             BEAST_EXPECT(!env.le(broker.brokerKeylet()));
         }
@@ -1666,33 +1667,33 @@ private:
             // not forgive residual DebtTotal. Deleting the pending loan
             // afterwards takes OwnerCount to zero and must forgive the
             // residual, leaving DebtTotal at zero and the broker deletable.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             // L1: proposed and accepted (borrower), then paid off in full.
             auto const l1Keylet = nextLoanKeylet(env, broker);
             std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
-            propose(env, broker, lender, borrower, startDate);
+            propose(env, broker, lender_, borrower_, startDate);
             env.close();
-            env(accept(borrower, l1Keylet.key));
+            env(accept(borrower_, l1Keylet.key));
             env.close();
 
             // L2: proposed for evan and left pending.
             auto const l2Keylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, evan, startDate);
+            propose(env, broker, lender_, evan_, startDate);
             env.close();
 
             // Pay L1 off. A generous upper bound (2x principal) clears
             // principal + interest.
             env.close(NetClock::time_point{NetClock::duration{startDate}} + 30s);
-            env(pay(borrower, l1Keylet.key, broker.asset(400), tfLoanFullPayment));
+            env(pay(borrower_, l1Keylet.key, broker.asset(400), tfLoanFullPayment));
             env.close();
             if (auto const l1 = env.le(l1Keylet); BEAST_EXPECT(l1))
                 BEAST_EXPECT(l1->at(sfPaymentRemaining) == 0);
 
             // Delete L1. OwnerCount stays at 1 and DebtTotal is exactly L2's
             // contribution.
-            env(del(borrower, l1Keylet.key));
+            env(del(borrower_, l1Keylet.key));
             env.close();
             BEAST_EXPECT(!env.le(l1Keylet));
             auto const brokerL2Only = readBroker(env, broker);
@@ -1724,14 +1725,14 @@ private:
 
             // Deleting L2 takes OwnerCount to zero and must forgive the
             // residual.
-            env(del(lender, l2Keylet.key));
+            env(del(lender_, l2Keylet.key));
             BEAST_EXPECT(!env.le(l2Keylet));
             auto const brokerEmpty = readBroker(env, broker);
             BEAST_EXPECT(brokerEmpty.ownerCount == 0);
             BEAST_EXPECT(brokerEmpty.debtTotal == beast::kZero);
 
             // The broker can now be deleted.
-            env(jtx::loan_broker::del(lender, broker.brokerID));
+            env(jtx::loan_broker::del(lender_, broker.brokerID));
             BEAST_EXPECT(!env.le(broker.brokerKeylet()));
         }
 
@@ -1742,7 +1743,7 @@ private:
             // independently to DebtTotal, AssetsReserved, and OwnerCount.
             // Deleting one pending loan must leave the other's bookkeeping
             // untouched.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             Number const principal = broker.asset(200).number();
@@ -1751,7 +1752,7 @@ private:
 
             // Propose L1 (borrower) to establish a baseline delta.
             auto const l1Keylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             auto const vault1 = readVault(env, broker);
@@ -1763,7 +1764,7 @@ private:
             // Propose L2 (evan) on the same broker while L1 is still
             // pending. Each proposal contributes an equal delta.
             auto const l2Keylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, evan, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, evan_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             auto const vault2 = readVault(env, broker);
@@ -1780,7 +1781,7 @@ private:
 
             // Delete L1. L2's bookkeeping is untouched; broker state
             // reflects exactly the L2-only contribution.
-            env(del(lender, l1Keylet.key));
+            env(del(lender_, l1Keylet.key));
             env.close();
             BEAST_EXPECT(!env.le(l1Keylet));
 
@@ -1799,11 +1800,11 @@ private:
             // A pending loan counts toward DebtMaximum. With DebtMaximum set
             // to L1's DebtTotal, a same-sized L2 is rejected with
             // tecLIMIT_EXCEEDED.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             auto const l1Keylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             auto const brokerL1 = env.le(broker.brokerKeylet());
@@ -1812,7 +1813,7 @@ private:
             Number const debtAfterL1 = brokerL1->at(sfDebtTotal);
 
             // Tighten DebtMaximum to exactly L1's DebtTotal.
-            env(jtx::loan_broker::set(lender, broker.vaultID),
+            env(jtx::loan_broker::set(lender_, broker.vaultID),
                 jtx::loan_broker::kLoanBrokerId(broker.brokerID),
                 jtx::loan_broker::kDebtMaximum(debtAfterL1));
             env.close();
@@ -1821,8 +1822,8 @@ private:
             propose(
                 env,
                 broker,
-                lender,
-                evan,
+                lender_,
+                evan_,
                 (env.now() + 1h).time_since_epoch().count(),
                 Ter(tecLIMIT_EXCEEDED));
             env.close();
@@ -1847,7 +1848,7 @@ private:
                     ? "Two-step: Batch inner LoanSet creates a pending loan"
                     : "Two-step: Batch inner LoanSet rejected while ttLOAN_SET is disabled");
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             Number const principal = broker.asset(200).number();
@@ -1860,23 +1861,23 @@ private:
             std::uint32_t const brokerOwnerCount0 = brokerState0->at(sfOwnerCount);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            auto const lenderSeq = env.seq(lender);
+            auto const lenderSeq = env.seq(lender_);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
-            env(batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
+            env(batch::outer(lender_, lenderSeq, batchFee, tfAllOrNothing),
                 batch::Inner(
                     env.json(
-                        set(lender, broker.brokerID, principal),
-                        kBorrower(borrower.id()),
+                        set(lender_, broker.brokerID, principal),
+                        kBorrower(borrower_.id()),
                         kStartDate(startDate),
-                        kInterestRate(interest),
-                        kPaymentTotal(payTotal),
-                        kPaymentInterval(payInterval),
+                        kInterestRate(interest_),
+                        kPaymentTotal(payTotal_),
+                        kPaymentInterval(payInterval_),
                         Sig(kNone),
                         Fee(kNone),
                         Seq(kNone)),
                     lenderSeq + 1),
-                batch::Inner(pay(lender, borrower, XRP(1)), lenderSeq + 2),
+                batch::Inner(pay(lender_, borrower_, XRP(1)), lenderSeq + 2),
                 Ter(lendingBatchEnabled ? TER(tesSUCCESS) : TER(temINVALID_INNER_BATCH)));
             env.close();
 
@@ -1885,7 +1886,7 @@ private:
                 if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
                 {
                     BEAST_EXPECT(loan->isFlag(lsfLoanPending));
-                    BEAST_EXPECT(loan->at(sfBorrower) == borrower.id());
+                    BEAST_EXPECT(loan->at(sfBorrower) == borrower_.id());
                     BEAST_EXPECT(loan->at(sfStartDate) == startDate);
                 }
 
@@ -1923,19 +1924,19 @@ private:
                     ? "Two-step: Batch inner LoanAccept accepts the pending loan"
                     : "Two-step: Batch inner LoanAccept rejected while ttLOAN_ACCEPT is disabled");
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
-            auto const borrowerSeq = env.seq(borrower);
+            auto const borrowerSeq = env.seq(borrower_);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
-            env(batch::outer(borrower, borrowerSeq, batchFee, tfAllOrNothing),
-                batch::Inner(accept(borrower, loanKeylet.key), borrowerSeq + 1),
-                batch::Inner(pay(borrower, evan, XRP(1)), borrowerSeq + 2),
+            env(batch::outer(borrower_, borrowerSeq, batchFee, tfAllOrNothing),
+                batch::Inner(accept(borrower_, loanKeylet.key), borrowerSeq + 1),
+                batch::Inner(pay(borrower_, evan_, XRP(1)), borrowerSeq + 2),
                 Ter(lendingBatchEnabled ? TER(tesSUCCESS) : TER(temINVALID_INNER_BATCH)));
             env.close();
 
@@ -1954,32 +1955,32 @@ private:
             testcase << "Two-step: cash-basis balance sheet closes out ("
                      << assetTypeName(assetType) << ")";
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, assetType);
 
             auto const vault0 = readVault(env, broker);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
             std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
-            propose(env, broker, lender, borrower, startDate);
+            propose(env, broker, lender_, borrower_, startDate);
             env.close();
 
-            env(accept(borrower, loanKeylet.key));
+            env(accept(borrower_, loanKeylet.key));
             env.close();
 
             // For IOU / MPT, fund the borrower with enough to cover principal
             // plus interest.
             if (!broker.asset.native())
             {
-                env(pay(issuer, borrower, broker.asset(400)));
+                env(pay(issuer_, borrower_, broker.asset(400)));
                 env.close();
             }
 
             // Pay the loan off in full while the first payment is still on
             // time.
-            env(pay(borrower, loanKeylet.key, broker.asset(400), tfLoanFullPayment));
+            env(pay(borrower_, loanKeylet.key, broker.asset(400), tfLoanFullPayment));
             env.close();
-            env(del(borrower, loanKeylet.key));
+            env(del(borrower_, loanKeylet.key));
             env.close();
 
             // No reserved principal, no outstanding debt, and AssetsTotal
@@ -2011,11 +2012,11 @@ private:
         {
             testcase("Two-step: LoanAccept rejected once vault enters Redemption");
 
-            using timeType = decltype(sfRedemptionDate)::type::value_type;
+            using TimeType = decltype(sfRedemptionDate)::type::value_type;
 
-            Env env(*this, features);
-            env.fund(XRP(100'000'000), noripple(lender));
-            env.fund(XRP(1'000'000), borrower, evan);
+            Env env(*this, features_);
+            env.fund(XRP(100'000'000), noripple(lender_));
+            env.fund(XRP(1'000'000), borrower_, evan_);
             env.close();
 
             // Closed-ended vault whose RedemptionDate is just past the end of
@@ -2023,9 +2024,10 @@ private:
             BrokerParameters params{};
             params.vaultKind = VaultKind::ClosedEnded;
             params.subscriptionOffset = 60;
-            params.redemptionOffset = (payInterval * payTotal) + 3600;
-            auto const asset = createAsset(env, AssetType::XRP, params, issuer, lender, borrower);
-            auto const broker = createVaultAndBroker(env, asset, lender, params);
+            params.redemptionOffset = (payInterval_ * payTotal_) + 3600;
+            auto const asset =
+                createAsset(env, AssetType::XRP, params, issuer_, lender_, borrower_);
+            auto const broker = createVaultAndBroker(env, asset, lender_, params);
 
             if (!BEAST_EXPECT(broker.redemptionDate))
                 return;
@@ -2033,7 +2035,7 @@ private:
             // Propose while the vault is still in the Investment phase.
             auto const loanKeylet = nextLoanKeylet(env, broker);
             std::uint32_t const startDate = env.now().time_since_epoch().count() + 60;
-            propose(env, broker, lender, borrower, startDate);
+            propose(env, broker, lender_, borrower_, startDate);
             env.close();
 
             if (!BEAST_EXPECT(broker.redemptionDate.has_value()))
@@ -2042,9 +2044,9 @@ private:
             // Advance the ledger past RedemptionDate.
             env.close(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                NetClock::time_point{NetClock::duration{timeType{*broker.redemptionDate + 1}}});
+                NetClock::time_point{NetClock::duration{TimeType{*broker.redemptionDate + 1}}});
 
-            env(accept(borrower, loanKeylet.key), Ter(tecEXPIRED));
+            env(accept(borrower_, loanKeylet.key), Ter(tecEXPIRED));
             expectStillPending(env, loanKeylet);
         }
 
@@ -2061,9 +2063,9 @@ private:
             testcase << "Two-step: LoanAccept rejected during " << phaseName
                      << " (StartDate not yet expired)";
 
-            Env env(*this, features);
-            env.fund(XRP(100'000'000), noripple(lender));
-            env.fund(XRP(1'000'000), borrower);
+            Env env(*this, features_);
+            env.fund(XRP(100'000'000), noripple(lender_));
+            env.fund(XRP(1'000'000), borrower_);
             env.close();
 
             BrokerParameters params{};
@@ -2071,13 +2073,14 @@ private:
             params.subscriptionOffset = 60;
             // Far enough out for the loan schedule to end before RedemptionDate.
             params.redemptionOffset = 10u * 365u * 24u * 60u * 60u;
-            auto const asset = createAsset(env, AssetType::XRP, params, issuer, lender, borrower);
-            auto const broker = createVaultAndBroker(env, asset, lender, params);
+            auto const asset =
+                createAsset(env, AssetType::XRP, params, issuer_, lender_, borrower_);
+            auto const broker = createVaultAndBroker(env, asset, lender_, params);
 
             // Propose while the vault is in Investment, with StartDate 1h out.
             auto const loanKeylet = nextLoanKeylet(env, broker);
             std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
-            propose(env, broker, lender, borrower, startDate);
+            propose(env, broker, lender_, borrower_, startDate);
             env.close();
             expectStillPending(env, loanKeylet);
 
@@ -2116,7 +2119,7 @@ private:
                 BEAST_EXPECT(getVaultPhase(*env.current(), v) == scenario);
             BEAST_EXPECT(parentClose < startDate);
 
-            env(accept(borrower, loanKeylet.key), Ter(expected));
+            env(accept(borrower_, loanKeylet.key), Ter(expected));
             expectStillPending(env, loanKeylet);
         }
 
@@ -2127,7 +2130,7 @@ private:
             // LoanBrokerCoverClawback: the clawback is capped at
             // CoverAvailable - DebtTotal * CoverRateMinimum. After the issuer
             // claws back to that minimum, LoanAccept still succeeds.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::IOU, /*enableClawback=*/true);
 
             BrokerParameters const defaults{};
@@ -2142,7 +2145,7 @@ private:
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
             std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
-            propose(env, broker, lender, borrower, startDate);
+            propose(env, broker, lender_, borrower_, startDate);
             env.close();
 
             // The pending loan has raised DebtTotal above zero.
@@ -2155,7 +2158,7 @@ private:
 
             // Attempt to claw back the entire cover deposit. The withdrawal is
             // capped at the headroom.
-            env(jtx::loan_broker::coverClawback(issuer),
+            env(jtx::loan_broker::coverClawback(issuer_),
                 jtx::loan_broker::kLoanBrokerId(broker.brokerID),
                 kAmount(broker.asset(defaults.coverDeposit)));
             env.close();
@@ -2169,7 +2172,7 @@ private:
             BEAST_EXPECT(coverAfter >= expectedMinCover);
 
             // LoanAccept succeeds with cover at the minimum.
-            env(accept(borrower, loanKeylet.key));
+            env(accept(borrower_, loanKeylet.key));
             env.close();
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
                 BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
@@ -2181,24 +2184,24 @@ private:
             // While a loan is pending, VaultDelete is rejected with
             // tecHAS_OBLIGATIONS. Deleting the pending loan restores the
             // vault's pre-proposal accounting.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             auto const vault0 = readVault(env, broker);
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             // AssetsReserved is non-zero and VaultDelete is rejected.
             if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
                 BEAST_EXPECT(v->at(sfAssetsReserved) > beast::kZero);
             Vault const vault{env};
-            env(vault.del({.owner = lender, .id = broker.vaultID}), Ter(tecHAS_OBLIGATIONS));
+            env(vault.del({.owner = lender_, .id = broker.vaultID}), Ter(tecHAS_OBLIGATIONS));
             env.close();
 
             // Deleting the pending loan returns the vault to its pre-proposal
             // snapshot.
-            env(del(lender, loanKeylet.key));
+            env(del(lender_, loanKeylet.key));
             env.close();
             auto const vault1 = readVault(env, broker);
             BEAST_EXPECT(vault1.available == vault0.available);
@@ -2211,7 +2214,7 @@ private:
 
             // An origination fee that cannot be represented in the Vault.Asset
             // is rejected with tecPRECISION_LOSS.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
@@ -2219,8 +2222,8 @@ private:
             propose(
                 env,
                 broker,
-                lender,
-                borrower,
+                lender_,
+                borrower_,
                 (env.now() + 1h).time_since_epoch().count(),
                 kLoanOriginationFee(Number{15, -1}),
                 Ter(tecPRECISION_LOSS));
@@ -2233,7 +2236,7 @@ private:
 
             // With the broker's LoanSequence at its maximum, the next proposal
             // is rejected with tecMAX_SEQUENCE_REACHED.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             auto const changed =
@@ -2252,8 +2255,8 @@ private:
             propose(
                 env,
                 broker,
-                lender,
-                borrower,
+                lender_,
+                borrower_,
                 (env.now() + 1h).time_since_epoch().count(),
                 Ter(tecMAX_SEQUENCE_REACHED));
         }
@@ -2263,13 +2266,13 @@ private:
 
             // Propose and accept in the same open ledger, without a close in
             // between. The accept succeeds.
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             // No env.close() here.
-            env(accept(borrower, loanKeylet.key));
+            env(accept(borrower_, loanKeylet.key));
             env.close();
 
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
@@ -2296,7 +2299,7 @@ private:
             testcase << "Two-step: LoanAccept failure and pending LoanDelete (accrual, "
                      << assetTypeName(assetType) << ")";
 
-            Env env(*this, features);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, assetType);
 
             // The LEVersion rewrite does not survive a close. Nothing below
@@ -2308,11 +2311,11 @@ private:
             Number const principal = broker.asset(200).number();
             auto const vault0 = readVault(env, broker);
             auto const broker0 = readBroker(env, broker);
-            auto const lenderOwners0 = env.ownerCount(lender);
-            auto const borrowerOwners0 = env.ownerCount(borrower);
+            auto const lenderOwners0 = env.ownerCount(lender_);
+            auto const borrowerOwners0 = env.ownerCount(borrower_);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
 
             // Interest is recognised at proposal under Legacy accounting.
             auto const vault1 = readVault(env, broker);
@@ -2323,7 +2326,7 @@ private:
             Number const interestDue = vault1.total - vault0.total;
             BEAST_EXPECT(broker1.debtTotal == broker0.debtTotal + principal + interestDue);
             BEAST_EXPECT(broker1.ownerCount == broker0.ownerCount + 1);
-            BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0 + 1);
+            BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0 + 1);
 
             // Make the acceptance fail: for XRP drain the borrower's reserve,
             // for IOU freeze the borrower's line, for MPT lock the borrower's
@@ -2332,28 +2335,28 @@ private:
             switch (assetType)
             {
                 case AssetType::XRP: {
-                    auto const amt = env.balance(borrower) -
-                        accountReserve(*env.current(), borrower.id(), env.journal);
-                    env(pay(borrower, evan, amt));
+                    auto const amt = env.balance(borrower_) -
+                        accountReserve(*env.current(), borrower_.id(), env.journal);
+                    env(pay(borrower_, evan_, amt));
                     expected = TER{tecINSUFFICIENT_RESERVE};
                     break;
                 }
                 case AssetType::IOU:
-                    env(trust(issuer, borrower[iouCurrency_](0), tfSetFreeze));
+                    env(trust(issuer_, borrower_[iouCurrency_](0), tfSetFreeze));
                     expected = TER{tecFROZEN};
                     break;
                 case AssetType::MPT: {
                     // close = false: a ledger close would discard the Legacy
                     // LEVersion rewrite made by makeVaultInstantRecognition.
                     MPTTester mptt{
-                        env, issuer, broker.asset.raw().get<MPTIssue>().getMptID(), {}, false};
-                    mptt.set({.account = issuer, .holder = borrower, .flags = tfMPTLock});
+                        env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID(), {}, false};
+                    mptt.set({.account = issuer_, .holder = borrower_, .flags = tfMPTLock});
                     expected = TER{tecLOCKED};
                     break;
                 }
             }
 
-            env(accept(borrower, loanKeylet.key), Ter(expected));
+            env(accept(borrower_, loanKeylet.key), Ter(expected));
             expectStillPending(env, loanKeylet);
 
             // The rejected acceptance changed nothing: the recognised
@@ -2366,13 +2369,13 @@ private:
             auto const broker2 = readBroker(env, broker);
             BEAST_EXPECT(broker2.debtTotal == broker1.debtTotal);
             BEAST_EXPECT(broker2.ownerCount == broker1.ownerCount);
-            BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0 + 1);
-            BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwners0);
+            BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0 + 1);
+            BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners0);
 
             // Deleting the pending loan reverses the proposal exactly. For a
             // Legacy vault that means AssetsTotal drops by the interest
             // recognised at proposal, back to its pre-proposal value.
-            env(del(lender, loanKeylet.key));
+            env(del(lender_, loanKeylet.key));
             BEAST_EXPECT(!env.le(loanKeylet));
 
             auto const vault3 = readVault(env, broker);
@@ -2383,8 +2386,8 @@ private:
             BEAST_EXPECT(broker3.debtTotal == broker0.debtTotal);
             BEAST_EXPECT(broker3.ownerCount == broker0.ownerCount);
             BEAST_EXPECT(broker3.coverAvailable == broker0.coverAvailable);
-            BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0);
-            BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwners0);
+            BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0);
+            BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners0);
         }
     }
 
@@ -2393,9 +2396,9 @@ private:
     void
     testTwoStep(FeatureBitset const& featuresToTest)
     {
-        features = featuresToTest;
+        features_ = featuresToTest;
 
-        if ((features & featureLendingProtocolV1_2).none())
+        if ((features_ & featureLendingProtocolV1_2).none())
         {
             testTwoStepAmendmentDisabled();
             return;

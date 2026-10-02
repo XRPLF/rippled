@@ -25,7 +25,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
@@ -294,7 +293,7 @@ private:
 
             return loan["index"].asString();
         }();
-        auto const loanKeylet{keylet::loan(uint256{std::string_view(loanID)})};
+        auto const loanKeylet{keylet::loan(UInt256{std::string_view(loanID)})};
 
         env.close(startDate);
 

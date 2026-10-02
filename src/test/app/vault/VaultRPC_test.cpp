@@ -176,7 +176,7 @@ private:
             testcase("RPC ledger_entry cannot find vault by key");
             json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
-            jvParams[jss::vault] = to_string(uint256(42));
+            jvParams[jss::vault] = to_string(UInt256(42));
             auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
             BEAST_EXPECT(jvVault[jss::result][jss::error].asString() == "entryNotFound");
         }
@@ -340,7 +340,7 @@ private:
             testcase("RPC vault_info json all zero vault_id");
             json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
-            jvParams[jss::vault_id] = strHex(uint256(beast::kZero));
+            jvParams[jss::vault_id] = strHex(UInt256(beast::kZero));
             auto jv = env.rpc("json", "vault_info", to_string(jvParams));
             checkError(jv[jss::result], "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
@@ -518,7 +518,7 @@ private:
 
         {
             testcase("RPC vault_info command line unknown index");
-            json::Value jv = env.rpc("vault_info", strHex(uint256(42)), "validated");
+            json::Value jv = env.rpc("vault_info", strHex(UInt256(42)), "validated");
             checkError(jv[jss::result], "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
 
@@ -555,7 +555,7 @@ private:
             makeClosedEndedVault(env, lender, asset, 60, 10u * 365u * 24u * 60u * 60u);
         env(setup.vault.deposit(
             {.depositor = lender, .id = setup.keylet.key, .amount = XRP(1000)}));
-        env.close(tp{d{setup.sub + 1}});
+        env.close(Tp{D{setup.sub + 1}});
 
         auto const brokerKeylet =
             keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));

@@ -203,7 +203,7 @@ LoanAccept::doApply()
 }
 
 void
-LoanAccept::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanAccept::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
