@@ -4090,7 +4090,19 @@ expectedLedgerCounters()
           .labelSets = labelSetsFor(label::stage, lval::quorum_shortfall::all)}},
         {metric::ledgerJumpTotal, {.description = ledgerJumpTotalDesc, .labelSets = unlabelled}},
         {metric::rotationCopyNodeRestoreTotal,
-         {.description = rotationCopyNodeRestoreTotalDesc, .labelSets = unlabelled}}};
+         {.description = rotationCopyNodeRestoreTotalDesc, .labelSets = unlabelled}},
+        // Listed pair by pair, not built from the two `all` lists, so a value
+        // added to or dropped from either list fails the series-count checks.
+        {metric::rotationFreshenKeysTotal,
+         {.description = rotationFreshenKeysTotalDesc,
+          .labelSets = labelSetsForPairs(
+              label::cache,
+              label::outcome,
+              std::array{
+                  std::pair{lval::freshen_cache::treenode, lval::freshen_outcome::fetched},
+                  std::pair{lval::freshen_cache::treenode, lval::freshen_outcome::copied},
+                  std::pair{lval::freshen_cache::masterTx, lval::freshen_outcome::fetched},
+                  std::pair{lval::freshen_cache::masterTx, lval::freshen_outcome::copied}})}}};
 
     // The sweep publishes its trim counters only where the trim is measured.
     if constexpr (kMallocTrimSupported)

@@ -787,7 +787,7 @@ SHAMapStoreImp::recordFreshen(
         XRPL_METRIC_COUNTER_ADD_LABELED(
             app_,
             telemetry::metric::rotationFreshenKeysTotal,
-            "Keys the rotation's cache freshen fetched, and how many were only in the archive",
+            telemetry::rotationFreshenKeysTotalDesc,
             amount,
             {{telemetry::label::cache, std::string(cacheName)},
              {telemetry::label::outcome, std::string(outcome)}});

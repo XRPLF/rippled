@@ -240,7 +240,7 @@ public:
         return map_;
     }
 
-    partition_map_type const&
+    PartitionMapType const&
     map() const
     {
         return map_;

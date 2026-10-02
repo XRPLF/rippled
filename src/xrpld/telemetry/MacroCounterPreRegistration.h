@@ -122,6 +122,26 @@ viewChangeModeNames()
 }
 
 /**
+ * Builds every (cache, outcome) label set of rotation_freshen_keys_total.
+ *
+ * SHAMapStoreImp::recordFreshen() adds under both outcomes each time it
+ * counts a cache, so every pairing can occur.
+ *
+ * @return One label set per pair, 4 for the two caches and two outcomes.
+ */
+[[nodiscard]] inline std::vector<CounterLabelSet>
+freshenKeysLabelSets()
+{
+    std::vector<CounterLabelSet> labelSets;
+    for (auto const* cache : lval::freshen_cache::all)
+    {
+        for (auto const* outcome : lval::freshen_outcome::all)
+            labelSets.push_back(CounterLabelSet{{label::cache, cache}, {label::outcome, outcome}});
+    }
+    return labelSets;
+}
+
+/**
  * Pre-register the overlay and peer counters.
  *
  * @param app Holds the metrics registry.
@@ -208,6 +228,11 @@ preRegisterLedgerCounters(App& app)
     XRPL_METRIC_COUNTER_PREREGISTER(app, metric::ledgerJumpTotal, ledgerJumpTotalDesc);
     XRPL_METRIC_COUNTER_PREREGISTER(
         app, metric::rotationCopyNodeRestoreTotal, rotationCopyNodeRestoreTotalDesc);
+    XRPL_METRIC_COUNTER_PREREGISTER_LABELED(
+        app,
+        metric::rotationFreshenKeysTotal,
+        rotationFreshenKeysTotalDesc,
+        freshenKeysLabelSets());
     // The sweep publishes no trim counter where the trim is not measured, and
     // a zero there would report a trim that never ran.
     if constexpr (kMallocTrimSupported)
