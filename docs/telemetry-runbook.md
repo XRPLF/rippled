@@ -85,13 +85,15 @@ Follow [BUILD.md](../BUILD.md), adding `-o telemetry=True` so Conan pulls `opent
 
 ```bash
 conan install .. --output-folder . --build missing -o telemetry=True --settings build_type=Release
-cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtelemetry=ON ..
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON ..
 cmake --build . --target xrpld
 ```
 
-Conan also writes a `conan-release` CMake preset, so `cmake --preset conan-release -Dtelemetry=ON` works instead of the explicit toolchain line. There is no preset named `default`.
+The Conan option is the only telemetry switch. The toolchain file that `conan install` writes sets the `telemetry` CMake variable, and `CMakeLists.txt` reads it, so the CMake line needs no telemetry flag. Do not add `-Dtelemetry=`: it overrides the toolchain's value and can disagree with what Conan fetched. The toolchain sets `telemetry` only while the CMake cache has no value for it, so change the option in a fresh build directory.
 
-Both telemetry flags are the current default, so omitting them still gives you an instrumented build. Pass them anyway, so the build stays instrumented wherever the default moves.
+Conan also writes a `conan-release` preset. From the repo root, `cmake --preset conan-release -Dxrpld=ON` works instead of the explicit toolchain line. Then `cmake --build --preset conan-release --target xrpld` builds in `.build/build/Release`. There is no preset named `default`.
+
+`telemetry=True` is the current Conan default, so omitting it still gives you an instrumented build. Pass it anyway, so the build stays instrumented wherever the default moves.
 
 ### 4. Run against a live network
 
@@ -117,8 +119,10 @@ public network with all tracing and native metrics enabled:
 Both set `[insight] server=otel` (native metrics → collector → Prometheus, which
 drives the dashboards) and `service_instance_id`, exposed by Prometheus as the
 `service_instance_id` label that the `$node` dashboard variable filters on. The
-mainnet config logs to `/var/log/xrpld/mainnet/debug.log` — the path
-the collector's file_log receiver tails for log-trace correlation.
+mainnet config logs to `data/logs/mainnet/debug.log`, relative to the config file,
+so to `docker/telemetry/data/logs/mainnet/debug.log`. By default the compose stack
+mounts `docker/telemetry/data/logs` into the collector as `/var/log/xrpld`, where
+the file_log receiver tails it for log-trace correlation.
 
 Metrics begin flowing as soon as the node connects to peers (`server_state`
 ≥ `connected`); full ledger and consensus panels populate after sync
@@ -271,23 +275,22 @@ All spans instrumented in xrpld, grouped by subsystem:
 | `rpc.command.<name>` | RPCHandler.cpp    | `command`, `version`, `rpc_role`, `rpc_status`, `load_type` | Per-command span (e.g., `rpc.command.server_info`)    |
 | `rpc.startup`        | Application.cpp   | —                                                           | `[rpc_startup]` batch; parent of its command spans    |
 
-On `rpc.ws_message`, `rpc_status` is set **on four of the five error paths**
-(resource threshold exceeded, bad API version / missing command, caught
-exception, and an error in the command result — `ServerHandler.cpp:489`, `:522`,
-`:571`, `:608`). The exception is the **invalid-JSON / oversized-request** path,
-which opens its own `rpc.ws_message` span and calls only `setError()`, writing no
-`rpc_status` at all (`ServerHandler.cpp:392-395`) — those rejections are visible
-solely through `status_code="ERROR"`. The success path calls `setOk()` and writes
-no `rpc_status` either, so there is never an `rpc_status="success"` series for
+On `rpc.ws_message`, `rpc_status` is set to `error` **on all five error
+paths**. Four are in the WebSocket overload of `ServerHandler::processSession()`.
+They are resource threshold exceeded, bad API version / missing command, a caught
+exception, and an error in the command result. The fifth is the
+**invalid-JSON / oversized-request** path in `ServerHandler::onWSMessage()`,
+which opens its own `rpc.ws_message` span. The success path calls `setOk()` and
+writes no `rpc_status`. So there is never an `rpc_status="success"` series for
 this span: count successes as total minus error, or filter on `status_code`.
-`rpc.command.*` is unaffected — it sets `rpc_status` on both outcomes.
+`rpc.command.*` sets `rpc_status` on both outcomes.
 
 ### Transaction Spans
 
 | Span Name       | Source File     | Attributes                                                                                                                                                                                                                                                     | Description                                                  |
 | --------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq`, `tx_account` and one `tx_<field>` per other account field the transaction carries (`tx_destination`, `tx_owner`, ...; keys in `TxAccountSpanNames.h`) | Transaction submission and processing                        |
-| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `tx_status`, `current_ledger_seq`                                                                                                                                                                             | Transaction this node will process, received from peer relay |
+| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `tx_status`, `current_ledger_seq`                                                                                                                                                                             | Peer-relayed transaction, received after the duplicate check |
 | `tx.apply`      | BuildLedger.cpp | `tx_count`, `tx_failed`                                                                                                                                                                                                                                        | Transaction set applied per ledger                           |
 | `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                                                                                                                                                                                               | Stateless checks stage                                       |
 | `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`, `current_ledger_seq`, `current_ledger_hash`                                                                                                                                                                                  | Ledger-aware checks stage                                    |
@@ -307,10 +310,10 @@ txID-keyed spans can be joined to the ledger trace it targeted
 hash); `tx.preflight` is stateless and omits both.
 
 `tx.apply` carries its own `ledger_seq`, written beside `tx_count` and `tx_failed`
-([BuildLedger.cpp:197](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L197)). Its
-parent `ledger.build` carries the same sequence
-([BuildLedger.cpp:90](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L90)), so
-either span can be filtered on it.
+in `applyTransactions()`. When `trace_ledger` is on, its parent `ledger.build`
+carries the same sequence, set in `buildLedgerImpl()`, so either span can be
+filtered on it. Both functions
+are in [BuildLedger.cpp](../src/xrpld/app/ledger/detail/BuildLedger.cpp).
 
 ### Transaction Queue Spans
 
@@ -363,18 +366,20 @@ either span can be filtered on it.
 | `consensus.round`            | `outcome.yes`      | --                                                          | Round settled with consensus reached                                                       |
 | `consensus.round`            | `outcome.moved_on` | --                                                          | Round abandoned; the network moved on without us                                           |
 | `consensus.round`            | `outcome.expired`  | --                                                          | Round expired without settling                                                             |
+| `consensus.round`            | `view.change`      | `prev_ledger_prefix`, `net_ledger_prefix`                   | The network prefers a different prior ledger; skipped while already in `WrongLedger`       |
 
-The nine events above are the complete set. The seven on `consensus.round`
-carry **no event attributes** — they are timestamps marking phase entry and the
-terminal outcome, so a round's whole life reads off one span's event list.
+The ten events above are the complete set on `consensus.*` spans. Seven of the
+eight on `consensus.round` carry **no event attributes**. They are timestamps
+marking phase entry and the terminal outcome, so a round's whole life reads off
+one span's event list. The exception is `view.change`:
+`RCLConsensus::Adaptor::getPrevLedger()` records both ledger-ID prefixes on it.
 Phase entry additionally rewrites the round's span-level `consensus_phase`
 attribute, which is why `phase.recovery` is the one phase event that leaves
 `consensus_phase` unchanged (it fires with an empty label). Evidence:
-[RCLConsensus.cpp:1344](../src/xrpld/app/consensus/RCLConsensus.cpp#L1344),
-[1386](../src/xrpld/app/consensus/RCLConsensus.cpp#L1386),
-[1400](../src/xrpld/app/consensus/RCLConsensus.cpp#L1400); outcomes are chosen
-from `result_->state` at
-[Consensus.h:1517-1525](../include/xrpl/consensus/Consensus.h#L1517).
+the `RCLConsensus::Adaptor` methods `startRoundTracing()`, `onPhaseEvent()` and
+`onOutcomeEvent()` in [RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp);
+outcomes are chosen from `result_->state` in `Consensus::phaseEstablish()`
+([Consensus.h](../include/xrpl/consensus/Consensus.h)).
 
 > **`tx.included` note**: the event is recorded while the canonical transaction set is being assembled, which happens before `buildLCL()` applies anything. So a transaction that fails to apply, or is left over to retry in a later ledger, still has a `tx.included` event. Treat the events as the round's **input** set, not as proof a transaction reached the accepted ledger; `tx_count` on the same span counts the same set. A transaction whose bytes cannot be parsed gets no event, and nothing in the accepted ledger is missing one, so the events are always a superset of the ledger's contents. To confirm a transaction actually applied, read `ter_result` and `applied` on its `tx.transactor` span.
 
@@ -440,30 +445,31 @@ duration bounded below by the one-minute threshold. The shutdown and
 an `abandoned` span can also be arbitrarily short. A `failed` span that the destructor ends also stays open until destruction.
 
 `ledger.build` does **not** carry `tx_count` / `tx_failed`. Those two live on its
-child `tx.apply` span, which is where the set is actually applied
-([BuildLedger.cpp:191](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L191)) —
-join on the trace, not on one span.
+child `tx.apply` span, which is where `applyTransactions()` applies the set
+([BuildLedger.cpp](../src/xrpld/app/ledger/detail/BuildLedger.cpp)).
+Join on the trace, not on one span.
 
 > **Most `ledger.*` spans carry a ledger hash; `ledger.build` does not.**
 > `ledger_span::attr::ledgerHash`
-> ([LedgerSpanNames.h:95](../src/xrpld/app/ledger/detail/LedgerSpanNames.h#L95))
+> ([LedgerSpanNames.h](../src/xrpld/app/ledger/detail/LedgerSpanNames.h))
 > is set unconditionally on `ledger.validate` and `ledger.store` by
-> `LedgerMaster::makeLedgerTraceSpan`
-> ([LedgerMaster.cpp:187](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L187)),
-> and on `ledger.acquire` together with its three phase children, so
-> `span.ledger_hash` filters work over all of those. It is also the key the
-> per-ledger trace join hashes, which is why the validation harness now requires
-> it on both ends of that join. The exception is `ledger.build`, which carries
+> `LedgerMaster::makeLedgerTraceSpan()`
+> ([LedgerMaster.cpp](../src/xrpld/app/ledger/detail/LedgerMaster.cpp)).
+> It is also set on `ledger.acquire` and its three phase children, so
+> `span.ledger_hash` filters work over all of those. The per-ledger trace join
+> hashes this key, so the validation harness requires it on both ends of that
+> join. The exception is `ledger.build`, which carries
 > `ledger_seq` only — identify a build by sequence, or pull the whole ledger's
 > trace and read the hash off a sibling span. `ledger_hash` is likewise set on
-> `consensus.validation.send` and on the peer spans.
+> `consensus.validation.accept`, `consensus.validation.send` and
+> `peer.validation.receive`.
 
 ### Peer Spans
 
-| Span Name                 | Source File | Attributes                      | Description                   |
-| ------------------------- | ----------- | ------------------------------- | ----------------------------- |
-| `peer.proposal.receive`   | PeerImp.cpp | `peer_id`, `proposal_trusted`   | Proposal received from peer   |
-| `peer.validation.receive` | PeerImp.cpp | `peer_id`, `validation_trusted` | Validation received from peer |
+| Span Name                 | Source File | Attributes                                                        | Description                   |
+| ------------------------- | ----------- | ----------------------------------------------------------------- | ----------------------------- |
+| `peer.proposal.receive`   | PeerImp.cpp | `peer_id`, `proposal_trusted`                                     | Proposal received from peer   |
+| `peer.validation.receive` | PeerImp.cpp | `peer_id`, `ledger_hash`, `full_validation`, `validation_trusted` | Validation received from peer |
 
 Both peer receive spans are `kConsumer` inbound entry points started as fresh
 trace roots. They never inherit an ambient span left active on the peer thread,
@@ -619,34 +625,31 @@ flowchart TB
 
 Ingress branches (all evidence in code):
 
-- `onHandoff`: WS upgrade vs peer bundle vs status page vs legacy HTTP
-  ([ServerHandler.cpp:227](../src/xrpld/rpc/detail/ServerHandler.cpp#L227)).
-- `doSubmit`: `tx_blob` present → submit signed blob; absent → server
-  sign-and-submit ([Submit.cpp:49](../src/xrpld/rpc/handlers/transaction/Submit.cpp#L49)).
+- `ServerHandler::onHandoff()`: WS upgrade vs peer bundle vs status page vs
+  plain HTTP ([ServerHandler.cpp](../src/xrpld/rpc/detail/ServerHandler.cpp)).
+- `doSubmit()`: `tx_blob` present → submit signed blob; absent → server
+  sign-and-submit ([Submit.cpp](../src/xrpld/rpc/handlers/transaction/Submit.cpp)).
 - `tx.process`: local RPC → `doTransactionSync`; peer → `doTransactionAsync`
-  (JtBatch) ([NetworkOPs.cpp:1434](../src/xrpld/app/misc/NetworkOPs.cpp#L1434)).
-- **Pre-span peer drops** (no `tx.receive` created): `Diverged`
-  ([PeerImp.cpp:1325](../src/xrpld/overlay/detail/PeerImp.cpp#L1325)) /
-  `needNetworkLedger` ([1328](../src/xrpld/overlay/detail/PeerImp.cpp#L1328)),
-  a transaction that does not parse (`STTx` throws at
-  [1340](../src/xrpld/overlay/detail/PeerImp.cpp#L1340), caught at
-  [1495](../src/xrpld/overlay/detail/PeerImp.cpp#L1495)), `tfInnerBatchTxn`
-  ([1361](../src/xrpld/overlay/detail/PeerImp.cpp#L1361)), and a HashRouter
-  duplicate: the same tx seen in the last 10 s, charged a fee if marked `BAD`
-  ([1373](../src/xrpld/overlay/detail/PeerImp.cpp#L1373)). All come before the
-  span at [1415](../src/xrpld/overlay/detail/PeerImp.cpp#L1415).
-- **Post-span peer drops** (span exists, `tx_status` set, no job enqueued):
-  `dropped_no_sync` when validated-ledger age > 4 min
-  ([1460](../src/xrpld/overlay/detail/PeerImp.cpp#L1460)), `dropped_queue_full`
-  when `JtTransaction` jobs > `maxTransactions`
-  ([1466](../src/xrpld/overlay/detail/PeerImp.cpp#L1466)).
-- **Queued** (span exists): otherwise `tx_status` is `queued_for_check` and
-  `addJob(JtTransaction)` is called
-  ([1476](../src/xrpld/overlay/detail/PeerImp.cpp#L1476)).
+  (JtBatch), both chosen in `NetworkOPsImp::processTransaction()`
+  ([NetworkOPs.cpp](../src/xrpld/app/misc/NetworkOPs.cpp)).
+- **Pre-span peer drops** in `PeerImp::handleTransaction()`
+  ([PeerImp.cpp](../src/xrpld/overlay/detail/PeerImp.cpp)) create no
+  `tx.receive`. They are `Diverged` / `needNetworkLedger`, a transaction that
+  does not parse, `tfInnerBatchTxn`, and a HashRouter duplicate. A parse failure
+  is an `STTx` throw that the function's own `catch` handles. A duplicate is the
+  same tx seen in the last 10 s, and it is charged a fee if marked `BAD`. All
+  come before `txReceiveSpan()` opens the span.
+- **Post-span peer drops** in the same function set `tx_status` on the span and
+  enqueue no job. `dropped_no_sync` fires when validated-ledger age > 4 min.
+  `dropped_queue_full` fires when `JtTransaction` jobs > `maxTransactions`.
+- **Queued** in the same function (span exists): otherwise `tx_status` is
+  `queued_for_check` and `addJob(JtTransaction)` is called.
 - **Relay fan-out**: an accepted/queued `tx.process` relays to N peers via
-  `Overlay::relay`, gated on `applied || (non-FULL local) || terQUEUED`,
-  HashRouter `shouldRelay`, and not `tfInnerBatchTxn`; the span context is
-  injected here ([NetworkOPs.cpp:1797](../src/xrpld/app/misc/NetworkOPs.cpp#L1797)).
+  `Overlay::relay`. The gate is `applied || (non-FULL local) || terQUEUED`,
+  HashRouter `shouldRelay`, and not `tfInnerBatchTxn`. A fail-hard submit that
+  did not succeed is never relayed. `NetworkOPsImp::apply()` makes this decision
+  and injects the span context into the relayed message
+  ([NetworkOPs.cpp](../src/xrpld/app/misc/NetworkOPs.cpp)).
 
 Inbound consensus messages take a two-stage handler — a fresh-root `peer.*.receive`
 span created first (kConsumer, always), then a `consensus.*.receive` span (only if
@@ -693,37 +696,25 @@ flowchart TB
     CV -.->|if relay / cluster| RELAY
 ```
 
-Consensus-message drop evidence:
+Consensus-message drop evidence, all in [PeerImp.cpp](../src/xrpld/overlay/detail/PeerImp.cpp):
 
 - Both `peer.proposal.receive` and `peer.validation.receive` are `freshRoot`
-  spans created at the top of `onMessage`
-  ([PeerImp.cpp:1766](../src/xrpld/overlay/detail/PeerImp.cpp#L1766),
-  [2389](../src/xrpld/overlay/detail/PeerImp.cpp#L2389)) — so they exist even for
-  dropped messages.
-- **Proposal drops (all before `consensus.proposal.receive` at
-  [1868](../src/xrpld/overlay/detail/PeerImp.cpp#L1868))**: untrusted+relay-off
-  ([1807](../src/xrpld/overlay/detail/PeerImp.cpp#L1807)), duplicate
-  ([1832](../src/xrpld/overlay/detail/PeerImp.cpp#L1832)), untrusted+Diverged
-  ([1840](../src/xrpld/overlay/detail/PeerImp.cpp#L1840)), untrusted+loaded
-  ([1846](../src/xrpld/overlay/detail/PeerImp.cpp#L1846)).
-- **Validation drops (asymmetric around `consensus.validation.receive` at
-  [2476](../src/xrpld/overlay/detail/PeerImp.cpp#L2476))**: before — `!isCurrent`
-  ([2426](../src/xrpld/overlay/detail/PeerImp.cpp#L2426)), relay-off
-  ([2445](../src/xrpld/overlay/detail/PeerImp.cpp#L2445)), duplicate
-  ([2468](../src/xrpld/overlay/detail/PeerImp.cpp#L2468)); after — untrusted+Diverged
-  ([2489](../src/xrpld/overlay/detail/PeerImp.cpp#L2489)), untrusted+loaded
-  ([2506](../src/xrpld/overlay/detail/PeerImp.cpp#L2506)).
+  spans created at the top of `PeerImp::onMessage()`, in its `TMProposeSet` and
+  `TMValidation` overloads. So they exist even for dropped messages.
+- **Proposal drops (all before `consensus.proposal.receive`, in the
+  `TMProposeSet` overload)**: untrusted+relay-off, duplicate, untrusted+Diverged,
+  untrusted+loaded.
+- **Validation drops (asymmetric around `consensus.validation.receive`, in the
+  `TMValidation` overload)**: before — `!isCurrent`, relay-off, duplicate; after —
+  untrusted+Diverged, untrusted+loaded.
 - **Worker sig-fail drops** (charged `kFeeInvalidSignature`, suppress processing
-  and relay): `checkPropose !checkSign`
-  ([PeerImp.cpp:3105](../src/xrpld/overlay/detail/PeerImp.cpp#L3105)),
-  `checkValidation !isValid`
-  ([3149](../src/xrpld/overlay/detail/PeerImp.cpp#L3149)).
+  and relay): `!checkSign` in `PeerImp::checkPropose()`, `!isValid` in
+  `PeerImp::checkValidation()`.
 
 ### Shared transaction apply pipeline
 
 The apply pipeline is the **single protocol tx-processing chain**, expressed in
-code as one composed call
-([apply.cpp:118](../src/libxrpl/tx/apply.cpp#L118)):
+code as one composed call (`apply()` in [apply.cpp](../src/libxrpl/tx/apply.cpp)):
 `doApply(preclaim(preflight(), …), …)`. C++ evaluates inner-to-outer, so
 `preflight` runs first, feeds `preclaim`, which feeds `doApply`. Each stage
 inspects the prior stage's `TER` and no-ops if it already failed.
@@ -765,36 +756,57 @@ flowchart TB
     CLS --> OK
     CLS --> FAIL
     CLS --> RETRY
-    RETRY -. "next pass while pass<3 and changes>0" .-> FREE
-    RETRY -. "last pass → drop from set" .-> FAIL
+    RETRY -. "next pass, up to 3" .-> FREE
+    RETRY -. "open ledger: still Retry after the last pass" .-> GONE
+    RETRY -. "consensus: handed to the next open ledger" .-> I1
+
+    GONE["`**dropped**
+    left out of the new open ledger`"]:::drop
+
+    subgraph legend["Reading the diagram"]
+        direction LR
+        L1["`**Last pass**
+        runs without TapRetry, so a tec
+        claims its fee instead of retrying`"]
+        L2["`**Dotted arrows from Retry**
+        where a tx goes while its result
+        still says retry`"]
+    end
+
+    L1 ~~~ L2
+    GONE ~~~ legend
 ```
 
 Pipeline gates and retry (evidence):
 
-- `preclaim` short-circuits if preflight `!tesSUCCESS`
-  ([applySteps.cpp:498](../src/libxrpl/tx/applySteps.cpp#L498)); `doApply`
-  short-circuits if `!likelyToClaimFee`
-  ([applySteps.cpp:532](../src/libxrpl/tx/applySteps.cpp#L532)); the transactor
-  mutates only when preclaim is `tesSUCCESS`
-  ([Transactor.cpp:1647](../src/libxrpl/tx/Transactor.cpp#L1647)).
+- `preclaim` short-circuits if preflight `!tesSUCCESS`, and `doApply`
+  short-circuits if `!likelyToClaimFee` (`preclaim()` and `doApply()` in
+  [applySteps.cpp](../src/libxrpl/tx/applySteps.cpp)). `Transactor::apply()`
+  runs only when preclaim is `tesSUCCESS`; a `tec` result can still charge the
+  fee (`Transactor::operator()()` in
+  [Transactor.cpp](../src/libxrpl/tx/Transactor.cpp)).
 - **Final-TER classification**: `applied` → Success; `tef | tem | tel` → hard Fail;
-  else → Retry ([apply.cpp:226](../src/libxrpl/tx/apply.cpp#L226)).
+  else → Retry (`applyTransaction()` in [apply.cpp](../src/libxrpl/tx/apply.cpp)).
 - **Multi-pass retry**: both open-ledger `applyOne` and consensus `tx.apply` loop
-  `pass < LEDGER_TOTAL_PASSES` (= 3); a `Retry` tx is kept for the next pass, and
-  the final pass converts lingering retriable txs into drops
-  ([OpenLedger.h:237](../src/xrpld/app/ledger/OpenLedger.h#L237),
-  [BuildLedger.cpp:129](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L129);
-  `LEDGER_TOTAL_PASSES` [OpenLedger.h:29](../src/xrpld/app/ledger/OpenLedger.h#L29)).
+  `pass < LEDGER_TOTAL_PASSES` (= 3), and a `Retry` tx is kept for the next pass.
+  The last pass runs without `TapRetry`, so a `tec` result there claims its fee
+  instead of being retried. In the open ledger, a tx still at `Retry` after that
+  pass is dropped (`OpenLedger::apply()` and `LEDGER_TOTAL_PASSES` in
+  [OpenLedger.h](../src/xrpld/app/ledger/OpenLedger.h)). In consensus,
+  `applyTransactions()` keeps it in the set, and `doAccept()` hands it to
+  `OpenLedger::accept()` for the next open ledger
+  ([BuildLedger.cpp](../src/xrpld/app/ledger/detail/BuildLedger.cpp),
+  [RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp)).
 - **TxQ re-preflight**: the queue path re-runs `preflight` when the ledger's
-  rules/flags changed since enqueue
-  ([TxQ.cpp:315](../src/xrpld/app/misc/detail/TxQ.cpp#L315)).
+  rules/flags changed since enqueue (`TxQ::MaybeTx::apply()` in
+  [TxQ.cpp](../src/xrpld/app/misc/detail/TxQ.cpp)).
 - **TxQ cross-ledger retry**: a queued tx that fails with a retriable result keeps its slot with
-  `--retriesRemaining` (`kRetriesAllowed` = 10) and is re-applied at a **later**
-  ledger close; on `retriesRemaining ≤ 0` or `tef|tem` it is dropped with an
-  account `retryPenalty` ([TxQ.cpp:1528](../src/xrpld/app/misc/detail/TxQ.cpp#L1528)).
+  `--retriesRemaining` (`kRetriesAllowed` = 10). It is re-applied at a **later**
+  ledger close. On `retriesRemaining ≤ 0` it is dropped with an account
+  `retryPenalty`; otherwise a `tef|tem` result drops it with a `dropPenalty`
+  (`TxQ::accept()` in [TxQ.cpp](../src/xrpld/app/misc/detail/TxQ.cpp)).
 - `TxQ::apply` outcome fork: preflight-reject / `applied_direct` / `batch_clear` /
-  `queued` (`terQUEUED`) / reject
-  ([TxQ.cpp:762](../src/xrpld/app/misc/detail/TxQ.cpp#L762)).
+  `queued` (`terQUEUED`) / reject (in [TxQ.cpp](../src/xrpld/app/misc/detail/TxQ.cpp)).
 
 > **`tx.apply` is set-level, consensus-only.** It wraps the retry-pass loop over
 > the agreed set during `buildLedger` and exists on **no other** invoker. It is
@@ -810,13 +822,14 @@ in `Establish` across many heartbeats until the outcome is decided.
 > mechanisms (see [docs/consensus.md](consensus.md)):
 >
 > 1. **Avalanche rounds inside one Establish phase** — each `timerEntry` runs
->    `phaseEstablish` again (`establishCounter_++`) and raises the inclusion
->    threshold **50% → 65% → 70% → 95%** as the round ages
->    ([ConsensusParms.h:145](../include/xrpl/consensus/ConsensusParms.h#L145)).
+>    `phaseEstablish` again (`establishCounter_++`). The inclusion threshold
+>    rises **50% → 65% → 70% → 95%** as the round ages (`avalancheCutoffs` in
+>    [ConsensusParms.h](../include/xrpl/consensus/ConsensusParms.h)).
 >    `checkConsensus` returning `No` keeps the node in `Establish` and loops; a
 >    round cannot even `Expire` before a minimum of
 >    `avalancheCutoffs.size() × avMinRounds = 4 × 2 = 8` passes
->    ([Consensus.h:1937](../include/xrpl/consensus/Consensus.h#L1937)).
+>    (`Consensus::haveConsensus()` in
+>    [Consensus.h](../include/xrpl/consensus/Consensus.h)).
 > 2. **Retry across consensus rounds** — a round can end `MovedOn` / `Expired`,
 >    meaning the network settled a _different_ ledger. The node still builds a
 >    ledger, but the **next** round's `checkLedger` detects the wrong prior,
@@ -876,52 +889,63 @@ flowchart TB
 Consensus loops and branches (evidence):
 
 - **`consensus.establish` is the parent of `update_positions` and `check`**:
-  `phaseEstablish` creates the establish span (`startEstablishTracing`), and both
+  `phaseEstablish` creates the establish span (`startEstablishTracing`). Both
   child spans parent to its captured context
-  ([Consensus.h:2099](../include/xrpl/consensus/Consensus.h#L2099),
-  [1628](../include/xrpl/consensus/Consensus.h#L1628),
-  [1837](../include/xrpl/consensus/Consensus.h#L1837)).
+  (`Consensus::startEstablishTracing()`, `Consensus::updateOurPositions()` and
+  `Consensus::haveConsensus()` in
+  [Consensus.h](../include/xrpl/consensus/Consensus.h)).
 - **Avalanche-convergence loop (rounds within one ledger)**: repeated
-  `heartbeat → timerEntry → phaseEstablish` bumps `establishCounter_` and raises
-  the inclusion threshold each pass; `checkConsensus` = `No` stays in `Establish`
-  ([NetworkOPs.cpp:1214](../src/xrpld/app/misc/NetworkOPs.cpp#L1214);
-  [Consensus.h:1467](../include/xrpl/consensus/Consensus.h#L1467);
-  thresholds [ConsensusParms.h:145](../include/xrpl/consensus/ConsensusParms.h#L145)).
+  `heartbeat → timerEntry → phaseEstablish` bumps `establishCounter_` each pass
+  and raises the inclusion threshold as the round ages. While `checkConsensus` is
+  `No`, the round stays in `Establish` (`NetworkOPsImp::processHeartbeatTimer()` in
+  [NetworkOPs.cpp](../src/xrpld/app/misc/NetworkOPs.cpp);
+  `Consensus::phaseEstablish()` in [Consensus.h](../include/xrpl/consensus/Consensus.h);
+  thresholds: `avalancheCutoffs` in
+  [ConsensusParms.h](../include/xrpl/consensus/ConsensusParms.h)).
 - **Retry-across-rounds loop (many rounds per settled ledger)**: `MovedOn` /
-  `Expired` accepts a non-preferred ledger; the next round's `checkLedger` finds
+  `Expired` accepts a non-preferred ledger. The next round's `checkLedger` finds
   the wrong prior and recovers before re-deliberating
-  ([Consensus.h:1193](../include/xrpl/consensus/Consensus.h#L1193)); round-to-round
-  via `endConsensus → beginConsensus`
-  ([NetworkOPs.cpp:2315](../src/xrpld/app/misc/NetworkOPs.cpp#L2315)).
+  (`Consensus::handleWrongLedger()` in
+  [Consensus.h](../include/xrpl/consensus/Consensus.h)). Rounds follow one
+  another via `endConsensus → beginConsensus` (`NetworkOPsImp::endConsensus()` in
+  [NetworkOPs.cpp](../src/xrpld/app/misc/NetworkOPs.cpp)).
 - **Two extra establish loop-backs before accept**: `shouldPause` (laggard
-  backpressure) and `!haveCloseTimeConsensus_` (TX consensus but not close-time)
-  each `return` and re-loop, distinct from `checkConsensus == No`
-  ([Consensus.h:1496](../include/xrpl/consensus/Consensus.h#L1496),
-  [1499](../include/xrpl/consensus/Consensus.h#L1499)); close time can
-  "agree to disagree" at prior close + 1s ([docs/consensus.md:163](consensus.md)).
+  backpressure) and `!haveCloseTimeConsensus_` (TX consensus but not close-time).
+  Each makes `Consensus::phaseEstablish()` return and re-loop, distinct from
+  `checkConsensus == No` ([Consensus.h](../include/xrpl/consensus/Consensus.h)).
+  Close time can "agree to disagree" at prior close + 1s (the Effective Close
+  Time section of [docs/consensus.md](consensus.md)).
 - **acquireTxSet / gotTxSet loop**: a disagreeing peer position triggers an async
-  `acquireTxSet`; the later `gotTxSet` regenerates disputes and can extend the
-  establish phase ([Consensus.h:931](../include/xrpl/consensus/Consensus.h#L931)).
+  `acquireTxSet`. The later `gotTxSet` regenerates disputes and can extend the
+  establish phase (`Consensus::peerProposalInternal()` and
+  `Consensus::gotTxSet()` in [Consensus.h](../include/xrpl/consensus/Consensus.h)).
   The fetch is spanned as `txset.acquire` and records one `round.request` event
   per round that asked for the set; the `gotTxSet` delivery itself has no span,
   so a set arriving too late to be used leaves no trace of its own.
 - **Bow-out / mode change**: `handleWrongLedger → leaveConsensus` sends a bow-out
   proposal and demotes Proposing → Observing for the rest of the round
-  ([Consensus.h:1976](../include/xrpl/consensus/Consensus.h#L1976)); `startRound`
-  begins in Proposing **or** Observing ([docs/consensus.md:176](consensus.md)).
+  (`Consensus::leaveConsensus()` in
+  [Consensus.h](../include/xrpl/consensus/Consensus.h)). `startRound` begins in
+  Proposing **or** Observing (the Modes section of
+  [docs/consensus.md](consensus.md#modes)).
 - **Buffered Open-phase inputs**: `peerProposal` / `gotTxSet` arriving during Open
-  are stored, then seeded as disputes at `closeLedger` (`createDisputes`);
+  are stored, then seeded as disputes at `closeLedger` (`createDisputes`).
   `playbackProposals` replays them at `startRound` / `handleWrongLedger`
-  ([docs/consensus.md:244](consensus.md);
-  [Consensus.h:816](../include/xrpl/consensus/Consensus.h#L816)).
+  (the Open section of [docs/consensus.md](consensus.md#open);
+  `Consensus::startRoundInternal()` in
+  [Consensus.h](../include/xrpl/consensus/Consensus.h)).
 - **Outcome fork** after `checkConsensus`: `No` (loop) / `Yes` (onAccept) /
-  `MovedOn` / `Expired` ([Consensus.h:1515](../include/xrpl/consensus/Consensus.h#L1515)).
+  `MovedOn` / `Expired` (`Consensus::haveConsensus()` and
+  `Consensus::phaseEstablish()` in
+  [Consensus.h](../include/xrpl/consensus/Consensus.h)).
 - **Expired guard**: a round cannot leave on `Expired` before
   `avalancheCutoffs.size() × avMinRounds` (= 8) passes — below that, `Expired`
-  loops like `No` ([Consensus.h:1937](../include/xrpl/consensus/Consensus.h#L1937)).
+  loops like `No` (`Consensus::haveConsensus()` in
+  [Consensus.h](../include/xrpl/consensus/Consensus.h)).
 - The **deterministic-vs-random trace-strategy** branch at round start
-  ([RCLConsensus.cpp:1291](../src/xrpld/app/consensus/RCLConsensus.cpp#L1291)) sets
-  only the trace ID — it has **zero protocol effect**.
+  (`RCLConsensus::Adaptor::startRoundTracing()` in
+  [RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp)) only shapes
+  the round span's trace ID and parent. It has **zero protocol effect**.
 
 ### Accept, build, and finalize the ledger
 
@@ -978,39 +1002,44 @@ flowchart TB
     onAcc --> END
 ```
 
-- Order inside `doAccept`: `buildLCL` (build → `tx.apply`, then `txq.cleanup`,
-  then `ledger.store`) → optional `validate` → `consensusBuilt`/`checkAccept` →
-  `OpenLedger::accept` (rebuilds the open ledger; `txq.accept` runs in its
-  callback) → `switchLCL` promotes the built ledger to the new LCL
-  ([RCLConsensus.cpp:812](../src/xrpld/app/consensus/RCLConsensus.cpp#L812) then
-  [833](../src/xrpld/app/consensus/RCLConsensus.cpp#L833)).
+- Order inside `doAccept` (`RCLConsensus::Adaptor::doAccept()` in
+  [RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp)): `buildLCL`
+  (build → `tx.apply`, then `txq.cleanup`, then `ledger.store`) → optional
+  `validate` → `consensusBuilt`/`checkAccept` → `OpenLedger::accept` →
+  `switchLCL`. `OpenLedger::accept` rebuilds the open ledger, and `txq.accept`
+  runs in its callback. `switchLCL` promotes the built ledger to the new LCL.
 - **buildLCL replay branch**: if `releaseReplay()` has data, `buildLedger` replays
-  the stored set with `TapNone` — it **still emits `ledger.build`** (via
-  `buildLedgerImpl`) but applies txns directly with **no `tx.apply` child** and no
-  3-pass loop; else the normal consensus-set path runs `tx.apply` over 3 passes
-  ([RCLConsensus.cpp:929](../src/xrpld/app/consensus/RCLConsensus.cpp#L929);
-  [BuildLedger.cpp:252](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L252)).
+  the stored set with `TapNone`. It **still emits `ledger.build`** (via
+  `buildLedgerImpl`), but applies txns directly, with **no `tx.apply` child** and
+  no 3-pass loop. Otherwise the normal consensus-set path runs `tx.apply` over 3
+  passes (`RCLConsensus::Adaptor::buildLCL()` in
+  [RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp); `buildLedger()`
+  in [BuildLedger.cpp](../src/xrpld/app/ledger/detail/BuildLedger.cpp)).
 - `processClosedLedger` (`txq.cleanup`) runs **after** build, **before** store
-  ([RCLConsensus.cpp:950](../src/xrpld/app/consensus/RCLConsensus.cpp#L950) vs
-  [953](../src/xrpld/app/consensus/RCLConsensus.cpp#L953)).
+  (`RCLConsensus::Adaptor::buildLCL()` in
+  [RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp)).
 - **`ledger.validate` is async + lossy**: `checkAccept` is re-entered per incoming
-  trusted validation (`handleNewValidation → checkAccept`,
-  [RCLValidations.cpp:193](../src/xrpld/app/consensus/RCLValidations.cpp#L193));
-  it promotes the **highest-seq** trusted ledger whose `valCount > neededValidations`
-  ([LedgerMaster.cpp:1180](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1180)),
-  which may be a **different** ledger than the one this node built. Below quorum
-  (`tvc < minVal`) it returns early with no promotion — a built ledger that loses
-  is abandoned ([LedgerMaster.cpp:980](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L980);
-  [docs/consensus.md:50](consensus.md)). The `ledger.validate` span is emitted only
-  inside `checkAccept` ([LedgerMaster.cpp:1003](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1003)).
+  trusted validation (`handleNewValidation → checkAccept` in
+  [RCLValidations.cpp](../src/xrpld/app/consensus/RCLValidations.cpp)). If the
+  built ledger does not validate, `consensusBuilt` then tries the **highest-seq**
+  trusted ledger whose `valCount > neededValidations`
+  (`LedgerMaster::consensusBuilt()` in
+  [LedgerMaster.cpp](../src/xrpld/app/ledger/detail/LedgerMaster.cpp)). That may
+  be a **different** ledger than the one this node built. Below quorum
+  (`tvc < minVal`) `checkAccept` returns early with no promotion — a built ledger
+  that loses is abandoned (`LedgerMaster::checkAccept()`; the Distributed
+  Agreement section of [docs/consensus.md](consensus.md#distributed-agreement)).
+  The `ledger.validate` span is emitted only inside `checkAccept`.
 - **validation-send guard**: broadcast only if
-  `validating_ && isCompatible && !consensusFail && canValidateSeq(seq)` — silently
+  `validating_ && isCompatible && !consensusFail && canValidateSeq(seq)` —
   suppressed for incompatible ledgers or an already-validated seq
-  ([RCLConsensus.cpp:730](../src/xrpld/app/consensus/RCLConsensus.cpp#L730)).
-- **switchLCL**: standalone → `setFullLedger` + `tryAdvance` — marks the ledger
-  full-validated **without** emitting `ledger.validate` (that span lives only in
-  `checkAccept`); networked → `checkAccept` (shared async quorum gate)
-  ([LedgerMaster.cpp:442](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L442)).
+  (`RCLConsensus::Adaptor::doAccept()` in
+  [RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp)).
+- **switchLCL** (`LedgerMaster::switchLCL()` in
+  [LedgerMaster.cpp](../src/xrpld/app/ledger/detail/LedgerMaster.cpp)): standalone
+  → `setFullLedger` + `tryAdvance`, which marks the ledger full-validated
+  **without** emitting `ledger.validate`; that span lives only in `checkAccept`.
+  Networked → `checkAccept`, the shared async quorum gate.
 
 ### Side flows: pathfinding and ledger acquire
 
@@ -1041,10 +1070,11 @@ flowchart TB
     UALL -.->|dead / aborted| DEAD
 ```
 
-**Ledger acquire** — a flow **outside the close flow** that fetches a missing or
+**Ledger acquire** is a flow **outside the close flow**. It fetches a missing or
 correct-prior ledger from peers, retries per peer/timer, and finishes with a
-reason-dependent store; `checkAccept` + `tryAdvance` run on **any** completed
-acquire. `ledger.acquire` is usually a trace root, but not reliably so — see the
+reason-dependent store. `checkAccept` + `tryAdvance` run on any acquire that
+`done()` completes. `ledger.acquire` is usually a trace root, but not reliably
+so — see the
 [parenting known issues](#where-telemetry-parenting-differs-from-protocol-flow):
 
 ```mermaid
@@ -1079,20 +1109,22 @@ flowchart TB
 Side-flow evidence:
 
 - **Pathfind subscription lifecycle**: `path_find` create inserts a persistent
-  subscription (`makePathRequest`); `update_all` re-runs each active request every
-  close, removes dead subscribers (`doAborting` + `remove_if` erase), and takes an
-  extra pass when a new request arrived mid-run
-  ([PathRequestManager.cpp:103](../src/xrpld/rpc/detail/PathRequestManager.cpp#L103),
-  [169](../src/xrpld/rpc/detail/PathRequestManager.cpp#L169),
-  [181](../src/xrpld/rpc/detail/PathRequestManager.cpp#L181)).
-- **Acquire outcome fork**: `timeouts_ > kLedgerTimeoutRetriesMax` (= 6) sets
-  `failed_` → terminal `logFailure`, no store/checkAccept
-  ([InboundLedger.cpp:506](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L506)).
+  subscription (`makePathRequest`). `update_all` re-runs each active request every
+  close and removes dead subscribers (`doAborting` + `remove_if` erase). It takes
+  an extra pass when a new request arrived mid-run
+  (`PathRequestManager::updateAll()` in
+  [PathRequestManager.cpp](../src/xrpld/rpc/detail/PathRequestManager.cpp)).
+- **Acquire outcome fork**: when `timeouts_ > kLedgerTimeoutRetriesMax` (= 6),
+  `InboundLedger::onTimer()` sets `failed_` and calls `done()`. Its `AcqDone`
+  job then runs `logFailure`, with no store and no `checkAccept`
+  ([InboundLedger.cpp](../src/xrpld/app/ledger/detail/InboundLedger.cpp)).
   A third path never reaches `done()` at all: the destructor marks any acquisition
-  that is still neither `complete_` nor `failed_` as `outcome=abandoned`
-  ([InboundLedgers.cpp:396](../src/xrpld/app/ledger/detail/InboundLedgers.cpp#L396)
-  sweep eviction; [InboundLedger.cpp:309](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L309)
-  abort branch). Give-up fires at roughly **18s**, not 21s: `init()` enters the
+  that is still neither `complete_` nor `failed_` as `outcome=abandoned`. Sweep
+  eviction happens in `InboundLedgersImp::sweep()`
+  ([InboundLedgers.cpp](../src/xrpld/app/ledger/detail/InboundLedgers.cpp)); the
+  destructor stamps the outcome through `InboundLedger::finalizeAcquireSpan()`
+  ([InboundLedger.cpp](../src/xrpld/app/ledger/detail/InboundLedger.cpp)).
+  Give-up fires at roughly **18s**, not 21s: `init()` enters the
   retry loop through `queueJob()` with no preceding `setTimer()`, so the first
   `invokeOnTimer()` runs immediately with `progress_` still `false` and takes
   `timeouts_` to 1 at t≈0. The test needs `timeouts_ > 6` — the seventh invocation
@@ -1115,14 +1147,14 @@ Side-flow evidence:
   `acquire_sweep_evictions`.
 
 - **done() reason branch (store side only)**: `HISTORY` → `onLedgerFetched`, **no**
-  `storeLedger`; else → `storeLedger`. But `checkAccept` + `tryAdvance` run for
-  **any** `complete_ && !failed_` acquire regardless of reason
-  ([InboundLedger.cpp:841](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L841)
-  store switch; [853](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L853)
-  reason-independent checkAccept/tryAdvance on the `AcqDone` job).
-- **tryAdvance multi-ledger loop**: `doAdvance` runs `do { … } while (advanceWork_)`,
-  publishing a range of ledgers and recursively triggering further HISTORY acquire
-  ([LedgerMaster.cpp:1905](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1905)).
+  `storeLedger`; else → `storeLedger`. But the `AcqDone` job that `done()` posts
+  runs `checkAccept` + `tryAdvance` for **any** `complete_ && !failed_` acquire,
+  whatever its reason (`InboundLedger::done()` in
+  [InboundLedger.cpp](../src/xrpld/app/ledger/detail/InboundLedger.cpp)).
+- **tryAdvance multi-ledger loop**: `LedgerMaster::doAdvance()` runs
+  `do { … } while (advanceWork_)`, publishing a range of ledgers and recursively
+  triggering further HISTORY acquire
+  ([LedgerMaster.cpp](../src/xrpld/app/ledger/detail/LedgerMaster.cpp)).
 
 ### Where telemetry parenting differs from protocol flow
 
@@ -1130,16 +1162,16 @@ The graph above is protocol control flow. The OpenTelemetry span **parent links*
 are built differently and, in several places, do **not** represent a real
 call edge. Read a trace with these in mind:
 
-| Telemetry does this                                                                                                                   | Real protocol flow                                                                                                                                                                                                                                                                                                                                                                         |
-| ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `tx.process` is a `hashSpan` root from `txID` — an independent trace root ([TxTracing.h:63](../src/xrpld/telemetry/TxTracing.h#L63)). | The real edge is the synchronous `doSubmit → processTransaction` call; it is **not** a child of `rpc.command.submit`.                                                                                                                                                                                                                                                                      |
-| `tx.preflight` / `tx.preclaim` / `tx.transactor` share one `txID`-derived trace ID.                                                   | That shared ID is a correlation trick, not a call edge. The real order is the composed `apply()` at [apply.cpp:118](../src/libxrpl/tx/apply.cpp#L118). They are **not** children of `tx.process` or `tx.apply`. Because nothing else nests under it either, `tx.apply` is **always a leaf** — the stage spans for the transactions it applied sit in the txID-keyed trace, not beneath it. |
-| `consensus.round` uses a deterministic trace ID from the previous ledger hash.                                                        | This makes **all validators share one trace ID** (a cross-node shared root), not a per-node parent. The real round-to-round edge is `endConsensus → beginConsensus`.                                                                                                                                                                                                                       |
-| `consensus.accept` (main thread) and `consensus.accept.apply` (JtAccept worker) are wired via a captured context.                     | The real edge is the queued `JtAccept` job, a thread hand-off ([RCLConsensus.cpp:483](../src/xrpld/app/consensus/RCLConsensus.cpp#L483)). `consensus.accept.apply` is a scoped guard, so the spans `doAccept` creates after it (`ledger.build`, `txq.cleanup`, `txq.accept`, `ledger.store`, `ledger.validate`) nest under it; those are real containment edges.                           |
-| `pathfind.update_all` parents nothing from the original `pathfind.request`.                                                           | The causal link is the ledger-close job on `JtUpdatePf`, not span nesting.                                                                                                                                                                                                                                                                                                                 |
-| `ledger.acquire` and its downstream `ledger.store` / `ledger.validate`.                                                               | Reached via the `AcqDone` job, not parent inheritance. All three are `hashSpan` roots keyed on the ledger hash, so none of them parents the others and none inherits its caller's span; they share one trace instead.                                                                                                                                                                      |
-| `peer.*.receive` (fresh `kConsumer` root) and `consensus.*.receive` on the same message.                                              | Two **sequential stages of one synchronous handler**, not parent/child; on a duplicate/untrusted drop the `consensus.*.receive` is never created.                                                                                                                                                                                                                                          |
-| Receive spans adopt the sender's `trace_id` + `span_id` as a genuine cross-node parent.                                               | Deliberate: the receive span becomes a child of a **different node's** span (a cross-node context marker, not an in-process edge). `tx.receive` is asymmetric — it borrows only the sender's `span_id` and re-derives its own `trace_id` from `txID`.                                                                                                                                      |
+| Telemetry does this                                                                                                                                 | Real protocol flow                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tx.process` is a `hashSpan` root from `txID` — an independent trace root (`txProcessSpan()` in [TxTracing.h](../src/xrpld/telemetry/TxTracing.h)). | The real edge is the synchronous `doSubmit → processTransaction` call; it is **not** a child of `rpc.command.submit`.                                                                                                                                                                                                                                                                                                                         |
+| `tx.preflight` / `tx.preclaim` / `tx.transactor` share one `txID`-derived trace ID.                                                                 | That shared ID is a correlation trick, not a call edge. The real order is the composed `apply()` in [apply.cpp](../src/libxrpl/tx/apply.cpp). They are **not** children of `tx.process` or `tx.apply`. Because nothing else nests under it either, `tx.apply` is **always a leaf** — the stage spans for the transactions it applied sit in the txID-keyed trace, not beneath it.                                                             |
+| `consensus.round` uses a deterministic trace ID from the previous ledger hash.                                                                      | This makes **all validators share one trace ID** (a cross-node shared root), not a per-node parent. The real round-to-round edge is `endConsensus → beginConsensus`.                                                                                                                                                                                                                                                                          |
+| `consensus.accept` (main thread) and `consensus.accept.apply` (JtAccept worker) are wired via a captured context.                                   | The real edge is the queued `JtAccept` job, a thread hand-off (`RCLConsensus::Adaptor::onAccept()` in [RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp)). `consensus.accept.apply` is a scoped guard, so the spans `doAccept` creates after it (`ledger.build`, `txq.cleanup`, `txq.accept`) nest under it; those are real containment edges. The `ledger.store` and `ledger.validate` it reaches are `hashSpan` roots instead. |
+| `pathfind.update_all` parents nothing from the original `pathfind.request`.                                                                         | The causal link is the ledger-close job on `JtUpdatePf`, not span nesting.                                                                                                                                                                                                                                                                                                                                                                    |
+| `ledger.acquire` and its downstream `ledger.store` / `ledger.validate`.                                                                             | Reached via the `AcqDone` job, not parent inheritance. All three are `hashSpan` roots keyed on the ledger hash, so none of them parents the others and none inherits its caller's span; they share one trace instead.                                                                                                                                                                                                                         |
+| `peer.*.receive` (fresh `kConsumer` root) and `consensus.*.receive` on the same message.                                                            | Two **sequential stages of one synchronous handler**, not parent/child; on a duplicate/untrusted drop the `consensus.*.receive` is never created.                                                                                                                                                                                                                                                                                             |
+| Receive spans adopt the sender's `trace_id` + `span_id` as a genuine cross-node parent.                                                             | Deliberate: the receive span becomes a child of a **different node's** span (a cross-node context marker, not an in-process edge). `tx.receive` is asymmetric — it borrows only the sender's `span_id` and re-derives its own `trace_id` from `txID`.                                                                                                                                                                                         |
 
 > **Known telemetry artifacts**:
 > an RPC entry span's scope can leak across a reused coroutine worker, and the
@@ -1152,45 +1184,58 @@ Three further divergences are **known issues in the code**, not deliberate desig
 Unlike the rows above, these produce a parent that is simply wrong, and all three
 are pending a code fix:
 
-- **`grpc.*` and `pathfind.update_all` do not open a fresh root.** All four RPC
-  entry points create their span with `freshRoot`, so a reused coroutine worker
-  cannot leak a stale ambient parent into them
-  ([ServerHandler.cpp:473](../src/xrpld/rpc/detail/ServerHandler.cpp#L473),
-  [640](../src/xrpld/rpc/detail/ServerHandler.cpp#L640)). `grpc.<MethodName>`
-  ([GRPCServer.cpp:173](../src/xrpld/app/main/GRPCServer.cpp#L173)) and
-  `pathfind.update_all`
-  ([PathRequestManager.cpp:91](../src/xrpld/rpc/detail/PathRequestManager.cpp#L91))
-  use the plain constructor instead, so either can be adopted by whatever span
+- **`grpc.*` and `pathfind.update_all` do not open a fresh root.** The four RPC
+  entry spans in `ServerHandler` all use `freshRoot`. They are in
+  `ServerHandler::onHandoff()`, `ServerHandler::onWSMessage()` and both
+  `ServerHandler::processSession()` overloads in
+  [ServerHandler.cpp](../src/xrpld/rpc/detail/ServerHandler.cpp). So a reused
+  coroutine worker cannot leak a stale ambient parent into them.
+  `grpc.<MethodName>` (the coroutine overload of
+  `GRPCServerImpl::CallData::process()` in
+  [GRPCServer.cpp](../src/xrpld/app/main/GRPCServer.cpp)) and
+  `pathfind.update_all` (`PathRequestManager::updateAll()` in
+  [PathRequestManager.cpp](../src/xrpld/rpc/detail/PathRequestManager.cpp))
+  use `SpanGuard::span()` instead, `update_all` through the plain
+  `ScopedSpanGuard` constructor. So either can be adopted by whatever span
   happened to be active on the worker that picked the job up. A gRPC call
   appearing beneath an unrelated transaction's trace is this bug, not a real
   call edge.
 - **`ledger.acquire` / `ledger.store` / `ledger.validate` are true roots on the
-  ledger-hash trace.** All three use `SpanGuard::hashSpan`
-  ([InboundLedger.cpp:128](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L128),
-  [LedgerMaster.cpp:181](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L181)), which
-  derives the trace id from the ledger hash and never inherits the ambient span. So
+  ledger-hash trace.** All three use `SpanGuard::hashSpan`, which derives the
+  trace id from the ledger hash and never inherits the ambient span. The acquire
+  span is created in `InboundLedger::init()`
+  ([InboundLedger.cpp](../src/xrpld/app/ledger/detail/InboundLedger.cpp)). The
+  store and validate spans come from `LedgerMaster::makeLedgerTraceSpan()`, which
+  `LedgerMaster::storeLedger()` and `LedgerMaster::checkAccept()` call
+  ([LedgerMaster.cpp](../src/xrpld/app/ledger/detail/LedgerMaster.cpp)). So
   the caller does not matter: an acquire started from the `ledger_request` RPC, a
   store reached from `buildLCL` inside `doAccept`, and a validate reached from
   `checkAccept` all come out as roots of the same per-ledger trace. Two `ledger.store`
   roots for one ledger is the normal shape when a node both fetches and builds it.
 
-  **`ledger.build` and `tx.apply` use the same ambient-parent construct and land
-  on the intended edges.** `ledger.build` is a plain `ScopedSpanGuard`
-  ([BuildLedger.cpp:55](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L55)): on the
+  **`ledger.build` and `tx.apply` inherit the ambient span and land on the
+  intended edges.** `ledger.build` is a plain `ScopedSpanGuard`
+  (`buildLedgerImpl()` in
+  [BuildLedger.cpp](../src/xrpld/app/ledger/detail/BuildLedger.cpp)). On the
   consensus path it is created inside `doAccept` after `consensus.accept.apply`
-  opens, so it nests under that span; on the replay path
-  ([LedgerDeltaAcquire.cpp:208](../src/xrpld/app/ledger/detail/LedgerDeltaAcquire.cpp#L208))
-  nothing is ambient and it is a root. `tx.apply`
-  ([BuildLedger.cpp:123](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L123)) is
-  reached only synchronously from `buildLedgerImpl` while `ledger.build`'s scope is
-  live, so its ambient parent is always `ledger.build`.
+  opens, so it nests under that span. On the replay path
+  (`LedgerDeltaAcquire::tryBuild()` in
+  [LedgerDeltaAcquire.cpp](../src/xrpld/app/ledger/detail/LedgerDeltaAcquire.cpp))
+  nothing is ambient, so it is a root. `tx.apply` (`applyTransactions()` in
+  [BuildLedger.cpp](../src/xrpld/app/ledger/detail/BuildLedger.cpp)) is reached
+  only synchronously from `buildLedgerImpl`, while `ledger.build`'s scope is
+  live. So whenever `trace_ledger` is on, its ambient parent is `ledger.build`.
 
-- **`consensus.round` is not always a root.** The `consensus_trace_strategy=attribute`
-  path has two creation branches; the fallback branch — taken on the first traced
-  round of a run, and whenever consensus tracing is off — sets no parent at all
-  ([RCLConsensus.cpp:1310](../src/xrpld/app/consensus/RCLConsensus.cpp#L1310)),
-  so that round inherits the ambient context instead of starting a trace. Rounds
-  under the default `deterministic` strategy are unaffected.
+- **`consensus.round` is not always a root.** `readConsensusTraceStrategy()`
+  accepts only `deterministic` (the default) and `random`. Under `random`,
+  `RCLConsensus::Adaptor::startRoundTracing()` in
+  [RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp) has two
+  creation branches. When the previous round left a span context,
+  `SpanGuard::linkedSpan()` starts a fresh root linked to it. The first traced
+  round of a run has no such context. There `SpanGuard::span()` sets no explicit
+  parent, so the round takes whatever span is active on that thread.
+  Under the default `deterministic` strategy, `SpanGuard::hashSpan()` always
+  starts a root.
 
 ---
 
@@ -1317,19 +1362,21 @@ sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.tr
 > stage rather than on a single aggregate so the failing stage is obvious.
 
 > **Sampling caveat**: these stage metrics are span-derived, but head sampling
-> is **fixed at 100% and is not configurable** — the ratio is a compile-time
-> constant ([Telemetry.h:234](../include/xrpl/telemetry/Telemetry.h#L234)
-> `static constexpr double samplingRatio = 1.0;`) and there is no
-> `sampling_ratio` config key to set
-> ([TelemetryConfig.cpp:139](../src/libxrpl/telemetry/TelemetryConfig.cpp#L139)
-> — "nothing to parse"). So locally these counts are **exact**, not a sample.
-> Volume reduction is a collector-side **tail** sampling decision instead, and
-> the only policy shipped is a single 0.5% probabilistic one that lives **only**
-> in `otel-collector-config.grafanacloud.yaml` — the base
-> `otel-collector-config.yaml` has no tail sampling at all, so a stock local
-> stack retains every trace. Where that Cloud policy is in force it applies to
-> the trace-storage branch only; span_metrics run on a separate branch and still
-> see 100% of spans, so the derived RED metrics stay exact either way.
+> is **fixed at 100% and is not configurable**. The ratio is a compile-time
+> constant (`static constexpr double samplingRatio = 1.0;` in `Telemetry::Setup`,
+> [Telemetry.h](../include/xrpl/telemetry/Telemetry.h)). There is no
+> `sampling_ratio` config key to set (`makeTelemetrySetup()` in
+> [TelemetryConfig.cpp](../src/libxrpl/telemetry/TelemetryConfig.cpp) — "nothing
+> to parse"). So locally these counts are **exact**, not a sample.
+> Volume reduction is a collector-side **tail** sampling decision instead. The
+> only sampler shipped is one `tail_sampling` processor in
+> `otel-collector-config.grafanacloud.yaml`. It keeps 0.5% of traces at random,
+> plus every trace with a span whose name starts with `nodestore.rotate`. The
+> base `otel-collector-config.yaml` has **no** tail sampling, so a stock local
+> stack keeps every trace. Where the Cloud sampler is in force it applies to
+> the trace-storage branch only. The `spanmetrics` connector runs on a separate
+> branch and still sees 100% of spans, so the derived RED metrics stay exact
+> either way.
 
 ### Transaction Queue Health
 
@@ -1622,16 +1669,22 @@ does not apply to these dimensions.
 Configured in `otel-collector-config.yaml` (spanmetrics connector, `unit: ms`):
 
 ```
-1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2s, 3s, 4s, 5s, 10s, 30s
+0.01ms, 0.05ms, 0.1ms, 0.25ms, 0.5ms, 1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2s, 3s, 4s, 5s, 10s, 30s
 ```
 
+Sub-millisecond boundaries exist because most xrpld spans finish far below 1ms.
 Sub-second boundaries cover RPC/tx/ledger spans; 2s-4s resolve second-scale
 consensus spans (`consensus.round`, `consensus.establish`) that would otherwise
 pile into one 1s-5s bucket and make `histogram_quantile` a meaningless
 interpolation; 10s/30s give the `ledger.acquire` catch-up tail a measurable home.
-Boundaries must stay strictly ascending. The native beast::insight histograms
-(ms-scale RPC/IO timers) keep the original 1ms-5s buckets in
-`Telemetry.cpp` — they never exceed 5s, so they need no high-range buckets.
+Boundaries must stay strictly ascending.
+
+The native `beast::insight` histograms do not use this list. `Telemetry.cpp`
+registers one view per unit, with edges from `HistogramBuckets.h`. `ms`
+instruments get `kMillisecondBuckets` (1 ms to 120 s). `By` instruments get
+`kByteBuckets` (512 B to 1 MiB). The millisecond ladder holds every collector edge
+from 1 ms up, so span and native latency panels share one scale. Its 60 s and
+120 s edges cover long-running jobs.
 
 ## System Metrics (OTel native -- beast::insight)
 
@@ -1651,60 +1704,60 @@ The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTe
 
 Do not set `prefix` on this path. `formatName()` never applies it, so the setting is silently ignored and the exported names are bare and lowercase — `jobq_job_count`, not `xrpld_jobq_job_count`. Queries written against a prefixed name return no series.
 
-> **Fallback**: Set `server=statsd` and `address=127.0.0.1:8125` to use the legacy StatsD UDP path. This requires re-enabling the `statsd` receiver in `otel-collector-config.yaml` and uncommenting port 8125 in `docker-compose.yml`. On that path `prefix` **is** applied to the metric name, which is why the StatsD examples elsewhere in this document keep it.
+> **Fallback**: Set `server=statsd` and `address=127.0.0.1:8125` to use the StatsD UDP path. `otel-collector-config.yaml` has no `statsd` receiver, so add one and list it in the `metrics` pipeline's `receivers`. Then uncomment the port 8125 line in `docker-compose.yml`. On that path `prefix` **is** applied to the metric name, which is why the StatsD examples elsewhere in this document keep it.
 
 ### Metric Reference
 
 #### Gauges
 
-| Prometheus Metric                     | Source                    | Description                                                                |
-| ------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
-| `ledgermaster_validated_ledger_age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                          |
-| `ledgermaster_published_ledger_age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                          |
-| `state_accounting_{mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
-| `state_accounting_{mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                  |
-| `peer_finder_active_inbound_peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
-| `peer_finder_active_outbound_peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
-| `overlay_peer_disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
-| `jobq_job_count`                      | JobQueue.cpp:26           | Current job queue depth (all types)                                        |
-| `jobq_{jobtype}_waiting`              | JobTypeData.h             | Jobs of this type enqueued but not yet running                             |
-| `jobq_{jobtype}_running`              | JobTypeData.h             | Jobs of this type currently executing                                      |
-| `jobq_{jobtype}_deferred`             | JobTypeData.h             | Jobs of this type held back because the type's concurrency limit was hit   |
-| `{category}_bytes_in/out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
-| `{category}_messages_in/out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
+| Prometheus Metric                     | Source                                       | Description                                                                |
+| ------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------- |
+| `ledgermaster_validated_ledger_age`   | `LedgerMaster::Stats` (LedgerMaster.h)       | Age of validated ledger (seconds)                                          |
+| `ledgermaster_published_ledger_age`   | `LedgerMaster::Stats` (LedgerMaster.h)       | Age of published ledger (seconds)                                          |
+| `state_accounting_{mode}_duration`    | `NetworkOPsImp::Stats` (NetworkOPs.cpp)      | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
+| `state_accounting_{mode}_transitions` | `NetworkOPsImp::Stats` (NetworkOPs.cpp)      | Transition count per mode                                                  |
+| `peer_finder_active_inbound_peers`    | `ManagerImp::Stats` (PeerfinderManager.cpp)  | Active inbound peer connections                                            |
+| `peer_finder_active_outbound_peers`   | `ManagerImp::Stats` (PeerfinderManager.cpp)  | Active outbound peer connections                                           |
+| `overlay_peer_disconnects`            | `OverlayImpl::Stats` (OverlayImpl.h)         | Peer disconnect count                                                      |
+| `jobq_job_count`                      | `JobQueue::JobQueue()` (JobQueue.cpp)        | Current job queue depth (all types)                                        |
+| `jobq_{jobtype}_waiting`              | JobTypeData.h                                | Jobs of this type enqueued but not yet running                             |
+| `jobq_{jobtype}_running`              | JobTypeData.h                                | Jobs of this type currently executing                                      |
+| `jobq_{jobtype}_deferred`             | JobTypeData.h                                | Jobs of this type held back because the type's concurrency limit was hit   |
+| `{category}_bytes_in/out`             | `OverlayImpl::TrafficGauges` (OverlayImpl.h) | Overlay traffic bytes per category (57 categories)                         |
+| `{category}_messages_in/out`          | `OverlayImpl::TrafficGauges` (OverlayImpl.h) | Overlay traffic messages per category                                      |
 
-Note that `job_count` is exported as `jobq_job_count`: the JobQueue is
-constructed with `collectorManager_->group("jobq")` (Application.cpp:386),
-`GroupImp::makeName()` joins prefix and name with a `.` (Groups.cpp:42), and
-`OTelCollectorImp::formatName()` then turns the `.` into `_` and lowercases the
-whole string (OTelCollector.cpp:855-874). The same mechanism produces the
-`jobq_{jobtype}_*` names above and the pre-existing
+Note that `job_count` is exported as `jobq_job_count`. The `ApplicationImp`
+constructor builds the JobQueue with `collectorManager_->group("jobq")`.
+`GroupImp::makeName()` joins that prefix and the name with a `.`, and
+`OTelCollectorImp::formatName()` turns the `.` into `_` and lowercases the whole
+string. The same mechanism produces the `jobq_{jobtype}_*` names above and the
 `jobq_{jobtype}_milliseconds` timing family.
 
 #### Per-Job-Type Queue Saturation
 
-The three `jobq_{jobtype}_{waiting,running,deferred}` families expose the
-per-type counters that `JobTypeData` already maintained but never exported.
-`{jobtype}` is the lowercased `JobTypes` name, so `JtLedgerReq` ("ledgerRequest")
-becomes `jobq_ledgerrequest_waiting` / `_running` / `_deferred`.
+The three `jobq_{jobtype}_{waiting,running,deferred}` families export the
+`waiting`, `running` and `deferred` counters that `JobTypeData` keeps per job
+type. `{jobtype}` is the lowercased `JobTypes` name, so `JtLedgerReq`
+("ledgerRequest") becomes `jobq_ledgerrequest_waiting` / `_running` /
+`_deferred`.
 
 They are emitted for every **non-special** job type — 35 of the 46 declared
 types. A "special" type is one whose concurrency limit is 0
-(`JobTypeInfo::special()`, JobTypeInfo.h:71-74); the limit logic never applies
-to it, so its `deferred` is always zero. The gauge members are declared at
-JobTypeData.h:78-80 and created at :100-102, next to the existing
-`dequeue`/`execute` events and under the same `!info.special()` guard (:95). They
-are published by `JobQueue::collect()` under the `mutex_` that already guards the
-counters (JobQueue.cpp:66-93) — no new locking.
+(`JobTypeInfo::special()`); the limit logic never applies to it, so its
+`deferred` is always zero. The gauges are the `JobTypeData` members
+`waitingGauge`, `runningGauge` and `deferredGauge`. The `JobTypeData`
+constructor creates them beside the `dequeue`/`execute` events, under the same
+`!info.special()` guard. `JobQueue::collect()` publishes them: it copies the
+counters under `mutex_`, then sets the gauges after it releases the lock.
 
-**`deferred` is the leading indicator.** `JobQueue::addJob()` never rejects
-work — when a type is at its limit, `addRefCountedJob()` increments `deferred`
-and returns `true` anyway (JobQueue.cpp:131-142), and `finishJob()` drains one
-deferred job per completion (JobQueue.cpp:353-362). Backpressure on a capped type
-therefore shows up **only as latency**, after the harm is done. `deferred > 0`
-says the cap is being hit _now_, before the duration histograms move.
+**`deferred` is the leading indicator.** A type at its limit does not make
+`JobQueue::addJob()` reject work. `JobQueue::addRefCountedJob()` increments
+`deferred` and returns `true` anyway, and `JobQueue::finishJob()` drains one
+deferred job per completion. Backpressure on a capped type therefore shows up
+**only as latency**, after the harm is done. `deferred > 0` says the cap is
+being hit _now_, before the duration histograms move.
 
-Limits that matter for ledger sync (JobTypes.h:54-77):
+Limits that matter for ledger sync, as set in the `JobTypes` constructor:
 
 | Job type       | Metric prefix         | Limit | Producers                                                                       |
 | -------------- | --------------------- | ----- | ------------------------------------------------------------------------------- |
@@ -1714,27 +1767,29 @@ Limits that matter for ledger sync (JobTypes.h:54-77):
 | `JtUpdatePf`   | `jobq_updatepaths_`   | 1     | `PthFindNewReq`, `PthFindOBDB`, `PthFindNewLed`, `OB<seq>` — see the note below |
 | `JtTxnData`    | `jobq_fetchtxndata_`  | 5     | `TxAcq`, `ComplAcquire`, `RcvPeerData`                                          |
 
-> **`JtUpdatePf` has four producers, three of them individually visible.** All
-> four run the same `updatePaths()` work but arrive under different names. Three
-> come through `LedgerMaster::newPFWork()` (LedgerMaster.cpp:1545), which passes
-> its caller's name straight to `addJob`: `PthFindNewReq` (:1512),
-> `PthFindOBDB` (:1533), and `PthFindNewLed` (:1984). All three are all-letters,
-> so each is its own `handler` series. The fourth is
-> `"OB" + std::to_string(seq)` (OrderBookDBImpl.cpp:84), which contains digits
-> and therefore folds to `handler="other"` — order-book rebuild traffic is the
-> only one of the four that is not directly attributable. Do not read the whole
-> type as invisible: three of its four producers are named.
+> **`JtUpdatePf` has four producers, three of them individually visible.** Three
+> come through `LedgerMaster::newPFWork()`, which queues `updatePaths()` and
+> passes its caller's name straight to `addJob`. They are `PthFindNewReq` from
+> `LedgerMaster::newPathRequest()`, `PthFindOBDB` from
+> `LedgerMaster::newOrderBookDB()`, and `PthFindNewLed` from
+> `LedgerMaster::doAdvance()`. All three are all-letters, so each is its own
+> `handler` series. The fourth is `"OB" + std::to_string(seq)`, which
+> `OrderBookDBImpl::setup()` queues to rebuild the order book. It contains
+> digits and therefore folds to `handler="other"` — order-book rebuild traffic
+> is the only one of the four that is not directly attributable. Do not read
+> the whole type as invisible: three of its four producers are named.
 
-> **Sampling caveat**: these are gauges read by the `JobQueue::collect()` hook,
-> which the beast::insight `PeriodicMetricReader` drives every 1 s
-> (Telemetry.cpp:441). A `deferred` spike shorter than the sample interval can be
-> missed entirely. Treat a non-zero reading as real saturation, but do not treat
-> a zero reading as proof that no saturation occurred — cross-check
-> `job_queued_us` for the same type.
+> **Sampling caveat**: these are gauges read by the `JobQueue::collect()` hook.
+> The global `PeriodicExportingMetricReader` that `TelemetryImpl::initMetrics()` builds
+> drives that hook every `metric_export_interval_ms`, 1 s by default. A
+> `deferred` spike shorter than the sample interval can be missed entirely.
+> Treat a non-zero reading as real saturation, but do not treat a zero reading
+> as proof that no saturation occurred — cross-check `job_queued_us` for the
+> same type.
 
 #### OTel MetricsRegistry Gauges
 
-These gauges are exported via the OTel Metrics SDK `PeriodicMetricReader` (10s interval), NOT through beast::insight.
+These gauges are exported via the OTel Metrics SDK `PeriodicExportingMetricReader` (10s interval), NOT through beast::insight.
 
 | Prometheus Metric                                   | Source              | Description                                                                                                                                                                         |
 | --------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1801,23 +1856,23 @@ ledger acquisition deferring". Use `acquire_ledger_deferrals` and
 
 #### Counters
 
-| Prometheus Metric               | Source                | Description                    |
-| ------------------------------- | --------------------- | ------------------------------ |
-| `rpc_requests_total`            | ServerHandler.cpp:108 | Total RPC request count        |
-| `ledger_fetches_total`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
-| `ledger_history_mismatch_total` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
-| `warn_total`                    | Logic.h:33            | Resource manager warning count |
-| `drop_total`                    | Logic.h:34            | Resource manager drop count    |
+| Prometheus Metric               | Source                                                        | Description                               |
+| ------------------------------- | ------------------------------------------------------------- | ----------------------------------------- |
+| `rpc_requests_total`            | `ServerHandler::ServerHandler()` (ServerHandler.cpp)          | Total RPC request count                   |
+| `ledger_fetches_total`          | `InboundLedgersImp::InboundLedgersImp()` (InboundLedgers.cpp) | Ledger fetch request count                |
+| `ledger_history_mismatch_total` | `LedgerHistory::LedgerHistory()` (LedgerHistory.cpp)          | Built vs validated ledger hash mismatches |
+| `warn_total`                    | `resource::Logic::Stats` (Logic.h)                            | Resource manager warning count            |
+| `drop_total`                    | `resource::Logic::Stats` (Logic.h)                            | Resource manager drop count               |
 
 #### Histograms
 
-| Prometheus Metric | Source                | Description                    |
-| ----------------- | --------------------- | ------------------------------ |
-| `rpc_time`        | ServerHandler.cpp:110 | RPC response time (ms)         |
-| `rpc_size`        | ServerHandler.cpp:109 | RPC response size (bytes)      |
-| `ios_latency`     | Application.cpp:438   | I/O service loop latency (ms)  |
-| `pathfind_fast`   | PathRequests.h:23     | Fast pathfinding duration (ms) |
-| `pathfind_full`   | PathRequests.h:24     | Full pathfinding duration (ms) |
+| Prometheus Metric | Source                                                            | Description                    |
+| ----------------- | ----------------------------------------------------------------- | ------------------------------ |
+| `rpc_time`        | `ServerHandler::ServerHandler()` (ServerHandler.cpp)              | RPC response time (ms)         |
+| `rpc_size`        | `ServerHandler::ServerHandler()` (ServerHandler.cpp)              | RPC response size (bytes)      |
+| `ios_latency`     | `ApplicationImp::io_latency_sampler_` (Application.cpp)           | I/O service loop latency (ms)  |
+| `pathfind_fast`   | `PathRequestManager::PathRequestManager()` (PathRequestManager.h) | Fast pathfinding duration (ms) |
+| `pathfind_full`   | `PathRequestManager::PathRequestManager()` (PathRequestManager.h) | Full pathfinding duration (ms) |
 
 #### Job Instruments
 
@@ -1842,10 +1897,11 @@ buckets stop at 10 ms and every quantile saturates.
 
 `job_type` names the queue a job ran on, not the code that submitted it. Several
 job types have more than one producer, so `job_type` alone cannot attribute a
-latency spike. The clearest case: `RcvGetLedger` (PeerImp.cpp:1566) and
-`RcvGetObjByHash` (PeerImp.cpp:2603) both submit to `JtLedgerReq`, so both report
-as `job_type="ledgerRequest"`. `JtLedgerData` has five producers, `JtUpdatePf` has
-four, and `JtAdvance` has four.
+latency spike. The clearest case: `RcvGetLedger` (from
+`PeerImp::onMessage(TMGetLedger)`) and `RcvGetObjByHash` (from
+`PeerImp::onMessage(TMGetObjectByHash)`) both submit to `JtLedgerReq`, so both
+report as `job_type="ledgerRequest"`. `JtLedgerData` has five producers,
+`JtUpdatePf` has four, and `JtAdvance` has four.
 
 The `handler` label carries the name string passed to `addJob()` — the specific
 call site. It resolves all of those at once, not just the GetObject path.
@@ -1853,8 +1909,8 @@ call site. It resolves all of those at once, not just the GetObject path.
 **The value is sanitized, not raw.** A raw job name would be unbounded, because
 two production job names embed a ledger sequence number:
 
-- `"Pub" + std::to_string(ledger->seq())` (LedgerPersistence.cpp:84)
-- `"OB" + std::to_string(ledger->seq() % 1000000000)` (OrderBookDBImpl.cpp:84)
+- `"Pub" + std::to_string(ledger->seq())` (`pendSaveValidated()`)
+- `"OB" + std::to_string(ledger->seq() % 1000000000)` (`OrderBookDBImpl::setup()`)
 
 A raw label would mint a new Prometheus series for every ledger — unbounded
 growth at ~1 series every 3-5 s, forever.
@@ -1878,13 +1934,13 @@ all-letters and pass through; five are not, and two more are built at runtime
 from a ledger sequence. The domain is therefore **44 values** (43 names plus
 `"other"`):
 
-| Name          | Why it is not all-letters | Call site              |
-| ------------- | ------------------------- | ---------------------- |
-| `GetConsL1`   | digit                     | RCLConsensus.cpp:169   |
-| `GetConsL2`   | digit                     | RCLValidations.cpp:135 |
-| `gRPC-Client` | hyphen                    | GRPCServer.cpp:156     |
-| `RPC-Client`  | hyphen                    | ServerHandler.cpp:332  |
-| `WS-Client`   | hyphen                    | ServerHandler.cpp:376  |
+| Name          | Why it is not all-letters | Call site                                                |
+| ------------- | ------------------------- | -------------------------------------------------------- |
+| `GetConsL1`   | digit                     | `RCLConsensus::Adaptor::acquireLedger()`                 |
+| `GetConsL2`   | digit                     | `RCLValidationsAdaptor::acquire()`                       |
+| `gRPC-Client` | hyphen                    | `GRPCServerImpl::CallData<Request, Response>::process()` |
+| `RPC-Client`  | hyphen                    | `ServerHandler::onRequest()`                             |
+| `WS-Client`   | hyphen                    | `ServerHandler::onWSMessage()`                           |
 
 > The consequence worth remembering: `handler="other"` is a **mixed bucket**, not
 > a residual. It holds the two per-ledger dynamic names _and_ those five static
@@ -1914,28 +1970,27 @@ fixed and tiny: two `result` values, two `reason` values.
 
 Aggregation choices worth knowing when reading these:
 
-- `getobject_lookup_us` times the **whole fetch loop once**
-  (`processGetObjectByHash()`, PeerImp.cpp:2713-2742 — the iteration cap is set
-  at :2713 and the loop ends at :2742), not each iteration. The loop can run up
-  to `kHardMaxReplyNodes` = 12288 times (Tuning.h:30); timing each
-  `fetchNodeObject()` would cost more than the lookups. It needs an
-  `addMicrosecondHistogramView()` entry for the same reason the job histograms
-  do — a 12288-lookup loop routinely exceeds 10 ms, so without the view the
-  metric saturates exactly when it matters.
+- `getobject_lookup_us` times the **whole fetch loop once** in
+  `PeerImp::processGetObjectByHash()`, not each iteration. The loop can run up
+  to `kHardMaxReplyNodes` = 12288 times; timing each `fetchNodeObject()` would
+  cost more than the lookups. It needs an `addMicrosecondHistogramView()` entry
+  for the same reason the job histograms do — a 12288-lookup loop routinely
+  exceeds 10 ms, so without the view the metric saturates exactly when it
+  matters.
 - `getobject_lookups_total` is incremented **once per request with the batch
   totals**, not once per object. A 12288-iteration loop incrementing per object
   would be a measurable hot-path cost for no extra information.
 - `getobject_request_objects` records `packet.objects_size()` — the _requested_
   count, which is what the charge bands price on, not the count actually found.
 - `getobject_charge` records only the **dynamic** part returned by
-  `computeGetObjectByHashFee()` (PeerImp.cpp:3658-3681), applied at
-  PeerImp.cpp:2757-2758 just after the loop. The admission-time base charge is a
-  constant (`kFeeModerateBurdenPeer`, PeerImp.cpp:2634) and is already implied.
-- `getobject_rejected_total` counts the two early returns in
-  `onMessage(TMGetObjectByHash)`: the malformed-ledgerhash check (PeerImp.cpp:2569,
-  counter at :2573) and the oversize gate (PeerImp.cpp:2585, counter at :2591).
-  Both fire before the job is enqueued, so a rejected request contributes to no
-  other GetObject metric.
+  `PeerImp::computeGetObjectByHashFee()`, which `processGetObjectByHash()`
+  applies just after the loop. The admission-time base charge is a constant,
+  `kFeeModerateBurdenPeer`, which `onMessage(TMGetObjectByHash)` charges after a
+  successful enqueue, so it is already implied.
+- `getobject_rejected_total` counts two early returns in
+  `PeerImp::onMessage(TMGetObjectByHash)`: the malformed-ledgerhash check and
+  the oversize gate. Both fire before the job is enqueued, so a rejected request
+  contributes to no other GetObject metric.
 
 > On a healthy local network `getobject_rejected_total` reads zero — no honest
 > peer sends an oversized request. Verify its panel with a synthetic oversized
@@ -2231,7 +2286,7 @@ board and is documented last, together with the LogQL-specific traps it exposed.
 | Transaction Processing Rate        | timeseries     | `rate(span_calls_total{span_name="tx.process"}[$__rate_interval])` and `tx.receive`          | `span_name`                         |
 | Transaction Processing Latency     | timeseries     | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                              | —                                   |
 | Transaction Path Distribution      | piechart       | `sum by (local) (increase(span_calls_total{span_name="tx.process"}[$__rate_interval]))`      | `local`                             |
-| Transaction Receive vs Suppressed  | timeseries     | `rate(span_calls_total{span_name="tx.receive"}[$__rate_interval])`                           | —                                   |
+| Transaction Receive Rate           | timeseries     | `rate(span_calls_total{span_name="tx.receive"}[$__rate_interval])`                           | —                                   |
 | TX Processing Duration Heatmap     | heatmap        | `tx.process` histogram buckets                                                               | `le`                                |
 | TX Apply Duration per Ledger       | timeseries     | p95/p50 of `tx.apply`                                                                        | —                                   |
 | TX Apply Failed Rate               | stat           | `rate(span_calls_total{span_name="tx.transactor",stage="apply",ter_result!~"tesSUCCESS\|"})` | `stage`, `ter_result`               |
@@ -2311,21 +2366,23 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 > job hooks, not the `jobq_*` ones.**
 > `$quantile` is a dashboard template variable holding a fraction (`0.95`), fed
 > straight into `histogram_quantile()`. There is **no `quantile` label** on any
-> xrpld series — that was a StatsD-era summary convention, and a selector like
-> `{quantile="$quantile"}` matches nothing and reports no error. The job queue
-> exposes two parallel families: `job_running_us` / `job_queued_us`
-> (`MetricsRegistry` instruments, labelled by `job_type` and `handler`,
-> microseconds — what these panels use; the two names come from the
-> `kJobQueuedDurationUs` / `kJobRunningDurationUs` constants and the microsecond
-> buckets from `addMicrosecondHistogramView()` in
-> `MetricsRegistry::initExporterAndProvider()`, all in
-> [MetricsRegistry.cpp](../src/libxrpl/telemetry/MetricsRegistry.cpp), recorded
-> from the `PerfLog` job hooks at
-> [PerfLogImp.cpp:432](../src/xrpld/perflog/detail/PerfLogImp.cpp#L432)) and
-> `jobq_<jobtype>[_q]_milliseconds`
-> (beast::insight, one instrument per job type, milliseconds —
-> [JobTypeData.h:97](../include/xrpl/core/JobTypeData.h#L97)). Both are live;
-> prefer the labelled `job_*_us` pair so one query covers every job type.
+> xrpld series, so a selector like `{quantile="$quantile"}` matches nothing and
+> reports no error. The job queue exposes two parallel families, and both are
+> live. `job_running_us` / `job_queued_us` are `MetricsRegistry` instruments,
+> labelled by `job_type` and `handler`, in microseconds; these panels use them.
+> Their names come from the `kJobQueuedDurationUs` / `kJobRunningDurationUs`
+> constants and their microsecond buckets from `addMicrosecondHistogramView()`
+> in `MetricsRegistry::initExporterAndProvider()`, all in
+> [MetricsRegistry.cpp](../src/libxrpl/telemetry/MetricsRegistry.cpp). They are
+> recorded by the `PerfLog` job hooks `PerfLogImp::jobStart()` and
+> `PerfLogImp::jobFinish()` in
+> [PerfLogImp.cpp](../src/xrpld/perflog/detail/PerfLogImp.cpp).
+> `jobq_<jobtype>[_q]_milliseconds` are beast::insight instruments in
+> milliseconds: the `dequeue` and `execute` events that the `JobTypeData`
+> constructor in [JobTypeData.h](../include/xrpl/core/JobTypeData.h) creates
+> for each non-special job type. `JobQueue::processTask()` records them only
+> for a job that waited or ran 10 ms or more. Prefer the labelled `job_*_us`
+> pair so one query covers every job type.
 
 ### Network Traffic -- System Metrics (`network-traffic`)
 
@@ -2374,9 +2431,8 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 > The unit an `Event` declares also selects its bucket ladder, because the
 > histogram views match on unit. `rpc_size` measures bytes, so it declares
 > `Unit::Bytes` and exports as **`rpc_size_bytes_bucket`** on the byte ladder.
-> It used to share the `ms` constructor and export as
-> `rpc_size_milliseconds_bucket` on a latency ladder — if you find that name in
-> an old query or bookmark, it no longer exists.
+> No `rpc_size_milliseconds_bucket` series exists, so a query on that name
+> returns no data and no error.
 
 #### Reading A Histogram Percentile
 
@@ -2610,14 +2666,16 @@ or more. `server_info` reports the latest probe, fast ones included, as
 The rule counts `state_accounting_full_transitions`, which counts transitions
 _into_ `full` and is exported as a cumulative gauge — `increase()` is therefore
 correct, and its counter-reset correction turns a process restart into a small
-positive delta rather than a false spike. `state_changes_total` cannot be used
-here: it carries no from/to labels, so it cannot tell a flap from a normal
-startup walk.
+positive delta rather than a false spike. `state_changes_total{to="full"}`,
+summed over `from`, counts the same entries: `NetworkOPsImp::setMode()` records
+both on each mode change.
 
-**The `uptime > 3600` gate is load-bearing.** Every node walks
-`disconnected → connected → syncing → tracking → full` once at boot; without the
-gate, every restart pages. The trade-off is deliberate: the rule starts
-evaluating an hour after boot.
+**The start-up entry into `full` does not page.** The first entry into `full`
+after a start counts as a transition too. So the rule also requires
+`state_accounting_full_transitions > 1`: a node that has entered `full` only
+once has not flapped, however long it took to get there. The `uptime > 3600`
+gate holds the rule off for the first hour after boot. Entries made in that
+hour still count once it opens.
 
 Investigate in this order: the online-delete rotation's cache freshen (a
 rotation logs `rotating` when it starts and `finished rotation` when it
@@ -2839,7 +2897,7 @@ curl -sG http://localhost:9090/api/v1/query \
 
 ## Log-Trace Correlation
 
-When xrpld is built with `telemetry=ON`, log lines emitted within an active, sampled OpenTelemetry span automatically include `trace_id` and `span_id` fields:
+When xrpld is built with telemetry (Conan `-o telemetry=True`), log lines emitted within an active, sampled OpenTelemetry span automatically include `trace_id` and `span_id` fields:
 
 ```
 2024-Jan-15 10:30:45.123456789 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
@@ -2859,20 +2917,20 @@ A span becomes current in **either** of two ways:
 - As a [`ScopedSpanGuard`](../include/xrpl/telemetry/SpanGuard.h), which activates on construction.
 - By activating a plain `SpanGuard` through `activate()` or the `activateIfLive()` wrapper. `activate()` returns a `ScopedActivation` whose `Impl` holds an `otel_trace::Scope` constructed from the span, and that `Scope` pushes onto the same `RuntimeContext` store `Log.cpp` reads.
 
-A plain `SpanGuard` that is **never activated** makes no span current — it "never pushes the span onto the thread-local context stack" ([SpanGuard.h](../include/xrpl/telemetry/SpanGuard.h#L274)) — so lines inside such a region carry no `trace_id` regardless of severity.
+A plain `SpanGuard` that is **never activated** makes no span current. The `SpanGuard` class comment in [SpanGuard.h](../include/xrpl/telemetry/SpanGuard.h) says it "never pushes the span onto the thread-local context stack". So lines inside such a region carry no `trace_id`, whatever their severity.
 
 Severity does not affect injection, but `JLOG` filters on severity **before** `format()` runs, so the configured log level decides whether a qualifying line is emitted at all.
 
-**The dependably correlated line at `info`** is the consensus accept pair at [RCLConsensus.cpp:736/740](../src/xrpld/app/consensus/RCLConsensus.cpp#L736) — an `if`/`else`, so exactly one of the two fires on every accepted round. `doAccept` activates the accept span as ambient (`activateIfLive(acceptSpan)`) and then opens `consensus.accept.apply` as a scoped guard ([RCLConsensus.cpp:634](../src/xrpld/app/consensus/RCLConsensus.cpp#L634)), which stays ambient to the end of the function. Both branches of the pair sit inside it, so their lines carry the round's `trace_id` and `consensus.accept.apply`'s `span_id`. At roughly one round every 4 s this yields dozens of correlated lines per run.
+**The dependably correlated line at `info`** is the consensus accept pair (`CNF Val` / `CNF buildLCL`) in `RCLConsensus::Adaptor::doAccept()` ([RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp)). The pair is an `if`/`else`, so exactly one of the two fires on every accepted round. `doAccept` activates the accept span as ambient (`activateIfLive(acceptSpan)`). It then opens `consensus.accept.apply` as a scoped guard, which stays ambient to the end of the function. Both branches of the pair sit inside it, so their lines carry the round's `trace_id` and `consensus.accept.apply`'s `span_id`. At roughly one round every 4 s this yields dozens of correlated lines per run.
 
 That is a dependable pair rather than an unconditional one: `info` severity is necessary but not sufficient. Four preconditions must all hold, and each has its own bail-out that silently yields an uncorrelated line rather than an error:
 
-| Precondition                                                                  | Where it is enforced                                                                                                                                                                                                                                                                        | What happens if it fails                                                                        |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Telemetry enabled — built with `telemetry=ON` **and** `[telemetry] enabled=1` | The `SpanGuard` factories return early on `tel == nullptr \|\| !tel->isEnabled()`, e.g. [SpanGuard.cpp:278-280](../src/libxrpl/telemetry/SpanGuard.cpp#L278)                                                                                                                                | Null guard, no span, no `trace_id`                                                              |
-| `trace_consensus=1`                                                           | The round span is built by `hashSpan(TraceCategory::Consensus, …)`, which checks `isCategoryEnabled()` ([SpanGuard.cpp:354](../src/libxrpl/telemetry/SpanGuard.cpp#L354))                                                                                                                   | No round span, so `roundSpanContext_` never becomes valid                                       |
-| A valid `roundSpanContext_` at accept time                                    | `makeAcceptSpan()` calls `SpanGuard::childSpan(cs::accept, roundSpanContext_)` ([RCLConsensus.cpp:512](../src/xrpld/app/consensus/RCLConsensus.cpp#L512)), and `childSpan` returns a null guard on an invalid parent ([SpanGuard.cpp:274-281](../src/libxrpl/telemetry/SpanGuard.cpp#L274)) | Null accept span, so `activateIfLive` activates nothing and the pair logs without trace context |
-| The current span context is valid **and sampled**                             | Injection is gated on `spanCtx.IsValid() && spanCtx.IsSampled()` ([Log.cpp:328](../src/libxrpl/basics/Log.cpp#L328))                                                                                                                                                                        | Ids are withheld deliberately, so the log never advertises a trace that was not exported        |
+| Precondition                                                                       | Where it is enforced                                                                                                                                                                                                                                                                                      | What happens if it fails                                                                        |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Telemetry enabled — built with `-o telemetry=True` **and** `[telemetry] enabled=1` | The `SpanGuard` factories return early on `tel == nullptr \|\| !tel->isEnabled()`, e.g. `SpanGuard::span()` in [SpanGuard.cpp](../src/libxrpl/telemetry/SpanGuard.cpp)                                                                                                                                    | Null guard, no span, no `trace_id`                                                              |
+| `trace_consensus=1`                                                                | The round span is built by `SpanGuard::hashSpan(TraceCategory::Consensus, …)`, which checks `isCategoryEnabled()` ([SpanGuard.cpp](../src/libxrpl/telemetry/SpanGuard.cpp))                                                                                                                               | No round span, so `roundSpanContext_` never becomes valid                                       |
+| A valid `roundSpanContext_` at accept time                                         | `RCLConsensus::Adaptor::makeAcceptSpan()` calls `SpanGuard::childSpan(cs::accept, roundSpanContext_)` ([RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp)), and `SpanGuard::childSpan()` returns a null guard on an invalid parent ([SpanGuard.cpp](../src/libxrpl/telemetry/SpanGuard.cpp)) | Null accept span, so `activateIfLive` activates nothing and the pair logs without trace context |
+| The current span context is valid **and sampled**                                  | Injection is gated on `spanCtx.IsValid() && spanCtx.IsSampled()` (`Logs::format()` in [Log.cpp](../src/libxrpl/basics/Log.cpp))                                                                                                                                                                           | Ids are withheld deliberately, so the log never advertises a trace that was not exported        |
 
 The sampled check always passes today: head sampling is fixed at 1.0, and a span with no parent or a remote parent is decided by that ratio, not by the peer's sampled flag (`makeHeadSampler` in [Telemetry.cpp](../src/libxrpl/telemetry/Telemetry.cpp)). The gate matters only below 1.0: a span the ratio rejects, and every local child of it, is not exported but still carries valid ids.
 
@@ -2886,9 +2944,9 @@ With all four satisfied, `info` is the minimum level at which the `log.trace_id_
 
 #### Why not `debug`
 
-`debug` does correlate strictly more: it additionally brings in [`BuildLedger.cpp:81`](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L81) (inside the `ledger.build` `ScopedSpanGuard` at [:55](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L55), once per ledger close) and [`RPCHandler.cpp:188`](../src/xrpld/rpc/detail/RPCHandler.cpp#L188) (inside the `rpc.command.*` `ScopedSpanGuard` at [:168](../src/xrpld/rpc/detail/RPCHandler.cpp#L168), once per RPC command), giving broader multi-subsystem coverage.
+`debug` does correlate strictly more. It adds the `Flushed` line of `buildLedgerImpl()` in [BuildLedger.cpp](../src/xrpld/app/ledger/detail/BuildLedger.cpp), once per ledger close, inside that function's `ledger.build` `ScopedSpanGuard`. It also adds the `RPC call` line of `callMethod()` in [RPCHandler.cpp](../src/xrpld/rpc/detail/RPCHandler.cpp), once per RPC command, inside that function's `rpc.command.*` `ScopedSpanGuard`. So more subsystems carry correlated lines.
 
-But raising the **base** level to `debug` puts synchronous log I/O inside `ledger.build`, `consensus.accept` (including [RCLConsensus.cpp:715](../src/xrpld/app/consensus/RCLConsensus.cpp#L715), which logs **per transaction**) and `tx.apply` — precisely the spans whose p50/p95/p99 latencies `regression-metrics.json` gates. A baseline captured at `debug` bakes that log I/O into the latency numbers permanently, turning the regression gate into a measurement of its own configuration.
+But raising the **base** level to `debug` puts synchronous log I/O inside `ledger.build`, `consensus.accept` and `tx.apply`. These are spans whose latency quantiles `regression-metrics.json` gates. Inside `consensus.accept`, the debug `Tx:` line of `RCLConsensus::Adaptor::doAccept()` in [RCLConsensus.cpp](../src/xrpld/app/consensus/RCLConsensus.cpp) logs **per transaction**. A baseline captured at `debug` bakes that log I/O into the latency numbers permanently, turning the regression gate into a measurement of its own configuration.
 
 So if you need the broader coverage, enable it **per partition** rather than globally, and only **after** a baseline has been captured at the harness's normal level:
 
@@ -3016,7 +3074,7 @@ Stream labels are only `service_name`, `service_instance_id`,
 2. **`label_values()` cannot see structured metadata.** A `query`-type template
    variable over `xrpl_network_type`, `severity`, or `partition` returns an empty
    dropdown; only true stream labels populate. Use a `custom` variable with
-   enumerated values instead. This is why filters appeared blank.
+   enumerated values instead.
 
 3. **A target with no datasource `uid` resolves to the DEFAULT datasource.**
    The Prometheus dashboards use `{"type": "prometheus"}` with no uid and work
@@ -3062,20 +3120,19 @@ Stream labels are only `service_name`, `service_instance_id`,
     target as a range query even with `instant: true`, so `lastNotNull` reads only
     the final bucket — a window total shows as a single-bucket count. Aggregate
     over `$__range` and reduce with `max`.
-11. **A `regexp` anchored on the log prefix silently drops most matches.** The
-    _Peer Disconnect Rate By Reason_ panel anchored its capture on `\] `, which
-    only matches a reason emitted immediately after the `[NNN] ` peer-id prefix.
-    `PeerImp` does not log that way: `PeerImp::fail` emits
-    `[NNN] <name> failed: <reason>` (`src/xrpld/overlay/detail/PeerImp.cpp:645`)
-    and the clean teardown emits `close: Closed` (`:635`). Only
-    `ConnectAttempt::fail`, which logs the bare reason
-    (`src/xrpld/overlay/detail/ConnectAttempt.cpp:136`), ever matched — so the
-    panel's `Timeout` series was connect-attempt timeouts only, `Ping Timeout`
-    (`PeerImp.cpp:762`) was invisible, and `PeerImp`'s own `Closed` was
-    uncounted. The panel now matches all three prefixes
-    (`(?:\] |failed: |close: )`) and distinguishes `Ping Timeout` from
-    `Connect Timeout`. When adding a log-derived panel, enumerate every producer
-    of the string being captured rather than sampling one.
+11. **A `regexp` anchored on one log prefix silently drops matches.** `PeerImp`
+    and `ConnectAttempt` both start each line with a bracketed peer prefix, but
+    the reason sits in a different place in each. `ConnectAttempt::fail()` and
+    `ConnectAttempt::close()` log right after the prefix, so `\] ` catches them.
+    The one-argument `PeerImp::fail()` logs `<name> failed: <reason>`, and
+    `PeerImp::close()` logs `close: Closed`. So a capture anchored on `\] ` alone
+    misses `Ping Timeout`, which `PeerImp::onTimer()` passes to `fail()`, and
+    `PeerImp`'s own `Closed`. The _Peer Disconnect Rate By Reason_ panel
+    therefore anchors on all three prefixes, `(?:\] |failed: |close: )`. Its
+    `label_format` renames the bare `Timeout` from `ConnectAttempt::onTimer()`
+    to `Connect Timeout`, so it stays apart from `Ping Timeout`. When adding a
+    log-derived panel, enumerate every producer of the string being captured
+    rather than sampling one.
 
 Also worth knowing: **do not verify a LogQL panel by rendering it as an image.**
 On Grafana Cloud, the image renderer can show "No data" for a Loki panel whose
@@ -3195,10 +3252,11 @@ answer.
 | `rate(getobject_rejected_total{reason="malformed_ledgerhash"}[5m])` rising | **Malformed requests** — a peer is sending a ledgerhash that is not 32 bytes. Refused at the gate; no queue or storage cost incurred.                                                                                                                                               |
 | All GetObject metrics normal, `jobq_*_deferred` high on another type       | **This path is exonerated** — the slowness is elsewhere. Find the saturated type with `topk(5, {__name__=~"jobq_.*_deferred", service_instance_id=~"$node"} > 0)` and investigate that producer instead.                                                                            |
 
-Row 2 says "within ~10%", not "equal", deliberately: `job_running_us` also
-covers the charge computation (PeerImp.cpp:2757) and the reply `send()` that
-follow the loop, so it is always the larger of the two. Treat a small residual as
-normal and only a large one as a signal — that is what row 3 is for.
+Row 2 says "within ~10%", not "equal", on purpose. `job_running_us` also
+covers the charge computation and the reply `send()` after the loop in
+`PeerImp::processGetObjectByHash()`. So it is always the larger of the two.
+Treat a small residual as normal and only a large one as a signal — that is what
+row 3 is for.
 
 The last row matters as much as the others: the set can rule this path _out_,
 which a slowness-only metric cannot.
@@ -3250,7 +3308,7 @@ flowchart TB
     W --> W1["`reads cheap and always miss
     data comes from peers`"]
     W1 --> W2["`cost is on the WRITE side
-    one global mutex per insert
+    one store-wide mutex per insert
     so inserts queue`"]
     W2 --> W3["`**Look at:** writer depth
     above ~1.2, insert mean
@@ -3281,9 +3339,10 @@ flowchart TB
 
 This is the most misleading signal on the board, so read it first.
 `fetchHitCount_` is incremented whenever the fetch **returned an object**
-(`src/libxrpl/nodestore/Database.cpp:246-255`) — not when a cache served it. So
-`node_reads_hit / node_reads_total` is the fraction of fetches that **found**
-something, and it can read ~100% while every one of those fetches went to disk.
+(`Database::fetchNodeObject()` in `src/libxrpl/nodestore/Database.cpp`) — not
+when a cache served it. So `node_reads_hit / node_reads_total` is the fraction
+of fetches that **found** something, and it can read ~100% while every one of
+those fetches went to disk.
 
 A ~100% "hit rate" at over 100 µs per read is therefore not a contradiction. It is
 the cold-read signature: the data is on disk, found every time, and paid for every
@@ -3399,9 +3458,10 @@ depth at 1.00, queueing near 0%, and `acquire_completions` advancing. Any one of
 a read mean several times a warm read, a writer depth above ~1.2, or completions
 flat at zero is worth chasing.
 
-**Why the write path serializes.** NuDB takes one global mutex per insert
-(`nudb/impl/basic_store.ipp:288`). It is a Conan dependency and is not patched
-here, so this is a property to observe and design around, not a bug to fix
+**Why the write path serializes.** NuDB takes one store-wide mutex per insert:
+`basic_store::insert()` locks the store's `u_` member
+(`nudb/impl/basic_store.ipp`). NuDB is a Conan dependency and is not patched
+here. So this is a property to observe and design around, not a bug to fix
 locally. `nudb_writer_depth_x100` is the queue length at that mutex.
 
 #### The deferral/timeout pair
@@ -3422,25 +3482,27 @@ they are the pair this procedure means. The all-lane totals remain useful for on
 question only: whether _any_ lane is deferring.
 
 A deferral happens when the acquisition timer job finds its lane's job count at or
-above the acquisition's own limit — 5 for `InboundLedger`
-(`src/xrpld/app/ledger/detail/InboundLedger.cpp:96`), compared against
-`getJobCountTotal()` in `TimeoutCounter::queueJob()`
-(`src/xrpld/app/ledger/detail/TimeoutCounter.cpp:62-64`). That is not the same as
-the `ledgerData` lane's concurrency cap of 3 (`include/xrpl/core/JobTypes.h:63`):
-the gate counts running plus queued, so it fires at 3 running plus 2 queued. The
-timer is re-armed but its **body does not run**, so the retry counter never
-advances and the 6-timeout give-up becomes unreachable — the give-up path is
-disarmed and the acquisition can never end on its own. Neither counter alone shows
-this: deferrals rising looks like ordinary backpressure, and timeouts flat looks
-like health. Only the divergence is diagnostic. See the counter documentation in
+above the acquisition's own limit. For `InboundLedger` that limit is 5, set as
+`.jobLimit` by its constructor in `src/xrpld/app/ledger/detail/InboundLedger.cpp`.
+`TimeoutCounter::queueJob()` compares it against `getJobCountTotal()`
+(`src/xrpld/app/ledger/detail/TimeoutCounter.cpp`). That is not the same as the
+`ledgerData` lane's concurrency cap of 3, set by the `JtLedgerData` entry in
+`include/xrpl/core/JobTypes.h`. The gate counts running plus queued, so it fires
+at 3 running plus 2 queued. The timer is re-armed but its **body does not run**,
+so the retry counter never advances and the timeout give-up never fires. Only
+arriving data, the sweep, or clearing the whole map (`InboundLedgersImp::stop()`
+or `clearFailures()`) can then end the acquisition. Neither counter alone shows
+this: deferrals rising looks like ordinary
+backpressure, and timeouts flat looks like health. Only the divergence is
+diagnostic. See the counter documentation in
 `src/xrpld/app/ledger/AcquireStats.h`.
 
 Two more pairs from the same family:
 
 - `acquire_sweep_evictions` rising while `acquire_completions` stays at zero →
   partial work is being discarded and redone. The sweep drops any acquisition
-  idle for more than one minute
-  (`src/xrpld/app/ledger/detail/InboundLedgers.cpp:396`), taking whatever it had
+  idle for more than one minute (`InboundLedgersImp::sweep()` in
+  `src/xrpld/app/ledger/detail/InboundLedgers.cpp`), taking whatever it had
   built with it. Only the ones that had not finished are counted: a completed or
   failed acquisition also waits in the map for the sweep, and counting those
   would make this rate track ordinary cleanup instead of wasted work.
@@ -3462,19 +3524,19 @@ Two more pairs from the same family:
   a gap there is correct behaviour.
 - **`write_load` and `nudb_writers_in_flight` are the same number on NuDB.** Both
   read the same atomic: `NuDBBackend::getWriteLoad()` returns `concurrentWriters`
-  (`src/libxrpl/nodestore/backend/NuDBFactory.cpp:355-361`), which is also what
+  (`src/libxrpl/nodestore/backend/NuDBFactory.cpp`), which is also what
   `WriteStats::concurrentWriters` reports. Their agreement confirms nothing — it is
   one signal plotted twice. On RocksDB `write_load` is a genuinely different
-  quantity, the larger of the recorded load and the pending batch size
-  (`src/libxrpl/nodestore/BatchWriter.cpp:47-53`), so it is a batch-queue length
-  rather than a thread count.
+  quantity: the larger of the recorded load and the pending batch size
+  (`BatchWriter::getWriteLoad()` in `src/libxrpl/nodestore/BatchWriter.cpp`).
+  So there it is a batch-queue length rather than a thread count.
 - **`stored_object_bytes` is not the size of the store on disk.** It reports the
   cumulative object-payload bytes this process has written — the same value as
   `node_written_bytes`, from the same accessor — so it excludes keys, padding and
   the log, and it resets with the process. A ratio of the two is a constant 1.0 and
-  measures nothing. This label value was called `nudb_bytes` in earlier revisions; it
-  comes from `node_store::Database` rather than the NuDB backend, so it is not part
-  of the `nudb_*` family above and reads the same on RocksDB.
+  measures nothing. It comes from `node_store::Database`, not the NuDB backend.
+  So it is not part of the `nudb_*` family above, and it reads the same on
+  RocksDB.
 - These gauges are sampled on the `MetricsRegistry` reader's 10 s cadence, while
   the `jobq_*` lane gauges are sampled at 1 s by a different provider. Widen the
   window when correlating them rather than reading a single scrape; see the caveat
@@ -3483,10 +3545,10 @@ Two more pairs from the same family:
   nothing has been read or written yet, so an idle node legitimately shows no
   series.
 
-Existing panels that already carry part of this picture, on the _Ledger Data &
-Sync_ dashboard: **NuDB Read Latency**, **NuDB Read Found Ratio**, **NuDB Read
-Pressure**, and **Job Queue Backlog and Deferred by Type** for the lane occupancy
-that this procedure tells you to distrust on its own.
+The _Ledger Data & Sync_ dashboard carries part of this picture in
+**NuDB Read Latency**, **NuDB Read Found Ratio** and **NuDB Read Pressure**.
+**Job Queue Backlog and Deferred by Type** adds the lane occupancy, which this
+procedure tells you not to trust on its own.
 
 The pair this procedure asks for is on **Ledger Acquire Deferrals vs Timeouts
 (Ledger Lane Only)**, in the _Sync Bottleneck Discrimination_ row. The adjacent
@@ -3545,7 +3607,7 @@ not a sign the cache is working.
 
 ### No trace_id in log output
 
-- Verify xrpld was built with `telemetry=ON` (the `XRPL_ENABLE_TELEMETRY` preprocessor flag)
+- Verify xrpld was built with Conan `-o telemetry=True`, which defines the `XRPL_ENABLE_TELEMETRY` preprocessor flag
 - Verify `enabled=1` in the `[telemetry]` config section
 - Log lines only contain `trace_id`/`span_id` when emitted inside an active span — background logs outside of RPC/consensus/transaction processing will not have trace context
 - Check `log_level` is at least `info`. The dependably correlated line is the consensus accept pair, which is at info severity, so at `warning` or above correlation becomes incidental. `info` is necessary but not sufficient: the accept pair also needs telemetry enabled, `trace_consensus=1`, a valid round span context and a sampled span context — see [Which Log Lines Carry Trace Context](#which-log-lines-carry-trace-context) for the full precondition table
@@ -3654,22 +3716,23 @@ _Time to First Validated Ledger_ stays flat at zero.
 Ledger acquires are in flight, _Ledgers Behind Network_ is flat or rising, and
 `full` never arrives.
 
-| Look at                                                                                                       | Healthy                                           | Unhealthy                                                                                                  | Conclude                                                                                                                                                                                                                                    |
-| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| _Missing SHAMap Nodes per Acquire (state/tx)_                                                                 | falling toward zero (read the trend over minutes) | **flat and non-zero**                                                                                      | **no peer is serving that tree** — the node will sit here forever. Pinned at 256 is the per-sweep cap, meaningful only with the trend                                                                                                       |
-| _Acquire Stall Rate (no progress)_                                                                            | flat                                              | sustained rate **together with** a flat missing-node count                                                 | the definitive stuck-sync signature: requesting and nobody answering                                                                                                                                                                        |
-| _Peers Able to Serve Needed Sequence_                                                                         | `peers_serving_next` above zero                   | `peers_ahead` = 0 (sustained) while `peers_reporting` > 0 and `ledgermaster_validated_ledger_age` climbing | **decisive**: no peer offers anything newer than this node, so _Ledgers Behind Network_ reads 0 too (same peer ranges). Waiting cannot finish it — the peer set must change. Everything else in branch C will look starved; do not chase it |
-|                                                                                                               |                                                   | `peers_serving_next` = 0 while `peers_ahead` > 0                                                           | none of the peers ahead offers the ledger after this node's. Not a sync blocker — the node fetches the newest ledger by hash — but its history keeps a hole that only a peer holding those ledgers can fill. Keep reading the rows below    |
-| _Peer Supply Window Margin (history headroom vs tip gap)_                                                     | _History Headroom_ positive, _Tip Gap_ near zero  | _History Headroom_ **below zero**                                                                          | no peer offers this node's validated ledger or anything older. Not a sync blocker, but the ledgers between this node's and the lowest one offered can stay a hole that only a peer holding them can fill                                    |
-|                                                                                                               |                                                   | _Tip Gap_ growing steadily                                                                                 | the peer set lags the real network; not a history problem                                                                                                                                                                                   |
-| _Ledger Acquire Phase Outcomes (by phase & timeout)_ + _Ledger Acquire Phase Duration (p95 by phase)_ (row 9) | `header` short, `astree` the bulk                 | `astree` hot with `timed_out=true` and non-zero `missing_nodes`                                            | the common stuck shape — peers are not supplying account-state nodes                                                                                                                                                                        |
-|                                                                                                               |                                                   | `header` hot                                                                                               | the node is waiting to be **told what to fetch**; invisible in the missing-node counts, which are both still zero                                                                                                                           |
-| _Add-Node Outcomes_                                                                                           | `good` dominates                                  | `duplicate` swamps `good`                                                                                  | bandwidth busy, acquire standing still — peers re-sending known data                                                                                                                                                                        |
-|                                                                                                               |                                                   | `invalid` rising                                                                                           | a specific misbehaving peer, not a local fault                                                                                                                                                                                              |
-| _Received-Data Stash Depth & In-Flight Acquires_                                                              | stash drains                                      | stash growing                                                                                              | data arrives faster than it is applied — a job-queue or disk problem, the **opposite** conclusion from a stall rate, and only this panel separates them                                                                                     |
-| `jobq_<jobtype>_deferred`                                                                                     | flat at 0                                         | sustained non-zero on `ledgerdata`/`ledgerrequest`                                                         | a job the queue accepted then **withheld** at its concurrency limit of 3 — it appears in neither `waiting` nor `running`, so no other signal can show it. Starved `ledgerdata` is exactly why the stash grows while missing nodes stay flat |
-| _Worker Pool Saturation_ + _Worker Pool Capacity & Total Backlog_                                             | under 80%                                         | 100% with `total_waiting` climbing                                                                         | the pool is **exhausted** — every stage looks slow at once. Stop here; no per-subsystem fix helps while no thread is free                                                                                                                   |
-| Acquire outcome `abandoned` in Tempo (`{name="ledger.acquire" && span.outcome="abandoned"}`)                  | absent                                            | present                                                                                                    | the acquire was destroyed with no result: swept, shut down, or cleared by an admin `fetch_info` clear. Rule out the last two first                                                                                                          |
+| Look at                                                                                                       | Healthy                                                                        | Unhealthy                                                                                                  | Conclude                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _Missing SHAMap Nodes per Acquire (state/tx)_                                                                 | falling toward zero (read the trend over minutes)                              | **flat and non-zero**                                                                                      | **no peer is serving that tree** — the node will sit here forever. Pinned at 256 is the per-sweep cap, meaningful only with the trend                                                                                                       |
+| _Acquire Stall Rate (no progress)_                                                                            | flat                                                                           | sustained rate **together with** a flat missing-node count                                                 | the definitive stuck-sync signature: requesting and nobody answering                                                                                                                                                                        |
+| _Peers Able to Serve Needed Sequence_                                                                         | `peers_serving_next` above zero                                                | `peers_ahead` = 0 (sustained) while `peers_reporting` > 0 and `ledgermaster_validated_ledger_age` climbing | **decisive**: no peer offers anything newer than this node, so _Ledgers Behind Network_ reads 0 too (same peer ranges). Waiting cannot finish it — the peer set must change. Everything else in branch C will look starved; do not chase it |
+|                                                                                                               |                                                                                | `peers_serving_next` = 0 while `peers_ahead` > 0                                                           | none of the peers ahead offers the ledger after this node's. Not a sync blocker — the node fetches the newest ledger by hash — but its history keeps a hole that only a peer holding those ledgers can fill. Keep reading the rows below    |
+| _Peer Supply Window Margin (history headroom vs tip gap)_                                                     | _History Headroom_ positive, _Tip Gap_ near zero (−1 between rounds is normal) | _History Headroom_ **below zero**                                                                          | no peer offers this node's validated ledger or anything older. Not a sync blocker, but the ledgers between this node's and the lowest one offered can stay a hole that only a peer holding them can fill                                    |
+|                                                                                                               |                                                                                | _Tip Gap_ growing steadily                                                                                 | this node falls further behind the tip its peers already hold: it is not keeping up. Not a history problem                                                                                                                                  |
+|                                                                                                               |                                                                                | _Tip Gap_ **staying below −1**                                                                             | its peers lag behind this node. Peers advertise their published ledger, so −1 between rounds is normal                                                                                                                                      |
+| _Ledger Acquire Phase Outcomes (by phase & timeout)_ + _Ledger Acquire Phase Duration (p95 by phase)_ (row 9) | `header` short, `astree` the bulk                                              | `astree` hot with `timed_out=true` and non-zero `missing_nodes`                                            | the common stuck shape — peers are not supplying account-state nodes                                                                                                                                                                        |
+|                                                                                                               |                                                                                | `header` hot                                                                                               | the node is waiting to be **told what to fetch**; invisible in the missing-node counts, which are both still zero                                                                                                                           |
+| _Add-Node Outcomes_                                                                                           | `good` dominates                                                               | `duplicate` swamps `good`                                                                                  | bandwidth busy, acquire standing still — peers re-sending known data                                                                                                                                                                        |
+|                                                                                                               |                                                                                | `invalid` rising                                                                                           | a specific misbehaving peer, not a local fault                                                                                                                                                                                              |
+| _Received-Data Stash Depth & In-Flight Acquires_                                                              | stash drains                                                                   | stash growing                                                                                              | data arrives faster than it is applied — a job-queue or disk problem, the **opposite** conclusion from a stall rate, and only this panel separates them                                                                                     |
+| `jobq_<jobtype>_deferred`                                                                                     | flat at 0                                                                      | sustained non-zero on `ledgerdata`/`ledgerrequest`                                                         | a job the queue accepted then **withheld** at its concurrency limit of 3 — it appears in neither `waiting` nor `running`, so no other signal can show it. Starved `ledgerdata` is exactly why the stash grows while missing nodes stay flat |
+| _Worker Pool Saturation_ + _Worker Pool Capacity & Total Backlog_                                             | under 80%                                                                      | 100% with `total_waiting` climbing                                                                         | the pool is **exhausted** — every stage looks slow at once. Stop here; no per-subsystem fix helps while no thread is free                                                                                                                   |
+| Acquire outcome `abandoned` in Tempo (`{name="ledger.acquire" && span.outcome="abandoned"}`)                  | absent                                                                         | present                                                                                                    | the acquire was destroyed with no result: swept, shut down, or cleared by an admin `fetch_info` clear. Rule out the last two first                                                                                                          |
 
 **Conclusion:** distinguish "nobody is serving it" (peer supply) from "it arrives
 and we cannot process it" (job queue / disk). The two look identical in a log and
@@ -3711,9 +3774,9 @@ Read the **Back-fill & persistence** row.
 
 | Look at                                                     | Healthy                                                                                                                                                                     | Unhealthy                                                       | Conclude                                                                                                                                                                                                                                                                                                                                     |
 | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| _NodeStore Write vs Read Latency (us/op)_                   | write line flat and low                                                                                                                                                     | write line rising during back-fill                              | the backend cannot absorb writes. Adding peers will not help — check storage IOPS, the `[node_db]` backend and whether online-delete/rotation competes with the back-fill                                                                                                                                                                    |
+| _NodeStore Write vs Read Latency (µs/op)_                   | write line flat and low                                                                                                                                                     | write line rising during back-fill                              | the backend cannot absorb writes. Adding peers will not help — check storage IOPS, the `[node_db]` backend and whether online-delete/rotation competes with the back-fill                                                                                                                                                                    |
 |                                                             |                                                                                                                                                                             | read line far above write                                       | the read path is the cost; read with the cache-hit panel below                                                                                                                                                                                                                                                                               |
-| _NodeStore Operation Rate (writes vs reads)_                | write rate non-zero while behind                                                                                                                                            | write rate zero while still behind the network                  | nothing is being persisted — the stall is **upstream** of the node store. Go to branch C; storage is not the problem                                                                                                                                                                                                                         |
+| _NodeStore Operation Rate (Writes vs Reads)_                | write rate non-zero while behind                                                                                                                                            | write rate zero while still behind the network                  | nothing is being persisted — the stall is **upstream** of the node store. Go to branch C; storage is not the problem                                                                                                                                                                                                                         |
 | _SHAMap TreeNode Cache Hit Rate_                            | rising as the cache warms                                                                                                                                                   | persistently low                                                | the working set does not fit the cache, or re-acquisition churns it, so every tree walk pays disk latency                                                                                                                                                                                                                                    |
 | _Acquire Source (local vs network)_                         | `local` dominant on a warm node                                                                                                                                             | sustained `network` on a range the node should hold             | the local store is not retaining data                                                                                                                                                                                                                                                                                                        |
 | paired with _NuDB Cache Hit Ratio_ (Ledger Data Sync board) | both healthy                                                                                                                                                                | low on both                                                     | disk-bound sync                                                                                                                                                                                                                                                                                                                              |
@@ -3728,7 +3791,7 @@ Read the **Back-fill & persistence** row.
 | _Rotation Node Re-Store Rate_                               | flat at zero                                                                                                                                                                | any sustained rate                                              | an earlier rotation removed the only on-disk copy of clean nodes the current state map still reaches. Two consequences: each rescue is an extra write competing with sync, and without it the node would later hit an unresolvable missing-node error. Get the hashes from the `copyNode` warning in Loki — they are deliberately not labels |
 | _Rotation Phase Duration (p95 by stage)_                    | `freshen.keys` p95 well under one second on an idle node; other stages proportional to state-map size                                                                       | `freshen.keys` p95 in seconds                                   | a cache mutex (tree-node or transaction cache) is being held across the getKeys() copy for up to that long. For the tree-node cache, every job that fetches a SHAMap node during that window waits, and a `full`->`syncing` flap is likely for the round that overlaps it                                                                    |
 |                                                             |                                                                                                                                                                             | `copy` p95 approaching the rotation cadence                     | the state-map walk is not converging inside its own interval; the next rotation will overlap this one                                                                                                                                                                                                                                        |
-| _Cache Lock Hold Peak (us)_                                 | zero on an idle node; sub-millisecond values during a sweep                                                                                                                 | multi-second peak                                               | the `TaggedCache` for either the tree-node cache or the FullBelow cache held its mutex that long across `getKeys()` or `sweep()`. Correlate with the `rotating` log line and the `nodestore.rotate.freshen.keys` span: a rotation is the usual cause                                                                                         |
+| _Cache Lock Hold Peak (µs)_                                 | zero on an idle node; sub-millisecond values during a sweep                                                                                                                 | multi-second peak                                               | the `TaggedCache` for either the tree-node cache or the FullBelow cache held its mutex that long across `getKeys()` or `sweep()`. Correlate with the `rotating` log line and the `nodestore.rotate.freshen.keys` span: a rotation is the usual cause                                                                                         |
 | _Job Stalls ≥1 s (Count By Job Type)_                       | zero, or a very small count on a healthy busy node                                                                                                                          | several distinct job types crossing the bar in the same minute  | the whole worker pool froze at the same instant. This is a process-wide stall, not a per-type slowdown; the rotation spans point at what caused it                                                                                                                                                                                           |
 
 > **Proving a rotation stall from telemetry.** For a suspected rotation-driven
@@ -4105,9 +4168,12 @@ panel it reads.
       shapes of a supply gap apart, and zero is the boundary in both cases:
       _History Headroom_ **below zero** means no peer offers this node's
       validated ledger or anything older. That can leave a hole in its
-      history but does not stop the sync; a _Tip Gap_ that grows
-      steadily means it is chasing a tip its peers have not reached, which is a
-      peer set lagging the real network rather than a history problem. Both
+      history but does not stop the sync. A _Tip Gap_ that grows steadily
+      means its peers keep advancing while this node falls further behind
+      them. The node is not keeping up, which is not a history problem.
+      Peers advertise their published ledger, which trails validation, so a
+      _Tip Gap_ of −1 between rounds is normal. One that stays below −1
+      means its peers lag behind this node. Both
       lines stay blank until the node has a validated ledger and a peer has
       advertised a range, so an empty panel here is the `peers_reporting` = 0
       case above, not a healthy reading.
@@ -4150,11 +4216,17 @@ panel it reads.
     - `charge_resources` — **the peer's fault.** The peer's traffic (too many
       messages, costly requests, or bad data) used up its resource allowance,
       so this node cut it off. There is nothing to fix locally.
-    - `not_useful`, `ping_timeout`, `read_error` — topology or network
-      faults. The peer is on a different chain or unreachable, so the fix is
-      the peer set.
+    - `not_useful`, `ping_timeout` — topology or network faults. The peer is
+      on a different chain or unreachable, so the fix is the peer set.
+    - `read_error` — **often just churn.** A read failed. xrpld drops a peer
+      without starting a TLS shutdown, so a peer that drops this node shows
+      up here, not as `graceful`. A network fault, or a malformed or
+      oversized message, also lands here. Watch the Peer Quality rate panels
+      named below for a sudden rise.
     - `graceful`, `shutdown`, `stopping` — normal churn and clean teardown,
-      not faults. A run dominated by these is healthy.
+      not faults. `graceful` is rare between xrpld nodes, for the reason
+      above. A run dominated by these, or by a small `read_error` count, is
+      healthy.
       Use `direction` to tell churn in the peers this node dials from churn
       in the peers that dial it. That panel is a total over the dashboard
       window, so it says how much of each reason but not when. For the
@@ -4224,10 +4296,11 @@ panel it reads.
     write-bound, so no read-side panel can show it; check this step whenever a
     node with existing history is the slow one. Both panels live in the
     **Back-fill & persistence** row.
-    Panel _NodeStore Write vs Read Latency (us/op)_ (`nodestore_state`,
-    `metric=node_writes_duration_us` / `node_reads_duration_us` rated against
-    their counts) with _NodeStore Operation Rate (writes vs reads)_
-    (`metric=node_writes` / `node_reads_total`) beside it:
+    Panel _NodeStore Write vs Read Latency (µs/op)_ rates
+    `metric=node_writes_duration_us` / `node_reads_duration_us`
+    (`nodestore_state`) against their counts. Read it with
+    _NodeStore Operation Rate (Writes vs Reads)_ (`metric=node_writes` /
+    `node_reads_total`) beside it:
     - **Write line rising during history back-fill** — the backend cannot
       absorb writes fast enough. Sync will stay slow however many peers are
       available, so adding peers will not help. Check storage IOPS, the
@@ -4345,9 +4418,9 @@ panel it reads.
       than at acquisition.
     - **Validation fine, publishing behind?** Panel _Publish Lag (validated
       minus published)_ (`ledger_quorum_publish`, `metric=publish_lag`). This
-      is the separate question, and the one no other panel can answer: the
-      published sequence was never exported before, so this gap was not
-      derivable from any other series. Publishing trails validation by
+      is the separate question. This panel counts the lag in ledgers;
+      _Ledger Publish Gap_ on Node Health shows the same lag in seconds.
+      Publishing trails validation by
       design, so a small lag that drains each round is normal.
       - **Lag flat at 0 or 1** — healthy.
       - **Lag positive and growing** — validation is healthy and the
@@ -4497,10 +4570,10 @@ panel it reads.
 18. **Are consensus rounds themselves slowing down?**
     Panels _Consensus Round Duration Distribution_ (heatmap) and _Consensus
     Round Duration (p50/p95/p99)_ (`consensus_round_duration_ms`). A round that
-    used to take 3-4 s and now takes 12 delays every ledger behind it, and
-    until now this was only a span attribute — answering it fleet-wide meant
-    raw trace queries. Being a native metric it is also **never sampled**,
-    unlike every span-derived panel above.
+    takes 12 s instead of 3-4 s delays every ledger behind it. As a native
+    metric this histogram answers that fleet-wide without trace queries.
+    `RCLConsensus::Adaptor::makeAcceptSpan()` records it before it checks for a
+    live accept span, so it is recorded even when consensus tracing is off.
     - **Band drifting upward, or a second band high up** — rounds are taking
       longer. Read it against the two panels that explain why: _Tx-Set Acquire
       Duration (p95)_ (step 16 — rounds waiting on data rather than on
@@ -4559,9 +4632,9 @@ Read it this way:
    validation), from the acquire-completion job, and from the consensus thread
    (`switchLCL`). A chain would assert an order that does not hold.
 3. **Compare the spans' durations,** which is the point of having them in one
-   trace: whether this ledger was slow to _arrive_, slow to be _accepted_, or
-   slow to be _stored_ is now one glance instead of three separate searches
-   that cannot be correlated.
+   trace. Whether this ledger was slow to _arrive_, slow to be _accepted_, or
+   slow to be _stored_ is then one glance. Three separate searches could not be
+   correlated.
 4. **If a validation span has no `ledger.validate` beside it,** check its
    `accept_gated` attribute. `true` means another thread was already accepting
    that ledger, so no acceptance followed this validation — that is normal, not
@@ -4607,16 +4680,18 @@ compile telemetry out:
 
 ```bash
 conan install .. --output-folder . --build missing -o telemetry=False --settings build_type=Release
-cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dtelemetry=OFF ..
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON ..
 ```
 
-Both flags are needed. Pass each explicitly rather than omitting it — an omitted flag resolves to whatever
-the build's current default is. That default is `ON` on the telemetry branches so CI
-compiles the instrumented paths, and `OFF` once the feature is merged; `-Dtelemetry=OFF`
-is correct either way. `-DXRPL_ENABLE_TELEMETRY=OFF` does **not** work: that name is only
-a compile definition added when `telemetry` is ON, not a CMake option, so telemetry stays
-compiled in and CMake only lists it under `Manually-specified variables were not used by
-the project`.
+`-o telemetry=False` is the switch: Conan then skips `opentelemetry-cpp`, and its toolchain
+file sets the `telemetry` CMake variable to `False`. State it, because the Conan default is
+`True` and omitting it leaves telemetry compiled in. Run this in a fresh build directory:
+the toolchain sets `telemetry` only while the CMake cache has no value for it. Do not add
+`-Dtelemetry=` to the CMake line; it overrides the toolchain's value and can disagree with
+what Conan fetched. `-DXRPL_ENABLE_TELEMETRY=OFF` does **not** work. That name is only a
+compile definition added when `telemetry` is on, not a variable the build reads. So
+telemetry stays compiled in, and CMake only lists the name under `Manually-specified
+variables were not used by the project`.
 
 When telemetry is compiled out, all trace macros expand to no-ops with zero overhead.
 
@@ -4665,14 +4740,14 @@ The counts are not hard-coded in the validator — it iterates the inventory fil
 so those files are authoritative. The figures below are the inventory as it
 stands today.
 
-| Category         | Checks                                                                                                                                                                                                                                                                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Spans            | Every **required** entry in `expected_spans.json` — 58 span types at the time of writing: 28 required, 30 marked `"optional": true`                                                                                                                                             | Span name found in Tempo carrying its `required_attributes`, plus the declared parent-child relationships. An `"optional": true` entry that does not fire is recorded as a skip, not a failure — it needs traffic the harness may not generate (HTTP/JSON-RPC client, gRPC client, missing-ledger fetch, mode transitions) or that it deliberately no longer generates (path-finding RPC — see "Pathfinding is not exercised" in [the workload README](../docker/telemetry/workload/README.md)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| Metrics          | Every entry in every asserted category of `expected_metrics.json` — 145 checks across 26 asserting categories at the time of writing: 140 metric names plus 5 `required_labels` checks, of which the 61 fresh-node `sync_diagnostics` names are asserted by their own validator | SpanMetrics, `beast::insight` gauges/counters exported over OTLP, and the `MetricsRegistry` OTLP metrics. Each must have > 0 Prometheus series; none are optional. A category may also declare `required_labels`, and each label there becomes one additional check that at least one of that category's series carries it with a non-empty value (matched as `<label>!=""`, because Prometheus cannot distinguish an absent label from an empty one). Those labels were declared but never actually read until the check was generalised, so they were documented as required while going unverified; `spanmetrics` contributes 4 and `job_queue` 1. The separate `not_asserted` group lists metrics deliberately left out of the gate because they are workload-gated or defect-gated; it has neither a `metrics` nor a `required_labels` key, so the validator skips it entirely.                                                                                                                                                                                                                                                                  |
-| Logs             | 2 checks                                                                                                                                                                                                                                                                        | `trace_id`/`span_id` present in Loki, and a logged trace id resolves in Tempo. Gated in CI. `run-full-validation.sh` prints a four-leg diagnostic (node, mount, collector, Loki) after the suite whenever these run, so a failure names the leg that broke.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Parity           | 10 checks                                                                                                                                                                                                                                                                       | 6 span attributes the external-parity dashboard panels read, plus 4 metric value-sanity bounds.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| Dashboards       | Every uid in `expected_metrics.json` under `grafana_dashboards.uids` — currently all 16 provisioned dashboards                                                                                                                                                                  | Each listed dashboard loads and reports a panel count. This is a provisioning check only: it does **not** execute the panels' queries, so a dashboard can pass while individual panels render empty. `log-derived-insights` is Loki-backed, so only its provisioning is covered here; its data path is covered by the two log checks instead.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| Reverse coverage | 2 checks — `metric.reverse_coverage` and `span.reverse_coverage`                                                                                                                                                                                                                | The only checks that run in the opposite direction: they read the full emitted inventory (the Prometheus `__name__` label values, the Tempo `name` intrinsic's tag values) and name everything the contract never mentions, sorted and one per line in the log. **Warn only — `passed` is hardcoded `True` in `_reverse_coverage_result`, so these can never fail CI.** Downstream branches legitimately add telemetry an upstream contract has not seen, and a hard failure would redden all of them. A metric family is accounted for by a `metrics` entry, by a `not_asserted.metrics_excluded` key, or by an anchored regex under the top-level `accounted_patterns` list — which exists for families whose membership is derived mechanically from a table in the code (the per-job-type job-queue instruments, the overlay per-category traffic cross product) plus the Prometheus scrape plumbing that is not xrpld telemetry. Histogram `_bucket`/`_count`/`_sum` names fold onto their base family before matching. Spans need no pattern list: the check reuses the forward matcher, so `rpc.command.*` covers every command it expands to. |
+| Category         | Checks                                                                                                                                                                                                                                                                                   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Spans            | Every **required** entry in `expected_spans.json` — 58 span types at the time of writing: 28 required, 30 marked `"optional": true`                                                                                                                                                      | Span name found in Tempo carrying its `required_attributes`, plus the declared parent-child relationships. An `"optional": true` entry that does not fire is recorded as a skip, not a failure. Such an entry needs traffic the harness may not generate: an HTTP/JSON-RPC client, a gRPC client, a missing-ledger fetch or a mode transition. The harness also sends no path-finding RPC, on purpose (see "Pathfinding is not exercised" in [the workload README](../docker/telemetry/workload/README.md)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Metrics          | Every entry in every asserted category of `expected_metrics.json`. At the time of writing that is 158 checks across 27 asserting categories: 153 metric names plus 5 `required_labels` checks. The 64 fresh-node `sync_diagnostics` names among them are asserted by their own validator | SpanMetrics, `beast::insight` gauges/counters exported over OTLP, and the `MetricsRegistry` OTLP metrics. Each must have > 0 Prometheus series; none are optional. A category may also declare `required_labels`, and each label there becomes one additional check that at least one of that category's series carries it with a non-empty value (matched as `<label>!=""`, because Prometheus cannot distinguish an absent label from an empty one). `spanmetrics` contributes 4 of these label checks and `job_queue` 1. The separate `not_asserted` group lists metrics deliberately left out of the gate because they are workload-gated or defect-gated; it has neither a `metrics` nor a `required_labels` key, so the validator skips it entirely.                                                                                                                                                                                                                                                                                                                                                                                            |
+| Logs             | 2 checks                                                                                                                                                                                                                                                                                 | `trace_id`/`span_id` present in Loki, and a logged trace id resolves in Tempo. Gated in CI. `run-full-validation.sh` prints a four-leg diagnostic (node, mount, collector, Loki) after the suite whenever these run, so a failure names the leg that broke.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Parity           | 10 checks                                                                                                                                                                                                                                                                                | 6 span attributes the external-parity dashboard panels read, plus 4 metric value-sanity bounds.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Dashboards       | Every uid in `expected_metrics.json` under `grafana_dashboards.uids` — currently all 16 provisioned dashboards                                                                                                                                                                           | Each listed dashboard loads and reports a panel count. This is a provisioning check only: it does **not** execute the panels' queries, so a dashboard can pass while individual panels render empty. `log-derived-insights` is Loki-backed, so only its provisioning is covered here; its data path is covered by the two log checks instead.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Reverse coverage | 2 checks — `metric.reverse_coverage` and `span.reverse_coverage`                                                                                                                                                                                                                         | The only checks that run in the opposite direction: they read the full emitted inventory (the Prometheus `__name__` label values, the Tempo `name` intrinsic's tag values) and name everything the contract never mentions, sorted and one per line in the log. **Warn only — `passed` is hardcoded `True` in `_reverse_coverage_result`, so these can never fail CI.** Downstream branches legitimately add telemetry an upstream contract has not seen, and a hard failure would redden all of them. A metric family is accounted for by a `metrics` entry, by a `not_asserted.metrics_excluded` key, or by an anchored regex under the top-level `accounted_patterns` list — which exists for families whose membership is derived mechanically from a table in the code (the per-job-type job-queue instruments, the overlay per-category traffic cross product) plus the Prometheus scrape plumbing that is not xrpld telemetry. Histogram `_bucket`/`_count`/`_sum` names fold onto their base family before matching. Spans need no pattern list: the check reuses the forward matcher, so `rpc.command.*` covers every command it expands to. |
 
 ### Running Individual Tools
 
@@ -4750,7 +4825,7 @@ Key properties:
   bound.** The `AND` is deliberate: SpanMetrics latency histograms use explicit
   buckets, so a quantile sitting near a bucket boundary can jump a whole bucket
   with no real change. Bounds live in `regression-thresholds.json` — `defaults`
-  per category and quantile, plus a per-metric `override` for every gated key.
+  per category and quantile, plus an `overrides` entry for every gated key.
 - **The absolute bound is derived per metric, as `hi_next − baseline`.** Locate
   the baseline in the half-open bucket `(lo, hi]` of its ladder and take
   `hi_next` as the next edge above `hi`; the trip point is then exactly
@@ -4767,48 +4842,42 @@ Key properties:
   `baseline-timings.json` obliges you to re-derive these bounds** — a value that
   moves into a different bucket gets a different `hi_next` — and
   `.github/scripts/telemetry/check_regression_bounds.py` fails CI if you do not.
-- **A single flat bound cannot work here.** The gated quantiles span 0.006 ms to
-  21 ms, so one figure is inert at the bottom of that range and trigger-happy at
-  the top. The flat 10/15 ms span bound it replaced sat 1.15x to 2000x above the
-  metric it guarded, and a 10x regression injected into each key in turn was
-  caught on only 5 of 28.
+- **A single flat bound cannot work here.** The gated quantiles span 0.06 ms to
+  21 ms. So one figure is inert at the bottom of that range and trigger-happy at
+  the top.
 - **The detection floor is `hi_next / baseline`, so some keys are only weakly
-  guarded.** It ranges 2.21x to 16.28x over the current baseline;
-  `job.acceptLedger.running.p95` is effectively not guarded at 16.3x, and is the
-  one gated key a 10x regression does not catch (it first fires at 16.28x; at 20x
-  the sweep catches 20 of 20). `baselines/README.md` lists all seven weak keys,
-  the limiting ladder step for each, and the edges that would fix them.
+  guarded.** It ranges from 2.00x to 7.41x over the current baseline, so a 10x
+  slowdown of any gated key trips the gate. The weakest key is
+  `span.consensus.ledger_close.p95`, at 7.41x. `baselines/README.md` lists the
+  six weakest keys, the limiting ladder step for each, and the edges that would
+  fix them.
 - **A baseline refresh can silently move sensitivity in either direction.** The
   trip point is derived from the baseline, so a refresh that lands at the low end
-  of a metric's range tightens the gate and one that lands high loosens it.
-  `job.acceptLedger.running.p95` has been measured with a 5.74x detection floor
-  on one baseline and 16.28x on another — it does not fire on any observed run,
-  so it stays gated, but the weak floor is recorded rather than left to surprise
-  someone. The same effect puts three `p50` keys below the spread they need, and
-  those are excluded (below). `baselines/README.md` carries the measurements.
+  of a metric's range tightens the gate and one that lands high loosens it. So
+  re-check every key's detection floor after a refresh. The same effect puts
+  three `p50` keys below the spread they need, and those are excluded (below).
+  `baselines/README.md` carries the measurements.
 - **The bound covers quantization noise only, so a key whose run-to-run variance
-  exceeds it cannot be gated. Five keys are excluded for that reason**, leaving
-  20 gated. `span.ledger.validate.p95` and `.p99` came first — spreads of 5.9x
-  and 66.8x across four CI runs, both reaching past their trip points on healthy
-  runs, because the span's duration follows peer-validation arrival timing rather
-  than code speed. `span.tx.apply.p50`, `span.ledger.build.p50` and
-  `span.consensus.ledger_close.p50` join them on this baseline, with observed
-  maxima 46.76x, 4.77x and 2.38x above their trip points. That is the same rule
-  applied, not a new exception: the decisive evidence is that
-  `span.tx.apply.p50` has read 0.7917 ms and 0.00597 ms on the same workload
-  — 132x apart — so whether the gate worked was
-  decided by where in its own distribution the captured run fell, not by the
-  code. All five share one shape: the observed maximum exceeds
-  `baseline + bound`, four of them because a low-bucket baseline yields a tiny
-  bound. Widening gates nothing and re-baselining until a run lands high is the
-  trap; **a multi-run baseline, or a spread measurement captured alongside it, is
-  what would let them be gated again** — not implemented, and the reason these
-  exclusions stand. They are listed with their measurements in `excluded_keys` in
-  `regression-metrics.json`, and `check_regression_bounds.py` rule F keeps each
-  entry honest. Before gating any key, check its observed maximum across runs
-  against `baseline + bound`; see `baselines/README.md`.
+  exceeds it cannot be gated. Six keys are excluded for that reason**, leaving
+  19 gated: `span.ledger.validate.p95` and `.p99`, `span.ledger.build.p50` and
+  `.p99`, `span.tx.apply.p50` and `span.consensus.ledger_close.p50`. All six
+  share one shape: the observed maximum across CI runs exceeds
+  `baseline + bound`, so a healthy run can clear the trip point. Four of them
+  have a baseline in a low bucket, where the bound is tiny. For the other two,
+  `span.ledger.validate.p99` and `span.ledger.build.p99`, the spread is wider
+  than the one bucket of headroom the bound allows.
+  `ledger.validate` varies because its duration follows when peer validations
+  arrive, not how fast the code runs.
+  Widening a bound gates nothing, and re-baselining until a run lands high is
+  the trap. **A bound sized from the spread across runs is what would let these
+  keys be gated again.** The baseline is the median of three runs, but
+  `check_regression_bounds.py` rule C requires every bound to equal
+  `hi_next − baseline`, so the spread plays no part. The keys are listed with
+  their measurements in `excluded_keys` in `regression-metrics.json`, and rule F
+  keeps each entry honest. Before gating any key, check its observed maximum
+  across runs against `baseline + bound`; see `baselines/README.md`.
 - **For every currently gated metric the absolute bound decides; the percentage
-  bound does not.** Measured, the bound is 121%-1528% of its own baseline, above
+  bound does not.** Measured, the bound is 100%-641% of its own baseline, above
   both configured percentage bounds. This is _not_ a general property: the span
   ladder's top steps are only 1.25x-1.5x apart, so a baseline between about
   2667-3000 ms or 3334-4000 ms gets an absolute bound worth under 50% of itself
@@ -4865,8 +4934,9 @@ automatic promotion from `develop`.
    `placeholder` key. For a refresh of an already-populated baseline, take the
    `timings.json` artifact instead and justify the delta in the PR description.
 
-Never hand-edit `baseline-timings.json` — every entry should trace back to a real
-CI run so its variance characteristics are preserved. Details in
+Do not hand-edit `baseline-timings.json`, with one exception: combining several
+CI runs into a median, which nothing automates yet. Every entry should still trace
+back to real CI runs, so its variance characteristics are preserved. Details in
 `docker/telemetry/workload/baselines/README.md`.
 
 #### CI workflow
@@ -4906,20 +4976,20 @@ CI, so Conan and ccache hit the shared caches) and `validate-telemetry`
   log-record attributes, Loki's OTLP path stores them as structured metadata, and
   structured metadata joins a metric query's label set — so an unaggregated
   `count_over_time` produces one series per log line and Loki answers `HTTP 400
-maximum number of series (500) reached`. Unaggregated, both legs printed
-  `unavailable` on runs `32877465763` and `32964262700` and the block
-  distinguished nothing. A rejected query now logs its HTTP status and Loki's own
-  plain-text explanation rather than a JSON-mimetype error.
+maximum number of series (500) reached`. Without the `sum()`, both counts would
+  print `unavailable`. A rejected query logs its HTTP status and Loki's own
+  plain-text explanation.
   `log.trace_id_cross_reference` polls Tempo for up to `METRIC_POLL_TIMEOUT_SEC`
   before failing, so a logged id that Tempo has not yet indexed is retried rather
   than reported absent. It also separates a failed Tempo query from a genuinely
   absent trace: a 404 on `/api/traces/<id>` is absence and moves to the next
   candidate, while any other non-200 raises `TempoQueryError` and is reported as
-  "could not verify" rather than "not exported". Both Tempo helpers previously
-  passed an error body straight to `resp.json()`, so a JSON 5xx read as zero
+  "could not verify" rather than "not exported". Both Tempo helpers,
+  `_tempo_search()` and `_tempo_get_trace()`, check the HTTP status before they
+  parse the body. So a 5xx raises `TempoQueryError` instead of reading as zero
   spans or zero traces.
   `docker/telemetry/integration-test.sh` (which has its own
-  `check_log_correlation()`) is still run by no workflow.
+  `check_log_correlation()`) is not run by any workflow.
 - **Inputs**: only `run_benchmark` changes behaviour. `rpc_rate`, `rpc_duration`,
   `tx_tps` and `tx_duration` are inert, as noted in their descriptions.
 - **Results**: reports are uploaded as the `telemetry-validation-reports`
@@ -4949,18 +5019,20 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 If benchmarks exceed thresholds:
 
 1. **Reduce trace volume with collector-side tail sampling.** There is no
-   `sampling_ratio` config key — xrpld's head sampling is a compile-time
-   constant fixed at 1.0
-   ([Telemetry.h:234](../include/xrpl/telemetry/Telemetry.h#L234)
-   `static constexpr double samplingRatio = 1.0;`), and
-   [TelemetryConfig.cpp:139](../src/libxrpl/telemetry/TelemetryConfig.cpp#L139)
+   `sampling_ratio` config key. xrpld's head sampling is a compile-time
+   constant fixed at 1.0: `Telemetry::Setup` in
+   [Telemetry.h](../include/xrpl/telemetry/Telemetry.h) declares
+   `static constexpr double samplingRatio = 1.0;`. `makeTelemetrySetup()`
+   in [TelemetryConfig.cpp](../src/libxrpl/telemetry/TelemetryConfig.cpp)
    explicitly parses nothing for it. Volume reduction is a collector decision.
-   The only policy shipped is a single 0.5% probabilistic `tail_sampling`
-   processor in `otel-collector-config.grafanacloud.yaml`; the base
-   `otel-collector-config.yaml` has **no** tail sampling, so a stock local
-   stack keeps every trace. Where the Cloud policy is in force it sits on the
-   trace-storage branch only — spanmetrics runs on a separate branch and still
-   sees 100% of spans, so the derived RED metrics stay exact.
+   The only sampler shipped is one `tail_sampling` processor in
+   `otel-collector-config.grafanacloud.yaml`. It keeps 0.5% of traces at
+   random, plus every trace with a span whose name starts with
+   `nodestore.rotate`. The base `otel-collector-config.yaml` has **no** tail
+   sampling, so a stock local stack keeps every trace. Where the Cloud sampler
+   is in force it sits on the trace-storage branch only. Spanmetrics runs on a
+   separate branch and still sees 100% of spans, so the derived RED metrics stay
+   exact.
 2. **Disable peer tracing**: `trace_peer=0` (highest volume category)
 3. **Increase batch delay**: `batch_delay_ms=10000` (less frequent exports)
 4. **Reduce queue size**: `max_queue_size=1024` (back-pressure earlier)

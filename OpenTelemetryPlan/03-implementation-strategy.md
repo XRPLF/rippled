@@ -8,28 +8,37 @@
 ## 3.1 Directory Structure
 
 The telemetry implementation follows xrpld's existing code organization
-pattern. The tree below sketches the three telemetry directories. It differs
-from the original design sketch in two ways worth calling out:
-`TelemetryConfig.h`, `TraceContext.h`, `SpanAttributes.h` and
-`TraceContext.cpp` were never created (config structs live inside
-`Telemetry.h`, propagation lives in `TraceContextPropagator.h`, and attribute
-constants live in the `*SpanNames.h` headers next to their owning class); the
-metrics work of Phase 7/9 added a whole second module under
-`src/xrpld/telemetry/`, which the sketch predated.
+pattern. The tree below lists the files in the three telemetry directories.
+The two libxrpl directories hold the tracing wrapper, `MetricsRegistry` and
+the metric headers. The xrpld layer holds `AppMetricGauges` and
+`PeerValidationLoad.h`, beside the tracing helpers. Config structs live inside
+`Telemetry.h`, and context propagation lives in `TraceContextPropagator.h`.
+Attribute constants live in the `*SpanNames.h` headers next to their owning
+class.
 
 ```
-include/xrpl/telemetry/            # libxrpl layer: tracing SDK wrapper
+include/xrpl/telemetry/            # libxrpl layer: tracing and metrics
 ├── Telemetry.h                    # Interface + Setup config struct + factories
 ├── SpanGuard.h                    # RAII span management, factory methods, discard()
 ├── SpanNames.h                    # StaticStr/join() + shared span & attr constants
+├── MetricNames.h                  # Metric name, label and value constants
 ├── DiscardFlag.h                  # Thread-local discard flag
 ├── FilteringSpanProcessor.h       # Drops discarded spans; exports each attribute key once
 ├── CoroAwareContextStorage.h      # RuntimeContextStorage override for coroutines
 ├── DeterministicIdGenerator.h     # trace_id from txHash / prevLedgerHash
+├── HeadSampler.h                  # makeHeadSampler(): parent-based trace-id ratio sampler
 ├── TraceContextPropagator.h       # protobuf TraceContext inject/extract (P2P)
 ├── TraceContextValidation.h       # Validation of peer-supplied trace context
 ├── Redaction.h                    # redactAccount() — hashing helper, applied to no span
 ├── TxAccountSpanNames.h           # tx_<account field> keys + accountFieldAttributeKey()
+├── Recording.h                    # Record-only state; empty types when compiled out
+├── MetricsRegistry.h              # MeterProvider + exporter + its own counters/histograms
+├── MetricMacros.h                 # XRPL_METRIC_COUNTER_ADD / _HISTOGRAM_RECORD / ...
+├── PreRegisteredCounters.h        # Startup zero for getobject_rejected_total
+├── HistogramBuckets.h             # Explicit histogram bucket ladders
+├── ValidationTracker.h            # Validation-agreement tracking
+├── RpcMetricNames.h               # RPC request-count histogram names
+├── PeerValidationLoadMetricNames.h
 └── GetObjectMetricNames.h         # getobject_* metric name constants
 
 src/libxrpl/telemetry/
@@ -41,14 +50,15 @@ src/libxrpl/telemetry/
 ├── DeterministicIdGenerator.cpp
 ├── Redaction.cpp
 ├── TxAccountSpanNames.cpp         # SField code -> attribute key table
+├── MetricsRegistry.cpp            # Export pipeline, registry instruments, histogram views
+├── detail/ValidationTracker.cpp
 └── NullTelemetry.cpp              # No-op impl — ALWAYS compiled (in-source #ifdef)
 
-src/xrpld/telemetry/               # xrpld layer: native metrics + tx tracing helpers
-├── MetricsRegistry.h / .cpp       # Owns the XRPL_METRIC_* instruments + MeterProvider
-├── MetricMacros.h                 # XRPL_METRIC_COUNTER_ADD / _HISTOGRAM_RECORD / ...
-├── ValidationTracker.h            # Validation-agreement tracking (impl in detail/)
-├── detail/ValidationTracker.cpp
+src/xrpld/telemetry/               # xrpld layer: observable gauges + tracing helpers
+├── AppMetricGauges.h / .cpp       # Observable gauges that sample live server state
+├── PeerValidationLoad.h           # Rates, ranks and warning throttle for peer_validation_load
 ├── ConsensusReceiveTracing.h      # Peer proposal/validation receive spans
+├── MacroCounterPreRegistration.h  # Startup zeros for call-site counters with fixed label sets
 ├── PropagationHelpers.h           # Context inject/extract call-site helpers
 ├── TxSpanNames.h                  # tx.* span + attribute constants
 └── TxTracing.h                    # Transaction span helpers

@@ -299,11 +299,11 @@ using CollectedMetrics = std::map<std::string, PointsByAttrs>;
  * name -> (labels -> point) map a test can assert exact values against.
  *
  * Why not the shipped InMemoryMetricExporter? Its symbols live in a separate
- * Conan archive (libopentelemetry_exporter_in_memory_metric.a) which is NOT on
- * the xrpl_tests link line -- only libopentelemetry_exporter_in_memory.a (the
- * SPAN exporter, used by SpanGuardScope.cpp) is. Subclassing MetricReader needs
- * only libopentelemetry_metrics.a, which is already linked via the umbrella
- * target, so this keeps the tests hermetic with no build-system change.
+ * Conan archive (libopentelemetry_exporter_in_memory_metric.a), which is not on
+ * this test binary's link line. Subclassing MetricReader needs only
+ * libopentelemetry_metrics.a, which is already linked via the umbrella target
+ * that xrpl.libxrpl passes on, so this keeps the tests hermetic with no
+ * build-system change.
  *
  * Inheritance:
  *

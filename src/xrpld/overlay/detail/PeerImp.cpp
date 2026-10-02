@@ -661,9 +661,9 @@ PeerImp::close()
     // socket-already-closed early return, so this counter's total tracks that
     // existing tally rather than being a second, differently-scoped count.
     // What it adds is the split between a slow peer or path ("large_sendq"),
-    // a peer that used up its resource allowance ("charge_resources"), and a
-    // topology or network fault ("not_useful", "ping_timeout", "read_error");
-    // each calls for a different response.
+    // a peer that used up its resource allowance ("charge_resources"), a
+    // topology or network fault ("not_useful", "ping_timeout"), and a failed
+    // read ("read_error"); each calls for a different response.
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
         telemetry::metric::peerDisconnectTotal,
@@ -862,9 +862,9 @@ PeerImp::onShutdown(ErrorCode ec)
         }
     }
 
-    // The TLS shutdown handshake finished. First-wins means the reason set by
-    // whoever asked for the graceful close is kept; "shutdown" only lands when
-    // the teardown started here, i.e. a clean close with no earlier cause.
+    // The TLS shutdown finished. The only way here is gracefulClose(), whose
+    // one caller sets "graceful" first, so first-wins keeps that; "shutdown"
+    // is only a fallback.
     setDisconnectReason(telemetry::lval::disconnect::shutdown);
     close();
 }
@@ -1016,13 +1016,18 @@ PeerImp::onReadMessage(ErrorCode ec, std::size_t bytesTransferred)
         if (ec == boost::asio::error::eof)
         {
             JLOG(journal_.info()) << "EOF";
-            // The peer closed its side cleanly. Counted apart from a read
-            // error because it is normal peer churn, not a fault.
+            // The peer sent a TLS close. PeerImp never sends one first
+            // (close() just closes the socket), so between two xrpld nodes
+            // this branch does not normally run.
             setDisconnectReason(telemetry::lval::disconnect::graceful);
             gracefulClose();
             return;
         }
 
+        // Any other read failure. This includes the way an xrpld peer drops
+        // this node: it closes the socket with no TLS close, so the read ends
+        // with "stream truncated", or with a reset if data was still in
+        // flight. A real network fault lands here too.
         setDisconnectReason(telemetry::lval::disconnect::readError);
         fail("onReadMessage", ec);
         return;
@@ -1053,6 +1058,8 @@ PeerImp::onReadMessage(ErrorCode ec, std::size_t bytesTransferred)
 
         if (ec)
         {
+            // The peer sent a malformed or oversized message. It counts as a
+            // read error too.
             setDisconnectReason(telemetry::lval::disconnect::readError);
             fail("onReadMessage", ec);
             return;
