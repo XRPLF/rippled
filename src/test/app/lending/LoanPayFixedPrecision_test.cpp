@@ -709,38 +709,61 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             "itself floors to zero still succeeds");
 
         Env env(*this, features());
-        auto const accounts = setupCoarsenIou(env);
+        // The owner needs funds for the cover deposit.
+        auto const accounts = setupIou(
+            env,
+            {.depositorTrust = 30'000'000,
+             .ownerTrust = 1'000'000,
+             .depositorFunds = 10'000'000,
+             .ownerFunds = 900'000});
         auto const& [issuer, owner, depositor, asset] = accounts;
         Account const dustBorrower{"dustBorrower"};
         fundIouHolder(env, dustBorrower, accounts, kDustBorrowerTrustLimit, kDustBorrowerFunds);
 
         // Both the dust principal and the dust fee are on the vault's base
-        // grid, well below CoverAvailable's magnitude, so
-        // creditToPosteriorBrokerCoverScale floors the fee credit to zero too:
-        // the payment still takes the both-legs-zero terminal-close path, but
-        // through the cover branch instead of the owner branch.
+        // grid (1e-10). CoverAvailable is first pushed past 1e6, so its grid
+        // is 1e-9 and creditToPosteriorBrokerCoverScale floors the dust fee
+        // credit to zero too: the payment takes the both-legs-zero
+        // terminal-close path, through the cover branch instead of the owner
+        // branch.
+        //
+        // A cover deposit stops at the Open limit (9e5 at Scale 10), so the
+        // rest comes from a large service fee redirected into cover.
         Number const dustPrincipal{9, -10};
         Number const dustFee{1, -10};
+        Number const coverDeposit{899'999};
+        Number const bigFee{200'000};
         auto const coarsened = coarsenVault(
             env,
             owner,
             depositor,
             asset,
-            {.extraLoans = {ExtraLoan{
-                 .principal = dustPrincipal,
-                 .paymentTotal = 1,
-                 .paymentInterval = kLongPaymentInterval,
-                 .borrower = dustBorrower,
-                 .serviceFee = dustFee}}});
+            {.extraLoans =
+                 {ExtraLoan{
+                      .principal = dustPrincipal,
+                      .paymentTotal = 1,
+                      .paymentInterval = kLongPaymentInterval,
+                      .borrower = dustBorrower,
+                      .serviceFee = dustFee},
+                  ExtraLoan{
+                      .principal = Number{1},
+                      .paymentTotal = 1,
+                      .paymentInterval = kLongPaymentInterval,
+                      .serviceFee = bigFee}},
+             .coverDeposit = coverDeposit});
         auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
         auto const& brokerKeylet = coarsened.fixture.brokerKeylet;
         auto const& feeLoanKeylet = coarsened.loanKeylets[1];
+        auto const& bigFeeLoanKeylet = coarsened.loanKeylets[2];
 
-        // Deep-freeze the broker owner, now that the vault/broker/loan are
-        // already originated, so the upcoming terminal payment's fee cannot be
-        // sent directly to them; it is redirected into CoverAvailable instead
+        // Deep-freeze the broker owner, now that the vault/broker/loans are
+        // already originated, so the fees cannot be sent directly to them;
+        // they are redirected into CoverAvailable instead
         // (sendBrokerFeeToOwner == false).
         env(trust(issuer, asset(0), owner, tfSetFreeze | tfSetDeepFreeze));
+        env.close();
+
+        env(pay(depositor, bigFeeLoanKeylet.key, asset(Number{1} + bigFee).value()));
         env.close();
 
         auto const vaultSleBefore = env.le(vaultKeylet);
@@ -749,6 +772,8 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             return;
         BEAST_EXPECT(getVaultScale(vaultSleBefore) > getVaultBaseScale(vaultSleBefore));
         Number const coverAvailableBefore = brokerSleBefore->at(sfCoverAvailable);
+        BEAST_EXPECT(coverAvailableBefore == coverDeposit + bigFee);
+        BEAST_EXPECT(coverAvailableBefore > Number(1, 6));
 
         auto const before = snapshotVault(env, vaultKeylet, asset);
 
@@ -770,14 +795,10 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         auto const after = snapshotVault(env, vaultKeylet, asset);
         Number const coverAvailableAfter = brokerSleAfter->at(sfCoverAvailable);
 
-        // The vault credit leg floors to zero regardless; the cover credit
-        // leg is bounded by the dust fee itself (CoverAvailable starts at
-        // zero here, so there is no existing grid to floor a sub-unit amount
-        // against). Either way the loan still closes.
+        // Both credit legs floor to zero, and the loan still closes.
         BEAST_EXPECT(after.available == before.available);
         BEAST_EXPECT(after.vaultBalance == before.vaultBalance);
-        BEAST_EXPECT(coverAvailableAfter - coverAvailableBefore >= beast::kZero);
-        BEAST_EXPECT(coverAvailableAfter - coverAvailableBefore <= dustFee);
+        BEAST_EXPECT(coverAvailableAfter == coverAvailableBefore);
 
         checkVaultLoanSums(env, coarsened, "testCoarsenedVaultTerminalCloseFeeToCoverFloorsToZero");
     }
@@ -979,15 +1000,6 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         checkVaultLoanSums(env, coarsened, "testCoarsenedVaultCreditCrossesPowerOfTen");
     }
 
-    // Regression for a ValidVault false positive: a single VaultWithdraw or
-    // VaultClawback that takes the stored AssetsTotal cache across its own
-    // floor-rounding grid boundary tripped the invariant, although AssetsAvailable
-    // moved by exactly the transferred amount. Independent floor-rounding of the
-    // before/after AssetsTotal snapshots can differ from the real delta by more
-    // than the invariant's one-unit tolerance.
-    // A final VaultWithdraw of all shares must succeed when AssetsDeployed is
-    // zero, even if the shares-to-assets round-trip would round the payout above
-    // AssetsAvailable.
     // Pay half of LoanBroker_test's former testFixedPrecisionCover minCoverBroker
     // scenario: an origination at the minimum-cover grid followed by a full
     // single payment, checked the same way LoanSet's origination half is.
