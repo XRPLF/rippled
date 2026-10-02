@@ -118,8 +118,8 @@
  * @endcode
  *
  * @note Header-only and dependency-free: nothing here includes an OTel or an
- *       xrpld header, so `src/tests/libxrpl/telemetry/MetricMacros.cpp` can
- *       include it even though `xrpl_tests` links only `xrpl.libxrpl`. The
+ *       xrpld header, so `src/tests/xrpld/telemetry/MetricMacros.cpp` can
+ *       include it although its test binary links no xrpld code. The
  *       constants are `inline constexpr`, so they contribute no symbol to link
  *       against.
  * @note Not guarded by `XRPL_ENABLE_TELEMETRY`, for the same reason

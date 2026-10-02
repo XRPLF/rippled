@@ -194,9 +194,6 @@ tests.libxrpl > xrpl.basics
 tests.libxrpl > xrpl.config
 tests.libxrpl > xrpl.consensus
 tests.libxrpl > xrpl.core
-tests.libxrpl > xrpld.app
-tests.libxrpl > xrpld.overlay
-tests.libxrpl > xrpld.telemetry
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.ledger
 tests.libxrpl > xrpl.net
@@ -210,11 +207,17 @@ tests.libxrpl > xrpl.server
 tests.libxrpl > xrpl.shamap
 tests.libxrpl > xrpl.telemetry
 tests.libxrpl > xrpl.tx
+tests.xrpld > xrpl.basics
+tests.xrpld > xrpl.consensus
+tests.xrpld > xrpl.core
 tests.xrpld > xrpld.app
+tests.xrpld > xrpld.overlay
 tests.xrpld > xrpld.rpc
 tests.xrpld > xrpld.telemetry
 tests.xrpld > xrpl.json
+tests.xrpld > xrpl.peerfinder
 tests.xrpld > xrpl.protocol
+tests.xrpld > xrpl.server
 tests.xrpld > xrpl.telemetry
 xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol
