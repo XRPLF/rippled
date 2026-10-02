@@ -3777,7 +3777,8 @@ the only one with a deadline.
 | _Amendment Warned_             | 0                                                                                                      | 1                                 | the same condition as a flag: an unsupported amendment reached majority                                                                                                                                                                                           |
 | _Byzantine Ledger Jumps_       | flat at zero                                                                                           | a single jump during a fresh sync | benign — the node is settling onto the network's chain                                                                                                                                                                                                            |
 |                                |                                                                                                        | repeated jumps                    | wrong-chain thrash: the node keeps switching chains and never settles. Check the peer set (branch A) and the configured network id. Nothing in the acquire pipeline can fix it                                                                                    |
-| _Ledger/Object Serve Refusals_ | near zero                                                                                              | `sendq_full`/`load_shed` climbing | self-inflicted: this node is too loaded to answer. It does not explain **this** node's sync — it explains its peers', and is the serving-side symptom of the same overload branches C-E cover                                                                     |
+| _Ledger/Object Serve Refusals_ | near zero                                                                                              | `load_shed` climbing              | self-inflicted: this node is too loaded, or for a fetch pack too far behind the network, to answer. It does not explain **this** node's sync — it explains its peers', and is the serving-side symptom of the same overload branches C-E cover                    |
+|                                |                                                                                                        | `sendq_full` climbing             | this node's send queue to the asking peer has reached its limit: that peer, the path to it, or this node's own uplink is slow                                                                                                                                     |
 |                                |                                                                                                        | `not_found` climbing              | a genuine history gap — a retention and configuration question, not a load one                                                                                                                                                                                    |
 
 **Conclusion:** the countdown is the only actionable amendment signal. The
@@ -4165,10 +4166,13 @@ panel it reads.
       (`serve_refused_total`, by `request` and `reason`) is what **this node
       refuses to serve OTHERS**. It does not explain this node's own sync, but
       it explains its peers' — and a node that refuses everything is why some
-      other operator is reading step 11 on their side. `sendq_full` and
-      `load_shed` are self-inflicted: this node is too loaded or too far
-      behind on its send queue to answer, so treat them as the serving-side
-      symptom of the same overload steps 3, 9 and 10 cover. `not_found` is
+      other operator is reading step 11 on their side. `load_shed` is
+      self-inflicted: this node is too loaded, or for a fetch pack too far
+      behind the network, to answer, so treat it as the serving-side symptom
+      of the same overload steps 3, 9 and 10 cover. `sendq_full` is not:
+      this node's send queue to the asking peer has reached its limit, so
+      that peer, the path to it, or this node's own uplink is slow.
+      `not_found` is
       different — it is a genuine history gap, meaning the data was asked for
       and this node simply does not hold it, which is a configuration and
       retention question rather than a load one.

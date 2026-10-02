@@ -2646,9 +2646,10 @@ TEST(MetricMacros, serve_refused_total_keys_series_on_request_and_reason_pair)
     // Four distinct (request, reason) pairs -> exactly four series.
     ASSERT_EQ(data.at("serve_refused_total").size(), 4u);
 
-    // SELF-INFLICTED BACKPRESSURE: "sendq_full" and "load_shed" both mean this
-    // node chose not to answer because it was already behind. The fix is local
-    // (capacity, tuning), and the refusal directly slows the asking peer's sync.
+    // BACKPRESSURE: "load_shed" means this node was too loaded, or for a
+    // fetch pack too far behind, to answer; "sendq_full" means its send queue
+    // to the asking peer was already full. Either way the refusal directly
+    // slows the asking peer's sync.
     EXPECT_EQ(
         counterValue(
             data, "serve_refused_total", attrs("request", "ledger", "reason", "sendq_full")),
