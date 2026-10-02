@@ -322,7 +322,7 @@ TEST_F(TxTracePropagationTest, relayed_receive_span_is_child_of_sender_process_s
     EXPECT_EQ(receiveData->GetTraceId(), processData->GetTraceId());
 }
 
-TEST_F(TxTracePropagationTest, receive_span_takes_trace_id_from_tx_id_not_from_peer)
+TEST_F(TxTracePropagationTest, peer_span_in_another_trace_gives_root_receive_span)
 {
     auto const txId = fixedTxId();
     // A peer whose trace id for this transaction is not the hash-derived one.
@@ -335,8 +335,11 @@ TEST_F(TxTracePropagationTest, receive_span_takes_trace_id_from_tx_id_not_from_p
         ASSERT_TRUE(sent.has_trace_context());
         sent.mutable_trace_context()->set_trace_id(peerTraceId);
 
+        // The parsed message still carries the peer's whole context. Only the
+        // receive side decides how to use it.
         auto const received = relayOverWire(sent);
         ASSERT_EQ(received.trace_context().trace_id(), peerTraceId);
+        ASSERT_TRUE(isValidSpanId(received.trace_context().span_id()));
         auto const receiveSpan = txReceiveSpan(txId, received);
         ASSERT_TRUE(receiveSpan);
     }
@@ -348,8 +351,10 @@ TEST_F(TxTracePropagationTest, receive_span_takes_trace_id_from_tx_id_not_from_p
     ASSERT_NE(receiveData, nullptr);
     ASSERT_EQ(spans.size(), 2u);
 
-    // Only the span id comes from the peer. The trace id comes from the tx id.
-    EXPECT_EQ(receiveData->GetParentSpanId(), processData->GetSpanId());
+    // A parent and its child share one trace. The peer's span lies in another
+    // trace. It cannot be the parent. The receive span is a root in the trace
+    // named by the tx id.
+    EXPECT_EQ(receiveData->GetParentSpanId(), opentelemetry::trace::SpanId{});
     EXPECT_EQ(receiveData->GetTraceId(), traceIdOf(txId));
 }
 
