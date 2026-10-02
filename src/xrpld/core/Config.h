@@ -136,7 +136,10 @@ private:
      */
     bool signingEnabled_ = false;
 
-    // The amount of RAM, in GiB, that we detected on this system.
+    // The amount of RAM, in bytes, that we detected on this system. Kept at
+    // byte granularity (not rounded to GiB) so a cgroup limit under 1 GiB
+    // still reads as a nonzero budget instead of collapsing into the
+    // detection-failed case below.
     // 0 when detection failed.
     std::uint64_t const ramSize_;
 

@@ -58,7 +58,8 @@ inline TaggedCache<
         ClockType& clock,
         beast::Journal journal,
         beast::insight::Collector::Ptr const& collector,
-        int cacheHardCap)
+        int cacheHardCap,
+        std::optional<std::size_t> partitions)
     : journal_(journal)
     , clock_(clock)
     , stats_(
@@ -69,6 +70,7 @@ inline TaggedCache<
     , targetSize_(size)
     , targetAge_(expiration)
     , cacheHardCap_(cacheHardCap)
+    , cache_(partitions)
 {
 }
 
@@ -232,15 +234,19 @@ template <
     class Mutex>
 inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    evictForHardCap(CacheType::MapType& partition, CacheType::MapType::iterator const& keep)
+    evictForHardCap(CacheType::Iterator const& keep)
 {
     // Caller holds mutex_. Only value caches carry strong/weak entries; key
     // caches never enable the hard cap, so this is a no-op for them.
     if constexpr (!IsKeyCache)
     {
-        std::size_t const bucketCount = partition.bucket_count();
-        if (bucketCount == 0)
+        auto& partitions = *keep.map;
+        std::size_t const partitionCount = partitions.size();
+        if (partitionCount == 0)
             return;
+
+        std::size_t const homePartition = static_cast<std::size_t>(keep.ait - partitions.begin());
+        key_type const keepKey = keep->first;
 
         // Approximate LRU with bounded work per call: sample a window of
         // strong entries starting at the rotating bucket cursor and demote
@@ -249,69 +255,95 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         // time, so the budget lets eviction catch up without stalling them.
         constexpr int kEvictSampleBudget = 64;
         constexpr int kMaxDemotionsPerCall = 8;
-        std::size_t const maxBuckets = std::min<std::size_t>(bucketCount, 4 * kEvictSampleBudget);
 
         for (int demotions = 0; cacheCount_ > cacheHardCap_ && demotions < kMaxDemotionsPerCall;
              ++demotions)
         {
-            int sampled = 0;
-            std::size_t bucketsWalked = 0;
-            key_type oldestKey{};
-            bool haveOldest = false;
-            ClockType::time_point oldestAccess{};
-
-            std::size_t b = evictHand_ % bucketCount;
-            while (sampled < kEvictSampleBudget && bucketsWalked < maxBuckets)
+            // cacheCount_ is cache-wide, so a home partition with nothing to
+            // demote (a small cap or uneven partitioning can leave it empty
+            // or holding only the just-inserted `keep` entry) must not end
+            // the search: try every partition, starting where the last
+            // eviction left off, before giving up.
+            bool demoted = false;
+            for (std::size_t attempt = 0; !demoted && attempt < partitionCount; ++attempt)
             {
-                for (auto lit = partition.begin(b); lit != partition.end(b); ++lit)
+                std::size_t const p = (evictPartition_ + attempt) % partitionCount;
+                auto& partition = partitions[p];
+                std::size_t const bucketCount = partition.bucket_count();
+                if (bucketCount == 0)
+                    continue;
+
+                bool const isHome = (p == homePartition);
+                std::size_t const maxBuckets =
+                    std::min<std::size_t>(bucketCount, 4 * kEvictSampleBudget);
+
+                int sampled = 0;
+                std::size_t bucketsWalked = 0;
+                key_type oldestKey{};
+                bool haveOldest = false;
+                ClockType::time_point oldestAccess{};
+
+                std::size_t b = isHome ? evictHand_ % bucketCount : 0;
+                while (sampled < kEvictSampleBudget && bucketsWalked < maxBuckets)
                 {
-                    if (lit->first == keep->first || lit->second.isWeak())
-                        continue;
-                    if (!haveOldest || lit->second.lastAccess < oldestAccess)
+                    for (auto lit = partition.begin(b); lit != partition.end(b); ++lit)
                     {
-                        oldestAccess = lit->second.lastAccess;
-                        oldestKey = lit->first;
-                        haveOldest = true;
+                        if ((isHome && lit->first == keepKey) || lit->second.isWeak())
+                            continue;
+                        if (!haveOldest || lit->second.lastAccess < oldestAccess)
+                        {
+                            oldestAccess = lit->second.lastAccess;
+                            oldestKey = lit->first;
+                            haveOldest = true;
+                        }
+                        if (++sampled >= kEvictSampleBudget)
+                            break;
                     }
-                    if (++sampled >= kEvictSampleBudget)
-                        break;
+                    b = (b + 1) % bucketCount;
+                    ++bucketsWalked;
                 }
-                b = (b + 1) % bucketCount;
-                ++bucketsWalked;
-            }
-            evictHand_ = b;  // resume the scan here on the next over-cap call
+                if (isHome)
+                    evictHand_ = b;  // resume the home scan here on the next call
 
-            if (!haveOldest)
+                if (!haveOldest)
+                    continue;  // nothing demotable sampled here; try the next partition
+
+                auto oldest = partition.find(oldestKey);
+                if (oldest == partition.end() || (isHome && oldest->first == keepKey) ||
+                    oldest->second.isWeak())
+                    continue;
+
+                if (oldest->second.ptr.useCount() == 1)
+                {
+                    // Sole owner: release entirely.
+                    partition.erase(oldest);
+                }
+                else
+                {
+                    // Others hold it: keep it weakly tracked.
+                    oldest->second.ptr.convertToWeak();
+                }
+                --cacheCount_;
+                demoted = true;
+                evictPartition_ = p;
+
+                // First eviction marks saturation onset; then a heartbeat
+                // every 100k to avoid flooding.
+                ++hardCapEvictions_;
+                if (hardCapEvictions_ == 1 || hardCapEvictions_ % 100000 == 0)
+                {
+                    JLOG(journal_.warn()) << name_ << ": hard-cap eviction #" << hardCapEvictions_
+                                          << " (cap " << cacheHardCap_ << ", strong " << cacheCount_
+                                          << ") - cache saturated, growth now evicts";
+                }
+            }
+
+            if (!demoted)
             {
-                JLOG(journal_.debug()) << name_ << ": over hard cap " << cacheHardCap_
-                                       << " but eviction sample found no strong entry to demote";
+                JLOG(journal_.debug())
+                    << name_ << ": over hard cap " << cacheHardCap_
+                    << " but eviction sample found no strong entry to demote in any partition";
                 return;
-            }
-
-            auto oldest = partition.find(oldestKey);
-            if (oldest == partition.end() || oldest == keep || oldest->second.isWeak())
-                return;
-
-            if (oldest->second.ptr.useCount() == 1)
-            {
-                // Sole owner: release entirely.
-                partition.erase(oldest);
-            }
-            else
-            {
-                // Others hold it: keep it weakly tracked.
-                oldest->second.ptr.convertToWeak();
-            }
-            --cacheCount_;
-
-            // First eviction marks saturation onset; then a heartbeat every
-            // 100k to avoid flooding.
-            ++hardCapEvictions_;
-            if (hardCapEvictions_ == 1 || hardCapEvictions_ % 100000 == 0)
-            {
-                JLOG(journal_.warn()) << name_ << ": hard-cap eviction #" << hardCapEvictions_
-                                      << " (cap " << cacheHardCap_ << ", strong " << cacheCount_
-                                      << ") - cache saturated, growth now evicts";
             }
         }
     }
@@ -466,9 +498,9 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                                     .first;
         ++cacheCount_;
         // The just-inserted entry is the newest; evictForHardCap skips it
-        // and drops the oldest in its partition.
+        // and drops the oldest across the cache.
         if (cacheHardCap_ > 0 && cacheCount_ > cacheHardCap_)
-            evictForHardCap(*emplacedIt.ait, emplacedIt.mit);
+            evictForHardCap(emplacedIt);
         return false;
     }
 
@@ -520,14 +552,14 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
         ++cacheCount_;
         if (cacheHardCap_ > 0 && cacheCount_ > cacheHardCap_)
-            evictForHardCap(*cit.ait, cit.mit);
+            evictForHardCap(cit);
         return true;
     }
 
     entry.ptr = data;
     ++cacheCount_;
     if (cacheHardCap_ > 0 && cacheCount_ > cacheHardCap_)
-        evictForHardCap(*cit.ait, cit.mit);
+        evictForHardCap(cit);
 
     return false;
 }
@@ -838,7 +870,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         // independent of cache size, so not counted as a hit
         ++cacheCount_;
         if (cacheHardCap_ > 0 && cacheCount_ > cacheHardCap_)
-            evictForHardCap(*cit.ait, cit.mit);
+            evictForHardCap(cit);
         entry.touch(clock_.now());
         return entry.ptr.getStrong();
     }

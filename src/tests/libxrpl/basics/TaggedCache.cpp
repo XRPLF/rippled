@@ -276,6 +276,47 @@ TEST(TaggedCacheTest, hard_cap_enforced_on_insert)
     EXPECT_GT(capped.getCacheSize(), 0);
 }
 
+TEST(TaggedCacheTest, hard_cap_enforced_across_partitions)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Key = LedgerIndex;
+    using Value = std::string;
+    using Cache = TaggedCache<Key, Value>;
+
+    // The cap is well below the partition count, so with sequential keys
+    // (partitioned round-robin) the partition a given insert lands in holds
+    // only that one entry when the count first crosses the cap: eviction
+    // must fall through to another partition rather than stop at an empty
+    // home partition and leave cacheCount_ stuck above cacheHardCap_.
+    int const cap = 4;
+    std::size_t const partitions = 16;
+    Cache capped(
+        "capped-partitions",
+        1'000'000,
+        3600s,
+        clock,
+        journal,
+        beast::insight::NullCollector::make(),
+        cap,
+        partitions);
+
+    bool everExceeded = false;
+    for (Key k = 1; k <= 2000; ++k)
+    {
+        capped.insert(k, "v");
+        if (capped.getCacheSize() > cap)
+            everExceeded = true;
+    }
+    EXPECT_FALSE(everExceeded);
+    EXPECT_LE(capped.getCacheSize(), cap);
+    EXPECT_GT(capped.getCacheSize(), 0);
+}
+
 TEST(TaggedCacheTest, hard_cap_disabled)
 {
     using namespace std::chrono_literals;

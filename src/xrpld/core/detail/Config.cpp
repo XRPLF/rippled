@@ -341,8 +341,7 @@ getEnvVar(char const* name)
     return value;
 }
 
-Config::Config()
-    : j_(beast::Journal::getNullSink()), ramSize_(detail::getMemorySize() / (1024 * 1024 * 1024))
+Config::Config() : j_(beast::Journal::getNullSink()), ramSize_(detail::getMemorySize())
 {
 }
 
@@ -677,11 +676,11 @@ Config::loadFromString(std::string const& fileContents)
     // A budget beyond the detected memory (physical RAM, or the cgroup limit
     // when one is set) cannot be honored and recreates the oversized-preset
     // OOM this setting exists to prevent.
-    if (memoryLimit && ramSize_ != 0 && *memoryLimit > (ramSize_ << 30) && !quiet_)
+    if (memoryLimit && ramSize_ != 0 && *memoryLimit > ramSize_ && !quiet_)
     {
         std::cerr << "WARNING: the configured memory budget (" << (*memoryLimit >> 30)
-                  << " GB) exceeds detected memory (" << ramSize_
-                  << " GB, RAM or cgroup limit); set [memory_limit] to " << ramSize_
+                  << " GB) exceeds detected memory (" << (ramSize_ >> 30)
+                  << " GB, RAM or cgroup limit); set [memory_limit] to " << (ramSize_ >> 30)
                   << " or less.\n";
     }
 
@@ -1389,8 +1388,9 @@ Config::cacheMemoryBudget() const
     if (memoryLimit)
         return *memoryLimit;
 
-    // ramSize_ is in GiB; 0 when detection failed, which disables enforcement.
-    return ramSize_ << 30;
+    // ramSize_ is in bytes; 0 when detection failed, which disables
+    // enforcement.
+    return ramSize_;
 }
 
 FeeSetup
