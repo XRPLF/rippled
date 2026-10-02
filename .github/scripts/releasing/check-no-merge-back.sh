@@ -21,9 +21,10 @@ SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 source "${SCRIPT_DIR}/common.sh"
 load_release_branches
 
-RELEASE_COMMITS=$(git rev-list "${BRANCHES[@]}" --not "${BASE}" | sort)
-HEAD_COMMITS=$(git rev-list "${HEAD}" --not "${BASE}" | sort)
-MERGED=$(comm -12 <(echo "${RELEASE_COMMITS}") <(echo "${HEAD_COMMITS}"))
+RELEASE_COMMITS=$(git rev-list "${BRANCHES[@]}" --not "${BASE}")
+HEAD_COMMITS=$(git rev-list "${BASE}..${HEAD}")
+# The release commits in <head>, newest first.
+MERGED=$(grep -xF -f <(echo "${RELEASE_COMMITS}") <<<"${HEAD_COMMITS}" || true)
 if [ -z "${MERGED}" ]; then
     echo "No release commits are merged back."
     exit 0
