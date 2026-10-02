@@ -2,7 +2,7 @@
 #
 # Alerting on health-critical internal metrics.
 #
-# Fourteen rules across five subsystems: consensus/ledger health, validator
+# Rules across five subsystems: consensus/ledger health, validator
 # health, the job queue, node operating state, and the overlay (manifests,
 # peer disconnects and untrusted validation traffic).
 #
