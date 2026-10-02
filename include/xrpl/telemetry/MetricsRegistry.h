@@ -141,9 +141,9 @@ namespace xrpl::telemetry {
 
 /**
  * Run time at which a finished job counts as a stall, in microseconds.
- * Equal to LoadMonitor's 1 s warn threshold (LoadMonitor.cpp
- * addLoadSample) so this counter and the "Job: ... run:" log line
- * describe the same event.
+ * LoadMonitor's "Job: ... run:" warning uses the same 1 s bar
+ * (LoadMonitor.cpp addLoadSample), but it tests run time plus queue wait.
+ * So it also fires for a short job that waited long, which is not a stall.
  */
 inline constexpr std::int64_t kJobStallThresholdUs = 1'000'000;
 
@@ -830,7 +830,8 @@ public:
      *
      * Guarded, along with the tracker itself, because only the observable-gauge
      * callbacks read it and those exist only in this configuration. Recording
-     * into it is not free: each call takes its lock and inserts an entry.
+     * into it takes no lock, but it is not free: each call reads the clock
+     * and pushes one event onto a ring.
      * @return Reference to the internal ValidationTracker instance.
      */
     [[nodiscard]] ValidationTracker&
@@ -871,9 +872,9 @@ private:
      * Tracks validation agreement between this node and the network.
      *
      * Guarded because reconcile() -- which resolves and then prunes recorded
-     * events -- runs only from the observable-gauge callbacks. Recording
-     * without it accumulates one entry per validated ledger, so the tracker
-     * exists only where something drains it.
+     * events -- runs only from the observable-gauge callbacks. Without it
+     * the rings fill and every later event is dropped, so the tracker is
+     * built only into builds that have the callbacks that drain it.
      */
     ValidationTracker validationTracker_;
 

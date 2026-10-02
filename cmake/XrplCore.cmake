@@ -94,7 +94,7 @@ if(telemetry)
     )
 endif()
 
-include(GitInfo)
+include(XrplVersion)
 add_module(xrpl git)
 target_compile_definitions(
     xrpl.libxrpl.git
@@ -123,6 +123,11 @@ add_module(xrpl protocol)
 target_link_libraries(
     xrpl.libxrpl.protocol
     PUBLIC xrpl.libxrpl.crypto xrpl.libxrpl.git xrpl.libxrpl.json
+)
+# Only on BuildInfo.cpp, so a new version does not rebuild the whole module.
+set_source_files_properties(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/libxrpl/protocol/BuildInfo.cpp
+    PROPERTIES COMPILE_DEFINITIONS XRPLD_VERSION="${XRPLD_VERSION}"
 )
 
 # Level 05

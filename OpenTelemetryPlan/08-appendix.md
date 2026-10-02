@@ -191,21 +191,9 @@ This guide maps Phase 9–11 content to its location across the documentation.
 | Test harness         | `docker/telemetry/docker-compose.workload.yaml` (phase-10 branch)        |
 | CI workflow          | `.github/workflows/telemetry-validation.yml` (phase-10 branch)           |
 
-**Validates** (Phase-10 harness inventory): **40** span types, **67** unique
-required span attributes, **36** metric entries, **14** dashboards, log-trace
-correlation.
+**Validates** (Phase-10 harness inventory): span types, required span attributes, metric entries, dashboards, log-trace correlation.
 
-> **These are the harness manifests' counts, and two of them lag the code.** The
-> manifests (`docker/telemetry/workload/expected_spans.json`,
-> `expected_metrics.json`) live only on the phase-10 branch. `expected_spans.json`
-> holds 40 span entries against the **41** span-name families the code emits
-> (`rpc.ws_upgrade` has no entry), and its own `total_unique_attributes: 58` field
-> is stale against the 67 attributes its per-span `required_attributes` lists
-> actually name. `expected_metrics.json` asserts 14 dashboard uids against the
-> **15** dashboard JSONs in `docker/telemetry/grafana/dashboards/`;
-> `log-derived-insights` is the unasserted one. The full emitted inventory is in
-> [09-data-collection-reference.md §1.1](./09-data-collection-reference.md#11-complete-span-inventory-41-spans)
-> and [§5c](./09-data-collection-reference.md#validated-telemetry-inventory).
+> **The counts live in the harness manifests, not in this file, because they change from branch to branch.** The manifests (`docker/telemetry/workload/expected_spans.json`, `expected_metrics.json`) are added on the phase-10 branch. In `expected_spans.json`, `total_span_types` is the number of span entries and `total_unique_attributes` is the number of distinct keys across their `required_attributes` lists. `test_contract_totals_count_its_span_entries` in `docker/telemetry/workload/test_validate_telemetry.py` fails when either total does not match the entries. `expected_metrics.json` lists the dashboards the harness checks under `grafana_dashboards.uids`. The full emitted inventory is in [09-data-collection-reference.md §1.1](./09-data-collection-reference.md#11-complete-span-inventory-42-spans) and [§5c](./09-data-collection-reference.md#validated-telemetry-inventory).
 
 ### Phase 11: Third-Party Data Collection Pipelines
 

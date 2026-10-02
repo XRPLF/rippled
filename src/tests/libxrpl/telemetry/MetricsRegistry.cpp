@@ -755,7 +755,6 @@ TEST(MetricsRegistryDaysUntil, the_sentinel_is_the_one_the_validator_list_sets)
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/Job.h>
-#include <xrpl/core/JobTypeInfo.h>
 #include <xrpl/core/JobTypes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/telemetry/ValidationTracker.h>
@@ -765,7 +764,6 @@ TEST(MetricsRegistryDaysUntil, the_sentinel_is_the_one_the_validator_list_sets)
 #include <opentelemetry/sdk/metrics/data/metric_data.h>
 #include <opentelemetry/sdk/metrics/export/metric_producer.h>
 #include <opentelemetry/sdk/metrics/instruments.h>
-#include <opentelemetry/sdk/metrics/metric_reader.h>
 
 #include <functional>
 #include <map>
