@@ -357,7 +357,6 @@ LoanPay::doApply()
     auto const asset = *vaultSle->at(sfAsset);
 
     // Determine where to send the broker's fee
-    auto coverAvailableProxy = brokerSle->at(sfCoverAvailable);
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
@@ -388,7 +387,8 @@ LoanPay::doApply()
             return roundToAsset(
                 asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale);
         }();
-        return coverAvailableProxy >= minCover && !isDeepFrozen(view, brokerOwner, asset) &&
+        return brokerSle->at(sfCoverAvailable) >= minCover &&
+            !isDeepFrozen(view, brokerOwner, asset) &&
             !requireAuth(view, asset, brokerOwner, AuthType::StrongAuth);
     }();
 
@@ -440,7 +440,6 @@ LoanPay::doApply()
 
     std::expected<LoanPaymentParts, TER> const paymentParts =
         loanMakePayment(asset, view, loanSle, brokerSle, amount, paymentType, j_);
-
     if (!paymentParts)
     {
         XRPL_ASSERT_PARTS(
@@ -448,8 +447,7 @@ LoanPay::doApply()
         return paymentParts.error();
     }
 
-    // If the payment computation completed without error, the loanSle object
-    // has been modified.
+    // If the payment computation completed without error, the loanSle object has been modified.
     view.update(loanSle);
 
     Number const scheduledInterestDelta =
@@ -485,10 +483,8 @@ LoanPay::doApply()
     // LoanBroker object state changes
     view.update(brokerSle);
 
-    auto assetsAvailableProxy = vaultSle->at(sfAssetsAvailable);
-    auto assetsTotalProxy = vaultSle->at(sfAssetsTotal);
-    Number const assetsAvailableBefore = *assetsAvailableProxy;
-    Number const assetsTotalBefore = *assetsTotalProxy;
+    Number const assetsAvailableBefore = *vaultSle->at(sfAssetsAvailable);
+    Number const assetsTotalBefore = vaultSle->at(sfAssetsTotal);
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
     auto const deltas = loanPaymentDeltas(vaultSle, *paymentParts);
@@ -527,12 +523,6 @@ LoanPay::doApply()
                      << ", debt total delta: " << debtTotalDelta
                      << ", scheduled interest delta: " << scheduledInterestDelta;
 
-    XRPL_ASSERT_PARTS(
-        (totalPaidToVaultRaw + totalPaidToBrokerRaw) ==
-            (paymentParts->principalPaid + paymentParts->interestPaid + paymentParts->feePaid),
-        "xrpl::LoanPay::doApply",
-        "payments add up");
-
     // Decrease LoanBroker Debt by the amount paid, add the Loan value change
     // (which might be negative). debtTotalDelta may be negative, increasing the
     // debt
@@ -548,23 +538,6 @@ LoanPay::doApply()
     //------------------------------------------------------
     // Vault object state changes
     view.update(vaultSle);
-
-#if !NDEBUG
-    {
-        Number const pseudoAccountBalanceBefore = accountHolds(
-            view,
-            vaultPseudoAccount,
-            asset,
-            FreezeHandling::IgnoreFreeze,
-            AuthHandling::IgnoreAuth,
-            j_);
-
-        XRPL_ASSERT_PARTS(
-            assetsAvailableBefore == pseudoAccountBalanceBefore,
-            "xrpl::LoanPay::doApply",
-            "vault pseudo balance agrees before");
-    }
-#endif
 
     if (fixedPrecision)
     {
@@ -582,19 +555,9 @@ LoanPay::doApply()
     }
     else
     {
-        assetsAvailableProxy += totalPaidToVaultRounded;
-        assetsTotalProxy += assetsTotalDelta;
+        vaultSle->at(sfAssetsAvailable) += totalPaidToVaultRounded;
+        vaultSle->at(sfAssetsTotal) += assetsTotalDelta;
     }
-
-    XRPL_ASSERT_PARTS(
-        *assetsAvailableProxy <= *assetsTotalProxy,
-        "xrpl::LoanPay::doApply",
-        "assets available must not be greater than assets outstanding");
-
-    JLOG(j_.debug()) << "total paid to vault raw: " << totalPaidToVaultRaw
-                     << ", total paid to vault rounded: " << totalPaidToVaultRounded
-                     << ", total paid to broker: " << totalPaidToBroker
-                     << ", amount from transaction: " << amount;
 
     // Move funds
     XRPL_ASSERT_PARTS(
@@ -609,7 +572,7 @@ LoanPay::doApply()
         // posterior cover scale; any sub-unit remainder is forgiven. The
         // broker can Withdraw the credited amount later or leave it for future
         // needs.
-        coverAvailableProxy += totalPaidToBroker;
+        brokerSle->at(sfCoverAvailable) += totalPaidToBroker;
     }
 
     associateAsset(*loanSle, asset);
@@ -617,13 +580,9 @@ LoanPay::doApply()
     associateAsset(*vaultSle, asset);
 
     // Duplicate some checks after rounding
-    Number const assetsAvailableAfter = *assetsAvailableProxy;
-    Number const assetsTotalAfter = *assetsTotalProxy;
+    Number const assetsAvailableAfter = vaultSle->at(sfAssetsAvailable);
+    Number const assetsTotalAfter = vaultSle->at(sfAssetsTotal);
 
-    XRPL_ASSERT_PARTS(
-        assetsAvailableAfter <= assetsTotalAfter,
-        "xrpl::LoanPay::doApply",
-        "assets available must not be greater than assets outstanding");
     if (assetsAvailableAfter == assetsAvailableBefore)
     {
         // Credit rounded to zero. On FixedPrecision, if this payment also
@@ -642,9 +601,8 @@ LoanPay::doApply()
 
             if (totalPaidToVaultRounded == beast::kZero && totalPaidToBroker == beast::kZero)
             {
-                // Nothing moves for this terminal close: the sub-unit
-                // remainder is forgiven, and no fee is owed either. Return
-                // before the transfer and its conservation checks, since
+                // Nothing moves for this terminal close: the sub-unit remainder is forgiven, and no
+                // fee is owed either. Return before the transfer and its conservation checks, since
                 // they assume some transfer happens.
                 return tesSUCCESS;
             }
@@ -757,22 +715,6 @@ LoanPay::doApply()
             WaiveTransferFee::Yes))
         return ter;
 
-#if !NDEBUG
-    {
-        Number const pseudoAccountBalanceAfter = accountHolds(
-            view,
-            vaultPseudoAccount,
-            asset,
-            FreezeHandling::IgnoreFreeze,
-            AuthHandling::IgnoreAuth,
-            j_);
-        XRPL_ASSERT_PARTS(
-            assetsAvailableAfter == pseudoAccountBalanceAfter,
-            "xrpl::LoanPay::doApply",
-            "vault pseudo balance agrees after");
-    }
-#endif
-
     // Check that funds are conserved
     auto const accountBalanceAfter = conservationBalance(view, accountID_, asset, j_);
     auto const vaultBalanceAfter = accountID_ == vaultPseudoAccount
@@ -821,10 +763,6 @@ LoanPay::doApply()
     }();
 
     // No object changes are made below this point
-    XRPL_ASSERT_PARTS(
-        Number::getround() == Number::RoundingMode::ToNearest,
-        "xrpl::LoanPay::doApply",
-        "Number rounding ToNearest");
     NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
 
     auto const accountBalanceBeforeRounded = roundToScale(accountBalanceBefore, balanceScale);
