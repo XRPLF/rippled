@@ -65,10 +65,10 @@ protected:
         // Keylet has no default constructor. Fill with an obviously
         // meaningless placeholder; setupSingleLoanVault overwrites the
         // fields that matter.
-        Keylet vaultKeylet{ltACCOUNT_ROOT, uint256{}};
-        Keylet loan1Keylet{ltACCOUNT_ROOT, uint256{}};
+        Keylet vaultKeylet{ltACCOUNT_ROOT, UInt256{}};
+        Keylet loan1Keylet{ltACCOUNT_ROOT, UInt256{}};
         // Only meaningful when impairAndPaySibling == true.
-        Keylet loan2Keylet{ltACCOUNT_ROOT, uint256{}};
+        Keylet loan2Keylet{ltACCOUNT_ROOT, UInt256{}};
         jtx::Account vaultAccount{"vp_vault_pseudo_placeholder"};
         MPTID share;
     };

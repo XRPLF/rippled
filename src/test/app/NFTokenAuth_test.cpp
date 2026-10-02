@@ -561,7 +561,7 @@ public:
         auto const [nftID, minterSellIdx] = mintAndOfferNFT(env, minter, drops(1), 1);
         env(token::acceptSellOffer(a1, minterSellIdx));
 
-        uint256 const sellIdx = keylet::nftokenOffer(a1, SeqProxy::rawSequence(env.seq(a1))).key;
+        UInt256 const sellIdx = keylet::nftokenOffer(a1, SeqProxy::rawSequence(env.seq(a1))).key;
         env(token::createOffer(a1, nftID, usd(100)), Txflags(tfSellNFToken));
 
         if (features[fixEnforceNFTokenTrustlineV2])

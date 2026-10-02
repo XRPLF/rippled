@@ -55,10 +55,10 @@ inline TaggedCache<
     TaggedCache(
         std::string const& name,
         int size,
-        clock_type::duration expiration,
-        clock_type& clock,
+        ClockType::duration expiration,
+        ClockType& clock,
         beast::Journal journal,
-        beast::insight::Collector::ptr const& collector)
+        beast::insight::Collector::Ptr const& collector)
     : journal_(journal)
     , clock_(clock)
     , stats_(
@@ -82,7 +82,7 @@ template <
     class Mutex>
 inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    clock() -> clock_type&
+    clock() -> ClockType&
 {
     return clock_;
 }
@@ -238,8 +238,8 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     // is destroyed but still within the main cache lock.
     std::vector<SweptPointersVector> allStuffToSweep(cache_.partitions());
 
-    clock_type::time_point const now(clock_.now());
-    clock_type::time_point whenExpire;
+    ClockType::time_point const now(clock_.now());
+    ClockType::time_point whenExpire;
 
     auto const start = std::chrono::steady_clock::now();
     {
@@ -253,7 +253,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         {
             whenExpire = now - (targetAge_ * targetSize_ / cache_.size());
 
-            clock_type::duration const minimumAge(std::chrono::seconds(1));
+            ClockType::duration const minimumAge(std::chrono::seconds(1));
             if (whenExpire > (now - minimumAge))
                 whenExpire = now - minimumAge;
 
@@ -497,7 +497,7 @@ inline SharedPointerType
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     fetch(key_type const& key)
 {
-    std::scoped_lock<mutex_type> const l(mutex_);
+    std::scoped_lock<MutexType> const l(mutex_);
     auto ret = initialFetch(key, l);
     if (!ret)
         ++misses_;
@@ -551,7 +551,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     requires IsKeyCache
 {
     std::scoped_lock const lock(mutex_);
-    clock_type::time_point const now(clock_.now());
+    ClockType::time_point const now(clock_.now());
     auto [it, inserted] = cache_.emplace(
         std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(now));
     if (!inserted)
@@ -593,7 +593,7 @@ template <
     class Mutex>
 inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    peekMutex() -> mutex_type&
+    peekMutex() -> MutexType&
 {
     return mutex_;
 }
@@ -721,7 +721,7 @@ template <
     class Mutex>
 inline SharedPointerType
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    initialFetch(key_type const& key, std::scoped_lock<mutex_type> const& l)
+    initialFetch(key_type const& key, std::scoped_lock<MutexType> const& l)
 {
     auto cit = cache_.find(key);
     if (cit == cache_.end())
@@ -786,9 +786,9 @@ template <
 inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     sweepPartition(
-        clock_type::time_point const& whenExpire,
-        [[maybe_unused]] clock_type::time_point const& now,
-        KeyValueCacheType::map_type& partition,
+        ClockType::time_point const& whenExpire,
+        [[maybe_unused]] ClockType::time_point const& now,
+        KeyValueCacheType::MapType& partition,
         SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&)
@@ -864,9 +864,9 @@ template <
 inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     sweepPartition(
-        clock_type::time_point const& whenExpire,
-        clock_type::time_point const& now,
-        KeyOnlyCacheType::map_type& partition,
+        ClockType::time_point const& whenExpire,
+        ClockType::time_point const& now,
+        KeyOnlyCacheType::MapType& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&)
