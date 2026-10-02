@@ -920,9 +920,11 @@ inline constexpr std::array all{success, buildFailed, parameterFailed, timeout};
  * `peer_disconnect_total` reasons -- why a peer connection closed.
  *
  * The split separates a slow peer or path (`large_sendq`), a peer that used
- * up its resource allowance (`charge_resources`), and a topology or network
- * fault (`not_useful`, `ping_timeout`, `read_error`); each calls for a
- * different response.
+ * up its resource allowance (`charge_resources`), a topology or network
+ * fault (`not_useful`, `ping_timeout`), and a failed read (`read_error`);
+ * each calls for a different response. A failed read includes a peer
+ * closing the link, since PeerImp drops a peer without starting a TLS
+ * shutdown; that is why `graceful` is rare between xrpld nodes.
  * `unknown` is the initial value and appears when a teardown path set no
  * cause, so an unattributed disconnect is visible rather than absent.
  */

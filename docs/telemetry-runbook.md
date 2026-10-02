@@ -4150,11 +4150,17 @@ panel it reads.
     - `charge_resources` — **the peer's fault.** The peer's traffic (too many
       messages, costly requests, or bad data) used up its resource allowance,
       so this node cut it off. There is nothing to fix locally.
-    - `not_useful`, `ping_timeout`, `read_error` — topology or network
-      faults. The peer is on a different chain or unreachable, so the fix is
-      the peer set.
+    - `not_useful`, `ping_timeout` — topology or network faults. The peer is
+      on a different chain or unreachable, so the fix is the peer set.
+    - `read_error` — **often just churn.** A read failed. xrpld drops a peer
+      without starting a TLS shutdown, so a peer that drops this node shows
+      up here, not as `graceful`. A network fault, or a malformed or
+      oversized message, also lands here. Watch the Peer Quality rate panels
+      named below for a sudden rise.
     - `graceful`, `shutdown`, `stopping` — normal churn and clean teardown,
-      not faults. A run dominated by these is healthy.
+      not faults. `graceful` is rare between xrpld nodes, for the reason
+      above. A run dominated by these, or by a small `read_error` count, is
+      healthy.
       Use `direction` to tell churn in the peers this node dials from churn
       in the peers that dial it. That panel is a total over the dashboard
       window, so it says how much of each reason but not when. For the
