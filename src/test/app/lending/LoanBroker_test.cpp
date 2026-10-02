@@ -2847,6 +2847,22 @@ class LoanBroker_test : public beast::unit_test::Suite
             BEAST_EXPECT(pseudoBefore - pseudoBalance() == debited);
         }
 
+        // A third-party destination is checked against the rounded amount
+        // actually sent: 1.8e-6 rounds to 1e-6, which fits bob's 1.5e-6 limit
+        // even though the requested amount does not.
+        {
+            Account const bob{"bob"};
+            env.fund(XRP(1'000), bob);
+            env(trust(bob, iou(Number{15, -7})));
+            env.close();
+            Number const coverBefore = coverAvailable();
+            env(coverWithdraw(alice, brokerKeylet.key, iou(Number{18, -7})), kDestination(bob));
+            BEAST_EXPECT(coverBefore - coverAvailable() == (Number{1, -6}));
+            BEAST_EXPECT(Number(env.balance(bob, iou).value()) == (Number{1, -6}));
+            // Undo, so the clawback expectations below stay unchanged.
+            env(coverDeposit(alice, brokerKeylet.key, iou(Number{1, -6})));
+        }
+
         {
             Number const coverBefore = coverAvailable();
             Number const pseudoBefore = pseudoBalance();
