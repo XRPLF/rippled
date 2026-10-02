@@ -830,7 +830,8 @@ public:
      *
      * Guarded, along with the tracker itself, because only the observable-gauge
      * callbacks read it and those exist only in this configuration. Recording
-     * into it is not free: each call takes its lock and inserts an entry.
+     * into it takes no lock, but it is not free: each call reads the clock
+     * and pushes one event onto a ring.
      * @return Reference to the internal ValidationTracker instance.
      */
     [[nodiscard]] ValidationTracker&
@@ -871,9 +872,9 @@ private:
      * Tracks validation agreement between this node and the network.
      *
      * Guarded because reconcile() -- which resolves and then prunes recorded
-     * events -- runs only from the observable-gauge callbacks. Recording
-     * without it accumulates one entry per validated ledger, so the tracker
-     * exists only where something drains it.
+     * events -- runs only from the observable-gauge callbacks. Without it
+     * the rings fill and every later event is dropped, so the tracker is
+     * built only into builds that have the callbacks that drain it.
      */
     ValidationTracker validationTracker_;
 

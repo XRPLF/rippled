@@ -28,8 +28,6 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <helpers/ManualMetricReader.h>
-#include <opentelemetry/metrics/async_instruments.h>
-#include <opentelemetry/metrics/meter.h>
 #include <opentelemetry/metrics/observer_result.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/variant.h>

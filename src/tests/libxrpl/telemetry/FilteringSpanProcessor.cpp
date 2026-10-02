@@ -105,6 +105,10 @@ traceId(std::array<std::uint8_t, otel_trace::TraceId::kSize> const& bytes)
  * Renders an attribute value with its type, such as `int64:7` or
  * `string:"open"`, so one string comparison checks both. Array types the
  * tests never set render as `unrendered`.
+ *
+ * Signed integers go through std::to_string. For a negative value,
+ * libstdc++'s std::format negates an unsigned copy, which the UBSan legs'
+ * unsigned-integer-overflow check reports and stops on.
  */
 struct RenderValue
 {
@@ -117,7 +121,7 @@ struct RenderValue
     std::string
     operator()(std::int32_t value) const
     {
-        return std::format("int32:{}", value);
+        return "int32:" + std::to_string(value);
     }
 
     std::string
@@ -129,7 +133,7 @@ struct RenderValue
     std::string
     operator()(std::int64_t value) const
     {
-        return std::format("int64:{}", value);
+        return "int64:" + std::to_string(value);
     }
 
     std::string
@@ -173,7 +177,7 @@ struct RenderValue
         std::string text;
         for (std::int64_t const value : values)
         {
-            text += std::format("{}{}", text.empty() ? "" : ",", value);
+            text += std::format("{}{}", text.empty() ? "" : ",", std::to_string(value));
         }
         return std::format("int64[]:[{}]", text);
     }

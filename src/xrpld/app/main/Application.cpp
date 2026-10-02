@@ -256,8 +256,8 @@ private:
             lastSample_ = lastSample;
 
             // Always emit the first sample so the series exists downstream
-            // even on an idle node. After that, only report latency >= 10 ms,
-            // so faster samples are never recorded.
+            // even on an idle node. After that, only samples of 10 ms or more
+            // go to event_. lastSample_ is set on every sample, fast ones included.
             if (firstSample_.exchange(false) || lastSample >= 10ms)
                 event_.notify(lastSample);
             if (lastSample >= 500ms)
