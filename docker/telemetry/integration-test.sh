@@ -651,7 +651,10 @@ log "Verifying spans in Tempo..."
 # Check service registration
 services=$(curl -sf --max-time "$CURL_MAX_TIME" "$TEMPO/api/v2/search/tag/resource.service.name/values" |
     jq -r '.tagValues[].value' 2>/dev/null || echo "")
-if echo "$services" | grep -q "xrpld"; then
+# Whole-line match: a substring match would also accept a value that merely
+# contains "xrpld". This endpoint ignores start/end (measured), so its only
+# protection against a previous run is the teardown in Step 1.
+if echo "$services" | grep -Fxq "xrpld"; then
     ok "Service 'xrpld' registered in Tempo"
 else
     fail "Service 'xrpld' NOT found in Tempo (found: $services)"
