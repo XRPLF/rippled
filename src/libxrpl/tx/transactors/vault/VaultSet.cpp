@@ -113,11 +113,12 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // FixedPrecision: AssetsMaximum must be exactly representable on the
-    // Vault's base grid, otherwise associateAsset would silently round the
-    // cap the owner asked for.
+    // With featureLendingProtocolV1_2, AssetsMaximum must be exactly
+    // representable at the Vault's scale (the base grid on FixedPrecision
+    // Vaults, the live scale on existing Legacy/CashBasis Vaults), otherwise
+    // associateAsset would silently round the cap the owner asked for.
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum];
-        assetMax && getVaultVersion(vault) == VaultVersion::FixedPrecision)
+        assetMax && ctx.view.rules().enabled(featureLendingProtocolV1_2))
     {
         Asset const asset = vault->at(sfAsset);
         if (!isOnVaultBaseGrid(asset, *assetMax, getVaultBaseScale(vault)))
