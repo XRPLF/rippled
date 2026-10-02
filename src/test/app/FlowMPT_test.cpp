@@ -2689,10 +2689,13 @@ struct FlowMPT_test : public beast::unit_test::Suite
                 test(t);
         }
 
-        // Cross-currency payment with BookStep as the first step.
-        // BookStep limits the buy amount.
+        // Cross-currency payment with BookStep as the first step. BookStep
+        // limits the buy amount to what the issuer can still issue. That
+        // limits the issuer, not carol's offer: it keeps its funded
+        // remainder, and since the step stops there the issuer's own offer
+        // behind it at the same quality is not reached either.
         {
-            auto test = [&](int sendMax, std::uint16_t dstXRP, std::uint8_t expGwOffers) {
+            auto test = [&](int sendMax) {
                 Env env(*this);
                 env.fund(XRP(1'000), gw, alice, carol);
 
@@ -2708,27 +2711,63 @@ struct FlowMPT_test : public beast::unit_test::Suite
                     Path(~XRP),
                     Txflags(tfPartialPayment | tfNoRippleDirect));
 
-                BEAST_EXPECT(env.balance(alice) == XRP(dstXRP));
+                BEAST_EXPECT(env.balance(alice) == XRP(1'300));
                 BEAST_EXPECT(env.balance(gw, usd) == usd(-300));
                 BEAST_EXPECT(env.balance(carol, usd) == usd(300));
-                BEAST_EXPECT(expectOffers(env, carol, 0));
-                BEAST_EXPECT(expectOffers(env, gw, expGwOffers));
+                BEAST_EXPECT(expectOffers(env, carol, 1, {{usd(100), XRP(100)}}));
+                BEAST_EXPECT(expectOffers(env, gw, 1));
             };
-            // carol's offer is partially consumed - 300USD/300XRP
-            // because available amount to issue is 300USD. gw's
-            // offer is fully consumed because it doesn't change
-            // OutstandingAmount. Both offers are removed from the
-            // order book - carol's offer is unfunded and gw's offer
-            // is fully consumed.
-            test(500, 1'400, 0);
-            // carol's offer is partially consumed - 300USD/300XRP
-            // because available amount to issue is 300USD. gw's
-            // offer is partially consumed because of sendMax limit.
-            // carol's offer is removed from the order book because
-            // it's unfunded. gw's offer remains on the order book
-            // because it's partially consumed and gw has more
-            // funds.
-            test(350, 1'350, 1);
+            test(500);
+            test(350);
+        }
+
+        // Same-quality offers behind the clipped one, with the issuer's own
+        // offer at the back. Once the issuer has nothing left to issue the
+        // step stops: no offer is consumed for zero, deleted, or given an
+        // MPToken.
+        {
+            Account const dan{"dan"};
+            Account const erin{"erin"};
+            auto test = [&](int outstanding) {
+                Env env(*this);
+                env.fund(XRP(1'000), gw, alice, carol, dan, erin);
+                env.close();
+
+                MPT const usd =
+                    MPTTester({.env = env, .issuer = gw, .holders = {carol}, .maxAmt = 300});
+                if (outstanding)
+                    env(pay(gw, carol, usd(outstanding)));
+                env(offer(carol, usd(400), XRP(400)));
+                env.close();
+                env(offer(dan, usd(100), XRP(100)));
+                env.close();
+                env(offer(erin, usd(400), XRP(400)));
+                env.close();
+                env(offer(gw, usd(100), XRP(100)));
+                env.close();
+
+                int const issued = 300 - outstanding;
+                env(pay(gw, alice, XRP(500)),
+                    Sendmax(usd(500)),
+                    Path(~XRP),
+                    Txflags(tfPartialPayment | tfNoRippleDirect),
+                    Ter(issued ? TER{tesSUCCESS} : TER{tecPATH_DRY}));
+                env.close();
+
+                BEAST_EXPECT(env.balance(alice) == XRP(1'000 + issued));
+                BEAST_EXPECT(env.balance(gw, usd) == usd(-300));
+                BEAST_EXPECT(env.balance(carol, usd) == usd(300));
+                BEAST_EXPECT(expectOffers(env, carol, 1, {{usd(400 - issued), XRP(400 - issued)}}));
+                BEAST_EXPECT(expectOffers(env, dan, 1));
+                BEAST_EXPECT(expectOffers(env, erin, 1));
+                BEAST_EXPECT(expectOffers(env, gw, 1));
+                BEAST_EXPECT(!env.le(keylet::mptoken(usd.mpt(), dan)));
+                BEAST_EXPECT(!env.le(keylet::mptoken(usd.mpt(), erin)));
+            };
+            // carol is clipped to 300 and keeps 100/100
+            test(0);
+            // nothing left to issue, the step is dry
+            test(300);
         }
     }
 

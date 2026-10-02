@@ -855,7 +855,11 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 {
                     // BookStep is the first step (an issuer is making a
                     // cross-currency payment). Limit to the funds available to
-                    // issue, otherwise OutstandingAmount may overflow.
+                    // issue, otherwise OutstandingAmount may overflow. This
+                    // limits the taker, not the offer: its remainder is still
+                    // funded by the owner, so the callback keeps it. With
+                    // nothing left to issue there is nothing to consume, so
+                    // stop before touching the offer.
                     auto const available = toAmount<TIn>(accountFunds(
                         sb,
                         issuer,
@@ -863,8 +867,13 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                         FreezeHandling::IgnoreFreeze,
                         AuthHandling::IgnoreAuth,
                         j_));
+                    if (available <= beast::kZero)
+                        return false;
                     if (stpAmt.in > available)
+                    {
+                        inLimited = true;
                         limitIn = available;
+                    }
                 }
                 else if (maxIn_ && ofrAmt.in > *maxIn_)
                 {
@@ -1143,9 +1152,10 @@ BookStep<TIn, TOut, TDerived>::revImp(
             remainingOut = out - result.out;
             this->consumeOffer(sb, offer, ofrAmt, stpAmt, ownerGives);
             // return true b/c even if the payment is satisfied,
-            // we need to consume the offer. An offer limited to the issuance
-            // cap is not consumed, though: its remainder is still funded, and
-            // no more of that MPT can flow through this step anyway.
+            // we need to consume the offer. An offer limited by what the
+            // issuer can issue is not consumed, though: its remainder is still
+            // funded, and no more of that MPT can flow through this step
+            // anyway.
             return !inLimited;
         }
 
@@ -1281,8 +1291,8 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
             lastOut = savedOutsAdj.insert(stpAmt.out);
             resultAdj = TAmounts<TIn, TOut>(sum(savedInsAdj), sum(savedOutsAdj));
             // consume the offer even if stepAmt.in == remainingIn, unless it
-            // was limited to the issuance cap: its remainder is still funded
-            // and must stay on the book.
+            // was limited by what the issuer can issue: its remainder is
+            // still funded and must stay on the book.
             processMore = !inLimited;
         }
         else
