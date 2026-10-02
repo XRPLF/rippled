@@ -445,8 +445,14 @@ setIssuerMirrorEpoch(SLE const& issuance, SLE& mptoken)
 
     // Unlike the auditor mirror, the issuer mirror is not optional: every
     // confidential MPToken carries one, so there is no existence check here.
+    //
+    // sfIssuerMirrorEncryptionKey and sfIssuerKeyMirrorEpoch must be present together. At epoch 0
+    // both stay absent; recover that key via sfInitialIssuerEncryptionKey instead.
     if (auto const epoch = issuance[~sfIssuerKeyEpoch].value_or(0); epoch != 0)
+    {
         mptoken[sfIssuerKeyMirrorEpoch] = epoch;
+        mptoken[sfIssuerMirrorEncryptionKey] = issuance[sfIssuerEncryptionKey];
+    }
 }
 
 void

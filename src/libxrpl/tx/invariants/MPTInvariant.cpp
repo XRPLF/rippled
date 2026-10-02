@@ -1,6 +1,7 @@
 #include <xrpl/tx/invariants/MPTInvariant.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -10,6 +11,7 @@
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -630,6 +632,29 @@ ValidConfidentialMPToken::visitEntry(
         {
             changes_[id].changesConfidentialFields = true;
         }
+
+        // Record the after-state MPToken so finalize() can evaluate the mirror
+        // key invariants against its issuance.
+        change.mptokens.push_back(after);
+
+        // A transaction that rewrites sfIssuerEncryptedBalance without
+        // advancing sfIssuerKeyMirrorEpoch must leave sfIssuerMirrorEncryptionKey
+        // unchanged.
+        if (before && before->getType() == ltMPTOKEN)
+        {
+            auto const issuerBalanceBefore = (*before)[~sfIssuerEncryptedBalance];
+            auto const issuerBalanceAfter = (*after)[~sfIssuerEncryptedBalance];
+            auto const mirrorEpochBefore = (*before)[~sfIssuerKeyMirrorEpoch].value_or(0);
+            auto const mirrorEpochAfter = (*after)[~sfIssuerKeyMirrorEpoch].value_or(0);
+            auto const mirrorKeyBefore = (*before)[~sfIssuerMirrorEncryptionKey];
+            auto const mirrorKeyAfter = (*after)[~sfIssuerMirrorEncryptionKey];
+
+            if (issuerBalanceAfter && issuerBalanceBefore != issuerBalanceAfter &&
+                mirrorEpochAfter <= mirrorEpochBefore && mirrorKeyBefore != mirrorKeyAfter)
+            {
+                change.mirrorKeyChangedWithoutEpoch = true;
+            }
+        }
     }
 
     if (before && before->getType() == ltMPTOKEN_ISSUANCE)
@@ -680,6 +705,20 @@ ValidConfidentialMPToken::visitEntry(
             if (versionBefore == versionAfter)
                 changes_[id].badVersion = true;
         }
+    }
+
+    if (before && after && before->getType() == ltMPTOKEN_ISSUANCE &&
+        after->getType() == ltMPTOKEN_ISSUANCE)
+    {
+        uint192 const id = getMptID(after);
+
+        // sfInitialIssuerEncryptionKey is immutable once written. If it was
+        // present before the transaction, it must be present and unchanged after.
+        auto const initialKeyBefore = (*before)[~sfInitialIssuerEncryptionKey];
+        auto const initialKeyAfter = (*after)[~sfInitialIssuerEncryptionKey];
+
+        if (initialKeyBefore.has_value() && initialKeyBefore != initialKeyAfter)
+            changes_[id].initialIssuerKeyMutated = true;
     }
 }
 
@@ -804,6 +843,96 @@ ValidConfidentialMPToken::finalize(
                 << "Invariant failed: MPToken sfConfidentialBalanceVersion not updated when "
                    "sfConfidentialBalanceSpending changed";
             return false;
+        }
+
+        // Key rotation invariants for sfInitialIssuerEncryptionKey and
+        // sfIssuerMirrorEncryptionKey.
+        if (view.rules().enabled(featureConfidentialMPTKeyRotation))
+        {
+            // sfInitialIssuerEncryptionKey is present iff sfIssuerKeyEpoch
+            // is present, and if present must be a 33-byte compressed point.
+            bool const hasInitialKey = issuance->isFieldPresent(sfInitialIssuerEncryptionKey);
+            bool const hasIssuerKeyEpoch = issuance->isFieldPresent(sfIssuerKeyEpoch);
+            if (hasInitialKey != hasIssuerKeyEpoch)
+            {
+                JLOG(j.fatal()) << "Invariant failed: sfInitialIssuerEncryptionKey presence does "
+                                   "not match sfIssuerKeyEpoch presence for MPT "
+                                << to_string(id);
+                return false;
+            }
+            if (hasInitialKey &&
+                !isValidCompressedECPoint((*issuance)[sfInitialIssuerEncryptionKey]))
+            {
+                JLOG(j.fatal()) << "Invariant failed: sfInitialIssuerEncryptionKey is not a valid "
+                                   "compressed EC point for MPT "
+                                << to_string(id);
+                return false;
+            }
+
+            // sfInitialIssuerEncryptionKey is immutable once written.
+            if (checks.initialIssuerKeyMutated)
+            {
+                JLOG(j.fatal()) << "Invariant failed: sfInitialIssuerEncryptionKey changed on MPT "
+                                << to_string(id);
+                return false;
+            }
+
+            for (auto const& mptokenPtr : checks.mptokens)
+            {
+                auto const& mptoken = *mptokenPtr;
+                bool const hasMirrorKey = mptoken.isFieldPresent(sfIssuerMirrorEncryptionKey);
+                bool const hasMirrorEpoch = mptoken.isFieldPresent(sfIssuerKeyMirrorEpoch);
+
+                // sfIssuerMirrorEncryptionKey is present iff
+                // sfIssuerKeyMirrorEpoch is present.
+                if (hasMirrorKey != hasMirrorEpoch)
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: sfIssuerMirrorEncryptionKey presence does not match "
+                           "sfIssuerKeyMirrorEpoch presence for MPT "
+                        << to_string(id);
+                    return false;
+                }
+
+                if (hasMirrorKey)
+                {
+                    // sfIssuerMirrorEncryptionKey must be a 33-byte
+                    // compressed point and sfIssuerEncryptedBalance must be present.
+                    if (!isValidCompressedECPoint(mptoken[sfIssuerMirrorEncryptionKey]) ||
+                        !mptoken.isFieldPresent(sfIssuerEncryptedBalance))
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: sfIssuerMirrorEncryptionKey is malformed or has "
+                               "no issuer mirror ciphertext for MPT "
+                            << to_string(id);
+                        return false;
+                    }
+
+                    // a mirror current with the issuance's issuer key epoch
+                    // must be encrypted under the issuance's issuer key.
+                    if (mptoken[sfIssuerKeyMirrorEpoch] ==
+                            (*issuance)[~sfIssuerKeyEpoch].value_or(0) &&
+                        Slice(mptoken[sfIssuerMirrorEncryptionKey]) !=
+                            Slice((*issuance)[sfIssuerEncryptionKey]))
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: current issuer mirror not encrypted "
+                                           "under the registered issuer key for MPT "
+                                        << to_string(id);
+                        return false;
+                    }
+                }
+            }
+
+            // Rewriting sfIssuerEncryptedBalance without advancing
+            // sfIssuerKeyMirrorEpoch must leave sfIssuerMirrorEncryptionKey
+            // unchanged.
+            if (checks.mirrorKeyChangedWithoutEpoch)
+            {
+                JLOG(j.fatal()) << "Invariant failed: sfIssuerMirrorEncryptionKey changed "
+                                   "without advancing the mirror epoch for MPT "
+                                << to_string(id);
+                return false;
+            }
         }
     }
 

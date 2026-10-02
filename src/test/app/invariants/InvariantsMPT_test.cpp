@@ -7,6 +7,7 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 
+#include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -1632,11 +1633,329 @@ class InvariantsMPT_test : public InvariantsBase
             precloseOrphan);
     }
 
+    void
+    testConfidentialMPTKeyRotation()
+    {
+        using namespace test::jtx;
+        testcase << "ValidConfidentialMPToken key rotation";
+
+        MPTID mptID;
+
+        // Generate an MPT with privacy, issue 100 tokens to A2.
+        // Perform a confidential conversion to populate encrypted state.
+        auto const precloseConfidential =
+            [&mptID](Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance});
+            mptID = mpt.issuanceID();
+
+            mpt.authorize({.account = a2});
+            mpt.pay(a1, a2, 100);
+
+            mpt.generateKeyPair(a1);
+            mpt.set({.account = a1, .issuerPubKey = mpt.getPubKey(a1)});
+
+            mpt.generateKeyPair(a2);
+            mpt.convert({
+                .account = a2,
+                .amt = 100,
+                .holderPubKey = mpt.getPubKey(a2),
+            });
+            return true;
+        };
+
+        // --- Key rotation invariants (featureConfidentialMPTKeyRotation) ---
+
+        // sfInitialIssuerEncryptionKey present without sfIssuerKeyEpoch.
+        doInvariantCheck(
+            {"sfInitialIssuerEncryptionKey presence does not match sfIssuerKeyEpoch presence"},
+            [&mptID](Account const&, Account const&, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                if (!sleIssuance)
+                    return false;
+                // Store a valid key but leave the epoch absent.
+                sleIssuance->setFieldVL(
+                    sfInitialIssuerEncryptionKey, sleIssuance->getFieldVL(sfIssuerEncryptionKey));
+                ac.view().update(sleIssuance);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_ISSUANCE_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // sfIssuerKeyEpoch present without sfInitialIssuerEncryptionKey.
+        doInvariantCheck(
+            {"sfInitialIssuerEncryptionKey presence does not match sfIssuerKeyEpoch presence"},
+            [&mptID](Account const&, Account const&, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                if (!sleIssuance)
+                    return false;
+                sleIssuance->setFieldU32(sfIssuerKeyEpoch, 1);
+                ac.view().update(sleIssuance);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_ISSUANCE_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // sfInitialIssuerEncryptionKey present but not a valid compressed point.
+        doInvariantCheck(
+            {"sfInitialIssuerEncryptionKey is not a valid compressed EC point"},
+            [&mptID](Account const&, Account const&, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                if (!sleIssuance)
+                    return false;
+                sleIssuance->setFieldU32(sfIssuerKeyEpoch, 1);
+                sleIssuance->setFieldVL(sfInitialIssuerEncryptionKey, Blob(33, 0x00));
+                ac.view().update(sleIssuance);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_ISSUANCE_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // sfInitialIssuerEncryptionKey is immutable once written. Set up a
+        // rotated issuance (epoch 1) so the initial key is present, then mutate it.
+        auto const precloseRotatedIssuance =
+            [&mptID](Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance});
+            mptID = mpt.issuanceID();
+            mpt.generateKeyPair(a1);
+            mpt.set({.account = a1, .issuerPubKey = mpt.getPubKey(a1)});
+            // Rotate the issuer key to epoch 1, preserving the epoch 0 key as
+            // sfInitialIssuerEncryptionKey.
+            mpt.generateKeyPair(a1);
+            mpt.set({.account = a1, .issuerPubKey = mpt.getPubKey(a1)});
+            return true;
+        };
+
+        doInvariantCheck(
+            {"sfInitialIssuerEncryptionKey changed on MPT"},
+            [&mptID](Account const&, Account const&, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                if (!sleIssuance || !sleIssuance->isFieldPresent(sfInitialIssuerEncryptionKey))
+                    return false;
+                // Overwrite the immutable initial key with the (different, valid)
+                // current issuer key.
+                sleIssuance->setFieldVL(
+                    sfInitialIssuerEncryptionKey, sleIssuance->getFieldVL(sfIssuerEncryptionKey));
+                ac.view().update(sleIssuance);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_ISSUANCE_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseRotatedIssuance);
+
+        // sfIssuerMirrorEncryptionKey present without sfIssuerKeyMirrorEpoch.
+        doInvariantCheck(
+            {"sfIssuerMirrorEncryptionKey presence does not match sfIssuerKeyMirrorEpoch presence"},
+            [&mptID](Account const&, Account const& a2, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleIssuance || !sleToken)
+                    return false;
+                // Add a mirror key but leave the mirror epoch absent.
+                sleToken->setFieldVL(
+                    sfIssuerMirrorEncryptionKey, sleIssuance->getFieldVL(sfIssuerEncryptionKey));
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // sfIssuerMirrorEncryptionKey present but not a valid compressed point.
+        doInvariantCheck(
+            {"sfIssuerMirrorEncryptionKey is malformed or has no issuer mirror ciphertext"},
+            [&mptID](Account const&, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                sleToken->setFieldU32(sfIssuerKeyMirrorEpoch, 5);
+                sleToken->setFieldVL(sfIssuerMirrorEncryptionKey, Blob(33, 0x00));
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // a current issuer mirror (epoch == issuance issuer key epoch) must
+        // be encrypted under the issuance's issuer key.
+        Buffer distinctValidKey;
+        auto const precloseConfidentialCapture =
+            [&mptID, &distinctValidKey](Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance});
+            mptID = mpt.issuanceID();
+            mpt.authorize({.account = a2});
+            mpt.pay(a1, a2, 100);
+            mpt.generateKeyPair(a1);
+            mpt.set({.account = a1, .issuerPubKey = mpt.getPubKey(a1)});
+            mpt.generateKeyPair(a2);
+            mpt.convert({.account = a2, .amt = 100, .holderPubKey = mpt.getPubKey(a2)});
+            // A valid compressed point distinct from the issuer key.
+            distinctValidKey = *mpt.getPubKey(a2);
+            return true;
+        };
+
+        doInvariantCheck(
+            {"current issuer mirror not encrypted under the registered issuer key"},
+            [&mptID, &distinctValidKey](Account const&, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                // Mirror epoch equals the issuance issuer key epoch (both 0), but
+                // the mirror key does not match the issuance issuer key.
+                sleToken->setFieldU32(sfIssuerKeyMirrorEpoch, 0);
+                sleToken->setFieldVL(sfIssuerMirrorEncryptionKey, distinctValidKey);
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidentialCapture);
+
+        // rewriting sfIssuerEncryptedBalance without advancing
+        // sfIssuerKeyMirrorEpoch must leave sfIssuerMirrorEncryptionKey unchanged.
+        // Set up a holder whose issuer mirror is stale (mirror epoch 1, issuance
+        // issuer key epoch 2).
+        auto const precloseStaleMirror =
+            [&mptID](Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance});
+            mptID = mpt.issuanceID();
+            mpt.authorize({.account = a2});
+            mpt.pay(a1, a2, 100);
+            // Register the issuer key, then rotate to epoch 1.
+            mpt.generateKeyPair(a1);
+            mpt.set({.account = a1, .issuerPubKey = mpt.getPubKey(a1)});
+            mpt.generateKeyPair(a1);
+            mpt.set({.account = a1, .issuerPubKey = mpt.getPubKey(a1)});
+            // Bob initializes at epoch 1 (current issuer mirror).
+            mpt.generateKeyPair(a2);
+            mpt.convert({.account = a2, .amt = 100, .holderPubKey = mpt.getPubKey(a2)});
+            // Rotate again to epoch 2, leaving Bob's issuer mirror stale at epoch 1.
+            mpt.generateKeyPair(a1);
+            mpt.set({.account = a1, .issuerPubKey = mpt.getPubKey(a1)});
+            return true;
+        };
+
+        doInvariantCheck(
+            {"sfIssuerMirrorEncryptionKey changed without advancing the mirror epoch"},
+            [&mptID](Account const&, Account const& a2, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleIssuance || !sleToken)
+                    return false;
+                // Rewrite the issuer ciphertext to a new value.
+                auto balance = sleToken->getFieldVL(sfIssuerEncryptedBalance);
+                if (balance.empty())
+                    return false;
+                balance[0] ^= 0xFF;
+                sleToken->setFieldVL(sfIssuerEncryptedBalance, balance);
+                // Change the mirror key (to the epoch 2 issuer key) without
+                // advancing the mirror epoch (stays at 1).
+                sleToken->setFieldVL(
+                    sfIssuerMirrorEncryptionKey, sleIssuance->getFieldVL(sfIssuerEncryptionKey));
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseStaleMirror);
+
+        // Rewriting sfIssuerEncryptedBalance while decreasing
+        // sfIssuerKeyMirrorEpoch. Setup: Bob at mirror epoch 1, issuance issuer key epoch 2.
+        doInvariantCheck(
+            {"sfIssuerMirrorEncryptionKey changed without advancing the mirror epoch"},
+            [&mptID](Account const&, Account const& a2, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleIssuance || !sleToken)
+                    return false;
+                // Rewrite the issuer ciphertext to a new value.
+                auto balance = sleToken->getFieldVL(sfIssuerEncryptedBalance);
+                if (balance.empty())
+                    return false;
+                balance[0] ^= 0xFF;
+                sleToken->setFieldVL(sfIssuerEncryptedBalance, balance);
+                // Decrease the mirror epoch (1 -> 0) while changing the mirror
+                // key to the issuance's current (epoch 2) issuer key.
+                sleToken->setFieldU32(sfIssuerKeyMirrorEpoch, 0);
+                sleToken->setFieldVL(
+                    sfIssuerMirrorEncryptionKey, sleIssuance->getFieldVL(sfIssuerEncryptionKey));
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseStaleMirror);
+
+        // Multiple holders under the same issuance. Corrupt the MPToken that is visited first
+        // (smaller key) so a regression that only retains the last-visited entry would miss it.
+        Account const a3{"A3"};
+        auto const precloseTwoHolders =
+            [&mptID, &a3](Account const& a1, Account const& a2, Env& env) -> bool {
+            env.fund(XRP(1000), a3);
+            MPTTester mpt(env, a1, {.holders = {a2, a3}, .fund = false});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance});
+            mptID = mpt.issuanceID();
+            mpt.authorize({.account = a2});
+            mpt.authorize({.account = a3});
+            mpt.pay(a1, a2, 100);
+            mpt.pay(a1, a3, 100);
+            mpt.generateKeyPair(a1);
+            mpt.set({.account = a1, .issuerPubKey = mpt.getPubKey(a1)});
+            mpt.generateKeyPair(a2);
+            mpt.convert({.account = a2, .amt = 100, .holderPubKey = mpt.getPubKey(a2)});
+            mpt.generateKeyPair(a3);
+            mpt.convert({.account = a3, .amt = 100, .holderPubKey = mpt.getPubKey(a3)});
+            return true;
+        };
+
+        doInvariantCheck(
+            {"sfIssuerMirrorEncryptionKey presence does not match sfIssuerKeyMirrorEpoch presence"},
+            [&mptID, &a3](Account const&, Account const& a2, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                auto sleToken2 = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                auto sleToken3 = ac.view().peek(keylet::mptoken(mptID, a3.id()));
+                if (!sleIssuance || !sleToken2 || !sleToken3)
+                    return false;
+                // The MPToken visited first (smaller key) is corrupted; the
+                // other is touched but left valid.
+                auto& corrupt = sleToken2->key() < sleToken3->key() ? sleToken2 : sleToken3;
+                auto& other = sleToken2->key() < sleToken3->key() ? sleToken3 : sleToken2;
+                // Add a mirror key but leave the mirror epoch absent.
+                corrupt->setFieldVL(
+                    sfIssuerMirrorEncryptionKey, sleIssuance->getFieldVL(sfIssuerEncryptionKey));
+                ac.view().update(corrupt);
+                // Touch the other holder's MPToken so finalize() sees both.
+                ac.view().update(other);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseTwoHolders);
+    }
+
 public:
     void
     run() override
     {
         testConfidentialMPTTransfer();
+        testConfidentialMPTKeyRotation();
         testMPT();
     }
 };
