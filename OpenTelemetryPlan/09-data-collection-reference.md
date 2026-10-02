@@ -92,14 +92,12 @@ Code in `libxrpl` cannot use these macros and always goes through `beast::insigh
 
 ### 1.1 Complete Span Inventory (42 spans)
 
-> **41 emitted span-name families.** The count is derived from the `*SpanNames.h`
+> **42 emitted span-name families.** The count is derived from the `*SpanNames.h`
 > headers and their call sites, one family per distinct span name
 > (`rpc.command.<name>` and `grpc.<MethodName>` each count once, since the
 > command / method name is a parameter of a single family). The tables below list
-> all 41: RPC 5, gRPC 1, transaction 6, TxQ 6, consensus 13, ledger 4, peer 2,
-> pathfind 4. The Phase-10 validation harness
-> (`docker/telemetry/workload/expected_spans.json`) catalogues **40** of them —
-> `rpc.ws_upgrade` has no entry.
+> all 42: RPC 6, gRPC 1, transaction 6, TxQ 6, consensus 13, ledger 4, peer 2,
+> pathfind 4. The Phase-10 validation harness lists the families it checks in `docker/telemetry/workload/expected_spans.json`, and its `total_span_types` field gives their number.
 
 > **See also**: [02-design-decisions.md §2.3](./02-design-decisions.md#23-span-naming-conventions) for naming conventions and the full span catalog with rationale. [docs/telemetry-runbook.md § Protocol Span Flow](../docs/telemetry-runbook.md#protocol-span-flow) for the span flow diagrams (the former `04-code-samples.md` §4.6 was deleted).
 
@@ -1196,28 +1194,21 @@ Phase 10 builds a 5-node validator docker-compose harness with RPC load generato
 
 | Category                  | Expected Count      | Validation Method                |
 | ------------------------- | ------------------- | -------------------------------- |
-| Trace spans               | 40 of 41 emitted    | Jaeger/Tempo API query           |
-| Span attributes           | 67 required         | Per-span attribute assertion     |
+| Trace spans               | One per entry       | Tempo API query                  |
+| Span attributes           | Required, per span  | Per-span attribute assertion     |
 | Legacy `*` families       | ~270 (≈224 traffic) | Prometheus `__name__` query      |
 | Native MetricsRegistry    | 35 instruments      | Prometheus query                 |
 | Call-site `XRPL_METRIC_*` | 7 instruments       | Prometheus query                 |
 | Per-job-type gauges       | 105 (35 types × 3)  | Prometheus `__name__` query      |
 | SpanMetrics RED           | 4 per span          | Prometheus query                 |
-| Grafana dashboards        | 14 of 15 on disk    | Dashboard API "no data" check    |
+| Grafana dashboards        | Each listed uid     | Dashboard API load + panel count |
 | Log-trace links           | Present             | Loki query + Tempo reverse check |
 
-> **These are the harness's numbers, not the code's, and three of them differ.**
-> `docker/telemetry/workload/expected_spans.json` carries 40 span entries against
-> the **41** families the code emits ([§1.1](#11-complete-span-inventory-41-spans)) —
-> `rpc.ws_upgrade` has no entry — and 67 distinct required attributes (the
-> manifest's own `total_unique_attributes: 58` field is stale).
-> `expected_metrics.json` asserts 36 metric entries and 14 dashboard uids against
-> the **15** dashboard JSONs in `docker/telemetry/grafana/dashboards/`;
-> `log-derived-insights` is the unasserted one. The 35 native instruments match
-> the tables in
-> [§Phase 9: OTel SDK-Exported Metrics](#phase-9-otel-sdk-exported-metrics-metricsregistry)
-> and the Phase 7+ section exactly, counting each labeled gauge family
-> (`nodestore_state`, `cache_metrics`, …) once.
+> **The span and dashboard rows count manifest entries, so they quote no number.** The counts change from branch to branch. `docker/telemetry/workload/expected_spans.json`, added on the phase-10 branch, has one entry per span-name family it checks; `rpc.command.*` and `grpc.*` are one entry each. Its `total_span_types` field is the number of entries, and `total_unique_attributes` is the number of distinct keys across the entries' `required_attributes` lists. `test_contract_totals_count_its_span_entries` in `docker/telemetry/workload/test_validate_telemetry.py` fails when either total does not match the entries. The full emitted span inventory is in [§1.1](#11-complete-span-inventory-42-spans).
+>
+> `expected_metrics.json` lists the dashboard uids under `grafana_dashboards.uids`. The dashboard check loads each uid through the Grafana API and passes when the dashboard has at least one panel (rows are not counted). It checks provisioning, not panel data. `log-derived-insights` reads Loki, and nothing asserts its panel data.
+>
+> The 35 native instruments match the tables in [§Phase 9: OTel SDK-Exported Metrics](#phase-9-otel-sdk-exported-metrics-metricsregistry) and the Phase 7+ section exactly, counting each labeled gauge family (`nodestore_state`, `cache_metrics`, …) once.
 >
 > Note that `ledgers_closed_total` appears in **both** instrument rows: it is
 > created as a `MetricsRegistry` member (in `MetricsRegistry::initSyncInstruments()`, whose
@@ -2149,9 +2140,9 @@ messages are traced.
 
 **Status**: NOT IMPLEMENTED. The span catalog in `02` §2.3.2 is a design
 inventory, not a statement of what emits; §2.3.2 now marks which entries are
-live. Instrumenting the remaining families would change the **41 span families**
-counted in [§1.1](#11-complete-span-inventory-41-spans) and the **40** catalogued
-in `docker/telemetry/workload/expected_spans.json`, so it is scoped as its own
+live. Instrumenting the remaining families would change the span families
+counted in [§1.1](#11-complete-span-inventory-42-spans) and the entries in
+`docker/telemetry/workload/expected_spans.json`, so it is scoped as its own
 change rather than folded into a metric task.
 
 ### 6.5 PeerFinder slot and cache metrics: NOT IMPLEMENTED
