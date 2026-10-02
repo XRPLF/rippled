@@ -529,5 +529,53 @@ TEST_F(VaultBalance, credit_to_posterior_scale_ignores_ambient_rounding_mode)
     EXPECT_EQ(Number(credit), exactDownwardCredit);
 }
 
+// creditToPosteriorAvailableScale returns
+// floor16(AssetsAvailable + raw) - AssetsAvailable, never finer than -Scale.
+
+TEST_F(VaultBalance, credit_to_posterior_available_scale_integral_passes_through)
+{
+    auto const vault = makeVault(xrpIssue(), Number{1'000}, VaultVersion::FixedPrecision);
+    STAmount const credit =
+        creditToPosteriorAvailableScale(vault, Number{250}, Number::RoundingMode::Downward);
+    EXPECT_EQ(credit, STAmount(xrpIssue(), 250));
+}
+
+TEST_F(VaultBalance, credit_to_posterior_available_scale_floors_to_base_grid)
+{
+    // Scale 6: the base grid is 1e-6, and AssetsAvailable is small enough
+    // that the posterior grid is the base grid.
+    auto const vault = iouVault(Number{0}, Number{100});
+    STAmount const credit = creditToPosteriorAvailableScale(
+        vault, Number{12'345'678, -7}, Number::RoundingMode::Downward);
+    EXPECT_EQ(credit, iouAmount(Number{1'234'567, -6}));
+}
+
+TEST_F(VaultBalance, credit_to_posterior_available_scale_floors_the_sum_across_power_of_ten)
+{
+    // 9999999999.999999 + 0.000011 crosses 10^10, where the 16-digit grid is
+    // 1e-5. Flooring the delta alone would give 0.00001; flooring the sum
+    // gives 10000000000.00001, so the credit is exactly 0.000011.
+    auto const vault = iouVault(Number{0}, Number{9'999'999'999'999'999, -6});
+    STAmount const credit =
+        creditToPosteriorAvailableScale(vault, Number{11, -6}, Number::RoundingMode::Downward);
+    EXPECT_EQ(credit, iouAmount(Number{11, -6}));
+    EXPECT_EQ(
+        STAmount(iou_, Number{9'999'999'999'999'999, -6} + Number(credit)),
+        iouAmount(Number{1'000'000'000'000'001, -5}));
+}
+
+TEST_F(VaultBalance, credit_to_posterior_available_scale_uses_the_exact_raw_amount)
+{
+    // raw has 17 significant digits. Exact: 0.000009 + 12345678901.234561 =
+    // 12345678901.23457 on the 1e-5 grid, so the credit is
+    // 12345678901.234561, stored as 12345678901.23456. Rounding raw to 16
+    // digits first (12345678901.23456) would floor the sum to
+    // 12345678901.23456 and give a credit one unit lower, 12345678901.23455.
+    auto const vault = iouVault(Number{0}, Number{9, -6});
+    STAmount const credit = creditToPosteriorAvailableScale(
+        vault, Number{12'345'678'901'234'561, -6}, Number::RoundingMode::Downward);
+    EXPECT_EQ(credit, iouAmount(Number{1'234'567'890'123'456, -5}));
+}
+
 }  // namespace
 }  // namespace xrpl
