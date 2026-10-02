@@ -2739,23 +2739,27 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         }
         else if (isTrusted || !app_.getFeeTrack().isLoadedLocal())
         {
-            // Set before the handle is moved into the job below.
+            std::string const name = isTrusted ? "ChkTrust" : "ChkUntrust";
+
+            std::weak_ptr<PeerImp> const weak = shared_from_this();
+            // The job holds its own reference to the span. The span is still
+            // open when addJob() returns. validation_receive_status then
+            // records whether the job queue took the job. The job may already
+            // be running by then. The SDK span takes its lock for each
+            // attribute write.
+            bool const queued = app_.getJobQueue().addJob(
+                isTrusted ? JtValidationT : JtValidationUt, name, [weak, val, m, key, sp = span]() {
+                    if (auto peer = weak.lock())
+                        peer->checkValidation(val, key, m);
+                });
             if (span && *span)
             {
                 span->setAttribute(
                     telemetry::consensus::span::attr::validationReceiveStatus,
-                    telemetry::consensus::span::val::validationQueued);
+                    queued ? std::string_view{telemetry::consensus::span::val::validationQueued}
+                           : std::string_view{
+                                 telemetry::consensus::span::val::validationDroppedQueueStopping});
             }
-            std::string const name = isTrusted ? "ChkTrust" : "ChkUntrust";
-
-            std::weak_ptr<PeerImp> const weak = shared_from_this();
-            app_.getJobQueue().addJob(
-                isTrusted ? JtValidationT : JtValidationUt,
-                name,
-                [weak, val, m, key, sp = std::move(span)]() {
-                    if (auto peer = weak.lock())
-                        peer->checkValidation(val, key, m);
-                });
         }
         else
         {
