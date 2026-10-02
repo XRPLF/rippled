@@ -2991,6 +2991,16 @@ TEST(MetricMacros, nodestore_state_gauge_observes_exact_derived_means)
         .fetchCount = 1000,
         .fetchDurationUs = 1'000'000};  // 1 s over 1000 fetches -> 1000 us
 
+    // The constant `backend` label the production callback adds to every
+    // point. Static, so the captureless callback below reads it without a
+    // capture.
+    static constexpr std::string_view kBackend = "NuDB";
+
+    // Lookup key for one series: its `metric` value plus that backend.
+    auto const series = [](std::string const& field) {
+        return attrs("metric", field, "backend", std::string{kBackend});
+    };
+
     // Registers the production callback against one fresh provider and returns
     // its single collection, so every scenario is measured in isolation.
     auto collectWith = [](NodeStoreTotals& state) {
@@ -3001,10 +3011,15 @@ TEST(MetricMacros, nodestore_state_gauge_observes_exact_derived_means)
         gauge->AddCallback(
             [](opentelemetry::metrics::ObserverResult result, void* state) {
                 auto const* self = static_cast<NodeStoreTotals const*>(state);
+                // The same two labels as the production lambda in
+                // AppMetricGauges::registerNodeStoreGauge.
                 auto observe = [&](char const* field, std::int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                        ->Observe(value, {{telemetry::label::metric, field}});
+                        ->Observe(
+                            value,
+                            {{telemetry::label::metric, field},
+                             {telemetry::label::backend, std::string{kBackend}}});
                 };
                 // The four cumulative totals, observed unconditionally: for a
                 // total, zero is the meaningful "nothing yet" reading.
@@ -3038,25 +3053,25 @@ TEST(MetricMacros, nodestore_state_gauge_observes_exact_derived_means)
     // Exactly six series: the two means and the four cumulative totals that let
     // a dashboard recover interval latency from them.
     ASSERT_EQ(busy.at("nodestore_state").size(), 6u);
-    EXPECT_EQ(gaugeValue(busy, "nodestore_state", attrs("metric", "write_mean_us")), 4000);
-    EXPECT_EQ(gaugeValue(busy, "nodestore_state", attrs("metric", "read_mean_us")), 1000);
-    EXPECT_EQ(gaugeValue(busy, "nodestore_state", attrs("metric", "node_writes")), 500);
-    EXPECT_EQ(gaugeValue(busy, "nodestore_state", attrs("metric", "node_reads_total")), 1000);
-    EXPECT_EQ(
-        gaugeValue(busy, "nodestore_state", attrs("metric", "node_writes_duration_us")), 2'000'000);
-    EXPECT_EQ(
-        gaugeValue(busy, "nodestore_state", attrs("metric", "node_reads_duration_us")), 1'000'000);
+    EXPECT_EQ(gaugeValue(busy, "nodestore_state", series("write_mean_us")), 4000);
+    EXPECT_EQ(gaugeValue(busy, "nodestore_state", series("read_mean_us")), 1000);
+    EXPECT_EQ(gaugeValue(busy, "nodestore_state", series("node_writes")), 500);
+    EXPECT_EQ(gaugeValue(busy, "nodestore_state", series("node_reads_total")), 1000);
+    EXPECT_EQ(gaugeValue(busy, "nodestore_state", series("node_writes_duration_us")), 2'000'000);
+    EXPECT_EQ(gaugeValue(busy, "nodestore_state", series("node_reads_duration_us")), 1'000'000);
 
     // The write mean is the signal this pair exists for, and it must be legible
     // next to the read mean rather than merely present.
     EXPECT_GT(
-        gaugeValue(busy, "nodestore_state", attrs("metric", "write_mean_us")),
-        gaugeValue(busy, "nodestore_state", attrs("metric", "read_mean_us")));
+        gaugeValue(busy, "nodestore_state", series("write_mean_us")),
+        gaugeValue(busy, "nodestore_state", series("read_mean_us")));
 
-    // Single fixed-cardinality label group, keyed exactly `metric`.
+    // Two fixed-cardinality labels per series: `metric` and the constant
+    // `backend`.
     auto const& firstKey = busy.at("nodestore_state").begin()->first;
-    ASSERT_EQ(firstKey.size(), 1u);
-    EXPECT_EQ(firstKey.begin()->first, "metric");
+    ASSERT_EQ(firstKey.size(), 2u);
+    EXPECT_EQ(firstKey.count("metric"), 1u);
+    EXPECT_EQ(firstKey.count("backend"), 1u);
 
     // EDGE CASE: a node that has never written. The zero denominator must skip
     // the mean rather than divide by zero, while the total is still reported --
@@ -3066,10 +3081,10 @@ TEST(MetricMacros, nodestore_state_gauge_observes_exact_derived_means)
         .storeCount = 0, .storeDurationUs = 0, .fetchCount = 4, .fetchDurationUs = 800};
     auto const idle = collectWith(totals);
 
-    EXPECT_EQ(idle.at("nodestore_state").count(attrs("metric", "write_mean_us")), 0u);
-    EXPECT_EQ(gaugeValue(idle, "nodestore_state", attrs("metric", "node_writes")), 0);
-    EXPECT_EQ(gaugeValue(idle, "nodestore_state", attrs("metric", "read_mean_us")), 200);
-    EXPECT_EQ(gaugeValue(idle, "nodestore_state", attrs("metric", "node_reads_total")), 4);
+    EXPECT_EQ(idle.at("nodestore_state").count(series("write_mean_us")), 0u);
+    EXPECT_EQ(gaugeValue(idle, "nodestore_state", series("node_writes")), 0);
+    EXPECT_EQ(gaugeValue(idle, "nodestore_state", series("read_mean_us")), 200);
+    EXPECT_EQ(gaugeValue(idle, "nodestore_state", series("node_reads_total")), 4);
     // Five series, not six: every total plus the one mean that is derivable.
     EXPECT_EQ(idle.at("nodestore_state").size(), 5u);
 
@@ -3080,10 +3095,10 @@ TEST(MetricMacros, nodestore_state_gauge_observes_exact_derived_means)
         .storeCount = 7, .storeDurationUs = 100, .fetchCount = 0, .fetchDurationUs = 0};
     auto const truncating = collectWith(totals);
 
-    EXPECT_EQ(gaugeValue(truncating, "nodestore_state", attrs("metric", "write_mean_us")), 14);
+    EXPECT_EQ(gaugeValue(truncating, "nodestore_state", series("write_mean_us")), 14);
     // The read side now has the zero denominator, so its mean drops out too.
-    EXPECT_EQ(truncating.at("nodestore_state").count(attrs("metric", "read_mean_us")), 0u);
-    EXPECT_EQ(gaugeValue(truncating, "nodestore_state", attrs("metric", "node_reads_total")), 0);
+    EXPECT_EQ(truncating.at("nodestore_state").count(series("read_mean_us")), 0u);
+    EXPECT_EQ(gaugeValue(truncating, "nodestore_state", series("node_reads_total")), 0);
 
     // EDGE CASE: stores counted, but the duration total still reads zero.
     // The accumulator keeps nanoseconds and getStoreDurationUs() truncates, so
@@ -3097,16 +3112,14 @@ TEST(MetricMacros, nodestore_state_gauge_observes_exact_derived_means)
         .storeCount = 9000, .storeDurationUs = 0, .fetchCount = 10, .fetchDurationUs = 50};
     auto const subMicrosecond = collectWith(totals);
 
-    EXPECT_EQ(subMicrosecond.at("nodestore_state").count(attrs("metric", "write_mean_us")), 1u);
-    EXPECT_EQ(gaugeValue(subMicrosecond, "nodestore_state", attrs("metric", "write_mean_us")), 0);
+    EXPECT_EQ(subMicrosecond.at("nodestore_state").count(series("write_mean_us")), 1u);
+    EXPECT_EQ(gaugeValue(subMicrosecond, "nodestore_state", series("write_mean_us")), 0);
     // The count is published beside it, so the reading is interpretable: real
     // write throughput with a sub-microsecond per-operation cost.
-    EXPECT_EQ(gaugeValue(subMicrosecond, "nodestore_state", attrs("metric", "node_writes")), 9000);
-    EXPECT_EQ(
-        gaugeValue(subMicrosecond, "nodestore_state", attrs("metric", "node_writes_duration_us")),
-        0);
+    EXPECT_EQ(gaugeValue(subMicrosecond, "nodestore_state", series("node_writes")), 9000);
+    EXPECT_EQ(gaugeValue(subMicrosecond, "nodestore_state", series("node_writes_duration_us")), 0);
     // The read side is independent and unaffected by the write-side reading.
-    EXPECT_EQ(gaugeValue(subMicrosecond, "nodestore_state", attrs("metric", "read_mean_us")), 5);
+    EXPECT_EQ(gaugeValue(subMicrosecond, "nodestore_state", series("read_mean_us")), 5);
     // All six series present: both means are derivable here.
     EXPECT_EQ(subMicrosecond.at("nodestore_state").size(), 6u);
 }
