@@ -2665,10 +2665,12 @@ positive delta rather than a false spike. `state_changes_total` cannot be used
 here: it carries no from/to labels, so it cannot tell a flap from a normal
 startup walk.
 
-**The `uptime > 3600` gate is load-bearing.** Every node walks
-`disconnected → connected → syncing → tracking → full` once at boot; without the
-gate, every restart pages. The trade-off is deliberate: the rule starts
-evaluating an hour after boot.
+**The start-up entry into `full` does not page.** The first entry into `full`
+after a start counts as a transition too. So the rule also requires
+`state_accounting_full_transitions > 1`: a node that has entered `full` only
+once has not flapped, however long it took to get there. The `uptime > 3600`
+gate holds the rule off for the first hour after boot. Entries made in that
+hour still count once it opens.
 
 Investigate in this order: the online-delete rotation's cache freshen (a
 rotation logs `rotating` when it starts and `finished rotation` when it

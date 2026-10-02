@@ -666,20 +666,20 @@ groups:
       # Node state flapping: full -> syncing/tracking -> full, repeatedly.
       #
       # state_accounting_full_transitions counts transitions INTO full
-      # (NetworkOPs.cpp StateAccounting::mode), a cumulative gauge that EVERY
-      # node always reports, so past the uptime gate increase() returns a real
-      # series (0 when healthy). Keep it rather than state_changes_total: the
-      # rule needs entries into full, and this gauge counts exactly those.
-      # noDataState is OK because the gate returns no rows while every node is
-      # in its first hour.
+      # (NetworkOPs.cpp StateAccounting::mode), as a cumulative gauge. Keep it
+      # rather than state_changes_total: the rule needs entries into full, and
+      # this gauge counts exactly those.
       #
       # Threshold >0: one full -> syncing -> full round is a single re-entry,
       # which is exactly the online-delete rotation flap to catch.
       #
-      # The uptime gate is load-bearing. Every node walks
-      # disconnected -> connected -> syncing -> tracking -> full once at boot,
-      # and that first entry into full counts, so without the gate every
-      # restart that reaches full would fire the rule.
+      # The first entry into full after a start counts as a transition too.
+      # The `> 1` gate drops a node that has entered full only once. So that
+      # entry alone does not fire the rule, however long the node took to
+      # reach full. The uptime gate holds the rule off for the first hour
+      # after a start. Entries made in that hour still count once it opens.
+      # noDataState is OK because a healthy fleet often returns no rows: no
+      # node has re-entered full, or every node is in its first hour.
       - uid: xrpld-node-state-flapping
         title: NodeStateFlapping
         condition: is_flapping
@@ -693,9 +693,9 @@ groups:
         annotations:
           summary: "Node state flapping on {{ $labels.service_instance_id }}"
           description: >-
-            FULL-state re-entries on {{ $labels.service_instance_id }} in the last hour:
-            {{ printf "%.0f" $values.full_transitions_now.Value }} (threshold: more than 0, past the first
-            hour of uptime).
+            Entries into FULL on {{ $labels.service_instance_id }} in the last hour: {{
+            printf "%.0f" $values.full_transitions_now.Value }} (threshold: more than 0, past the
+            first hour of uptime, on a node that has re-entered FULL since it started).
           action: >-
             The node is flapping out of sync rather than holding FULL. A likely cause is
             the online-delete rotation cache-freshen; match the flap times against the
@@ -710,6 +710,8 @@ groups:
               refId: full_transitions_1h
               expr: |-
                 sum by (service_instance_id) (increase(state_accounting_full_transitions{service_name="xrpld"}[1h]))
+                  and on (service_instance_id)
+                    (max by (service_instance_id) (state_accounting_full_transitions{service_name="xrpld"}) > 1)
                   and on (service_instance_id)
                     (min by (service_instance_id) (server_info{service_name="xrpld", metric="uptime"}) > 3600)
               instant: true
