@@ -156,16 +156,16 @@ public:
  * Under featureConfidentialMPTKeyRotation, additionally verifies the key
  * rotation invariants for sfInitialIssuerEncryptionKey and
  * sfIssuerMirrorEncryptionKey:
- * - I15: sfInitialIssuerEncryptionKey on MPTokenIssuance is present iff
+ * - sfInitialIssuerEncryptionKey on MPTokenIssuance is present iff
  *   sfIssuerKeyEpoch is present, and must be a 33-byte compressed point.
- * - I16: sfInitialIssuerEncryptionKey is immutable once written.
- * - I17: sfIssuerMirrorEncryptionKey on MPToken is present iff
+ * - sfInitialIssuerEncryptionKey is immutable once written.
+ * - sfIssuerMirrorEncryptionKey on MPToken is present iff
  *   sfIssuerKeyMirrorEpoch is present.
- * - I18: sfIssuerMirrorEncryptionKey, if present, must be a 33-byte compressed
+ * - sfIssuerMirrorEncryptionKey, if present, must be a 33-byte compressed
  *   point and sfIssuerEncryptedBalance must also be present.
- * - I19: when sfIssuerKeyMirrorEpoch equals the issuance's sfIssuerKeyEpoch,
+ * - when sfIssuerKeyMirrorEpoch equals the issuance's sfIssuerKeyEpoch,
  *   sfIssuerMirrorEncryptionKey must equal the issuance's sfIssuerEncryptionKey.
- * - I20: a transaction that rewrites sfIssuerEncryptedBalance without advancing
+ * - a transaction that rewrites sfIssuerEncryptedBalance without advancing
  *   sfIssuerKeyMirrorEpoch must leave sfIssuerMirrorEncryptionKey unchanged.
  */
 class ValidConfidentialMPToken
@@ -184,13 +184,13 @@ class ValidConfidentialMPToken
 
         // Key rotation checks (featureConfidentialMPTKeyRotation).
 
-        // I16: sfInitialIssuerEncryptionKey present before the transaction but
+        // sfInitialIssuerEncryptionKey present before the transaction but
         // absent or changed afterwards.
         bool initialIssuerKeyMutated = false;
         // The holder MPTokens after the transaction, used by finalize() to
         // evaluate the mirror-key invariants against their issuance.
         std::vector<SLE::const_pointer> mptokens;
-        // I20: sfIssuerEncryptedBalance was rewritten without advancing
+        // sfIssuerEncryptedBalance was rewritten without advancing
         // sfIssuerKeyMirrorEpoch, yet sfIssuerMirrorEncryptionKey changed.
         bool mirrorKeyChangedWithoutEpoch = false;
     };

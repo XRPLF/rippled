@@ -634,10 +634,10 @@ ValidConfidentialMPToken::visitEntry(
         }
 
         // Record the after-state MPToken so finalize() can evaluate the mirror
-        // key invariants (I17-I20) against its issuance.
+        // key invariants against its issuance.
         change.mptokens.push_back(after);
 
-        // I20: a transaction that rewrites sfIssuerEncryptedBalance without
+        // A transaction that rewrites sfIssuerEncryptedBalance without
         // advancing sfIssuerKeyMirrorEpoch must leave sfIssuerMirrorEncryptionKey
         // unchanged.
         if (before && before->getType() == ltMPTOKEN)
@@ -650,7 +650,7 @@ ValidConfidentialMPToken::visitEntry(
             auto const mirrorKeyAfter = (*after)[~sfIssuerMirrorEncryptionKey];
 
             if (issuerBalanceAfter && issuerBalanceBefore != issuerBalanceAfter &&
-                mirrorEpochAfter == mirrorEpochBefore && mirrorKeyBefore != mirrorKeyAfter)
+                mirrorEpochAfter <= mirrorEpochBefore && mirrorKeyBefore != mirrorKeyAfter)
             {
                 change.mirrorKeyChangedWithoutEpoch = true;
             }
@@ -712,7 +712,7 @@ ValidConfidentialMPToken::visitEntry(
     {
         uint192 const id = getMptID(after);
 
-        // I16: sfInitialIssuerEncryptionKey is immutable once written. If it was
+        // sfInitialIssuerEncryptionKey is immutable once written. If it was
         // present before the transaction, it must be present and unchanged after.
         auto const initialKeyBefore = (*before)[~sfInitialIssuerEncryptionKey];
         auto const initialKeyAfter = (*after)[~sfInitialIssuerEncryptionKey];
@@ -845,11 +845,11 @@ ValidConfidentialMPToken::finalize(
             return false;
         }
 
-        // Key rotation invariants for sfInitialIssuerEncryptionKey (I15/I16) and
-        // sfIssuerMirrorEncryptionKey (I17-I20).
+        // Key rotation invariants for sfInitialIssuerEncryptionKey and
+        // sfIssuerMirrorEncryptionKey.
         if (view.rules().enabled(featureConfidentialMPTKeyRotation))
         {
-            // I15: sfInitialIssuerEncryptionKey is present iff sfIssuerKeyEpoch
+            // sfInitialIssuerEncryptionKey is present iff sfIssuerKeyEpoch
             // is present, and if present must be a 33-byte compressed point.
             bool const hasInitialKey = issuance->isFieldPresent(sfInitialIssuerEncryptionKey);
             bool const hasIssuerKeyEpoch = issuance->isFieldPresent(sfIssuerKeyEpoch);
@@ -869,7 +869,7 @@ ValidConfidentialMPToken::finalize(
                 return false;
             }
 
-            // I16: sfInitialIssuerEncryptionKey is immutable once written.
+            // sfInitialIssuerEncryptionKey is immutable once written.
             if (checks.initialIssuerKeyMutated)
             {
                 JLOG(j.fatal()) << "Invariant failed: sfInitialIssuerEncryptionKey changed on MPT "
@@ -883,7 +883,7 @@ ValidConfidentialMPToken::finalize(
                 bool const hasMirrorKey = mptoken.isFieldPresent(sfIssuerMirrorEncryptionKey);
                 bool const hasMirrorEpoch = mptoken.isFieldPresent(sfIssuerKeyMirrorEpoch);
 
-                // I17: sfIssuerMirrorEncryptionKey is present iff
+                // sfIssuerMirrorEncryptionKey is present iff
                 // sfIssuerKeyMirrorEpoch is present.
                 if (hasMirrorKey != hasMirrorEpoch)
                 {
@@ -896,7 +896,7 @@ ValidConfidentialMPToken::finalize(
 
                 if (hasMirrorKey)
                 {
-                    // I18: sfIssuerMirrorEncryptionKey must be a 33-byte
+                    // sfIssuerMirrorEncryptionKey must be a 33-byte
                     // compressed point and sfIssuerEncryptedBalance must be present.
                     if (!isValidCompressedECPoint(mptoken[sfIssuerMirrorEncryptionKey]) ||
                         !mptoken.isFieldPresent(sfIssuerEncryptedBalance))
@@ -908,7 +908,7 @@ ValidConfidentialMPToken::finalize(
                         return false;
                     }
 
-                    // I19: a mirror current with the issuance's issuer key epoch
+                    // a mirror current with the issuance's issuer key epoch
                     // must be encrypted under the issuance's issuer key.
                     if (mptoken[sfIssuerKeyMirrorEpoch] ==
                             (*issuance)[~sfIssuerKeyEpoch].value_or(0) &&
@@ -923,7 +923,7 @@ ValidConfidentialMPToken::finalize(
                 }
             }
 
-            // I20: rewriting sfIssuerEncryptedBalance without advancing
+            // Rewriting sfIssuerEncryptedBalance without advancing
             // sfIssuerKeyMirrorEpoch must leave sfIssuerMirrorEncryptionKey
             // unchanged.
             if (checks.mirrorKeyChangedWithoutEpoch)

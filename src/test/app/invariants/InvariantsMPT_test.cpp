@@ -1666,7 +1666,7 @@ class InvariantsMPT_test : public InvariantsBase
 
         // --- Key rotation invariants (featureConfidentialMPTKeyRotation) ---
 
-        // I15: sfInitialIssuerEncryptionKey present without sfIssuerKeyEpoch.
+        // sfInitialIssuerEncryptionKey present without sfIssuerKeyEpoch.
         doInvariantCheck(
             {"sfInitialIssuerEncryptionKey presence does not match sfIssuerKeyEpoch presence"},
             [&mptID](Account const&, Account const&, ApplyContext& ac) {
@@ -1684,7 +1684,7 @@ class InvariantsMPT_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseConfidential);
 
-        // I15: sfIssuerKeyEpoch present without sfInitialIssuerEncryptionKey.
+        // sfIssuerKeyEpoch present without sfInitialIssuerEncryptionKey.
         doInvariantCheck(
             {"sfInitialIssuerEncryptionKey presence does not match sfIssuerKeyEpoch presence"},
             [&mptID](Account const&, Account const&, ApplyContext& ac) {
@@ -1700,7 +1700,7 @@ class InvariantsMPT_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseConfidential);
 
-        // I15: sfInitialIssuerEncryptionKey present but not a valid compressed point.
+        // sfInitialIssuerEncryptionKey present but not a valid compressed point.
         doInvariantCheck(
             {"sfInitialIssuerEncryptionKey is not a valid compressed EC point"},
             [&mptID](Account const&, Account const&, ApplyContext& ac) {
@@ -1717,7 +1717,7 @@ class InvariantsMPT_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseConfidential);
 
-        // I16: sfInitialIssuerEncryptionKey is immutable once written. Set up a
+        // sfInitialIssuerEncryptionKey is immutable once written. Set up a
         // rotated issuance (epoch 1) so the initial key is present, then mutate it.
         auto const precloseRotatedIssuance =
             [&mptID](Account const& a1, Account const& a2, Env& env) -> bool {
@@ -1751,7 +1751,7 @@ class InvariantsMPT_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseRotatedIssuance);
 
-        // I17: sfIssuerMirrorEncryptionKey present without sfIssuerKeyMirrorEpoch.
+        // sfIssuerMirrorEncryptionKey present without sfIssuerKeyMirrorEpoch.
         doInvariantCheck(
             {"sfIssuerMirrorEncryptionKey presence does not match sfIssuerKeyMirrorEpoch presence"},
             [&mptID](Account const&, Account const& a2, ApplyContext& ac) {
@@ -1770,7 +1770,7 @@ class InvariantsMPT_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseConfidential);
 
-        // I18: sfIssuerMirrorEncryptionKey present but not a valid compressed point.
+        // sfIssuerMirrorEncryptionKey present but not a valid compressed point.
         doInvariantCheck(
             {"sfIssuerMirrorEncryptionKey is malformed or has no issuer mirror ciphertext"},
             [&mptID](Account const&, Account const& a2, ApplyContext& ac) {
@@ -1787,7 +1787,7 @@ class InvariantsMPT_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseConfidential);
 
-        // I19: a current issuer mirror (epoch == issuance issuer key epoch) must
+        // a current issuer mirror (epoch == issuance issuer key epoch) must
         // be encrypted under the issuance's issuer key.
         Buffer distinctValidKey;
         auto const precloseConfidentialCapture =
@@ -1824,7 +1824,7 @@ class InvariantsMPT_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseConfidentialCapture);
 
-        // I20: rewriting sfIssuerEncryptedBalance without advancing
+        // rewriting sfIssuerEncryptedBalance without advancing
         // sfIssuerKeyMirrorEpoch must leave sfIssuerMirrorEncryptionKey unchanged.
         // Set up a holder whose issuer mirror is stale (mirror epoch 1, issuance
         // issuer key epoch 2).
@@ -1874,8 +1874,36 @@ class InvariantsMPT_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseStaleMirror);
 
-        // Multiple holders under the same issuance. Corrupt the MPToken that is visited first (smaller key) so a
-        // regression that only retains the last-visited entry would miss it.
+        // Rewriting sfIssuerEncryptedBalance while decreasing
+        // sfIssuerKeyMirrorEpoch. Setup: Bob at mirror epoch 1, issuance issuer key epoch 2.
+        doInvariantCheck(
+            {"sfIssuerMirrorEncryptionKey changed decreasing the mirror epoch"},
+            [&mptID](Account const&, Account const& a2, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleIssuance || !sleToken)
+                    return false;
+                // Rewrite the issuer ciphertext to a new value.
+                auto balance = sleToken->getFieldVL(sfIssuerEncryptedBalance);
+                if (balance.empty())
+                    return false;
+                balance[0] ^= 0xFF;
+                sleToken->setFieldVL(sfIssuerEncryptedBalance, balance);
+                // Decrease the mirror epoch (1 -> 0) while changing the mirror
+                // key to the issuance's current (epoch 2) issuer key.
+                sleToken->setFieldU32(sfIssuerKeyMirrorEpoch, 0);
+                sleToken->setFieldVL(
+                    sfIssuerMirrorEncryptionKey, sleIssuance->getFieldVL(sfIssuerEncryptionKey));
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseStaleMirror);
+
+        // Multiple holders under the same issuance. Corrupt the MPToken that is visited first
+        // (smaller key) so a regression that only retains the last-visited entry would miss it.
         Account const a3{"A3"};
         auto const precloseTwoHolders =
             [&mptID, &a3](Account const& a1, Account const& a2, Env& env) -> bool {
