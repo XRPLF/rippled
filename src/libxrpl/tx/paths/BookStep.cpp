@@ -1444,6 +1444,18 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
         return temBAD_PATH;
     }
 
+    // An issuer paying with its own MPT issues it into the first book. A
+    // holder-sourced strand records the MPT in the first MPTEndpointStep and
+    // so rejects a later book that outputs it again; do the same here. The
+    // step after such a book issues the MPT a second time and the payment
+    // engine cannot keep the two within MaximumAmount once StrandFlow
+    // rebuilds the sandbox on a limiting step.
+    if (ctx.isFirst && book_.in.holds<MPTIssue>() && book_.in.getIssuer() == ctx.strandSrc &&
+        ctx.view.rules().enabled(featureMPTokensV2))
+    {
+        ctx.seenDirectAssets[0].insert(book_.in);
+    }
+
     // Do not allow two books to output the same issue. This may cause offers on
     // one step to unfund offers in another step.
     if (!ctx.seenBookOuts.insert(book_.out).second ||

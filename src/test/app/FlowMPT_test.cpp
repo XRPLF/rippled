@@ -2587,6 +2587,85 @@ struct FlowMPT_test : public beast::unit_test::Suite
         testReExecuteDirectStep(features);
         testSelfPayLowQualityOffer(features);
         testLockedMidPathHolder(features);
+        testIssuerSourceMPTLoop(features);
+    }
+
+    void
+    testIssuerSourceMPTLoop(FeatureBitset features)
+    {
+        // An issuer paying with its own MPT may not route it back through a
+        // book that outputs the same MPT. It would issue at the first book
+        // and again after the second, and with the issuer's own offer in
+        // the second book the engine could not keep the sum within
+        // MaximumAmount. Holders already get temBAD_PATH_LOOP for this.
+        testcase("Issuer-sourced payment looping through its own MPT");
+
+        using namespace jtx;
+
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const c1{"c1"};
+        Account const e1{"e1"};
+        Account const dan{"dan"};
+
+        Env env(*this, features);
+        env.fund(XRP(1'000), gw, alice, c1, e1, dan);
+        env.close();
+
+        MPT const x =
+            MPTTester({.env = env, .issuer = gw, .holders = {alice, c1, e1, dan}, .maxAmt = 100});
+        auto const eur = gw["EUR"];
+        auto const usd = gw["USD"];
+        env(trust(e1, eur(1'000)));
+        env(trust(e1, usd(1'000)));
+        env(trust(dan, eur(1'000)));
+        env(pay(gw, e1, eur(1'000)));
+        env(pay(gw, e1, usd(1'000)));
+        env(pay(gw, alice, x(10)));
+        env.close();
+
+        // Liquidity for every path below, arranged so nothing crosses at
+        // creation.
+        env(offer(gw, XRP(60), x(30)));    // issuer sells x for XRP
+        env(offer(gw, usd(100), x(100)));  // issuer sells x for usd
+        env.close();
+        env(offer(c1, x(100), XRP(100)));  // buys x for XRP
+        env(offer(e1, XRP(70), usd(70)));  // sells usd for XRP
+        env(offer(e1, x(100), eur(100)));  // sells eur for x
+        env.close();
+        BEAST_EXPECT(expectOffers(env, gw, 2));
+        BEAST_EXPECT(expectOffers(env, c1, 1));
+        BEAST_EXPECT(expectOffers(env, e1, 2));
+
+        auto const flags = Txflags(tfNoRippleDirect | tfPartialPayment);
+
+        // x -> XRP -> x, the issuer's own offer feeds the endpoint
+        env(pay(gw, dan, x(100)), Sendmax(x(100)), Path(~XRP, ~x), flags, Ter(temBAD_PATH_LOOP));
+        // x -> XRP -> x -> eur, the issuer's own offer feeds a third book
+        env(pay(gw, dan, eur(100)),
+            Sendmax(x(100)),
+            Path(~XRP, ~x, ~eur),
+            flags,
+            Ter(temBAD_PATH_LOOP));
+        // x -> XRP -> usd -> x, a limiting book before the issuer's own offer
+        env(pay(gw, dan, x(100)),
+            Sendmax(x(100)),
+            Path(~XRP, ~usd, ~x),
+            flags,
+            Ter(temBAD_PATH_LOOP));
+        // Same loop from a holder is already rejected
+        env(pay(alice, dan, x(10)), Sendmax(x(10)), Path(~XRP, ~x), flags, Ter(temBAD_PATH_LOOP));
+        env.close();
+
+        BEAST_EXPECT(env.balance(gw, x) == x(-10));
+        BEAST_EXPECT(env.balance(c1, x) == x(0));
+        BEAST_EXPECT(env.balance(dan, x) == x(0));
+
+        // The issuer paying with another asset may still take its own offer
+        env(pay(gw, dan, x(50)), Sendmax(usd(50)), Path(~x), flags);
+        env.close();
+        BEAST_EXPECT(env.balance(dan, x) == x(50));
+        BEAST_EXPECT(env.balance(gw, x) == x(-60));
     }
 
     void
