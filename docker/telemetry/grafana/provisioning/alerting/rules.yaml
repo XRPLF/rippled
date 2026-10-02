@@ -39,6 +39,15 @@
 #     only for still-reporting nodes: a single dead node's row just disappears
 #     and noDataState never triggers.
 #
+#   * Uptime gates take `min by (service_instance_id)` of the uptime series.
+#     After a restart that changes a resource label, such as an upgrade, two
+#     series share one service_instance_id for a few minutes. The old one
+#     stays until the exporter drops it. `min` reads the new process. `sum`
+#     adds the two and `max` reads the old one, so either could open the gate
+#     early. A gated rule sets noDataState: OK. While every node is still
+#     gated out, as after a fleet-wide restart, the query returns no rows.
+#     NoData would raise an alert for that.
+#
 #   * `page_oncall: "true"` marks the rules meant to page on-call. The
 #     provisioned Slack template does not read it; to tag an on-call group,
 #     add a mention for it to your own Slack template.
@@ -294,8 +303,8 @@ groups:
       #
       # The uptime gate skips the first hour after a start, as NodeStateFlapping
       # and NodeNotFull do: a restarted validator follows the network for a
-      # while before it validates again. It takes the max, not the sum, of the
-      # uptime series, so overlapping series cannot inflate it. noDataState is
+      # while before it validates again. It takes the min of the uptime series,
+      # so a lingering old series cannot open it early. noDataState is
       # OK because the gate returns no rows while every node is in its first
       # hour, and a fleet with no validator key publishes no series at all.
       - uid: xrpld-validations-missed
@@ -333,7 +342,7 @@ groups:
                       1e-9)
                 )
                 and on (service_instance_id)
-                  (max by (service_instance_id) (server_info{service_name="xrpld", metric="uptime"}) > 3600)
+                  (min by (service_instance_id) (server_info{service_name="xrpld", metric="uptime"}) > 3600)
               instant: true
               range: false
               intervalMs: 1000
@@ -702,7 +711,7 @@ groups:
               expr: |-
                 sum by (service_instance_id) (increase(state_accounting_full_transitions{service_name="xrpld"}[1h]))
                   and on (service_instance_id)
-                    (sum by (service_instance_id) (server_info{service_name="xrpld", metric="uptime"}) > 3600)
+                    (min by (service_instance_id) (server_info{service_name="xrpld", metric="uptime"}) > 3600)
               instant: true
               range: false
               intervalMs: 1000
@@ -747,7 +756,7 @@ groups:
         condition: is_not_full
         for: 15m
         isPaused: true
-        noDataState: NoData
+        noDataState: OK
         execErrState: Error
         labels:
           severity: warning
@@ -772,7 +781,7 @@ groups:
               expr: |-
                 max by (service_instance_id) (server_info{service_name="xrpld", metric="server_state"})
                   and on (service_instance_id)
-                    (sum by (service_instance_id) (server_info{service_name="xrpld", metric="uptime"}) > 3600)
+                    (min by (service_instance_id) (server_info{service_name="xrpld", metric="uptime"}) > 3600)
               instant: true
               range: false
               intervalMs: 1000
@@ -900,7 +909,7 @@ groups:
         condition: is_flooding
         for: 10m
         isPaused: true
-        noDataState: NoData
+        noDataState: OK
         execErrState: Error
         labels:
           severity: warning
@@ -925,7 +934,7 @@ groups:
               expr: |-
                 sum by (service_instance_id) (rate(overhead_manifest_bytes_in{service_name="xrpld"}[10m]))
                   and on (service_instance_id)
-                    (sum by (service_instance_id) (server_info{service_name="xrpld", metric="uptime"}) > 1800)
+                    (min by (service_instance_id) (server_info{service_name="xrpld", metric="uptime"}) > 1800)
               instant: true
               range: false
               intervalMs: 1000
@@ -1046,8 +1055,8 @@ groups:
       # The uptime gate is load-bearing. After a stop of an hour or more, the
       # baseline hour holds only minutes of samples, so it reads far too low
       # and the ratio can pass 3 for many minutes. 4200s is the 1h baseline
-      # plus its 10m offset. The gate takes the max, not the sum, of
-      # the uptime series, so overlapping series cannot inflate it.
+      # plus its 10m offset. The gate takes the min of the uptime
+      # series, so a lingering old series cannot open it early.
       # noDataState is OK because the gate returns no rows while every node is
       # in its first 70 minutes, for example after a fleet-wide restart.
       - uid: xrpld-untrusted-validation-flood
@@ -1083,7 +1092,7 @@ groups:
                 sum by (service_instance_id) (rate(validations_untrusted_messages_in{service_name="xrpld"}[2m]))
                   / clamp_min(sum by (service_instance_id) (rate(validations_untrusted_messages_in{service_name="xrpld"}[1h] offset 10m)), 50)
                   and on (service_instance_id)
-                    (max by (service_instance_id) (server_info{service_name="xrpld", metric="uptime"}) > 4200)
+                    (min by (service_instance_id) (server_info{service_name="xrpld", metric="uptime"}) > 4200)
               instant: true
               range: false
               intervalMs: 1000
