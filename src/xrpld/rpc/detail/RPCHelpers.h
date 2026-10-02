@@ -18,6 +18,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/server/NetworkOPs.h>
 
 #include <cstdint>
@@ -82,6 +83,17 @@ isOwnerDirNodeField(SField const& field);
  */
 HashSet<AccountID>
 parseAccountIds(json::Value const& jvArray);
+
+/**
+ * @brief Parses an array of MPT issuance IDs from a JSON value.
+ *
+ * Extracts and returns a set of MPTID objects from the provided JSON array.
+ *
+ * @param jvArray The JSON value containing an array of MPT issuance IDs.
+ * @return A HashSet containing the parsed MPTID objects.
+ */
+HashSet<MPTID>
+parseMPTIssuanceIDs(json::Value const& jvArray);
 
 /**
  * @brief Retrieves the limit value from a JsonContext or sets a default.
