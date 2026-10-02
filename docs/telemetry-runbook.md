@@ -559,12 +559,12 @@ Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### Transaction Overview (`transaction-overview`)
 
-| Panel                             | Type       | PromQL                                                                               | Labels Used |
-| --------------------------------- | ---------- | ------------------------------------------------------------------------------------ | ----------- |
-| Transaction Processing Rate       | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m])` and `tx.receive` | `span_name` |
-| Transaction Processing Latency    | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                      | —           |
-| Transaction Path Distribution     | piechart   | `sum by (local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))` | `local`     |
-| Transaction Receive vs Suppressed | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.receive"}[5m])`                  | —           |
+| Panel                          | Type       | PromQL                                                                               | Labels Used |
+| ------------------------------ | ---------- | ------------------------------------------------------------------------------------ | ----------- |
+| Transaction Processing Rate    | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m])` and `tx.receive` | `span_name` |
+| Transaction Processing Latency | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                      | —           |
+| Transaction Path Distribution  | piechart   | `sum by (local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))` | `local`     |
+| Transaction Receive Rate       | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.receive"}[5m])`                  | —           |
 
 ### Consensus Health (`consensus-health`)
 
