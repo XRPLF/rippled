@@ -43,6 +43,7 @@
 #include <xrpld/shamap/NodeFamily.h>
 #include <xrpld/telemetry/AppMetricGauges.h>
 #include <xrpld/telemetry/MacroCounterPreRegistration.h>
+#include <xrpld/telemetry/NodeStoreBackendName.h>
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
@@ -471,6 +472,7 @@ public:
               std::make_unique<telemetry::AppMetricGauges>(
                   *metricsRegistry_,
                   *this,
+                  telemetry::nodeStoreBackendName(config_->section(Sections::kNodeDatabase)),
                   logs_->journal("MetricsRegistry")))
 
         , txMaster_(*this)

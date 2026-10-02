@@ -12,11 +12,13 @@
  * pull-model instruments on top of it.
  */
 
-// Unguarded because the constructor names beast::Journal and MetricsRegistry in
-// both configurations. beast::Journal is taken by value, so it needs a complete
-// type even when telemetry is off.
+// Unguarded because the constructor names beast::Journal, MetricsRegistry and
+// std::string in both configurations. beast::Journal and std::string are taken
+// by value, so every caller needs the complete type even when telemetry is off.
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/telemetry/MetricsRegistry.h>
+
+#include <string>
 
 #ifdef XRPL_ENABLE_TELEMETRY
 // Guarded like the members that use them: PeerValidationLoad.h by
@@ -98,6 +100,9 @@ namespace xrpl::telemetry {
  * Most multiplex their values through a `metric` label, so a new value needs
  * no new instrument; object counts use `type`, build info uses `version`,
  * complete ledgers uses `bound` and `index`, and validation load adds `trust`.
+ * Every point on the `nodestore_state` and `storage_detail` gauges also
+ * carries a constant `backend` label, the NodeStore backend name given at
+ * construction, so a reader can tell which database each node reads from.
  * Twenty-eight are ObservableGauges and four are ObservableCounters, the
  * latter where the value read is already cumulative and must never decrease.
  *
@@ -111,7 +116,10 @@ namespace xrpl::telemetry {
  * // service the callbacks read exists. The overlay is built last, so it
  * // fixes where this call can go.
  * gauges_ = std::make_unique<AppMetricGauges>(
- *     *metricsRegistry_, *this, logs_->journal("MetricsRegistry"));
+ *     *metricsRegistry_,
+ *     *this,
+ *     nodeStoreBackendName(config_->section(Sections::kNodeDatabase)),
+ *     logs_->journal("MetricsRegistry"));
  * gauges_->startAsyncGauges();
  *
  * // Shutdown, in the required order.
@@ -162,9 +170,16 @@ public:
      * @param core Registry owning the meter these instruments are created on,
      * and the validation tracker two of them read. Must outlive this object.
      * @param app  Services the callbacks sample. Must outlive this object.
+     * @param nodeStoreBackend Canonical NodeStore backend name, from
+     * nodeStoreBackendName(); stamped as the backend label on nodestore_state
+     * and storage_detail.
      * @param journal Log output.
      */
-    AppMetricGauges(MetricsRegistry& core, ServiceRegistry& app, beast::Journal journal);
+    AppMetricGauges(
+        MetricsRegistry& core,
+        ServiceRegistry& app,
+        std::string nodeStoreBackend,
+        beast::Journal journal);
 
     /**
      * Disarms the callbacks, then releases the instrument handles.
@@ -333,6 +348,12 @@ private:
      * log-level setting covers the whole metric pipeline.
      */
     beast::Journal const journal_;
+
+    /**
+     * Canonical NodeStore backend name, set once at construction and read by
+     * the gauge callbacks; immutable, so no lock.
+     */
+    std::string const nodeStoreBackend_;
 
     /**
      * True once startAsyncGauges() has registered the instruments. Read and

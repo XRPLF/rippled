@@ -3548,7 +3548,7 @@ Two more pairs from the same family:
   series.
 
 The _Ledger Data & Sync_ dashboard carries part of this picture in
-**NuDB Read Latency**, **NuDB Read Found Ratio** and **NuDB Read Pressure**.
+**NodeStore Mean Read Latency**, **NodeStore Read Found Ratio** and **NodeStore Read Pressure**.
 **Job Queue Backlog and Deferred by Type** adds the lane occupancy, which this
 procedure tells you not to trust on its own.
 
@@ -3557,7 +3557,7 @@ The pair this procedure asks for is on **Ledger Acquire Deferrals vs Timeouts
 **Acquire Deferrals vs Timeouts (All Lanes)** plots the pooled totals; read it only
 to see whether some other acquisition lane is also under pressure.
 
-**NuDB Read Found Ratio** plots `node_reads_hit / node_reads_total`. That is the
+**NodeStore Read Found Ratio** plots `node_reads_hit / node_reads_total`. That is the
 found rate, not a cache hit ratio: the underlying counter increments whenever a
 fetch returned an object, and a node with `online_delete` has no object cache at
 all. A rate near 1.0 alongside an expensive read time is the cold-read signature,
