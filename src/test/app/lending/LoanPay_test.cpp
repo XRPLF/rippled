@@ -12,6 +12,7 @@
 #include <test/jtx/trust.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -19,10 +20,12 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -34,17 +37,131 @@
 #include <xrpl/tx/transactors/lending/LoanSet.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 namespace xrpl::test {
 
 class LoanPay_test : public LoanTestBase
 {
 private:
+    // An IOU environment with a funded issuer, lender and borrower.
+    struct FixedPrecisionIOU
+    {
+        jtx::Env env;
+        jtx::Account const issuer{"issuer"};
+        jtx::Account const lender{"lender"};
+        jtx::Account const borrower{"borrower"};
+        jtx::PrettyAsset const asset;
+
+        FixedPrecisionIOU(
+            beast::unit_test::Suite& suite,
+            FeatureBitset features,
+            Number const& trustLimit,
+            Number const& lenderAmount,
+            Number const& borrowerAmount)
+            : env{suite, features}, asset{issuer["USD"]}
+        {
+            using namespace jtx;
+            env.fund(XRP(100'000), issuer, lender, borrower);
+            env.close();
+            env(trust(lender, asset(trustLimit)));
+            env(trust(borrower, asset(trustLimit)));
+            env(pay(issuer, lender, asset(lenderAmount)));
+            env(pay(issuer, borrower, asset(borrowerAmount)));
+            env.close();
+        }
+    };
+
+    FeatureBitset
+    fixedPrecisionFeatures() const
+    {
+        return all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2;
+    }
+
+    // Scale-6 vault and no management fee; tests override what they need.
+    static BrokerParameters
+    fixedPrecisionBrokerParams()
+    {
+        BrokerParameters params;
+        params.vaultScale = 6;
+        params.managementFeeRate = TenthBips16{0};
+        return params;
+    }
+
+    struct LoanShape
+    {
+        std::uint32_t paymentTotal = 0;
+        std::uint32_t paymentInterval = 0;
+        std::uint32_t flags = 0;
+    };
+
+    // Originates a loan on broker; extra adds LoanSet fields (interest rates,
+    // fees).
+    template <class Principal, class... Extra>
+    Keylet
+    originateLoan(
+        jtx::Env& env,
+        BrokerInfo const& broker,
+        jtx::Account const& borrower,
+        jtx::Account const& lender,
+        Principal&& principal,
+        LoanShape const& shape,
+        Extra&&... extra)
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        auto const loanKeylet = nextLoanKeylet(env, broker);
+        env(set(borrower, broker.brokerID, std::forward<Principal>(principal), shape.flags),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(shape.paymentTotal),
+            kPaymentInterval(shape.paymentInterval),
+            Fee(env.current()->fees().base * 2),
+            std::forward<Extra>(extra)...);
+        env.close();
+        return loanKeylet;
+    }
+
+    // Advances a year past the growth loan's start and pays it off in full at
+    // the maximum close interest, which grows AssetsTotal.
+    void
+    payOffGrowthLoan(
+        jtx::Env& env,
+        BrokerInfo const& broker,
+        jtx::Account const& borrower,
+        Keylet const& growthLoan,
+        Number const& maximum)
+    {
+        auto const growthState = getCurrentState(env, broker, growthLoan);
+        using Duration = NetClock::duration;
+        env.close(growthState.startDate + Duration{366 * 24 * 60 * 60});
+        env(jtx::loan::pay(borrower, growthLoan.key, broker.asset(maximum), tfLoanFullPayment));
+        env.close();
+    }
+
+    static Number
+    scheduledInterest(SLE::const_pointer const& loan)
+    {
+        return loan->at(sfTotalValueOutstanding) - loan->at(sfPrincipalOutstanding) -
+            loan->at(sfManagementFeeOutstanding);
+    }
+
+    // In FixedPrecision the vault's unpaid balance is exactly the debt owed.
+    void
+    expectPrincipalIsVaultDebt(SLE::const_pointer const& vault, SLE::const_pointer const& loan)
+    {
+        BEAST_EXPECT(
+            vault->at(sfAssetsTotal) - vault->at(sfAssetsAvailable) ==
+            loan->at(sfPrincipalOutstanding));
+    }
+
 #if LOAN_TODO
     void
     testLoanPayLateFullPaymentBypassesPenalties(FeatureBitset features)
@@ -1484,6 +1601,812 @@ private:
     }
 
     void
+    testFixedPrecisionScheduledPayment()
+    {
+        testcase("FixedPrecision scheduled LoanPay accounting");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Number const trustLimit{10'000'000};
+        Number const lenderAmount{2'000'000};
+        Number const borrowerAmount{100};
+        FixedPrecisionIOU f{
+            *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
+        auto& [env, issuer, lender, borrower, asset] = f;
+
+        auto brokerParams = fixedPrecisionBrokerParams();
+        TenthBips16 const managementFeeRate{100};
+        brokerParams.managementFeeRate = managementFeeRate;
+        auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
+        Number const principal{1'000};
+        std::uint32_t const interestRatePercent = 12;
+        auto const loanKeylet = originateLoan(
+            env,
+            broker,
+            borrower,
+            lender,
+            asset(principal).value(),
+            {.paymentTotal = 3, .paymentInterval = 24 * 60 * 60},
+            kInterestRate(percentageToTenthBips(interestRatePercent)));
+
+        auto const state = getCurrentState(env, broker, loanKeylet);
+        STAmount const payment{
+            asset, roundPeriodicPayment(asset, state.periodicPayment, state.loanScale)};
+
+        auto const vaultBefore = env.le(broker.vaultKeylet());
+        auto const brokerBefore = env.le(broker.brokerKeylet());
+        auto const loanBefore = env.le(loanKeylet);
+        if (!BEAST_EXPECT(vaultBefore && brokerBefore && loanBefore))
+            return;
+
+        Number const assetsAvailableBefore = vaultBefore->at(sfAssetsAvailable);
+        Number const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
+        Number const yieldBefore = vaultBefore->at(sfYieldUnrealized);
+        Number const debtBefore = brokerBefore->at(sfDebtTotal);
+        Number const principalBefore = loanBefore->at(sfPrincipalOutstanding);
+        Number const managementFeeBefore = loanBefore->at(sfManagementFeeOutstanding);
+        Number const scheduledInterestBefore = scheduledInterest(loanBefore);
+        Number const lenderBalanceBefore = env.balance(lender, asset).number();
+        BEAST_EXPECT(managementFeeBefore > beast::kZero);
+
+        env(pay(borrower, loanKeylet.key, payment));
+        env.close();
+
+        auto const vaultAfter = env.le(broker.vaultKeylet());
+        auto const brokerAfter = env.le(broker.brokerKeylet());
+        auto const loanAfter = env.le(loanKeylet);
+        if (!BEAST_EXPECT(vaultAfter && brokerAfter && loanAfter))
+            return;
+        checkFixedPrecisionVaultAssetsDeployed(
+            *this, env, broker.vaultKeylet(), {}, {loanKeylet}, "after scheduled payment");
+
+        Number const principalPaid = principalBefore - loanAfter->at(sfPrincipalOutstanding);
+        Number const credit = vaultAfter->at(sfAssetsAvailable) - assetsAvailableBefore;
+        Number const managementFeeAfter = loanAfter->at(sfManagementFeeOutstanding);
+        Number const scheduledInterestAfter = scheduledInterest(loanAfter);
+        Number const interestPaid = scheduledInterestBefore - scheduledInterestAfter;
+        Number const expectedAssetsTotal = [&] {
+            NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
+            return Number{STAmount{asset, assetsTotalBefore + interestPaid}};
+        }();
+        Number const interestActual = expectedAssetsTotal - assetsTotalBefore;
+
+        BEAST_EXPECT(brokerAfter->at(sfDebtTotal) == debtBefore - principalPaid);
+        BEAST_EXPECTS(
+            vaultAfter->at(sfAssetsTotal) == expectedAssetsTotal,
+            "AssetsTotal expected " + to_string(expectedAssetsTotal) + ", got " +
+                to_string(vaultAfter->at(sfAssetsTotal)));
+        BEAST_EXPECT(expectedAssetsTotal == assetsTotalBefore + interestPaid);
+        BEAST_EXPECT(credit == principalPaid + interestActual);
+        BEAST_EXPECT(
+            env.balance(lender, asset).number() - lenderBalanceBefore ==
+            managementFeeBefore - managementFeeAfter);
+        BEAST_EXPECT(
+            vaultAfter->at(sfYieldUnrealized) ==
+            yieldBefore + scheduledInterestAfter - scheduledInterestBefore);
+        BEAST_EXPECTS(
+            vaultAfter->at(sfAssetsTotal) + vaultAfter->at(sfYieldUnrealized) ==
+                assetsTotalBefore + yieldBefore,
+            "capacity before " + to_string(assetsTotalBefore + yieldBefore) + ", after " +
+                to_string(vaultAfter->at(sfAssetsTotal) + vaultAfter->at(sfYieldUnrealized)));
+
+        BEAST_EXPECT(scheduledInterestAfter > beast::kZero);
+        BEAST_EXPECT(vaultAfter->at(sfYieldUnrealized) > beast::kZero);
+
+        Number const fullPaymentMaximum = env.balance(borrower, asset).number();
+        env(pay(borrower, loanKeylet.key, asset(fullPaymentMaximum), tfLoanFullPayment));
+        env.close();
+
+        auto const vaultAfterFull = env.le(broker.vaultKeylet());
+        auto const loanAfterFull = env.le(loanKeylet);
+        if (!BEAST_EXPECT(vaultAfterFull && loanAfterFull))
+            return;
+        checkFixedPrecisionVaultAssetsDeployed(
+            *this, env, broker.vaultKeylet(), {}, {loanKeylet}, "after full payment");
+        BEAST_EXPECT(loanAfterFull->at(sfPaymentRemaining) == 0);
+        BEAST_EXPECT(loanAfterFull->at(sfTotalValueOutstanding) == beast::kZero);
+        BEAST_EXPECT(loanAfterFull->at(sfPrincipalOutstanding) == beast::kZero);
+        BEAST_EXPECT(loanAfterFull->at(sfManagementFeeOutstanding) == beast::kZero);
+        BEAST_EXPECT(vaultAfterFull->at(sfYieldUnrealized) == beast::kZero);
+    }
+
+    void
+    testFixedPrecisionRedirectedFeeRounding()
+    {
+        testcase("FixedPrecision redirected fee rounds at posterior cover scale");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Number const trustLimit{2, 10};
+        Number const lenderAmount{1, 10};
+        Number const borrowerAmount{2, 9};
+        FixedPrecisionIOU f{
+            *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
+        auto& [env, issuer, lender, borrower, asset] = f;
+
+        auto brokerParams = fixedPrecisionBrokerParams();
+        brokerParams.coverDeposit = 0;
+        auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
+
+        // Optional cover can fill the Open zone at P=6. The first redirected
+        // fee below is mandatory growth and takes CoverAvailable into the
+        // coarsened state.
+        Number const coverDepositAmount{9, 9};
+        env(loan_broker::coverDeposit(lender, broker.brokerID, asset(coverDepositAmount)));
+        env.close();
+
+        Number const loanPrincipal{1'000};
+        auto const makeLoan = [&](Number const& serviceFee) {
+            return originateLoan(
+                env,
+                broker,
+                borrower,
+                lender,
+                asset(loanPrincipal).value(),
+                {.paymentTotal = 2, .paymentInterval = 24 * 60 * 60},
+                kLoanServiceFee(serviceFee));
+        };
+        auto const payOnce = [&](Keylet const& loanKeylet, Number const& serviceFee) {
+            auto const state = getCurrentState(env, broker, loanKeylet);
+            STAmount const payment{
+                asset,
+                roundPeriodicPayment(asset, state.periodicPayment + serviceFee, state.loanScale)};
+            env(pay(borrower, loanKeylet.key, payment));
+            env.close();
+        };
+
+        Number const coarseningFee{1, 9};
+        auto const firstLoan = makeLoan(coarseningFee);
+        Number const roundedFeeRaw{17, -6};
+        auto const roundedFeeLoan = makeLoan(roundedFeeRaw);
+        Number const dustFee{1, -6};
+        auto const secondLoan = makeLoan(dustFee);
+        auto const checkSums = [&](char const* label) {
+            checkFixedPrecisionVaultAssetsDeployed(
+                *this,
+                env,
+                broker.vaultKeylet(),
+                {},
+                {firstLoan, roundedFeeLoan, secondLoan},
+                label);
+        };
+
+        // A deep-frozen owner cannot receive broker fees, so LoanPay redirects
+        // them to the broker pseudo-account and CoverAvailable. Originate all
+        // loans first because the freeze also blocks LoanSet.
+        env(trust(issuer, asset(0), lender, tfSetFreeze | tfSetDeepFreeze));
+        env.close();
+
+        payOnce(firstLoan, coarseningFee);
+        checkSums("after firstLoan payment");
+        auto const brokerCoarsened = env.le(broker.brokerKeylet());
+        if (!BEAST_EXPECT(brokerCoarsened))
+            return;
+        Number const coverBeforeDust = brokerCoarsened->at(sfCoverAvailable);
+        Number const expectedCoverAfterFirstPayment{1, 10};
+        BEAST_EXPECT(coverBeforeDust == expectedCoverAfterFirstPayment);
+
+        payOnce(roundedFeeLoan, roundedFeeRaw);
+        checkSums("after roundedFeeLoan payment");
+        auto const brokerAfterRoundedFee = env.le(broker.brokerKeylet());
+        if (!BEAST_EXPECT(brokerAfterRoundedFee))
+            return;
+        Number const roundedFee = brokerAfterRoundedFee->at(sfCoverAvailable) - coverBeforeDust;
+        BEAST_EXPECT(roundedFee > beast::kZero);
+        BEAST_EXPECT(roundedFee < roundedFeeRaw);
+
+        auto const vaultBeforeDust = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultBeforeDust))
+            return;
+        Number const availableBeforeDust = vaultBeforeDust->at(sfAssetsAvailable);
+        Number const borrowerBeforeDust = env.balance(borrower, asset).number();
+
+        payOnce(secondLoan, dustFee);
+
+        auto const brokerAfterDust = env.le(broker.brokerKeylet());
+        auto const vaultAfterDust = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(brokerAfterDust && vaultAfterDust))
+            return;
+        checkSums("after secondLoan (dust) payment");
+        BEAST_EXPECT(
+            brokerAfterDust->at(sfCoverAvailable) == brokerAfterRoundedFee->at(sfCoverAvailable));
+        Number const vaultCredit = vaultAfterDust->at(sfAssetsAvailable) - availableBeforeDust;
+        BEAST_EXPECT(borrowerBeforeDust - env.balance(borrower, asset).number() == vaultCredit);
+    }
+
+    void
+    testFixedPrecisionCoarsenedPayments()
+    {
+        testcase("FixedPrecision coarsened LoanPay transfers principal in full");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Number const trustLimit{3, 10};
+        Number const lenderAmount{11, 9};
+        Number const borrowerAmount{15, 9};
+        FixedPrecisionIOU f{
+            *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
+        auto& [env, issuer, lender, borrower, asset] = f;
+
+        auto brokerParams = fixedPrecisionBrokerParams();
+        Number const vaultDeposit{9, 9};
+        Number const debtMax{9, 9};
+        brokerParams.vaultDeposit = vaultDeposit;
+        brokerParams.debtMax = debtMax;
+        brokerParams.coverDeposit = 1'000'000'000;
+        auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
+
+        LoanShape const shape{.paymentTotal = 2, .paymentInterval = 2 * 365 * 24 * 60 * 60};
+        Number const firstLoanPrincipal{7, 9};
+        auto const firstLoan =
+            originateLoan(env, broker, borrower, lender, firstLoanPrincipal, shape);
+        Number const growthLoanPrincipal{1, 9};
+        auto const growthLoan = originateLoan(
+            env,
+            broker,
+            borrower,
+            lender,
+            growthLoanPrincipal,
+            shape,
+            kCloseInterestRate(lending::kMaxCloseInterestRate));
+
+        auto const vaultBeforeGrowth = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultBeforeGrowth))
+            return;
+        Number const assetsAvailableBeforeGrowth = vaultBeforeGrowth->at(sfAssetsAvailable);
+        Number const assetsTotalBeforeGrowth = vaultBeforeGrowth->at(sfAssetsTotal);
+        Number const yieldBeforeGrowth = vaultBeforeGrowth->at(sfYieldUnrealized);
+
+        Number const payoffMaximum{1, 10};
+        payOffGrowthLoan(env, broker, borrower, growthLoan, payoffMaximum);
+
+        auto const coarsenedVault = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(coarsenedVault))
+            return;
+        checkFixedPrecisionVaultAssetsDeployed(
+            *this,
+            env,
+            broker.vaultKeylet(),
+            {},
+            {firstLoan, growthLoan},
+            "after growth payment coarsens vault");
+        int const coarsenedScale = getVaultScale(coarsenedVault);
+        BEAST_EXPECTS(
+            coarsenedScale > getVaultBaseScale(coarsenedVault),
+            "expected coarsened scale; base " + std::to_string(getVaultBaseScale(coarsenedVault)) +
+                ", live " + std::to_string(coarsenedScale) + ", total " +
+                to_string(coarsenedVault->at(sfAssetsTotal)));
+        BEAST_EXPECTS(
+            coarsenedVault->at(sfAssetsTotal) > assetsTotalBeforeGrowth,
+            "AssetsTotal before " + to_string(assetsTotalBeforeGrowth) + ", after " +
+                to_string(coarsenedVault->at(sfAssetsTotal)));
+        BEAST_EXPECT(coarsenedVault->at(sfYieldUnrealized) == yieldBeforeGrowth);
+        Number const vaultCredit =
+            coarsenedVault->at(sfAssetsAvailable) - assetsAvailableBeforeGrowth;
+        BEAST_EXPECT(isRounded(asset, vaultCredit, coarsenedScale));
+        BEAST_EXPECT(isRounded(asset, coarsenedVault->at(sfAssetsTotal), coarsenedScale));
+    }
+
+    void
+    testFixedPrecisionCoarsenedSingleLoanTerminal()
+    {
+        testcase("FixedPrecision coarsened LoanPay single-loan terminal remainder");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Number const trustLimit{3, 10};
+        Number const lenderAmount{11, 9};
+        Number const borrowerAmount{5, 9};
+        FixedPrecisionIOU f{
+            *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
+        auto& [env, issuer, lender, borrower, asset] = f;
+
+        auto brokerParams = fixedPrecisionBrokerParams();
+        Number const vaultDeposit{9, 9};
+        Number const debtMax{2, 9};
+        brokerParams.vaultDeposit = vaultDeposit;
+        brokerParams.debtMax = debtMax;
+        brokerParams.coverDeposit = 200'000'000;
+        auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
+
+        LoanShape const shape{.paymentTotal = 2, .paymentInterval = 2 * 365 * 24 * 60 * 60};
+        Number const terminalLoanPrincipal{1'000'000};
+        auto const terminalLoan =
+            originateLoan(env, broker, borrower, lender, terminalLoanPrincipal, shape);
+        Number const growthLoanPrincipal{1, 9};
+        auto const growthLoan = originateLoan(
+            env,
+            broker,
+            borrower,
+            lender,
+            growthLoanPrincipal,
+            shape,
+            kCloseInterestRate(lending::kMaxCloseInterestRate));
+
+        Number const payoffMaximum{4, 9};
+        payOffGrowthLoan(env, broker, borrower, growthLoan, payoffMaximum);
+
+        auto const vaultBefore = env.le(broker.vaultKeylet());
+        auto const brokerBefore = env.le(broker.brokerKeylet());
+        auto const loanBefore = env.le(terminalLoan);
+        if (!BEAST_EXPECT(vaultBefore && brokerBefore && loanBefore))
+            return;
+        BEAST_EXPECT(getVaultScale(vaultBefore) > getVaultBaseScale(vaultBefore));
+        Number const remaining = loanBefore->at(sfPrincipalOutstanding);
+        Number const minFirstPrincipal{1, getVaultBaseScale(vaultBefore) + 2};
+        BEAST_EXPECT(remaining >= minFirstPrincipal);
+        BEAST_EXPECT(
+            vaultBefore->at(sfAssetsTotal) - vaultBefore->at(sfAssetsAvailable) == remaining);
+
+        Number const assetsAvailableBefore = vaultBefore->at(sfAssetsAvailable);
+        Number const borrowerBefore = env.balance(borrower, asset).number();
+        env(pay(borrower, terminalLoan.key, asset(remaining), tfLoanFullPayment));
+        env.close();
+
+        auto const loanAfter = env.le(terminalLoan);
+        auto const vaultAfter = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(loanAfter && vaultAfter))
+            return;
+        checkFixedPrecisionVaultAssetsDeployed(
+            *this,
+            env,
+            broker.vaultKeylet(),
+            {},
+            {terminalLoan, growthLoan},
+            "after terminal payment");
+        BEAST_EXPECT(loanAfter->at(sfPaymentRemaining) == 0);
+        BEAST_EXPECT(loanAfter->at(sfPrincipalOutstanding) == beast::kZero);
+
+        Number const credit = vaultAfter->at(sfAssetsAvailable) - assetsAvailableBefore;
+        BEAST_EXPECT(borrowerBefore - env.balance(borrower, asset).number() == credit);
+        BEAST_EXPECT(credit > beast::kZero);
+        Number const residual = vaultAfter->at(sfAssetsTotal) - vaultAfter->at(sfAssetsAvailable);
+        BEAST_EXPECT(residual == remaining - credit);
+        Number const availableCandidate = [&] {
+            NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
+            return assetsAvailableBefore + remaining;
+        }();
+        int const availableScale =
+            std::max(getVaultBaseScale(vaultAfter), scale(availableCandidate, asset));
+        Number const availableUnit{1, availableScale};
+        BEAST_EXPECT((residual < availableUnit));
+    }
+
+    void
+    testFixedPrecisionCoarsenedInterestPayment()
+    {
+        testcase("FixedPrecision coarsened LoanPay records interest before credit");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Number const trustLimit{3, 10};
+        Number const lenderAmount{1, 10};
+        Number const borrowerAmount{5, 9};
+        FixedPrecisionIOU f{
+            *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
+        auto& [env, issuer, lender, borrower, asset] = f;
+
+        auto brokerParams = fixedPrecisionBrokerParams();
+        Number const vaultDeposit{85, 8};
+        Number const debtMax{2, 9};
+        brokerParams.vaultDeposit = vaultDeposit;
+        brokerParams.debtMax = debtMax;
+        brokerParams.coverDeposit = 200'000'000;
+        auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
+
+        LoanShape const shape{.paymentTotal = 2, .paymentInterval = 2 * 365 * 24 * 60 * 60};
+        Number const targetLoanPrincipal{1'000'000};
+        std::uint32_t const interestRatePercent = 12;
+        auto const targetLoan = originateLoan(
+            env,
+            broker,
+            borrower,
+            lender,
+            asset(targetLoanPrincipal).value(),
+            shape,
+            kInterestRate(percentageToTenthBips(interestRatePercent)));
+        Number const growthLoanPrincipal{15, 8};
+        auto const growthLoan = originateLoan(
+            env,
+            broker,
+            borrower,
+            lender,
+            asset(growthLoanPrincipal).value(),
+            shape,
+            kCloseInterestRate(lending::kMaxCloseInterestRate));
+
+        Number const payoffMaximum{4, 9};
+        payOffGrowthLoan(env, broker, borrower, growthLoan, payoffMaximum);
+
+        auto const targetBefore = env.le(targetLoan);
+        auto const vaultBefore = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(targetBefore && vaultBefore))
+            return;
+        checkFixedPrecisionVaultAssetsDeployed(
+            *this, env, broker.vaultKeylet(), {}, {targetLoan, growthLoan}, "after growth payment");
+        BEAST_EXPECT(getVaultScale(vaultBefore) > getVaultBaseScale(vaultBefore));
+
+        Number const principalBefore = targetBefore->at(sfPrincipalOutstanding);
+        Number const scheduledBefore = scheduledInterest(targetBefore);
+        Number const yieldBefore = vaultBefore->at(sfYieldUnrealized);
+        Number const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
+        Number const assetsAvailableBefore = vaultBefore->at(sfAssetsAvailable);
+        Number const borrowerBefore = env.balance(borrower, asset).number();
+
+        auto const targetState = getCurrentState(env, broker, targetLoan);
+        Number const payment =
+            roundPeriodicPayment(asset, targetState.periodicPayment, targetState.loanScale);
+        env(pay(borrower, targetLoan.key, asset(payment)));
+        env.close();
+
+        auto const targetAfter = env.le(targetLoan);
+        auto const vaultAfter = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(targetAfter && vaultAfter))
+            return;
+        checkFixedPrecisionVaultAssetsDeployed(
+            *this, env, broker.vaultKeylet(), {}, {targetLoan, growthLoan}, "after target payment");
+        Number const principalAfter = targetAfter->at(sfPrincipalOutstanding);
+        Number const scheduledAfter = scheduledInterest(targetAfter);
+        Number const interestActual = vaultAfter->at(sfAssetsTotal) - assetsTotalBefore;
+        Number const interestPaid = scheduledBefore - scheduledAfter;
+        Number const credit = vaultAfter->at(sfAssetsAvailable) - assetsAvailableBefore;
+
+        BEAST_EXPECT(interestActual < interestPaid);
+        BEAST_EXPECT(isRounded(asset, interestActual, getVaultScale(vaultAfter)));
+        // The vault credit floors the sum principalPaid + interestPaid at
+        // AssetsAvailable's own posterior grid; interest is not floored into
+        // AssetsTotal, which is only a derived cache.
+        Number const principalPaid = principalBefore - principalAfter;
+        Number const expectedCredit = Number(creditToPosteriorAvailableScale(
+            vaultBefore,
+            STAmount{asset, principalPaid + interestPaid},
+            Number::RoundingMode::Downward));
+        BEAST_EXPECT(credit == expectedCredit);
+        BEAST_EXPECT(borrowerBefore - env.balance(borrower, asset).number() == credit);
+        BEAST_EXPECT(scheduledAfter < scheduledBefore);
+        BEAST_EXPECT(
+            vaultAfter->at(sfYieldUnrealized) == yieldBefore + scheduledAfter - scheduledBefore);
+        // Compare against the derived total; the stored AssetsTotal is a
+        // floored cache once coarsened.
+        BEAST_EXPECT(
+            getAssetsTotal(vaultAfter) - Number(vaultAfter->at(sfAssetsAvailable)) ==
+            principalAfter);
+    }
+
+    void
+    testFixedPrecisionSpecialPayments()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        struct Row
+        {
+            char const* name = nullptr;
+            bool late = false;
+        };
+        Row const rows[] = {
+            {.name = "FixedPrecision base-scale overpayment", .late = false},
+            {.name = "FixedPrecision base-scale late payment", .late = true},
+        };
+        for (auto const& row : rows)
+        {
+            testcase(row.name);
+
+            Number const trustLimit{5'000'000};
+            Number const lenderAmount{2'000'000};
+            Number const borrowerAmount{500'000};
+            FixedPrecisionIOU f{
+                *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
+            auto& [env, issuer, lender, borrower, asset] = f;
+
+            auto brokerParams = fixedPrecisionBrokerParams();
+            Number const debtMax{500'000};
+            brokerParams.debtMax = debtMax;
+            brokerParams.coverDeposit = 50'000;
+            auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
+
+            Number const loanPrincipal{100'000};
+            std::uint32_t const lateInterestRatePercent = 24;
+            Number const latePaymentFee{1};
+            std::uint32_t const interestRatePercent = 12;
+            std::uint32_t const overpaymentInterestRatePercent = 20;
+            auto const loanKeylet = row.late
+                ? originateLoan(
+                      env,
+                      broker,
+                      borrower,
+                      lender,
+                      asset(loanPrincipal).value(),
+                      {.paymentTotal = 12, .paymentInterval = 600},
+                      kLateInterestRate(percentageToTenthBips(lateInterestRatePercent)),
+                      kLatePaymentFee(asset(latePaymentFee).value()))
+                : originateLoan(
+                      env,
+                      broker,
+                      borrower,
+                      lender,
+                      asset(loanPrincipal).value(),
+                      {.paymentTotal = 3,
+                       .paymentInterval = 24 * 60 * 60,
+                       .flags = tfLoanOverpayment},
+                      kInterestRate(percentageToTenthBips(interestRatePercent)),
+                      kOverpaymentInterestRate(
+                          percentageToTenthBips(overpaymentInterestRatePercent)));
+
+            if (row.late)
+            {
+                auto const state = getCurrentState(env, broker, loanKeylet);
+                using Duration = NetClock::duration;
+                env.close(NetClock::time_point{Duration{state.nextPaymentDate + 1}});
+                // Covers 3 periods plus a small margin.
+                std::uint32_t const catchUpPeriods = 3;
+                Number const catchUpMargin{100};
+                Number const generousAmount =
+                    roundPeriodicPayment(asset, state.periodicPayment, state.loanScale) *
+                        catchUpPeriods +
+                    asset(catchUpMargin).value();
+                env(pay(borrower, loanKeylet.key, asset(generousAmount), tfLoanLatePayment));
+                env.close();
+            }
+            else
+            {
+                Number const overpayAmount{50'000};
+                env(pay(borrower, loanKeylet.key, asset(overpayAmount), tfLoanOverpayment));
+                env.close();
+            }
+
+            auto const loanAfter = env.le(loanKeylet);
+            auto const vaultAfter = env.le(broker.vaultKeylet());
+            if (!BEAST_EXPECT(loanAfter && vaultAfter))
+                return;
+            checkFixedPrecisionVaultAssetsDeployed(
+                *this, env, broker.vaultKeylet(), {}, {loanKeylet}, row.name);
+            BEAST_EXPECT(getVaultVersion(vaultAfter) == VaultVersion::FixedPrecision);
+            BEAST_EXPECT(vaultAfter->at(sfYieldUnrealized) == scheduledInterest(loanAfter));
+            expectPrincipalIsVaultDebt(vaultAfter, loanAfter);
+        }
+    }
+
+    void
+    testFixedPrecisionIntegralPayments()
+    {
+        using namespace jtx;
+
+        for (auto const assetType : {AssetType::XRP, AssetType::MPT})
+        {
+            testcase << "FixedPrecision regular LoanPay "
+                     << (assetType == AssetType::XRP ? "XRP" : "MPT");
+
+            Env env{*this, fixedPrecisionFeatures()};
+            Account const issuer{"issuer"};
+            Account const lender{"lender"};
+            Account const borrower{"borrower"};
+
+            BrokerParameters brokerParams;
+            brokerParams.vaultDeposit = 100'000;
+            brokerParams.debtMax = 25'000;
+            brokerParams.coverDeposit = 1'000;
+            brokerParams.managementFeeRate = TenthBips16{0};
+            LoanParameters const loanParams{
+                .account = borrower,
+                .counter = lender,
+                .principalRequest = 1'000,
+                .payTotal = 2,
+                .payInterval = 24 * 60 * 60};
+
+            auto const loanOpt =
+                createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
+            if (BEAST_EXPECT(loanOpt); !loanOpt)
+                continue;
+            auto const& [broker, loanKeylet, unusedBrokerPseudo] = *loanOpt;
+
+            auto const state = getCurrentState(env, broker, loanKeylet);
+            topUpBorrower(env, broker, issuer, borrower, state, std::nullopt);
+            Number const payment =
+                roundPeriodicPayment(broker.asset, state.periodicPayment, state.loanScale);
+            env(loan::pay(borrower, loanKeylet.key, STAmount{broker.asset, payment}));
+            env.close();
+
+            auto const loanAfter = env.le(loanKeylet);
+            auto const vaultAfter = env.le(broker.vaultKeylet());
+            if (!BEAST_EXPECT(loanAfter && vaultAfter))
+                continue;
+            checkFixedPrecisionVaultAssetsDeployed(
+                *this, env, broker.vaultKeylet(), {}, {loanKeylet}, "after integral payment");
+            BEAST_EXPECT(getVaultVersion(vaultAfter) == VaultVersion::FixedPrecision);
+            BEAST_EXPECT(loanAfter->at(sfPaymentRemaining) == state.paymentRemaining - 1);
+            expectPrincipalIsVaultDebt(vaultAfter, loanAfter);
+        }
+    }
+
+    void
+    testFixedPrecisionYieldAcrossLoans()
+    {
+        testcase("FixedPrecision YieldUnrealized equals three-loan sum");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Number const trustLimit{10'000'000};
+        Number const lenderAmount{3'000'000};
+        Number const borrowerAmount{1'000'000};
+        FixedPrecisionIOU f{
+            *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
+        auto& [env, issuer, lender, borrower, asset] = f;
+
+        auto brokerParams = fixedPrecisionBrokerParams();
+        Number const vaultDeposit{2'000'000};
+        Number const debtMax{1'000'000};
+        brokerParams.vaultDeposit = vaultDeposit;
+        brokerParams.debtMax = debtMax;
+        brokerParams.coverDeposit = 100'000;
+        auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
+
+        std::size_t const loanCount = 3;
+        Number const loanPrincipal{100'000};
+        std::uint32_t const interestRatePercent = 12;
+        std::vector<Keylet> loans;
+        loans.reserve(loanCount);
+        for (std::size_t i = 0; i < loanCount; ++i)
+        {
+            loans.push_back(originateLoan(
+                env,
+                broker,
+                borrower,
+                lender,
+                asset(loanPrincipal).value(),
+                {.paymentTotal = 2, .paymentInterval = 24 * 60 * 60},
+                kInterestRate(percentageToTenthBips(interestRatePercent))));
+        }
+
+        auto const expectedYield = [&] {
+            Number result;
+            for (auto const& loanKeylet : loans)
+            {
+                auto const loan = env.le(loanKeylet);
+                if (BEAST_EXPECT(loan))
+                    result += scheduledInterest(loan);
+            }
+            return result;
+        };
+
+        auto vault = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(vault))
+            return;
+        BEAST_EXPECT(vault->at(sfYieldUnrealized) == expectedYield());
+
+        // Pay two of the three loans.
+        std::size_t const paidLoanCount = 2;
+        for (std::size_t i = 0; i < paidLoanCount; ++i)
+        {
+            auto const state = getCurrentState(env, broker, loans[i]);
+            Number const payment =
+                roundPeriodicPayment(asset, state.periodicPayment, state.loanScale);
+            env(pay(borrower, loans[i].key, asset(payment)));
+            env.close();
+        }
+
+        vault = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(vault))
+            return;
+        checkFixedPrecisionVaultAssetsDeployed(
+            *this, env, broker.vaultKeylet(), {}, loans, "after two of three loans paid");
+        BEAST_EXPECT(vault->at(sfYieldUnrealized) == expectedYield());
+    }
+
+    void
+    testFixedPrecisionYieldAfterOverpaymentAndLatePayment()
+    {
+        testcase(
+            "FixedPrecision YieldUnrealized equals the open-loan sum after overpayment and "
+            "late payment");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Number const trustLimit{10'000'000};
+        Number const lenderAmount{3'000'000};
+        Number const borrowerAmount{1'000'000};
+        FixedPrecisionIOU f{
+            *this, fixedPrecisionFeatures(), trustLimit, lenderAmount, borrowerAmount};
+        auto& [env, issuer, lender, borrower, asset] = f;
+
+        auto brokerParams = fixedPrecisionBrokerParams();
+        Number const vaultDeposit{2'000'000};
+        Number const debtMax{1'000'000};
+        brokerParams.vaultDeposit = vaultDeposit;
+        brokerParams.debtMax = debtMax;
+        brokerParams.coverDeposit = 100'000;
+        auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
+
+        Number const loanPrincipal{100'000};
+        std::uint32_t const interestRatePercent = 12;
+        std::uint32_t const overpaymentInterestRatePercent = 20;
+        std::uint32_t const lateInterestRatePercent = 24;
+        Number const latePaymentFee{1};
+
+        // One loan each for overpayment, late payment, and an untouched
+        // loan still accruing scheduled interest.
+        auto const overpaidLoan = originateLoan(
+            env,
+            broker,
+            borrower,
+            lender,
+            asset(loanPrincipal).value(),
+            {.paymentTotal = 3, .paymentInterval = 24 * 60 * 60, .flags = tfLoanOverpayment},
+            kInterestRate(percentageToTenthBips(interestRatePercent)),
+            kOverpaymentInterestRate(percentageToTenthBips(overpaymentInterestRatePercent)));
+        auto const lateLoan = originateLoan(
+            env,
+            broker,
+            borrower,
+            lender,
+            asset(loanPrincipal).value(),
+            {.paymentTotal = 12, .paymentInterval = 600},
+            kInterestRate(percentageToTenthBips(interestRatePercent)),
+            kLateInterestRate(percentageToTenthBips(lateInterestRatePercent)),
+            kLatePaymentFee(asset(latePaymentFee).value()));
+        auto const untouchedLoan = originateLoan(
+            env,
+            broker,
+            borrower,
+            lender,
+            asset(loanPrincipal).value(),
+            {.paymentTotal = 3, .paymentInterval = 24 * 60 * 60},
+            kInterestRate(percentageToTenthBips(interestRatePercent)));
+
+        std::vector<Keylet> const loans{overpaidLoan, lateLoan, untouchedLoan};
+        auto const expectedYield = [&] {
+            Number result;
+            for (auto const& loanKeylet : loans)
+            {
+                auto const loan = env.le(loanKeylet);
+                if (BEAST_EXPECT(loan))
+                    result += scheduledInterest(loan);
+            }
+            return result;
+        };
+
+        auto vault = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(vault))
+            return;
+        BEAST_EXPECT(vault->at(sfYieldUnrealized) == expectedYield());
+
+        // Overpay the first loan.
+        Number const overpayAmount{50'000};
+        env(pay(borrower, overpaidLoan.key, asset(overpayAmount), tfLoanOverpayment));
+        env.close();
+
+        // Pay the second loan late.
+        auto const lateState = getCurrentState(env, broker, lateLoan);
+        using Duration = NetClock::duration;
+        env.close(NetClock::time_point{Duration{lateState.nextPaymentDate + 1}});
+        // Covers 3 periods plus a small margin.
+        std::uint32_t const catchUpPeriods = 3;
+        Number const catchUpMargin{100};
+        Number const generousAmount =
+            roundPeriodicPayment(asset, lateState.periodicPayment, lateState.loanScale) *
+                catchUpPeriods +
+            asset(catchUpMargin).value();
+        env(pay(borrower, lateLoan.key, asset(generousAmount), tfLoanLatePayment));
+        env.close();
+
+        // The third loan is left untouched, still contributing its own
+        // scheduled interest to the sum.
+        vault = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(vault))
+            return;
+        checkFixedPrecisionVaultAssetsDeployed(
+            *this, env, broker.vaultKeylet(), {}, loans, "after overpayment and late payment");
+        BEAST_EXPECT(vault->at(sfYieldUnrealized) == expectedYield());
+    }
+
+    void
     runAmendmentIndependent()
     {
         testLoanSetNearZeroInterestRateSucceeds();
@@ -1494,6 +2417,17 @@ private:
         testLoanPayCatchUpFeeAtExactDueDatePreAmendment();
         testRepayIntoUnauthorizedVault();
         testLoanPaySelfBrokerExistingLineDefaultRipple();
+        testFixedPrecisionScheduledPayment();
+        testFixedPrecisionRedirectedFeeRounding();
+        testFixedPrecisionCoarsenedPayments();
+        testFixedPrecisionCoarsenedSingleLoanTerminal();
+        testFixedPrecisionCoarsenedInterestPayment();
+        testFixedPrecisionSpecialPayments();
+        testFixedPrecisionIntegralPayments();
+        testFixedPrecisionYieldAcrossLoans();
+        testFixedPrecisionYieldAfterOverpaymentAndLatePayment();
+        testOverpaymentManagementFee(
+            all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
     }
 
     // Tests run under each entry in amendmentCombinations().
