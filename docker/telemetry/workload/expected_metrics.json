@@ -166,6 +166,21 @@
       "peer_quality{metric=\"peers_insane_count\"}"
     ]
   },
+  "peer_validation_load": {
+    "description": "Per-peer validation load (AppMetricGauges). An observable gauge whose labels come only from fixed lists: five metric values for each of two trust values, so every node has exactly these 10 series. All 10 are observed from the first collection, at 0 until a peer has been read twice, so no workload is needed.",
+    "metrics": [
+      "peer_validation_load{metric=\"top1_rate\",trust=\"trusted\"}",
+      "peer_validation_load{metric=\"top2_rate\",trust=\"trusted\"}",
+      "peer_validation_load{metric=\"top3_rate\",trust=\"trusted\"}",
+      "peer_validation_load{metric=\"top_share\",trust=\"trusted\"}",
+      "peer_validation_load{metric=\"peers_over_limit\",trust=\"trusted\"}",
+      "peer_validation_load{metric=\"top1_rate\",trust=\"untrusted\"}",
+      "peer_validation_load{metric=\"top2_rate\",trust=\"untrusted\"}",
+      "peer_validation_load{metric=\"top3_rate\",trust=\"untrusted\"}",
+      "peer_validation_load{metric=\"top_share\",trust=\"untrusted\"}",
+      "peer_validation_load{metric=\"peers_over_limit\",trust=\"untrusted\"}"
+    ]
+  },
   "parity_ledger_economy": {
     "description": "External dashboard parity: ledger economy metrics (AppMetricGauges.cpp). transaction_rate is observed on every export, in both branches of the ledger-age test. base_fee_drops is observed only inside the 'if (ledger)' guard on getValidatedLedger(), and that returns validLedger_ (LedgerMaster::getValidatedLedger), which stays null until a ledger validates — the same precondition complete_ledgers has. Both are asserted because run-full-validation.sh waits for a validated ledger before running the workload. base_fee_drops absent while transaction_rate is present is the signature of a cluster that never validated, not of a missing metric.",
     "metrics": [

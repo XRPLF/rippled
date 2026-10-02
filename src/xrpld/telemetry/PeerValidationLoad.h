@@ -574,7 +574,7 @@ private:
 [[nodiscard]] inline opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
 createValidationLoadGauge(opentelemetry::metrics::Meter& meter)
 {
-    return meter.CreateDoubleObservableGauge(kPeerValidationLoad, kPeerValidationLoadDesc);
+    return meter.CreateDoubleObservableGauge(metric::kPeerValidationLoad, kPeerValidationLoadDesc);
 }
 
 /**
