@@ -1146,6 +1146,27 @@ def test_every_contract_span_declares_allowed_parents() -> None:
     assert not stale, f"entries still carrying the old parent key: {stale}"
 
 
+def test_contract_totals_count_its_span_entries() -> None:
+    """The two total fields count what the file lists.
+
+    Nothing else reads total_span_types or total_unique_attributes, so a total
+    that an edit or a merge left wrong would pass every other check. The
+    file's own description defines both, and this asserts that definition
+    against the real file.
+    """
+    contract = vt._load_expected_spans()
+    spans = contract["spans"]
+    attributes = {key for span in spans for key in span.get("required_attributes", [])}
+    assert contract["total_span_types"] == len(spans), (
+        f"total_span_types is {contract['total_span_types']}, "
+        f"but the file lists {len(spans)} spans"
+    )
+    assert contract["total_unique_attributes"] == len(attributes), (
+        f"total_unique_attributes is {contract['total_unique_attributes']}, but the spans' "
+        f"required_attributes name {len(attributes)}"
+    )
+
+
 class FakePrometheus:
     """Answers /api/v1/query from a script kept per query.
 

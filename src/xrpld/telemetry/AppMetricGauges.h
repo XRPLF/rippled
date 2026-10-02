@@ -19,10 +19,13 @@
 #include <xrpl/telemetry/MetricsRegistry.h>
 
 #ifdef XRPL_ENABLE_TELEMETRY
-// Guarded like the members that use them: std::atomic by callbacksDetached_,
-// std::function and std::int64_t by the ObserveFn sink, the OTel instrument
-// headers by the 31 instrument handles, and observer_result.h by the
-// ObserverResult parameter of observeCacheLockHoldPeaks().
+// Guarded like the members that use them: PeerValidationLoad.h by
+// validationLoad_, std::atomic by callbacksDetached_, std::function and
+// std::int64_t by the ObserveFn sink, the OTel instrument headers by the 32
+// instrument handles, and observer_result.h by the ObserverResult parameter
+// of observeCacheLockHoldPeaks().
+#include <xrpld/telemetry/PeerValidationLoad.h>
+
 #include <opentelemetry/metrics/async_instruments.h>
 #include <opentelemetry/metrics/observer_result.h>
 #include <opentelemetry/nostd/shared_ptr.h>
@@ -62,12 +65,14 @@ namespace xrpl::telemetry {
  *
  * AppMetricGauges
  * +-- MetricsRegistry (borrowed)
- * |   +-- meter() -- creates all 31 observable instruments
+ * |   +-- meter() -- creates all 32 observable instruments
  * |   +-- getValidationTracker() -- read by the agreement instruments
  * |   +-- OTel MeterProvider
  * |       +-- PeriodicExportingMetricReader (~10 s tick, drives the callbacks)
  * +-- ServiceRegistry (borrowed) -- every value the callbacks sample
- * +-- 31 ObservableInstrument handles (owned)
+ * +-- PeerValidationLoad (owned) -- what the validation-load callback keeps
+ * |   between collections
+ * +-- 32 ObservableInstrument handles (owned)
  *
  * Callback flow, once startAsyncGauges() has run:
  *
@@ -85,16 +90,16 @@ namespace xrpl::telemetry {
  * CountedObject instances, load-factor breakdown, NodeStore I/O and
  * acquisition stalls, online-delete rotation state, server info, build
  * version, complete ledger ranges, database sizes, validator health, peer
- * quality, reduce-relay efficiency, ledger economy, state tracking, storage
- * detail, validation agreement, UNL quorum, clock close offset, sync state,
- * ledger-acquire progress, SHAMap tree-node cache hit rate, worker-pool
- * saturation, peer ledger supply, PeerFinder slot census, amendment block and
- * the ledger quorum/publish gate.
+ * quality, per-peer validation load, reduce-relay efficiency, ledger economy,
+ * state tracking, storage detail, validation agreement, UNL quorum, clock
+ * close offset, sync state, ledger-acquire progress, SHAMap tree-node cache
+ * hit rate, worker-pool saturation, peer ledger supply, PeerFinder slot
+ * census, amendment block and the ledger quorum/publish gate.
  * Most multiplex their values through a `metric` label, so a new value needs
- * no new instrument; object counts use `type`, build info uses `version`, and
- * complete ledgers uses `bound` and `index`. Twenty-seven are ObservableGauges
- * and four are ObservableCounters, the latter where the value read is already
- * cumulative and must never decrease.
+ * no new instrument; object counts use `type`, build info uses `version`,
+ * complete ledgers uses `bound` and `index`, and validation load adds `trust`.
+ * Twenty-eight are ObservableGauges and four are ObservableCounters, the
+ * latter where the value read is already cumulative and must never decrease.
  *
  * Teardown order is a caller contract, in this order: detachCallbacks(), then
  * MetricsRegistry::stop(), then destroy this object. stop() joins the reader
@@ -125,6 +130,9 @@ namespace xrpl::telemetry {
  * writers of the state they read. Each reads only lock-protected or
  * atomic state and wraps its body in a catch-all try block, so a
  * transient failure never brings down the reader thread.
+ * - The validation-load callback also keeps state between collections, in
+ * validationLoad_. Only that callback touches it, and the SDK runs
+ * observable callbacks one at a time, so it needs no lock.
  * - startAsyncGauges() and the destructor are NOT thread-safe with each
  * other and belong on the single server lifecycle thread. armed_ is a
  * plain bool because that call is its only reader and writer.
@@ -341,6 +349,14 @@ private:
      */
     std::atomic<bool> callbacksDetached_{false};
 
+    /**
+     * What the validation-load callback keeps between collections: each live
+     * peer's last reading and last warning. Touched only by that callback,
+     * which the SDK never runs twice at once. Declared before the handles,
+     * so it outlives them.
+     */
+    PeerValidationLoad validationLoad_;
+
     // --- Observable instrument handles ---
     // Held so the callbacks stay registered for as long as this object lives.
     /**
@@ -467,6 +483,12 @@ private:
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         peerQualityGauge_;
     /**
+     * Per-peer validation load: the three busiest peers' rates, the busiest
+     * peer's share and the peers over the limit, by signer trust.
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        peerValidationLoadGauge_;
+    /**
      * Transaction reduce-relay efficiency: selected against suppressed peers,
      * feature-disabled peers, missing-tx frequency.
      */
@@ -571,6 +593,8 @@ private:
     registerValidatorHealthGauge();
     void
     registerPeerQualityGauge();
+    void
+    registerPeerValidationLoadGauge();
     void
     registerReduceRelayGauge();  // Reduce-relay efficiency
     void

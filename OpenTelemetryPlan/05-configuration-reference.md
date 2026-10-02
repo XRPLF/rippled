@@ -289,22 +289,26 @@ overlay that exists is `docker/telemetry/otel-collector-config.grafanacloud.yaml
 It is **not** the base config plus one processor — it restructures the service
 graph. The full delta:
 
-| Added by the overlay     | Where  | Purpose                                                                   |
-| ------------------------ | ------ | ------------------------------------------------------------------------- |
-| `basicauth/grafanacloud` | `:29`  | Extension; instance id / API token from the container environment         |
-| `tail_sampling`          | `:60`  | One `probabilistic` policy at **0.5%**, `decision_wait: 10s`              |
-| `transform/cloudlabels`  | `:119` | Copies three resource attrs onto datapoint labels for Cloud (OTLP) ingest |
-| `otlp_http/grafanacloud` | `:236` | Single OTLP/HTTP exporter fanning all three signals to Grafana Cloud      |
-| `metrics_flush_interval` | `:136` | `spanmetrics` flushes every 15s instead of the 60s default                |
+| Added by the overlay            | Where                    | Purpose                                                                                                       |
+| ------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `basicauth/grafanacloud`        | `extensions`             | Extension; instance id / API token from the container environment                                             |
+| `batch/store`                   | `processors`             | 2048-span batches for `traces/store` only, so Grafana Cloud gets fewer, larger requests                       |
+| `tail_sampling`                 | `processors`             | One `probabilistic` policy at **0.5%**, `decision_wait: 10s`, `num_traces: 300000`, a decision cache          |
+| `transform/cloudlabels`         | `processors`             | Copies four resource attrs onto datapoint labels for Cloud (OTLP) ingest                                      |
+| `otlp/tempo` queue              | `exporters`              | Queue sized in spans (100000), because `batch/store` sends it large batches                                   |
+| `otlp_http/grafanacloud`        | `exporters`              | Metrics and logs to Grafana Cloud over OTLP/HTTP, with the default retry and queue                            |
+| `otlp_http/grafanacloud-traces` | `exporters`              | Stored traces to the same endpoint; queue sized in spans (100000), 20 consumers                               |
+| `metrics_flush_interval`        | `connectors.spanmetrics` | `spanmetrics` flushes every 15s instead of the 60s default                                                    |
+| `telemetry`                     | `service`                | The collector's own metrics, posted to its own OTLP receiver so they reach local Prometheus and Grafana Cloud |
 
 | Removed by the overlay | Consequence                                                       |
 | ---------------------- | ----------------------------------------------------------------- |
 | `debug`                | No console span dump; collector logs alone when diagnosing ingest |
 
 Pipelines go from **three** (`traces`, `metrics`, `logs`) to **five**
-(`:253-280`): `traces/metrics`, `traces/store`, `metrics/local`,
+(`service.pipelines`): `traces/metrics`, `traces/store`, `metrics/local`,
 `metrics/cloud`, `logs`. `tail_sampling` is applied in **`traces/store`**
-(`:259-261`) — the branch feeding Tempo and Grafana Cloud — not in a pipeline
+— the branch feeding Tempo and Grafana Cloud — not in a pipeline
 named `traces`, which does not exist in the overlay. The `traces/metrics`
 branch feeds `spanmetrics` unsampled, so the derived RED metrics stay exact
 while stored traces are ~1/200 of ingested ones.
