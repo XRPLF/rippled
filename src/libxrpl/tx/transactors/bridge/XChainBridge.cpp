@@ -2235,7 +2235,7 @@ XChainCreateAccountCommit::doApply()
 }
 
 void
-XChainCreateBridge::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainCreateBridge::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2253,7 +2253,7 @@ XChainCreateBridge::finalizeInvariants(
 }
 
 void
-BridgeModify::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+BridgeModify::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2271,7 +2271,7 @@ BridgeModify::finalizeInvariants(
 }
 
 void
-XChainClaim::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainClaim::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2284,7 +2284,7 @@ XChainClaim::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, be
 }
 
 void
-XChainCommit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainCommit::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2302,7 +2302,7 @@ XChainCommit::finalizeInvariants(
 }
 
 void
-XChainCreateClaimID::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainCreateClaimID::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2320,7 +2320,7 @@ XChainCreateClaimID::finalizeInvariants(
 }
 
 void
-XChainAddClaimAttestation::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainAddClaimAttestation::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2338,7 +2338,7 @@ XChainAddClaimAttestation::finalizeInvariants(
 }
 
 void
-XChainAddAccountCreateAttestation::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainAddAccountCreateAttestation::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2356,7 +2356,7 @@ XChainAddAccountCreateAttestation::finalizeInvariants(
 }
 
 void
-XChainCreateAccountCommit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainCreateAccountCommit::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

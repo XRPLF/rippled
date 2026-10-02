@@ -49,7 +49,7 @@ private:
 
 public:
     // This constructor is private, use createObject instead.
-    NodeObject(NodeObjectType type, Blob&& data, uint256 const& hash, PrivateAccess);
+    NodeObject(NodeObjectType type, Blob&& data, UInt256 const& hash, PrivateAccess);
 
     /**
      * Create an object from fields.
@@ -64,7 +64,7 @@ public:
      * @param hash The 256-bit hash of the payload data.
      */
     static std::shared_ptr<NodeObject>
-    createObject(NodeObjectType type, Blob&& data, uint256 const& hash);
+    createObject(NodeObjectType type, Blob&& data, UInt256 const& hash);
 
     /**
      * Returns the type of this object.
@@ -75,7 +75,7 @@ public:
     /**
      * Returns the hash of the data.
      */
-    [[nodiscard]] uint256 const&
+    [[nodiscard]] UInt256 const&
     getHash() const;
 
     /**
@@ -86,7 +86,7 @@ public:
 
 private:
     NodeObjectType const type_;
-    uint256 const hash_;
+    UInt256 const hash_;
     Blob const data_;
 };
 

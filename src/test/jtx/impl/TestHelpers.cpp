@@ -249,7 +249,7 @@ findPathsRequest(
     std::optional<STAmount> const& saSendMax,
     std::optional<PathAsset> const& srcAsset,
     std::optional<AccountID> const& srcIssuer,
-    std::optional<uint256> const& domain)
+    std::optional<UInt256> const& domain)
 {
     using namespace jtx;
 
@@ -314,7 +314,7 @@ findPaths(
     std::optional<STAmount> const& saSendMax,
     std::optional<PathAsset> const& srcAsset,
     std::optional<AccountID> const& srcIssuer,
-    std::optional<uint256> const& domain)
+    std::optional<UInt256> const& domain)
 {
     json::Value result =
         findPathsRequest(env, src, dst, saDstAmount, saSendMax, srcAsset, srcIssuer, domain);
@@ -363,7 +363,7 @@ findPathsByElement(
     std::optional<STAmount> const& saSendMax,
     std::optional<STPathElement> const& srcElement,
     std::optional<AccountID> const& srcIssuer,
-    std::optional<uint256> const& domain)
+    std::optional<UInt256> const& domain)
 {
     // srcElement is optional but is expected to always be present
     XRPL_ASSERT(
@@ -463,7 +463,7 @@ expectOffers(
 {
     std::uint16_t cnt = 0;
     std::uint16_t matched = 0;
-    forEachItem(*env.current(), account, [&](SLE::const_ref sle) {
+    forEachItem(*env.current(), account, [&](SLE::ConstRef sle) {
         if (!sle)
             return false;
         if (sle->getType() == ltOFFER)
@@ -695,7 +695,7 @@ issueHelperMPT(IssuerArgs const& args)
 namespace loan_broker {
 
 json::Value
-set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
+set(AccountID const& account, UInt256 const& vaultId, uint32_t flags)
 {
     json::Value jv;
     jv[sfTransactionType] = jss::LoanBrokerSet;
@@ -706,7 +706,7 @@ set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
 }
 
 json::Value
-del(AccountID const& account, uint256 const& brokerID, uint32_t flags)
+del(AccountID const& account, UInt256 const& brokerID, uint32_t flags)
 {
     json::Value jv;
     jv[sfTransactionType] = jss::LoanBrokerDelete;
@@ -719,7 +719,7 @@ del(AccountID const& account, uint256 const& brokerID, uint32_t flags)
 json::Value
 coverDeposit(
     AccountID const& account,
-    uint256 const& brokerID,
+    UInt256 const& brokerID,
     STAmount const& amount,
     uint32_t flags)
 {
@@ -735,7 +735,7 @@ coverDeposit(
 json::Value
 coverWithdraw(
     AccountID const& account,
-    uint256 const& brokerID,
+    UInt256 const& brokerID,
     STAmount const& amount,
     uint32_t flags)
 {
@@ -766,7 +766,7 @@ namespace loan {
 
 json::Value
 set(AccountID const& account,
-    uint256 const& loanBrokerID,
+    UInt256 const& loanBrokerID,
     Number principalRequested,
     std::uint32_t flags)
 {
@@ -780,7 +780,7 @@ set(AccountID const& account,
 }
 
 json::Value
-manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
+manage(AccountID const& account, UInt256 const& loanID, std::uint32_t flags)
 {
     json::Value jv;
     jv[sfTransactionType] = jss::LoanManage;
@@ -791,7 +791,7 @@ manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
 }
 
 json::Value
-del(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
+del(AccountID const& account, UInt256 const& loanID, std::uint32_t flags)
 {
     json::Value jv;
     jv[sfTransactionType] = jss::LoanDelete;
@@ -802,7 +802,7 @@ del(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
 }
 
 json::Value
-pay(AccountID const& account, uint256 const& loanID, STAmount const& amount, std::uint32_t flags)
+pay(AccountID const& account, UInt256 const& loanID, STAmount const& amount, std::uint32_t flags)
 {
     json::Value jv;
     jv[sfTransactionType] = jss::LoanPay;

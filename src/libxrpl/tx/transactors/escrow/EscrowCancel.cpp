@@ -169,7 +169,7 @@ EscrowCancel::doApply()
 }
 
 void
-EscrowCancel::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+EscrowCancel::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
