@@ -35,6 +35,7 @@
 #include <cstdint>
 #include <optional>
 #include <set>
+#include <vector>
 
 namespace xrpl {
 
@@ -50,12 +51,12 @@ hasExpired(
     std::optional<std::uint32_t> const& exp,
     ExpiryComparison comparison)
 {
-    using d = NetClock::duration;
-    using tp = NetClock::time_point;
+    using D = NetClock::duration;
+    using Tp = NetClock::time_point;
 
     if (!exp)
         return false;
-    auto const boundary = tp{d{*exp}};
+    auto const boundary = Tp{D{*exp}};
     return comparison == ExpiryComparison::Inclusive  //
         ? view.parentCloseTime() >= boundary
         : view.parentCloseTime() > boundary;
@@ -266,7 +267,7 @@ areCompatible(
 
 bool
 areCompatible(
-    uint256 const& validHash,
+    UInt256 const& validHash,
     LedgerIndex validIndex,
     ReadView const& testLedger,
     beast::Journal::Stream& s,
@@ -304,10 +305,10 @@ areCompatible(
     return ret;
 }
 
-std::set<uint256>
+std::set<UInt256>
 getEnabledAmendments(ReadView const& view)
 {
-    std::set<uint256> amendments;
+    std::set<UInt256> amendments;
 
     if (auto const sle = view.read(keylet::amendments()))
     {
@@ -321,29 +322,29 @@ getEnabledAmendments(ReadView const& view)
     return amendments;
 }
 
-majorityAmendments_t
+MajorityAmendmentsT
 getMajorityAmendments(ReadView const& view)
 {
-    majorityAmendments_t ret;
+    MajorityAmendmentsT ret;
 
     if (auto const sle = view.read(keylet::amendments()))
     {
         if (sle->isFieldPresent(sfMajorities))
         {
-            using tp = NetClock::time_point;
-            using d = tp::duration;
+            using Tp = NetClock::time_point;
+            using D = Tp::duration;
 
             auto const majorities = sle->getFieldArray(sfMajorities);
 
             for (auto const& m : majorities)
-                ret[m.getFieldH256(sfAmendment)] = tp(d(m.getFieldU32(sfCloseTime)));
+                ret[m.getFieldH256(sfAmendment)] = Tp(D(m.getFieldU32(sfCloseTime)));
         }
     }
 
     return ret;
 }
 
-std::optional<uint256>
+std::optional<UInt256>
 hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 {
     // Easy cases...
@@ -465,9 +466,10 @@ canWithdraw(
     ReadView const& view,
     AccountID const& from,
     AccountID const& to,
-    SLE::const_ref toSle,
+    SLE::ConstRef toSle,
     STAmount const& amount,
-    bool hasDestinationTag)
+    bool hasDestinationTag,
+    std::optional<std::vector<UInt256>> const& credentialIDs)
 {
     if (auto const ret = checkDestinationAndTag(toSle, hasDestinationTag))
         return ret;
@@ -478,7 +480,28 @@ canWithdraw(
     if (toSle->isFlag(lsfDepositAuth))
     {
         if (!view.exists(keylet::depositPreauth(to, from)))
-            return tecNO_PERMISSION;
+        {
+            if (credentialIDs.has_value())
+            {
+                STVector256 const credIDs{*credentialIDs};
+
+                // Callers must have validated these in preclaim, so a missing
+                // credential here is an invariant violation.
+                for (auto const& h : credIDs)
+                {
+                    if (!view.exists(keylet::credential(h)))
+                        return tecINTERNAL;  // LCOV_EXCL_LINE
+                }
+
+                if (auto const ret = credentials::authorizedDepositPreauth(view, credIDs, to);
+                    !isTesSuccess(ret))
+                    return ret;
+            }
+            else
+            {
+                return tecNO_PERMISSION;
+            }
+        }
     }
 
     return withdrawToDestExceedsLimit(view, from, to, amount);
@@ -490,11 +513,12 @@ canWithdraw(
     AccountID const& from,
     AccountID const& to,
     STAmount const& amount,
-    bool hasDestinationTag)
+    bool hasDestinationTag,
+    std::optional<std::vector<UInt256>> const& credentialIDs)
 {
     auto const toSle = view.read(keylet::account(to));
 
-    return canWithdraw(view, from, to, toSle, amount, hasDestinationTag);
+    return canWithdraw(view, from, to, toSle, amount, hasDestinationTag, credentialIDs);
 }
 
 [[nodiscard]] TER
@@ -503,7 +527,8 @@ canWithdraw(ReadView const& view, STTx const& tx)
     auto const from = tx[sfAccount];
     auto const to = tx[~sfDestination].value_or(from);
 
-    return canWithdraw(view, from, to, tx[sfAmount], tx.isFieldPresent(sfDestinationTag));
+    return canWithdraw(
+        view, from, to, tx[sfAmount], tx.isFieldPresent(sfDestinationTag), tx[~sfCredentialIDs]);
 }
 
 TER
@@ -518,12 +543,19 @@ doWithdraw(
 {
     auto const dstSle = ctx.view.read(keylet::account(dstAcct));
 
-    // Create trust line or MPToken for the receiving account
+    // Create a trust line or MPToken for a self-destination only when there
+    // is a payout to credit. Post-fixCleanup3_4_0, a zero-value withdraw
+    // (e.g. share redemption from a fully impaired vault) must not insert
+    // an empty holding: that records a one-sided zero delta and can also
+    // create+delete MPTokens in the same transaction.
     if (dstAcct == senderAcct)
     {
-        if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset(), j);
-            !isTesSuccess(ter) && ter != tecDUPLICATE)
-            return ter;
+        if (amount > beast::kZero || !ctx.view.rules().enabled(fixCleanup3_4_0))
+        {
+            if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset(), j);
+                !isTesSuccess(ter) && ter != tecDUPLICATE)
+                return ter;
+        }
     }
     else
     {
@@ -571,7 +603,7 @@ cleanupOnAccountDelete(
     // Delete all the entries in the account directory.
     SLE::pointer sleDirNode{};
     unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::kZero};
+    UInt256 dirEntry{beast::kZero};
     std::uint32_t deleted = 0;
 
     if (view.exists(ownerDirKeylet) &&

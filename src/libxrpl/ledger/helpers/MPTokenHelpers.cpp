@@ -184,6 +184,8 @@ addEmptyHolding(
     auto const mpt = ctx.view.peek(keylet::mptokenIssuance(mptID));
     if (!mpt)
         return tefINTERNAL;  // LCOV_EXCL_LINE
+    // Unlike IOU addEmptyHolding (post-fixCleanup3_4_0), a locked issuance is
+    // still rejected before the "MPToken already exists" short circuit.
     if (mpt->isFlag(lsfMPTLocked))
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (ctx.view.peek(keylet::mptoken(mptID, accountID)))
@@ -384,8 +386,7 @@ requireAuth(
     // They are implicitly authorized for any MPT they hold, including vault shares whose
     // underlying asset would otherwise require auth.
     auto const isPseudoAccountExempt = [&] {
-        return (featureSAVEnabled || featureMPTV2Enabled) &&
-            isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID, &sfAMMID});
+        return (featureSAVEnabled || featureMPTV2Enabled) && isPseudoAccount(view, account);
     };
 
     auto const mptID = keylet::mptokenIssuance(mptIssue.getMptID());
@@ -974,7 +975,7 @@ createMPToken(
     ApplyView& view,
     MPTID const& mptIssuanceID,
     AccountID const& account,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     std::uint32_t const flags)
 {
     auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
@@ -1003,7 +1004,7 @@ checkCreateMPT(
     xrpl::ApplyView& view,
     xrpl::MPTIssue const& mptIssue,
     xrpl::AccountID const& holder,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     std::uint32_t flags,
     beast::Journal j)
 {

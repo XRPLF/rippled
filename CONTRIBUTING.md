@@ -59,6 +59,17 @@ to an existing XLS. Neither change will be released (in an amendment's
 case, marked as `Supported::yes`) until the corresponding XLS's status
 is `Final`.
 
+## AI coding agents
+
+[`AGENTS.md`](./AGENTS.md) (and its `CLAUDE.md` symlink, for Claude Code) holds shared, checked-in guidance for AI coding agents working in this repository — build/test/lint commands and architecture notes. Additional `AGENTS.md` files may exist in subdirectories to give agents context specific to that part of the codebase; whenever you add one, also add a `CLAUDE.md` symlink pointing to it (`ln -s AGENTS.md CLAUDE.md`) so Claude Code picks it up too.
+
+If you want to give an agent personal instructions that shouldn't be shared with other contributors (e.g. your own workflow preferences), those are gitignored, not checked in:
+
+- `CLAUDE.local.md` — read by Claude Code alongside `CLAUDE.md`.
+- `AGENTS.override.md` — read by AGENTS.md-compatible tools that support a personal override file layered on top of `AGENTS.md`.
+
+Likewise, `.claude/settings.local.json` is for personal, untracked Claude Code settings, while `.claude/settings.json` is shared.
+
 ## Before making a pull request
 
 (Or marking a draft pull request as ready.)
@@ -82,7 +93,7 @@ If you create new source files, they must be organized as follows:
   under `include/xrpl`, and source (`.cpp`) files must go under
   `src/libxrpl`.
 - All other non-test files must go under `src/xrpld`.
-- All test source files must go under `src/test`.
+- New test source files should use `gtest` and go under `src/tests`, unless that isn't possible, in which case they should use our legacy test framework and go under `src/test`.
 - All benchmark source files must go under `src/benchmarks`.
 
 The source must be formatted according to the style guide below. The easiest
@@ -468,8 +479,12 @@ exists, then no other unit test will be executed, apart from `TestSuiteName`.
     elsewhere in the codebase.
 12. Use clear and self-explanatory names for functions, variables,
     structs and classes.
-13. Use TitleCase for classes, structs and filenames, camelCase for
-    function and variable names, lower case for namespaces and folders.
+13. Use TitleCase for classes, structs, type aliases and filenames,
+    camelCase for function and variable names, lower case for namespaces and
+    folders. The exception is a type alias that generic code looks up by name
+    (`value_type`, `iterator`, `result_type`, and the rest of the standard
+    container, hash and clock members), which keeps its snake_case spelling;
+    `.clang-tidy` lists the names that are allowed.
 14. Provide as many comments as you feel that a competent programmer
     would need to understand what your code does.
 

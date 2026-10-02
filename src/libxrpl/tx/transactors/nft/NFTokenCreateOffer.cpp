@@ -52,7 +52,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
     if (hasExpired(ctx.view, ctx.tx[~sfExpiration]))
         return tecEXPIRED;
 
-    uint256 const nftokenID = ctx.tx[sfNFTokenID];
+    UInt256 const nftokenID = ctx.tx[sfNFTokenID];
     std::uint32_t const txFlags = ctx.tx.getFlags();
     if (!nft::findToken(
             ctx.view, ctx.tx[ctx.tx.isFlag(tfSellNFToken) ? sfAccount : sfOwner], nftokenID))
@@ -90,7 +90,7 @@ NFTokenCreateOffer::doApply()
 }
 
 void
-NFTokenCreateOffer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+NFTokenCreateOffer::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

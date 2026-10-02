@@ -64,6 +64,7 @@ words:
   - blindings
   - bookdir
   - Bougalis
+  - bthomee
   - Britto
   - Btrfs
   - Buildx
@@ -82,6 +83,7 @@ words:
   - coeffs
   - coldwallet
   - compr
+  - cppcoro
   - conanfile
   - conanrun
   - confs
@@ -128,6 +130,7 @@ words:
   - fsanitize
   - funclets
   - Gamal
+  - gantt
   - gcov
   - gcovr
   - ghead
@@ -141,6 +144,7 @@ words:
   - hwrap
   - ifndef
   - inequation
+  - Injectivity
   - insuf
   - insuff
   - invasively
@@ -176,6 +180,7 @@ words:
   - ltype
   - mathbunnyru
   - mcmodel
+  - Mankawde
   - MEMORYSTATUSEX
   - MPTAMM
   - MPTDEX
@@ -245,6 +250,7 @@ words:
   - protobuf
   - protos
   - ptrs
+  - Pratik
   - pushd
   - pyenv
   - pyparsing
@@ -389,3 +395,4 @@ words:
   - xxhasher
   - zstdio
   - CGNAT
+  - ungated

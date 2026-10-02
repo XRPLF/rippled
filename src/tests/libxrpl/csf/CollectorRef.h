@@ -53,7 +53,7 @@ namespace xrpl::test::csf {
  */
 class CollectorRef
 {
-    using tp = SimTime;
+    using Tp = SimTime;
 
     // Interface for type-erased collector instance
     struct ICollector
@@ -61,67 +61,67 @@ class CollectorRef
         virtual ~ICollector() = default;
 
         virtual void
-        on(PeerID node, tp when, Share<Tx> const&) = 0;
+        on(PeerID node, Tp when, Share<Tx> const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, Share<TxSet> const&) = 0;
+        on(PeerID node, Tp when, Share<TxSet> const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, Share<Validation> const&) = 0;
+        on(PeerID node, Tp when, Share<Validation> const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, Share<Ledger> const&) = 0;
+        on(PeerID node, Tp when, Share<Ledger> const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, Share<Proposal> const&) = 0;
+        on(PeerID node, Tp when, Share<Proposal> const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, Receive<Tx> const&) = 0;
+        on(PeerID node, Tp when, Receive<Tx> const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, Receive<TxSet> const&) = 0;
+        on(PeerID node, Tp when, Receive<TxSet> const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, Receive<Validation> const&) = 0;
+        on(PeerID node, Tp when, Receive<Validation> const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, Receive<Ledger> const&) = 0;
+        on(PeerID node, Tp when, Receive<Ledger> const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, Receive<Proposal> const&) = 0;
+        on(PeerID node, Tp when, Receive<Proposal> const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, Relay<Tx> const&) = 0;
+        on(PeerID node, Tp when, Relay<Tx> const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, Relay<TxSet> const&) = 0;
+        on(PeerID node, Tp when, Relay<TxSet> const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, Relay<Validation> const&) = 0;
+        on(PeerID node, Tp when, Relay<Validation> const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, Relay<Ledger> const&) = 0;
+        on(PeerID node, Tp when, Relay<Ledger> const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, Relay<Proposal> const&) = 0;
+        on(PeerID node, Tp when, Relay<Proposal> const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, SubmitTx const&) = 0;
+        on(PeerID node, Tp when, SubmitTx const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, StartRound const&) = 0;
+        on(PeerID node, Tp when, StartRound const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, CloseLedger const&) = 0;
+        on(PeerID node, Tp when, CloseLedger const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, AcceptLedger const&) = 0;
+        on(PeerID node, Tp when, AcceptLedger const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, WrongPrevLedger const&) = 0;
+        on(PeerID node, Tp when, WrongPrevLedger const&) = 0;
 
         virtual void
-        on(PeerID node, tp when, FullyValidateLedger const&) = 0;
+        on(PeerID node, Tp when, FullyValidateLedger const&) = 0;
     };
 
     // Bridge between type-ful collector T and type erased instance
@@ -145,127 +145,127 @@ class CollectorRef
         operator=(Any&&) = default;
 
         void
-        on(PeerID node, tp when, Share<Tx> const& e) override
+        on(PeerID node, Tp when, Share<Tx> const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, Share<TxSet> const& e) override
+        on(PeerID node, Tp when, Share<TxSet> const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, Share<Validation> const& e) override
+        on(PeerID node, Tp when, Share<Validation> const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, Share<Ledger> const& e) override
+        on(PeerID node, Tp when, Share<Ledger> const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, Share<Proposal> const& e) override
+        on(PeerID node, Tp when, Share<Proposal> const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, Receive<Tx> const& e) override
+        on(PeerID node, Tp when, Receive<Tx> const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, Receive<TxSet> const& e) override
+        on(PeerID node, Tp when, Receive<TxSet> const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, Receive<Validation> const& e) override
+        on(PeerID node, Tp when, Receive<Validation> const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, Receive<Ledger> const& e) override
+        on(PeerID node, Tp when, Receive<Ledger> const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, Receive<Proposal> const& e) override
+        on(PeerID node, Tp when, Receive<Proposal> const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, Relay<Tx> const& e) override
+        on(PeerID node, Tp when, Relay<Tx> const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, Relay<TxSet> const& e) override
+        on(PeerID node, Tp when, Relay<TxSet> const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, Relay<Validation> const& e) override
+        on(PeerID node, Tp when, Relay<Validation> const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, Relay<Ledger> const& e) override
+        on(PeerID node, Tp when, Relay<Ledger> const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, Relay<Proposal> const& e) override
+        on(PeerID node, Tp when, Relay<Proposal> const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, SubmitTx const& e) override
+        on(PeerID node, Tp when, SubmitTx const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, StartRound const& e) override
+        on(PeerID node, Tp when, StartRound const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, CloseLedger const& e) override
+        on(PeerID node, Tp when, CloseLedger const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, AcceptLedger const& e) override
+        on(PeerID node, Tp when, AcceptLedger const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, WrongPrevLedger const& e) override
+        on(PeerID node, Tp when, WrongPrevLedger const& e) override
         {
             t_.on(node, when, e);
         }
 
         void
-        on(PeerID node, tp when, FullyValidateLedger const& e) override
+        on(PeerID node, Tp when, FullyValidateLedger const& e) override
         {
             t_.on(node, when, e);
         }
@@ -290,7 +290,7 @@ public:
 
     template <class E>
     void
-    on(PeerID node, tp when, E const& e)
+    on(PeerID node, Tp when, E const& e)
     {
         impl_->on(node, when, e);
     }

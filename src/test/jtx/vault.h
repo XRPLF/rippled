@@ -3,10 +3,13 @@
 #include <test/jtx/Account.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/Protocol.h>
 
+#include <chrono>
 #include <cstdint>
 #include <optional>
 #include <tuple>
@@ -31,6 +34,8 @@ struct Vault
             std::nullopt;  // NOLINT(readability-redundant-member-init)
         std::optional<std::uint32_t> redemptionDate =
             std::nullopt;  // NOLINT(readability-redundant-member-init)
+        std::optional<VaultVersion> leVersion =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
     };
 
     /**
@@ -39,10 +44,42 @@ struct Vault
     [[nodiscard]] std::tuple<json::Value, Keylet>
     create(CreateArgs const& args) const;
 
+    struct CreateClosedEndedArgs
+    {
+        Account owner;
+        Asset asset;
+        std::optional<std::uint32_t> flags =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
+        NetClock::duration subscriptionOffset = std::chrono::seconds{10};
+        NetClock::duration investmentWindow = std::chrono::seconds{1'000'000};
+    };
+
+    /**
+     * Return a VaultCreate transaction for a closed-ended vault, its
+     * expected keylet, and the vault's SubscriptionDate.
+     *
+     * Under featureLendingProtocolV1_1, LoanBrokerSet::preclaim only
+     * accepts closed-ended vaults, so tests that attach a loan broker
+     * need one. SubscriptionDate is set to now() + subscriptionOffset,
+     * giving callers a window to deposit while still in the Subscription
+     * phase; pass the returned date to closePastSubscription() afterwards
+     * to advance into the Investment phase.
+     */
+    [[nodiscard]] std::tuple<json::Value, Keylet, NetClock::time_point>
+    createClosedEnded(CreateClosedEndedArgs const& args) const;
+
+    /**
+     * Advance env's clock to just past subscriptionDate, moving a
+     * closed-ended vault from the Subscription phase into the Investment
+     * phase.
+     */
+    void
+    closePastSubscription(NetClock::time_point subscriptionDate) const;
+
     struct SetArgs
     {
         Account owner;
-        uint256 id;
+        UInt256 id;
     };
 
     static json::Value
@@ -51,7 +88,7 @@ struct Vault
     struct DeleteArgs
     {
         Account owner;
-        uint256 id;
+        UInt256 id;
     };
 
     static json::Value
@@ -60,7 +97,7 @@ struct Vault
     struct DepositArgs
     {
         Account depositor;
-        uint256 id;
+        UInt256 id;
         STAmount amount;
     };
 
@@ -70,7 +107,7 @@ struct Vault
     struct WithdrawArgs
     {
         Account depositor;
-        uint256 id;
+        UInt256 id;
         STAmount amount;
     };
 
@@ -80,7 +117,7 @@ struct Vault
     struct ClawbackArgs
     {
         Account issuer;
-        uint256 id;
+        UInt256 id;
         Account holder;
         std::optional<STAmount> amount = std::nullopt;  // NOLINT(readability-redundant-member-init)
     };
