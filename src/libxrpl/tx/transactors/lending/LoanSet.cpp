@@ -751,7 +751,7 @@ LoanSet::doApply()
     // On FixedPrecision Vaults, origination adds the principal to DebtTotal
     // exactly, and LoanPay and default later subtract exact amounts, so
     // DebtTotal must never be rounded at a scale coarser than the base scale.
-    adjustBrokerDebtTotal(brokerSle->at(sfDebtTotal), vaultSle, debtTotalDelta, vaultScale);
+    adjustBrokerDebtTotal(brokerSle, vaultSle, debtTotalDelta, vaultScale);
     adjustLoanBrokerOwnerCount(view, brokerSle, 1, j_);
     loanSequenceProxy += 1;
     // The sequence should be extremely unlikely to roll over, but fail if it
