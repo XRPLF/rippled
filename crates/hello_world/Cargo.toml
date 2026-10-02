@@ -8,3 +8,6 @@ crate-type = ["staticlib"]
 
 [dependencies]
 cxx.workspace = true
+
+[lints]
+workspace = true

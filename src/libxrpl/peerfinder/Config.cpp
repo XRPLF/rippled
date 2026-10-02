@@ -107,8 +107,12 @@ Config::makeConfig(
     else
     {
         config.outPeers = *limits.outPeers;
-        config.inPeers = *limits.inPeers;
-        config.maxPeers = 0;
+
+        // Inbound slots only exist if we accept incoming connections, and
+        // `maxPeers` is the total across both directions. The legacy branch
+        // above upholds the same two invariants.
+        config.inPeers = config.wantIncoming ? *limits.inPeers : 0;
+        config.maxPeers = config.inPeers + config.outPeers;
     }
 
     // This will cause servers configured as validators to request that

@@ -6,16 +6,31 @@
 %{error:pkg_release must be defined}
 %endif
 
-Name:     xrpld
+# The base name, which every package ships under. A variant build
+# (build_pkg.py --variant) only suffixes the package name, e.g. xrpld-assert.
+%global base_name xrpld
+
+Name:     %{base_name}%{?pkg_variant:-%{pkg_variant}}
 Version:  %{pkg_version}
 Release:  %{pkg_release}%{?dist}
-Summary:  XRP Ledger daemon
+Summary:  XRP Ledger daemon%{?pkg_variant: (%{pkg_variant} build)}
 
 License:  ISC
 URL:      https://github.com/XRPLF/rippled
 
 ExclusiveArch: x86_64 aarch64
 BuildRequires: systemd-rpm-macros
+
+# A variant owns the same paths, so it stands in for the plain package.
+%if "%{?pkg_variant}" != ""
+Conflicts: %{base_name}
+Provides:  %{base_name} = %{version}-%{release}
+%endif
+
+# These have to precede %%debug_package: it opens the debuginfo subpackage, and
+# any tag after it is silently dropped from the main package.
+%{?systemd_requires}
+%{?sysusers_requires_compat}
 
 %undefine _debugsource_packages
 %debug_package
@@ -25,10 +40,13 @@ BuildRequires: systemd-rpm-macros
 %global _binary_payload w3.zstdio
 %global _find_debuginfo_dwz_opts %{nil}
 
-%build_mtime_policy clamp_to_source_date_epoch
+# Reproducibility: the first two take their value from the SOURCE_DATE_EPOCH
+# build_pkg.py exports. Without these the header records the wall clock and the
+# build container's hostname, so two builds of the same commit differ.
+%global clamp_mtime_to_source_date_epoch 1
+%global use_source_date_epoch_as_buildtime 1
+%global _buildhost xrplf.org
 
-%{?systemd_requires}
-%{?sysusers_requires_compat}
 
 %description
 xrpld is the reference implementation of the XRP Ledger protocol. It
@@ -44,22 +62,22 @@ management.
 :
 
 %install
-install -Dm0755 %{_sourcedir}/xrpld                %{buildroot}%{_bindir}/%{name}
+install -Dm0755 %{_sourcedir}/xrpld                %{buildroot}%{_bindir}/%{base_name}
 install -Dm0755 %{_sourcedir}/validator-keys       %{buildroot}%{_bindir}/validator-keys
-install -Dm0644 %{_sourcedir}/xrpld.cfg            %{buildroot}%{_sysconfdir}/%{name}/xrpld.cfg
-install -Dm0644 %{_sourcedir}/validators.txt       %{buildroot}%{_sysconfdir}/%{name}/validators.txt
+install -Dm0644 %{_sourcedir}/xrpld.cfg            %{buildroot}%{_sysconfdir}/%{base_name}/xrpld.cfg
+install -Dm0644 %{_sourcedir}/validators.txt       %{buildroot}%{_sysconfdir}/%{base_name}/validators.txt
 
 # systemd units, sysusers, tmpfiles, preset
 install -Dm0644 %{_sourcedir}/xrpld.service        %{buildroot}%{_unitdir}/xrpld.service
 install -Dm0644 %{_sourcedir}/xrpld.sysusers       %{buildroot}%{_sysusersdir}/xrpld.conf
 install -Dm0644 %{_sourcedir}/xrpld.tmpfiles       %{buildroot}%{_tmpfilesdir}/xrpld.conf
-install -Dm0644 /dev/null %{buildroot}%{_presetdir}/50-xrpld.preset
-cat >%{buildroot}%{_presetdir}/50-xrpld.preset <<'EOF'
+install -d %{buildroot}%{_presetdir}
+cat >%{buildroot}%{_presetdir}/50-%{base_name}.preset <<'EOF'
 enable xrpld.service
 EOF
 
 # Logrotate config
-install -Dm0644 %{_sourcedir}/xrpld.logrotate      %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
+install -Dm0644 %{_sourcedir}/xrpld.logrotate      %{buildroot}%{_sysconfdir}/logrotate.d/%{base_name}
 
 # Docs
 install -Dm0644 %{_sourcedir}/LICENSE.md %{buildroot}%{_docdir}/%{name}/LICENSE.md
@@ -70,13 +88,13 @@ install -Dm0644 %{_sourcedir}/validator-keys-LICENSE %{buildroot}%{_docdir}/%{na
 # Legacy compatibility for pre-FHS package layouts.
 # TODO: remove after rippled fully deprecated.
 install -d %{buildroot}/usr/local/bin
-ln -s %{_bindir}/%{name} %{buildroot}/usr/local/bin/rippled
+ln -s %{_bindir}/%{base_name} %{buildroot}/usr/local/bin/rippled
 
 %pre
-%sysusers_create_package %{name} %{_sourcedir}/xrpld.sysusers
+%sysusers_create_package %{base_name} %{_sourcedir}/xrpld.sysusers
 
 %post
-systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
+%tmpfiles_create_package %{base_name} %{_sourcedir}/xrpld.tmpfiles
 %systemd_post xrpld.service
 
 %preun
@@ -84,24 +102,32 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 
 %postun
 %systemd_postun xrpld.service
+# A flavour swap installs the replacement before erasing this package, so the
+# %%preun above has just disabled a unit the replacement still owns. rpm keeps a
+# file that another installed package owns, so the unit outliving our own erase
+# means exactly that; a plain erase takes it with us and re-presets nothing.
+if [ $1 -eq 0 ] && [ -f %{_unitdir}/xrpld.service ]; then
+    systemctl preset xrpld.service >/dev/null 2>&1 || :
+fi
 
 %files
+%attr(0755,root,root) %dir %{_docdir}/%{name}
 %license %{_docdir}/%{name}/LICENSE.md
 %license %{_docdir}/%{name}/validator-keys-LICENSE
 %doc %{_docdir}/%{name}/README.md
 
-%dir %{_sysconfdir}/%{name}
+%attr(0755,root,root) %dir %{_sysconfdir}/%{base_name}
 
-%{_bindir}/%{name}
+%{_bindir}/%{base_name}
 %{_bindir}/validator-keys
 
-%config(noreplace) %{_sysconfdir}/%{name}/xrpld.cfg
-%config(noreplace) %{_sysconfdir}/%{name}/validators.txt
-%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
+%config(noreplace) %{_sysconfdir}/%{base_name}/xrpld.cfg
+%config(noreplace) %{_sysconfdir}/%{base_name}/validators.txt
+%config(noreplace) %{_sysconfdir}/logrotate.d/%{base_name}
 
 
 %{_unitdir}/xrpld.service
-%{_presetdir}/50-xrpld.preset
+%attr(0644,root,root) %{_presetdir}/50-%{base_name}.preset
 %{_sysusersdir}/xrpld.conf
 %{_tmpfilesdir}/xrpld.conf
 %ghost %dir /var/lib/xrpld

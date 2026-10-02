@@ -5,6 +5,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/noop.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
@@ -238,7 +239,7 @@ private:
                 closePaymentFee};
 
         // Collect vault NAV before closing payment
-        auto const vaultId2 = brokerSle2 ? brokerSle2->at(sfVaultID) : uint256{};
+        auto const vaultId2 = brokerSle2 ? brokerSle2->at(sfVaultID) : UInt256{};
         auto const vaultKey2 = keylet::vault(vaultId2);
         auto const vaultBefore = env.le(vaultKey2);
         BEAST_EXPECT(vaultBefore);
@@ -330,13 +331,13 @@ private:
         auto broker = std::get<BrokerInfo>(*loanResult);
         auto loanKeylet = std::get<Keylet>(*loanResult);
 
-        using tp = NetClock::time_point;
-        using d = NetClock::duration;
+        using Tp = NetClock::time_point;
+        using D = NetClock::duration;
 
         auto state = getCurrentState(env, broker, loanKeylet);
         if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
-            env.close(tp{d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
+            env.close(Tp{D{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }
 
         topUpBorrower(env, broker, issuer, borrower, state, loanParams.serviceFee);
@@ -680,7 +681,7 @@ private:
         auto createNewLoan = [&]() {
             auto const sleBroker = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(sleBroker))
-                return keylet::loan(uint256{});
+                return keylet::loan(UInt256{});
             auto const lk =
                 keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
             env(set(borrower, broker.brokerID, broker.asset(principalRequest).value()),
@@ -1090,9 +1091,74 @@ private:
         }
     }
 
+    // Every signature on a transaction covered the same bytes before
+    // fixCleanup3_4_0, so a signature could be moved from the role that made
+    // it into another role. Here the lender signs a LoanSet as the
+    // counterparty, and the borrower copies that signature into the
+    // SponsorSignature, making the lender pay the fee without the lender ever
+    // agreeing to sponsor it.
+    void
+    testSignatureCopiedBetweenRoles(bool fixEnabled)
+    {
+        testcase(
+            std::string("Counterparty signature copied into the sponsor slot") +
+            (fixEnabled ? "" : " (pre-amendment)"));
+
+        using namespace jtx;
+        using namespace loan;
+
+        Env env(*this, fixEnabled ? all_ : all_ - fixCleanup3_4_0);
+        BEAST_EXPECT(env.enabled(fixCleanup3_4_0) == fixEnabled);
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        auto const broker = createVaultAndBroker(env, xrpAsset, lender);
+
+        auto const feeAmt = XRP(1);
+
+        // The lender agrees to the loan by signing the Counterparty slot of a
+        // LoanSet that names the lender as the fee sponsor. The lender signs
+        // nothing else.
+        auto loanSet = env.json(
+            set(borrower, broker.brokerID, broker.asset(Number{1, 3}).value()),
+            sponsor::As(lender, spfSponsorFee),
+            Sig(sfCounterpartySignature, lender),
+            Fee(feeAmt));
+
+        // The borrower copies the lender's signature into the sponsor slot.
+        loanSet[sfSponsorSignature.jsonName] = loanSet[sfCounterpartySignature.jsonName];
+
+        auto const lenderBalance = env.balance(lender);
+        auto const borrowerBalance = env.balance(borrower);
+
+        env(loanSet, Ter(fixEnabled ? TER{telENV_RPC_FAILED} : TER{tesSUCCESS}));
+        env.close();
+
+        if (fixEnabled)
+        {
+            // The copied signature does not verify in the sponsor slot, so
+            // nothing happens at all.
+            BEAST_EXPECT(env.balance(lender) == lenderBalance);
+            BEAST_EXPECT(env.balance(borrower) == borrowerBalance);
+        }
+        else
+        {
+            // The lender paid the fee, and the borrower got the loan.
+            BEAST_EXPECT(env.balance(lender) == lenderBalance - feeAmt);
+            BEAST_EXPECT(env.balance(borrower).value() > borrowerBalance.value());
+        }
+    }
+
     void
     runAmendmentIndependent()
     {
+        testSignatureCopiedBetweenRoles(true);
+        testSignatureCopiedBetweenRoles(false);
         testRIPD3901();
         testImpairmentPaymentDateUnchanged();
         testImpairmentPaymentDatePreAmendment();
