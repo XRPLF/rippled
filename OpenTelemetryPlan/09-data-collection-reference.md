@@ -255,13 +255,13 @@ under an unrelated transaction's trace.
 
 ---
 
-### 1.2 Complete Attribute Inventory (89 attribute rows, 78 unique keys)
+### 1.2 Complete Attribute Inventory (bare/underscore keys)
 
 > **See also**: [02-design-decisions.md §2.4.2](./02-design-decisions.md#242-span-attributes-by-category) for attribute design rationale and privacy considerations.
 
 Every span can carry key-value attributes that provide context for filtering and aggregation.
 
-The tables below list one row per attribute per subsystem, so a key shared by two subsystems (for example `ledger_seq`) appears once in each. The §6 per-header counts use the same row-based rule.
+The tables below list one row per attribute per subsystem, so a key shared by two subsystems (for example `ledger_seq`) appears once in each.
 
 #### RPC Attributes
 
@@ -899,19 +899,19 @@ xrpld_State_Accounting_Full_duration
 
 All span names and attributes are defined as compile-time constants in colocated `SpanNames.h` headers. Each header lives next to its subsystem's implementation.
 
-| Header File                                     | Subsystem     | Span Count | Attribute Count | Notes                                       |
-| ----------------------------------------------- | ------------- | ---------- | --------------- | ------------------------------------------- |
-| `src/xrpld/rpc/detail/RpcSpanNames.h`           | RPC (HTTP/WS) | 6          | 5               | Includes `rpc.ws_upgrade` error path        |
-| `src/xrpld/rpc/detail/PathFindSpanNames.h`      | PathFind      | 5          | 8               | Covers one-shot and subscription paths      |
-| `src/xrpld/app/main/GrpcSpanNames.h`            | gRPC          | 1          | 3               | Flat single-span structure per request      |
-| `src/xrpld/telemetry/TxSpanNames.h`             | Transaction   | 2          | 7               | Includes peer context attributes            |
-| `include/xrpl/tx/detail/TxApplySpanNames.h`     | Tx Apply      | 3          | 6               | Apply pipeline: preflight, preclaim, apply  |
-| `src/xrpld/app/misc/detail/TxQSpanNames.h`      | TxQ           | 6          | 13              | Queue lifecycle: enqueue through cleanup    |
-| `include/xrpl/consensus/ConsensusSpanNames.h`   | Consensus     | 10         | 35              | Deterministic trace IDs, close-time details |
-| `src/xrpld/app/ledger/detail/LedgerSpanNames.h` | Ledger        | 4          | 7               | Build, store, validate, tx.apply            |
-| `src/xrpld/overlay/detail/PeerSpanNames.h`      | Peer Overlay  | 2          | 5               | Proposal and validation receive             |
+| Header File                                     | Subsystem     | Notes                                       |
+| ----------------------------------------------- | ------------- | ------------------------------------------- |
+| `src/xrpld/rpc/detail/RpcSpanNames.h`           | RPC (HTTP/WS) | Includes `rpc.ws_upgrade` error path        |
+| `src/xrpld/rpc/detail/PathFindSpanNames.h`      | PathFind      | Covers one-shot and subscription paths      |
+| `src/xrpld/app/main/GrpcSpanNames.h`            | gRPC          | Flat single-span structure per request      |
+| `src/xrpld/telemetry/TxSpanNames.h`             | Transaction   | Includes peer context attributes            |
+| `include/xrpl/tx/detail/TxApplySpanNames.h`     | Tx Apply      | Apply pipeline: preflight, preclaim, apply  |
+| `src/xrpld/app/misc/detail/TxQSpanNames.h`      | TxQ           | Queue lifecycle: enqueue through cleanup    |
+| `include/xrpl/consensus/ConsensusSpanNames.h`   | Consensus     | Deterministic trace IDs, close-time details |
+| `src/xrpld/app/ledger/detail/LedgerSpanNames.h` | Ledger        | Build, store, validate, tx.apply            |
+| `src/xrpld/overlay/detail/PeerSpanNames.h`      | Peer Overlay  | Proposal and validation receive             |
 
-Column totals: **39 spans** and **89 attribute rows**, matching §1.1 and §1.2. `tx.apply` is counted under `LedgerSpanNames.h`, which defines it; §1.1 lists it with the transaction spans.
+`LedgerSpanNames.h` defines `tx.apply`; §1.1 lists it with the transaction spans.
 
 > **Design convention**: SpanNames headers are colocated with their subsystem classes rather than centralized in `telemetry/`. See [memory/feedback_span-names-colocation.md](../.claude/memory/feedback_span-names-colocation.md) for rationale.
 
