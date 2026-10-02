@@ -1,5 +1,6 @@
 include(GoogleTest)
 include(isolate_headers)
+include(xrpl_find_otel_archive)
 
 find_package(GTest REQUIRED)
 
@@ -27,36 +28,22 @@ target_link_libraries(
     xrpld_tests
     PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl rpcspec::rpcspec
 )
-# The telemetry tests read ended spans back from an InMemorySpanExporter. The
-# OpenTelemetry package does not put that archive on the link line, so find
-# it by path, as src/tests/libxrpl/CMakeLists.txt does and explains. The
-# result is cached, so this finds the same file that xrpl_tests links.
+# The telemetry tests read ended spans back from an InMemorySpanExporter.
 # This block follows the main link call so that the archives it adds come
 # after libxrpl, which uses OpenTelemetry.
 # GNU ld reads each archive once, and the umbrella lists the metrics archive,
 # which these tests use, after the common and resources archives it needs.
 # So on Linux it also goes before the umbrella. Apple ld and MSVC search all
-# archives, and Apple ld, with fatal warnings here, rejects one listed twice.
+# archives. Newer Apple linkers, when warnings are fatal as in CI, reject a
+# library listed twice.
 if(telemetry)
-    string(TOUPPER "${CMAKE_BUILD_TYPE}" otel_build_type)
-    find_library(
+    xrpl_find_otel_archive(
         OTEL_IN_MEMORY_EXPORTER_LIB
-        NAMES opentelemetry_exporter_in_memory
-        HINTS "${opentelemetry-cpp_LIB_DIRS_${otel_build_type}}"
+        opentelemetry_exporter_in_memory
     )
-    if(NOT OTEL_IN_MEMORY_EXPORTER_LIB)
-        message(FATAL_ERROR "opentelemetry_exporter_in_memory not found")
-    endif()
     set(otel_libs_before_umbrella "")
     if(is_linux)
-        find_library(
-            OTEL_METRICS_SDK_LIB
-            NAMES opentelemetry_metrics
-            HINTS "${opentelemetry-cpp_LIB_DIRS_${otel_build_type}}"
-        )
-        if(NOT OTEL_METRICS_SDK_LIB)
-            message(FATAL_ERROR "opentelemetry_metrics not found")
-        endif()
+        xrpl_find_otel_archive(OTEL_METRICS_SDK_LIB opentelemetry_metrics)
         set(otel_libs_before_umbrella "${OTEL_METRICS_SDK_LIB}")
     endif()
     target_link_libraries(

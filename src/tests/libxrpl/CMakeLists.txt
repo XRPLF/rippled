@@ -1,6 +1,7 @@
 include(GoogleTest)
 include(isolate_headers)
 include(verify_headers)
+include(xrpl_find_otel_archive)
 
 # Test requirements.
 find_package(GTest REQUIRED)
@@ -93,29 +94,11 @@ endif()
 # The telemetry test module exercises SpanGuard/Telemetry, which link against
 # the OpenTelemetry SDK when the telemetry build option is enabled.
 if(telemetry)
-    # The SpanGuardScope tests drive an InMemorySpanExporter to read exported
-    # spans (test-only; production never uses it). The Conan package ships
-    # libopentelemetry_exporter_in_memory.a but declares the component with no
-    # libs, so neither the umbrella target nor opentelemetry-cpp::exporter_in_memory
-    # puts the archive on the link line. Locate it by path and link it BEFORE
-    # the umbrella so its undefined SDK references resolve against the umbrella.
-    # CMakeDeps suffixes its variables with the upper-cased build type, so a
-    # hardcoded _RELEASE hint is empty in any other config and the archive is
-    # then only found by luck. Derive the suffix instead. An empty hint is not
-    # fatal on its own: the Conan toolchain puts the package on
-    # CMAKE_PREFIX_PATH, which find_library searches anyway. A miss stops the
-    # configure step instead of failing at link time. The check is explicit
-    # because find_library's REQUIRED needs CMake 3.18, and this project allows
-    # 3.16.
-    string(TOUPPER "${CMAKE_BUILD_TYPE}" otel_build_type)
-    find_library(
+    # The SpanGuardScope tests read exported spans from an InMemorySpanExporter.
+    xrpl_find_otel_archive(
         OTEL_IN_MEMORY_EXPORTER_LIB
-        NAMES opentelemetry_exporter_in_memory
-        HINTS "${opentelemetry-cpp_LIB_DIRS_${otel_build_type}}"
+        opentelemetry_exporter_in_memory
     )
-    if(NOT OTEL_IN_MEMORY_EXPORTER_LIB)
-        message(FATAL_ERROR "opentelemetry_exporter_in_memory not found")
-    endif()
     target_link_libraries(
         xrpl_tests
         PRIVATE
