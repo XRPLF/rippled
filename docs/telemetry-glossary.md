@@ -823,7 +823,7 @@ Writing a tree node back to storage from memory because it could not be found in
 
 ### Rotation phase
 
-One named step inside a rotation window. Splitting the window into named phases matters because the parts have very different costs and one of them, the re-fetch of every cached key, used to begin with a single copy of all keys under the cache's mutex, which was a process-wide stall; that copy now runs one partition at a time. Timing each phase individually keeps the re-fetch separable from the walk that precedes it and from the throttled waits interleaved with both. A phase whose duration grows while the others stay flat is the one to look at; a mutex hold now shows on the cache lock hold peak, not on a phase duration.
+One named step inside a rotation window. Splitting the window into named phases matters because the parts have very different costs. One of them is the re-fetch of the cached keys. It copies the keys under the cache's mutex one partition at a time, never the whole cache at once. Timing each phase individually keeps the re-fetch separable from the walk that precedes it and from the throttled waits interleaved with both. A phase whose duration grows while the others stay flat is the one to look at. The cache lock hold peak, not a phase duration, shows how long the mutex was held.
 
 **Scope:** per node — measured on and specific to this individual server.
 
