@@ -157,6 +157,27 @@ jobs:
     if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-check-rename.yml
 
+  # Runs regardless of the changed files.
+  # PRs into staging branches are skipped, since fixes may be cherry-picked between release lines.
+  check-release-commits:
+    needs: should-run
+    if: ${{ github.event.pull_request.base.ref == 'develop' || github.event.merge_group.base_ref == 'refs/heads/develop' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The check needs the full history of the release and staging branches.
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check for copied release commits
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+        run: .github/scripts/releasing/check-no-copied-release-commits.sh "${BASE}" "${HEAD}"
+
   clang-tidy:
     needs: should-run
     if: ${{ needs.should-run.outputs.go == 'true' }}
@@ -238,6 +259,7 @@ jobs:
       - check-levelization
       - check-otel-naming
       - check-rename
+      - check-release-commits
       - clang-tidy
       - build-test
       - rust
