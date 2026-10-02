@@ -113,7 +113,7 @@ one right after the other.
 The merge back is a regular PR into `develop`
 whose branch contains a real merge commit of the release tag:
 
-1. Create a branch from `develop`, run `git merge <tag>`, and resolve any conflicts.
+1. Create a branch from `develop`, run `git merge --no-ff <tag>`, and resolve any conflicts.
 2. Once the PR is approved, `develop` is fast-forwarded to the PR branch,
    so the merge commit lands as it is.
    Never squash or rebase it.
