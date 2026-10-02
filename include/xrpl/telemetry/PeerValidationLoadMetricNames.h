@@ -18,7 +18,7 @@
  * Example usage -- creating the gauge:
  * @code
  * auto const gauge =
- *     meter.CreateDoubleObservableGauge(kPeerValidationLoad, kPeerValidationLoadDesc);
+ *     meter.CreateDoubleObservableGauge(metric::kPeerValidationLoad, kPeerValidationLoadDesc);
  * @endcode
  *
  * Example usage -- the series one point becomes, as a dashboard queries it:
@@ -33,6 +33,9 @@
  * JLOG(journal.warn()) << formatValidationLoadWarning(warning, publicKey);
  * @endcode
  *
+ * Only the instrument name sits in `namespace metric`; the description and the
+ * label constants stay outside it.
+ *
  * @note These are `constexpr char[]`, not `std::string_view`: the OTel API
  * takes its own `nostd::string_view`, which converts from `char const*` but
  * not from `std::string_view`. Same convention as GetObjectMetricNames.h.
@@ -43,14 +46,18 @@ namespace xrpl::telemetry {
 
 // ===== Metric name ===========================================================
 
+namespace metric {
+
 /**
  * Observable gauge: the validation rates of the busiest peers and the busiest
  * peer's share, split by the `metric` and `trust` labels.
  */
 inline constexpr char kPeerValidationLoad[] = "peer_validation_load";
 
+}  // namespace metric
+
 /**
- * Description of kPeerValidationLoad.
+ * Description of metric::kPeerValidationLoad.
  */
 inline constexpr char kPeerValidationLoadDesc[] =
     "Validations per second from the busiest peers, and the busiest peer's share, by signer trust";
