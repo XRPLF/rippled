@@ -65,7 +65,13 @@ checkCondition(Slice f, Slice c)
 bool
 EscrowFinish::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return !ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials);
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) && !ctx.rules.enabled(featureCredentials))
+        return false;
+
+    if (ctx.tx.isFieldPresent(sfGas) && !ctx.rules.enabled(featureSmartEscrow))
+        return false;
+
+    return true;
 }
 
 NotTEC
@@ -409,7 +415,7 @@ EscrowFinish::doApply()
 }
 
 void
-EscrowFinish::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+EscrowFinish::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -162,4 +162,89 @@ toUInt64(std::string const& s);
 bool
 isProperlyFormedTomlDomain(std::string_view domain);
 
+/**
+ * Whether a view can be passed on as a C string.
+ *
+ * A reader given only data() stops at the first null, so the view must reach the
+ * terminating null. The test rebuilds the view from data() and compares: a view
+ * that stops earlier rebuilds longer, and so compares unequal.
+ *
+ * consteval because reading the byte after the view is only defined when @p str
+ * points into storage holding a null at or after its end, such as a string
+ * literal. An unterminated view is then a compile error, not an out-of-bounds
+ * read.
+ *
+ * @param str The view to test.
+ * @return Whether @p str is null-terminated. A view with no data is not.
+ */
+consteval bool
+isNullTerminated(std::string_view str)
+{
+    if (str.data() == nullptr)
+        return false;
+
+    // Reading past the view is the point, so the usual data() warning does not
+    // apply.
+    // NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
+    return std::string_view{str.data()} == str;
+}
+
+/**
+ * A string that is known to reach its terminating null.
+ *
+ * Converts to std::string_view, so it compares and hashes as one. Unlike a
+ * view, asCString() may be handed to a reader that expects a C string, such
+ * as json::StaticString.
+ *
+ * The only constructor is consteval and rejects a view that stops before the
+ * null, so the property holds by construction and no caller asserts it.
+ */
+class NullTerminatedView
+{
+public:
+    /**
+     * Build a view from one that reaches its terminating null.
+     *
+     * Explicit, so that a plain view cannot become a proof of termination by
+     * accident. The conversion the other way stays implicit.
+     *
+     * @param view The string to hold. Rejected at compile time if it stops
+     *        before its terminating null, or has no data.
+     */
+    explicit consteval NullTerminatedView(std::string_view view)
+        : data_(view.data()), size_(view.size())
+    {
+        if (!isNullTerminated(view))
+            throw "xrpl::NullTerminatedView : view does not reach a null";
+    }
+
+    constexpr
+    operator std::string_view() const noexcept
+    {
+        return view();
+    }
+
+    /**
+     * @return The string as a view.
+     */
+    [[nodiscard]] constexpr std::string_view
+    view() const noexcept
+    {
+        return {data_, size_};
+    }
+
+    /**
+     * @return The string as a C string. Never null.
+     */
+    [[nodiscard]] constexpr char const*
+    asCString() const noexcept
+    {
+        return data_;
+    }
+
+private:
+    char const* data_;
+    std::size_t size_;
+};
+
 }  // namespace xrpl

@@ -37,7 +37,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -49,7 +49,7 @@ public:
 
     // Interface used by AccountDelete
     static TER
-    removeFromLedger(ApplyView& view, uint256 const& delIndex, beast::Journal j);
+    removeFromLedger(ApplyView& view, UInt256 const& delIndex, beast::Journal j);
 
 private:
     /**

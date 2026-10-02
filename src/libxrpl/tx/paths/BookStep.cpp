@@ -168,14 +168,14 @@ public:
     revImp(
         PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         TOut const& out);
 
     std::pair<TIn, TOut>
     fwdImp(
         PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         TIn const& in);
 
     std::pair<bool, EitherAmount>
@@ -227,7 +227,7 @@ private:
     // If callback returns false, don't process any more offers.
     // Return the unfunded, bad offers and the number of offers consumed.
     template <class Callback>
-    std::pair<boost::container::flat_set<uint256>, std::uint32_t>
+    std::pair<boost::container::flat_set<UInt256>, std::uint32_t>
     forEachOffer(
         PaymentSandbox& sb,
         ApplyView& afView,
@@ -697,7 +697,7 @@ limitStepOut(
 
 template <class TIn, class TOut, class TDerived>
 template <class Callback>
-std::pair<boost::container::flat_set<uint256>, std::uint32_t>
+std::pair<boost::container::flat_set<UInt256>, std::uint32_t>
 BookStep<TIn, TOut, TDerived>::forEachOffer(
     PaymentSandbox& sb,
     ApplyView& afView,
@@ -1068,7 +1068,7 @@ std::pair<TIn, TOut>
 BookStep<TIn, TOut, TDerived>::revImp(
     PaymentSandbox& sb,
     ApplyView& afView,
-    boost::container::flat_set<uint256>& ofrsToRm,
+    boost::container::flat_set<UInt256>& ofrsToRm,
     TOut const& out)
 {
     cache_.reset();
@@ -1147,7 +1147,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
             return DebtDirection::Issues;
         }();
         auto const r = forEachOffer(sb, afView, prevStepDebtDir, eachOffer);
-        boost::container::flat_set<uint256> const toRm = std::move(std::get<0>(r));
+        boost::container::flat_set<UInt256> const toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         offersUsed_ = offersConsumed;
         setUnion(ofrsToRm, toRm);
@@ -1186,7 +1186,7 @@ std::pair<TIn, TOut>
 BookStep<TIn, TOut, TDerived>::fwdImp(
     PaymentSandbox& sb,
     ApplyView& afView,
-    boost::container::flat_set<uint256>& ofrsToRm,
+    boost::container::flat_set<UInt256>& ofrsToRm,
     TIn const& in)
 {
     XRPL_ASSERT(cache_, "xrpl::BookStep::fwdImp : cache is set");
@@ -1327,7 +1327,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
             return DebtDirection::Issues;
         }();
         auto const r = forEachOffer(sb, afView, prevStepDebtDir, eachOffer);
-        boost::container::flat_set<uint256> const toRm = std::move(std::get<0>(r));
+        boost::container::flat_set<UInt256> const toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         offersUsed_ = offersConsumed;
         setUnion(ofrsToRm, toRm);
@@ -1378,7 +1378,7 @@ BookStep<TIn, TOut, TDerived>::validFwd(
 
     try
     {
-        boost::container::flat_set<uint256> dummy;
+        boost::container::flat_set<UInt256> dummy;
         fwdImp(sb, afView, dummy, get<TIn>(in));  // changes cache
     }
     catch (FlowException const&)
@@ -1568,12 +1568,13 @@ bookStepEqual(Step const& step, xrpl::Book const& book)
 {
     return std::visit(
         [&]<typename TIn, typename TOut>(TIn const&, TOut const&) {
-            using TIn_ = TIn::amount_type;
-            using TOut_ = TOut::amount_type;
+            using TInAmount = TIn::Amount;
+            using TOutAmount = TOut::Amount;
 
-            if constexpr (ValidTaker<TIn_, TOut_>)
+            if constexpr (ValidTaker<TInAmount, TOutAmount>)
             {
-                return equalHelper<TIn_, TOut_, BookPaymentStep<TIn_, TOut_>>(step, book);
+                return equalHelper<TInAmount, TOutAmount, BookPaymentStep<TInAmount, TOutAmount>>(
+                    step, book);
             }
             else
             {

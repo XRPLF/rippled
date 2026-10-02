@@ -278,7 +278,7 @@ DepositPreauth::doApply()
 }
 
 TER
-DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, beast::Journal j)
+DepositPreauth::removeFromLedger(ApplyView& view, UInt256 const& preauthIndex, beast::Journal j)
 {
     // Existence already checked in preclaim and AccountDelete
     auto const slePreauth{view.peek(keylet::depositPreauth(preauthIndex))};
@@ -332,7 +332,7 @@ credentialsCanonical(STArray const& credentials)
 }  // namespace
 
 void
-DepositPreauth::visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+DepositPreauth::visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     // On deletion `after` holds the erased entry, so only isDelete is reliable.
     auto const& sle = after ? after : before;
