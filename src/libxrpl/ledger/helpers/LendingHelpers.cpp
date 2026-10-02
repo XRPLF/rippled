@@ -69,7 +69,7 @@ canApplyToBrokerCover(
 namespace detail {
 
 [[nodiscard]] int
-getPosteriorBrokerCoverScale(SLE::ConstRef vault, SLE::ConstRef broker, STAmount const& delta)
+getPosteriorBrokerCoverScale(SLE::ConstRef vault, SLE::ConstRef broker, Number const& delta)
 {
     XRPL_ASSERT(
         vault && vault->getType() == ltVAULT,
@@ -77,9 +77,6 @@ getPosteriorBrokerCoverScale(SLE::ConstRef vault, SLE::ConstRef broker, STAmount
     XRPL_ASSERT(
         broker && broker->getType() == ltLOAN_BROKER,
         "xrpl::detail::getPosteriorBrokerCoverScale : valid LoanBroker sle");
-    XRPL_ASSERT(
-        delta.asset() == vault->at(sfAsset),
-        "xrpl::detail::getPosteriorBrokerCoverScale : delta and Vault asset match");
 
     return posteriorAssetScale(
         getVaultVersion(vault),
@@ -116,7 +113,7 @@ roundToPosteriorBrokerCoverScale(
 creditToPosteriorBrokerCoverScale(
     SLE::ConstRef vault,
     SLE::ConstRef broker,
-    STAmount const& raw,
+    Number const& raw,
     Number::RoundingMode roundingMode)
 {
     XRPL_ASSERT(
@@ -125,13 +122,13 @@ creditToPosteriorBrokerCoverScale(
     XRPL_ASSERT(
         broker && broker->getType() == ltLOAN_BROKER,
         "xrpl::creditToPosteriorBrokerCoverScale : valid LoanBroker sle");
-    XRPL_ASSERT(
-        raw.asset() == vault->at(sfAsset),
-        "xrpl::creditToPosteriorBrokerCoverScale : raw and Vault asset match");
-    if (raw.integral())
-        return raw;
-
     Asset const asset = vault->at(sfAsset);
+    if (asset.integral())
+    {
+        NumberRoundModeGuard const rg(roundingMode);
+        return STAmount{asset, raw};
+    }
+
     Number const reference = broker->at(sfCoverAvailable);
     int const scale = detail::getPosteriorBrokerCoverScale(vault, broker, raw);
     return detail::creditToPosteriorScale(asset, reference, scale, raw, roundingMode);
@@ -173,8 +170,10 @@ checkOptionalBrokerCoverInflow(SLE::ConstRef vault, SLE::ConstRef broker, STAmou
     if (getVaultVersion(vault) != VaultVersion::FixedPrecision)
         return tesSUCCESS;
 
-    STAmount const rounded = detail::roundToPosteriorBrokerCoverScale(
-        vault, broker, amount, Number::RoundingMode::TowardsZero);
+    // amount is the effective credit (already floored on the posterior
+    // CoverAvailable grid by creditToPosteriorBrokerCoverScale); rounding it
+    // again as a standalone delta could hide a crossing.
+    STAmount const& rounded = amount;
     int const baseScale = getVaultBaseScale(vault);
     // Keep this explicit even though the Open-limit capacity check below rejects
     // every coarsening transition too. The protocol defines both conditions

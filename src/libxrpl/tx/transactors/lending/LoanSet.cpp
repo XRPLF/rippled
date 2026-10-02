@@ -748,9 +748,9 @@ LoanSet::doApply()
     view.update(vaultSle);
 
     // Update the balances in the loan broker
-    // FixedPrecision default subtracts principal from DebtTotal exactly. That
-    // depends on origination never rounding DebtTotal at a scale coarser than
-    // the asset's base scale.
+    // On FixedPrecision Vaults, origination adds the principal to DebtTotal
+    // exactly, and LoanPay and default later subtract exact amounts, so
+    // DebtTotal must never be rounded at a scale coarser than the base scale.
     adjustBrokerDebtTotal(brokerSle->at(sfDebtTotal), vaultSle, debtTotalDelta, vaultScale);
     adjustLoanBrokerOwnerCount(view, brokerSle, 1, j_);
     loanSequenceProxy += 1;
