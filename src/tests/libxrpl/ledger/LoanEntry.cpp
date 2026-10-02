@@ -18,9 +18,9 @@ TEST(LoanEntryTests, constructors)
     expectKeylet<LoanEntry>(
         e, keylet::loan(e.someID(), seq), "loan(loanBrokerID, loanSeq)", e.someID(), seq);
 
-    expectKeylet<LoanEntry>(e, keylet::loan(e.someID()), "loan(uint256)", e.someID());
+    expectKeylet<LoanEntry>(e, keylet::loan(e.someID()), "loan(UInt256)", e.someID());
 
-    // Both overloads start with the same uint256, so they must not produce
+    // Both overloads start with the same UInt256, so they must not produce
     // the same key -- otherwise arity is the only thing keeping them apart
     // and the test proves nothing.
     EXPECT_NE(keylet::loan(e.someID(), seq).key, keylet::loan(e.someID()).key);

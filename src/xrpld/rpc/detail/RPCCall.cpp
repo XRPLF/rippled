@@ -203,7 +203,7 @@ private:
         }
         else if (strLedger.length() == 64)
         {
-            // YYY Could confirm this is a uint256.
+            // YYY Could confirm this is a UInt256.
             jvRequest[jss::ledger_hash] = strLedger;
         }
         else
@@ -265,7 +265,7 @@ private:
     }
 
 private:
-    using parseFuncPtr = json::Value (RPCParser::*)(json::Value const& jvParams);
+    using ParseFuncPtr = json::Value (RPCParser::*)(json::Value const& jvParams);
 
     json::Value
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
@@ -878,7 +878,7 @@ private:
 
         {
             // verify the channel id is a valid 256 bit number
-            uint256 channelId;
+            UInt256 channelId;
             if (!channelId.parseHex(jvParams[index].asString()))
                 return rpcError(RpcChannelMalformed);
             jvRequest[jss::channel_id] = to_string(channelId);
@@ -911,7 +911,7 @@ private:
         jvRequest[jss::public_key] = strPk;
         {
             // verify the channel id is a valid 256 bit number
-            uint256 channelId;
+            UInt256 channelId;
             if (!channelId.parseHex(jvParams[1u].asString()))
                 return rpcError(RpcChannelMalformed);
         }
@@ -995,7 +995,7 @@ private:
     parseVault(json::Value const& jvParams)
     {
         std::string const strVaultID = jvParams[0u].asString();
-        uint256 id = beast::kZero;
+        UInt256 id = beast::kZero;
         if (!id.parseHex(strVaultID))
             return rpcError(RpcInvalidParams);
 
@@ -2010,7 +2010,7 @@ rpcClient(
             xrpl::ServerHandler::Setup setup;
             try
             {
-                beast::logstream rpcCallLog{logs.journal("HTTPClient").warn()};
+                beast::LogStream rpcCallLog{logs.journal("HTTPClient").warn()};
                 setup = setupServerHandler(config, rpcCallLog);
             }
             catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
