@@ -1048,7 +1048,7 @@ class InvariantsMPT_test : public InvariantsBase
                     return false;
                 MPTIssue const mpt{makeMptID(sleAcct->getFieldU32(sfSequence), a1)};
                 auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
-                sleNew->setFieldH256(sfReferenceHolding, uint256{1});
+                sleNew->setFieldH256(sfReferenceHolding, UInt256{1});
                 ac.view().insert(sleNew);
                 return true;
             },
@@ -1061,7 +1061,7 @@ class InvariantsMPT_test : public InvariantsBase
         // sfReferenceHolding), then mutate it in precheck to produce a
         // before/after pair.
         {
-            uint256 vaultKey;
+            UInt256 vaultKey;
             doInvariantCheck(
                 {{"sfReferenceHolding was modified on an existing "
                   "MPTokenIssuance"}},
@@ -1073,7 +1073,7 @@ class InvariantsMPT_test : public InvariantsBase
                         ac.view().peek(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
                     if (!sleIssuance)
                         return false;
-                    sleIssuance->setFieldH256(sfReferenceHolding, uint256{2});
+                    sleIssuance->setFieldH256(sfReferenceHolding, UInt256{2});
                     ac.view().update(sleIssuance);
                     return true;
                 },
@@ -1103,7 +1103,7 @@ class InvariantsMPT_test : public InvariantsBase
         // other than a VaultDelete transaction. Set up a vault, then have
         // an arbitrary tx erase the pseudo's MPToken in precheck.
         {
-            uint256 vaultKey;
+            UInt256 vaultKey;
             doInvariantCheck(
                 {{"vault pseudo-account holding deleted by a "
                   "non-VaultDelete transaction"}},
