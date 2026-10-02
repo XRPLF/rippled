@@ -2103,10 +2103,7 @@ async def assert_sync_diagnostics_metrics(
     # pass silently whatever Prometheus holds, which is the more dangerous half
     # of the defect this replaces: the original call also passed `report` where
     # `deadline` belongs and omitted `sem` entirely, raising TypeError before any
-    # check ran and taking the validation phases ordered after it down with it --
-    # three of them as CI invokes this (dashboards, parity span attrs, parity
-    # value sanity), since the workflow passes --skip-loki; four when the
-    # log-correlation phase is enabled.
+    # check ran and taking the validation phases ordered after it down with it.
     deadline = time.monotonic() + METRIC_POLL_TIMEOUT_SEC
     sem = asyncio.Semaphore(METRIC_POLL_CONCURRENCY)
     checks = await asyncio.gather(
