@@ -90,7 +90,7 @@ Code in `libxrpl` cannot use these macros and always goes through `beast::insigh
 
 ## 1. OpenTelemetry Spans
 
-### 1.1 Complete Span Inventory (42 spans)
+### 1.1 Complete Span Inventory
 
 > **Emitted span-name families.** The tables below list one row per distinct span name, taken from the `*SpanNames.h` headers and their call sites. `rpc.command.<name>` and `grpc.<MethodName>` are one family each, because the command or method name is a parameter. The Phase-10 validation harness lists the families it checks in `docker/telemetry/workload/expected_spans.json`, and its `total_span_types` field gives their number. This branch also emits the sync-diagnostic spans (`nodestore.rotate.*`, the `ledger.acquire.*` children, `ledger.serve`, `txset.acquire`, `peer.dial` and `consensus.validation.accept`). `expected_spans.json` lists them, but these tables do not; [Fresh-node sync diagnostics](#fresh-node-sync-diagnostics) describes them.
 
@@ -306,7 +306,7 @@ aggregation. Per the 2026-05-13 naming redesign, span-attribute keys use the
 >   it (both `consensus.validation.send` and `peer.validation.receive`) — there
 >   is no dotted span attribute.
 
-The tables below list one row per attribute per subsystem, so a key shared by two subsystems (for example `ledger_seq`) appears once in each. That is 89 rows over 78 distinct keys. The §6 per-header counts use the same row-based rule, so they sum to 89.
+The tables below list one row per attribute per subsystem, so a key shared by two subsystems (for example `ledger_seq`) appears once in each.
 
 #### RPC Attributes
 
@@ -1219,7 +1219,7 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 | Grafana dashboards             | Each listed uid     | Dashboard API load + panel count            | `expected_metrics.json` |
 | Log-trace links                | Present             | Loki query + Tempo reverse check            | —                       |
 
-> **The span and dashboard rows count manifest entries, so they quote no number.** The counts change from branch to branch. `docker/telemetry/workload/expected_spans.json`, added on the phase-10 branch, has one entry per span-name family it checks; `rpc.command.*` and `grpc.*` are one entry each. Its `total_span_types` field is the number of entries, and `total_unique_attributes` is the number of distinct keys across the entries' `required_attributes` lists. `test_contract_totals_count_its_span_entries` in `docker/telemetry/workload/test_validate_telemetry.py` fails when either total does not match the entries. The full emitted span inventory is in [§1.1](#11-complete-span-inventory-42-spans).
+> **The span, native, call-site and dashboard rows quote no number.** Each counts manifest entries, and those change from branch to branch. `docker/telemetry/workload/expected_spans.json`, added on the phase-10 branch, has one entry per span-name family it checks; `rpc.command.*` and `grpc.*` are one entry each. Its `total_span_types` field is the number of entries, and `total_unique_attributes` is the number of distinct keys across the entries' `required_attributes` lists. `test_contract_totals_count_its_span_entries` in `docker/telemetry/workload/test_validate_telemetry.py` fails when either total does not match the entries. The full emitted span inventory is in [§1.1](#11-complete-span-inventory).
 >
 > The **Validation Method** column for the two bulk beast rows used to read
 > "Prometheus `__name__` query", which never described anything real:
@@ -1238,7 +1238,7 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 >
 > `expected_metrics.json` lists the dashboard uids under `grafana_dashboards.uids`. The dashboard check loads each uid through the Grafana API and passes when the dashboard has at least one panel (rows are not counted). It checks provisioning, not panel data. `log-derived-insights` reads Loki, and nothing asserts its panel data.
 >
-> The 35 native instruments match the tables in [§Phase 9: OTel SDK-Exported Metrics](#phase-9-otel-sdk-exported-metrics-metricsregistry) and the Phase 7+ section exactly, counting each labeled gauge family (`nodestore_state`, `cache_metrics`, …) once.
+> Every native instrument has a row in the tables in [§Phase 9: OTel SDK-Exported Metrics](#phase-9-otel-sdk-exported-metrics-metricsregistry) and the Phase 7+ section, and a labeled gauge family (`nodestore_state`, `cache_metrics`, …) has one row.
 >
 > Note that `ledgers_closed_total` appears in **both** instrument rows: it is
 > created as a `MetricsRegistry` member (in `MetricsRegistry::initSyncInstruments()`, whose
@@ -2186,7 +2186,7 @@ messages are traced.
 **Status**: NOT IMPLEMENTED. The span catalog in `02` §2.3.2 is a design
 inventory, not a statement of what emits; §2.3.2 now marks which entries are
 live. Instrumenting the remaining families would change the span families
-counted in [§1.1](#11-complete-span-inventory-42-spans) and the entries in
+listed in [§1.1](#11-complete-span-inventory) and the entries in
 `docker/telemetry/workload/expected_spans.json`, so it is scoped as its own
 change rather than folded into a metric task.
 

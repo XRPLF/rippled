@@ -1445,6 +1445,24 @@ class RuleBCollector(unittest.TestCase):
         v, _ = self._run(y, {"command", "rpc_status"})
         self.assertEqual(v, [])
 
+    def test_comment_does_not_end_list_but_dedent_does(self):
+        # The entries sit at the key's own indentation, which YAML allows. A
+        # comment holding a colon sits between them, so the entry after it must
+        # still be read. The sibling key `other:` ends the list, so the
+        # `- name:` under it is not a dimension.
+        y = (
+            "connectors:\n"
+            "  spanmetrics:\n"
+            "    dimensions:\n"
+            "    - name: command\n"
+            "    # Note: a comment with a colon.\n"
+            "    - name: bogus_after_comment\n"
+            "    other:\n"
+            "      - name: bogus_outside_list\n"
+        )
+        v, _ = self._run(y, {"command"})
+        self.assertEqual(v, ["bogus_after_comment"])
+
     def test_skip_when_no_spanmetrics_block(self):
         v, skips = self._run("receivers:\n  otlp:\n", {"command"})
         self.assertEqual(v, [])
