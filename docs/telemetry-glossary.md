@@ -753,7 +753,7 @@ xrpld keeps several caches: SLE (ledger entries), Ledger, AcceptedLedger, TreeNo
 
 ### NodeStore
 
-The NodeStore is xrpld's content-addressed object database holding all ledger tree nodes, keyed by hash. It is the main on-disk store read during queries and sync and written as new ledgers are stored; NuDB is the default backend.
+The NodeStore is xrpld's content-addressed object database holding all ledger tree nodes, keyed by hash. It is the main on-disk store read during queries and sync and written as new ledgers are stored. Its backend is set by `type` in `[node_db]`, for example NuDB or RocksDB.
 
 **Scope:** per node — measured on and specific to this individual server.
 
@@ -769,7 +769,7 @@ A lookup is one attempt to fetch an object from the NodeStore by its hash. A hit
 
 ### NuDB
 
-NuDB is a fast append-only key-value store used as the NodeStore backend. Its on-disk size grows steadily with retained ledger history; the growth slope is the data growth rate.
+NuDB is a fast append-only key-value store, one of the NodeStore backends that `type` in `[node_db]` can select. Its on-disk size grows steadily with retained ledger history; the growth slope is the data growth rate.
 
 **Scope:** per node — measured on and specific to this individual server.
 
