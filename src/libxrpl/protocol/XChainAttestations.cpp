@@ -536,7 +536,7 @@ XChainCreateAccountAttestation::XChainCreateAccountAttestation(STObject const& o
           o[sfWasLockingChainSend] != 0,
           o[sfDestination]} {};
 
-XChainCreateAccountAttestation ::XChainCreateAccountAttestation(json::Value const& v)
+XChainCreateAccountAttestation::XChainCreateAccountAttestation(json::Value const& v)
     : XChainCreateAccountAttestation{
           json::getOrThrow<AccountID>(v, sfAttestationSignerAccount),
           json::getOrThrow<PublicKey>(v, sfPublicKey),

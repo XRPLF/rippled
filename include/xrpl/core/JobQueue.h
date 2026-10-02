@@ -571,7 +571,7 @@ public:
 
     JobQueue(
         int threadCount,
-        beast::insight::Collector::ptr const& collector,
+        beast::insight::Collector::Ptr const& collector,
         beast::Journal journal,
         Logs& logs,
         perf::PerfLog& perfLog);
@@ -709,7 +709,7 @@ private:
 
     // Statistics tracking
     perf::PerfLog& perfLog_;
-    beast::insight::Collector::ptr collector_;
+    beast::insight::Collector::Ptr collector_;
     beast::insight::Gauge jobCount_;
     beast::insight::Hook hook_;
 

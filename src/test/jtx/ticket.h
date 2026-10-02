@@ -51,6 +51,6 @@ public:
 /**
  * Match the number of tickets on the account.
  */
-using tickets = OwnerCount<ltTICKET>;
+using Tickets = OwnerCount<ltTICKET>;
 
 }  // namespace xrpl::test::jtx

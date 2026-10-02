@@ -168,14 +168,14 @@ public:
     revImp(
         PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         TOut const& out);
 
     std::pair<TIn, TOut>
     fwdImp(
         PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         TIn const& in);
 
     std::pair<bool, EitherAmount>
@@ -227,7 +227,7 @@ private:
     // If callback returns false, don't process any more offers.
     // Return the unfunded, bad offers and the number of offers consumed.
     template <class Callback>
-    std::pair<boost::container::flat_set<uint256>, std::uint32_t>
+    std::pair<boost::container::flat_set<UInt256>, std::uint32_t>
     forEachOffer(
         PaymentSandbox& sb,
         ApplyView& afView,
@@ -697,7 +697,7 @@ limitStepOut(
 
 template <class TIn, class TOut, class TDerived>
 template <class Callback>
-std::pair<boost::container::flat_set<uint256>, std::uint32_t>
+std::pair<boost::container::flat_set<UInt256>, std::uint32_t>
 BookStep<TIn, TOut, TDerived>::forEachOffer(
     PaymentSandbox& sb,
     ApplyView& afView,
@@ -1068,7 +1068,7 @@ std::pair<TIn, TOut>
 BookStep<TIn, TOut, TDerived>::revImp(
     PaymentSandbox& sb,
     ApplyView& afView,
-    boost::container::flat_set<uint256>& ofrsToRm,
+    boost::container::flat_set<UInt256>& ofrsToRm,
     TOut const& out)
 {
     cache_.reset();
@@ -1147,7 +1147,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
             return DebtDirection::Issues;
         }();
         auto const r = forEachOffer(sb, afView, prevStepDebtDir, eachOffer);
-        boost::container::flat_set<uint256> const toRm = std::move(std::get<0>(r));
+        boost::container::flat_set<UInt256> const toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         offersUsed_ = offersConsumed;
         setUnion(ofrsToRm, toRm);
@@ -1186,7 +1186,7 @@ std::pair<TIn, TOut>
 BookStep<TIn, TOut, TDerived>::fwdImp(
     PaymentSandbox& sb,
     ApplyView& afView,
-    boost::container::flat_set<uint256>& ofrsToRm,
+    boost::container::flat_set<UInt256>& ofrsToRm,
     TIn const& in)
 {
     XRPL_ASSERT(cache_, "xrpl::BookStep::fwdImp : cache is set");
@@ -1327,7 +1327,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
             return DebtDirection::Issues;
         }();
         auto const r = forEachOffer(sb, afView, prevStepDebtDir, eachOffer);
-        boost::container::flat_set<uint256> const toRm = std::move(std::get<0>(r));
+        boost::container::flat_set<UInt256> const toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         offersUsed_ = offersConsumed;
         setUnion(ofrsToRm, toRm);
@@ -1378,7 +1378,7 @@ BookStep<TIn, TOut, TDerived>::validFwd(
 
     try
     {
-        boost::container::flat_set<uint256> dummy;
+        boost::container::flat_set<UInt256> dummy;
         fwdImp(sb, afView, dummy, get<TIn>(in));  // changes cache
     }
     catch (FlowException const&)
@@ -1500,6 +1500,13 @@ template <class TIn, class TOut, class TDerived>
 bool
 BookStep<TIn, TOut, TDerived>::checkMPTDEX(ReadView const& view, AccountID const& owner) const
 {
+    // Offer-owner locks on book_.in and book_.out are handled by the
+    // liquidity sources before an offer reaches this point. OfferStream
+    // filters CLOB offers through the assetIn deep-freeze check and the
+    // assetOut owner-funds check using FreezeHandling::ZeroIfFrozen, while
+    // AMMLiquidity gets pool balances through ammAccountHolds(), which zeroes
+    // locked holdings. This method only enforces MPT trade and transfer
+    // permissions.
     if (!isTesSuccess(canTrade(view, book_.in)) || !isTesSuccess(canTrade(view, book_.out)))
         return false;
 
@@ -1513,14 +1520,8 @@ BookStep<TIn, TOut, TDerived>::checkMPTDEX(ReadView const& view, AccountID const
             // Offer's owner is an issuer
             if (asset.getIssuer() == owner)
                 return true;
-            // The previous step could be MPTEndpointStep with non issuer account or
-            // BookStep. Fail both if in asset is locked. In the former case it is holder
-            // to locked holder transfer. In the latter case it is not possible to tell if
-            // it is issuer to holder or holder to holder transfer.
-            if (isFrozen(view, owner, book_.in.get<MPTIssue>()))
-                return false;
-            // Previous step is BookStep. BookStep only sends if CanTransfer is
-            // set and not locked or the offer is owned by an issuer
+            // Previous BookStep already enforced transferability for the asset
+            // it sends to this offer.
             if (prevStep_->bookStepBook())
                 return true;
             // Previous step is MPTEndpointStep and offer's owner is not an
@@ -1567,12 +1568,13 @@ bookStepEqual(Step const& step, xrpl::Book const& book)
 {
     return std::visit(
         [&]<typename TIn, typename TOut>(TIn const&, TOut const&) {
-            using TIn_ = TIn::amount_type;
-            using TOut_ = TOut::amount_type;
+            using TInAmount = TIn::Amount;
+            using TOutAmount = TOut::Amount;
 
-            if constexpr (ValidTaker<TIn_, TOut_>)
+            if constexpr (ValidTaker<TInAmount, TOutAmount>)
             {
-                return equalHelper<TIn_, TOut_, BookPaymentStep<TIn_, TOut_>>(step, book);
+                return equalHelper<TInAmount, TOutAmount, BookPaymentStep<TInAmount, TOutAmount>>(
+                    step, book);
             }
             else
             {
