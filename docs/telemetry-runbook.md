@@ -83,13 +83,15 @@ Follow [BUILD.md](../BUILD.md), adding `-o telemetry=True` so Conan pulls `opent
 
 ```bash
 conan install .. --output-folder . --build missing -o telemetry=True --settings build_type=Release
-cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtelemetry=ON ..
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON ..
 cmake --build . --target xrpld
 ```
 
-Conan also writes a `conan-release` CMake preset, so `cmake --preset conan-release -Dtelemetry=ON` works instead of the explicit toolchain line. There is no preset named `default`.
+The Conan option is the only telemetry switch. The toolchain file that `conan install` writes sets the `telemetry` CMake variable, and `CMakeLists.txt` reads it, so the CMake line needs no telemetry flag. Do not add `-Dtelemetry=`: it overrides the toolchain's value and can disagree with what Conan fetched. The toolchain sets `telemetry` only while the CMake cache has no value for it, so change the option in a fresh build directory.
 
-Both telemetry flags are the current default, so omitting them still gives you an instrumented build. Pass them anyway, so the build stays instrumented wherever the default moves.
+Conan also writes a `conan-release` preset. From the repo root, `cmake --preset conan-release -Dxrpld=ON` works instead of the explicit toolchain line. Then `cmake --build --preset conan-release --target xrpld` builds in `.build/build/Release`. There is no preset named `default`.
+
+`telemetry=True` is the current Conan default, so omitting it still gives you an instrumented build. Pass it anyway, so the build stays instrumented wherever the default moves.
 
 ### 4. Run against a live network
 
@@ -1724,7 +1726,7 @@ The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTe
 
 Do not set `prefix` on this path. `formatName()` never applies it, so the setting is silently ignored and the exported names are bare and lowercase — `jobq_job_count`, not `xrpld_jobq_job_count`. Queries written against a prefixed name return no series.
 
-> **Fallback**: Set `server=statsd` and `address=127.0.0.1:8125` to use the legacy StatsD UDP path. This requires re-enabling the `statsd` receiver in `otel-collector-config.yaml` and uncommenting port 8125 in `docker-compose.yml`. On that path `prefix` **is** applied to the metric name, which is why the StatsD examples elsewhere in this document keep it.
+> **Fallback**: Set `server=statsd` and `address=127.0.0.1:8125` to use the StatsD UDP path. `otel-collector-config.yaml` has no `statsd` receiver, so add one and list it in the `metrics` pipeline's `receivers`. Then uncomment the port 8125 line in `docker-compose.yml`. On that path `prefix` **is** applied to the metric name, which is why the StatsD examples elsewhere in this document keep it.
 
 ### Metric Reference
 
@@ -1876,23 +1878,23 @@ ledger acquisition deferring". Use `acquire_ledger_deferrals` and
 
 #### Counters
 
-| Prometheus Metric               | Source                | Description                    |
-| ------------------------------- | --------------------- | ------------------------------ |
-| `rpc_requests_total`            | ServerHandler.cpp:108 | Total RPC request count        |
-| `ledger_fetches_total`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
-| `ledger_history_mismatch_total` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
-| `warn_total`                    | Logic.h:33            | Resource manager warning count |
-| `drop_total`                    | Logic.h:34            | Resource manager drop count    |
+| Prometheus Metric               | Source                                                        | Description                               |
+| ------------------------------- | ------------------------------------------------------------- | ----------------------------------------- |
+| `rpc_requests_total`            | `ServerHandler::ServerHandler()` (ServerHandler.cpp)          | Total RPC request count                   |
+| `ledger_fetches_total`          | `InboundLedgersImp::InboundLedgersImp()` (InboundLedgers.cpp) | Ledger fetch request count                |
+| `ledger_history_mismatch_total` | `LedgerHistory::LedgerHistory()` (LedgerHistory.cpp)          | Built vs validated ledger hash mismatches |
+| `warn_total`                    | `resource::Logic::Stats` (Logic.h)                            | Resource manager warning count            |
+| `drop_total`                    | `resource::Logic::Stats` (Logic.h)                            | Resource manager drop count               |
 
 #### Histograms
 
-| Prometheus Metric | Source                | Description                    |
-| ----------------- | --------------------- | ------------------------------ |
-| `rpc_time`        | ServerHandler.cpp:110 | RPC response time (ms)         |
-| `rpc_size`        | ServerHandler.cpp:109 | RPC response size (bytes)      |
-| `ios_latency`     | Application.cpp:438   | I/O service loop latency (ms)  |
-| `pathfind_fast`   | PathRequests.h:23     | Fast pathfinding duration (ms) |
-| `pathfind_full`   | PathRequests.h:24     | Full pathfinding duration (ms) |
+| Prometheus Metric | Source                                                            | Description                    |
+| ----------------- | ----------------------------------------------------------------- | ------------------------------ |
+| `rpc_time`        | `ServerHandler::ServerHandler()` (ServerHandler.cpp)              | RPC response time (ms)         |
+| `rpc_size`        | `ServerHandler::ServerHandler()` (ServerHandler.cpp)              | RPC response size (bytes)      |
+| `ios_latency`     | `ApplicationImp::io_latency_sampler_` (Application.cpp)           | I/O service loop latency (ms)  |
+| `pathfind_fast`   | `PathRequestManager::PathRequestManager()` (PathRequestManager.h) | Fast pathfinding duration (ms) |
+| `pathfind_full`   | `PathRequestManager::PathRequestManager()` (PathRequestManager.h) | Full pathfinding duration (ms) |
 
 #### Job Instruments
 
@@ -2281,7 +2283,7 @@ board and is documented last, together with the LogQL-specific traps it exposed.
 | Transaction Processing Rate        | timeseries     | `rate(span_calls_total{span_name="tx.process"}[$__rate_interval])` and `tx.receive`          | `span_name`                         |
 | Transaction Processing Latency     | timeseries     | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                              | —                                   |
 | Transaction Path Distribution      | piechart       | `sum by (local) (increase(span_calls_total{span_name="tx.process"}[$__rate_interval]))`      | `local`                             |
-| Transaction Receive vs Suppressed  | timeseries     | `rate(span_calls_total{span_name="tx.receive"}[$__rate_interval])`                           | —                                   |
+| Transaction Receive Rate           | timeseries     | `rate(span_calls_total{span_name="tx.receive"}[$__rate_interval])`                           | —                                   |
 | TX Processing Duration Heatmap     | heatmap        | `tx.process` histogram buckets                                                               | `le`                                |
 | TX Apply Duration per Ledger       | timeseries     | p95/p50 of `tx.apply`                                                                        | —                                   |
 | TX Apply Failed Rate               | stat           | `rate(span_calls_total{span_name="tx.transactor",stage="apply",ter_result!~"tesSUCCESS\|"})` | `stage`, `ter_result`               |
@@ -2890,7 +2892,7 @@ curl -sG http://localhost:9090/api/v1/query \
 
 ## Log-Trace Correlation
 
-When xrpld is built with `telemetry=ON`, log lines emitted within an active, sampled OpenTelemetry span automatically include `trace_id` and `span_id` fields:
+When xrpld is built with telemetry (Conan `-o telemetry=True`), log lines emitted within an active, sampled OpenTelemetry span automatically include `trace_id` and `span_id` fields:
 
 ```
 2024-Jan-15 10:30:45.123456789 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
@@ -3553,7 +3555,7 @@ not a sign the cache is working.
 
 ### No trace_id in log output
 
-- Verify xrpld was built with `telemetry=ON` (the `XRPL_ENABLE_TELEMETRY` preprocessor flag)
+- Verify xrpld was built with Conan `-o telemetry=True`, which defines the `XRPL_ENABLE_TELEMETRY` preprocessor flag
 - Verify `enabled=1` in the `[telemetry]` config section
 - Log lines only contain `trace_id`/`span_id` when emitted inside an active span — background logs outside of RPC/consensus/transaction processing will not have trace context
 - Check that the specific trace category is enabled (e.g., `trace_rpc=1`)
