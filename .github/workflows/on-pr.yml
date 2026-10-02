@@ -171,6 +171,7 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: .github/scripts/releasing/check-no-copied-release-commits.sh "${BASE}" "${HEAD}"
+      # Runs even if the previous check fails, so that both problems are reported at once.
       - name: Check merge-back has no new commits
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         env:
