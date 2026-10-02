@@ -33,7 +33,7 @@ graph LR
     end
 
     subgraph viz["Visualization"]
-        F["Grafana  :3000<br/>10 dashboards"]
+        F["Grafana  :3000"]
     end
 
     A -->|"OTLP/HTTP :4318<br/>(traces + attributes)"| R1
@@ -84,7 +84,7 @@ always goes through `beast::insight` instead.
 
 ## 1. OpenTelemetry Spans
 
-### 1.1 Complete Span Inventory (39 spans)
+### 1.1 Complete Span Inventory
 
 > **See also**: [02-design-decisions.md §2.3](./02-design-decisions.md#23-span-naming-conventions) for naming conventions and the full span catalog with rationale. [04-code-samples.md §4.6](./04-code-samples.md#46-span-flow-visualization) for span flow diagrams.
 
@@ -261,7 +261,7 @@ under an unrelated transaction's trace.
 
 Every span can carry key-value attributes that provide context for filtering and aggregation.
 
-The tables below list one row per attribute per subsystem, so a key shared by two subsystems (for example `ledger_seq`) appears once in each. That is 89 rows over 78 distinct keys. The §6 per-header counts use the same row-based rule, so they sum to 89.
+The tables below list one row per attribute per subsystem, so a key shared by two subsystems (for example `ledger_seq`) appears once in each. The §6 per-header counts use the same row-based rule.
 
 #### RPC Attributes
 
@@ -797,7 +797,7 @@ Prometheus label. See [telemetry-runbook.md](../docs/telemetry-runbook.md)
 
 1. Open Grafana at **http://localhost:3000**
 2. Navigate to **Dashboards → xrpld** folder
-3. All 10 dashboards are auto-provisioned from `docker/telemetry/grafana/dashboards/`
+3. All dashboards are auto-provisioned from `docker/telemetry/grafana/dashboards/`
 
 ---
 
