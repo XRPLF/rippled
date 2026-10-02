@@ -60,6 +60,52 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
         checkVaultLoanSums(env, fixture, {loanKeylet}, "default");
     }
 
+    // Default removes only the defaulted Loan's scheduled interest from
+    // YieldUnrealized; another open Loan's interest stays.
+    void
+    testDefaultRemovesOnlyThatLoansScheduledInterest()
+    {
+        using namespace test::jtx;
+        using namespace loan;
+
+        testcase("Lending: default removes only the defaulted Loan's scheduled interest");
+
+        Env env(*this, features());
+        auto const [issuer, owner, depositor, asset] = setupIou(env);
+
+        auto const fixture = setupLendingVault(env, owner, depositor, asset, Number{1'000});
+        auto const defaulted = openLoan(env, fixture, Number{300}, 3, percentageToTenthBips(10));
+        auto const kept = openLoan(env, fixture, Number{200}, 3, percentageToTenthBips(10));
+
+        auto const scheduledInterest = [&](Keylet const& k) {
+            auto const loanSle = env.le(k);
+            if (!BEAST_EXPECT(loanSle))
+                return Number{0};
+            return Number(loanSle->at(sfTotalValueOutstanding)) -
+                Number(loanSle->at(sfPrincipalOutstanding)) -
+                Number(loanSle->at(sfManagementFeeOutstanding));
+        };
+        auto const yield = [&] {
+            auto const vaultSle = env.le(fixture.vaultKeylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return Number{0};
+            return Number(vaultSle->at(sfYieldUnrealized));
+        };
+
+        Number const defaultedInterest = scheduledInterest(defaulted);
+        Number const keptInterest = scheduledInterest(kept);
+        BEAST_EXPECT(defaultedInterest > beast::kZero);
+        BEAST_EXPECT(keptInterest > beast::kZero);
+        BEAST_EXPECT(yield() == defaultedInterest + keptInterest);
+
+        defaultAfterGrace(env, owner, defaulted);
+
+        BEAST_EXPECT(yield() == keptInterest);
+        BEAST_EXPECT(scheduledInterest(kept) == keptInterest);
+        expectVault(env, fixture.vaultKeylet, {.assetsDeployed = Number{200}});
+        checkVaultLoanSums(env, fixture, {defaulted, kept}, "default with interest");
+    }
+
     void
     testLendingDefaultWithPartialCover()
     {
@@ -312,6 +358,25 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
         BEAST_EXPECT(coverMoved > beast::kZero);
         BEAST_EXPECT(coverMoved < defaultLoanPrincipal);
         BEAST_EXPECT(coverMoved <= coverBefore);
+        // The rate amount is DebtTotal * 10% * 50%. It is rounded on the broker
+        // grid and then floored on AssetsAvailable's grid, so the cover moved is
+        // at most the rate amount and less than one live unit below it.
+        {
+            auto const vaultSle = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+            Number const rateAmount = Number(brokerSleBefore->at(sfDebtTotal)) * Number{5, -2};
+            Number const liveUnit{1, getVaultScale(vaultSle)};
+            BEAST_EXPECT(coverMoved <= rateAmount);
+            BEAST_EXPECT(rateAmount - coverMoved < liveUnit);
+        }
+        // The broker pseudo-account's balance moves by exactly the cover moved.
+        {
+            Account const brokerPseudo{"brokerPseudo", brokerSleAfter->at(sfAccount)};
+            BEAST_EXPECT(
+                Number(env.balance(brokerPseudo, asset).value()) ==
+                Number(brokerSleAfter->at(sfCoverAvailable)));
+        }
 
         // AssetsDeployed drops by the full principal; AssetsAvailable rises by the cover
         // moved.
@@ -953,6 +1018,7 @@ public:
     run() override
     {
         testLendingAssetsDeployedDefault();
+        testDefaultRemovesOnlyThatLoansScheduledInterest();
         testLendingDefaultWithPartialCover();
         testLendingDefaultOfImpairedLoan();
         testLendingImpairUnimpairDefault();

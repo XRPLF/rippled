@@ -1911,6 +1911,31 @@ class InvariantsVault_test : public InvariantsBase
                 return true;
             });
 
+        // FixedPrecision-only: a new vault must have YieldUnrealized == 0.
+        doInvariantCheck(
+            {
+                "created vault must be empty",
+                "create operation must not have updated a vault",
+            },
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfYieldUnrealized] = Number{1};
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& a1, Account const& a2, Env& env) {
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
         doInvariantCheck(
             {
                 "created vault must be empty",
