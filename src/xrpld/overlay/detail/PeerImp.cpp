@@ -346,7 +346,7 @@ PeerImp::writeNext()
         boost::asio::buffer(writing_->getBuffer(compressionEnabled_)),
         bind_executor(
             strand_,
-            [self = shared_from_this()](error_code const& ec, std::size_t bytesTransferred) {
+            [self = shared_from_this()](ErrorCode const& ec, std::size_t bytesTransferred) {
                 self->onWriteMessage(ec, bytesTransferred);
             }));
 }
