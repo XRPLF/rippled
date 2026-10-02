@@ -148,11 +148,7 @@ TEST(MallocTrim, measures_without_debug_logging)
     EXPECT_GT(report.rssBeforeKB, 0);
     EXPECT_GT(report.rssAfterKB, 0);
 
-    // deltaKB() is now derived from two real readings rather than from the
-    // sentinel pair, so it is the genuine change: a trim never grows RSS by
-    // more than another thread could allocate concurrently, and this test is
-    // single-threaded, so the reading cannot be positive.
-    EXPECT_LE(report.deltaKB(), 0);
+    // When both readings are real, deltaKB() is their exact difference.
     EXPECT_EQ(report.deltaKB(), report.rssAfterKB - report.rssBeforeKB);
 #else
     // NEGATIVE PLATFORM PATH: not Linux/glibc, so there is no trim at all and

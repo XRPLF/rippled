@@ -24,10 +24,12 @@
 
 #include <xrpld/telemetry/AppMetricGauges.h>
 
-// Both name types in the constructor signature, which is compiled in either
-// way, so they belong outside the telemetry guard below.
+// Headers the constructor signature needs in both builds, so they sit outside
+// the telemetry guard below.
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/telemetry/MetricsRegistry.h>
+
+#include <string>
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
@@ -91,7 +93,6 @@
 #include <limits>
 #include <memory>
 #include <sstream>
-#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -103,6 +104,7 @@ namespace xrpl::telemetry {
 AppMetricGauges::AppMetricGauges(
     [[maybe_unused]] MetricsRegistry& core,
     [[maybe_unused]] ServiceRegistry& app,
+    [[maybe_unused]] std::string nodeStoreBackend,
     [[maybe_unused]] beast::Journal journal)
 #ifdef XRPL_ENABLE_TELEMETRY
     : core_(core)
@@ -110,6 +112,7 @@ AppMetricGauges::AppMetricGauges(
     // The core logs through the same partition, so one log-level setting
     // covers the whole metric pipeline.
     , journal_(journal)
+    , nodeStoreBackend_(std::move(nodeStoreBackend))
 #endif
 {
 }
@@ -601,7 +604,9 @@ AppMetricGauges::registerNodeStoreGauge()
     // counters from Database via its public accessors.
     //
     // Every value multiplexes onto this one gauge through its `metric`
-    // label, so a new value needs no new instrument. The body is split
+    // label, so a new value needs no new instrument. Every point also
+    // carries the constant `backend` label, so a reader can tell which
+    // NodeStore backend the node reads from. The body is split
     // across four helpers, one per domain, to stay inside the per-function
     // line budget and to keep each domain testable on its own.
     nodeStoreGauge_ = core_.meter()->CreateInt64ObservableGauge(
@@ -621,7 +626,9 @@ AppMetricGauges::registerNodeStoreGauge()
                 ObserveFn const observe = [&](char const* name, std::int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{label::metric, name}});
+                        ->Observe(
+                            value,
+                            {{label::metric, name}, {label::backend, self->nodeStoreBackend_}});
                 };
 
                 // Qualified because the enclosing lambda captures nothing:
@@ -1306,7 +1313,9 @@ AppMetricGauges::registerStorageDetailGauge()
                 auto observe = [&](char const* name, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{label::metric, name}});
+                        ->Observe(
+                            value,
+                            {{label::metric, name}, {label::backend, self->nodeStoreBackend_}});
                 };
 
                 // Cumulative payload bytes handed to the NodeStore. This is
