@@ -125,7 +125,7 @@ path in Phase 1b through Phase 5.
 
 > **Status column.** This catalog is the design inventory; it is not a
 > statement of what currently emits. `Live` means the span is present in the
-> implemented inventory ([09-data-collection-reference.md §1.1](./09-data-collection-reference.md#11-complete-span-inventory-42-spans)),
+> implemented inventory ([09-data-collection-reference.md §1.1](./09-data-collection-reference.md#11-complete-span-inventory)),
 > which is the authoritative list. `Renamed`/`Split` means the concept shipped
 > under a different name than planned here. **Not built** means no span is
 > emitted for it today.

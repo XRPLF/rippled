@@ -3010,8 +3010,7 @@ sum(count_over_time({service_name="xrpld"} | trace_id = "" [5m]))
 ### Log-Derived Insights (`log-derived-insights`)
 
 The only **Loki/LogQL** dashboard. It surfaces detail that no metric or span
-records, by parsing `debug.log` text. 41 panels in 10 rows: 8 stat, 18
-timeseries, 2 table, 1 state-timeline, 1 logs, 1 text, across 35 queries.
+records, by parsing `debug.log` text.
 
 > **REQUIRES DEBUG LOGS for most rows.** xrpld's default threshold is `Info`
 > (`Severity thresh = Severity::Info`, `app/main/Main.cpp`). Rows tagged `[DBG]`
@@ -3083,7 +3082,7 @@ Stream labels are only `service_name`, `service_instance_id`,
    Grafana does not substitute `$__rate_interval` for a Loki target, so Loki
    receives the literal string and fails with
    `parse error: not a valid duration string: "$__rate_interval"`, which surfaces
-   as "No data". The other 14 dashboards all use `$__rate_interval` because they
+   as "No data". The other dashboards all use `$__rate_interval` because they
    are Prometheus-backed; do **not** align LogQL panels to that convention.
 
 5. **Loki caps a query at 2000 series.** Any per-key or per-IP aggregation must be
