@@ -1620,7 +1620,7 @@ private:
                     std::make_pair(valKeys.cbegin(), valKeys.cend() - 4),
                     std::make_pair(valKeys.cbegin() + 1, valKeys.cend() - 2),
                     std::make_pair(valKeys.cbegin() + 2, valKeys.cend()),
-                };
+            };
 
             auto addPublishedList = [&, this](int i) {
                 auto const publisherSecret = randomSecretKey();
@@ -1710,7 +1710,7 @@ private:
                     std::make_pair(valKeys.cbegin(), valKeys.cend() - 4),
                     std::make_pair(valKeys.cbegin() + 1, valKeys.cend() - 2),
                     std::make_pair(valKeys.cbegin() + 2, valKeys.cend()),
-                };
+            };
 
             auto addPublishedList =
                 [&, this](

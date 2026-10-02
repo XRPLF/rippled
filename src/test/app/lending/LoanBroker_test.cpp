@@ -1601,7 +1601,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 // issuer has already issued MaximumAmount. MaximumAmount is
                 // default.
                 {kMaxMpTokenAmount, std::nullopt, 250, tecINSUFFICIENT_FUNDS},
-            };
+        };
         for (auto const& [pay, max, deposit, err] : mptTests)
         {
             test([&](Env& env) -> std::tuple<MPT, PrettyAmount, TER> {
