@@ -573,44 +573,44 @@ The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTe
 
 Do not set `prefix` on this path. `formatName()` never applies it, so the setting is silently ignored and the exported names are bare and lowercase — `jobq_job_count`, not `xrpld_jobq_job_count`. Queries written against a prefixed name return no series.
 
-> **Fallback**: Set `server=statsd` and `address=127.0.0.1:8125` to use the legacy StatsD UDP path. This requires re-enabling the `statsd` receiver in `otel-collector-config.yaml` and uncommenting port 8125 in `docker-compose.yml`. On that path `prefix` **is** applied to the metric name, which is why the StatsD examples elsewhere in this document keep it.
+> **Fallback**: Set `server=statsd` and `address=127.0.0.1:8125` to use the StatsD UDP path. `otel-collector-config.yaml` has no `statsd` receiver, so add one and list it in the `metrics` pipeline's `receivers`. Then uncomment the port 8125 line in `docker-compose.yml`. On that path `prefix` **is** applied to the metric name, which is why the StatsD examples elsewhere in this document keep it.
 
 ### Metric Reference
 
 #### Gauges
 
-| Prometheus Metric                     | Source                    | Description                                                                |
-| ------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
-| `ledgermaster_validated_ledger_age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                          |
-| `ledgermaster_published_ledger_age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                          |
-| `state_accounting_{Mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
-| `state_accounting_{Mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                  |
-| `peer_finder_active_inbound_peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
-| `peer_finder_active_outbound_peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
-| `overlay_peer_disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
-| `jobq_job_count`                      | JobQueue.cpp:26           | Current job queue depth                                                    |
-| `{category}_bytes_in/out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
-| `{category}_messages_in/out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
+| Prometheus Metric                     | Source                                       | Description                                                                |
+| ------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------- |
+| `ledgermaster_validated_ledger_age`   | `LedgerMaster::Stats` (LedgerMaster.h)       | Age of validated ledger (seconds)                                          |
+| `ledgermaster_published_ledger_age`   | `LedgerMaster::Stats` (LedgerMaster.h)       | Age of published ledger (seconds)                                          |
+| `state_accounting_{Mode}_duration`    | `NetworkOPsImp::Stats` (NetworkOPs.cpp)      | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
+| `state_accounting_{Mode}_transitions` | `NetworkOPsImp::Stats` (NetworkOPs.cpp)      | Transition count per mode                                                  |
+| `peer_finder_active_inbound_peers`    | `ManagerImp::Stats` (PeerfinderManager.cpp)  | Active inbound peer connections                                            |
+| `peer_finder_active_outbound_peers`   | `ManagerImp::Stats` (PeerfinderManager.cpp)  | Active outbound peer connections                                           |
+| `overlay_peer_disconnects`            | `OverlayImpl::Stats` (OverlayImpl.h)         | Peer disconnect count                                                      |
+| `jobq_job_count`                      | `JobQueue::JobQueue()` (JobQueue.cpp)        | Current job queue depth                                                    |
+| `{category}_bytes_in/out`             | `OverlayImpl::TrafficGauges` (OverlayImpl.h) | Overlay traffic bytes per category (57 categories)                         |
+| `{category}_messages_in/out`          | `OverlayImpl::TrafficGauges` (OverlayImpl.h) | Overlay traffic messages per category                                      |
 
 #### Counters
 
-| Prometheus Metric               | Source                | Description                    |
-| ------------------------------- | --------------------- | ------------------------------ |
-| `rpc_requests_total`            | ServerHandler.cpp:108 | Total RPC request count        |
-| `ledger_fetches_total`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
-| `ledger_history_mismatch_total` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
-| `warn_total`                    | Logic.h:33            | Resource manager warning count |
-| `drop_total`                    | Logic.h:34            | Resource manager drop count    |
+| Prometheus Metric               | Source                                                        | Description                               |
+| ------------------------------- | ------------------------------------------------------------- | ----------------------------------------- |
+| `rpc_requests_total`            | `ServerHandler::ServerHandler()` (ServerHandler.cpp)          | Total RPC request count                   |
+| `ledger_fetches_total`          | `InboundLedgersImp::InboundLedgersImp()` (InboundLedgers.cpp) | Ledger fetch request count                |
+| `ledger_history_mismatch_total` | `LedgerHistory::LedgerHistory()` (LedgerHistory.cpp)          | Built vs validated ledger hash mismatches |
+| `warn_total`                    | `resource::Logic::Stats` (Logic.h)                            | Resource manager warning count            |
+| `drop_total`                    | `resource::Logic::Stats` (Logic.h)                            | Resource manager drop count               |
 
 #### Histograms
 
-| Prometheus Metric | Source                | Description                    |
-| ----------------- | --------------------- | ------------------------------ |
-| `rpc_time`        | ServerHandler.cpp:110 | RPC response time (ms)         |
-| `rpc_size`        | ServerHandler.cpp:109 | RPC response size (bytes)      |
-| `ios_latency`     | Application.cpp:438   | I/O service loop latency (ms)  |
-| `pathfind_fast`   | PathRequests.h:23     | Fast pathfinding duration (ms) |
-| `pathfind_full`   | PathRequests.h:24     | Full pathfinding duration (ms) |
+| Prometheus Metric | Source                                                            | Description                    |
+| ----------------- | ----------------------------------------------------------------- | ------------------------------ |
+| `rpc_time`        | `ServerHandler::ServerHandler()` (ServerHandler.cpp)              | RPC response time (ms)         |
+| `rpc_size`        | `ServerHandler::ServerHandler()` (ServerHandler.cpp)              | RPC response size (bytes)      |
+| `ios_latency`     | `ApplicationImp::io_latency_sampler_` (Application.cpp)           | I/O service loop latency (ms)  |
+| `pathfind_fast`   | `PathRequestManager::PathRequestManager()` (PathRequestManager.h) | Fast pathfinding duration (ms) |
+| `pathfind_full`   | `PathRequestManager::PathRequestManager()` (PathRequestManager.h) | Full pathfinding duration (ms) |
 
 ## Deployment Tiers
 
