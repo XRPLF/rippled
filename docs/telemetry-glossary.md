@@ -1195,7 +1195,7 @@ Set-get (fetch) and set-share messages exchange transaction-set data between pee
 
 ### Serve refusal
 
-A peer data request that this node declined to answer — the supply side of the sync exchange, as opposed to everything a node measures about its own fetching. It matters because a node that refuses everything it is asked for looks, from the outside, exactly like a node nobody asks: both serve nothing. From the asking peer's point of view a refusal is indistinguishable from a peer that does not hold the data, so refusals directly slow the sync of every peer that depends on this node. The reason divides them into two kinds. Self-inflicted refusals mean the node was too loaded to answer — its outgoing queue to that peer had grown past its limit, or the local fee track showed it under load, or too much bulk-transfer work was already queued — and these are the serving-side symptom of the same overload that shows up as stalls and job-queue backlog locally. A refusal because the data was simply not held is different: that is a genuine history gap, a question of what this node retains rather than how busy it is.
+A peer data request that this node declined to answer — the supply side of the sync exchange, as opposed to everything a node measures about its own fetching. It matters because a node that refuses everything it is asked for looks, from the outside, exactly like a node nobody asks: both serve nothing. From the asking peer's point of view a refusal is indistinguishable from a peer that does not hold the data, so refusals directly slow the sync of every peer that depends on this node. The reason says which kind. A load refusal (`load_shed`) means the node was too busy or too far behind to answer — the local fee track showed it under load, or, for a fetch pack, its last validated ledger was over 40 seconds old or too much bulk-transfer work was already queued — and these are the serving-side symptom of the same overload that shows up as stalls and job-queue backlog locally. A full send queue (`sendq_full`) is different: the outgoing queue to the asking peer has reached its limit, so the cause is a slow peer or network path, or this node's own uplink. A refusal because the data was simply not held (`not_found`) is different again: a genuine history gap, a question of what this node retains rather than how busy it is.
 
 **Scope:** per node — measured on and specific to this individual server.
 
@@ -1230,6 +1230,14 @@ Proposals and validations are trusted if they come from validators on this node'
 **Scope:** per node — measured on and specific to this individual server.
 
 **See also:** [Trusted / untrusted / duplicate on xrpl.org](https://xrpl.org/docs/concepts/consensus-protocol/unl)
+
+<a id="validation-load"></a>
+
+### Validation load (per peer)
+
+How many validations each peer delivers per second, split by whether the signer is trusted. The `peer_validation_load` gauge reports only ranked values: the three busiest peers' rates, the busiest peer's share of the total, and how many peers are over the per-peer limit. A flood carried by one peer therefore shows as a share near 1 without any peer appearing in a metric label. The busiest untrusted peer is named in a warning log line instead, when it is over the per-peer limit, by connection id and node public key. The throttle is per connection: one connection is named at most once every five minutes, and a reconnect gets a new id.
+
+**Scope:** per node — measured on and specific to this individual server.
 
 <a id="validator-list"></a>
 

@@ -103,7 +103,6 @@ inline constexpr auto applied = makeStr("applied");
 namespace val {
 inline constexpr auto sync = makeStr("sync");
 inline constexpr auto async = makeStr("async");
-inline constexpr auto knownBad = makeStr("known_bad");
 /**
  * Transaction was dropped because the validated ledger is too old to
  * confidently apply new transactions (server is out of sync).
