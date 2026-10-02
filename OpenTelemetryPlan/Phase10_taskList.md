@@ -23,12 +23,12 @@
 Before Phases 1-9 can be considered production-ready, we need proof that:
 
 1. Every emitted span fires with its required attributes under real transaction
-   workloads (the "16 spans / 22 attributes" figures below are stale; the harness
-   derives both totals from `expected_spans.json`)
+   workloads (the harness takes the span and attribute totals from
+   `expected_spans.json`)
 2. All 255+ StatsD metrics + ~50 Phase 9 metrics appear in Prometheus with non-zero values
 3. Log-trace correlation (Phase 8) produces clickable trace_id links in Loki
-4. The 14 harness-asserted Grafana dashboards render meaningful data (no empty
-   panels); 15 are on disk
+4. Every Grafana dashboard the harness checks renders meaningful data (no empty
+   panels)
 5. Performance overhead stays within bounds (< 3% CPU, < 5MB memory)
 6. The telemetry stack survives sustained load without data loss or queue backpressure
 
@@ -175,8 +175,8 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
 
   **Dashboard validation**:
   - For each dashboard, query the dashboard API and assert no panels show "No
-    data". There are **15 dashboards on disk**; the harness asserts **14** —
-    `log-derived-insights` is provisioned but unasserted.
+    data". The harness checks every dashboard listed under
+    `grafana_dashboards.uids` in `expected_metrics.json`.
 
 - Output: JSON report with pass/fail per check, suitable for CI.
 
@@ -274,12 +274,12 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
 - [ ] Transaction submitter generates 6+ transaction types at configurable TPS
 - [ ] Validation suite confirms the full span / attribute / metric inventory
       (totals computed dynamically from `expected_spans.json` /
-      `expected_metrics.json`, not the stale 16 / 22 figures)
+      `expected_metrics.json`)
 - [ ] Log-trace correlation validated end-to-end (Loki ↔ Tempo) — implemented,
       and gated in CI: the workflow passes no `--skip-loki`, so
       `validate_telemetry.py` builds and runs both log-correlation checks
-- [ ] All 14 harness-asserted Grafana dashboards render data (no empty panels);
-      15 on disk
+- [ ] Every dashboard in `grafana_dashboards.uids` renders data (no empty
+      panels)
 - [ ] Benchmark shows < 3% CPU overhead, < 5MB memory overhead
 - [ ] CI workflow runs validation on telemetry branch changes
 - [ ] Validation report output is CI-parseable (JSON with exit codes)
