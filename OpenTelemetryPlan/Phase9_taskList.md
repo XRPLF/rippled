@@ -405,14 +405,9 @@ bare rename in `145b1469d6` and `25868f2740` — the
   - ✅ Troubleshooting entries for new metric categories
   - ❌ **Still open**: dashboard guides for **six** dashboards — `fee-market`,
     `job-queue`, `ledger-data-sync`, `overlay-traffic-detail`, `peer-quality` and
-    `validator-health`. The runbook's dashboard reference records the gap
-    verbatim: "Nine dashboards have a reference section below. `fee-market`,
-    `job-queue`, `ledger-data-sync`, `overlay-traffic-detail`, `peer-quality`, and
-    `validator-health` are provisioned but not yet documented here — their panel
-    descriptions carry the same six-heading reference format, so open the panel
-    info icon in Grafana until a section is written." (15 provisioned − 6
-    undocumented = 9 documented.) Also still open: the Validation Agreement
-    explainer (8s grace / 5m late repair)
+    `validator-health`. The runbook records the gap at its dashboard reference
+    section: these six are provisioned but have no section there yet. Also still
+    open: the Validation Agreement explainer (8s grace / 5m late repair)
 
 - Provision Grafana alert rules (`docker/telemetry/grafana/provisioning/alerting/`) — **as shipped**:
   - **14 rules in 5 groups**: `xrpld-consensus` (`LedgerHistoryMismatch`,
@@ -740,11 +735,10 @@ actually emits. `peer.connect`, `peer.disconnect`, `peer.message.send` and
 protocol message families have no spans.
 
 **Scope warning**: This is larger than Tasks 9.14-9.16 combined and changes the
-span-family inventory asserted in `09` §1.1 (**41** emitted families) and in
-`docker/telemetry/workload/expected_spans.json` (**40** catalogued — `rpc.ws_upgrade`
-has no entry). `trace_peer` is also **on by default** and already flagged as
-high-volume, so adding per-message spans has a volume cost that needs measuring
-before commitment.
+span-family inventory in `09` §1.1 and the entries in
+`docker/telemetry/workload/expected_spans.json`. `trace_peer` is also
+**on by default** and already flagged as high-volume, so adding per-message
+spans has a volume cost that needs measuring before commitment.
 
 **Exit Criteria**:
 
