@@ -2375,44 +2375,42 @@ class Delegate_test : public beast::unit_test::Suite
 
         // Sponsor fields are common fields, so they are permitted in every granular template.
         // Fee sponsorship is allowed for a granular delegated transaction.
-        {
-            Env env(*this);
-            env.fund(XRP(10000), alice, bob, gw, sponsor);
-            env.trust(usd(200), alice);
-            env.close();
+        Env env(*this);
+        env.fund(XRP(10000), alice, bob, gw, sponsor);
+        env.trust(usd(200), alice);
+        env.close();
 
-            env(delegate::set(gw, bob, {"PaymentMint"}));
-            env.close();
+        env(delegate::set(gw, bob, {"PaymentMint"}));
+        env.close();
 
-            // Co-signed: the sponsor account pays the fee.
-            auto const gwBalance = env.balance(gw);
-            auto const bobBalance = env.balance(bob);
-            auto const sponsorBalance = env.balance(sponsor);
-            env(pay(gw, alice, usd(50)),
-                delegate::As(bob),
-                Fee(feeAmt),
-                sponsor::As(sponsor, spfSponsorFee),
-                Sig(sfSponsorSignature, sponsor));
-            env.close();
-            env.require(Balance(alice, usd(50)));
-            BEAST_EXPECT(env.balance(gw) == gwBalance);
-            BEAST_EXPECT(env.balance(bob) == bobBalance);
-            BEAST_EXPECT(env.balance(sponsor) == sponsorBalance - feeAmt);
+        // Co-signed: the sponsor account pays the fee.
+        auto const gwBalance = env.balance(gw);
+        auto const bobBalance = env.balance(bob);
+        auto const sponsorBalance = env.balance(sponsor);
+        env(pay(gw, alice, usd(50)),
+            delegate::As(bob),
+            Fee(feeAmt),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor));
+        env.close();
+        env.require(Balance(alice, usd(50)));
+        BEAST_EXPECT(env.balance(gw) == gwBalance);
+        BEAST_EXPECT(env.balance(bob) == bobBalance);
+        BEAST_EXPECT(env.balance(sponsor) == sponsorBalance - feeAmt);
 
-            // Pre-funded: sponsorship(sponsor, bob) pays the fee, bob is sfDelegate.
-            env(sponsor::set_fee(sponsor, 0, XRP(100)), sponsor::SponseeAcc(bob));
-            env.close();
-            auto const sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, bob);
-            env(pay(gw, alice, usd(50)),
-                delegate::As(bob),
-                Fee(feeAmt),
-                sponsor::As(sponsor, spfSponsorFee));
-            env.close();
-            env.require(Balance(alice, usd(100)));
-            BEAST_EXPECT(env.balance(gw) == gwBalance);
-            BEAST_EXPECT(env.balance(bob) == bobBalance);
-            BEAST_EXPECT(sponsor::sponsorshipFeeBalance(env, sponsor, bob) == sponsorFee - feeAmt);
-        }
+        // Pre-funded: sponsorship(sponsor, bob) pays the fee, bob is sfDelegate.
+        env(sponsor::set_fee(sponsor, 0, XRP(100)), sponsor::SponseeAcc(bob));
+        env.close();
+        auto const sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, bob);
+        env(pay(gw, alice, usd(50)),
+            delegate::As(bob),
+            Fee(feeAmt),
+            sponsor::As(sponsor, spfSponsorFee));
+        env.close();
+        env.require(Balance(alice, usd(100)));
+        BEAST_EXPECT(env.balance(gw) == gwBalance);
+        BEAST_EXPECT(env.balance(bob) == bobBalance);
+        BEAST_EXPECT(sponsor::sponsorshipFeeBalance(env, sponsor, bob) == sponsorFee - feeAmt);
 
         // Reserve sponsorship is not tested here: checkSponsor rejects it with temINVALID for any
         // delegated transaction before the permission check, regardless of the delegate's
