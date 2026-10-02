@@ -11,7 +11,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -346,28 +345,20 @@ getAssetsTotalScale(SLE::ConstRef vaultSle)
  * round through adjustImpreciseNumber at vaultScale. Shared by LoanSet
  * (origination) and LoanPay (payment, where delta is negative).
  *
+ * @param brokerSle The LoanBroker whose DebtTotal is adjusted.
+ * @param vaultSle The LoanBroker's Vault.
+ * @param delta The signed change to DebtTotal.
  * @param vaultScale The Vault scale the caller captured before changing
  *        AssetsTotal. Legacy/CashBasis round DebtTotal at that scale, not at
  *        the scale after this transaction's AssetsTotal change. Unused on
  *        FixedPrecision Vaults.
  */
-template <class NumberProxy>
 void
 adjustBrokerDebtTotal(
-    NumberProxy debtTotal,
+    SLE::Ref brokerSle,
     SLE::ConstRef vaultSle,
     Number const& delta,
-    int vaultScale)
-{
-    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
-    {
-        debtTotal += delta;
-    }
-    else
-    {
-        adjustImpreciseNumber(debtTotal, delta, vaultSle->at(sfAsset), vaultScale);
-    }
-}
+    int vaultScale);
 
 /**
  * Minimum required broker cover, rounded up.
