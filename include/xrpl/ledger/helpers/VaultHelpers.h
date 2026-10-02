@@ -100,16 +100,6 @@ getVaultScale(SLE::ConstRef vault);
 [[nodiscard]] int
 getVaultBaseScale(SLE::ConstRef vault);
 
-namespace detail {
-
-/**
- * Return the Vault's posterior live exponent after applying an unrounded delta.
- */
-[[nodiscard]] int
-getPosteriorVaultScale(SLE::ConstRef vault, STAmount const& delta);
-
-}  // namespace detail
-
 /**
  * Round an amount at the Vault's posterior live exponent.
  */
@@ -120,6 +110,12 @@ roundToPosteriorVaultScale(
     Number::RoundingMode roundingMode);
 
 namespace detail {
+
+/**
+ * Return the Vault's posterior live exponent after applying an unrounded delta.
+ */
+[[nodiscard]] int
+getPosteriorVaultScale(SLE::ConstRef vault, STAmount const& delta);
 
 /**
  * Shared grid-floor core of getVaultScale / getPosteriorVaultScale /
@@ -149,7 +145,7 @@ posteriorAssetScale(
     Asset const& asset,
     int baseScale,
     Number const& reference,
-    STAmount const& delta);
+    Number const& delta);
 
 /**
  * Shared core of creditToPosteriorAvailableScale and
@@ -157,14 +153,15 @@ posteriorAssetScale(
  * returns the difference from reference, so the delta applied is exactly
  * what moves reference onto the floored sum. See
  * creditToPosteriorAvailableScale's doc for why the sum, not raw alone,
- * must be floored.
+ * must be floored. raw is the exact amount; it is not rounded on its own
+ * before being added to reference.
  */
 [[nodiscard]] STAmount
 creditToPosteriorScale(
     Asset const& asset,
     Number const& reference,
     int atScale,
-    STAmount const& raw,
+    Number const& raw,
     Number::RoundingMode roundingMode);
 
 }  // namespace detail
@@ -185,11 +182,14 @@ creditToPosteriorScale(
  * the sum instead, floor16(9999999999.999999 + 0.000011) minus
  * 9999999999.999999, is exact by construction, since STAmount's own
  * 16-digit canonical form of the sum is what gets subtracted from.
+ *
+ * raw is taken as an exact Number: rounding it to 16 digits before adding
+ * it to AssetsAvailable could drop a tail that moves the floored sum.
  */
 [[nodiscard]] STAmount
 creditToPosteriorAvailableScale(
     SLE::ConstRef vault,
-    STAmount const& raw,
+    Number const& raw,
     Number::RoundingMode roundingMode);
 
 /**
