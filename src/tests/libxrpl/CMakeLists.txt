@@ -21,14 +21,6 @@ set_target_properties(
 )
 # Lets test sources include the shared helpers as <helpers/...>.
 target_include_directories(xrpl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-# Three tests reach a header under src/xrpld/ rather than in libxrpl:
-# ledger/AcquireStats.cpp includes <xrpld/app/ledger/AcquireStats.h>,
-# telemetry/RpcMetricNames.cpp includes <xrpld/rpc/detail/Tuning.h>, and
-# telemetry/PeerValidationLoad.cpp includes
-# <xrpld/telemetry/PeerValidationLoad.h>. Put src/ on the include path so all
-# three resolve as <xrpld/...>. This is unconditional because those headers
-# are header-only and testable in every build, telemetry or not.
-target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
 
 # One source subdirectory per module. Network unit tests are currently not

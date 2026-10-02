@@ -319,22 +319,22 @@ public:
     chop(int num);
 
     // vector-like functions
-    Blob ::iterator
+    Blob::iterator
     begin()
     {
         return data_.begin();
     }
-    Blob ::iterator
+    Blob::iterator
     end()
     {
         return data_.end();
     }
-    [[nodiscard]] Blob ::const_iterator
+    [[nodiscard]] Blob::const_iterator
     begin() const
     {
         return data_.begin();
     }
-    [[nodiscard]] Blob ::const_iterator
+    [[nodiscard]] Blob::const_iterator
     end() const
     {
         return data_.end();
