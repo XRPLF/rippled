@@ -498,17 +498,10 @@ LoanPay::doApply()
     Number const assetsTotalDelta = fixedPrecision ? kNumZero : deltas.assetsTotalDelta;
     Number const debtTotalDelta = deltas.debtTotalDelta;
     STAmount const totalPaidToVaultRounded = fixedPrecision
+        // Pass the exact Number sum: rounding it to 16 digits first could drop
+        // a tail that moves floor16(AssetsAvailable + sum).
         ? creditToPosteriorAvailableScale(
-              vaultSle,
-              [&] {
-                  // Build the STAmount from the exact Number sum under a
-                  // Downward guard: constructing it under the ambient
-                  // (possibly ToNearest) mode first could round the raw sum
-                  // up by one unit before the floor below ever runs.
-                  NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
-                  return STAmount{asset, totalPaidToVaultRaw};
-              }(),
-              Number::RoundingMode::Downward)
+              vaultSle, totalPaidToVaultRaw, Number::RoundingMode::Downward)
         : STAmount{
               asset,
               roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward)};
@@ -522,17 +515,9 @@ LoanPay::doApply()
     // the delta. Legacy/CashBasis keeps the fee as the original, unrounded
     // Number: only the FixedPrecision path is 16-digit-rounded via STAmount.
     Number const totalPaidToBroker = fixedPrecision && !sendBrokerFeeToOwner
+        // The exact fee, for the same reason as totalPaidToVaultRounded.
         ? Number(creditToPosteriorBrokerCoverScale(
-              vaultSle,
-              brokerSle,
-              [&] {
-                  // See totalPaidToVaultRounded above: build the STAmount
-                  // under a Downward guard so the ambient mode cannot round
-                  // the raw amount up before the floor below runs.
-                  NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
-                  return STAmount{asset, totalPaidToBrokerRaw};
-              }(),
-              Number::RoundingMode::Downward))
+              vaultSle, brokerSle, totalPaidToBrokerRaw, Number::RoundingMode::Downward))
         : totalPaidToBrokerRaw;
 
     JLOG(j_.debug()) << "Loan Pay: principal paid: " << paymentParts->principalPaid
@@ -650,10 +635,10 @@ LoanPay::doApply()
         // letting it through would change the Loan's schedule with no cash movement at all.
         if (fixedPrecision && loanSle->at(sfPaymentRemaining) == 0)
         {
-            JLOG(j_.warn()) << "LoanPay: terminal payment closed the Loan with a zero cash "
-                               "credit; the sub-unit remainder is forgiven. Principal: "
-                            << paymentParts->principalPaid
-                            << ", Interest: " << paymentParts->interestPaid;
+            JLOG(j_.debug()) << "LoanPay: terminal payment closed the Loan with a zero cash "
+                                "credit; the sub-unit remainder is forgiven. Principal: "
+                             << paymentParts->principalPaid
+                             << ", Interest: " << paymentParts->interestPaid;
 
             if (totalPaidToVaultRounded == beast::kZero && totalPaidToBroker == beast::kZero)
             {
