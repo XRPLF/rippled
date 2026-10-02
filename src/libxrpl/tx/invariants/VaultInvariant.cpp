@@ -439,7 +439,8 @@ ValidVault::finalizeLoanAccept(ReadView const& view, beast::Journal const& j) co
         result = false;
     }
 
-    // Assets reserved are only ever released by a loan accept.
+    // Only the creation of a pending loan (LoanSet) adds to assets reserved.
+    // A loan accept, like a loan delete, may only release them.
     if (afterVault.assetsReserved > beforeVault.assetsReserved)
     {
         JLOG(j.fatal()) << "Invariant failed: loan accept must not increase assets reserved";

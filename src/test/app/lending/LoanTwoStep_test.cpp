@@ -608,6 +608,13 @@ private:
                 propose(env, broker, lender_, brokerPseudo, futureDate, Ter(tecNO_PERMISSION));
             }
 
+            // A proposal naming a Borrower that does not exist is rejected
+            // with tecNO_DST.
+            {
+                std::uint32_t const futureDate = (env.now() + 1h).time_since_epoch().count();
+                propose(env, broker, lender_, Account("nobody"), futureDate, Ter(tecNO_DST));
+            }
+
             // No CounterpartySignature, not a Batch inner, no Borrower:
             // rejected with temBAD_SIGNER.
             env(set(lender_, broker.brokerID, broker.asset(200).number()), Ter(temBAD_SIGNER));

@@ -857,7 +857,10 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     if (!borrowerSle)
     {
         JLOG(ctx.j.warn()) << "Borrower does not exist.";
-        return terNO_ACCOUNT;
+        // In the two-step flow the Borrower is a passive field, so treat a
+        // missing account like any other missing destination. In the one-step
+        // flow the Borrower signs, and checkSign has already rejected it.
+        return twoStepFlow ? TER{tecNO_DST} : TER{terNO_ACCOUNT};
     }
     if (twoStepFlow && isPseudoAccount(borrowerSle))
     {
