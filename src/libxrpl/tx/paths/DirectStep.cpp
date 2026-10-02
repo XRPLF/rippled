@@ -160,14 +160,14 @@ public:
     revImp(
         PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         IOUAmount const& out);
 
     std::pair<IOUAmount, IOUAmount>
     fwdImp(
         PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         IOUAmount const& in);
 
     std::pair<bool, EitherAmount>
@@ -271,7 +271,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // payments and assume that general checks were already performed.
     [[nodiscard]] TER
-    check(StrandContext const& ctx, SLE::const_ref sleSrc) const;
+    check(StrandContext const& ctx, SLE::ConstRef sleSrc) const;
 
     [[nodiscard]] std::string
     logString() const override
@@ -329,7 +329,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // offer crossing and assume that general checks were already performed.
     static TER
-    check(StrandContext const& ctx, SLE::const_ref sleSrc);
+    check(StrandContext const& ctx, SLE::ConstRef sleSrc);
 
     [[nodiscard]] std::string
     logString() const override
@@ -435,7 +435,7 @@ DirectIOfferCrossingStep::maxFlow(ReadView const& sb, IOUAmount const& desired) 
 }
 
 TER
-DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
+DirectIPaymentStep::check(StrandContext const& ctx, SLE::ConstRef sleSrc) const
 {
     // Since this is a payment a trust line must be present.  Perform all
     // trust line related checks.
@@ -553,7 +553,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
 }
 
 TER
-DirectIOfferCrossingStep::check(StrandContext const&, SLE::const_ref)
+DirectIOfferCrossingStep::check(StrandContext const&, SLE::ConstRef)
 {
     // The standard checks are all we can do because any remaining checks
     // require the existence of a trust line.  Offer crossing does not
@@ -599,7 +599,7 @@ std::pair<IOUAmount, IOUAmount>
 DirectStepI<TDerived>::revImp(
     PaymentSandbox& sb,
     ApplyView& /*afView*/,
-    boost::container::flat_set<uint256>& /*ofrsToRm*/,
+    boost::container::flat_set<UInt256>& /*ofrsToRm*/,
     IOUAmount const& out)
 {
     cache_.reset();
@@ -713,7 +713,7 @@ std::pair<IOUAmount, IOUAmount>
 DirectStepI<TDerived>::fwdImp(
     PaymentSandbox& sb,
     ApplyView& /*afView*/,
-    boost::container::flat_set<uint256>& /*ofrsToRm*/,
+    boost::container::flat_set<UInt256>& /*ofrsToRm*/,
     IOUAmount const& in)
 {
     XRPL_ASSERT(cache_, "xrpl::DirectStepI::fwdImp : cache is set");
@@ -797,7 +797,7 @@ DirectStepI<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmo
 
     try
     {
-        boost::container::flat_set<uint256> dummy;
+        boost::container::flat_set<UInt256> dummy;
         fwdImp(sb, afView, dummy, in.get<IOUAmount>());  // changes cache
     }
     catch (FlowException const&)

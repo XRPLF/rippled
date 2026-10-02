@@ -6,7 +6,7 @@
 
 using namespace xrpl;
 
-TEST(contract, contract)
+TEST(Contract, contract)
 {
     try
     {

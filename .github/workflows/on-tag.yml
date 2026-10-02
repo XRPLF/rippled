@@ -1,9 +1,12 @@
 # When a versioned tag is pushed, this workflow:
 #
-#   - uploads the libxrpl recipe to the Conan remote
 #   - builds and tests the release binaries
+#   - uploads the libxrpl recipe to the Conan remote
 #   - builds the DEB and RPM packages
 #   - publishes those packages to the XRPLF package repositories
+#
+# Nothing is published unless the build passes, which is also where CMake
+# rejects a tag that is not a valid version, e.g. 3.2.01.
 name: Tag
 
 on:
@@ -22,6 +25,7 @@ defaults:
 jobs:
   upload-recipe:
     if: ${{ github.repository == 'XRPLF/rippled' }}
+    needs: build-test
     uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:
       remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
@@ -50,3 +54,7 @@ jobs:
       remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
       remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
       signing_key: ${{ secrets.NEXUS_PACKAGES_PRIVATE_KEY }}
+      dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
+      antithesis_docker_host: ${{ secrets.ANTITHESIS_DOCKER_HOST }}
+      antithesis_docker_path: ${{ secrets.ANTITHESIS_DOCKER_PATH }}
+      antithesis_docker_credentials: ${{ secrets.ANTITHESIS_DOCKER_CREDENTIALS }}

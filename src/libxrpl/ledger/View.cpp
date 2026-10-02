@@ -52,12 +52,12 @@ hasExpired(
     std::optional<std::uint32_t> const& exp,
     ExpiryComparison comparison)
 {
-    using d = NetClock::duration;
-    using tp = NetClock::time_point;
+    using D = NetClock::duration;
+    using Tp = NetClock::time_point;
 
     if (!exp)
         return false;
-    auto const boundary = tp{d{*exp}};
+    auto const boundary = Tp{D{*exp}};
     return comparison == ExpiryComparison::Inclusive  //
         ? view.parentCloseTime() >= boundary
         : view.parentCloseTime() > boundary;
@@ -311,7 +311,7 @@ areCompatible(
 
 bool
 areCompatible(
-    uint256 const& validHash,
+    UInt256 const& validHash,
     LedgerIndex validIndex,
     ReadView const& testLedger,
     beast::Journal::Stream& s,
@@ -349,10 +349,10 @@ areCompatible(
     return ret;
 }
 
-std::set<uint256>
+std::set<UInt256>
 getEnabledAmendments(ReadView const& view)
 {
-    std::set<uint256> amendments;
+    std::set<UInt256> amendments;
 
     if (auto const sle = view.read(keylet::amendments()))
     {
@@ -366,29 +366,29 @@ getEnabledAmendments(ReadView const& view)
     return amendments;
 }
 
-majorityAmendments_t
+MajorityAmendmentsT
 getMajorityAmendments(ReadView const& view)
 {
-    majorityAmendments_t ret;
+    MajorityAmendmentsT ret;
 
     if (auto const sle = view.read(keylet::amendments()))
     {
         if (sle->isFieldPresent(sfMajorities))
         {
-            using tp = NetClock::time_point;
-            using d = tp::duration;
+            using Tp = NetClock::time_point;
+            using D = Tp::duration;
 
             auto const majorities = sle->getFieldArray(sfMajorities);
 
             for (auto const& m : majorities)
-                ret[m.getFieldH256(sfAmendment)] = tp(d(m.getFieldU32(sfCloseTime)));
+                ret[m.getFieldH256(sfAmendment)] = Tp(D(m.getFieldU32(sfCloseTime)));
         }
     }
 
     return ret;
 }
 
-std::optional<uint256>
+std::optional<UInt256>
 hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 {
     // Easy cases...
@@ -510,10 +510,10 @@ canWithdraw(
     ReadView const& view,
     AccountID const& from,
     AccountID const& to,
-    SLE::const_ref toSle,
+    SLE::ConstRef toSle,
     STAmount const& amount,
     bool hasDestinationTag,
-    std::optional<std::vector<uint256>> const& credentialIDs)
+    std::optional<std::vector<UInt256>> const& credentialIDs)
 {
     if (auto const ret = checkDestinationAndTag(toSle, hasDestinationTag))
         return ret;
@@ -558,7 +558,7 @@ canWithdraw(
     AccountID const& to,
     STAmount const& amount,
     bool hasDestinationTag,
-    std::optional<std::vector<uint256>> const& credentialIDs)
+    std::optional<std::vector<UInt256>> const& credentialIDs)
 {
     auto const toSle = view.read(keylet::account(to));
 
@@ -647,7 +647,7 @@ cleanupOnAccountDelete(
     // Delete all the entries in the account directory.
     SLE::pointer sleDirNode{};
     unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::kZero};
+    UInt256 dirEntry{beast::kZero};
     std::uint32_t deleted = 0;
 
     if (view.exists(ownerDirKeylet) &&
