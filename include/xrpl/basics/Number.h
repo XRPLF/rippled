@@ -887,7 +887,7 @@ Number
 power(Number const& f, unsigned n);
 
 // Returns f^(1/d)
-// Uses Newton–Raphson iterations until the result stops changing
+// Uses Newton–Raphson iterations until an iterate repeats
 // to find the root of the polynomial g(x) = x^d - f
 
 Number
