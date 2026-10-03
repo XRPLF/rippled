@@ -530,7 +530,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         // LP depositing into AMM empty state gets the auction slot
         // and the voting
         if (lptAMMBalance == beast::kZero)
-            initializeFeeAuctionVote(sb, ammSle, accountID_, lptAMMBalance.asset(), tfee);
+            ammSle.initializeFeeAuctionVote(accountID_, lptAMMBalance.asset(), tfee);
 
         ammSle.update();
     }
