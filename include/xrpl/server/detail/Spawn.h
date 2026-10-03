@@ -58,7 +58,8 @@ inline constexpr auto kPropagateExceptions = [](std::exception_ptr ePtr) {
  *
  * @tparam Ctx The type of the context/strand
  * @tparam F The type of the function to execute
- * @param ctx The execution context
+ * @param ctx An execution context (e.g. `io_context`), an executor, or a
+ * strand. A strand is used as-is; anything else is wrapped in a new strand.
  * @param func The function to execute. Must return `void`
  */
 template <typename Ctx, typename F>
@@ -74,7 +75,7 @@ spawn(Ctx&& ctx, F&& func)
     else
     {
         boost::asio::spawn(
-            boost::asio::make_strand(boost::asio::get_associated_executor(std::forward<Ctx>(ctx))),
+            boost::asio::make_strand(std::forward<Ctx>(ctx)),
             std::forward<F>(func),
             impl::kPropagateExceptions);
     }
