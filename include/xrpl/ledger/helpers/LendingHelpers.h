@@ -302,12 +302,6 @@ constructLoanState(
     Number const& principalOutstanding,
     Number const& managementFeeOutstanding);
 
-// Overload of constructLoanState() that reads the three tracked fields
-// directly from a Loan ledger object, which always holds rounded values,
-// rather than taking them as separate Number arguments.
-LoanState
-constructLoanState(LoanEntryR const& loan);
-
 Number
 computeManagementFee(
     Asset const& asset,
