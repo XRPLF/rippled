@@ -105,7 +105,7 @@ AMMBid::preflight(PreflightContext const& ctx)
 TER
 AMMBid::preclaim(PreclaimContext const& ctx)
 {
-    AMMEntryR const ammSle(ctx.tx[sfAsset], ctx.tx[sfAsset2], ctx.view);
+    AMMEntryR const ammSle(ctx.tx[sfAsset], ctx.tx[sfAsset2], ctx.view, ctx.j);
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Bid: Invalid asset pair.";
@@ -128,7 +128,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto const lpTokens = ammLPHolds(ctx.view, ammSle, ctx.tx[sfAccount], ctx.j);
+    auto const lpTokens = ammSle.lpHolds(ctx.tx[sfAccount]);
     // Not LP
     if (lpTokens == beast::kZero)
     {
@@ -184,7 +184,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     if (!ammSle)
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
-    auto const lpTokens = ammLPHolds(sb, ammSle, account, ctx.journal);
+    auto const lpTokens = ammSle.lpHolds(account);
 
     XRPL_ASSERT(ammSle->isFieldPresent(sfAuctionSlot), "xrpl::applyBid : has auction slot");
     if (!ammSle->isFieldPresent(sfAuctionSlot))
