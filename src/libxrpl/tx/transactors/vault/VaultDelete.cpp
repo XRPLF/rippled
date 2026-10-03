@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -131,7 +132,7 @@ VaultDelete::doApply()
     }
 
     // Try to remove MPToken for vault shares for the vault owner if it exists.
-    if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, accountID_)))
+    if (MPTokenEntryW(shareMPTID, accountID_, view(), j_))
     {
         if (auto const ter =
                 removeEmptyHolding(applyViewContext, accountID_, MPTIssue(shareMPTID), j_);
