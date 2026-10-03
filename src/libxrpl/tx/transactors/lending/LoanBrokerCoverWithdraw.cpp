@@ -80,7 +80,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Trying to withdraw into a pseudo-account.";
         return tecPSEUDO_ACCOUNT;
     }
-    LoanBrokerEntryR const sleBroker(brokerID, ctx.view);
+    LoanBrokerEntryR const sleBroker(brokerID, ctx.view, ctx.j);
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -105,8 +105,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         return tecWRONG_ASSET;
 
     // Helper handles both IOU and MPT correctly without explicit branching.
-    if (auto const ret = canApplyToBrokerCover(
-            ctx.view, sleBroker, vaultAsset, amount, ctx.j, "LoanBrokerCoverWithdraw"))
+    if (auto const ret = sleBroker.canApplyToCover(vaultAsset, amount, "LoanBrokerCoverWithdraw"))
         return ret;
 
     // The broker's pseudo-account is the source of funds.
