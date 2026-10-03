@@ -255,36 +255,50 @@ applyBatchTransactions(
 
     for (auto const& stx : batchTxn.getBatchTransactions())
     {
-        auto const result = applyOneTransaction(*stx);
-        XRPL_ASSERT(
-            result.applied == (isTesSuccess(result.ter) || isTecClaim(result.ter)),
-            "Outer Batch failure, inner transaction should not be applied");
-
-        if (result.applied)
-            ++applied;
-
-        if (!isTesSuccess(result.ter))
+        try
         {
-            if ((mode & tfAllOrNothing) != 0u)
+            auto const result = applyOneTransaction(*stx);
+            XRPL_ASSERT(
+                result.applied == (isTesSuccess(result.ter) || isTecClaim(result.ter)),
+                "Outer Batch failure, inner transaction should not be applied");
+
+            if (result.applied)
+                ++applied;
+
+            if (!isTesSuccess(result.ter))
             {
-                // The whole-batch view is discarded, so nothing recorded so far reached the
-                // ledger.
-                if (innerResults != nullptr)
+                if ((mode & tfAllOrNothing) != 0u)
                 {
-                    for (auto i = firstResult; i < innerResults->size(); ++i)
+                    // The whole-batch view is discarded, so nothing recorded so far reached the
+                    // ledger.
+                    if (innerResults != nullptr)
                     {
-                        (*innerResults)[i].applied = false;
+                        for (auto i = firstResult; i < innerResults->size(); ++i)
+                        {
+                            (*innerResults)[i].applied = false;
+                        }
                     }
+                    return false;
                 }
-                return false;
-            }
 
-            if ((mode & tfUntilFailure) != 0u)
+                if ((mode & tfUntilFailure) != 0u)
+                    break;
+            }
+            else if ((mode & tfOnlyOne) != 0u)
+            {
                 break;
+            }
         }
-        else if ((mode & tfOnlyOne) != 0u)
+        catch (std::exception const& ex)
         {
-            break;
+            // Returning false here means the whole-batch view is discarded and never
+            // reaches the ledger, so the results already pushed for earlier inner
+            // transactions in this batch must not claim they were applied.
+            JLOG(j.warn()) << "BatchTrace[" << parentBatchId << "]: " << stx->getTransactionID()
+                           << " throws: " << ex.what();
+            if (innerResults != nullptr)
+                innerResults->resize(firstResult);
+            return false;
         }
     }
 
