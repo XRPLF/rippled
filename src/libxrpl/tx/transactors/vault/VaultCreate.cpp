@@ -196,7 +196,7 @@ VaultCreate::doApply()
     if (preFeeBalance_ < owner.reserve())
         return tecINSUFFICIENT_RESERVE;
 
-    auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
+    auto maybePseudo = AccountRootEntryW::createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)
         return maybePseudo.error();  // LCOV_EXCL_LINE
     auto const& pseudo = *maybePseudo;

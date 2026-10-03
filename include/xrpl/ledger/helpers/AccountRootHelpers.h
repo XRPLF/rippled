@@ -13,7 +13,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
-#include <expected>
 #include <optional>
 #include <vector>
 
@@ -256,17 +255,6 @@ isPseudoAccount(ReadView const& view, AccountID const& accountId)
 {
     return AccountRootEntryR(accountId, view).isPseudoAccount();
 }
-
-/**
- * Create pseudo-account, storing pseudoOwnerKey into ownerField.
- *
- * The list of valid ownerField is maintained in AccountRootHelpers.cpp and
- * the caller to this function must perform necessary amendment check(s)
- * before using a field. The amendment check is **not** performed in
- * createPseudoAccount.
- */
-[[nodiscard]] std::expected<SLE::pointer, TER>
-createPseudoAccount(ApplyView& view, UInt256 const& pseudoOwnerKey, SField const& ownerField);
 
 /**
  * Checks the destination and tag.
