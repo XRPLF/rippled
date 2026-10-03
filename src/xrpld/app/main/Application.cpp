@@ -156,6 +156,7 @@ private:
         beast::Journal journal_;
         beast::IOLatencyProbe<std::chrono::steady_clock> probe_;
         std::atomic<std::chrono::milliseconds> lastSample_;
+        std::atomic<bool> firstSample_;
 
     public:
         IOLatencySampler(
@@ -163,7 +164,7 @@ private:
             beast::Journal journal,
             std::chrono::milliseconds interval,
             boost::asio::io_context& ios)
-            : event_(std::move(ev)), journal_(journal), probe_(interval, ios)
+            : event_(std::move(ev)), journal_(journal), probe_(interval, ios), firstSample_(true)
         {
         }
 
@@ -182,7 +183,10 @@ private:
 
             lastSample_ = lastSample;
 
-            if (lastSample >= 10ms)
+            // Always emit the first sample so the series exists downstream
+            // even on an idle node. After that, only samples of 10 ms or more
+            // go to event_. lastSample_ is set on every sample, fast ones included.
+            if (firstSample_.exchange(false) || lastSample >= 10ms)
                 event_.notify(lastSample);
             if (lastSample >= 500ms)
             {
