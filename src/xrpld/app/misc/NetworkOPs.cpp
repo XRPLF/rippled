@@ -1017,7 +1017,6 @@ private:
     std::array<SubMapType, SubTypes::SLastEntry> streamMaps_;
 
     ServerFeeSummary lastFeeSummary_;
-    std::atomic<bool> pubFeePending_{false};  ///< true while a PubFee job is queued
 
     JobQueue& jobQueue_;
 
@@ -3454,12 +3453,7 @@ NetworkOPsImp::reportFeeChange()
     if (f != lastFeeSummary_)
     {
         lastFeeSummary_ = f;
-        pubFeePending_.store(true, std::memory_order_relaxed);
-        jobQueue_.addJob(
-            JtClientFeeChange, "PubFee", [this]() {
-                pubServer();
-                pubFeePending_.store(false, std::memory_order_relaxed);
-            });
+        jobQueue_.addJob(JtClientFeeChange, "PubFee", [this]() { pubServer(); });
     }
 }
 
@@ -4779,8 +4773,7 @@ NetworkOPsImp::subServer(InfoSub::Ref isrListener, json::Value& jvResult, bool a
     std::scoped_lock const sl(streamLock_);
     bool const added =
         streamMaps_[SServer].emplace(isrListener->getSeq(), isrListener).second;
-    if (added && streamMaps_[SServer].size() == 1 &&
-        !pubFeePending_.load(std::memory_order_relaxed))
+    if (added && streamMaps_[SServer].size() == 1)
     {
         // First subscriber on an otherwise-quiet node: reset lastFeeSummary_
         // so the next reportFeeChange() tick publishes a full serverStatus
