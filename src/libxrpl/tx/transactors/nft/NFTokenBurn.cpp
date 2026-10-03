@@ -1,6 +1,8 @@
 #include <xrpl/tx/transactors/nft/NFTokenBurn.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -43,7 +45,7 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
 
         if (auto const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]); issuer != account)
         {
-            if (auto const sle = ctx.view.read(keylet::account(issuer)); sle)
+            if (auto const sle = AccountRootEntryR(issuer, ctx.view); sle)
             {
                 if (auto const minter = (*sle)[~sfNFTokenMinter]; minter != account)
                     return tecNO_PERMISSION;
@@ -68,10 +70,10 @@ NFTokenBurn::doApply()
     if (!isTesSuccess(ret))
         return ret;
 
-    if (auto issuer = view().peek(keylet::account(nft::getIssuer(ctx_.tx[sfNFTokenID]))))
+    if (auto issuer = AccountRootEntryW(nft::getIssuer(ctx_.tx[sfNFTokenID]), view()))
     {
         (*issuer)[~sfBurnedNFTokens] = (*issuer)[~sfBurnedNFTokens].valueOr(0) + 1;
-        view().update(issuer);
+        issuer.update();
     }
 
     // Delete up to 500 offers in total.

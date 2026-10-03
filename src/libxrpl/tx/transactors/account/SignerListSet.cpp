@@ -6,6 +6,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -213,8 +214,9 @@ removeSignersFromLedger(
         // LCOV_EXCL_STOP
     }
 
+    AccountRootEntryW accountSle(accountKeylet, view);
     decreaseOwnerCountForObject(
-        view, view.peek(accountKeylet), signers, removeFromOwnerCount, registry.getJournal("View"));
+        view, accountSle, signers, removeFromOwnerCount, registry.getJournal("View"));
 
     view.erase(signers);
 
@@ -309,7 +311,7 @@ SignerListSet::replaceSignerList()
             ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_))
         return ter;
 
-    auto const sle = view().peek(accountKeylet);
+    auto sle = AccountRootEntryW(accountKeylet, view());
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -359,7 +361,7 @@ SignerListSet::destroySignerList()
     auto const accountKeylet = keylet::account(accountID_);
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
-    SLE::pointer const ledgerEntry = view().peek(accountKeylet);
+    auto const ledgerEntry = AccountRootEntryW(accountKeylet, view());
     if (!ledgerEntry)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

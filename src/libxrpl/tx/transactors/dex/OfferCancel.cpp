@@ -1,6 +1,8 @@
 #include <xrpl/tx/transactors/dex/OfferCancel.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -33,7 +35,7 @@ OfferCancel::preclaim(PreclaimContext const& ctx)
     auto const id = ctx.tx[sfAccount];
     auto const offerSequence = ctx.tx[sfOfferSequence];
 
-    auto const sle = ctx.view.read(keylet::account(id));
+    auto const sle = AccountRootEntryR(id, ctx.view);
     if (!sle)
         return terNO_ACCOUNT;
 
@@ -54,7 +56,7 @@ OfferCancel::doApply()
 {
     auto const offerSequence = ctx_.tx[sfOfferSequence];
 
-    auto const sle = view().read(keylet::account(accountID_));
+    auto const sle = AccountRootEntryW(accountID_, view());
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

@@ -15,6 +15,7 @@
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -790,7 +791,7 @@ TxQ::apply(
     // If the account is not currently in the ledger, don't queue its tx.
     auto const account = (*tx)[sfAccount];
     Keylet const accountKey{keylet::account(account)};
-    auto const sleAccount = view.read(accountKey);
+    auto const sleAccount = AccountRootEntryR(accountKey, view);
     if (!sleAccount)
         return {terNO_ACCOUNT, false};
 
@@ -1007,8 +1008,8 @@ TxQ::apply(
         {
             // If the transaction is queueable, create the multiTxn
             // object to hold the info we need to adjust for prior txns.
-            TER const ter{
-                canBeHeld(*tx, flags, view, sleAccount, accountIter, replacedTxIter, lock)};
+            TER const ter{canBeHeld(
+                *tx, flags, view, sleAccount.rawSle(), accountIter, replacedTxIter, lock)};
             if (!isTesSuccess(ter))
                 return {ter, false};
 
@@ -1063,7 +1064,8 @@ TxQ::apply(
                 // front of this one in the queue.  Make sure the current
                 // transaction fits in proper sequence order with the
                 // previous transaction or is a ticket.
-                if (txSeqProx.isSeq() && nextQueuableSeqImpl(sleAccount, lock) != txSeqProx)
+                if (txSeqProx.isSeq() &&
+                    nextQueuableSeqImpl(sleAccount.rawSle(), lock) != txSeqProx)
                     return {telCAN_NOT_QUEUE, false};
             }
 
@@ -1153,7 +1155,7 @@ TxQ::apply(
             // Create the test view from the current view.
             multiTxn.emplace(view, flags);
 
-            auto const sleBump = multiTxn->applyView.peek(accountKey);
+            auto sleBump = AccountRootEntryW(accountKey, multiTxn->applyView);
             if (!sleBump)
                 return {tefINTERNAL, false};
 
@@ -1174,7 +1176,7 @@ TxQ::apply(
             // to the most successful case.
             sleBump->at(sfSequence) = txSeqProx.isSeq()
                 ? txSeqProx.value()
-                : nextQueuableSeqImpl(sleAccount, lock).value();
+                : nextQueuableSeqImpl(sleAccount.rawSle(), lock).value();
         }
     }
 
@@ -1249,7 +1251,8 @@ TxQ::apply(
     // If `multiTxn` has a value, then `canBeHeld` has already been verified
     if (!multiTxn)
     {
-        TER const ter{canBeHeld(*tx, flags, view, sleAccount, accountIter, replacedTxIter, lock)};
+        TER const ter{
+            canBeHeld(*tx, flags, view, sleAccount.rawSle(), accountIter, replacedTxIter, lock)};
         if (!isTesSuccess(ter))
         {
             // Bail, transaction cannot be held
@@ -1692,7 +1695,7 @@ TxQ::tryDirectApply(
     beast::Journal j)
 {
     auto const account = (*tx)[sfAccount];
-    auto const sleAccount = view.read(keylet::account(account));
+    auto const sleAccount = AccountRootEntryR(account, view);
 
     // Don't attempt to direct apply if the account is not in the ledger.
     if (!sleAccount)
@@ -1820,10 +1823,10 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> co
     auto const baseFee = *maybeBaseFee;
     auto const fee = FeeMetrics::scaleFeeLevel(snapshot, view);
 
-    auto const sle = view.read(keylet::account(account));
+    auto const sle = AccountRootEntryR(account, view);
 
     std::uint32_t const accountSeq = sle ? (*sle)[sfSequence] : 0;
-    std::uint32_t const availableSeq = nextQueuableSeqImpl(sle, lock).value();
+    std::uint32_t const availableSeq = nextQueuableSeqImpl(sle.rawSle(), lock).value();
     return FeeAndSeq{
         .fee = mulDiv(fee, baseFee, kBaseLevel)
                    .value_or(XRPAmount(std::numeric_limits<std::int64_t>::max())),

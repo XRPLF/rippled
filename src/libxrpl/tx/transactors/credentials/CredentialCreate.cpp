@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>  // IWYU pragma: keep
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -84,7 +85,7 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
     auto const credType(ctx.tx[sfCredentialType]);
     auto const subject = ctx.tx[sfSubject];
 
-    auto const subjectSle = ctx.view.read(keylet::account(subject));
+    auto const subjectSle = AccountRootEntryR(subject, ctx.view);
 
     if (!subjectSle)
     {
@@ -134,7 +135,7 @@ CredentialCreate::doApply()
         sleCred->setFieldU32(sfExpiration, *optExp);
     }
 
-    auto const sleIssuer = view().peek(keylet::account(accountID_));
+    auto sleIssuer = AccountRootEntryW(accountID_, view());
     if (!sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

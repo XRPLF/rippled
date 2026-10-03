@@ -4,6 +4,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
@@ -159,7 +160,7 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
     }
 
     AccountID const target = proposedTx.getAccountID(sfAccount);
-    auto const sleTarget = ctx.view.read(keylet::account(target));
+    auto const sleTarget = AccountRootEntryR(target, ctx.view);
     if (!sleTarget)
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: target account "
@@ -297,7 +298,7 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
 TER
 TransactionProposalCreate::doApply()
 {
-    auto const sle = view().peek(keylet::account(accountID_));
+    auto sle = AccountRootEntryW(accountID_, view());
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
