@@ -1538,6 +1538,22 @@ class RuleDDashboards(unittest.TestCase):
             ["fragment_bogus"],
         )
 
+    def test_not_equal_selector_label_flagged(self):
+        # A label used only with `!=` must still be extracted and validated.
+        # The operator class `[=!]~?` matched `=`, `=~` and `!~`, but not
+        # `!=`, so a label that appears only in a `!=` selector slipped past
+        # Rule D -- a false negative, where a bad label name used with `!=`
+        # was never caught. The quote is unescaped, which both the phase-1c
+        # (`\s*\"`) and phase-9 (`\s*\\?\"`) selector forms accept.
+        #
+        # Mutation caught: revert the operator class to `[=!]~?` and this
+        # test fails, because `bogus_label` is never extracted and the
+        # result is empty instead of ["bogus_label"].
+        self.assertEqual(
+            self._run('"expr": "node_metric{bogus_label!="x"}"', {"command"}),
+            ["bogus_label"],
+        )
+
 
 class PromotedResourceLabels(unittest.TestCase):
     """L2: resource attrs the collector promotes onto metric datapoints."""
