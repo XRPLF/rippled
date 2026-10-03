@@ -446,6 +446,98 @@ public:
     }
 
     void
+    testRmSmallIncreasedQOffersClampNative(FeatureBitset features)
+    {
+        testcase("Rm small increased q offers clamp native");
+
+        // Carol's partially funded offer is reduced to her funds. With
+        // fixCleanup3_5_0 the reduced input is clamped to the offer's input.
+
+        using namespace jtx;
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const carol = Account{"carol"};
+        auto const dan = Account{"dan"};
+        auto const gw = Account{"gw"};
+
+        auto const usd = gw["USD"];
+
+        STAmount const carolPays{XRPAmount{static_cast<std::int64_t>(STAmount::kMaxNativeN)}};
+        STAmount const carolGets{usd.issue(), 9'999'999'999'999'995ull, -15};
+        STAmount const carolFunds{usd.issue(), 9'999'999'999'999'994ull, -15};
+
+        auto setup = [&](Env& env, bool bobOffer) {
+            env.fund(XRP(10'000), alice, bob, carol, dan, gw);
+            env.close();
+            env.trust(usd(1'000), alice, bob, carol, dan);
+            env.close();
+            env(pay(gw, carol, carolFunds));
+            env(pay(gw, bob, usd(10)));
+            env.close();
+            // bob's offer is better than carol's, so it is taken first
+            if (bobOffer)
+                env(offer(bob, XRP(10), usd(10)));
+            env(offer(carol, carolPays, carolGets));
+            env.close();
+            env.require(Offers(bob, bobOffer ? 1 : 0), Offers(carol, 1));
+        };
+
+        for (auto const feat : {features, features - fixCleanup3_5_0})
+        {
+            bool const withFix = feat[fixCleanup3_5_0];
+
+            // Test payments: the payment needs more than bob's offer, so it
+            // reaches carol's offer.
+            {
+                Env env{*this, feat};
+                setup(env, true);
+
+                env(pay(alice, dan, usd(20)),
+                    Path(~usd),
+                    Sendmax(XRP(5'000)),
+                    Txflags(tfPartialPayment),
+                    Ter(withFix ? TER{tesSUCCESS} : TER{tecINTERNAL}));
+                env.close();
+
+                if (withFix)
+                {
+                    // bob's offer is consumed and carol's is partially taken
+                    env.require(Offers(bob, 0), Offers(carol, 1));
+                    BEAST_EXPECT(env.balance(dan, usd).value() > usd(10).value());
+                    BEAST_EXPECT(env.balance(carol, usd).value() < carolFunds);
+                }
+                else
+                {
+                    env.require(Offers(bob, 1), Offers(carol, 1), Balance(dan, usd(0)));
+                    env.require(Balance(carol, carolFunds));
+                }
+            }
+
+            // Test offer crossing: alice's offer crosses carol's quality
+            {
+                Env env{*this, feat};
+                setup(env, false);
+
+                STAmount const aliceGets{usd.issue(), 1, -7};
+                env(offer(alice, aliceGets, XRP(5'000)),
+                    Ter(withFix ? TER{tesSUCCESS} : TER{tecINTERNAL}));
+                env.close();
+
+                env.require(Offers(carol, 1));
+                if (withFix)
+                {
+                    env.require(Offers(alice, 0), Balance(alice, aliceGets));
+                }
+                else
+                {
+                    env.require(
+                        Offers(alice, 0), Balance(alice, usd(0)), Balance(carol, carolFunds));
+                }
+            }
+        }
+    }
+
+    void
     testRmSmallIncreasedQOffersIOU(FeatureBitset features)
     {
         testcase("Rm small increased q offers IOU");
@@ -5338,6 +5430,7 @@ public:
         testTicketCancelOffer(features);
         testRmSmallIncreasedQOffersXRP(features);
         testRmSmallIncreasedQOffersIOU(features);
+        testRmSmallIncreasedQOffersClampNative(features);
         testFillOrKill(features);
     }
 
