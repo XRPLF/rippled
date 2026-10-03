@@ -144,18 +144,7 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
 [[nodiscard]] TER
 canAddHolding(ReadView const& view, MPTIssue const& mptIssue)
 {
-    auto mptID = mptIssue.getMptID();
-    MPTokenIssuanceEntryR const issuance(mptID, view);
-    if (!issuance)
-    {
-        return tecOBJECT_NOT_FOUND;
-    }
-    if (!issuance->isFlag(lsfMPTCanTransfer))
-    {
-        return tecNO_AUTH;
-    }
-
-    return tesSUCCESS;
+    return MPTokenIssuanceEntryR(mptIssue.getMptID(), view).canAddHolding();
 }
 
 [[nodiscard]] TER
