@@ -12,6 +12,10 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
+
+#include <xrpl.pb.h>
 
 #include <chrono>
 #include <memory>
@@ -165,6 +169,50 @@ struct InboundLedger_test : public beast::unit_test::Suite
     }
 
     /**
+     * The header alone as a liBASE reply, so takeHeader() alone judges the
+     * packet.
+     *
+     * @param header The header to carry, serialized without a hash prefix, as
+     *        takeHeader() expects.
+     * @return The reply packet.
+     */
+    static std::shared_ptr<protocol::TMLedgerData>
+    headerPacket(LedgerHeader const& header)
+    {
+        Serializer s;
+        addRaw(header, s);
+
+        auto packet = std::make_shared<protocol::TMLedgerData>();
+        packet->set_ledgerhash(header.hash.data(), UInt256::size());
+        packet->set_ledgerseq(header.seq);
+        packet->set_type(protocol::liBASE);
+        packet->add_nodes()->set_nodedata(s.peekData().data(), s.peekData().size());
+        return packet;
+    }
+
+    /**
+     * An acquisition started with nothing in the store for its hash, so it
+     * waits on its peers.
+     *
+     * @param env The environment to run in.
+     * @param header The header of the ledger to acquire.
+     * @return The acquisition, started.
+     */
+    static std::shared_ptr<TestableInboundLedger>
+    startPeerAcquire(jtx::Env& env, LedgerHeader const& header)
+    {
+        auto acquire = std::make_shared<TestableInboundLedger>(
+            env.app(),
+            header.hash,
+            header.seq,
+            InboundLedger::Reason::GENERIC,
+            stopwatch(),
+            std::make_unique<RequestCountingPeerSet>());
+        acquire->startAcquire();
+        return acquire;
+    }
+
+    /**
      * A ledger whose maps all resolve locally finishes on the spot, and the
      * finished ledger is immutable and handed on.
      *
@@ -303,6 +351,105 @@ struct InboundLedger_test : public beast::unit_test::Suite
     }
 
     /**
+     * A peer-supplied header whose account hash is zero fails the acquisition
+     * and signals, as a local one does. The peer is not charged, and
+     * recentFailures_ is what shows done() ran.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testPeerZeroAccountHashFails(jtx::Env& env)
+    {
+        testcase("A peer header with a zero account hash fails the acquire");
+
+        // A real transaction root and a zero state root. Nothing is stored for this hash, so only a
+        // peer can supply the header.
+        auto const chain = DeepChain::toLeaf(2, nextSeed());
+        auto const header = makeHeader(chain.rootHash.asUInt256(), UInt256{});
+
+        BEAST_EXPECT(!env.app().getInboundLedgers().isFailure(header.hash));
+
+        auto acquire = startPeerAcquire(env, header);
+        BEAST_EXPECT(!acquire->isFailed());
+        BEAST_EXPECT(!acquire->getJson(0)[jss::have_header].asBool());
+
+        auto const peer = std::make_shared<ChargeRecordingPeer>();
+        BEAST_EXPECT(acquire->gotData(peer, headerPacket(header)));
+        acquire->runData();
+
+        // Failed, not complete, and the header is dropped, as tryDB() leaves one.
+        BEAST_EXPECT(acquire->isFailed());
+        BEAST_EXPECT(!acquire->isComplete());
+        BEAST_EXPECT(acquire->getLedger() == nullptr);
+        BEAST_EXPECT(!acquire->getJson(0)[jss::have_header].asBool());
+
+        // The header is the one asked for, so the sender is not to blame.
+        BEAST_EXPECT(peer->charges().empty());
+
+        // done() ran, so the hash reached recentFailures_, which stops the next round asking again.
+        BEAST_EXPECT(waitFor([&] { return env.app().getInboundLedgers().isFailure(header.hash); }));
+    }
+
+    /**
+     * A peer-supplied header with a zero transaction hash is taken, since that
+     * is an empty transaction set, and the acquisition finishes once the peer
+     * supplies the state map.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testPeerHeaderWithoutTransactionsCompletes(jtx::Env& env)
+    {
+        testcase("A peer header with no transactions completes the acquire");
+
+        // No transactions, and a state map that ends in a real leaf, so the acquisition can finish.
+        auto const chain = DeepChain::toLeaf(2, nextSeed());
+        auto const header = makeHeader(chain);
+
+        auto acquire = startPeerAcquire(env, header);
+
+        auto const peer = std::make_shared<ChargeRecordingPeer>();
+        BEAST_EXPECT(acquire->gotData(peer, headerPacket(header)));
+        acquire->runData();
+
+        // The header is taken, the empty transaction map counts as fetched, and the state map is
+        // what remains.
+        BEAST_EXPECT(!acquire->isFailed());
+        BEAST_EXPECT(!acquire->isComplete());
+        auto const json = acquire->getJson(0);
+        BEAST_EXPECT(json[jss::have_header].asBool());
+        BEAST_EXPECT(json[jss::have_transactions].asBool());
+        BEAST_EXPECT(!json[jss::have_state].asBool());
+
+        // The whole state map as state-node replies, root first, which completes the acquisition.
+        // The second gotData() answers false, since the first already asked for a dispatch.
+        BEAST_EXPECT(acquire->gotData(
+            peer,
+            packetFor(
+                chain,
+                {{SHAMapNodeID{}, chain.nodeAt(0)}},
+                protocol::liAS_NODE,
+                header.hash,
+                header.seq)));
+        BEAST_EXPECT(!acquire->gotData(
+            peer,
+            packetFor(
+                chain, chain.nodesBelowRoot(), protocol::liAS_NODE, header.hash, header.seq)));
+        acquire->runData();
+
+        BEAST_EXPECT(acquire->isComplete());
+        BEAST_EXPECT(!acquire->isFailed());
+        BEAST_EXPECT(peer->charges().empty());
+
+        auto const settled = acquire->getLedger();
+        BEAST_EXPECT(settled != nullptr);
+        if (settled)
+            BEAST_EXPECT(settled->isImmutable());
+
+        BEAST_EXPECT(!env.app().getInboundLedgers().isFailure(header.hash));
+    }
+
+    /**
      * The retry timer re-asks, then gives up and signals.
      *
      * The only case that drives onTimer() rather than trigger() directly,
@@ -371,6 +518,8 @@ struct InboundLedger_test : public beast::unit_test::Suite
 
         testLocalLedgerCompletesAcquire(env);
         testLocalFailureSignalsDone(env);
+        testPeerZeroAccountHashFails(env);
+        testPeerHeaderWithoutTransactionsCompletes(env);
 
         // Last: the only case that waits out a whole timeout chain.
         testTimerRetriesThenGivesUp(env);

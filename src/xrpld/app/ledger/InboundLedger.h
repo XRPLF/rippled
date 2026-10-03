@@ -186,6 +186,17 @@ private:
     bool
     takeHeader(std::string_view data);
 
+    /**
+     * Fail the acquisition when the header's account hash is zero. No ledger
+     * has an empty state map, so such a header cannot name a ledger. Both
+     * tryDB() and takeHeader() judge the header here.
+     *
+     * @return Whether the acquisition was failed, with failed_ set. ledger_ is
+     *         left to the caller.
+     */
+    bool
+    failOnZeroAccountHash();
+
     void
     receiveNode(
         std::shared_ptr<Peer> const& peer,
