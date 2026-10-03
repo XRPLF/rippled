@@ -875,7 +875,7 @@ def run_rule_d_dashboards(
         labels: Set[str] = set()
         for m in re.finditer(r"by\s*\(([^)]*)\)", text):
             labels |= {x.strip() for x in m.group(1).split(",") if x.strip()}
-        for m in re.finditer(r"\b([a-z_][a-z0-9_.]*)\s*[=!]~?\s*\"", text):
+        for m in re.finditer(r"\b([a-z_][a-z0-9_.]*)\s*(?:=~|!~|!=|=)\s*\"", text):
             labels.add(m.group(1))
         for lbl in sorted(labels):
             # Strip a TraceQL scope prefix (span./resource./...) — the bare
