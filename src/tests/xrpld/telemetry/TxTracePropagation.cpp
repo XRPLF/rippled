@@ -160,6 +160,15 @@ public:
         return true;
     }
 
+    /**
+     * @return A fixed strategy. Nothing these tests call reads it.
+     */
+    [[nodiscard]] ConsensusTraceStrategy
+    getConsensusTraceStrategy() const override
+    {
+        return ConsensusTraceStrategy::Deterministic;
+    }
+
     [[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
     getTracer(std::string_view name) override
     {

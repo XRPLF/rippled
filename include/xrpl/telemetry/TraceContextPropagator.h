@@ -6,12 +6,13 @@
  * Provides serialization/deserialization of OTel trace context to/from
  * Protocol Buffer TraceContext messages (P2P cross-node propagation).
  * Wired into the P2P message flow via PropagationHelpers.h for
- * TMTransaction messages.
+ * TMTransaction, TMProposeSet, and TMValidation messages.
  *
  * Only compiled when XRPL_ENABLE_TELEMETRY is defined.
  *
  * @see PropagationHelpers.h (high-level inject helpers),
- * TxTracing.h (transaction receive-side extraction).
+ * TxTracing.h (transaction receive-side extraction),
+ * ConsensusReceiveTracing.h (proposal/validation receive-side).
  */
 
 #ifdef XRPL_ENABLE_TELEMETRY
@@ -104,6 +105,10 @@ injectToProtobuf(opentelemetry::context::Context const& ctx, protocol::TraceCont
 
     // Serialize flags
     proto.set_trace_flags(spanCtx.trace_flags().flags());
+
+    // TODO: add a trace_state field to the protobuf TraceContext (field 4
+    // is reserved for it in xrpl.proto) with a size limit, then write it
+    // here and read it in extractFromProtobuf above.
 }
 
 }  // namespace xrpl::telemetry

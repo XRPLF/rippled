@@ -36,6 +36,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/consensus/ConsensusSpanNames.h>
 #include <xrpl/consensus/Validations.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
@@ -107,10 +108,12 @@
 #include <utility>
 #include <vector>
 
-// Needed only by the tx.receive span in handleTransaction(), which is compiled
-// out when telemetry is off. Without the same guard here it would be an unused
-// include in that build, which clang-tidy's misc-include-cleaner rejects.
+// The span factories below are named only by the telemetry-enabled blocks in
+// this file: the consensus receive spans, and the tx.receive span in
+// handleTransaction(). Without this guard they would be unused includes in a
+// build without telemetry, which clang-tidy's misc-include-cleaner rejects.
 #ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpld/telemetry/ConsensusReceiveTracing.h>
 #include <xrpld/telemetry/TxTracing.h>
 #endif  // XRPL_ENABLE_TELEMETRY
 
@@ -2066,9 +2069,43 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             app_.getTimeKeeper().closeTime(),
             calcNodeID(app_.getValidatorManifests().getMasterKey(publicKey))});
 
+    // Create a receive span that links to the sender's trace context
+    // (if propagated). shared_ptr keeps it alive across the job boundary.
+    // The receive span is a thread-free SpanGuard handed to the job worker;
+    // no scope to strip. The handle is allocated only for a live span, so an
+    // inbound proposal allocates nothing for it when telemetry is compiled out
+    // or disabled. The job body only carries the handle to hold the span
+    // alive, so an empty handle is safe there.
+    std::shared_ptr<telemetry::SpanGuard> span;
+#ifdef XRPL_ENABLE_TELEMETRY
+    if (auto guard = telemetry::proposalReceiveSpan(set))
+        span = std::make_shared<telemetry::SpanGuard>(std::move(guard));
+#endif
+    // Every attribute below exists only for the span, so the block is guarded
+    // on the span being live. Unguarded, each inbound proposal — trusted or
+    // not — builds two full hex strings and a substring of each, four string
+    // allocations no one reads.
+    if (span && *span)
+    {
+        span->setAttribute(telemetry::consensus::span::attr::proposalTrusted, isTrusted);
+        span->setAttribute(
+            telemetry::consensus::span::attr::round, static_cast<int64_t>(set.proposeseq()));
+        // First 16 hex chars (8 bytes) of each hash — enough to disambiguate
+        // peer positions and prior ledgers without exporting full 32-byte
+        // hashes on every receive event.
+        span->setAttribute(
+            telemetry::consensus::span::attr::prevLedgerPrefix,
+            to_string(prevLedger).substr(0, 16).c_str());
+        span->setAttribute(
+            telemetry::consensus::span::attr::positionHashPrefix,
+            to_string(proposeHash).substr(0, 16).c_str());
+    }
+
     std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(
-        isTrusted ? JtProposalT : JtProposalUt, "checkPropose", [weak, isTrusted, m, proposal]() {
+        isTrusted ? JtProposalT : JtProposalUt,
+        "checkPropose",
+        [weak, isTrusted, m, proposal, sp = std::move(span)]() {
             if (auto peer = weak.lock())
                 peer->checkPropose(isTrusted, m, proposal);
         });
@@ -2621,8 +2658,49 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             return;
         }
 
+        // Create a receive span that links to the sender's trace context
+        // (if propagated). shared_ptr keeps it alive across the job boundary.
+        // The receive span is a thread-free SpanGuard handed to the job worker;
+        // no scope to strip. The handle is allocated only for a live span, so
+        // an inbound validation allocates nothing for it when telemetry is
+        // compiled out or disabled. The job body only carries the handle to hold
+        // the span alive, so an empty handle is safe there.
+        std::shared_ptr<telemetry::SpanGuard> span;
+#ifdef XRPL_ENABLE_TELEMETRY
+        if (auto guard = telemetry::validationReceiveSpan(*m))
+            span = std::make_shared<telemetry::SpanGuard>(std::move(guard));
+#endif
+        // Every attribute below exists only for the span, so the block is
+        // guarded on the span being live. Unguarded, each inbound validation
+        // pays the field lookups and time conversions here. The span is built
+        // before the drop decision below on purpose, so a dropped validation
+        // is still traced; the guard removes the cost, not the span.
+        if (span && *span)
+        {
+            span->setAttribute(telemetry::consensus::span::attr::validationTrusted, isTrusted);
+            if (val->isFieldPresent(sfLedgerSequence))
+            {
+                span->setAttribute(
+                    telemetry::consensus::span::attr::ledgerSeq,
+                    static_cast<int64_t>(val->getFieldU32(sfLedgerSequence)));
+            }
+            span->setAttribute(telemetry::consensus::span::attr::fullValidation, val->isFull());
+            span->setAttribute(
+                telemetry::consensus::span::attr::validationSignTime,
+                static_cast<int64_t>(val->getSignTime().time_since_epoch().count()));
+        }
+
+        // Each branch below sets validation_receive_status once. It separates
+        // the microsecond drop paths from the queued path, whose span also
+        // covers the job wait and checkValidation.
         if (!isTrusted && (tracking_.load() == Tracking::Diverged))
         {
+            if (span && *span)
+            {
+                span->setAttribute(
+                    telemetry::consensus::span::attr::validationReceiveStatus,
+                    telemetry::consensus::span::val::validationDroppedDiverged);
+            }
             JLOG(pJournal_.debug()) << "Dropping untrusted validation from diverged peer";
         }
         else if (isTrusted || !app_.getFeeTrack().isLoadedLocal())
@@ -2630,14 +2708,35 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             std::string const name = isTrusted ? "ChkTrust" : "ChkUntrust";
 
             std::weak_ptr<PeerImp> const weak = shared_from_this();
-            app_.getJobQueue().addJob(
-                isTrusted ? JtValidationT : JtValidationUt, name, [weak, val, m, key]() {
+            // statusSpan keeps the span open after the job takes its own
+            // reference, so validation_receive_status can record whether the
+            // job queue took the job. The job may already be running by then.
+            // The SDK span takes its lock for each attribute write.
+            auto const statusSpan = span;
+            bool const queued = app_.getJobQueue().addJob(
+                isTrusted ? JtValidationT : JtValidationUt,
+                name,
+                [weak, val, m, key, sp = std::move(span)]() {
                     if (auto peer = weak.lock())
                         peer->checkValidation(val, key, m);
                 });
+            if (statusSpan && *statusSpan)
+            {
+                statusSpan->setAttribute(
+                    telemetry::consensus::span::attr::validationReceiveStatus,
+                    queued ? std::string_view{telemetry::consensus::span::val::validationQueued}
+                           : std::string_view{
+                                 telemetry::consensus::span::val::validationDroppedQueueStopping});
+            }
         }
         else
         {
+            if (span && *span)
+            {
+                span->setAttribute(
+                    telemetry::consensus::span::attr::validationReceiveStatus,
+                    telemetry::consensus::span::val::validationDroppedLoad);
+            }
             JLOG(pJournal_.debug()) << "Dropping untrusted validation for load";
         }
     }

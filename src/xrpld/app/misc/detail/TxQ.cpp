@@ -784,10 +784,11 @@ TxQ::apply(
     // synchronous call (no coroutine yield), so no unrelated parent leaks in and
     // its scope cannot leak out onto a reused worker.
     // With no context it inherits the span active on the calling thread, or is
-    // a root if there is none. An RPC thread (simulate, a local submit that runs
+    // a root if there is none. doAccept re-applies local transactions under
+    // consensus.accept.apply; an RPC thread (simulate, a local submit that runs
     // the batch, standalone ledger_accept) lends its rpc.command span; the batch
-    // job, the accept job and the consensus timer have none. current_ledger_seq
-    // below ties a root to its ledger.
+    // job, the consensus timer and the accept job after doAccept have none.
+    // current_ledger_seq below ties a root to its ledger.
     // A lambda picks the factory. ScopedSpanGuard cannot move, so each branch
     // returns a prvalue that initializes span in place.
     auto span = [&]() -> ScopedSpanGuard {

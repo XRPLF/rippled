@@ -264,6 +264,7 @@ words:
   - Raphson
   - rcflags
   - reencrypted
+  - reparent
   - replayer
   - repodata
   - repomd
