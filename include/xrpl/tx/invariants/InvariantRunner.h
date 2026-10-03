@@ -2,11 +2,11 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <functional>
 #include <optional>
@@ -66,16 +66,12 @@ public:
     /**
      * @brief Called for each ledger entry modified by the transaction.
      *
-     * @param isDelete true if the SLE is being deleted.
-     * @param before   the entry's state before the transaction (nullptr for
-     *                 newly created entries).
-     * @param after    the entry's state after the transaction.  For deletions
-     *                 this is the SLE being erased; use @p isDelete rather than
-     *                 a null @p after to detect deletions.  @p after is
-     *                 never null.
+     * @param entry validated before/after pair for the modified entry. It
+     *        holds shared pointers to the SLEs and keeps them alive for its
+     *        own lifetime. It is passed by reference and is not copyable.
      */
     virtual void
-    visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) = 0;
+    visitEntry(InvariantEntry const& entry) = 0;
 
     /**
      * @brief Called after all entries have been visited.

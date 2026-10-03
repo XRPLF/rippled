@@ -43,6 +43,7 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 #include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <array>
@@ -53,6 +54,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -1436,6 +1438,39 @@ class InvariantsMisc_test : public InvariantsBase
     }
 
     void
+    testInvariantEntry()
+    {
+        testcase << "invariant entry validation";
+
+        SLE::const_pointer const null;
+        SLE::const_pointer const sle = std::make_shared<SLE>(keylet::amendments());
+
+        InvariantEntry const created{false, null, sle};
+        BEAST_EXPECT(!created.isDelete());
+        BEAST_EXPECT(!created.before());
+        BEAST_EXPECT(created.after() == sle);
+
+        auto const expectLogicError = [&](bool isDelete,
+                                          SLE::ConstRef before,
+                                          SLE::ConstRef after,
+                                          std::string_view message) {
+            try
+            {
+                InvariantEntry const entry{isDelete, before, after};
+                (void)entry;
+                BEAST_EXPECT(false);
+            }
+            catch (std::logic_error const& ex)
+            {
+                BEAST_EXPECT(std::string_view{ex.what()}.contains(message));
+            }
+        };
+
+        expectLogicError(false, null, null, "after is never null");
+        expectLogicError(true, null, sle, "deleted entry missing before state");
+    }
+
+    void
     testTxCheckException()
     {
         testcase << "txCheck exception";
@@ -1457,7 +1492,7 @@ class InvariantsMisc_test : public InvariantsBase
             }
 
             void
-            visitEntry(bool, SLE::ConstRef, SLE::ConstRef) override
+            visitEntry(InvariantEntry const&) override
             {
                 if (throwFrom == ThrowFrom::VisitEntry)
                     throw std::runtime_error("test-injected visitEntry exception");
@@ -1508,6 +1543,54 @@ class InvariantsMisc_test : public InvariantsBase
     }
 
     void
+    testTxCheckEraseMissingBase()
+    {
+        testcase << "txCheck erase of entry missing from base";
+        using namespace jtx;
+
+        // A no-op TxInvariantCheck, so any failure comes from building the
+        // InvariantEntry during the state table traversal rather than from
+        // a check.
+        struct NoopTxInvariantCheck : TxInvariantCheck
+        {
+            void
+            visitEntry(InvariantEntry const&) override
+            {
+            }
+
+            [[nodiscard]] bool
+            finalize(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&) override
+            {
+                return true;
+            }
+        };
+
+        Env env{*this};
+        Account const alice{"alice"};
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        OpenView ov{*env.current()};
+        STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+        test::StreamSink sink{beast::Severity::Warning};
+        beast::Journal const jlog{sink};
+        ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+        CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+        // Erase a key that does not exist in the base ledger. The state
+        // table reports an Erase with no before state, which InvariantEntry
+        // rejects.
+        auto const missing = keylet::escrow(alice.id(), SeqProxy::rawSequence(999));
+        BEAST_EXPECT(!env.current()->exists(missing));
+        ac.rawView().rawErase(std::make_shared<SLE>(missing));
+
+        NoopTxInvariantCheck noop;
+        TER const result = checkInvariants(ac, tesSUCCESS, XRPAmount{}, noop);
+        BEAST_EXPECT(result == tecINVARIANT_FAILED);
+        BEAST_EXPECT(sink.messages().str().contains("deleted entry missing before state"));
+    }
+
+    void
     testTxCheckFinalizeFalse()
     {
         testcase << "txCheck finalize returns false";
@@ -1521,7 +1604,7 @@ class InvariantsMisc_test : public InvariantsBase
         struct FailingTxInvariantCheck : TxInvariantCheck
         {
             void
-            visitEntry(bool, SLE::ConstRef, SLE::ConstRef) override
+            visitEntry(InvariantEntry const&) override
             {
             }
 
@@ -1575,7 +1658,9 @@ class InvariantsMisc_test : public InvariantsBase
         testInvariantOverwrite(all_ - fixCleanup3_1_3);
         testObjectHasPseudoAccount();
         testSponsorship();
+        testInvariantEntry();
         testTxCheckException();
+        testTxCheckEraseMissingBase();
         testTxCheckFinalizeFalse();
     }
 };

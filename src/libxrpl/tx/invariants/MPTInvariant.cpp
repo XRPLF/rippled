@@ -24,6 +24,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <algorithm>
 #include <array>
@@ -68,8 +69,12 @@ subtractMPTAmountDelta(std::int64_t delta, std::uint64_t amount)
 }  // namespace
 
 void
-ValidMPTIssuance::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
+ValidMPTIssuance::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     // The sfReferenceHolding tracking and the deleted-holding capture are
     // only meaningful post-fixCleanup3_2_0 (the field is never set
     // pre-amendment, and the holding-deletion rule does not apply).
@@ -77,7 +82,7 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef 
     // on the hot path, except where noted for fixCleanup3_5_0 below.
     bool const fix320Enabled = isFeatureEnabled(fixCleanup3_2_0);
 
-    if (after && after->getType() == ltMPTOKEN_ISSUANCE)
+    if (after->getType() == ltMPTOKEN_ISSUANCE)
     {
         if (isDelete)
         {
@@ -104,7 +109,7 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef 
         }
     }
 
-    if (after && after->getType() == ltMPTOKEN)
+    if (after->getType() == ltMPTOKEN)
     {
         if (isDelete)
         {
@@ -126,7 +131,7 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef 
 
     // Capture deleted RippleState SLEs so finalize() can verify none of
     // them were owned by a vault pseudo-account outside VaultDelete.
-    if (fix320Enabled && isDelete && after && after->getType() == ltRIPPLE_STATE)
+    if (fix320Enabled && isDelete && after->getType() == ltRIPPLE_STATE)
         deletedHoldings_.push_back(after);
 }
 
@@ -445,8 +450,11 @@ ValidMPTIssuance::finalize(
 }
 
 void
-ValidMPTBalanceChanges::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef after)
+ValidMPTBalanceChanges::visitEntry(InvariantEntry const& entry)
 {
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (overflow_)
         return;
 
@@ -495,15 +503,11 @@ ValidMPTBalanceChanges::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef aft
     if (before && !update(*before, Order::Before))
         return;
 
-    if (after)
+    if (after->getType() == ltMPTOKEN_ISSUANCE)
     {
-        if (after->getType() == ltMPTOKEN_ISSUANCE)
-        {
-            overflow_ = (*after)[sfOutstandingAmount] > maxMPTAmount(*after);
-        }
-        if (!update(*after, Order::After))
-            return;
+        overflow_ = (*after)[sfOutstandingAmount] > maxMPTAmount(*after);
     }
+    update(*after, Order::After);
 }
 
 bool
@@ -573,11 +577,12 @@ ValidMPTBalanceChanges::finalize(
 }
 
 void
-ValidConfidentialMPToken::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidConfidentialMPToken::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     // Helper to get MPToken Issuance ID safely
     auto const getMptID = [](std::shared_ptr<SLE const> const& sle) -> UInt192 {
         if (!sle)
@@ -621,7 +626,7 @@ ValidConfidentialMPToken::visitEntry(
         }
     }
 
-    if (after && after->getType() == ltMPTOKEN)
+    if (after->getType() == ltMPTOKEN)
     {
         UInt192 const id = getMptID(after);
         auto& change = changes_[id];
@@ -673,7 +678,7 @@ ValidConfidentialMPToken::visitEntry(
             change.outstandingDelta, before->getFieldU64(sfOutstandingAmount));
     }
 
-    if (after && after->getType() == ltMPTOKEN_ISSUANCE)
+    if (after->getType() == ltMPTOKEN_ISSUANCE)
     {
         UInt192 const id = getMptID(after);
         auto& change = changes_[id];
@@ -693,7 +698,7 @@ ValidConfidentialMPToken::visitEntry(
             change.badCOA = true;
     }
 
-    if (before && after && before->getType() == ltMPTOKEN && after->getType() == ltMPTOKEN)
+    if (before && before->getType() == ltMPTOKEN && after->getType() == ltMPTOKEN)
     {
         UInt192 const id = getMptID(after);
 
@@ -853,11 +858,12 @@ ValidConfidentialMPToken::finalize(
 }
 
 void
-ValidMPTTransfer::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidMPTTransfer::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     // Record the before/after MPTAmount for each (issuanceID, account) pair
     // so finalize() can determine whether a transfer actually occurred.
     auto update = [&](SLE const& sle, bool isBefore) {
@@ -884,8 +890,7 @@ ValidMPTTransfer::visitEntry(
     if (before)
         update(*before, true);
 
-    if (after)
-        update(*after, false);
+    update(*after, false);
 
     // Record whether every touched AccountRoot was a pseudo-account BEFORE
     // the transaction applied (true and false). A transaction that erases a

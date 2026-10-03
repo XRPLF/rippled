@@ -10,6 +10,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <array>
 #include <cstdint>
@@ -57,12 +58,10 @@ public:
      * @brief Track MPT issuance and holding creations, deletions, and
      * mutations.
      *
-     * @param isDelete Whether the ledger entry is being deleted.
-     * @param before The ledger entry before transaction application.
-     * @param after The ledger entry after transaction application.
+     * @param entry The ledger entry change being checked.
      */
     void
-    visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after);
+    visitEntry(InvariantEntry const& entry);
 
     /**
      * @brief Verify MPT issuance invariants after transaction application.
@@ -109,12 +108,10 @@ public:
     /**
      * @brief Track MPT amount and outstanding amount changes.
      *
-     * @param isDelete Whether the ledger entry is being deleted.
-     * @param before The ledger entry before transaction application.
-     * @param after The ledger entry after transaction application.
+     * @param entry The ledger entry change being checked.
      */
     void
-    visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after);
+    visitEntry(InvariantEntry const& entry);
 
     /**
      * @brief Verify public MPT payment accounting invariants.
@@ -179,15 +176,10 @@ public:
     /**
      * @brief Track confidential MPT balance, issuance, and version changes.
      *
-     * @param isDelete Whether the ledger entry is being deleted.
-     * @param before The ledger entry before transaction application.
-     * @param after The ledger entry after transaction application.
+     * @param entry The ledger entry change being checked.
      */
     void
-    visitEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after);
+    visitEntry(InvariantEntry const& entry);
 
     /**
      * @brief Verify confidential MPT accounting and encrypted-field
@@ -233,15 +225,10 @@ public:
     /**
      * @brief Track MPT balance changes and deleted authorization state.
      *
-     * @param isDelete Whether the ledger entry is being deleted.
-     * @param before The ledger entry before transaction application.
-     * @param after The ledger entry after transaction application.
+     * @param entry The ledger entry change being checked.
      */
     void
-    visitEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after);
+    visitEntry(InvariantEntry const& entry);
 
     /**
      * @brief Verify MPT transfer authorization invariants.

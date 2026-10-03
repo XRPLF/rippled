@@ -12,9 +12,9 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <algorithm>
-#include <memory>
 
 namespace xrpl {
 
@@ -41,19 +41,19 @@ badExchangeRate(SLE const& dir)
 }  // namespace
 
 void
-ValidBookDirectory::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidBookDirectory::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     // New root directories must have matching exchange-rate metadata. New
     // child directories, and modified directories that change sfRootIndex, must
     // point to an existing root.
 
     // Only validate newly-created directories and sfRootIndex changes;
-    // LedgerStateFix handles legacy bad exchange-rate metadata. Skip deletions
-    // because `after` is not guaranteed to be null.
-    if (badBookDirectory_ || isDelete || !after || after->getType() != ltDIR_NODE)
+    // LedgerStateFix handles legacy bad exchange-rate metadata. Skip deletions.
+    if (badBookDirectory_ || isDelete || after->getType() != ltDIR_NODE)
         return;
 
     auto const rootIndex = after->getFieldH256(sfRootIndex);
