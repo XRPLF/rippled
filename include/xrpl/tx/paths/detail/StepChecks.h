@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -52,7 +53,7 @@ checkFreeze(
         if (auto const sleDst = view.read(keylet::account(dst));
             sleDst && sleDst->isFieldPresent(sfAMMID))
         {
-            auto const sleAmm = view.read(keylet::amm((*sleDst)[sfAMMID]));
+            AMMEntryR const sleAmm((*sleDst)[sfAMMID], view);
             if (!sleAmm)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 

@@ -11,6 +11,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -474,7 +475,7 @@ checkAMMPrecisionLoss(
 std::expected<std::tuple<STAmount, STAmount, STAmount>, TER>
 ammHolds(
     ReadView const& view,
-    SLE const& ammSle,
+    AMMEntryR const& ammSle,
     std::optional<Asset> const& optAsset1,
     std::optional<Asset> const& optAsset2,
     FreezeHandling freezeHandling,
@@ -482,8 +483,8 @@ ammHolds(
     beast::Journal const j)
 {
     auto const assets = [&]() -> std::optional<std::pair<Asset, Asset>> {
-        auto const asset1 = ammSle[sfAsset];
-        auto const asset2 = ammSle[sfAsset2];
+        auto const asset1 = (*ammSle)[sfAsset];
+        auto const asset2 = (*ammSle)[sfAsset2];
         if (optAsset1 && optAsset2)
         {
             if (invalidAMMAssetPair(
@@ -530,13 +531,13 @@ ammHolds(
         return std::unexpected(tecAMM_INVALID_TOKENS);
     auto const [amount1, amount2] = ammPoolHolds(
         view,
-        ammSle.getAccountID(sfAccount),
+        ammSle->getAccountID(sfAccount),
         assets->first,
         assets->second,
         freezeHandling,
         authHandling,
         j);
-    return std::make_tuple(amount1, amount2, ammSle[sfLPTokenBalance]);
+    return std::make_tuple(amount1, amount2, (*ammSle)[sfLPTokenBalance]);
 }
 
 STAmount
@@ -592,21 +593,22 @@ ammLPHolds(
 STAmount
 ammLPHolds(
     ReadView const& view,
-    SLE const& ammSle,
+    AMMEntryR const& ammSle,
     AccountID const& lpAccount,
     beast::Journal const j)
 {
-    return ammLPHolds(view, ammSle[sfAsset], ammSle[sfAsset2], ammSle[sfAccount], lpAccount, j);
+    return ammLPHolds(
+        view, (*ammSle)[sfAsset], (*ammSle)[sfAsset2], (*ammSle)[sfAccount], lpAccount, j);
 }
 
 std::uint16_t
-getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
+getTradingFee(ReadView const& view, AMMEntryR const& ammSle, AccountID const& account)
 {
     using namespace std::chrono;
-    XRPL_ASSERT(ammSle.isFieldPresent(sfAuctionSlot), "xrpl::getTradingFee : auction present");
-    if (ammSle.isFieldPresent(sfAuctionSlot))
+    XRPL_ASSERT(ammSle->isFieldPresent(sfAuctionSlot), "xrpl::getTradingFee : auction present");
+    if (ammSle->isFieldPresent(sfAuctionSlot))
     {
-        auto const& auctionSlot = safeDowncast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
+        auto const& auctionSlot = safeDowncast<STObject const&>(ammSle->peekAtField(sfAuctionSlot));
         // Not expired
         if (auto const expiration = auctionSlot[~sfExpiration];
             duration_cast<seconds>(view.header().parentCloseTime.time_since_epoch()).count() <
@@ -624,7 +626,7 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
             }
         }
     }
-    return ammSle[sfTradingFee];
+    return (*ammSle)[sfTradingFee];
 }
 
 STAmount
@@ -747,7 +749,7 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
 TER
 deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Journal j)
 {
-    auto ammSle = sb.peek(keylet::amm(asset, asset2));
+    AMMEntryW ammSle(asset, asset2, sb, j);
     if (!ammSle)
     {
         // LCOV_EXCL_START
@@ -794,7 +796,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
         // LCOV_EXCL_STOP
     }
 
-    sb.erase(ammSle);
+    ammSle.erase();
     sb.erase(sleAMMRoot);
 
     return tesSUCCESS;
@@ -803,7 +805,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
 void
 initializeFeeAuctionVote(
     ApplyView& view,
-    SLE::pointer& ammSle,
+    AMMEntryW& ammSle,
     AccountID const& account,
     Asset const& lptAsset,
     std::uint16_t tfee)
@@ -961,7 +963,7 @@ std::expected<bool, TER>
 verifyAndAdjustLPTokenBalance(
     Sandbox& sb,
     STAmount const& lpTokens,
-    SLE::pointer& ammSle,
+    AMMEntryW& ammSle,
     AccountID const& account)
 {
     auto const res = isOnlyLiquidityProvider(sb, lpTokens.get<Issue>(), account);
@@ -976,7 +978,7 @@ verifyAndAdjustLPTokenBalance(
                 lpTokens, ammSle->getFieldAmount(sfLPTokenBalance), Number{1, -3}))
         {
             ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
-            sb.update(ammSle);
+            ammSle.update();
         }
         else
         {

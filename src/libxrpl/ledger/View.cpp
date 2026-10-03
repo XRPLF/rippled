@@ -9,6 +9,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -193,7 +194,7 @@ canTransferLPToken(
     if (!sleIssuer || !sleIssuer->isFieldPresent(sfAMMID))
         return tesSUCCESS;
 
-    auto const sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+    AMMEntryR const sleAmm((*sleIssuer)[sfAMMID], view);
     if (!sleAmm)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

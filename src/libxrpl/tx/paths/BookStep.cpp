@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -106,13 +107,13 @@ private:
         , j_(ctx.j)
         , strandDeliver_(ctx.strandDeliver)
     {
-        if (auto const ammSle = ctx.view.read(keylet::amm(in, out));
+        if (AMMEntryR const ammSle(in, out, ctx.view);
             ammSle && ammSle->getFieldAmount(sfLPTokenBalance) != beast::kZero)
         {
             ammLiquidity_.emplace(
                 ctx.view,
                 (*ammSle)[sfAccount],
-                getTradingFee(ctx.view, *ammSle, ctx.ammContext.account()),
+                getTradingFee(ctx.view, ammSle, ctx.ammContext.account()),
                 in,
                 out,
                 ctx.ammContext,

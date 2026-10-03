@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -109,7 +110,7 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.read(keylet::account(ctx.tx[sfHolder])))
         return terNO_ACCOUNT;
 
-    auto const ammSle = ctx.view.read(keylet::amm(asset, asset2));
+    AMMEntryR const ammSle(asset, asset2, ctx.view);
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Clawback: Invalid asset pair.";
@@ -173,7 +174,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     Asset const asset = ctx_.tx[sfAsset];
     Asset const asset2 = ctx_.tx[sfAsset2];
 
-    auto ammSle = sb.peek(keylet::amm(asset, asset2));
+    AMMEntryW ammSle(asset, asset2, sb, j_);
     if (!ammSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -185,7 +186,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (sb.rules().enabled(fixAMMClawbackRounding))
     {
         // retrieve LP token balance inside the amendment gate to avoid inconsistent error behavior
-        auto const lpTokenBalance = ammLPHolds(sb, *ammSle, holder, j_);
+        auto const lpTokenBalance = ammLPHolds(sb, ammSle, holder, j_);
         if (lpTokenBalance == beast::kZero)
             return tecAMM_BALANCE;
 
@@ -196,7 +197,7 @@ AMMClawback::applyGuts(Sandbox& sb)
 
     auto const expected = ammHolds(
         sb,
-        *ammSle,
+        ammSle,
         asset,
         asset2,
         FreezeHandling::IgnoreFreeze,
@@ -214,7 +215,7 @@ AMMClawback::applyGuts(Sandbox& sb)
 
     // calling a second time on purpose since `verifyAndAdjustLPTokenBalance` rounds and may adjust
     // the balance
-    auto const holdLPtokens = ammLPHolds(sb, *ammSle, holder, j_);
+    auto const holdLPtokens = ammLPHolds(sb, ammSle, holder, j_);
     if (holdLPtokens == beast::kZero)
         return tecAMM_BALANCE;
 
@@ -225,7 +226,7 @@ AMMClawback::applyGuts(Sandbox& sb)
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
             AMMWithdraw::equalWithdrawTokens(
                 sb,
-                *ammSle,
+                ammSle,
                 holder,
                 issuer,
                 ammAccount,
@@ -247,7 +248,7 @@ AMMClawback::applyGuts(Sandbox& sb)
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
             equalWithdrawMatchingOneAmount(
                 sb,
-                *ammSle,
+                ammSle,
                 holder,
                 ammAccount,
                 amountBalance,
@@ -304,7 +305,7 @@ AMMClawback::applyGuts(Sandbox& sb)
 std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
 AMMClawback::equalWithdrawMatchingOneAmount(
     Sandbox& sb,
-    SLE const& ammSle,
+    AMMEntryR const& ammSle,
     AccountID const& holder,
     AccountID const& ammAccount,
     STAmount const& amountBalance,
