@@ -25,6 +25,28 @@ enum class ProtocolFeature {
 };
 
 /**
+ * Validations one peer has delivered since it connected, split by whether the
+ * signer is trusted. Peer::validationCounts() says which ones count.
+ *
+ * @code
+ *   PeerImp::onMessage(TMValidation) --counts--> Peer::validationCounts()
+ *                                                  --> peer_validation_load gauge
+ * @endcode
+ */
+struct PeerValidationCounts
+{
+    /**
+     * Validations whose signer is on this node's UNL.
+     */
+    std::uint64_t trusted = 0;
+
+    /**
+     * Validations from every other signer.
+     */
+    std::uint64_t untrusted = 0;
+};
+
+/**
  * Represents a peer connection in the overlay.
  */
 class Peer
@@ -134,6 +156,24 @@ public:
 
     [[nodiscard]] virtual bool
     txReduceRelayEnabled() const = 0;
+
+    //
+    // Statistics
+    //
+
+    /**
+     * Validations this peer has delivered since it connected.
+     *
+     * Counted once the signer's trust is known, so duplicates and untrusted
+     * validations this node then drops still count.
+     *
+     * @return The counts. Zero for a peer type that does not count them.
+     */
+    [[nodiscard]] virtual PeerValidationCounts
+    validationCounts() const
+    {
+        return {};
+    }
 };
 
 }  // namespace xrpl

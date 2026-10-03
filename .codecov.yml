@@ -58,3 +58,19 @@ ignore:
   - "src/tests/"
   - "include/xrpl/beast/test/"
   - "include/xrpl/beast/unit_test/"
+  # Telemetry modules. Telemetry compiles in by default (conanfile.py,
+  # CMakeLists.txt). SpanGuardScope.cpp sends spans to an in-memory exporter,
+  # but no unit test sends spans through the real OTLP export path, so these
+  # files are left out of the coverage report. This block belongs on the
+  # earliest branch that adds telemetry code — codecov config only flows
+  # child-ward, so an ignore added on a later branch can never cover the
+  # branches before it.
+  - "src/xrpld/telemetry/"
+  - "src/libxrpl/telemetry/"
+  - "include/xrpl/telemetry/"
+  - "src/libxrpl/beast/insight/OTelCollector.cpp"
+  - "include/xrpl/beast/insight/OTelCollector.h"
+  # Per-module span-name and span-label constant headers: compile-time
+  # constants only, colocated with their subsystem rather than under telemetry/.
+  - "**/*SpanNames.h"
+  - "**/*SpanLabels.h"

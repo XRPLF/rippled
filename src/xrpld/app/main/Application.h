@@ -28,6 +28,10 @@ namespace perf {
 class PerfLog;
 }  // namespace perf
 
+namespace telemetry {
+class Telemetry;
+}  // namespace telemetry
+
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
 
@@ -166,6 +170,16 @@ public:
      */
     [[nodiscard]] virtual size_t
     getNumberOfThreads() const = 0;
+
+    /**
+     * Returns the telemetry service built from the [telemetry] config section.
+     *
+     * @return The application's telemetry instance. The reference stays valid
+     * for the life of the application, also when telemetry is disabled or
+     * compiled out.
+     */
+    virtual telemetry::Telemetry&
+    getTelemetry() = 0;
 };
 
 std::unique_ptr<Application>
@@ -173,5 +187,23 @@ makeApplication(
     std::unique_ptr<Config> config,
     std::unique_ptr<Logs> logs,
     std::unique_ptr<TimeKeeper> timeKeeper);
+
+/**
+ * Construct the application with a known node identity.
+ *
+ * Telemetry builds its resource attributes during construction and they are
+ * immutable, so the node keypair must be supplied here. See
+ * resolveNodeIdentity(), which decides it from the config and command line
+ * alone; setup() then persists it.
+ *
+ * The three-argument overload above mints a keypair, which is what a test
+ * Application and a standalone run get anyway.
+ */
+std::unique_ptr<Application>
+makeApplication(
+    std::unique_ptr<Config> config,
+    std::unique_ptr<Logs> logs,
+    std::unique_ptr<TimeKeeper> timeKeeper,
+    std::pair<PublicKey, SecretKey> const& resolvedIdentity);
 
 }  // namespace xrpl
