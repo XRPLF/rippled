@@ -175,12 +175,15 @@ TEST_F(SigningKeysTest, write_to_file_errors)
         "Cannot write key file: " + inSealed.string());
     std::filesystem::permissions(sealed, std::filesystem::perms::owner_all);
 
-    // The temporary beside the key file is a symlink
+    // A stale file at the old fixed ".tmp" sibling name is neither followed
+    // nor removed: the temporary now gets a random suffix in the same
+    // directory, so that name plays no part in the write.
     auto const linked = std::filesystem::path(dir_.file("linked.json"));
-    std::filesystem::create_symlink(dir_.file("elsewhere.json"), linked.string() + ".tmp");
-    EXPECT_EQ(
-        errorOf([&] { keys.writeToFile(linked); }),
-        "Refusing to write through a symlink: " + linked.string() + ".tmp");
+    auto const stale = linked.string() + ".tmp";
+    std::filesystem::create_symlink(dir_.file("elsewhere.json"), stale);
+    keys.writeToFile(linked);
+    EXPECT_TRUE(keys == SigningKeys::makeSigningKeys(linked));
+    EXPECT_TRUE(std::filesystem::is_symlink(stale));
 }
 
 TEST_F(SigningKeysTest, key_file_fields)

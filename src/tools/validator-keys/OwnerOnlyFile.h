@@ -1,7 +1,6 @@
 #pragma once
 
 #include <filesystem>
-#include <fstream>
 #include <string>
 
 namespace xrpl {
@@ -9,9 +8,10 @@ namespace xrpl {
 /**
  * A file written for its owner only and replaced whole.
  *
- * The content goes to a temporary beside the target, restricted to the owner
- * before the first byte, and the target is replaced in one step by `commit`.
- * Without `commit` the temporary is removed, so a failed command leaves the
+ * The content goes to a temporary created beside the target under a name
+ * the system chooses, exclusively and restricted to the owner from its
+ * first byte, and the target is replaced in one step by `commit`. Without
+ * `commit` the temporary is removed, so a failed command leaves the
  * previous target as it was.
  */
 class OwnerOnlyFile
@@ -20,15 +20,16 @@ class OwnerOnlyFile
     std::filesystem::path temp_;
     // Names the file in errors: "key file", "output file".
     std::string what_;
-    std::ofstream stream_;
+    int fd_ = -1;
+    bool failed_ = false;
     bool committed_ = false;
 
 public:
     /**
-     * Opens the temporary.
+     * Creates the temporary, owner-only before the first byte is written.
      *
-     * @throws std::runtime_error if the target or the temporary is a symlink,
-     *         or the temporary cannot be opened or restricted
+     * @throws std::runtime_error if the target is a symlink, or the
+     *         temporary could not be created
      */
     OwnerOnlyFile(std::filesystem::path target, std::string what);
     ~OwnerOnlyFile();
