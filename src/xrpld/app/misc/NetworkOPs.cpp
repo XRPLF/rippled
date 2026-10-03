@@ -106,6 +106,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -175,9 +176,10 @@ namespace xrpl {
 
 /**
  * Concrete NetworkOPs: server sequencer, network tracker, and owner of all
- * client subscription state (accounts, books, streams). Subscriptions use three
- * independent non-recursive locks (accountLock_, bookLock_, streamLock_); see
- * their declarations for the locking and deferred-destruction rules.
+ * client subscription state (accounts, books, MPTs, streams). Subscriptions use
+ * four independent non-recursive locks (accountLock_, bookLock_, mptLock_,
+ * streamLock_); see their declarations for the locking and deferred-destruction
+ * rules.
  */
 class NetworkOPsImp final : public NetworkOPs
 {
@@ -656,6 +658,13 @@ public:
     unsubAccountInternal(std::uint64_t seq, HashSet<AccountID> const& vnaAccountIDs, bool rt)
         override;
 
+    void
+    subMPT(InfoSub::Ref ispListener, HashSet<MPTID> const& mptIDs) override;
+    void
+    unsubMPT(InfoSub::Ref ispListener, HashSet<MPTID> const& mptIDs) override;
+    void
+    unsubMPTInternal(std::uint64_t seq, MPTID const& mptID) override;
+
     ErrorCodeI
     subAccountHistory(InfoSub::Ref ispListener, AccountID const& account) override;
     void
@@ -885,6 +894,8 @@ private:
     pubServer();
     void
     pubConsensus(ConsensusPhase phase);
+    void
+    pubMPTTransaction(AcceptedLedgerTx const& transaction, MultiApiJson const& jvObj);
 
     std::string
     getHostId(bool forAdmin);
@@ -893,6 +904,7 @@ private:
     using SubMapType = HashMap<std::uint64_t, InfoSub::Wptr>;
     using SubInfoMapType = HashMap<AccountID, SubMapType>;
     using SubRpcMapType = HashMap<std::string, InfoSub::pointer>;
+    using SubMPTInfoMapType = HashMap<MPTID, SubMapType>;
 
     /*
      * With a validated ledger to separate history and future, the node
@@ -1014,16 +1026,18 @@ private:
 
     // Independent lock domains so a long cleanup/publish on one does not stall
     // the others. Hold at most one at a time; if ever more, order: accountLock_,
-    // bookLock_, streamLock_.
+    // bookLock_, mptLock_, streamLock_.
     //
-    // Deferred-destruction rule (non-recursive mutexes): under bookLock_ or
-    // streamLock_, never let the last InfoSub pointer die inside the lock -
-    // ~InfoSub re-acquires it via unsub* -> self-deadlock. Publishers collect the
-    // locked pointers in a vector declared before the lock and destruct after
-    // release (see pubServer / pubBookTransaction). accountLock_ is exempt:
-    // ~InfoSub offloads account teardown to scheduleAccountCleanup.
+    // Deferred-destruction rule (non-recursive mutexes): under bookLock_,
+    // mptLock_, or streamLock_, never let the last InfoSub pointer die inside the
+    // lock - ~InfoSub re-acquires it via unsub* -> self-deadlock. Publishers
+    // collect the locked pointers in a container declared before the lock and
+    // destruct after release (see pubServer / pubBookTransaction /
+    // pubMPTTransaction). accountLock_ is exempt: ~InfoSub offloads account
+    // teardown to scheduleAccountCleanup.
     std::mutex accountLock_;  ///< Guards subAccount_, subRTAccount_, subAccountHistory_.
     std::mutex bookLock_;     ///< Guards subBook_.
+    std::mutex mptLock_;      ///< Guards subMPT_.
     std::mutex streamLock_;   ///< Guards streamMaps_[] and rpcSubMap_.
 
     std::atomic<OperatingMode> mode_;
@@ -1060,7 +1074,8 @@ private:
 
     SubInfoMapType subAccount_;
     SubInfoMapType subRTAccount_;
-    SubBookMapType subBook_;  ///< Guarded by bookLock_.
+    SubBookMapType subBook_;    ///< Guarded by bookLock_.
+    SubMPTInfoMapType subMPT_;  ///< Guarded by mptLock_.
 
     SubRpcMapType rpcSubMap_;
 
@@ -3896,6 +3911,7 @@ NetworkOPsImp::pubValidatedTransaction(
         pubBookTransaction(transaction, jvObj);
 
     pubAccountTransaction(ledger, transaction, last);
+    pubMPTTransaction(transaction, jvObj);
 }
 
 void
@@ -4385,6 +4401,133 @@ NetworkOPsImp::scheduleAccountCleanup(
                 JLOG(journal_.error()) << "SubCleanup[seq=" << seq << "]: unknown exception";
             }
         });
+}
+
+void
+NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson const& jvObj)
+{
+    {
+        std::scoped_lock const sl(mptLock_);
+        if (subMPT_.empty())
+            return;
+    }
+
+    // getAffectedMPTs derives the issuance id for MPTokenIssuance entries from
+    // the metadata, so it also covers transactions whose top-level STTx carries
+    // no MPTokenIssuanceID, such as the inner transactions of a Batch. It reads
+    // only the metadata, so it runs outside mptLock_.
+    auto const affectedMPTs = alTx.getMeta().getAffectedMPTs();
+    if (affectedMPTs.empty())
+        return;
+
+    // Declared before the lock so a last-reference ~InfoSub runs after
+    // mptLock_ is released (see the deferred-destruction rule).
+    HashSet<InfoSub::pointer> notify;
+
+    {
+        std::scoped_lock const sl(mptLock_);
+
+        for (auto const& affectedMPT : affectedMPTs)
+        {
+            if (auto simiIt = subMPT_.find(affectedMPT); simiIt != subMPT_.end())
+            {
+                auto it = simiIt->second.begin();
+                while (it != simiIt->second.end())
+                {
+                    InfoSub::pointer const p = it->second.lock();
+
+                    if (p)
+                    {
+                        notify.insert(p);
+                        ++it;
+                    }
+                    else
+                    {
+                        it = simiIt->second.erase(it);
+                    }
+                }
+            }
+        }
+    }
+
+    if (notify.empty())
+        return;
+
+    // Reuse the transaction JSON built by pubValidatedTransaction; only the
+    // message type differs for this stream.
+    MultiApiJson jvMPT = jvObj;
+    jvMPT.set(jss::type, "mptTransaction");
+
+    for (InfoSub::Ref isrListener : notify)
+    {
+        jvMPT.visit(isrListener->getApiVersion(), [&](json::Value const& jv) {
+            isrListener->send(jv, true);
+        });
+    }
+}
+
+void
+NetworkOPsImp::subMPT(InfoSub::Ref isrListener, HashSet<MPTID> const& mptIDs)
+{
+    // Insert into subMPT_ before the InfoSub (unsubMPT removes in reverse), as
+    // subBook does, so a racing unsubMPT cannot leave a subMPT_ entry that the
+    // InfoSub doesn't know about.
+    {
+        std::scoped_lock const sl(mptLock_);
+
+        for (auto const& mptID : mptIDs)
+        {
+            JLOG(journal_.trace()) << "subMPT: MPT: " << to_string(mptID);
+
+            auto simIterator = subMPT_.find(mptID);
+            if (simIterator == subMPT_.end())
+            {
+                // Not found, note that the MPT issuance has a new single listener.
+                SubMapType usisElement;
+                usisElement[isrListener->getSeq()] = isrListener;
+                subMPT_.insert(simIterator, make_pair(mptID, usisElement));
+            }
+            else
+            {
+                // Found, note that the MPT issuance has another listener.
+                simIterator->second[isrListener->getSeq()] = isrListener;
+            }
+        }
+    }
+
+    for (auto const& mptID : mptIDs)
+        isrListener->insertSubMPTInfo(mptID);
+}
+
+void
+NetworkOPsImp::unsubMPT(InfoSub::Ref isrListener, HashSet<MPTID> const& mptIDs)
+{
+    for (auto const& mptID : mptIDs)
+    {
+        // Remove from the InfoSub first so ~InfoSub does not re-issue an
+        // unsubMPTInternal for an issuance the caller already removed, then
+        // remove from the server.
+        isrListener->deleteSubMPTInfo(mptID);
+        unsubMPTInternal(isrListener->getSeq(), mptID);
+    }
+}
+
+void
+NetworkOPsImp::unsubMPTInternal(std::uint64_t uSeq, MPTID const& mptID)
+{
+    // Only weak_ptrs are erased, so no InfoSub can be destroyed under the lock.
+    std::scoped_lock const sl(mptLock_);
+
+    auto simIterator = subMPT_.find(mptID);
+    if (simIterator == subMPT_.end())
+        return;
+
+    simIterator->second.erase(uSeq);
+    if (simIterator->second.empty())
+    {
+        // Don't need hash entry.
+        subMPT_.erase(simIterator);
+    }
 }
 
 void

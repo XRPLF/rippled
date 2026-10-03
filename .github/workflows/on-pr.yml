@@ -240,10 +240,31 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Check for copied release commits
+        if: ${{ github.event_name == 'pull_request' }}
         env:
-          BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
-          HEAD: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
         run: .github/scripts/releasing/check-no-copied-release-commits.sh "${BASE}" "${HEAD}"
+      # Runs even if the previous check fails, so that both problems are reported at once.
+      - name: Check merge-back has no new commits
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: .github/scripts/releasing/check-merge-back-commits.sh "${BASE}" "${HEAD}"
+      # The queue squashes PRs, so check the PR's own branch, named in the queue branch.
+      - name: Check the merge queue doesn't merge a release back
+        if: ${{ github.event_name == 'merge_group' }}
+        env:
+          BASE: ${{ github.event.merge_group.base_sha }}
+          HEAD_REF: ${{ github.event.merge_group.head_ref }}
+        run: |
+          if ! [[ "${HEAD_REF}" =~ /pr-([0-9]+)-[0-9a-f]+$ ]]; then
+              echo "Error: Can't find the PR number in '${HEAD_REF}'."
+              exit 1
+          fi
+          git fetch --no-tags origin "refs/pull/${BASH_REMATCH[1]}/head"
+          .github/scripts/releasing/check-no-merge-back.sh "${BASE}" FETCH_HEAD
 
   clang-tidy:
     needs: should-run

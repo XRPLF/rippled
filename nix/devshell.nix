@@ -147,6 +147,19 @@ rec {
     versionedTools = clangVersionedTools;
   };
 
+  # The gcc shell plus the Lean4 formal verification toolchain
+  formal-verification = makeShell {
+    shellName = "formal-verification";
+    stdenv = customGccStdenv;
+    compilerName = "gcc";
+    version = gccVersion;
+    versionedTools = gccVersionedTools;
+    extraPackages = [
+      customGccGcov
+      pkgs.lean4
+    ];
+  };
+
   # Nix provides no compiler; use the one from your system (e.g. Apple Clang).
   no-compiler = makeShell {
     shellName = "no-compiler";
