@@ -2,11 +2,13 @@
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/Serializer.h>
@@ -248,10 +250,14 @@ TEST_F(SHAMapSyncTest, inner_node_at_leaf_depth)
     EXPECT_TRUE(tallyIs(result, 0, 1, 0));
     EXPECT_FALSE(result.isGood());
     EXPECT_FALSE(map.isValid());
+
+    // Invalid is terminal, so setImmutable() refuses.
+    EXPECT_FALSE(map.setImmutable());
 }
 
-// A node the descent rejects is bad data: the batch counts it bad and the map stays usable for
-// another sender. All three ways of getting there are covered, since they share that verdict.
+// A node the descent cannot hook in is bad data: the batch counts it bad and the map stays usable
+// for another sender. All three refusals are covered: a depth the node does not sit at, a branch
+// the root leaves empty, and a hash the root does not name.
 TEST_F(SHAMapSyncTest, node_that_cannot_be_hooked_is_bad_data)
 {
     TestNodeFamily f{j_};
@@ -348,6 +354,158 @@ TEST_F(SHAMapSyncTest, map_invalidating_node_is_judged_before_the_cache_is_read)
     EXPECT_TRUE(tallyIs(result, 0, 1, 0));
     EXPECT_FALSE(result.isGood());
     EXPECT_FALSE(map.isValid());
+    EXPECT_FALSE(map.setImmutable());
+}
+
+// An invalid tx map must also stop the enclosing ledger from being marked immutable, since an
+// immutable ledger is treated as persistable.
+TEST_F(SHAMapSyncTest, invalid_tx_map_blocks_immutable_ledger)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    Ledger ledger{1, NetClock::time_point{}, noAmendments(), Fees{}, f};
+    ASSERT_FALSE(ledger.isImmutable());
+
+    ledger.txMap().setSynching();
+    ASSERT_TRUE(chain.fill(ledger.txMap()));
+
+    auto const result = chain.addOffendingNode(ledger.txMap());
+    ASSERT_TRUE(tallyIs(result, 0, 1, 0));
+    ASSERT_FALSE(ledger.txMap().isValid());
+
+    // The state map is untouched, so only the transaction map can be refusing.
+    ASSERT_TRUE(ledger.stateMap().isValid());
+
+    EXPECT_FALSE(ledger.setImmutable());
+    EXPECT_FALSE(ledger.isImmutable());
+}
+
+// The same for the state map, which is the second operand of the one expression
+// Ledger::setImmutable() tests both maps in.
+TEST_F(SHAMapSyncTest, invalid_state_map_blocks_immutable_ledger)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    Ledger ledger{1, NetClock::time_point{}, noAmendments(), Fees{}, f};
+    ASSERT_FALSE(ledger.isImmutable());
+
+    ledger.stateMap().setSynching();
+    ASSERT_TRUE(chain.fill(ledger.stateMap()));
+
+    auto const result = chain.addOffendingNode(ledger.stateMap());
+    ASSERT_TRUE(tallyIs(result, 0, 1, 0));
+    ASSERT_FALSE(ledger.stateMap().isValid());
+
+    // The transaction map is untouched, so only the state map can be refusing.
+    ASSERT_TRUE(ledger.txMap().isValid());
+
+    EXPECT_FALSE(ledger.setImmutable());
+    EXPECT_FALSE(ledger.isImmutable());
+}
+
+// A refusal leaves the header exactly as it was. setImmutable() derives the map hashes from the
+// maps and then the ledger hash from the header, and writes them only after every check has
+// passed. The up-front check covers this case, and the re-test after the maps are settled shares
+// the rule, which is why the header is written only once that one has passed too.
+TEST_F(SHAMapSyncTest, refused_settle_leaves_the_header_alone)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    // Not the header constructor: this one derives its map hashes, which is what must not happen.
+    Ledger ledger{1, NetClock::time_point{}, noAmendments(), Fees{}, f};
+    ASSERT_FALSE(ledger.isImmutable());
+    ASSERT_TRUE(ledger.header().txHash.isZero());
+    ASSERT_TRUE(ledger.header().accountHash.isZero());
+    auto const hashBefore = ledger.header().hash;
+
+    // A transaction map that hashes to something, so a derived header hash differs from the one
+    // the ledger has now.
+    ASSERT_TRUE(ledger.txMap().addItem(SHAMapNodeType::TnTransactionNm, makeRandomAS()));
+    ASSERT_TRUE(ledger.txMap().getHash().isNonZero());
+
+    // And a state map the chain abandons, so settling has to refuse.
+    ledger.stateMap().setSynching();
+    ASSERT_TRUE(chain.fill(ledger.stateMap()));
+    ASSERT_TRUE(chain.addOffendingNode(ledger.stateMap()).isInvalid());
+    ASSERT_FALSE(ledger.stateMap().isValid());
+
+    EXPECT_FALSE(ledger.setImmutable());
+
+    // The map hashes, the ledger hash and the flag all still hold their pre-refusal values.
+    EXPECT_FALSE(ledger.isImmutable());
+    EXPECT_TRUE(ledger.header().txHash.isZero());
+    EXPECT_TRUE(ledger.header().accountHash.isZero());
+    EXPECT_EQ(ledger.header().hash, hashBefore);
+}
+
+// Invalid is terminal: setImmutable() and clearSynching() offer no way back out of it, however
+// many times they are called. setSynching() is left alone, since it is unreachable on an invalid
+// map today and says so with an UNREACHABLE.
+TEST_F(SHAMapSyncTest, invalid_state_is_terminal)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    SHAMap map{SHAMapType::FREE, f};
+    map.setSynching();
+
+    ASSERT_TRUE(chain.fill(map));
+    ASSERT_TRUE(chain.addOffendingNode(map).isInvalid());
+    ASSERT_FALSE(map.isValid());
+
+    // Repeated attempts must each fail, and must not leave the map reporting a valid state.
+    for (auto attempt = 0; attempt < 3; ++attempt)
+    {
+        EXPECT_FALSE(map.setImmutable()) << "attempt " << attempt;
+        EXPECT_FALSE(map.isValid()) << "attempt " << attempt;
+    }
+
+    // Nor does clearSynching(), which keeps an abandoned map from being moved back to Modifying and
+    // passing isValid() again. It refuses rather than treating that as unreachable, since a
+    // concurrent walk can invalidate a map between a caller's own check and this call.
+    for (auto attempt = 0; attempt < 3; ++attempt)
+    {
+        map.clearSynching();
+        EXPECT_FALSE(map.isValid()) << "attempt " << attempt;
+    }
+
+    // isSynching() answers false for an invalid map.
+    EXPECT_FALSE(map.isSynching());
+}
+
+// A snapshot shares the source map's root, so Invalid carries over to it.
+TEST_F(SHAMapSyncTest, snapshot_of_invalid_map_stays_invalid)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    SHAMap map{SHAMapType::FREE, f};
+    map.setSynching();
+
+    ASSERT_TRUE(chain.fill(map));
+
+    auto const result = chain.addOffendingNode(map);
+    ASSERT_TRUE(tallyIs(result, 0, 1, 0));
+    ASSERT_FALSE(map.isValid());
+
+    // Both flavors: the immutable snapshot is the one the store reads, and the
+    // mutable one is the one that sets Modifying.
+    for (bool const isMutable : {false, true})
+    {
+        auto const snapshot = map.snapShot(isMutable);
+        ASSERT_TRUE(snapshot != nullptr);
+        EXPECT_FALSE(snapshot->isValid()) << "isMutable " << isMutable;
+        EXPECT_FALSE(snapshot->setImmutable()) << "isMutable " << isMutable;
+    }
+
+    // A snapshot of a sound map is unaffected.
+    SHAMap valid{SHAMapType::FREE, f};
+    valid.addItem(SHAMapNodeType::TnAccountState, makeRandomAS());
+    EXPECT_TRUE(valid.snapShot(false)->isValid());
+    EXPECT_TRUE(valid.snapShot(true)->isValid());
 }
 
 // A map marked complete in the database withdraws that claim the first time a read misses, and
@@ -490,7 +648,7 @@ TEST_F(SHAMapSyncTest, sync)
     ASSERT_TRUE(confuseMap(source, kNodesToConfuse));
     source.invariants();
 
-    source.setImmutable();
+    ASSERT_TRUE(source.setImmutable());
 
     std::size_t count = 0;
     source.visitLeaves([&count]([[maybe_unused]] auto const& item) { ++count; });
