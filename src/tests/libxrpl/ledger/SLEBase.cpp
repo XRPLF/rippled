@@ -76,9 +76,16 @@ template class SLEBase<ApplyView>;
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
+// Explicit instantiation *declarations*, not definitions: an entry whose
+// member bodies live in its own .cpp (with the explicit instantiation
+// definition there) must not be instantiated a second time here. MSVC also
+// rejects (C4661, an error under /WX) an explicit instantiation definition of
+// a class whose out-of-line members are not visible in this translation unit.
+// A declaration still instantiates the class definition itself, which is all
+// this exhaustiveness check needs.
 #define LEDGER_ENTRY(tag, value, name, ...)                                                    \
-    template class name##Entry<ReadView>;                                                      \
-    template class name##Entry<ApplyView>;                                                     \
+    extern template class name##Entry<ReadView>;                                               \
+    extern template class name##Entry<ApplyView>;                                              \
     static_assert(                                                                             \
         name##Entry<ReadView>::kEntryType == tag && name##Entry<ApplyView>::kEntryType == tag, \
         #name "Entry must be bound to " #tag);

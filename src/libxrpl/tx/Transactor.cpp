@@ -11,6 +11,7 @@
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/TicketEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
@@ -813,10 +814,8 @@ Transactor::ticketDelete(
     UInt256 const& ticketIndex,
     beast::Journal j)
 {
-    // Delete the Ticket, adjust the account root ticket count, and
-    // reduce the owner count.
-    SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
-    if (!sleTicket)
+    TicketEntryW ticket(ticketIndex, view, j);
+    if (!ticket)
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Ticket disappeared from ledger.";
@@ -824,51 +823,7 @@ Transactor::ticketDelete(
         // LCOV_EXCL_STOP
     }
 
-    std::uint64_t const page{(*sleTicket)[sfOwnerNode]};
-    if (!view.dirRemove(keylet::ownerDir(account), page, ticketIndex, true))
-    {
-        // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete Ticket from owner.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    // Update the account root's TicketCount.  If the ticket count drops to
-    // zero remove the (optional) field.
-    auto sleAccount = view.peek(keylet::account(account));
-    if (!sleAccount)
-    {
-        // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Could not find Ticket owner account root.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    if (auto ticketCount = (*sleAccount)[~sfTicketCount])
-    {
-        if (*ticketCount == 1)
-        {
-            sleAccount->makeFieldAbsent(sfTicketCount);
-        }
-        else
-        {
-            ticketCount = *ticketCount - 1;
-        }
-    }
-    else
-    {
-        // LCOV_EXCL_START
-        JLOG(j.fatal()) << "TicketCount field missing from account root.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    // Update the Ticket owner's reserve.
-    decreaseOwnerCountForObject(view, sleAccount, sleTicket, 1, j);
-
-    // Remove Ticket from ledger.
-    view.erase(sleTicket);
-    return tesSUCCESS;
+    return ticket.removeFromLedger(account);
 }
 
 // check stuff before you bother to lock the ledger
