@@ -298,7 +298,7 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
     XRPL_ASSERT(nodeSize <= 4, "xrpl::Config::setupControl : node size is set");
 }
 
-void
+bool
 Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStandalone)
 {
     setupControl(bQuiet, bSilent, bStandalone);
@@ -310,11 +310,15 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     // directory.
     std::filesystem::path dataDir;
 
+    // The config file to read. It stays unset when the search for one finds
+    // nothing.
+    std::optional<std::filesystem::path> configFile;
+
     if (!strConf.empty())
     {
         // --conf=<path> : everything is relative that file.
-        configFile_ = strConf;
-        configDir = std::filesystem::absolute(configFile_);
+        configFile = strConf;
+        configDir = std::filesystem::absolute(*configFile);
         configDir.remove_filename();
         dataDir = configDir / kDatabaseDirName;
     }
@@ -360,52 +364,76 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
         candidates.emplace_back("/etc/" + systemName(), "/var/lib/" + systemName());
 
         // Take the first candidate holding a config file under either name.
-        // When none does, the last candidate's values stand.
+        // When none does, configFile stays unset.
         for (auto const& candidate : candidates)
         {
             configDir = candidate.configDir;
             dataDir = candidate.dataDir;
 
-            bool found = false;
             for (std::string_view const fileName : {kConfigFileName, kConfigLegacyName})
             {
-                configFile_ = configDir / fileName;
-                if (std::filesystem::exists(configFile_))
+                auto candidateFile = configDir / fileName;
+                if (std::filesystem::exists(candidateFile))
                 {
-                    found = true;
+                    configFile = std::move(candidateFile);
                     break;
                 }
             }
 
-            if (found)
+            if (configFile)
                 break;
         }
-    }
 
-    // Update default values
-    load();
-    {
-        // load() may have set a new value for the dataDir
-        std::string const dbPath(legacy(Sections::kDatabasePath));
-        if (!dbPath.empty())
+        if (!configFile)
         {
-            dataDir = std::filesystem::path(dbPath);
-        }
-        else if (runStandalone_)
-        {
-            dataDir.clear();
+            // Report every directory searched, even when quiet, since this is
+            // the reason for the failure.
+            std::cerr << std::format(
+                "No {} or {} found. Searched:\n", kConfigFileName, kConfigLegacyName);
+            for (auto const& candidate : candidates)
+                std::cerr << std::format("  {}\n", candidate.configDir.string());
         }
     }
 
-    if (!dataDir.empty())
+    // Read the config file, which updates the default values. A file that is
+    // there but cannot be read throws, so getting past this means the file was
+    // read. The rest of this function still runs when the search found none,
+    // so that the command line RPC client gets the defaults and the SSL
+    // context. The caller decides whether that is fatal.
+    bool const configRead = configFile.has_value();
+
+    if (configRead)
+        load(*configFile);
+
+    // Only a config file that was read can name a data directory.
+    if (configRead)
     {
-        std::error_code ec;
-        std::filesystem::create_directories(dataDir, ec);
+        {
+            // load() may have set a new value for the dataDir
+            std::string const dbPath(legacy(Sections::kDatabasePath));
+            if (!dbPath.empty())
+            {
+                dataDir = std::filesystem::path(dbPath);
+            }
+            else if (runStandalone_)
+            {
+                dataDir.clear();
+            }
+        }
 
-        if (ec)
-            Throw<std::runtime_error>(std::format("Can not create {}", dataDir.string()));
+        if (!dataDir.empty())
+        {
+            std::error_code ec;
+            std::filesystem::create_directories(dataDir, ec);
 
-        legacy(Sections::kDatabasePath, std::filesystem::absolute(dataDir).string());
+            if (ec)
+            {
+                Throw<std::runtime_error>(
+                    std::format("Can not create {}: {}", dataDir.string(), ec.message()));
+            }
+
+            legacy(Sections::kDatabasePath, std::filesystem::absolute(dataDir).string());
+        }
     }
 
     HTTPClient::initializeSSLContext(this->sslVerifyDir, this->sslVerifyFile, this->sslVerify, j_);
@@ -418,6 +446,8 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
 
     Section const& nodeDbSection{section(Sections::kNodeDatabase)};
     getIfExists(nodeDbSection, Keys::kFastLoad, fastLoad);
+
+    return configRead;
 }
 
 // 0 ports are allowed for unit tests, but still not allowed to be present in
@@ -449,22 +479,25 @@ checkZeroPorts(Config const& config)
 }
 
 void
-Config::load()
+Config::load(std::filesystem::path const& configFile)
 {
+    // A std::filesystem::path has no std::formatter, and streaming one adds
+    // quotes of its own.
+    auto const fileName = configFile.string();
+
     // NOTE: this writes to cerr because we want cout to be reserved
     // for the writing of the json response (so that stdout can be part of a
     // pipeline, for instance)
     if (!quiet_)
-        std::cerr << "Loading: " << configFile_ << "\n";
+        std::cerr << std::format("Loading: '{}'\n", fileName);
 
     std::error_code ec;
-    auto const fileContents = getFileContents(ec, configFile_);
+    auto const fileContents = getFileContents(ec, configFile);
 
     if (ec)
     {
-        std::cerr << "Failed to read '" << configFile_ << "'." << ec.value() << ": " << ec.message()
-                  << std::endl;
-        return;
+        Throw<std::runtime_error>(
+            std::format("Failed to read '{}': {} (error {})", fileName, ec.message(), ec.value()));
     }
 
     loadFromString(fileContents);
