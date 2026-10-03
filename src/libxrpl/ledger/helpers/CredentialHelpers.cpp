@@ -112,24 +112,15 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
             // LCOV_EXCL_STOP
         }
 
-        CredentialEntryR const sleCred(h, view);
+        CredentialEntryR const sleCred(h, view, j);
         if (!sleCred)
         {
             JLOG(j.trace()) << "Credential doesn't exist. Cred: " << h;
             return tecBAD_CREDENTIALS;
         }
 
-        if (sleCred->getAccountID(sfSubject) != src)
-        {
-            JLOG(j.trace()) << "Credential doesn't belong to the source account. Cred: " << h;
-            return tecBAD_CREDENTIALS;
-        }
-
-        if (!sleCred->isFlag(lsfAccepted))
-        {
-            JLOG(j.trace()) << "Credential isn't accepted. Cred: " << h;
-            return tecBAD_CREDENTIALS;
-        }
+        if (auto const err = sleCred.isValid(src); !isTesSuccess(err))
+            return err;
 
         // Expiration checks are in doApply
     }
