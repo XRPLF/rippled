@@ -538,9 +538,14 @@ doWithdraw(
     AccountID const& dstAcct,
     AccountID const& sourceAcct,
     XRPAmount priorBalance,
-    STAmount const& amount,
+    STAmount const& destinationAmount,
+    STAmount const& sourceAmount,
     beast::Journal j)
 {
+    XRPL_ASSERT(
+        destinationAmount.asset() == sourceAmount.asset(),
+        "xrpl::doWithdraw : delivered and source amounts use the same asset");
+
     auto const dstSle = ctx.view.read(keylet::account(dstAcct));
 
     // Create a trust line or MPToken for a self-destination only when there
@@ -550,9 +555,10 @@ doWithdraw(
     // create+delete MPTokens in the same transaction.
     if (dstAcct == senderAcct)
     {
-        if (amount > beast::kZero || !ctx.view.rules().enabled(fixCleanup3_4_0))
+        if (destinationAmount > beast::kZero || !ctx.view.rules().enabled(fixCleanup3_4_0))
         {
-            if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset(), j);
+            if (auto const ter =
+                    addEmptyHolding(ctx, senderAcct, priorBalance, destinationAmount.asset(), j);
                 !isTesSuccess(ter) && ter != tecDUPLICATE)
                 return ter;
         }
@@ -567,15 +573,31 @@ doWithdraw(
     if (accountHolds(
             ctx.view,
             sourceAcct,
-            amount.asset(),
+            destinationAmount.asset(),
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
-            j) < amount)
+            j) < sourceAmount)
     {
         // LCOV_EXCL_START
-        JLOG(j.error()) << "doWithdraw: negative balance of broker cover assets.";
+        JLOG(j.error()) << "doWithdraw: source account holds fewer assets than the withdrawal.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
+    }
+
+    // A transfer fee applies. Redeem the gross amount with the issuer, then
+    // issue the net amount to the destination.
+    if (sourceAmount != destinationAmount)
+    {
+        auto const issuer = destinationAmount.getIssuer();
+        XRPL_ASSERT(
+            !destinationAmount.native() && sourceAcct != issuer && dstAcct != issuer,
+            "xrpl::doWithdraw : transfer fee applies between token holders");
+
+        if (auto const ter = directSendNoFee(ctx.view, sourceAcct, issuer, sourceAmount, false, j);
+            !isTesSuccess(ter))
+            return ter;
+
+        return directSendNoFee(ctx.view, issuer, dstAcct, destinationAmount, false, j);
     }
 
     // A reserve sponsor only covers tx.Account's own objects, so resolve the
@@ -589,7 +611,7 @@ doWithdraw(
     // Move the funds directly from the broker's pseudo-account to the
     // dstAcct
     return accountSend(
-        ctx.view, sourceAcct, dstAcct, amount, j, *sponsorSle, WaiveTransferFee::Yes);
+        ctx.view, sourceAcct, dstAcct, destinationAmount, j, *sponsorSle, WaiveTransferFee::Yes);
 }
 
 TER
