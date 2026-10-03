@@ -23,7 +23,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/Zero.h>  // IWYU pragma: keep
 #include <xrpl/core/Job.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
@@ -1381,6 +1381,22 @@ struct PayChan_test : public beast::unit_test::Suite
                 BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
             }
             {
+                // zero drops - must be rejected as malformed (fix for #6764)
+                auto const pkAsHex = sliceToHex(pk.slice());
+                auto rv = env.rpc("channel_authorize", "alice", chan1Str, "0");
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, "0", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+
+                json::Value args{json::ValueType::Object};
+                args[jss::amount] = "0";
+                args[jss::channel_id] = chan1Str;
+                args[jss::public_key] = pkAsHex;
+                args[jss::signature] = sig;
+                rv = env.rpc("json", "channel_verify", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+            }
+            {
                 // malformed channel
                 auto const pkAsHex = sliceToHex(pk.slice());
                 auto chan1StrBad = chan1Str;
@@ -1552,6 +1568,16 @@ struct PayChan_test : public beast::unit_test::Suite
                 // Amount is not a decimal string.
                 json::Value args{json::ValueType::Object};
                 args[jss::amount] = "TwoThousand";
+                args[jss::channel_id] = chan1Str;
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+                rs = env.rpc("json", "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rs[jss::error] == "channelAmtMalformed");
+            }
+            {
+                // amount is zero drops (fix for #6764)
+                json::Value args{json::ValueType::Object};
+                args[jss::amount] = "0";
                 args[jss::channel_id] = chan1Str;
                 args[jss::key_type] = "secp256k1";
                 args[jss::passphrase] = "passphrase_can_be_anything";

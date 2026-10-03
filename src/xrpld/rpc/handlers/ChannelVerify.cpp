@@ -66,6 +66,9 @@ doChannelVerify(rpc::JsonContext& context)
     if (!optDrops)
         return rpcError(RpcChannelAmtMalformed);
 
+    if (*optDrops == 0)
+        return rpcError(RpcChannelAmtMalformed);
+
     std::uint64_t const drops = *optDrops;
 
     auto sig = strUnHex(params[jss::signature].asString());
