@@ -49,6 +49,23 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 namespace detail {
 
 /**
+ * An owner count cannot be negative. If adjustment would cause a negative
+ * owner count, clamp the owner count at 0. Similarly for overflow. This
+ * adjustment allows the ownerCount to be adjusted up or down in multiple steps.
+ * If id != std::nullopt, then do error reporting.
+ *
+ * Shared by AccountRootEntry::ownerCount() and the owner-count helpers.
+ *
+ * @return The adjusted owner count
+ */
+std::uint32_t
+confineOwnerCount(
+    std::uint32_t currentOwnerCount,
+    std::int32_t ownerCountAdj,
+    std::optional<AccountID> const& id = std::nullopt,
+    beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
+
+/**
  * Returns the number of account reserves funded by this account: 1 for itself
  * (0 if sponsored by another account) plus the count of accounts it sponsors.
  * Shared by AccountRootEntry::reserve() and xrpLiquid().
@@ -123,18 +140,6 @@ checkReserve(
     XRPAmount accBalance,
     Adjustment adj,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
-
-/**
- * Return number of the objects which reserve is covered by the account(sle) (so called "owner
- * count"). Actual owner count can be adjusted by delta in ownerCountAdj.
- *
- * @param sle The account's ledger entry
- * @param j Journal for logging
- * @param ownerCountAdj Adjustment to the owner count (default: 0)
- * @return The adjusted owner count
- */
-std::uint32_t
-ownerCount(AccountRootEntryR const& sle, beast::Journal j, std::int32_t ownerCountAdj = 0);
 
 /**
  * Increase owner-count fields when the caller supplies the sponsor.

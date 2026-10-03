@@ -8,7 +8,6 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -699,8 +698,8 @@ AMMWithdraw::withdraw(
             auto const balance = (*sleAccount)[sfBalance]->xrp();
             // See also TrustSet::doApply() and MPTokenAuthorize::authorize()
             XRPAmount const reserve(
-                (ownerCount(sleAccount, journal) < 2) ? XRPAmount(beast::kZero)
-                                                      : sleAccount.reserve({.ownerCountDelta = 1}));
+                (sleAccount.ownerCount() < 2) ? XRPAmount(beast::kZero)
+                                              : sleAccount.reserve({.ownerCountDelta = 1}));
 
             auto const balanceAdj = std::max(priorBalance, balance);
             if (balanceAdj < reserve)
