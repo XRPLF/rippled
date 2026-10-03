@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/entries/CredentialEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>  // IWYU pragma: keep
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -114,7 +115,8 @@ CredentialCreate::doApply()
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(subject, accountID_, credType);
 
-    auto const sleCred = std::make_shared<SLE>(credentialKey);
+    CredentialEntryW sleCred(credentialKey, view(), j_);
+    sleCred.newSLE();
     if (!sleCred)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -160,7 +162,7 @@ CredentialCreate::doApply()
         sleCred->setFieldU64(sfIssuerNode, *page);
 
         increaseOwnerCount(ctx_.getApplyViewContext(), sleIssuer, 1, j_);
-        addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred);
+        addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred.mutableRawSle());
     }
 
     if (subject == accountID_)
@@ -180,7 +182,7 @@ CredentialCreate::doApply()
         sleCred->setFieldU64(sfSubjectNode, *page);
     }
 
-    view().insert(sleCred);
+    sleCred.insert();
 
     return tesSUCCESS;
 }

@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/CredentialEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STArray.h>
@@ -27,11 +28,11 @@ namespace credentials {
 
 // Check if credential sfExpiration field has passed ledger's parentCloseTime
 bool
-checkExpired(SLE const& sleCredential, NetClock::time_point const& closed);
+checkExpired(CredentialEntryR const& sleCredential, NetClock::time_point const& closed);
 
 // Actually remove a credentials object from the ledger
 [[nodiscard]] TER
-deleteSLE(ApplyView& view, SLE::Ref sleCredential, beast::Journal j);
+deleteSLE(ApplyView& view, CredentialEntryW& sleCredential, beast::Journal j);
 
 // Amendment and parameters checks for sfCredentialIDs field
 NotTEC
