@@ -285,9 +285,11 @@ public:
     /**
      * Find the first item after the given item.
      *
-     * @param id the identifier of the item.
-     *
-     * @note The item does not need to exist.
+     * @param id the identifier of the item, which need not exist in the map.
+     * @return an iterator at the first item with a greater key, or end() if the
+     *         map holds no greater key.
+     * @throws SHAMapMissingNode if the map cannot be walked. end() is the
+     *         separate answer that the map holds no greater key.
      */
     ConstIterator
     upperBound(UInt256 const& id) const;
@@ -295,9 +297,11 @@ public:
     /**
      * Find the object with the greatest object id smaller than the input id.
      *
-     * @param id the identifier of the item.
-     *
-     * @note The item does not need to exist.
+     * @param id the identifier of the item, which need not exist in the map.
+     * @return an iterator at the last item with a smaller key, or end() if the
+     *         map holds no smaller key.
+     * @throws SHAMapMissingNode if the map cannot be walked. end() is the
+     *         separate answer that the map holds no smaller key.
      */
     ConstIterator
     lowerBound(UInt256 const& id) const;
@@ -508,6 +512,29 @@ public:
 
 private:
     /**
+     * Whether placing `node` one level below `parentDepth` leaves it no room.
+     *
+     * Only a leaf may sit at kLeafDepth, and only a parent above kLeafDepth has
+     * a nibble left to record the branch taken. Both bounds are needed, since a
+     * leaf one level above kLeafDepth is allowed. Position is judged separately,
+     * by the walk that keeps a path.
+     *
+     * The conjunct order is load bearing: the depth is tested first, so the
+     * virtual isInner() call runs only at the one level where the bound
+     * applies.
+     *
+     * @param parentDepth the depth of the node being descended from.
+     * @param node the node about to be placed one level below it.
+     * @return whether that placement is past the deepest level this kind of
+     *         node may occupy.
+     */
+    [[nodiscard]] static bool
+    pastLeafDepth(unsigned int parentDepth, SHAMapTreeNode const& node)
+    {
+        return parentDepth + 1u >= kLeafDepth && (node.isInner() || parentDepth >= kLeafDepth);
+    }
+
+    /**
      * A path from the root of the map down to some node, pairing each node with the ID naming its
      * position.
      *
@@ -531,20 +558,46 @@ private:
             return stack_.size();
         }
 
+        /**
+         * The node at the end of the path, paired with its ID.
+         *
+         * std::stack::top on an empty stack is undefined, so an empty path
+         * yields a null node the caller can test. The assert alone is
+         * stripped in release.
+         */
         [[nodiscard]] std::pair<SHAMapTreeNodePtr, SHAMapNodeID> const&
         top() const
         {
-            XRPL_ASSERT(!stack_.empty(), "xrpl::SHAMap::NodePathStack::top : non-empty stack");
+            if (stack_.empty())
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::SHAMap::NodePathStack::top : empty stack");
+                static std::pair<SHAMapTreeNodePtr, SHAMapNodeID> const kEmpty;
+                return kEmpty;
+                // LCOV_EXCL_STOP
+            }
             return stack_.top();
         }
 
+        /**
+         * Shorten the path by one node. An empty path is left as it is.
+         */
         void
         pop()
         {
-            XRPL_ASSERT(!stack_.empty(), "xrpl::SHAMap::NodePathStack::pop : non-empty stack");
+            if (stack_.empty())
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::SHAMap::NodePathStack::pop : empty stack");
+                return;
+                // LCOV_EXCL_STOP
+            }
             stack_.pop();
         }
 
+        /**
+         * Discard the whole path.
+         */
         void
         clear()
         {
@@ -553,36 +606,79 @@ private:
 
         /**
          * Start a path at the root of the map, whose ID is the zero-depth ID by definition.
+         *
+         * @return false, leaving the path unchanged, if a path was already
+         *         started, so the caller stops rather than overwriting it.
          */
-        void
+        [[nodiscard]] bool
         pushRoot(SHAMapTreeNodePtr node)
         {
-            XRPL_ASSERT(stack_.empty(), "xrpl::SHAMap::NodePathStack::pushRoot : empty stack");
+            if (!stack_.empty())
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::SHAMap::NodePathStack::pushRoot : non-empty stack");
+                return false;
+                // LCOV_EXCL_STOP
+            }
             stack_.emplace(std::move(node), SHAMapNodeID{});
+            return true;
         }
 
         /**
          * Extend the path to the child of the current node reached by `branch`.
          *
-         * A node keeps the depth it was reached at, never a normalized kLeafDepth. Only a leaf may
-         * sit at kLeafDepth, since an inner node there would have no branch left to select.
+         * A node keeps the depth it was reached at.
+         *
+         * @param node the child to append.
+         * @param branch the branch of the current node that `node` was
+         *               reached through.
+         * @return false, leaving the path unchanged, if there is no node to
+         *         descend from, no node to push, no branch of that number, no
+         *         room left below for the kind of node offered, or a leaf
+         *         whose own key does not lie under `branch`. The caller stops
+         *         walking on a false return.
          */
-        void
+        [[nodiscard]] bool
         pushChild(SHAMapTreeNodePtr node, unsigned int branch)
         {
-            XRPL_ASSERT(node, "xrpl::SHAMap::NodePathStack::pushChild : non-null node input");
-            XRPL_ASSERT(
-                !stack_.empty(), "xrpl::SHAMap::NodePathStack::pushChild : non-empty stack");
-            auto childID = stack_.top().second.getChildNodeID(branch);
-            XRPL_ASSERT_IF(
-                node->isInner(),
-                childID.getDepth() < kLeafDepth,
-                "xrpl::SHAMap::NodePathStack::pushChild : inner node above leaf depth");
-            XRPL_ASSERT_IF(
-                node->isLeaf(),
-                childID.isPrefixOf(leafKey(*node)),
-                "xrpl::SHAMap::NodePathStack::pushChild : leaf key below branch");
+            if (stack_.empty() || !node || branch >= kBranchFactor)
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::SHAMap::NodePathStack::pushChild : no child to push");
+                return false;
+                // LCOV_EXCL_STOP
+            }
+
+            // Reachable, for the same reason the misplaced-leaf case below is: the two-argument
+            // SHAMap::descend fetches by the parent's recorded child hash and hooks what comes
+            // back, and a parsed node adopts that hash, so an inner node can arrive one level
+            // too deep. The push is refused and the caller stops.
+            auto const& parentID = stack_.top().second;
+            auto const parentDepth = parentID.getDepth();
+            bool const tooDeep = pastLeafDepth(parentDepth, *node);
+            SOMETIMES(tooDeep, "xrpl::SHAMap::NodePathStack::pushChild : child past leaf depth");
+            if (tooDeep)
+            {
+                return false;
+            }
+
+            // A leaf's own key names its position, so a leaf reached by this branch must agree with
+            // the ID that branch derives. Where the two disagree the push is refused.
+            //
+            // Reported rather than asserted, for the reason given above: a map read lazily from
+            // the local store reaches this push directly, with no hook ahead of it to judge the
+            // node first.
+            auto childID = parentID.getChildNodeID(branch);
+            bool const misplaced = !belongsAt(childID, *node);
+            SOMETIMES(
+                misplaced, "xrpl::SHAMap::NodePathStack::pushChild : leaf key outside branch");
+            if (misplaced)
+            {
+                return false;
+            }
+
             stack_.emplace(std::move(node), std::move(childID));
+            return true;
         }
 
         /**
@@ -591,17 +687,14 @@ private:
          * For nodes not reached by descending a known branch: the walk tracks only the key it is
          * heading for, or the node is newly created. Either way `target` selects the branch.
          */
-        void
+        [[nodiscard]] bool
         pushNode(SHAMapTreeNodePtr node, UInt256 const& target)
         {
             if (stack_.empty())
             {
-                pushRoot(std::move(node));
+                return pushRoot(std::move(node));
             }
-            else
-            {
-                pushChild(std::move(node), selectBranch(stack_.top().second, target));
-            }
+            return pushChild(std::move(node), selectBranch(stack_.top().second, target));
         }
 
     private:
@@ -719,8 +812,13 @@ private:
     /**
      * Returns the first or last item at or below the node already on top of `stack`, extending
      * `stack` with the path walked to reach it.
+     *
+     * @param stack the path to extend, whose last node the search starts from.
+     * @param direction whether to take the lowest or the highest branch at
+     *                  each level.
+     * @return the leaf found, or nullptr if no leaf lies below that node.
      */
-    SHAMapLeafNode*
+    [[nodiscard]] SHAMapLeafNode*
     belowHelper(NodePathStack& stack, BelowDirection direction) const;
 
     /**
@@ -734,7 +832,7 @@ private:
      * @param direction First to search upwards from `id`, Last to search downwards.
      * @return An iterator to the item found, or end() if no item lies on that side of `id`.
      */
-    ConstIterator
+    [[nodiscard]] ConstIterator
     boundHelper(UInt256 const& id, BelowDirection direction) const;
 
     // Simple descent
