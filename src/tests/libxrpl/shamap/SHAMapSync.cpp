@@ -4,7 +4,6 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
-#include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
@@ -18,7 +17,6 @@
 
 #include <chrono>
 #include <cstddef>
-#include <cstdint>
 #include <list>
 #include <utility>
 #include <vector>
@@ -34,13 +32,7 @@ protected:
     boost::intrusive_ptr<SHAMapItem>
     makeRandomAS()
     {
-        static constexpr auto kWordsPerState = 3uz;
-
-        Serializer s;
-
-        for (auto word = 0uz; word < kWordsPerState; ++word)
-            s.add32(randInt<std::uint32_t>(eng_));
-        return makeShamapitem(s.getSHA512Half(), s.slice());
+        return makeRandomAccountStateItem(eng_);
     }
 
     bool

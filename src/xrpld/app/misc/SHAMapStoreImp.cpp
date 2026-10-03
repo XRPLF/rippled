@@ -25,7 +25,6 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/server/State.h>
-#include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -408,17 +407,17 @@ SHAMapStoreImp::run()
             JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
             std::uint64_t nodeCount = 0;
 
-            try
-            {
-                validatedLedger->stateMap().snapShot(false)->visitNodes(
+            // A partial copy must not be followed by a rotation: clearPrior() above has
+            // already advanced minimumOnline_, and rotate() below deletes the archive, so
+            // a node the walk did not reach would have no remaining copy. Abandon this
+            // cycle and retry on a later ledger instead.
+            if (!validatedLedger->stateMap().snapShot(false)->visitNodes(
                     [this, &nodeCount](SHAMapTreeNode const& node) {
                         return copyNode(nodeCount, node);
-                    });
-            }
-            catch (SHAMapMissingNode const& e)
+                    }))
             {
-                JLOG(journal_.error())
-                    << "Missing node while copying ledger before rotate: " << e.what();
+                JLOG(journal_.error()) << "Missing node while copying ledger " << validatedSeq
+                                       << " before rotate; abandoning this rotation";
                 continue;
             }
 

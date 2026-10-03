@@ -31,28 +31,36 @@
 
 namespace xrpl {
 
-void
+bool
 SHAMap::visitLeaves(
     std::function<void(boost::intrusive_ptr<SHAMapItem const> const& item)> const& leafFunction)
     const
 {
-    visitNodes([&leafFunction](SHAMapTreeNode& node) {
+    return visitNodes([&leafFunction](SHAMapTreeNode& node) {
         if (!node.isInner())
             leafFunction(safeDowncast<SHAMapLeafNode&>(node).peekItem());
         return true;
     });
 }
 
-void
+bool
 SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
 {
     if (!root_)
-        return;
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::SHAMap::visitNodes : non-null root");
+        return true;
+        // LCOV_EXCL_STOP
+    }
 
-    function(*root_);
+    // The root is readable by definition, so a stop here still reports a complete walk.
+    if (!function(*root_))
+        return true;
 
+    // A map whose root is a leaf holds one node, and this walk just visited it.
     if (!root_->isInner())
-        return;
+        return true;
 
     using StackEntry = std::pair<unsigned int, intr_ptr::SharedPtr<SHAMapInnerNode>>;
     std::stack<StackEntry, std::vector<StackEntry>> stack;
@@ -67,8 +75,17 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
             if (!node->isEmptyBranch(pos))
             {
                 SHAMapTreeNodePtr const child = descendNoStore(*node, pos);
+                if (!child)
+                {
+                    // No caller can use a partial walk, so end it here rather than pay
+                    // for the rest of the map. The callers that act on the result log
+                    // it at a level an operator reads, so keep this one at debug.
+                    JLOG(journal_.debug())
+                        << "visitNodes: unreadable child node " << node->getChildHash(pos);
+                    return false;
+                }
                 if (!function(*child))
-                    return;
+                    return true;
 
                 if (child->isLeaf())
                 {
@@ -103,6 +120,8 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
         std::tie(pos, node) = stack.top();
         stack.pop();
     }
+
+    return true;
 }
 
 void

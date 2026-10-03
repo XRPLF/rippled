@@ -4,15 +4,20 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/random.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/Family.h>
 #include <xrpl/shamap/FullBelowCache.h>
+#include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/TreeNodeCache.h>
+
+#include <boost/smart_ptr/intrusive_ptr.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -20,6 +25,25 @@
 #include <stdexcept>
 
 namespace xrpl::tests {
+
+/**
+ * Build a SHAMapItem holding random account-state data.
+ *
+ * @param engine The random engine to draw the data from. Pass an engine with a
+ *               fixed seed to make a test reproducible on its own.
+ * @return The new item.
+ */
+template <class Engine>
+boost::intrusive_ptr<SHAMapItem>
+makeRandomAccountStateItem(Engine& engine)
+{
+    static constexpr auto kWordsPerState = 3uz;
+
+    Serializer s;
+    for (auto word = 0uz; word < kWordsPerState; ++word)
+        s.add32(randInt<std::uint32_t>(engine));
+    return makeShamapitem(s.getSHA512Half(), s.slice());
+}
 
 class TestNodeFamily : public Family
 {
