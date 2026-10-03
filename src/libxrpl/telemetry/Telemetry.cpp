@@ -23,6 +23,7 @@
 #include <xrpl/telemetry/DeterministicIdGenerator.h>
 #include <xrpl/telemetry/FilteringSpanProcessor.h>
 #include <xrpl/telemetry/HeadSampler.h>
+#include <xrpl/telemetry/SpanNames.h>
 
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/context/runtime_context.h>
@@ -266,8 +267,9 @@ public:
             {opentelemetry::semconv::service::kServiceName, setup_.serviceName},
             {opentelemetry::semconv::service::kServiceVersion, setup_.serviceVersion},
             {opentelemetry::semconv::service::kServiceInstanceId, setup_.serviceInstanceId},
-            {"xrpl.network.id", static_cast<int64_t>(setup_.networkId)},
-            {"xrpl.network.type", setup_.networkType},
+            {std::string(attr::networkId),
+             static_cast<int64_t>(setup_.networkId)},              // LCOV_EXCL_LINE
+            {std::string(attr::networkType), setup_.networkType},  // LCOV_EXCL_LINE
         });
 
         // Head sampling is fixed at 1.0. Spans with no parent or a remote parent use the
