@@ -269,13 +269,22 @@ jobs:
     env:
       CONTEXT: image-context
       IMAGE: ${{ matrix.target == 'voidstar' && 'xrpld-voidstar' || 'xrplf/xrpld' }}:${{ github.ref_type == 'tag' && github.ref_name || 'develop' }}
-      # Docker Hub is public, so a private build never reaches it;
-      # the Antithesis registry is not.
-      PUSH: ${{ inputs.publish && (matrix.target == 'voidstar' || github.event.repository.visibility == 'public') }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Determine release info
+        id: release_info
+        uses: ./.github/actions/release-info
+
+      # Docker Hub is public, so it only gets builds whose packages are public:
+      # those of a public codebase, and stable releases.
+      # The Antithesis registry is private, so it gets every build.
+      - name: Decide whether to push
+        env:
+          PUSH: ${{ inputs.publish && (matrix.target == 'voidstar' || github.event.repository.visibility == 'public' || steps.release_info.outputs.channel == 'stable') }}
+        run: echo "PUSH=${PUSH}" | tee -a "${GITHUB_ENV}"
 
       - name: Download package artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
