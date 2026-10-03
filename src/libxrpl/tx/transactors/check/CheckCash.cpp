@@ -168,14 +168,18 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         }
 
         // Make sure the check owner holds at least value.  If they have
-        // less than value the check cannot be cashed.
+        // less than value the check cannot be cashed. When the issuer is
+        // cashing the check, the writer is returning funds to the issuer --
+        // the one movement an unauthorized trust line is allowed -- so the
+        // writer's balance stays visible for that case.
         {
+            bool const cashedByIssuer = !value.native() && value.getIssuer() == dstId;
             STAmount availableFunds{accountFunds(
                 ctx.view,
                 sleCheck->at(sfAccount),
                 value,
                 FreezeHandling::ZeroIfFrozen,
-                AuthHandling::ZeroIfUnauthorized,
+                cashedByIssuer ? AuthHandling::IgnoreAuth : AuthHandling::ZeroIfUnauthorized,
                 ctx.j)};
 
             // Note that src will have one reserve's worth of additional XRP

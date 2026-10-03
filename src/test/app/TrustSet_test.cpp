@@ -368,25 +368,32 @@ public:
             "from unauthorised counter-parties");
 
         using namespace jtx;
-        Env env{*this};
 
-        auto const bob = Account{"bob"};
-        auto const alice = Account{"alice"};
-        env.fund(XRP(10000), bob, alice);
+        for (bool const withCleanup : {true, false})
+        {
+            Env env = withCleanup ? Env{*this} : Env{*this, testableAmendments() - fixCleanup3_5_0};
 
-        // alice wants to ensure that all holders of her tokens are authorised
-        env(fset(alice, asfRequireAuth));
-        env.close();
+            auto const bob = Account{"bob"};
+            auto const alice = Account{"alice"};
+            env.fund(XRP(10000), bob, alice);
 
-        // create a trust line from bob to alice. bob wants to hold at most
-        // 100 of alice's USD tokens. Note: alice hasn't authorised this
-        // trust line yet.
-        env(trust(bob, alice["USD"](100)));
-        env.close();
+            // alice wants to ensure that all holders of her tokens are authorised
+            env(fset(alice, asfRequireAuth));
+            env.close();
 
-        // send a payment from alice to bob, validate that the payment fails
-        env(pay(alice, bob, alice["USD"](10)), Ter(tecPATH_DRY));
-        env.close();
+            // create a trust line from bob to alice. bob wants to hold at most
+            // 100 of alice's USD tokens. Note: alice hasn't authorised this
+            // trust line yet.
+            env(trust(bob, alice["USD"](100)));
+            env.close();
+
+            // send a payment from alice to bob, validate that the payment fails.
+            // Post fixCleanup3_5_0 the engine answers tecNO_AUTH; before it, the
+            // retriable terNO_AUTH left a dry path.
+            env(pay(alice, bob, alice["USD"](10)),
+                Ter(withCleanup ? TER{tecNO_AUTH} : TER{tecPATH_DRY}));
+            env.close();
+        }
     }
 
     void
