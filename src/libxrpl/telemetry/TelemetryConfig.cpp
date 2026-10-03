@@ -407,10 +407,9 @@ makeTelemetrySetup(
         }
 
         // Still inside the enabled branch. mTLS only takes effect when TLS is
-        // on, so a client certificate set with use_tls=0 would be ignored and
-        // any exporter that did run would connect in plaintext. Reject that
-        // contradiction instead of failing open. tls_ca_cert is deliberately
-        // not checked this way.
+        // on, so a client certificate set with use_tls=0 would be ignored.
+        // Reject that contradiction so a client certificate always implies
+        // use_tls=1. tls_ca_cert is deliberately not checked this way.
         if (!setup.tlsClientCertPath.empty() && !setup.useTls)
         {
             Throw<std::runtime_error>(
