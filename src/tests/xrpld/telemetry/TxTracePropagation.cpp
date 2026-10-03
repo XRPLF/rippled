@@ -32,6 +32,7 @@
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/exporters/memory/in_memory_span_data.h>
 #include <opentelemetry/exporters/memory/in_memory_span_exporter_factory.h>
+#include <opentelemetry/metrics/meter.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/span.h>
 #include <opentelemetry/sdk/resource/resource.h>
@@ -167,6 +168,15 @@ public:
     getConsensusTraceStrategy() const override
     {
         return ConsensusTraceStrategy::Deterministic;
+    }
+
+    /**
+     * @return A meter from a noop provider. These tests record no metrics.
+     */
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
+    getMeter(std::string_view name) override
+    {
+        return noopMeter(name);
     }
 
     [[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>

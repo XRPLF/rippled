@@ -53,4 +53,12 @@ foreach(module IN LISTS test_modules)
     target_sources(xrpld_tests PRIVATE ${sources})
 endforeach()
 
+# ValidationTracker is server code with no library of its own: xrpld builds
+# its one source file directly. Build it into this binary too, so its tests
+# can call it. The class has no telemetry guards, so this is unconditional.
+target_sources(
+    xrpld_tests
+    PRIVATE ${CMAKE_SOURCE_DIR}/src/xrpld/telemetry/detail/ValidationTracker.cpp
+)
+
 gtest_discover_tests(xrpld_tests DISCOVERY_TIMEOUT 60)

@@ -1,4 +1,5 @@
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/main/NodeIdentity.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/rpc/RPCCall.h>
@@ -37,6 +38,7 @@
 #include <exception>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -805,6 +807,21 @@ run(int argc, char** argv)
         if (vm.contains("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::Severity::Trace));
 
+        // Telemetry stamps the node public key into resources it builds during
+        // construction, so the identity is decided here, where a malformed
+        // [node_seed] can still be reported and the process can exit cleanly.
+        // setup() persists it; see getNodeIdentity().
+        std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity;
+        try
+        {
+            nodeIdentity = resolveNodeIdentity(*config, vm, logs->journal("Application"));
+        }
+        catch (std::exception const& e)
+        {
+            std::cerr << "Unable to start " << systemName() << ": " << e.what() << std::endl;
+            return -1;
+        }
+
         // Application construction runs member initializers that validate
         // config (for example the [telemetry] section) and can throw. A throw
         // from a member-initializer list cannot be recovered inside the
@@ -816,14 +833,14 @@ run(int argc, char** argv)
         //
         // Only the construction is covered. The [telemetry] section is parsed
         // near the top of the member list, before the job queue and node store
-        // are built, so unwinding that throw destroys very little. setup() is
+        // are built, so unwinding that throw destroys little. setup() is
         // left outside deliberately: it starts subsystems whose shutdown order
         // is delicate, and only the normal stop sequence gets that order right.
         std::unique_ptr<Application> app;
         try
         {
-            app =
-                makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
+            app = makeApplication(
+                std::move(config), std::move(logs), std::make_unique<TimeKeeper>(), *nodeIdentity);
         }
         catch (std::exception const& e)
         {
