@@ -7,7 +7,6 @@
 #include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -94,7 +93,7 @@ escrowUnlockApplyHelper<Issue>(
         STAmount initialBalance(issue);
         initialBalance.get<Issue>().account = noAccount();
 
-        if (TER const ter = trustCreate(
+        if (TER const ter = RippleStateEntryW::create(
                 ctx.view,                            // payment sandbox
                 recvLow,                             // is dest low?
                 issuer,                              // source

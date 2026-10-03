@@ -809,7 +809,7 @@ directSendNoFeeIOU(
 
     bool const noRipple = !sleAccount->isFlag(lsfDefaultRipple);
 
-    return trustCreate(
+    return RippleStateEntryW::create(
         view,
         bSenderHigh,
         uSenderID,
