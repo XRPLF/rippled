@@ -8,6 +8,7 @@
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/server/LoadFeeTrack.h>
 
 #include <boost/asio/io_context.hpp>
@@ -71,11 +72,22 @@ private:
  */
 class TestServiceRegistry : public ServiceRegistry
 {
+    static Fees
+    defaultFees()
+    {
+        Fees fees{XRPAmount{10}, XRPAmount{10 * kDropsPerXrp}, XRPAmount{2 * kDropsPerXrp}};
+        fees.gasLimit = 1'000'000;
+        fees.bytecodeSizeLimit = 100'000;
+        fees.gasPrice = 1'000'000;
+        return fees;
+    }
+
     TestLogs logs_{beast::Severity::Warning};
     boost::asio::io_context ioContext_;
     TestFamily family_{logs_.journal("TestFamily")};
     LoadFeeTrack feeTrack_{logs_.journal("LoadFeeTrack")};
     TestNetworkIDService networkIDService_;
+    Fees fees_{defaultFees()};
     HashRouter hashRouter_{HashRouter::Setup{}, stopwatch()};
     NodeCache tempNodeCache_{
         "TempNodeCache",
@@ -372,6 +384,12 @@ public:
     getWalletDB() override
     {
         throw std::logic_error("TestServiceRegistry::getWalletDB() not implemented");
+    }
+
+    Fees
+    getFees() const override
+    {
+        return fees_;
     }
 
     // Temporary: Get the underlying Application
