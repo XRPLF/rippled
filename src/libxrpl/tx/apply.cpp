@@ -8,6 +8,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/BatchInnerResult.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -18,9 +19,11 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <cstdint>
 #include <exception>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -203,7 +206,8 @@ applyBatchTransactions(
     ServiceRegistry& registry,
     OpenView& batchView,
     STTx const& batchTxn,
-    beast::Journal j)
+    beast::Journal j,
+    std::vector<BatchInnerResult>* innerResults)
 {
     XRPL_ASSERT(
         batchTxn.getTxnType() == ttBATCH && !batchTxn.getFieldArray(sfRawTransactions).empty(),
@@ -211,8 +215,9 @@ applyBatchTransactions(
 
     auto const parentBatchId = batchTxn.getTransactionID();
     auto const mode = batchTxn.getFlags();
+    std::uint32_t index = 0;
 
-    auto applyOneTransaction = [&registry, &j, &parentBatchId, &batchView](STTx const& tx) {
+    auto applyOneTransaction = [&](STTx const& tx) {
         OpenView perTxBatchView(kBatchView, batchView);
 
         auto const ret = apply(registry, perTxBatchView, parentBatchId, tx, TapBatch, j);
@@ -222,6 +227,17 @@ applyBatchTransactions(
 
         JLOG(j.debug()) << "BatchTrace[" << parentBatchId << "]: " << tx.getTransactionID() << " "
                         << (ret.applied ? "applied" : "failure") << ": " << transToken(ret.ter);
+
+        if (innerResults != nullptr)
+        {
+            innerResults->push_back(
+                {.parentBatchId = parentBatchId,
+                 .innerTxId = tx.getTransactionID(),
+                 .index = index,
+                 .ter = ret.ter,
+                 .applied = ret.applied});
+        }
+        ++index;
 
         // If the transaction should be applied push its changes to the
         // whole-batch view.
@@ -235,28 +251,54 @@ applyBatchTransactions(
     };
 
     int applied = 0;
+    auto const firstResult = innerResults != nullptr ? innerResults->size() : 0;
 
     for (auto const& stx : batchTxn.getBatchTransactions())
     {
-        auto const result = applyOneTransaction(*stx);
-        XRPL_ASSERT(
-            result.applied == (isTesSuccess(result.ter) || isTecClaim(result.ter)),
-            "Outer Batch failure, inner transaction should not be applied");
-
-        if (result.applied)
-            ++applied;
-
-        if (!isTesSuccess(result.ter))
+        try
         {
-            if ((mode & tfAllOrNothing) != 0u)
-                return false;
+            auto const result = applyOneTransaction(*stx);
+            XRPL_ASSERT(
+                result.applied == (isTesSuccess(result.ter) || isTecClaim(result.ter)),
+                "Outer Batch failure, inner transaction should not be applied");
 
-            if ((mode & tfUntilFailure) != 0u)
+            if (result.applied)
+                ++applied;
+
+            if (!isTesSuccess(result.ter))
+            {
+                if ((mode & tfAllOrNothing) != 0u)
+                {
+                    // The whole-batch view is discarded, so nothing recorded so far reached the
+                    // ledger.
+                    if (innerResults != nullptr)
+                    {
+                        for (auto i = firstResult; i < innerResults->size(); ++i)
+                        {
+                            (*innerResults)[i].applied = false;
+                        }
+                    }
+                    return false;
+                }
+
+                if ((mode & tfUntilFailure) != 0u)
+                    break;
+            }
+            else if ((mode & tfOnlyOne) != 0u)
+            {
                 break;
+            }
         }
-        else if ((mode & tfOnlyOne) != 0u)
+        catch (std::exception const& ex)
         {
-            break;
+            // Returning false here means the whole-batch view is discarded and never
+            // reaches the ledger, so the results already pushed for earlier inner
+            // transactions in this batch must not claim they were applied.
+            JLOG(j.warn()) << "BatchTrace[" << parentBatchId << "]: " << stx->getTransactionID()
+                           << " throws: " << ex.what();
+            if (innerResults != nullptr)
+                innerResults->resize(firstResult);
+            return false;
         }
     }
 
@@ -270,7 +312,8 @@ applyTransaction(
     STTx const& txn,
     bool retryAssured,
     ApplyFlags flags,
-    beast::Journal j)
+    beast::Journal j,
+    std::vector<BatchInnerResult>* innerResults)
 {
     // Returns false if the transaction has need not be retried.
     if (retryAssured)
@@ -292,7 +335,7 @@ applyTransaction(
             {
                 OpenView wholeBatchView(kBatchView, view);
 
-                if (applyBatchTransactions(registry, wholeBatchView, txn, j))
+                if (applyBatchTransactions(registry, wholeBatchView, txn, j, innerResults))
                     wholeBatchView.apply(view);
             }
 

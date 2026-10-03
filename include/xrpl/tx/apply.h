@@ -4,12 +4,14 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/BatchInnerResult.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/tx/applySteps.h>
 
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -142,6 +144,7 @@ enum class ApplyTransactionResult {
  * Provides more detailed logging and decodes the
  * correct behavior based on the `TER` type
  *
+ * @param innerResults If set, receives one entry per inner transaction the outer Batch ran.
  * @see ApplyTransactionResult
  */
 ApplyTransactionResult
@@ -151,6 +154,7 @@ applyTransaction(
     STTx const& tx,
     bool retryAssured,
     ApplyFlags flags,
-    beast::Journal journal);
+    beast::Journal journal,
+    std::vector<BatchInnerResult>* innerResults = nullptr);
 
 }  // namespace xrpl
