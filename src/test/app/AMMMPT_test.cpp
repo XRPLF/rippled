@@ -6970,13 +6970,10 @@ private:
             env(offer(carol_, USD(0.49), btc(1)));
             env.close();
 
-            if (features[fixAMMv1_3])
-            {
-                BEAST_EXPECT(amm.expectBalances(btc(200'001), USD(99'999.51), amm.tokens()));
-                BEAST_EXPECT(expectOffers(env, alice_, 1, {{Amounts{btc(1), USD(0.01)}}}));
-                // Carol's offer crosses AMM
-                BEAST_EXPECT(expectOffers(env, carol_, 0));
-            }
+            BEAST_EXPECT(amm.expectBalances(btc(200'001), USD(99'999.51), amm.tokens()));
+            BEAST_EXPECT(expectOffers(env, alice_, 1, {{Amounts{btc(1), USD(0.01)}}}));
+            // Carol's offer crosses AMM
+            BEAST_EXPECT(expectOffers(env, carol_, 0));
         }
 
         // XRP/MPT crosses AMM despite of low quality LOB
@@ -6997,13 +6994,10 @@ private:
             env(offer(carol_, XRP(0.49), btc(1)));
             env.close();
 
-            if (features[fixAMMv1_3])
-            {
-                BEAST_EXPECT(amm.expectBalances(btc(200'001), XRP(99'999.51), amm.tokens()));
-                BEAST_EXPECT(expectOffers(env, alice_, 1, {{Amounts{btc(1), XRP(0.01)}}}));
-                // Carol's offer crosses AMM
-                BEAST_EXPECT(expectOffers(env, carol_, 0));
-            }
+            BEAST_EXPECT(amm.expectBalances(btc(200'001), XRP(99'999.51), amm.tokens()));
+            BEAST_EXPECT(expectOffers(env, alice_, 1, {{Amounts{btc(1), XRP(0.01)}}}));
+            // Carol's offer crosses AMM
+            BEAST_EXPECT(expectOffers(env, carol_, 0));
         }
     }
 
