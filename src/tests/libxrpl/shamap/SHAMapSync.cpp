@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
@@ -14,6 +15,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
+#include <xrpl/shamap/SHAMapInnerNode.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
@@ -28,12 +30,14 @@
 #include <shamap/InnerNode.h>
 #include <shamap/common.h>
 
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <list>
 #include <map>
 #include <optional>
+#include <thread>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -195,6 +199,53 @@ protected:
         // const pointer, so recording has to happen through one.
         mutable std::vector<Report> reports_;
         std::map<SHAMapHash, Blob> served_;
+    };
+
+    /**
+     * A sync filter that serves a range of a DeepChain's nodes, by hash.
+     *
+     * Stands in for a fetch pack, which is checked against each node's own
+     * hash alone, so a walk resolves nodes locally through the filter
+     * rather than through addKnownNode(). Anything outside the range,
+     * including a decoy child, looks unavailable.
+     */
+    class ChainFilter : public SHAMapSyncFilter
+    {
+    public:
+        /**
+         * @param chain The chain whose nodes to serve.
+         * @param maxDepth The deepest node to serve.
+         * @param minDepth The shallowest node to serve.
+         */
+        explicit ChainFilter(
+            DeepChain const& chain,
+            unsigned int maxDepth = SHAMap::kLeafDepth,
+            unsigned int minDepth = 0)
+        {
+            for (auto depth = minDepth; depth <= maxDepth; ++depth)
+                nodes_.emplace(chain.nodeAt(depth)->getHash(), chain.prefixedNodeAt(depth));
+        }
+
+        void
+        gotNode(
+            bool,
+            SHAMapHash const&,
+            std::uint32_t,
+            Blob&&,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+            SHAMapNodeType) const override
+        {
+        }
+
+        [[nodiscard]] std::optional<Blob>
+        getNode(SHAMapHash const& hash) const override
+        {
+            if (auto const it = nodes_.find(hash); it != nodes_.end())
+                return it->second;
+            return std::nullopt;
+        }
+
+    private:
+        std::map<SHAMapHash, Blob> nodes_;
     };
 
     /**
@@ -508,13 +559,241 @@ TEST_F(SHAMapSyncTest, snapshot_of_invalid_map_stays_invalid)
     EXPECT_TRUE(valid.snapShot(true)->isValid());
 }
 
+// getMissingNodes() refuses an invalid map outright, before consulting a filter. addKnownNode()
+// reaches the verdict here. A walk reaches it on its own in
+// get_missing_nodes_rejects_inner_node_at_leaf_depth.
+TEST_F(SHAMapSyncTest, get_missing_nodes_refuses_invalid_map)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    SHAMap map{SHAMapType::FREE, f};
+    // Unbacked, like TransactionAcquire's map, so the walk resolves synchronously.
+    map.setUnbacked();
+    map.setSynching();
+
+    ASSERT_TRUE(chain.fill(map));
+
+    auto const offendingResult = chain.addOffendingNode(map);
+    ASSERT_TRUE(tallyIs(offendingResult, 0, 1, 0));
+    ASSERT_FALSE(map.isValid());
+
+    // Only the node the map rejected, offered back as a fetch pack does.
+    ChainFilter const filter{chain, SHAMap::kLeafDepth, SHAMap::kLeafDepth};
+
+    EXPECT_TRUE(map.getMissingNodes(kMaxNodesPerRequest, &filter).empty());
+    EXPECT_FALSE(map.isValid());
+    EXPECT_FALSE(map.setImmutable());
+}
+
+// A walk reaches kLeafDepth through the filter alone, since each node is checked against its own
+// hash and the walk resolves every level locally. The walk is what reaches the verdict here.
+TEST_F(SHAMapSyncTest, get_missing_nodes_rejects_inner_node_at_leaf_depth)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    SHAMap map{SHAMapType::FREE, f};
+    // Unbacked so the walk resolves each level synchronously through the filter.
+    map.setUnbacked();
+    map.setSynching();
+
+    // Only the root goes in through the sync path. Everything below comes from the filter, so the
+    // map is still valid when the walk starts.
+    ASSERT_TRUE(map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+    ASSERT_TRUE(map.isValid());
+
+    ChainFilter const filter{chain};
+
+    EXPECT_TRUE(map.getMissingNodes(kMaxNodesPerRequest, &filter).empty());
+
+    // The walk reaches the same verdict addKnownNode() does, so the map is invalid and
+    // setImmutable() refuses.
+    EXPECT_FALSE(map.isValid());
+    EXPECT_FALSE(map.setImmutable());
+
+    // An empty result from a valid map clears the synching flag. An invalid map returns before
+    // that, and stays invalid across a second walk.
+    EXPECT_TRUE(map.getMissingNodes(kMaxNodesPerRequest, &filter).empty());
+    EXPECT_FALSE(map.isValid());
+}
+
+// The depth rule holds on a full-below cache hit reached by a walk too. A node's hash covers its
+// child hashes but not its depth, so a hit cannot stand in for the depth check. Backed, as
+// InboundLedger's map is.
+TEST_F(SHAMapSyncTest, get_missing_nodes_rejects_inner_node_at_leaf_depth_before_the_cache_is_read)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    // Backed, unlike the cases above, so the full-below cache is consulted at all.
+    SHAMap map{SHAMapType::FREE, f};
+    map.setSynching();
+
+    ASSERT_TRUE(map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+    ASSERT_TRUE(map.isValid());
+
+    // This case seeds the entry a lookup at the boundary would match: the offending node's own
+    // hash. The walk skips the lookup there, so the entry is never read and the depth verdict
+    // stands. Drop the skip and the hit returns for the whole branch, guard included.
+    f.getFullBelowCache()->insert(chain.nodeAt(SHAMap::kLeafDepth)->getHash().asUInt256());
+
+    ChainFilter const filter{chain};
+
+    EXPECT_TRUE(map.getMissingNodes(kMaxNodesPerRequest, &filter).empty());
+    EXPECT_FALSE(map.isValid());
+    EXPECT_FALSE(map.setImmutable());
+}
+
+// Every read a walk posts is drained before the walk returns, the verdict included: the
+// MissingNodes block lives on getMissingNodes()'s stack frame and each posted read holds a
+// reference to it. Each level here has an unresolvable second child, so reads are outstanding when
+// the verdict lands. The expectations below read the result alone, so a sanitizer build is what
+// exercises the drain.
+TEST_F(SHAMapSyncTest, get_missing_nodes_drains_posted_reads_when_invalidated)
+{
+    TestNodeFamily f{j_};
+    auto const chain = DeepChain::withDecoys();
+
+    // The decoy is the point of the shape: every inner node has a second child, so the case
+    // pins that shape rather than trusting the builder.
+    for (unsigned int depth = 0; depth < SHAMap::kLeafDepth; ++depth)
+    {
+        ASSERT_EQ(
+            safeDowncast<SHAMapInnerNode const*>(chain.nodeAt(depth).get())->getBranchCount(), 2);
+    }
+
+    // Backed, so descendAsync() posts real asynchronous reads rather than resolving inline.
+    SHAMap map{SHAMapType::FREE, f};
+    map.setSynching();
+
+    ASSERT_TRUE(map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+    ASSERT_TRUE(map.isValid());
+
+    // Only the chain nodes are served, so the decoy at each level has to be read asynchronously.
+    ChainFilter const filter{chain};
+
+    // The walk descends the chain, posting a read per level for the decoy child, and marks the map
+    // invalid on reaching kLeafDepth. Returning empty is the visible part; draining first is the
+    // part only a sanitizer can see.
+    EXPECT_TRUE(map.getMissingNodes(kMaxNodesPerRequest, &filter).empty());
+    EXPECT_FALSE(map.isValid());
+    EXPECT_FALSE(map.setImmutable());
+}
+
+// A walk that only meets legitimate depths must be left alone. Stopping one level short of
+// kLeafDepth leaves a deepest node whose child is genuinely missing, so the walk reports it and
+// the map stays valid.
+TEST_F(SHAMapSyncTest, get_missing_nodes_accepts_inner_node_above_leaf_depth)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    SHAMap map{SHAMapType::FREE, f};
+    map.setUnbacked();
+    map.setSynching();
+
+    ASSERT_TRUE(map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+
+    // Every node above kLeafDepth is served, so the one at kLeafDepth is what the walk reports.
+    SHAMapHash const withheld = chain.nodeAt(SHAMap::kLeafDepth)->getHash();
+    ChainFilter const filter{chain, SHAMap::kLeafDepth - 1};
+
+    auto const missing = map.getMissingNodes(kMaxNodesPerRequest, &filter);
+
+    ASSERT_EQ(missing.size(), 1u);
+    EXPECT_EQ(missing[0].first.getDepth(), SHAMap::kLeafDepth);
+    EXPECT_EQ(missing[0].second, withheld.asUInt256());
+    EXPECT_TRUE(map.isValid());
+}
+
+// The clearSynching() call site in addRootNode() needs a leaf root, and so a zero root hash. An
+// invalid map always has an inner root with a non-zero hash, so the root is treated as a duplicate
+// and the flag stands.
+TEST_F(SHAMapSyncTest, add_root_node_leaves_invalid_map_invalid)
+{
+    TestNodeFamily f{j_};
+    DeepChain const chain;
+
+    SHAMap map{SHAMapType::FREE, f};
+    map.setUnbacked();
+    map.setSynching();
+
+    ASSERT_TRUE(chain.fill(map));
+
+    auto const offendingResult = chain.addOffendingNode(map);
+    ASSERT_TRUE(tallyIs(offendingResult, 0, 1, 0));
+    ASSERT_FALSE(map.isValid());
+
+    // A duplicate: counted as good, and counted in the duplicate tally.
+    auto const result = map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr);
+    EXPECT_TRUE(tallyIs(result, 0, 0, 1));
+    EXPECT_TRUE(result.isGood());
+    EXPECT_FALSE(result.isUseful());
+
+    EXPECT_FALSE(map.isValid());
+    EXPECT_FALSE(map.setImmutable());
+}
+
+// The concurrent half of the same contract: a walk writing Invalid while another thread calls
+// setImmutable(). trySetState() leaves Invalid in place, so the map ends up invalid and
+// setImmutable() refuses.
+//
+// Meaningful only under ThreadSanitizer. Skipped at run time, so every build still parses the body.
+TEST_F(SHAMapSyncTest, invalid_state_survives_concurrent_set_immutable)
+{
+#ifndef XRPL_TSAN
+    GTEST_SKIP() << "Only meaningful under ThreadSanitizer";
+#endif
+
+    static constexpr auto kRounds = 200uz;
+
+    for (auto round = 0uz; round < kRounds; ++round)
+    {
+        TestNodeFamily f{j_};
+        DeepChain const chain;
+
+        SHAMap map{SHAMapType::FREE, f};
+        map.setUnbacked();
+        map.setSynching();
+
+        // Only the root goes in through the sync path, so the map is still valid here. The walk
+        // below resolves the rest through the filter.
+        ASSERT_TRUE(map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+        ChainFilter const filter{chain};
+
+        // One thread walks and invalidates while the other calls setImmutable() repeatedly. Both
+        // wait on the same flag, so neither is given a head start.
+        std::atomic<bool> go{false};
+
+        std::thread walker([&] {
+            while (!go.load(std::memory_order_acquire))
+                std::this_thread::yield();
+            map.getMissingNodes(kMaxNodesPerRequest, &filter);
+        });
+
+        std::thread setter([&] {
+            while (!go.load(std::memory_order_acquire))
+                std::this_thread::yield();
+            for (auto attempt = 0uz; attempt < 64uz; ++attempt)
+                static_cast<void>(map.setImmutable());
+        });
+
+        go.store(true, std::memory_order_release);
+        walker.join();
+        setter.join();
+
+        // The walk always reaches the verdict, so the map ends up invalid and setImmutable()
+        // refuses.
+        EXPECT_FALSE(map.isValid()) << "round " << round;
+        EXPECT_FALSE(map.setImmutable()) << "round " << round;
+    }
+}
+
 // A map marked complete in the database withdraws that claim the first time a read misses, and
 // reports the miss once so the ledger can be re-acquired. Sixteen unresolvable branches are posted
-// in one pass, so with four reader threads the misses overlap and finishFetch() runs concurrently
-// for a single map.
-//
-// This pins the report path: a miss withdraws the flag and reports once. The nightly
-// ThreadSanitizer job that PR 8245 adds covers the ordering.
+// in one pass, so with four reader threads finishFetch() runs concurrently for one map. The nightly
+// ThreadSanitizer job covers the ordering.
 TEST_F(SHAMapSyncTest, full_flag_is_withdrawn_once_by_concurrent_readers)
 {
     static constexpr auto kRounds = 8uz;
