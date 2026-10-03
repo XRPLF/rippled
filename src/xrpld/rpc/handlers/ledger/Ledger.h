@@ -5,13 +5,18 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/MethodNames.h>
 #include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Handler.h>
+#include <xrpld/rpc/detail/SpecBridge.hpp>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ApiVersion.h>
 
+#include <rpcspec/Errors.hpp>
+#include <rpcspec/handlers/ledger/Types.hpp>
+
+#include <expected>
+#include <functional>
 #include <memory>
 #include <string_view>
 #include <vector>
@@ -26,16 +31,23 @@ struct JsonContext;
 //    full: true | false    // optional, defaults to false.
 // }
 
-class LedgerHandler
+class LedgerHandler : public HandlerFor<::rpc::spec::handlers::ledger::Input>
 {
 public:
+    struct Output
+    {
+        std::shared_ptr<ReadView const> ledger;
+        std::vector<TxQ::TxDetails> queueTxs;
+        int options = 0;
+    };
+
     explicit LedgerHandler(JsonContext&);
 
-    Status
-    check();
+    [[nodiscard]] std::expected<Output, ::rpc::Status>
+    process(Input const& input) const;
 
     void
-    writeResult(json::Value&);
+    writeResult(json::Value& value, Output const& output) const;
 
     // NOLINTBEGIN(readability-identifier-naming)
     static constexpr std::string_view name = method::kLedger;
@@ -50,11 +62,7 @@ public:
     // NOLINTEND(readability-identifier-naming)
 
 private:
-    JsonContext& context_;
-    std::shared_ptr<ReadView const> ledger_;
-    std::vector<TxQ::TxDetails> queueTxs_;
-    json::Value result_;
-    int options_ = 0;
+    std::reference_wrapper<JsonContext> context_;
 };
 
 }  // namespace xrpl::rpc
