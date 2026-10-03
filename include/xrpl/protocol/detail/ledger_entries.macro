@@ -514,6 +514,8 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     {sfAssetsAvailable,      SoeDefault},
     {sfAssetsMaximum,        SoeDefault},
     {sfLossUnrealized,       SoeDefault},
+    {sfYieldUnrealized,      SoeDefault},
+    {sfAssetsDeployed,       SoeDefault},
     {sfShareMPTID,           SoeRequired},
     {sfWithdrawalPolicy,     SoeRequired},
     {sfScale,                SoeDefault},
