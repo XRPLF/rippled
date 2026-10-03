@@ -99,6 +99,30 @@ export TSAN_OPTIONS="include=sanitizers/suppressions/runtime-tsan-options.txt:su
 
 More details [here](https://github.com/google/sanitizers/wiki/ThreadSanitizerCppManual).
 
+> [!IMPORTANT]
+> The `ubuntu-clang-debug-amd64-tsan` CI config runs TSan only on the
+> `schedule` event (the nightly run and a manual dispatch), and it reports
+> nothing back yet: `runtime-tsan-options.txt` sets `halt_on_error=false` so
+> the run continues past a finding, and the workflow's `TSAN_OPTIONS` adds
+> `exitcode=0` so the finding does not fail the job. Read the job log to see
+> findings. `exitcode=0` lives in the workflow rather than in
+> `runtime-tsan-options.txt` so that the local command above still fails on a
+> finding. This is a first stage: once the job's findings are known and
+> stable, drop `exitcode=0` so a new one fails the job, and suppress the rest.
+
+> [!IMPORTANT]
+> Run TSan on Linux to check lock order. Linux reports an inversion as
+> `WARNING: ThreadSanitizer: lock-order-inversion (potential deadlock)`, with no
+> `TSAN_OPTIONS` needed. macOS arm64 reports nothing, even for a genuine double
+> lock of a non-recursive mutex. That is a platform limit, not a configuration
+> mistake. Data race detection does work on macOS.
+
+> [!TIP]
+> The build defines `XRPL_TSAN` when TSan is active, and `XRPL_ASAN` and
+> `XRPL_UBSAN` for the other two. Use them to skip a test that only means
+> something under one sanitizer, at run time rather than with `#ifdef` around
+> the body, so every build still compiles the test.
+
 ### LeakSanitizer (LSan)
 
 LSan is automatically enabled with ASAN. To disable it:
@@ -150,15 +174,30 @@ More details [here](https://clang.llvm.org/docs/undefinedbehaviorSanitizer.html)
 
 ### [`tsan.supp`](../../sanitizers/suppressions/tsan.supp)
 
-- **Purpose**: Suppress ThreadSanitizer data race warnings
-- **Format**: `race:<pattern>` where pattern matches function/file names
+- **Purpose**: Suppress ThreadSanitizer warnings
+- **Format**: `<type>:<pattern>` where pattern matches function/file names, and
+  type is `race`, `deadlock`, `signal`, `mutex` or `called_from_lib`
 - **More info**: [ThreadSanitizer suppressions](https://github.com/google/sanitizers/wiki/ThreadSanitizerSuppressions)
 
 ### [`sanitizer-ignorelist.txt`](../../sanitizers/suppressions/sanitizer-ignorelist.txt)
 
 - **Purpose**: Compile-time ignorelist for all sanitizers
 - **Usage**: Passed via `-fsanitize-ignorelist=absolute/path/to/sanitizer-ignorelist.txt`
-- **Format**: `<level>:<pattern>` (e.g., `src:Workers.cpp`)
+- **Format**: `<entity>:<glob>` (e.g. `src:*Workers.cpp`)
+- **Note**: Not a suppressions file; the syntax differs. Clang looks up only
+  the entities `src`, `fun`, `global`, `type` and `mainfile`. A `race:`,
+  `deadlock:` or `signal:` entry parses but is never consulted, so it does
+  nothing. Those types belong in `tsan.supp`.
+- **Note**: The glob must match the whole absolute path the compiler receives.
+  `src:core/detail/Workers.cpp` matches nothing; `src:*core/detail/Workers.cpp`
+  does.
+- **Note**: To confirm an entry works, compile the file with and without it and
+  compare how many times the object references the calls a sanitizer plants at
+  an instrumented operation (`__tsan_read`/`__tsan_write`, `__asan_report`, or
+  `__ubsan_handle`), e.g. `nm -u <file>.o | grep -cE '__tsan_(read|write)'`. A
+  working entry lowers the count, usually to zero (inlined code still counts).
+  Ignore `__tsan_func_entry` (survives an ignorelist) and `__tsan_init` (only
+  shows the runtime is present); both make an ignored file look instrumented.
 
 ## Troubleshooting
 
