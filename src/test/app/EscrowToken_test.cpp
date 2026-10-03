@@ -735,8 +735,8 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env(pay(gw, bob, usd(1)));
             env.close();
 
-            bool const largeMantissa =
-                features[featureSingleAssetVault] || features[featureLendingProtocol];
+            bool const largeMantissa = features[featureSingleAssetVault] ||
+                features[featureLendingProtocol] || features[featureMPTokensV2];
 
             // alice cannot create escrow for 1/10 iou - precision loss
             env(escrow::create(alice, bob, usd(1)),
@@ -2456,8 +2456,8 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env(pay(gw, bob, usd(1)));
             env.close();
 
-            bool const largeMantissa =
-                features[featureSingleAssetVault] || features[featureLendingProtocol];
+            bool const largeMantissa = features[featureSingleAssetVault] ||
+                features[featureLendingProtocol] || features[featureMPTokensV2];
 
             // alice cannot create escrow for 1/10 iou - precision loss
             env(escrow::create(alice, bob, usd(1)),
@@ -4496,7 +4496,7 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{testableAmendments()};
         for (FeatureBitset const& feats :
-             {all - featureSingleAssetVault - featureLendingProtocol, all})
+             {all - featureSingleAssetVault - featureLendingProtocol - featureMPTokensV2, all})
         {
             testIOUWithFeats(feats);
             testIOUWithFeats(feats - fixTokenEscrowV1_1);
