@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <memory>
 #include <queue>
+#include <utility>
 
 namespace xrpl {
 
@@ -55,7 +56,7 @@ public:
         return m;
     }
 
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return priority_.empty() && bulk_.empty();
@@ -66,7 +67,7 @@ public:
      * priority traffic is bounded by the validator set and must not count
      * toward a disconnect or a query refusal. Safe to call off the strand.
      */
-    std::size_t
+    [[nodiscard]] std::size_t
     bulkSize() const
     {
         return bulkCount_.load(std::memory_order_relaxed);
@@ -75,7 +76,7 @@ public:
     /**
      * Priority lane depth. Safe to call off the strand.
      */
-    std::size_t
+    [[nodiscard]] std::size_t
     prioritySize() const
     {
         return priorityCount_.load(std::memory_order_relaxed);
