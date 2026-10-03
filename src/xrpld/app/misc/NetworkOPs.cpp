@@ -3444,9 +3444,15 @@ NetworkOPsImp::reportFeeChange()
         registry_.get().getTxQ().getMetrics(*registry_.get().getOpenLedger().current()),
         registry_.get().getFeeTrack()};
 
-    // only schedule the job if something has changed
+    // Guard lastFeeSummary_ under streamLock_ to prevent concurrent
+    // threads from simultaneously passing the check and queuing
+    // duplicate JtClientFeeChange jobs (data race fix).
+    // Also fixes the no-subscriber case where lastFeeSummary_ was
+    // never updated by pubServer(), causing endless job queuing.
+    std::scoped_lock const sl(streamLock_);
     if (f != lastFeeSummary_)
     {
+        lastFeeSummary_ = f;
         jobQueue_.addJob(JtClientFeeChange, "PubFee", [this]() { pubServer(); });
     }
 }
@@ -4765,7 +4771,18 @@ NetworkOPsImp::subServer(InfoSub::Ref isrListener, json::Value& jvResult, bool a
         toBase58(TokenType::NodePublic, registry_.get().getApp().nodeIdentity().first);
 
     std::scoped_lock const sl(streamLock_);
-    return streamMaps_[SServer].emplace(isrListener->getSeq(), isrListener).second;
+    bool const added =
+        streamMaps_[SServer].emplace(isrListener->getSeq(), isrListener).second;
+    if (added && streamMaps_[SServer].size() == 1)
+    {
+        // First subscriber on an otherwise-quiet node: reset lastFeeSummary_
+        // so the next reportFeeChange() tick publishes a full serverStatus
+        // with base_fee and load_factor_* fields. Skip if a PubFee job is
+        // already queued — it will publish to the new subscriber anyway,
+        // and resetting here would cause a duplicate notification.
+        lastFeeSummary_ = {};
+    }
+    return added;
 }
 
 // <-- bool: true=erased, false=was not there
