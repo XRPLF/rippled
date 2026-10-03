@@ -353,7 +353,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     // might not match the LP's trustline balance
     if (sb.rules().enabled(fixAMMv1_1))
     {
-        if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, accountID_); !res)
+        if (auto const res = ammSle.verifyAndAdjustLPTokenBalance(lpTokens, accountID_); !res)
             return {res.error(), false};
     }
 

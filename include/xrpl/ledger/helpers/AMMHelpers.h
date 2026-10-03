@@ -7,7 +7,6 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
@@ -844,17 +843,5 @@ deleteAMMAccount(Sandbox& view, Asset const& asset, Asset const& asset2, beast::
  */
 std::expected<bool, TER>
 isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID const& lpAccount);
-
-/**
- * Due to rounding, the LPTokenBalance of the last LP might
- * not match the LP's trustline balance. If it's within the tolerance,
- * update LPTokenBalance to match the LP's trustline balance.
- */
-std::expected<bool, TER>
-verifyAndAdjustLPTokenBalance(
-    Sandbox& sb,
-    STAmount const& lpTokens,
-    AMMEntryW& ammSle,
-    AccountID const& account);
 
 }  // namespace xrpl
