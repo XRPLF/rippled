@@ -123,8 +123,10 @@ static constexpr std::chrono::minutes kMaxLedgerAgeAcquire{1};
 
 /**
  * Don't acquire history if write load is too high. The load is the number of
- * node objects queued or being written by the backend's batch writer; NuDB
- * always reports 0.
+ * node objects queued or being written by the backend's batch writer.
+ *
+ * NuDB reports 0 without telemetry. With telemetry compiled in it reports the
+ * number of writers in flight, which stays far below this threshold.
  */
 static constexpr int kMaxWriteLoadAcquire{8192};
 
