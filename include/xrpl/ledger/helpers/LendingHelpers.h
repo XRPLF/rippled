@@ -19,6 +19,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
 #include <expected>
@@ -306,6 +307,17 @@ constructLoanState(
 // rather than taking them as separate Number arguments.
 LoanState
 constructLoanState(SLE::ConstRef loan);
+
+/**
+ * Returns true if the loan is a pending loan created by the two-step
+ * (Borrower) flow, i.e. it carries the lsfLoanPending flag and has not yet
+ * been accepted by the borrower.
+ */
+inline bool
+isLoanPending(SLE::ConstRef loan)
+{
+    return loan->isFlag(lsfLoanPending);
+}
 
 Number
 computeManagementFee(
@@ -671,6 +683,115 @@ loanMakePayment(
     SLE::ConstRef brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
+    beast::Journal j);
+
+//------------------------------------------------------------------------------
+//
+// Loan application helpers (shared by LoanSet and LoanAccept)
+//
+//------------------------------------------------------------------------------
+
+/**
+ * Checks, in order: that a holding for the asset can be created, that the vault
+ * pseudo-account (the sender) is not frozen, that the broker pseudo-account (a
+ * fallback fee recipient) is not deep frozen, that the borrower (a future payer
+ * and fund recipient) is not frozen, and that the broker owner (a fee
+ * recipient) is not deep frozen.
+ *
+ * The origination fee is passed in by the caller: LoanSet reads it from the
+ * transaction, LoanAccept from the pending Loan entry.
+ *
+ * @param view           Read view used for the holding and freeze checks.
+ * @param asset          The vault asset being lent.
+ * @param originationFee The origination fee. When nonzero, the broker owner
+ *                       must also be able to hold the asset.
+ * @param vaultPseudo    The vault pseudo-account that will send the funds.
+ * @param brokerPseudo   The LoanBroker pseudo-account, the fallback recipient
+ *                       of LoanPay fees.
+ * @param borrower       The borrower, who receives the principal and later
+ *                       repays the loan.
+ * @param brokerOwner    The LoanBroker owner, who receives the origination fee.
+ * @param j              Journal for logging.
+ *
+ * @return `tesSUCCESS` if every check passes, otherwise the first failing
+ * check's error code.
+ */
+[[nodiscard]] TER
+checkLoanFreeze(
+    ReadView const& view,
+    Asset const& asset,
+    Number const& originationFee,
+    AccountID const& vaultPseudo,
+    AccountID const& brokerPseudo,
+    AccountID const& borrower,
+    AccountID const& brokerOwner,
+    beast::Journal j);
+
+/**
+ * Increment the loan owner's owner count for the new loan object and verify
+ * that it still meets its reserve requirement.
+ *
+ * LoanSet charges the borrower in the immediate flow and the LoanBroker owner
+ * in the two-step flow; LoanAccept charges the borrower.
+ *
+ * @param view           Apply view to modify.
+ * @param owner          The account being charged the owner reserve.
+ * @param loanOwnerSle   The AccountRoot of `owner`.
+ * @param signingAccount The transaction's signing account.
+ * @param preFeeBalance  The signing account's XRP balance before the
+ *                       transaction fee was deducted. Used in place of the
+ *                       ledger balance when `owner` is the signing account.
+ * @param j              Journal for logging.
+ *
+ * @return `tecINSUFFICIENT_RESERVE` if the balance is below the reserve after
+ * the increment, otherwise `tesSUCCESS`.
+ */
+[[nodiscard]] TER
+reserveLoanOwner(
+    ApplyView& view,
+    AccountID const& owner,
+    SLE::Ref loanOwnerSle,
+    AccountID const& signingAccount,
+    XRPAmount preFeeBalance,
+    beast::Journal j);
+
+/**
+ * Transfer the loan principal to the borrower and the origination fee, if any,
+ * to the LoanBroker owner. Creates holdings as necessary.
+ *
+ * The borrower and the broker owner must each be either the signing account
+ * or the authorized counterparty.
+ *
+ * @param viewContext           Apply view context to modify.
+ * @param borrowerSle           The borrower's AccountRoot.
+ * @param brokerOwnerSle        The LoanBroker owner's AccountRoot.
+ * @param vaultPseudo           The vault pseudo-account that sends the funds.
+ * @param vaultAsset            The vault asset being lent.
+ * @param loanAssetsToBorrower  The amount sent to the borrower, i.e. the
+ *                              principal requested less the origination fee.
+ * @param originationFee        The amount sent to the broker owner. May be
+ *                              zero, in which case no holding is created for
+ *                              the broker owner.
+ * @param signingAccount        The transaction's signing account.
+ * @param authorizedCounterparty The other party that authorized the
+ *                              transaction (the broker owner or the borrower,
+ *                              whichever did not sign).
+ * @param j                     Journal for logging.
+ *
+ * @return `tesSUCCESS` if the transfers succeed, otherwise the error from
+ * creating a holding, checking authorization, or sending the funds.
+ */
+[[nodiscard]] TER
+disburseLoan(
+    ApplyViewContext& viewContext,
+    SLE::Ref borrowerSle,
+    SLE::Ref brokerOwnerSle,
+    AccountID const& vaultPseudo,
+    Asset const& vaultAsset,
+    Number const& loanAssetsToBorrower,
+    Number const& originationFee,
+    AccountID const& signingAccount,
+    AccountID const& authorizedCounterparty,
     beast::Journal j);
 
 }  // namespace xrpl

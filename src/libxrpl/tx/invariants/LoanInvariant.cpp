@@ -52,6 +52,9 @@ ValidLoan::finalize(
 
     auto const txType = tx.getTxnType();
     bool const lpV11Enabled = view.rules().enabled(featureLendingProtocolV1_1);
+    // The two-step (pending loan) flow only exists from
+    // featureLendingProtocolV1_2 onwards.
+    bool const lpV12Enabled = view.rules().enabled(featureLendingProtocolV1_2);
 
     // Without featureLendingProtocolV1_1 an erased Loan is subject to the same
     // per-entry checks as any modified Loan. From V1_1 onward it is only subject
@@ -123,6 +126,133 @@ ValidLoan::finalize(
         {
             JLOG(j.fatal()) << "Invariant failed: Loan Overpayment flag changed";
             return false;
+        }
+        // The pending-loan checks on existing loans only apply once the two-step
+        // flow exists.
+        if (lpV12Enabled && before)
+        {
+            // The lsfLoanPending flag may only be cleared (finalising the
+            // loan), and only by LoanAccept. It must never be set on an
+            // existing loan.
+            bool const wasPending = before->isFlag(lsfLoanPending);
+            bool const isPending = after->isFlag(lsfLoanPending);
+
+            // The OwnerNode may only be added to an existing loan, and only by
+            // LoanAccept (which links the loan into the borrower's directory
+            // once accepted). It must never be removed or changed.
+            bool const beforeHasNode = before->isFieldPresent(sfOwnerNode);
+            bool const afterHasNode = after->isFieldPresent(sfOwnerNode);
+            if (beforeHasNode &&
+                (!afterHasNode ||
+                 before->getFieldU64(sfOwnerNode) != after->getFieldU64(sfOwnerNode)))
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan OwnerNode removed "
+                                   "or changed";
+                return false;
+            }
+
+            // LoanAccept may only finalise a pending loan, and only while its
+            // StartDate is still in the future.
+            if (txType == ttLOAN_ACCEPT)
+            {
+                // LoanAccept may only process a loan that was pending.
+                if (!wasPending)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanAccept modified a "
+                                       "Loan that was not pending";
+                    return false;
+                }
+
+                if (isPending)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanAccept leaves a "
+                                       "Loan pending";
+                    return false;
+                }
+
+                if (after->getFieldU32(sfStartDate) <=
+                    view.parentCloseTime().time_since_epoch().count())
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanAccept processed a "
+                                       "Loan whose StartDate is not in the future";
+                    return false;
+                }
+            }
+            else
+            {
+                if (wasPending != isPending)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: Loan Pending flag changed "
+                                       "by an unauthorized transaction";
+                    return false;
+                }
+
+                // A pending loan may only be modified by LoanAccept. Deleting it
+                // through LoanDelete is covered by the deleted-loan checks.
+                if (wasPending)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: pending Loan modified by a "
+                                       "transaction other than LoanAccept";
+                    return false;
+                }
+                if (!beforeHasNode && afterHasNode)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: Loan OwnerNode added "
+                                       "by an unauthorized transaction";
+                    return false;
+                }
+            }
+        }
+        // With or without featureLendingProtocolV1_2, a Loan created by LoanSet
+        // must be consistent with the transaction that created it. These checks
+        // do not re-derive which flow LoanSet chose; they only catch outcomes
+        // that must never happen whatever the flow. An active loan does not
+        // need a CounterpartySignature: the counterparty may instead sign an
+        // outer Batch or a Cosign proposal, neither of which is visible here.
+        if (isTesSuccess(result) && !before && txType == ttLOAN_SET)
+        {
+            bool const isPending = after->isFlag(lsfLoanPending);
+            bool const hasBorrower = tx.isFieldPresent(sfBorrower);
+            bool const hasStartDate = tx.isFieldPresent(sfStartDate);
+
+            // The Loan must record the StartDate and Borrower the transaction
+            // named.
+            if (hasStartDate && after->getFieldU32(sfStartDate) != tx.getFieldU32(sfStartDate))
+            {
+                JLOG(j.fatal()) << "Invariant failed: LoanSet did not record the "
+                                   "transaction StartDate";
+                return false;
+            }
+            if (hasBorrower && after->getAccountID(sfBorrower) != tx.getAccountID(sfBorrower))
+            {
+                JLOG(j.fatal()) << "Invariant failed: LoanSet did not record the "
+                                   "transaction Borrower";
+                return false;
+            }
+
+            if (isPending)
+            {
+                // The two-step flow does not exist before
+                // featureLendingProtocolV1_2, so LoanSet must not create a
+                // pending loan without it.
+                if (!lpV12Enabled)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanSet created a pending "
+                                       "Loan without featureLendingProtocolV1_2";
+                    return false;
+                }
+
+                // A pending loan is accepted in a later ledger, so its StartDate
+                // must be strictly in the future at creation to remain in the
+                // future when LoanAccept finalizes it.
+                if (after->getFieldU32(sfStartDate) <=
+                    view.parentCloseTime().time_since_epoch().count())
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanSet created a pending "
+                                       "Loan whose StartDate is not in the future";
+                    return false;
+                }
+            }
         }
         // Must not be negative - STNumber
         for (auto const field :
@@ -281,6 +411,36 @@ ValidLoan::finalize(
                         return false;
                     }
                 }
+            }
+        }
+
+        // A pending loan must not be linked into the borrower's directory, and
+        // a non-pending loan must be linked.
+        if (lpV12Enabled)
+        {
+            bool const isPending = after->isFlag(lsfLoanPending);
+            bool const hasNode = after->isFieldPresent(sfOwnerNode);
+            if (isPending && hasNode)
+            {
+                JLOG(j.fatal()) << "Invariant failed: pending Loan is linked "
+                                   "into the borrower's directory";
+                return false;
+            }
+            if (!isPending && !hasNode)
+            {
+                JLOG(j.fatal()) << "Invariant failed: active Loan is not linked "
+                                   "into the borrower's directory";
+                return false;
+            }
+
+            // Borrower and StartDate are required on the entry, so a loan must
+            // carry real values in them rather than their defaults.
+            if (after->getAccountID(sfBorrower) == beast::kZero ||
+                after->getFieldU32(sfStartDate) == 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan has no Borrower or "
+                                   "StartDate";
+                return false;
             }
         }
     }

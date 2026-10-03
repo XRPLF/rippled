@@ -63,6 +63,7 @@ ValidVault::Vault::make(SLE const& from)
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
     self.lossUnrealized = from.at(sfLossUnrealized);
+    self.assetsReserved = from.at(sfAssetsReserved);
     self.vaultKind = from[~sfVaultKind];
     self.subscriptionDate = from[~sfSubscriptionDate];
     self.redemptionDate = from[~sfRedemptionDate];
@@ -309,7 +310,7 @@ ValidVault::deltaShares(AccountID const& id) const
 bool
 ValidVault::isVaultEmpty(Vault const& vault)
 {
-    return vault.assetsAvailable == 0 && vault.assetsTotal == 0;
+    return vault.assetsAvailable == 0 && vault.assetsTotal == 0 && vault.assetsReserved == 0;
 }
 
 bool
@@ -409,6 +410,91 @@ ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules
 }
 
 bool
+ValidVault::finalizeLoanAccept(ReadView const& view, beast::Journal const& j) const
+{
+    XRPL_ASSERT(
+        !afterVault_.empty() && !beforeVault_.empty(),
+        "xrpl::ValidVault::finalizeLoanAccept : loan accept updated a vault");
+    auto const& afterVault = afterVault_[0];
+    auto const& beforeVault = beforeVault_[0];
+    auto const& vaultAsset = afterVault.asset;
+
+    bool result = true;
+
+    // Accepting a pending loan disburses the principal held back in assets
+    // reserved from the vault pseudo-account (to the borrower and, for the
+    // origination fee, to the broker owner). Assets available and assets
+    // outstanding were already settled when the pending loan was created, so
+    // they must not move now. LoanAccept writes neither field, so they are
+    // compared exactly.
+    if (afterVault.assetsAvailable != beforeVault.assetsAvailable)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan accept must not change assets available";
+        result = false;
+    }
+
+    if (afterVault.assetsTotal != beforeVault.assetsTotal)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan accept must not change assets outstanding";
+        result = false;
+    }
+
+    // Only the creation of a pending loan (LoanSet) adds to assets reserved.
+    // A loan accept, like a loan delete, may only release them.
+    if (afterVault.assetsReserved > beforeVault.assetsReserved)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan accept must not increase assets reserved";
+        result = false;
+    }
+
+    // Whatever leaves the pseudo-account must be covered by the release from
+    // assets reserved, so that the vault balance keeps covering assets
+    // available plus assets reserved. The two deltas come from differently
+    // quantized fields, so both are rounded to the vault's scale first.
+    auto const vaultDelta = deltaAssets(afterVault.pseudoId)
+                                .value_or(DeltaInfo{.delta = kNumZero, .scale = std::nullopt});
+    auto const minScale = computeVaultMinScale(vaultDelta, view.rules());
+    auto const disbursed = roundToAsset(vaultAsset, -vaultDelta.delta, minScale);
+    auto const released =
+        roundToAsset(vaultAsset, beforeVault.assetsReserved - afterVault.assetsReserved, minScale);
+    if (released < disbursed)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan accept must release at least the "
+                           "assets disbursed from the vault";
+        result = false;
+    }
+
+    return result;
+}
+
+bool
+ValidVault::finalizeLoanDelete(beast::Journal const& j) const
+{
+    XRPL_ASSERT(
+        !afterVault_.empty() && !beforeVault_.empty(),
+        "xrpl::ValidVault::finalizeLoanDelete : loan delete updated a vault");
+    auto const& afterVault = afterVault_[0];
+    auto const& beforeVault = beforeVault_[0];
+
+    // Only the deletion of a pending loan touches the vault: it returns the
+    // principal held back in assets reserved to the available pool. It must
+    // not credit assets available by more than it releases from assets
+    // reserved, so that the vault balance keeps covering their sum. Both
+    // fields are quantized to the same vault asset, so the deltas are
+    // compared directly.
+    auto const released = beforeVault.assetsReserved - afterVault.assetsReserved;
+    auto const credited = afterVault.assetsAvailable - beforeVault.assetsAvailable;
+    if (credited > released)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan delete must not credit assets available "
+                           "by more than the assets reserved released";
+        return false;
+    }
+
+    return true;
+}
+
+bool
 ValidVault::finalize(
     STTx const& tx,
     TER const ret,
@@ -435,8 +521,17 @@ ValidVault::finalize(
 
         return true;  // Not a vault operation
     }
+
+    // LoanDelete gained MayModifyVault with the two-step flow, where deleting a
+    // pending loan releases the reserved principal back to the vault. Before
+    // featureLendingProtocolV1_2 it must not modify a vault.
+    bool const isLoanDelete = tx.getTxnType() == ttLOAN_DELETE;
+    bool const lendingV12Enabled = view.rules().enabled(featureLendingProtocolV1_2);
+    bool const allowLoanDeleteModify = !isLoanDelete || lendingV12Enabled;
+
     if (!(hasPrivilege(tx, Privilege::MustModifyVault) ||
-          hasPrivilege(tx, Privilege::MayModifyVault)))
+          hasPrivilege(tx, Privilege::MayModifyVault)) ||
+        !allowLoanDeleteModify)
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault updated by a wrong transaction type";
@@ -646,6 +741,19 @@ ValidVault::finalize(
     if (afterVault.assetsMaximum < kZero)
     {
         JLOG(j.fatal()) << "Invariant failed: assets maximum must not be negative";
+        result = false;
+    }
+
+    if (afterVault.assetsReserved < kZero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: assets reserved must be positive or zero";
+        result = false;
+    }
+
+    if (afterVault.assetsAvailable + afterVault.assetsReserved > afterVault.assetsTotal)
+    {
+        JLOG(j.fatal()) << "Invariant failed: sum of assets available and "
+                           "reserved must not be greater than assets outstanding";
         result = false;
     }
 
@@ -1340,6 +1448,10 @@ ValidVault::finalize(
 
             case ttLOAN_SET:
                 return finalizeLoanSet(view, j);
+            case ttLOAN_ACCEPT:
+                return finalizeLoanAccept(view, j);
+            case ttLOAN_DELETE:
+                return finalizeLoanDelete(j);
             case ttLOAN_MANAGE:
             case ttLOAN_PAY:
                 return true;

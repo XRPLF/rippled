@@ -31,6 +31,8 @@ namespace xrpl {
  * - loss unrealized does not exceed the difference between assets total and
  *   assets available
  * - assets available do not exceed assets total
+ * - assets reserved is non-negative
+ * - sum of assets available and reserved does not exceed assets total
  * - vault deposit increases assets and share issuance, and adds to:
  *   total assets, assets available, shares outstanding
  * - vault withdrawal and clawback reduce assets and share issuance, and
@@ -46,6 +48,11 @@ namespace xrpl {
  * - vault withdrawal may not succeed when the vault phase is Investment
  * - closed-ended loan origination (ttLOAN_SET) may only succeed when the
  *   vault phase is Investment
+ * - loan accept leaves assets available and assets total unchanged, does not
+ *   increase assets reserved, and releases from assets reserved at least the
+ *   assets disbursed from the vault
+ * - deleting a pending loan credits assets available by no more than it
+ *   releases from assets reserved
  *
  * Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced
  * by NoModifiedUnmodifiableFields (see InvariantCheck.cpp). From
@@ -68,6 +75,7 @@ class ValidVault
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;
         Number lossUnrealized = 0;
+        Number assetsReserved = 0;
         std::optional<std::uint8_t> vaultKind;
         std::optional<std::uint32_t> subscriptionDate;
         std::optional<std::uint32_t> redemptionDate;
@@ -216,6 +224,27 @@ private:
      */
     [[nodiscard]] bool
     finalizeLoanSet(ReadView const& view, beast::Journal const& j) const;
+
+    /**
+     * @brief Invariant check for @c ttLOAN_ACCEPT.
+     *
+     * Accepting a pending loan disburses the principal held in @c AssetsReserved from the vault
+     * pseudo-account. @c AssetsAvailable and @c AssetsTotal were settled when the pending loan was
+     * created and must not change; @c AssetsReserved must not increase, and must release at least
+     * what left the pseudo-account.
+     */
+    [[nodiscard]] bool
+    finalizeLoanAccept(ReadView const& view, beast::Journal const& j) const;
+
+    /**
+     * @brief Invariant check for @c ttLOAN_DELETE.
+     *
+     * A LoanDelete only modifies a vault when it deletes a pending loan, returning the principal
+     * from @c AssetsReserved to @c AssetsAvailable. It must not credit @c AssetsAvailable by more
+     * than it releases from @c AssetsReserved.
+     */
+    [[nodiscard]] bool
+    finalizeLoanDelete(beast::Journal const& j) const;
 
 public:
     // Compute the coarsest scale required to represent all numbers
