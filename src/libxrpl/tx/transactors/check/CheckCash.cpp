@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -198,8 +199,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             return value.asset().visit(
                 [&](Issue const& issue) -> TER {
                     Currency const currency{issue.currency};
-                    auto const sleTrustLine =
-                        ctx.view.read(keylet::trustLine(dstId, issuerId, currency));
+                    RippleStateEntryR const sleTrustLine(dstId, issuerId, currency, ctx.view);
 
                     auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
                     if (!sleIssuer)
@@ -506,7 +506,7 @@ CheckCash::doApply()
                     // would exceed the limit on their trust line.  So we
                     // tweak the trust line limits before calling flow and
                     // then restore the trust line limits afterwards.
-                    auto const sleTrustLine = psb.peek(*trustLineKey);
+                    RippleStateEntryW sleTrustLine(*trustLineKey, psb, j_);
                     if (!sleTrustLine)
                         return tecNO_LINE;
 
@@ -552,7 +552,7 @@ CheckCash::doApply()
                 if (trustLineKey)
                 {
                     SF_AMOUNT const& tweakedLimit = destLow ? sfLowLimit : sfHighLimit;
-                    if (auto const sleTrustLine = psb.peek(*trustLineKey))
+                    if (RippleStateEntryW sleTrustLine(*trustLineKey, psb); sleTrustLine)
                         sleTrustLine->at(tweakedLimit) = savedLimit;
                 }
             });

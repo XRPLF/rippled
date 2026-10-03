@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/IOUAmount.h>
@@ -165,7 +166,7 @@ trustCreate(
 [[nodiscard]] TER
 trustDelete(
     ApplyView& view,
-    SLE::Ref sleRippleState,
+    RippleStateEntryW& sleRippleState,
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j);
@@ -270,7 +271,7 @@ removeEmptyHolding(
 [[nodiscard]] TER
 deleteAMMTrustLine(
     ApplyView& view,
-    SLE::pointer sleState,
+    RippleStateEntryW& sleState,
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j);
 

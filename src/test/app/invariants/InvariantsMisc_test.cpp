@@ -19,6 +19,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -380,7 +381,7 @@ class InvariantsMisc_test : public InvariantsBase
                 for (auto const& trustKeylet :
                      {keylet::trustLine(ammAcctID, a1["USD"]), keylet::trustLine(a1, ammIssue)})
                 {
-                    auto const line = ac.view().peek(trustKeylet);
+                    RippleStateEntryW line(trustKeylet, ac.view());
                     if (!line)
                     {
                         return false;
