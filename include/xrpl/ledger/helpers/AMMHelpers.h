@@ -826,14 +826,6 @@ ammLPHolds(
     beast::Journal const j);
 
 /**
- * Get AMM trading fee for the given account. The fee is discounted
- * if the account is the auction slot owner or one of the slot's authorized
- * accounts.
- */
-std::uint16_t
-getTradingFee(ReadView const& view, AMMEntryR const& ammSle, AccountID const& account);
-
-/**
  * Returns total amount held by AMM for the given token.
  */
 STAmount
