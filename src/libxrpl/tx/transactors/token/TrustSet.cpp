@@ -361,7 +361,7 @@ TrustSet::doApply()
     STAmount saLimitAllow = saLimitAmount;
     saLimitAllow.get<Issue>().account = accountID_;
 
-    RippleStateEntryW sleRippleState(accountID_, uDstAccountID, currency, view(), j_);
+    RippleStateEntryW sleRippleState(accountID_, uDstAccountID, currency, view(), viewJ);
 
     if (sleRippleState)
     {
@@ -617,8 +617,7 @@ TrustSet::doApply()
             {
                 // Delete.
 
-                terResult =
-                    trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
+                terResult = sleRippleState.removeFromLedger(uLowAccountID, uHighAccountID);
             }
             // Reserve is not scaled by load
             else if (
@@ -652,8 +651,7 @@ TrustSet::doApply()
             {
                 // Delete.
 
-                terResult =
-                    trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
+                terResult = sleRippleState.removeFromLedger(uLowAccountID, uHighAccountID);
             }
             // Reserve is not scaled by load.
             else if (bReserveIncrease && preFeeBalance_ < reserveCreate)

@@ -290,41 +290,6 @@ trustCreate(
     return tesSUCCESS;
 }
 
-TER
-trustDelete(
-    ApplyView& view,
-    RippleStateEntryW& sleRippleState,
-    AccountID const& uLowAccountID,
-    AccountID const& uHighAccountID,
-    beast::Journal j)
-{
-    // Detect legacy dirs.
-    std::uint64_t const uLowNode = sleRippleState->getFieldU64(sfLowNode);
-    std::uint64_t const uHighNode = sleRippleState->getFieldU64(sfHighNode);
-
-    JLOG(j.trace()) << "trustDelete: Deleting ripple line: low";
-
-    if (!view.dirRemove(keylet::ownerDir(uLowAccountID), uLowNode, sleRippleState->key(), false))
-    {
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    }
-
-    JLOG(j.trace()) << "trustDelete: Deleting ripple line: high";
-
-    if (!view.dirRemove(keylet::ownerDir(uHighAccountID), uHighNode, sleRippleState->key(), false))
-    {
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    }
-
-    removeSponsorFromLedgerEntry(sleRippleState.mutableRawSle(), sfHighSponsor);
-    removeSponsorFromLedgerEntry(sleRippleState.mutableRawSle(), sfLowSponsor);
-
-    JLOG(j.trace()) << "trustDelete: Deleting ripple line: state";
-    sleRippleState.erase();
-
-    return tesSUCCESS;
-}
-
 //------------------------------------------------------------------------------
 //
 // IOU issuance/redemption
@@ -439,12 +404,8 @@ issueIOU(
         state->setFieldAmount(sfBalance, finalBalance);
         if (mustDelete)
         {
-            return trustDelete(
-                view,
-                state,
-                bSenderHigh ? account : issue.account,
-                bSenderHigh ? issue.account : account,
-                j);
+            return state.removeFromLedger(
+                bSenderHigh ? account : issue.account, bSenderHigh ? issue.account : account);
         }
 
         state.update();
@@ -533,12 +494,8 @@ redeemIOU(
 
         if (mustDelete)
         {
-            return trustDelete(
-                view,
-                state,
-                bSenderHigh ? issue.account : account,
-                bSenderHigh ? account : issue.account,
-                j);
+            return state.removeFromLedger(
+                bSenderHigh ? issue.account : account, bSenderHigh ? account : issue.account);
         }
 
         state.update();
@@ -782,12 +739,8 @@ removeEmptyHolding(
         removeSponsorFromLedgerEntry(line.mutableRawSle(), sfHighSponsor);
     }
 
-    return trustDelete(
-        ctx.view,
-        line,
-        line->at(sfLowLimit)->getIssuer(),
-        line->at(sfHighLimit)->getIssuer(),
-        journal);
+    return line.removeFromLedger(
+        line->at(sfLowLimit)->getIssuer(), line->at(sfHighLimit)->getIssuer());
 }
 
 TER
@@ -826,12 +779,12 @@ deleteAMMTrustLine(
     auto const sponsorSle = getLedgerEntryReserveSponsor(
         view, sleState.rawSle(), !ammLow ? sfLowSponsor : sfHighSponsor);
 
-    // trustDelete() drops the entry's SLE, so read the reserve flag first.
-    // trustDelete() does not change the flags.
+    // removeFromLedger() drops the entry's SLE, so read the reserve flag
+    // first. removeFromLedger() does not change the flags.
     auto const uFlags = !ammLow ? lsfLowReserve : lsfHighReserve;
     bool const hasReserve = sleState->isFlag(uFlags);
 
-    if (auto const ter = trustDelete(view, sleState, low, high, j); !isTesSuccess(ter))
+    if (auto const ter = sleState.removeFromLedger(low, high); !isTesSuccess(ter))
     {
         JLOG(j.error()) << "deleteAMMTrustLine: failed to delete the trustline.";
         return ter;
