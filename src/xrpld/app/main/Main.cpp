@@ -804,11 +804,22 @@ run(int argc, char** argv)
         if (vm.contains("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::Severity::Trace));
 
-        auto app =
-            makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
+        // Building the application and setting it up both read config
+        // sections, and throw for a section they reject.
+        std::unique_ptr<Application> app;
+        try
+        {
+            app =
+                makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
 
-        if (!app->setup(vm))
-            return -1;
+            if (!app->setup(vm))
+                return -1;
+        }
+        catch (std::exception const& e)
+        {
+            std::cerr << "xrpld: invalid configuration: " << e.what() << std::endl;
+            return 1;
+        }
 
         // With our configuration parsed, ensure we have
         // enough file descriptors available:
