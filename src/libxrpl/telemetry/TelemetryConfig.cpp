@@ -337,10 +337,9 @@ makeTelemetrySetup(
         }
 
         // Still inside the enabled branch. mTLS only takes effect when TLS is
-        // on, so a client certificate set with use_tls=0 would be ignored and
-        // any exporter that did run would connect in plaintext. Reject that
-        // contradiction instead of failing open. tls_ca_cert is deliberately
-        // not checked this way.
+        // on, so a client certificate set with use_tls=0 would be ignored.
+        // Reject that contradiction so a client certificate always implies
+        // use_tls=1. tls_ca_cert is deliberately not checked this way.
         if (!setup.tlsClientCertPath.empty() && !setup.useTls)
         {
             Throw<std::runtime_error>(
@@ -350,10 +349,9 @@ makeTelemetrySetup(
 
         // Still inside the enabled branch, and checked before the files are
         // opened so a scheme problem is not hidden behind a path problem. The
-        // exporter reads TLS off the endpoint scheme alone, so use_tls=1 on an
-        // http endpoint would validate the certificate files and then still
-        // export in the clear. An operator who asks for TLS gets TLS or a
-        // startup error, never plaintext.
+        // exporter selects TLS from the endpoint scheme, so use_tls=1 requires
+        // an https endpoint, enforced here at startup. An operator who asks for
+        // TLS gets it, or a startup error.
         if (setup.useTls)
         {
             requireHttpsEndpoint(setup.tracesEndpoint, key::tracesEndpoint);
