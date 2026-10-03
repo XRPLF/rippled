@@ -64,6 +64,11 @@ doFeature(rpc::JsonContext& context)
         if (!isAdmin)
             return rpcError(RpcNoPermission);
 
+        if (!context.params[jss::vetoed].isBool())
+        {
+            return rpcError(rpcINVALID_PARAMS);
+        }
+
         if (context.params[jss::vetoed].asBool())
         {
             table.veto(feature);
