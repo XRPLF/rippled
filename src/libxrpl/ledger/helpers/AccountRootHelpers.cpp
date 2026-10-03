@@ -175,23 +175,6 @@ transferRate(ReadView const& view, AccountID const& issuer)
 }
 
 void
-decreaseOwnerCount(
-    ApplyView& view,
-    AccountRootEntryW& accountSle,
-    std::optional<AccountRootEntryW>& sponsorSle,
-    std::uint32_t count,
-    beast::Journal j)
-{
-    XRPL_ASSERT(
-        count != 0 && count <= std::numeric_limits<std::int32_t>::max(),
-        "xrpl::decreaseOwnerCount : count in signed delta range");
-    if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
-        return;  // LCOV_EXCL_LINE
-
-    accountSle.adjustOwnerCountSigned(sponsorSle, -static_cast<std::int32_t>(count));
-}
-
-void
 decreaseOwnerCountForObject(
     ApplyView& view,
     AccountRootEntryW& accountSle,
@@ -209,7 +192,7 @@ decreaseOwnerCountForObject(
         return;  // LCOV_EXCL_LINE
 
     auto sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
-    decreaseOwnerCount(view, accountSle, sponsorSle, count, j);
+    accountSle.decreaseOwnerCount(sponsorSle, count);
 }
 
 void

@@ -562,7 +562,7 @@ TrustSet::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            decreaseOwnerCount(view(), sleLowAccount, currentLowSponsor, 1, viewJ);
+            sleLowAccount.decreaseOwnerCount(currentLowSponsor, 1);
             uFlagsOut &= ~lsfLowReserve;
 
             removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsor);
@@ -603,7 +603,7 @@ TrustSet::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            decreaseOwnerCount(view(), sleHighAccount, currentHighSponsor, 1, viewJ);
+            sleHighAccount.decreaseOwnerCount(currentHighSponsor, 1);
             uFlagsOut &= ~lsfHighReserve;
 
             removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsor);
