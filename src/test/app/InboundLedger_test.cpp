@@ -616,12 +616,15 @@ struct InboundLedger_test : public beast::unit_test::Suite
             stopwatch(),
             std::make_unique<RequestCountingPeerSet>());
 
-        // checkLocal() routes into tryDB() without any peer data having arrived. It reports true
-        // only because the acquisition ended, which is what this case is about.
+        // checkLocal() routes into tryDB() with no peer data. It reports true only because the
+        // acquisition ended.
         BEAST_EXPECT(acquire->checkLocal());
 
         BEAST_EXPECT(acquire->isFailed());
         BEAST_EXPECT(!acquire->isComplete());
+
+        // A failed acquisition reports no ledger, though it still holds the partial one it built.
+        BEAST_EXPECT(acquire->getLedger() == nullptr);
     }
 
     /**
@@ -950,7 +953,11 @@ struct InboundLedger_test : public beast::unit_test::Suite
         BEAST_EXPECT(!acquire->isComplete());
         BEAST_EXPECT(peerSetPtr->requests() > requestsFromInit);
 
-        // done() remembered the hash, which is what stops the next round asking again.
+        // done() remembered the hash. This case reaches getLedger() with no ledger ever built, so
+        // both arms of the failed_ gate answer null here. The local-chain case above is what
+        // covers the gate itself: tryDB() builds a partial ledger and then fails, so the gate is
+        // the only reason the answer is null.
+        BEAST_EXPECT(acquire->getLedger() == nullptr);
         BEAST_EXPECT(
             waitFor([&] { return env.app().getInboundLedgers().isFailure(kUnknownLedger); }));
     }
