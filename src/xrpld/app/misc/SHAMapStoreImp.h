@@ -197,20 +197,37 @@ private:
     std::unique_ptr<node_store::Backend>
     makeBackendRotating(std::string path = std::string());
 
+    /**
+     * Re-fetch every key of one cache so any node only the archive still holds
+     * is copied into the writable backend before the archive is deleted.
+     *
+     * Keys are copied one map partition at a time, and every fetch runs with
+     * the cache mutex released. getKeys() would hold the mutex across the whole
+     * cache, which on a large tree-node cache stalls every job for seconds and
+     * can drop the node out of sync. The walk is abandoned as soon as
+     * healthWait() reports the node is no longer keeping up.
+     *
+     * @param cache The cache to walk.
+     * @return true if healthWait() said the rotation must stop or expire, so
+     *         the caller must abandon it; false if every key was fetched.
+     */
     template <class CacheInstance>
     bool
     freshenCache(CacheInstance& cache)
     {
         std::uint64_t check = 0;
 
-        for (auto const& key : cache.getKeys())
-        {
-            dbRotating_->fetchNodeObject(key, 0, node_store::FetchType::Synchronous, true);
-            if (!(++check % checkHealthInterval_) && healthWait() != HealthResult::KeepGoing)
-                return true;
-        }
-
-        return false;
+        // Returning false abandons the walk, so an unhealthy check skips the
+        // remaining partitions instead of copying keys nobody will fetch.
+        return !cache.forEachKeyPartition([&](auto const& keys) {
+            for (auto const& key : keys)
+            {
+                dbRotating_->fetchNodeObject(key, 0, node_store::FetchType::Synchronous, true);
+                if (!(++check % checkHealthInterval_) && healthWait() != HealthResult::KeepGoing)
+                    return false;
+            }
+            return true;
+        });
     }
 
     /**

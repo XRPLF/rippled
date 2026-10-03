@@ -6,6 +6,7 @@
 #include <xrpl/basics/scope.h>
 
 #include <algorithm>
+#include <utility>
 
 namespace xrpl {
 
@@ -645,6 +646,43 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     }
 
     return v;
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+template <class F>
+inline bool
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    forEachKeyPartition(F&& f) const
+{
+    // One buffer for the whole walk. clear() keeps the capacity, so it only
+    // reallocates for a partition larger than every earlier one.
+    std::vector<key_type> keys;
+    // partitions() and map() are fixed at construction, so the bound and the
+    // indexing need no lock.
+    for (std::size_t p = 0; p < cache_.partitions(); ++p)
+    {
+        keys.clear();
+        {
+            std::scoped_lock const lock(mutex_);
+            auto const& partition = cache_.map()[p];
+            keys.reserve(partition.size());
+            for (auto const& entry : partition)
+                keys.push_back(entry.first);
+        }
+        // as_const so the documented `const&` parameter is the enforced one: f
+        // must not mutate or move from the buffer the next partition reuses.
+        if (!f(std::as_const(keys)))
+            return false;
+    }
+    return true;
 }
 
 template <

@@ -240,6 +240,15 @@ public:
         return map_;
     }
 
+    /**
+     * Read-only access to the partitions, for a const walk over one at a time.
+     */
+    PartitionMapType const&
+    map() const
+    {
+        return map_;
+    }
+
     Iterator
     begin()
     {
