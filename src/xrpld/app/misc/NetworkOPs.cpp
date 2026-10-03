@@ -358,6 +358,9 @@ public:
     OperatingMode
     getOperatingMode() const override;
 
+    StateAccountingData
+    getStateAccountingData() override;
+
     std::string
     strOperatingMode(OperatingMode const mode, bool const admin) const override;
 
@@ -523,6 +526,10 @@ public:
 
     json::Value
     getConsensusInfo() override;
+    std::size_t
+    getPrevProposers() const override;
+    std::chrono::milliseconds
+    getPrevRoundTime() const override;
     json::Value
     getServerInfo(bool human, bool admin, bool counters) override;
     void
@@ -1103,6 +1110,16 @@ inline OperatingMode
 NetworkOPsImp::getOperatingMode() const
 {
     return mode_;
+}
+
+NetworkOPs::StateAccountingData
+NetworkOPsImp::getStateAccountingData()
+{
+    auto const data = accounting_.getCounterData();
+    std::array<NetworkOPs::AccountingCounter, 5> out;
+    for (std::size_t i = 0; i < out.size(); ++i)
+        out[i] = {data.counters[i].transitions, data.counters[i].dur};
+    return {out, data.mode, data.start, data.initialSyncUs};
 }
 
 inline std::string
@@ -2826,6 +2843,18 @@ json::Value
 NetworkOPsImp::getConsensusInfo()
 {
     return consensus_.getJson(true);
+}
+
+std::size_t
+NetworkOPsImp::getPrevProposers() const
+{
+    return consensus_.prevProposers();
+}
+
+std::chrono::milliseconds
+NetworkOPsImp::getPrevRoundTime() const
+{
+    return consensus_.prevRoundTime();
 }
 
 json::Value
