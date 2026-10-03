@@ -20,6 +20,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -187,6 +188,17 @@ protected:
     // Offset where the bulletproof begins in a send proof blob.
     // Proof layout: [compact_sigma | bulletproof]
     static constexpr size_t kBulletproofOffset = kEcSendProofLength - kEcDoubleBulletproofLength;
+
+    // Decrypts holder's current spending/inbox balances under currentKey and
+    // re-encrypts them under newKey, returning {spendingCiphertext,
+    // inboxCiphertext}. Returns std::nullopt if either balance is missing or
+    // fails to decrypt.
+    static std::optional<std::pair<Buffer, Buffer>>
+    reencryptHolderBalances(
+        test::jtx::MPTTester& mpt,
+        test::jtx::Account const& holder,
+        test::jtx::Account const& currentKey,
+        test::jtx::Account const& newKey);
 
     // Generate a forged aggregated bulletproof (double bulletproof) for
     // the given values and blinding factors. Used to test that splicing
