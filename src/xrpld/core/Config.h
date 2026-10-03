@@ -330,8 +330,21 @@ public:
 public:
     Config();
 
-    /* Be very careful to make sure these bool params
-        are in the right order. */
+    /**
+     * Set up the configuration and determine the config and data directories.
+     *
+     * When no config file is named, searches the working directory, then the XDG
+     * config directory when HOME is set, then the system config directory, and
+     * takes the first holding a config file under either name. The system config
+     * directory is the default when none does.
+     *
+     * Be very careful to make sure these bool params are in the right order.
+     *
+     * @param strConf Path of the config file, or empty to search for it.
+     * @param bQuiet Whether to minimize logging verbosity.
+     * @param bSilent Whether to write no console output after startup.
+     * @param bStandalone Whether to operate in stand-alone mode.
+     */
     void
     setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStandalone);
 
