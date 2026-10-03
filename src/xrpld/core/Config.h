@@ -88,6 +88,9 @@ struct FeeSetup
 class Config : public BasicConfig
 {
 public:
+    // Validation requires a readable config and never creates data directories.
+    enum class SetupMode { Normal, Validate };
+
     // Settings related to the configuration file location and directories
     static constexpr std::string_view kConfigFileName = "xrpld.cfg";
     static constexpr std::string_view kConfigLegacyName = "rippled.cfg";
@@ -110,7 +113,7 @@ private:
     std::filesystem::path debugLogfile_;
 
     void
-    load();
+    load(SetupMode mode);
     beast::Journal const j_;
 
     bool quiet_ = false;   // Minimize logging verbosity.
@@ -333,7 +336,12 @@ public:
     /* Be very careful to make sure these bool params
         are in the right order. */
     void
-    setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStandalone);
+    setup(
+        std::string const& strConf,
+        bool bQuiet,
+        bool bSilent,
+        bool bStandalone,
+        SetupMode mode = SetupMode::Normal);
 
     void
     setupControl(bool bQuiet, bool bSilent, bool bStandalone);

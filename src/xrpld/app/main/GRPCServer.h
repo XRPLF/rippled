@@ -56,6 +56,24 @@ public:
     isFinished() = 0;
 };
 
+/**
+ * Read-only gRPC configuration, shared by startup and --check-config.
+ */
+struct GRPCServerConfig
+{
+    std::string serverAddress;
+    std::vector<boost::asio::ip::address> secureGatewayIPs;
+    std::optional<std::string> sslCertPath;
+    std::optional<std::string> sslKeyPath;
+    std::optional<std::string> sslCertChainPath;
+    std::optional<std::string> sslClientCAPath;
+
+    GRPCServerConfig(Config const& config, beast::Journal journal);
+
+    std::shared_ptr<grpc::ServerCredentials>
+    createServerCredentials(beast::Journal journal) const;
+};
+
 class GRPCServerImpl final
 {
 private:
@@ -72,17 +90,8 @@ private:
 
     Application& app_;
 
-    std::string serverAddress_;
+    GRPCServerConfig config_;
     std::uint16_t serverPort_ = 0;
-
-    std::vector<boost::asio::ip::address> secureGatewayIPs_;
-
-    // TLS certificate paths
-    std::optional<std::string> sslCertPath_;
-    std::optional<std::string> sslKeyPath_;
-    std::optional<std::string> sslCertChainPath_;  // Intermediate CA certs for server cert chain
-    std::optional<std::string>
-        sslClientCAPath_;  // CA cert for client certificate verification (mTLS)
 
     beast::Journal journal_;
 
@@ -142,10 +151,6 @@ public:
     getEndpoint() const;
 
 private:
-    // Create server credentials (TLS or insecure) based on configuration
-    std::shared_ptr<grpc::ServerCredentials>
-    createServerCredentials();
-
     // Class encompassing the state and logic needed to serve a request.
     template <class Request, class Response>
     class CallData : public Processor,

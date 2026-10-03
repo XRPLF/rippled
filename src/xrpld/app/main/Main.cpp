@@ -1,4 +1,5 @@
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/main/ValidateConfig.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/rpc/RPCCall.h>
@@ -373,6 +374,8 @@ run(int argc, char** argv)
     //
     po::options_description gen("General Options");
     gen.add_options()("conf", po::value<std::string>(), "Specify the configuration file.")(
+        "check-config",
+        "Validate configuration and local input files, then exit without starting the server.")(
         "debug", "Enable normally suppressed debug logging")("help,h", "Display this message.")(
         "newnodeid", "Generate a new node identity for this server.")(
         "nodeid", po::value<std::string>(), "Specify the node identity for this server.")(
@@ -519,6 +522,41 @@ run(int argc, char** argv)
         std::cout << json::FastWriter().write(getServerDefinitionsJson());
         return 0;
         // LCOV_EXCL_STOP
+    }
+
+    if (vm.contains("check-config"))
+    {
+        // Only configuration selection and logging options make sense here.
+        // Reject other modes before they can run tests, RPCs or maintenance.
+        for (auto const& [name, value] : vm)
+        {
+            if (name != "check-config" && name != "conf" && name != "standalone" &&
+                name != "quiet" && name != "silent" && name != "verbose")
+            {
+                std::cerr << "xrpld: --check-config cannot be combined with --" << name << '\n';
+                return EXIT_FAILURE;
+            }
+        }
+
+        try
+        {
+            Config config;
+            config.setup(
+                vm.contains("conf") ? vm["conf"].as<std::string>() : std::string{},
+                vm.contains("quiet"),
+                vm.contains("silent"),
+                vm.contains("standalone"),
+                Config::SetupMode::Validate);
+            validateConfig(config, std::cerr);
+            if (!vm.contains("quiet") && !vm.contains("silent"))
+                std::cout << "Configuration is valid.\n";
+            return EXIT_SUCCESS;
+        }
+        catch (std::exception const& e)
+        {
+            std::cerr << "Configuration validation failed: " << e.what() << '\n';
+            return EXIT_FAILURE;
+        }
     }
 
 #ifndef ENABLE_TESTS
