@@ -2563,8 +2563,13 @@ public:
         feeTrack.raiseLocalFee();
         feeTrack.raiseLocalFee();
 
-        // No subscribers yet — reportFeeChange() should enqueue one job
+        // No subscribers yet — call reportFeeChange() twice with the same
+        // summary. The first enqueues a job; the second should not (no-op).
         ops.reportFeeChange();
+        ops.reportFeeChange();
+
+        // Drain the pending job before subscribing so pubFeePending_ is clear
+        env.app().getJobQueue().rendezvous();
 
         // Now subscribe
         auto wsc = makeWSClient(env.app().config());
