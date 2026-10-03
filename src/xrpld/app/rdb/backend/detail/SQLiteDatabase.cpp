@@ -159,7 +159,7 @@ SQLiteDatabase::deleteAccountTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq)
 }
 
 std::vector<BatchInnerResult>
-SQLiteDatabase::getBatchInnerResults(uint256 const& parentBatchId)
+SQLiteDatabase::getBatchInnerResults(uint256 const& parentBatchId, LedgerIndex ledgerSeq)
 {
     if (!useTxTables_)
         return {};
@@ -167,7 +167,7 @@ SQLiteDatabase::getBatchInnerResults(uint256 const& parentBatchId)
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return detail::getBatchInnerResults(*db, parentBatchId);
+        return detail::getBatchInnerResults(*db, parentBatchId, ledgerSeq);
     }
 
     return {};

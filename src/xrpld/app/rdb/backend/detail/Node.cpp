@@ -190,7 +190,7 @@ deleteBeforeLedgerSeq(soci::session& session, TableType type, LedgerIndex ledger
 }
 
 std::vector<BatchInnerResult>
-getBatchInnerResults(soci::session& session, uint256 const& parentBatchId)
+getBatchInnerResults(soci::session& session, uint256 const& parentBatchId, LedgerIndex ledgerSeq)
 {
     std::vector<BatchInnerResult> results;
 
@@ -203,8 +203,9 @@ getBatchInnerResults(soci::session& session, uint256 const& parentBatchId)
     soci::statement st =
         (session.prepare << "SELECT InnerTxnID, TxnIndex, TERResult, Applied "
                             "FROM BatchInnerResults WHERE ParentBatchID = :parent "
-                            "ORDER BY TxnIndex ASC;",
+                            "AND LedgerSeq = :seq ORDER BY TxnIndex ASC;",
          soci::use(parentHex),
+         soci::use(ledgerSeq),
          soci::into(innerHex),
          soci::into(index),
          soci::into(ter),

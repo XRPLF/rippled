@@ -63,6 +63,7 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/apply.h>
@@ -5944,6 +5945,22 @@ class Batch_test : public beast::unit_test::Suite
             }
             // The rolled-back inner transaction is not in the ledger.
             BEAST_EXPECT(env.rpc("tx", txIDs[0])[jss::result][jss::error] == "txnNotFound");
+
+            // getBatchInnerResults is scoped to the Batch's own ledger sequence: the
+            // rows it just wrote come back for that sequence and for no other, so a
+            // stale row from a different sequence can never surface through `tx`.
+            UInt256 parentBatchId;
+            BEAST_EXPECT(parentBatchId.parseHex(batchID));
+            auto const batchSeq = env.closed()->seq();
+            BEAST_EXPECT(
+                env.app()
+                    .getRelationalDatabase()
+                    .getBatchInnerResults(parentBatchId, batchSeq)
+                    .size() == 2);
+            BEAST_EXPECT(env.app()
+                             .getRelationalDatabase()
+                             .getBatchInnerResults(parentBatchId, batchSeq + 1)
+                             .empty());
         }
 
         // tfIndependent, both succeed: both applied, in RawTransactions order.

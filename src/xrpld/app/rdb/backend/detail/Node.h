@@ -101,10 +101,12 @@ deleteBeforeLedgerSeq(soci::session& session, TableType type, LedgerIndex ledger
  * @brief getBatchInnerResults Returns the recorded inner-transaction outcomes of a Batch.
  * @param session Session with the database.
  * @param parentBatchId Hash of the outer Batch transaction.
+ * @param ledgerSeq Ledger sequence the outer Batch transaction is validated in; rows
+ *        recorded for any other sequence are not this ledger's and are excluded.
  * @return Outcomes in RawTransactions order; empty if none were recorded.
  */
 std::vector<BatchInnerResult>
-getBatchInnerResults(soci::session& session, uint256 const& parentBatchId);
+getBatchInnerResults(soci::session& session, uint256 const& parentBatchId, LedgerIndex ledgerSeq);
 
 /**
  * @brief getRows Returns number of rows in given table.

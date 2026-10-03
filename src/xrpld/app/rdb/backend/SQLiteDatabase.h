@@ -153,7 +153,7 @@ public:
     deleteTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq) override;
 
     std::vector<BatchInnerResult>
-    getBatchInnerResults(uint256 const& parentBatchId) override;
+    getBatchInnerResults(uint256 const& parentBatchId, LedgerIndex ledgerSeq) override;
 
     /**
      * @brief deleteAccountTransactionsBeforeLedgerSeq Deletes all account

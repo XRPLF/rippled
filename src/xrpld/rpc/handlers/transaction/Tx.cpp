@@ -168,8 +168,8 @@ doTxHelp(rpc::Context& context, TxArgs args)
             result.closeTime = context.ledgerMaster.getCloseTimeBySeq(txn->getLedger());
             if (txn->getSTransaction()->getTxnType() == ttBATCH)
             {
-                result.innerResults =
-                    context.app.getRelationalDatabase().getBatchInnerResults(txn->getID());
+                result.innerResults = context.app.getRelationalDatabase().getBatchInnerResults(
+                    txn->getID(), ledger->header().seq);
             }
         }
 
