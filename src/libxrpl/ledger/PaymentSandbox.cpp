@@ -435,8 +435,6 @@ PaymentSandbox::issuerSelfDebitHookMPT(
     std::uint64_t amount,
     std::int64_t origBalance)
 {
-    XRPL_ASSERT(amount > 0, "PaymentSandbox::issuerSelfDebitHookMPT: amount must be > 0");
-
     tab_.issuerSelfDebitMPT(issue, amount, origBalance);
 }
 

@@ -28,6 +28,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
@@ -149,33 +150,34 @@ public:
         auto const big = MPT{gw.id(), 1};
         auto const usd = iouGw["USD"];
 
-        // This metadata represents a partial MPT/IOU offer fill whose deltas
-        // make divide(deltaGets, deltaPays) overflow before MPTokensV2 skips
-        // the unrepresentable book-change rate.
-        STObject finalFields = STObject::makeInnerObject(sfFinalFields);
-        finalFields.setFieldU32(sfSequence, 1);
-        finalFields.setFieldAmount(sfTakerGets, big(1'800'000'000'000'000'000ull));
-        finalFields.setFieldAmount(sfTakerPays, usd(9));
+        // Metadata for a partial MPT/IOU offer fill. The rate is
+        // divide(deltaGets, deltaPays): 1.8e18 MPT over `pays` IOU.
+        auto const test = [&](std::unordered_set<uint256, beast::Uhash<>> const& features,
+                              STAmount const& pays,
+                              std::size_t expectedChanges) {
+            STObject finalFields = STObject::makeInnerObject(sfFinalFields);
+            finalFields.setFieldU32(sfSequence, 1);
+            finalFields.setFieldAmount(sfTakerGets, big(1'800'000'000'000'000'000ull));
+            finalFields.setFieldAmount(sfTakerPays, pays);
 
-        STObject previousFields = STObject::makeInnerObject(sfPreviousFields);
-        previousFields.setFieldU32(sfSequence, 1);
-        previousFields.setFieldAmount(sfTakerGets, big(3'600'000'000'000'000'000ull));
-        previousFields.setFieldAmount(sfTakerPays, usd(18));
+            STObject previousFields = STObject::makeInnerObject(sfPreviousFields);
+            previousFields.setFieldU32(sfSequence, 1);
+            previousFields.setFieldAmount(sfTakerGets, big(3'600'000'000'000'000'000ull));
+            previousFields.setFieldAmount(sfTakerPays, pays + pays);
 
-        STObject modifiedOffer{sfModifiedNode};
-        modifiedOffer.setFieldU16(sfLedgerEntryType, ltOFFER);
-        modifiedOffer.setFieldObject(sfFinalFields, finalFields);
-        modifiedOffer.setFieldObject(sfPreviousFields, previousFields);
+            STObject modifiedOffer{sfModifiedNode};
+            modifiedOffer.setFieldU16(sfLedgerEntryType, ltOFFER);
+            modifiedOffer.setFieldObject(sfFinalFields, finalFields);
+            modifiedOffer.setFieldObject(sfPreviousFields, previousFields);
 
-        STArray affectedNodes{sfAffectedNodes};
-        affectedNodes.pushBack(std::move(modifiedOffer));
+            STArray affectedNodes{sfAffectedNodes};
+            affectedNodes.pushBack(std::move(modifiedOffer));
 
-        auto metadata = std::make_shared<STObject>(sfTransactionMetaData);
-        metadata->setFieldArray(sfAffectedNodes, affectedNodes);
+            auto metadata = std::make_shared<STObject>(sfTransactionMetaData);
+            metadata->setFieldArray(sfAffectedNodes, affectedNodes);
 
-        auto tx = std::make_shared<STTx const>(ttOFFER_CREATE, [](STObject&) {});
+            auto tx = std::make_shared<STTx const>(ttOFFER_CREATE, [](STObject&) {});
 
-        auto const test = [&](std::unordered_set<UInt256, beast::Uhash<>> const& features) {
             auto ledger = std::make_shared<Ledger>(
                 2,
                 NetClock::time_point{},
@@ -198,7 +200,7 @@ public:
                 auto const result =
                     xrpl::rpc::computeBookChanges(std::static_pointer_cast<Ledger const>(ledger));
                 BEAST_EXPECT(result[jss::type] == "bookChanges");
-                BEAST_EXPECT(result[jss::changes].size() == 0);
+                BEAST_EXPECT(result[jss::changes].size() == expectedChanges);
             }
             catch (std::overflow_error const&)
             {
@@ -206,8 +208,20 @@ public:
             }
         };
 
-        test(std::unordered_set<UInt256, beast::Uhash<>>{});
-        test(std::unordered_set<UInt256, beast::Uhash<>>{featureMPTokensV2});
+        // Over the smallest IOU the rate is beyond the IOU exponent range:
+        // the change is skipped.
+        STAmount const tiny{usd.issue(), STAmount::kMinValue, STAmount::kMinOffset};
+        // Over 9 USD the rate is 2e17. divide() used to overflow here; with
+        // Number arithmetic for MPT operands it is reported.
+        STAmount const nine = usd(9);
+
+        for (auto const& features :
+             {std::unordered_set<uint256, beast::Uhash<>>{},
+              std::unordered_set<uint256, beast::Uhash<>>{featureMPTokensV2}})
+        {
+            test(features, tiny, 0);
+            test(features, nine, 1);
+        }
     }
 
     // Build a ledger whose transactions are OfferCreates carrying the supplied
