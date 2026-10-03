@@ -31,9 +31,10 @@
  *              | (swapped by Coro)      |
  *              +------------------------+
  *
- * Install once at telemetry start via
- * opentelemetry::context::RuntimeContext::SetRuntimeContextStorage(), BEFORE
- * any span is created (SDK requirement).
+ * Install once from main() via
+ * opentelemetry::context::RuntimeContext::SetRuntimeContextStorage(), before
+ * any thread is started. That call writes a non-atomic process-global
+ * shared_ptr which every log line reads back, so a later install would race.
  *
  * @note Thread-safety: each thread/coroutine sees its own LocalValue store, so
  * the stack is never shared across threads — no locking needed. The storage
@@ -44,7 +45,7 @@
  * the coroutine's store — not a pattern here (spans are created inside their
  * own coro/job body).
  *
- * Example 1 — install at telemetry start (primary use):
+ * Example 1 — install from main(), before any thread (primary use):
  * @code
  *   using opentelemetry::context::RuntimeContext;
  *   RuntimeContext::SetRuntimeContextStorage(
