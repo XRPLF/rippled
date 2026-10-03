@@ -6,6 +6,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 
 #include <xrpl/basics/base64.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/test/yield_to.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
@@ -14,6 +15,10 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/ResourceManager.h>
+#include <xrpl/resource/detail/Tuning.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 
@@ -1124,6 +1129,198 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     }
 
     void
+    testBatchErrorMasking(boost::asio::yield_context& yield)
+    {
+        testcase("HTTP batch errors mask echoed secrets");
+
+        jtx::Env env{*this};
+        json::Value sensitive;
+        sensitive[jss::secret] = "batch-secret-sentinel";
+        sensitive[jss::seed] = "batch-seed-sentinel";
+        sensitive[jss::seed_hex] = "batch-hex-sentinel";
+        sensitive[jss::passphrase] = "batch-passphrase-sentinel";
+        sensitive["keep"] = "visible";
+
+        json::Value masked;
+        masked[jss::secret] = "<masked>";
+        masked[jss::seed] = "<masked>";
+        masked[jss::seed_hex] = "<masked>";
+        masked[jss::passphrase] = "<masked>";
+        masked["keep"] = "visible";
+
+        auto check = [&](char const* scenario,
+                         jtx::Env& testEnv,
+                         json::Value const& item,
+                         json::Value expected,
+                         int code,
+                         char const* message) {
+            testcase << "HTTP batch error masking: " << scenario;
+            json::Value request;
+            request[jss::method] = "batch";
+            request[jss::params].append(item);
+            // A following valid item must still execute normally.
+            json::Value ping;
+            ping[jss::method] = "ping";
+            request[jss::params].append(ping);
+
+            boost::system::error_code ec;
+            boost::beast::http::response<boost::beast::http::string_body> resp;
+            doHTTPRequest(testEnv, yield, false, resp, ec, to_string(request));
+            if (!BEAST_EXPECTS(!ec, ec.message()))
+                return;
+            BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
+            json::Value reply;
+            json::Reader reader;
+            if (!BEAST_EXPECT(reader.parse(resp.body(), reply)) ||
+                !BEAST_EXPECT(reply.isArray() && reply.size() == 2))
+                return;
+            expected[jss::error][jss::error]["code"] = code;
+            expected[jss::error][jss::error]["message"] = message;
+            BEAST_EXPECTS(reply[0u] == expected, to_string(reply[0u]));
+            if (code == -32604)
+            {
+                BEAST_EXPECT(reply[1u][jss::error][jss::error]["code"] == code);
+            }
+            else
+            {
+                BEAST_EXPECT(reply[1u][jss::result][jss::status] == jss::success);
+            }
+            BEAST_EXPECT(!resp.body().contains("-sentinel"));
+        };
+
+        // Early errors can echo both flat parameters and nested request data.
+        auto item = sensitive;
+        auto expected = masked;
+        item[jss::params].append(sensitive);
+        expected[jss::params].append(masked);
+        item[jss::id] = expected[jss::id] = 42;
+
+        check("missing method", env, item, expected, -32601, "Null method");
+        for (auto const& [scenario, value] : {
+                 std::pair{"null sensitive values", json::Value{}},
+                 std::pair{"boolean sensitive values", json::Value{true}},
+                 std::pair{"numeric sensitive values", json::Value{42}},
+                 std::pair{"object sensitive values", sensitive},
+                 std::pair{"array sensitive values", item[jss::params]},
+             })
+        {
+            auto malformed = item;
+            for (auto const& field : {jss::secret, jss::seed, jss::seed_hex, jss::passphrase})
+                malformed[field] = value;
+            check(scenario, env, malformed, expected, -32601, "Null method");
+        }
+        for (auto const& [message, method] : {
+                 std::pair{"Null method", json::Value{}},
+                 std::pair{"method is not string", json::Value{1}},
+                 std::pair{"method is empty", json::Value{""}},
+             })
+        {
+            item[jss::method] = expected[jss::method] = method;
+            check(message, env, item, expected, -32601, message);
+        }
+
+        item[jss::method] = expected[jss::method] = "ping";
+        item[jss::ripplerpc] = expected[jss::ripplerpc] = 1;
+        check("invalid ripplerpc", env, item, expected, -32601, "ripplerpc is not a string");
+        item.removeMember(jss::ripplerpc);
+        expected.removeMember(jss::ripplerpc);
+
+        item[jss::api_version] = expected[jss::api_version] = "invalid";
+        json::Value wrapped;
+        wrapped[jss::request] = expected;
+        check("invalid API version", env, item, wrapped, -32606, "invalid_API_version");
+
+        // Even an invalid array item can contain objects with sensitive fields.
+        json::Value array(json::ValueType::Array);
+        array.append(sensitive);
+        wrapped[jss::request] = json::ValueType::Array;
+        wrapped[jss::request].append(masked);
+        check("array item", env, array, wrapped, -32601, "Method not found");
+
+        // Preserve ordinary data while masking through object and array chains.
+        auto nested = sensitive;
+        auto nestedMasked = masked;
+        nested["ordinary"].append(true);
+        nested["ordinary"].append(42);
+        nestedMasked["ordinary"] = nested["ordinary"];
+        for (int depth = 0; depth < 16; ++depth)
+        {
+            json::Value parent;
+            json::Value maskedParent;
+            if (depth % 2 == 0)
+            {
+                parent["child"] = nested;
+                maskedParent["child"] = nestedMasked;
+            }
+            else
+            {
+                parent.append(nested);
+                maskedParent.append(nestedMasked);
+            }
+            nested = std::move(parent);
+            nestedMasked = std::move(maskedParent);
+        }
+        wrapped[jss::request] = nestedMasked;
+        check("deeply nested array item", env, nested, wrapped, -32601, "Method not found");
+
+        for (auto const& [scenario, value] : {
+                 std::pair{"null item", json::Value{}},
+                 std::pair{"boolean item", json::Value{true}},
+                 std::pair{"numeric item", json::Value{42}},
+                 std::pair{"string item", json::Value{"invalid"}},
+                 std::pair{"empty array item", json::Value{json::ValueType::Array}},
+             })
+        {
+            wrapped[jss::request] = value;
+            check(scenario, env, value, wrapped, -32601, "Method not found");
+        }
+
+        // A valid handler must receive the original passphrase even when the
+        // preceding batch item echoes a masked copy of it. Use the public test seed.
+        testcase("HTTP batch masking preserves valid wallet parameters");
+        json::Value wallet;
+        wallet[jss::method] = "wallet_propose";
+        wallet[jss::passphrase] = "masterpassphrase";
+        auto invalidWallet = wallet;
+        invalidWallet[jss::api_version] = "invalid";
+        json::Value request;
+        request[jss::method] = "batch";
+        request[jss::params].append(invalidWallet);
+        request[jss::params].append(wallet);
+        boost::system::error_code ec;
+        boost::beast::http::response<boost::beast::http::string_body> resp;
+        doHTTPRequest(env, yield, false, resp, ec, to_string(request));
+        if (!BEAST_EXPECTS(!ec, ec.message()))
+            return;
+        BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
+        json::Value reply;
+        json::Reader reader;
+        if (!BEAST_EXPECT(reader.parse(resp.body(), reply)) ||
+            !BEAST_EXPECT(reply.isArray() && reply.size() == 2))
+            return;
+        BEAST_EXPECT(reply[0u][jss::request][jss::passphrase] == "<masked>");
+        BEAST_EXPECT(reply[1u][jss::result][jss::status] == jss::success);
+        BEAST_EXPECT(reply[1u][jss::result][jss::master_seed] == "snoPBrXtMeMyMHUVTgbuqAfg1SUTb");
+        BEAST_EXPECT(
+            reply[1u][jss::result][jss::account_id] == "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
+
+        jtx::Env publicEnv{*this, makeConfig("http", false)};
+        item.removeMember(jss::api_version);
+        expected.removeMember(jss::api_version);
+        item[jss::method] = expected[jss::method] = "stop";
+        check("forbidden", publicEnv, item, expected, -32605, "Forbidden");
+
+        auto consumer = publicEnv.app().getResourceManager().newInboundEndpoint(
+            beast::ip::Endpoint::fromString(getEnvLocalhostAddr()));
+        // Charges are normalized by the decay window. Start at four times the
+        // drop threshold to allow for decay while the batch runs.
+        consumer.charge(
+            resource::Charge{resource::kDropThreshold * resource::kDecayWindowSeconds * 4});
+        item[jss::method] = expected[jss::method] = "ping";
+        check("overloaded", publicEnv, item, expected, -32604, "Server is overloaded");
+    }
+
+    void
     testStatusNotOkay(boost::asio::yield_context& yield)
     {
         testcase("Server status not okay");
@@ -1180,6 +1377,7 @@ public:
             testNoRPC(yield);
             testWSRequests(yield);
             testRPCRequests(yield);
+            testBatchErrorMasking(yield);
             testStatusNotOkay(yield);
         });
     }
