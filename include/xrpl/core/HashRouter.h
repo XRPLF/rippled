@@ -76,8 +76,6 @@ any(HashRouterFlags flags)
     return static_cast<std::underlying_type_t<HashRouterFlags>>(flags) != 0;
 }
 
-class Config;
-
 /**
  * Routing table for objects identified by hash.
  *

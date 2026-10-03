@@ -1,8 +1,10 @@
+// cspell:ignore ISTOGRAM Wreturn
 #pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/SHAMapStore.h>
+#include <xrpld/app/misc/SHAMapStoreSpanNames.h>
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
@@ -17,17 +19,23 @@
 #include <xrpl/shamap/FullBelowCache.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/shamap/TreeNodeCache.h>
+#include <xrpl/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricNames.h>
+#include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 
 #include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <thread>
 
 namespace xrpl {
@@ -197,13 +205,109 @@ private:
     std::unique_ptr<node_store::Backend>
     makeBackendRotating(std::string path = std::string());
 
+    /**
+     * One rotation phase: a child span of nodestore.rotate for its lifetime
+     * and one rotation_phase_duration_seconds record when it ends. Lives on
+     * the SHAMapStore thread only. Not movable: hold it in a scope.
+     *
+     * The record leaves out time spent in a phase opened inside this one (a
+     * health_wait), which is recorded under its own stage, so a wait is
+     * counted once. The span still covers the whole phase.
+     */
+    class RotationPhase
+    {
+    public:
+        template <std::size_t N>
+        RotationPhase(
+            SHAMapStoreImp& owner,
+            telemetry::StaticStr<N> const& phase,
+            char const* stage)
+            : owner_(owner)
+            , stage_(stage)
+            , enclosing_(owner.openPhase_)
+            , span_(telemetry::TraceCategory::Ledger, telemetry::nodestore_span::rotateFull, phase)
+        {
+            owner_.openPhase_ = this;
+        }
+
+        ~RotationPhase()
+        {
+            auto const elapsed = std::chrono::steady_clock::now() - start_;
+            XRPL_METRIC_HISTOGRAM_RECORD_LABELED(
+                owner_.app_,
+                telemetry::metric::rotationPhaseDurationSeconds,
+                "Seconds spent in one online-delete rotation phase, less nested waits",
+                std::chrono::duration<double>(elapsed - nested_).count(),
+                {{telemetry::label::stage, std::string(stage_)}});
+            if (enclosing_ != nullptr)
+                enclosing_->nested_ += elapsed;
+            owner_.openPhase_ = enclosing_;
+        }
+
+        RotationPhase(RotationPhase const&) = delete;
+        RotationPhase&
+        operator=(RotationPhase const&) = delete;
+        RotationPhase(RotationPhase&&) = delete;
+        RotationPhase&
+        operator=(RotationPhase&&) = delete;
+
+        template <class Value>
+        void
+        setAttribute(std::string_view key, Value value) noexcept
+        {
+            span_.setAttribute(key, value);
+        }
+
+    private:
+        SHAMapStoreImp& owner_;
+        /**
+         * Stage label for the duration record. Read only inside the metric
+         * macro, so a telemetry-off build never reads it.
+         */
+        [[maybe_unused]] char const* stage_;
+        /**
+         * The phase this one runs inside, or null.
+         */
+        RotationPhase* const enclosing_;
+        /**
+         * Time spent in phases opened inside this one.
+         */
+        std::chrono::steady_clock::duration nested_{};
+        std::chrono::steady_clock::time_point start_ = std::chrono::steady_clock::now();
+        telemetry::ScopedSpanGuard span_;
+    };
+
+    // True while run() is inside its rotation block. Read and written on the
+    // SHAMapStore thread only, so it needs no lock.
+    bool rotating_ = false;
+
+    /**
+     * The innermost open RotationPhase, or null. SHAMapStore thread only, so
+     * it needs no lock.
+     */
+    RotationPhase* openPhase_ = nullptr;
+
     template <class CacheInstance>
     bool
     freshenCache(CacheInstance& cache)
     {
-        std::uint64_t check = 0;
+        namespace ns = telemetry::nodestore_span;
+        namespace lv = telemetry::lval::rotation_phase;
 
-        for (auto const& key : cache.getKeys())
+        // getKeys() copies every key under the cache mutex. It gets its own
+        // phase so the hold is visible on its own, apart from the fetch loop.
+        auto const keys = [&] {
+            RotationPhase phase(*this, ns::phase::freshenKeys, lv::freshenKeys);
+            auto k = cache.getKeys();
+            phase.setAttribute(ns::attr::keyCount, static_cast<std::int64_t>(k.size()));
+            return k;
+        }();
+
+        RotationPhase phase(*this, ns::phase::freshenFetch, lv::freshenFetch);
+        phase.setAttribute(ns::attr::keyCount, static_cast<std::int64_t>(keys.size()));
+
+        std::uint64_t check = 0;
+        for (auto const& key : keys)
         {
             dbRotating_->fetchNodeObject(key, 0, node_store::FetchType::Synchronous, true);
             if (!(++check % checkHealthInterval_) && healthWait() != HealthResult::KeepGoing)

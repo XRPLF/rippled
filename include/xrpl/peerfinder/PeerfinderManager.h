@@ -9,6 +9,7 @@
 
 #include <boost/asio/ip/tcp.hpp>
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -16,6 +17,98 @@
 #include <vector>
 
 namespace xrpl::peer_finder {
+
+//------------------------------------------------------------------------------
+
+/**
+ * One consistent snapshot of slot occupancy and address-cache depth.
+ *
+ * Every field is read under a single acquire of the PeerFinder lock, so the
+ * nine numbers describe the same instant and can be compared against each
+ * other. Reading them through separate accessors would not give that: the
+ * autoconnect logic mutates counts and caches together, so two reads taken a
+ * moment apart can show a state that never existed.
+ *
+ * Dependency:
+ *
+ *     +-----------------+  reads   +--------+
+ *     | Logic (counts_, |--------->| Counts |
+ *     |  fixed_, caches)|          +--------+
+ *     +--------+--------+
+ *              | fills
+ *              v
+ *     +-----------------+  returned by  +---------+
+ *     |   SlotCensus    |<--------------| Manager |
+ *     +-----------------+               +---------+
+ *
+ * Example usage -- capacity check from a telemetry gauge callback:
+ * @code
+ * auto const census = overlay.getSlotCensus();
+ * if (census.outActive < census.outMax && census.connecting > 0)
+ *     // dials are starting but never completing
+ * @endcode
+ *
+ * Example usage -- edge case: a fresh node with nothing to dial:
+ * @code
+ * auto const census = overlay.getSlotCensus();
+ * if (census.bootcache == 0 && census.livecache == 0)
+ *     // no seed addresses at all; check [ips] and DNS
+ * @endcode
+ *
+ * @note All fields are signed so a caller can hand them straight to a metric
+ *       without an unsigned-to-signed conversion that would turn a sentinel
+ *       into a large positive or a negative value.
+ * @note Snapshot only. The values are stale the moment the lock is released,
+ *       which is fine for diagnostics but must not be used to make a slot
+ *       decision -- take the lock and re-read for that.
+ */
+struct SlotCensus
+{
+    /**
+     * Outbound slots currently occupied by an active peer.
+     */
+    std::int64_t outActive{0};
+
+    /**
+     * Outbound slots configured, i.e. the ceiling on outActive.
+     */
+    std::int64_t outMax{0};
+
+    /**
+     * Inbound slots currently occupied by an active peer.
+     */
+    std::int64_t inActive{0};
+
+    /**
+     * Inbound slots configured; 0 when inbound connections are disabled.
+     */
+    std::int64_t inMax{0};
+
+    /**
+     * Outbound connection attempts in flight, not yet active or failed.
+     */
+    std::int64_t connecting{0};
+
+    /**
+     * Fixed peers named in the configuration.
+     */
+    std::int64_t fixedConfigured{0};
+
+    /**
+     * Fixed peers currently connected, out of fixedConfigured.
+     */
+    std::int64_t fixedActive{0};
+
+    /**
+     * Addresses held for bootstrapping, persisted across restarts.
+     */
+    std::int64_t bootcache{0};
+
+    /**
+     * Addresses learned from peers this session, held in memory only.
+     */
+    std::int64_t livecache{0};
+};
 
 /**
  * Maintains a set of IP addresses used for getting into the network.
@@ -60,6 +153,26 @@ public:
      */
     virtual Config
     config() = 0;
+
+    /**
+     * Returns one consistent snapshot of slot occupancy and cache depth.
+     *
+     * Diagnostics only; nothing in the connection logic reads it. Exposed
+     * because the counts are otherwise invisible outside the PropertyStream:
+     * only the two active-peer counts are exported today, so a node that
+     * cannot dial is indistinguishable from one that has nothing to dial.
+     *
+     * Not `const`, and cannot be: the implementation takes the PeerFinder
+     * lock, which is a plain (non-mutable) member, and every other method on
+     * this interface is non-const for the same reason.
+     *
+     * @return All nine fields, read under a single lock acquire.
+     *
+     * @note Cheap: one lock acquire, then integer and container-size reads.
+     *       Intended for a ~10 s telemetry poll, not a per-message path.
+     */
+    virtual SlotCensus
+    getSlotCensus() = 0;
 
     /**
      * Add a peer that should always be connected.

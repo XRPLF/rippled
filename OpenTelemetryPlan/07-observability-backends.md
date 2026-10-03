@@ -322,9 +322,10 @@ The JSON dashboards are provisioned into Grafana folder `xrpld`. The uids are
 bare — there is no `xrpld-` prefix:
 
 `consensus-health`, `fee-market`, `job-queue`, `ledger-data-sync`,
-`ledger-operations`, `log-derived-insights`, `network-traffic`, `node-health`,
-`overlay-traffic-detail`, `peer-network`, `peer-quality`, `rpc-pathfinding`,
-`rpc-performance`, `transaction-overview`, `validator-health`.
+`ledger-operations`, `ledger-sync-health`, `log-derived-insights`,
+`network-traffic`, `node-health`, `overlay-traffic-detail`, `peer-network`,
+`peer-quality`, `rpc-pathfinding`, `rpc-performance`, `transaction-overview`,
+`validator-health`.
 
 > **Panel-count convention** (shared with [05 §5.8.3](./05-configuration-reference.md)):
 > counts are of **data panels only**. `type: "row"` collapsible headers are

@@ -152,6 +152,26 @@ private:
     void
     tryAdvance(ScopedLockType& sl);
 
+    /**
+     * Record this task reaching a terminal state, for telemetry.
+     *
+     * Replay degrading to plain ledger acquisition is otherwise silent: every
+     * terminal path here only sets `complete_`/`failed_` and writes a log
+     * line, so a replay that never succeeds looks identical to one that was
+     * never attempted. Each terminal site calls this exactly once.
+     *
+     * @param outcome  Terminal state, used as the metric's `outcome` label:
+     *                 `success`, `timeout`, `build_failed` or
+     *                 `parameter_failed`. A fixed set of four literals, so the
+     *                 label cardinality is bounded.
+     *
+     * @note No-op when telemetry is compiled out or disabled at runtime -- the
+     * counter macro carries its own guard, so callers need no `#ifdef`.
+     * @note Called from terminal paths only, never per delta or per ledger.
+     */
+    void
+    recordOutcome(char const* outcome) const;
+
     InboundLedgers& inboundLedgers_;
     LedgerReplayer& replayer_;
     TaskParameter parameter_;

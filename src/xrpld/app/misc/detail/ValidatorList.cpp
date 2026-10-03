@@ -1986,6 +1986,13 @@ ValidatorList::getTrustedMasterKeys() const
 }
 
 std::size_t
+ValidatorList::trustedKeyCount() const
+{
+    std::shared_lock const readLock{mutex_};
+    return trustedMasterKeys_.size();
+}
+
+std::size_t
 ValidatorList::getListThreshold() const
 {
     std::shared_lock const readLock{mutex_};

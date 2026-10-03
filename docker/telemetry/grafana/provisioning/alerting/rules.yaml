@@ -699,7 +699,9 @@ groups:
           action: >-
             The node is flapping out of sync rather than holding FULL. A likely cause is
             the online-delete rotation cache-freshen; match the flap times against the
-            "rotating" and "finished rotation" warnings in the SHAMapStore log.
+            "rotating" and "finished rotation" warnings in the SHAMapStore log, then
+            check the nodestore.rotate traces and the Cache Lock Hold Peak (µs) panel
+            on the Ledger Sync Health dashboard.
         data:
           - refId: full_transitions_1h
             relativeTimeRange:
