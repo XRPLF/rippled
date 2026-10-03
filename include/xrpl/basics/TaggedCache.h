@@ -18,6 +18,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <thread>
 #include <type_traits>
@@ -74,13 +75,24 @@ public:
     using SharedPointerType = SharedPointer;
 
 public:
+    /**
+     * @param cacheHardCap When positive, a hard upper bound on the number of
+     *     strongly-cached entries, enforced by demoting the approximately
+     *     oldest entry whenever growth would exceed it. 0 disables the cap
+     *     (the periodic sweep alone bounds the cache).
+     * @param partitions Number of partitions the underlying map is split
+     *     into; defaults to the hardware concurrency. Exposed so tests can
+     *     pin a small, known partition count.
+     */
     TaggedCache(
         std::string const& name,
         int size,
         ClockType::duration expiration,
         ClockType& clock,
         beast::Journal journal,
-        beast::insight::Collector::Ptr const& collector = beast::insight::NullCollector::make());
+        beast::insight::Collector::Ptr const& collector = beast::insight::NullCollector::make(),
+        int cacheHardCap = 0,
+        std::optional<std::size_t> partitions = std::nullopt);
 
 public:
     /**
@@ -357,6 +369,18 @@ private:
 
     using CacheType = HardenedPartitionedHashMap<key_type, Entry, Hash, KeyEqual>;
 
+    // Bounded approximate-LRU eviction across the cache's partitions. Keeps
+    // the strong-entry count at/below cacheHardCap_ as new entries are
+    // inserted, so a burst can't drive the cache past its RAM budget between
+    // timer sweeps. `keep` locates the entry that just grew the count (the
+    // newest entry, skipped by the search) and its home partition; a
+    // partition with no other strong entry to demote (a small cap or uneven
+    // partitioning) is not enough to stop the search, since cacheCount_ is
+    // global, so other partitions are tried before giving up. No-op unless
+    // cacheHardCap_ > 0 (opt-in); caller holds mutex_.
+    void
+    evictForHardCap(CacheType::Iterator const& keep);
+
     [[nodiscard]] std::thread
     sweepHelper(
         ClockType::time_point const& whenExpire,
@@ -390,8 +414,29 @@ private:
     // Desired maximum cache age
     ClockType::duration const targetAge_;
 
+    // Hard upper bound on strongly-cached entries, enforced by
+    // evictForHardCap whenever the strong count grows (fresh inserts and
+    // weak-to-strong revivals). 0 disables it (sweep-only sizing).
+    int const cacheHardCap_;
+
+    // Total hard-cap evictions (under mutex_); the first marks saturation
+    // onset for logging.
+    std::uint64_t hardCapEvictions_{0};
+
     // Number of items cached
     int cacheCount_{0};
+
+    // Rotating bucket cursor for evictForHardCap's home partition so
+    // successive over-cap evictions sweep the whole partition (CLOCK hand)
+    // instead of repeatedly sampling the head buckets. Advanced under mutex_.
+    std::size_t evictHand_{0};
+
+    // Rotating partition cursor for evictForHardCap: the partition an
+    // eviction last succeeded on, so a call whose home partition has nothing
+    // left to demote continues the search from here instead of restarting
+    // at partition 0 every time. Advanced under mutex_.
+    std::size_t evictPartition_{0};
+
     CacheType cache_;  // Hold strong reference to recent objects
     std::uint64_t hits_{0};
     std::uint64_t misses_{0};

@@ -4,6 +4,7 @@
 #include <xrpl/basics/IntrusiveRefCounts.h>
 #include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Protocol.h>
 
@@ -13,6 +14,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -241,6 +243,183 @@ TEST(TaggedCacheTest, tagged_cache)
         EXPECT_EQ(intrPtrCache.getCacheSize(), 0);
         EXPECT_EQ(intrPtrCache.size(), 0);
     }
+}
+
+TEST(TaggedCacheTest, hard_cap_enforced_on_insert)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Key = LedgerIndex;
+    using Value = std::string;
+    using Cache = TaggedCache<Key, Value>;
+
+    // A cap-enabled cache must never let the strong-cache count exceed the
+    // cap, enforced on the insert path alone (no sweep). The large targetSize
+    // and long age make the periodic sweep irrelevant here, so only
+    // evictForHardCap can be bounding it.
+    int const cap = 100;
+    Cache capped(
+        "capped", 1'000'000, 3600s, clock, journal, beast::insight::NullCollector::make(), cap);
+
+    bool everExceeded = false;
+    for (Key k = 1; k <= 1000; ++k)
+    {
+        capped.insert(k, "v");
+        if (capped.getCacheSize() > cap)
+            everExceeded = true;
+    }
+    EXPECT_FALSE(everExceeded);
+    EXPECT_LE(capped.getCacheSize(), cap);
+    EXPECT_GT(capped.getCacheSize(), 0);
+}
+
+TEST(TaggedCacheTest, hard_cap_enforced_across_partitions)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Key = LedgerIndex;
+    using Value = std::string;
+    using Cache = TaggedCache<Key, Value>;
+
+    // The cap is well below the partition count, so with sequential keys
+    // (partitioned round-robin) the partition a given insert lands in holds
+    // only that one entry when the count first crosses the cap: eviction
+    // must fall through to another partition rather than stop at an empty
+    // home partition and leave cacheCount_ stuck above cacheHardCap_.
+    int const cap = 4;
+    std::size_t const partitions = 16;
+    Cache capped(
+        "capped-partitions",
+        1'000'000,
+        3600s,
+        clock,
+        journal,
+        beast::insight::NullCollector::make(),
+        cap,
+        partitions);
+
+    bool everExceeded = false;
+    for (Key k = 1; k <= 2000; ++k)
+    {
+        capped.insert(k, "v");
+        if (capped.getCacheSize() > cap)
+            everExceeded = true;
+    }
+    EXPECT_FALSE(everExceeded);
+    EXPECT_LE(capped.getCacheSize(), cap);
+    EXPECT_GT(capped.getCacheSize(), 0);
+}
+
+TEST(TaggedCacheTest, hard_cap_enforced_in_sparse_partition)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Key = LedgerIndex;
+    using Value = std::string;
+    using Cache = TaggedCache<Key, Value>;
+
+    // A single partition whose bucket array grows into the thousands while
+    // an external owner (held in `heldRefs`, the common case for a value
+    // also referenced from elsewhere) keeps every demoted entry in the
+    // table as weakly-tracked rather than erased: the handful of strong
+    // survivors end up sparse across a bucket array far bigger than a
+    // bounded sampling window, so evictForHardCap must walk the whole
+    // partition, not a fixed-size slice of it, to keep finding one.
+    int const cap = 5;
+    std::size_t const partitions = 1;
+    Cache capped(
+        "capped-sparse",
+        1'000'000,
+        3600s,
+        clock,
+        journal,
+        beast::insight::NullCollector::make(),
+        cap,
+        partitions);
+
+    std::vector<std::shared_ptr<Value>> heldRefs;
+    bool everExceeded = false;
+    for (Key k = 1; k <= 2000; ++k)
+    {
+        capped.insert(k, "v");
+        heldRefs.push_back(capped.fetch(k));
+        if (capped.getCacheSize() > cap)
+            everExceeded = true;
+    }
+    EXPECT_FALSE(everExceeded);
+    EXPECT_LE(capped.getCacheSize(), cap);
+    EXPECT_GT(capped.getCacheSize(), 0);
+}
+
+TEST(TaggedCacheTest, hard_cap_enforced_via_fetch_handler)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Key = LedgerIndex;
+    using Value = std::string;
+    using Cache = TaggedCache<Key, Value>;
+
+    // fetch(key, handler) is the miss path a NodeStore- or database-backed
+    // lookup takes; it must count and cap an inserted entry the same as the
+    // canonicalize path uses, not insert one uncounted and uncapped.
+    int const cap = 100;
+    Cache capped(
+        "capped-handler",
+        1'000'000,
+        3600s,
+        clock,
+        journal,
+        beast::insight::NullCollector::make(),
+        cap);
+
+    bool everExceeded = false;
+    for (Key k = 1; k <= 1000; ++k)
+    {
+        auto const ptr = capped.fetch(k, [] { return std::make_shared<Value>("v"); });
+        EXPECT_NE(ptr, nullptr);
+        if (capped.getCacheSize() > cap)
+            everExceeded = true;
+    }
+    EXPECT_FALSE(everExceeded);
+    EXPECT_LE(capped.getCacheSize(), cap);
+    EXPECT_GT(capped.getCacheSize(), 0);
+}
+
+TEST(TaggedCacheTest, hard_cap_disabled)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Key = LedgerIndex;
+    using Value = std::string;
+    using Cache = TaggedCache<Key, Value>;
+
+    // cacheHardCap = 0: growth is bounded only by the periodic sweep.
+    Cache uncapped(
+        "uncapped", 1'000'000, 3600s, clock, journal, beast::insight::NullCollector::make(), 0);
+
+    for (Key k = 1; k <= 1000; ++k)
+        uncapped.insert(k, "v");
+    EXPECT_EQ(uncapped.getCacheSize(), 1000);
 }
 
 }  // namespace xrpl

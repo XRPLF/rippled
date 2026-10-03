@@ -57,7 +57,9 @@ inline TaggedCache<
         ClockType::duration expiration,
         ClockType& clock,
         beast::Journal journal,
-        beast::insight::Collector::Ptr const& collector)
+        beast::insight::Collector::Ptr const& collector,
+        int cacheHardCap,
+        std::optional<std::size_t> partitions)
     : journal_(journal)
     , clock_(clock)
     , stats_(
@@ -67,6 +69,8 @@ inline TaggedCache<
     , name_(name)
     , targetSize_(size)
     , targetAge_(expiration)
+    , cacheHardCap_(cacheHardCap)
+    , cache_(partitions)
 {
 }
 
@@ -230,6 +234,138 @@ template <
     class Mutex>
 inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    evictForHardCap(CacheType::Iterator const& keep)
+{
+    // Caller holds mutex_. Only value caches carry strong/weak entries; key
+    // caches never enable the hard cap, so this is a no-op for them.
+    if constexpr (!IsKeyCache)
+    {
+        auto& partitions = *keep.map;
+        std::size_t const partitionCount = partitions.size();
+        if (partitionCount == 0)
+            return;
+
+        std::size_t const homePartition = static_cast<std::size_t>(keep.ait - partitions.begin());
+        key_type const keepKey = keep->first;
+
+        // Approximate LRU with bounded work per call: sample a window of
+        // strong entries starting at the rotating bucket cursor and demote
+        // the oldest, repeating until the count is back under the cap or the
+        // demotion budget is spent. Growth paths raise the count by one at a
+        // time, so the budget lets eviction catch up without stalling them.
+        constexpr int kEvictSampleBudget = 64;
+        constexpr int kMaxDemotionsPerCall = 8;
+
+        for (int demotions = 0; cacheCount_ > cacheHardCap_ && demotions < kMaxDemotionsPerCall;
+             ++demotions)
+        {
+            // cacheCount_ is cache-wide, so a home partition with nothing to
+            // demote (a small cap or uneven partitioning can leave it empty
+            // or holding only the just-inserted `keep` entry) must not end
+            // the search: try every partition, starting where the last
+            // eviction left off, before giving up.
+            bool demoted = false;
+            for (std::size_t attempt = 0; !demoted && attempt < partitionCount; ++attempt)
+            {
+                std::size_t const p = (evictPartition_ + attempt) % partitionCount;
+                auto& partition = partitions[p];
+                std::size_t const bucketCount = partition.bucket_count();
+                if (bucketCount == 0)
+                    continue;
+
+                bool const isHome = (p == homePartition);
+
+                int sampled = 0;
+                std::size_t bucketsWalked = 0;
+                key_type oldestKey{};
+                bool haveOldest = false;
+                ClockType::time_point oldestAccess{};
+
+                // Bounded by bucketCount, not a fixed window: a partition
+                // that grew large and was since mostly vacated can leave its
+                // few remaining strong entries anywhere in a now-sparse
+                // bucket array, and a window short enough to be cheap on a
+                // dense partition could lie entirely between them. Walking
+                // every bucket once guarantees a present strong entry is
+                // found; the sampled-count budget still cuts the walk short
+                // on a partition that has plenty to choose from.
+                std::size_t b = isHome ? evictHand_ % bucketCount : 0;
+                while (sampled < kEvictSampleBudget && bucketsWalked < bucketCount)
+                {
+                    for (auto lit = partition.begin(b); lit != partition.end(b); ++lit)
+                    {
+                        if ((isHome && lit->first == keepKey) || lit->second.isWeak())
+                            continue;
+                        if (!haveOldest || lit->second.lastAccess < oldestAccess)
+                        {
+                            oldestAccess = lit->second.lastAccess;
+                            oldestKey = lit->first;
+                            haveOldest = true;
+                        }
+                        if (++sampled >= kEvictSampleBudget)
+                            break;
+                    }
+                    b = (b + 1) % bucketCount;
+                    ++bucketsWalked;
+                }
+                if (isHome)
+                    evictHand_ = b;  // resume the home scan here on the next call
+
+                if (!haveOldest)
+                    continue;  // nothing demotable sampled here; try the next partition
+
+                auto oldest = partition.find(oldestKey);
+                if (oldest == partition.end() || (isHome && oldest->first == keepKey) ||
+                    oldest->second.isWeak())
+                    continue;
+
+                if (oldest->second.ptr.useCount() == 1)
+                {
+                    // Sole owner: release entirely.
+                    partition.erase(oldest);
+                }
+                else
+                {
+                    // Others hold it: keep it weakly tracked.
+                    oldest->second.ptr.convertToWeak();
+                }
+                --cacheCount_;
+                demoted = true;
+                evictPartition_ = p;
+
+                // First eviction marks saturation onset; then a heartbeat
+                // every 100k to avoid flooding.
+                ++hardCapEvictions_;
+                if (hardCapEvictions_ == 1 || hardCapEvictions_ % 100000 == 0)
+                {
+                    JLOG(journal_.warn()) << name_ << ": hard-cap eviction #" << hardCapEvictions_
+                                          << " (cap " << cacheHardCap_ << ", strong " << cacheCount_
+                                          << ") - cache saturated, growth now evicts";
+                }
+            }
+
+            if (!demoted)
+            {
+                JLOG(journal_.debug())
+                    << name_ << ": over hard cap " << cacheHardCap_
+                    << " but eviction sample found no strong entry to demote in any partition";
+                return;
+            }
+        }
+    }
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+inline void
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     sweep()
 {
     // Keep references to all the stuff we sweep
@@ -360,11 +496,17 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
     if (cit == cache_.end())
     {
-        cache_.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(key),
-            std::forward_as_tuple(clock_.now(), data));
+        auto const emplacedIt = cache_
+                                    .emplace(
+                                        std::piecewise_construct,
+                                        std::forward_as_tuple(key),
+                                        std::forward_as_tuple(clock_.now(), data))
+                                    .first;
         ++cacheCount_;
+        // The just-inserted entry is the newest; evictForHardCap skips it
+        // and drops the oldest across the cache.
+        if (cacheHardCap_ > 0 && cacheCount_ > cacheHardCap_)
+            evictForHardCap(emplacedIt);
         return false;
     }
 
@@ -415,11 +557,15 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         }
 
         ++cacheCount_;
+        if (cacheHardCap_ > 0 && cacheCount_ > cacheHardCap_)
+            evictForHardCap(cit);
         return true;
     }
 
     entry.ptr = data;
     ++cacheCount_;
+    if (cacheHardCap_ > 0 && cacheCount_ > cacheHardCap_)
+        evictForHardCap(cit);
 
     return false;
 }
@@ -695,7 +841,15 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     ++misses_;
     auto const [it, inserted] = cache_.emplace(digest, Entry(clock_.now(), std::move(sle)));
     if (!inserted)
+    {
         it->second.touch(clock_.now());
+    }
+    else
+    {
+        ++cacheCount_;
+        if (cacheHardCap_ > 0 && cacheCount_ > cacheHardCap_)
+            evictForHardCap(it);
+    }
     return it->second.ptr.getStrong();
 }
 // End CachedSLEs functions.
@@ -729,6 +883,8 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     {
         // independent of cache size, so not counted as a hit
         ++cacheCount_;
+        if (cacheHardCap_ > 0 && cacheCount_ > cacheHardCap_)
+            evictForHardCap(cit);
         entry.touch(clock_.now());
         return entry.ptr.getStrong();
     }

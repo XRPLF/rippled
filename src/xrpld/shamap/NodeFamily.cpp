@@ -11,6 +11,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/shamap/FullBelowCache.h>
 #include <xrpl/shamap/TreeNodeCache.h>
 
@@ -39,8 +40,17 @@ NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
               app.config().getValueFor(SizedItem::TreeCacheSize),
               std::chrono::seconds(app.config().getValueFor(SizedItem::TreeCacheAge)),
               stopwatch(),
-              j_))
+              j_,
+              beast::insight::NullCollector::make(),
+              // Hard cap: the clamped target, enforced on insert; 0 = off.
+              app.config().cacheMemoryBudget() != 0
+                  ? app.config().getValueFor(SizedItem::TreeCacheSize)
+                  : 0))
 {
+    auto const budget = app.config().cacheMemoryBudget();
+    JLOG(j_.info()) << "TreeNodeCache sizing: target="
+                    << app.config().getValueFor(SizedItem::TreeCacheSize) << " entries, budget "
+                    << (budget >> 30) << " GB" << (budget == 0 ? " (enforcement disabled)" : "");
 }
 
 void

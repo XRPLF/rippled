@@ -36,6 +36,7 @@ Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta
 
 ### Additions in 3.4.0
 
+- `server_info` (admin): The `node_size` field has been removed; it reported the deprecated `[node_size]` config setting, which is still accepted as an alias for `[memory_limit]` and still emits a startup warning. Admin responses now include `memory_limit`, the cache memory budget in gigabytes rounded up (0 when enforcement is disabled).
 - `ledger`: `nftoken_id`, `nftoken_ids`, and `offer_id` are now included in transaction metadata when transactions are expanded (`expand`, or admin-only `full`), matching the `tx`, `account_tx`, and `subscribe` (`transactions` stream) responses. ([#5706](https://github.com/XRPLF/rippled/pull/5706))
 
 ### Bugfixes in 3.4.0
