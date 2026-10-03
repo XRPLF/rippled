@@ -6,7 +6,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -197,7 +196,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
     // enabled in the code section below, for specific cases. This block is not
     // amendment-gated because sleDst will not have a pseudo-account designator
     // field populated, unless the appropriate amendment was already enabled.
-    if (sleDst && isPseudoAccount(sleDst))
+    if (sleDst && sleDst.isPseudoAccount())
     {
         // If destination is AMM and the trustline doesn't exist then only allow
         // TrustSet if the asset is AMM LP token and AMM is not in empty state.

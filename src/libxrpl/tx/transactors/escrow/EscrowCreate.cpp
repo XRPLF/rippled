@@ -8,7 +8,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -356,7 +355,7 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
     // because all writes to pseudo-account discriminator fields **are**
     // amendment gated, hence the behaviour of this check will always match the
     // currently active amendments.
-    if (isPseudoAccount(sled))
+    if (sled.isPseudoAccount())
         return tecNO_PERMISSION;
 
     if (!isXRP(amount))

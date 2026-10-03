@@ -6,7 +6,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -740,7 +740,7 @@ ValidVault::finalize(
                     return false;
                 }
 
-                if (!isPseudoAccount(AccountRootEntryR(sleSharesIssuer, view)))
+                if (!AccountRootEntryR(sleSharesIssuer, view).isPseudoAccount())
                 {
                     JLOG(j.fatal())  //
                         << "Invariant failed: shares issuer must be a "
