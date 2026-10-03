@@ -136,16 +136,15 @@ PaymentChannelClaim::preclaim(PreclaimContext const& ctx)
         AccountID const dest = (*slep)[sfDestination];
         auto const& chanFunds = slep->getFieldAmount(sfAmount);
 
-        if (auto const bal = ctx.tx[~sfBalance])
-        {
-            // The requested balance (and optional amount) must match the
-            // channel's asset; otherwise STAmount comparisons/subtractions
-            // in doApply would throw on mismatched issues.
-            if (bal->asset() != chanFunds.asset())
-                return tecWRONG_ASSET;
-            if (auto const amt = ctx.tx[~sfAmount]; amt && amt->asset() != chanFunds.asset())
-                return tecWRONG_ASSET;
-        }
+        // The requested balance and the optional amount must each match
+        // the channel's asset; otherwise the STAmount comparisons and
+        // subtractions in doApply would throw on mismatched issues. amount
+        // is checked independently of balance: a claim can carry Amount
+        // without Balance (the signature-authorized ceiling alone).
+        if (auto const bal = ctx.tx[~sfBalance]; bal && bal->asset() != chanFunds.asset())
+            return tecWRONG_ASSET;
+        if (auto const amt = ctx.tx[~sfAmount]; amt && amt->asset() != chanFunds.asset())
+            return tecWRONG_ASSET;
 
         if (!isXRP(chanFunds) && ctx.tx.isFieldPresent(sfBalance))
         {

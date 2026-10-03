@@ -1064,9 +1064,16 @@ struct PayChanToken_test : public beast::unit_test::Suite
             // tecWRONG_ASSET: claims must use the channel's asset
             env(paychan::claim(alice, chan, eur(10), eur(10)), Ter(tecWRONG_ASSET));
             env(paychan::claim(alice, chan, XRP(10), XRP(10)), Ter(tecWRONG_ASSET));
+
+            // tecWRONG_ASSET: an Amount of a different asset is rejected
+            // even without a Balance
+            env(paychan::claim(bob, chan, std::nullopt, eur(10)),
+                Txflags(tfClose),
+                Ter(tecWRONG_ASSET));
             env.close();
 
             // The channel is unchanged and bob received nothing
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
             BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(1'000));
             BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == usd(0));
             BEAST_EXPECT(env.balance(bob, usd) == usd(0));
@@ -3571,9 +3578,16 @@ struct PayChanToken_test : public beast::unit_test::Suite
             // tecWRONG_ASSET: claims must use the channel's asset
             env(paychan::claim(alice, chan, usd(10), usd(10)), Ter(tecWRONG_ASSET));
             env(paychan::claim(alice, chan, XRP(10), XRP(10)), Ter(tecWRONG_ASSET));
+
+            // tecWRONG_ASSET: an Amount of a different asset is rejected
+            // even without a Balance
+            env(paychan::claim(bob, chan, std::nullopt, XRP(10)),
+                Txflags(tfClose),
+                Ter(tecWRONG_ASSET));
             env.close();
 
             // The channel is unchanged and the funds remain locked
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
             BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == mpt(1'000));
             BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == mpt(0));
             BEAST_EXPECT(env.balance(alice, mpt) == mpt(9'000));
