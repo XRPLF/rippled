@@ -712,39 +712,8 @@ lockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& amount, 
             return tecOBJECT_NOT_FOUND;
         }  // LCOV_EXCL_STOP
 
-        auto const amt = sle->getFieldU64(sfMPTAmount);
-        auto const pay = amount.mpt().value();
-
-        // Underflow check for subtraction
-        if (!canSubtract(STAmount(mptIssue, amt), STAmount(mptIssue, pay)))
-        {  // LCOV_EXCL_START
-            JLOG(j.error()) << "lockEscrowMPT: insufficient MPTAmount for " << to_string(sender)
-                            << ": " << amt << " < " << pay;
-            return tecINTERNAL;
-        }  // LCOV_EXCL_STOP
-
-        (*sle)[sfMPTAmount] = amt - pay;
-
-        // Overflow check for addition
-        uint64_t const locked = (*sle)[~sfLockedAmount].valueOr(0);
-
-        if (!canAdd(STAmount(mptIssue, locked), STAmount(mptIssue, pay)))
-        {  // LCOV_EXCL_START
-            JLOG(j.error()) << "lockEscrowMPT: overflow on locked amount for " << to_string(sender)
-                            << ": " << locked << " + " << pay;
-            return tecINTERNAL;
-        }  // LCOV_EXCL_STOP
-
-        if (sle->isFieldPresent(sfLockedAmount))
-        {
-            (*sle)[sfLockedAmount] += pay;
-        }
-        else
-        {
-            sle->setFieldU64(sfLockedAmount, pay);
-        }
-
-        sle.update();
+        if (auto const ter = sle.lockEscrow(amount); !isTesSuccess(ter))
+            return ter;  // LCOV_EXCL_LINE
     }
 
     // 1. Increase the Issuance EscrowedAmount
