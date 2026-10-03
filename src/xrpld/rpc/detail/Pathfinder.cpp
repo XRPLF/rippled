@@ -948,7 +948,7 @@ Pathfinder::isNoRippleOut(STPath const& currentPath)
 
     // Last link must be an account.
     STPathElement const& endElement = currentPath.back();
-    if ((endElement.getNodeType() & STPathElement::TypeAccount) == 0u)
+    if (!endElement.isType(STPathElement::TypeAccount))
         return false;
 
     // If there's only one item in the path, return true if that item specifies
