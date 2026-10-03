@@ -200,7 +200,7 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
                 return maxOffer(balances);
             }
             if (auto const amounts =
-                    changeSpotPriceQuality(balances, *clobQuality, tradingFee_, view.rules(), j_))
+                    changeSpotPriceQuality(balances, *clobQuality, tradingFee_, j_))
             {
                 return AMMOffer<TIn, TOut>(*this, *amounts, balances, Quality{*amounts});
             }

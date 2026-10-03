@@ -213,49 +213,19 @@ adjustAmountsByLPTokens(
 
     if (lpTokensActual < lpTokens)
     {
-        bool const ammRoundingEnabled = [&]() {
-            if (auto const& rules = getCurrentTransactionRules();
-                rules && rules->enabled(fixAMMv1_1))
-                return true;
-            return false;
-        }();
-
         // Equal trade
         if (amount2)
         {
             Number const fr = lpTokensActual / lpTokens;
             auto const amountActual = toSTAmount(amount.asset(), fr * amount);
             auto const amount2Actual = toSTAmount(amount2->asset(), fr * *amount2);
-            if (!ammRoundingEnabled)
-            {
-                return std::make_tuple(
-                    amountActual < amount ? amountActual : amount,
-                    amount2Actual < amount2 ? amount2Actual : amount2,
-                    lpTokensActual);
-            }
-
             return std::make_tuple(amountActual, amount2Actual, lpTokensActual);
         }
 
         // Single trade
-        auto const amountActual = [&]() {
-            if (isDeposit == IsDeposit::Yes)
-            {
-                return ammAssetIn(amountBalance, lptAMMBalance, lpTokensActual, tfee);
-            }
-            if (!ammRoundingEnabled)
-            {
-                return ammAssetOut(amountBalance, lptAMMBalance, lpTokens, tfee);
-            }
-
-            return ammAssetOut(amountBalance, lptAMMBalance, lpTokensActual, tfee);
-        }();
-        if (!ammRoundingEnabled)
-        {
-            return amountActual < amount
-                ? std::make_tuple(amountActual, std::nullopt, lpTokensActual)
-                : std::make_tuple(amount, std::nullopt, lpTokensActual);
-        }
+        auto const amountActual = isDeposit == IsDeposit::Yes
+            ? ammAssetIn(amountBalance, lptAMMBalance, lpTokensActual, tfee)
+            : ammAssetOut(amountBalance, lptAMMBalance, lpTokensActual, tfee);
 
         return std::make_tuple(amountActual, std::nullopt, lpTokensActual);
     }
@@ -980,7 +950,7 @@ verifyAndAdjustLPTokenBalance(
         }
         else
         {
-            return std::unexpected<TER>(tecAMM_INVALID_TOKENS);
+            return std::unexpected<TER>(tecAMM_INVALID_TOKENS);  // LCOV_EXCL_LINE
         }
     }
     return true;
