@@ -107,6 +107,18 @@ SHAMap::snapShot(bool isMutable) const
 }
 
 void
+SHAMap::condemn(SHAMapTreeNode const& node, SHAMapHash const& hash, SHAMapNodeID const& position)
+    const
+{
+    // journal_ is shared by every map built from one Family, so name which map this is. The root
+    // node's own hash, since getHash() unshares the tree on a zero hash.
+    JLOG(journal_.warn()) << (node.isLeaf() ? "Leaf " : "Inner node ") << hash << " cannot sit at "
+                          << position << ", so the map with root hash " << root_->getHash()
+                          << " is invalid";
+    setInvalid();
+}
+
+void
 SHAMap::dirtyUp(NodePathStack& stack, UInt256 const& target, SHAMapTreeNodePtr child)
 {
     // walk the tree up from through the inner nodes to the root_
@@ -403,11 +415,22 @@ SHAMap::descend(
         !parent->isEmptyBranch(branch), "xrpl::SHAMap::descend : parent branch is non-empty");
 
     SHAMapTreeNode* child = parent->getChildPointer(branch);  // NOLINT(misc-const-correctness)
+    auto childID = parentID.getChildNodeID(branch);
 
     if (child == nullptr)
     {
         auto const& childHash = parent->getChildHash(branch);
         SHAMapTreeNodePtr childNode = fetchNodeNT(childHash, filter);
+
+        if (childNode &&
+            (!belongsAt(childID, *childNode) || pastLeafDepth(parentID.getDepth(), *childNode)))
+        {
+            // A hash covers a node's contents, not its position, so position is judged before
+            // canonicalizeChild hooks the node in. The verdict lands on the map, since resolving
+            // the same blob again gives the same node.
+            condemn(*childNode, childHash, childID);
+            return std::make_pair(nullptr, std::move(childID));
+        }
 
         if (childNode)
         {
@@ -416,7 +439,7 @@ SHAMap::descend(
         }
     }
 
-    return std::make_pair(child, parentID.getChildNodeID(branch));
+    return std::make_pair(child, std::move(childID));
 }
 
 SHAMapTreeNode*
