@@ -21,7 +21,7 @@
  *     struct TxSettings
  *     {
  *         Delegation delegable{Delegation::NotDelegable};
- *         uint256 amendment{};
+ *         UInt256 amendment{};
  *         Privilege privileges{Privilege::NoPriv};
  *     };
  *
@@ -66,11 +66,13 @@ TRANSACTION(ttPAYMENT, 0, Payment,
 #endif
 TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, ({.delegable = Delegation::Delegable}), ({
     {sfDestination, SoeRequired},
+    {sfDestinationTag, SoeOptional},
     {sfAmount, SoeRequired, SoeMptSupported},
     {sfCondition, SoeOptional},
     {sfCancelAfter, SoeOptional},
     {sfFinishAfter, SoeOptional},
-    {sfDestinationTag, SoeOptional},
+    {sfBytecode, SoeOptional},
+    {sfData, SoeOptional},
 }))
 
 /** This transaction type completes an existing escrow. */
@@ -83,6 +85,7 @@ TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish, ({.delegable = Delegation::Delegab
     {sfFulfillment, SoeOptional},
     {sfCondition, SoeOptional},
     {sfCredentialIDs, SoeOptional},
+    {sfGas, SoeOptional},
 }))
 
 
@@ -1131,6 +1134,46 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
     {sfRemainingOwnerCountDelta, SoeOptional},
 }))
 
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTMirrorUpdate.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_MIRROR_UPDATE, 92, ConfidentialMPTMirrorUpdate,
+    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialMPTKeyRotation}),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfHolder, SoeOptional},
+    {sfIssuerEncryptedAmount, SoeOptional},
+    {sfAuditorEncryptedAmount, SoeOptional},
+    {sfZKProof, SoeRequired},
+}))
+
+/** This transaction rotates or recovers a confidential MPT holder's ElGamal encryption key,
+    or cancels a recovery. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTHolderKeyUpdate.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, 93, ConfidentialMPTHolderKeyUpdate,
+    ({.amendment = featureConfidentialMPTKeyRotation}),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfHolderEncryptionKey, SoeOptional},
+    {sfConfidentialBalanceSpending, SoeOptional},
+    {sfConfidentialBalanceInbox, SoeOptional},
+    {sfZKProof, SoeOptional},
+}))
+
+/** This transaction posts an unsigned transaction on-ledger as a
+    TransactionProposal, pending multi-signature collection. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/proposal/TransactionProposalCreate.h>
+#endif
+TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 95, TransactionProposalCreate,
+    ({.amendment = featureCosign}),
+    ({
+    {sfProposedTransaction, SoeRequired},
+    {sfExpiration, SoeRequired},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html
@@ -1161,6 +1204,10 @@ TRANSACTION(ttFEE, 101, SetFee,
     {sfBaseFeeDrops, SoeOptional},
     {sfReserveBaseDrops, SoeOptional},
     {sfReserveIncrementDrops, SoeOptional},
+    // Smart Escrow fields
+    {sfGasLimit, SoeOptional},
+    {sfBytecodeSizeLimit, SoeOptional},
+    {sfGasPrice, SoeOptional},
 }))
 
 /** This system-generated transaction type is used to update the network's negative UNL

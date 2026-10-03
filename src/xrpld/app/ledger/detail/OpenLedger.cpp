@@ -61,7 +61,7 @@ OpenLedger::current() const
 }
 
 bool
-OpenLedger::modify(modify_type const& f)
+OpenLedger::modify(ModifyType const& f)
 {
     std::scoped_lock const lock1(modifyMutex_);
     auto next = std::make_shared<OpenView>(*current_);
@@ -84,15 +84,15 @@ OpenLedger::accept(
     OrderedTxs& retries,
     ApplyFlags flags,
     std::string_view suffix,
-    modify_type const& f)
+    ModifyType const& f)
 {
     JLOG(j_.trace()) << "accept ledger " << ledger->seq() << " " << suffix;
     auto next = create(rules, ledger);
     if (retriesFirst)
     {
         // Handle disputed tx, outside lock
-        using empty = std::vector<std::shared_ptr<STTx const>>;
-        apply(app, *next, *ledger, empty{}, retries, flags, j_);
+        using Empty = std::vector<std::shared_ptr<STTx const>>;
+        apply(app, *next, *ledger, Empty{}, retries, flags, j_);
     }
     // Block calls to modify, otherwise
     // new tx going into the open ledger

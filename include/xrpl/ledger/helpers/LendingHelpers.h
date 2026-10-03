@@ -50,7 +50,7 @@ namespace xrpl {
 [[nodiscard]] TER
 canApplyToBrokerCover(
     ReadView const& view,
-    SLE::const_ref sleBroker,
+    SLE::ConstRef sleBroker,
     Asset const& vaultAsset,
     STAmount const& amount,
     beast::Journal j,
@@ -255,7 +255,7 @@ adjustImpreciseNumber(
 }
 
 inline int
-getAssetsTotalScale(SLE::const_ref vaultSle)
+getAssetsTotalScale(SLE::ConstRef vaultSle)
 {
     if (!vaultSle)
         return Number::kMinExponent - 1;  // LCOV_EXCL_LINE
@@ -266,7 +266,7 @@ getAssetsTotalScale(SLE::const_ref vaultSle)
 // DebtTotal is a broker-level aggregate maintained at vault scale, so the
 // rounding must also use vault scale — never an individual loan's scale.
 inline Number
-minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::const_ref vaultSle)
+minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::ConstRef vaultSle)
 {
     XRPL_ASSERT(
         vaultSle && vaultSle->getType() == ltVAULT, "xrpl::minimumBrokerCover : valid Vault sle");
@@ -305,7 +305,7 @@ constructLoanState(
 // directly from a Loan ledger object, which always holds rounded values,
 // rather than taking them as separate Number arguments.
 LoanState
-constructLoanState(SLE::const_ref loan);
+constructLoanState(SLE::ConstRef loan);
 
 Number
 computeManagementFee(
@@ -328,7 +328,7 @@ computeFullPaymentInterest(
 // boundary is amendment-gated: with fixCleanup3_4_0 the due date must be
 // strictly in the past, otherwise the exact due-date instant counts as late.
 [[nodiscard]] bool
-isPaymentLate(ReadView const& view, SLE::const_ref loanSle);
+isPaymentLate(ReadView const& view, SLE::ConstRef loanSle);
 
 // Deltas applied to Vault.AssetsTotal and LoanBroker.DebtTotal at a single
 // accounting touch point (origination, payment, impair/unimpair/default).
@@ -338,9 +338,9 @@ struct AccountingDeltas
     Number debtTotalDelta;
 };
 
-// Whole-life (pre-LendingProtocolV1_1) recognition model: interest is
-// recognized into AssetsTotal/DebtTotal up front, at origination.
-namespace accrual {
+// Instant interest recognition (pre-LendingProtocolV1_1): interest is
+// recognized into AssetsTotal/DebtTotal immediately, at origination.
+namespace instant_recognition {
 
 // LoanSet origination: what's added to Vault.AssetsTotal and LoanBroker.DebtTotal
 AccountingDeltas
@@ -356,13 +356,13 @@ loanOriginationExceedsVaultMaximum(
 
 // LoanManage impair/unimpair/default: the vault's exposure to this loan
 Number
-loanVaultExposure(SLE::const_ref loanSle);
+loanVaultExposure(SLE::ConstRef loanSle);
 
 // LoanPay: what's added to Vault.AssetsTotal and subtracted from LoanBroker.DebtTotal for a payment
 AccountingDeltas
 loanPaymentDeltas(LoanPaymentParts const& parts);
 
-}  // namespace accrual
+}  // namespace instant_recognition
 
 // Cash-basis (LendingProtocolV1_1) recognition model: AssetsTotal/DebtTotal
 // are principal-only, interest is recognized only as it's actually paid.
@@ -372,7 +372,7 @@ AccountingDeltas
 loanOriginationDeltas(Number const& principalRequested);
 
 Number
-loanVaultExposure(SLE::const_ref loanSle);
+loanVaultExposure(SLE::ConstRef loanSle);
 
 AccountingDeltas
 loanPaymentDeltas(LoanPaymentParts const& parts);
@@ -381,25 +381,25 @@ loanPaymentDeltas(LoanPaymentParts const& parts);
 
 // Public dispatchers: pick cash_basis:: if featureLendingProtocolV1_1 is
 // enabled AND the Vault's LEVersion (VaultHelpers::getVaultVersion) is
-// VaultVersion::CashBasis, else accrual::. These are the only entry points
+// VaultVersion::CashBasis, else instant_recognition::. These are the only entry points
 // transactors call.
 AccountingDeltas
 loanOriginationDeltas(
-    SLE::const_ref vaultSle,
+    SLE::ConstRef vaultSle,
     Number const& principalRequested,
     Number const& interestDue);
 
 bool
 loanOriginationExceedsVaultMaximum(
-    SLE::const_ref vaultSle,
+    SLE::ConstRef vaultSle,
     Number const& vaultTotal,
     Number const& interestDue);
 
 Number
-loanVaultExposure(SLE::const_ref vaultSle, SLE::const_ref loanSle);
+loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle);
 
 AccountingDeltas
-loanPaymentDeltas(SLE::const_ref vaultSle, LoanPaymentParts const& parts);
+loanPaymentDeltas(SLE::ConstRef vaultSle, LoanPaymentParts const& parts);
 
 namespace detail {
 // These classes and functions should only be accessed by LendingHelper
@@ -667,8 +667,8 @@ std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
     ApplyView& view,
-    SLE::ref loan,
-    SLE::const_ref brokerSle,
+    SLE::Ref loan,
+    SLE::ConstRef brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
     beast::Journal j);
