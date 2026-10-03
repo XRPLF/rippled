@@ -4,7 +4,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/IOUAmount.h>
@@ -273,16 +272,6 @@ deleteAMMTrustLine(
     ApplyView& view,
     SLE::pointer sleState,
     std::optional<AccountID> const& ammAccountID,
-    beast::Journal j);
-
-/**
- * Delete AMMs MPToken.
- */
-[[nodiscard]] TER
-deleteAMMMPToken(
-    ApplyView& view,
-    MPTokenEntryW& sleMPT,
-    AccountID const& ammAccountID,
     beast::Journal j);
 
 }  // namespace xrpl
