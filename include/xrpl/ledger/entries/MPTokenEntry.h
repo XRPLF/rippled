@@ -8,6 +8,8 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <cstdint>
@@ -77,6 +79,23 @@ public:
      */
     [[nodiscard]] bool
     isFrozen(AccountID const& account, std::uint8_t depth = 0) const;
+
+    /**
+     * Creates the MPToken of @p account for @p mptIssuanceID: links it into
+     * the owner directory, sets its fields and sponsor, and inserts it.
+     *
+     * Does not change the owner count.
+     *
+     * @return tesSUCCESS, or tecDIR_FULL if the owner directory is full
+     */
+    [[nodiscard]] static TER
+    create(
+        ApplyView& view,
+        MPTID const& mptIssuanceID,
+        AccountID const& account,
+        SLE::Ref sponsorSle,
+        std::uint32_t flags)
+        requires Base::kIsWritable;
 };
 
 using MPTokenEntryR = MPTokenEntry<ReadView>;

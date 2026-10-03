@@ -280,14 +280,6 @@ unlockEscrowMPT(
     beast::Journal j);
 
 TER
-createMPToken(
-    ApplyView& view,
-    MPTID const& mptIssuanceID,
-    AccountID const& account,
-    SLE::Ref sponsorSle,
-    std::uint32_t const flags);
-
-TER
 checkCreateMPT(
     xrpl::ApplyView& view,
     xrpl::MPTIssue const& mptIssue,
