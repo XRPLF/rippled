@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/PayChannelEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -43,8 +44,8 @@ PaymentChannelFund::preflight(PreflightContext const& ctx)
 TER
 PaymentChannelFund::doApply()
 {
-    Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
-    auto const slep = ctx_.view().peek(k);
+    PayChannelEntryW slep(
+        Keylet(ltPAYCHAN, ctx_.tx[sfChannel]), ctx_.view(), ctx_.registry.get().getJournal("View"));
     if (!slep)
         return tecNO_ENTRY;
 
@@ -52,10 +53,9 @@ PaymentChannelFund::doApply()
     auto const txAccount = ctx_.tx[sfAccount];
     auto const curExpiration = (*slep)[~sfExpiration];
 
-    if (isChannelExpired(ctx_.view(), (*slep)[~sfCancelAfter]) ||
-        isChannelExpired(ctx_.view(), curExpiration))
+    if (slep.isExpired((*slep)[~sfCancelAfter]) || slep.isExpired(curExpiration))
     {
-        return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
+        return slep.removeFromLedger();
     }
 
     if (src != txAccount)
@@ -79,7 +79,7 @@ PaymentChannelFund::doApply()
                                                                 : TER{temBAD_EXPIRATION};
         }
         (*slep)[~sfExpiration] = *newExpiration;
-        ctx_.view().update(slep);
+        slep.update();
     }
 
     auto const sle = ctx_.view().peek(keylet::account(txAccount));
@@ -110,7 +110,7 @@ PaymentChannelFund::doApply()
     }
 
     (*slep)[sfAmount] = (*slep)[sfAmount] + ctx_.tx[sfAmount];
-    ctx_.view().update(slep);
+    slep.update();
 
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     ctx_.view().update(sle);
