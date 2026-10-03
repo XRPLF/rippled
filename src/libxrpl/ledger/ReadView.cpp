@@ -3,6 +3,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/ledger/detail/ReadViewFwdRange.h>
+#include <xrpl/ledger/entries/AmendmentsEntry.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Rules.h>
@@ -72,9 +73,9 @@ makeRulesGivenLedger(
     std::optional const digest = ledger.digest(k.key);
     if (digest)
     {
-        auto const sle = ledger.read(k);
-        if (sle)
-            return Rules(presets, digest, sle->getFieldV256(sfAmendments));
+        AmendmentsEntryR const entry(k, ledger);
+        if (entry)
+            return Rules(presets, digest, entry->getFieldV256(sfAmendments));
     }
     return Rules(presets);
 }
