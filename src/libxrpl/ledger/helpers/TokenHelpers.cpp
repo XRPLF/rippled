@@ -439,8 +439,7 @@ accountHolds(
 
     MPTokenEntryR const sleMpt(mptIssue.getMptID(), account, view, j);
 
-    if (!sleMpt ||
-        (zeroIfFrozen == FreezeHandling::ZeroIfFrozen && isFrozen(view, account, *sleMpt)))
+    if (!sleMpt || (zeroIfFrozen == FreezeHandling::ZeroIfFrozen && sleMpt.isFrozen(account)))
     {
         amount.clear(mptIssue);
     }

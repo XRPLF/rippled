@@ -10,6 +10,8 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 template <typename ViewT>
@@ -61,6 +63,20 @@ public:
     {
         return (*this)->isFlag(lsfMPTLocked);
     }
+
+    /**
+     * Returns true if @p account cannot send or receive tokens of this
+     * MPToken's issuance because a freeze applies: the issuance is globally
+     * locked, this MPToken is individually locked, or (for a vault share)
+     * the vault pseudo-account's underlying asset is frozen.
+     *
+     * The issuance is read once for the global-freeze and vault checks.
+     *
+     * @param account The holder of this MPToken.
+     * @param depth Current recursion depth for the vault-share walk.
+     */
+    [[nodiscard]] bool
+    isFrozen(AccountID const& account, std::uint8_t depth = 0) const;
 };
 
 using MPTokenEntryR = MPTokenEntry<ReadView>;
