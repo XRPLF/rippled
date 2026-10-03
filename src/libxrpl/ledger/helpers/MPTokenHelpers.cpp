@@ -857,33 +857,8 @@ unlockEscrowMPT(
         return tecOBJECT_NOT_FOUND;
     }  // LCOV_EXCL_STOP
 
-    if (!sle->isFieldPresent(sfLockedAmount))
-    {  // LCOV_EXCL_START
-        JLOG(j.error()) << "unlockEscrowMPT: no locked amount in MPToken for " << to_string(sender);
-        return tecINTERNAL;
-    }  // LCOV_EXCL_STOP
-
-    auto const locked = sle->getFieldU64(sfLockedAmount);
-    auto const delta = grossAmount.mpt().value();
-
-    // Underflow check for subtraction
-    if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
-    {  // LCOV_EXCL_START
-        JLOG(j.error()) << "unlockEscrowMPT: insufficient locked amount for " << to_string(sender)
-                        << ": " << locked << " < " << delta;
-        return tecINTERNAL;
-    }  // LCOV_EXCL_STOP
-
-    auto const newLocked = locked - delta;
-    if (newLocked == 0)
-    {
-        sle->makeFieldAbsent(sfLockedAmount);
-    }
-    else
-    {
-        sle->setFieldU64(sfLockedAmount, newLocked);
-    }
-    sle.update();
+    if (auto const ter = sle.unlockEscrow(grossAmount); !isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
 
     // Note: The gross amount is the amount that was locked, the net
     // amount is the amount that is being unlocked. The difference is the fee
