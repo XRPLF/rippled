@@ -2882,9 +2882,13 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     if (admin)
     {
-        // The cache memory budget in GB; 0 means enforcement is disabled.
-        info[jss::memory_limit] =
-            static_cast<json::UInt>(registry_.get().getApp().config().cacheMemoryBudget() >> 30);
+        // The cache memory budget in GB, rounded up: a nonzero sub-GiB
+        // budget (a cgroup limit under 1 GiB, kept nonzero so enforcement
+        // stays on) would otherwise truncate to 0, the same value reported
+        // when enforcement is disabled.
+        constexpr std::uint64_t oneGiB = std::uint64_t{1} << 30;
+        auto const budget = registry_.get().getApp().config().cacheMemoryBudget();
+        info[jss::memory_limit] = static_cast<json::UInt>((budget + oneGiB - 1) >> 30);
 
         auto when = registry_.get().getValidators().expires();
 

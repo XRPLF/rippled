@@ -274,8 +274,6 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                     continue;
 
                 bool const isHome = (p == homePartition);
-                std::size_t const maxBuckets =
-                    std::min<std::size_t>(bucketCount, 4 * kEvictSampleBudget);
 
                 int sampled = 0;
                 std::size_t bucketsWalked = 0;
@@ -283,8 +281,16 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                 bool haveOldest = false;
                 ClockType::time_point oldestAccess{};
 
+                // Bounded by bucketCount, not a fixed window: a partition
+                // that grew large and was since mostly vacated can leave its
+                // few remaining strong entries anywhere in a now-sparse
+                // bucket array, and a window short enough to be cheap on a
+                // dense partition could lie entirely between them. Walking
+                // every bucket once guarantees a present strong entry is
+                // found; the sampled-count budget still cuts the walk short
+                // on a partition that has plenty to choose from.
                 std::size_t b = isHome ? evictHand_ % bucketCount : 0;
-                while (sampled < kEvictSampleBudget && bucketsWalked < maxBuckets)
+                while (sampled < kEvictSampleBudget && bucketsWalked < bucketCount)
                 {
                     for (auto lit = partition.begin(b); lit != partition.end(b); ++lit)
                     {
@@ -835,7 +841,15 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     ++misses_;
     auto const [it, inserted] = cache_.emplace(digest, Entry(clock_.now(), std::move(sle)));
     if (!inserted)
+    {
         it->second.touch(clock_.now());
+    }
+    else
+    {
+        ++cacheCount_;
+        if (cacheHardCap_ > 0 && cacheCount_ > cacheHardCap_)
+            evictForHardCap(it);
+    }
     return it->second.ptr.getStrong();
 }
 // End CachedSLEs functions.
