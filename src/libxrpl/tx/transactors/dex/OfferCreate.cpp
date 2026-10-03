@@ -885,12 +885,12 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tesSUCCESS, true};
     }
 
-    auto sleCreator = AccountRootEntryW(accountID_, sb);
+    auto sleCreator = AccountRootEntryW(accountID_, sb, viewJ);
     if (!sleCreator)
         return {tefINTERNAL, false};
 
     {
-        XRPAmount const reserve = accountReserve(sb, sleCreator, viewJ, {.ownerCountDelta = 1});
+        XRPAmount const reserve = sleCreator.reserve({.ownerCountDelta = 1});
         if (preFeeBalance_ < reserve)
         {
             // If we are here, the signing account had an insufficient reserve

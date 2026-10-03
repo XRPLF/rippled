@@ -123,7 +123,7 @@ TER
 PaymentChannelCreate::doApply()
 {
     auto const account = ctx_.tx[sfAccount];
-    auto sle = AccountRootEntryW(account, ctx_.view());
+    auto sle = AccountRootEntryW(account, ctx_.view(), j_);
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -158,8 +158,8 @@ PaymentChannelCreate::doApply()
         // - sponsored:   0  — sponsor covers the new owner increment, so
         //                the source only owes reserve for its current owners.
         // - unsponsored: 1  — source owes reserve including the new increment.
-        auto const sourceReserve = accountReserve(
-            ctx_.view(), sle, j_, {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
+        auto const sourceReserve =
+            sle.reserve({.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
         if (preFeeBalance_ - ctx_.tx[sfAmount].xrp() < sourceReserve)
             return tecUNFUNDED;
     }

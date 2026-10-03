@@ -82,7 +82,7 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainSet::doApply()
 {
-    auto ownerSle = AccountRootEntryW(accountID_, view());
+    auto ownerSle = AccountRootEntryW(accountID_, view(), ctx_.journal);
     if (!ownerSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -111,8 +111,7 @@ PermissionedDomainSet::doApply()
         // Create new permissioned domain.
         // Check reserve availability for new object creation
         auto const balance = STAmount((*ownerSle)[sfBalance]).xrp();
-        auto const reserve =
-            accountReserve(ctx_.view(), ownerSle, ctx_.journal, {.ownerCountDelta = 1});
+        auto const reserve = ownerSle.reserve({.ownerCountDelta = 1});
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
 

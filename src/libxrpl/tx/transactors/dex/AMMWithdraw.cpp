@@ -692,16 +692,15 @@ AMMWithdraw::withdraw(
                 reserveHandling == ReserveHandling::IgnoreReserve)
                 return tesSUCCESS;
 
-            auto sleAccount = AccountRootEntryW(account, view);
+            auto sleAccount = AccountRootEntryW(account, view, journal);
             if (!sleAccount)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
             auto const balance = (*sleAccount)[sfBalance]->xrp();
             // See also TrustSet::doApply() and MPTokenAuthorize::authorize()
             XRPAmount const reserve(
-                (ownerCount(sleAccount, journal) < 2)
-                    ? XRPAmount(beast::kZero)
-                    : accountReserve(view, sleAccount, journal, {.ownerCountDelta = 1}));
+                (ownerCount(sleAccount, journal) < 2) ? XRPAmount(beast::kZero)
+                                                      : sleAccount.reserve({.ownerCountDelta = 1}));
 
             auto const balanceAdj = std::max(priorBalance, balance);
             if (balanceAdj < reserve)
