@@ -190,10 +190,13 @@ PaymentChannelFund::doApply()
 
         // Guard the channel-amount accumulation itself: a small IOU amount
         // added to a much larger channel amount would be rounded away below
-        // after the source had already been debited. MPT amounts are exact
-        // integers bounded by the outstanding supply, so only IOUs can lose
-        // precision here.
-        if (amount.holds<Issue>() && !canAdd(chanAmt, amount))
+        // after the source had already been debited. sfAmount is never
+        // reduced by a claim, so repeated fund/claim cycles on the same
+        // tokens can carry an MPT channel's historical sfAmount close to
+        // kMaxMpTokenAmount even while the source's live balance stays
+        // small; MPTAmount's addition is a signed 64-bit add and overflows
+        // past that point. canAdd() catches both.
+        if (!canAdd(chanAmt, amount))
             return tecPRECISION_LOSS;
     }
 

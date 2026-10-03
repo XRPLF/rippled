@@ -3439,6 +3439,59 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == mpt(200));
             BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 200);
         }
+
+        // tecPRECISION_LOSS: the channel's sfAmount is never reduced by a
+        // claim, so funding the same tokens back into a channel after they
+        // have been claimed out and paid back to the source can carry
+        // sfAmount past kMaxMpTokenAmount even though the source's live
+        // balance is tiny. canAdd(chanAmt, amount) catches the overflow
+        // before the source is debited, the same guard IOU funding uses.
+        {
+            Env env{*this, features};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create(
+                {.maxAmt = kMaxMpTokenAmount,
+                 .ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(kMaxMpTokenAmount)));
+            env.close();
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, mpt(kMaxMpTokenAmount), settleDelay, pk));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            // alice, the channel owner, claims the whole channel out to bob;
+            // this leaves the channel open with sfAmount still
+            // kMaxMpTokenAmount (a claim never reduces it).
+            env(paychan::claim(alice, chan, mpt(kMaxMpTokenAmount), mpt(kMaxMpTokenAmount)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, mpt) == mpt(kMaxMpTokenAmount));
+
+            // bob pays one token back to alice; the token supply never
+            // exceeded kMaxMpTokenAmount, but the channel has already
+            // recorded kMaxMpTokenAmount as funded once.
+            env(pay(bob, alice, mpt(1)));
+            env.close();
+
+            env(paychan::fund(alice, chan, mpt(1)), Ter(tecPRECISION_LOSS));
+            env.close();
+
+            // neither the channel amount nor alice's balance changed
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == mpt(kMaxMpTokenAmount));
+            BEAST_EXPECT(env.balance(alice, mpt) == mpt(1));
+        }
     }
 
     void
