@@ -8,6 +8,8 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/UintTypes.h>
 
 namespace xrpl {
@@ -39,6 +41,32 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::trustLine(id, issue), view, j)
     {
+    }
+
+    /**
+     * Returns the limit that @p account sets on this line for IOUs issued
+     * by @p issuer. The issuer of the result is @p account.
+     */
+    [[nodiscard]] STAmount
+    creditLimit(AccountID const& account, AccountID const& issuer) const
+    {
+        STAmount result = (*this)->getFieldAmount(account < issuer ? sfLowLimit : sfHighLimit);
+        result.get<Issue>().account = account;
+        return result;
+    }
+
+    /**
+     * Returns the amount of IOUs issued by @p issuer that @p account holds
+     * on this line. The issuer of the result is @p account.
+     */
+    [[nodiscard]] STAmount
+    creditBalance(AccountID const& account, AccountID const& issuer) const
+    {
+        STAmount result = (*this)->getFieldAmount(sfBalance);
+        if (account < issuer)
+            result.negate();
+        result.get<Issue>().account = account;
+        return result;
     }
 };
 
