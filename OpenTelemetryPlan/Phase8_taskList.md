@@ -76,7 +76,7 @@
   - Add Loki service:
     ```yaml
     loki:
-      image: grafana/loki:3.4.2
+      image: grafana/loki:3.7.6
       ports:
         - "3100:3100"
       command: -config.file=/etc/loki/local-config.yaml

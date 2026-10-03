@@ -75,7 +75,8 @@
 - Match existing telemetry code style from `src/libxrpl/telemetry/Telemetry.cpp`
 - Use RAII for MeterProvider lifecycle (shutdown on destructor)
 
-**Reference**: [04-code-samples.md](./04-code-samples.md) — code style and patterns
+**Reference**: [03-implementation-strategy.md](./03-implementation-strategy.md) —
+code style and patterns (`04-code-samples.md` was deleted by `d6450631bf`)
 
 ---
 
@@ -482,22 +483,25 @@ validatorParticipationGauge_ = meter_->CreateInt64ObservableGauge(
 
 > **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity)
 
-**Objective**: Export NuDB-specific stored-bytes total and initial sync duration.
+**Objective**: Export the NodeStore stored-bytes total and initial sync duration.
 
 **Gauge label values**:
 
 | Gauge Name       | Label `metric=`                 | Type   | Source                                               |
 | ---------------- | ------------------------------- | ------ | ---------------------------------------------------- |
-| `storage_detail` | `nudb_bytes`                    | int64  | `Database::getStoreSize()` — cumulative object bytes |
+| `storage_detail` | `stored_object_bytes`           | int64  | `Database::getStoreSize()` — cumulative object bytes |
 | `sync_info`      | `initial_sync_duration_seconds` | double | Time from start to first FULL                        |
 
-Despite the name, `nudb_bytes` is not a file size. `getStoreSize()` sums the object
-payloads this process has written, so it excludes NuDB's keys, bucket padding and
-log, and it resets when the process restarts while the files on disk do not. It is
-the same accessor `node_written_bytes` uses, so the two series are equal by
-construction and any write-amplification ratio built from the pair is a constant 1.0.
-Neither `Backend` nor `Database` exposes a file-size accessor, so no metric reports
-the store's on-disk size today.
+`stored_object_bytes` is not a file size. `getStoreSize()` sums the object payloads
+this process has written, so it excludes NuDB's keys, bucket padding and log, and it
+resets when the process restarts while the files on disk do not. It is the same
+accessor `node_written_bytes` uses, so the two series are equal by construction and
+any write-amplification ratio built from the pair is a constant 1.0. Neither
+`Backend` nor `Database` exposes a file-size accessor, so no metric reports the
+store's on-disk size today.
+
+This label value was `nudb_bytes` when Phase 7 shipped it and was renamed in Phase 9,
+because the value comes from `Database` rather than the NuDB backend.
 
 **Key modified files**: `src/xrpld/telemetry/MetricsRegistry.h/.cpp`
 

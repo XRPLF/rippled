@@ -43,6 +43,7 @@
 
 #include <xrpl.pb.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstddef>
@@ -188,6 +189,20 @@ private:
     // post duplicate fail() calls) when several queued requests cross
     // kDropThreshold before the first fail() lands on the strand.
     std::atomic<bool> chargeDisconnectFired_{false};
+
+    /**
+     * Validations from trusted signers this peer delivered, counted in
+     * onMessage(TMValidation) once the signer's trust is known. Relaxed: only
+     * telemetry reads it, as a rate.
+     */
+    std::atomic<std::uint64_t> validationsTrusted_{0};
+
+    /**
+     * Validations from every other signer, counted at the same point and with
+     * the same ordering as validationsTrusted_.
+     */
+    std::atomic<std::uint64_t> validationsUntrusted_{0};
+
     std::shared_ptr<peer_finder::Slot> const slot_;
     boost::beast::multi_buffer readBuffer_;
     HttpRequestType request_;
@@ -403,6 +418,20 @@ public:
 
     json::Value
     json() override;
+
+    /**
+     * Reads the two validation counters.
+     *
+     * @return The counts so far. Each counter is read on its own with relaxed
+     * ordering, so the pair is not taken at one instant.
+     */
+    [[nodiscard]] PeerValidationCounts
+    validationCounts() const override
+    {
+        return {
+            .trusted = validationsTrusted_.load(std::memory_order_relaxed),
+            .untrusted = validationsUntrusted_.load(std::memory_order_relaxed)};
+    }
 
     bool
     supportsFeature(ProtocolFeature f) const override;
@@ -701,6 +730,97 @@ protected:
     processLedgerRequest(
         std::shared_ptr<protocol::TMGetLedger> const& m,
         std::vector<SHAMapNodeID> nodeIDs);
+
+    /**
+     * The three object counts of one `TMGetObjectByHash` request.
+     *
+     * @code
+     *   processGetObjectByHash() --> GetObjectCounts --> recordGetObjectMetrics()
+     * @endcode
+     *
+     * processGetObjectByHash() fills it so that `found <= attempted <=
+     * requested`. It skips an entry with no hash or a wrong-size hash before
+     * the lookup, looks at nothing past `kHardMaxReplyNodes`, and grows the
+     * reply only on a hit.
+     *
+     * @code
+     * // 5 entries: 1 malformed, 3 of the other 4 stored.
+     * GetObjectCounts const counts{.requested = 5, .attempted = 4, .found = 3};
+     * // counts.hits() is 3 and counts.misses() is 1; the malformed entry is
+     * // neither.
+     *
+     * // Edge case: every entry malformed, so nothing is looked up.
+     * GetObjectCounts const none{.requested = 2, .attempted = 0, .found = 0};
+     * // none.hits() and none.misses() are both 0.
+     * @endcode
+     *
+     * @note A plain value built per request, so there is nothing to lock.
+     */
+    struct GetObjectCounts
+    {
+        /**
+         * Entries in the request, `objects_size()`.
+         */
+        int requested = 0;
+        /**
+         * Entries that reached the NodeStore lookup.
+         */
+        int attempted = 0;
+        /**
+         * Objects returned in the reply.
+         */
+        int found = 0;
+
+        /**
+         * Lookups that found their object.
+         *
+         * @return `found`, or 0 if it is negative.
+         */
+        [[nodiscard]] int
+        hits() const
+        {
+            return std::max(0, found);
+        }
+
+        /**
+         * Lookups that found nothing. A skipped malformed entry is not one.
+         * Clamped at zero: a caller that breaks `found <= attempted` gets 0
+         * rather than a negative value, which the unsigned counter would read
+         * as about 1.8e19.
+         *
+         * @return `attempted - found`, or 0 if that is negative.
+         */
+        [[nodiscard]] int
+        misses() const
+        {
+            return std::max(0, attempted - found);
+        }
+    };
+
+    /**
+     * Record the OTel metrics for one completed `TMGetObjectByHash` request.
+     *
+     * Called once per request from `processGetObjectByHash()`, after the fetch
+     * loop and the `charge()` call. A separate method keeps that function
+     * shorter. Virtual so a test subclass can capture the counts, as it does
+     * with `charge()`.
+     *
+     * Records `getobject_request_objects`, `getobject_lookup_us`,
+     * `getobject_charge`, and both label values of
+     * `getobject_lookups_total`. The body only feeds `XRPL_METRIC_*` macros,
+     * which drop their arguments when telemetry is compiled out, so the call
+     * site needs no guard.
+     *
+     * @param counts        The request's counts; see GetObjectCounts.
+     * @param lookupElapsed Wall time of the whole fetch loop.
+     * @param fee           The dynamic charge that was applied, so the
+     *                      recorded value is exactly the one charged.
+     */
+    virtual void
+    recordGetObjectMetrics(
+        GetObjectCounts const& counts,
+        std::chrono::microseconds const lookupElapsed,
+        resource::Charge const& fee);
 
     /**
      * Process a generic-query TMGetObjectByHash message.

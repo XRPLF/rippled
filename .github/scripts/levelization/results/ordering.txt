@@ -135,8 +135,12 @@ test.ledger > xrpl.json
 test.ledger > xrpl.ledger
 test.ledger > xrpl.protocol
 test.nodestore > test.jtx
+test.nodestore > test.unit_test
 test.nodestore > xrpl.basics
+test.nodestore > xrpl.config
+test.nodestore > xrpld.app
 test.nodestore > xrpld.core
+test.nodestore > xrpld.telemetry
 test.nodestore > xrpl.nodestore
 test.nodestore > xrpl.rdb
 test.overlay > test.jtx
@@ -203,9 +207,12 @@ tests.libxrpl > xrpl.shamap
 tests.libxrpl > xrpl.telemetry
 tests.libxrpl > xrpl.tx
 tests.xrpld > xrpl.basics
+tests.xrpld > xrpl.config
+tests.xrpld > xrpld.app
 tests.xrpld > xrpld.rpc
 tests.xrpld > xrpld.telemetry
 tests.xrpld > xrpl.json
+tests.xrpld > xrpl.nodestore
 tests.xrpld > xrpl.protocol
 tests.xrpld > xrpl.telemetry
 xrpl.conditions > xrpl.basics
@@ -253,6 +260,8 @@ xrpl.shamap > xrpl.nodestore
 xrpl.shamap > xrpl.protocol
 xrpl.telemetry > xrpl.basics
 xrpl.telemetry > xrpl.config
+xrpl.telemetry > xrpl.core
+xrpl.telemetry > xrpl.protocol
 xrpl.tx > xrpl.basics
 xrpl.tx > xrpl.core
 xrpl.tx > xrpl.ledger
@@ -264,7 +273,6 @@ xrpld.app > xrpl.config
 xrpld.app > xrpl.consensus
 xrpld.app > xrpl.core
 xrpld.app > xrpld.core
-xrpld.app > xrpld.telemetry
 xrpld.app > xrpl.json
 xrpld.app > xrpl.ledger
 xrpld.app > xrpl.net
@@ -289,7 +297,6 @@ xrpld.overlay > xrpl.consensus
 xrpld.overlay > xrpl.core
 xrpld.overlay > xrpld.core
 xrpld.overlay > xrpld.peerfinder
-xrpld.overlay > xrpld.telemetry
 xrpld.overlay > xrpl.json
 xrpld.overlay > xrpl.ledger
 xrpld.overlay > xrpl.peerfinder
@@ -312,6 +319,7 @@ xrpld.perflog > xrpl.json
 xrpld.perflog > xrpl.nodestore
 xrpld.perflog > xrpl.protocol
 xrpld.perflog > xrpl.server
+xrpld.perflog > xrpl.telemetry
 xrpld.rpc > xrpl.basics
 xrpld.rpc > xrpl.config
 xrpld.rpc > xrpl.core
@@ -333,6 +341,13 @@ xrpld.shamap > xrpl.nodestore
 xrpld.shamap > xrpl.protocol
 xrpld.shamap > xrpl.shamap
 xrpld.telemetry > xrpl.basics
+xrpld.telemetry > xrpl.config
 xrpld.telemetry > xrpl.consensus
+xrpld.telemetry > xrpl.core
+xrpld.telemetry > xrpld.core
+xrpld.telemetry > xrpl.json
+xrpld.telemetry > xrpl.nodestore
 xrpld.telemetry > xrpl.protocol
+xrpld.telemetry > xrpl.rdb
+xrpld.telemetry > xrpl.server
 xrpld.telemetry > xrpl.telemetry

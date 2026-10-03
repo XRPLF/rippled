@@ -106,9 +106,23 @@ injectToProtobuf(opentelemetry::context::Context const& ctx, protocol::TraceCont
     // Serialize flags
     proto.set_trace_flags(spanCtx.trace_flags().flags());
 
-    // TODO: add a trace_state field to the protobuf TraceContext (field 4
-    // is reserved for it in xrpl.proto) with a size limit, then write it
-    // here and read it in extractFromProtobuf above.
+    /**
+     * TODO: add a `trace_state` field to the protobuf TraceContext (field
+     * 4 is reserved for it in xrpl.proto) with a size limit, then write it
+     * here and read it in extractFromProtobuf above.
+     *
+     * Two uses are intended. One is W3C tracestate vendor-specific
+     * key-value pairs, for cross-vendor propagation. The other is an
+     * authenticated token. Today a peer's trace context is
+     * unauthenticated input: the parser checks only that the ids and flags
+     * are well formed (16-byte trace_id and 8-byte span_id, neither all
+     * zero; flags fit 8 bits) and drops the context otherwise, so the ids
+     * are a hint rather than trusted provenance. A token the
+     * receiver could verify would let it decide whether to adopt a peer's
+     * context at all. That needs a shared verification key, a canonical
+     * form to sign, and a defined policy for peers that send no token.
+     * None of that exists yet, which is why the field is only reserved.
+     */
 }
 
 }  // namespace xrpl::telemetry

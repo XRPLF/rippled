@@ -21,11 +21,13 @@
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/telemetry/MetricsRegistry.h>
 
 #include <algorithm>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -323,11 +325,19 @@ LedgerHistory::handleMismatch(
     auto builtLedger = getLedgerByHash(built);
     auto validLedger = getLedgerByHash(valid);
 
+    // Records the classified mismatch reason as a labeled OTel counter so
+    // fork diagnosis is a queryable time series, not just a log grep.
+    auto recordReason = [this](std::string_view reason) {
+        if (auto* mr = app_.getMetricsRegistry())
+            mr->incrementLedgerHistoryMismatch(reason);
+    };
+
     if (!builtLedger || !validLedger)
     {
         JLOG(j_.error()) << "MISMATCH cannot be analyzed:"
                          << " builtLedger: " << to_string(built) << " -> " << builtLedger
                          << " validLedger: " << to_string(valid) << " -> " << validLedger;
+        recordReason(telemetry::ledger_mismatch_reason::unknown);
         return;
     }
 
@@ -349,6 +359,7 @@ LedgerHistory::handleMismatch(
     if (builtLedger->header().parentHash != validLedger->header().parentHash)
     {
         JLOG(j_.error()) << "MISMATCH on prior ledger";
+        recordReason(telemetry::ledger_mismatch_reason::priorLedger);
         return;
     }
 
@@ -356,8 +367,15 @@ LedgerHistory::handleMismatch(
     if (builtLedger->header().closeTime != validLedger->header().closeTime)
     {
         JLOG(j_.error()) << "MISMATCH on close time";
+        recordReason(telemetry::ledger_mismatch_reason::closeTime);
         return;
     }
+
+    // Tracks whether the mismatch reason has already been recorded. The
+    // consensus tx-set hash disagreement is the root cause, so it is counted
+    // once here; the tx-level comparison below still logs its diagnostics but
+    // must not record a second reason for the same mismatch event.
+    bool reasonRecorded = false;
 
     if (builtConsensusHash && validatedConsensusHash)
     {
@@ -366,6 +384,8 @@ LedgerHistory::handleMismatch(
             JLOG(j_.error()) << "MISMATCH on consensus transaction set "
                              << " built: " << to_string(*builtConsensusHash)
                              << " validated: " << to_string(*validatedConsensusHash);
+            recordReason(telemetry::ledger_mismatch_reason::consensusTxset);
+            reasonRecorded = true;
         }
         else
         {
@@ -381,11 +401,15 @@ LedgerHistory::handleMismatch(
     if (builtTx == validTx)
     {
         JLOG(j_.error()) << "MISMATCH with same " << builtTx.size() << " transactions";
+        if (!reasonRecorded)
+            recordReason(telemetry::ledger_mismatch_reason::sameTxsetDiffResult);
     }
     else
     {
         JLOG(j_.error()) << "MISMATCH with " << builtTx.size() << " built and " << validTx.size()
                          << " valid transactions.";
+        if (!reasonRecorded)
+            recordReason(telemetry::ledger_mismatch_reason::differentTxset);
     }
 
     JLOG(j_.error()) << "built\n" << getJson({*builtLedger, {}});

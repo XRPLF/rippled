@@ -3,7 +3,7 @@
  * Implementation of the ValidationTracker class.
  */
 
-#include <xrpld/telemetry/ValidationTracker.h>
+#include <xrpl/telemetry/ValidationTracker.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Protocol.h>
@@ -118,6 +118,10 @@ ValidationTracker::decidePending(TimePoint now)
             noteTallied(hash);
             decisions.push_back(Decision{.minute = evt.minute, .agreed = evt.agreed});
             (evt.agreed ? totalAgreements_ : totalMissed_).fetch_add(1, std::memory_order_relaxed);
+            // The gross pair records this first classification and is left
+            // alone by the repair branch below, so each only ever rises.
+            (evt.agreed ? totalAgreementsGross_ : totalMissedGross_)
+                .fetch_add(1, std::memory_order_relaxed);
         }
         else if (
             !evt.agreed && evt.weValidated && evt.networkValidated &&
@@ -353,6 +357,18 @@ std::uint64_t
 ValidationTracker::totalMissed() const
 {
     return totalMissed_.load(std::memory_order_relaxed);
+}
+
+std::uint64_t
+ValidationTracker::totalAgreementsEver() const
+{
+    return totalAgreementsGross_.load(std::memory_order_relaxed);
+}
+
+std::uint64_t
+ValidationTracker::totalMissedEver() const
+{
+    return totalMissedGross_.load(std::memory_order_relaxed);
 }
 
 std::uint64_t

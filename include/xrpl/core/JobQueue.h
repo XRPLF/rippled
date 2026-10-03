@@ -334,7 +334,9 @@ private:
     //  any.
     //
     // Invariants:
-    //  <none>
+    //  The calling thread owns the JobLock. This function mutates the
+    //  deferred and running counts, which mutex_ guards; collect() reads
+    //  them under the same lock.
     void
     finishJob(JobType type);
 
