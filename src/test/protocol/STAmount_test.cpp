@@ -1371,6 +1371,55 @@ public:
     //--------------------------------------------------------------------------
 
     void
+    testMPTOperandIOUResult()
+    {
+        testcase("MPT operand with IOU result does not wrap negative");
+
+        // A partially funded offer selling 5e17 MPT for 1,000 USD, with the
+        // owner holding 4.8e17 MPT, is reduced by multiplying the funds by the
+        // offer's rate (2e-15 USD per MPT). The legacy 16-digit path takes the
+        // unscaled MPT mantissa: 4.8e17 * 2e15 / 1e14 = 9.6e18, which fits in
+        // uint64 but not in int64, so the IOU result wrapped to a negative
+        // amount without throwing. Under MPTokensV2 any MPT operand uses Number
+        // arithmetic.
+        MPTIssue const s{makeMptID(1, AccountID(0x4985601))};
+        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+        STAmount const funds{s, UINT64_C(480'000'000'000'000'000)};
+        STAmount const rate{noIssue(), UINT64_C(2'000'000'000'000'000), -30};
+        STAmount const invRate{noIssue(), UINT64_C(5'000'000'000'000'000), -1};
+        STAmount const expected{usd, 960};
+
+        auto rules = [](bool const mptV2) {
+            // Rules keeps a reference to the presets set, so use static
+            // storage here rather than a local temporary.
+            static std::unordered_set<UInt256, beast::Uhash<>> const kNoFeatures;
+            static std::unordered_set<UInt256, beast::Uhash<>> const kMptV2Features{
+                featureMPTokensV2};
+            return Rules{mptV2 ? kMptV2Features : kNoFeatures};
+        };
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(false));
+
+            BEAST_EXPECT(mulRoundStrict(funds, rate, usd, false).signum() < 0);
+            BEAST_EXPECT(mulRound(funds, rate, usd, false).signum() < 0);
+            BEAST_EXPECT(divRoundStrict(funds, invRate, usd, false).signum() < 0);
+        }
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(true));
+
+            for (bool const roundUp : {false, true})
+            {
+                BEAST_EXPECT(mulRoundStrict(funds, rate, usd, roundUp) == expected);
+                BEAST_EXPECT(mulRound(funds, rate, usd, roundUp) == expected);
+                BEAST_EXPECT(divRoundStrict(funds, invRate, usd, roundUp) == expected);
+                BEAST_EXPECT(divRound(funds, invRate, usd, roundUp) == expected);
+            }
+        }
+    }
+
+    void
     testMPTGetRate()
     {
         testcase("getRate with a large integral numerator");
@@ -1516,6 +1565,7 @@ public:
         testCanAddIOU();
         testCanAddMPT();
         testMPTRateRounding();
+        testMPTOperandIOUResult();
         testMPTGetRate();
         testCanSubtractXRP();
         testCanSubtractIOU();

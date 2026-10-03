@@ -7011,6 +7011,77 @@ public:
     }
 
     void
+    testPartiallyFundedLargeMPTAsk(FeatureBitset features)
+    {
+        // carol sells 5e17 MPT for 1,000 USD but holds only 4.8e17 MPT.
+        // BookStep reduces the offer by her funds with
+        // mulRoundStrict(funds [MPT], rate, USD): an MPT operand with an IOU
+        // result. On the legacy 16-digit path the product (9.6e18) fit in
+        // uint64 but not int64 and wrapped to a negative USD amount without
+        // throwing. Sending it failed, the strand went dry, and the offer was
+        // never removed, so every crossing or payment through the book failed.
+        // Any MPT operand now uses Number arithmetic and the offer is taken.
+        testcase("Partially funded large MPT ask");
+
+        using namespace jtx;
+
+        for (bool const payment : {false, true})
+        {
+            Env env{*this, features};
+            Account const gw{"gw"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            Account const dan{"dan"};
+            env.fund(XRP(10'000), gw, bob, carol, dan);
+            env.close();
+
+            auto const usd = gw["USD"];
+            env(trust(bob, usd(10'000)));
+            env(trust(carol, usd(10'000)));
+            env(pay(gw, bob, usd(5'000)));
+
+            MPT const s = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {bob, carol, dan},
+                 .maxAmt = kMaxMpTokenAmount});
+            env(pay(gw, carol, s(480'000'000'000'000'000LL)));
+            env.close();
+
+            auto const carolSeq = env.seq(carol);
+            env(offer(carol, usd(1'000), s(500'000'000'000'000'000LL)));
+            env.close();
+
+            if (payment)
+            {
+                env(pay(bob, dan, s(1'000'000'000'000'000LL)),
+                    Path(~s),
+                    Sendmax(usd(100)),
+                    Txflags(tfPartialPayment));
+                env.close();
+                BEAST_EXPECT(env.balance(dan, s) == s(1'000'000'000'000'000LL));
+            }
+            else
+            {
+                env(offer(bob, s(1'000'000'000'000'000LL), usd(2)));
+                env.close();
+                BEAST_EXPECT(env.balance(bob, s) == s(1'000'000'000'000'000LL));
+                BEAST_EXPECT(expectOffers(env, bob, 0));
+            }
+
+            BEAST_EXPECT(env.balance(bob, usd) == usd(4'998));
+            BEAST_EXPECT(env.balance(carol, usd) == usd(2));
+            BEAST_EXPECT(env.balance(carol, s) == s(479'000'000'000'000'000LL));
+            auto const ask = env.le(keylet::offer(carol.id(), SeqProxy::rawSequence(carolSeq)));
+            if (BEAST_EXPECT(ask))
+            {
+                BEAST_EXPECT((*ask)[sfTakerGets] == s(499'000'000'000'000'000LL));
+                BEAST_EXPECT((*ask)[sfTakerPays] == usd(998));
+            }
+        }
+    }
+
+    void
     testBookOffersMPTFunding(FeatureBitset features)
     {
         testcase("book_offers uses MPT issuer capacity, transfer fees, and locks");
@@ -7760,6 +7831,7 @@ public:
         testMPTOfferLargeRatePartialCross(features);
         testMPTOfferLargeRateTickSizeCross(features);
         testMPTOfferLargeRemainderCross(features);
+        testPartiallyFundedLargeMPTAsk(features);
         testMPTOfferLargeRateFlags(features);
         testZeroRateXrpIouOffer(features);
         testBookOffersMPTFunding(features);
