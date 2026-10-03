@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/PermissionedDomainEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -320,7 +321,8 @@ checkVaultDomain(
     if (!maybeDomainID)
         return tecNO_AUTH;
 
-    auto const err = credentials::validDomain(view, *maybeDomainID, subject);
+    PermissionedDomainEntryR const domain(*maybeDomainID, view);
+    auto const err = credentials::validDomain(domain, subject);
     if (err == tecEXPIRED && suppressExpired == SuppressExpired::Yes)
         return tesSUCCESS;
 
