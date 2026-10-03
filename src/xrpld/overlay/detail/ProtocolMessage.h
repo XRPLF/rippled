@@ -5,6 +5,7 @@
 #include <xrpld/overlay/detail/ZeroCopyStream.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/telemetry/TraceContextValidation.h>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
@@ -279,6 +280,11 @@ parseMessageContent(MessageHeader const& header, Buffers const& buffers)
     }
 
     m->DiscardUnknownFields();
+
+    // A peer's trace context is only a tracing hint. Clean it here, so
+    // handlers and relays see only a well-formed copy.
+    if constexpr (requires { telemetry::sanitizeTraceContext(*m); })
+        telemetry::sanitizeTraceContext(*m);
 
     return m;
 }

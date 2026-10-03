@@ -38,6 +38,7 @@
 #include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
+#include <xrpld/rpc/detail/RpcSpanNames.h>
 #include <xrpld/shamap/NodeFamily.h>
 
 #include <xrpl/basics/ByteUtilities.h>
@@ -82,10 +83,12 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Consumer.h>
@@ -100,6 +103,8 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/TreeNodeCache.h>
+#include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/Telemetry.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -214,6 +219,7 @@ public:
 
     beast::Journal journal_;
     std::unique_ptr<perf::PerfLog> perfLog_;
+    std::unique_ptr<telemetry::Telemetry> telemetry_;
     Application::MutexType masterMutex_;
 
     // Required by the SHAMapStore
@@ -324,6 +330,15 @@ public:
                   rpc::getHandlerNames(),
                   logs_->journal("PerfLog"),
                   [this] { signalStop("PerfLog"); }))
+        , telemetry_(
+              telemetry::makeTelemetry(
+                  telemetry::makeTelemetrySetup(
+                      config_->section(Sections::kTelemetry),
+                      "",  // Updated later via setServiceInstanceId()
+                      build_info::getVersionString(),
+                      config_->networkId),
+                  logs_->journal("Telemetry")))
+
         , txMaster_(*this)
         , collectorManager_(makeCollectorManager(
               config_->section(Sections::kInsight),
@@ -492,6 +507,37 @@ public:
         //
 
         add(ledgerCleaner_.get());
+    }
+
+    /**
+     * Stop telemetry before the members are destroyed.
+     *
+     * setup() starts telemetry and run() stops it. This covers the paths that
+     * never reach run(): every `return false` in setup() after the start, and
+     * a caller that gives up after setup() succeeds. Without it the global
+     * Telemetry instance would point at a destroyed object. It acts only while
+     * this application's instance is still published, so a normal shutdown,
+     * where run() already stopped it, does nothing here.
+     */
+    ~ApplicationImp() override
+    {
+        // A destructor is implicitly noexcept, so a failure to stop must not
+        // escape and terminate the process.
+        try
+        {
+            if (telemetry::Telemetry::getInstance() == telemetry_.get())
+                telemetry_->stop();
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(journal_.error()) << "Error stopping telemetry: " << e.what();
+        }
+        catch (...)
+        {
+            // The callees reach third-party SDK code, which may throw something
+            // outside std::exception. Escaping here would terminate the process.
+            JLOG(journal_.error()) << "Error stopping telemetry: unknown exception";
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -1131,6 +1177,22 @@ private:
     void
     startGenesisLedger();
 
+    /**
+     * Start the tracing pipeline.
+     *
+     * Called once from setup(), as soon as the node identity is known.
+     * Starting here rather than in start() means spans emitted during the
+     * rest of setup() are recorded: SpanGuard drops a span whenever the
+     * global Telemetry instance is not yet live, and the first consensus
+     * round runs inside setup().
+     *
+     * @pre nodeIdentity_ is populated, so setServiceInstanceId() has
+     * already supplied the service.instance.id resource attribute
+     * (the Telemetry resource is fixed once start() builds it).
+     */
+    void
+    startTelemetry() const;
+
     std::shared_ptr<Ledger>
     getLastFullLedger();
 
@@ -1226,6 +1288,27 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         return false;
     }
 
+    nodeIdentity_ = getNodeIdentity(*this, cmdline);
+
+    // Now that the node identity is known, inject it into the telemetry
+    // resource attributes — but only if the user didn't already set a
+    // custom service_instance_id in [telemetry].  The Telemetry object
+    // was constructed with an empty serviceInstanceId because
+    // nodeIdentity_ is not available in the member initializer list.
+    if (!config_->section(Sections::kTelemetry).exists("service_instance_id"))
+        telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
+
+    // Start telemetry here, not in start(). Spans are emitted during the rest
+    // of setup() — the first consensus round in beginConsensus() below — and
+    // are dropped unless the global Telemetry instance is already live.
+    //
+    // The position is bounded on both sides:
+    //  - After initRelationalDatabase(): the wallet DB must exist for the node
+    //    identity above, and a DB failure aborts setup(), so starting earlier
+    //    would export a partial trace stream for a run that never comes up.
+    //  - Before beginConsensus(): that call emits the first consensus spans.
+    startTelemetry();
+
     if (validatorKeys_.keys)
         setMaxDisallowedLedger();
 
@@ -1312,8 +1395,6 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     }
 
     orderBookDB_->setup(getLedgerMaster().getCurrentLedger());
-
-    nodeIdentity_ = getNodeIdentity(*this, cmdline);
 
     if (!cluster_->load(config().section(Sections::kClusterNodes)))
     {
@@ -1459,43 +1540,55 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //
     // Execute start up rpc commands.
     //
-    for (auto const& cmd : config_->section(Sections::kRpcStartup).lines())
+    // One span over the batch, so each startup command's rpc.command.* span has
+    // a parent. A fresh root, created only when the section has commands.
+    auto const& startupCommands = config_->section(Sections::kRpcStartup).lines();
+    if (!startupCommands.empty())
     {
-        json::Reader jrReader;
-        json::Value jvCommand;
+        auto const startupSpan = telemetry::ScopedSpanGuard::freshRoot(
+            telemetry::TraceCategory::Rpc,
+            telemetry::rpc_span::prefix::rpc,
+            telemetry::rpc_span::op::startup,
+            telemetry::SpanRole::Internal);
 
-        if (!jrReader.parse(cmd, jvCommand))
+        for (auto const& cmd : startupCommands)
         {
-            JLOG(journal_.fatal())
-                << "Couldn't parse entry in [" << Sections::kRpcStartup << "]: '" << cmd;
-        }
+            json::Reader jrReader;
+            json::Value jvCommand;
 
-        if (!config_->quiet())
-        {
-            JLOG(journal_.fatal()) << "Startup RPC: " << jvCommand << std::endl;
-        }
+            if (!jrReader.parse(cmd, jvCommand))
+            {
+                JLOG(journal_.fatal())
+                    << "Couldn't parse entry in [" << Sections::kRpcStartup << "]: '" << cmd;
+            }
 
-        resource::Charge loadType = resource::kFeeReferenceRpc;
-        resource::Consumer c;
-        rpc::JsonContext context{
-            {.j = getJournal("RPCHandler"),
-             .app = *this,
-             .loadType = loadType,
-             .netOps = getOPs(),
-             .ledgerMaster = getLedgerMaster(),
-             .consumer = c,
-             .role = Role::ADMIN,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = rpc::kApiMaximumSupportedVersion},
-            jvCommand};
+            if (!config_->quiet())
+            {
+                JLOG(journal_.fatal()) << "Startup RPC: " << jvCommand << std::endl;
+            }
 
-        json::Value jvResult;
-        rpc::doCommand(context, jvResult);
+            resource::Charge loadType = resource::kFeeReferenceRpc;
+            resource::Consumer c;
+            rpc::JsonContext context{
+                {.j = getJournal("RPCHandler"),
+                 .app = *this,
+                 .loadType = loadType,
+                 .netOps = getOPs(),
+                 .ledgerMaster = getLedgerMaster(),
+                 .consumer = c,
+                 .role = Role::ADMIN,
+                 .coro = {},
+                 .infoSub = {},
+                 .apiVersion = rpc::kApiMaximumSupportedVersion},
+                jvCommand};
 
-        if (!config_->quiet())
-        {
-            JLOG(journal_.fatal()) << "Result: " << jvResult << std::endl;
+            json::Value jvResult;
+            rpc::doCommand(context, jvResult);
+
+            if (!config_->quiet())
+            {
+                JLOG(journal_.fatal()) << "Result: " << jvResult << std::endl;
+            }
         }
     }
 
@@ -1527,6 +1620,12 @@ ApplicationImp::start(bool withTimers)
 
     ledgerCleaner_->start();
     perfLog_->start();
+}
+
+void
+ApplicationImp::startTelemetry() const
+{
+    telemetry_->start();
 }
 
 void
@@ -1617,6 +1716,11 @@ ApplicationImp::run()
     ledgerCleaner_->stop();
     nodeStore_->stop();
     perfLog_->stop();
+    // Telemetry must stop last among trace-producing components: a span that
+    // ends after stop() is dropped, not exported. serverHandler_, overlay_,
+    // and jobQueue_ are already stopped above, so no threads should be
+    // calling startSpan() at this point.
+    telemetry_->stop();
 
     JLOG(journal_.info()) << "Done.";
 }
