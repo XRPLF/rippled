@@ -414,16 +414,11 @@ CheckCash::doApply()
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
             auto checkDstReserve = [&]() -> SLE::pointer {
-                auto sleDst = AccountRootEntryW(accountID_, psb);
+                auto sleDst = AccountRootEntryW(accountID_, psb, j_);
 
                 // Can the account cover the trust line's or MPT reserve?
-                if (auto const ret = checkReserve(
-                        applyViewContext,
-                        sleDst,
-                        preFeeBalance_,
-                        *sponsorSle,
-                        {.ownerCountDelta = 1},
-                        j_);
+                if (auto const ret = sleDst.checkReserve(
+                        applyViewContext, preFeeBalance_, *sponsorSle, {.ownerCountDelta = 1});
                     !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "

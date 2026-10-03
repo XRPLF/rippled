@@ -92,56 +92,6 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
 }
 
 /**
- * Check if an account has sufficient reserve.
- *
- * @param view The ledger view to read from
- * @param tx The transaction being processed
- * @param accSle The account's ledger entry
- * @param accBalance The account's balance
- * @param sponsorSle The sponsor's ledger entry (if applicable)
- * @param adj Adjustment to the owner/account count (default: 0/0). Positive to add, negative to
- * subtract.
- * @param j Journal for logging (default: null sink)
- * @param insufReserveCode The transaction result code to return if the reserve is insufficient
- * (default: tecINSUFFICIENT_RESERVE).
- * @return Transaction result code
- */
-[[nodiscard]] TER
-checkReserve(
-    ApplyViewContext ctx,
-    AccountRootEntryR const& accSle,
-    XRPAmount accBalance,
-    std::optional<AccountRootEntryR> const& sponsorSle,
-    Adjustment adj,
-    beast::Journal j,
-    TER insufReserveCode = tecINSUFFICIENT_RESERVE);
-
-/**
- * Check if an account has sufficient reserve, deriving the sponsor internally.
- *
- * Equivalent to the overload above, but resolves the sponsor via
- * getEffectiveTxReserveSponsor(ctx, accSle) instead of taking it explicitly. Use this
- * in the common case where the sponsor is simply the transaction's reserve
- * sponsor for accSle. Callers that must force the account's-own-reserve branch
- * (passing a null sponsor) or supply a different sponsor should use the
- * explicit overload above.
- *
- * @param ctx The apply-view context (view + tx)
- * @param accSle The account's ledger entry
- * @param accBalance The account's balance
- * @param adj Reserve adjustments (owner/account count deltas)
- * @param j Journal for logging (default: null sink)
- * @return Transaction result code
- */
-[[nodiscard]] TER
-checkReserve(
-    ApplyViewContext ctx,
-    AccountRootEntryR const& accSle,
-    XRPAmount accBalance,
-    Adjustment adj,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
-
-/**
  * Increase owner-count fields when the caller supplies the sponsor.
  *
  * This helper does not create a ledger object. It updates reserve accounting

@@ -8,7 +8,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -306,7 +305,7 @@ SponsorshipTransfer::doApply()
     auto const objectID = ctx_.tx[~sfObjectID];
 
     auto const sponseeID = ctx_.tx[~sfSponsee].value_or(accountID_);
-    auto sponseeSle = AccountRootEntryW(sponseeID, view());
+    auto sponseeSle = AccountRootEntryW(sponseeID, view(), ctx_.journal);
     if (!sponseeSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -354,13 +353,11 @@ SponsorshipTransfer::doApply()
 
             // Check if new sponsor has sufficient balance
             // NOLINTNEXTLINE(readability-suspicious-call-argument)
-            if (auto const ter = checkReserve(
+            if (auto const ter = sponseeSle.checkReserve(
                     ctx_.getApplyViewContext(),
-                    sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance).xrp(),
                     std::optional<AccountRootEntryR>{newSponsorSle},
-                    {.ownerCountDelta = ownerCountDelta},
-                    ctx_.journal);
+                    {.ownerCountDelta = ownerCountDelta});
                 !isTesSuccess(ter))
                 return ter;
 
@@ -426,13 +423,11 @@ SponsorshipTransfer::doApply()
             // steps in (Reassign), or the object/account is deleted.
             if (view().rules().enabled(fixCleanup3_4_0))
             {
-                if (auto const ter = checkReserve(
+                if (auto const ter = sponseeSle.checkReserve(
                         ctx_.getApplyViewContext(),
-                        sponseeSle,
                         balanceBeforeFee(sponseeSle.rawSle()),
                         std::nullopt,
-                        {.ownerCountDelta = ownerCountDelta},
-                        ctx_.journal);
+                        {.ownerCountDelta = ownerCountDelta});
                     !isTesSuccess(ter))
                     return ter;
             }
@@ -472,13 +467,11 @@ SponsorshipTransfer::doApply()
             if (!newSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
-            if (auto const ter = checkReserve(
+            if (auto const ter = sponseeSle.checkReserve(
                     ctx_.getApplyViewContext(),
-                    sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance).xrp(),
                     std::optional<AccountRootEntryR>{newSponsorSle},
-                    {.accountCountDelta = 1},
-                    ctx_.journal);
+                    {.accountCountDelta = 1});
                 !isTesSuccess(ter))
                 return ter;
 
@@ -519,13 +512,11 @@ SponsorshipTransfer::doApply()
 
             // The sponsee must be able to hold its own account reserve after
             // the sponsorship is removed.
-            if (auto const ter = checkReserve(
+            if (auto const ter = sponseeSle.checkReserve(
                     ctx_.getApplyViewContext(),
-                    sponseeSle,
                     balanceBeforeFee(sponseeSle.rawSle()),
                     std::optional<AccountRootEntryR>{},
-                    {.accountCountDelta = 1},
-                    ctx_.journal);
+                    {.accountCountDelta = 1});
                 !isTesSuccess(ter))
                 return ter;
 
