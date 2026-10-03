@@ -96,6 +96,14 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
+    // Pre-fixCleanup3_5_0: a missing holder fails later in doApply, and the fee is still charged.
+    // Post-fixCleanup3_5_0: refused here, as the other clawback transactions do.
+    if (ctx.view.rules().enabled(fixCleanup3_5_0) && !ctx.view.exists(keylet::account(holder)))
+    {
+        JLOG(ctx.j.debug()) << "VaultClawback: holder account does not exist.";
+        return terNO_ACCOUNT;
+    }
+
     // A pseudo-account holds no vault shares, so a clawback naming one is a no-op: the vault's own
     // pseudo-account issues the shares, and no flow hands them to another one.
     // Pre-fixCleanup3_4_0: an implicit amount ends in tecPRECISION_LOSS, an explicit one debits the
