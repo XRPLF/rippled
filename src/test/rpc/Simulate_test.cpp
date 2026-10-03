@@ -14,6 +14,8 @@
 #include <test/jtx/token.h>
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/Role.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -22,8 +24,11 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -33,6 +38,9 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/Fees.h>
 
 #include <chrono>
 #include <cstdint>
@@ -1336,6 +1344,71 @@ class Simulate_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testLoadType()
+    {
+        // Regression test for issue #6801:
+        // doSimulate must charge kFeeHeavyBurdenRpc, not kFeeMediumBurdenRpc,
+        // because it performs full transaction execution (autofill, STTx parse,
+        // OpenView copy, TxQ::apply with preclaim/apply).
+        testcase("simulate load type is kFeeHeavyBurdenRpc");
+        using namespace jtx;
+
+        Env env(*this);
+        env.close();
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        // Build a minimal payment tx_json
+        json::Value tx = json::ValueType::Object;
+        tx[jss::TransactionType] = jss::Payment;
+        tx[jss::Account] = alice.human();
+        tx[jss::Destination] = bob.human();
+        tx[jss::Amount] = "1000000";
+
+        json::Value params = json::ValueType::Object;
+        params[jss::command] = "simulate";
+        params[jss::tx_json] = tx;
+
+        // Invoke doSimulate via rpc::doCommand so we can inspect loadType
+        auto& app = env.app();
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
+
+        rpc::JsonContext context{
+            {.j = env.journal,
+             .app = app,
+             .loadType = loadType,
+             .netOps = app.getOPs(),
+             .ledgerMaster = app.getLedgerMaster(),
+             .consumer = c,
+             .role = Role::USER,
+             .coro = {},
+             .infoSub = {},
+             .apiVersion = rpc::kApiVersionIfUnspecified},
+            {},
+            {}};
+
+        json::Value result;
+        Gate g;
+        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+            context.params = params;
+            context.coro = coro;
+            rpc::doCommand(context, result);
+            g.signal();
+        });
+
+        using namespace std::chrono_literals;
+        if (!BEAST_EXPECT(g.waitFor(5s)))
+            return;
+
+        // The handler must have set loadType to kFeeHeavyBurdenRpc
+        BEAST_EXPECT(loadType == resource::kFeeHeavyBurdenRpc);
+    }
+
 public:
     void
     run() override
@@ -1354,6 +1427,7 @@ public:
         testDeleteExpiredCredentials();
         testSuccessfulTransactionNetworkID();
         testSuccessfulTransactionAdditionalMetadata();
+        testLoadType();
     }
 };
 
