@@ -178,6 +178,42 @@ AccountRootEntry<ViewT>::checkReserve(ApplyViewContext ctx, XRPAmount accBalance
 }
 
 template <typename ViewT>
+XRPAmount
+AccountRootEntry<ViewT>::xrpLiquid(std::int32_t ownerCountAdj) const
+{
+    if (!this->exists())
+        return beast::kZero;
+
+    auto const& view = this->readView();
+    auto const j = this->journal();
+    AccountID const id = (*this)->getAccountID(sfAccount);
+
+    // Return balance minus reserve
+    std::uint32_t const currentOwnerCount = detail::confineOwnerCount(
+        view.ownerCountHook(id, OwnerCounts(this->rawSle())).count(), ownerCountAdj);
+    std::uint32_t const currentAccountCount = detail::accountCountImpl(*this, 0, j);
+
+    // Pseudo-accounts have no reserve requirement
+    auto const reserve = isPseudoAccount()
+        ? XRPAmount{0}
+        : view.fees().accountReserve(currentOwnerCount, currentAccountCount);
+
+    auto const fullBalance = (*this)->getFieldAmount(sfBalance);
+
+    auto const balance = view.balanceHookIOU(id, xrpAccount(), fullBalance);
+
+    STAmount const amount = (balance < reserve) ? STAmount{0} : balance - reserve;
+
+    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(id)
+                    << " amount=" << amount.getFullText()
+                    << " fullBalance=" << fullBalance.getFullText()
+                    << " balance=" << balance.getFullText() << " reserve=" << reserve
+                    << " ownerCount=" << currentOwnerCount << " ownerCountAdj=" << ownerCountAdj;
+
+    return amount.xrp();
+}
+
+template <typename ViewT>
 bool
 AccountRootEntry<ViewT>::isPseudoAccount() const
 {
