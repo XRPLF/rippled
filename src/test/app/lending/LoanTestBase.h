@@ -2874,7 +2874,7 @@ protected:
                     bool const impairAllowed = BEAST_EXPECT(loanSle) &&
                         canImpairLoan(env, broker, state) &&
                         (!env.current()->rules().enabled(fixCleanup3_4_0) ||
-                         isPaymentLate(*env.current(), LoanEntryR(loanSle, *env.current())));
+                         LoanEntryR(loanSle, *env.current()).isPaymentLate());
                     if (impairAllowed)
                     {
                         // Making a payment will unimpair the loan
