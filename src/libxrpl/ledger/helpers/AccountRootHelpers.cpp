@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -379,7 +380,7 @@ decreaseOwnerCountForObject(
 void
 adjustLoanBrokerOwnerCount(
     ApplyView& view,
-    SLE::Ref brokerSle,
+    LoanBrokerEntryW& brokerSle,
     std::int32_t delta,
     beast::Journal j)
 {
@@ -394,7 +395,12 @@ adjustLoanBrokerOwnerCount(
         return;  // LCOV_EXCL_LINE
 
     adjustOwnerCountImpl(
-        view, brokerSle, sfOwnerCount, brokerSle->getAccountID(sfAccount), delta, j);
+        view,
+        brokerSle.mutableRawSle(),
+        sfOwnerCount,
+        brokerSle->getAccountID(sfAccount),
+        delta,
+        j);
 }
 
 XRPAmount

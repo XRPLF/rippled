@@ -4,6 +4,7 @@
 #include <xrpl/basics/Number.h>  // IWYU pragma: keep
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Indexes.h>
@@ -54,7 +55,7 @@ LoanDelete::preclaim(PreclaimContext const& ctx)
     }
 
     auto const loanBrokerID = loanSle->at(sfLoanBrokerID);
-    auto const loanBrokerSle = ctx.view.read(keylet::loanBroker(loanBrokerID));
+    LoanBrokerEntryR const loanBrokerSle(loanBrokerID, ctx.view);
     if (!loanBrokerSle)
     {
         // should be impossible
@@ -85,7 +86,7 @@ LoanDelete::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
-    auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
+    LoanBrokerEntryW brokerSle(brokerID, view);
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerPseudoAccount = brokerSle->at(sfAccount);
