@@ -105,7 +105,8 @@ cmake --build . --parallel $(nproc)
 
 ## Building without telemetry
 
-Omit the `-o telemetry=True` option (or pass `-o telemetry=False`).
+Pass `-o telemetry=False` to `conan install`.
+Omitting the option is not enough. It then resolves to whatever the recipe's current default is.
 The `opentelemetry-cpp` dependency will not be downloaded,
 the `XRPL_ENABLE_TELEMETRY` preprocessor define will not be set,
 and all tracing macros will compile to no-ops.

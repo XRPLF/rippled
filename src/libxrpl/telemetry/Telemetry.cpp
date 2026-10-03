@@ -477,10 +477,11 @@ public:
         // so nodes agree on every trace. Collector tail sampling reduces volume.
         auto sampler = makeHeadSampler(setup_.samplingRatio);
 
-        // Create TracerProvider with a DeterministicIdGenerator. It returns a
-        // deterministic trace_id when a PendingTraceId is active on the thread,
-        // else a random one — letting hash-derived roots (introduced on a later
-        // branch) become true trace roots. Dormant until such a caller exists.
+        // Create TracerProvider with a DeterministicIdGenerator. When a
+        // PendingTraceId is active on the thread, the generator returns that
+        // pending trace_id. A hash-derived root (such as a transaction hash)
+        // then becomes a true trace root. With no PendingTraceId active, the
+        // generator returns a random trace_id.
         sdkProvider_ = trace_sdk::TracerProviderFactory::Create(
             std::move(processor),
             resourceAttrs,
