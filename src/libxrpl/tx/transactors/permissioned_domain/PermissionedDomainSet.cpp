@@ -3,7 +3,6 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -132,7 +131,7 @@ PermissionedDomainSet::doApply()
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
         std::optional<AccountRootEntryW> noSponsor;
-        increaseOwnerCount(view(), ownerSle, noSponsor, 1, ctx_.journal);
+        ownerSle.increaseOwnerCount(noSponsor, 1);
         view().insert(slePd);
     }
 

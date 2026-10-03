@@ -221,7 +221,6 @@ CheckCreate::doApply()
 
     view().insert(sleCheck);
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
     // If it's not a self-send (and it shouldn't be), add Check to the
     // destination's owner directory.
     if (dstAccountId != accountID_)
@@ -252,7 +251,7 @@ CheckCreate::doApply()
     }
     // If we succeeded, the new entry counts against the creator's reserve.
 
-    increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, viewJ);
+    sle.increaseOwnerCount(ctx_.getApplyViewContext(), 1);
     addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCheck);
     return tesSUCCESS;
 }

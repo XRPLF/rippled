@@ -284,11 +284,11 @@ trustCreate(
     }
 
     sleRippleState->setFieldU32(sfFlags, uFlags);
-    AccountRootEntryW accountSle(bSetHigh ? uHighAccountID : uLowAccountID, view);
+    AccountRootEntryW accountSle(bSetHigh ? uHighAccountID : uLowAccountID, view, j);
     std::optional<AccountRootEntryW> sponsorAccSle;
     if (sponsorSle)
         sponsorAccSle.emplace(sponsorSle->getAccountID(sfAccount), view);
-    increaseOwnerCount(view, accountSle, sponsorAccSle, 1, j);
+    accountSle.increaseOwnerCount(sponsorAccSle, 1);
 
     addSponsorToLedgerEntry(sleRippleState, sponsorSle, bSetHigh ? sfHighSponsor : sfLowSponsor);
 

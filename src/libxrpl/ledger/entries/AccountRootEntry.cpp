@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -18,6 +19,7 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -169,6 +171,133 @@ AccountRootEntry<ViewT>::checkReserve(ApplyViewContext ctx, XRPAmount accBalance
     if (*sponsorExp)
         sponsorSle.emplace(**sponsorExp);
     return checkReserve(ctx, accBalance, sponsorSle, adj);
+}
+
+template <typename ViewT>
+void
+AccountRootEntry<ViewT>::adjustOwnerCountSigned(
+    std::optional<AccountRootEntry<ApplyView>>& sponsorSle,
+    std::int32_t adjustment)
+    requires Base::kIsWritable
+{
+    auto& view = this->applyView();
+    auto const j = this->journal();
+
+    if (view.rules().enabled(featureSponsor))
+    {
+        XRPL_ASSERT(this->exists(), "xrpl::adjustOwnerCountSigned : valid account sle");
+        if (!this->exists())
+            return;  // LCOV_EXCL_LINE
+
+        auto const accountID = (*this)->getAccountID(sfAccount);
+        bool const validType = (*this)->getType() == ltACCOUNT_ROOT;
+        XRPL_ASSERT(validType, "xrpl::adjustOwnerCountSigned : valid account sle type");
+        if (!validType)
+            return;  // LCOV_EXCL_LINE
+
+        XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
+
+        OwnerCounts const currentOwnerCount(this->rawSle());
+        OwnerCounts totalOwnerCount(currentOwnerCount);
+
+        if (sponsorSle)
+        {
+            bool const validSponsorType = (*sponsorSle)->getType() == ltACCOUNT_ROOT;
+            XRPL_ASSERT(validSponsorType, "xrpl::adjustOwnerCountSigned : valid sponsor sle type");
+            if (!validSponsorType)
+                return;  // LCOV_EXCL_LINE
+            auto const sponsorID = (*sponsorSle)->getAccountID(sfAccount);
+
+            totalOwnerCount.sponsored = detail::adjustOwnerCountImpl(
+                view, this->mutableRawSle(), sfSponsoredOwnerCount, accountID, adjustment, j);
+
+            {
+                OwnerCounts const sponsorCurrent(sponsorSle->rawSle());
+                OwnerCounts sponsorAdjustment(sponsorCurrent);
+                sponsorAdjustment.sponsoring = detail::adjustOwnerCountImpl(
+                    view,
+                    sponsorSle->mutableRawSle(),
+                    sfSponsoringOwnerCount,
+                    sponsorID,
+                    adjustment,
+                    j);
+                view.adjustOwnerCountHook(sponsorID, sponsorCurrent, sponsorAdjustment);
+            }
+
+            auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
+            if (sponsorshipSle && adjustment > 0)
+            {
+                // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new
+                // objects. Removing/reassigning ownership of the object doesn't increase
+                // RemainingOwnerCount back. Don't call hook because this counter is not something
+                // that requires reserve (like other sf...OwnerCounts do).
+                detail::adjustOwnerCountImpl(
+                    view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j);
+            }
+        }
+
+        totalOwnerCount.owner = detail::adjustOwnerCountImpl(
+            view, this->mutableRawSle(), sfOwnerCount, accountID, adjustment, j);
+        view.adjustOwnerCountHook(accountID, currentOwnerCount, totalOwnerCount);
+    }
+    else
+    {
+        XRPL_ASSERT(this->exists(), "xrpl::adjustOwnerCountSigned : valid account sle");
+        if (!this->exists())
+            return;
+        // the remaining are only asserts to preserve existing behavior
+        XRPL_ASSERT(!sponsorSle, "xrpl::adjustOwnerCountSigned : sponsor not enabled");
+        XRPL_ASSERT(
+            (*this)->getType() == ltACCOUNT_ROOT,
+            "xrpl::adjustOwnerCountSigned : valid account sle type");
+        XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCount : nonzero adjustment input");
+        std::uint32_t const current{(*this)->getFieldU32(sfOwnerCount)};
+        AccountID const id = (**this)[sfAccount];
+        std::uint32_t const adjusted = detail::confineOwnerCount(current, adjustment, id, j);
+
+        OwnerCounts const currentOwnerCount(this->rawSle());
+        OwnerCounts finalOwnerCount(currentOwnerCount);
+        finalOwnerCount.owner = adjusted;
+
+        view.adjustOwnerCountHook(id, currentOwnerCount, finalOwnerCount);
+        (*this)->at(sfOwnerCount) = adjusted;
+        this->update();
+    }
+}
+
+template <typename ViewT>
+void
+AccountRootEntry<ViewT>::increaseOwnerCount(
+    std::optional<AccountRootEntry<ApplyView>>& sponsorSle,
+    std::uint32_t count)
+    requires Base::kIsWritable
+{
+    XRPL_ASSERT(
+        count != 0 && count <= std::numeric_limits<std::int32_t>::max(),
+        "xrpl::increaseOwnerCount : count in signed delta range");
+    if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
+        return;  // LCOV_EXCL_LINE
+
+    adjustOwnerCountSigned(sponsorSle, static_cast<std::int32_t>(count));
+}
+
+template <typename ViewT>
+void
+AccountRootEntry<ViewT>::increaseOwnerCount(ApplyViewContext ctx, std::uint32_t count)
+    requires Base::kIsWritable
+{
+    auto sponsorExp = getEffectiveTxReserveSponsor(ctx, *this);
+
+    // The sponsor's existence is validated by checkReserve/checkSponsor before
+    // any owner-count mutation, so loading it here cannot fail.
+    XRPL_ASSERT(
+        sponsorExp.has_value(), "xrpl::increaseOwnerCount : sponsor validated before mutation");
+
+    std::optional<AccountRootEntry<ApplyView>> sponsorSle;
+    if (sponsorExp && *sponsorExp)
+        sponsorSle.emplace(std::move(**sponsorExp));
+
+    increaseOwnerCount(sponsorSle, count);
 }
 
 template class AccountRootEntry<ReadView>;
