@@ -684,10 +684,14 @@ ValidVault::finalize(
         return std::nullopt;
     }();
 
-    if (!beforeShares &&
-        (tx.getTxnType() == ttVAULT_DEPOSIT ||   //
-         tx.getTxnType() == ttVAULT_WITHDRAW ||  //
-         tx.getTxnType() == ttVAULT_CLAWBACK))
+    bool const isDonate = isVaultDonate(view.rules(), tx);
+    bool const shouldUpdateShares =
+        // Vault Asset donation is the only operation that can succeed without updating shares
+        ((tx.getTxnType() == ttVAULT_DEPOSIT && !isDonate) ||  //
+         tx.getTxnType() == ttVAULT_WITHDRAW ||                //
+         tx.getTxnType() == ttVAULT_CLAWBACK);
+
+    if (!beforeShares && shouldUpdateShares)
     {
         JLOG(j.fatal()) << "Invariant failed: vault operation succeeded "
                            "without updating shares";
@@ -842,19 +846,23 @@ ValidVault::finalize(
                     !beforeVault_.empty(), "xrpl::ValidVault::finalize : deposit updated a vault");
                 auto const& beforeVault = beforeVault_[0];
 
-                // Deposit is only allowed while the vault is in NoPhase or
-                // Subscription.
-                auto const depositPhase = getVaultPhase(
-                    view,
-                    afterVault.vaultKind,
-                    afterVault.subscriptionDate,
-                    afterVault.redemptionDate);
-                if (depositPhase != VaultPhase::NoPhase && depositPhase != VaultPhase::Subscription)
+                // Ordinary deposits are only allowed in NoPhase or Subscription.
+                // A donation mints no shares, so it is allowed in any phase.
+                if (!isDonate)
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: deposit only allowed in "
-                        "Subscription or NoPhase";
-                    result = false;
+                    auto const depositPhase = getVaultPhase(
+                        view,
+                        afterVault.vaultKind,
+                        afterVault.subscriptionDate,
+                        afterVault.redemptionDate);
+                    if (depositPhase != VaultPhase::NoPhase &&
+                        depositPhase != VaultPhase::Subscription)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: deposit only allowed in "
+                            "Subscription or NoPhase";
+                        result = false;
+                    }
                 }
 
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
@@ -946,34 +954,75 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                auto const maybeAccDeltaShares = deltaShares(tx[sfAccount]);
-                if (!maybeAccDeltaShares)
+                // If assets are donated, check share invariants
+                if (isDonate)
                 {
-                    JLOG(j.fatal()) << "Invariant failed: deposit must change depositor shares";
-                    return false;  // That's all we can do
-                }
-                // We don't round shares, they are integral MPT
-                auto const& accountDeltaShares = *maybeAccDeltaShares;
-                if (accountDeltaShares.delta <= kZero)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: deposit must increase depositor shares";
-                    result = false;
-                }
+                    if (afterVault.owner != tx[sfAccount])
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: donation must be made by the vault owner";
+                        result = false;
+                    }
 
-                auto const maybeVaultDeltaShares = deltaShares(afterVault.pseudoId);
-                if (!maybeVaultDeltaShares || maybeVaultDeltaShares->delta == kZero)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: deposit must change vault shares";
-                    return false;  // That's all we can do
-                }
+                    // A donation leaves the share issuance untouched, so it never shows up in
+                    // beforeMPTs_. Read the (unchanged) issuance from the view instead.
+                    auto const sleShares =
+                        view.read(keylet::mptokenIssuance(afterVault.shareMPTID));
+                    if (!sleShares || sleShares->getFieldU64(sfOutstandingAmount) == 0)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: donation requires outstanding shares";
+                        result = false;
+                    }
 
-                // We don't round shares, they are integral MPT
-                auto const& vaultDeltaShares = *maybeVaultDeltaShares;
-                if (vaultDeltaShares.delta * -1 != accountDeltaShares.delta)
+                    auto const accountDeltaShares = deltaShares(tx[sfAccount]);
+                    if (accountDeltaShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: donation must not change depositor shares";
+                        return false;  // That's all we can do
+                    }
+
+                    auto const vaultDeltaShares = deltaShares(afterVault.pseudoId);
+                    if (vaultDeltaShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: donation must not change vault shares";
+                        return false;  // That's all we can do
+                    }
+                }
+                else
                 {
-                    JLOG(j.fatal()) << "Invariant failed: " <<  //
-                        "deposit must change depositor and vault shares by equal amount";
-                    result = false;
+                    auto const maybeAccDeltaShares = deltaShares(tx[sfAccount]);
+                    if (!maybeAccDeltaShares)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: deposit must change depositor shares";
+                        return false;  // That's all we can do
+                    }
+                    // We don't need to round shares, they are integral MPT
+                    auto const& accountDeltaShares = *maybeAccDeltaShares;
+                    if (accountDeltaShares.delta <= kZero)
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: deposit must increase depositor shares";
+                        result = false;
+                    }
+
+                    auto const maybeVaultDeltaShares = deltaShares(afterVault.pseudoId);
+                    if (!maybeVaultDeltaShares || maybeVaultDeltaShares->delta == kZero)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: deposit must change vault shares";
+                        return false;  // That's all we can do
+                    }
+
+                    // We don't need to round shares, they are integral MPT
+                    auto const& vaultDeltaShares = *maybeVaultDeltaShares;
+                    if (vaultDeltaShares.delta * -1 != accountDeltaShares.delta)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: " <<  //
+                            "deposit must change depositor and vault shares by equal amount";
+                        result = false;
+                    }
                 }
 
                 auto const assetTotalDelta = roundToAsset(
