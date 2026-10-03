@@ -1206,6 +1206,8 @@ trust-these-validators.gov
         if (!unexcept([&]() { parsePort(wss, conf[Sections::kPortWssAdmin], log); }))
             return;
         BEAST_EXPECT(wss.adminNetsV4.size() + wss.adminNetsV6.size() == 1);
+        // Default send_queue_limit should be 1000
+        BEAST_EXPECT(wss.wsQueueLimit == 1000);
     }
 
     void
