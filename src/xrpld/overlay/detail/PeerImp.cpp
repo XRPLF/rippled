@@ -1459,10 +1459,11 @@ PeerImp::handleTransaction(
         }
         else
         {
-            // The job holds its own reference to the span. The span is still
-            // open when addJob() returns. tx_status then records whether the
-            // job queue took the job. The job may already be running by then.
-            // The SDK span takes its lock for each attribute write.
+            // statusSpan keeps the span open after the job takes its own
+            // reference, so tx_status can record whether the job queue took
+            // the job. The job may already be running by then. The SDK span
+            // takes its lock for each attribute write.
+            auto const statusSpan = span;
             bool const queued = app_.getJobQueue().addJob(
                 JtTransaction,
                 "RcvCheckTx",
@@ -1471,7 +1472,7 @@ PeerImp::handleTransaction(
                  checkSignature,
                  batch,
                  stx,
-                 sp = span]() {
+                 sp = std::move(span)]() {
                     // Activate the tx.receive span so checkTransaction's log
                     // lines carry its trace_id. Non-owning: sp keeps the span
                     // open. This job body runs to completion on one worker.
@@ -1479,9 +1480,9 @@ PeerImp::handleTransaction(
                     if (auto peer = weak.lock())
                         peer->checkTransaction(flags, checkSignature, stx, batch);
                 });
-            if (span)
+            if (statusSpan)
             {
-                span->setAttribute(
+                statusSpan->setAttribute(
                     tx_span::attr::txStatus,
                     queued ? std::string_view{tx_span::val::queuedForCheck}
                            : std::string_view{tx_span::val::droppedQueueStopping});
