@@ -440,16 +440,12 @@ port_wss_admin
         using namespace std::filesystem;
         auto const cwd = current_path();
 
-        // Test both config file names.
-        std::string_view const configFiles[] = {Config::kConfigFileName, Config::kConfigLegacyName};
-
         // Config file in current directory.
-        for (auto const& configFile : configFiles)
         {
             // Use a temporary directory for testing.
             TempDir const td;
             current_path(td.path());
-            Path const f = td.file(std::string{configFile});
+            Path const f = td.file(std::string{Config::kConfigFileName});
             std::ofstream o(f.string());
             o << detail::configContents("", "");
             o.close();
@@ -491,7 +487,6 @@ port_wss_admin
         auto const home = detail::envVar("HOME");
         auto const xdgConfigHome = detail::envVar("XDG_CONFIG_HOME");
 
-        for (auto const& configFile : configFiles)
         {
             // Point the current working directory to a temporary directory, so
             // we don't pick up an actual config file from the repository root.
@@ -512,7 +507,7 @@ port_wss_admin
                 // Create the config file in '${XDG_CONFIG_HOME}/[systemName]'.
                 Path p = tc.file(systemName());
                 create_directory(p);
-                p = tc.file(systemName() + "/" + std::string{configFile});
+                p = tc.file(systemName() + "/" + std::string{Config::kConfigFileName});
                 std::ofstream o(p.string());
                 o << detail::configContents("", "");
                 o.close();
@@ -547,7 +542,7 @@ port_wss_admin
                 s += "/" + systemName();
                 p = tc.file(s);
                 create_directory(p);
-                p = tc.file(s + "/" + std::string{configFile});
+                p = tc.file(s + "/" + std::string{Config::kConfigFileName});
                 std::ofstream o(p.string());
                 o << detail::configContents("", "");
                 o.close();
@@ -566,16 +561,16 @@ port_wss_admin
             BEAST_EXPECT(detail::envVar("XDG_CONFIG_HOME") == xdgConfigHome);
         }
 
-        // No config file under either name in any searched directory.
+        // No config file in any searched directory.
         {
             // The system config directory is the last one searched and is not
             // under the test's control, so only run this when it holds no
             // config file.
             Path const systemDir = Path("/etc") / systemName();
-            if (exists(systemDir / std::string{Config::kConfigFileName}) ||
-                exists(systemDir / std::string{Config::kConfigLegacyName}))
+            Path const systemFile = systemDir / std::string{Config::kConfigFileName};
+            if (exists(systemFile))
             {
-                log << "Skipping: " << systemDir.string() << " holds a config file." << std::endl;
+                log << "Skipping: " << systemFile.string() << " exists." << std::endl;
             }
             else
             {
