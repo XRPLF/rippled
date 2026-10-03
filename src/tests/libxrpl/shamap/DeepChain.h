@@ -153,15 +153,25 @@ struct DeepChain
     }
 
     /**
+     * Every node in the chain, root first.
+     *
+     * @return The nodes, each with its claimed position.
+     */
+    [[nodiscard]] std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>>
+    allNodes() const
+    {
+        return nodesBelowRoot(0);
+    }
+
+    /**
      * Fill a synching map, stopping one level short of the deepest node so the
      * caller offers that one itself.
      *
-     * Reports rather than asserts: the two binaries sharing this header use
-     * different test frameworks.
+     * Returns rather than asserts, since two test frameworks share this header.
      *
      * @param map The map to fill.
      * @return Whether the root and every node above the deepest one was
-     *         accepted, which is a property of the chain.
+     *         accepted.
      */
     [[nodiscard]] bool
     fill(SHAMap& map) const

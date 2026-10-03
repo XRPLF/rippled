@@ -1042,6 +1042,19 @@ InboundLedger::receiveNode(
         return;
     }
 
+    // The verdict belongs to whichever walk reached it rather than to this packet, so the
+    // acquisition fails here and the sender keeps its fee. The validity check runs ahead of
+    // isSynching() below, which reads an invalid map the same way as a finished one.
+    if (!map.isValid())
+    {
+        failed_ = true;
+        done();
+
+        // The whole packet is discarded, since its nodes belong to the abandoned map.
+        san = SHAMapAddNode::invalid();
+        return;
+    }
+
     if (!map.isSynching())
     {
         if (packet.type() == protocol::liTX_NODE)
