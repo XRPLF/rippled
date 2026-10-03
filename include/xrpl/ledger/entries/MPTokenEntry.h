@@ -67,6 +67,19 @@ public:
     }
 
     /**
+     * Returns true if the issuer authorized this MPToken (lsfMPTAuthorized).
+     *
+     * This is only the MPToken-side part of requireAuth(). It does not check
+     * whether the issuance requires authorization, the issuance's domain, or
+     * the pseudo-account and vault-share rules.
+     */
+    [[nodiscard]] bool
+    isAuthorized() const
+    {
+        return (*this)->isFlag(lsfMPTAuthorized);
+    }
+
+    /**
      * Returns true if @p account cannot send or receive tokens of this
      * MPToken's issuance because a freeze applies: the issuance is globally
      * locked, this MPToken is individually locked, or (for a vault share)
