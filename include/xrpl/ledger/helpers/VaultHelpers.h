@@ -165,22 +165,6 @@ sharesToAssetsWithdraw(
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
 
 /**
- * Returns true iff `account` holds all of the vault's outstanding shares —
- * i.e. is the sole remaining shareholder. Returns false if the account
- * holds no shares or fewer than the total outstanding.
- *
- * @param view The ledger view.
- * @param account The candidate sole shareholder.
- * @param issuance The MPTokenIssuance SLE for the vault's shares; provides
- *                 both the share MPTID and the outstanding-amount total.
- */
-[[nodiscard]] bool
-isSoleShareholder(
-    ReadView const& view,
-    AccountID const& account,
-    MPTokenIssuanceEntryR const& issuance);
-
-/**
  * Resolves a Vault's LEVersion, the single point every accounting touch
  * point should call to determine which recognition model (instant interest
  * recognition vs. cash-basis) a Vault uses. Vaults created before featureLendingProtocolV1_1

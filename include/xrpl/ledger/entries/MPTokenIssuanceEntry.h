@@ -139,6 +139,15 @@ public:
      */
     [[nodiscard]] bool
     isVaultPseudoAccountFrozen(AccountID const& account, std::uint8_t depth) const;
+
+    /**
+     * Returns true iff @p account holds all of this vault share issuance's
+     * outstanding shares, i.e. is the sole remaining shareholder. Returns
+     * false if the account holds no shares or fewer than the total
+     * outstanding.
+     */
+    [[nodiscard]] bool
+    isSoleShareholder(AccountID const& account) const;
 };
 
 using MPTokenIssuanceEntryR = MPTokenIssuanceEntry<ReadView>;
