@@ -3640,8 +3640,7 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 env(rate(gw_, 1.25));
                 env.close();
-                // This offer succeeds to cross pre- and post-amendment
-                // because the strand's out amount is small enough to match
+                // This offer crosses because the strand's out amount is small enough to match
                 // limitQuality value and limitOut() function in StrandFlow
                 // doesn't require an adjustment to out value.
                 env(offer(carol_, EUR(100), GBP(100)));
@@ -3706,8 +3705,7 @@ private:
                 // first and initially forces multi-path AMM offer generation.
                 // Multi-path AMM offers are consumed until their quality
                 // is less than the auto-bridge offers quality. Auto-bridge
-                // offers are consumed afterward. Then the behavior is
-                // different pre-amendment and post-amendment.
+                // offers are consumed afterward.
                 env(offer(bob_, GBP(10), XRP(10)), Txflags(tfPassive));
                 env(offer(ed, XRP(10), EUR(10)), Txflags(tfPassive));
                 env.close();
@@ -3717,8 +3715,7 @@ private:
                 // AMM offer is generated with the limit out taking
                 // into consideration the transfer fee. This results
                 // in an overall quality offer matching the limit quality
-                // and the single path AMM offer is consumed. More
-                // liquidity is consumed overall in post-amendment.
+                // and the single path AMM offer is consumed.
                 // Total consumed ~60.68GBP/62.93EUR
                 BEAST_EXPECT(ammAlice.expectBalances(
                     STAmount{GBP, UINT64_C(1'060'684828792832), -12},
@@ -5153,8 +5150,7 @@ private:
                     if (rates.first == 1.5)
                     {
                         // Ed offer is partially crossed.
-                        // The updated rounding makes limitQuality
-                        // work if both amendments are enabled
+                        // Rounding in favor of the AMM makes limitQuality work
                         BEAST_EXPECT(expectOffers(
                             env,
                             ed,
@@ -5320,16 +5316,12 @@ private:
         std::string logs;
 
         enum class Status {
-            SucceedShouldSucceedResize,  // Succeed in pre-fix because
-                                         // error allowance, succeed post-fix
-                                         // because of offer resizing
-            FailShouldSucceed,           // Fail in pre-fix due to rounding,
-                                         // succeed after fix because of XRP
-                                         // side is generated first
-            SucceedShouldFail,           // Succeed in pre-fix, fail after fix
-                                         // due to small quality difference
-            Fail,                        // Both fail because the quality can't be matched
-            Succeed                      // Both succeed
+            SucceedShouldSucceedResize,  // Succeeds because of offer resizing
+            FailShouldSucceed,           // Succeeds because the XRP side
+                                         // is generated first
+            SucceedShouldFail,           // Fails due to small quality difference
+            Fail,                        // Fails because the quality can't be matched
+            Succeed                      // Succeeds
         };
         using enum Status;
         auto const xrpIouAmounts10100 = TAmounts{XRPAmount{10}, IOUAmount{100}};
@@ -5388,17 +5380,14 @@ private:
             {"1819778294",           "8305.084302902864",   Quality{6487429398998540860},  415, Succeed},
             {"6970462.633911943",    "57359281",            Quality{6054087899185946624},  850, Succeed},
             {"3983448845",           "2347.543644281467",   Quality{6558965195382476659},  856, Succeed},
-            // This is a tiny offer 12drops/19321952e-15 it succeeds pre-amendment because of the error allowance.
-            // Post amendment it is resized to 11drops/17711789e-15 but the quality is still less than
-            // the target quality and the offer fails.
+            // This is a tiny offer 12drops/19321952e-15. It is resized to 11drops/17711789e-15
+            // but the quality is still less than the target quality and the offer fails.
             {"771493171",            "1.243473020567508",   Quality{6707566798038544272},  100, SucceedShouldFail},
         };
         // clang-format on
 
         boost::regex const rx("^\\d+$");
         boost::smatch match;
-        // tests that succeed should have the same amounts pre-fix and post-fix
-        std::vector<std::pair<STAmount, STAmount>> const successAmounts;
         Env const env(*this, features, std::make_unique<CaptureLogs>(&logs));
         auto rules = env.current()->rules();
         CurrentTransactionRulesGuard const rg(rules);
@@ -5847,14 +5836,13 @@ private:
             Env env(*this, features);
 
             fund(env, gw_, {alice_, carol_}, XRP(1'000'000), {USD(1'000'000)});
-            // This offer blocks AMM offer in pre-amendment
+            // Low quality LOB offer
             env(offer(alice_, XRP(1), USD(0.01)));
             env.close();
 
             AMM const amm(env, gw_, XRP(200'000), USD(100'000));
 
-            // The offer doesn't cross AMM in pre-amendment code
-            // It crosses AMM in post-amendment code
+            // The offer crosses AMM
             env(offer(carol_, USD(0.49), XRP(1)));
             env.close();
 
@@ -5865,13 +5853,12 @@ private:
             BEAST_EXPECT(expectOffers(env, carol_, 0));
         }
 
-        // There is no blocking offer, the same AMM liquidity is consumed
-        // pre- and post-amendment.
+        // There is no LOB offer, the same AMM liquidity is consumed.
         {
             Env env(*this, features);
 
             fund(env, gw_, {alice_, carol_}, XRP(1'000'000), {USD(1'000'000)});
-            // There is no blocking offer
+            // There is no LOB offer
             // env(offer(alice_, XRP(1), USD(0.01)));
 
             AMM const amm(env, gw_, XRP(200'000), USD(100'000));
@@ -5880,7 +5867,7 @@ private:
             env(offer(carol_, USD(0.49), XRP(1)));
             env.close();
 
-            // The same result as with the blocking offer
+            // The same result as with the LOB offer
             BEAST_EXPECT(
                 amm.expectBalances(XRPAmount(200'000'980'005), USD(99'999.51), amm.tokens()));
             // Carol's offer crosses AMM
@@ -5892,8 +5879,7 @@ private:
             Env env(*this, features);
             fund(env, gw_, {alice_, carol_, bob_}, XRP(10'000), {USD(1'000)});
 
-            // This offer blocks AMM offer in pre-amendment
-            // It crosses AMM in post-amendment code
+            // Low quality LOB offer
             env(offer(bob_, USD(1), XRPAmount(500)));
             env.close();
             AMM const amm(env, alice_, XRP(1'000), USD(500));
@@ -5906,8 +5892,7 @@ private:
             BEAST_EXPECT(expectOffers(env, bob_, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
         }
 
-        // There is no blocking offer, the same AMM liquidity is consumed
-        // pre- and post-amendment.
+        // There is no LOB offer, the same AMM liquidity is consumed.
         {
             Env env(*this, features);
             fund(env, gw_, {alice_, carol_, bob_}, XRP(10'000), {USD(1'000)});

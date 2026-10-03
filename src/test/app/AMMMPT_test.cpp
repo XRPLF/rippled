@@ -5075,8 +5075,7 @@ private:
                  .pay = 30'000'000'000'000'000,
                  .flags = kMptDexFlags});
             AMM const ammAlice(env, alice_, btc(1'000'000'000'000'000), eth(1'100'000'000'000'000));
-            // This offer succeeds to cross pre- and post-amendment
-            // because the strand's out amount is small enough to match
+            // This offer crosses because the strand's out amount is small enough to match
             // limitQuality value and limitOut() function in StrandFlow
             // doesn't require an adjustment to out value.
             env(offer(carol_, eth(100'000'000'000'000), btc(100'000'000'000'000)));
@@ -6748,8 +6747,7 @@ private:
                     if (rates.first == kLowRate)
                     {
                         // Ed offer is partially crossed.
-                        // The updated rounding makes limitQuality
-                        // work if both amendments are enabled
+                        // Rounding in favor of the AMM makes limitQuality work
                         BEAST_EXPECT(expectOffers(
                             env,
                             ed,
