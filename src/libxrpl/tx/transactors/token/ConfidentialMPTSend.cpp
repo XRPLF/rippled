@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -102,7 +103,7 @@ verifySendProofs(
     PreclaimContext const& ctx,
     std::shared_ptr<SLE const> const& sleSenderMPToken,
     std::shared_ptr<SLE const> const& sleDestinationMPToken,
-    std::shared_ptr<SLE const> const& sleIssuance)
+    MPTokenIssuanceEntryR const& sleIssuance)
 {
     // Sanity check
     if (!sleSenderMPToken || !sleDestinationMPToken || !sleIssuance)
@@ -180,7 +181,7 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
 
     // Check if MPT issuance exists
     auto const mptIssuanceID = ctx.tx[sfMPTokenIssuanceID];
-    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntryR const sleIssuance(mptIssuanceID, ctx.view);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -307,7 +308,7 @@ ConfidentialMPTSend::doApply()
 
     auto sleSenderMPToken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     auto sleDestinationMPToken = view().peek(keylet::mptoken(mptIssuanceID, destination));
-    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntryR const sleIssuance(mptIssuanceID, view());
 
     auto const sleDestAcct = view().read(keylet::account(destination));
 

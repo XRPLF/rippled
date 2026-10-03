@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -75,7 +76,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     }
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntryR const sleIssuance(mptIssuanceID, ctx.view);
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -130,7 +131,7 @@ VaultSet::doApply()
     auto const vaultAsset = vault->at(sfAsset);
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntryW sleIssuance(mptIssuanceID, view(), j_);
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -164,7 +165,7 @@ VaultSet::doApply()
         {
             sleIssuance->makeFieldAbsent(sfDomainID);
         }
-        view().update(sleIssuance);
+        sleIssuance.update();
     }
 
     // Note, we must update Vault object even if only DomainID is being updated

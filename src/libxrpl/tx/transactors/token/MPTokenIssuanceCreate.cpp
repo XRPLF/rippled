@@ -5,6 +5,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -154,7 +155,8 @@ MPTokenIssuanceCreate::create(
         if (!ownerNode)
             return std::unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
 
-        auto mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
+        MPTokenIssuanceEntryW mptIssuance(mptIssuanceKeylet, ctx.view, journal);
+        mptIssuance.newSLE();
         (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
         (*mptIssuance)[sfIssuer] = args.account;
         (*mptIssuance)[sfOutstandingAmount] = 0;
@@ -195,9 +197,9 @@ MPTokenIssuanceCreate::create(
             (*mptIssuance)[sfReferenceHolding] = *args.referenceHolding;
         }
 
-        addSponsorToLedgerEntry(mptIssuance, sponsorSle);
+        addSponsorToLedgerEntry(mptIssuance.mutableRawSle(), sponsorSle);
 
-        ctx.view.insert(mptIssuance);
+        mptIssuance.insert();
     }
 
     // Update owner count.

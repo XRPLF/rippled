@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -99,7 +100,7 @@ ConfidentialMPTMirrorUpdate::preclaim(PreclaimContext const& ctx)
     // The issuance must exist and have confidential balances enabled with a
     // registered issuer encryption key; otherwise there is no mirror to update.
     auto const mptIssuanceID = ctx.tx[sfMPTokenIssuanceID];
-    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntryR const sleIssuance(mptIssuanceID, ctx.view);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -209,7 +210,7 @@ ConfidentialMPTMirrorUpdate::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
 
-    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntryR const sleIssuance(mptIssuanceID, view());
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
