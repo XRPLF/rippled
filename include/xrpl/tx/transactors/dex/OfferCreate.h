@@ -5,6 +5,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/OfferEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Keylet.h>
@@ -108,7 +109,7 @@ private:
     TER
     applyHybrid(
         Sandbox& sb,
-        STLedgerEntry::pointer sleOffer,
+        OfferEntryW& sleOffer,
         Keylet const& offerIndex,
         STAmount const& saTakerPays,
         STAmount const& saTakerGets,
