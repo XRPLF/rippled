@@ -173,6 +173,18 @@ sharesToAssetsWithdraw(
 isSoleShareholder(ReadView const& view, AccountID const& account, SLE::ConstRef issuance);
 
 /**
+ * Determine if a vault is insolvent. A vault is considered insolvent when
+ * the total assets in the vault are zero, and outstanding shares are non-zero.
+ *
+ * @param vault The vault SLE.
+ * @param shareIssuance The MPTokenIssuance SLE for the vault's shares.
+ *
+ * @return True if the vault is insolvent, false otherwise.
+ */
+[[nodiscard]] bool
+isVaultInsolvent(SLE::ConstRef vault, SLE::ConstRef shareIssuance);
+
+/**
  * Resolves a Vault's LEVersion, the single point every accounting touch
  * point should call to determine which recognition model (instant interest
  * recognition vs. cash-basis) a Vault uses. Vaults created before featureLendingProtocolV1_1

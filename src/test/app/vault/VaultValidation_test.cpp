@@ -11,6 +11,7 @@
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
+#include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
@@ -34,6 +35,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
@@ -167,6 +169,14 @@ private:
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             tx[sfFlags] = tfClearDeepFreeze;
             env(tx, Ter{temINVALID_FLAG});
+
+            {
+                env.disableFeature(featureLendingProtocolV1_2);
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                tx[sfFlags] = tfVaultOwnerCanBlockDeposit;
+                env(tx, Ter(temINVALID_FLAG));
+                env.enableFeature(featureLendingProtocolV1_2);
+            }
 
             {
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
@@ -474,13 +484,50 @@ private:
 
         testCase(
             [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
-                testcase("invalid set immutable flag");
+                testcase("set flags fail without featureLendingProtocolV1_2");
 
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                env(tx, Ter(tesSUCCESS));
+                env.close();
+
+                {
+                    env.disableFeature(featureLendingProtocolV1_2);
+                    env(vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositBlock}),
+                        Ter(temINVALID_FLAG));
+                    env(vault.set(
+                            {.owner = owner, .id = keylet.key, .flags = tfVaultDepositUnblock}),
+                        Ter(temINVALID_FLAG));
+                    env.enableFeature(featureLendingProtocolV1_2);
+                }
+            });
+
+        testCase(
+            [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
+                testcase("invalid set flag combination");
+
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                env(tx, Ter(tesSUCCESS));
+                env.close();
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
-                    tx[sfFlags] = tfVaultPrivate;
+                    tx[sfFlags] = tfVaultDepositBlock | tfVaultDepositUnblock;
+                    env(tx, Ter(temINVALID_FLAG));
+                }
+            });
+
+        testCase(
+            [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
+                testcase("invalid set immutable flag");
+
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                env(tx);
+
+                {
+                    auto tx = vault.set({.owner = owner, .id = keylet.key});
+                    // tfVaultPrivate aliases tfVaultDepositBlock (0x00010000). Use a
+                    // VaultCreate-only flag that VaultSet still rejects.
+                    tx[sfFlags] = tfVaultOwnerCanBlockDeposit;
                     env(tx, Ter(temINVALID_FLAG));
                 }
             });
@@ -1181,6 +1228,351 @@ private:
     }
 
     void
+    testVaultDepositBlockGeneral()
+    {
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const owner{"owner"};
+        Account const other{"other"};
+
+        env.fund(XRP(100'000'000), owner, other);
+        Vault vault{env};
+        PrettyAsset const asset = xrpIssue();
+        std::string const prefix = "VaultDepositBlock: ";
+
+        auto const blockVault = [&](TER expectedTer, Keylet const& keylet) {
+            env(vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositBlock}),
+                Ter(expectedTer));
+        };
+
+        auto const unblockVault = [&](TER expectedTer, Keylet const& keylet) {
+            env(vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositUnblock}),
+                Ter(expectedTer));
+        };
+
+        {
+            testcase(prefix + "block/unblock fails when amendment is disabled");
+
+            env.disableFeature(featureLendingProtocolV1_2);
+            auto const [tx, keylet] = vault.create(
+                {.owner = owner, .asset = asset, .flags = tfVaultOwnerCanBlockDeposit});
+            env(tx, Ter(temINVALID_FLAG));
+            env.close();
+
+            blockVault(temINVALID_FLAG, keylet);
+            unblockVault(temINVALID_FLAG, keylet);
+
+            env.enableFeature(featureLendingProtocolV1_2);
+        }
+
+        {
+            testcase(prefix + "block/unblock fails when vault is not configured");
+            auto const [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+            BEAST_EXPECT(!env.le(keylet)->isFlag(lsfVaultOwnerCanBlockDeposit));
+
+            blockVault(tecNO_PERMISSION, keylet);
+            unblockVault(tecNO_PERMISSION, keylet);
+
+            env(vault.del({.owner = owner, .id = keylet.key}), Ter(tesSUCCESS));
+            env.close();
+        }
+
+        auto const [tx, keylet] =
+            vault.create({.owner = owner, .asset = asset, .flags = tfVaultOwnerCanBlockDeposit});
+        env(tx);
+        env.close();
+        BEAST_EXPECT(env.le(keylet)->isFlag(lsfVaultOwnerCanBlockDeposit));
+
+        {
+            testcase(prefix + "block/unblock succeeds");
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+            env(vault.deposit({
+                    .depositor = other,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+
+            blockVault(tesSUCCESS, keylet);
+
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tecLOCKED));
+
+            env(vault.deposit({
+                    .depositor = other,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tecLOCKED));
+
+            env(vault.withdraw({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+
+            env(vault.withdraw({
+                    .depositor = other,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+
+            unblockVault(tesSUCCESS, keylet);
+
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+
+            env(vault.deposit({
+                    .depositor = other,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+
+            env(vault.withdraw({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+
+            env(vault.withdraw({
+                    .depositor = other,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+        }
+
+        {
+            testcase(prefix + "block/unblock fails when caller is not owner");
+
+            env(vault.set({.owner = other, .id = keylet.key, .flags = tfVaultDepositBlock}),
+                Ter(tecNO_PERMISSION));
+
+            blockVault(tesSUCCESS, keylet);
+
+            env(vault.set({.owner = other, .id = keylet.key, .flags = tfVaultDepositUnblock}),
+                Ter(tecNO_PERMISSION));
+
+            unblockVault(tesSUCCESS, keylet);
+        }
+
+        {
+            testcase(prefix + "donation is refused while vault is blocked");
+            env(vault.deposit({
+                    .depositor = other,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+
+            blockVault(tesSUCCESS, keylet);
+
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                    .flags = tfVaultDonate,
+                }),
+                Ter(tecLOCKED));
+
+            unblockVault(tesSUCCESS, keylet);
+
+            env(vault.withdraw({
+                    .depositor = other,
+                    .id = keylet.key,
+                    .amount = XRP(10'000),
+                }),
+                Ter(tesSUCCESS));
+        }
+
+        {
+            testcase(prefix + "VaultSet combines field update with block flag");
+
+            auto const makeTx = [&]() {
+                auto jv =
+                    vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositBlock});
+                jv[sfData] = "4D65746144617461";
+                return jv;
+            };
+
+            env.disableFeature(featureLendingProtocolV1_2);
+            env(makeTx(), Ter(temINVALID_FLAG));
+            env.enableFeature(featureLendingProtocolV1_2);
+            env.close();
+
+            env(makeTx(), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.le(keylet)->isFlag(lsfVaultDepositBlocked));
+            BEAST_EXPECT(strHex(env.le(keylet)->at(sfData)) == "4D65746144617461");
+
+            unblockVault(tesSUCCESS, keylet);
+        }
+
+        {
+            testcase(prefix + "unblock is a no-op when vault is already unblocked");
+            unblockVault(tesSUCCESS, keylet);
+            BEAST_EXPECT(!env.le(keylet)->isFlag(lsfVaultDepositBlocked));
+        }
+
+        {
+            testcase(prefix + "block is a no-op when vault is already blocked");
+            blockVault(tesSUCCESS, keylet);
+            BEAST_EXPECT(env.le(keylet)->isFlag(lsfVaultDepositBlocked));
+            blockVault(tesSUCCESS, keylet);
+            BEAST_EXPECT(env.le(keylet)->isFlag(lsfVaultDepositBlocked));
+            unblockVault(tesSUCCESS, keylet);
+            BEAST_EXPECT(!env.le(keylet)->isFlag(lsfVaultDepositBlocked));
+        }
+
+        env(vault.del({.owner = owner, .id = keylet.key}));
+    }
+
+    void
+    testVaultDepositBlockClosedEnded()
+    {
+        using namespace test::jtx;
+
+        Env env{*this};
+        Vault const vault{env};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        env.fund(XRP(1'000'000), owner, depositor);
+        env.close();
+
+        PrettyAsset const asset = xrpIssue();
+        std::string const prefix = "VaultDepositBlock closed-ended: ";
+
+        auto const [createTx, keylet, subscriptionDate] = vault.createClosedEnded(
+            {.owner = owner,
+             .asset = asset,
+             .flags = tfVaultOwnerCanBlockDeposit,
+             .subscriptionOffset = std::chrono::seconds{600}});
+        env(createTx, Ter(tesSUCCESS));
+        env.close();
+
+        testcase(prefix + "block and unblock during the Subscription phase");
+
+        env(vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositBlock}),
+            Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.le(keylet)->isFlag(lsfVaultDepositBlocked));
+
+        env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}),
+            Ter(tecLOCKED));
+        env.close();
+
+        env(vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositUnblock}),
+            Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet)->isFlag(lsfVaultDepositBlocked));
+
+        env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}),
+            Ter(tesSUCCESS));
+        env.close();
+
+        BEAST_EXPECT(env.now() < subscriptionDate);
+    }
+
+    void
+    testVaultDepositBlockClosedEndedPhases()
+    {
+        using namespace test::jtx;
+
+        Env env{*this};
+        Vault const vault{env};
+        Account const owner{"owner"};
+        env.fund(XRP(1'000'000), owner);
+        env.close();
+
+        PrettyAsset const asset = xrpIssue();
+        std::string const prefix = "VaultDepositBlock closed-ended: ";
+
+        auto const [createTx, keylet, subscriptionDate] = vault.createClosedEnded(
+            {.owner = owner,
+             .asset = asset,
+             .flags = tfVaultOwnerCanBlockDeposit,
+             .subscriptionOffset = std::chrono::seconds{60},
+             .investmentWindow = std::chrono::seconds{200}});
+        env(createTx, Ter(tesSUCCESS));
+        env.close();
+
+        auto const toggle = [&]() {
+            env(vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositBlock}),
+                Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.le(keylet)->isFlag(lsfVaultDepositBlocked));
+
+            env(vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositUnblock}),
+                Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet)->isFlag(lsfVaultDepositBlocked));
+        };
+
+        {
+            testcase(prefix + "block and unblock during the Investment phase");
+            vault.closePastSubscription(subscriptionDate);
+            BEAST_EXPECT(env.now() >= subscriptionDate);
+            toggle();
+        }
+
+        {
+            testcase(prefix + "block and unblock during the Redemption phase");
+            env.close(subscriptionDate + std::chrono::seconds{201});
+            env.close();
+            toggle();
+        }
+    }
+
+    void
+    testVaultDeleteBlocked()
+    {
+        using namespace test::jtx;
+
+        Env env{*this};
+        Vault const vault{env};
+        Account const owner{"owner"};
+        env.fund(XRP(1'000'000), owner);
+        env.close();
+
+        PrettyAsset const asset = xrpIssue();
+
+        testcase("VaultDelete of a blocked vault");
+        auto [tx, keylet] =
+            vault.create({.owner = owner, .asset = asset, .flags = tfVaultOwnerCanBlockDeposit});
+        env(tx, Ter(tesSUCCESS));
+        env.close();
+
+        env(vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositBlock}),
+            Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.le(keylet)->isFlag(lsfVaultDepositBlocked));
+
+        env(vault.del({.owner = owner, .id = keylet.key}), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.le(keylet) == nullptr);
+    }
+
+    void
     testVaultDepositDonate()
     {
         using namespace test::jtx;
@@ -1431,6 +1823,338 @@ private:
         }
     }
 
+    // A defaulted loan can leave a vault holding shares with nothing behind
+    // them. Ordinary deposits are refused there because the share price is
+    // undefined, but a donation mints no shares, so it is the one deposit
+    // that can put assets back.
+    void
+    testVaultDepositDonateInsolvent()
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+        std::string const prefix = "VaultDeposit donate insolvent";
+
+        // featureLendingProtocolV1_1 confines loan brokers to closed-ended
+        // vaults. Ordinary deposits into those are refused in Investment
+        // with tecEXPIRED before insolvency is considered. This case uses
+        // an open-ended vault so a regular deposit can reach tecLOCKED.
+        Env env{*this, all_ - featureLendingProtocolV1_1};
+        Vault const vault{env};
+
+        auto const vaultShareBalance = [&](Keylet const& vaultKeylet) {
+            auto const sleVault = env.le(vaultKeylet);
+            BEAST_EXPECT(sleVault != nullptr);
+
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
+            BEAST_EXPECT(sleIssuance != nullptr);
+
+            return sleIssuance->at(sfOutstandingAmount);
+        };
+
+        auto const vaultAssetBalance = [&](Keylet const& vaultKeylet) {
+            auto const sleVault = env.le(vaultKeylet);
+            BEAST_EXPECT(sleVault != nullptr);
+
+            return std::make_pair(sleVault->at(sfAssetsAvailable), sleVault->at(sfAssetsTotal));
+        };
+
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        env.fund(XRP(1'000'000), owner, depositor);
+        env.close();
+
+        PrettyAsset const asset = xrpIssue();
+
+        auto const [createTx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+        env(createTx, Ter(tesSUCCESS));
+        env.close();
+
+        env(vault.deposit({.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)}),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const sharesIssued = vaultShareBalance(vaultKeylet);
+        BEAST_EXPECT(sharesIssued > 0);
+
+        // Lend the vault's entire balance out, then let the loan default so
+        // the receivable is written off and the vault is left with shares
+        // and no assets.
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(loan_broker::set(owner, vaultKeylet.key), Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+        env(loan::set(depositor, brokerKeylet.key, asset(100).value()),
+            kInterestRate(TenthBips32(0)),
+            kGracePeriod(60),
+            kPaymentInterval(120),
+            kPaymentTotal(10),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        env.close(std::chrono::seconds{120 + 60});
+        env(manage(owner, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+
+        {
+            testcase(prefix + " setup leaves shares with no assets");
+            auto const [available, total] = vaultAssetBalance(vaultKeylet);
+            BEAST_EXPECT(available == 0);
+            BEAST_EXPECT(total == 0);
+            BEAST_EXPECT(vaultShareBalance(vaultKeylet) == sharesIssued);
+        }
+
+        {
+            testcase(prefix + " ordinary deposit is refused");
+            env(vault.deposit({.depositor = depositor, .id = vaultKeylet.key, .amount = asset(50)}),
+                Ter(tecLOCKED));
+            env.close();
+        }
+
+        {
+            testcase(prefix + " donation recapitalizes the vault");
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = vaultKeylet.key,
+                    .amount = asset(50),
+                    .flags = tfVaultDonate,
+                }),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const [available, total] = vaultAssetBalance(vaultKeylet);
+            BEAST_EXPECT(available == asset(50).value());
+            BEAST_EXPECT(total == asset(50).value());
+            BEAST_EXPECT(vaultShareBalance(vaultKeylet) == sharesIssued);
+        }
+
+        {
+            testcase(prefix + " ordinary deposit resumes once backed again");
+            env(vault.deposit({.depositor = depositor, .id = vaultKeylet.key, .amount = asset(50)}),
+                Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(vaultShareBalance(vaultKeylet) > sharesIssued);
+        }
+    }
+
+    // Same write-off as above, but on a closed-ended vault under
+    // featureLendingProtocolV1_1. Ordinary deposits fail with tecEXPIRED in
+    // the Investment phase; a donation is not phase-gated, so it can still
+    // recapitalize after the default.
+    void
+    testVaultDepositDonateInsolventClosedEnded()
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+        std::string const prefix = "VaultDeposit donate insolvent closed-ended";
+
+        Env env{*this};
+        Vault const vault{env};
+
+        auto const vaultShareBalance = [&](Keylet const& vaultKeylet) {
+            auto const sleVault = env.le(vaultKeylet);
+            BEAST_EXPECT(sleVault != nullptr);
+
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
+            BEAST_EXPECT(sleIssuance != nullptr);
+
+            return sleIssuance->at(sfOutstandingAmount);
+        };
+
+        auto const vaultAssetBalance = [&](Keylet const& vaultKeylet) {
+            auto const sleVault = env.le(vaultKeylet);
+            BEAST_EXPECT(sleVault != nullptr);
+
+            return std::make_pair(sleVault->at(sfAssetsAvailable), sleVault->at(sfAssetsTotal));
+        };
+
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        env.fund(XRP(1'000'000), owner, depositor);
+        env.close();
+
+        PrettyAsset const asset = xrpIssue();
+
+        auto const [createTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+            {.owner = owner, .asset = asset, .subscriptionOffset = std::chrono::seconds{60}});
+        env(createTx, Ter(tesSUCCESS));
+        env.close();
+
+        env(vault.deposit({.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)}),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const sharesIssued = vaultShareBalance(vaultKeylet);
+        BEAST_EXPECT(sharesIssued > 0);
+
+        vault.closePastSubscription(subscriptionDate);
+
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(loan_broker::set(owner, vaultKeylet.key), Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+        env(loan::set(depositor, brokerKeylet.key, asset(100).value()),
+            kInterestRate(TenthBips32(0)),
+            kGracePeriod(60),
+            kPaymentInterval(120),
+            kPaymentTotal(10),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        env.close(std::chrono::seconds{120 + 60});
+        env(manage(owner, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+
+        {
+            testcase(prefix + " setup leaves shares with no assets");
+            auto const [available, total] = vaultAssetBalance(vaultKeylet);
+            BEAST_EXPECT(available == 0);
+            BEAST_EXPECT(total == 0);
+            BEAST_EXPECT(vaultShareBalance(vaultKeylet) == sharesIssued);
+        }
+
+        {
+            testcase(prefix + " ordinary deposit is refused by phase");
+            env(vault.deposit({.depositor = depositor, .id = vaultKeylet.key, .amount = asset(50)}),
+                Ter(tecEXPIRED));
+            env.close();
+        }
+
+        {
+            testcase(prefix + " donation recapitalizes the vault");
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = vaultKeylet.key,
+                    .amount = asset(50),
+                    .flags = tfVaultDonate,
+                }),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const [available, total] = vaultAssetBalance(vaultKeylet);
+            BEAST_EXPECT(available == asset(50).value());
+            BEAST_EXPECT(total == asset(50).value());
+            BEAST_EXPECT(vaultShareBalance(vaultKeylet) == sharesIssued);
+        }
+    }
+
+    // Same write-off as testVaultDepositDonateInsolvent, with an IOU asset.
+    void
+    testVaultDepositDonateInsolventIOU()
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+        std::string const prefix = "VaultDeposit donate insolvent IOU";
+
+        Env env{*this, all_ - featureLendingProtocolV1_1};
+        Vault const vault{env};
+
+        auto const vaultShareBalance = [&](Keylet const& vaultKeylet) {
+            auto const sleVault = env.le(vaultKeylet);
+            BEAST_EXPECT(sleVault != nullptr);
+
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
+            BEAST_EXPECT(sleIssuance != nullptr);
+
+            return sleIssuance->at(sfOutstandingAmount);
+        };
+
+        auto const vaultAssetBalance = [&](Keylet const& vaultKeylet) {
+            auto const sleVault = env.le(vaultKeylet);
+            BEAST_EXPECT(sleVault != nullptr);
+
+            return std::make_pair(sleVault->at(sfAssetsAvailable), sleVault->at(sfAssetsTotal));
+        };
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        env.fund(XRP(1'000'000), issuer, owner, depositor);
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        PrettyAsset const asset = issuer["IOU"];
+        env(trust(owner, asset(10'000)));
+        env(trust(depositor, asset(10'000)));
+        env(pay(issuer, owner, asset(1'000)));
+        env(pay(issuer, depositor, asset(1'000)));
+        env.close();
+
+        auto const [createTx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+        env(createTx, Ter(tesSUCCESS));
+        env.close();
+
+        env(vault.deposit({.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)}),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const sharesIssued = vaultShareBalance(vaultKeylet);
+        BEAST_EXPECT(sharesIssued > 0);
+
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(loan_broker::set(owner, vaultKeylet.key), Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+        env(loan::set(depositor, brokerKeylet.key, asset(100).value()),
+            kInterestRate(TenthBips32(0)),
+            kGracePeriod(60),
+            kPaymentInterval(120),
+            kPaymentTotal(10),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        env.close(std::chrono::seconds{120 + 60});
+        env(manage(owner, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+
+        {
+            testcase(prefix + " setup leaves shares with no assets");
+            auto const [available, total] = vaultAssetBalance(vaultKeylet);
+            BEAST_EXPECT(available == 0);
+            BEAST_EXPECT(total == 0);
+            BEAST_EXPECT(vaultShareBalance(vaultKeylet) == sharesIssued);
+        }
+
+        {
+            testcase(prefix + " ordinary deposit is refused");
+            env(vault.deposit({.depositor = depositor, .id = vaultKeylet.key, .amount = asset(50)}),
+                Ter(tecLOCKED));
+            env.close();
+        }
+
+        {
+            testcase(prefix + " owner donation succeeds");
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = vaultKeylet.key,
+                    .amount = asset(50),
+                    .flags = tfVaultDonate,
+                }),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const [available, total] = vaultAssetBalance(vaultKeylet);
+            BEAST_EXPECT(available == asset(50).value());
+            BEAST_EXPECT(total == asset(50).value());
+            BEAST_EXPECT(vaultShareBalance(vaultKeylet) == sharesIssued);
+        }
+    }
+
     void
     testVaultDonateAssets()
     {
@@ -1647,7 +2371,14 @@ public:
         testCreateFailMPT();
         testVaultDeleteMemoData();
         testVaultCreateLEVersion();
+        testVaultDepositBlockGeneral();
+        testVaultDepositBlockClosedEnded();
+        testVaultDepositBlockClosedEndedPhases();
+        testVaultDeleteBlocked();
         testVaultDepositDonate();
+        testVaultDepositDonateInsolvent();
+        testVaultDepositDonateInsolventClosedEnded();
+        testVaultDepositDonateInsolventIOU();
         testVaultDonateAssets();
         testVaultCreatePrivateUnderV12();
 

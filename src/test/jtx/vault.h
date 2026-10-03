@@ -80,6 +80,7 @@ struct Vault
     {
         Account owner;
         UInt256 id;
+        std::optional<std::uint32_t> flags = std::nullopt;
     };
 
     static json::Value
