@@ -19,7 +19,6 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <thread>
 #include <type_traits>
 #include <vector>
 
@@ -72,6 +71,14 @@ public:
     using ClockType = beast::AbstractClock<std::chrono::steady_clock>;
     using SharedWeakComboPointerType = SharedWeakUnionPointerType;
     using SharedPointerType = SharedPointer;
+
+    /**
+     * Most worker threads a single sweep() may start.
+     *
+     * A worker takes several partitions when there are more than this, so the
+     * thread count does not follow the host's core count.
+     */
+    static constexpr std::size_t kMaxSweepThreads = 8;
 
 public:
     TaggedCache(
@@ -357,8 +364,18 @@ private:
 
     using CacheType = HardenedPartitionedHashMap<key_type, Entry, Hash, KeyEqual>;
 
-    [[nodiscard]] std::thread
-    sweepHelper(
+    /**
+     * Sweeps one partition of a key/value cache, in the calling thread.
+     *
+     * @param whenExpire Entries last accessed at or before this point expire.
+     * @param now Current time, used to pull back a future timestamp.
+     * @param partition The one partition to walk.
+     * @param stuffToSweep Collects evicted pointers, destroyed once the caller
+     * releases the cache lock.
+     * @param allRemovals Accumulates removals across all workers.
+     */
+    void
+    sweepPartition(
         ClockType::time_point const& whenExpire,
         [[maybe_unused]] ClockType::time_point const& now,
         KeyValueCacheType::MapType& partition,
@@ -366,8 +383,18 @@ private:
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&);
 
-    [[nodiscard]] std::thread
-    sweepHelper(
+    /**
+     * Sweeps one partition of a key-only cache, in the calling thread.
+     *
+     * A key-only cache owns no pointers, so stuffToSweep is unused.
+     *
+     * @param whenExpire Entries last accessed at or before this point expire.
+     * @param now Current time, used to pull back a future timestamp.
+     * @param partition The one partition to walk.
+     * @param allRemovals Accumulates removals across all workers.
+     */
+    void
+    sweepPartition(
         ClockType::time_point const& whenExpire,
         ClockType::time_point const& now,
         KeyOnlyCacheType::MapType& partition,
