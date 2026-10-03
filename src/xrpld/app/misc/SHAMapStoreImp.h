@@ -210,6 +210,9 @@ private:
      * and one rotation_phase_duration_seconds record when it ends. Lives on
      * the SHAMapStore thread only. Not movable: hold it in a scope.
      *
+     * `cache` names the cache a freshen phase worked on (lval::freshen_cache)
+     * and is empty for every other phase.
+     *
      * The record leaves out time spent in a phase opened inside this one (a
      * health_wait), which is recorded under its own stage, so a wait is
      * counted once. The span still covers the whole phase.
@@ -221,24 +224,31 @@ private:
         RotationPhase(
             SHAMapStoreImp& owner,
             telemetry::StaticStr<N> const& phase,
-            char const* stage)
+            std::string_view stage,
+            std::string_view cache = {})
             : owner_(owner)
             , stage_(stage)
+            , cache_(cache)
             , enclosing_(owner.openPhase_)
             , span_(telemetry::TraceCategory::Ledger, telemetry::nodestore_span::rotateFull, phase)
         {
             owner_.openPhase_ = this;
+            if (!cache_.empty())
+                span_.setAttribute(telemetry::nodestore_span::attr::cache, cache_);
         }
 
         ~RotationPhase()
         {
             auto const elapsed = std::chrono::steady_clock::now() - start_;
+            // One label set for every phase, so this stays one histogram
+            // instrument. `cache` is empty on the non-freshen phases, and
+            // Prometheus treats an empty label as absent.
             XRPL_METRIC_HISTOGRAM_RECORD_LABELED(
                 owner_.app_,
                 telemetry::metric::rotationPhaseDurationSeconds,
                 "Seconds spent in one online-delete rotation phase, less nested waits",
                 std::chrono::duration<double>(elapsed - nested_).count(),
-                {{telemetry::label::stage, std::string(stage_)}});
+                {{telemetry::label::stage, stage_}, {telemetry::label::cache, cache_}});
             if (enclosing_ != nullptr)
                 enclosing_->nested_ += elapsed;
             owner_.openPhase_ = enclosing_;
@@ -261,10 +271,17 @@ private:
     private:
         SHAMapStoreImp& owner_;
         /**
-         * Stage label for the duration record. Read only inside the metric
-         * macro, so a telemetry-off build never reads it.
+         * Stage label for the duration record. An owned copy: the
+         * constructor takes a view so callers can pass the label constants,
+         * and a stored view would only live as long as the caller's text.
          */
-        [[maybe_unused]] char const* stage_;
+        std::string const stage_;
+        /**
+         * The cache a freshen phase worked on, empty for every other phase.
+         * Labels the duration record and, when set, the span. An owned copy,
+         * like stage_.
+         */
+        std::string const cache_;
         /**
          * The phase this one runs inside, or null.
          */
@@ -287,35 +304,59 @@ private:
      */
     RotationPhase* openPhase_ = nullptr;
 
+    /**
+     * Re-fetch every key of one cache so any node only the archive still
+     * holds is copied into the writable backend before the archive is deleted.
+     *
+     * @param cache The cache to walk.
+     * @param cacheName Its lval::freshen_cache label value.
+     * @return true if healthWait() said the rotation must stop or expire.
+     */
     template <class CacheInstance>
     bool
-    freshenCache(CacheInstance& cache)
+    freshenCache(CacheInstance& cache, std::string_view cacheName)
     {
         namespace ns = telemetry::nodestore_span;
         namespace lv = telemetry::lval::rotation_phase;
 
-        // getKeys() copies every key under the cache mutex. It gets its own
-        // phase so the hold is visible on its own, apart from the fetch loop.
-        auto const keys = [&] {
-            RotationPhase phase(*this, ns::phase::freshenKeys, lv::freshenKeys);
-            auto k = cache.getKeys();
-            phase.setAttribute(ns::attr::keyCount, static_cast<std::int64_t>(k.size()));
-            return k;
-        }();
+        RotationPhase phase(*this, ns::phase::freshenFetch, lv::freshenFetch, cacheName);
+        auto const copiedBefore = dbRotating_->duplicateCopyForwardTotal();
 
-        RotationPhase phase(*this, ns::phase::freshenFetch, lv::freshenFetch);
-        phase.setAttribute(ns::attr::keyCount, static_cast<std::int64_t>(keys.size()));
+        // Keys are copied one map partition at a time, and each fetch runs with
+        // the cache mutex released. getKeys() held the mutex across the whole
+        // cache, which on a large tree-node cache stalls every job for seconds
+        // and can drop the node out of sync. Once healthWait() says stop, the
+        // remaining partitions are still copied (cheap) but no longer fetched.
+        std::uint64_t fetched = 0;
+        bool stop = false;
+        cache.forEachKeyPartition([&](auto const& keys) {
+            if (stop)
+                return;
+            for (auto const& key : keys)
+            {
+                dbRotating_->fetchNodeObject(key, 0, node_store::FetchType::Synchronous, true);
+                if (!(++fetched % checkHealthInterval_) && healthWait() != HealthResult::KeepGoing)
+                {
+                    stop = true;
+                    return;
+                }
+            }
+        });
+        auto const copied = dbRotating_->duplicateCopyForwardTotal() - copiedBefore;
+        phase.setAttribute(ns::attr::keyCount, static_cast<std::int64_t>(fetched));
+        phase.setAttribute(ns::attr::keysCopied, static_cast<std::int64_t>(copied));
+        recordFreshen(cacheName, fetched, copied);
 
-        std::uint64_t check = 0;
-        for (auto const& key : keys)
-        {
-            dbRotating_->fetchNodeObject(key, 0, node_store::FetchType::Synchronous, true);
-            if (!(++check % checkHealthInterval_) && healthWait() != HealthResult::KeepGoing)
-                return true;
-        }
-
-        return false;
+        return stop;
     }
+
+    /**
+     * Count one finished freshen on rotation_freshen_keys_total and log it.
+     * Kept out of the template above so the metric instrument is created once,
+     * not once per cache type.
+     */
+    void
+    recordFreshen(std::string_view cacheName, std::uint64_t fetched, std::uint64_t copied);
 
     /**
      * delete from sqlite table in batches to not lock the db excessively.

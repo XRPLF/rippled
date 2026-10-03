@@ -26,7 +26,6 @@ inline constexpr auto rotateFull = join(seg::nodestore, op::rotate);
 namespace phase {
 inline constexpr auto clearPrior = makeStr("clear_prior");
 inline constexpr auto copy = makeStr("copy");
-inline constexpr auto freshenKeys = join(makeStr("freshen"), makeStr("keys"));
 inline constexpr auto freshenFetch = join(makeStr("freshen"), makeStr("fetch"));
 inline constexpr auto newBackend = makeStr("new_backend");
 inline constexpr auto clearCaches = makeStr("clear_caches");
@@ -41,6 +40,9 @@ inline constexpr auto lastRotated = makeStr("last_rotated");
 inline constexpr auto nodeCount = makeStr("node_count");
 inline constexpr auto keyCount = makeStr("key_count");
 inline constexpr auto copyForwards = makeStr("copy_forwards");
+inline constexpr auto cache = makeStr("cache");
+inline constexpr auto keysCopied = makeStr("keys_copied");
+inline constexpr auto nodesCopied = makeStr("nodes_copied");
 inline constexpr auto serverMode = makeStr("server_mode");
 inline constexpr auto missingLedgers = makeStr("missing_ledgers");
 inline constexpr auto outcome = makeStr("outcome");
