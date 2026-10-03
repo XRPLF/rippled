@@ -138,7 +138,7 @@ doAccountInfo(rpc::JsonContext& context)
     // Flags that are only reported when their amendment is enabled. This can't be `constexpr`,
     // since the amendment IDs are computed at runtime.
     static auto const kAmendmentGatedFlags =
-        std::to_array<std::tuple<std::string_view, LedgerSpecificFlags, uint256 const&>>(
+        std::to_array<std::tuple<std::string_view, LedgerSpecificFlags, UInt256 const&>>(
             {{"allowTrustLineLocking", lsfAllowTrustLineLocking, featureTokenEscrow}});
 
     // Every `AccountRoot` flag must be reported by `account_info`, so if a new flag is added, it

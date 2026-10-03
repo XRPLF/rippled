@@ -46,6 +46,9 @@ class ValidMPTIssuance
      * MPTokens and RippleStates deleted during apply. finalize() checks each
      * holder's AccountRoot to detect vault pseudo-account holdings deleted
      * outside VaultDelete. All these checks are gated on fixCleanup3_2_0.
+     *
+     * Under fixCleanup3_5_0, finalize() also rejects any MPToken erased with
+     * a non-zero sfMPTAmount.
      */
     std::vector<std::shared_ptr<SLE const>> deletedHoldings_;
 
@@ -59,7 +62,7 @@ public:
      * @param after The ledger entry after transaction application.
      */
     void
-    visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after);
+    visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after);
 
     /**
      * @brief Verify MPT issuance invariants after transaction application.
@@ -100,7 +103,7 @@ class ValidMPTBalanceChanges
     // true if OutstandingAmount > MaximumAmount in after for any MPT
     bool overflow_{false};
     // mptid:MPTData
-    hash_map<uint192, MPTData> data_;
+    HashMap<UInt192, MPTData> data_;
 
 public:
     /**
@@ -111,7 +114,7 @@ public:
      * @param after The ledger entry after transaction application.
      */
     void
-    visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after);
+    visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after);
 
     /**
      * @brief Verify public MPT payment accounting invariants.
@@ -138,8 +141,9 @@ public:
  * - Convert/ConvertBack symmetry:
  * Regular MPToken balance change (±X) == COA (Confidential Outstanding Amount) change (∓X)
  * - Cannot delete MPToken with non-zero confidential state:
- * Cannot delete if sfIssuerEncryptedBalance exists
- * Cannot delete if sfConfidentialBalanceInbox and sfConfidentialBalanceSpending exist
+ * Cannot delete if any of sfConfidentialBalanceSpending, sfConfidentialBalanceInbox,
+ * sfIssuerEncryptedBalance or sfAuditorEncryptedBalance is present, and the issuance's
+ * sfConfidentialOutstandingAmount is non-zero. Mirrors MPTokenAuthorize::preclaim.
  * - Privacy flag consistency:
  * MPToken confidential balance fields can only be created or changed if
  * lsfMPTCanHoldConfidentialBalance is set on the issuance.
@@ -162,12 +166,14 @@ class ValidConfidentialMPToken
         std::int64_t outstandingDelta = 0;
         SLE::const_pointer issuance;
         bool deletedWithEncrypted = false;
+        // True when an erased MPToken had a non-zero pre-tx public balance.
+        bool deletedWithBalanceBefore = false;
         bool badConsistency = false;
         bool badCOA = false;
         bool changesConfidentialFields = false;
         bool badVersion = false;
     };
-    std::map<uint192, Changes> changes_;
+    std::map<UInt192, Changes> changes_;
 
 public:
     /**
@@ -211,17 +217,17 @@ class ValidMPTTransfer
         std::optional<std::uint64_t> amtAfter;
     };
     // MPTID: {holder: Value}
-    hash_map<uint192, hash_map<AccountID, Value>> amount_;
+    HashMap<UInt192, HashMap<AccountID, Value>> amount_;
     // Deleted MPToken
     // MPToken key: true if MPTAuthorized is set
-    hash_map<uint256, bool> deletedAuthorized_;
+    HashMap<UInt256, bool> deletedAuthorized_;
     // Every touched AccountRoot (not only pseudos):
     // AccountID -> whether it was a pseudo-account BEFORE this transaction
     // applied. Needed because a transaction may erase a pseudo-account and
     // move MPT out of it in the same transaction; by finalize() time the
     // view no longer shows it as a pseudo-account (or as existing at all).
     // False entries freeze the pre-tx classification for touched non-pseudos.
-    hash_map<AccountID, bool> pseudoAccountsBefore_;
+    HashMap<AccountID, bool> pseudoAccountsBefore_;
 
 public:
     /**

@@ -370,7 +370,7 @@ public:
      * Return the next sequence that would go in the TxQ for an account.
      */
     SeqProxy
-    nextQueuableSeq(SLE::const_ref sleAccount) const;
+    nextQueuableSeq(SLE::ConstRef sleAccount) const;
 
     /**
      * Returns fee metrics in reference fee level units.
@@ -428,7 +428,7 @@ public:
 private:
     // Implementation for nextQueuableSeq().  The passed lock must be held.
     SeqProxy
-    nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&) const;
+    nextQueuableSeqImpl(SLE::ConstRef sleAccount, std::scoped_lock<std::mutex> const&) const;
 
     /**
      * Track and use the fee escalation metrics of the
@@ -949,7 +949,7 @@ private:
         STTx const&,
         ApplyFlags const,
         OpenView const&,
-        SLE::const_ref sleAccount,
+        SLE::ConstRef sleAccount,
         AccountMap::iterator const&,
         std::optional<TxQAccount::TxMap::iterator> const&,
         std::scoped_lock<std::mutex> const& lock);
