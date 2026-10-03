@@ -120,7 +120,8 @@ private:
             keylet::loanBroker(f.lender.id(), SeqProxy::rawSequence(env.seq(f.lender))).key;
         {
             using namespace loan_broker;
-            env(set(f.lender, vaultKeylet.key),
+            env(set(f.lender),
+                loan_broker::kVaultId(vaultKeylet.key),
                 kDebtMaximum((*f.asset)(kStuckPrincipal * 10).value()));
             env.close();
         }

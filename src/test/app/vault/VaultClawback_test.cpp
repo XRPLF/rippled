@@ -116,7 +116,7 @@ private:
             auto const& brokerKeylet =
                 keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
 
-            env(set(owner, vaultKeylet.key));
+            env(set(owner), loan_broker::kVaultId(vaultKeylet.key));
             env.close();
 
             auto const& loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
@@ -519,7 +519,7 @@ private:
                 // Create a loan broker backed by this vault
                 auto const brokerKeylet =
                     keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-                env(set(owner, vaultKeylet.key));
+                env(set(owner), loan_broker::kVaultId(vaultKeylet.key));
                 env.close();
 
                 // Depositor borrows 40 units, reducing assetsAvailable to 60
@@ -578,7 +578,7 @@ private:
                 // Create a loan broker backed by this vault
                 auto const brokerKeylet =
                     keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-                env(set(owner, vaultKeylet.key));
+                env(set(owner), loan_broker::kVaultId(vaultKeylet.key));
                 env.close();
 
                 // Depositor borrows 40 units
@@ -634,7 +634,7 @@ private:
                 // Create a loan broker backed by this vault
                 auto const brokerKeylet =
                     keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-                env(set(owner, vaultKeylet.key));
+                env(set(owner), loan_broker::kVaultId(vaultKeylet.key));
                 env.close();
 
                 // Depositor borrows 40 units: assetsAvailable=60, assetsTotal=100
@@ -689,7 +689,7 @@ private:
 
                 auto const brokerKeylet =
                     keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-                env(set(owner, vaultKeylet.key));
+                env(set(owner), loan_broker::kVaultId(vaultKeylet.key));
                 env.close();
 
                 // Depositor borrows 40 units: assetsAvailable=60, assetsTotal=100
@@ -738,7 +738,7 @@ private:
 
                 auto const brokerKeylet =
                     keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-                env(set(owner, vaultKeylet.key));
+                env(set(owner), loan_broker::kVaultId(vaultKeylet.key));
                 env.close();
 
                 // Depositor borrows all 100 units: assetsAvailable=0, assetsTotal=100
@@ -846,7 +846,7 @@ private:
             // Create a loan broker backed by this vault
             auto const brokerKeylet =
                 keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-            env(set(owner, vaultKeylet.key));
+            env(set(owner), loan_broker::kVaultId(vaultKeylet.key));
             env.close();
 
             // Depositor borrows 40 units, reducing assetsAvailable to 60

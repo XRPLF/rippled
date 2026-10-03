@@ -204,7 +204,7 @@ InvariantsBase::createLoanBroker(
 
     auto const loanBrokerKeylet = keylet::loanBroker(a.id(), SeqProxy::rawSequence(env.seq(a)));
     // Create a Loan Broker with all default values.
-    env(set(a, vaultID), Fee(kIncrement));
+    env(set(a), kVaultId(vaultID), Fee(kIncrement));
 
     return loanBrokerKeylet;
 }

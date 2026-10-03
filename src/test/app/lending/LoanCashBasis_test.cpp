@@ -198,7 +198,8 @@ private:
 
             BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
-            env(loan_broker::set(lender, broker.vaultID),
+            // VaultID must be omitted on update.
+            env(loan_broker::set(lender),
                 loan_broker::kLoanBrokerId(broker.brokerID),
                 loan_broker::kDebtMaximum(debtMaximum),
                 Fee(env.current()->fees().base * 2));

@@ -470,7 +470,7 @@ private:
         auto const brokerKeyLet =
             keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
 
-        env(loan_broker::set(lender, vaultKeyLet.key), txFee);
+        env(loan_broker::set(lender), loan_broker::kVaultId(vaultKeyLet.key), txFee);
         env.close();
 
         STAmount const debtMaximumRequest = XRPAmount(200'000);
