@@ -180,4 +180,50 @@ TEST_F(SHAMapSyncTest, sync)
     destination.invariants();
 }
 
+// The duplicate verdict also answers for a node that did not need to be added, which is the half
+// of incDuplicate()'s contract that "already held" does not cover. addKnownNode() reaches it when
+// the map has stopped taking nodes, and returns there before looking at the offer at all.
+//
+// An A/B on one offer and two maps of the same shape, so the synching state is the only difference
+// between the two verdicts. Neither map holds the offered node, so a count that meant "already
+// held" would be wrong for it.
+TEST_F(SHAMapSyncTest, add_known_node_reports_duplicate_once_a_map_stops_synching)
+{
+    TestNodeFamily f{j_};
+
+    // A well-formed inner node with one child. Its contents do not matter: both verdicts below
+    // are reached without the map reading them.
+    auto const makeOffer = [] {
+        Serializer s;
+        s.addBitString(UInt256{1});
+        s.add8(0);
+        s.add8(kWireTypeCompressedInner);
+        return SHAMapTreeNode::makeFromWire(makeSlice(s.peekData()));
+    };
+    ASSERT_TRUE(makeOffer());
+
+    SHAMapNodeID const target{1, UInt256{}};
+
+    // Synching, so the offer is examined, and refused because the empty root has no branch to
+    // hook it onto. The point is that the map looked.
+    SHAMap synching{SHAMapType::FREE, f};
+    synching.setSynching();
+
+    auto const examined = synching.addKnownNode(target, makeOffer(), nullptr);
+    EXPECT_TRUE(examined.isInvalid());
+    EXPECT_EQ(examined.getDuplicate(), 0);
+
+    // The same offer to a map that has stopped taking nodes.
+    SHAMap stopped{SHAMapType::FREE, f};
+    stopped.setSynching();
+    stopped.clearSynching();
+    ASSERT_FALSE(stopped.isSynching());
+
+    auto const notNeeded = stopped.addKnownNode(target, makeOffer(), nullptr);
+    EXPECT_EQ(notNeeded.getGood(), 0);
+    EXPECT_EQ(notNeeded.getBad(), 0);
+    EXPECT_EQ(notNeeded.getDuplicate(), 1);
+    EXPECT_TRUE(notNeeded.isGood()) << "a node that was not needed counts on the accepted side";
+}
+
 }  // namespace xrpl::tests
