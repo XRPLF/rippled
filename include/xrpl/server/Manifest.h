@@ -7,6 +7,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
 
 #include <atomic>
@@ -21,8 +22,6 @@
 #include <vector>
 
 namespace xrpl {
-
-class STObject;
 
 /*
     Validator key manifests
