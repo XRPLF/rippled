@@ -244,6 +244,15 @@ private:
         TAmounts<TIn, TOut> const& stepAmt,
         TOut const& ownerGives) const;
 
+    template <template <typename, typename> typename Offer>
+    void
+    tryConsumeOffer(
+        PaymentSandbox& sb,
+        Offer<TIn, TOut>& offer,
+        TAmounts<TIn, TOut> const& ofrAmt,
+        TAmounts<TIn, TOut> const& stepAmt,
+        TOut const& ownerGives) const;
+
     // If clobQuality is available and has a better quality then return nullopt,
     // otherwise if amm liquidity is available return AMM offer adjusted based
     // on clobQuality.
@@ -787,10 +796,11 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         auto ownerGives = ofrAmt.out;
         try
         {
-            // All arithmetic in this block runs before the offer is consumed.
             // A crafted MPTokensV2 offer can overflow while transfer rates or
-            // crossing limits are applied; remove that unusable offer instead
-            // of letting it persist as a tecINTERNAL source.
+            // crossing limits are applied, here or in the callback's
+            // limitStepIn()/limitStepOut(); remove that unusable offer instead
+            // of letting it persist as a tecINTERNAL source. Overflows while
+            // consuming the offer are handled by tryConsumeOffer().
             stpAmt.in = mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
 
             // owner pays the transfer fee.
@@ -854,16 +864,9 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 removeOffer("Removing offer with overflowing amount calculation");
                 return true;
             }
-            // An overflow can only be produced by a crafted MPT offer, and MPT
-            // offers require featureMPTokensV2 (enforced at OfferCreate
-            // preflight). So the amendment is always enabled when we get here
-            // and this legacy re-throw is unreachable in practice.
-            // LCOV_EXCL_START
-            XRPL_ASSERT(
-                sb.rules().enabled(featureMPTokensV2),
-                "xrpl::BookStep::forEachOffer : overflow implies MPTokensV2");
+            // Legacy behavior: the exception escapes flow() and the
+            // transaction fails with tecINTERNAL.
             throw;
-            // LCOV_EXCL_STOP
         }
     };
 
@@ -902,6 +905,32 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     }
 
     return {offers.permToRemove(), counter.count()};
+}
+
+template <class TIn, class TOut, class TDerived>
+template <template <typename, typename> typename Offer>
+void
+BookStep<TIn, TOut, TDerived>::tryConsumeOffer(
+    PaymentSandbox& sb,
+    Offer<TIn, TOut>& offer,
+    TAmounts<TIn, TOut> const& ofrAmt,
+    TAmounts<TIn, TOut> const& stepAmt,
+    TOut const& ownerGives) const
+{
+    try
+    {
+        // Under MPTokensV2, an overflow while consuming the offer fails the
+        // strand instead of being handled by forEachOffer().
+        consumeOffer(sb, offer, ofrAmt, stepAmt, ownerGives);
+    }
+    catch (std::overflow_error const&)
+    {
+        if (sb.rules().enabled(featureMPTokensV2))
+        {
+            Throw<FlowException>(tecINTERNAL, "Overflow while consuming offer");
+        }
+        throw;
+    }
 }
 
 template <class TIn, class TOut, class TDerived>
@@ -1101,7 +1130,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
             savedOuts.insert(stpAmt.out);
             result = TAmounts<TIn, TOut>(sum(savedIns), sum(savedOuts));
             remainingOut = out - result.out;
-            this->consumeOffer(sb, offer, ofrAmt, stpAmt, ownerGives);
+            this->tryConsumeOffer(sb, offer, ofrAmt, stpAmt, ownerGives);
             // return true b/c even if the payment is satisfied,
             // we need to consume the offer
             return true;
@@ -1130,7 +1159,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
         savedOuts.insert(remainingOut);
         result.in = sum(savedIns);
         result.out = out;
-        this->consumeOffer(sb, offer, ofrAdjAmt, stpAdjAmt, ownerGivesAdj);
+        this->tryConsumeOffer(sb, offer, ofrAdjAmt, stpAdjAmt, ownerGivesAdj);
 
         // Explicitly check whether the offer is funded.  Given that we have
         // (stpAmt.out > remainingOut), it's natural to assume the offer
@@ -1311,7 +1340,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
         savedOuts = std::move(savedOutsAdj);
         result = resultAdj;
         remainingIn = in - result.in;
-        this->consumeOffer(sb, offer, ofrAdjAmt, stpAdjAmt, ownerGivesAdj);
+        this->tryConsumeOffer(sb, offer, ofrAdjAmt, stpAdjAmt, ownerGivesAdj);
 
         // When the mantissas of two iou amounts differ by less than ten, then
         // subtracting them leaves a result of zero. This can cause the check
@@ -1413,6 +1442,18 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
     {
         JLOG(j_.debug()) << "Book: currency is inconsistent with issuer." << *this;
         return temBAD_PATH;
+    }
+
+    // An issuer paying with its own MPT issues it into the first book. A
+    // holder-sourced strand records the MPT in the first MPTEndpointStep and
+    // so rejects a later book that outputs it again; do the same here. The
+    // step after such a book issues the MPT a second time and the payment
+    // engine cannot keep the two within MaximumAmount once StrandFlow
+    // rebuilds the sandbox on a limiting step.
+    if (ctx.isFirst && book_.in.holds<MPTIssue>() && book_.in.getIssuer() == ctx.strandSrc &&
+        ctx.view.rules().enabled(featureMPTokensV2))
+    {
+        ctx.seenDirectAssets[0].insert(book_.in);
     }
 
     // Do not allow two books to output the same issue. This may cause offers on
