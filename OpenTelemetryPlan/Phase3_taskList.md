@@ -545,3 +545,11 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 - [ ] <5% overhead on transaction throughput
 - [x] Deterministic trace_id: same trace_id for same tx across all nodes
 - [x] Protobuf span_id propagation preserves parent-child ordering when available
+
+---
+
+## Known Issues / Future Work
+
+### trace_state is not a proto field yet
+
+`TraceContext` in `xrpl.proto` has no `trace_state` field: number 4 and the name `trace_state` are `reserved` for W3C `tracestate` vendor-specific key-value pairs. When cross-vendor trace propagation is needed, add the field with a size limit and wire it through `TraceContextPropagator`. Until then a peer-sent field 4 is an unknown field, which the parser drops.
