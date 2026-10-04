@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <format>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -107,10 +108,10 @@ SHAMapNodeID::getChildNodeID(unsigned int branch) const
         depth_ <= SHAMap::kLeafDepth, "xrpl::SHAMapNodeID::getChildNodeID : maximum leaf depth");
 
     if (depth_ >= SHAMap::kLeafDepth)
-        Throw<std::logic_error>("Request for child node ID of " + to_string(*this));
+        Throw<std::logic_error>(std::format("Request for child node ID of {}", to_string(*this)));
 
     if (!isPrefixOf(id_))
-        Throw<std::logic_error>("Incorrect mask for " + to_string(*this));
+        Throw<std::logic_error>(std::format("Incorrect mask for {}", to_string(*this)));
 
     SHAMapNodeID node{depth_ + 1, id_};
     node.id_.begin()[depth_ / 2] |= ((depth_ & 1) != 0u) ? branch : (branch << 4);
