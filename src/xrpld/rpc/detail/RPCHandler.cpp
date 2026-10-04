@@ -7,6 +7,7 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Handler.h>
+#include <xrpld/rpc/detail/RpcSpanNames.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
@@ -17,6 +18,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <atomic>
 #include <chrono>
@@ -25,7 +27,9 @@
 #include <string>
 #include <string_view>
 
-namespace xrpl::rpc {
+namespace xrpl {
+using namespace telemetry;
+namespace rpc {
 
 namespace {
 
@@ -154,9 +158,58 @@ fillHandler(JsonContext& context, Handler const*& result)
     return RpcSuccess;
 }
 
+/**
+ * Names the reason a command failed, for the span's error description.
+ *
+ * jss::error holds the error token, and an old-style handler reports it there
+ * and nowhere else. A failure the reply does not name is described by the
+ * status's own error code, which is the only reason left to report. Every
+ * token is a compile-time string, so no request text reaches the description.
+ *
+ * @param status What the handler returned.
+ * @param result The reply the handler filled in. The returned view can point
+ * into it, so result must outlive the view.
+ * @param replyHasError The caller's containsError(result), passed in so the
+ * reply is not searched twice.
+ * @return The error token, or "error" where neither source carries one.
+ */
+std::string_view
+errorDescription(Status const& status, json::Value const& result, bool replyHasError)
+{
+    if (replyHasError && result[jss::error].isString())
+    {
+        // asCString() asserts the type, then hands back the stored pointer
+        // unchecked, and a string-typed json::Value may hold a null one. Both
+        // checks are needed before that pointer becomes a view.
+        if (char const* const token = result[jss::error].asCString(); token != nullptr)
+            return token;
+    }
+
+    // A TER or a bare integer code has no token in the error registry, so
+    // reading one would name an unrelated error. getErrorInfo() returns a
+    // reference into a static table, so its token outlives this call.
+    if (status.type() == Status::Type::ErrorCodeI)
+        return getErrorInfo(status.toErrorCode()).token.cStr();
+
+    return rpc_span::val::error;
+}
+
 Status
 callMethod(JsonContext& context, Handler::Method method, std::string_view name, json::Value& result)
 {
+    // Scoped so this command nests under rpc.process and becomes the ambient
+    // parent of any command-internal spans (e.g. pathfind.request). Coro-aware
+    // storage keeps the scope correct across doRipplePathFind's yield. Internal
+    // rather than Server: the inbound boundary is above rpc.process.
+    auto span =
+        ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, name, SpanRole::Internal);
+    span.setAttribute(rpc_span::attr::command, name);
+    span.setAttribute(rpc_span::attr::version, static_cast<int64_t>(context.apiVersion));
+    span.setAttribute(
+        rpc_span::attr::rpcRole,
+        context.role == Role::ADMIN ? std::string_view(rpc_span::val::admin)
+                                    : std::string_view(rpc_span::val::user));
+
     static std::atomic<std::uint64_t> kRequestId{0};
     auto& perfLog = context.app.getPerfLog();
     std::uint64_t const curId = ++kRequestId;
@@ -173,12 +226,39 @@ callMethod(JsonContext& context, Handler::Method method, std::string_view name, 
         JLOG(context.j.debug()) << "RPC call " << name << " completed in "
                                 << ((end - start).count() / 1000000000.0) << "seconds";
         perfLog.rpcFinish(name, curId);
+        // Everything in here only feeds the span, and searching the reply is
+        // not free, so a null guard pays for none of it. setError() and
+        // setAttribute() are no-ops on a null guard, but their arguments are
+        // not: with telemetry compiled out operator bool() is a constant false.
+        if (span)
+        {
+            // An old-style handler reports its error in the reply, not in the
+            // Status: byRef() returns a default Status whatever happened.
+            // Reading both covers every handler. Status::operator bool() is
+            // true when there IS an error.
+            bool const replyHasError = containsError(result);
+            bool const failed = static_cast<bool>(ret) || replyHasError;
+            // Two values only. rpc_status is a spanmetrics dimension, so every
+            // value it can take becomes a Prometheus label and a metric series.
+            span.setAttribute(
+                rpc_span::attr::rpcStatus,
+                failed ? std::string_view{rpc_span::val::error}
+                       : std::string_view{rpc_span::val::success});
+            // Error so a failed call answers {status.code=error}, for the codes
+            // that never throw (rpcTOO_BUSY, rpcNO_PERMISSION, ...). Success
+            // stays Unset: the spec reserves Ok for an operator asserting
+            // verified success, and a tool may read it as suppressing errors.
+            if (failed)
+                span.setError(errorDescription(ret, result, replyHasError));
+        }
         return ret;
     }
     catch (std::exception& e)
     {
         perfLog.rpcError(name, curId);
         JLOG(context.j.info()) << "Caught throw: " << e.what();
+        span.recordException(e);
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
 
         if (context.loadType == resource::kFeeReferenceRpc)
             context.loadType = resource::kFeeExceptionRpc;
@@ -188,6 +268,54 @@ callMethod(JsonContext& context, Handler::Method method, std::string_view name, 
     }
 }
 
+// Telemetry-only helper, so it is compiled out with telemetry off. Left
+// running it would cost several json lookups, up to two string copies and a
+// handler-table lookup on every failed request, for a name nobody records.
+// Its result IS the span name, so `if (span)` cannot guard it: at that point
+// no span exists to test. The single call site is gated the same way, which
+// also keeps this file-static function referenced in both configurations.
+#ifdef XRPL_ENABLE_TELEMETRY
+
+// Resolve the span suffix / command attribute for a request that failed in
+// fillHandler. The name comes from the handler registry, so only a registered
+// handler name or the "unknown" label can reach the span; request text never
+// does. That bounded set also bounds the Prometheus label the spanmetrics
+// connector derives from it, and a real command still keeps its own error
+// attribution: a submit rejected with rpcTOO_BUSY stays rpc.command.submit.
+std::string_view
+resolveCommandSpanName(JsonContext const& context)
+{
+    bool const hasCommand = context.params.isMember(jss::command);
+    bool const hasMethod = context.params.isMember(jss::method);
+
+    if (!hasCommand && !hasMethod)
+        return rpc_span::val::unknownCommand;
+
+    // A json array or object throws when asked for its string value, and no
+    // non-string field names a handler. The reply's error code is already
+    // decided, so naming the span must not be able to change it.
+    if ((hasCommand && !context.params[jss::command].isString()) ||
+        (hasMethod && !context.params[jss::method].isString()))
+        return rpc_span::val::unknownCommand;
+
+    // fillHandler() rejects a request that supplies both fields with differing
+    // values as rpcUNKNOWN_COMMAND. Mirror that here, or the span would be
+    // labelled with one of the two names and misattribute the error to a
+    // command that was never dispatched.
+    if (hasCommand && hasMethod &&
+        context.params[jss::command].asString() != context.params[jss::method].asString())
+        return rpc_span::val::unknownCommand;
+
+    std::string const cmd = hasCommand ? context.params[jss::command].asString()
+                                       : context.params[jss::method].asString();
+
+    auto const* handler = getHandler(context.apiVersion, context.app.config().betaRpcApi, cmd);
+    return (handler != nullptr) ? std::string_view{handler->name}
+                                : std::string_view{rpc_span::val::unknownCommand};
+}
+
+#endif  // XRPL_ENABLE_TELEMETRY
+
 }  // namespace
 
 Status
@@ -196,6 +324,30 @@ doCommand(rpc::JsonContext& context, json::Value& result)
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))
     {
+        // Every statement below only feeds the error span, and the span name
+        // itself comes from resolveCommandSpanName(), so there is no span
+        // object to test with `if (span)`. With telemetry off the whole block
+        // is compiled out and a storm of malformed requests pays nothing.
+#ifdef XRPL_ENABLE_TELEMETRY
+        // Bound the span name and command attribute to the finite set of
+        // registered handler names (plus "unknown") — see the helper for why
+        // raw request input must not reach the telemetry pipeline.
+        auto const cmdName = resolveCommandSpanName(context);
+        // Internal for the same reason as the success path above.
+        auto span = ScopedSpanGuard(
+            TraceCategory::Rpc, rpc_span::prefix::command, cmdName, SpanRole::Internal);
+        span.setAttribute(rpc_span::attr::command, cmdName);
+        // Mirror the attribute set callMethod() puts on a successful command
+        // span, so error spans stay filterable by API version and role.
+        span.setAttribute(rpc_span::attr::version, static_cast<int64_t>(context.apiVersion));
+        span.setAttribute(
+            rpc_span::attr::rpcRole,
+            context.role == Role::ADMIN ? std::string_view(rpc_span::val::admin)
+                                        : std::string_view(rpc_span::val::user));
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
+        span.setError(getErrorInfo(error).token.cStr());
+#endif  // XRPL_ENABLE_TELEMETRY
+
         injectError(error, result);
         return error;
     }
@@ -231,4 +383,5 @@ roleRequired(unsigned int version, bool betaEnabled, std::string_view method)
     return handler->role;
 }
 
-}  // namespace xrpl::rpc
+}  // namespace rpc
+}  // namespace xrpl
