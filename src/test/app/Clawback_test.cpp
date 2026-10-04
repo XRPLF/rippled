@@ -871,28 +871,31 @@ class Clawback_test : public beast::unit_test::Suite
             for (auto const& c : cases)
             {
                 std::string logs;
-                Env env(*this, feat, std::make_unique<test::CaptureLogs>(&logs));
+                {
+                    Env env(*this, feat, std::make_unique<test::CaptureLogs>(&logs));
 
-                env.fund(XRP(1000), alice, bob);
-                env.close();
+                    env.fund(XRP(1000), alice, bob);
+                    env.close();
 
-                auto const usd = alice["USD"];
+                    auto const usd = alice["USD"];
 
-                env(fset(alice, asfAllowTrustLineClawback));
-                env.close();
+                    env(fset(alice, asfAllowTrustLineClawback));
+                    env.close();
 
-                env.trust(usd(10'000'000'000), bob);
-                env(pay(alice, bob, STAmount{usd.issue(), c.balanceMantissa, c.balanceExponent}));
-                env.close();
+                    env.trust(usd(10'000'000'000), bob);
+                    env(pay(
+                        alice, bob, STAmount{usd.issue(), c.balanceMantissa, c.balanceExponent}));
+                    env.close();
 
-                env(claw(
-                    alice,
-                    STAmount{Issue{usd.currency, bob.id()}, c.clawMantissa, c.clawExponent}));
-                env.close();
+                    env(claw(
+                        alice,
+                        STAmount{Issue{usd.currency, bob.id()}, c.clawMantissa, c.clawExponent}));
+                    env.close();
 
-                BEAST_EXPECT(
-                    env.balance(bob, usd).value() ==
-                    STAmount(usd.issue(), c.afterMantissa, c.afterExponent));
+                    BEAST_EXPECT(
+                        env.balance(bob, usd).value() ==
+                        STAmount(usd.issue(), c.afterMantissa, c.afterExponent));
+                }
                 BEAST_EXPECT(!logs.contains("Invariant failed"));
             }
         }
