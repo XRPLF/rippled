@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -874,15 +875,18 @@ MPTEndpointStep<TDerived>::check(StrandContext const& ctx) const
 
     // pure issue/redeem can't be frozen (issuer/holder)
     // For the first step: check global freeze of the step's own asset.
-    // For the last step: check only the per-holder MPToken lock.
+    // For the last step: check only the per-holder lock.
     // Global freeze of the deliver asset is not checked here
     // because MPT semantics allow issuer<->holder transfers even when globally
     // locked — only holder-to-holder DEX paths are restricted.
+    // For both steps: a vault share inherits the freeze of the vault's
+    // underlying asset.
     if (!(ctx.isLast && ctx.isFirst))
     {
         auto const& account = ctx.isFirst ? src_ : dst_;
         bool const frozen = (ctx.isFirst && isGlobalFrozen(ctx.view, mptIssue_)) ||
-            isIndividualFrozen(ctx.view, account, mptIssue_);
+            isIndividualFrozen(ctx.view, account, mptIssue_) ||
+            isVaultPseudoAccountFrozen(ctx.view, account, mptIssue_, 0);
         if (frozen)
             return terLOCKED;
     }
