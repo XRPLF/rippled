@@ -12,6 +12,7 @@
 
 #include <boost/program_options/variables_map.hpp>
 
+#include <format>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -38,7 +39,7 @@ getNodeIdentity(Application& app, boost::program_options::variables_map const& c
         if (!seed)
         {
             Throw<std::runtime_error>(
-                std::string("Invalid [") + Sections::kNodeSeed + "] in configuration file");
+                std::format("Invalid [{}] in configuration file", Sections::kNodeSeed));
         }
     }
 
