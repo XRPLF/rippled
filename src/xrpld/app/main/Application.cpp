@@ -1613,6 +1613,8 @@ ApplicationImp::run()
 
     // The order of these stop calls is delicate.
     // Re-ordering them risks undefined behavior.
+    if (datagramMonitor_)
+        datagramMonitor_->stop();
     loadManager_->stop();
     shaMapStore_->stop();
     jobQueue_->stop();
