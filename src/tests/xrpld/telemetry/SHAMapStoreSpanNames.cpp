@@ -26,7 +26,6 @@ TEST(SHAMapStoreSpanNames, root_and_phase_names_are_the_exported_literals)
     EXPECT_EQ(std::string_view{ns::rotateFull}, "nodestore.rotate");
     EXPECT_EQ(std::string_view{ns::phase::clearPrior}, "clear_prior");
     EXPECT_EQ(std::string_view{ns::phase::copy}, "copy");
-    EXPECT_EQ(std::string_view{ns::phase::freshenKeys}, "freshen.keys");
     EXPECT_EQ(std::string_view{ns::phase::freshenFetch}, "freshen.fetch");
     EXPECT_EQ(std::string_view{ns::phase::newBackend}, "new_backend");
     EXPECT_EQ(std::string_view{ns::phase::clearCaches}, "clear_caches");
@@ -42,6 +41,9 @@ TEST(SHAMapStoreSpanNames, attribute_keys_are_bare_snake_case_literals)
     EXPECT_EQ(std::string_view{a::nodeCount}, "node_count");
     EXPECT_EQ(std::string_view{a::keyCount}, "key_count");
     EXPECT_EQ(std::string_view{a::copyForwards}, "copy_forwards");
+    EXPECT_EQ(std::string_view{a::cache}, "cache");
+    EXPECT_EQ(std::string_view{a::keysCopied}, "keys_copied");
+    EXPECT_EQ(std::string_view{a::nodesCopied}, "nodes_copied");
     EXPECT_EQ(std::string_view{a::serverMode}, "server_mode");
     EXPECT_EQ(std::string_view{a::missingLedgers}, "missing_ledgers");
     EXPECT_EQ(std::string_view{a::outcome}, "outcome");

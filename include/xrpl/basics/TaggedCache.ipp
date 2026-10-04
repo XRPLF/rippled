@@ -708,6 +708,37 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
+template <class F>
+inline void
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    forEachKeyPartition(F&& f) const
+{
+    std::vector<key_type> keys;
+    for (std::size_t p = 0; p < cache_.partitions(); ++p)
+    {
+        keys.clear();
+        {
+            std::scoped_lock const lock(mutex_);
+            auto const& partition = cache_.map()[p];
+            keys.reserve(partition.size());
+            auto const copyStart = std::chrono::steady_clock::now();
+            for (auto const& entry : partition)
+                keys.push_back(entry.first);
+            noteLockHold(copyStart, keys.size(), "forEachKeyPartition");
+        }
+        f(keys);
+    }
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
 inline double
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     rate() const

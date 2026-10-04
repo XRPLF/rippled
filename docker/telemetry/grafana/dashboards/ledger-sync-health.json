@@ -5177,7 +5177,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*How long each online-delete rotation phase takes, at the 95th percentile, with one line per `stage` and node. Time in a health wait inside a phase counts under `health_wait`, not under that phase.*\n\n###### How it's computed:\n*95th percentile of the rotation_phase_duration_seconds histogram over the rate interval, per node and stage. Each phase adds one sample when it ends, from the `SHAMapStoreImp::RotationPhase` destructor. A phase's sample leaves out the time spent in a health wait nested inside it.*\n\n###### Reading it:\n*A stage has no value in windows where it did not run. The p95 is coarse: the first buckets end at 1, 5, 10 and 30 s. A stage that always ends under 1 s reads about 0.95 s. Each freshen line mixes the tree-node cache and the transaction cache, which share one stage label.*\n\n###### Healthy range:\n*`freshen.keys` at about 0.95 s, which means under 1 s; it holds a cache mutex while it runs. Each other stage well inside the time between rotations. No `health_wait` line.*\n\n###### Watch for:\n*`freshen.keys` p95 of several seconds: a cache mutex was held for seconds. Cache Lock Hold Peak on this board shows the tree-node cache's hold; the transaction cache's hold is not plotted. For the tree-node cache, every SHAMap node fetch in that window waited. A `copy` p95 close to the time between rotations means each rotation barely ends before the next is due. A `health_wait` line means a rotation found the node not full, behind the network, or missing recent ledgers.*\n\n###### Keywords:\n- **Rotation phase** *(per node)* \u2014 one named step of an online-delete rotation, such as `copy`, `freshen.keys` or `swap`.\n- **Health wait** *(per node)* \u2014 a pause inside a rotation while the node is not healthy enough to go on.\n\n###### Computation boundary:\n*Result: Per node and stage \u2014 each series is one server's own value for one stage.*\n*Computed in xrpld code (call-site metric macro, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[SHAMapStoreImp.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/SHAMapStoreImp.h) \u00b7 [SHAMapStoreImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/SHAMapStoreImp.cpp)\n\n###### Function:\n`SHAMapStoreImp::RotationPhase::~RotationPhase` \u00b7 `SHAMapStoreImp::run` \u00b7 `SHAMapStoreImp::freshenCache` \u00b7 `SHAMapStoreImp::healthWait`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rotation-phase)",
+      "description": "###### What this is:\n*How long each online-delete rotation phase takes, at the 95th percentile, with one line per `stage` and node. Time in a health wait inside a phase counts under `health_wait`, not under that phase.*\n\n###### How it's computed:\n*95th percentile of the rotation_phase_duration_seconds histogram over the rate interval, per node and stage. Each phase adds one sample when it ends, from the `SHAMapStoreImp::RotationPhase` destructor. A phase's sample leaves out the time spent in a health wait nested inside it. Only `freshen.fetch` samples set the `cache` label (`treenode` or `master_tx`), and the query sums over it.*\n\n###### Reading it:\n*A stage has no value in windows where it did not run. The p95 is coarse: the first buckets end at 1, 5, 10 and 30 s. A stage that always ends under 1 s reads about 0.95 s. `freshen.fetch` runs at most once per cache in a rotation: the tree-node cache first, then the transaction cache. Its line mixes both.*\n\n###### Healthy range:\n*Each stage well inside the time between rotations. No `health_wait` line.*\n\n###### Watch for:\n*`freshen.fetch` p95 in minutes: the re-fetch loop is reading the cached keys back from the node store. The freshen holds the cache mutex only while it copies one partition's keys, so this is read load, not a freeze. A long tree-node cache hold shows on Cache Lock Hold Peak on this board. A `copy` p95 close to the time between rotations means each rotation barely ends before the next is due. A `health_wait` line means a rotation found the node not full, behind the network, or missing recent ledgers.*\n\n###### Keywords:\n- **Rotation phase** *(per node)* \u2014 one named step of an online-delete rotation, such as `copy`, `freshen.fetch` or `swap`.\n- **Health wait** *(per node)* \u2014 a pause inside a rotation while the node is not healthy enough to go on.\n\n###### Computation boundary:\n*Result: Per node and stage \u2014 each series is one server's own value for one stage.*\n*Computed in xrpld code (call-site metric macro, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[SHAMapStoreImp.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/SHAMapStoreImp.h) \u00b7 [SHAMapStoreImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/SHAMapStoreImp.cpp)\n\n###### Function:\n`SHAMapStoreImp::RotationPhase::~RotationPhase` \u00b7 `SHAMapStoreImp::run` \u00b7 `SHAMapStoreImp::freshenCache` \u00b7 `SHAMapStoreImp::healthWait`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rotation-phase)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -5277,7 +5277,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Longest single hold of a `TaggedCache::mutex_` since the previous collection tick, in microseconds. One series each for the tree-node cache and the FullBelow cache, observed on the `cache_metrics` gauge.*\n\n###### How it's computed:\n*cache_metrics with metric treenode_lock_hold_peak_us or fullbelow_lock_hold_peak_us, plotted as is. Each cache keeps its longest timed hold. The tree-node cache times sweep() and getKeys(); the FullBelow cache times sweep() only. On every collection tick, about every 10 s, AppMetricGauges reads that peak and resets it to zero.*\n\n###### Reading it:\n*Each point is the worst single hold in the last tick, not an average. A hold shows up in the first tick after it ends. Other users of the mutex are not timed. A sweep starts its clock before it takes the lock, so its figure includes any wait for the mutex.*\n\n###### Healthy range:\n*Holds well under 1 s, the point at which the cache logs a warning. The tree-node line can rise during a rotation's `freshen.keys` step, which copies every key under the mutex.*\n\n###### Watch for:\n*A tree-node peak of seconds: every SHAMap node fetch in that window waited for it. If it lines up with a rotation (the `rotating` log line), compare it with `freshen.keys` on Rotation Phase Duration. The `nodestore.rotate.freshen.keys` span covers the same step. Any hold of 1 s or more also logs a warning that names the cache, the operation and the entry count.*\n\n###### Keywords:\n- **Cache lock hold** *(per node)* \u2014 the longest single hold of one cache's mutex since the last collection tick.\n- **FullBelow cache** *(per node)* \u2014 remembers which SHAMap tree keys have all their descendants present, which speeds up acquiring a complete tree.\n\n###### Computation boundary:\n*Result: Per node and cache \u2014 each series is one server's own value for one cache.*\n*Computed in xrpld code (AppMetricGauges, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[TaggedCache.ipp](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/basics/TaggedCache.ipp) \u00b7 [AppMetricGauges.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/AppMetricGauges.cpp)\n\n###### Function:\n`TaggedCache::noteLockHold` \u00b7 `TaggedCache::takeLockHoldPeak` \u00b7 `AppMetricGauges::observeCacheLockHoldPeaks`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#cache-lock-hold)",
+      "description": "###### What this is:\n*Longest single hold of a `TaggedCache::mutex_` since the previous collection tick, in microseconds. One series each for the tree-node cache and the FullBelow cache, observed on the `cache_metrics` gauge.*\n\n###### How it's computed:\n*cache_metrics with metric treenode_lock_hold_peak_us or fullbelow_lock_hold_peak_us, plotted as is. Each cache keeps its longest timed hold. The tree-node cache times sweep() and forEachKeyPartition(); the FullBelow cache times sweep() only. On every collection tick, about every 10 s, AppMetricGauges reads that peak and resets it to zero.*\n\n###### Reading it:\n*Each point is the worst single hold in the last tick, not an average. A hold shows up in the first tick after it ends. Other users of the mutex are not timed. A sweep starts its clock before it takes the lock, so its figure includes any wait for the mutex. The rotation's freshen copies the tree-node cache's keys one partition at a time, so its holds are per partition, not per cache.*\n\n###### Healthy range:\n*Holds well under 1 s, the point at which the cache logs a warning.*\n\n###### Watch for:\n*A tree-node peak of seconds: every SHAMap node fetch in that window waited for it. Timing alone does not name the cause. The periodic cache sweep (`NodeFamily::sweep`, every sweep interval) holds the mutex over the whole cache and can overlap a long `freshen.fetch`. The 1 s warning names the operation: `forEachKeyPartition` is the freshen, `sweep` is not.*\n\n###### Keywords:\n- **Cache lock hold** *(per node)* \u2014 the longest single hold of one cache's mutex since the last collection tick.\n- **FullBelow cache** *(per node)* \u2014 remembers which SHAMap tree keys have all their descendants present, which speeds up acquiring a complete tree.\n- **Key partition** *(per node)* \u2014 one shard of a cache's map; the freshen copies one partition's keys per mutex hold.\n\n###### Computation boundary:\n*Result: Per node and cache \u2014 each series is one server's own value for one cache.*\n*Computed in xrpld code (AppMetricGauges, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[TaggedCache.ipp](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/basics/TaggedCache.ipp) \u00b7 [AppMetricGauges.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/AppMetricGauges.cpp)\n\n###### Function:\n`TaggedCache::noteLockHold` \u00b7 `TaggedCache::takeLockHoldPeak` \u00b7 `AppMetricGauges::observeCacheLockHoldPeaks`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#cache-lock-hold)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -5370,6 +5370,108 @@
         }
       ],
       "title": "Cache Lock Hold Peak (\u00b5s)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*Keys handled by each online-delete rotation's freshen step, split by `cache` (tree-node or master transaction) and `outcome`. `fetched` is how many keys the freshen read. `copied` is how many of those were found only in the archive, which is about to be deleted. Those keys were written to the writable backend.*\n\n###### How it's computed:\n*increase(rotation_freshen_keys_total) over each interval slot, summed by node, cache and outcome, then rounded. `SHAMapStoreImp::recordFreshen` adds both outcomes once for each cache a rotation freshens, including a freshen that a health check cut short. A bar is the total over the rotations in its slot, usually one.*\n\n###### Reading it:\n*Compare `copied` with `fetched` for the same cache: the ratio is the share of cached keys that only the archive still held. Gaps between bars are the time between rotations. Every cache and outcome starts at zero when the node starts, so the first rotation after a restart is counted.*\n\n###### Healthy range:\n*A `fetched` bar for each cache every rotation, with `copied` at or below it.*\n\n###### Watch for:\n*`copied` far below `fetched`: the freshen reads many keys to rescue few, so most of its read load buys nothing. A `treenode` pair with no `master_tx` pair usually means the rotation stopped during the tree-node freshen. An empty transaction cache adds 0, which also shows no bar. Each freshen also logs a \"freshened ... cache\" warning with both counts.*\n\n###### Keywords:\n- **Rotation freshen** *(per node)* \u2014 the rotation step that re-reads the cached keys. A node that only the archive holds is written to the writable backend before the archive is deleted.\n- **Copy-forward write** *(per node)* \u2014 writing a node read from the archive into the writable backend.\n\n###### Computation boundary:\n*Result: Per node, cache and outcome \u2014 each series is one server's own total for one cache and outcome.*\n*Computed in xrpld code (call-site metric macro, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[SHAMapStoreImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/SHAMapStoreImp.cpp) \u00b7 [SHAMapStoreImp.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/SHAMapStoreImp.h)\n\n###### Function:\n`SHAMapStoreImp::recordFreshen` \u00b7 `SHAMapStoreImp::freshenCache`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#copy-forward-write)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Keys per Rotation",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 0,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": 1800000,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 449
+      },
+      "id": 76,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": true
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "round(sum by (service_instance_id, cache, outcome) (increase(rotation_freshen_keys_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__interval])))",
+          "legendFormat": "rotation_freshen_keys_total [{{service_instance_id}}-{{cache}}-{{outcome}}]",
+          "refId": "A",
+          "interval": "1m"
+        }
+      ],
+      "title": "Rotation Freshen Yield (Keys per Rotation)",
       "type": "timeseries"
     }
   ],
