@@ -59,7 +59,7 @@ def create_transaction_parser():
 # the members that differ from these.
 SETTING_DEFAULTS = {
     "delegable": "Delegation::NotDelegable",
-    "amendment": "uint256{}",
+    "amendment": "UInt256{}",
     "privileges": "Privilege::NoPriv",
 }
 

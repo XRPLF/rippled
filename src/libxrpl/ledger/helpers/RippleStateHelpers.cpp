@@ -184,8 +184,8 @@ trustCreate(
     bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // ripple state entry
-    SLE::ref sleAccount,        // the account being set.
+    UInt256 const& uIndex,      // ripple state entry
+    SLE::Ref sleAccount,        // the account being set.
     bool const bAuth,           // authorize account.
     bool const bNoRipple,       // others cannot ripple through
     bool const bFreeze,         // funds cannot leave
@@ -196,7 +196,7 @@ trustCreate(
                                 // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     beast::Journal j)
 {
     JLOG(j.trace()) << "trustCreate: " << to_string(uSrcAccountID) << ", "
@@ -298,7 +298,7 @@ trustCreate(
 TER
 trustDelete(
     ApplyView& view,
-    SLE::ref sleRippleState,
+    SLE::Ref sleRippleState,
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j)
@@ -399,7 +399,7 @@ issueIOU(
     AccountID const& account,
     STAmount const& amount,
     Issue const& issue,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     beast::Journal j)
 {
     XRPL_ASSERT(
@@ -652,21 +652,32 @@ addEmptyHolding(
 
     auto const& issuerId = issue.getIssuer();
     auto const& currency = issue.currency;
-    if (isGlobalFrozen(ctx.view, issuerId))
-        return tecFROZEN;  // LCOV_EXCL_LINE
-
     auto const& srcId = issuerId;
     auto const& dstId = accountID;
     auto const high = srcId > dstId;
     auto const index = keylet::trustLine(srcId, dstId, currency);
+    // Post-fixCleanup3_4_0: an existing line is a no-op. Issuer freeze and
+    // DefaultRipple only matter when this function has to create a line.
+    bool const fix340Enabled = ctx.view.rules().enabled(fixCleanup3_4_0);
+    if (fix340Enabled && ctx.view.exists(index))
+        return tecDUPLICATE;
+
+    if (isGlobalFrozen(ctx.view, issuerId))
+        return tecFROZEN;  // LCOV_EXCL_LINE
+
     auto const sleSrc = ctx.view.peek(keylet::account(srcId));
     auto const sleDst = ctx.view.peek(keylet::account(dstId));
     if (!sleDst || !sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
+    // Create path: DefaultRipple is still required. terNO_RIPPLE is
+    // intentional so VaultWithdraw / CoverWithdraw fail in preclaim via
+    // canAddHolding (retryable, no fee) rather than claiming a tec* fee
+    // in doApply. Transactor::operator() will not apply and will not
+    // convert it to tefINTERNAL.
     if (!sleSrc->isFlag(lsfDefaultRipple))
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return fix340Enabled ? TER{terNO_RIPPLE} : tecINTERNAL;
     // If the line already exists, don't create it again.
-    if (ctx.view.read(index))
+    if (!fix340Enabled && ctx.view.exists(index))
         return tecDUPLICATE;
 
     // A reserve sponsor only covers tx.Account's own objects.

@@ -105,11 +105,11 @@ public:
         F&& f);
 
     // Hash of the validated ledger
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     getLedgerHash() const;
 
     // Hash of consensus transaction set used to generate ledger
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     getConsensusHash() const;
 
     [[nodiscard]] NetClock::time_point
@@ -124,6 +124,13 @@ public:
     [[nodiscard]] NodeID const&
     getNodeID() const noexcept;
 
+    /**
+     * Whether this validation carries a good signature.
+     *
+     * Reports false if the signature cannot be checked at all, so a caller
+     * cannot tell that apart from a bad signature. Either way the validation is
+     * unusable, and the reason is logged. Only a computed answer is remembered.
+     */
     [[nodiscard]] bool
     isValid() const noexcept;
 
@@ -133,7 +140,7 @@ public:
     [[nodiscard]] bool
     isTrusted() const noexcept;
 
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     getSigningHash() const;
 
     void

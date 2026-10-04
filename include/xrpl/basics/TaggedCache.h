@@ -60,19 +60,19 @@ template <
     class T,
     bool IsKeyCache = false,
     class SharedWeakUnionPointerType = SharedWeakCachePointer<T>,
-    class SharedPointerType = std::shared_ptr<T>,
+    class SharedPointer = std::shared_ptr<T>,
     class Hash = HardenedHash<>,
     class KeyEqual = std::equal_to<Key>,
     class Mutex = std::recursive_mutex>
 class TaggedCache
 {
 public:
-    using mutex_type = Mutex;
+    using MutexType = Mutex;
     using key_type = Key;
     using mapped_type = T;
-    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
-    using shared_weak_combo_pointer_type = SharedWeakUnionPointerType;
-    using shared_pointer_type = SharedPointerType;
+    using ClockType = beast::AbstractClock<std::chrono::steady_clock>;
+    using SharedWeakComboPointerType = SharedWeakUnionPointerType;
+    using SharedPointerType = SharedPointer;
 
 public:
     /**
@@ -92,24 +92,28 @@ public:
      *     strongly-cached entries, enforced by demoting the approximately
      *     oldest entry whenever growth would exceed it. 0 disables the cap
      *     (the periodic sweep alone bounds the cache).
+     * @param partitions Number of partitions the underlying map is split
+     *     into; defaults to the hardware concurrency. Exposed so tests can
+     *     pin a small, known partition count.
      * @param byteBudget When set, a hard upper bound on the charged bytes of
      *     strongly-cached entries, enforced the same way.
      */
     TaggedCache(
         std::string const& name,
         int size,
-        clock_type::duration expiration,
-        clock_type& clock,
+        ClockType::duration expiration,
+        ClockType& clock,
         beast::Journal journal,
-        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make(),
+        beast::insight::Collector::Ptr const& collector = beast::insight::NullCollector::make(),
         int cacheHardCap = 0,
+        std::optional<std::size_t> partitions = std::nullopt,
         std::optional<ByteBudget> byteBudget = std::nullopt);
 
 public:
     /**
      * Return the clock associated with the cache.
      */
-    clock_type&
+    ClockType&
     clock();
 
     /**
@@ -269,7 +273,7 @@ public:
     bool
     retrieve(key_type const& key, T& data);
 
-    mutex_type&
+    MutexType&
     peekMutex();
 
     std::vector<key_type>
@@ -295,7 +299,7 @@ public:
 
 private:
     SharedPointerType
-    initialFetch(key_type const& key, std::scoped_lock<mutex_type> const& l);
+    initialFetch(key_type const& key, std::scoped_lock<MutexType> const& l);
 
     void
     collectMetrics();
@@ -307,7 +311,7 @@ private:
         Stats(
             std::string const& prefix,
             Handler const& handler,
-            beast::insight::Collector::ptr const& collector)
+            beast::insight::Collector::Ptr const& collector)
             : hook(collector->makeHook(handler))
             , size(collector->makeGauge(prefix, "size"))
             , hitRate(collector->makeGauge(prefix, "hit_rate"))
@@ -326,14 +330,14 @@ private:
     class KeyOnlyEntry
     {
     public:
-        clock_type::time_point lastAccess;
+        ClockType::time_point lastAccess;
 
-        explicit KeyOnlyEntry(clock_type::time_point const& lastAccess) : lastAccess(lastAccess)
+        explicit KeyOnlyEntry(ClockType::time_point const& lastAccess) : lastAccess(lastAccess)
         {
         }
 
         void
-        touch(clock_type::time_point const& now)
+        touch(ClockType::time_point const& now)
         {
             lastAccess = now;
         }
@@ -342,14 +346,14 @@ private:
     class ValueEntry
     {
     public:
-        shared_weak_combo_pointer_type ptr;
-        clock_type::time_point lastAccess;
+        SharedWeakComboPointerType ptr;
+        ClockType::time_point lastAccess;
 
         // Bytes charged against the byte budget while strong; 0 when weak
         // or when no budget is configured.
         std::uint32_t costBytes{0};
 
-        ValueEntry(clock_type::time_point const& lastAccess, shared_pointer_type const& ptr)
+        ValueEntry(ClockType::time_point const& lastAccess, SharedPointerType const& ptr)
             : ptr(ptr), lastAccess(lastAccess)
         {
         }
@@ -377,7 +381,7 @@ private:
             return ptr.lock();
         }
         void
-        touch(clock_type::time_point const& now)
+        touch(ClockType::time_point const& now)
         {
             lastAccess = now;
         }
@@ -385,24 +389,29 @@ private:
 
     using Entry = std::conditional_t<IsKeyCache, KeyOnlyEntry, ValueEntry>;
 
-    using KeyOnlyCacheType = hardened_partitioned_hash_map<key_type, KeyOnlyEntry, Hash, KeyEqual>;
+    using KeyOnlyCacheType = HardenedPartitionedHashMap<key_type, KeyOnlyEntry, Hash, KeyEqual>;
 
-    using KeyValueCacheType = hardened_partitioned_hash_map<key_type, ValueEntry, Hash, KeyEqual>;
+    using KeyValueCacheType = HardenedPartitionedHashMap<key_type, ValueEntry, Hash, KeyEqual>;
 
-    using cache_type = hardened_partitioned_hash_map<key_type, Entry, Hash, KeyEqual>;
+    using CacheType = HardenedPartitionedHashMap<key_type, Entry, Hash, KeyEqual>;
 
-    // Bounded approximate-LRU eviction from a single partition. Keeps the
-    // strong-entry count at/below cacheHardCap_ as new entries are inserted, so
-    // a burst can't drive the cache past its RAM budget between timer sweeps.
-    // No-op unless cacheHardCap_ > 0 (opt-in); caller holds mutex_.
+    // Bounded approximate-LRU eviction across the cache's partitions. Keeps
+    // the strong-entry count at/below cacheHardCap_ as new entries are
+    // inserted, so a burst can't drive the cache past its RAM budget between
+    // timer sweeps. `keep` locates the entry that just grew the count (the
+    // newest entry, skipped by the search) and its home partition; a
+    // partition with no other strong entry to demote (a small cap or uneven
+    // partitioning) is not enough to stop the search, since cacheCount_ is
+    // global, so other partitions are tried before giving up. No-op unless
+    // cacheHardCap_ > 0 (opt-in); caller holds mutex_.
     void
-    evictForHardCap(cache_type::map_type& partition, cache_type::map_type::iterator const& keep);
+    evictForHardCap(CacheType::Iterator const& keep);
 
     [[nodiscard]] std::thread
     sweepHelper(
-        clock_type::time_point const& whenExpire,
-        [[maybe_unused]] clock_type::time_point const& now,
-        KeyValueCacheType::map_type& partition,
+        ClockType::time_point const& whenExpire,
+        [[maybe_unused]] ClockType::time_point const& now,
+        KeyValueCacheType::MapType& partition,
         SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
         std::atomic<std::uint64_t>& allBytesRemoved,
@@ -410,19 +419,19 @@ private:
 
     [[nodiscard]] std::thread
     sweepHelper(
-        clock_type::time_point const& whenExpire,
-        clock_type::time_point const& now,
-        KeyOnlyCacheType::map_type& partition,
+        ClockType::time_point const& whenExpire,
+        ClockType::time_point const& now,
+        KeyOnlyCacheType::MapType& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
         std::atomic<std::uint64_t>& allBytesRemoved,
         std::scoped_lock<std::recursive_mutex> const&);
 
     beast::Journal journal_;
-    clock_type& clock_;
+    ClockType& clock_;
     Stats stats_;
 
-    mutex_type mutable mutex_;
+    MutexType mutable mutex_;
 
     // Used for logging
     std::string name_;
@@ -431,7 +440,7 @@ private:
     int const targetSize_;
 
     // Desired maximum cache age
-    clock_type::duration const targetAge_;
+    ClockType::duration const targetAge_;
 
     // Hard upper bound on strongly-cached entries, enforced by
     // evictForHardCap whenever the strong count grows (fresh inserts and
@@ -463,12 +472,18 @@ private:
     [[nodiscard]] bool
     overHardCap() const;
 
-    // Rotating bucket cursor for evictForHardCap so successive over-cap
-    // evictions sweep the whole partition (CLOCK hand) instead of repeatedly
-    // sampling the head buckets. Advanced under mutex_.
+    // Rotating bucket cursor for evictForHardCap's home partition so
+    // successive over-cap evictions sweep the whole partition (CLOCK hand)
+    // instead of repeatedly sampling the head buckets. Advanced under mutex_.
     std::size_t evictHand_{0};
 
-    cache_type cache_;  // Hold strong reference to recent objects
+    // Rotating partition cursor for evictForHardCap: the partition an
+    // eviction last succeeded on, so a call whose home partition has nothing
+    // left to demote continues the search from here instead of restarting
+    // at partition 0 every time. Advanced under mutex_.
+    std::size_t evictPartition_{0};
+
+    CacheType cache_;  // Hold strong reference to recent objects
     std::uint64_t hits_{0};
     std::uint64_t misses_{0};
 };

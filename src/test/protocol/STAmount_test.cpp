@@ -1009,8 +1009,8 @@ public:
         auto rules = [](bool const mptV2) {
             // Rules keeps a reference to the presets set, so use static
             // storage here rather than a local temporary.
-            static std::unordered_set<uint256, beast::Uhash<>> const kNoFeatures;
-            static std::unordered_set<uint256, beast::Uhash<>> const kMptV2Features{
+            static std::unordered_set<UInt256, beast::Uhash<>> const kNoFeatures;
+            static std::unordered_set<UInt256, beast::Uhash<>> const kMptV2Features{
                 featureMPTokensV2};
             return Rules{mptV2 ? kMptV2Features : kNoFeatures};
         };

@@ -967,6 +967,75 @@ class InvariantsMPT_test : public InvariantsBase
                 });
         }
 
+        // LoanSet / VaultWithdraw MayAuthorizeMpt caps (fixCleanup3_4_0):
+        // LoanSet allows at most two creates and no deletes; VaultWithdraw
+        // allows at most one of each. Fabricate one extra mutation so a
+        // too-loose cap would miss these.
+        {
+            auto const insertHolderTokens =
+                [](Account const& issuer, Account const& holder, ApplyContext& ac, int n) {
+                    auto const sle = ac.view().peek(keylet::account(issuer.id()));
+                    if (!sle)
+                        return false;
+                    auto seq = sle->getFieldU32(sfSequence);
+                    for (int i = 0; i < n; ++i)
+                    {
+                        MPTIssue const mpt{makeMptID(seq + i, issuer)};
+                        auto sleNew =
+                            std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), holder));
+                        (*sleNew)[sfAccount] = holder.id();
+                        (*sleNew)[sfMPTokenIssuanceID] = mpt.getMptID();
+                        ac.view().insert(sleNew);
+                    }
+                    return true;
+                };
+
+            std::array<std::pair<xrpl::TxType, std::uint8_t>, 2> const createOverCap{
+                {{ttLOAN_SET, 3}, {ttVAULT_WITHDRAW, 2}}};
+            for (auto const& [txnType, nTokens] : createOverCap)
+            {
+                doInvariantCheck(
+                    {{"MPT authorize succeeded but created/deleted bad number mptokens"}},
+                    [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                        return insertHolderTokens(a1, a2, ac, nTokens);
+                    },
+                    XRPAmount{},
+                    STTx{txnType, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+            }
+
+            MPTID id;
+            auto const precloseTwoHolders = [&id](Account const& a1, Account const& a2, Env& env) {
+                Account const gw("gw");
+                env.fund(XRP(1'000), gw);
+                MPTTester const mpt({.env = env, .issuer = gw, .holders = {a1, a2}});
+                id = mpt.issuanceID();
+                return true;
+            };
+            std::array<std::pair<xrpl::TxType, std::uint8_t>, 2> const deleteOverCap{
+                {{ttLOAN_SET, 1}, {ttVAULT_WITHDRAW, 2}}};
+            for (auto const& [txnType, nTokens] : deleteOverCap)
+            {
+                doInvariantCheck(
+                    {{"MPT authorize succeeded but created/deleted bad number mptokens"}},
+                    [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                        std::array const holders{a1, a2};
+                        for (int i = 0; i < nTokens; ++i)
+                        {
+                            auto sle = ac.view().peek(keylet::mptoken(id, holders[i]));
+                            if (!sle)
+                                return false;
+                            ac.view().erase(sle);
+                        }
+                        return true;
+                    },
+                    XRPAmount{},
+                    STTx{txnType, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    precloseTwoHolders);
+            }
+        }
+
         // sfReferenceHolding can only be set on creation by VaultCreate. A
         // non-VaultCreate transaction that creates an MPTokenIssuance with
         // sfReferenceHolding present must trip the invariant.
@@ -979,7 +1048,7 @@ class InvariantsMPT_test : public InvariantsBase
                     return false;
                 MPTIssue const mpt{makeMptID(sleAcct->getFieldU32(sfSequence), a1)};
                 auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
-                sleNew->setFieldH256(sfReferenceHolding, uint256{1});
+                sleNew->setFieldH256(sfReferenceHolding, UInt256{1});
                 ac.view().insert(sleNew);
                 return true;
             },
@@ -992,7 +1061,7 @@ class InvariantsMPT_test : public InvariantsBase
         // sfReferenceHolding), then mutate it in precheck to produce a
         // before/after pair.
         {
-            uint256 vaultKey;
+            UInt256 vaultKey;
             doInvariantCheck(
                 {{"sfReferenceHolding was modified on an existing "
                   "MPTokenIssuance"}},
@@ -1004,7 +1073,7 @@ class InvariantsMPT_test : public InvariantsBase
                         ac.view().peek(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
                     if (!sleIssuance)
                         return false;
-                    sleIssuance->setFieldH256(sfReferenceHolding, uint256{2});
+                    sleIssuance->setFieldH256(sfReferenceHolding, UInt256{2});
                     ac.view().update(sleIssuance);
                     return true;
                 },
@@ -1034,7 +1103,7 @@ class InvariantsMPT_test : public InvariantsBase
         // other than a VaultDelete transaction. Set up a vault, then have
         // an arbitrary tx erase the pseudo's MPToken in precheck.
         {
-            uint256 vaultKey;
+            UInt256 vaultKey;
             doInvariantCheck(
                 {{"vault pseudo-account holding deleted by a "
                   "non-VaultDelete transaction"}},

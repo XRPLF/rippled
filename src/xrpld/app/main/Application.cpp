@@ -35,6 +35,7 @@
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/ServerHandler.h>
+#include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/shamap/NodeFamily.h>
@@ -243,7 +244,7 @@ public:
     std::unique_ptr<InboundLedgers> inboundLedgers_;
     std::unique_ptr<InboundTransactions> inboundTransactions_;
     std::unique_ptr<LedgerReplayer> ledgerReplayer_;
-    TaggedCache<uint256, AcceptedLedger> acceptedLedgerCache_;
+    TaggedCache<UInt256, AcceptedLedger> acceptedLedgerCache_;
     std::unique_ptr<NetworkOPs> networkOPs_;
     std::unique_ptr<Cluster> cluster_;
     std::unique_ptr<PeerReservationTable> peerReservations_;
@@ -269,7 +270,7 @@ public:
     std::optional<SQLiteDatabase> relationalDatabase_;
     std::unique_ptr<DatabaseCon> walletDB_;
     std::unique_ptr<Overlay> overlay_;
-    std::optional<uint256> trapTxID_;
+    std::optional<UInt256> trapTxID_;
 
     boost::asio::signal_set signals_;
 
@@ -324,6 +325,7 @@ public:
               perf::makePerfLog(
                   perf::setupPerfLog(config_->section(Sections::kPerf), config_->configDir),
                   *this,
+                  rpc::getHandlerNames(),
                   logs_->journal("PerfLog"),
                   [this] { signalStop("PerfLog"); }))
         , txMaster_(*this)
@@ -635,7 +637,7 @@ public:
         return *inboundTransactions_;
     }
 
-    TaggedCache<uint256, AcceptedLedger>&
+    TaggedCache<UInt256, AcceptedLedger>&
     getAcceptedLedgerCache() override
     {
         return acceptedLedgerCache_;
@@ -1003,7 +1005,7 @@ public:
                 << "; size after: " << treeNodeCache->size();
         }
         {
-            TaggedCache<uint256, Transaction> const& masterTxCache =
+            TaggedCache<UInt256, Transaction> const& masterTxCache =
                 getMasterTransaction().getCache();
 
             std::size_t const oldMasterTxSize = masterTxCache.size();
@@ -1138,7 +1140,7 @@ public:
         return maxDisallowedLedger_;
     }
 
-    std::optional<uint256> const&
+    std::optional<UInt256> const&
     getTrapTxID() const override
     {
         return trapTxID_;
@@ -1169,7 +1171,7 @@ private:
         std::string const& ledgerID,
         bool replay,
         bool isFilename,
-        std::optional<uint256> trapTxID);
+        std::optional<UInt256> trapTxID);
 
     void
     setMaxDisallowedLedger();
@@ -1427,7 +1429,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     {
         try
         {
-            auto logStream = beast::logstream{journal_.error()};
+            auto logStream = beast::LogStream{journal_.error()};
             auto setup = setupServerHandler(*config_, logStream);
             setup.makeContexts();
             serverHandler_->setup(setup, journal_);
@@ -1712,9 +1714,9 @@ ApplicationImp::fdRequired() const
 void
 ApplicationImp::startGenesisLedger()
 {
-    std::vector<uint256> const initialAmendments = (config_->startUp == StartUpType::Fresh)
+    std::vector<UInt256> const initialAmendments = (config_->startUp == StartUpType::Fresh)
         ? amendmentTable_->getDesired()
-        : std::vector<uint256>{};
+        : std::vector<UInt256>{};
 
     std::shared_ptr<Ledger> const genesis = std::make_shared<Ledger>(
         kCreateGenesis,
@@ -1826,9 +1828,9 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
             if (ledger.get().isMember("close_time"))
             {
-                using tp = NetClock::time_point;
-                using d = tp::duration;
-                closeTime = tp{d{ledger.get()["close_time"].asUInt()}};
+                using Tp = NetClock::time_point;
+                using D = Tp::duration;
+                closeTime = Tp{D{ledger.get()["close_time"].asUInt()}};
             }
             if (ledger.get().isMember("close_time_resolution"))
             {
@@ -1868,7 +1870,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
                 return nullptr;
             }
 
-            uint256 uIndex;
+            UInt256 uIndex;
 
             if (!uIndex.parseHex(entry[jss::index].asString()))
             {
@@ -1919,7 +1921,7 @@ ApplicationImp::loadOldLedger(
     std::string const& ledgerID,
     bool replay,
     bool isFileName,
-    std::optional<uint256> trapTxID)
+    std::optional<UInt256> trapTxID)
 {
     try
     {
@@ -1932,7 +1934,7 @@ ApplicationImp::loadOldLedger(
         }
         else if (ledgerID.length() == 64)
         {
-            uint256 hash;
+            UInt256 hash;
 
             if (hash.parseHex(ledgerID))
             {

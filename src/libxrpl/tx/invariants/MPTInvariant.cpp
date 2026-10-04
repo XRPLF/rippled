@@ -40,6 +40,7 @@ constexpr auto kConfidentialMptTxTypes = std::to_array<TxType>({
     ttCONFIDENTIAL_MPT_CONVERT_BACK,
     ttCONFIDENTIAL_MPT_MERGE_INBOX,
     ttCONFIDENTIAL_MPT_CLAWBACK,
+    ttCONFIDENTIAL_MPT_MIRROR_UPDATE,
 });
 
 // Clamp to the cap (== INT64_MAX) before the signed conversion. Invariant
@@ -66,7 +67,7 @@ subtractMPTAmountDelta(std::int64_t delta, std::uint64_t amount)
 }  // namespace
 
 void
-ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidMPTIssuance::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     // The sfReferenceHolding tracking and the deleted-holding capture are
     // only meaningful post-fixCleanup3_2_0 (the field is never set
@@ -234,14 +235,6 @@ ValidMPTIssuance::finalize(
 
         if (hasPrivilege(tx, Privilege::DestroyMptIssuance))
         {
-            // A VaultDelete that is still cleaning up credentials pinned to its
-            // pseudo-account returns tecINCOMPLETE and has not yet reached the
-            // share issuance. Don't require the issuance to be removed until
-            // the deletion completes (a later transaction).
-            if (rules.enabled(fixCleanup3_4_0) && txnType == ttVAULT_DELETE &&
-                result == tecINCOMPLETE)
-                return mptIssuancesDeleted_ == 0 && mptIssuancesCreated_ == 0;
-
             if (mptIssuancesDeleted_ == 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance deletion "
@@ -307,27 +300,46 @@ ValidMPTIssuance::finalize(
                     return false;
                 }
             }
-            else if (lendingProtocolEnabled && (mptokensCreated_ + mptokensDeleted_) > 1)
+            else
             {
-                JLOG(j.fatal()) << "Invariant failed: MPT authorize succeeded "
-                                   "but created/deleted bad number mptokens";
-                return false;
-            }
-            else if (submittedByIssuer && (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by issuer "
-                                   "succeeded but created/deleted mptokens";
-                return false;
-            }
-            else if (
-                !submittedByIssuer && hasPrivilege(tx, Privilege::MustAuthorizeMpt) &&
-                (mptokensCreated_ + mptokensDeleted_ != 1))
-            {
-                // if the holder submitted this tx, then a mptoken must be
-                // either created or deleted.
-                JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by holder "
-                                   "succeeded but created/deleted bad number of mptokens";
-                return false;
+                // Cap on MPToken creates and deletes while featureLendingProtocol is enabled.
+                // - LoanSet: at most two creates and no deletes.
+                // - VaultWithdraw: at most one create and one delete.
+                // - Other MayAuthorizeMpt types: created + deleted <= 1.
+                // - MustAuthorizeMpt still requires exactly one create or delete below.
+                auto const mptokensExceedAuthorizeCap = [&] {
+                    if (!lendingProtocolEnabled)
+                        return false;
+                    if (rules.enabled(fixCleanup3_4_0))
+                    {
+                        if (txnType == ttLOAN_SET)
+                            return mptokensDeleted_ != 0 || mptokensCreated_ > 2;
+                        if (txnType == ttVAULT_WITHDRAW)
+                            return mptokensCreated_ > 1 || mptokensDeleted_ > 1;
+                    }
+                    return (mptokensCreated_ + mptokensDeleted_) > 1;
+                };
+                if (mptokensExceedAuthorizeCap())
+                {
+                    JLOG(j.fatal()) << "Invariant failed: MPT authorize succeeded "
+                                       "but created/deleted bad number mptokens";
+                    return false;
+                }
+                if (submittedByIssuer && (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
+                {
+                    JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by issuer "
+                                       "succeeded but created/deleted mptokens";
+                    return false;
+                }
+                if (!submittedByIssuer && hasPrivilege(tx, Privilege::MustAuthorizeMpt) &&
+                    (mptokensCreated_ + mptokensDeleted_ != 1))
+                {
+                    // if the holder submitted this tx, then a mptoken must be
+                    // either created or deleted.
+                    JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by holder "
+                                       "succeeded but created/deleted bad number of mptokens";
+                    return false;
+                }
             }
 
             return true;
@@ -416,7 +428,7 @@ ValidMPTIssuance::finalize(
 }
 
 void
-ValidMPTBalanceChanges::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+ValidMPTBalanceChanges::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (overflow_)
         return;
@@ -550,7 +562,7 @@ ValidConfidentialMPToken::visitEntry(
     std::shared_ptr<SLE const> const& after)
 {
     // Helper to get MPToken Issuance ID safely
-    auto const getMptID = [](std::shared_ptr<SLE const> const& sle) -> uint192 {
+    auto const getMptID = [](std::shared_ptr<SLE const> const& sle) -> UInt192 {
         if (!sle)
             return beast::kZero;
         if (sle->getType() == ltMPTOKEN)
@@ -562,7 +574,7 @@ ValidConfidentialMPToken::visitEntry(
 
     if (before && before->getType() == ltMPTOKEN)
     {
-        uint192 const id = getMptID(before);
+        UInt192 const id = getMptID(before);
         auto& change = changes_[id];
         change.mptAmountDelta =
             subtractMPTAmountDelta(change.mptAmountDelta, before->getFieldU64(sfMPTAmount));
@@ -583,7 +595,7 @@ ValidConfidentialMPToken::visitEntry(
 
     if (after && after->getType() == ltMPTOKEN)
     {
-        uint192 const id = getMptID(after);
+        UInt192 const id = getMptID(after);
         auto& change = changes_[id];
         change.mptAmountDelta =
             addMPTAmountDelta(change.mptAmountDelta, after->getFieldU64(sfMPTAmount));
@@ -622,7 +634,7 @@ ValidConfidentialMPToken::visitEntry(
 
     if (before && before->getType() == ltMPTOKEN_ISSUANCE)
     {
-        uint192 const id = getMptID(before);
+        UInt192 const id = getMptID(before);
         auto& change = changes_[id];
         if (before->isFieldPresent(sfConfidentialOutstandingAmount))
         {
@@ -635,7 +647,7 @@ ValidConfidentialMPToken::visitEntry(
 
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
-        uint192 const id = getMptID(after);
+        UInt192 const id = getMptID(after);
         auto& change = changes_[id];
 
         bool const hasCOA = after->isFieldPresent(sfConfidentialOutstandingAmount);
@@ -655,7 +667,7 @@ ValidConfidentialMPToken::visitEntry(
 
     if (before && after && before->getType() == ltMPTOKEN && after->getType() == ltMPTOKEN)
     {
-        uint192 const id = getMptID(after);
+        UInt192 const id = getMptID(after);
 
         // sfConfidentialBalanceVersion must change when spending changes
         auto const spendingBefore = (*before)[~sfConfidentialBalanceSpending];
@@ -832,6 +844,14 @@ ValidMPTTransfer::visitEntry(
 
     if (after)
         update(*after, false);
+
+    // Record whether every touched AccountRoot was a pseudo-account BEFORE
+    // the transaction applied (true and false). A transaction that erases a
+    // pseudo-account (and moves MPT out of it) in the same transaction leaves
+    // no trace of its pseudo-account status in the post-transaction view
+    // isAuthorized() sees at finalize() time.
+    if (before && before->getType() == ltACCOUNT_ROOT)
+        pseudoAccountsBefore_[before->at(sfAccount)] = isPseudoAccount(before);
 }
 
 bool
@@ -844,10 +864,19 @@ ValidMPTTransfer::isAuthorized(
     // Pseudo-accounts (Vault, LoanBroker, AMM) hold assets on behalf of their
     // participants and are implicitly authorized for any MPT they hold,
     // including vault shares whose underlying asset would otherwise require
-    // auth.  Exempt them here rather than relying on requireAuth: the recursive
+    // auth. Exempt them here rather than relying on requireAuth: the recursive
     // share -> underlying descent in requireAuth fails for a pseudo-account
     // that holds the share but not the underlying.
-    if (isPseudoAccount(view, holder))
+    //
+    // Use the pre-transaction classification for any account this
+    // transaction touched (pseudoAccountsBefore_): the post-transaction view
+    // is wrong for an account this same transaction erased. Untouched
+    // accounts aren't in the map, so fall back to the current view, which is
+    // still accurate for them since nothing changed.
+    auto const pseudoIt = pseudoAccountsBefore_.find(holder);
+    bool const isPseudo =
+        pseudoIt != pseudoAccountsBefore_.end() ? pseudoIt->second : isPseudoAccount(view, holder);
+    if (isPseudo)
         return true;
 
     auto const key = keylet::mptoken(mptid, holder);

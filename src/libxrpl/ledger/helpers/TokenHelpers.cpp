@@ -326,7 +326,7 @@ getLineIfUsable(
 static STAmount
 getTrustLineBalance(
     ReadView const& view,
-    SLE::const_ref sle,
+    SLE::ConstRef sle,
     AccountID const& account,
     Currency const& currency,
     AccountID const& issuer,
@@ -583,6 +583,32 @@ canAddHolding(ReadView const& view, Asset const& asset)
         asset.value());
 }
 
+[[nodiscard]] bool
+holdingExists(ReadView const& view, AccountID const& account, Issue const& issue)
+{
+    if (issue.native() || account == issue.getIssuer())
+        return true;
+    return view.exists(keylet::trustLine(account, issue));
+}
+
+[[nodiscard]] bool
+holdingExists(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue)
+{
+    if (account == mptIssue.getIssuer())
+        return true;
+    return view.exists(keylet::mptoken(mptIssue.getMptID(), account));
+}
+
+[[nodiscard]] bool
+holdingExists(ReadView const& view, AccountID const& account, Asset const& asset)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) -> bool {
+            return holdingExists(view, account, issue);
+        },
+        asset.value());
+}
+
 TER
 addEmptyHolding(
     ApplyViewContext ctx,
@@ -661,7 +687,7 @@ directSendNoFeeIOU(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     bool bCheckIssuer,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     beast::Journal j)
 {
     AccountID const& issuer = saAmount.getIssuer();
@@ -815,7 +841,7 @@ directSendNoLimitIOU(
     STAmount const& saAmount,
     STAmount& saActual,
     beast::Journal j,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     WaiveTransferFee waiveFee)
 {
     auto const& issuer = saAmount.getIssuer();
@@ -941,7 +967,7 @@ accountSendIOU(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     WaiveTransferFee waiveFee)
 {
     if (view.rules().enabled(fixAMMv1_1))
@@ -1518,7 +1544,7 @@ accountSend(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     WaiveTransferFee waiveFee,
     AllowMPTOverflow allowOverflow)
 {

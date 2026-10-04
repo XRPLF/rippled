@@ -5,10 +5,8 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -76,7 +74,7 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 }
 
 TER
-deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j)
+deleteSLE(ApplyView& view, SLE::Ref sleCredential, beast::Journal j)
 {
     if (!sleCredential)
         return tecNO_ENTRY;
@@ -129,36 +127,6 @@ deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j)
     return tesSUCCESS;
 }
 
-TER
-deletePseudoAccountCredentials(
-    ApplyView& view,
-    AccountID const& pseudoAcct,
-    std::uint16_t maxNodesToDelete,
-    beast::Journal j)
-{
-    XRPL_ASSERT(
-        isPseudoAccount(view.read(keylet::account(pseudoAcct))),
-        "xrpl::credentials::deletePseudoAccountCredentials : is a pseudo-account");
-
-    // Delete the credentials linked into the pseudo-account's owner directory,
-    // visiting at most maxNodesToDelete entries. Any other object is left in
-    // place; the caller's own checks decide whether the remaining directory
-    // blocks deletion. If the bound is reached, cleanupOnAccountDelete returns
-    // tecINCOMPLETE and the caller propagates it so a later transaction resumes.
-    return cleanupOnAccountDelete(
-        view,
-        keylet::ownerDir(pseudoAcct),
-        [&view, &j](LedgerEntryType nodeType, uint256 const&, SLE::pointer& sleItem)
-            -> std::pair<TER, SkipEntry> {
-            if (nodeType == ltCREDENTIAL)
-                return {deleteSLE(view, sleItem, j), SkipEntry::No};
-
-            return {tesSUCCESS, SkipEntry::Yes};
-        },
-        j,
-        maxNodesToDelete);
-}
-
 NotTEC
 checkFields(STTx const& tx, Rules const& rules, beast::Journal j)
 {
@@ -174,13 +142,13 @@ checkFields(STTx const& tx, Rules const& rules, beast::Journal j)
     }
 
     if (rules.enabled(fixCleanup3_4_0) &&
-        std::ranges::any_of(credentials, [](uint256 const& id) { return id.isZero(); }))
+        std::ranges::any_of(credentials, [](UInt256 const& id) { return id.isZero(); }))
     {
         JLOG(j.trace()) << "Malformed transaction: zero credential ID.";
         return temMALFORMED;
     }
 
-    std::unordered_set<uint256> duplicates;
+    std::unordered_set<UInt256> duplicates;
     for (auto const& cred : credentials)
     {
         auto [it, ins] = duplicates.insert(cred);
@@ -237,7 +205,7 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
 }
 
 TER
-validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
+validDomain(ReadView const& view, UInt256 domainID, AccountID const& subject)
 {
     // Note, permissioned domain objects can be deleted at any time
     auto const slePD = view.read(keylet::permissionedDomain(domainID));
@@ -328,7 +296,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
         return credentials.empty() ? temARRAY_EMPTY : temARRAY_TOO_LARGE;
     }
 
-    std::unordered_set<uint256> duplicates;
+    std::unordered_set<UInt256> duplicates;
     for (auto const& credential : credentials)
     {
         auto const& issuer = credential[sfIssuer];
@@ -364,7 +332,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
 }  // namespace credentials
 
 TER
-verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, beast::Journal j)
+verifyValidDomain(ApplyView& view, AccountID const& account, UInt256 domainID, beast::Journal j)
 {
     auto const slePD = view.read(keylet::permissionedDomain(domainID));
     if (!slePD)
@@ -405,7 +373,7 @@ checkDepositPreauth(
     ReadView const& view,
     AccountID const& src,
     AccountID const& dst,
-    SLE::const_ref sleDst,
+    SLE::ConstRef sleDst,
     beast::Journal j)
 {
     // If depositPreauth is enabled, then an account that requires
@@ -453,7 +421,7 @@ verifyDepositPreauth(
     ApplyView& view,
     AccountID const& src,
     AccountID const& dst,
-    SLE::const_ref sleDst,
+    SLE::ConstRef sleDst,
     beast::Journal j)
 {
     if (auto const err = cleanupExpiredCredentials(tx, view, j); !isTesSuccess(err))

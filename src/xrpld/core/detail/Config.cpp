@@ -169,6 +169,55 @@ minCgroupLimit(std::string const& mount, std::string path, char const* file)
     return best;
 }
 
+// The mount point of the cgroup v2 unified hierarchy (`controller` empty) or
+// of the cgroup v1 hierarchy whose comounted controllers include
+// `controller`; empty when neither is mounted. Read from /proc/self/mountinfo
+// rather than a fixed path, since a container runtime or an init system can
+// mount either hierarchy somewhere other than /sys/fs/cgroup. Field 5, the
+// mount point, is already expressed relative to this process's own root
+// (man 5 proc), so no further namespace translation is needed.
+[[nodiscard]] std::string
+findCgroupMount(std::string_view controller)
+{
+    std::ifstream in("/proc/self/mountinfo");
+    std::string line;
+
+    while (std::getline(in, line))
+    {
+        auto const dash = line.find(" - ");
+        if (dash == std::string::npos)
+            continue;
+
+        std::istringstream prefix(line.substr(0, dash));
+        std::string id, parentId, majorMinor, root, mountPoint;
+        prefix >> id >> parentId >> majorMinor >> root >> mountPoint;
+
+        std::istringstream suffix(line.substr(dash + 3));
+        std::string fsType, source, superOptions;
+        suffix >> fsType >> source >> superOptions;
+
+        if (controller.empty())
+        {
+            if (fsType == "cgroup2")
+                return mountPoint;
+            continue;
+        }
+
+        if (fsType != "cgroup")
+            continue;
+
+        std::stringstream opts(superOptions);
+        std::string opt;
+        while (std::getline(opts, opt, ','))
+        {
+            if (opt == controller)
+                return mountPoint;
+        }
+    }
+
+    return {};
+}
+
 // The cgroup (v2, then v1) memory limit in bytes; 0 when absent or
 // unlimited. Checks this process's own cgroup and its ancestors (covering
 // nested limits such as systemd MemoryMax=) before the root-level files
@@ -176,23 +225,31 @@ minCgroupLimit(std::string const& mount, std::string path, char const* file)
 [[nodiscard]] std::uint64_t
 getCgroupMemoryLimit()
 {
-    if (auto const path = getOwnCgroupPath(""); !path.empty() && path != "/")
+    if (auto const mount = findCgroupMount(""); !mount.empty())
     {
-        if (auto const limit = minCgroupLimit("/sys/fs/cgroup", path, "memory.max"))
+        if (auto const path = getOwnCgroupPath(""); !path.empty() && path != "/")
+        {
+            if (auto const limit = minCgroupLimit(mount, path, "memory.max"))
+                return limit;
+        }
+
+        if (auto const limit = readCgroupLimit(mount + "/memory.max"))
             return limit;
     }
 
-    if (auto const limit = readCgroupLimit("/sys/fs/cgroup/memory.max"))
-        return limit;
-
-    if (auto const path = getOwnCgroupPath("memory"); !path.empty() && path != "/")
+    if (auto const mount = findCgroupMount("memory"); !mount.empty())
     {
-        if (auto const limit =
-                minCgroupLimit("/sys/fs/cgroup/memory", path, "memory.limit_in_bytes"))
+        if (auto const path = getOwnCgroupPath("memory"); !path.empty() && path != "/")
+        {
+            if (auto const limit = minCgroupLimit(mount, path, "memory.limit_in_bytes"))
+                return limit;
+        }
+
+        if (auto const limit = readCgroupLimit(mount + "/memory.limit_in_bytes"))
             return limit;
     }
 
-    return readCgroupLimit("/sys/fs/cgroup/memory/memory.limit_in_bytes");
+    return 0;
 }
 
 [[nodiscard]] std::uint64_t
@@ -330,11 +387,6 @@ getSingleSection(
 //
 //------------------------------------------------------------------------------
 
-char const* const Config::kConfigFileName = "xrpld.cfg";
-char const* const Config::kConfigLegacyName = "rippled.cfg";
-char const* const Config::kDatabaseDirName = "db";
-char const* const Config::kValidatorsFileName = "validators.txt";
-
 [[nodiscard]] static std::string
 getEnvVar(char const* name)
 {
@@ -346,8 +398,7 @@ getEnvVar(char const* name)
     return value;
 }
 
-Config::Config()
-    : j_(beast::Journal::getNullSink()), ramSize_(detail::getMemorySize() / (1024 * 1024 * 1024))
+Config::Config() : j_(beast::Journal::getNullSink()), ramSize_(detail::getMemorySize())
 {
 }
 
@@ -679,13 +730,22 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    // A budget beyond physical memory cannot be honored and recreates the
-    // oversized-preset OOM this setting exists to prevent.
-    if (memoryLimit && ramSize_ != 0 && *memoryLimit > (ramSize_ << 30) && !quiet_)
+    // A budget beyond the detected memory (physical RAM, or the cgroup limit
+    // when one is set) cannot be honored and recreates the oversized-preset
+    // OOM this setting exists to prevent.
+    if (memoryLimit && ramSize_ != 0 && *memoryLimit > ramSize_ && !quiet_)
     {
         std::cerr << "WARNING: the configured memory budget (" << (*memoryLimit >> 30)
-                  << " GB) exceeds detected RAM (" << ramSize_ << " GB); set [memory_limit] to "
-                  << ramSize_ << " or less.\n";
+                  << " GB) exceeds detected memory (" << ramSize_
+                  << " bytes, RAM or cgroup limit); ";
+        // A whole-GB floor of 0 here is a nonzero byte budget rounded down,
+        // not the "disabled" value: recommending it would turn enforcement
+        // off, the opposite of this warning's point.
+        if (auto const detectedGb = ramSize_ >> 30)
+            std::cerr << "set [memory_limit] to " << detectedGb << " or less.\n";
+        else
+            std::cerr << "[memory_limit] is in whole gigabytes and cannot represent it; "
+                         "remove the setting to use the detected budget automatically.\n";
     }
 
     if (getSingleSection(secConfig, Sections::kSigningSupport, strTemp, j_))
@@ -1094,11 +1154,11 @@ Config::loadFromString(std::string const& fileContents)
         }
         else if (boost::iequals(match[2], "days"))
         {
-            amendmentMajorityTime = days(duration);
+            amendmentMajorityTime = Days(duration);
         }
         else if (boost::iequals(match[2], "weeks"))
         {
-            amendmentMajorityTime = weeks(duration);
+            amendmentMajorityTime = Weeks(duration);
         }
 
         if (amendmentMajorityTime < minutes(15))
@@ -1396,8 +1456,9 @@ Config::cacheMemoryBudget() const
     if (memoryLimit)
         return *memoryLimit;
 
-    // ramSize_ is in GiB; 0 when detection failed, which disables enforcement.
-    return ramSize_ << 30;
+    // ramSize_ is in bytes; 0 when detection failed, which disables
+    // enforcement.
+    return ramSize_;
 }
 
 FeeSetup

@@ -38,7 +38,7 @@ VaultWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 }
 
 static WaiveUnrealizedLoss
-shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
+shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::ConstRef issuance)
 {
     XRPL_ASSERT(
         issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
@@ -204,6 +204,15 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     AuthType const authType = account == dstAcct ? AuthType::WeakAuth : AuthType::StrongAuth;
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType); !isTesSuccess(ter))
         return ter;
+
+    // Fail early when self-destination would have to create a holding.
+    // Skip when a holding already exists: canAddHolding does not look at that,
+    // and would block a no-op create (the DefaultRipple-cleared self-withdraw).
+    if (fix340Enabled && account == dstAcct && !holdingExists(ctx.view, dstAcct, vaultAsset))
+    {
+        if (auto const ter = canAddHolding(ctx.view, vaultAsset); !isTesSuccess(ter))
+            return ter;
+    }
 
     // The checks above only establish that an account may hold the asset. A
     // private vault additionally restricts who may take part in it, so paying
@@ -580,7 +589,7 @@ VaultWithdraw::doApply()
 }
 
 void
-VaultWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultWithdraw::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
