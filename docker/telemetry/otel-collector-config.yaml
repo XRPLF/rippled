@@ -48,6 +48,10 @@ processors:
         action: delete
       - key: telemetry.sdk.version
         action: delete
+  # No attribute hashing or redaction. Account addresses in span attributes
+  # (pathfind_source_account, pathfind_dest_account) are public ledger
+  # identifiers and are stored as emitted so they join against explorers and
+  # logs. Do not add an attributes/hash processor for them.
 
 exporters:
   debug:
