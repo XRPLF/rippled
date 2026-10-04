@@ -26,6 +26,7 @@ class Xrpl(ConanFile):
         "rocksdb": [True, False],
         "shared": [True, False],
         "static": [True, False],
+        "telemetry": [True, False],
         "tests": [True, False],
         "unity": [True, False],
         "xrpld": [True, False],
@@ -61,6 +62,7 @@ class Xrpl(ConanFile):
         "rocksdb": True,
         "shared": False,
         "static": True,
+        "telemetry": True,
         "tests": False,
         "unity": False,
         "xrpld": False,
@@ -146,6 +148,10 @@ class Xrpl(ConanFile):
             self.requires("rocksdb/10.5.1")
         self.requires("secp256k1/0.7.1", transitive_headers=True)
         self.requires("sqlite3/3.53.0", force=True)
+        # OpenTelemetry C++ SDK for distributed tracing (optional).
+        # Provides OTLP/HTTP exporter, batch span processor, and trace API.
+        if self.options.telemetry:
+            self.requires("opentelemetry-cpp/1.28.0", transitive_headers=True)
         self.requires("xxhash/0.8.3", transitive_headers=True)
 
     exports_sources = (
@@ -187,6 +193,7 @@ class Xrpl(ConanFile):
         tc.variables["rocksdb"] = self.options.rocksdb
         tc.variables["BUILD_SHARED_LIBS"] = self.options.shared
         tc.variables["static"] = self.options.static
+        tc.variables["telemetry"] = self.options.telemetry
         tc.variables["unity"] = self.options.unity
         tc.variables["xrpld"] = self.options.xrpld
         tc.generate()
@@ -241,3 +248,9 @@ class Xrpl(ConanFile):
         ]
         if self.options.rocksdb:
             libxrpl.requires.append("rocksdb::librocksdb")
+        if self.options.telemetry:
+            libxrpl.requires.append("opentelemetry-cpp::opentelemetry-cpp")
+            # The public telemetry headers pick their class layout on this
+            # define, so a consumer that does not see it compiles a different
+            # SpanGuard than the one inside the library it links.
+            libxrpl.defines.append("XRPL_ENABLE_TELEMETRY")

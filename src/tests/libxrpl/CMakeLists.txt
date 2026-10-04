@@ -40,6 +40,7 @@ set(test_modules
     tx
     protocol_autogen
     server
+    telemetry
 )
 if(NOT WIN32)
     list(APPEND test_modules net)
