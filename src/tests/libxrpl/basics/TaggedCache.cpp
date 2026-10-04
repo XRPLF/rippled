@@ -447,6 +447,7 @@ TEST(TaggedCacheTest, byte_budget_enforced_on_insert)
         journal,
         beast::insight::NullCollector::make(),
         0,
+        std::nullopt,
         budget);
 
     bool everExceeded = false;
