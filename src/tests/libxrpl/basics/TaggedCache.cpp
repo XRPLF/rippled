@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
 
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <utility>

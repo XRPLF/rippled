@@ -245,7 +245,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         if (partitionCount == 0)
             return;
 
-        std::size_t const homePartition = static_cast<std::size_t>(keep.ait - partitions.begin());
+        auto const homePartition = static_cast<std::size_t>(keep.ait - partitions.begin());
         key_type const keepKey = keep->first;
 
         // Approximate LRU with bounded work per call: sample a window of
