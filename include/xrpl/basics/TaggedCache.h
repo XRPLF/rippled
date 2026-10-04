@@ -396,14 +396,15 @@ private:
     using CacheType = HardenedPartitionedHashMap<key_type, Entry, Hash, KeyEqual>;
 
     // Bounded approximate-LRU eviction across the cache's partitions. Keeps
-    // the strong-entry count at/below cacheHardCap_ as new entries are
-    // inserted, so a burst can't drive the cache past its RAM budget between
-    // timer sweeps. `keep` locates the entry that just grew the count (the
-    // newest entry, skipped by the search) and its home partition; a
-    // partition with no other strong entry to demote (a small cap or uneven
-    // partitioning) is not enough to stop the search, since cacheCount_ is
-    // global, so other partitions are tried before giving up. No-op unless
-    // cacheHardCap_ > 0 (opt-in); caller holds mutex_.
+    // the strong-entry count at/below cacheHardCap_ and the charged bytes
+    // at/below the byte budget as new entries are inserted, so a burst can't
+    // drive the cache past its RAM budget between timer sweeps. `keep`
+    // locates the entry that just grew the cache (the newest entry, skipped
+    // by the search) and its home partition; a partition with no other
+    // strong entry to demote (a small cap or uneven partitioning) is not
+    // enough to stop the search, since the bounds are cache-wide, so other
+    // partitions are tried before giving up. No-op unless cacheHardCap_ > 0
+    // or a byte budget is set (opt-in); caller holds mutex_.
     void
     evictForHardCap(CacheType::Iterator const& keep);
 

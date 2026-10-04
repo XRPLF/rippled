@@ -1445,8 +1445,7 @@ Config::getValueFor(SizedItem item) const
             // the value stays prime for hash distribution.
             return 300007;
         case SizedItem::SleCacheSize:
-            // Closed-ledger SLEs pulled by RPC and pathfinding, a few KB
-            // each; previously unbounded.
+            // Closed-ledger SLEs pulled by RPC and pathfinding, a few KB each.
             return std::clamp(gb * 1024, 4096, 262144);
     }
 

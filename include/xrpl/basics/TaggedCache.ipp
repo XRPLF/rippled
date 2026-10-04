@@ -327,9 +327,10 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
         // Approximate LRU with bounded work per call: sample a window of
         // strong entries starting at the rotating bucket cursor and demote
-        // the oldest, repeating until the count is back under the cap or the
-        // demotion budget is spent. Growth paths raise the count by one at a
-        // time, so the budget lets eviction catch up without stalling them.
+        // the oldest, repeating until neither the entry cap nor the byte
+        // budget is exceeded or the demotion budget is spent. Growth paths
+        // raise the count by one at a time, so the budget lets eviction catch
+        // up without stalling them.
         constexpr int kEvictSampleBudget = 64;
         constexpr int kMaxDemotionsPerCall = 8;
 
@@ -415,17 +416,21 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                 ++hardCapEvictions_;
                 if (hardCapEvictions_ == 1 || hardCapEvictions_ % 100000 == 0)
                 {
-                    JLOG(journal_.warn()) << name_ << ": hard-cap eviction #" << hardCapEvictions_
-                                          << " (cap " << cacheHardCap_ << ", strong " << cacheCount_
-                                          << ") - cache saturated, growth now evicts";
+                    JLOG(journal_.warn())
+                        << name_ << ": hard-cap eviction #" << hardCapEvictions_ << " (cap "
+                        << cacheHardCap_ << ", strong " << cacheCount_ << ", bytes " << cacheBytes_
+                        << " of budget " << (byteBudget_ ? byteBudget_->bytes : 0)
+                        << ") - cache saturated, growth now evicts";
                 }
             }
 
             if (!demoted)
             {
                 JLOG(journal_.debug())
-                    << name_ << ": over hard cap " << cacheHardCap_
-                    << " but eviction sample found no strong entry to demote in any partition";
+                    << name_ << ": over hard cap or byte budget (cap " << cacheHardCap_
+                    << ", strong " << cacheCount_ << ", bytes " << cacheBytes_ << " of budget "
+                    << (byteBudget_ ? byteBudget_->bytes : 0)
+                    << ") but eviction sample found no strong entry to demote in any partition";
                 return;
             }
         }
@@ -589,7 +594,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                                         std::forward_as_tuple(clock_.now(), data))
                                     .first;
         ++cacheCount_;
-        chargeEntry(emplacedIt.mit->second, data);
+        chargeEntry(emplacedIt->second, data);
         // The just-inserted entry is the newest; evictForHardCap skips it
         // and drops the oldest across the cache.
         if (overHardCap())
@@ -938,7 +943,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     else
     {
         ++cacheCount_;
-        chargeEntry(it.mit->second, it.mit->second.ptr.getStrong());
+        chargeEntry(it->second, it->second.ptr.getStrong());
         if (overHardCap())
             evictForHardCap(it);
     }
