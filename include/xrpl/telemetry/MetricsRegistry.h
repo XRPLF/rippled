@@ -38,7 +38,6 @@
  * |       +-- ledgers_closed_total
  * |       +-- validations_sent_total
  * |       +-- validations_checked_total
- * |       +-- state_changes_total
  * |       +-- ledger_hash_mismatch_total{reason}
  * |       +-- txq_expired_total
  * |       +-- txq_dropped_total{reason}
@@ -139,6 +138,14 @@
 #endif
 
 namespace xrpl::telemetry {
+
+/**
+ * Run time at which a finished job counts as a stall, in microseconds.
+ * LoadMonitor's "Job: ... run:" warning uses the same 1 s bar
+ * (LoadMonitor.cpp addLoadSample), but it tests run time plus queue wait.
+ * So it also fires for a short job that waited long, which is not a stall.
+ */
+inline constexpr std::int64_t kJobStallThresholdUs = 1'000'000;
 
 /**
  * Central OpenTelemetry metric registry.
@@ -318,7 +325,8 @@ public:
      * pipeline: OTLP exporter, periodic reader, MeterProvider and every
      * SYNCHRONOUS instrument (counters and histograms).
      *
-     * The parity counters it creates start at 0 for each label value, so a
+     * The parity counters it creates start at 0 for each label value, and
+     * jobq_stall_total at 0 for each job type the job queue can run, so a
      * later event shows under increase(). See initSyncInstruments().
      *
      * Doing this in the constructor is what fixes the init order. The
@@ -784,14 +792,6 @@ public:
     incrementValidationsChecked();
 
     /**
-     * Increment the state_changes_total counter.
-     * Called from NetworkOPsImp::setMode() when the server operating mode
-     * changes (e.g. CONNECTED -> SYNCING -> TRACKING -> FULL).
-     */
-    void
-    incrementStateChanges();
-
-    /**
      * Increment the ledger_hash_mismatch_total counter for a reason.
      * Called from LedgerHistory::handleMismatch() once the mismatch has
      * been classified. The reason label turns fork diagnosis from a
@@ -944,6 +944,12 @@ private:
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobFinishedCounter_;
     /**
+     * Counter: jobq_stall_total{job_type="<name>"} — one per finished job
+     * whose run time reached kJobStallThresholdUs. Starts at 0 for each job
+     * type the job queue can run.
+     */
+    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobStallCounter_;
+    /**
      * Histogram: job_queued_us{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
@@ -971,11 +977,6 @@ private:
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         validationsCheckedCounter_;
-    /**
-     * Counter: state_changes_total — incremented on operating mode transitions.
-     */
-    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
-        stateChangesCounter_;
     /**
      * Counter: ledger_hash_mismatch_total{reason} — incremented per classified
      * built-vs-validated ledger mismatch.
@@ -1007,7 +1008,8 @@ private:
     /**
      * Create the synchronous instruments (RPC and job-queue counters and
      * histograms, plus the synchronous parity counters), and start each of
-     * those parity counters at 0 for every label value. Extracted from the
+     * those parity counters at 0 for every label value, and jobq_stall_total
+     * at 0 for every job type the job queue can run. Extracted from the
      * constructor to keep each function under the 80-line limit.
      */
     void

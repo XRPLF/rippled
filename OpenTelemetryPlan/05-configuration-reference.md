@@ -458,9 +458,10 @@ bare (no `xrpld-` prefix). The full inventory and per-panel query reference is
 are:
 
 `consensus-health`, `fee-market`, `job-queue`, `ledger-data-sync`,
-`ledger-operations`, `log-derived-insights`, `network-traffic`, `node-health`,
-`overlay-traffic-detail`, `peer-network`, `peer-quality`, `rpc-pathfinding`,
-`rpc-performance`, `transaction-overview`, `validator-health`.
+`ledger-operations`, `ledger-sync-health`, `log-derived-insights`,
+`network-traffic`, `node-health`, `overlay-traffic-detail`, `peer-network`,
+`peer-quality`, `rpc-pathfinding`, `rpc-performance`, `transaction-overview`,
+`validator-health`.
 
 > **Panel-count convention used in these docs**: counts are of **data panels
 > only** — `type: "row"` collapsible headers are excluded, because a row is a

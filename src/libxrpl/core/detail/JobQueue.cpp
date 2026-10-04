@@ -193,6 +193,25 @@ JobQueue::getJobCountGE(JobType t) const
     return ret;
 }
 
+JobQueue::WorkerSaturation
+JobQueue::getWorkerSaturation() const
+{
+    // Read the configured thread count and the in-flight task count before
+    // taking the mutex: neither is guarded by it (numberOfThreads_ is set at
+    // construction, runningTaskCount_ is an atomic), and holding the queue
+    // lock across them would add contention for no benefit.
+    WorkerSaturation out;
+    out.runningTasks = workers_.numberOfCurrentlyRunningTasks();
+    out.workerThreads = workers_.getNumberOfThreads();
+
+    std::scoped_lock const lock(mutex_);
+
+    for (auto const& entry : jobData_)
+        out.totalWaiting += entry.second.waiting;
+
+    return out;
+}
+
 std::unique_ptr<LoadEvent>
 JobQueue::makeLoadEvent(JobType t, std::string const& name)
 {

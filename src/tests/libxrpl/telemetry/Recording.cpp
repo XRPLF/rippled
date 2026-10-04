@@ -36,8 +36,16 @@ static_assert(!std::is_move_constructible_v<telemetry::Counter<>>);
 static_assert(!std::is_move_assignable_v<telemetry::Counter<>>);
 
 // Stopwatch and Mirror hold ordinary values, so they stay copyable in both
-// builds; only Counter needed the explicit deletions above.
+// builds; only Counter needed the explicit deletions above. Mirror's four
+// operations are asserted unconditionally for the same reason as Counter's: an
+// owning class must not be copyable in one configuration and not the other. The
+// compiled-in form gets them from its T member and the compiled-out form from
+// being empty, so both answer the same.
 static_assert(std::is_copy_constructible_v<telemetry::Stopwatch>);
+static_assert(std::is_copy_constructible_v<telemetry::Mirror<int>>);
+static_assert(std::is_copy_assignable_v<telemetry::Mirror<int>>);
+static_assert(std::is_move_constructible_v<telemetry::Mirror<int>>);
+static_assert(std::is_move_assignable_v<telemetry::Mirror<int>>);
 
 // The compiled-out forms must be empty types. That is what lets an owning class
 // declare the member unconditionally: the storage collapses to padding, and the
@@ -132,4 +140,58 @@ TEST(Recording, stopwatch_restart_resets_the_origin)
         EXPECT_EQ(beforeRestart, std::chrono::microseconds{0});
         EXPECT_EQ(afterRestart, std::chrono::microseconds{0});
     }
+}
+
+// Mirror is empty when compiled out, so it costs no storage as a member.
+TEST(Recording, mirror_is_empty_when_compiled_out)
+{
+    if constexpr (telemetry::kEnabled)
+    {
+        EXPECT_FALSE(std::is_empty_v<telemetry::Mirror<int>>);
+    }
+    else
+    {
+        EXPECT_TRUE(std::is_empty_v<telemetry::Mirror<int>>);
+    }
+}
+
+// The first store is a change; storing the same value again is not. This is
+// the property that stops one event per proposal becoming 35 per round.
+TEST(Recording, mirror_reports_a_change_once)
+{
+    telemetry::Mirror<int> mirror;
+
+    if constexpr (telemetry::kEnabled)
+    {
+        EXPECT_TRUE(mirror.changedTo(7));
+        EXPECT_FALSE(mirror.changedTo(7));
+        EXPECT_TRUE(mirror.changedTo(8));
+        EXPECT_EQ(mirror.load(), 8);
+    }
+    else
+    {
+        EXPECT_FALSE(mirror.changedTo(7));
+        EXPECT_FALSE(mirror.changedTo(8));
+        EXPECT_EQ(mirror.load(), 0);
+    }
+}
+
+// A default-constructed mirror holds T{}, and changedTo() against T{} is
+// therefore NOT a change when compiled in -- the boundary a caller relies on
+// when the mirrored value can legitimately be zero.
+TEST(Recording, mirror_starts_at_a_default_value)
+{
+    telemetry::Mirror<int> mirror;
+    EXPECT_EQ(mirror.load(), 0);
+    EXPECT_FALSE(mirror.changedTo(0));
+}
+
+// store() overwrites without reporting, for callers that only read later.
+TEST(Recording, mirror_store_overwrites)
+{
+    telemetry::Mirror<int> mirror;
+    mirror.store(3);
+    EXPECT_EQ(mirror.load(), telemetry::kEnabled ? 3 : 0);
+    mirror.store(4);
+    EXPECT_EQ(mirror.load(), telemetry::kEnabled ? 4 : 0);
 }
