@@ -64,6 +64,8 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/telemetry/MetricMacros.h>
+#include <xrpl/telemetry/MetricsRegistry.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
@@ -797,6 +799,13 @@ RCLConsensus::Adaptor::doAccept(
     // See if we can accept a ledger as fully-validated
     ledgerMaster_.consensusBuilt(built.ledger, result.txns.id(), std::move(consensusJson));
 
+    // Record ledger close for OTel dashboard parity counter. Uses the
+    // call-site macro (see MetricMacros.h) rather than a MetricsRegistry
+    // member. The name and description are shared with the registry, which
+    // creates the same counter to start it at 0.
+    XRPL_METRIC_COUNTER_INC(
+        app_, telemetry::kLedgersClosedTotal, telemetry::kLedgersClosedTotalDesc);
+
     //-------------------------------------------------------------------------
     {
         // Apply disputed transactions that didn't get in
@@ -1125,6 +1134,22 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 
     // Publish to all our subscribers:
     app_.getOPs().pubValidation(v);
+
+    // Record validation sent for OTel dashboard parity counter.
+    if (auto* mr = app_.getMetricsRegistry())
+    {
+        mr->incrementValidationsSent();
+#ifdef XRPL_ENABLE_TELEMETRY
+        // Record our validation for the agreement tracker so it can
+        // compare against network-validated ledgers.
+        //
+        // Only when enabled: nothing reconciles or drains the tracker unless
+        // the observable gauges are running. Without them the ring fills, and
+        // every later event is dropped.
+        if (mr->isEnabled())
+            mr->getValidationTracker().recordOurValidation(ledger.id(), ledger.seq());
+#endif
+    }
 }
 
 void

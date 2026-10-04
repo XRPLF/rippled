@@ -57,6 +57,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/telemetry/MetricsRegistry.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
 
@@ -102,8 +103,10 @@ static constexpr std::chrono::minutes kMaxLedgerAgeAcquire{1};
 
 /**
  * Don't acquire history if write load is too high. The load is the number of
- * node objects queued or being written by the backend's batch writer; NuDB
- * always reports 0.
+ * node objects queued or being written by the backend's batch writer.
+ *
+ * NuDB reports 0 without telemetry. With telemetry compiled in it reports the
+ * number of writers in flight, which stays far below this threshold.
  */
 static constexpr int kMaxWriteLoadAcquire{8192};
 
@@ -319,6 +322,17 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
         "xrpl::LedgerMaster::setValidLedger : valid ledger sequence");
     (void)maxLedgerDifference_;
     validLedgerSeq_ = l->header().seq;
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Record the network-validated ledger for the agreement tracker so it
+    // can compare against our own validations.
+    //
+    // Only when enabled: nothing reconciles or drains the tracker unless
+    // the observable gauges are running. Without them the ring fills, and
+    // every later event is dropped.
+    if (auto* mr = app_.getMetricsRegistry(); mr != nullptr && mr->isEnabled())
+        mr->getValidationTracker().recordNetworkValidation(l->header().hash, l->header().seq);
+#endif
 
     app_.getOPs().updateLocalTx(*l);
     app_.getSHAMapStore().onLedgerClosed(getValidatedLedger());

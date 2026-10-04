@@ -108,6 +108,7 @@ inline constexpr auto consensus = makeStr("consensus");
 inline constexpr auto peer = makeStr("peer");
 inline constexpr auto ledger = makeStr("ledger");
 inline constexpr auto network = makeStr("network");
+inline constexpr auto node = makeStr("node");
 inline constexpr auto link = makeStr("link");
 }  // namespace seg
 
@@ -116,6 +117,16 @@ inline constexpr auto link = makeStr("link");
 namespace attr {
 inline constexpr auto networkId = join(join(seg::xrpl, seg::network), makeStr("id"));
 inline constexpr auto networkType = join(join(seg::xrpl, seg::network), makeStr("type"));
+
+/**
+ * Resource attribute `xrpl.node.id` — the node's base58 public key.
+ *
+ * Dotted form, like its siblings above, because it is a process-identity
+ * value stamped once on the OTel resource rather than a per-span attribute.
+ * It gives traces and metrics a stable per-node key alongside
+ * `service.instance.id`.
+ */
+inline constexpr auto nodeId = join(join(seg::xrpl, seg::node), makeStr("id"));
 
 /**
  * Canonical shared attrs (rule 5 — <domain>_<field> underscore form).
