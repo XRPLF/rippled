@@ -35,6 +35,7 @@
 #include <atomic>
 #include <cstddef>
 #include <filesystem>
+#include <format>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -193,7 +194,7 @@ public:
             if (!s.ok())
             {
                 Throw<std::runtime_error>(
-                    std::string("Unable to set RocksDB bbt_options: ") + s.ToString());
+                    std::format("Unable to set RocksDB bbt_options: {}", s.ToString()));
             }
         }
 
@@ -206,7 +207,7 @@ public:
             if (!s.ok())
             {
                 Throw<std::runtime_error>(
-                    std::string("Unable to set RocksDB options: ") + s.ToString());
+                    std::format("Unable to set RocksDB options: {}", s.ToString()));
             }
         }
 
@@ -241,7 +242,7 @@ public:
         if (!status.ok() || (localDb == nullptr))
         {
             Throw<std::runtime_error>(
-                std::string("Unable to open/create RocksDB: ") + status.ToString());
+                std::format("Unable to open/create RocksDB: {}", status.ToString()));
         }
         db.reset(localDb);
     }
@@ -356,7 +357,7 @@ public:
         auto ret = db->Write(options, &wb);
 
         if (!ret.ok())
-            Throw<std::runtime_error>("storeBatch failed: " + ret.ToString());
+            Throw<std::runtime_error>(std::format("storeBatch failed: {}", ret.ToString()));
     }
 
     void
