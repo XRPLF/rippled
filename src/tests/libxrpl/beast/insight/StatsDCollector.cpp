@@ -37,6 +37,7 @@ namespace beast::insight {
  *     "test",
  *     Journal(Journal::getNullSink()));
  * auto const gauge = collector->makeGauge("g");
+ * collector->onCollectionReady();  // Nothing is polled before this.
  * EXPECT_EQ(server.receive(std::chrono::seconds(10)), "test.g:0|g\n");
  *
  * // Edge case: nothing was sent, so the wait runs out and returns empty.
@@ -140,6 +141,10 @@ TEST(StatsDCollector, untouched_gauge_publishes_initial_zero)
     // Created and then left alone: no set(), no increment().
     auto const gauge = collector->makeGauge("untouched");
 
+    // A collector polls its metrics only after this. Without the call no tick
+    // ever flushes and every assertion below would hold for the wrong reason.
+    collector->onCollectionReady();
+
     EXPECT_EQ(server.receive(std::chrono::seconds(10)), std::string("test.untouched:0|g\n"));
 }
 
@@ -162,6 +167,10 @@ TEST(StatsDCollector, untouched_counter_publishes_nothing)
     auto collector = StatsDCollector::make(address, "test", Journal(Journal::getNullSink()));
     auto const counter = collector->makeCounter("untouched");
     auto const control = collector->makeGauge("control");
+
+    // Same reason as above: polling must be on, or the empty result proves only
+    // that nothing was polled.
+    collector->onCollectionReady();
 
     // The control's line, alone: the channel carries a datagram, and the
     // counter contributed nothing to it.
