@@ -15,7 +15,7 @@
 
 namespace xrpl::test::jtx {
 
-uint256
+UInt256
 setupDomain(
     jtx::Env& env,
     std::vector<jtx::Account> const& accounts,
@@ -26,7 +26,7 @@ setupDomain(
     env.fund(XRP(100000), domainOwner);
     env.close();
 
-    pdomain::Credentials const credentials{{domainOwner, credType}};
+    pdomain::Credentials const credentials{{.issuer = domainOwner, .credType = credType}};
     env(pdomain::setTx(domainOwner, credentials));
 
     auto const objects = pdomain::getObjects(domainOwner, env);

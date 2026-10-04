@@ -4,33 +4,34 @@
 
 namespace beast {
 
-/** Zero allows classes to offer efficient comparisons to zero.
-
-    Zero is a struct to allow classes to efficiently compare with zero without
-    requiring an rvalue construction.
-
-    It's often the case that we have classes which combine a number and a unit.
-    In such cases, comparisons like t > 0 or t != 0 make sense, but comparisons
-    like t > 1 or t != 1 do not.
-
-    The class Zero allows such comparisons to be easily made.
-
-    The comparing class T either needs to have a method called signum() which
-    returns a positive number, 0, or a negative; or there needs to be a signum
-    function which resolves in the namespace which takes an instance of T and
-    returns a positive, zero or negative number.
-*/
+/**
+ * Zero allows classes to offer efficient comparisons to zero.
+ *
+ * Zero is a struct to allow classes to efficiently compare with zero without
+ * requiring an rvalue construction.
+ *
+ * It's often the case that we have classes which combine a number and a unit.
+ * In such cases, comparisons like t > 0 or t != 0 make sense, but comparisons
+ * like t > 1 or t != 1 do not.
+ *
+ * The class Zero allows such comparisons to be easily made.
+ *
+ * The comparing class T either needs to have a method called signum() which
+ * returns a positive number, 0, or a negative; or there needs to be a signum
+ * function which resolves in the namespace which takes an instance of T and
+ * returns a positive, zero or negative number.
+ */
 
 struct Zero
 {
     explicit Zero() = default;
 };
 
-namespace {
-constexpr Zero kZero{};
-}  // namespace
+inline constexpr Zero kZero{};
 
-/** Default implementation of signum calls the method on the class. */
+/**
+ * Default implementation of signum calls the method on the class.
+ */
 template <typename T>
 auto
 signum(T const& t)

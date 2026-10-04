@@ -1,6 +1,4 @@
-//
-#ifndef RIPPLE_APP_MAIN_DATAGRAMMONITOR_H_INCLUDED
-#define RIPPLE_APP_MAIN_DATAGRAMMONITOR_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/AcceptedLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
@@ -27,9 +25,11 @@
 
 #include <netdb.h>
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -53,7 +53,7 @@
 
 namespace xrpl {
 
-// Magic number for server info packets: 'XDGM' (le) Xahau DataGram Monitor
+// Magic number for server info packets: 'XDGM' (le) xrpld DataGram Monitor
 constexpr uint32_t SERVER_INFO_MAGIC = 0x4D474458;
 constexpr uint32_t SERVER_INFO_VERSION = 1;
 
@@ -129,7 +129,7 @@ struct [[gnu::packed]] ServerInfoHeader
     uint32_t network_id;          // Network ID from config
     uint32_t server_state;        // Operating mode as enum
     uint32_t peer_count;          // Number of connected peers
-    uint32_t node_size;           // Size category (0=tiny through 4=huge)
+    uint32_t node_size;           // Unused, always 0; [memory_limit] replaces node_size
     uint32_t cpu_cores;           // CPU core count
     uint32_t ledger_range_count;  // Number of range entries
     uint32_t warning_flags;       // Warning flags (reduced size)
@@ -682,7 +682,7 @@ private:
         header->io_latency_us = app_.getIOLatency().count();
         header->validation_quorum = 0;  // TODO: fork validator-list accessor
         header->peer_count = app_.getOverlay().size();
-        header->node_size = app_.config().nodeSize;
+        header->node_size = 0;  // Unused; [memory_limit] replaces node_size
 
         auto const [counters, mode, start, initialSync] = ops.getStateAccountingData();
         for (size_t i = 0; i < 5; ++i)
@@ -801,10 +801,8 @@ private:
         auto const& nodeKey = app_.nodeIdentity().first;
         std::memcpy(header->node_public_key, nodeKey.data(), 33);
         memset(&header->version_string, 0, 32);
-        memcpy(
-            &header->version_string,
-            BuildInfo::getVersionString().c_str(),
-            BuildInfo::getVersionString().size() > 32 ? 32 : BuildInfo::getVersionString().size());
+        auto const& version = build_info::getVersionString();
+        memcpy(&header->version_string, version.c_str(), std::min<std::size_t>(version.size(), 32));
 
         header->ledger_range_count = 0;
 
@@ -821,7 +819,7 @@ private:
     {
         std::vector<std::pair<EndpointInfo, int>> endpoints;
 
-        for (auto const& epStr : app_.config().DATAGRAM_MONITOR)
+        for (auto const& epStr : app_.config().datagramMonitor)
         {
             auto endpoint = parseEndpoint(epStr);
             endpoints.push_back(std::make_pair(endpoint, createSocket(endpoint)));
@@ -881,4 +879,3 @@ public:
     }
 };
 }  // namespace xrpl
-#endif

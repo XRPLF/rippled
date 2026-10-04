@@ -13,8 +13,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstddef>
-#include <memory>
-
 namespace xrpl {
 
 NotTEC
@@ -95,10 +93,7 @@ NFTokenBurn::doApply()
 }
 
 void
-NFTokenBurn::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+NFTokenBurn::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

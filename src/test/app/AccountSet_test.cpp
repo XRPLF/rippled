@@ -1,4 +1,3 @@
-
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
@@ -383,6 +382,7 @@ public:
         auto const usd = gw["USD"];
 
         // Test gateway with a variety of allowed transfer rates
+        // NOLINTNEXTLINE(bugprone-float-loop-counter)
         for (double transferRate = 1.0; transferRate <= 2.0; transferRate += 0.03125)
         {
             Env env(*this);
@@ -433,7 +433,7 @@ public:
             // non-zero sfMintedNFTokens and sfBurnedNFTokens fields.  This
             // prevents an exception when the AccountRoot template is applied.
             {
-                uint256 const nftId0{token::getNextID(env, gw, 0u)};
+                UInt256 const nftId0{token::getNextID(env, gw, 0u)};
                 env(token::mint(gw, 0u));
                 env.close();
 
@@ -452,7 +452,7 @@ public:
 
                 // We'll insert a replacement for the account root
                 // with the higher (currently invalid) transfer rate.
-                auto replacement = std::make_shared<SLE>(*sle, sle->key());
+                auto replacement = std::make_shared<SLE>(*sle);
                 (*replacement)[sfTransferRate] =
                     static_cast<std::uint32_t>(transferRate * QUALITY_ONE);
                 view.rawReplace(replacement);
@@ -556,19 +556,19 @@ public:
         std::uint32_t const ticketSeq{env.seq(alice) + 1};
         env(ticket::create(alice, 1));
         env.close();
-        env.require(Owners(alice, 1), tickets(alice, 1));
+        env.require(Owners(alice, 1), Tickets(alice, 1));
 
         // Try using a ticket that alice doesn't have.
         env(noop(alice), ticket::Use(ticketSeq + 1), Ter(terPRE_TICKET));
         env.close();
-        env.require(Owners(alice, 1), tickets(alice, 1));
+        env.require(Owners(alice, 1), Tickets(alice, 1));
 
         // Actually use alice's ticket.  Note that if a transaction consumes
         // a ticket then the account's sequence number does not advance.
         std::uint32_t const aliceSeq{env.seq(alice)};
         env(noop(alice), ticket::Use(ticketSeq));
         env.close();
-        env.require(Owners(alice, 0), tickets(alice, 0));
+        env.require(Owners(alice, 0), Tickets(alice, 0));
         BEAST_EXPECT(aliceSeq == env.seq(alice));
 
         // Try re-using a ticket that alice already used.

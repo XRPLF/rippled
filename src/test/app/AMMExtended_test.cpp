@@ -73,7 +73,8 @@ class AMMExtended_test : public jtx::AMMTest
     // For now, just disable SAV entirely, which locks in the small Number
     // mantissas
     FeatureBitset const all_{
-        testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
+        testableAmendments() - featureSingleAssetVault - featureLendingProtocol -
+        featureMPTokensV2};
 
 private:
     void
@@ -546,7 +547,7 @@ private:
         //  1 for each trust limit == 3 (alice_ < mtgox/amazon/bitstamp) +
         //  1 for payment          == 4
         auto const startingXrp =
-            XRP(100) + env.current()->fees().accountReserve(3) + env.current()->fees().base * 4;
+            XRP(100) + env.current()->fees().accountReserve(3, 1) + env.current()->fees().base * 4;
 
         env.fund(startingXrp, gw1, gw2, gw3, localAlice);
         env.fund(XRP(2'000), localBob);
@@ -1200,7 +1201,7 @@ private:
         env.close();
         env.require(Balance(cam, aBux(35)));
         env.require(Balance(cam, bBux(35)));
-        env.require(offers(cam, 1));
+        env.require(Offers(cam, 1));
 
         // This offer caused the assert.
         env(offer(cam, bBux(30), aBux(30)));
@@ -1282,6 +1283,78 @@ private:
         BEAST_EXPECT(ammAlice.expectBalances(USD(1'050), XRP(1'000), ammAlice.tokens()));
         BEAST_EXPECT(expectOffers(env, bob_, 0));
         BEAST_EXPECT(expectHolding(env, bob_, USD(0)));
+    }
+
+    // Same shape as testRequireAuth, except the issuer never authorizes the AMM's own trust line.
+    // An AMM holds the asset for its liquidity providers and cannot sign a TrustSet for itself, so
+    // once pseudo-accounts are implicitly authorized the pool keeps trading. Before that the offer
+    // stream drops it and the taker's offer stays on the book.
+    void
+    testPseudoAccountRequireAuth(FeatureBitset features)
+    {
+        testcase("lsfRequireAuth, unauthorized AMM pseudo-account");
+
+        using namespace jtx;
+
+        bool const pseudoExempt = features[fixCleanup3_4_0];
+
+        Env env{*this, features};
+
+        auto const aliceUSD = alice_["USD"];
+        auto const bobUSD = bob_["USD"];
+
+        env.fund(XRP(400'000), gw_, alice_, bob_);
+        env.close();
+
+        env(fset(gw_, asfRequireAuth));
+        env.close();
+
+        env(trust(gw_, bobUSD(100)), Txflags(tfSetfAuth));
+        env(trust(bob_, USD(100)));
+        env(trust(gw_, aliceUSD(100)), Txflags(tfSetfAuth));
+        env(trust(alice_, USD(2'000)));
+        env(pay(gw_, alice_, USD(1'000)));
+        env.close();
+
+        AMM const ammAlice(env, alice_, USD(1'000), XRP(1'050));
+
+        // The pool's own line stays unauthorized: AMMCreate opens it without the flag, and the
+        // pseudo-account has no key to ask for one.
+        auto const ammLineAuthorized = [&]() -> bool {
+            auto const line =
+                env.le(keylet::trustLine(ammAlice.ammAccount(), USD.issue().account, USD.currency));
+            if (!BEAST_EXPECT(line))
+                return false;
+            return line->isFlag(
+                ammAlice.ammAccount() > USD.issue().account ? lsfLowAuth : lsfHighAuth);
+        };
+        BEAST_EXPECT(!ammLineAuthorized());
+
+        env(pay(gw_, bob_, USD(50)));
+        env.close();
+        BEAST_EXPECT(expectHolding(env, bob_, USD(50)));
+
+        // Bob sells USD into the pool, so the pool is the side that has to be authorized to hold
+        // the asset.
+        env(offer(bob_, XRP(50), USD(50)));
+        env.close();
+
+        if (pseudoExempt)
+        {
+            BEAST_EXPECT(ammAlice.expectBalances(USD(1'050), XRP(1'000), ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(env, bob_, 0));
+            BEAST_EXPECT(expectHolding(env, bob_, USD(0)));
+        }
+        else
+        {
+            // The pool is skipped, so nothing crosses and the offer rests on the book.
+            BEAST_EXPECT(ammAlice.expectBalances(USD(1'000), XRP(1'050), ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(env, bob_, 1));
+            BEAST_EXPECT(expectHolding(env, bob_, USD(50)));
+        }
+
+        // Either way the exemption skips the check rather than setting the flag.
+        BEAST_EXPECT(!ammLineAuthorized());
     }
 
     void
@@ -1380,6 +1453,8 @@ private:
         testDirectToDirectPath(all_);
         testDirectToDirectPath(all_ - fixAMMv1_1 - fixAMMv1_3);
         testRequireAuth(all_);
+        testPseudoAccountRequireAuth(all_);
+        testPseudoAccountRequireAuth(all_ - fixCleanup3_4_0);
         testMissingAuth(all_);
     }
 
@@ -2420,8 +2495,10 @@ private:
                 // 1,400 - 56.3368*1.25 = 1400 - 70.4210 = 1329.5789GBP
                 BEAST_EXPECT(
                     expectHolding(env, alice_, STAmount{GBP, UINT64_C(1'329'578947368421), -12}));
-                //// 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
-                ///= 70.4210EUR
+                /**
+                 * / 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
+                 * = 70.4210EUR
+                 */
                 // 56.3368GBP is swapped in for 53.3322EUR
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount{GBP, UINT64_C(1'056'336842105263), -12},
@@ -2435,8 +2512,10 @@ private:
                 // 1,400 - 56.3368*1.25 = 1400 - 70.4210 = 1329.5789GBP
                 BEAST_EXPECT(
                     expectHolding(env, alice_, STAmount{GBP, UINT64_C(1'329'57894736842), -11}));
-                //// 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
-                ///= 70.4210EUR
+                /**
+                 * / 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
+                 * = 70.4210EUR
+                 */
                 // 56.3368GBP is swapped in for 53.3322EUR
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount{GBP, UINT64_C(1'056'336842105264), -12},

@@ -1,7 +1,12 @@
 #pragma once
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+
+#include <mutex>
+#include <ostream>
+#include <sstream>
+#include <string>
 
 namespace xrpl::test {
 
@@ -60,9 +65,8 @@ SuiteJournalSink::writeAlways(beast::Severity level, std::string const& text)
                 return "WRN:";
             case Severity::Error:
                 return "ERR:";
-            default:
-                break;
             case Severity::Fatal:
+            default:
                 break;
         }
         return "FTL:";

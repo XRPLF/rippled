@@ -2,8 +2,32 @@
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/PerfLog.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TxSearched.h>
+#include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
+
+#include <soci/session.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
 
 namespace xrpl::detail {
 
@@ -158,7 +182,7 @@ getLimitedNewestLedgerInfo(soci::session& session, LedgerIndex ledgerFirstIndex,
  * @return Ledger or none if ledger not found.
  */
 std::optional<LedgerHeader>
-getLedgerInfoByHash(soci::session& session, uint256 const& ledgerHash, beast::Journal j);
+getLedgerInfoByHash(soci::session& session, UInt256 const& ledgerHash, beast::Journal j);
 
 /**
  * @brief getHashByIndex Returns hash of ledger with given sequence.
@@ -166,7 +190,7 @@ getLedgerInfoByHash(soci::session& session, uint256 const& ledgerHash, beast::Jo
  * @param ledgerIndex Ledger sequence.
  * @return Hash of the ledger.
  */
-uint256
+UInt256
 getHashByIndex(soci::session& session, LedgerIndex ledgerIndex);
 
 /**
@@ -282,7 +306,7 @@ getNewestAccountTxs(
  *         skipped. We need to skip some quantity of transactions if option
  *         offset is > 0 in the options structure.
  */
-std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
+std::pair<std::vector<RelationalDatabase::TxnMetaLedgerType>, int>
 getOldestAccountTxsB(
     soci::session& session,
     Application& app,
@@ -308,7 +332,7 @@ getOldestAccountTxsB(
  *         skipped. We need to skip some quantity of transactions if option
  *         offset is > 0 in the options structure.
  */
-std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
+std::pair<std::vector<RelationalDatabase::TxnMetaLedgerType>, int>
 getNewestAccountTxsB(
     soci::session& session,
     Application& app,
@@ -387,7 +411,7 @@ std::variant<RelationalDatabase::AccountTx, TxSearched>
 getTransaction(
     soci::session& session,
     Application& app,
-    uint256 const& id,
+    UInt256 const& id,
     std::optional<ClosedInterval<uint32_t>> const& range,
     ErrorCodeI& ec);
 

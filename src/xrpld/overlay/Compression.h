@@ -2,6 +2,10 @@
 
 #include <xrpl/basics/CompressionAlgorithms.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/instrumentation.h>
+
+#include <cstddef>
+#include <cstdint>
 
 namespace xrpl::compression {
 
@@ -14,7 +18,8 @@ enum class Algorithm : std::uint8_t { None = 0x00, LZ4 = 0x90 };
 
 enum class Compressed : std::uint8_t { On, Off };
 
-/** Decompress input stream.
+/**
+ * Decompress input stream.
  * @tparam InputStream ZeroCopyInputStream
  * @param in Input source stream
  * @param inSize Size of compressed data
@@ -53,7 +58,8 @@ decompress(
     return 0;
 }
 
-/** Compress input data.
+/**
+ * Compress input data.
  * @tparam BufferFactory Callable object or lambda.
  *     Takes the requested buffer size and returns allocated buffer pointer.
  * @param in Data to compress

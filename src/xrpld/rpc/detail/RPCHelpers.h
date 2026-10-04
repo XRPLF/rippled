@@ -1,22 +1,35 @@
 #pragma once
 
-#include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <cstdint>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
 class ReadView;
 
-namespace RPC {
+namespace rpc {
 
 struct JsonContext;
 
@@ -33,7 +46,7 @@ struct JsonContext;
  * @return A 64-bit unsigned integer representing the start hint for traversal.
  */
 std::uint64_t
-getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
+getStartHint(SLE::ConstRef sle, AccountID const& accountID);
 
 /**
  * @brief Tests if a ledger entry (SLE) is owned by the specified account.
@@ -47,10 +60,18 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
  * @return true if the SLE is owned by the account, false otherwise.
  */
 bool
-isRelatedToAccount(
-    ReadView const& ledger,
-    std::shared_ptr<SLE const> const& sle,
-    AccountID const& accountID);
+isRelatedToAccount(ReadView const& ledger, SLE::ConstRef sle, AccountID const& accountID);
+
+/**
+ * @brief Checks whether an SField is a UINT64 sf*Node owner-directory
+ *        page-hint field probed by `isRelatedToAccount`.
+ *
+ * @param field The SField to test.
+ * @return true if the field is one of the owner-directory page-hint
+ *         fields, false otherwise.
+ */
+bool
+isOwnerDirNodeField(SField const& field);
 
 /**
  * @brief Parses an array of account IDs from a JSON value.
@@ -58,10 +79,21 @@ isRelatedToAccount(
  * Extracts and returns a set of AccountID objects from the provided JSON array.
  *
  * @param jvArray The JSON value containing an array of account IDs.
- * @return A hash_set containing the parsed AccountID objects.
+ * @return A HashSet containing the parsed AccountID objects.
  */
-hash_set<AccountID>
+HashSet<AccountID>
 parseAccountIds(json::Value const& jvArray);
+
+/**
+ * @brief Parses an array of MPT issuance IDs from a JSON value.
+ *
+ * Extracts and returns a set of MPTID objects from the provided JSON array.
+ *
+ * @param jvArray The JSON value containing an array of MPT issuance IDs.
+ * @return A HashSet containing the parsed MPTID objects.
+ */
+HashSet<MPTID>
+parseMPTIssuanceIDs(json::Value const& jvArray);
 
 /**
  * @brief Retrieves the limit value from a JsonContext or sets a default.
@@ -77,7 +109,7 @@ parseAccountIds(json::Value const& jvArray);
  * std::nullopt on success.
  */
 std::optional<json::Value>
-readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext const& context);
+readLimitField(unsigned int& limit, tuning::LimitRange const& range, JsonContext const& context);
 
 /**
  * @brief Extracts a Seed from RPC parameters.
@@ -115,7 +147,7 @@ parseXrplLibSeed(json::Value const& params);
  * @param params The JSON value containing RPC parameters.
  * @return A pair consisting of the RPC status and the chosen LedgerEntryType.
  */
-std::pair<RPC::Status, LedgerEntryType>
+std::pair<rpc::Status, LedgerEntryType>
 chooseLedgerEntryType(json::Value const& params);
 
 /**
@@ -154,7 +186,8 @@ keypairForSignature(
     json::Value& error,
     unsigned int apiVersion = kApiVersionIfUnspecified);
 
-/** Parse subscribe/unsubscribe parameters
+/**
+ * Parse subscribe/unsubscribe parameters
  */
 ErrorCodeI
 parseSubUnsubJson(
@@ -163,6 +196,6 @@ parseSubUnsubJson(
     json::StaticString const& name,
     beast::Journal j);
 
-}  // namespace RPC
+}  // namespace rpc
 
 }  // namespace xrpl

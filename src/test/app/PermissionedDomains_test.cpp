@@ -8,18 +8,22 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 #include <test/jtx/txflags.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <map>
 #include <optional>
@@ -62,7 +66,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         Account const alice("alice");
         Env env(*this, features);
         env.fund(XRP(1000), alice);
-        pdomain::Credentials const credentials{{alice, "first credential"}};
+        pdomain::Credentials const credentials{{.issuer = alice, .credType = "first credential"}};
         env(pdomain::setTx(alice, credentials));
         BEAST_EXPECT(env.ownerCount(alice) == 1);
         auto objects = pdomain::getObjects(alice, env);
@@ -84,7 +88,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         Account const alice("alice");
         Env env(*this, amendments);
         env.fund(XRP(1000), alice);
-        pdomain::Credentials const credentials{{alice, "first credential"}};
+        pdomain::Credentials const credentials{{.issuer = alice, .credType = "first credential"}};
         env(pdomain::setTx(alice, credentials), Ter(temDISABLED));
     }
 
@@ -96,15 +100,15 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         Account const alice("alice");
         Env env(*this, testableAmendments() - featurePermissionedDomains);
         env.fund(XRP(1000), alice);
-        pdomain::Credentials const credentials{{alice, "first credential"}};
+        pdomain::Credentials const credentials{{.issuer = alice, .credType = "first credential"}};
         env(pdomain::setTx(alice, credentials), Ter(temDISABLED));
-        env(pdomain::deleteTx(alice, uint256(75)), Ter(temDISABLED));
+        env(pdomain::deleteTx(alice, UInt256(75)), Ter(temDISABLED));
     }
 
     // Verify that bad inputs fail for each of create new and update
     // behaviors of PermissionedDomainSet
     void
-    testBadData(Account const& account, Env& env, std::optional<uint256> domain = std::nullopt)
+    testBadData(Account const& account, Env& env, std::optional<UInt256> domain = std::nullopt)
     {
         Account const alice2("alice2");
         Account const alice3("alice3");
@@ -124,40 +128,40 @@ class PermissionedDomains_test : public beast::unit_test::Suite
 
         // Test 11 credentials.
         pdomain::Credentials const credentials11{
-            {alice2, "credential1"},
-            {alice3, "credential2"},
-            {alice4, "credential3"},
-            {alice5, "credential4"},
-            {alice6, "credential5"},
-            {alice7, "credential6"},
-            {alice8, "credential7"},
-            {alice9, "credential8"},
-            {alice10, "credential9"},
-            {alice11, "credential10"},
-            {alice12, "credential11"}};
+            {.issuer = alice2, .credType = "credential1"},
+            {.issuer = alice3, .credType = "credential2"},
+            {.issuer = alice4, .credType = "credential3"},
+            {.issuer = alice5, .credType = "credential4"},
+            {.issuer = alice6, .credType = "credential5"},
+            {.issuer = alice7, .credType = "credential6"},
+            {.issuer = alice8, .credType = "credential7"},
+            {.issuer = alice9, .credType = "credential8"},
+            {.issuer = alice10, .credType = "credential9"},
+            {.issuer = alice11, .credType = "credential10"},
+            {.issuer = alice12, .credType = "credential11"}};
         BEAST_EXPECT(credentials11.size() == kMaxPermissionedDomainCredentialsArraySize + 1);
         env(pdomain::setTx(account, credentials11, domain), Ter(temARRAY_TOO_LARGE));
 
         // Test credentials including non-existent issuer.
         Account const nobody("nobody");
         pdomain::Credentials const credentialsNon{
-            {alice2, "credential1"},
-            {alice3, "credential2"},
-            {alice4, "credential3"},
-            {nobody, "credential4"},
-            {alice5, "credential5"},
-            {alice6, "credential6"},
-            {alice7, "credential7"}};
+            {.issuer = alice2, .credType = "credential1"},
+            {.issuer = alice3, .credType = "credential2"},
+            {.issuer = alice4, .credType = "credential3"},
+            {.issuer = nobody, .credType = "credential4"},
+            {.issuer = alice5, .credType = "credential5"},
+            {.issuer = alice6, .credType = "credential6"},
+            {.issuer = alice7, .credType = "credential7"}};
         env(pdomain::setTx(account, credentialsNon, domain), Ter(tecNO_ISSUER));
 
         // Test bad fee
         env(pdomain::setTx(account, credentials11, domain), Fee(1, true), Ter(temBAD_FEE));
 
         pdomain::Credentials const credentials4{
-            {alice2, "credential1"},
-            {alice3, "credential2"},
-            {alice4, "credential3"},
-            {alice5, "credential4"},
+            {.issuer = alice2, .credType = "credential1"},
+            {.issuer = alice3, .credType = "credential2"},
+            {.issuer = alice4, .credType = "credential3"},
+            {.issuer = alice5, .credType = "credential4"},
         };
         auto txJsonMutable = pdomain::setTx(account, credentials4, domain);
         auto const credentialOrig = txJsonMutable["AcceptedCredentials"][2u];
@@ -192,11 +196,11 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         // permissioned domains, so transactions should return errors
         {
             pdomain::Credentials const credentialsDup{
-                {alice7, "credential6"},
-                {alice2, "credential1"},
-                {alice3, "credential2"},
-                {alice2, "credential1"},
-                {alice5, "credential4"},
+                {.issuer = alice7, .credType = "credential6"},
+                {.issuer = alice2, .credType = "credential1"},
+                {.issuer = alice3, .credType = "credential2"},
+                {.issuer = alice2, .credType = "credential1"},
+                {.issuer = alice5, .credType = "credential4"},
             };
 
             std::unordered_map<std::string, Account> human2Acc;
@@ -210,7 +214,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             env.close();
             env(pdomain::setTx(account, sorted, domain));
 
-            uint256 d;
+            UInt256 d;
             if (domain)
             {
                 d = *domain;
@@ -230,11 +234,11 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         // sort correctly.
         {
             pdomain::Credentials const credentialsSame{
-                {alice2, "credential3"},
-                {alice3, "credential2"},
-                {alice2, "credential9"},
-                {alice5, "credential4"},
-                {alice2, "credential6"},
+                {.issuer = alice2, .credType = "credential3"},
+                {.issuer = alice3, .credType = "credential2"},
+                {.issuer = alice2, .credType = "credential9"},
+                {.issuer = alice5, .credType = "credential4"},
+                {.issuer = alice2, .credType = "credential6"},
             };
             std::unordered_map<std::string, Account> human2Acc;
             for (auto const& c : credentialsSame)
@@ -243,7 +247,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             BEAST_EXPECT(credentialsSame != pdomain::sortCredentials(credentialsSame));
             env(pdomain::setTx(account, credentialsSame, domain));
 
-            uint256 d;
+            UInt256 d;
             if (domain)
             {
                 d = *domain;
@@ -286,11 +290,11 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         for (auto const& c : alice)
             human2Acc.emplace(c.human(), c);
 
-        for (int i = 0; i < accNum; ++i)
-            env.fund(XRP(1000), alice[i]);
+        for (auto const& account : alice)
+            env.fund(XRP(1000), account);
 
         // Create new from existing account with a single credential.
-        pdomain::Credentials const credentials1{{alice[2], "credential1"}};
+        pdomain::Credentials const credentials1{{.issuer = alice[2], .credType = "credential1"}};
         {
             env(pdomain::setTx(alice[0], credentials1));
             BEAST_EXPECT(env.ownerCount(alice[0]) == 1);
@@ -314,7 +318,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
                 "89";
             static_assert(kLongCredentialType.size() == kMaxCredentialTypeLength);
             pdomain::Credentials const longCredentials{
-                {alice[1], std::string(kLongCredentialType)}};
+                {.issuer = alice[1], .credType = std::string(kLongCredentialType)}};
 
             env(pdomain::setTx(alice[0], longCredentials));
 
@@ -345,18 +349,18 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         // Create new from existing account with 10 credentials.
         // Last credential describe domain owner itself
         pdomain::Credentials const credentials10{
-            {alice[2], "credential1"},
-            {alice[3], "credential2"},
-            {alice[4], "credential3"},
-            {alice[5], "credential4"},
-            {alice[6], "credential5"},
-            {alice[7], "credential6"},
-            {alice[8], "credential7"},
-            {alice[9], "credential8"},
-            {alice[10], "credential9"},
-            {alice[0], "credential10"},
+            {.issuer = alice[2], .credType = "credential1"},
+            {.issuer = alice[3], .credType = "credential2"},
+            {.issuer = alice[4], .credType = "credential3"},
+            {.issuer = alice[5], .credType = "credential4"},
+            {.issuer = alice[6], .credType = "credential5"},
+            {.issuer = alice[7], .credType = "credential6"},
+            {.issuer = alice[8], .credType = "credential7"},
+            {.issuer = alice[9], .credType = "credential8"},
+            {.issuer = alice[10], .credType = "credential9"},
+            {.issuer = alice[0], .credType = "credential10"},
         };
-        uint256 domain2;
+        UInt256 domain2;
         {
             BEAST_EXPECT(credentials10.size() == kMaxPermissionedDomainCredentialsArraySize);
             BEAST_EXPECT(credentials10 != pdomain::sortCredentials(credentials10));
@@ -386,11 +390,11 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         // Update from the wrong owner.
         env(pdomain::setTx(alice[2], credentials1, domain2), Ter(tecNO_PERMISSION));
 
-        // Update a uint256(0) domain
-        env(pdomain::setTx(alice[0], credentials1, uint256(0)), Ter(temMALFORMED));
+        // Update a UInt256(0) domain
+        env(pdomain::setTx(alice[0], credentials1, UInt256(0)), Ter(temMALFORMED));
 
         // Update non-existent domain
-        env(pdomain::setTx(alice[0], credentials1, uint256(75)), Ter(tecNO_ENTRY));
+        env(pdomain::setTx(alice[0], credentials1, UInt256(75)), Ter(tecNO_ENTRY));
 
         // Wrong flag
         env(pdomain::setTx(alice[0], credentials1), Txflags(tfClawTwoAssets), Ter(temINVALID_FLAG));
@@ -434,7 +438,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         env.fund(XRP(1000), alice);
         auto const setFee(drops(env.current()->fees().increment));
 
-        pdomain::Credentials const credentials{{alice, "first credential"}};
+        pdomain::Credentials const credentials{{.issuer = alice, .credType = "first credential"}};
         env(pdomain::setTx(alice, credentials));
         env.close();
 
@@ -448,16 +452,16 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         env(pdomain::deleteTx(bob, domain), Ter(tecNO_PERMISSION));
 
         // Delete a non-existent domain.
-        env(pdomain::deleteTx(alice, uint256(75)), Ter(tecNO_ENTRY));
+        env(pdomain::deleteTx(alice, UInt256(75)), Ter(tecNO_ENTRY));
 
         // Test bad fee
-        env(pdomain::deleteTx(alice, uint256(75)), Ter(temBAD_FEE), Fee(1, true));
+        env(pdomain::deleteTx(alice, UInt256(75)), Ter(temBAD_FEE), Fee(1, true));
 
         // Wrong flag
         env(pdomain::deleteTx(alice, domain), Ter(temINVALID_FLAG), Txflags(tfClawTwoAssets));
 
         // Delete a zero domain.
-        env(pdomain::deleteTx(alice, uint256(0)), Ter(temMALFORMED));
+        env(pdomain::deleteTx(alice, UInt256(0)), Ter(temMALFORMED));
 
         // Make sure owner count reflects the existing domain.
         BEAST_EXPECT(env.ownerCount(alice) == 1);
@@ -498,7 +502,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.ownerCount(alice) == 0);
 
         // alice does not have enough XRP to cover the reserve.
-        pdomain::Credentials const credentials{{alice, "first credential"}};
+        pdomain::Credentials const credentials{{.issuer = alice, .credType = "first credential"}};
         env(pdomain::setTx(alice, credentials), Ter(tecINSUFFICIENT_RESERVE));
         BEAST_EXPECT(env.ownerCount(alice) == 0);
         BEAST_EXPECT(pdomain::getObjects(alice, env).empty());
@@ -526,6 +530,50 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.ownerCount(alice) == 1);
     }
 
+    void
+    testTicket(FeatureBitset features)
+    {
+        testcase("Tickets");
+
+        using namespace test::jtx;
+
+        Env env(*this, features);
+        Account const alice("alice");
+        env.fund(XRP(1000), alice);
+
+        pdomain::Credentials const credentials{
+            {.issuer = alice, .credType = "credential1"},
+        };
+
+        std::uint32_t seq{env.seq(alice)};
+        env(ticket::create(alice, 2));
+
+        {
+            env(pdomain::setTx(alice, credentials), ticket::Use(++seq));
+            auto domain = pdomain::getNewDomain(env.meta());
+            if (features[fixCleanup3_1_3])
+            {
+                BEAST_EXPECT(
+                    domain ==
+                    keylet::permissionedDomain(alice.id(), SeqProxy::rawSequence(seq)).key);
+            }
+            else
+            {
+                BEAST_EXPECT(
+                    domain == keylet::permissionedDomain(alice.id(), SeqProxy::rawSequence(0)).key);
+            }
+        }
+
+        if (features[fixCleanup3_1_3])
+        {
+            env(pdomain::setTx(alice, credentials), ticket::Use(++seq));
+        }
+        else
+        {
+            env(pdomain::setTx(alice, credentials), ticket::Use(++seq), Ter(tefEXCEPTION));
+        }
+    }
+
 public:
     void
     run() override
@@ -540,6 +588,8 @@ public:
         testDelete(withFix_);
         testAccountReserve(withFeature_);
         testAccountReserve(withFix_);
+        testTicket(withFeature_);
+        testTicket(withFix_);
     }
 };
 

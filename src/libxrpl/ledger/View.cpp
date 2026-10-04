@@ -14,6 +14,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -32,9 +33,9 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <set>
+#include <vector>
 
 namespace xrpl {
 
@@ -45,20 +46,26 @@ namespace xrpl {
 //------------------------------------------------------------------------------
 
 bool
-hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp)
+hasExpired(
+    ReadView const& view,
+    std::optional<std::uint32_t> const& exp,
+    ExpiryComparison comparison)
 {
-    using d = NetClock::duration;
-    using tp = NetClock::time_point;
+    using D = NetClock::duration;
+    using Tp = NetClock::time_point;
 
-    return exp && (view.parentCloseTime() >= tp{d{*exp}});
+    if (!exp)
+        return false;
+    auto const boundary = Tp{D{*exp}};
+    return comparison == ExpiryComparison::Inclusive  //
+        ? view.parentCloseTime() >= boundary
+        : view.parentCloseTime() > boundary;
 }
 
-bool
-isVaultPseudoAccountFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    MPTIssue const& mptShare,
-    std::uint8_t depth)
+namespace {
+
+std::optional<bool>
+checkVaultPseudoAccountFrozenPreconditions(ReadView const& view, std::uint8_t depth)
 {
     if (!view.rules().enabled(featureSingleAssetVault))
         return false;
@@ -66,26 +73,37 @@ isVaultPseudoAccountFrozen(
     if (depth >= kMaxAssetCheckDepth)
     {
         // LCOV_EXCL_START
-        UNREACHABLE("xrpl::View::isVaultPseudoAccountFrozen : reached asset check depth");
+        UNREACHABLE(
+            "xrpl::View::checkVaultPseudoAccountFrozenPreconditions : reached asset check depth");
         return true;
         // LCOV_EXCL_STOP
     }
 
-    auto const mptIssuance = view.read(keylet::mptIssuance(mptShare.getMptID()));
-    if (mptIssuance == nullptr)
-        return false;  // zero MPToken won't block deletion of MPTokenIssuance
+    return std::nullopt;
+}
 
-    auto const issuer = mptIssuance->getAccountID(sfIssuer);
+bool
+isVaultPseudoAccountFrozenForIssuance(
+    ReadView const& view,
+    AccountID const& account,
+    SLE const& issuanceSle,
+    std::uint8_t depth)
+{
+    XRPL_ASSERT(
+        issuanceSle.getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::isVaultPseudoAccountFrozenForIssuance : MPTokenIssuance SLE");
+
+    auto const issuer = issuanceSle.getAccountID(sfIssuer);
 
     // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
     // to the vault pseudo's MPToken or RippleState for the underlying.
     // Read it to derive the underlying asset and recurse, skipping the
     // issuer-account-then-vault chain. Pre-amendment shares (no field)
     // fall back to the chain lookup below.
-    if (mptIssuance->isFieldPresent(sfReferenceHolding))
+    if (issuanceSle.isFieldPresent(sfReferenceHolding))
     {
         auto const sleHolding =
-            view.read(keylet::unchecked(mptIssuance->getFieldH256(sfReferenceHolding)));
+            view.read(keylet::unchecked(issuanceSle.getFieldH256(sfReferenceHolding)));
         if (!sleHolding)
         {
             // LCOV_EXCL_START
@@ -94,7 +112,7 @@ isVaultPseudoAccountFrozen(
             // LCOV_EXCL_STOP
         }
         return isAnyFrozen(
-            view, {issuer, account}, assetOfHolding(*mptIssuance, *sleHolding), depth + 1);
+            view, {issuer, account}, assetOfHolding(issuanceSle, *sleHolding), depth + 1);
     }
 
     auto const mptIssuer = view.read(keylet::account(issuer));
@@ -120,6 +138,38 @@ isVaultPseudoAccountFrozen(
     return isAnyFrozen(view, {issuer, account}, vault->at(sfAsset), depth + 1);
 }
 
+}  // namespace
+
+bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    SLE const& issuanceSle,
+    std::uint8_t depth)
+{
+    if (auto const result = checkVaultPseudoAccountFrozenPreconditions(view, depth))
+        return *result;
+
+    return isVaultPseudoAccountFrozenForIssuance(view, account, issuanceSle, depth);
+}
+
+bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptShare,
+    std::uint8_t depth)
+{
+    if (auto const result = checkVaultPseudoAccountFrozenPreconditions(view, depth))
+        return *result;
+
+    auto const issuanceSle = view.read(keylet::mptokenIssuance(mptShare.getMptID()));
+    if (issuanceSle == nullptr)
+        return false;  // zero MPToken won't block deletion of MPTokenIssuance
+
+    return isVaultPseudoAccountFrozenForIssuance(view, account, *issuanceSle, depth);
+}
+
 bool
 isLPTokenFrozen(
     ReadView const& view,
@@ -128,6 +178,33 @@ isLPTokenFrozen(
     Asset const& asset2)
 {
     return isFrozen(view, account, asset) || isFrozen(view, account, asset2);
+}
+
+TER
+canTransferLPToken(
+    ReadView const& view,
+    AccountID const& from,
+    AccountID const& to,
+    AccountID const& lpTokenIssuer)
+{
+    // Only AMM-issued LPTokens are subject to this check. The LPToken's issuer
+    // is the AMM account; if it is not an AMM, this is not an LPToken.
+    auto const sleIssuer = view.read(keylet::account(lpTokenIssuer));
+    if (!sleIssuer || !sleIssuer->isFieldPresent(sfAMMID))
+        return tesSUCCESS;
+
+    auto const sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+    if (!sleAmm)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const transferable = [&](Asset const& a) -> TER {
+        if (!a.holds<MPTIssue>())
+            return tesSUCCESS;
+        return canTransfer(view, a.get<MPTIssue>(), from, to);
+    };
+    if (auto const err = transferable((*sleAmm)[sfAsset]); !isTesSuccess(err))
+        return err;
+    return transferable((*sleAmm)[sfAsset2]);
 }
 
 bool
@@ -190,7 +267,7 @@ areCompatible(
 
 bool
 areCompatible(
-    uint256 const& validHash,
+    UInt256 const& validHash,
     LedgerIndex validIndex,
     ReadView const& testLedger,
     beast::Journal::Stream& s,
@@ -228,10 +305,10 @@ areCompatible(
     return ret;
 }
 
-std::set<uint256>
+std::set<UInt256>
 getEnabledAmendments(ReadView const& view)
 {
-    std::set<uint256> amendments;
+    std::set<UInt256> amendments;
 
     if (auto const sle = view.read(keylet::amendments()))
     {
@@ -245,29 +322,29 @@ getEnabledAmendments(ReadView const& view)
     return amendments;
 }
 
-majorityAmendments_t
+MajorityAmendmentsT
 getMajorityAmendments(ReadView const& view)
 {
-    majorityAmendments_t ret;
+    MajorityAmendmentsT ret;
 
     if (auto const sle = view.read(keylet::amendments()))
     {
         if (sle->isFieldPresent(sfMajorities))
         {
-            using tp = NetClock::time_point;
-            using d = tp::duration;
+            using Tp = NetClock::time_point;
+            using D = Tp::duration;
 
             auto const majorities = sle->getFieldArray(sfMajorities);
 
             for (auto const& m : majorities)
-                ret[m.getFieldH256(sfAmendment)] = tp(d(m.getFieldU32(sfCloseTime)));
+                ret[m.getFieldH256(sfAmendment)] = Tp(D(m.getFieldU32(sfCloseTime)));
         }
     }
 
     return ret;
 }
 
-std::optional<uint256>
+std::optional<UInt256>
 hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 {
     // Easy cases...
@@ -332,11 +409,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 //------------------------------------------------------------------------------
 
 TER
-dirLink(
-    ApplyView& view,
-    AccountID const& owner,
-    std::shared_ptr<SLE>& object,
-    SF_UINT64 const& node)
+dirLink(ApplyView& view, AccountID const& owner, SLE::pointer& object, SF_UINT64 const& node)
 {
     auto const page =
         view.dirInsert(keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
@@ -393,9 +466,10 @@ canWithdraw(
     ReadView const& view,
     AccountID const& from,
     AccountID const& to,
-    SLE::const_ref toSle,
+    SLE::ConstRef toSle,
     STAmount const& amount,
-    bool hasDestinationTag)
+    bool hasDestinationTag,
+    std::optional<std::vector<UInt256>> const& credentialIDs)
 {
     if (auto const ret = checkDestinationAndTag(toSle, hasDestinationTag))
         return ret;
@@ -406,7 +480,28 @@ canWithdraw(
     if (toSle->isFlag(lsfDepositAuth))
     {
         if (!view.exists(keylet::depositPreauth(to, from)))
-            return tecNO_PERMISSION;
+        {
+            if (credentialIDs.has_value())
+            {
+                STVector256 const credIDs{*credentialIDs};
+
+                // Callers must have validated these in preclaim, so a missing
+                // credential here is an invariant violation.
+                for (auto const& h : credIDs)
+                {
+                    if (!view.exists(keylet::credential(h)))
+                        return tecINTERNAL;  // LCOV_EXCL_LINE
+                }
+
+                if (auto const ret = credentials::authorizedDepositPreauth(view, credIDs, to);
+                    !isTesSuccess(ret))
+                    return ret;
+            }
+            else
+            {
+                return tecNO_PERMISSION;
+            }
+        }
     }
 
     return withdrawToDestExceedsLimit(view, from, to, amount);
@@ -418,11 +513,12 @@ canWithdraw(
     AccountID const& from,
     AccountID const& to,
     STAmount const& amount,
-    bool hasDestinationTag)
+    bool hasDestinationTag,
+    std::optional<std::vector<UInt256>> const& credentialIDs)
 {
     auto const toSle = view.read(keylet::account(to));
 
-    return canWithdraw(view, from, to, toSle, amount, hasDestinationTag);
+    return canWithdraw(view, from, to, toSle, amount, hasDestinationTag, credentialIDs);
 }
 
 [[nodiscard]] TER
@@ -431,13 +527,13 @@ canWithdraw(ReadView const& view, STTx const& tx)
     auto const from = tx[sfAccount];
     auto const to = tx[~sfDestination].value_or(from);
 
-    return canWithdraw(view, from, to, tx[sfAmount], tx.isFieldPresent(sfDestinationTag));
+    return canWithdraw(
+        view, from, to, tx[sfAmount], tx.isFieldPresent(sfDestinationTag), tx[~sfCredentialIDs]);
 }
 
 TER
 doWithdraw(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext ctx,
     AccountID const& senderAcct,
     AccountID const& dstAcct,
     AccountID const& sourceAcct,
@@ -445,23 +541,31 @@ doWithdraw(
     STAmount const& amount,
     beast::Journal j)
 {
-    // Create trust line or MPToken for the receiving account
+    auto const dstSle = ctx.view.read(keylet::account(dstAcct));
+
+    // Create a trust line or MPToken for a self-destination only when there
+    // is a payout to credit. Post-fixCleanup3_4_0, a zero-value withdraw
+    // (e.g. share redemption from a fully impaired vault) must not insert
+    // an empty holding: that records a one-sided zero delta and can also
+    // create+delete MPTokens in the same transaction.
     if (dstAcct == senderAcct)
     {
-        if (auto const ter = addEmptyHolding(view, senderAcct, priorBalance, amount.asset(), j);
-            !isTesSuccess(ter) && ter != tecDUPLICATE)
-            return ter;
+        if (amount > beast::kZero || !ctx.view.rules().enabled(fixCleanup3_4_0))
+        {
+            if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset(), j);
+                !isTesSuccess(ter) && ter != tecDUPLICATE)
+                return ter;
+        }
     }
     else
     {
-        auto dstSle = view.read(keylet::account(dstAcct));
-        if (auto err = verifyDepositPreauth(tx, view, senderAcct, dstAcct, dstSle, j))
+        if (auto err = verifyDepositPreauth(ctx.tx, ctx.view, senderAcct, dstAcct, dstSle, j))
             return err;
     }
 
     // Sanity check
     if (accountHolds(
-            view,
+            ctx.view,
             sourceAcct,
             amount.asset(),
             FreezeHandling::IgnoreFreeze,
@@ -474,9 +578,18 @@ doWithdraw(
         // LCOV_EXCL_STOP
     }
 
+    // A reserve sponsor only covers tx.Account's own objects, so resolve the
+    // sponsor against the destination. accountSend can auto-create a holding
+    // for dstAcct; keying on the destination ensures a third-party destination's
+    // holding is never stamped with the tx's reserve sponsor.
+    auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, dstSle);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
+
     // Move the funds directly from the broker's pseudo-account to the
     // dstAcct
-    return accountSend(view, sourceAcct, dstAcct, amount, j, WaiveTransferFee::Yes);
+    return accountSend(
+        ctx.view, sourceAcct, dstAcct, amount, j, *sponsorSle, WaiveTransferFee::Yes);
 }
 
 TER
@@ -488,9 +601,9 @@ cleanupOnAccountDelete(
     std::optional<uint16_t> maxNodesToDelete)
 {
     // Delete all the entries in the account directory.
-    std::shared_ptr<SLE> sleDirNode{};
+    SLE::pointer sleDirNode{};
     unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::kZero};
+    UInt256 dirEntry{beast::kZero};
     std::uint32_t deleted = 0;
 
     if (view.exists(ownerDirKeylet) &&

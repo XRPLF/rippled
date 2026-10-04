@@ -73,7 +73,7 @@ Transaction::setStatus(
 TransStatus
 Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
 {
-    auto const c = (status) ? safeCast<TxnSql>((*status)[0]) : TxnSql::Unknown;
+    auto const c = status ? safeCast<TxnSql>((*status)[0]) : TxnSql::Unknown;
 
     switch (static_cast<TxnSql>(c))
     {
@@ -103,7 +103,7 @@ Transaction::transactionFromSQL(
     Blob const& rawTxn,
     Application& app)
 {
-    std::uint32_t const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
+    auto const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
 
     SerialIter it(makeSlice(rawTxn));
     auto txn = std::make_shared<STTx const>(it);
@@ -116,26 +116,26 @@ Transaction::transactionFromSQL(
 }
 
 std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
-Transaction::load(uint256 const& id, Application& app, ErrorCodeI& ec)
+Transaction::load(UInt256 const& id, Application& app, ErrorCodeI& ec)
 {
     return load(id, app, std::nullopt, ec);
 }
 
 std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
 Transaction::load(
-    uint256 const& id,
+    UInt256 const& id,
     Application& app,
     ClosedInterval<uint32_t> const& range,
     ErrorCodeI& ec)
 {
-    using op = std::optional<ClosedInterval<uint32_t>>;
+    using Op = std::optional<ClosedInterval<uint32_t>>;
 
-    return load(id, app, op{range}, ec);
+    return load(id, app, Op{range}, ec);
 }
 
 std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
 Transaction::load(
-    uint256 const& id,
+    UInt256 const& id,
     Application& app,
     std::optional<ClosedInterval<uint32_t>> const& range,
     ErrorCodeI& ec)
@@ -151,7 +151,7 @@ Transaction::getJson(JsonOptions options, bool binary) const
 {
     // Note, we explicitly suppress `include_date` option here
     json::Value ret(transaction_->getJson(
-        options & ~static_cast<JsonOptions::underlying_t>(JsonOptions::Values::IncludeDate),
+        options & ~static_cast<JsonOptions::UnderlyingT>(JsonOptions::Values::IncludeDate),
         binary));
 
     // NOTE Binary STTx::getJson output might not be a JSON object
@@ -182,7 +182,7 @@ Transaction::getJson(JsonOptions options, bool binary) const
 
         if (txnSeq_ && netID)
         {
-            std::optional<std::string> const ctid = RPC::encodeCTID(ledgerIndex_, *txnSeq_, *netID);
+            std::optional<std::string> const ctid = rpc::encodeCTID(ledgerIndex_, *txnSeq_, *netID);
             if (ctid)
                 ret[jss::ctid] = *ctid;
         }

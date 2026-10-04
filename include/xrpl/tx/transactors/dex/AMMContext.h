@@ -6,7 +6,8 @@
 
 namespace xrpl {
 
-/** Maintains AMM info per overall payment engine execution and
+/**
+ * Maintains AMM info per overall payment engine execution and
  * individual iteration.
  * Only one instance of this class is created in Flow.cpp::flow().
  * The reference is percolated through calls to AMMLiquidity class,
@@ -84,7 +85,8 @@ public:
         return accountID_;
     }
 
-    /** Strand execution may fail. Reset the flag at the start
+    /**
+     * Strand execution may fail. Reset the flag at the start
      * of each payment engine iteration.
      */
     void

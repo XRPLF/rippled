@@ -7,58 +7,68 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <stdexcept>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
-/** Convert a NodeObject from in-memory to database format.
-
-    The (suboptimal) database format consists of:
-
-    - 8 prefix bytes which will typically be 0, but don't assume that's the
-      case; earlier versions of the code would use these bytes to store the
-      ledger index either once or twice.
-    - A single byte denoting the type of the object.
-    - The payload.
-
-    @note This class is typically instantiated on the stack, so the size of
-          the object does not matter as much as it normally would since the
-          allocation is, effectively, free.
-
-          We leverage that fact to preallocate enough memory to handle most
-          payloads as part of this object, eliminating the need for dynamic
-          allocation. As of this writing ~94% of objects require fewer than
-          1024 payload bytes.
+/**
+ * Convert a NodeObject from in-memory to database format.
+ *
+ * The (suboptimal) database format consists of:
+ *
+ * - 8 prefix bytes which will typically be 0, but don't assume that's the
+ *   case; earlier versions of the code would use these bytes to store the
+ *   ledger index either once or twice.
+ * - A single byte denoting the type of the object.
+ * - The payload.
+ *
+ * @note This class is typically instantiated on the stack, so the size of
+ *       the object does not matter as much as it normally would since the
+ *       allocation is, effectively, free.
+ *
+ *       We leverage that fact to preallocate enough memory to handle most
+ *       payloads as part of this object, eliminating the need for dynamic
+ *       allocation. As of this writing ~94% of objects require fewer than
+ *       1024 payload bytes.
  */
 
 class EncodedBlob
 {
-    /** The 32-byte key of the serialized object. */
+    /**
+     * The 32-byte key of the serialized object.
+     */
     std::array<std::uint8_t, 32> key_{};
 
-    /** A pre-allocated buffer for the serialized object.
-
-         The buffer is large enough for the 9 byte prefix and at least
-         1024 more bytes. The precise size is calculated automatically
-         at compile time so as to avoid wasting space on padding bytes.
+    /**
+     * A pre-allocated buffer for the serialized object.
+     *
+     * The buffer is large enough for the 9 byte prefix and at least
+     * 1024 more bytes. The precise size is calculated automatically
+     * at compile time so as to avoid wasting space on padding bytes.
      */
     std::array<std::uint8_t, boost::alignment::align_up(9 + 1024, alignof(std::uint32_t))>
         payload_{};
 
-    /** The size of the serialized data. */
+    /**
+     * The size of the serialized data.
+     */
     std::uint32_t size_;
 
-    /** A pointer to the serialized data.
-
-        This may point to the pre-allocated buffer (if it is sufficiently
-        large) or to a dynamically allocated buffer.
+    /**
+     * A pointer to the serialized data.
+     *
+     * This may point to the pre-allocated buffer (if it is sufficiently
+     * large) or to a dynamically allocated buffer.
      */
     std::uint8_t* const ptr_;
 
 public:
     explicit EncodedBlob(std::shared_ptr<NodeObject> const& obj)
         : size_([&obj]() {
-            XRPL_ASSERT(obj, "xrpl::NodeStore::EncodedBlob::EncodedBlob : non-null input");
+            XRPL_ASSERT(obj, "xrpl::node_store::EncodedBlob::EncodedBlob : non-null input");
 
             if (!obj)
                 throw std::runtime_error("EncodedBlob: unseated std::shared_ptr used.");
@@ -78,7 +88,7 @@ public:
         XRPL_ASSERT(
             ((ptr_ == payload_.data()) && (size_ <= payload_.size())) ||
                 ((ptr_ != payload_.data()) && (size_ > payload_.size())),
-            "xrpl::NodeStore::EncodedBlob::~EncodedBlob : valid payload "
+            "xrpl::node_store::EncodedBlob::~EncodedBlob : valid payload "
             "pointer");
 
         if (ptr_ != payload_.data())
@@ -104,4 +114,4 @@ public:
     }
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

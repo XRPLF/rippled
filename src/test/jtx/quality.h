@@ -1,10 +1,15 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+
+#include <cstdint>
 
 namespace xrpl::test::jtx {
 
-/** Sets the literal QualityIn on a trust JTx. */
+/**
+ * Sets the literal QualityIn on a trust JTx.
+ */
 class QualityIn
 {
 private:
@@ -19,7 +24,9 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Sets the QualityIn on a trust JTx. */
+/**
+ * Sets the QualityIn on a trust JTx.
+ */
 class QualityInPercent
 {
 private:
@@ -32,7 +39,9 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Sets the literal QualityOut on a trust JTx. */
+/**
+ * Sets the literal QualityOut on a trust JTx.
+ */
 class QualityOut
 {
 private:
@@ -47,7 +56,9 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Sets the QualityOut on a trust JTx as a percentage. */
+/**
+ * Sets the QualityOut on a trust JTx as a percentage.
+ */
 class QualityOutPercent
 {
 private:

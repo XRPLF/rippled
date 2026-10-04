@@ -5,7 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/Rules.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
@@ -19,6 +19,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <limits>
 #include <ostream>
 #include <stdexcept>
@@ -88,7 +89,6 @@ STNumber::add(Serializer& s) const
         }
         else
         {
-#if !NDEBUG
             // There are circumstances where an already-rounded Number is
             // serialized without being touched by a transactor, and thus
             // without an asset. We can't know if it's rounded, because it could
@@ -96,11 +96,9 @@ STNumber::add(Serializer& s) const
             // Json. Regardless, the only time we should be serializing an
             // STNumber is when the scale is large.
             XRPL_ASSERT_PARTS(
-                Number::getMantissaScale() == MantissaRange::MantissaScale::LargeLegacy ||
-                    Number::getMantissaScale() == MantissaRange::MantissaScale::Large,
+                Number::getMantissaScale() != MantissaRange::MantissaScale::Small,
                 "xrpl::STNumber::add",
                 "STNumber only used with large mantissa scale");
-#endif
         }
     }
 
@@ -142,7 +140,7 @@ STNumber::isEquivalent(STBase const& t) const
 {
     XRPL_ASSERT(
         t.getSType() == this->getSType(), "xrpl::STNumber::isEquivalent : field type match");
-    STNumber const& v = dynamic_cast<STNumber const&>(t);
+    auto const& v = dynamic_cast<STNumber const&>(t);
     return value_ == v;
 }
 
@@ -173,7 +171,7 @@ partsFromString(std::string const& number)
     boost::smatch match;
 
     if (!boost::regex_match(number, match, kReNumber))
-        Throw<std::runtime_error>("'" + number + "' is not a number");
+        Throw<std::runtime_error>(std::format("'{}' is not a number", number));
 
     // Match fields:
     //   0 = whole input
@@ -258,8 +256,47 @@ numberFromJson(SField const& field, json::Value const& value)
         Throw<std::runtime_error>("not a number");
     }
 
-    return STNumber{
-        field, Number{parts.negative, parts.mantissa, parts.exponent, Number::Normalized{}}};
+    Number const num{parts.negative, parts.mantissa, parts.exponent, Number::Normalized{}};
+
+    // Canonicalize "parts" and "num" with each other by getting rid of trailing 0s until either the
+    // exponents match, or there are no more 0s. If the two results don't match exactly, then the
+    // value has been rounded one way or another, and should not be used, because it may lead to an
+    // unexpected result. canonicalizeParts is not to be confused with Number::canonicalize, because
+    // they have completely different goals.
+    auto canonicalizeParts = [](NumberParts p, int otherExponent) {
+        if (p.mantissa == 0)
+            return NumberParts{};
+
+        while (p.exponent < otherExponent && p.mantissa % 10 == 0)
+        {
+            p.mantissa /= 10;
+            ++p.exponent;
+        }
+
+        return p;
+    };
+
+    auto const numberMantissa = num.mantissa();
+    auto const numberExponent = num.exponent();
+
+    auto const canonicalParts = canonicalizeParts(parts, numberExponent);
+
+    auto const canonicalNum = canonicalizeParts(
+        NumberParts{
+            .mantissa = Number::externalToInternal(numberMantissa),
+            .exponent = numberExponent,
+            .negative = numberMantissa < 0,
+        },
+        canonicalParts.exponent);
+
+    if (canonicalParts.mantissa != canonicalNum.mantissa ||
+        canonicalParts.exponent != canonicalNum.exponent ||
+        canonicalParts.negative != canonicalNum.negative)
+    {
+        Throw<std::runtime_error>("number cannot be represented");
+    }
+
+    return STNumber{field, num};
 }
 
 }  // namespace xrpl

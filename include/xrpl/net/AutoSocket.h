@@ -2,11 +2,19 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/beast/core/bind_handler.hpp>
+
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 // Socket wrapper that supports both SSL and non-SSL connections.
 // Generally, handle it as you would an SSL connection.
@@ -16,14 +24,15 @@
 class AutoSocket
 {
 public:
-    using ssl_socket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
-    using endpoint_type = boost::asio::ip::tcp::socket::endpoint_type;
-    using socket_ptr = std::unique_ptr<ssl_socket>;
-    using plain_socket = ssl_socket::next_layer_type;
-    using lowest_layer_type = ssl_socket::lowest_layer_type;
-    using handshake_type = ssl_socket::handshake_type;
-    using error_code = boost::system::error_code;
-    using callback = std::function<void(error_code)>;
+    using SslSocket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
+    using EndpointType = boost::asio::ip::tcp::socket::endpoint_type;
+    using SocketPtr = std::unique_ptr<SslSocket>;
+    using PlainSocket = SslSocket::next_layer_type;
+    // NOLINTNEXTLINE(readability-identifier-naming) -- asio stream layer concept name
+    using lowest_layer_type = SslSocket::lowest_layer_type;
+    using HandshakeType = SslSocket::handshake_type;
+    using ErrorCode = boost::system::error_code;
+    using Callback = std::function<void(ErrorCode)>;
 
 public:
     AutoSocket(
@@ -35,7 +44,7 @@ public:
         , buffer_((plainOnly || secureOnly) ? 0 : 4)
         , j_{beast::Journal::getNullSink()}
     {
-        socket_ = std::make_unique<ssl_socket>(s, c);
+        socket_ = std::make_unique<SslSocket>(s, c);
     }
 
     AutoSocket(boost::asio::io_context& s, boost::asio::ssl::context& c)
@@ -48,27 +57,27 @@ public:
     {
         return secure_;
     }
-    ssl_socket&
+    SslSocket&
     sslSocket()
     {
         return *socket_;
     }
-    plain_socket&
+    PlainSocket&
     plainSocket()
     {
         return socket_->next_layer();
     }
 
-    beast::IP::Endpoint
+    beast::ip::Endpoint
     localEndpoint()
     {
-        return beast::IP::fromAsio(lowestLayer().local_endpoint());
+        return beast::ip::fromAsio(lowestLayer().local_endpoint());
     }
 
-    beast::IP::Endpoint
+    beast::ip::Endpoint
     remoteEndpoint()
     {
-        return beast::IP::fromAsio(lowestLayer().remote_endpoint());
+        return beast::ip::fromAsio(lowestLayer().remote_endpoint());
     }
 
     lowest_layer_type&
@@ -92,9 +101,9 @@ public:
     }
 
     void
-    asyncHandshake(handshake_type type, callback cbFunc)
+    asyncHandshake(HandshakeType type, Callback cbFunc)
     {
-        if ((type == ssl_socket::client) || (secure_))
+        if ((type == SslSocket::client) || (secure_))
         {
             // must be ssl
             secure_ = true;
@@ -104,7 +113,7 @@ public:
         {
             // must be plain
             secure_ = false;
-            post(socket_->get_executor(), boost::beast::bind_handler(cbFunc, error_code()));
+            post(socket_->get_executor(), boost::beast::bind_handler(cbFunc, ErrorCode()));
         }
         else
         {
@@ -112,12 +121,9 @@ public:
             socket_->next_layer().async_receive(
                 boost::asio::buffer(buffer_),
                 boost::asio::socket_base::message_peek,
-                std::bind(
-                    &AutoSocket::handleAutodetect,
-                    this,
-                    cbFunc,
-                    std::placeholders::_1,
-                    std::placeholders::_2));
+                [this, cbFunc](ErrorCode const& ec, size_t bytesTransferred) {
+                    handleAutodetect(cbFunc, ec, bytesTransferred);
+                });
         }
     }
 
@@ -131,10 +137,10 @@ public:
         }
         else
         {
-            error_code ec;
+            ErrorCode ec;
             try
             {
-                lowestLayer().shutdown(plain_socket::shutdown_both);
+                lowestLayer().shutdown(PlainSocket::shutdown_both);
             }
             catch (boost::system::system_error const& e)
             {
@@ -292,7 +298,7 @@ public:
 
 protected:
     void
-    handleAutodetect(callback cbFunc, error_code const& ec, size_t bytesTransferred)
+    handleAutodetect(Callback cbFunc, ErrorCode const& ec, size_t bytesTransferred)
     {
         using namespace xrpl;
 
@@ -317,12 +323,12 @@ protected:
             // ssl
             JLOG(j_.trace()) << "SSL";
             secure_ = true;
-            socket_->async_handshake(ssl_socket::server, cbFunc);
+            socket_->async_handshake(SslSocket::server, cbFunc);
         }
     }
 
 private:
-    socket_ptr socket_;
+    SocketPtr socket_;
     bool secure_;
     std::vector<char> buffer_;
     beast::Journal j_;

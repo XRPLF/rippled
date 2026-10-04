@@ -6,6 +6,8 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
@@ -13,30 +15,32 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <boost/container/flat_set.hpp>
 
 #include <cstdint>
+#include <flat_set>
 #include <limits>
 #include <stdexcept>
 
 namespace xrpl {
 
-TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
-    : transactionID_(txid), ledgerSeq_(ledger), nodes_(obj.getFieldArray(sfAffectedNodes))
+TxMeta::TxMeta(UInt256 const& txid, std::uint32_t ledger, STObject const& obj)
+    : transactionID_(txid)
+    , ledgerSeq_(ledger)
+    , index_(obj.getFieldU32(sfTransactionIndex))
+    , result_(obj.getFieldU8(sfTransactionResult))
+    , nodes_([&obj] {
+        auto const affectedNodes = dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
+        XRPL_ASSERT(affectedNodes, "xrpl::TxMeta::TxMeta(STObject) : type cast succeeded");
+        return affectedNodes != nullptr ? *affectedNodes : obj.getFieldArray(sfAffectedNodes);
+    }())
 {
-    result_ = obj.getFieldU8(sfTransactionResult);
-    index_ = obj.getFieldU32(sfTransactionIndex);
-
-    auto affectedNodes = dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
-    XRPL_ASSERT(affectedNodes, "xrpl::TxMeta::TxMeta(STObject) : type cast succeeded");
-    if (affectedNodes != nullptr)
-        nodes_ = *affectedNodes;
-
     setAdditionalFields(obj);
 }
 
-TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
+TxMeta::TxMeta(UInt256 const& txid, std::uint32_t ledger, Blob const& vec)
     : transactionID_(txid), ledgerSeq_(ledger), nodes_(sfAffectedNodes, 32)
 {
     SerialIter sit(makeSlice(vec));
@@ -49,7 +53,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
     setAdditionalFields(obj);
 }
 
-TxMeta::TxMeta(uint256 const& transactionID, std::uint32_t ledger)
+TxMeta::TxMeta(UInt256 const& transactionID, std::uint32_t ledger)
     : transactionID_(transactionID)
     , ledgerSeq_(ledger)
     , index_(std::numeric_limits<std::uint32_t>::max())
@@ -60,7 +64,7 @@ TxMeta::TxMeta(uint256 const& transactionID, std::uint32_t ledger)
 }
 
 void
-TxMeta::setAffectedNode(uint256 const& node, SField const& type, std::uint16_t nodeType)
+TxMeta::setAffectedNode(UInt256 const& node, SField const& type, std::uint16_t nodeType)
 {
     // make sure the node exists and force its type
     for (auto& n : nodes_)
@@ -145,10 +149,56 @@ TxMeta::getAffectedAccounts() const
     return list;
 }
 
-STObject&
-TxMeta::getAffectedNode(SLE::ref node, SField const& type)
+std::flat_set<MPTID>
+TxMeta::getAffectedMPTs() const
 {
-    uint256 const index = node->key();
+    std::flat_set<MPTID> list;
+
+    for (auto const& it : nodes_)
+    {
+        int const index =
+            it.getFieldIndex((it.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
+
+        if (index != -1)
+        {
+            auto inner = dynamic_cast<STObject const*>(&it.peekAtIndex(index));
+            XRPL_ASSERT(inner, "xrpl::getAffectedMPTs : STObject type cast succeeded");
+            if (inner != nullptr)
+            {
+                // An MPTokenIssuance entry does not store its own issuance id;
+                // the id is derived from the issuer and the sequence that
+                // created the issuance.
+                if (it.getFieldU16(sfLedgerEntryType) == ltMPTOKEN_ISSUANCE)
+                {
+                    list.insert(
+                        makeMptID(inner->getFieldU32(sfSequence), inner->getAccountID(sfIssuer)));
+                }
+
+                for (auto const& field : *inner)
+                {
+                    if (auto mptID = dynamic_cast<STBitString<192> const*>(&field);
+                        field.getFName() == sfMPTokenIssuanceID && (mptID != nullptr))
+                    {
+                        list.insert(mptID->value());
+                    }
+                    else if (
+                        auto amount = dynamic_cast<STAmount const*>(&field);
+                        (amount != nullptr) && amount->holds<MPTIssue>())
+                    {
+                        list.insert(amount->get<MPTIssue>().getMptID());
+                    }
+                }
+            }
+        }
+    }
+
+    return list;
+}
+
+STObject&
+TxMeta::getAffectedNode(SLE::Ref node, SField const& type)
+{
+    UInt256 const index = node->key();
     for (auto& n : nodes_)
     {
         if (n.getFieldH256(sfLedgerIndex) == index)
@@ -158,7 +208,7 @@ TxMeta::getAffectedNode(SLE::ref node, SField const& type)
     STObject& obj = nodes_.back();
 
     XRPL_ASSERT(
-        obj.getFName() == type, "xrpl::TxMeta::getAffectedNode(SLE::ref) : field type match");
+        obj.getFName() == type, "xrpl::TxMeta::getAffectedNode(SLE::Ref) : field type match");
     obj.setFieldH256(sfLedgerIndex, index);
     obj.setFieldU16(sfLedgerEntryType, node->getFieldU16(sfLedgerEntryType));
 
@@ -166,7 +216,7 @@ TxMeta::getAffectedNode(SLE::ref node, SField const& type)
 }
 
 STObject&
-TxMeta::getAffectedNode(uint256 const& node)
+TxMeta::getAffectedNode(UInt256 const& node)
 {
     for (auto& n : nodes_)
     {
@@ -174,7 +224,7 @@ TxMeta::getAffectedNode(uint256 const& node)
             return n;
     }
     // LCOV_EXCL_START
-    UNREACHABLE("xrpl::TxMeta::getAffectedNode(uint256) : node not found");
+    UNREACHABLE("xrpl::TxMeta::getAffectedNode(UInt256) : node not found");
     Throw<std::runtime_error>("Affected node not found");
     return *(nodes_.begin());  // Silence compiler warning.
     // LCOV_EXCL_STOP

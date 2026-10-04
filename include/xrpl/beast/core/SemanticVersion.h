@@ -6,37 +6,41 @@
 
 namespace beast {
 
-/** A Semantic Version number.
-
-    Identifies the build of a particular version of software using
-    the Semantic Versioning Specification described here:
-
-    http://semver.org/
-*/
+/**
+ * A Semantic Version number.
+ *
+ * Identifies the build of a particular version of software using
+ * the Semantic Versioning Specification described here:
+ *
+ * http://semver.org/
+ */
 class SemanticVersion
 {
 public:
-    using identifier_list = std::vector<std::string>;
+    using IdentifierList = std::vector<std::string>;
 
     int majorVersion;
     int minorVersion;
     int patchVersion;
 
-    identifier_list preReleaseIdentifiers;
-    identifier_list metaData;
+    IdentifierList preReleaseIdentifiers;
+    IdentifierList metaData;
 
     SemanticVersion();
 
     SemanticVersion(std::string_view version);
 
-    /** Parse a semantic version string.
-        The parsing is as strict as possible.
-        @return `true` if the string was parsed.
-    */
+    /**
+     * Parse a semantic version string.
+     * The parsing is as strict as possible.
+     * @return `true` if the string was parsed.
+     */
     bool
     parse(std::string_view input);
 
-    /** Produce a string from semantic version components. */
+    /**
+     * Produce a string from semantic version components.
+     */
     [[nodiscard]] std::string
     print() const;
 
@@ -52,9 +56,10 @@ public:
     }
 };
 
-/** Compare two SemanticVersions against each other.
-    The comparison follows the rules as per the specification.
-*/
+/**
+ * Compare two SemanticVersions against each other.
+ * The comparison follows the rules as per the specification.
+ */
 int
 compare(SemanticVersion const& lhs, SemanticVersion const& rhs);
 

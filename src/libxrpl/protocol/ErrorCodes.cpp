@@ -9,7 +9,7 @@
 #include <string>
 
 namespace xrpl {
-namespace RPC {
+namespace rpc {
 
 namespace detail {
 
@@ -105,10 +105,9 @@ static constexpr ErrorInfo kUnorderedErrorInfos[]{
 };
 // clang-format on
 
-// Sort and validate unorderedErrorInfos at compile time.  Should be
-// converted to consteval when get to C++20.
+// Sort and validate unorderedErrorInfos at compile time.
 template <int M, int N>
-constexpr auto
+consteval auto
 sortErrorInfos(ErrorInfo const (&unordered)[N]) -> std::array<ErrorInfo, M>
 {
     std::array<ErrorInfo, M> ret = {};
@@ -215,12 +214,12 @@ errorCodeHttpStatus(ErrorCodeI code)
     return getErrorInfo(code).httpStatus;
 }
 
-}  // namespace RPC
+}  // namespace rpc
 
 std::string
 rpcErrorString(json::Value const& jv)
 {
-    XRPL_ASSERT(RPC::containsError(jv), "xrpl::RPC::rpcErrorString : input contains an error");
+    XRPL_ASSERT(rpc::containsError(jv), "xrpl::rpc::rpcErrorString : input contains an error");
     return jv[jss::error].asString() + jv[jss::error_message].asString();
 }
 

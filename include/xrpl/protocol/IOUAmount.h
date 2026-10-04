@@ -1,40 +1,42 @@
 #pragma once
 
-#include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 
 #include <boost/operators.hpp>
 
 #include <cstdint>
+#include <ostream>
 #include <string>
 
 namespace xrpl {
 
-/** Floating point representation of amounts with high dynamic range
-
-    Amounts are stored as a normalized signed mantissa and an exponent. The
-    range of the normalized exponent is [-96,80] and the range of the absolute
-    value of the normalized mantissa is [1000000000000000, 9999999999999999].
-
-    Arithmetic operations can throw std::overflow_error during normalization
-    if the amount exceeds the largest representable amount, but underflows
-    will silently truncate to zero.
-*/
+/**
+ * Floating point representation of amounts with high dynamic range
+ *
+ * Amounts are stored as a normalized signed mantissa and an exponent. The
+ * range of the normalized exponent is [-96,80] and the range of the absolute
+ * value of the normalized mantissa is [1000000000000000, 9999999999999999].
+ *
+ * Arithmetic operations can throw std::overflow_error during normalization
+ * if the amount exceeds the largest representable amount, but underflows
+ * will silently truncate to zero.
+ */
 class IOUAmount : private boost::totally_ordered<IOUAmount>, private boost::additive<IOUAmount>
 {
 private:
-    using mantissa_type = std::int64_t;
-    using exponent_type = int;
-    mantissa_type mantissa_{};
-    exponent_type exponent_{};
+    using MantissaType = std::int64_t;
+    using ExponentType = int;
+    MantissaType mantissa_{};
+    ExponentType exponent_{};
 
-    /** Adjusts the mantissa and exponent to the proper range.
-
-        This can throw if the amount cannot be normalized, or is larger than
-        the largest value that can be represented as an IOU amount. Amounts
-        that are too small to be represented normalize to 0.
-    */
+    /**
+     * Adjusts the mantissa and exponent to the proper range.
+     *
+     * This can throw if the amount cannot be normalized, or is larger than
+     * the largest value that can be represented as an IOU amount. Amounts
+     * that are too small to be represented normalize to 0.
+     */
     void
     normalize();
 
@@ -45,7 +47,7 @@ public:
     IOUAmount() = default;
     explicit IOUAmount(Number const& other);
     IOUAmount(beast::Zero);
-    IOUAmount(mantissa_type mantissa, exponent_type exponent);
+    IOUAmount(MantissaType mantissa, ExponentType exponent);
 
     IOUAmount& operator=(beast::Zero);
 
@@ -66,18 +68,22 @@ public:
     bool
     operator<(IOUAmount const& other) const;
 
-    /** Returns true if the amount is not zero */
+    /**
+     * Returns true if the amount is not zero
+     */
     explicit
     operator bool() const noexcept;
 
-    /** Return the sign of the amount */
+    /**
+     * Return the sign of the amount
+     */
     [[nodiscard]] int
     signum() const noexcept;
 
-    [[nodiscard]] exponent_type
+    [[nodiscard]] ExponentType
     exponent() const noexcept;
 
-    [[nodiscard]] mantissa_type
+    [[nodiscard]] MantissaType
     mantissa() const noexcept;
 
     static IOUAmount
@@ -95,7 +101,7 @@ inline IOUAmount::IOUAmount(beast::Zero)
     *this = beast::kZero;
 }
 
-inline IOUAmount::IOUAmount(mantissa_type mantissa, exponent_type exponent)
+inline IOUAmount::IOUAmount(MantissaType mantissa, ExponentType exponent)
     : mantissa_(mantissa), exponent_(exponent)
 {
     normalize();
@@ -156,13 +162,13 @@ IOUAmount::signum() const noexcept
     return (mantissa_ != 0) ? 1 : 0;
 }
 
-inline IOUAmount::exponent_type
+inline IOUAmount::ExponentType
 IOUAmount::exponent() const noexcept
 {
     return exponent_;
 }
 
-inline IOUAmount::mantissa_type
+inline IOUAmount::MantissaType
 IOUAmount::mantissa() const noexcept
 {
     return mantissa_;
@@ -178,37 +184,5 @@ to_string(IOUAmount const& amount);
 */
 IOUAmount
 mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp);
-
-// Since many uses of the number class do not have access to a ledger,
-// getSTNumberSwitchover needs to be globally accessible.
-
-bool
-getSTNumberSwitchover();
-
-void
-setSTNumberSwitchover(bool v);
-
-/** RAII class to set and restore the Number switchover.
- */
-
-class NumberSO
-{
-    bool saved_;
-
-public:
-    ~NumberSO()
-    {
-        setSTNumberSwitchover(saved_);
-    }
-
-    NumberSO(NumberSO const&) = delete;
-    NumberSO&
-    operator=(NumberSO const&) = delete;
-
-    explicit NumberSO(bool v) : saved_(getSTNumberSwitchover())
-    {
-        setSTNumberSwitchover(v);
-    }
-};
 
 }  // namespace xrpl

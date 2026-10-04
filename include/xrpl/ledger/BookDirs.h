@@ -1,6 +1,13 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+
+#include <cstddef>
+#include <iterator>
+#include <optional>
 
 namespace xrpl {
 
@@ -8,16 +15,16 @@ class BookDirs
 {
 private:
     ReadView const* view_ = nullptr;
-    uint256 const root_;
-    uint256 const nextQuality_;
-    uint256 const key_;
-    std::shared_ptr<SLE const> sle_ = nullptr;
+    UInt256 const root_;
+    UInt256 const nextQuality_;
+    UInt256 const key_;
+    SLE::const_pointer sle_ = nullptr;
     unsigned int entry_ = 0;
-    uint256 index_;
+    UInt256 index_;
 
 public:
     class const_iterator;  // NOLINT(readability-identifier-naming)
-    using value_type = std::shared_ptr<SLE const>;
+    using value_type = SLE::const_pointer;
 
     BookDirs(ReadView const&, Book const&);
 
@@ -42,12 +49,6 @@ public:
     bool
     operator==(const_iterator const& other) const;
 
-    bool
-    operator!=(const_iterator const& other) const
-    {
-        return !(*this == other);
-    }
-
     reference
     operator*() const;
 
@@ -66,19 +67,19 @@ public:
 private:
     friend class BookDirs;
 
-    const_iterator(ReadView const& view, uint256 const& root, uint256 const& dirKey)
+    const_iterator(ReadView const& view, UInt256 const& root, UInt256 const& dirKey)
         : view_(&view), root_(root), key_(dirKey), curKey_(dirKey)
     {
     }
 
     ReadView const* view_ = nullptr;
-    uint256 root_;
-    uint256 nextQuality_;
-    uint256 key_;
-    uint256 curKey_;
-    std::shared_ptr<SLE const> sle_;
+    UInt256 root_;
+    UInt256 nextQuality_;
+    UInt256 key_;
+    UInt256 curKey_;
+    SLE::const_pointer sle_;
     unsigned int entry_ = 0;
-    uint256 index_;
+    UInt256 index_;
     std::optional<value_type> mutable cache_;
 };
 

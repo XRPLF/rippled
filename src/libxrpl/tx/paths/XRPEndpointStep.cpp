@@ -16,7 +16,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/paths/detail/AmountSpec.h>
 #include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/StepChecks.h>
 #include <xrpl/tx/paths/detail/Steps.h>
@@ -98,14 +97,14 @@ public:
     revImp(
         PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         XRPAmount const& out);
 
     std::pair<XRPAmount, XRPAmount>
     fwdImp(
         PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         XRPAmount const& in);
 
     std::pair<bool, EitherAmount>
@@ -204,7 +203,7 @@ private:
         {
             return ctx.strandDeliver.visit(
                 [&](Issue const& issue) {
-                    if (!ctx.view.exists(keylet::line(acc, issue)))
+                    if (!ctx.view.exists(keylet::trustLine(acc, issue)))
                         return -1;
                     return 0;
                 },
@@ -261,7 +260,7 @@ std::pair<XRPAmount, XRPAmount>
 XRPEndpointStep<TDerived>::revImp(
     PaymentSandbox& sb,
     ApplyView& afView,
-    boost::container::flat_set<uint256>& ofrsToRm,
+    boost::container::flat_set<UInt256>& ofrsToRm,
     XRPAmount const& out)
 {
     auto const balance = static_cast<TDerived const*>(this)->xrpLiquid(sb);
@@ -283,7 +282,7 @@ std::pair<XRPAmount, XRPAmount>
 XRPEndpointStep<TDerived>::fwdImp(
     PaymentSandbox& sb,
     ApplyView& afView,
-    boost::container::flat_set<uint256>& ofrsToRm,
+    boost::container::flat_set<UInt256>& ofrsToRm,
     XRPAmount const& in)
 {
     XRPL_ASSERT(cache_, "xrpl::XRPEndpointStep::fwdImp : cache is set");

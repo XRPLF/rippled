@@ -2,13 +2,13 @@
 
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerNodeHelpers.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/DecayingSample.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/scope.h>
@@ -48,7 +48,7 @@ private:
     Application& app_;
     std::mutex fetchRateMutex_;
     // measures ledgers per second, constants are important
-    DecayWindow<30, clock_type> fetchRate_;
+    DecayWindow<30, ClockType> fetchRate_;
     beast::Journal const j_;
 
 public:
@@ -57,8 +57,8 @@ public:
 
     InboundLedgersImp(
         Application& app,
-        clock_type& clock,
-        beast::insight::Collector::ptr const& collector,
+        ClockType& clock,
+        beast::insight::Collector::Ptr const& collector,
         std::unique_ptr<PeerSetBuilder> peerSetBuilder)
         : app_(app)
         , fetchRate_(clock.now())
@@ -70,9 +70,11 @@ public:
     {
     }
 
-    /** @callgraph */
+    /**
+     * @callgraph
+     */
     std::shared_ptr<Ledger const>
-    acquire(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
+    acquire(UInt256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
     {
         auto doAcquire = [&, seq, reason]() -> std::shared_ptr<Ledger const> {
             XRPL_ASSERT(
@@ -127,7 +129,7 @@ public:
     }
 
     void
-    acquireAsync(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
+    acquireAsync(UInt256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
     {
         std::unique_lock lock(acquiresMutex_);
         try
@@ -151,7 +153,7 @@ public:
     }
 
     std::shared_ptr<InboundLedger>
-    find(uint256 const& hash) override
+    find(UInt256 const& hash) override
     {
         XRPL_ASSERT(hash.isNonZero(), "xrpl::InboundLedgersImp::find : nonzero input");
 
@@ -182,7 +184,8 @@ public:
     // means "We got some data from an inbound ledger"
 
     // VFALCO TODO Remove the dependency on the Peer object.
-    /** We received a TMLedgerData from a peer.
+    /**
+     * We received a TMLedgerData from a peer.
      */
     bool
     gotLedgerData(
@@ -220,7 +223,7 @@ public:
     }
 
     void
-    logFailure(uint256 const& h, std::uint32_t seq) override
+    logFailure(UInt256 const& h, std::uint32_t seq) override
     {
         ScopedLockType const sl(lock_);
 
@@ -228,7 +231,7 @@ public:
     }
 
     bool
-    isFailure(uint256 const& h) override
+    isFailure(UInt256 const& h) override
     {
         ScopedLockType const sl(lock_);
 
@@ -236,35 +239,30 @@ public:
         return recentFailures_.find(h) != recentFailures_.end();
     }
 
-    /** We got some data for a ledger we are no longer acquiring Since we paid
-        the price to receive it, we might as well stash it in case we need it.
-
-        Nodes are received in wire format and must be stashed/hashed in prefix
-        format
-    */
+    /**
+     * We got some data for a ledger we are no longer acquiring Since we paid
+     * the price to receive it, we might as well stash it in case we need it.
+     *
+     * Nodes are received in wire format and must be stashed/hashed in prefix
+     * format
+     */
     void
     gotStaleData(std::shared_ptr<protocol::TMLedgerData> packetPtr) override
     {
         Serializer s;
         try
         {
-            for (int i = 0; i < packetPtr->nodes().size(); ++i)
+            for (auto const& ledgerNode : packetPtr->nodes())
             {
-                auto const& node = packetPtr->nodes(i);
-
-                if (!node.has_nodeid() || !node.has_nodedata())
-                    return;
-
-                auto newNode = SHAMapTreeNode::makeFromWire(makeSlice(node.nodedata()));
-
-                if (!newNode)
+                auto const treeNode = getTreeNode(ledgerNode.nodedata());
+                if (!treeNode)
                     return;
 
                 s.erase();
-                newNode->serializeWithPrefix(s);
+                treeNode->serializeWithPrefix(s);
 
                 app_.getLedgerMaster().addFetchPack(
-                    newNode->getHash().asUInt256(), std::make_shared<Blob>(s.begin(), s.end()));
+                    treeNode->getHash().asUInt256(), std::make_shared<Blob>(s.begin(), s.end()));
             }
         }
         catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
@@ -302,7 +300,7 @@ public:
     {
         json::Value ret(json::ValueType::Object);
 
-        std::vector<std::pair<uint256, std::shared_ptr<InboundLedger>>> acqs;
+        std::vector<std::pair<UInt256, std::shared_ptr<InboundLedger>>> acqs;
 
         {
             ScopedLockType const sl(lock_);
@@ -378,7 +376,7 @@ public:
 
         {
             ScopedLockType const sl(lock_);
-            MapType::iterator it(ledgers_.begin());
+            auto it = ledgers_.begin();
             total = ledgers_.size();
 
             stuffToSweep.reserve(total);
@@ -432,22 +430,22 @@ public:
     }
 
 private:
-    clock_type& clock_;
+    ClockType& clock_;
 
     using ScopedLockType = std::unique_lock<std::recursive_mutex>;
     std::recursive_mutex lock_;
 
     bool stopping_ = false;
-    using MapType = hash_map<uint256, std::shared_ptr<InboundLedger>>;
+    using MapType = HashMap<UInt256, std::shared_ptr<InboundLedger>>;
     MapType ledgers_;
 
-    beast::aged_map<uint256, std::uint32_t> recentFailures_;
+    beast::AgedMap<UInt256, std::uint32_t> recentFailures_;
 
     beast::insight::Counter counter_;
 
     std::unique_ptr<PeerSetBuilder> peerSetBuilder_;
 
-    std::set<uint256> pendingAcquires_;
+    std::set<UInt256> pendingAcquires_;
     std::mutex acquiresMutex_;
 };
 
@@ -456,8 +454,8 @@ private:
 std::unique_ptr<InboundLedgers>
 makeInboundLedgers(
     Application& app,
-    InboundLedgers::clock_type& clock,
-    beast::insight::Collector::ptr const& collector)
+    InboundLedgers::ClockType& clock,
+    beast::insight::Collector::Ptr const& collector)
 {
     return std::make_unique<InboundLedgersImp>(app, clock, collector, makePeerSetBuilder(app));
 }

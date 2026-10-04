@@ -123,6 +123,12 @@ Change::preclaim(PreclaimContext const& ctx)
                     ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temDISABLED;
             }
+            // The ttFEE transaction format defines these fields as optional,
+            // but they are unconditionally forbidden until FeeVoteImpl is
+            // updated to populate them (SmartEscrow behavioral port).
+            if (ctx.tx.isFieldPresent(sfGasLimit) || ctx.tx.isFieldPresent(sfBytecodeSizeLimit) ||
+                ctx.tx.isFieldPresent(sfGasPrice))
+                return temDISABLED;
             return tesSUCCESS;
         case ttAMENDMENT:
         case ttUNL_MODIFY:
@@ -160,7 +166,7 @@ Change::preCompute()
 TER
 Change::applyAmendment()
 {
-    uint256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
+    UInt256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
 
     auto const k = keylet::amendments();
 
@@ -254,7 +260,7 @@ Change::applyAmendment()
 TER
 Change::applyFee()
 {
-    auto const k = keylet::fees();
+    auto const k = keylet::feeSettings();
 
     SLE::pointer feeObject = view().peek(k);
 
@@ -409,10 +415,7 @@ Change::applyUNLModify()
 }
 
 void
-Change::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+Change::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

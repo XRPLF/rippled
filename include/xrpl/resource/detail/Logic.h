@@ -4,30 +4,39 @@
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/clock/abstract_clock.h>
-#include <xrpl/beast/insight/Insight.h>
+#include <xrpl/beast/core/List.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/Disposition.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/detail/Import.h>
 
 #include <mutex>
+#include <string>
+#include <tuple>
+#include <utility>
 
-namespace xrpl::Resource {
+namespace xrpl::resource {
 
 class Logic
 {
 private:
-    using clock_type = Stopwatch;
-    using Imports = hash_map<std::string, Import>;
-    using Table = hash_map<Key, Entry, Key::Hasher, Key::KeyEqual>;
+    using ClockType = Stopwatch;
+    using Imports = HashMap<std::string, Import>;
+    using Table = HashMap<Key, Entry, Key::Hasher, Key::KeyEqual>;
     using EntryIntrusiveList = beast::List<Entry>;
 
     struct Stats
     {
-        Stats(beast::insight::Collector::ptr const& collector)
+        Stats(beast::insight::Collector::Ptr const& collector)
         {
             warn = collector->makeMeter("warn");
             drop = collector->makeMeter("drop");
@@ -67,10 +76,7 @@ private:
 
     //--------------------------------------------------------------------------
 public:
-    Logic(
-        beast::insight::Collector::ptr const& collector,
-        clock_type& clock,
-        beast::Journal journal)
+    Logic(beast::insight::Collector::Ptr const& collector, ClockType& clock, beast::Journal journal)
         : stats_(collector), clock_(clock), journal_(journal)
     {
     }
@@ -87,7 +93,7 @@ public:
     }
 
     Consumer
-    newInboundEndpoint(beast::IP::Endpoint const& address)
+    newInboundEndpoint(beast::ip::Endpoint const& address)
     {
         Entry* entry(nullptr);
 
@@ -117,7 +123,7 @@ public:
     }
 
     Consumer
-    newOutboundEndpoint(beast::IP::Endpoint const& address)
+    newOutboundEndpoint(beast::ip::Endpoint const& address)
     {
         Entry* entry(nullptr);
 
@@ -150,7 +156,7 @@ public:
      * enabled.
      */
     Consumer
-    newUnlimitedEndpoint(beast::IP::Endpoint const& address)
+    newUnlimitedEndpoint(beast::ip::Endpoint const& address)
     {
         Entry* entry(nullptr);
 
@@ -183,11 +189,13 @@ public:
         return getJson(kWarningThreshold);
     }
 
-    /** Returns a json::ValueType::Object. */
+    /**
+     * Returns a json::ValueType::Object.
+     */
     json::Value
     getJson(int threshold)
     {
-        clock_type::time_point const now(clock_.now());
+        ClockType::time_point const now(clock_.now());
 
         json::Value ret(json::ValueType::Object);
         std::scoped_lock const _(lock_);
@@ -232,7 +240,7 @@ public:
     Gossip
     exportConsumers()
     {
-        clock_type::time_point const now(clock_.now());
+        ClockType::time_point const now(clock_.now());
 
         Gossip gossip;
         std::scoped_lock const _(lock_);
@@ -342,10 +350,9 @@ public:
             Import& import(iter->second);
             if (iter->second.whenExpires <= elapsed)
             {
-                for (auto itemIter(import.items.begin()); itemIter != import.items.end();
-                     ++itemIter)
+                for (auto& item : import.items)
                 {
-                    itemIter->consumer.entry().remoteBalance -= itemIter->balance;
+                    item.consumer.entry().remoteBalance -= item.balance;
                 }
 
                 iter = importTable_.erase(iter);
@@ -377,7 +384,7 @@ public:
     {
         std::scoped_lock const _(lock_);
         Entry& entry(iter->second);
-        XRPL_ASSERT(entry.refcount == 0, "xrpl::Resource::Logic::erase : entry not used");
+        XRPL_ASSERT(entry.refcount == 0, "xrpl::resource::Logic::erase : entry not used");
         inactive_.erase(inactive_.iteratorTo(entry));
         table_.erase(iter);
     }
@@ -411,7 +418,7 @@ public:
                 default:
                     // LCOV_EXCL_START
                     UNREACHABLE(
-                        "xrpl::Resource::Logic::release : invalid entry "
+                        "xrpl::resource::Logic::release : invalid entry "
                         "kind");
                     break;
                     // LCOV_EXCL_STOP
@@ -430,7 +437,7 @@ public:
         static_assert(
             kFeeLogAsWarn > kFeeLogAsInfo && kFeeLogAsInfo > kFeeLogAsDebug && kFeeLogAsDebug > 10);
 
-        static auto kGetStream = [](Resource::Charge::value_type cost, beast::Journal& journal) {
+        static auto kGetStream = [](resource::Charge::value_type cost, beast::Journal& journal) {
             if (cost >= kFeeLogAsWarn)
                 return journal.warn();
             if (cost >= kFeeLogAsInfo)
@@ -444,7 +451,7 @@ public:
             context = " (" + context + ")";
 
         std::scoped_lock const _(lock_);
-        clock_type::time_point const now(clock_.now());
+        ClockType::time_point const now(clock_.now());
         int const balance(entry.add(fee.cost(), now));
         JLOG(kGetStream(fee.cost(), journal_)) << "Charging " << entry << " for " << fee << context;
         return disposition(balance);
@@ -481,7 +488,7 @@ public:
 
         std::scoped_lock const _(lock_);
         bool drop(false);
-        clock_type::time_point const now(clock_.now());
+        ClockType::time_point const now(clock_.now());
         int const balance(entry.balance(now));
         if (balance >= kDropThreshold)
         {
@@ -509,7 +516,7 @@ public:
 
     static void
     writeList(
-        clock_type::time_point const now,
+        ClockType::time_point const now,
         beast::PropertyStream::Set& items,
         EntryIntrusiveList& list)
     {
@@ -528,7 +535,7 @@ public:
     void
     onWrite(beast::PropertyStream::Map& map)
     {
-        clock_type::time_point const now(clock_.now());
+        ClockType::time_point const now(clock_.now());
 
         std::scoped_lock const _(lock_);
 
@@ -554,4 +561,4 @@ public:
     }
 };
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource

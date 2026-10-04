@@ -73,6 +73,27 @@ public:
     }
 
     void
+    testNoAlternativeKey()
+    {
+        using namespace test::jtx;
+
+        testcase("Cannot remove last signing method");
+        Env env{*this, testableAmendments()};
+        Account const alice("alice");
+        Account const bob("bob");
+        env.fund(XRP(10000), alice);
+
+        env(regkey(alice, bob));
+        env(fset(alice, asfDisableMaster), Sig(alice));
+
+        env(regkey(alice, kDisabled), Sig(bob), Ter(tecNO_ALTERNATIVE_KEY));
+
+        auto const sle = env.le(alice);
+        BEAST_EXPECT(
+            sle && sle->isFlag(lsfDisableMaster) && sle->getAccountID(sfRegularKey) == bob.id());
+    }
+
+    void
     testPasswordSpent()
     {
         using namespace test::jtx;
@@ -169,6 +190,7 @@ public:
     {
         testDisabledMasterKey();
         testDisabledRegularKey();
+        testNoAlternativeKey();
         testPasswordSpent();
         testUniversalMask();
         testTicketRegularKey();

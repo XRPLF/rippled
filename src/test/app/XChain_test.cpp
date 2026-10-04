@@ -82,14 +82,14 @@ struct SEnv
     }
 
     SEnv&
-    enableFeature(uint256 const feature)
+    enableFeature(UInt256 const feature)
     {
         env.enableFeature(feature);
         return *this;
     }
 
     SEnv&
-    disableFeature(uint256 const feature)
+    disableFeature(UInt256 const feature)
     {
         env.app().config().features.erase(feature);
         return *this;
@@ -141,7 +141,7 @@ struct SEnv
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return env.current()->fees().accountReserve(count);
+        return env.current()->fees().accountReserve(count, 1);
     }
 
     XRPAmount
@@ -150,18 +150,18 @@ struct SEnv
         return env.current()->fees().base;
     }
 
-    std::shared_ptr<SLE const>
+    SLE::const_pointer
     account(jtx::Account const& account)
     {
         return env.le(account);
     }
 
-    std::shared_ptr<SLE const>
+    SLE::const_pointer
     bridge(json::Value const& jvb)
     {
         STXChainBridge const b(jvb);
 
-        auto tryGet = [&](STXChainBridge::ChainType ct) -> std::shared_ptr<SLE const> {
+        auto tryGet = [&](STXChainBridge::ChainType ct) -> SLE::const_pointer {
             if (auto r = env.le(keylet::bridge(b, ct)))
             {
                 if ((*r)[sfXChainBridge] == b)
@@ -186,13 +186,13 @@ struct SEnv
         return (*bridge(jvb))[sfXChainClaimID];
     }
 
-    std::shared_ptr<SLE const>
+    SLE::const_pointer
     claimID(json::Value const& jvb, std::uint64_t seq)
     {
         return env.le(keylet::xChainClaimID(STXChainBridge(jvb), seq));
     }
 
-    std::shared_ptr<SLE const>
+    SLE::const_pointer
     caClaimID(json::Value const& jvb, std::uint64_t seq)
     {
         return env.le(keylet::xChainCreateAccountClaimID(STXChainBridge(jvb), seq));
@@ -245,9 +245,9 @@ struct Balance
     T& env;
     STAmount startAmount;
 
-    Balance(T& env, jtx::Account const& account) : account(account), env(env)
+    Balance(T& env, jtx::Account const& account)
+        : account(account), env(env), startAmount(env.balance(account))
     {
-        startAmount = env.balance(account);
     }
 
     [[nodiscard]] STAmount
@@ -262,12 +262,12 @@ struct Balance
 template <class T>
 struct BalanceTransfer
 {
-    using balance = Balance<T>;
+    using BalanceType = Balance<T>;
 
-    balance from;
-    balance to;
-    balance payer;                        // pays the rewards
-    std::vector<balance> rewardAccounts;  // receives the reward
+    BalanceType from;
+    BalanceType to;
+    BalanceType payer;                        // pays the rewards
+    std::vector<BalanceType> rewardAccounts;  // receives the reward
     XRPAmount txFees;
 
     BalanceTransfer(
@@ -282,7 +282,7 @@ struct BalanceTransfer
         , to(env, toAcct)
         , payer(env, payer)
         , rewardAccounts([&]() {
-            std::vector<balance> r;
+            std::vector<BalanceType> r;
             r.reserve(numPayees);
             for (size_t i = 0; i < numPayees; ++i)
                 r.emplace_back(env, payees[i]);
@@ -306,9 +306,8 @@ struct BalanceTransfer
     [[nodiscard]] bool
     payeesReceived(STAmount const& reward) const
     {
-        return std::all_of(rewardAccounts.begin(), rewardAccounts.end(), [&](balance const& b) {
-            return b.diff() == reward;
-        });
+        return std::ranges::all_of(
+            rewardAccounts, [&](BalanceType const& b) { return b.diff() == reward; });
     }
 
     bool
@@ -371,7 +370,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return XEnv(*this).env.current()->fees().accountReserve(count);
+        return XEnv(*this).env.current()->fees().accountReserve(count, 1);
     }
 
     XRPAmount
@@ -2164,14 +2163,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                     scAttester, jvb, mcAlice, amt, payees[i], true, claimID, dst, signers[i]);
 
                 TER const expectedTER = i < quorum ? tesSUCCESS : TER{tecXCHAIN_NO_CLAIM_ID};
-                if (i + 1 == quorum)
-                {
-                    scEnv.tx(att, Ter(expectedTER)).close();
-                }
-                else
-                {
-                    scEnv.tx(att, Ter(expectedTER)).close();
-                }
+                scEnv.tx(att, Ter(expectedTER)).close();
 
                 if (i + 1 < quorum)
                 {
@@ -3931,17 +3923,15 @@ private:
         [[nodiscard]] bool
         verify() const
         {
-            for (auto const& [acct, state] : accounts)
-            {
-                if (!state.verify(env, acct))
-                    return false;
-            }
-            return true;
+            return std::ranges::all_of(accounts, [&](auto const& entry) {
+                auto const& [acct, state] = entry;
+                return state.verify(env, acct);
+            });
         }
 
         struct BridgeCounters
         {
-            using complete_cb = std::function<void(std::vector<size_t> const& signers)>;
+            using CompleteCb = std::function<void(std::vector<size_t> const& signers)>;
 
             uint32_t claimId{0};
             uint32_t createCount{0};  // for account create. First should be 1
@@ -3950,7 +3940,7 @@ private:
 
             uint32_t numCreateAttnSent{0};  // for current claimCount
             std::vector<size_t> signers;
-            std::vector<complete_cb> createCallbacks;
+            std::vector<CompleteCb> createCallbacks;
         };
 
         struct Claims
@@ -4375,6 +4365,7 @@ public:
     {
         using namespace jtx;
         uint64_t time = 0;
+        // NOLINTNEXTLINE(bugprone-random-generator-seed): fixed seed for reproducible test
         std::mt19937 gen(27);  // Standard mersenne_twister_engine
         std::uniform_int_distribution<uint32_t> distrib(0, 9);
 

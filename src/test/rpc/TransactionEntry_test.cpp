@@ -17,7 +17,6 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -184,7 +183,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
             {
                 json::Value expected;
                 json::Reader().parse(expectedJson, expected);
-                if (RPC::containsError(expected))
+                if (rpc::containsError(expected))
                     Throw<std::runtime_error>("Internal JSONRPC_test error.  Bad test JSON.");
 
                 for (auto memberIt = expected.begin(); memberIt != expected.end(); memberIt++)
@@ -353,7 +352,7 @@ public:
     run() override
     {
         testBadInput();
-        forAllApiVersions(std::bind_front(&TransactionEntry_test::testRequest, this));
+        forAllApiVersions([this](unsigned apiVersion) { testRequest(apiVersion); });
     }
 };
 

@@ -1,11 +1,11 @@
 #include <xrpld/app/ledger/InboundTransactions.h>
 
+#include <xrpld/app/ledger/LedgerNodeHelpers.h>
 #include <xrpld/app/ledger/detail/TransactionAcquire.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
@@ -14,6 +14,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <xrpl.pb.h>
 
@@ -55,22 +56,22 @@ class InboundTransactionsImp : public InboundTransactions
 public:
     InboundTransactionsImp(
         Application& app,
-        beast::insight::Collector::ptr const& collector,
+        beast::insight::Collector::Ptr const& collector,
         std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet,
         std::unique_ptr<PeerSetBuilder> peerSetBuilder)
         : app_(app)
-        , zeroSet_(map_[uint256()])
+        , zeroSet_(map_[UInt256()])
         , gotSet_(std::move(gotSet))
         , peerSetBuilder_(std::move(peerSetBuilder))
         , j_(app_.getJournal("InboundTransactions"))
     {
         zeroSet_.set =
-            std::make_shared<SHAMap>(SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
+            std::make_shared<SHAMap>(SHAMapType::TRANSACTION, UInt256(), app_.getNodeFamily());
         zeroSet_.set->setUnbacked();
     }
 
     TransactionAcquire::pointer
-    getAcquire(uint256 const& hash)
+    getAcquire(UInt256 const& hash)
     {
         {
             std::scoped_lock const sl(lock_);
@@ -84,7 +85,7 @@ public:
     }
 
     std::shared_ptr<SHAMap>
-    getSet(uint256 const& hash, bool acquire) override
+    getSet(UInt256 const& hash, bool acquire) override
     {
         TransactionAcquire::pointer ta;
 
@@ -119,7 +120,8 @@ public:
         return {};
     }
 
-    /** We received a TMLedgerData from a peer.
+    /**
+     * We received a TMLedgerData from a peer.
      */
     void
     gotData(
@@ -136,38 +138,49 @@ public:
 
         if (ta == nullptr)
         {
-            peer->charge(Resource::kFeeUselessData, "ledger_data");
+            peer->charge(resource::kFeeUselessData, "ledger_data useless");
             return;
         }
 
-        std::vector<std::pair<SHAMapNodeID, Slice>> data;
+        std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data;
         data.reserve(packet.nodes().size());
 
-        for (auto const& node : packet.nodes())
+        for (auto const& ledgerNode : packet.nodes())
         {
-            if (!node.has_nodeid() || !node.has_nodedata())
+            auto treeNode = getTreeNode(ledgerNode.nodedata());
+            if (!treeNode)
             {
-                peer->charge(Resource::kFeeMalformedRequest, "ledger_data");
+                JLOG(j_.warn()) << "Got invalid node data for TX set " << hash << " from peer "
+                                << peer->id();
+                peer->charge(resource::kFeeInvalidData, "ledger_node.node_data invalid");
                 return;
             }
 
-            auto const id = deserializeSHAMapNodeID(node.nodeid());
-
-            if (!id)
+            auto const nodeID = getSHAMapNodeID(ledgerNode, *treeNode);
+            if (!nodeID)
             {
-                peer->charge(Resource::kFeeInvalidData, "ledger_data");
+                JLOG(j_.warn()) << "Got invalid node id for TX set " << hash << " from peer "
+                                << peer->id();
+                peer->charge(resource::kFeeInvalidData, "ledger_node.node_id invalid");
                 return;
             }
 
-            data.emplace_back(*id, makeSlice(node.nodedata()));
+            data.emplace_back(*nodeID, std::move(treeNode));
         }
 
-        if (!ta->takeNodes(data, peer).isUseful())
-            peer->charge(Resource::kFeeUselessData, "ledger_data not useful");
+        auto const san = ta->takeNodes(std::move(data), peer);
+        if (san.isInvalid())
+        {
+            peer->charge(resource::kFeeInvalidData, "ledger_data invalid");
+        }
+        else if (!san.isUseful())
+        {
+            peer->charge(resource::kFeeUselessData, "ledger_data useless");
+        }
     }
 
     void
-    giveSet(uint256 const& hash, std::shared_ptr<SHAMap> const& set, bool fromAcquire) override
+    giveSet(UInt256 const& hash, std::shared_ptr<SHAMap> const& set, bool fromAcquire) override
     {
         bool isNew = true;
 
@@ -234,7 +247,7 @@ public:
     }
 
 private:
-    using MapType = hash_map<uint256, InboundTransactionSet>;
+    using MapType = HashMap<UInt256, InboundTransactionSet>;
 
     Application& app_;
 
@@ -261,7 +274,7 @@ InboundTransactions::~InboundTransactions() = default;
 std::unique_ptr<InboundTransactions>
 makeInboundTransactions(
     Application& app,
-    beast::insight::Collector::ptr const& collector,
+    beast::insight::Collector::Ptr const& collector,
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet)
 {
     return std::make_unique<InboundTransactionsImp>(

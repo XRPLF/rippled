@@ -1,18 +1,57 @@
-# Build Linux packages (DEB and RPM) from pre-built binary artifacts.
-# Discovers which configurations to package from linux.json (os entries
-# with "package": true) and fans out one job per entry. Today only
-# linux/amd64 is emitted; the architecture is hardcoded both here
-# (runner) and in generate.py.
+# Build, verify and publish Linux packages from the pre-built xrpld and
+# validator-keys artifacts, in these stages:
+#
+#   - 'package' builds and signs one format per config that carries a "package"
+#     map in linux.json; that map names the container image and the format
+#   - 'test-install-deb' and 'test-install-rpm' call
+#     reusable-package-test-install.yml to install what was built on a range of
+#     distros and run the binaries there, so a package that cannot be installed
+#     never reaches Nexus
+#   - 'publish' uploads with the image's publish_pkg.py, doing a --dry-run
+#     unless 'publish: true'
+#   - 'docker' builds an Ubuntu image from the tested DEB, and one with the
+#     voidstar binary for Antithesis, pushing them to Docker Hub and to the
+#     Antithesis registry only with 'publish: true'
+#
+# Only linux/amd64 is supported; the runner is hardcoded in the jobs below.
 name: Package
 
 on:
   workflow_call:
     inputs:
-      pkg_release:
-        description: "Package release number. Increment when repackaging the same executable."
+      publish:
+        description: "Whether to publish the packages after building them."
+        required: false
+        type: boolean
+        default: false
+      nexus_url:
+        description: "The base URL of the Nexus instance hosting the deb and rpm repositories."
         required: false
         type: string
-        default: "1"
+        default: https://packages-upload.xrplf.org
+
+    secrets:
+      remote_username:
+        description: "The username of a Nexus account with write access to the repositories."
+        required: false
+      remote_password:
+        description: "The password or token for that Nexus account."
+        required: false
+      signing_key:
+        description: "Armoured PGP private key used to sign the RPMs."
+        required: false
+      dockerhub_token:
+        description: "A Docker Hub organization access token for xrplf, with push access to xrplf/xrpld."
+        required: false
+      antithesis_docker_host:
+        description: "The host of the Antithesis container registry, e.g. us-central1-docker.pkg.dev."
+        required: false
+      antithesis_docker_path:
+        description: "The repository path in that registry, the image name excluded."
+        required: false
+      antithesis_docker_credentials:
+        description: "The JSON key of a service account with push access to that repository."
+        required: false
 
 defaults:
   run:
@@ -20,80 +59,290 @@ defaults:
 
 env:
   BUILD_DIR: build
+  PACKAGE_DIR: packages
 
 jobs:
   generate-matrix:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
+      deb_package_names: ${{ steps.generate.outputs.deb_package_names }}
+      rpm_package_names: ${{ steps.generate.outputs.rpm_package_names }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: 3.13
+          python-version: "3.13"
 
       - name: Generate packaging matrix
         id: generate
         working-directory: .github/scripts/strategy-matrix
-        run: |
-          ./generate.py --packaging --config=linux.json >>"${GITHUB_OUTPUT}"
-
-  generate-version:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          sparse-checkout: |
-            .github/actions/generate-version
-            src/libxrpl/protocol/BuildInfo.cpp
-      - name: Generate version
-        id: version
-        uses: ./.github/actions/generate-version
+        run: ./generate.py --packaging >>"${GITHUB_OUTPUT}"
 
   package:
-    needs: [generate-matrix, generate-version]
-    if: ${{ github.event.repository.visibility == 'public' }}
+    needs: [generate-matrix]
+    if: ${{ github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/') }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
-    name: "${{ matrix.artifact_name }}"
+    name: "${{ matrix.xrpld_artifact_name }}"
     permissions:
       contents: read
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
-    container: ${{ format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}-sha-{4}', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version, matrix.os.image_sha) }}
+    container: ${{ matrix.image }}
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Prepare runner
+        uses: XRPLF/actions/prepare-runner@b3e255d74d785d053e4903da8ac90983cd7d9e82
+        with:
+          enable_ccache: false
+
+      - name: Download pre-built xrpld binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ matrix.xrpld_artifact_name }}
+          path: ${{ env.BUILD_DIR }}
+
+      - name: Download pre-built validator-keys binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ matrix.validator_keys_artifact_name }}
+          path: ${{ env.BUILD_DIR }}
+
+      - name: Make binaries executable
+        run: chmod +x "${BUILD_DIR}/xrpld" "${BUILD_DIR}/validator-keys"
+
+      - name: Determine release info
+        id: release_info
+        uses: ./.github/actions/release-info
+
+      - name: Build package
+        env:
+          PACKAGE_TYPE: ${{ matrix.package_type }}
+          PACKAGE_VARIANT: ${{ matrix.package_variant }}
+          PKG_RELEASE: ${{ steps.release_info.outputs.pkg_release }}
+          CHANNEL: ${{ steps.release_info.outputs.channel }}
+        run: |
+          ./package/build_pkg.py \
+              --package-type "${PACKAGE_TYPE}" \
+              --build-dir "${BUILD_DIR}" \
+              --pkg-release "${PKG_RELEASE}" \
+              --variant "${PACKAGE_VARIANT}" \
+              --channel "${CHANNEL}"
+
+      # Before the upload, so the artifact, the tested package and the published
+      # package are the same bytes.
+      - name: Sign RPM
+        if: ${{ inputs.publish && matrix.package_type == 'rpm' }}
+        env:
+          PKG_SIGNING_KEY: ${{ secrets.signing_key }}
+        run: ./package/sign_rpm.py --package-dir "${BUILD_DIR}"
+
+      # Split from the debug symbols, which are an order of magnitude larger, so
+      # that test-install downloads only what it installs. In the globs below the
+      # version follows the name, separated by '_' in a DEB and '-' in an RPM. A
+      # version starts with a digit and a longer name does not, so that one digit
+      # is what tells 'xrpld-3.4.1-...' from 'xrpld-assert-3.4.1-...'.
+      - name: Upload package artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ matrix.xrpld_artifact_name }}-pkg
+          path: |
+            ${{ env.BUILD_DIR }}/debbuild/${{ matrix.package_name }}_[0-9]*.deb
+            ${{ env.BUILD_DIR }}/rpmbuild/RPMS/**/${{ matrix.package_name }}-[0-9]*.rpm
+          if-no-files-found: error
+
+      - name: Upload debug symbol artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ matrix.xrpld_artifact_name }}-pkg-debug
+          path: |
+            ${{ env.BUILD_DIR }}/debbuild/${{ matrix.package_name }}-dbgsym_[0-9]*.deb
+            ${{ env.BUILD_DIR }}/debbuild/${{ matrix.package_name }}-dbgsym_[0-9]*.ddeb
+            ${{ env.BUILD_DIR }}/rpmbuild/RPMS/**/${{ matrix.package_name }}-debuginfo-[0-9]*.rpm
+          if-no-files-found: error
+
+  # One call per format, so a variant packaged for one format is installed for
+  # that format alone. The images are every distro family that format targets,
+  # oldest release first, so both ends of the dependency range the packages
+  # declare are exercised.
+  test-install-deb:
+    needs: [generate-matrix, package]
+    name: install deb
+    uses: ./.github/workflows/reusable-package-test-install.yml
+    with:
+      package_type: deb
+      package_names: ${{ needs.generate-matrix.outputs.deb_package_names }}
+      images: |
+        [
+          "debian:11",
+          "debian:12",
+          "debian:13",
+          "ubuntu:20.04",
+          "ubuntu:22.04",
+          "ubuntu:24.04",
+          "ubuntu:26.04"
+        ]
+
+  test-install-rpm:
+    needs: [generate-matrix, package]
+    name: install rpm
+    uses: ./.github/workflows/reusable-package-test-install.yml
+    with:
+      package_type: rpm
+      package_names: ${{ needs.generate-matrix.outputs.rpm_package_names }}
+      images: |
+        [
+          "almalinux:9",
+          "almalinux:10",
+          "rockylinux/rockylinux:9",
+          "rockylinux/rockylinux:10",
+          "registry.access.redhat.com/ubi9/ubi",
+          "registry.access.redhat.com/ubi10/ubi"
+        ]
+
+  publish:
+    needs: [generate-matrix, package, test-install-deb, test-install-rpm]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+    name: "publish ${{ matrix.xrpld_artifact_name }}${{ !inputs.publish && ' (dry run)' || '' }}"
+    permissions:
+      contents: read
+    runs-on: ["self-hosted", "Linux", "X64", "heavy"]
+    container: ${{ matrix.image }}
     timeout-minutes: 30
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Download pre-built binary
+      - name: Prepare runner
+        uses: XRPLF/actions/prepare-runner@b3e255d74d785d053e4903da8ac90983cd7d9e82
+        with:
+          enable_ccache: false
+
+      # Both artifacts, so the debug symbols are published alongside the package.
+      - name: Download package artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: ${{ matrix.artifact_name }}
-          path: ${{ env.BUILD_DIR }}
+          pattern: ${{ matrix.xrpld_artifact_name }}-pkg*
+          merge-multiple: true
+          path: ${{ env.PACKAGE_DIR }}
 
-      - name: Make binary executable
-        run: chmod +x "${BUILD_DIR}/xrpld"
+      - name: Determine release info
+        id: release_info
+        uses: ./.github/actions/release-info
 
-      - name: Build package
+      - name: Publish package
         env:
-          PKG_VERSION: ${{ needs.generate-version.outputs.version }}
-          PKG_RELEASE: ${{ inputs.pkg_release }}
-        run: ./package/build_pkg.sh
+          CHANNEL: ${{ steps.release_info.outputs.channel }}
+          DRY_RUN_OPTION: ${{ !inputs.publish && '--dry-run' || '' }}
+          NEXUS_URL: ${{ inputs.nexus_url }}
+          NEXUS_USERNAME: ${{ inputs.publish && secrets.remote_username || '' }}
+          NEXUS_PASSWORD: ${{ inputs.publish && secrets.remote_password || '' }}
+        run: |
+          publish_pkg.py \
+              --channel "${CHANNEL}" \
+              --package-dir "${PACKAGE_DIR}" \
+              --nexus-url "${NEXUS_URL}" \
+              ${DRY_RUN_OPTION}
 
-      - name: Upload package artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+  docker:
+    needs: [test-install-deb, test-install-rpm]
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [xrpld, voidstar]
+    name: "docker ${{ matrix.target }}${{ !inputs.publish && ' (dry run)' || '' }}"
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CONTEXT: image-context
+      IMAGE: ${{ matrix.target == 'voidstar' && 'xrpld-voidstar' || 'xrplf/xrpld' }}:${{ github.ref_type == 'tag' && github.ref_name || 'develop' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Determine release info
+        id: release_info
+        uses: ./.github/actions/release-info
+
+      # Docker Hub is public, so it only gets builds whose packages are public:
+      # those of a public codebase, and stable releases.
+      # The Antithesis registry is private, so it gets every build.
+      - name: Decide whether to push
+        env:
+          PUSH: ${{ inputs.publish && (matrix.target == 'voidstar' || github.event.repository.visibility == 'public' || steps.release_info.outputs.channel == 'stable') }}
+        run: echo "PUSH=${PUSH}" | tee -a "${GITHUB_ENV}"
+
+      - name: Download package artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: ${{ matrix.artifact_name }}-pkg-${{ needs.generate-version.outputs.version }}
-          path: |
-            ${{ env.BUILD_DIR }}/debbuild/*.deb
-            ${{ env.BUILD_DIR }}/debbuild/*.ddeb
-            ${{ env.BUILD_DIR }}/rpmbuild/RPMS/**/*.rpm
-          if-no-files-found: error
+          pattern: "*-pkg"
+          merge-multiple: true
+          path: ${{ env.PACKAGE_DIR }}
+
+      - name: Download voidstar binary
+        if: ${{ matrix.target == 'voidstar' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: xrpld-ubuntu-clang-debug-amd64-voidstar
+          path: ${{ env.CONTEXT }}
+
+      - name: Build image
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          mkdir -p "${CONTEXT}"
+          find "${PACKAGE_DIR}" -type f -name 'xrpld_[0-9]*.deb' -exec cp {} "${CONTEXT}/" \;
+          docker build --pull --file package/images/xrpld/Dockerfile --target "${TARGET}" --tag "${IMAGE}" "${CONTEXT}"
+
+      - name: Start the server
+        run: |
+          container="$(docker run --detach "${IMAGE}" --standalone --silent --conf /etc/xrpld/xrpld.cfg)"
+          trap 'docker rm --force "${container}" >/dev/null' EXIT
+
+          for _ in $(seq 30); do
+              output="$(docker exec "${container}" xrpld --conf /etc/xrpld/xrpld.cfg server_info || true)"
+              if [[ "${output}" == *'"status" : "success"'* ]]; then
+                  exit 0
+              fi
+              sleep 2
+          done
+
+          docker logs "${container}"
+          exit 1
+
+      - name: Log in to Docker Hub
+        if: ${{ env.PUSH == 'true' && matrix.target == 'xrpld' }}
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: xrplf
+          password: ${{ secrets.dockerhub_token }}
+
+      - name: Log in to the Antithesis registry
+        if: ${{ env.PUSH == 'true' && matrix.target == 'voidstar' }}
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ secrets.antithesis_docker_host }}
+          username: _json_key
+          password: ${{ secrets.antithesis_docker_credentials }}
+
+      - name: Push image
+        if: ${{ env.PUSH == 'true' }}
+        env:
+          REGISTRY: ${{ matrix.target == 'voidstar' && format('{0}/{1}/', secrets.antithesis_docker_host, secrets.antithesis_docker_path) || '' }}
+        run: |
+          docker tag "${IMAGE}" "${REGISTRY}${IMAGE}"
+          docker push "${REGISTRY}${IMAGE}"

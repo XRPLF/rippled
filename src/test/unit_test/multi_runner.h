@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/unit_test/global_suites.h>
 #include <xrpl/beast/unit_test/runner.h>
+#include <xrpl/beast/unit_test/suite_info.h>
 
 #include <boost/beast/core/static_string.hpp>
 #include <boost/container/static_vector.hpp>
@@ -12,18 +13,22 @@
 
 #include <atomic>
 #include <chrono>
-#include <numeric>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <memory>
+#include <ostream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <thread>
-#include <unordered_set>
 #include <utility>
 
 namespace xrpl {
 
 namespace detail {
 
-using clock_type = std::chrono::steady_clock;
+using ClockType = std::chrono::steady_clock;
 
 struct CaseResults
 {
@@ -42,7 +47,7 @@ struct SuiteResults
     std::size_t cases = 0;
     std::size_t total = 0;
     std::size_t failed = 0;
-    typename clock_type::time_point start = clock_type::now();
+    ClockType::time_point start = ClockType::now();
 
     explicit SuiteResults(std::string name = "") : name(std::move(name))
     {
@@ -54,10 +59,10 @@ struct SuiteResults
 
 struct Results
 {
-    using static_string = boost::beast::static_string<256>;
+    using StaticString = boost::beast::static_string<256>;
     // results may be stored in shared memory. Use `static_string` to ensure
     // pointers from different memory spaces do not co-mingle
-    using run_time = std::pair<static_string, typename clock_type::duration>;
+    using RunTime = std::pair<StaticString, ClockType::duration>;
 
     static constexpr auto kMaxTop = 10;
 
@@ -65,8 +70,8 @@ struct Results
     std::size_t cases = 0;
     std::size_t total = 0;
     std::size_t failed = 0;
-    boost::container::static_vector<run_time, kMaxTop> top;
-    typename clock_type::time_point start = clock_type::now();
+    boost::container::static_vector<RunTime, kMaxTop> top;
+    ClockType::time_point start = ClockType::now();
 
     void
     add(SuiteResults const& r);
@@ -194,7 +199,8 @@ namespace test {
 
 //------------------------------------------------------------------------------
 
-/** Manager for children running unit tests
+/**
+ * Manager for children running unit tests
  */
 class MultiRunnerParent : private detail::MultiRunnerBase</*IsParent*/ true>
 {
@@ -229,7 +235,8 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** A class to run a subset of unit tests
+/**
+ * A class to run a subset of unit tests
  */
 class MultiRunnerChild : public beast::unit_test::Runner,
                          private detail::MultiRunnerBase</*IsParent*/ false>

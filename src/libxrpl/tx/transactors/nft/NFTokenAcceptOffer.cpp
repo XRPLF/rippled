@@ -5,14 +5,17 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -21,7 +24,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <utility>
 
@@ -46,6 +48,13 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 
         if (*bf <= beast::kZero)
             return temMALFORMED;
+
+        if (ctx.rules.enabled(fixCleanup3_4_0))
+        {
+            // We don't allow a non-native currency to use the currency code XRP.
+            if (badAsset() == bf->asset())
+                return temBAD_CURRENCY;
+        }
     }
 
     return tesSUCCESS;
@@ -55,13 +64,13 @@ TER
 NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 {
     auto const checkOffer =
-        [&ctx](std::optional<uint256> id) -> std::pair<std::shared_ptr<const SLE>, TER> {
+        [&ctx](std::optional<UInt256> id) -> std::pair<SLE::const_pointer, TER> {
         if (id)
         {
             if (id->isZero())
                 return {nullptr, tecOBJECT_NOT_FOUND};
 
-            auto offerSLE = ctx.view.read(keylet::nftoffer(*id));
+            auto offerSLE = ctx.view.read(keylet::nftokenOffer(*id));
 
             if (!offerSLE)
                 return {nullptr, tecOBJECT_NOT_FOUND};
@@ -308,7 +317,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         if (ctx.view.rules().enabled(fixEnforceNFTokenTrustline) &&
             (nft::getFlags(tokenID) & nft::kFlagCreateTrustLines) == 0 &&
             nftMinter != amount.getIssuer() &&
-            !ctx.view.read(keylet::line(nftMinter, amount.get<Issue>())))
+            !ctx.view.read(keylet::trustLine(nftMinter, amount.get<Issue>())))
             return tecNO_LINE;
 
         // Check that the issuer is allowed to receive IOUs.
@@ -356,7 +365,7 @@ TER
 NFTokenAcceptOffer::transferNFToken(
     AccountID const& buyer,
     AccountID const& seller,
-    uint256 const& nftokenID)
+    UInt256 const& nftokenID)
 {
     auto tokenAndPage = nft::findTokenAndPage(view(), seller, nftokenID);
 
@@ -375,35 +384,28 @@ NFTokenAcceptOffer::transferNFToken(
 
     auto const insertRet = nft::insertToken(view(), buyer, std::move(tokenAndPage->token));
 
-    // if fixNFTokenReserve is enabled, check if the buyer has sufficient
-    // reserve to own a new object, if their OwnerCount changed.
-    //
     // There was an issue where the buyer accepts a sell offer, the ledger
     // didn't check if the buyer has enough reserve, meaning that buyer can get
     // NFTs free of reserve.
-    if (view().rules().enabled(fixNFTokenReserve))
-    {
-        // To check if there is sufficient reserve, we cannot use preFeeBalance_
-        // because NFT is sold for a price. So we must use the balance after
-        // the deduction of the potential offer price. A small caveat here is
-        // that the balance has already deducted the transaction fee, meaning
-        // that the reserve requirement is a few drops higher.
-        auto const buyerBalance = sleBuyer->getFieldAmount(sfBalance);
+    // To check if there is sufficient reserve, we cannot use preFeeBalance_
+    // because NFT is sold for a price. So we must use the balance after
+    // the deduction of the potential offer price. A small caveat here is
+    // that the balance has already deducted the transaction fee, meaning
+    // that the reserve requirement is a few drops higher.
+    auto const buyerBalance = sleBuyer->getFieldAmount(sfBalance);
 
-        auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
-        if (buyerOwnerCountAfter > buyerOwnerCountBefore)
-        {
-            if (auto const reserve = view().fees().accountReserve(buyerOwnerCountAfter);
-                buyerBalance < reserve)
-                return tecINSUFFICIENT_RESERVE;
-        }
+    auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
+    if (buyerOwnerCountAfter > buyerOwnerCountBefore)
+    {
+        if (buyerBalance < accountReserve(view(), sleBuyer, j_))
+            return tecINSUFFICIENT_RESERVE;
     }
 
     return insertRet;
 }
 
 TER
-NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
+NFTokenAcceptOffer::acceptOffer(SLE::Ref offer)
 {
     bool const isSell = offer->isFlag(lsfSellNFToken);
     AccountID const owner = (*offer)[sfOwner];
@@ -440,10 +442,10 @@ NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
 TER
 NFTokenAcceptOffer::doApply()
 {
-    auto const loadToken = [this](std::optional<uint256> const& id) {
-        std::shared_ptr<SLE> sle;
+    auto const loadToken = [this](std::optional<UInt256> const& id) {
+        SLE::pointer sle;
         if (id)
-            sle = view().peek(keylet::nftoffer(*id));
+            sle = view().peek(keylet::nftokenOffer(*id));
         return sle;
     };
 
@@ -456,8 +458,7 @@ NFTokenAcceptOffer::doApply()
     {
         bool foundExpired = false;
 
-        auto const deleteOfferIfExpired =
-            [this, &foundExpired](std::shared_ptr<SLE> const& offer) -> TER {
+        auto const deleteOfferIfExpired = [this, &foundExpired](SLE::Ref offer) -> TER {
             if (offer && hasExpired(view(), (*offer)[~sfExpiration]))
             {
                 JLOG(j_.trace()) << "Offer is expired, deleting: " << offer->key();
@@ -569,10 +570,7 @@ NFTokenAcceptOffer::doApply()
 }
 
 void
-NFTokenAcceptOffer::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+NFTokenAcceptOffer::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

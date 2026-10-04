@@ -33,7 +33,7 @@ public:
      * @brief Construct a MPToken ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit MPToken(std::shared_ptr<SLE const> sle)
+    explicit MPToken(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -147,6 +147,222 @@ public:
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
     }
+
+    /**
+     * @brief Get sfConfidentialBalanceInbox (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getConfidentialBalanceInbox() const
+    {
+        if (hasConfidentialBalanceInbox())
+            return this->sle_->at(sfConfidentialBalanceInbox);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfConfidentialBalanceInbox is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasConfidentialBalanceInbox() const
+    {
+        return this->sle_->isFieldPresent(sfConfidentialBalanceInbox);
+    }
+
+    /**
+     * @brief Get sfConfidentialBalanceSpending (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getConfidentialBalanceSpending() const
+    {
+        if (hasConfidentialBalanceSpending())
+            return this->sle_->at(sfConfidentialBalanceSpending);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfConfidentialBalanceSpending is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasConfidentialBalanceSpending() const
+    {
+        return this->sle_->isFieldPresent(sfConfidentialBalanceSpending);
+    }
+
+    /**
+     * @brief Get sfConfidentialBalanceVersion (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getConfidentialBalanceVersion() const
+    {
+        if (hasConfidentialBalanceVersion())
+            return this->sle_->at(sfConfidentialBalanceVersion);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfConfidentialBalanceVersion is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasConfidentialBalanceVersion() const
+    {
+        return this->sle_->isFieldPresent(sfConfidentialBalanceVersion);
+    }
+
+    /**
+     * @brief Get sfIssuerEncryptedBalance (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getIssuerEncryptedBalance() const
+    {
+        if (hasIssuerEncryptedBalance())
+            return this->sle_->at(sfIssuerEncryptedBalance);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfIssuerEncryptedBalance is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasIssuerEncryptedBalance() const
+    {
+        return this->sle_->isFieldPresent(sfIssuerEncryptedBalance);
+    }
+
+    /**
+     * @brief Get sfAuditorEncryptedBalance (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getAuditorEncryptedBalance() const
+    {
+        if (hasAuditorEncryptedBalance())
+            return this->sle_->at(sfAuditorEncryptedBalance);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAuditorEncryptedBalance is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAuditorEncryptedBalance() const
+    {
+        return this->sle_->isFieldPresent(sfAuditorEncryptedBalance);
+    }
+
+    /**
+     * @brief Get sfIssuerKeyMirrorEpoch (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getIssuerKeyMirrorEpoch() const
+    {
+        if (hasIssuerKeyMirrorEpoch())
+            return this->sle_->at(sfIssuerKeyMirrorEpoch);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfIssuerKeyMirrorEpoch is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasIssuerKeyMirrorEpoch() const
+    {
+        return this->sle_->isFieldPresent(sfIssuerKeyMirrorEpoch);
+    }
+
+    /**
+     * @brief Get sfAuditorKeyMirrorEpoch (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getAuditorKeyMirrorEpoch() const
+    {
+        if (hasAuditorKeyMirrorEpoch())
+            return this->sle_->at(sfAuditorKeyMirrorEpoch);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAuditorKeyMirrorEpoch is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAuditorKeyMirrorEpoch() const
+    {
+        return this->sle_->isFieldPresent(sfAuditorKeyMirrorEpoch);
+    }
+
+    /**
+     * @brief Get sfHolderEncryptionKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getHolderEncryptionKey() const
+    {
+        if (hasHolderEncryptionKey())
+            return this->sle_->at(sfHolderEncryptionKey);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfHolderEncryptionKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasHolderEncryptionKey() const
+    {
+        return this->sle_->isFieldPresent(sfHolderEncryptionKey);
+    }
+
+    /**
+     * @brief Get sfRecoveryKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getRecoveryKey() const
+    {
+        if (hasRecoveryKey())
+            return this->sle_->at(sfRecoveryKey);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfRecoveryKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasRecoveryKey() const
+    {
+        return this->sle_->isFieldPresent(sfRecoveryKey);
+    }
 };
 
 /**
@@ -182,7 +398,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    MPTokenBuilder(std::shared_ptr<SLE const> sle)
+    MPTokenBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltMPTOKEN)
         {
@@ -191,7 +407,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfAccount (SoeRequired)
@@ -271,12 +489,111 @@ public:
     }
 
     /**
+     * @brief Set sfConfidentialBalanceInbox (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setConfidentialBalanceInbox(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfConfidentialBalanceInbox] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfConfidentialBalanceSpending (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setConfidentialBalanceSpending(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfConfidentialBalanceSpending] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfConfidentialBalanceVersion (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setConfidentialBalanceVersion(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfConfidentialBalanceVersion] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfIssuerEncryptedBalance (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setIssuerEncryptedBalance(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfIssuerEncryptedBalance] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAuditorEncryptedBalance (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setAuditorEncryptedBalance(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfAuditorEncryptedBalance] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfIssuerKeyMirrorEpoch (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setIssuerKeyMirrorEpoch(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfIssuerKeyMirrorEpoch] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAuditorKeyMirrorEpoch (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setAuditorKeyMirrorEpoch(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfAuditorKeyMirrorEpoch] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfHolderEncryptionKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setHolderEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfHolderEncryptionKey] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfRecoveryKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setRecoveryKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfRecoveryKey] = value;
+        return *this;
+    }
+
+    /**
      * @brief Build and return the completed MPToken wrapper.
      * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     MPToken
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return MPToken{std::make_shared<SLE>(std::move(object_), index)};
     }

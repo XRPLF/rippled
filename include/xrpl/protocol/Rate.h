@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/STAmount.h>
 
 #include <boost/operators.hpp>
@@ -10,12 +10,13 @@
 
 namespace xrpl {
 
-/** Represents a transfer rate
-
-    Transfer rates are specified as fractions of 1 billion.
-    For example, a transfer rate of 1% is represented as
-    1,010,000,000.
-*/
+/**
+ * Represents a transfer rate
+ *
+ * Transfer rates are specified as fractions of 1 billion.
+ * For example, a transfer rate of 1% is represented as
+ * 1,010,000,000.
+ */
 struct Rate : private boost::totally_ordered<Rate>
 {
     std::uint32_t value;
@@ -65,13 +66,17 @@ STAmount
 divideRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool roundUp);
 
 namespace nft {
-/** Given a transfer fee (in basis points) convert it to a transfer rate. */
+/**
+ * Given a transfer fee (in basis points) convert it to a transfer rate.
+ */
 Rate
 transferFeeAsRate(std::uint16_t fee);
 
 }  // namespace nft
 
-/** A transfer rate signifying a 1:1 exchange */
+/**
+ * A transfer rate signifying a 1:1 exchange
+ */
 extern Rate const kParityRate;
 
 }  // namespace xrpl

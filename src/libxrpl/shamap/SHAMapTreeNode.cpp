@@ -18,6 +18,7 @@
 #include <xrpl/shamap/SHAMapTxPlusMetaLeafNode.h>
 
 #include <cstdint>
+#include <format>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -25,14 +26,13 @@
 
 namespace xrpl {
 
-intr_ptr::SharedPtr<SHAMapTreeNode>
+SHAMapTreeNodePtr
 SHAMapTreeNode::makeTransaction(Slice data, SHAMapHash const& hash, bool hashValid)
 {
     if (data.size() < kMinShaMapItemBytes)
     {
-        Throw<std::runtime_error>(
-            "Short TXN node: " + std::to_string(data.size()) + " bytes (minimum " +
-            std::to_string(kMinShaMapItemBytes) + " required)");
+        Throw<std::runtime_error>(std::format(
+            "Short TXN node: {} bytes (minimum {} required)", data.size(), kMinShaMapItemBytes));
     }
 
     auto item = makeShamapitem(sha512Half(HashPrefix::TransactionId, data), data);
@@ -43,36 +43,34 @@ SHAMapTreeNode::makeTransaction(Slice data, SHAMapHash const& hash, bool hashVal
     return intr_ptr::makeShared<SHAMapTxLeafNode>(std::move(item), 0);
 }
 
-intr_ptr::SharedPtr<SHAMapTreeNode>
+SHAMapTreeNodePtr
 SHAMapTreeNode::makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool hashValid)
 {
     Serializer s(data.data(), data.size());
 
-    uint256 tag;
+    UInt256 tag;
 
     if (s.size() < tag.kBytes)
     {
-        Throw<std::runtime_error>(
-            "Short TXN+MD node: " + std::to_string(s.size()) + " bytes (minimum " +
-            std::to_string(tag.kBytes) + " required for tag)");
+        Throw<std::runtime_error>(std::format(
+            "Short TXN+MD node: {} bytes (minimum {} required for tag)", s.size(), tag.kBytes));
     }
 
     // FIXME: improve this interface so that the above check isn't needed
     if (!s.getBitString(tag, s.size() - tag.kBytes))
     {
-        Throw<std::out_of_range>(
-            "Short TXN+MD node: failed to read tag at offset " +
-            std::to_string(s.size() - tag.kBytes));
+        Throw<std::out_of_range>(std::format(
+            "Short TXN+MD node: failed to read tag at offset {}", s.size() - tag.kBytes));
     }
 
     s.chop(tag.kBytes);
 
     if (s.size() < kMinShaMapItemBytes)
     {
-        Throw<std::runtime_error>(
-            "Short TXN+MD node: " + std::to_string(s.size()) +
-            " bytes after tag removal (minimum " + std::to_string(kMinShaMapItemBytes) +
-            " required)");
+        Throw<std::runtime_error>(std::format(
+            "Short TXN+MD node: {} bytes after tag removal (minimum {} required)",
+            s.size(),
+            kMinShaMapItemBytes));
     }
 
     auto item = makeShamapitem(tag, s.slice());
@@ -83,25 +81,24 @@ SHAMapTreeNode::makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool
     return intr_ptr::makeShared<SHAMapTxPlusMetaLeafNode>(std::move(item), 0);
 }
 
-intr_ptr::SharedPtr<SHAMapTreeNode>
+SHAMapTreeNodePtr
 SHAMapTreeNode::makeAccountState(Slice data, SHAMapHash const& hash, bool hashValid)
 {
     Serializer s(data.data(), data.size());
 
-    uint256 tag;
+    UInt256 tag;
 
     if (s.size() < tag.kBytes)
     {
-        Throw<std::runtime_error>(
-            "Short AS node: " + std::to_string(s.size()) + " bytes (minimum " +
-            std::to_string(tag.kBytes) + " required for tag)");
+        Throw<std::runtime_error>(std::format(
+            "Short AS node: {} bytes (minimum {} required for tag)", s.size(), tag.kBytes));
     }
 
     // FIXME: improve this interface so that the above check isn't needed
     if (!s.getBitString(tag, s.size() - tag.kBytes))
     {
         Throw<std::out_of_range>(
-            "Short AS node: failed to read tag at offset " + std::to_string(s.size() - tag.kBytes));
+            std::format("Short AS node: failed to read tag at offset {}", s.size() - tag.kBytes));
     }
 
     s.chop(tag.kBytes);
@@ -111,9 +108,10 @@ SHAMapTreeNode::makeAccountState(Slice data, SHAMapHash const& hash, bool hashVa
 
     if (s.size() < kMinShaMapItemBytes)
     {
-        Throw<std::runtime_error>(
-            "Short AS node: " + std::to_string(s.size()) + " bytes after tag removal (minimum " +
-            std::to_string(kMinShaMapItemBytes) + " required)");
+        Throw<std::runtime_error>(std::format(
+            "Short AS node: {} bytes after tag removal (minimum {} required)",
+            s.size(),
+            kMinShaMapItemBytes));
     }
 
     auto item = makeShamapitem(tag, s.slice());
@@ -124,7 +122,7 @@ SHAMapTreeNode::makeAccountState(Slice data, SHAMapHash const& hash, bool hashVa
     return intr_ptr::makeShared<SHAMapAccountStateLeafNode>(std::move(item), 0);
 }
 
-intr_ptr::SharedPtr<SHAMapTreeNode>
+SHAMapTreeNodePtr
 SHAMapTreeNode::makeFromWire(Slice rawNode)
 {
     if (rawNode.empty())
@@ -152,10 +150,10 @@ SHAMapTreeNode::makeFromWire(Slice rawNode)
     if (type == kWireTypeTransactionWithMeta)
         return makeTransactionWithMeta(rawNode, hash, hashValid);
 
-    Throw<std::runtime_error>("wire: Unknown type (" + std::to_string(type) + ")");
+    Throw<std::runtime_error>(std::format("wire: Unknown type ({})", type));
 }
 
-intr_ptr::SharedPtr<SHAMapTreeNode>
+SHAMapTreeNodePtr
 SHAMapTreeNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
 {
     if (rawNode.size() < 4)
@@ -183,9 +181,8 @@ SHAMapTreeNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
     if (type == HashPrefix::TxNode)
         return makeTransactionWithMeta(rawNode, hash, hashValid);
 
-    Throw<std::runtime_error>(
-        "prefix: unknown type (" +
-        std::to_string(safeCast<std::underlying_type_t<HashPrefix>>(type)) + ")");
+    Throw<std::runtime_error>(std::format(
+        "prefix: unknown type ({})", safeCast<std::underlying_type_t<HashPrefix>>(type)));
 }
 
 std::string

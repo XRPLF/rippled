@@ -1,37 +1,44 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstddef>
+#include <iterator>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
 class STArray final : public STBase, public CountedObject<STArray>
 {
 private:
-    using list_type = std::vector<STObject>;
+    using ListType = std::vector<STObject>;
 
-    list_type v_;
+    ListType v_;
 
 public:
     using value_type = STObject;
-    using size_type = list_type::size_type;
-    using iterator = list_type::iterator;
-    using const_iterator = list_type::const_iterator;
+    using size_type = ListType::size_type;
+    using iterator = ListType::iterator;
+    using const_iterator = ListType::const_iterator;
 
     STArray() = default;
     STArray(STArray const&) = default;
 
-    template <
-        class Iter,
-        class = std::enable_if_t<
-            std::is_convertible_v<typename std::iterator_traits<Iter>::reference, STObject>>>
-    explicit STArray(Iter first, Iter last);
+    template <class Iter>
+    explicit STArray(Iter first, Iter last)
+        requires(std::is_convertible_v<typename std::iterator_traits<Iter>::reference, STObject>);
 
-    template <
-        class Iter,
-        class = std::enable_if_t<
-            std::is_convertible_v<typename std::iterator_traits<Iter>::reference, STObject>>>
-    STArray(SField const& f, Iter first, Iter last);
+    template <class Iter>
+    STArray(SField const& f, Iter first, Iter last)
+        requires(std::is_convertible_v<typename std::iterator_traits<Iter>::reference, STObject>);
 
     STArray&
     operator=(STArray const&) = default;
@@ -126,9 +133,6 @@ public:
     bool
     operator==(STArray const& s) const;
 
-    bool
-    operator!=(STArray const& s) const;
-
     iterator
     erase(iterator pos);
 
@@ -159,13 +163,17 @@ private:
     friend class detail::STVar;
 };
 
-template <class Iter, class>
-STArray::STArray(Iter first, Iter last) : v_(first, last)
+template <class Iter>
+STArray::STArray(Iter first, Iter last)
+    requires(std::is_convertible_v<typename std::iterator_traits<Iter>::reference, STObject>)
+    : v_(first, last)
 {
 }
 
-template <class Iter, class>
-STArray::STArray(SField const& f, Iter first, Iter last) : STBase(f), v_(first, last)
+template <class Iter>
+STArray::STArray(SField const& f, Iter first, Iter last)
+    requires(std::is_convertible_v<typename std::iterator_traits<Iter>::reference, STObject>)
+    : STBase(f), v_(first, last)
 {
 }
 
@@ -270,12 +278,6 @@ inline bool
 STArray::operator==(STArray const& s) const
 {
     return v_ == s.v_;
-}
-
-inline bool
-STArray::operator!=(STArray const& s) const
-{
-    return v_ != s.v_;
 }
 
 inline STArray::iterator

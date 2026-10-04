@@ -14,8 +14,6 @@
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
-
 namespace xrpl {
 
 NotTEC
@@ -62,17 +60,14 @@ NFTokenModify::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenModify::doApply()
 {
-    uint256 const nftokenID = ctx_.tx[sfNFTokenID];
+    UInt256 const nftokenID = ctx_.tx[sfNFTokenID];
     AccountID const owner = ctx_.tx[ctx_.tx.isFieldPresent(sfOwner) ? sfOwner : sfAccount];
 
     return nft::changeTokenURI(view(), owner, nftokenID, ctx_.tx[~sfURI]);
 }
 
 void
-NFTokenModify::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+NFTokenModify::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -10,9 +10,8 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream_base.hpp>
-#include <boost/format/free_funcs.hpp>
 
-#include <functional>
+#include <format>
 #include <stdexcept>
 #include <string>
 
@@ -25,9 +24,9 @@ WorkSSL::WorkSSL(
     boost::asio::io_context& ios,
     beast::Journal j,
     Config const& config,
-    endpoint_type const& lastEndpoint,
+    EndpointType const& lastEndpoint,
     bool lastStatus,
-    callback_type cb)
+    CallbackType cb)
     : WorkBase(host, path, port, ios, lastEndpoint, lastStatus, cb)
     , context_(
           config.sslVerifyDir,
@@ -39,11 +38,11 @@ WorkSSL::WorkSSL(
 {
     auto ec = context_.preConnectVerify(stream_, host_);
     if (ec)
-        Throw<std::runtime_error>(boost::str(boost::format("preConnectVerify: %s") % ec.message()));
+        Throw<std::runtime_error>(std::format("preConnectVerify: {}", ec.message()));
 }
 
 void
-WorkSSL::onConnect(error_code const& ec)
+WorkSSL::onConnect(ErrorCode const& ec)
 {
     auto err = ec ? ec : context_.postConnectVerify(stream_, host_);
     if (err)
@@ -55,11 +54,11 @@ WorkSSL::onConnect(error_code const& ec)
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
         boost::asio::bind_executor(
-            strand_, std::bind(&WorkSSL::onHandshake, shared_from_this(), std::placeholders::_1)));
+            strand_, [self = shared_from_this()](ErrorCode const& ec) { self->onHandshake(ec); }));
 }
 
 void
-WorkSSL::onHandshake(error_code const& ec)
+WorkSSL::onHandshake(ErrorCode const& ec)
 {
     if (ec)
     {

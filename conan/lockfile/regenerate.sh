@@ -14,7 +14,7 @@ export CONAN_HOME="$TEMP_DIR"
 # Ensure that the xrplf remote is the first to be consulted, so any recipes we
 # patched are used. We also add it there to not created huge diff when the
 # official Conan Center Index is updated.
-conan remote add --force --index 0 xrplf https://conan.ripplex.io
+conan remote add --force --index 0 xrplf https://conan.xrplf.org/repository/conan/
 
 # Delete any existing lockfile.
 rm -f conan.lock

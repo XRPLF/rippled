@@ -9,8 +9,10 @@
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstdint>
+#include <exception>
 #include <initializer_list>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -101,6 +103,39 @@ struct STNumber_test : public beast::unit_test::Suite
             BEAST_EXPECT(numberFromJson(sfNumber, "-0.000e6") == STNumber(sfNumber, 0));
 
             {
+                auto const parseNumber = [](std::string const& boundary) {
+                    return numberFromJson(sfNumber, boundary);
+                };
+                auto const expectParseThrows = [this, &parseNumber](std::string const& boundary) {
+                    try
+                    {
+                        parseNumber(boundary);
+                        fail();
+                    }
+                    catch (std::exception const& e)
+                    {
+                        BEAST_EXPECT(std::string(e.what()) == "number cannot be represented");
+                    }
+                };
+
+                // Small rejects this; large scales parse it as 9223372036854775800e-1.
+                auto constexpr positiveBoundary = "922337203685477580";
+                auto constexpr negativeBoundary = "-922337203685477580";
+                if (Number::getMantissaScale() == MantissaRange::MantissaScale::Small)
+                {
+                    expectParseThrows(positiveBoundary);
+                    expectParseThrows(negativeBoundary);
+                }
+                else
+                {
+                    BEAST_EXPECT(
+                        parseNumber(positiveBoundary) ==
+                        STNumber(sfNumber, Number{922'337'203'685'477'580, 0}));
+                    BEAST_EXPECT(
+                        parseNumber(negativeBoundary) ==
+                        STNumber(sfNumber, Number{-922'337'203'685'477'580, 0}));
+                }
+
                 NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
                 // maxint64 9,223,372,036,854,775,807
                 auto const maxInt = std::to_string(std::numeric_limits<std::int64_t>::max());
@@ -108,23 +143,19 @@ struct STNumber_test : public beast::unit_test::Suite
                 auto const minInt = std::to_string(std::numeric_limits<std::int64_t>::min());
                 if (Number::getMantissaScale() == MantissaRange::MantissaScale::Small)
                 {
-                    BEAST_EXPECT(
-                        numberFromJson(sfNumber, maxInt) ==
-                        STNumber(sfNumber, Number{9'223'372'036'854'775, 3}));
-                    BEAST_EXPECT(
-                        numberFromJson(sfNumber, minInt) ==
-                        STNumber(sfNumber, Number{-9'223'372'036'854'775, 3}));
+                    // min/maxInt can't be exactly represented with the small mantissa, so they
+                    // don't parse, and are expected to throw.
+                    expectParseThrows(maxInt);
+                    expectParseThrows(minInt);
                 }
                 else
                 {
+                    // with large mantissas, maxint is fine
                     BEAST_EXPECT(
-                        numberFromJson(sfNumber, maxInt) ==
+                        parseNumber(maxInt) ==
                         STNumber(sfNumber, Number{9'223'372'036'854'775'807, 0}));
-                    BEAST_EXPECT(
-                        numberFromJson(sfNumber, minInt) ==
-                        STNumber(
-                            sfNumber,
-                            Number{true, 9'223'372'036'854'775'808ULL, 0, Number::Normalized{}}));
+                    // but minint's mantissa is > kMaxRep, and so rounds, and thus can't be parsed
+                    expectParseThrows(minInt);
                 }
             }
 
@@ -146,61 +177,32 @@ struct STNumber_test : public beast::unit_test::Suite
                 numberFromJson(sfNumber, std::to_string(kUMax)) ==
                 STNumber(sfNumber, Number(kUMax, 0)));
 
+            auto const expectJsonThrows = [this](
+                                              json::Value const& num, std::string const& expected) {
+                try
+                {
+                    numberFromJson(sfNumber, num);
+                    fail();
+                }
+                catch (std::exception const& e)
+                {
+                    std::ostringstream out;
+                    out << "Json: " << num.asString() << " got exception: " << e.what()
+                        << ", expected: " << expected;
+                    BEAST_EXPECTS(std::string(e.what()) == expected, out.str());
+                }
+            };
+
+            // Obvious overflows tested here
+            expectJsonThrows("1e2000000", "Number::normalize 2");
+            expectJsonThrows("1e2000000000", "Number::normalize 2");
+
             // Obvious non-numbers tested here
-            try
-            {
-                auto _ = numberFromJson(sfNumber, "");
-                BEAST_EXPECT(false);
-            }
-            catch (std::runtime_error const& e)
-            {
-                std::string const expected = "'' is not a number";
-                BEAST_EXPECT(e.what() == expected);
-            }
-
-            try
-            {
-                auto _ = numberFromJson(sfNumber, "e");
-                BEAST_EXPECT(false);
-            }
-            catch (std::runtime_error const& e)
-            {
-                std::string const expected = "'e' is not a number";
-                BEAST_EXPECT(e.what() == expected);
-            }
-
-            try
-            {
-                auto _ = numberFromJson(sfNumber, "1e");
-                BEAST_EXPECT(false);
-            }
-            catch (std::runtime_error const& e)
-            {
-                std::string const expected = "'1e' is not a number";
-                BEAST_EXPECT(e.what() == expected);
-            }
-
-            try
-            {
-                auto _ = numberFromJson(sfNumber, "e2");
-                BEAST_EXPECT(false);
-            }
-            catch (std::runtime_error const& e)
-            {
-                std::string const expected = "'e2' is not a number";
-                BEAST_EXPECT(e.what() == expected);
-            }
-
-            try
-            {
-                auto _ = numberFromJson(sfNumber, json::Value());
-                BEAST_EXPECT(false);
-            }
-            catch (std::runtime_error const& e)
-            {
-                std::string const expected = "not a number";
-                BEAST_EXPECT(e.what() == expected);
-            }
+            expectJsonThrows("", "'' is not a number");
+            expectJsonThrows("e", "'e' is not a number");
+            expectJsonThrows("1e", "'1e' is not a number");
+            expectJsonThrows("e2", "'e2' is not a number");
+            expectJsonThrows(json::Value(), "not a number");
 
             try
             {

@@ -14,11 +14,9 @@
 include_guard(GLOBAL)
 include(CompilationEnv)
 
-if(NOT DEFINED SANITIZERS)
-    set(SANITIZERS_ENABLED FALSE)
+if(NOT SANITIZERS_ENABLED)
     return()
 endif()
-set(SANITIZERS_ENABLED TRUE)
 
 message(STATUS "=== Configuring Sanitizers ===")
 message(STATUS "  SANITIZERS: ${SANITIZERS}")

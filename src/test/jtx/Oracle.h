@@ -1,8 +1,25 @@
 #pragma once
 
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/ter.h>
 
-#include <date/date.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+
+#include <chrono>
+#include <cstdint>
+#include <optional>
+#include <ostream>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <variant>
+#include <vector>
 
 namespace xrpl::test::jtx::oracle {
 
@@ -85,7 +102,8 @@ struct RemoveArg
 // validation {close-maxLastUpdateTimeDelta,close+maxLastUpdateTimeDelta}.
 static constexpr std::chrono::seconds kTestStartTime = kEpochOffset + std::chrono::seconds(10'000);
 
-/** Oracle class facilitates unit-testing of the Price Oracle feature.
+/**
+ * Oracle class facilitates unit-testing of the Price Oracle feature.
  * It defines functions to create, update, and delete the Oracle object,
  * to query for various states, and to call APIs.
  */
