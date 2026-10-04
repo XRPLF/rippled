@@ -122,6 +122,7 @@ words:
   - envrc
   - exceptioned
   - EXPECT_STREQ
+  - exfiltration
   - Falco
   - fcontext
   - finalizers
@@ -142,6 +143,7 @@ words:
   - Hinnant
   - hotwallet
   - hicpp
+  - htpasswd
   - hwaddress
   - hwrap
   - ifndef

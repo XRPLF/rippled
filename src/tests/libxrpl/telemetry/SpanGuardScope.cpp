@@ -13,9 +13,9 @@
 //    SpanGuard; destroying it while a different store is active trips an
 //    owner-store assertion.
 //  - A category that is off gets a null guard from SpanGuard::span,
-//    SpanGuard::freshRoot, the ScopedSpanGuard constructor and
-//    ScopedSpanGuard::freshRoot, and the methods called on a null
-//    ScopedSpanGuard are safe no-ops.
+//    SpanGuard::freshRoot, both SpanGuard::hashSpan overloads, the
+//    ScopedSpanGuard constructor and ScopedSpanGuard::freshRoot, and the
+//    methods called on a null ScopedSpanGuard are safe no-ops.
 //  - DeterministicIdGenerator (installed by the test TracerProvider) mints a
 //    caller-pinned trace_id for a forced-root span. PendingTraceId pins the id
 //    for one root span; an ambient child under a live parent never adopts it.
@@ -51,6 +51,7 @@
 #include <opentelemetry/trace/span_id.h>
 #include <opentelemetry/trace/span_metadata.h>
 #include <opentelemetry/trace/span_startoptions.h>
+#include <opentelemetry/trace/trace_flags.h>
 #include <opentelemetry/trace/trace_id.h>
 #include <opentelemetry/trace/tracer.h>
 
@@ -584,10 +585,12 @@ TEST_F(SpanGuardScopeTest, scoped_guard_survives_localvalue_store_swap)
 }
 
 // A category that is off gets a null guard from SpanGuard::span,
-// SpanGuard::freshRoot, the ScopedSpanGuard constructor and
-// ScopedSpanGuard::freshRoot, while a category that is on keeps exporting.
-// Each category is off once, with the next one as the control, so each is also
-// seen exporting.
+// SpanGuard::freshRoot, both SpanGuard::hashSpan overloads, the
+// ScopedSpanGuard constructor and ScopedSpanGuard::freshRoot, while a category
+// that is on keeps exporting. Each category is off once, with the next one as
+// the control, so each is also seen exporting. In the control category the two
+// hashSpan calls, with the same hash, parent span id and flags, return live
+// guards, so in the off category only the category check makes them null.
 TEST_F(SpanGuardScopeTest, disabled_category_gets_null_guard_from_span_factories)
 {
     constexpr std::array cases{
@@ -598,6 +601,11 @@ TEST_F(SpanGuardScopeTest, disabled_category_gets_null_guard_from_span_factories
         std::pair{TraceCategory::Ledger, TraceCategory::Rpc},
     };
 
+    auto const h = makeTraceIdBytes();
+    constexpr std::array<std::uint8_t, opentelemetry::trace::SpanId::kSize> parentSpanId{
+        1, 2, 3, 4, 5, 6, 7, 8};
+    constexpr auto sampled = opentelemetry::trace::TraceFlags::kIsSampled;
+
     for (auto const& [off, on] : cases)
     {
         SCOPED_TRACE(::testing::Message() << "category off: " << std::to_underlying(off));
@@ -605,21 +613,46 @@ TEST_F(SpanGuardScopeTest, disabled_category_gets_null_guard_from_span_factories
         {
             auto const plain = SpanGuard::span(off, "off", "span");
             auto const root = SpanGuard::freshRoot(off, "off", "fresh_root");
+            auto const hashRoot = SpanGuard::hashSpan(off, "off.hash_root", h.data(), h.size());
+            auto const hashChild = SpanGuard::hashSpan(
+                off,
+                "off.hash_child",
+                h.data(),
+                h.size(),
+                parentSpanId.data(),
+                parentSpanId.size(),
+                sampled);
             ScopedSpanGuard const scoped(off, "off", "scoped");
             auto const scopedRoot = ScopedSpanGuard::freshRoot(off, "off", "scoped_fresh_root");
             EXPECT_FALSE(static_cast<bool>(plain));
             EXPECT_FALSE(static_cast<bool>(root));
+            EXPECT_FALSE(static_cast<bool>(hashRoot));
+            EXPECT_FALSE(static_cast<bool>(hashChild));
             EXPECT_FALSE(static_cast<bool>(scoped));
             EXPECT_FALSE(static_cast<bool>(scopedRoot));
 
             auto const control = SpanGuard::span(on, "control", "span");
+            auto const controlHashRoot =
+                SpanGuard::hashSpan(on, "control.hash_root", h.data(), h.size());
+            auto const controlHashChild = SpanGuard::hashSpan(
+                on,
+                "control.hash_child",
+                h.data(),
+                h.size(),
+                parentSpanId.data(),
+                parentSpanId.size(),
+                sampled);
             EXPECT_TRUE(static_cast<bool>(control));
+            EXPECT_TRUE(static_cast<bool>(controlHashRoot));
+            EXPECT_TRUE(static_cast<bool>(controlHashChild));
         }
 
-        // Only the control span reached the exporter.
+        // Only the control spans reached the exporter.
         auto const spans = spanData()->GetSpans();
-        ASSERT_EQ(spans.size(), 1u);
-        EXPECT_EQ(nameOf(*spans[0]), "control.span");
+        EXPECT_EQ(spans.size(), 3u);
+        EXPECT_EQ(countSpans(spans, "control.span"), 1u);
+        EXPECT_EQ(countSpans(spans, "control.hash_root"), 1u);
+        EXPECT_EQ(countSpans(spans, "control.hash_child"), 1u);
     }
 }
 
