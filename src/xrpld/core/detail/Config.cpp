@@ -170,7 +170,7 @@ minCgroupLimit(std::string const& mount, std::string path, char const* file)
 }
 
 // The mount point of the cgroup v2 unified hierarchy (`controller` empty) or
-// of the cgroup v1 hierarchy whose comounted controllers include
+// of the cgroup v1 hierarchy whose co-mounted controllers include
 // `controller`; empty when neither is mounted. Read from /proc/self/mountinfo
 // rather than a fixed path, since a container runtime or an init system can
 // mount either hierarchy somewhere other than /sys/fs/cgroup. Field 5, the
@@ -742,10 +742,14 @@ Config::loadFromString(std::string const& fileContents)
         // not the "disabled" value: recommending it would turn enforcement
         // off, the opposite of this warning's point.
         if (auto const detectedGb = ramSize_ >> 30)
+        {
             std::cerr << "set [memory_limit] to " << detectedGb << " or less.\n";
+        }
         else
+        {
             std::cerr << "[memory_limit] is in whole gigabytes and cannot represent it; "
                          "remove the setting to use the detected budget automatically.\n";
+        }
     }
 
     if (getSingleSection(secConfig, Sections::kSigningSupport, strTemp, j_))
