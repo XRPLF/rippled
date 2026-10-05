@@ -277,13 +277,11 @@ SponsorshipSet::createSponsorship(
     if (hasPositiveFeeAmount)
         sponsorBalanceAfterFee -= *feeAmountDelta;
 
-    if (auto const ret = checkReserve(
+    if (auto const ret = sponsorAccSle.checkReserve(
             ctx_.getApplyViewContext(),
-            sponsorAccSle,
             sponsorBalanceAfterFee.xrp(),
             reserveSponsorAccSle,
             {.ownerCountDelta = 1},
-            ctx_.journal,
             tecUNFUNDED);
         !isTesSuccess(ret))
     {
@@ -341,7 +339,7 @@ SponsorshipSet::doApply()
     if (sponseeID == sponsorID)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto sponsorAccSle = AccountRootEntryW(sponsorID, ctx_.view());
+    auto sponsorAccSle = AccountRootEntryW(sponsorID, ctx_.view(), ctx_.journal);
     if (!sponsorAccSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -390,13 +388,11 @@ SponsorshipSet::doApply()
         // object.
         (*sponsorAccSle)[sfBalance] -= actualDelta;
 
-        if (auto const ret = checkReserve(
+        if (auto const ret = sponsorAccSle.checkReserve(
                 ctx_.getApplyViewContext(),
-                sponsorAccSle,
                 (*sponsorAccSle)[sfBalance]->xrp(),
                 *reserveSponsorAccSle,
                 {},
-                ctx_.journal,
                 tecUNFUNDED);
             !isTesSuccess(ret))
         {

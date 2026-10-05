@@ -141,8 +141,8 @@ PaymentChannelCreate::doApply()
         // validates the sponsor's reserve + remaining credit. When
         // unsponsored this hits the source branch and validates the
         // source's pre-lock balance against base + (currentOC+1)*increment.
-        if (auto const ret = checkReserve(
-                ctx_.getApplyViewContext(), sle, preFeeBalance_, {.ownerCountDelta = 1}, j_);
+        if (auto const ret = sle.checkReserve(
+                ctx_.getApplyViewContext(), preFeeBalance_, {.ownerCountDelta = 1});
             !isTesSuccess(ret))
             return ret;
 

@@ -88,7 +88,7 @@ CredentialAccept::doApply()
     AccountID const issuer{ctx_.tx[sfIssuer]};
 
     // Both exist as credential object exist itself (checked in preclaim)
-    auto sleSubject = AccountRootEntryW(accountID_, view());
+    auto sleSubject = AccountRootEntryW(accountID_, view(), j_);
     auto sleIssuer = AccountRootEntryW(issuer, view());
 
     if (!sleSubject || !sleIssuer)
@@ -98,13 +98,8 @@ CredentialAccept::doApply()
     if (!txSponsorSle)
         return txSponsorSle.error();  // LCOV_EXCL_LINE
 
-    if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(),
-            sleSubject,
-            preFeeBalance_,
-            *txSponsorSle,
-            {.ownerCountDelta = 1},
-            j_);
+    if (auto const ret = sleSubject.checkReserve(
+            ctx_.getApplyViewContext(), preFeeBalance_, *txSponsorSle, {.ownerCountDelta = 1});
         !isTesSuccess(ret))
         return ret;
 

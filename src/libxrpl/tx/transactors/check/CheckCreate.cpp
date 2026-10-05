@@ -188,15 +188,15 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
 TER
 CheckCreate::doApply()
 {
-    auto sle = AccountRootEntryW(accountID_, view());
+    auto sle = AccountRootEntryW(accountID_, view(), ctx_.journal);
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // A check counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
-    if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(), sle, preFeeBalance_, {.ownerCountDelta = 1}, ctx_.journal);
+    if (auto const ret =
+            sle.checkReserve(ctx_.getApplyViewContext(), preFeeBalance_, {.ownerCountDelta = 1});
         !isTesSuccess(ret))
         return ret;
     // Note that we use the value from the sequence or ticket as the
