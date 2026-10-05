@@ -135,6 +135,7 @@ public:
      * Moves @p amount of this MPToken's MPTAmount into its LockedAmount,
      * for an escrow. Does not change the issuance.
      *
+     * @param amount The amount to move from MPTAmount to LockedAmount.
      * @return tesSUCCESS, or tecINTERNAL on underflow or overflow
      */
     [[nodiscard]] TER
