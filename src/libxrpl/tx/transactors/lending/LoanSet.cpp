@@ -511,7 +511,7 @@ createLoan(
 
     AccountID const brokerPseudo = brokerSle->at(sfAccount);
     Asset const vaultAsset = vaultSle->at(sfAsset);
-    auto const vaultScale = getVaultScale(vaultSle);
+    auto const vaultScale = getVaultBaseScale(vaultSle);
     auto const vaultVersion = getVaultVersion(vaultSle);
 
     auto loan = buildLoan(ctx, plan, brokerSle, pending);
