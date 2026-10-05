@@ -1150,7 +1150,8 @@ ValidVault::finalize(
                             roundToAsset(vaultAsset, vaultPseudoDeltaAssets, localMinScale);
                         auto const rate = transferRate(view, vaultAsset);
                         bool const feeAdjustedWithdrawal = fix350Enabled && distinctDestination &&
-                            !vaultAsset.native() && rate != kParityRate;
+                            !vaultAsset.native() && tx[sfAccount] != vaultAsset.getIssuer() &&
+                            rate != kParityRate;
                         auto expectedDestinationDelta = localPseudoDeltaAssets * -1;
                         if (feeAdjustedWithdrawal)
                         {

@@ -932,6 +932,34 @@ private:
             },
             feeArgs);
 
+        testCase(
+            [this](
+                Env& env,
+                Account const& issuer,
+                Account const& owner,
+                Account const& depositor,
+                PrettyAsset const& asset,
+                Vault& vault,
+                MPTTester& mptt) {
+                testcase("MPT no transfer fee on issuer withdrawal to a third party");
+
+                auto const funded = createFundedVault(env, vault, owner, issuer, asset(100));
+                auto const mptIssue = asset.raw().get<MPTIssue>();
+                auto const shareIssue = funded.shares.raw().get<MPTIssue>();
+
+                auto tx = vault.withdraw(
+                    {.depositor = issuer, .id = funded.keylet.key, .amount = asset(40)});
+                tx[sfDestination] = depositor.human();
+                env(tx);
+                env.close();
+
+                BEAST_EXPECT(mptt.checkMPTokenAmount(depositor, 1040));
+                BEAST_EXPECT(env.balance(funded.account, mptIssue) == asset(60));
+                BEAST_EXPECT(env.balance(issuer, shareIssue) == funded.shares(60));
+                BEAST_EXPECT(mptt.checkMPTokenOutstandingAmount(1100));
+            },
+            feeArgs);
+
         testCase([this](
                      Env& env,
                      Account const& issuer,
@@ -2021,6 +2049,32 @@ private:
 
                 env(vault.del({.owner = owner, .id = funded.keylet.key}));
                 env.close();
+            },
+            feeArgs);
+
+        testCase(
+            [this](
+                Env& env,
+                Account const& owner,
+                Account const& issuer,
+                Account const& charlie,
+                auto,
+                Vault& vault,
+                PrettyAsset const& asset,
+                auto&&...) {
+                testcase("IOU no transfer fee on issuer withdrawal to a third party");
+
+                auto const funded = createFundedVault(env, vault, owner, issuer, asset(100));
+                auto const issue = asset.raw().get<Issue>();
+
+                auto tx = vault.withdraw(
+                    {.depositor = issuer, .id = funded.keylet.key, .amount = asset(40)});
+                tx[sfDestination] = charlie.human();
+                env(tx);
+                env.close();
+
+                BEAST_EXPECT(env.balance(charlie, issue) == asset(40));
+                BEAST_EXPECT(env.balance(funded.account, issue) == asset(60));
             },
             feeArgs);
 

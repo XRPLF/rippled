@@ -61,11 +61,13 @@ withdrawalTransferRate(
     Asset const& asset)
 {
     // Pre-fixCleanup3_5_0: every vault withdrawal waives the transfer fee.
-    // Post-fixCleanup3_5_0: the fee applies only when another token holder receives the assets.
+    // Post-fixCleanup3_5_0: the fee applies only when a holder other than the issuer withdraws to
+    // another such holder.
     if (!view.rules().enabled(fixCleanup3_5_0))
         return kParityRate;
 
-    if (asset.native() || destination == account || destination == asset.getIssuer())
+    if (asset.native() || destination == account || account == asset.getIssuer() ||
+        destination == asset.getIssuer())
         return kParityRate;
 
     return transferRate(view, asset);
