@@ -127,6 +127,9 @@ public:
     /**
      * Returns the scale of the vault's sfAssetsTotal for its asset, or
      * Number::kMinExponent - 1 if the entry does not exist.
+     *
+     * @return The scale of the vault's sfAssetsTotal, or Number::kMinExponent
+     * - 1 if the entry does not exist.
      */
     [[nodiscard]] int
     assetsTotalScale() const
@@ -140,6 +143,10 @@ public:
      * Computes the minimum required broker cover, rounded consistently.
      * DebtTotal is a broker-level aggregate maintained at vault scale, so the
      * rounding must also use vault scale — never an individual loan's scale.
+     *
+     * @param debtTotal The broker's total outstanding debt, at vault scale.
+     * @param coverRateMinimum The minimum cover rate to apply to debtTotal.
+     * @return The minimum required broker cover, rounded up to vault scale.
      */
     [[nodiscard]] Number
     minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum) const
