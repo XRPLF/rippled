@@ -25,7 +25,7 @@ OfferEntry<ViewT>::removeFromLedger()
     auto const owner = (*this)->getAccountID(sfAccount);
 
     // Detect legacy directories.
-    uint256 const uDirectory = (*this)->getFieldH256(sfBookDirectory);
+    UInt256 const uDirectory = (*this)->getFieldH256(sfBookDirectory);
 
     ApplyView& view = this->applyView();
 
