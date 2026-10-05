@@ -17,9 +17,9 @@ public:
     virtual ~Store() = default;
 
     // load the bootstrap cache
-    using load_callback = std::function<void(beast::ip::Endpoint, int)>;
+    using LoadCallback = std::function<void(beast::ip::Endpoint, int)>;
     virtual std::size_t
-    load(load_callback const& cb) = 0;
+    load(LoadCallback const& cb) = 0;
 
     // save the bootstrap cache
     struct Entry

@@ -5,6 +5,7 @@
 #include <xrpl.pb.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 
 namespace xrpl::test {
@@ -39,6 +40,40 @@ public:
         auto const unknown =
             TrafficCount::categorize(message, static_cast<protocol::MessageType>(99), false);
         BEAST_EXPECT(unknown == TrafficCount::Category::Unknown);
+    }
+
+    void
+    testAttribute()
+    {
+        testcase("attribute");
+
+        auto const outsider = TrafficCount::IsFromCluster::No;
+        auto const member = TrafficCount::IsFromCluster::Yes;
+
+        // Cluster is read as traffic between configured cluster members, and any
+        // peer can send that type, so a sender outside the cluster is held to
+        // unknown rather than counted as one.
+        BEAST_EXPECT(
+            TrafficCount::attribute(TrafficCount::Category::Cluster, outsider) ==
+            TrafficCount::Category::Unknown);
+        BEAST_EXPECT(
+            TrafficCount::attribute(TrafficCount::Category::Cluster, member) ==
+            TrafficCount::Category::Cluster);
+
+        // Every other category is derived from the message alone, so membership
+        // does not enter into it either way. Base is the first category and
+        // Unknown the last, so the walk covers all of them.
+        for (auto i = static_cast<std::size_t>(TrafficCount::Category::Base);
+             i <= static_cast<std::size_t>(TrafficCount::Category::Unknown);
+             ++i)
+        {
+            auto const cat = static_cast<TrafficCount::Category>(i);
+            if (cat == TrafficCount::Category::Cluster)
+                continue;
+
+            BEAST_EXPECT(TrafficCount::attribute(cat, outsider) == cat);
+            BEAST_EXPECT(TrafficCount::attribute(cat, member) == cat);
+        }
     }
 
     struct TestCase
@@ -129,6 +164,7 @@ public:
     run() override
     {
         testCategorize();
+        testAttribute();
         testAddCount();
         testToString();
     }

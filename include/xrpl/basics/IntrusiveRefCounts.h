@@ -77,21 +77,13 @@ struct IntrusiveRefCounts
     std::size_t
     useCount() const noexcept;
 
-    // This function MUST be called after a partial destructor finishes running.
-    // Calling this function may cause other threads to delete the object
-    // pointed to by `o`, so `o` should never be used after calling this
-    // function. The parameter will be set to a `nullptr` after calling this
-    // function to emphasize that it should not be used.
-    // Note: This is intentionally NOT called at the end of `partialDestructor`.
-    // The reason for this is if new classes are written to support this smart
-    // pointer class, they need to write their own `partialDestructor` function
-    // and ensure `partialDestructorFinished` is called at the end. Putting this
-    // call inside the smart pointer class itself is expected to be less error
-    // prone.
-    // Note: The "two-star" programming is intentional. It emphasizes that `o`
-    // may be deleted and the unergonomic API is meant to signal the special
-    // nature of this function call to callers.
-    // Note: This is a template to support incompletely defined classes.
+    // MUST be called after `partialDestructor` returns. Another thread may
+    // then delete the object, so `*o` is nulled and must not be used after
+    // (unless the caller holds its own weak ref, e.g.
+    // SharedWeakUnion::convertToWeak). Called by the smart pointers, not
+    // `partialDestructor`, so custom partial destructors can't forget it.
+    // The two-star API signals that `*o` may be deleted. Templated to
+    // support incomplete types.
     template <class T>
     friend void
     partialDestructorFinished(T** o);

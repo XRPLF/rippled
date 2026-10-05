@@ -20,14 +20,14 @@ TEST(UnitsTest, types)
     {
         XRPAmount const x{100};
         EXPECT_EQ(x.drops(), 100);
-        EXPECT_TRUE((std::is_same_v<decltype(x)::unit_type, unit::dropTag>));
+        EXPECT_TRUE((std::is_same_v<decltype(x)::UnitType, unit::dropTag>));
         auto y = 4u * x;
         EXPECT_EQ(y.value(), 400);
-        EXPECT_TRUE((std::is_same_v<decltype(y)::unit_type, unit::dropTag>));
+        EXPECT_TRUE((std::is_same_v<decltype(y)::UnitType, unit::dropTag>));
 
         auto z = 4 * y;
         EXPECT_EQ(z.value(), 1600);
-        EXPECT_TRUE((std::is_same_v<decltype(z)::unit_type, unit::dropTag>));
+        EXPECT_TRUE((std::is_same_v<decltype(z)::UnitType, unit::dropTag>));
 
         FeeLevel32 const f{10};
         FeeLevel32 const baseFee{100};
@@ -37,17 +37,17 @@ TEST(UnitsTest, types)
         EXPECT_TRUE(drops);
         EXPECT_EQ(drops.value(), 1000);  // NOLINT(bugprone-unchecked-optional-access)
         EXPECT_TRUE(
-            (std::is_same_v<std::remove_reference_t<decltype(*drops)>::unit_type, unit::dropTag>));
+            (std::is_same_v<std::remove_reference_t<decltype(*drops)>::UnitType, unit::dropTag>));
 
         EXPECT_TRUE((std::is_same_v<std::remove_reference_t<decltype(*drops)>, XRPAmount>));
     }
     {
         XRPAmount const x{100};
         EXPECT_EQ(x.value(), 100);
-        EXPECT_TRUE((std::is_same_v<decltype(x)::unit_type, unit::dropTag>));
+        EXPECT_TRUE((std::is_same_v<decltype(x)::UnitType, unit::dropTag>));
         auto y = 4u * x;
         EXPECT_EQ(y.value(), 400);
-        EXPECT_TRUE((std::is_same_v<decltype(y)::unit_type, unit::dropTag>));
+        EXPECT_TRUE((std::is_same_v<decltype(y)::UnitType, unit::dropTag>));
 
         FeeLevel64 const f{10};
         FeeLevel64 const baseFee{100};
@@ -57,17 +57,17 @@ TEST(UnitsTest, types)
         EXPECT_TRUE(drops);
         EXPECT_EQ(drops.value(), 1000);  // NOLINT(bugprone-unchecked-optional-access)
         EXPECT_TRUE(
-            (std::is_same_v<std::remove_reference_t<decltype(*drops)>::unit_type, unit::dropTag>));
+            (std::is_same_v<std::remove_reference_t<decltype(*drops)>::UnitType, unit::dropTag>));
         EXPECT_TRUE((std::is_same_v<std::remove_reference_t<decltype(*drops)>, XRPAmount>));
     }
     {
         FeeLevel64 const x{1024};
         EXPECT_EQ(x.value(), 1024);
-        EXPECT_TRUE((std::is_same_v<decltype(x)::unit_type, unit::feelevelTag>));
+        EXPECT_TRUE((std::is_same_v<decltype(x)::UnitType, unit::feelevelTag>));
         std::uint64_t const m = 4;
         auto y = m * x;
         EXPECT_EQ(y.value(), 4096);
-        EXPECT_TRUE((std::is_same_v<decltype(y)::unit_type, unit::feelevelTag>));
+        EXPECT_TRUE((std::is_same_v<decltype(y)::UnitType, unit::feelevelTag>));
 
         XRPAmount const basefee{10};
         FeeLevel64 const referencefee{256};
@@ -77,7 +77,7 @@ TEST(UnitsTest, types)
         EXPECT_TRUE(drops);
         EXPECT_EQ(drops.value(), 40);  // NOLINT(bugprone-unchecked-optional-access)
         EXPECT_TRUE(
-            (std::is_same_v<std::remove_reference_t<decltype(*drops)>::unit_type, unit::dropTag>));
+            (std::is_same_v<std::remove_reference_t<decltype(*drops)>::UnitType, unit::dropTag>));
         EXPECT_TRUE((std::is_same_v<std::remove_reference_t<decltype(*drops)>, XRPAmount>));
     }
 }
