@@ -4982,6 +4982,57 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(bob, usd) == usd(3'000));
         }
 
+        // tecPRECISION_LOSS: a partial IOU claw whose difference rounds to a
+        // different nonzero decrease is rejected and the channel is unchanged.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+            env.trust(usd(100000000000000000), alice);
+            env.trust(usd(100000000000000000), bob);
+            env.close();
+            env(pay(gw, alice, usd(10000000000000000)));
+            env.close();
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(1234567890123456), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            // 1234567890123456 - 6000.25 needs 18 digits, so the difference
+            // rounds under either mantissa size
+            env(paychan::clawback(gw, chan, usd(6000.25)), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(1234567890123456));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(1234567890123456));
+
+            // an exact difference is accepted
+            env(paychan::clawback(gw, chan, usd(6000)));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(1234567890117456));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(1234567890117456));
+        }
+
+        // tecPRECISION_LOSS: a dust claw the channel amount cannot register
+        // is rejected. The difference rounds back to the old amount and adding
+        // the dust to it gives the old amount again, so only subtracting the
+        // difference from the old amount exposes the loss.
+        {
+            Env env{*this, features};
+            setup(env);
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            STAmount const dust{usd.issue(), 15, -19};
+            env(paychan::clawback(gw, chan, dust), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(4'000));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(4'000));
+        }
+
         // Clawback after a partial claim: only the unclaimed remainder is
         // taken and the destination's already-claimed balance is untouched.
         // This is also the regression test for the full-claw amount being set

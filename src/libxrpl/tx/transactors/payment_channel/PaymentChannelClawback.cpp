@@ -113,6 +113,12 @@ PaymentChannelClawback::doApply()
     auto const clawAmount = ctx_.tx[~sfAmount];
     bool const full = !clawAmount || *clawAmount >= lockedRemaining;
 
+    // A partial claw must record exactly the clawed decrease: an IOU
+    // difference that rounds would shrink sfAmount by something other than
+    // what the issuer took.
+    if (!full && !isExactDifference(chanAmt, *clawAmount))
+        return tecPRECISION_LOSS;
+
     // For a full claw, set the new amount to sfBalance directly rather than
     // computing chanAmt - lockedRemaining: for IOUs the latter is a - (a - b)
     // and can round, leaving a dust channel undeleted or pushing sfAmount

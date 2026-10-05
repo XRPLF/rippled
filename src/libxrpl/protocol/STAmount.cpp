@@ -542,6 +542,26 @@ isExactSum(STAmount const& a, STAmount const& b)
 }
 
 /**
+ * Integral types defer to canSubtract(). For IOU amounts each check misses
+ * the case where one operand is dust against the other. With a dust
+ * subtrahend, a - b rounds to a and adding b back rounds to a again, so only
+ * a - diff != b shows the loss. With a dust minuend, a - b rounds to -b and
+ * a - diff rounds to b, so only diff + b != a shows it. Both are checked.
+ */
+bool
+isExactDifference(STAmount const& a, STAmount const& b)
+{
+    if (!areComparable(a, b))
+        return false;
+
+    if (a.integral())
+        return canSubtract(a, b);
+
+    STAmount const diff = a - b;
+    return diff + b == a && a - diff == b;
+}
+
+/**
  * @brief Determines if it is safe to subtract one STAmount from another.
  *
  * This function checks whether subtracting amount `b` from amount `a` is valid,

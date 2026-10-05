@@ -796,6 +796,22 @@ bool
 isExactSum(STAmount const& amt1, STAmount const& amt2);
 
 /**
+ * Determine whether `amt1 - amt2` equals the mathematical difference.
+ *
+ * XRP and MPT differences are integer subtractions, so this is canSubtract().
+ * An IOU difference is rounded to the mantissa width and is exact only if
+ * adding the subtrahend back gives the minuend and subtracting the difference
+ * from the minuend gives back the subtrahend.
+ *
+ * @param amt1 The minuend.
+ * @param amt2 The subtrahend.
+ * @return true if the difference is exact; false if it rounds, underflows,
+ *     or the amounts are not comparable.
+ */
+bool
+isExactDifference(STAmount const& amt1, STAmount const& amt2);
+
+/**
  * Get the scale of a Number for a given asset.
  *
  * "scale" is similar to "exponent", but from the perspective of STAmount, which has different rules
