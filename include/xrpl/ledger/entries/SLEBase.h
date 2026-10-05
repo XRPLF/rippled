@@ -77,6 +77,11 @@ resolveEntry(ReadView const& view, Keylet const& key)
  * Write-only members are gated by `requires` clauses, providing compile-time
  * guarantees that read-only entries cannot mutate state.
  *
+ * Read-only entries are copyable, movable, and assignable. Writable entries
+ * are move-only (not copyable or copy-assignable): the view is stored as a
+ * pointer so assignment can reseat it, but a writable entry's shared_ptr<SLE>
+ * is meant to have a single writer at a time.
+ *
  * @tparam EntryType the ledger entry type this entry is statically bound to.
  * Derived per-type entries pass their own type (e.g. ltACCOUNT_ROOT); the
  * generic ReadOnlySLE / WritableSLE aliases leave it at ltANY, which opts out
@@ -102,8 +107,14 @@ public:
     using SlePtrType = std::conditional_t<kIsWritable, SLE::pointer, SLE::const_pointer>;
 
     // View reference type: ApplyView& for writable, ReadView const& for
-    // read-only
+    // read-only. Constructors take this; it is what callers spell out.
     using ViewRefType = std::conditional_t<kIsWritable, ApplyView&, ReadView const&>;
+
+    // View pointer type: what the entry actually stores. A pointer, rather
+    // than ViewRefType itself, so the entry stays assignable -- a stored
+    // reference member cannot be reseated, which is what forced the deleted
+    // assignment operators below.
+    using ViewPtrType = std::conditional_t<kIsWritable, ApplyView*, ReadView const*>;
 
     // Non-virtual by design: these entries are parameterized on the view and
     // entry type, never used polymorphically through a base pointer. A vptr
@@ -115,14 +126,22 @@ public:
     // virtual, never delete a derived entry through an SLEBase*.
     ~SLEBase() = default;
 
+    // Read-only entries are freely copyable and movable, including
+    // assignment: the view is stored as a pointer (see ViewPtrType above), so
+    // reseating it on assignment is well defined. Writable entries stay
+    // move-only, matching the shared_ptr<SLE> they wrap: copying one would
+    // leave two entries thinking they each own the only write access to the
+    // same SLE.
     SLEBase(SLEBase const&)
         requires(!kIsWritable)
     = default;
     SLEBase(SLEBase&&) = default;
     SLEBase&
-    operator=(SLEBase const&) = delete;
+    operator=(SLEBase const&)
+        requires(!kIsWritable)
+    = default;
     SLEBase&
-    operator=(SLEBase&&) = delete;
+    operator=(SLEBase&&) = default;
     SLEBase() = delete;
 
     // --- Constructors that adopt/resolve an SLE (public so the ReadOnlySLE /
@@ -142,7 +161,7 @@ public:
         ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         requires(!kIsWritable)
-        : view_(view), sle_(std::move(sle)), j_(j)
+        : view_(&view), sle_(std::move(sle)), j_(j)
     {
         XRPL_ASSERT(
             !kIsTyped || !sle_ || sle_->getType() == kEntryType,
@@ -157,7 +176,7 @@ public:
         ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         requires(!kIsWritable)
-        : view_(view), sle_(detail::resolveEntry(view, key)), j_(j)
+        : view_(&view), sle_(detail::resolveEntry(view, key)), j_(j)
     {
         XRPL_ASSERT(
             !kIsTyped || key.type == kEntryType,
@@ -181,7 +200,7 @@ public:
     SLEBase(SLEBase<OtherViewT, OtherType> const& other)
         requires(!kIsWritable && IsWritableView<OtherViewT> &&
                  (OtherType == EntryType || EntryType == ltANY))
-        : view_(other.readView()), sle_(other.rawSle()), j_(other.journal())
+        : view_(&other.readView()), sle_(other.rawSle()), j_(other.journal())
     {
     }
 
@@ -193,7 +212,7 @@ public:
         ApplyView& view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         requires kIsWritable
-        : view_(view), key_(key), sle_(view_.peek(key)), j_(j)
+        : view_(&view), key_(key), sle_(view_->peek(key)), j_(j)
     {
         XRPL_ASSERT(
             !kIsTyped || key.type == kEntryType,
@@ -321,7 +340,7 @@ public:
     [[nodiscard]] ReadView const&
     readView() const
     {
-        return view_;
+        return *view_;
     }
 
     /**
@@ -371,7 +390,7 @@ public:
     applyView()
         requires kIsWritable
     {
-        return view_;
+        return *view_;
     }
 
     /**
@@ -408,7 +427,7 @@ public:
     {
         if (!exists())
             Throw<std::logic_error>("xrpl::SLEBase::insert : entry does not exist");
-        view_.insert(sle_);
+        view_->insert(sle_);
     }
 
     /**
@@ -430,7 +449,7 @@ public:
     {
         if (!exists())
             Throw<std::logic_error>("xrpl::SLEBase::erase : entry does not exist");
-        view_.erase(sle_);
+        view_->erase(sle_);
         sle_ = nullptr;
     }
 
@@ -443,7 +462,7 @@ public:
     {
         if (!exists())
             Throw<std::logic_error>("xrpl::SLEBase::update : entry does not exist");
-        view_.update(sle_);
+        view_->update(sle_);
     }
 
     /**
@@ -466,7 +485,11 @@ public:
     }
 
 protected:
-    ViewRefType view_;
+    // Stored as a pointer, not ViewRefType, so the entry stays assignable --
+    // see the assignment operators above. Declared first: the writable
+    // constructor initializes sle_ from view_->peek(key), so view_ must be
+    // constructed before it.
+    ViewPtrType view_;
 
     // Keylet is only meaningful for writable views, which need it to build an
     // SLE that does not exist yet; read-only entries derive it from the SLE.
