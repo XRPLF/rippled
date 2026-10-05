@@ -370,6 +370,15 @@ doSimulate(rpc::JsonContext& context)
             RpcInvalidParams, "tfInnerBatchTxn flag is not allowed on top-level transactions.");
     }
 
+    // These enter the WASM engine, which is far costlier than the default simulate load
+    // and collects no gas to pay for it. Charged on shape, so a request refused before
+    // reaching the engine pays too. Exhaustive: `ttBATCH` is refused above.
+    if ((stTx->getTxnType() == ttESCROW_CREATE && stTx->isFieldPresent(sfBytecode)) ||
+        (stTx->getTxnType() == ttESCROW_FINISH && stTx->isFieldPresent(sfGas)))
+    {
+        context.loadType = resource::kFeeHeavyBurdenRpc;
+    }
+
     std::string reason;
     auto transaction = std::make_shared<Transaction>(stTx, reason, context.app);
     // Actually run the transaction through the transaction processor

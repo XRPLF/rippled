@@ -1,9 +1,8 @@
 use std::cell::Cell;
 use std::fmt;
-use std::sync::LazyLock;
 use wasmi::{
-    Config, Engine, Export, Linker, Memory, Module, Store, StoreLimits, StoreLimitsBuilder,
-    TrapCode,
+    CompilationMode, Config, CustomFuelCosts, EnforcedLimits, Engine, Export, Linker, Memory,
+    Module, Store, StoreLimits, StoreLimitsBuilder, TrapCode,
 };
 use xrpl_host_functions::HostFunctions;
 
@@ -165,7 +164,7 @@ impl RunFailure {
 /// trap and refusal all report it the same way.
 ///
 /// `Store::get_fuel` fails only on a store without fuel metering, which
-/// [`build_wasm_engine`] rules out and `run`'s `set_fuel` would already have
+/// [`wasm_engine`] rules out and `run`'s `set_fuel` would already have
 /// caught — so a failure here is a defect in this crate. It must not become a
 /// number: `0` forgives a run its whole cost, `gas` charges an untouched one for
 /// everything. [`RunError::Internal`] instead.
@@ -234,19 +233,17 @@ impl From<Fault> for RunError {
     }
 }
 
-/// The process-wide wasmi engine, built once on first use.
+/// A fresh wasmi engine for one caller's use: deterministic, minimal features,
+/// fuel metering on.
 ///
-/// The configuration is consensus-fixed and identical for every invocation, and an
-/// [`Engine`] is an internally `Arc`ed `Send + Sync` handle, so one shared engine
-/// serves concurrent [`run`] calls.
-pub(crate) fn wasm_engine() -> &'static Engine {
-    static ENGINE: LazyLock<Engine> = LazyLock::new(build_wasm_engine);
-    &ENGINE
-}
-
-/// Build the wasmi engine the escrow VM requires: deterministic, minimal
-/// features, fuel metering on.
-fn build_wasm_engine() -> Engine {
+/// The configuration is consensus-fixed and identical for every invocation, so any
+/// two engines from here accept exactly the same modules. Each is nonetheless a
+/// distinct engine with its own compiled-code and type registries, and wasmi ties a
+/// [`Module`] to the engine that compiled it — a module cannot be instantiated in a
+/// [`Store`] built on another. A caller that compiles and runs must therefore hold
+/// one engine across both steps, which is why [`compile`] takes the engine rather
+/// than reaching for its own.
+pub(crate) fn wasm_engine() -> Engine {
     let mut config = Config::default();
     config.consume_fuel(true);
     config.ignore_custom_sections(true);
@@ -265,13 +262,25 @@ fn build_wasm_engine() -> Engine {
     // config.wasm_memory64(false);
     config.wasm_wide_arithmetic(false);
     config.allow_start_fn(false);
+    config.enforced_limits(EnforcedLimits::strict());
+
+    let fuel_costs = CustomFuelCosts {
+        bytes_copied_per_fuel: 64,
+        fuel_per_bytes_translated: 7,
+        fuel_per_bytes_validated: 2,
+    };
+    config.fuel_cost(fuel_costs);
+    // config.operator_costs is already guarded by the probe_fuel test under budgets.rs
+    // in that a change to operator costs in a future version will be a loud failure.
+
+    config.compilation_mode(CompilationMode::LazyTranslation);
     Engine::new(&config)
 }
 
 /// Every resource ceiling a run is given, in one place.
 ///
 /// The two *size* caps are what a contract can reach today. The three *count* caps
-/// are set to 1 although [`build_wasm_engine`] already forces each: turning
+/// are set to 1 although [`wasm_engine`] already forces each: turning
 /// `wasm_reference_types` on would let a module declare up to
 /// `wasmparser::MAX_WASM_TABLES` tables, `wasm_multi_memory` likewise for memories,
 /// and both size caps are **per table and per memory, not aggregate** — so a feature
@@ -292,13 +301,14 @@ fn store_limits() -> StoreLimits {
         .build()
 }
 
-/// Compile `wasm` for this engine.
+/// Compile `wasm` for `engine`.
 ///
 /// The one path to a [`Module`]: the configuration is what decides whether a
 /// contract is valid at all, so [`run`] and [`crate::check`] must not be able to
-/// compile against different ones.
-pub(crate) fn compile(wasm: &[u8]) -> Result<Module, String> {
-    Module::new(wasm_engine(), wasm).map_err(|e| e.to_string())
+/// compile against different ones. The engine is the caller's because the module it
+/// returns may only be instantiated in a [`Store`] built on that same engine.
+pub(crate) fn compile(engine: &Engine, wasm: &[u8]) -> Result<Module, String> {
+    Module::new(engine, wasm).map_err(|e| e.to_string())
 }
 
 /// Run a contract: compile `wasm`, give it `gas` fuel, service its host
@@ -310,11 +320,11 @@ pub fn run<'h>(
     function_name: &str,
 ) -> Result<RunOutcome, RunFailure> {
     let engine = wasm_engine();
-    let module =
-        compile(wasm).map_err(|detail| RunFailure::owing_nothing(RunError::Compile(detail)))?;
+    let module = compile(&engine, wasm)
+        .map_err(|detail| RunFailure::owing_nothing(RunError::Compile(detail)))?;
 
     let mut store = Store::new(
-        engine,
+        &engine,
         VmState {
             host,
             mem_limits: store_limits(),
@@ -329,7 +339,7 @@ pub fn run<'h>(
         .map_err(|_| RunFailure::owing_nothing(RunError::Internal))?;
     store.limiter(|state| &mut state.mem_limits);
 
-    let mut linker = Linker::<VmState<'h>>::new(engine);
+    let mut linker = Linker::<VmState<'h>>::new(&engine);
     register_host_functions::<Bodies>(&mut linker)
         .map_err(|_| RunFailure::owing_nothing(RunError::Internal))?;
 
@@ -371,9 +381,13 @@ pub fn run<'h>(
 mod tests {
     use super::*;
 
+    /// Each call is its own engine, which is what makes the engine a caller's to
+    /// hold: a module compiled through one may not be instantiated in a store built
+    /// on another, so `run` must pass the engine it made to [`compile`] rather than
+    /// let it call here a second time.
     #[test]
-    fn the_engine_is_one_engine() {
-        assert!(Engine::same(wasm_engine(), wasm_engine()));
+    fn each_call_is_a_new_engine() {
+        assert!(!Engine::same(&wasm_engine(), &wasm_engine()));
     }
 
     /// One instance, one table, one memory — asserted here rather than through a
@@ -391,6 +405,48 @@ mod tests {
         assert_eq!(limits.instances(), 1);
         assert_eq!(limits.tables(), 1);
         assert_eq!(limits.memories(), 1);
+    }
+
+    /// The three size-proportional fuel rates, read back off the engine. wasmi
+    /// takes its own defaults for these unless told otherwise, so an upgrade that
+    /// changed one would retune our gas silently. `Config` keeps them
+    /// `pub(crate)` and exposes them only through `Debug`.
+    #[test]
+    fn the_dynamic_fuel_costs_are_pinned() {
+        let config = format!("{:?}", wasm_engine().config());
+        for rate in [
+            "bytes_copied_per_fuel: 64",
+            "fuel_per_bytes_translated: 7",
+            "fuel_per_bytes_validated: 2",
+        ] {
+            assert!(config.contains(rate), "expected `{rate}` in {config}");
+        }
+    }
+
+    /// [`EnforcedLimits::strict`] is the one line in [`wasm_engine`] that takes a
+    /// value rather than stating one — the fields are `pub(crate)`, so the preset is
+    /// the only way to set them.
+    #[test]
+    fn the_enforced_limits_are_pinned() {
+        const EXPECTED: &str = concat!(
+            "EnforcedLimits { ",
+            "max_globals: Some(1000), ",
+            "max_functions: Some(10000), ",
+            "max_tables: Some(100), ",
+            "max_element_segments: Some(1000), ",
+            "max_memories: Some(1), ",
+            "max_data_segments: Some(1000), ",
+            "max_params: Some(32), ",
+            "max_results: Some(32), ",
+            "min_avg_bytes_per_function: Some(AvgBytesPerFunctionLimit { ",
+            "req_funcs_bytes: 1000, min_avg_bytes_per_function: 40 }) }",
+        );
+
+        let config = format!("{:?}", wasm_engine().config());
+        assert!(
+            config.contains(EXPECTED),
+            "expected `{EXPECTED}` in {config}"
+        );
     }
 
     /// The only place these numbers appear as literals; every other test derives

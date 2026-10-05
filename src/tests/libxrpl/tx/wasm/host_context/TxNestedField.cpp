@@ -20,7 +20,7 @@ struct TxNestedFieldCall : HostContextTest
     Bytes const locatorBytes = bytesOfSteps(steps);
 };
 
-TEST_F(TxNestedFieldCall, LocatorBytesBecomeFieldLocatorHostIsAskedFor)
+TEST_F(TxNestedFieldCall, locator_bytes_become_field_locator_host_is_asked_for)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps))).WillOnce(testing::Return(value));
@@ -32,7 +32,7 @@ TEST_F(TxNestedFieldCall, LocatorBytesBecomeFieldLocatorHostIsAskedFor)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(TxNestedFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(TxNestedFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::NotLeafField)));
@@ -44,7 +44,7 @@ TEST_F(TxNestedFieldCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(TxNestedFieldCall, EmptyLocatorIsRefusedWithoutAskingHost)
+TEST_F(TxNestedFieldCall, empty_locator_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getTxNestedField).Times(0);
 
@@ -55,7 +55,7 @@ TEST_F(TxNestedFieldCall, EmptyLocatorIsRefusedWithoutAskingHost)
 }
 
 // Distinct from an empty locator: `invokeWithLocator` checks the two conditions separately.
-TEST_F(TxNestedFieldCall, MisalignedLocatorLengthIsRefusedWithoutAskingHost)
+TEST_F(TxNestedFieldCall, misaligned_locator_length_is_refused_without_asking_host)
 {
     Bytes const oddLength{1, 2, 3};
     EXPECT_CALL(host, getTxNestedField).Times(0);
@@ -66,7 +66,7 @@ TEST_F(TxNestedFieldCall, MisalignedLocatorLengthIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::LocatorMalformed));
 }
 
-TEST_F(TxNestedFieldCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(TxNestedFieldCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps)))
         .WillOnce(testing::Throw(std::runtime_error{"nested field came apart"}));
@@ -81,7 +81,7 @@ TEST_F(TxNestedFieldCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(TxNestedFieldCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(TxNestedFieldCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps))).WillOnce(testing::Return(value));
@@ -93,7 +93,7 @@ TEST_F(TxNestedFieldCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(TxNestedFieldCall, OutRegionOfExactSizeIsWritten)
+TEST_F(TxNestedFieldCall, out_region_of_exact_size_is_written)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps))).WillOnce(testing::Return(value));
@@ -105,7 +105,7 @@ TEST_F(TxNestedFieldCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(TxNestedFieldCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(TxNestedFieldCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps))).WillOnce(testing::Return(Bytes{}));
 

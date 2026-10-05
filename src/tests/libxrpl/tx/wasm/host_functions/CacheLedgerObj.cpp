@@ -48,17 +48,17 @@ struct CacheLedgerObjImpl : RealHostFixture
     }
 };
 
-TEST_F(CacheLedgerObjImpl, MatchesLedgerExplicitIndices)
+TEST_F(CacheLedgerObjImpl, matches_ledger_explicit_indices)
 {
     runMatchesLedger(false);
 }
 
-TEST_F(CacheLedgerObjImpl, MatchesLedgerImplicitIndices)
+TEST_F(CacheLedgerObjImpl, matches_ledger_implicit_indices)
 {
     runMatchesLedger(true);
 }
 
-TEST_F(CacheLedgerObjImpl, OutOfRange)
+TEST_F(CacheLedgerObjImpl, out_of_range)
 {
     auto h = makeHost();
     auto result = h->cacheLedgerObj(uint256{}, -1);
@@ -70,7 +70,7 @@ TEST_F(CacheLedgerObjImpl, OutOfRange)
     EXPECT_EQ(result.error(), HostFunctionError::SlotOutRange);
 }
 
-TEST_F(CacheLedgerObjImpl, LedgerObjNotFound)
+TEST_F(CacheLedgerObjImpl, ledger_obj_not_found)
 {
     auto const ghost = keylet::account(Account{"ghost"}.id()).key;
     auto result = makeHost()->cacheLedgerObj(ghost, 0);
@@ -81,7 +81,7 @@ TEST_F(CacheLedgerObjImpl, LedgerObjNotFound)
 // Two hosts built from the same fixture are fully independent: each owns its own slot
 // table, so caching into one leaves the other's slots empty. (This is what the `WasmHost`
 // handle buys over the old shared-fixture-state design.)
-TEST_F(CacheLedgerObjImpl, IndependentHostsDoNotShareSlots)
+TEST_F(CacheLedgerObjImpl, independent_hosts_do_not_share_slots)
 {
     auto const owner = fund("owner");
     auto const key = keylet::account(owner.id()).key;

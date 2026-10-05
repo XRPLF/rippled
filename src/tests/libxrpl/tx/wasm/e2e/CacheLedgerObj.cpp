@@ -26,7 +26,7 @@ struct CacheLedgerObjE2e : RealVmTest
 {
 };
 
-TEST_F(CacheLedgerObjE2e, ContractComputesAKeyCachesTheObjectAndReadsItsField)
+TEST_F(CacheLedgerObjE2e, contract_computes_a_key_caches_the_object_and_reads_its_field)
 {
     auto const owner = fund("owner");
     auto const wat = std::format(

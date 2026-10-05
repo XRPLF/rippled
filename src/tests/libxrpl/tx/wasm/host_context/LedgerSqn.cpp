@@ -20,7 +20,7 @@ struct LedgerSqnCall : HostContextTest
     Bytes const expectedBytes = bytesOfScalar(kLedgerSqn);
 };
 
-TEST_F(LedgerSqnCall, HostValueIsWrittenAsLittleEndianBytes)
+TEST_F(LedgerSqnCall, host_value_is_written_as_little_endian_bytes)
 {
     EXPECT_CALL(host, getLedgerSqn()).WillOnce(testing::Return(kLedgerSqn));
 
@@ -29,7 +29,7 @@ TEST_F(LedgerSqnCall, HostValueIsWrittenAsLittleEndianBytes)
     EXPECT_TRUE(out.holds(bytesOf(expectedBytes)));
 }
 
-TEST_F(LedgerSqnCall, HostErrorBecomesContractReturnValue)
+TEST_F(LedgerSqnCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getLedgerSqn())
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::Unimplemented)));
@@ -40,7 +40,7 @@ TEST_F(LedgerSqnCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(LedgerSqnCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(LedgerSqnCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getLedgerSqn())
         .WillOnce(testing::Throw(std::runtime_error{"ledger sqn came apart"}));
@@ -54,7 +54,7 @@ TEST_F(LedgerSqnCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(LedgerSqnCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(LedgerSqnCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     EXPECT_CALL(host, getLedgerSqn()).WillOnce(testing::Return(kLedgerSqn));
 
@@ -63,7 +63,7 @@ TEST_F(LedgerSqnCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(LedgerSqnCall, OutRegionOfExactSizeIsWritten)
+TEST_F(LedgerSqnCall, out_region_of_exact_size_is_written)
 {
     EXPECT_CALL(host, getLedgerSqn()).WillOnce(testing::Return(kLedgerSqn));
 

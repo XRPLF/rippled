@@ -22,55 +22,55 @@ struct FloatToMantExpImpl : FloatTest
     }
 };
 
-TEST_F(FloatToMantExpImpl, MalformedInput)
+TEST_F(FloatToMantExpImpl, malformed_input)
 {
     expectError(makeHost()->floatToMantExp(Slice{}), HostFunctionError::FloatInputMalformed);
 }
 
-TEST_F(FloatToMantExpImpl, Zero)
+TEST_F(FloatToMantExpImpl, zero)
 {
     expectValue(makeHost()->floatToMantExp(slice(FloatTest::kIntZero)), pair(0, kExpMin));
 }
 
-TEST_F(FloatToMantExpImpl, One)
+TEST_F(FloatToMantExpImpl, one)
 {
     expectValue(
         makeHost()->floatToMantExp(slice(FloatTest::kOne)),
         pair(1'000'000'000'000'000'000, -FloatTest::kNormalExp));
 }
 
-TEST_F(FloatToMantExpImpl, MinusOne)
+TEST_F(FloatToMantExpImpl, minus_one)
 {
     expectValue(
         makeHost()->floatToMantExp(slice(FloatTest::kMinusOne)),
         pair(-1'000'000'000'000'000'000, -FloatTest::kNormalExp));
 }
 
-TEST_F(FloatToMantExpImpl, Ten)
+TEST_F(FloatToMantExpImpl, ten)
 {
     expectValue(
         makeHost()->floatToMantExp(slice(FloatTest::kTen)),
         pair(1'000'000'000'000'000'000, -FloatTest::kNormalExp + 1));
 }
 
-TEST_F(FloatToMantExpImpl, Pi)
+TEST_F(FloatToMantExpImpl, pi)
 {
     expectValue(
         makeHost()->floatToMantExp(slice(FloatTest::kPi)),
         pair(3'141'592'653'589'793'000, -FloatTest::kNormalExp));
 }
 
-TEST_F(FloatToMantExpImpl, IntMax)
+TEST_F(FloatToMantExpImpl, int_max)
 {
     expectValue(makeHost()->floatToMantExp(slice(FloatTest::kIntMax)), pair(kMax64, 0));
 }
 
-TEST_F(FloatToMantExpImpl, IntMin)
+TEST_F(FloatToMantExpImpl, int_min)
 {
     expectValue(makeHost()->floatToMantExp(slice(FloatTest::kIntMin)), pair(-kMax64, 0));
 }
 
-TEST_F(FloatToMantExpImpl, Max)
+TEST_F(FloatToMantExpImpl, max)
 {
     expectValue(
         makeHost()->floatToMantExp(slice(FloatTest::kMax)),

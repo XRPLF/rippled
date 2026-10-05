@@ -11,7 +11,7 @@ struct Sha512HalfImpl : RealHostFixture
 {
 };
 
-TEST_F(Sha512HalfImpl, LogsMessageAndData)
+TEST_F(Sha512HalfImpl, logs_message_and_data)
 {
     static constexpr auto data = std::string_view{"hello world"};
     auto const result = makeHost()->computeSha512HalfHash({data.data(), data.size()});

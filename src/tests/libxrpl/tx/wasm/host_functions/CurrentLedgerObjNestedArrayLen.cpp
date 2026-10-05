@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
+#include <tx/wasm/fixtures/OwnedLocator.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
 #include <tx/wasm/fixtures/WasmLedger.h>
 
@@ -24,38 +25,38 @@ struct CurrentLedgerObjNestedArrayLenImpl : RealHostFixture
     }
 };
 
-TEST_F(CurrentLedgerObjNestedArrayLenImpl, SignerEntriesLength)
+TEST_F(CurrentLedgerObjNestedArrayLenImpl, signer_entries_length)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
-    expectValue(h->getCurrentLedgerObjNestedArrayLen(FieldLocator{{sfSignerEntries.getCode()}}), 2);
+    expectValue(h->getCurrentLedgerObjNestedArrayLen(locator({sfSignerEntries.getCode()})), 2);
 }
 
-TEST_F(CurrentLedgerObjNestedArrayLenImpl, NonArrayFieldNoArray)
+TEST_F(CurrentLedgerObjNestedArrayLenImpl, non_array_field_no_array)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectError(
-        h->getCurrentLedgerObjNestedArrayLen(FieldLocator{{sfSignerQuorum.getCode()}}),
+        h->getCurrentLedgerObjNestedArrayLen(locator({sfSignerQuorum.getCode()})),
         HostFunctionError::NoArray);
 }
 
-TEST_F(CurrentLedgerObjNestedArrayLenImpl, MissingFieldNotFound)
+TEST_F(CurrentLedgerObjNestedArrayLenImpl, missing_field_not_found)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectError(
-        h->getCurrentLedgerObjNestedArrayLen(FieldLocator{{sfSigners.getCode()}}),
+        h->getCurrentLedgerObjNestedArrayLen(locator({sfSigners.getCode()})),
         HostFunctionError::FieldNotFound);
 }
 
-TEST_F(CurrentLedgerObjNestedArrayLenImpl, MissingCurrentObjectNotFound)
+TEST_F(CurrentLedgerObjNestedArrayLenImpl, missing_current_object_not_found)
 {
     auto const owner = fund("owner");
     auto assembler = bareTx();
     auto h = makeHost(keylet::signerList(owner.id()), assembler.type, std::move(assembler.build));
     expectError(
-        h->getCurrentLedgerObjNestedArrayLen(FieldLocator{{sfSignerEntries.getCode()}}),
+        h->getCurrentLedgerObjNestedArrayLen(locator({sfSignerEntries.getCode()})),
         HostFunctionError::LedgerObjNotFound);
 }
 

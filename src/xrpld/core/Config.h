@@ -59,27 +59,27 @@ struct FeeSetup
     /**
      * The account reserve requirement in drops.
      */
-    XRPAmount accountReserve{10 * kDropsPerXrp};
+    XRPAmount accountReserve{1'000'000};
 
     /**
      * The per-owned item reserve requirement in drops.
      */
-    XRPAmount ownerReserve{2 * kDropsPerXrp};
+    XRPAmount ownerReserve{200'000};
 
     /**
      * The gas limit for Feature Extensions.
      */
-    std::uint32_t gasLimit{1'000'000};
+    std::uint32_t gasLimit{kDefaultGasLimit};
 
     /**
      * The bytecode size limit for Feature Extensions.
      */
-    std::uint32_t bytecodeSizeLimit{100'000};
+    std::uint32_t bytecodeSizeLimit{kDefaultBytecodeSizeLimit};
 
     /**
      * The price of 1 WASM gas, in micro-drops.
      */
-    std::uint32_t gasPrice{1'000'000};
+    std::uint32_t gasPrice{kDefaultGasPrice};
 
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
@@ -90,9 +90,20 @@ struct FeeSetup
     [[nodiscard]] Fees
     toFees() const
     {
-        return Fees{referenceFee, accountReserve, ownerReserve};
+        return Fees{
+            referenceFee, accountReserve, ownerReserve, gasLimit, bytecodeSizeLimit, gasPrice};
     }
 };
+
+static_assert(
+    FeeSetup{}.referenceFee == XRPAmount{10},
+    "Default FeeSetup.referenceFee has been modified, please verify if change is correct.");
+static_assert(
+    FeeSetup{}.accountReserve == XRPAmount{1'000'000},
+    "Default FeeSetup.accountReserve has been modified, please verify if change is correct.");
+static_assert(
+    FeeSetup{}.ownerReserve == XRPAmount{200'000},
+    "Default FeeSetup.ownerReserve has been modified, please verify if change is correct.");
 
 //  This entire derived class is deprecated.
 //  For new config information use the style implied

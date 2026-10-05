@@ -20,7 +20,7 @@ struct CurrentLedgerObjFieldCall : HostContextTest
     std::int32_t fieldCode = sfBalance.getCode();
 };
 
-TEST_F(CurrentLedgerObjFieldCall, FieldCodeBecomesSFieldHostIsAskedFor)
+TEST_F(CurrentLedgerObjFieldCall, field_code_becomes_sfield_host_is_asked_for)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
@@ -33,7 +33,7 @@ TEST_F(CurrentLedgerObjFieldCall, FieldCodeBecomesSFieldHostIsAskedFor)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(CurrentLedgerObjFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(CurrentLedgerObjFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::FieldNotFound)));
@@ -45,7 +45,7 @@ TEST_F(CurrentLedgerObjFieldCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(CurrentLedgerObjFieldCall, UnknownFieldCodeIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjFieldCall, unknown_field_code_is_refused_without_asking_host)
 {
     fieldCode = 0x7fff'0000;  // a code nothing is registered under
     EXPECT_CALL(host, getCurrentLedgerObjField).Times(0);
@@ -56,7 +56,7 @@ TEST_F(CurrentLedgerObjFieldCall, UnknownFieldCodeIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidField));
 }
 
-TEST_F(CurrentLedgerObjFieldCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(CurrentLedgerObjFieldCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
         .WillOnce(testing::Throw(std::runtime_error{"current ledger obj field came apart"}));
@@ -71,7 +71,7 @@ TEST_F(CurrentLedgerObjFieldCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(CurrentLedgerObjFieldCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(CurrentLedgerObjFieldCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
@@ -84,7 +84,7 @@ TEST_F(CurrentLedgerObjFieldCall, ShortOutRegionWritesNothingAndReturnsTrueLengt
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(CurrentLedgerObjFieldCall, OutRegionOfExactSizeIsWritten)
+TEST_F(CurrentLedgerObjFieldCall, out_region_of_exact_size_is_written)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
@@ -97,7 +97,7 @@ TEST_F(CurrentLedgerObjFieldCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(CurrentLedgerObjFieldCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(CurrentLedgerObjFieldCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
         .WillOnce(testing::Return(Bytes{}));

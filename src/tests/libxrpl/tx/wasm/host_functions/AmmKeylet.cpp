@@ -13,7 +13,7 @@ struct AmmKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(AmmKeyletImpl, MatchesAmmKeyletFunction)
+TEST_F(AmmKeyletImpl, matches_amm_keylet_function)
 {
     auto const owner = fund("owner");
 
@@ -23,7 +23,7 @@ TEST_F(AmmKeyletImpl, MatchesAmmKeyletFunction)
         makeHost()->ammKeylet(usdIssue, xrpIssue()), keylet::amm(xrpIssue(), usdIssue));
 }
 
-TEST_F(AmmKeyletImpl, InvalidParameters)
+TEST_F(AmmKeyletImpl, invalid_parameters)
 {
     auto const owner = fund("owner");
 

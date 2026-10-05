@@ -4,15 +4,18 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/TER.h>
 
 #include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <exception>
 #include <limits>
 #include <optional>
 #include <source_location>
+#include <span>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -56,6 +59,16 @@ enum class HostFunctionError : int32_t {
     InternalFatal = std::numeric_limits<int32_t>::min(),
 };
 
+// The verdict `floatCompare` answers, read as the placing of `x` against `y`. Wire values
+// shared with the guest: append only, never renumber, never negative — a verdict and a
+// `HostFunctionError` share one `i32`, split by sign. The second declaration of
+// `xrpl_host_functions::FloatOrdering`, which links into the guest and so cannot use `cxx`.
+enum class FloatOrdering : int32_t {
+    Equal = 0,
+    Greater = 1,
+    Less = 2,
+};
+
 template <typename T>
 struct WasmResult
 {
@@ -71,56 +84,6 @@ struct WasmTER
 {
     TER ter;
     std::optional<int64_t> cost;
-};
-
-class FieldLocator
-{
-    int32_t const* ptr_ = nullptr;
-    uint32_t size_ = 0;
-    std::vector<int32_t> buf_;
-
-public:
-    FieldLocator(std::vector<int32_t>&& buf)
-        : ptr_(&buf[0]), size_(buf.size()), buf_(std::move(buf))
-    {
-    }
-
-    FieldLocator(int32_t const* ptr, uint32_t const size) : ptr_(ptr), size_(size)
-    {
-    }
-
-    FieldLocator(FieldLocator const&) = delete;
-    FieldLocator&
-    operator=(FieldLocator const&) = delete;
-    FieldLocator(FieldLocator&&) = default;
-    FieldLocator&
-    operator=(FieldLocator&&) = default;
-
-    int32_t
-    operator[](unsigned i) const
-    {
-        if (i >= size_)
-            Throw<std::runtime_error>("index out of bounds");
-        return ptr_[i];
-    }
-
-    [[nodiscard]] uint32_t
-    size() const
-    {
-        return size_;
-    }
-
-    [[nodiscard]] int32_t const*
-    data() const
-    {
-        return ptr_;
-    }
-
-    [[nodiscard]] bool
-    empty() const
-    {
-        return size_ == 0;
-    }
 };
 
 template <typename T, size_t Size = sizeof(T)>
@@ -154,10 +117,54 @@ adjustWasmEndianess(T x)
     // LCOV_EXCL_STOP
 }
 
+class FieldLocator
+{
+    std::span<uint8_t const> bytes_;
+
+public:
+    explicit FieldLocator(std::span<uint8_t const> bytes) : bytes_(bytes)
+    {
+    }
+
+    FieldLocator(FieldLocator const&) = delete;
+    FieldLocator&
+    operator=(FieldLocator const&) = delete;
+    FieldLocator(FieldLocator&&) = default;
+    FieldLocator&
+    operator=(FieldLocator&&) = default;
+
+    int32_t
+    operator[](size_t i) const
+    {
+        if (i >= size())
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::FieldLocator::operator[] : index out of bounds");
+            Throw<std::runtime_error>("index out of bounds");
+            // LCOV_EXCL_STOP
+        }
+        auto step = int32_t{};
+        std::memcpy(&step, bytes_.data() + (i * sizeof(int32_t)), sizeof(int32_t));
+        return adjustWasmEndianess(step);
+    }
+
+    [[nodiscard]] size_t
+    size() const
+    {
+        return bytes_.size() / sizeof(int32_t);
+    }
+};
+
 constexpr int32_t
 hfErrorToInt(HostFunctionError e)
 {
     return static_cast<int32_t>(e);
+}
+
+constexpr int32_t
+floatOrderingToInt(FloatOrdering o)
+{
+    return static_cast<int32_t>(o);
 }
 
 template <class Body>

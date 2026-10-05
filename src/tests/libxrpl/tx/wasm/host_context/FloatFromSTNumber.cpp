@@ -42,7 +42,7 @@ struct FloatFromSTNumberCall : HostContextTest
     std::int32_t const mode = 1;
 };
 
-TEST_F(FloatFromSTNumberCall, SerializedNumberDecodesToValueHostIsAskedFor)
+TEST_F(FloatFromSTNumberCall, serialized_number_decodes_to_value_host_is_asked_for)
 {
     Bytes const result{1, 2, 3};
     EXPECT_CALL(host, floatFromSTNumber(testing::Eq(number), mode))
@@ -55,7 +55,7 @@ TEST_F(FloatFromSTNumberCall, SerializedNumberDecodesToValueHostIsAskedFor)
     EXPECT_TRUE(out.holds(bytesOf(result)));
 }
 
-TEST_F(FloatFromSTNumberCall, HostErrorBecomesContractReturnValue)
+TEST_F(FloatFromSTNumberCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatFromSTNumber(testing::Eq(number), mode))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -67,7 +67,7 @@ TEST_F(FloatFromSTNumberCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(FloatFromSTNumberCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(FloatFromSTNumberCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, floatFromSTNumber(testing::Eq(number), mode))
         .WillOnce(testing::Throw(std::runtime_error{"float from st number came apart"}));
@@ -81,7 +81,7 @@ TEST_F(FloatFromSTNumberCall, HostExceptionBecomesInternalFatalAndIsLogged)
 }
 
 // `parseST` catches its own failure: a malformed buffer never reaches the host at all.
-TEST_F(FloatFromSTNumberCall, MalformedBytesAreRefusedWithoutAskingHost)
+TEST_F(FloatFromSTNumberCall, malformed_bytes_are_refused_without_asking_host)
 {
     Bytes const malformedBytes{0xff, 0xff, 0xff};
     EXPECT_CALL(host, floatFromSTNumber).Times(0);
@@ -92,9 +92,74 @@ TEST_F(FloatFromSTNumberCall, MalformedBytesAreRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
+// Decoding is where the rounding happens, so the guest's mode has to be installed before it.
+struct FloatFromSTNumberRounding : HostContextTest
+{
+    // Declared first so the range is in force while the expectations below are built.
+    NumberMantissaScaleGuard const scale{MantissaRange::MantissaScale::Small};
+
+    // Seventeen digits against a sixteen-digit range: normalizing drops the last one and the
+    // mode decides its fate. A dropped `7` rounds up under `ToNearest`, a dropped `3` down, so
+    // each case below disagrees with `ToNearest` and fails if the decode does not honour the
+    // mode it was given.
+    std::int32_t const exponent = 0;
+    Bytes const dropsSeven = serialized(12'345'678'901'234'567, exponent);
+    Bytes const dropsThree = serialized(12'345'678'901'234'563, exponent);
+
+    STNumber const truncated{sfGeneric, Number{1'234'567'890'123'456, 1}};
+    STNumber const raised{sfGeneric, Number{1'234'567'890'123'457, 1}};
+
+    void
+    expectDecodedAs(Bytes const& wire, Number::RoundingMode mode, STNumber const& expected)
+    {
+        auto const asInt = static_cast<std::int32_t>(mode);
+        auto const result = Bytes{1, 2, 3};
+        EXPECT_CALL(host, floatFromSTNumber(testing::Eq(expected), asInt))
+            .WillOnce(testing::Return(result));
+
+        auto out = OutRegion{32};
+        EXPECT_EQ(
+            hostContext.floatFromSTNumber(bytesOf(wire), asInt, out.slice()),
+            static_cast<std::int32_t>(result.size()));
+    }
+};
+
+TEST_F(FloatFromSTNumberRounding, towards_zero_truncates_instead_of_rounding_to_nearest)
+{
+    expectDecodedAs(dropsSeven, Number::RoundingMode::TowardsZero, truncated);
+}
+
+TEST_F(FloatFromSTNumberRounding, upward_rounds_away_instead_of_rounding_to_nearest)
+{
+    expectDecodedAs(dropsThree, Number::RoundingMode::Upward, raised);
+}
+
+TEST_F(FloatFromSTNumberRounding, downward_truncates_instead_of_rounding_to_nearest)
+{
+    expectDecodedAs(dropsSeven, Number::RoundingMode::Downward, truncated);
+}
+
+TEST_F(FloatFromSTNumberRounding, to_nearest_is_unchanged)
+{
+    expectDecodedAs(dropsSeven, Number::RoundingMode::ToNearest, raised);
+    expectDecodedAs(dropsThree, Number::RoundingMode::ToNearest, truncated);
+}
+
+TEST_F(FloatFromSTNumberRounding, an_invalid_mode_still_reaches_the_host)
+{
+    constexpr auto kNotAMode = std::int32_t{99};
+    EXPECT_CALL(host, floatFromSTNumber(testing::_, kNotAMode))
+        .WillOnce(testing::Return(std::unexpected(HostFunctionError::FloatInputMalformed)));
+
+    auto out = OutRegion{32};
+    EXPECT_EQ(
+        hostContext.floatFromSTNumber(bytesOf(dropsSeven), kNotAMode, out.slice()),
+        hfErrorToInt(HostFunctionError::FloatInputMalformed));
+}
+
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(FloatFromSTNumberCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(FloatFromSTNumberCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const result{1, 2, 3};
     EXPECT_CALL(host, floatFromSTNumber(testing::Eq(number), mode))

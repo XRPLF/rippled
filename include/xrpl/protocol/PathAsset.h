@@ -5,9 +5,11 @@
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstdint>
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <variant>
 
 namespace xrpl {
@@ -79,7 +81,7 @@ PathAsset::holds() const
 }
 
 template <ValidPathAsset T>
-[[nodiscard]] [[nodiscard]] T const&
+[[nodiscard]] T const&
 PathAsset::get() const
 {
     if (!holds<T>())
@@ -121,9 +123,32 @@ operator==(PathAsset const& lhs, PathAsset const& rhs)
 
 template <typename Hasher>
 void
-hash_append(Hasher& h, PathAsset const& pathAsset)
+hash_append(Hasher& h, PathAsset const& pathAsset) noexcept
 {
-    std::visit([&]<ValidPathAsset T>(T const& e) { hash_append(h, e); }, pathAsset.value());
+    using beast::hash_append;
+    using Variant = std::remove_cvref_t<decltype(pathAsset.value())>;
+
+    static_assert(
+        std::variant_size_v<Variant> < 0xFFu,
+        "PathAsset's discriminant must fit in a byte, leaving 0xFF reserved.");
+
+    // std::visit is not noexcept: it throws bad_variant_access when the variant
+    // is valueless_by_exception.
+    if (pathAsset.value().valueless_by_exception()) [[unlikely]]
+    {
+        hash_append(h, static_cast<std::uint8_t>(0xFFu));
+        return;
+    }
+
+    hash_append(h, static_cast<std::uint8_t>(pathAsset.value().index()));
+    std::visit(
+        [&]<ValidPathAsset T>(T const& e) noexcept {
+            static_assert(
+                noexcept(hash_append(h, e)),
+                "Every PathAsset alternative must be nothrow-hashable.");
+            hash_append(h, e);
+        },
+        pathAsset.value());
 }
 
 inline bool

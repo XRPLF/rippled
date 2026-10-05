@@ -16,7 +16,7 @@ struct FloatFromStNumberImpl : FloatTest
 {
 };
 
-TEST_F(FloatFromStNumberImpl, BadModeIsMalformed)
+TEST_F(FloatFromStNumberImpl, bad_mode_is_malformed)
 {
     auto h = makeHost();
     auto const n = STNumber{sfNumber, Number(123, 0)};
@@ -24,14 +24,14 @@ TEST_F(FloatFromStNumberImpl, BadModeIsMalformed)
     expectError(h->floatFromSTNumber(n, 4), HostFunctionError::FloatInputMalformed);
 }
 
-TEST_F(FloatFromStNumberImpl, MaxUint)
+TEST_F(FloatFromStNumberImpl, max_uint)
 {
     auto const n = STNumber{
         sfNumber, Number(std::numeric_limits<std::uint64_t>::max(), 0, Number::Normalized{})};
     expectValue(makeHost()->floatFromSTNumber(n, 0), FloatTest::kUintMax);
 }
 
-TEST_F(FloatFromStNumberImpl, MinusMaxExponent)
+TEST_F(FloatFromStNumberImpl, minus_max_exponent)
 {
     auto const n = STNumber{sfNumber, Number(-1, Number::kMaxExponent + FloatTest::kNormalExp)};
     expectValue(makeHost()->floatFromSTNumber(n, 0), FloatTest::kMinusMaxExp);

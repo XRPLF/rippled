@@ -26,7 +26,7 @@ struct ParentLedgerHashCall : HostContextTest
     Hash const hash = uint256::fromVoid(hashBytes.data());
 };
 
-TEST_F(ParentLedgerHashCall, HostValueIsWrittenAsBytes)
+TEST_F(ParentLedgerHashCall, host_value_is_written_as_bytes)
 {
     EXPECT_CALL(host, getParentLedgerHash()).WillOnce(testing::Return(hash));
 
@@ -36,7 +36,7 @@ TEST_F(ParentLedgerHashCall, HostValueIsWrittenAsBytes)
     EXPECT_TRUE(out.holds(bytesOf(hashBytes)));
 }
 
-TEST_F(ParentLedgerHashCall, HostErrorBecomesContractReturnValue)
+TEST_F(ParentLedgerHashCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getParentLedgerHash())
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -48,7 +48,7 @@ TEST_F(ParentLedgerHashCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(ParentLedgerHashCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(ParentLedgerHashCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getParentLedgerHash())
         .WillOnce(testing::Throw(std::runtime_error{"parent ledger hash came apart"}));
@@ -63,7 +63,7 @@ TEST_F(ParentLedgerHashCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(ParentLedgerHashCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(ParentLedgerHashCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     EXPECT_CALL(host, getParentLedgerHash()).WillOnce(testing::Return(hash));
 
@@ -73,7 +73,7 @@ TEST_F(ParentLedgerHashCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(ParentLedgerHashCall, OutRegionOfExactSizeIsWritten)
+TEST_F(ParentLedgerHashCall, out_region_of_exact_size_is_written)
 {
     EXPECT_CALL(host, getParentLedgerHash()).WillOnce(testing::Return(hash));
 

@@ -83,8 +83,8 @@ fn a_text_format_module_does_not_pass() {
 }
 
 /// A feature the engine disables is refused here too, because both stages compile
-/// against the one engine. `vm_limits.rs` walks every disabled feature; this pins
-/// that screening sees the same configuration.
+/// against engines built from the same configuration. `vm_limits.rs` walks every
+/// disabled feature; this pins that screening sees that configuration.
 #[test]
 fn a_disabled_feature_does_not_pass() {
     let refusal = refusal(&module(

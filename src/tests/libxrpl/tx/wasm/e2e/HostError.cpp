@@ -24,7 +24,7 @@ struct HostErrorE2e : RealVmTest
 {
 };
 
-TEST_F(HostErrorE2e, ARealHostErrorReachesTheGuestAsItsWireCode)
+TEST_F(HostErrorE2e, a_real_host_error_reaches_the_guest_as_its_wire_code)
 {
     // The contract runs against an account root, then asks it for `sfMemoData` — a field
     // that object does not carry. The impl genuinely fails to find it, so the code the

@@ -24,7 +24,9 @@
 //! `trace` is the sixtieth: its declared `HostResult<()>` gives it a
 //! `CallResult<()>` body and the `charged_unreported` helper.
 
-use crate::abi::{CallResult, guest_memory, write_buffered, write_into, write_mant_exp};
+use crate::abi::{
+    CallResult, charge_transfer, guest_memory, write_buffered, write_into, write_mant_exp,
+};
 use crate::args::{InBytes, InStr, InU32, OutBytes, TraceCode};
 use crate::vm::VmState;
 use wasmi::Caller;
@@ -499,8 +501,9 @@ impl HostFunctionBodies for Bodies {
 
     fn update_data(caller: &mut Caller<'_, VmState<'_>>, data: InBytes) -> CallResult<i32> {
         let memory = guest_memory(caller)?;
-        let host = caller.data().host;
-        Ok(host.update_data(data.read(memory)?)?)
+        let bytes = data.read(memory)?;
+        charge_transfer(caller.data(), bytes.len())?;
+        Ok(caller.data().host.update_data(bytes)?)
     }
 
     fn get_nft(
@@ -647,7 +650,9 @@ impl HostFunctionBodies for Bodies {
     ) -> CallResult<i32> {
         let memory = guest_memory(caller)?;
         let host = caller.data().host;
-        Ok(host.float_compare(x.read(memory)?, y.read(memory)?)?)
+        // `FloatOrdering`'s codes are non-negative, which is what lets the verdict share
+        // this `i32` with a negative `HostError`.
+        Ok(host.float_compare(x.read(memory)?, y.read(memory)?)?.code())
     }
 
     fn float_add(
