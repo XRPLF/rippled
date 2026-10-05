@@ -25,7 +25,6 @@
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -455,9 +454,25 @@ struct TransactionPreProcessResult
     }
 };
 
+/**
+ * Checks a sign or submit request and builds the transaction it describes.
+ *
+ * @param params The request's parameters, which `tx_json` is read out of and
+ *        autofilled fields are written into.
+ * @param apiVersion The API version the request is served at, which selects
+ *        the error reported for a ledger that is not current.
+ * @param role The caller's role.
+ * @param signingArgs Who signs, and for whom, filled in as the request is
+ *        read.
+ * @param validatedLedgerAge How old the last validated ledger is.
+ * @param app The application.
+ * @param rules The rules of the ledger the transaction is built against.
+ * @return The transaction, or the error to report.
+ */
 static TransactionPreProcessResult
 transactionPreProcessImpl(
     json::Value& params,
+    unsigned apiVersion,
     Role role,
     SigningForParams& signingArgs,
     std::chrono::seconds validatedLedgerAge,
@@ -506,13 +521,7 @@ transactionPreProcessImpl(
 
     // Check tx_json fields, but don't add any.
     auto [txJsonResult, srcAddressID] = checkTxJsonFields(
-        txJson,
-        role,
-        verify,
-        validatedLedgerAge,
-        app.config(),
-        app.getFeeTrack(),
-        getAPIVersionNumber(params, app.config().betaRpcApi));
+        txJson, role, verify, validatedLedgerAge, app.config(), app.getFeeTrack(), apiVersion);
 
     if (rpc::containsError(txJsonResult))
         return std::move(txJsonResult);
@@ -1025,7 +1034,7 @@ transactionSign(
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
     TransactionPreProcessResult const preprocResult = transactionPreProcessImpl(
-        jvRequest, role, signForParams, validatedLedgerAge, app, ledger->rules());
+        jvRequest, apiVersion, role, signForParams, validatedLedgerAge, app, ledger->rules());
 
     if (!preprocResult.second)
         return preprocResult.first;
@@ -1062,7 +1071,7 @@ transactionSubmit(
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
     TransactionPreProcessResult const preprocResult = transactionPreProcessImpl(
-        jvRequest, role, signForParams, validatedLedgerAge, app, ledger->rules());
+        jvRequest, apiVersion, role, signForParams, validatedLedgerAge, app, ledger->rules());
 
     if (!preprocResult.second)
         return preprocResult.first;
@@ -1230,7 +1239,7 @@ transactionSignFor(
     SigningForParams signForParams(*signerAccountID);
 
     TransactionPreProcessResult const preprocResult = transactionPreProcessImpl(
-        jvRequest, role, signForParams, validatedLedgerAge, app, ledger->rules());
+        jvRequest, apiVersion, role, signForParams, validatedLedgerAge, app, ledger->rules());
 
     if (!preprocResult.second)
         return preprocResult.first;
@@ -1317,13 +1326,7 @@ transactionSubmitMultiSigned(
     json::Value& txJson(jvRequest["tx_json"]);
 
     auto [txJsonResult, srcAddressID] = checkTxJsonFields(
-        txJson,
-        role,
-        true,
-        validatedLedgerAge,
-        app.config(),
-        app.getFeeTrack(),
-        getAPIVersionNumber(jvRequest, app.config().betaRpcApi));
+        txJson, role, true, validatedLedgerAge, app.config(), app.getFeeTrack(), apiVersion);
 
     if (rpc::containsError(txJsonResult))
         return std::move(txJsonResult);
