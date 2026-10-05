@@ -219,6 +219,8 @@ ValidTransactionProposal::visitEntry(bool isDelete, SLE::const_ref before, SLE::
         ++modified_;
     }
 
+    // A live proposal's signer lists must stay submittable: within size
+    // limits, sorted by account, and free of duplicates.
     if (!isDelete && !validSignerArrays(after->getFieldObject(sfProposedTransaction)))
         invalidSignerArrays_ = true;
 
@@ -232,6 +234,12 @@ ValidTransactionProposal::visitEntry(bool isDelete, SLE::const_ref before, SLE::
             expectedSponsoringOwnerCountDelta_[sle->getAccountID(sfSponsor)] += reserve;
     };
 
+    // Subtract the reserve the proposal held before, then add the reserve it
+    // holds now. For a proposal with a reserve of 5:
+    //   Create:                   +5                -> owner +5
+    //   Delete:                   -5                -> owner -5
+    //   Add a signature:          -5 then +5        -> owner  0
+    //   Transfer sponsor A to B:  -5 on A, +5 on B  -> owner  0, A -5, B +5
     if (before)
         recordReserveState(before, -1);
     if (!isDelete)
@@ -246,9 +254,15 @@ ValidTransactionProposal::finalize(
     ReadView const& view,
     beast::Journal const& j) const
 {
-    bool valid = true;
+    if (!view.rules().enabled(featureCosign))
+        return true;
 
-    bool immutableFieldsChanged = false;
+    if (invalidSignerArrays_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: TransactionProposal signer arrays are not canonical.";
+        return false;
+    }
+
     for (auto const& change : changes_)
     {
         if (!change.before || change.isDelete)
@@ -257,19 +271,11 @@ ValidTransactionProposal::finalize(
         bool const allowed = tx.getTxnType() == ttSPONSORSHIP_TRANSFER
             ? onlySponsorChanged(*change.before, *change.after)
             : onlySignatureFieldsChanged(*change.before, *change.after);
-        immutableFieldsChanged |= !allowed;
-    }
-
-    if (immutableFieldsChanged)
-    {
-        JLOG(j.fatal()) << "Invariant failed: TransactionProposal immutable fields changed.";
-        valid = false;
-    }
-
-    if (invalidSignerArrays_)
-    {
-        JLOG(j.fatal()) << "Invariant failed: TransactionProposal signer arrays are not canonical.";
-        valid = false;
+        if (!allowed)
+        {
+            JLOG(j.fatal()) << "Invariant failed: TransactionProposal immutable fields changed.";
+            return false;
+        }
     }
 
     // Owner counts move for many reasons unrelated to proposals: an offer, an
@@ -284,7 +290,7 @@ ValidTransactionProposal::finalize(
     {
         JLOG(j.fatal())
             << "Invariant failed: TransactionProposal reserve accounting is inconsistent.";
-        valid = false;
+        return false;
     }
 
     bool effectsMatch = false;
@@ -310,10 +316,10 @@ ValidTransactionProposal::finalize(
     {
         JLOG(j.fatal())
             << "Invariant failed: TransactionProposal changes do not match transaction result.";
-        valid = false;
+        return false;
     }
 
-    return valid || !view.rules().enabled(featureCosign);
+    return true;
 }
 
 }  // namespace xrpl
