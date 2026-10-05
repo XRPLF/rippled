@@ -703,6 +703,11 @@ Reader::decodeString(Token& token, std::string& decoded)
                     if (!decodeUnicodeCodePoint(token, current, end, unicode))
                         return false;
 
+                    // json::Value stores a string through its first NUL, so a string holding one
+                    // would be read as the text before it. Refuse it rather than truncate.
+                    if (unicode == 0)
+                        return addError("Null character in string", token, current);
+
                     decoded += codePointToUTF8(unicode);
                 }
                 break;
@@ -710,6 +715,11 @@ Reader::decodeString(Token& token, std::string& decoded)
                 default:
                     return addError("Bad escape sequence in string", token, current);
             }
+        }
+        else if (c == '\0')
+        {
+            // The raw form of the escape refused above.
+            return addError("Null character in string", token, current);
         }
         else
         {
