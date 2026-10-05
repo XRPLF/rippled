@@ -66,7 +66,7 @@ doFeature(RPC::JsonContext& context)
 
         if (!context.params[jss::vetoed].isBool())
         {
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
         }
 
         if (context.params[jss::vetoed].asBool())
