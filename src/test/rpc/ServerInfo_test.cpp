@@ -152,11 +152,35 @@ admin = 127.0.0.1
             }
         }
     }
+    void
+    testLogLevelParameterTypes()
+    {
+        testcase("log_level parameter types");
 
+        using namespace test::jtx;
+
+        Env env(*this);
+
+        auto testInvalidParams = [&](json::Value const& params) {
+            auto const result = env.rpc("json", "log_level", to_string(params))[jss::result];
+
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+        };
+
+        json::Value invalidSeverity(json::ValueType::Object);
+        invalidSeverity[jss::severity] = 5;
+        testInvalidParams(invalidSeverity);
+
+        json::Value invalidPartition(json::ValueType::Object);
+        invalidPartition[jss::severity] = "warn";
+        invalidPartition[jss::partition] = 5;
+        testInvalidParams(invalidPartition);
+    }
     void
     run() override
     {
         testServerInfo();
+        testLogLevelParameterTypes();
     }
 };
 
