@@ -121,6 +121,31 @@ public:
     isPseudoAccount() const;
 
     /**
+     * Checks the destination and tag.
+     *
+     * - Checks that the entry exists.
+     * - If the entry requires a destination tag, checks that there is a tag.
+     *
+     * @param hasDestinationTag Whether the transaction supplies a destination tag
+     * @return tecNO_DST if the entry does not exist; tecDST_TAG_NEEDED if the
+     *         entry requires a destination tag and hasDestinationTag is false;
+     *         tesSUCCESS otherwise
+     */
+    [[nodiscard]] TER
+    checkDestinationAndTag(bool hasDestinationTag) const
+    {
+        if (!this->exists())
+            return tecNO_DST;
+
+        // The tag is basically account-specific information we don't
+        // understand, but we can require someone to fill it in.
+        if ((*this)->isFlag(lsfRequireDestTag) && !hasDestinationTag)
+            return tecDST_TAG_NEEDED;  // Cannot send without a tag
+
+        return tesSUCCESS;
+    }
+
+    /**
      * Increase owner-count fields when the caller supplies the sponsor.
      *
      * This helper does not create a ledger object. It updates reserve accounting

@@ -9,7 +9,6 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
@@ -260,14 +259,5 @@ isPseudoAccount(ReadView const& view, AccountID const& accountId)
 {
     return AccountRootEntryR(accountId, view).isPseudoAccount();
 }
-
-/**
- * Checks the destination and tag.
- *
- * - Checks that the SLE is not null.
- * - If the SLE requires a destination tag, checks that there is a tag.
- */
-[[nodiscard]] TER
-checkDestinationAndTag(AccountRootEntryR const& toSle, bool hasDestinationTag);
 
 }  // namespace xrpl
