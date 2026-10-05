@@ -148,8 +148,10 @@ public:
      * underlying asset, recursing up to kMaxAssetCheckDepth. Returns false
      * if featureSingleAssetVault is disabled or the issuance does not exist.
      *
+     * @param account the account to check for freeze.
      * @param depth Current recursion depth; callers outside the freeze
      *              checks should pass 0.
+     * @return true if @p account is frozen through the vault, false otherwise.
      */
     [[nodiscard]] bool
     isVaultPseudoAccountFrozen(AccountID const& account, std::uint8_t depth) const;
