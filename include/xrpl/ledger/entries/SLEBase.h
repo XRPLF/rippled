@@ -70,9 +70,10 @@ resolveEntry(ReadView const& view, Keylet const& key)
 /**
  * View-parameterized base class for all ledger entries.
  *
- * SLEBase<ReadView>  — read-only:  holds shared_ptr<SLE const> + ReadView const&
- * SLEBase<ApplyView> — writable:   holds shared_ptr<SLE> + ApplyView& + Keylet,
- *                                   plus insert/update/erase operations
+ * SLEBase<ReadView>  — read-only:  holds shared_ptr<SLE const> + ReadView const*
+ * SLEBase<ApplyView> — writable:   holds shared_ptr<SLE> + ApplyView* + Keylet,
+ *                                   plus insertIntoView/updateView/eraseFromView
+ *                                   operations
  *
  * Write-only members are gated by `requires` clauses, providing compile-time
  * guarantees that read-only entries cannot mutate state.
