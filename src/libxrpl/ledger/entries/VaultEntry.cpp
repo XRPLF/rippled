@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -40,6 +41,19 @@ VaultEntry<ViewT>::kind() const
     if (vaultKind && *vaultKind == std::to_underlying(VaultKind::ClosedEnded))
         return VaultKind::ClosedEnded;
     return VaultKind::OpenEnded;
+}
+
+template <typename ViewT>
+VaultPhase
+VaultEntry<ViewT>::phase() const
+{
+    XRPL_ASSERT(
+        *this && (*this)->getType() == ltVAULT, "xrpl::VaultEntry::phase : valid Vault sle");
+    return getVaultPhase(
+        this->readView(),
+        (**this)[~sfVaultKind],
+        (**this)[~sfSubscriptionDate],
+        (**this)[~sfRedemptionDate]);
 }
 
 template class VaultEntry<ReadView>;
