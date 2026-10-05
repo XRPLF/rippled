@@ -291,7 +291,7 @@ public:
     }
 
     void
-    subAccount(InfoSub::Ref, HashSet<AccountID> const&, bool) override
+    subAccount(InfoSub::Ref, HashSet<AccountID> const&, bool, unsigned int) override
     {
     }
 
@@ -306,7 +306,7 @@ public:
     }
 
     ErrorCodeI
-    subAccountHistory(InfoSub::Ref, AccountID const&) override
+    subAccountHistory(InfoSub::Ref, AccountID const&, unsigned int) override
     {
         return {};
     }
@@ -336,7 +336,7 @@ public:
     }
 
     bool
-    subLedger(InfoSub::Ref, json::Value&) override
+    subLedger(InfoSub::Ref, json::Value&, unsigned int) override
     {
         return {};
     }
@@ -348,7 +348,7 @@ public:
     }
 
     bool
-    subBookChanges(InfoSub::Ref) override
+    subBookChanges(InfoSub::Ref, unsigned int) override
     {
         return {};
     }
@@ -360,7 +360,7 @@ public:
     }
 
     bool
-    subManifests(InfoSub::Ref) override
+    subManifests(InfoSub::Ref, unsigned int) override
     {
         return {};
     }
@@ -377,7 +377,7 @@ public:
     }
 
     bool
-    subServer(InfoSub::Ref, json::Value&, bool) override
+    subServer(InfoSub::Ref, json::Value&, bool, unsigned int) override
     {
         return {};
     }
@@ -389,7 +389,7 @@ public:
     }
 
     bool
-    subBook(InfoSub::Ref, Book const&) override
+    subBook(InfoSub::Ref, Book const&, unsigned int) override
     {
         return {};
     }
@@ -407,7 +407,7 @@ public:
     }
 
     bool
-    subTransactions(InfoSub::Ref) override
+    subTransactions(InfoSub::Ref, unsigned int) override
     {
         return {};
     }
@@ -419,7 +419,7 @@ public:
     }
 
     bool
-    subRTTransactions(InfoSub::Ref) override
+    subRTTransactions(InfoSub::Ref, unsigned int) override
     {
         return {};
     }
@@ -431,7 +431,7 @@ public:
     }
 
     bool
-    subValidations(InfoSub::Ref) override
+    subValidations(InfoSub::Ref, unsigned int) override
     {
         return {};
     }
@@ -443,7 +443,7 @@ public:
     }
 
     bool
-    subPeerStatus(InfoSub::Ref) override
+    subPeerStatus(InfoSub::Ref, unsigned int) override
     {
         return {};
     }
@@ -460,7 +460,7 @@ public:
     }
 
     bool
-    subConsensus(InfoSub::Ref) override
+    subConsensus(InfoSub::Ref, unsigned int) override
     {
         return {};
     }
@@ -472,7 +472,7 @@ public:
     }
 
     void
-    subMPT(InfoSub::Ref, HashSet<MPTID> const&) override
+    subMPT(InfoSub::Ref, HashSet<MPTID> const&, unsigned int) override
     {
     }
 
