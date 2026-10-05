@@ -134,22 +134,27 @@ public:
     increaseOwnerCount(ApplyViewContext ctx, std::uint32_t count)
         requires Base::kIsWritable;
 
+    /**
+     * Decrease owner-count fields when the caller supplies the sponsor.
+     *
+     * This helper does not delete a ledger object. It updates reserve accounting
+     * after the caller has removed an owner-counted reserve, or for special
+     * owner-count changes whose sponsor cannot be derived from an object's
+     * sfSponsor field.
+     *
+     * @param sponsorSle The sponsor's ledger entry (if applicable)
+     * @param count Amount to remove from the owner count
+     */
+    void
+    decreaseOwnerCount(std::optional<AccountRootEntry<ApplyView>>& sponsorSle, std::uint32_t count)
+        requires Base::kIsWritable;
+
 private:
     void
     adjustOwnerCountSigned(
         std::optional<AccountRootEntry<ApplyView>>& sponsorSle,
         std::int32_t adjustment)
         requires Base::kIsWritable;
-
-    // Temporary: decreaseOwnerCount still lives in AccountRootHelpers and
-    // shares adjustOwnerCountSigned until it moves onto this class.
-    friend void
-    decreaseOwnerCount(
-        ApplyView& view,
-        AccountRootEntry<ApplyView>& accountSle,
-        std::optional<AccountRootEntry<ApplyView>>& sponsorSle,
-        std::uint32_t count,
-        beast::Journal j);
 };
 
 using AccountRootEntryR = AccountRootEntry<ReadView>;
