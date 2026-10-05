@@ -107,6 +107,38 @@ statusRequestResponse(HttpRequestType const& request, boost::beast::http::status
     return handoff;
 }
 
+/**
+ * The object a request presents its parameters in.
+ *
+ * `params` is an array holding one object for the by-position form and is that
+ * object itself for the by-name form. Anything else reads as an empty object,
+ * since a caller reads the version and the credentials out of it before the
+ * shape is validated.
+ *
+ * Answers an Object or a Null and nothing else: Role.cpp reads `admin_password`
+ * out of the result through the const `operator[]`, which asserts on any other
+ * type, so widening this makes that line a remotely reachable assert.
+ *
+ * @param request The request, which need not be an object.
+ * @return The parameters, or an empty object when the request presents none.
+ *         Borrowed from @p request, so it lives as long as the request does.
+ */
+static json::Value const&
+requestParams(json::Value const& request)
+{
+    static json::Value const kNoParams{json::ValueType::Object};
+    if (!request.isObject())
+        return kNoParams;
+
+    auto const& params = request[jss::params];
+    if (params.isArray() && params.size() > 0 && params[json::UInt(0)].isObjectOrNull())
+        return params[json::UInt(0)];
+    if (params.isObject())
+        return params;
+
+    return kNoParams;
+}
+
 // VFALCO TODO Rewrite to use boost::beast::http::fields
 static bool
 authorized(Port const& port, std::map<std::string, std::string> const& h)
@@ -818,19 +850,12 @@ ServerHandler::processRequest(
             continue;
         }
 
-        unsigned apiVersion = rpc::kApiVersionIfUnspecified;
-        if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
-            jsonRPC[jss::params].size() > 0 && jsonRPC[jss::params][0u].isObject())
-        {
-            apiVersion = rpc::getAPIVersionNumber(
-                jsonRPC[jss::params][json::UInt(0)], app_.config().betaRpcApi);
-        }
-
+        // The version lives with the request's parameters, in whichever form the request presents
+        // them. A `method: "batch"` entry that names none there carries it beside its method.
+        unsigned apiVersion =
+            rpc::getAPIVersionNumber(requestParams(jsonRPC), app_.config().betaRpcApi);
         if (apiVersion == rpc::kApiVersionIfUnspecified && batch)
-        {
-            // for batch request, api_version may be at a different level
             apiVersion = rpc::getAPIVersionNumber(jsonRPC, app_.config().betaRpcApi);
-        }
 
         // Answers a request rejected before it reaches a handler. A lone request receives the
         // HTTP status and `message` as the whole body; a batch entry receives an error object
@@ -883,16 +908,9 @@ ServerHandler::processRequest(
                 apiVersion, app_.config().betaRpcApi, jsonRPC[jss::method].asString());
         }
 
-        if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
-            jsonRPC[jss::params].size() > 0 && jsonRPC[jss::params][json::UInt(0)].isObjectOrNull())
-        {
-            role = requestRole(
-                required, port, jsonRPC[jss::params][json::UInt(0)], remoteIPAddress, user);
-        }
-        else
-        {
-            role = requestRole(required, port, json::ValueType::Object, remoteIPAddress, user);
-        }
+        // The role comes from the credentials the request presents, which sit with its parameters
+        // whichever form they take.
+        role = requestRole(required, port, requestParams(jsonRPC), remoteIPAddress, user);
 
         auto usage =
             requestInboundEndpoint(resourceManager_, remoteIPAddress, role, user, forwardedFor);
@@ -940,12 +958,8 @@ ServerHandler::processRequest(
             continue;
         }
 
-        // Extract request parameters from the request Json as `params`.
-        //
-        // If the field "params" is empty, `params` is an empty object.
-        //
-        // Otherwise, that field must be an array of length 1 (why?)
-        // and we take that first entry and validate that it's an object.
+        // The `params` field carries the one object a handler reads, in either of the two forms the
+        // specification defines: the object itself, or an array holding it.
         json::Value params;
         if (!batch)
         {
@@ -954,14 +968,15 @@ ServerHandler::processRequest(
             {
                 params = json::Value(json::ValueType::Object);
             }
-            else if (!params.isArray() || params.size() != 1)
+            else if (!params.isObject())
             {
-                usage.charge(resource::kFeeMalformedRpc);
-                httpReply(400, "params unparsable", output, rpcJ);
-                return;
-            }
-            else
-            {
+                if (!params.isArray() || params.size() != 1)
+                {
+                    usage.charge(resource::kFeeMalformedRpc);
+                    httpReply(400, "params unparsable", output, rpcJ);
+                    return;
+                }
+
                 params = std::move(params[0u]);
                 if (!params.isObjectOrNull())
                 {
