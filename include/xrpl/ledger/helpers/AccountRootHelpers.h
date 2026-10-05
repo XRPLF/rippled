@@ -56,6 +56,11 @@ namespace detail {
  *
  * Shared by AccountRootEntry::ownerCount() and the owner-count helpers.
  *
+ * @param currentOwnerCount The owner count before adjustment
+ * @param ownerCountAdj Positive to add to count, negative to reduce count
+ * @param id The account ID to use for error reporting, or std::nullopt to
+ *           skip error reporting
+ * @param j Journal for logging
  * @return The adjusted owner count
  */
 std::uint32_t
