@@ -42,6 +42,17 @@
 
 namespace xrpl {
 
+/**
+ * Picks the `Sequence` a simulated transaction runs with.
+ *
+ * @param txJson The transaction, which carries an `Account` member.
+ * @param context The request, read for the open ledger and the queue.
+ * @return 0 when the transaction names a `TicketSequence`, otherwise the
+ *         account's next queueable sequence. On either path, the error to
+ *         report when `Account` is not a string or does not parse as an
+ *         account; without a `TicketSequence`, also when the account is not
+ *         in the open ledger.
+ */
 static std::expected<std::uint32_t, json::Value>
 getAutofillSequence(json::Value const& txJson, rpc::JsonContext& context)
 {
@@ -50,10 +61,10 @@ getAutofillSequence(json::Value const& txJson, rpc::JsonContext& context)
     auto const& accountStr = txJson[jss::Account];
     if (!accountStr.isString())
     {
-        // sanity check, should fail earlier
-        // LCOV_EXCL_START
+        // The earlier check requires `Account` to be present, not to be a string, so this is the
+        // type check. Without it `asString` below throws on a numeric value, which degrades a clean
+        // field error into an internal one.
         return std::unexpected(rpc::invalidFieldError("tx.Account"));
-        // LCOV_EXCL_STOP
     }
     auto const srcAddressID = parseBase58<AccountID>(accountStr.asString());
     if (!srcAddressID.has_value())
@@ -240,6 +251,19 @@ getTxJsonFromParams(json::Value const& params)
     return txJson;
 }
 
+/**
+ * Applies @p transaction to a copy of the open ledger as a dry run.
+ *
+ * @param context The request, read for `binary`.
+ * @param transaction The transaction to apply.
+ * @return The engine result with `applied` and `ledger_index`, and the
+ *         transaction as `tx_blob` when `binary` is true, otherwise as
+ *         `tx_json`. Its metadata follows as `meta_blob` or `meta` only
+ *         when the engine produced any, which it does when the result is
+ *         `tesSUCCESS` or a `tec` code, since both apply the transaction
+ *         to the view. A `tel`, `tem`, `tef` or `ter` result applies
+ *         nothing and carries no metadata.
+ */
 static json::Value
 simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
 {
@@ -266,12 +290,11 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
     }
     else
     {
-        // shouldn't be hit
-        // LCOV_EXCL_START
+        // Every TER this can hold names a token, so this arm states the fallback rather than a
+        // result any transaction reaches.
         jvResult[jss::engine_result] = "unknown";
         jvResult[jss::engine_result_code] = result.ter;
         jvResult[jss::engine_result_message] = "unknown";
-        // LCOV_EXCL_STOP
     }
 
     if (token == "tesSUCCESS")
@@ -307,10 +330,20 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
     return jvResult;
 }
 
-// {
-//   tx_blob: <string> XOR tx_json: <object>,
-//   binary: <bool>
-// }
+/**
+ * Dry-runs a transaction against the open ledger without submitting it.
+ *
+ * `params` carry `tx_blob` or `tx_json`, one of the two, and optionally
+ * `binary`. A credential in `params` is refused. A `tx_json` missing
+ * `Sequence`, `Fee` or `SigningPubKey` has it filled in, and one missing
+ * `NetworkID` has it filled in where the network's ID is above 1024.
+ *
+ * @param context The request.
+ * @return The result `simulateTxn` builds, or an error object:
+ *         `invalidTransaction` with `error_exception` when the transaction
+ *         does not build, `internalSimulate` with `error_exception` when
+ *         applying it throws.
+ */
 json::Value
 doSimulate(rpc::JsonContext& context)
 {
@@ -353,7 +386,7 @@ doSimulate(rpc::JsonContext& context)
     catch (std::exception& e)
     {
         json::Value jvResult = json::ValueType::Object;
-        jvResult[jss::error] = "invalidTransaction";
+        rpc::injectError(RpcInvalidTransaction, jvResult);
         jvResult[jss::error_exception] = e.what();
         return jvResult;
     }
@@ -377,15 +410,13 @@ doSimulate(rpc::JsonContext& context)
     {
         return simulateTxn(context, transaction);
     }
-    // LCOV_EXCL_START this is just in case, so xrpld doesn't crash
     catch (std::exception const& e)
     {
         json::Value jvResult = json::ValueType::Object;
-        jvResult[jss::error] = "internalSimulate";
+        rpc::injectError(RpcInternalSimulate, jvResult);
         jvResult[jss::error_exception] = e.what();
         return jvResult;
     }
-    // LCOV_EXCL_STOP
 }
 
 }  // namespace xrpl
