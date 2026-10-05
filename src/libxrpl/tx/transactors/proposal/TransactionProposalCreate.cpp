@@ -326,7 +326,6 @@ TransactionProposalCreate::doApply()
 
     view().insert(sleProposal);
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
     {
         auto const page = view().dirInsert(
             keylet::ownerDir(accountID_), proposalKeylet, describeOwnerDir(accountID_));
@@ -335,7 +334,7 @@ TransactionProposalCreate::doApply()
         sleProposal->setFieldU64(sfOwnerNode, *page);
     }
 
-    increaseOwnerCount(ctx_.getApplyViewContext(), sle, ownerCount, viewJ);
+    sle.increaseOwnerCount(ctx_.getApplyViewContext(), ownerCount);
     addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleProposal);
     return tesSUCCESS;
 }

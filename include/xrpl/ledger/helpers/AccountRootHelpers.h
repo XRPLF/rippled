@@ -71,6 +71,22 @@ confineOwnerCount(
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
 /**
+ * Clamps and writes an owner-count field of sle, then updates sle in view.
+ *
+ * Shared by AccountRootEntry and adjustLoanBrokerOwnerCount().
+ *
+ * @return The adjusted owner count
+ */
+std::uint32_t
+adjustOwnerCountImpl(
+    ApplyView& view,
+    SLE::Ref sle,
+    SF_UINT32 const& sfield,
+    AccountID const& accID,
+    std::int32_t ownerCountAdj,
+    beast::Journal j);
+
+/**
  * Returns the number of account reserves funded by this account: 1 for itself
  * (0 if sponsored by another account) plus the count of accounts it sponsors.
  * Shared by AccountRootEntry::reserve() and xrpLiquid().
@@ -97,49 +113,6 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
 }
 
 /**
- * Increase owner-count fields when the caller supplies the sponsor.
- *
- * This helper does not create a ledger object. It updates reserve accounting
- * after the caller has created/updated an object.
- * If sponsorSle is provided, this also adjusts the account's sponsored count
- * and the sponsor's sponsoring count.
- *
- * @param view The apply view for making changes
- * @param accountSle The account's ledger entry
- * @param sponsorSle The sponsor's ledger entry (if applicable)
- * @param count Amount to add to the owner count
- * @param j Journal for logging
- */
-void
-increaseOwnerCount(
-    ApplyView& view,
-    AccountRootEntryW& accountSle,
-    std::optional<AccountRootEntryW>& sponsorSle,
-    std::uint32_t count,
-    beast::Journal j);
-
-/**
- * Increase owner-count fields, deriving the tx reserve sponsor internally.
- *
- * Equivalent to the overload above, but resolves the sponsor via
- * getEffectiveTxReserveSponsor(ctx, accountSle) instead of taking it explicitly. Use
- * this when the sponsor is the transaction's reserve sponsor for accountSle
- * (the common create path). Deletion paths, which derive the sponsor from an
- * object's sfSponsor field, should keep using the explicit overload.
- *
- * @param ctx The apply-view context (view + tx)
- * @param accountSle The account's ledger entry
- * @param count Amount to add to the owner count
- * @param j Journal for logging
- */
-void
-increaseOwnerCount(
-    ApplyViewContext ctx,
-    AccountRootEntryW& accountSle,
-    std::uint32_t count,
-    beast::Journal j);
-
-/**
  * Convenience overload that accepts AccountID instead of SLE references.
  *
  * @param view The apply view for making changes
@@ -156,11 +129,11 @@ increaseOwnerCount(
     std::uint32_t count,
     beast::Journal j)
 {
-    AccountRootEntryW accountSle(account, view);
+    AccountRootEntryW accountSle(account, view, j);
     std::optional<AccountRootEntryW> sponsorSle;
     if (sponsor)
         sponsorSle.emplace(*sponsor, view);
-    increaseOwnerCount(view, accountSle, sponsorSle, count, j);
+    accountSle.increaseOwnerCount(sponsorSle, count);
 }
 
 /**

@@ -102,6 +102,54 @@ public:
      */
     [[nodiscard]] TER
     checkReserve(ApplyViewContext ctx, XRPAmount accBalance, Adjustment adj) const;
+
+    /**
+     * Increase owner-count fields when the caller supplies the sponsor.
+     *
+     * This helper does not create a ledger object. It updates reserve accounting
+     * after the caller has created/updated an object.
+     * If sponsorSle is provided, this also adjusts the account's sponsored count
+     * and the sponsor's sponsoring count.
+     *
+     * @param sponsorSle The sponsor's ledger entry (if applicable)
+     * @param count Amount to add to the owner count
+     */
+    void
+    increaseOwnerCount(std::optional<AccountRootEntry<ApplyView>>& sponsorSle, std::uint32_t count)
+        requires Base::kIsWritable;
+
+    /**
+     * Increase owner-count fields, deriving the tx reserve sponsor internally.
+     *
+     * Equivalent to the overload above, but resolves the sponsor via
+     * getEffectiveTxReserveSponsor(ctx, *this) instead of taking it explicitly. Use
+     * this when the sponsor is the transaction's reserve sponsor for this account
+     * (the common create path). Deletion paths, which derive the sponsor from an
+     * object's sfSponsor field, should keep using the explicit overload.
+     *
+     * @param ctx The apply-view context (view + tx)
+     * @param count Amount to add to the owner count
+     */
+    void
+    increaseOwnerCount(ApplyViewContext ctx, std::uint32_t count)
+        requires Base::kIsWritable;
+
+private:
+    void
+    adjustOwnerCountSigned(
+        std::optional<AccountRootEntry<ApplyView>>& sponsorSle,
+        std::int32_t adjustment)
+        requires Base::kIsWritable;
+
+    // Temporary: decreaseOwnerCount still lives in AccountRootHelpers and
+    // shares adjustOwnerCountSigned until it moves onto this class.
+    friend void
+    decreaseOwnerCount(
+        ApplyView& view,
+        AccountRootEntry<ApplyView>& accountSle,
+        std::optional<AccountRootEntry<ApplyView>>& sponsorSle,
+        std::uint32_t count,
+        beast::Journal j);
 };
 
 using AccountRootEntryR = AccountRootEntry<ReadView>;
