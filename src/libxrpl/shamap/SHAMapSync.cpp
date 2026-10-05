@@ -226,12 +226,12 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
             // we already know this child node is missing
             fullBelow = false;
         }
-        // The depth test precedes the cache lookup for the same reason it does in addKnownNode():
-        // the cache is keyed by node hash and shared across maps, and a hash covers a node's
-        // children but not its depth. Skipping the shortcut forgoes an optimization only.
+        // The cache key carries the child's position beside its hash, so a hit answers for this
+        // child at this position and no other. The depth test runs first, so a child at kLeafDepth
+        // is judged by the arm below rather than answered from the cache: only a leaf sits there.
         else if (
             !backed_ || isLeafDepth(nodeID.getDepth() + 1) ||
-            !f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
+            !f_.getFullBelowCache()->touchIfExists(childHash.asUInt256(), nodeID, branch))
         {
             bool pending = false;
             auto d = descendAsync(
@@ -273,7 +273,10 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
                 setInvalid();
                 return;
             }
-            else if (d->isInner() && !safeDowncast<SHAMapInnerNode*>(d)->isFullBelow(mn.generation))
+            // The node's own full-below flag is not read here. The node object is shared by hash
+            // across maps and positions, so a flag another walk set says nothing about this
+            // position, and the position-keyed cache above has already missed for it.
+            else if (d->isInner())
             {
                 mn.stack.push(se);
 
@@ -292,10 +295,14 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 
     if (fullBelow)
     {  // No partial node encountered below this node
-        node->setFullBelowGen(mn.generation);
+        // The node flag is written for the root alone, since the root position is the only one a
+        // shared node object can vouch for; see SHAMapInnerNode::fullBelowGen_.
+        if (nodeID.isRoot())
+            node->setFullBelowGen(mn.generation);
         if (backed_)
         {
-            f_.getFullBelowCache()->insert(node->getHash().asUInt256());
+            // Keyed by position as well as hash, so the entry answers only for this position.
+            f_.getFullBelowCache()->insert(node->getHash().asUInt256(), nodeID);
         }
     }
 
@@ -441,12 +448,10 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
 
             if (mn.stack.empty() && !mn.resumes.empty())
             {
-                // Recheck nodes we could not finish before
+                // Recheck nodes we could not finish before. A node's own full-below flag is not
+                // consulted: it is written for a root only, and a resumed node sits below one.
                 for (auto const& [innerNode, nodeId] : mn.resumes)
-                {
-                    if (!innerNode->isFullBelow(mn.generation))
-                        mn.stack.emplace(innerNode, nodeId, randInt(255), 0, true);
-                }
+                    mn.stack.emplace(innerNode, nodeId, randInt(255), 0, true);
 
                 mn.resumes.clear();
             }
@@ -632,10 +637,6 @@ SHAMap::addKnownNode(
 {
     XRPL_ASSERT(!nodeID.isRoot(), "xrpl::SHAMap::addKnownNode : valid node");
     XRPL_ASSERT(treeNode, "xrpl::SHAMap::addKnownNode : non-null tree node");
-    XRPL_ASSERT_IF(
-        treeNode->isLeaf(),
-        nodeID.isPrefixOf(leafKey(*treeNode)),
-        "xrpl::SHAMap::addKnownNode : leaf position consistent with node ID");
 
     if (!isSynching())
     {
@@ -643,13 +644,13 @@ SHAMap::addKnownNode(
         return SHAMapAddNode::duplicate();
     }
 
-    auto const generation = f_.getFullBelowCache()->getGeneration();
     SHAMapNodeID currNodeID;
     auto currNode = root_.get();
 
-    while (currNode->isInner() &&
-           !safeDowncast<SHAMapInnerNode*>(currNode)->isFullBelow(generation) &&
-           (currNodeID.getDepth() < nodeID.getDepth()))
+    // The descent reads no node's own full-below flag: a node object is shared by hash across
+    // maps and positions, so that flag answers for the root position alone. The position-keyed
+    // cache lookup in the loop is the memo that answers for a position below it.
+    while (currNode->isInner() && (currNodeID.getDepth() < nodeID.getDepth()))
     {
         auto const branch = selectBranch(currNodeID, nodeID.getNodeID());
         auto inner = safeDowncast<SHAMapInnerNode*>(currNode);
@@ -662,18 +663,25 @@ SHAMap::addKnownNode(
 
         auto childHash = inner->getChildHash(branch);
 
-        // Depth before the cache: the cache is keyed by node hash and shared across the family, and
-        // a hash covers a node's children but not its depth, so the same subtree can be cached as
-        // complete at one depth and reached at another. Skipping the shortcut only forgoes an
-        // optimization.
+        // The cache key carries the child's position beside its hash, so a hit answers for this
+        // child at this position and no other. The depth test runs first, so a node offered at
+        // kLeafDepth reaches the badDepth test below rather than being answered as a duplicate.
         if (!isLeafDepth(currNodeID.getDepth() + 1) &&
-            f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
+            f_.getFullBelowCache()->touchIfExists(childHash.asUInt256(), currNodeID, branch))
         {
             return SHAMapAddNode::duplicate();
         }
 
         auto prevNode = inner;
         std::tie(currNode, currNodeID) = descend(inner, currNodeID, branch, filter);
+
+        if (!isValid())
+        {
+            // descend condemned the map. `childHash` was read before that descent, so the
+            // comparison below would read a stale value.
+            JLOG(journal_.warn()) << "Node " << nodeID << " cannot be hooked into an invalid map";
+            return SHAMapAddNode::invalid();
+        }
 
         if (currNode != nullptr)
             continue;
@@ -685,25 +693,18 @@ SHAMap::addKnownNode(
             return SHAMapAddNode::invalid();
         }
 
-        // Only leaves may sit at kLeafDepth (see isLeafDepth), so an inner node there makes the map
-        // impossible. The node is reported as bad data.
-        //
-        // Every node from the root down hash-verified to get here, so it is the requested root hash
-        // itself that commits to a shape no valid tree can have. The verdict belongs to that hash
-        // rather than to our copy of the tree.
+        // Every node from the root down hash-verified to get here, so the requested root hash
+        // itself commits to a shape no tree can have. The verdict belongs to that hash.
         bool const badDepth = treeNode->isInner() && isLeafDepth(currNodeID.getDepth());
         SOMETIMES(badDepth, "xrpl::SHAMap::addKnownNode : map is invalid");
         if (badDepth)
         {
-            JLOG(journal_.warn()) << "Node " << nodeID << " makes the map invalid at "
-                                  << currNodeID;
-            setInvalid();
+            condemn(*treeNode, treeNode->getHash(), currNodeID);
             return SHAMapAddNode::mapInvalidated();
         }
 
-        // The data hashes to the child at currNodeID but claims to belong at nodeID, so it is not
-        // the node that was asked for. Only the label is wrong, so the map stays sound and the node
-        // is still obtainable from another sender.
+        // The data hashes to the child at currNodeID but is labeled nodeID, so it is not the node
+        // asked for. Only the label is wrong, so the map stays sound.
         bool const badPosition = (currNodeID != nodeID);
         SOMETIMES(badPosition, "xrpl::SHAMap::addKnownNode : node ID does not match its position");
         if (badPosition)
@@ -711,6 +712,14 @@ SHAMap::addKnownNode(
             JLOG(journal_.warn()) << "Unable to hook node " << nodeID << ", stuck at "
                                   << currNodeID;
             return SHAMapAddNode::invalid();
+        }
+
+        // A leaf's own key names its position, and the hash test above ties this leaf to this
+        // parent, so the verdict belongs to the map. Below badPosition, since Invalid is terminal.
+        if (!belongsAt(nodeID, *treeNode))
+        {
+            condemn(*treeNode, treeNode->getHash(), nodeID);
+            return SHAMapAddNode::mapInvalidated();
         }
 
         if (backed_)

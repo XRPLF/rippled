@@ -131,21 +131,18 @@ private:
     /**
      * The sequence of the ledger that this map references, if any.
      *
-     * Written when a map's ledger sequence is established (Ledger::setFull(),
-     * InboundLedger) while a nodestore reader thread reads it. Relaxed either
-     * way: it serves as a lookup hint for a nodestore keyed by hash.
+     * Written by Ledger::setFull() and by InboundLedger, and read on a
+     * nodestore reader thread. Relaxed both ways, since it is only a lookup
+     * hint for a store keyed by hash.
      */
     std::atomic<std::uint32_t> ledgerSeq_ = 0;
 
     SHAMapTreeNodePtr root_;
 
     /**
-     * The map's state.
-     *
-     * A getMissingNodes() walk writes it, through setInvalid() and
-     * clearSynching(), while whatever drives the acquisition reads it.
-     * The walk runs with the acquisition's lock released, so this is atomic
-     * rather than guarded.
+     * The map's state. Atomic because a getMissingNodes() walk writes it with
+     * the acquisition's lock released. Mutable because a const descend() can
+     * record the Invalid verdict.
      */
     mutable std::atomic<SHAMapState> state_;
     SHAMapType const type_;
@@ -414,17 +411,25 @@ public:
      * deserialized.
      *
      * A node that no valid tree can hold makes the map Invalid, which is
-     * terminal: the root hash committed to an impossible shape, so no peer
-     * can satisfy it. An acquisition reaching this verdict gives up.
+     * terminal. An acquisition reaching that verdict gives up.
      *
      * @param nodeID The position in the tree where this node belongs.
      * @param treeNode A deserialized tree node to add.
      * @param filter Optional sync filter to track received nodes.
      * @return Status indicating whether the node was useful, duplicate, or invalid.
      *
-     * @note This function expects the treeNode to be a valid, deserialized SHAMapTreeNode. The
-     *       caller is responsible for deserialization and basic validation before calling this
-     *       function. This also means that the nodeID must be consistent with the node's content.
+     * @note The caller is responsible for deserialization. The position is
+     *       checked here, in three steps that share two verdicts. A node
+     *       the descent reaches at a position other than the one nodeID
+     *       claims is refused with invalid(), and the map stays valid, since
+     *       only the label was wrong. A leaf that hash-verified at the
+     *       position nodeID claims, but whose own key does not lie under
+     *       nodeID, condemns the map and returns mapInvalidated(). A node the
+     *       descent itself condemns on the way, resolved from the local store
+     *       or the filter rather than supplied by the caller, leaves the map
+     *       Invalid and returns invalid(), since that verdict is not the
+     *       caller's doing. Any map outside Synching, including one already
+     *       condemned, returns duplicate().
      */
     SHAMapAddNode
     addKnownNode(
@@ -733,28 +738,41 @@ private:
     /**
      * Record that the map is provably not the one it claims to be.
      *
-     * Private because only the map itself can prove that, from a node that
-     * contradicts the hashes it is syncing against. Cannot fail, since
-     * Invalid outranks every other state; see trySetState().
+     * Cannot fail, since Invalid outranks every other state. Const because a
+     * const descend() can reach this verdict while resolving a node.
      */
     void
-    setInvalid();
+    setInvalid() const;
+
+    /**
+     * Condemn the map, naming in the log the node whose position proves it.
+     *
+     * Const, because a read path can reach this verdict. See setInvalid().
+     *
+     * @param node the node that cannot sit where it was offered.
+     * @param hash the hash it was resolved under.
+     * @param position the place in the tree it was offered for.
+     */
+    void
+    condemn(SHAMapTreeNode const& node, SHAMapHash const& hash, SHAMapNodeID const& position) const;
 
     /**
      * Move the map to a new state, atomically.
      *
-     * With clearSynching(), the only writer of state_ past construction, so
-     * the order between the states lives in one place: Invalid outranks all
-     * of them and is always stored, while every other transition is refused
-     * once the map is Invalid, which is what makes that verdict terminal.
+     * With clearSynching(), the only writer of state_ past construction.
+     * Invalid is always stored, and every other transition is refused once
+     * the map is Invalid, which is what makes that verdict terminal.
      * clearSynching() is narrower and moves only Synching.
+     *
+     * Const to let setInvalid() be const. state_ is mutable, which makes that
+     * legal.
      *
      * @param desired The state to move to.
      * @return false if the map is Invalid and the requested state is not,
-     *         leaving it unchanged; true otherwise.
+     *         leaving it unchanged. True otherwise.
      */
     bool
-    trySetState(SHAMapState desired);
+    trySetState(SHAMapState desired) const;
 
     // tree node cache operations
     SHAMapTreeNodePtr
@@ -865,6 +883,22 @@ private:
         bool& pending,
         DescendCallback&&) const;
 
+    /**
+     * Resolve the child of `parent` on `branch`, judging where it lands.
+     *
+     * Const, yet it records the Invalid verdict through setInvalid(). A new
+     * caller must therefore be a path that may reach that verdict. Today
+     * addKnownNode() is the only one.
+     *
+     * @param parent the inner node to descend from.
+     * @param parentID the position of `parent`.
+     * @param branch the branch of `parent` to resolve, which the caller has
+     *               already bounded.
+     * @param filter an alternate source of nodes, or null for the store alone.
+     * @return the child and the child's position. A null child where the branch
+     *         could not be resolved, or where what came back does not belong at
+     *         that position, in which case the map is left Invalid.
+     */
     std::pair<SHAMapTreeNode*, SHAMapNodeID>
     descend(
         SHAMapInnerNode* parent,
@@ -1000,10 +1034,9 @@ SHAMap::state() const
 }
 
 inline bool
-SHAMap::trySetState(SHAMapState desired)
+SHAMap::trySetState(SHAMapState desired) const
 {
-    // Invalid is stored outright: a walk reaching that verdict has to win against a thread
-    // settling the map.
+    // Invalid is stored outright: that verdict outranks a concurrent transition.
     if (desired == SHAMapState::Invalid)
     {
         state_.store(SHAMapState::Invalid, std::memory_order_release);
@@ -1085,7 +1118,7 @@ SHAMap::isValid() const
 }
 
 inline void
-SHAMap::setInvalid()
+SHAMap::setInvalid() const
 {
     // Through trySetState() like every other transition, so state_ has one writer funnel.
     trySetState(SHAMapState::Invalid);

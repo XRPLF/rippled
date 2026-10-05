@@ -466,11 +466,12 @@ TEST_F(SHAMapSyncTest, map_invalidating_node_is_judged_before_the_cache_is_read)
     ASSERT_TRUE(chain.fill(map));
     ASSERT_TRUE(map.isValid());
 
-    // This case seeds the entry a lookup at the boundary would match: the offending node's own
-    // hash. The descent skips the lookup there, so the entry is never read and the depth verdict
-    // stands. Drop the skip and the hit returns for the whole branch, so the tally below becomes
-    // a duplicate.
-    f.getFullBelowCache()->insert(chain.nodeAt(SHAMap::kLeafDepth)->getHash().asUInt256());
+    // This case seeds the entry a lookup at the boundary would match: the offending node's hash
+    // at its own position. The descent skips the lookup there, so the entry is never read and
+    // the depth verdict stands. Drop the skip and the hit returns for the whole branch, so the
+    // tally below becomes a duplicate.
+    f.getFullBelowCache()->insert(
+        chain.nodeAt(SHAMap::kLeafDepth)->getHash().asUInt256(), chain.idAt(SHAMap::kLeafDepth));
 
     auto const result = chain.addOffendingNode(map);
 
@@ -480,7 +481,166 @@ TEST_F(SHAMapSyncTest, map_invalidating_node_is_judged_before_the_cache_is_read)
     EXPECT_FALSE(map.setImmutable());
 }
 
-// An invalid tx map must also stop the enclosing ledger from being marked immutable, since an
+// A full-below entry answers only for the position the walk that filed it finished at. One cache
+// serves every map of a family, and a node's hash covers its children rather than its place, so a
+// subtree completed under one node ID must not satisfy a lookup for the same hash under another.
+// This case files a real subtree at its own position, has a root record that subtree one branch
+// over, and checks that the walk descends and reaches the leaf below rather than taking the
+// shortcut. An inner node fits any position, so the leaf is what the position test can refuse.
+TEST_F(SHAMapSyncTest, full_below_entry_does_not_answer_at_another_position)
+{
+    TestNodeFamily f{j_};
+
+    // A leaf two levels down, so the subtree filed below is an inner node with a real leaf under
+    // it.
+    auto const chain = DeepChain::toLeaf(2);
+    auto const subtree = chain.nodeAt(1);
+
+    auto const realBranch = selectBranch(SHAMapNodeID{}, chain.pathKey);
+    auto const otherBranch = (realBranch + 1) % SHAMap::kBranchFactor;
+
+    // The entry an earlier walk of that chain would have left behind: complete, at its own
+    // position.
+    f.getFullBelowCache()->insert(subtree->getHash().asUInt256(), chain.idAt(1));
+
+    // A root recording the same subtree one branch over. Nothing in the subtree's hash contradicts
+    // that placement, which is why the lookup is the only thing standing between the two.
+    auto const rootAtOtherBranch =
+        makeCompressedInnerNode({{.branch = otherBranch, .hash = subtree->getHash()}});
+    ASSERT_TRUE(rootAtOtherBranch != nullptr);
+
+    SHAMap map{SHAMapType::FREE, f};
+    map.setSynching();
+    ASSERT_TRUE(map.addRootNode(rootAtOtherBranch->getHash(), rootAtOtherBranch, nullptr).isGood());
+    ASSERT_TRUE(map.isValid());
+
+    // The path this root puts the chain's leaf on: the chain's own key with its first nibble
+    // replaced. selectBranch reads the high nibble of a byte at an even depth and the low nibble at
+    // an odd one, so rewriting the high nibble of byte 0 moves depth 0 alone.
+    UInt256 keyThroughOtherBranch = chain.pathKey;
+    keyThroughOtherBranch.begin()[0] =
+        static_cast<unsigned char>((otherBranch << 4) | (chain.pathKey.begin()[0] & 0x0Fu));
+
+    // Serves the subtree and the leaf under it, so the descent can resolve both.
+    ChainFilter const filter{chain, 2, 1};
+
+    // An inner node agrees with any position, so this one is judged by what the descent meets on
+    // the way rather than by a label of its own.
+    auto const offered = makeCompressedInnerNode({{.branch = 0u, .hash = SHAMapHash{UInt256{1}}}});
+    ASSERT_TRUE(offered != nullptr);
+
+    auto const result =
+        map.addKnownNode(SHAMapNodeID::createID(2, keyThroughOtherBranch), offered, &filter);
+
+    // The lookup missed, so the walk descended, and the chain's leaf does not belong under
+    // otherBranch.
+    EXPECT_FALSE(result.isGood());
+    EXPECT_FALSE(map.isValid());
+    EXPECT_FALSE(map.setImmutable());
+}
+
+// The full-below flag lives on the node object, which the TreeNodeCache shares by hash across maps
+// and positions, so a flag one walk set says nothing about the same object hooked somewhere else.
+// The flag is therefore written and read for a walk's root alone, and the position-keyed cache is
+// the only memo below it. This case has an honest map complete a subtree, then checks that a root
+// recording the same subtree one branch over re-derives it at that position rather than reading the
+// flag, and that the subtree, used as a root itself, is walked rather than trusted.
+TEST_F(SHAMapSyncTest, full_below_flag_answers_for_the_root_alone)
+{
+    TestNodeFamily f{j_};
+    auto const gen = f.getFullBelowCache()->getGeneration();
+
+    // A leaf two levels down, so the subtree completed below the root is an inner node with a real
+    // leaf under it. The two depths select distinct branches, so moving the subtree moves the leaf
+    // off its key.
+    auto const chain = DeepChain::toLeaf(2);
+    auto const subtree = chain.nodeAt(1);
+    auto const realBranch = selectBranch(SHAMapNodeID{}, chain.pathKey);
+    ASSERT_NE(realBranch, selectBranch(chain.idAt(1), chain.pathKey));
+
+    // Serves the subtree and the leaf under it, so every walk here resolves both synchronously.
+    ChainFilter const filter{chain, 2, 1};
+
+    // The honest walk completes the subtree below its root: it files the position-keyed entry and
+    // leaves the node flag alone, since the subtree is not this walk's root.
+    SHAMap honest{SHAMapType::FREE, f};
+    honest.setSynching();
+    ASSERT_TRUE(honest.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+    ASSERT_TRUE(honest.getMissingNodes(kMaxNodesPerRequest, &filter).empty());
+    ASSERT_FALSE(honest.isSynching());
+    EXPECT_TRUE(f.getFullBelowCache()->touchIfExists(
+        subtree->getHash().asUInt256(), SHAMapNodeID{}, realBranch));
+
+    // The object every map in the family now shares for the subtree is the one the honest walk
+    // canonicalized, not the chain's own instance, so the flag is read there.
+    auto const shared = f.getTreeNodeCache()->fetch(subtree->getHash().asUInt256());
+    ASSERT_TRUE(shared != nullptr);
+    auto const* const sharedInner = safeDowncast<SHAMapInnerNode const*>(shared.get());
+    EXPECT_FALSE(sharedInner->isFullBelow(gen));
+
+    // A root recording the same subtree one branch over. The walk resolves the shared object from
+    // the cache and descends it rather than reading its flag, which files an entry at this position
+    // too.
+    auto const otherBranch = (realBranch + 1) % SHAMap::kBranchFactor;
+    auto const rootAtOtherBranch =
+        makeCompressedInnerNode({{.branch = otherBranch, .hash = subtree->getHash()}});
+    ASSERT_TRUE(rootAtOtherBranch != nullptr);
+
+    SHAMap shifted{SHAMapType::FREE, f};
+    shifted.setSynching();
+    ASSERT_TRUE(
+        shifted.addRootNode(rootAtOtherBranch->getHash(), rootAtOtherBranch, nullptr).isGood());
+    EXPECT_TRUE(shifted.getMissingNodes(kMaxNodesPerRequest, &filter).empty());
+    EXPECT_TRUE(f.getFullBelowCache()->touchIfExists(
+        subtree->getHash().asUInt256(), SHAMapNodeID{}, otherBranch));
+
+    // The subtree as a root. Its flag is clear, so the walk runs, and completing it as a root is
+    // what sets the flag.
+    SHAMap rooted{SHAMapType::FREE, f};
+    rooted.setSynching();
+    ASSERT_TRUE(rooted.addRootNode(subtree->getHash(), subtree, nullptr).isGood());
+    EXPECT_TRUE(rooted.getMissingNodes(kMaxNodesPerRequest, &filter).empty());
+    EXPECT_FALSE(rooted.isSynching());
+    EXPECT_TRUE(sharedInner->isFullBelow(gen));
+}
+
+// An entry is filed under a node's own position and looked up from the node above it plus the
+// branch taken, so the two ways of naming one position have to produce identical key bytes. The
+// case above asserts only that a lookup one branch over misses, which a lookup that named nothing
+// at all would also satisfy. This case asserts the hit, which is what ties the two forms together.
+// Both nibble parities are covered, since a position's nibble is the high one at an even parent
+// depth and the low one at an odd depth.
+TEST_F(SHAMapSyncTest, full_below_lookup_finds_the_entry_an_insert_filed)
+{
+    TestNodeFamily f{j_};
+    auto const cache = f.getFullBelowCache();
+
+    // Inner nodes at depths 1 and 2 with a real leaf below them, which is the kind of subtree the
+    // walk records.
+    auto const chain = DeepChain::toLeaf(3);
+
+    for (auto depth = 1u; depth <= 2u; ++depth)
+    {
+        auto const subtree = chain.nodeAt(depth);
+        ASSERT_TRUE(subtree != nullptr) << "depth " << depth;
+        auto const subtreeHash = subtree->getHash().asUInt256();
+
+        // Filed under the node's own position, the way gmnProcessNodes files it.
+        cache->insert(subtreeHash, chain.idAt(depth));
+
+        // The lookup names the node above and the branch taken, the way both walks ask for it.
+        auto const parentID = chain.idAt(depth - 1);
+        auto const realBranch = selectBranch(parentID, chain.pathKey);
+
+        for (auto branch = 0u; branch < SHAMap::kBranchFactor; ++branch)
+        {
+            EXPECT_EQ(cache->touchIfExists(subtreeHash, parentID, branch), branch == realBranch)
+                << "depth " << depth << " branch " << branch;
+        }
+    }
+}
+
+// An invalid transaction map stops the enclosing ledger from being marked immutable, since an
 // immutable ledger is treated as persistable.
 TEST_F(SHAMapSyncTest, invalid_tx_map_blocks_immutable_ledger)
 {
@@ -776,10 +936,12 @@ TEST_F(SHAMapSyncTest, get_missing_nodes_rejects_inner_node_at_leaf_depth_before
     ASSERT_TRUE(map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
     ASSERT_TRUE(map.isValid());
 
-    // This case seeds the entry a lookup at the boundary would match: the offending node's own
-    // hash. The walk skips the lookup there, so the entry is never read and the depth verdict
-    // stands. Drop the skip and the hit returns for the whole branch, guard included.
-    f.getFullBelowCache()->insert(chain.nodeAt(SHAMap::kLeafDepth)->getHash().asUInt256());
+    // This case seeds the entry a lookup at the boundary would match: the offending node's hash
+    // at its own position. The walk skips the lookup there, so the entry is never read and the
+    // depth verdict stands. Drop the skip and the hit returns for the whole branch, guard
+    // included.
+    f.getFullBelowCache()->insert(
+        chain.nodeAt(SHAMap::kLeafDepth)->getHash().asUInt256(), chain.idAt(SHAMap::kLeafDepth));
 
     ChainFilter const filter{chain};
 
