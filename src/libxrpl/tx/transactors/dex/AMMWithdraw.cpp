@@ -275,7 +275,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = checkAmount(amount2, amount2Balance))
         return ter;
 
-    auto const lpTokens = ammLPHolds(ctx.view, ammSle, ctx.tx[sfAccount], ctx.j);
+    auto const lpTokens = ammSle.lpHolds(ctx.tx[sfAccount]);
     auto const lpTokensWithdraw = tokensWithdraw(lpTokens, ctx.tx[~sfLPTokenIn], ctx.tx.getFlags());
 
     if (lpTokens <= beast::kZero)
@@ -345,7 +345,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const accountSle = sb.read(keylet::account(ammAccountID));
     if (!accountSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
-    auto const lpTokens = ammLPHolds(ctx_.view(), ammSle, ctx_.tx[sfAccount], ctx_.journal);
+    auto const lpTokens = ammSle.lpHolds(ctx_.tx[sfAccount]);
     auto const lpTokensWithdraw =
         tokensWithdraw(lpTokens, ctx_.tx[~sfLPTokenIn], ctx_.tx.getFlags());
 
@@ -549,7 +549,7 @@ AMMWithdraw::withdraw(
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
 {
-    auto const lpTokens = ammLPHolds(view, ammSle, account, journal);
+    auto const lpTokens = ammSle.lpHolds(account);
     auto const expected =
         ammSle.holds(amountWithdraw.asset(), std::nullopt, freezeHandling, authHandling);
     // LCOV_EXCL_START

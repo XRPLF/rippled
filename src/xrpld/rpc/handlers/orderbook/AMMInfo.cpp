@@ -192,9 +192,8 @@ doAMMInfo(rpc::JsonContext& context)
         FreezeHandling::IgnoreFreeze,
         AuthHandling::IgnoreAuth,
         context.j);
-    auto const lptAMMBalance = accountID
-        ? ammLPHolds(*ledger, AMMEntryR(amm, *ledger), *accountID, context.j)
-        : (*amm)[sfLPTokenBalance];
+    auto const lptAMMBalance = accountID ? AMMEntryR(amm, *ledger, context.j).lpHolds(*accountID)
+                                         : (*amm)[sfLPTokenBalance];
 
     json::Value ammResult;
     asset1Balance.setJson(ammResult[jss::amount]);

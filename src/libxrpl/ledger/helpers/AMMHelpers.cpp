@@ -522,17 +522,6 @@ ammLPHolds(
     return view.balanceHookIOU(lpAccount, ammAccount, amount);
 }
 
-STAmount
-ammLPHolds(
-    ReadView const& view,
-    AMMEntryR const& ammSle,
-    AccountID const& lpAccount,
-    beast::Journal const j)
-{
-    return ammLPHolds(
-        view, (*ammSle)[sfAsset], (*ammSle)[sfAsset2], (*ammSle)[sfAccount], lpAccount, j);
-}
-
 std::uint16_t
 getTradingFee(ReadView const& view, AMMEntryR const& ammSle, AccountID const& account)
 {
