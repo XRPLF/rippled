@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -104,7 +105,7 @@ AMMBid::preflight(PreflightContext const& ctx)
 TER
 AMMBid::preclaim(PreclaimContext const& ctx)
 {
-    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    AMMEntryR const ammSle(ctx.tx[sfAsset], ctx.tx[sfAsset2], ctx.view);
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Bid: Invalid asset pair.";
@@ -127,7 +128,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto const lpTokens = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
+    auto const lpTokens = ammLPHolds(ctx.view, ammSle, ctx.tx[sfAccount], ctx.j);
     // Not LP
     if (lpTokens == beast::kZero)
     {
@@ -179,11 +180,11 @@ static std::pair<TER, bool>
 applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journal j)
 {
     using namespace std::chrono;
-    auto const ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    AMMEntryW ammSle(ctx.tx[sfAsset], ctx.tx[sfAsset2], sb, j);
     if (!ammSle)
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
-    auto const lpTokens = ammLPHolds(sb, *ammSle, account, ctx.journal);
+    auto const lpTokens = ammLPHolds(sb, ammSle, account, ctx.journal);
 
     XRPL_ASSERT(ammSle->isFieldPresent(sfAuctionSlot), "xrpl::applyBid : has auction slot");
     if (!ammSle->isFieldPresent(sfAuctionSlot))
@@ -250,7 +251,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
             return res;
         }
         ammSle->setFieldAmount(sfLPTokenBalance, lptAMMBalance - saBurn);
-        sb.update(ammSle);
+        ammSle.update();
         return tesSUCCESS;
     };
 

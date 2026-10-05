@@ -11,6 +11,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -191,8 +192,9 @@ doAMMInfo(rpc::JsonContext& context)
         FreezeHandling::IgnoreFreeze,
         AuthHandling::IgnoreAuth,
         context.j);
-    auto const lptAMMBalance =
-        accountID ? ammLPHolds(*ledger, *amm, *accountID, context.j) : (*amm)[sfLPTokenBalance];
+    auto const lptAMMBalance = accountID
+        ? ammLPHolds(*ledger, AMMEntryR(amm, *ledger), *accountID, context.j)
+        : (*amm)[sfLPTokenBalance];
 
     json::Value ammResult;
     asset1Balance.setJson(ammResult[jss::amount]);
