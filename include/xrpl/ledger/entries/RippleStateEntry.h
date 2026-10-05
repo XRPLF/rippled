@@ -123,6 +123,8 @@ public:
      * Removes this line from the owner directories of @p lowAccount and
      * @p highAccount, clears both sponsors, and erases it.
      *
+     * @param lowAccount the account on the low side of the line.
+     * @param highAccount the account on the high side of the line.
      * @return tesSUCCESS, or tefBAD_LEDGER if a directory removal fails
      */
     [[nodiscard]] TER
