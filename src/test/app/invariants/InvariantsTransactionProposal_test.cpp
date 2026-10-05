@@ -142,6 +142,36 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseStagedPayload);
 
+        // No transaction type on this amendment branch deletes a proposal yet,
+        // so a deletion has to be staged by hand. Releasing the reserve, as a
+        // real deletion would, leaves the deletion itself as the only violation.
+        testcase("TransactionProposal deletion outside the whitelist");
+        doInvariantCheck(
+            {{"TransactionProposal changes do not match transaction result"}},
+            [&](Account const& owner, Account const&, ApplyContext& ac) {
+                auto sle = peekLiveProposal(ac);
+                if (!sle)
+                    return false;
+                auto account = ac.view().peek(keylet::account(owner.id()));
+                if (!account)
+                    return false;
+                account->at(sfOwnerCount) -=
+                    xrpl::proposal::proposalOwnerCount(sle->getFieldObject(sfProposedTransaction));
+                ac.view().update(account);
+                if (!ac.view().dirRemove(
+                        keylet::ownerDir(owner.id()),
+                        sle->getFieldU64(sfOwnerNode),
+                        sle->key(),
+                        false))
+                    return false;
+                ac.view().erase(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseLiveProposal);
+
         // Distinct AccountIDs in ascending order, so an array built from them
         // violates only the bound on its length.
         auto ascendingAccounts = [](std::size_t count) {
