@@ -71,9 +71,9 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j);
 TER
 verifyValidDomain(ApplyView& view, AccountID const& account, UInt256 domainID, beast::Journal j);
 
-// Like verifyValidDomain, but 
+// Like verifyValidDomain, but
 // 1) You only call this function in doApply
-// 2) The domain owner is always considered a member and does not need a credential. 
+// 2) The domain owner is always considered a member and does not need a credential.
 TER
 verifyDomainAndPurgeExpired(
     ApplyView& view,
