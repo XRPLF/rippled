@@ -16,6 +16,7 @@
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>
 
 #include <cstddef>
+#include <format>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -264,7 +265,7 @@ OpenView::rawTxInsert(
     auto const result = txs_.emplace(
         std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(txn, metaData));
     if (!result.second)
-        Throw<std::logic_error>("rawTxInsert: duplicate TX id: " + to_string(key));
+        Throw<std::logic_error>(std::format("rawTxInsert: duplicate TX id: {}", to_string(key)));
 }
 
 }  // namespace xrpl
