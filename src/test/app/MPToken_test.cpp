@@ -978,6 +978,27 @@ class MPToken_test : public beast::unit_test::Suite
             env(pay(alice, carol, mpt(100)), Path(~usd), err);
         }
 
+        // MPT path element is invalid in V1
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {carol}});
+
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer | tfMPTCanTrade});
+            auto const mpt = mptAlice["MPT"];
+            auto const usd = alice["USD"];
+
+            env(trust(carol, usd(1'000)));
+            env.close();
+
+            auto const err = !mpTokensV2 ? Ter(temDISABLED) : Ter(tesSUCCESS);
+            env(pay(alice, carol, usd(100)), Path(~mpt), err);
+            env(pay(alice, carol, usd(100)), Path(~mpt), Sendmax(usd(100)), err);
+            env.close();
+            env.require(Balance(carol, usd(mpTokensV2 ? 200 : 0)));
+        }
+
         // build_path is invalid if MPT
         {
             Env env{*this, features - featureMPTokensV2};

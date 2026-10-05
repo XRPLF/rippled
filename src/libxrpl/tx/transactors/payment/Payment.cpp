@@ -137,8 +137,18 @@ Payment::preflight(PreflightContext const& ctx)
             return temBAD_AMOUNT;
     }
 
-    if (!mpTokensV2 && isDstMPT && ctx.tx.isFieldPresent(sfPaths))
-        return temMALFORMED;
+    if (!mpTokensV2 && ctx.tx.isFieldPresent(sfPaths))
+    {
+        if (isDstMPT)
+            return temMALFORMED;
+
+        // MPT path elements are part of MPTokensV2
+        if (std::ranges::any_of(ctx.tx.getFieldPathSet(sfPaths), [](STPath const& path) {
+                return std::ranges::any_of(
+                    path, [](STPathElement const& pe) { return pe.hasMPT(); });
+            }))
+            return temDISABLED;
+    }
 
     // A zero DomainID is invalid for a PermissionedDomain ledger entry because
     // keylet::permissionedDomain(UInt256) uses the DomainID as the ledger key.
