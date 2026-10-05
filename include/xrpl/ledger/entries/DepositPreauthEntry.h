@@ -58,6 +58,11 @@ public:
      * entry.
      *
      * @param owner The account that owns this DepositPreauth entry.
+     *
+     * @return `tecNO_ENTRY` if the entry does not exist, `tefBAD_LEDGER` if it
+     *         could not be unlinked from the owner's directory,
+     *         `tefINTERNAL` if the owner's account could not be found, and
+     *         `tesSUCCESS` otherwise.
      */
     TER
     removeFromLedger(AccountID const& owner)
