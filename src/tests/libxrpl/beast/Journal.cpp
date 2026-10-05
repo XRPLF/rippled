@@ -48,17 +48,17 @@ TEST(Journal, info_threshold)
     Journal const j(sink);
 
     j.trace() << " ";
-    EXPECT_EQ(sink.count(), 0u);
+    EXPECT_EQ(sink.count(), 0uz);
     j.debug() << " ";
-    EXPECT_EQ(sink.count(), 0u);
+    EXPECT_EQ(sink.count(), 0uz);
     j.info() << " ";
-    EXPECT_EQ(sink.count(), 1u);
+    EXPECT_EQ(sink.count(), 1uz);
     j.warn() << " ";
-    EXPECT_EQ(sink.count(), 2u);
+    EXPECT_EQ(sink.count(), 2uz);
     j.error() << " ";
-    EXPECT_EQ(sink.count(), 3u);
+    EXPECT_EQ(sink.count(), 3uz);
     j.fatal() << " ";
-    EXPECT_EQ(sink.count(), 4u);
+    EXPECT_EQ(sink.count(), 4uz);
 }
 
 TEST(Journal, debug_threshold)
@@ -68,17 +68,17 @@ TEST(Journal, debug_threshold)
     Journal const j(sink);
 
     j.trace() << " ";
-    EXPECT_EQ(sink.count(), 0u);
+    EXPECT_EQ(sink.count(), 0uz);
     j.debug() << " ";
-    EXPECT_EQ(sink.count(), 1u);
+    EXPECT_EQ(sink.count(), 1uz);
     j.info() << " ";
-    EXPECT_EQ(sink.count(), 2u);
+    EXPECT_EQ(sink.count(), 2uz);
     j.warn() << " ";
-    EXPECT_EQ(sink.count(), 3u);
+    EXPECT_EQ(sink.count(), 3uz);
     j.error() << " ";
-    EXPECT_EQ(sink.count(), 4u);
+    EXPECT_EQ(sink.count(), 4uz);
     j.fatal() << " ";
-    EXPECT_EQ(sink.count(), 5u);
+    EXPECT_EQ(sink.count(), 5uz);
 }
 
 // A Journal holds a reference to its sink rather than a copy of the threshold,
@@ -92,12 +92,12 @@ TEST(Journal, threshold_change_applies_to_an_existing_journal)
     Journal const j(sink);
 
     j.debug() << " ";
-    EXPECT_EQ(sink.count(), 0u);
+    EXPECT_EQ(sink.count(), 0uz);
 
     sink.threshold(Severity::Debug);
 
     j.debug() << " ";
-    EXPECT_EQ(sink.count(), 1u);
+    EXPECT_EQ(sink.count(), 1uz);
 }
 
 }  // namespace beast
