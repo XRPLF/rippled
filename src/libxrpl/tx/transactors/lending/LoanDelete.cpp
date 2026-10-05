@@ -85,7 +85,7 @@ reversePendingLoan(
     view.update(vaultSle);
 
     // Reverse the broker debt.
-    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), -debtTotalDelta, vaultAsset, vaultScale);
+    adjustBrokerDebtTotal(brokerSle, vaultSle, -debtTotalDelta, vaultScale);
 
     // Release the reserve from the Loan Broker: Decrement
     // AccountRoot(LoanBroker.Owner).OwnerCount by 1.
