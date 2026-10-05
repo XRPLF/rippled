@@ -528,8 +528,8 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env.close();
 
             // With a larger mantissa the amounts remain addable
-            bool const largeMantissa =
-                features[featureSingleAssetVault] || features[featureLendingProtocol];
+            bool const largeMantissa = features[featureSingleAssetVault] ||
+                features[featureLendingProtocol] || features[featureMPTokensV2];
 
             // alice cannot create paychan for 1/10 iou - precision loss
             env(paychan::create(alice, bob, usd(1), 100s, alice.pk()),
@@ -2654,8 +2654,8 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env.close();
 
             // With a larger mantissa the amounts remain addable
-            bool const largeMantissa =
-                features[featureSingleAssetVault] || features[featureLendingProtocol];
+            bool const largeMantissa = features[featureSingleAssetVault] ||
+                features[featureLendingProtocol] || features[featureMPTokensV2];
 
             // alice cannot create paychan for 1/10 iou - precision loss
             auto const pk = alice.pk();
@@ -4926,7 +4926,7 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{testableAmendments()};
         for (FeatureBitset const& feats :
-             {all - featureSingleAssetVault - featureLendingProtocol, all})
+             {all - featureSingleAssetVault - featureLendingProtocol - featureMPTokensV2, all})
         {
             testIOUWithFeats(feats);
             testIOUWithFeats(feats - fixCleanup3_2_0);
