@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -62,7 +63,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         return tecHAS_OBLIGATIONS;
     }
 
-    auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
+    VaultEntryR const vault(sleBroker->at(sfVaultID), ctx.view);
     if (!vault)
     {
         // LCOV_EXCL_START
@@ -132,7 +133,7 @@ LoanBrokerDelete::doApply()
     if (!broker)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultID = broker->at(sfVaultID);
-    auto const sleVault = view().read(keylet::vault(vaultID));
+    VaultEntryR const sleVault(vaultID, view());
     if (!sleVault)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultPseudoID = sleVault->at(sfAccount);

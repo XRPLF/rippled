@@ -1,8 +1,10 @@
 #include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
@@ -29,8 +31,9 @@ namespace xrpl {
 
 // True unit test of `clampToAssetsTotalScale`. The function under test only
 // reads sfAsset and sfAssetsTotal from the vault SLE and never touches a
-// ledger view or Rules, so a bare in-memory ltVAULT SLE is enough; there is
-// no jtx::Env and no transaction submitted anywhere in this file.
+// ledger view or Rules, so a bare in-memory ltVAULT SLE is enough. The only
+// jtx::Env is the one runCases() needs so VaultEntryR can wrap that SLE; no
+// transaction is submitted anywhere in this file.
 //
 // Number regime: this suite relies on the default thread_local Number
 // mantissa range, which src/libxrpl/basics/Number.cpp initializes to
@@ -86,6 +89,9 @@ private:
             Number::RoundingMode::Upward,
             Number::RoundingMode::TowardsZero};
 
+        test::jtx::Env const env{*this};
+        auto const view = env.current();
+
         for (auto const& c : cases)
         {
             testcase(c.name);
@@ -106,7 +112,7 @@ private:
             for (auto const mode : modes)
             {
                 NumberRoundModeGuard const rg(mode);
-                auto const result = clampToAssetsTotalScale(vault, delta);
+                auto const result = clampToAssetsTotalScale(VaultEntryR(vault, *view), delta);
 
                 // The function must be insensitive to the caller's ambient
                 // rounding mode: every mode must agree with the first one

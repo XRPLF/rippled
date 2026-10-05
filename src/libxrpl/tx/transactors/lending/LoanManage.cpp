@@ -6,6 +6,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
@@ -136,7 +137,7 @@ LoanManage::defaultLoan(
     ApplyView& view,
     SLE::Ref loanSle,
     SLE::Ref brokerSle,
-    SLE::Ref vaultSle,
+    VaultEntryW& vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -238,7 +239,7 @@ LoanManage::defaultLoan(
             adjustImpreciseNumber(
                 vaultLossUnrealizedProxy, -totalDefaultAmount, vaultAsset, vaultScale);
         }
-        view.update(vaultSle);
+        vaultSle.update();
     }
 
     // Update the LoanBroker object:
@@ -287,7 +288,7 @@ TER
 LoanManage::impairLoan(
     ApplyView& view,
     SLE::Ref loanSle,
-    SLE::Ref vaultSle,
+    VaultEntryW& vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -316,7 +317,7 @@ LoanManage::impairLoan(
         JLOG(j.warn()) << "Vault unrealized loss is too large, and will corrupt the vault.";
         return tecLIMIT_EXCEEDED;
     }
-    view.update(vaultSle);
+    vaultSle.update();
 
     // Update the Loan object
     loanSle->setFlag(lsfLoanImpaired);
@@ -339,7 +340,7 @@ LoanManage::impairLoan(
 LoanManage::unimpairLoan(
     ApplyView& view,
     SLE::Ref loanSle,
-    SLE::Ref vaultSle,
+    VaultEntryW& vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -361,7 +362,7 @@ LoanManage::unimpairLoan(
     // Reverse the "paper loss"
     adjustImpreciseNumber(vaultLossUnrealizedProxy, -lossReversed, vaultAsset, vaultScale);
 
-    view.update(vaultSle);
+    vaultSle.update();
 
     // Update the Loan object
     loanSle->clearFlag(lsfLoanImpaired);
@@ -405,7 +406,7 @@ LoanManage::doApply()
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
+    VaultEntryW vaultSle(brokerSle->at(sfVaultID), view);
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);

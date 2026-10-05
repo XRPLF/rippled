@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -313,7 +314,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return terNO_ACCOUNT;
     }
 
-    auto const vault = ctx.view.read(keylet::vault(brokerSle->at(sfVaultID)));
+    VaultEntryR const vault(brokerSle->at(sfVaultID), ctx.view);
     if (!vault)
     {
         // Should be impossible
@@ -447,7 +448,7 @@ LoanSet::doApply()
     if (!brokerOwnerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
+    VaultEntryW vaultSle(brokerSle->at(sfVaultID), view);
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultPseudo = vaultSle->at(sfAccount);
@@ -702,7 +703,7 @@ LoanSet::doApply()
         *vaultAvailableProxy <= *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
         "assets available must not be greater than assets outstanding");
-    view.update(vaultSle);
+    vaultSle.update();
 
     // Update the balances in the loan broker
     adjustImpreciseNumber(brokerSle->at(sfDebtTotal), debtTotalDelta, vaultAsset, vaultScale);
