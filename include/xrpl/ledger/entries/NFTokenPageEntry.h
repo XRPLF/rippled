@@ -59,6 +59,10 @@ public:
      * @p id, or std::nullopt if this page does not hold that token.
      *
      * The page itself is not changed.
+     *
+     * @param id the ID of the token to remove from the copy.
+     * @return the shortened copy, or std::nullopt if this page does not hold
+     *         the token.
      */
     [[nodiscard]] std::optional<STArray>
     tokensWithout(UInt256 const& id) const
