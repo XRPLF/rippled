@@ -79,6 +79,10 @@ public:
 
     /**
      * Returns true if @p issuer froze this line for @p account.
+     *
+     * @param account the account whose side of the line is checked.
+     * @param issuer the account on the other side of the line.
+     * @return true if @p issuer froze this line for @p account.
      */
     [[nodiscard]] bool
     isIndividualFrozen(AccountID const& account, AccountID const& issuer) const
