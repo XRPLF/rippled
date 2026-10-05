@@ -13,6 +13,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 
+#include <cstdint>
 #include <expected>
 #include <optional>
 #include <tuple>
@@ -59,6 +60,11 @@ public:
     // Get the LP token balance that lpAccount holds in this AMM.
     [[nodiscard]] STAmount
     lpHolds(AccountID const& lpAccount) const;
+
+    // Get the trading fee for account. The fee is discounted if account is
+    // the auction slot owner or one of the slot's authorized accounts.
+    [[nodiscard]] std::uint16_t
+    tradingFee(AccountID const& account) const;
 };
 
 using AMMEntryR = AMMEntry<ReadView>;

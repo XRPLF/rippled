@@ -3,7 +3,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -520,34 +519,6 @@ ammLPHolds(
     }
 
     return view.balanceHookIOU(lpAccount, ammAccount, amount);
-}
-
-std::uint16_t
-getTradingFee(ReadView const& view, AMMEntryR const& ammSle, AccountID const& account)
-{
-    using namespace std::chrono;
-    XRPL_ASSERT(ammSle->isFieldPresent(sfAuctionSlot), "xrpl::getTradingFee : auction present");
-    if (ammSle->isFieldPresent(sfAuctionSlot))
-    {
-        auto const& auctionSlot = safeDowncast<STObject const&>(ammSle->peekAtField(sfAuctionSlot));
-        // Not expired
-        if (auto const expiration = auctionSlot[~sfExpiration];
-            duration_cast<seconds>(view.header().parentCloseTime.time_since_epoch()).count() <
-            expiration)
-        {
-            if (auctionSlot[~sfAccount] == account)
-                return auctionSlot[sfDiscountedFee];
-            if (auctionSlot.isFieldPresent(sfAuthAccounts))
-            {
-                for (auto const& acct : auctionSlot.getFieldArray(sfAuthAccounts))
-                {
-                    if (acct[~sfAccount] == account)
-                        return auctionSlot[sfDiscountedFee];
-                }
-            }
-        }
-    }
-    return (*ammSle)[sfTradingFee];
 }
 
 STAmount
