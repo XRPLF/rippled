@@ -172,6 +172,23 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseLiveProposal);
 
+        // A SponsorshipTransfer may reassign the Sponsor and nothing else.
+        testcase("TransactionProposal sponsorship transfer touches another field");
+        doInvariantCheck(
+            {{"TransactionProposal immutable fields changed"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto sle = peekLiveProposal(ac);
+                if (!sle)
+                    return false;
+                sle->setFieldU32(sfExpiration, sle->getFieldU32(sfExpiration) + 1);
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttSPONSORSHIP_TRANSFER, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseLiveProposal);
+
         // Distinct AccountIDs in ascending order, so an array built from them
         // violates only the bound on its length.
         auto ascendingAccounts = [](std::size_t count) {
