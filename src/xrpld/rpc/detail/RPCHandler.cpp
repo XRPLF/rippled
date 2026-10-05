@@ -35,6 +35,11 @@ namespace {
  * This code is called from both the HTTP RPC handler and Websockets.
  *
  * The form of the Json returned is somewhat different between the two services.
+ * The shapes below are those of API versions 1 and 2. From API version 3 the
+ * HTTP transport answers the JSON-RPC 2.0 envelope instead: `jsonrpc` and the
+ * request's `id` at the top level, the payload under `result`, and a failure
+ * under `error` as {code, message, data} with the XRPL token and code inside
+ * `data`. See shapeSpecReply in ServerHandler.cpp.
  *
  * HTML:
  *   Success:

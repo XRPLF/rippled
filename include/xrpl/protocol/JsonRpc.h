@@ -25,7 +25,9 @@ inline constexpr std::string_view kJsonRpcVersion{"2.0"};
  * The specification reserves -32768 to -32000 for the protocol and leaves
  * -32000 to -32099 of it to the implementation.
  *
- * kJsonRpcServerError is the code for an error an XRPL handler reports.
+ * kJsonRpcServerError is the code for an error an XRPL handler reports. The
+ * XRPL token and code travel in the error's `data` member, so renumbering an
+ * XRPL error cannot change a JSON-RPC code.
  *
  * The codes from kJsonRpcServerOverloaded on lie outside the
  * implementation-defined sub-range, which the specification does not allow.
@@ -39,5 +41,17 @@ inline constexpr json::Int kJsonRpcInvalidParams{-32602};
 inline constexpr json::Int kJsonRpcServerOverloaded{-32604};
 inline constexpr json::Int kJsonRpcForbidden{-32605};
 inline constexpr json::Int kJsonRpcWrongVersion{-32606};
+
+/**
+ * The `message` the specification fixes for three of its reserved codes.
+ *
+ * A reply reporting kJsonRpcInvalidRequest, kJsonRpcMethodNotFound or
+ * kJsonRpcInvalidParams carries this text in `message` and the server's own
+ * reason in `data`. The specification defines no message for the other codes
+ * above, so a reply reporting one of them carries the reason in `message`.
+ */
+inline constexpr std::string_view kJsonRpcInvalidRequestMessage{"Invalid Request"};
+inline constexpr std::string_view kJsonRpcMethodNotFoundMessage{"Method not found"};
+inline constexpr std::string_view kJsonRpcInvalidParamsMessage{"Invalid params"};
 
 }  // namespace xrpl::rpc
