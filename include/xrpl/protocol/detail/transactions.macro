@@ -457,7 +457,7 @@ TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
     {sfAsset2, SoeRequired, SoeMptSupported},
 }))
 
-// 41 to 48 are unused
+// 41 to 48 deprecated
 
 /** This transaction type creates or updates a DID */
 #if TRANSACTION_INCLUDE

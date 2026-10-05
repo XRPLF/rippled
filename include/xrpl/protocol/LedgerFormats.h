@@ -103,6 +103,32 @@ enum LedgerEntryType : std::uint16_t {
      */
     ltGENERATOR_MAP [[deprecated("This object type is not supported and should not be used.")]] =
         0x0067,
+
+    /**
+     * A deprecated type, removed with the XChainBridge amendment.
+     *
+     * @deprecated **This object type is not supported and should not be used.**
+     *             The XChainBridge amendment was never enabled on Mainnet.
+     */
+    ltBRIDGE [[deprecated("This object type is not supported and should not be used.")]] = 0x0069,
+
+    /**
+     * A deprecated type, removed with the XChainBridge amendment.
+     *
+     * @deprecated **This object type is not supported and should not be used.**
+     *             The XChainBridge amendment was never enabled on Mainnet.
+     */
+    ltXCHAIN_OWNED_CLAIM_ID
+    [[deprecated("This object type is not supported and should not be used.")]] = 0x0071,
+
+    /**
+     * A deprecated type, removed with the XChainBridge amendment.
+     *
+     * @deprecated **This object type is not supported and should not be used.**
+     *             The XChainBridge amendment was never enabled on Mainnet.
+     */
+    ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID
+    [[deprecated("This object type is not supported and should not be used.")]] = 0x0074,
 };
 
 /**

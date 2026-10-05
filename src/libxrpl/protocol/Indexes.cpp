@@ -105,6 +105,9 @@ enum class LedgerNameSpace : std::uint16_t {
     Contract [[deprecated]] = 'c',
     Generator [[deprecated]] = 'g',
     Nickname [[deprecated]] = 'n',
+    Bridge [[deprecated]] = 'H',
+    XchainClaimId [[deprecated]] = 'Q',
+    XchainCreateAccountClaimId [[deprecated]] = 'K',
 };
 
 template <class... Args>

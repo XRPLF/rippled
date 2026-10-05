@@ -146,7 +146,7 @@ TYPED_SFIELD(sfEmitBurden,               UINT64,    13)
 // 64-bit integers (uncommon)
 // 16 to 18 unused
 TYPED_SFIELD(sfReferenceCount,           UINT64,    19)
-// 20-22 unused
+// 20 to 22 unused
 TYPED_SFIELD(sfAssetPrice,               UINT64,    23)
 TYPED_SFIELD(sfMaximumAmount,            UINT64,    24, SField::kSmdBaseTen|SField::kSmdDefault)
 TYPED_SFIELD(sfOutstandingAmount,        UINT64,    25, SField::kSmdBaseTen|SField::kSmdDefault)
@@ -274,8 +274,7 @@ TYPED_SFIELD(sfLPTokenOut,               AMOUNT,    25)
 TYPED_SFIELD(sfLPTokenIn,                AMOUNT,    26)
 TYPED_SFIELD(sfEPrice,                   AMOUNT,    27)
 TYPED_SFIELD(sfPrice,                    AMOUNT,    28)
-TYPED_SFIELD(sfSignatureReward,          AMOUNT,    29)
-TYPED_SFIELD(sfMinAccountCreateAmount,   AMOUNT,    30)
+// 29 to 30 unused
 TYPED_SFIELD(sfLPTokenBalance,           AMOUNT,    31)
 TYPED_SFIELD(sfFeeAmount,                AMOUNT,    32)
 TYPED_SFIELD(sfMaxFee,                   AMOUNT,    33)
@@ -370,7 +369,7 @@ TYPED_SFIELD(sfBaseAsset,                CURRENCY,   1)
 TYPED_SFIELD(sfQuoteAsset,               CURRENCY,   2)
 
 // issue
-// 1 and 2 are unused
+// 1 to 2 unused
 TYPED_SFIELD(sfAsset,                    ISSUE,      3)
 TYPED_SFIELD(sfAsset2,                   ISSUE,      4)
 
