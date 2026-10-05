@@ -199,6 +199,11 @@ public:
      * tecNO_PERMISSION if lsfMPTCanTrade is not set. Vault shares recurse
      * into the underlying asset's tradability via sfReferenceHolding;
      * @p depth is bounded at kMaxAssetCheckDepth.
+     *
+     * @param depth Current recursion depth; callers outside the
+     *              tradability checks should pass 0.
+     * @return tesSUCCESS if the MPT may be traded, tecOBJECT_NOT_FOUND, or
+     *         tecNO_PERMISSION otherwise.
      */
     [[nodiscard]] TER
     canTrade(std::uint8_t depth = 0) const;
