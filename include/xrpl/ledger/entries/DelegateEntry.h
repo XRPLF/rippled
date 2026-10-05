@@ -63,6 +63,9 @@ public:
      * directories, restores the delegating account's owner count, and
      * erases the entry.
      * @param owner The account whose owner directory entry led here.
+     * @return tesSUCCESS on success; tecINTERNAL if the entry or the
+     * delegating account's root does not exist; tefBAD_LEDGER if removal
+     * from an owner directory fails.
      */
     TER
     removeFromLedger(AccountID const& owner)
