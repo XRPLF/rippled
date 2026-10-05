@@ -145,7 +145,8 @@ class AccountTx_test : public beast::unit_test::Suite
         // Ledger 3 has the two txs associated with funding the account
         // All other ledgers have no txs
 
-        auto const hasTxs = [apiVersion](json::Value const& j) {
+        auto const hasTxs = [apiVersion](json::Value const& reply) {
+            auto const j = jtx::rpcLegacyReply(reply);
             switch (apiVersion)
             {
                 case 1:
@@ -188,17 +189,20 @@ class AccountTx_test : public beast::unit_test::Suite
             }
         };
 
-        auto const noTxs = [](json::Value const& j) {
+        auto const noTxs = [](json::Value const& reply) {
+            auto const j = jtx::rpcLegacyReply(reply);
             return j.isMember(jss::result) && (j[jss::result][jss::status] == "success") &&
                 (j[jss::result][jss::transactions].size() == 0);
         };
 
-        auto const isErr = [](json::Value const& j, ErrorCodeI code, std::string const& message) {
-            return j.isMember(jss::result) &&
-                j[jss::result][jss::error] == rpc::getErrorInfo(code).token &&
-                j[jss::result][jss::error_code] == code &&
-                j[jss::result][jss::error_message] == message;
-        };
+        auto const isErr =
+            [](json::Value const& reply, ErrorCodeI code, std::string const& message) {
+                auto const j = jtx::rpcLegacyReply(reply);
+                return j.isMember(jss::result) &&
+                    j[jss::result][jss::error] == rpc::getErrorInfo(code).token &&
+                    j[jss::result][jss::error_code] == code &&
+                    j[jss::result][jss::error_message] == message;
+            };
 
         json::Value jParams;
         jParams[jss::api_version] = apiVersion;
@@ -445,7 +449,7 @@ class AccountTx_test : public beast::unit_test::Suite
             }
 
             p[jss::binary] = true;
-            json::Value result{env.rpc("json", "account_tx", to_string(p))};
+            json::Value result{jtx::rpcLegacyReply(env.rpc("json", "account_tx", to_string(p)))};
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
 
             p[jss::forward] = "true";
@@ -462,7 +466,7 @@ class AccountTx_test : public beast::unit_test::Suite
             }
 
             p[jss::forward] = false;
-            result = env.rpc("json", "account_tx", to_string(p));
+            result = jtx::rpcLegacyReply(env.rpc("json", "account_tx", to_string(p)));
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
         }
         // test limit with malformed values
@@ -552,7 +556,8 @@ class AccountTx_test : public beast::unit_test::Suite
             // Test case: limit = 10 should succeed (valid integer)
             p[jss::limit] = 10;
             BEAST_EXPECT(
-                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::status] == "success");
+                jtx::rpcPayload(env.rpc("json", "account_tx", to_string(p)))[jss::status] ==
+                "success");
         }
     }
 

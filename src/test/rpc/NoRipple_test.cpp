@@ -249,17 +249,17 @@ public:
                 params[jss::role] = "gateway";
                 params[jss::transactions] = "asdf";
 
-                auto lines = env.rpc("json", "noripple_check", to_string(params));
+                auto const lines =
+                    test::jtx::rpcPayload(env.rpc("json", "noripple_check", to_string(params)));
                 if (apiVersion < 2u)
                 {
-                    BEAST_EXPECT(lines[jss::result][jss::status] == "success");
+                    BEAST_EXPECT(lines[jss::status] == "success");
                 }
                 else
                 {
-                    BEAST_EXPECT(lines[jss::result][jss::error] == "invalidParams");
-                    BEAST_EXPECT(lines[jss::result][jss::error_code] == RpcInvalidParams);
-                    BEAST_EXPECT(
-                        lines[jss::result][jss::error_message] == "Invalid field 'transactions'.");
+                    BEAST_EXPECT(lines[jss::error] == "invalidParams");
+                    BEAST_EXPECT(lines[jss::error_code] == RpcInvalidParams);
+                    BEAST_EXPECT(lines[jss::error_message] == "Invalid field 'transactions'.");
                 }
             }
         }
