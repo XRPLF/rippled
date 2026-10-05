@@ -46,6 +46,10 @@ public:
     /**
      * Returns the limit that @p account sets on this line for IOUs issued
      * by @p issuer. The issuer of the result is @p account.
+     *
+     * @param account the account whose limit is returned.
+     * @param issuer the account on the other side of the line.
+     * @return the limit @p account sets on this line.
      */
     [[nodiscard]] STAmount
     creditLimit(AccountID const& account, AccountID const& issuer) const
@@ -58,6 +62,10 @@ public:
     /**
      * Returns the amount of IOUs issued by @p issuer that @p account holds
      * on this line. The issuer of the result is @p account.
+     *
+     * @param account the account whose balance is returned.
+     * @param issuer the account on the other side of the line.
+     * @return the balance @p account holds on this line.
      */
     [[nodiscard]] STAmount
     creditBalance(AccountID const& account, AccountID const& issuer) const
