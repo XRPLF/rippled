@@ -7,19 +7,13 @@
 namespace xrpl {
 
 json::Value
-doAccountCurrencies(rpc::JsonContext&);
-json::Value
 doAccountInfo(rpc::JsonContext&);
 json::Value
 doAccountLines(rpc::JsonContext&);
 json::Value
 doAccountChannels(rpc::JsonContext&);
 json::Value
-doAccountNFTs(rpc::JsonContext&);
-json::Value
 doAccountObjects(rpc::JsonContext&);
-json::Value
-doAccountOffers(rpc::JsonContext&);
 json::Value
 doAccountTx(rpc::JsonContext&);
 json::Value

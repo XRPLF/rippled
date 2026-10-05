@@ -5,6 +5,9 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/handlers/Handlers.h>
+#include <xrpld/rpc/handlers/account/AccountCurrencies.h>
+#include <xrpld/rpc/handlers/account/AccountNFTs.h>
+#include <xrpld/rpc/handlers/account/AccountOffers.h>
 #include <xrpld/rpc/handlers/ledger/Ledger.h>
 #include <xrpld/rpc/handlers/orderbook/BookChanges.h>
 #include <xrpld/rpc/handlers/server_info/Version.h>
@@ -122,7 +125,7 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kAccountCurrencies,
-        .valueMethod = Method::of<&byRef<&doAccountCurrencies>>(),
+        .valueMethod = Method::of<&handle<AccountCurrenciesHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -140,7 +143,7 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kAccountNfts,
-        .valueMethod = Method::of<&byRef<&doAccountNFTs>>(),
+        .valueMethod = Method::of<&handle<AccountNFTsHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -152,7 +155,7 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kAccountOffers,
-        .valueMethod = Method::of<&byRef<&doAccountOffers>>(),
+        .valueMethod = Method::of<&handle<AccountOffersHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
