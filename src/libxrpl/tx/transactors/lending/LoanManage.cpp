@@ -177,7 +177,7 @@ LoanManage::defaultLoan(
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = vaultSle.assetsTotalScale();
 
     {
         // Decrease the Total Value of the Vault:
@@ -305,7 +305,7 @@ LoanManage::impairLoan(
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = vaultSle.assetsTotalScale();
 
     // Update the Vault object(set "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
@@ -347,7 +347,7 @@ LoanManage::unimpairLoan(
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = vaultSle.assetsTotalScale();
 
     // Update the Vault object(clear "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
