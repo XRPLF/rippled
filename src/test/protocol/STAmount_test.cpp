@@ -1029,10 +1029,10 @@ public:
         // 1 - 1.5e-18 rounds back to 1, so only the difference with the
         // coarser operand exposes the loss
         {
-            STAmount const amt1(usd, 15, -19);
-            STAmount const amt2(usd, 1);
-            BEAST_EXPECT(isExactSum(amt1, amt2) == false);
-            BEAST_EXPECT(isExactSum(amt2, amt1) == false);
+            STAmount const dust(usd, 15, -19);
+            STAmount const one(usd, 1);
+            BEAST_EXPECT(isExactSum(dust, one) == false);
+            BEAST_EXPECT(isExactSum(one, dust) == false);
         }
 
         // IOU sum that rounds the smaller operand away entirely
