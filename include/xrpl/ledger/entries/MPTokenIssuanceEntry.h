@@ -101,6 +101,8 @@ public:
      * Returns tesSUCCESS if a holding of this issuance may be added:
      * tecOBJECT_NOT_FOUND if the issuance does not exist, tecNO_AUTH if
      * lsfMPTCanTransfer is not set.
+     *
+     * @return tesSUCCESS, tecOBJECT_NOT_FOUND, or tecNO_AUTH.
      */
     [[nodiscard]] TER
     canAddHolding() const
