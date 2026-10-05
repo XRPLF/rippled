@@ -14,6 +14,8 @@ For a log of breaking changes, see the **API Version [number]** headings. In gen
 
 API version 3 is currently a beta API. It requires enabling `[beta_rpc_api]` in the xrpld configuration to use. See [API-VERSION-3.md](API-VERSION-3.md) for the full list of changes in API version 3.
 
+From this version a message a subscription pushes over WebSocket is sent as a JSON-RPC 2.0 notification: `method` names the event where `type` did, the message's content sits under `params`, and there is no `id`. A `path_find` update is sent the same way. A subscriber named by a `url` receives the legacy `event` call at every version. See [API-VERSION-3.md](API-VERSION-3.md).
+
 ## API Version 2
 
 API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-2.md](API-VERSION-2.md) for the full list of changes in API version 2.
