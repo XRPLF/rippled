@@ -3,6 +3,7 @@ find_package(GTest REQUIRED)
 add_executable(
     validator_keys_tests
     Commands.cpp
+    Fixtures.cpp
     ListSigning.cpp
     SigningKeys.cpp
     "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/main.cpp"

@@ -25,9 +25,4 @@ set_target_properties(
     PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
 )
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
-    "${CMAKE_BINARY_DIR}/validator-keys-LICENSE"
-    COPYONLY
-)
 install(TARGETS validator-keys RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

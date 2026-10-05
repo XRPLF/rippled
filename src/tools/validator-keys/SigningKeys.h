@@ -23,6 +23,13 @@ std::string
 tokenToBase64(ValidatorToken const& token);
 
 /**
+ * Whether two secret keys hold the same bytes. SecretKey deletes its
+ * comparison operators so secrets are compared only where it is deliberate.
+ */
+bool
+sameSecret(SecretKey const& a, SecretKey const& b);
+
+/**
  * The master key of a validator or a validator-list publisher, as stored in
  * the key file, with the manifests, tokens and revocations the master key
  * signs.
@@ -254,7 +261,8 @@ public:
     /**
      * Sets the domain the next manifest carries.
      *
-     * @throws std::runtime_error if the domain is not well formed
+     * @throws std::runtime_error if the domain is not well formed, or a token
+     *         is pending, since its manifest is already fixed for signing
      */
     void
     domain(std::string d);

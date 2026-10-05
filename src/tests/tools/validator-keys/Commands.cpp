@@ -24,17 +24,21 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
+#include <ios>
 #include <limits>
+#include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace xrpl::tools::test {
 
 namespace {
 
-std::string const kArgError = "Syntax error: Wrong number of arguments";
-std::string const kRevokedOperation = "Operation error: The specified master key has been revoked!";
-std::string const kExhausted =
+constexpr std::string_view kArgError = "Syntax error: Wrong number of arguments";
+constexpr std::string_view kRevokedOperation =
+    "Operation error: The specified master key has been revoked!";
+constexpr std::string_view kExhausted =
     "Maximum number of tokens have already been generated.\n"
     "Revoke validator keys if previous token has been compromised.";
 
@@ -263,6 +267,11 @@ TEST_F(CommandsTest, external_token)
     EXPECT_NE(attest.err.find("Sign these bytes"), std::string::npos);
     auto const next = run("start_token", {}, options_);
     auto const nextBytes = next.out.substr(0, next.out.find('\n'));
+    // The pending manifest is fixed, so its domain cannot change before finish_token
+    EXPECT_EQ(
+        commandError("set_domain", {"other.example.com"}, options_),
+        "A token is pending: finish it with finish_token before changing the domain");
+    EXPECT_EQ(keys(options_).domain(), "validator.example.com");
     auto const finished = run("finish_token", {signer.signHex(nextBytes)}, options_);
     auto const token = required(loadValidatorToken({blockBody(finished.out, "validator_token")}));
     auto const m = required(deserializeManifest(base64Decode(token.manifest)));
@@ -283,6 +292,33 @@ TEST_F(CommandsTest, external_token)
         run("start_revoke_keys", {}, options_).err.find("already been revoked"), std::string::npos);
     EXPECT_EQ(commandError("start_token", {}, options_), "Validator keys have been revoked.");
     EXPECT_EQ(commandError("finish_token", {"00"}, options_), "Validator keys have been revoked.");
+}
+
+TEST_F(CommandsTest, output_failure)
+{
+    run("create_keys", {}, options_);
+    std::ostringstream out;
+    out.setstate(std::ios::badbit);
+    std::ostringstream err;
+    EXPECT_EQ(
+        errorOf([&] { runCommand("create_token", {}, options_, out, err); }),
+        "Cannot write the output");
+}
+
+TEST_F(CommandsTest, default_key_file)
+{
+    std::filesystem::path const home = dir_.path();
+    auto const keyFile = home / ".xrpld" / "validator-keys.json";
+    auto const legacy = home / ".ripple" / "validator-keys.json";
+    EXPECT_EQ(defaultKeyFile(home), keyFile);
+
+    std::filesystem::create_directories(legacy.parent_path());
+    writeFile(legacy, "{}");
+    EXPECT_EQ(defaultKeyFile(home), legacy);
+
+    std::filesystem::create_directories(keyFile.parent_path());
+    writeFile(keyFile, "{}");
+    EXPECT_EQ(defaultKeyFile(home), keyFile);
 }
 
 TEST_F(CommandsTest, revoke_keys)

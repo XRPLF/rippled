@@ -303,6 +303,13 @@ deserializeManifest(
  *
  * Both signatures cover @ref manifestSigningData of the returned object. Set
  * them as sfSignature and sfMasterSignature, then serialize.
+ *
+ * @param masterKey The validator's or publisher's master public key
+ * @param signingKey The ephemeral key the manifest delegates to
+ * @param sequence The manifest sequence; a newer manifest has a larger one
+ * @param domain The domain to carry, or empty for none
+ * @return sfPublicKey, sfSigningPubKey, sfSequence and, when not empty,
+ *         sfDomain, without any signature
  */
 STObject
 makeManifestFields(
@@ -314,6 +321,10 @@ makeManifestFields(
 /**
  * The fields of a revocation before it is signed: @p masterKey at the
  * largest sequence, with no signing key.
+ *
+ * @param masterKey The master public key being revoked
+ * @return sfPublicKey and sfSequence set to the largest value, without the
+ *         master signature
  */
 STObject
 makeRevocationFields(PublicKey const& masterKey);
@@ -321,6 +332,11 @@ makeRevocationFields(PublicKey const& masterKey);
 /**
  * The bytes a manifest's signatures cover: HashPrefix::Manifest followed by
  * the fields without the signatures.
+ *
+ * @param fields An unsigned manifest or revocation, as
+ *        @ref makeManifestFields or @ref makeRevocationFields returns it
+ * @return The bytes sfMasterSignature covers, and sfSignature when the
+ *         manifest has a signing key
  */
 Blob
 manifestSigningData(STObject const& fields);
@@ -328,6 +344,12 @@ manifestSigningData(STObject const& fields);
 /**
  * A manifest signed by both keys.
  *
+ * @param masterKey The master public key
+ * @param masterSecret The secret key of @p masterKey; signs sfMasterSignature
+ * @param signingKey The ephemeral key the manifest delegates to
+ * @param signingSecret The secret key of @p signingKey; signs sfSignature
+ * @param sequence The manifest sequence; a newer manifest has a larger one
+ * @param domain The domain to carry, or empty for none
  * @return The serialized manifest, as `Manifest::serialized` holds it
  */
 std::string
@@ -342,6 +364,8 @@ makeManifest(
 /**
  * A revocation of @p masterKey signed by it.
  *
+ * @param masterKey The master public key being revoked
+ * @param masterSecret The secret key of @p masterKey
  * @return The serialized manifest, as `Manifest::serialized` holds it
  */
 std::string

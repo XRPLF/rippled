@@ -321,6 +321,22 @@ makeSignedList(
         jv[jss::blobs_v2] = existing[jss::blobs_v2];
         if (existing[jss::manifest].asString() != manifestBase64)
         {
+            // A server that applied the existing manifest rejects an older or
+            // equal one, and with it every blob signed under it.
+            auto const published =
+                deserializeManifest(base64Decode(existing[jss::manifest].asString()));
+            if (!published)
+                throw std::runtime_error("The list to append to holds an invalid manifest");
+            auto const current = deserializeManifest(base64Decode(manifestBase64));
+            if (!current)
+                throw std::runtime_error("The token holds an invalid manifest");
+            if (published->sequence >= current->sequence)
+            {
+                throw std::runtime_error(
+                    "The list to append to was signed under manifest sequence " +
+                    std::to_string(published->sequence) +
+                    "; append with a token whose manifest sequence is higher");
+            }
             if (!resign)
             {
                 throw std::runtime_error(

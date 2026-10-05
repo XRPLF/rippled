@@ -46,12 +46,24 @@ std::string const&
 getVersionString();
 
 /**
+ * The key file used when `--keyfile` is not given:
+ * `<home>/.xrpld/validator-keys.json`, or the legacy
+ * `<home>/.ripple/validator-keys.json` when only that one exists, the same
+ * order xrpld reads `xrpld.cfg` and `rippled.cfg` in.
+ */
+std::filesystem::path
+defaultKeyFile(std::filesystem::path const& home);
+
+/**
  * Runs one command. Results go to @p out, warnings and notes to @p err.
  *
  * @return The process exit code
  *
- * @throws std::runtime_error naming what went wrong; nothing has been written
- *         to a key file or an output file when it throws before that point
+ * @throws std::runtime_error naming what went wrong. Nothing has been
+ *         written to a key file or an output file when it throws before
+ *         that write. A failed write to @p out is thrown after the key
+ *         file was updated: the undelivered token is not recoverable and
+ *         the next token takes the next sequence.
  */
 int
 runCommand(

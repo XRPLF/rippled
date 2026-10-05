@@ -92,7 +92,10 @@ main(int argc, char** argv)
 
     po::options_description general("General Options");
     general.add_options()("help,h", "Display this message.")(
-        "keyfile", po::value<std::string>(), "Specify the key file.")(
+        "keyfile",
+        po::value<std::string>(),
+        "Specify the key file (default: ~/.xrpld/validator-keys.json, or "
+        "~/.ripple/validator-keys.json when only that one exists).")(
         "token-key-type",
         po::value<std::string>(),
         "Key type of a token's signing key: secp256k1 (default; the only type xrpld loads "
@@ -150,15 +153,15 @@ main(int argc, char** argv)
         return EXIT_SUCCESS;
     }
 
-    std::string const homeDir = getEnvVar("HOME");
-    std::string const defaultKeyFile =
-        (homeDir.empty() ? std::filesystem::current_path().string() : homeDir) +
-        "/.ripple/validator-keys.json";
-
     try
     {
+        std::string const homeDir = getEnvVar("HOME");
         ToolOptions options;
-        options.keyFile = vm.contains("keyfile") ? vm["keyfile"].as<std::string>() : defaultKeyFile;
+        options.keyFile = vm.contains("keyfile")
+            ? std::filesystem::path(vm["keyfile"].as<std::string>())
+            : defaultKeyFile(
+                  homeDir.empty() ? std::filesystem::current_path()
+                                  : std::filesystem::path(homeDir));
 
         if (vm.contains("token-key-type"))
         {

@@ -329,6 +329,25 @@ TEST_F(ListSigningTest, sign_and_verify_version_2)
         EXPECT_EQ(report["signing_key"].asString(), strHex(signingKey2));
     }
 
+    // Appending under the older token would downgrade the published manifest
+    auto const resignOld = [&](std::string const& bytes) {
+        return strHex(
+            sign(publisher_.signingKey, publisher_.token.validationSecret, makeSlice(bytes)));
+    };
+    EXPECT_EQ(
+        errorOf([&] {
+            makeSignedList(
+                publisher_.token.manifest,
+                publisher_.manifest.masterKey,
+                third,
+                resignOld(third.canonical),
+                2,
+                v2c,
+                resignOld);
+        }),
+        "The list to append to was signed under manifest sequence 2; append with a token whose "
+        "manifest sequence is higher");
+
     // Append refuses the wrong shape, another publisher, a broken blob and a full list
     EXPECT_EQ(
         errorOf([&] {

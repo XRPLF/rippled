@@ -29,8 +29,12 @@ its key pair:
 Sample output:
 
 ```
-  Validator keys stored in /home/ubuntu/.ripple/validator-keys.json
+  Validator keys stored in /home/ubuntu/.xrpld/validator-keys.json
 ```
+
+Without `--keyfile` the tool uses `~/.xrpld/validator-keys.json`. A key file
+left at `~/.ripple/validator-keys.json` by an earlier version is still used
+when `~/.xrpld/validator-keys.json` does not exist.
 
 Keep the key file in a secure but recoverable location, such as an encrypted
 USB flash drive. Do not modify its contents.

@@ -618,6 +618,16 @@ getVersionString()
     return kValue;
 }
 
+std::filesystem::path
+defaultKeyFile(std::filesystem::path const& home)
+{
+    auto keyFile = home / ".xrpld" / "validator-keys.json";
+    auto legacy = home / ".ripple" / "validator-keys.json";
+    if (!std::filesystem::exists(keyFile) && std::filesystem::exists(legacy))
+        return legacy;
+    return keyFile;
+}
+
 int
 runCommand(
     std::string const& command,
@@ -634,7 +644,12 @@ runCommand(
         throw std::runtime_error("Syntax error: Wrong number of arguments");
 
     Context ctx{.options = options, .out = out, .err = err};
-    return it->run(args, ctx);
+    int const rc = it->run(args, ctx);
+    // A result that never reached the caller, such as a token, is a failure.
+    out.flush();
+    if (!out)
+        throw std::runtime_error("Cannot write the output");
+    return rc;
 }
 
 }  // namespace xrpl::tools

@@ -116,11 +116,12 @@ public:
     buildRevocation(SecretKey const& sk, KeyType type, bool invalidSig = false)
     {
         auto const pk = derivePublicKey(type, sk);
-        auto m = deserializeManifest(makeRevocation(pk, invalidSig ? randomSecretKey() : sk));
-        if (!m)
+        auto manifest =
+            deserializeManifest(makeRevocation(pk, invalidSig ? randomSecretKey() : sk));
+        if (!manifest)
             Throw<std::runtime_error>("Could not create a revocation manifest");
-        BEAST_EXPECT(invalidSig ^ m->verify());
-        return std::move(*m);
+        BEAST_EXPECT(invalidSig ^ manifest->verify());
+        return std::move(*manifest);
     }
 
     Manifest
@@ -134,12 +135,12 @@ public:
     {
         auto const pk = derivePublicKey(type, sk);
         auto const spk = derivePublicKey(stype, ssk);
-        auto m = deserializeManifest(
+        auto manifest = deserializeManifest(
             makeManifest(pk, invalidSig ? randomSecretKey() : sk, spk, ssk, seq));
-        if (!m)
+        if (!manifest)
             Throw<std::runtime_error>("Could not create a manifest");
-        BEAST_EXPECT(invalidSig ^ m->verify());
-        return std::move(*m);
+        BEAST_EXPECT(invalidSig ^ manifest->verify());
+        return std::move(*manifest);
     }
 
     static Manifest

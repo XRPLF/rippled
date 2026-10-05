@@ -39,11 +39,12 @@ BASE_NAME = "xrpld"
 VARIANTS = ("", "assert")
 
 # Files both packaging systems consume, staged under the same names.
-STAGED_FROM_BUILD = ("xrpld", "validator-keys", "validator-keys-LICENSE")
+STAGED_FROM_BUILD = ("xrpld", "validator-keys")
 STAGED_FROM_SRC = {
     "cfg/xrpld-example.cfg": "xrpld.cfg",
     "cfg/validators-example.txt": "validators.txt",
     "LICENSE.md": "LICENSE.md",
+    "src/tools/validator-keys/LICENSE": "validator-keys-LICENSE",
     "README.md": "README.md",
 }
 STAGED_UNITS = ("xrpld.service", "xrpld.sysusers", "xrpld.tmpfiles", "xrpld.logrotate")
@@ -153,7 +154,7 @@ def read_version(xrpld: Path) -> str:
 
 
 def check_binaries(build_dir: Path) -> None:
-    """Fail unless the binaries and their notices are present and runnable."""
+    """Fail unless the binaries are present and runnable."""
     missing = [
         name
         for name in ("xrpld", "validator-keys")
@@ -163,13 +164,6 @@ def check_binaries(build_dir: Path) -> None:
         f"missing or not executable in {build_dir}: {' '.join(missing)}. "
         "Both binaries come from a single CMake build directory configured with "
         "-Dxrpld=ON -Dvalidator_keys=ON."
-    )
-
-    # No package goes out without the attribution.
-    notice = build_dir / "validator-keys-LICENSE"
-    assert notice.is_file(), (
-        f"missing {notice}. cmake/XrplValidatorKeys.cmake copies it from "
-        "src/tools/validator-keys, so reconfigure with -Dvalidator_keys=ON."
     )
 
     # Catches a binary still pointing at the Nix store's ELF loader, since

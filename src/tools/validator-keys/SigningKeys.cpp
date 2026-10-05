@@ -53,13 +53,13 @@ char const* const kExhaustedError =
 char const* const kNoSecretError = "This key file cannot be used to sign.";
 char const* const kBadManifestError = "Manifest is not properly signed";
 
+}  // namespace
+
 bool
 sameSecret(SecretKey const& a, SecretKey const& b)
 {
     return std::equal(a.begin(), a.end(), b.begin());
 }
-
-}  // namespace
 
 std::string
 tokenToBase64(ValidatorToken const& token)
@@ -506,6 +506,11 @@ SigningKeys::attestationData() const
 void
 SigningKeys::domain(std::string d)
 {
+    if (pending_)
+    {
+        throw std::runtime_error(
+            "A token is pending: finish it with finish_token before changing the domain");
+    }
     if (!d.empty() && !isProperlyFormedTomlDomain(d))
     {
         throw std::runtime_error(
