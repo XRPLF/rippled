@@ -124,6 +124,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/container/small_vector.hpp>
 #include <boost/system/detail/errc.hpp>
 #include <boost/system/detail/error_code.hpp>
 #include <boost/system/system_error.hpp>
@@ -1173,6 +1174,120 @@ noteSubscriber(NotifyMap& notify, InfoSub::pointer const& subscriber, unsigned i
 {
     notify.try_emplace(subscriber->getSeq(), subscriber, apiVersion);
 }
+
+/**
+ * One stream event, shaped once per API version for every subscriber it is
+ * sent to.
+ *
+ * Holds the shape the event takes for each version it is asked for, so the
+ * second subscriber on a version is handed the copy the first one's shaping
+ * made rather than the one copy per subscriber sendShaped would make. The
+ * event is bound at construction and borrowed for the instance's life: one
+ * instance carries one event, the shapes it holds are that event's, and a
+ * second event takes a second instance.
+ *
+ * Reuse is safe because nothing on the way out alters the copy: sendTo writes
+ * it as it stands. A message tailored to one subscriber must not travel this
+ * way: an account history message carries that subscriber's own transaction
+ * index, so it goes through sendShaped.
+ */
+class StreamBroadcast
+{
+public:
+    /**
+     * Binds the event @p message, one content for every version.
+     *
+     * @param message The event as the publisher built it. Borrowed, so it must
+     *        outlive this instance.
+     */
+    explicit StreamBroadcast(json::Value const& message) : single_(&message)
+    {
+    }
+
+    /**
+     * Binds the event @p message, one content per version.
+     *
+     * @param message The event as the publisher built it for each version.
+     *        Borrowed, so it must outlive this instance.
+     */
+    explicit StreamBroadcast(MultiApiJson const& message) : multi_(&message)
+    {
+    }
+
+    /**
+     * Sends the event to @p subscriber in the shape its API version expects.
+     *
+     * @param subscriber Where the message is going. One that cannot receive a
+     *        notification is sent the event as the publisher built it,
+     *        whatever its version, and its shape is not held.
+     * @param apiVersion The version the subscription was registered at, read
+     *        by the caller from the entry it took the subscriber from.
+     */
+    void
+    sendTo(InfoSub& subscriber, unsigned int apiVersion)
+    {
+        if (multi_ != nullptr)
+        {
+            multi_->visit(
+                apiVersion, [&](json::Value const& jv) { send(subscriber, apiVersion, jv); });
+            return;
+        }
+        send(subscriber, apiVersion, *single_);
+    }
+
+private:
+    /**
+     * Sends @p message, the event's content for @p apiVersion, to @p subscriber
+     * in the shape that version expects.
+     *
+     * @param subscriber Where the message is going.
+     * @param apiVersion The API version that subscriber is on.
+     * @param message The event as the publisher built it for that version.
+     */
+    void
+    send(InfoSub& subscriber, unsigned int apiVersion, json::Value const& message)
+    {
+        if (subscriber.wantsNotifications())
+        {
+            auto held = std::ranges::find(shaped_, apiVersion, &Shape::version);
+            if (held == shaped_.end())
+            {
+                if (auto notification = shapeAsNotification(message, apiVersion))
+                {
+                    shaped_.emplace_back(apiVersion, std::move(*notification));
+                    held = std::prev(shaped_.end());
+                }
+            }
+
+            if (held != shaped_.end())
+            {
+                subscriber.send(held->message, true);
+                return;
+            }
+        }
+
+        // Neither case copies: what the publisher built is sent as it stands.
+        subscriber.send(message, true);
+    }
+
+    // The bound event, exactly one of the two set.
+    json::Value const* single_ = nullptr;
+    MultiApiJson const* multi_ = nullptr;
+
+    struct Shape
+    {
+        unsigned int version{};
+        json::Value message;
+    };
+
+    // Derived so that a new API version cannot make a publish allocate inside streamLock_.
+    static constexpr std::size_t kMaxShapes =
+        rpc::kApiMaximumValidVersion - rpc::kApiMinimumSpecVersion + 1;
+
+    // One entry per version that shapes, found by a linear scan, where a map would allocate a
+    // bucket array and a node to hold one of them.
+    boost::container::small_vector<Shape, kMaxShapes> shaped_;
+};
 
 }  // namespace
 
@@ -2510,11 +2625,12 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
             jvObj[jss::domain] = mo.domain;
         jvObj[jss::manifest] = strHex(mo.serialized);
 
+        StreamBroadcast broadcast{jvObj};
         for (auto i = streamMaps_[SManifests].begin(); i != streamMaps_[SManifests].end();)
         {
             if (auto p = i->second.sink.lock())
             {
-                sendShaped(*p, i->second.apiVersion, jvObj);
+                broadcast.sendTo(*p, i->second.apiVersion);
                 toRelease.push_back(std::move(p));
                 ++i;
             }
@@ -2612,6 +2728,7 @@ NetworkOPsImp::pubServer()
 
         lastFeeSummary_ = f;
 
+        StreamBroadcast broadcast{jvObj};
         for (auto i = streamMaps_[SServer].begin(); i != streamMaps_[SServer].end();)
         {
             InfoSub::pointer p = i->second.sink.lock();
@@ -2621,7 +2738,7 @@ NetworkOPsImp::pubServer()
             //             sending of JSON data.
             if (p)
             {
-                sendShaped(*p, i->second.apiVersion, jvObj);
+                broadcast.sendTo(*p, i->second.apiVersion);
                 toRelease.push_back(std::move(p));
                 ++i;
             }
@@ -2650,11 +2767,12 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
         jvObj[jss::type] = "consensusPhase";
         jvObj[jss::consensus] = to_string(phase);
 
+        StreamBroadcast broadcast{jvObj};
         for (auto i = streamMap.begin(); i != streamMap.end();)
         {
             if (auto p = i->second.sink.lock())
             {
-                sendShaped(*p, i->second.apiVersion, jvObj);
+                broadcast.sendTo(*p, i->second.apiVersion);
                 toRelease.push_back(std::move(p));
                 ++i;
             }
@@ -2760,13 +2878,12 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
                 }
             });
 
+        StreamBroadcast broadcast{multiObj};
         for (auto i = streamMaps_[SValidations].begin(); i != streamMaps_[SValidations].end();)
         {
             if (auto p = i->second.sink.lock())
             {
-                multiObj.visit(
-                    i->second.apiVersion,  //
-                    [&](json::Value const& jv) { sendShaped(*p, i->second.apiVersion, jv); });
+                broadcast.sendTo(*p, i->second.apiVersion);
                 toRelease.push_back(std::move(p));
                 ++i;
             }
@@ -2794,13 +2911,14 @@ NetworkOPsImp::pubPeerStatus(std::function<json::Value()> const& func)
 
         jvObj[jss::type] = "peerStatusChange";
 
+        StreamBroadcast broadcast{jvObj};
         for (auto i = streamMaps_[SPeerStatus].begin(); i != streamMaps_[SPeerStatus].end();)
         {
             InfoSub::pointer p = i->second.sink.lock();
 
             if (p)
             {
-                sendShaped(*p, i->second.apiVersion, jvObj);
+                broadcast.sendTo(*p, i->second.apiVersion);
                 toRelease.push_back(std::move(p));
                 ++i;
             }
@@ -3373,6 +3491,7 @@ NetworkOPsImp::pubProposedTransaction(
 
         std::scoped_lock const sl(streamLock_);
 
+        StreamBroadcast broadcast{jvObj};
         auto it = streamMaps_[SRtTransactions].begin();
         while (it != streamMaps_[SRtTransactions].end())
         {
@@ -3380,9 +3499,7 @@ NetworkOPsImp::pubProposedTransaction(
 
             if (p)
             {
-                jvObj.visit(
-                    it->second.apiVersion,  //
-                    [&](json::Value const& jv) { sendShaped(*p, it->second.apiVersion, jv); });
+                broadcast.sendTo(*p, it->second.apiVersion);
                 toRelease.push_back(std::move(p));
                 ++it;
             }
@@ -3474,13 +3591,16 @@ NetworkOPsImp::publishLedgerStreams(
         {
             jvObj[jss::validated_ledgers] = registry_.get().getLedgerMaster().getCompleteLedgers();
         }
+        // The ledger event and the book-changes event below are two events, so each loop binds an
+        // instance of its own.
+        StreamBroadcast broadcast{jvObj};
         auto it = streamMaps_[SLedger].begin();
         while (it != streamMaps_[SLedger].end())
         {
             InfoSub::pointer p = it->second.sink.lock();
             if (p)
             {
-                sendShaped(*p, it->second.apiVersion, jvObj);
+                broadcast.sendTo(*p, it->second.apiVersion);
                 toRelease.push_back(std::move(p));
                 ++it;
             }
@@ -3495,13 +3615,14 @@ NetworkOPsImp::publishLedgerStreams(
     {
         json::Value const jvObj = xrpl::rpc::computeBookChanges(lpAccepted);
 
+        StreamBroadcast broadcast{jvObj};
         auto it = streamMaps_[SBookChanges].begin();
         while (it != streamMaps_[SBookChanges].end())
         {
             InfoSub::pointer p = it->second.sink.lock();
             if (p)
             {
-                sendShaped(*p, it->second.apiVersion, jvObj);
+                broadcast.sendTo(*p, it->second.apiVersion);
                 toRelease.push_back(std::move(p));
                 ++it;
             }
@@ -3705,6 +3826,10 @@ NetworkOPsImp::pubValidatedTransaction(
 
         std::scoped_lock const sl(streamLock_);
 
+        // One event, so both loops send through one instance: a subscriber of both streams is sent
+        // the same message twice.
+        StreamBroadcast broadcast{jvObj};
+
         auto it = streamMaps_[STransactions].begin();
         while (it != streamMaps_[STransactions].end())
         {
@@ -3712,9 +3837,7 @@ NetworkOPsImp::pubValidatedTransaction(
 
             if (p)
             {
-                jvObj.visit(
-                    it->second.apiVersion,  //
-                    [&](json::Value const& jv) { sendShaped(*p, it->second.apiVersion, jv); });
+                broadcast.sendTo(*p, it->second.apiVersion);
                 toRelease.push_back(std::move(p));
                 ++it;
             }
@@ -3732,9 +3855,7 @@ NetworkOPsImp::pubValidatedTransaction(
 
             if (p)
             {
-                jvObj.visit(
-                    it->second.apiVersion,  //
-                    [&](json::Value const& jv) { sendShaped(*p, it->second.apiVersion, jv); });
+                broadcast.sendTo(*p, it->second.apiVersion);
                 toRelease.push_back(std::move(p));
                 ++it;
             }
@@ -3826,12 +3947,9 @@ NetworkOPsImp::pubBookTransaction(AcceptedLedgerTx const& alTx, MultiApiJson con
         }
     }
 
+    StreamBroadcast broadcast{jvObj};
     for (auto const& entry : listeners)
-    {
-        jvObj.visit(
-            entry.apiVersion,  //
-            [&](json::Value const& jv) { sendShaped(*entry.sink, entry.apiVersion, jv); });
-    }
+        broadcast.sendTo(*entry.sink, entry.apiVersion);
     // listeners destructs here, outside bookLock_; ~InfoSub (if any fires)
     // will reacquire bookLock_ via unsubBook with no iterator hazard.
 }
@@ -3948,11 +4066,12 @@ NetworkOPsImp::pubAccountTransaction(
         MultiApiJson jvObj = transJson(stTxn, trResult, true, ledger, metaRef);
 
         {
+            // Bound to this event; the history loop below tells each subscriber something only it
+            // gets, so it stays on sendShaped.
+            StreamBroadcast broadcast{jvObj};
             for (auto const& [seq, entry] : notify)
             {
-                jvObj.visit(
-                    entry.apiVersion,  //
-                    [&](json::Value const& jv) { sendShaped(*entry.sink, entry.apiVersion, jv); });
+                broadcast.sendTo(*entry.sink, entry.apiVersion);
             }
         }
 
@@ -4028,11 +4147,11 @@ NetworkOPsImp::pubProposedAccountTransaction(
         MultiApiJson const jvObj = transJson(tx, result, false, ledger, std::nullopt);
 
         {
+            // Bound to this event, see StreamBroadcast.
+            StreamBroadcast broadcast{jvObj};
             for (auto const& [seq, entry] : notify)
             {
-                jvObj.visit(
-                    entry.apiVersion,  //
-                    [&](json::Value const& jv) { sendShaped(*entry.sink, entry.apiVersion, jv); });
+                broadcast.sendTo(*entry.sink, entry.apiVersion);
             }
         }
     }
@@ -4291,11 +4410,10 @@ NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson cons
     if (notify.empty())
         return;
 
+    StreamBroadcast broadcast{jvObj};
     for (auto const& [seq, entry] : notify)
     {
-        jvObj.visit(
-            entry.apiVersion,  //
-            [&](json::Value const& jv) { sendShaped(*entry.sink, entry.apiVersion, jv); });
+        broadcast.sendTo(*entry.sink, entry.apiVersion);
     }
 }
 
