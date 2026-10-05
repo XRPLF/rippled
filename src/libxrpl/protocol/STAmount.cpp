@@ -37,6 +37,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <format>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -1193,8 +1194,7 @@ muldiv(std::uint64_t multiplier, std::uint64_t multiplicand, std::uint64_t divis
     if (ret > std::numeric_limits<std::uint64_t>::max())
     {
         Throw<std::overflow_error>(
-            "overflow: (" + std::to_string(multiplier) + " * " + std::to_string(multiplicand) +
-            ") / " + std::to_string(divisor));
+            std::format("overflow: ({} * {}) / {}", multiplier, multiplicand, divisor));
     }
 
     return static_cast<uint64_t>(ret);
@@ -1215,9 +1215,8 @@ muldivRound(
 
     if (ret > std::numeric_limits<std::uint64_t>::max())
     {
-        Throw<std::overflow_error>(
-            "overflow: ((" + std::to_string(multiplier) + " * " + std::to_string(multiplicand) +
-            ") + " + std::to_string(rounding) + ") / " + std::to_string(divisor));
+        Throw<std::overflow_error>(std::format(
+            "overflow: (({} * {}) + {}) / {}", multiplier, multiplicand, rounding, divisor));
     }
 
     return static_cast<uint64_t>(ret);
