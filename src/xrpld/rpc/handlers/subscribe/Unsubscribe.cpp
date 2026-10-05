@@ -207,6 +207,18 @@ doUnsubscribe(rpc::JsonContext& context)
         }
     }
 
+    if (context.params.isMember(jss::mpt_issuances))
+    {
+        if (!context.params[jss::mpt_issuances].isArray())
+            return rpcError(RpcInvalidParams);
+
+        auto ids = rpc::parseMPTIssuanceIDs(context.params[jss::mpt_issuances]);
+        if (ids.empty())
+            return rpcError(RpcInvalidParams);
+        context.netOps.unsubMPT(ispSub, ids);
+        JLOG(context.j.debug()) << "doUnsubscribe: mpts: " << ids.size();
+    }
+
     if (removeUrl)
     {
         context.netOps.tryRemoveRpcSub(context.params[jss::url].asString());
