@@ -46,6 +46,9 @@ class ValidMPTIssuance
      * MPTokens and RippleStates deleted during apply. finalize() checks each
      * holder's AccountRoot to detect vault pseudo-account holdings deleted
      * outside VaultDelete. All these checks are gated on fixCleanup3_2_0.
+     *
+     * Under fixCleanup3_5_0, finalize() also rejects any MPToken erased with
+     * a non-zero sfMPTAmount.
      */
     std::vector<std::shared_ptr<SLE const>> deletedHoldings_;
 
@@ -138,8 +141,9 @@ public:
  * - Convert/ConvertBack symmetry:
  * Regular MPToken balance change (±X) == COA (Confidential Outstanding Amount) change (∓X)
  * - Cannot delete MPToken with non-zero confidential state:
- * Cannot delete if sfIssuerEncryptedBalance exists
- * Cannot delete if sfConfidentialBalanceInbox and sfConfidentialBalanceSpending exist
+ * Cannot delete if any of sfConfidentialBalanceSpending, sfConfidentialBalanceInbox,
+ * sfIssuerEncryptedBalance or sfAuditorEncryptedBalance is present, and the issuance's
+ * sfConfidentialOutstandingAmount is non-zero. Mirrors MPTokenAuthorize::preclaim.
  * - Privacy flag consistency:
  * MPToken confidential balance fields can only be created or changed if
  * lsfMPTCanHoldConfidentialBalance is set on the issuance.
@@ -162,6 +166,8 @@ class ValidConfidentialMPToken
         std::int64_t outstandingDelta = 0;
         SLE::const_pointer issuance;
         bool deletedWithEncrypted = false;
+        // True when an erased MPToken had a non-zero pre-tx public balance.
+        bool deletedWithBalanceBefore = false;
         bool badConsistency = false;
         bool badCOA = false;
         bool changesConfidentialFields = false;
