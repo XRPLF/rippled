@@ -152,6 +152,8 @@ public:
      * Returns this account's IOU transfer fee as Rate, or kParityRate if it
      * sets none. Rate specifies the fee as fractions of 1 billion. For
      * example, 1% transfer rate is represented as 1,010,000,000.
+     *
+     * @return This account's IOU transfer fee, or kParityRate if it sets none.
      */
     [[nodiscard]] Rate
     transferRate() const
