@@ -52,6 +52,17 @@ public:
      */
     [[nodiscard]] VaultVersion
     version() const;
+
+    /**
+     * Resolves the Vault's VaultKind. Returns VaultKind::ClosedEnded when
+     * sfVaultKind is present and equal to that value; anything else
+     * (including an absent field or an unrecognised value) is treated as
+     * VaultKind::OpenEnded.
+     *
+     * @return The Vault's VaultKind.
+     */
+    [[nodiscard]] VaultKind
+    kind() const;
 };
 
 using VaultEntryR = VaultEntry<ReadView>;

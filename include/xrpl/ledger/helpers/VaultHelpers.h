@@ -172,19 +172,9 @@ sharesToAssetsWithdraw(
 isSoleShareholder(ReadView const& view, AccountID const& account, SLE::ConstRef issuance);
 
 /**
- * Resolves the VaultKind of a vault SLE. Returns VaultKind::ClosedEnded when
- * sfVaultKind is present and equal to that value; anything else (including an
- * absent field or an unrecognised value) is treated as VaultKind::OpenEnded.
- *
- * @param vault The vault SLE.
- */
-[[nodiscard]] VaultKind
-getVaultKind(VaultEntryR const& vault);
-
-/**
  * Reads sfVaultKind from a transaction. An absent field resolves to
  * VaultKind::OpenEnded (matching the on-ledger default); any unrecognised
- * value is also treated as VaultKind::OpenEnded, mirroring the SLE overload.
+ * value is also treated as VaultKind::OpenEnded, mirroring VaultEntry::kind().
  * Callers that need to reject out-of-range values (e.g. preflight) should
  * gate on isValidVaultKind() first.
  *
