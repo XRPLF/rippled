@@ -4,7 +4,6 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/conditions/Condition.h>
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
@@ -18,6 +17,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -218,24 +218,16 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         }
     }
 
+    // amendment was checked by checkExtraFeatures
     if (ctx.tx.isFieldPresent(sfBytecode))
     {
-        auto const fees(ctx.registry.get().getFees());
-        if (fees.bytecodeSizeLimit == 0 || fees.gasLimit == 0)
-        {
-            JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
-            return temTEMP_DISABLED;
-        }
-
         auto const code = ctx.tx.getFieldVL(sfBytecode);
-        if (code.empty() || code.size() > fees.bytecodeSizeLimit)
+        // Protocol ceiling only; `preflight` has no view.
+        if (code.empty() || code.size() > kMaxBytecodeSizeLimit)
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.Bytecode bad size " << code.size();
             return temMALFORMED;
         }
-        // TODO(SmartEscrow): screen the module itself here - that it compiles,
-        // and that it imports and exports what the engine can serve - once the
-        // WASM engine lands. Until then any blob of the right size is taken.
     }
 
     return tesSUCCESS;
@@ -428,6 +420,28 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
             !isTesSuccess(ret))
             return ret;
     }
+
+    if (ctx.tx.isFieldPresent(sfBytecode))
+    {
+        auto const& fees = ctx.view.fees();
+        if (isBytecodeUploadDisabled(fees))
+        {
+            JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
+            return temTEMP_DISABLED;
+        }
+
+        auto const code = ctx.tx.getFieldVL(sfBytecode);
+        if (code.size() > fees.bytecodeSizeLimit)
+        {
+            JLOG(ctx.j.debug()) << "EscrowCreate.Bytecode over voted limit " << code.size();
+            return temMALFORMED;
+        }
+
+        // TODO(SmartEscrow): screen the module itself here - that it compiles,
+        // and that it imports and exports what the engine can serve - once the
+        // WASM engine lands. Until then any blob of the right size is taken.
+    }
+
     return tesSUCCESS;
 }
 
@@ -519,11 +533,15 @@ EscrowCreate::doApply()
         // checkReserve) because that helper diverts to the sponsor's balance
         // when a sponsor is present and would ignore the source's post-lock
         // balance entirely. ownerCountDelta differs by case:
-        // - sponsored:   0  — sponsor covers the new owner increment, so the
-        //                source only owes reserve for its current owners.
-        // - unsponsored: 1  — source owes reserve including the new increment.
+        // - sponsored:   0            — sponsor covers the new owner increment, so
+        //                the source only owes reserve for its current owners.
+        // - unsponsored: reserveToAdd — source owes reserve including the new
+        //                increment, which Bytecode can make larger than one unit.
         auto const sourceReserve = accountReserve(
-            ctx_.view(), sle, j_, {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
+            ctx_.view(),
+            sle,
+            j_,
+            {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : reserveToAdd});
         if (balance - STAmount(amount).xrp() < sourceReserve)
             return tecUNFUNDED;
     }
