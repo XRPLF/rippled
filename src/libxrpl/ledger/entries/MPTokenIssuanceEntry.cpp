@@ -8,11 +8,13 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
 
 #include <cstdint>
 
@@ -143,6 +145,57 @@ MPTokenIssuanceEntry<ViewT>::isSoleShareholder(AccountID const& account) const
         return false;  // LCOV_EXCL_LINE
 
     return sleToken->getFieldU64(sfMPTAmount) == outstanding;
+}
+
+template <typename ViewT>
+TER
+MPTokenIssuanceEntry<ViewT>::canTransfer(
+    AccountID const& from,
+    AccountID const& to,
+    WaiveMPTCanTransfer waive,
+    std::uint8_t depth) const
+{
+    if (!this->exists())
+        return tecOBJECT_NOT_FOUND;
+
+    auto const& view = this->readView();
+
+    auto const issuer = (**this)[sfIssuer];
+    if (waive == WaiveMPTCanTransfer::Yes || from == issuer || to == issuer)
+        return tesSUCCESS;
+
+    if (!(*this)->isFlag(lsfMPTCanTransfer))
+        return TER{tecNO_AUTH};
+
+    // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
+    // to the vault pseudo's MPToken or RippleState for the underlying asset.
+    // Third-party transfers inherit the underlying's transferability.
+    // Issuer-involving transfers and waived callers returned tesSUCCESS above.
+    //
+    // The recursive call always passes WaiveMPTCanTransfer::No so that
+    // a waived outer caller does not transitively unlock the underlying.
+    if (view.rules().enabled(fixCleanup3_2_0) && (*this)->isFieldPresent(sfReferenceHolding))
+    {
+        // Defensive depth bound on the inheritance recursion. Unreachable
+        // in practice (vault-of-vault-shares is forbidden at VaultCreate).
+        if (depth >= kMaxAssetCheckDepth)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::MPTokenHelpers::canTransfer : reached asset check depth");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+
+        auto const sleHolding =
+            view.read(keylet::unchecked((*this)->getFieldH256(sfReferenceHolding)));
+        if (!sleHolding)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        return xrpl::canTransfer(
+            view, assetOfHolding(*this, *sleHolding), from, to, WaiveMPTCanTransfer::No, depth + 1);
+    }
+
+    return tesSUCCESS;
 }
 
 template class MPTokenIssuanceEntry<ReadView>;
