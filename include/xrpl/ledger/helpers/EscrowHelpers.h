@@ -35,6 +35,11 @@ namespace detail {
  * Return what the old reserve check returned for it, without adopting a
  * non-AccountRoot SLE into an AccountRootEntry: the tx reserve sponsor's
  * error if the escrow owner submitted the tx, else tefINTERNAL.
+ *
+ * @param ctx the apply view context for the escrow transaction.
+ * @param sleDest the non-AccountRoot SLE that was passed as the destination.
+ * @return the tx reserve sponsor's error code if the escrow owner submitted
+ *         the tx, else tefINTERNAL.
  */
 inline TER
 escrowDestNotAccountResult(ApplyViewContext ctx, SLE::ConstRef sleDest)
