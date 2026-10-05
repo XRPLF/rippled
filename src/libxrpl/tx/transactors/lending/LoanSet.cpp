@@ -469,8 +469,7 @@ LoanSet::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
-    if (ctx_.view().rules().enabled(featureLendingProtocolV1_2) &&
-        brokerSle->isFlag(lsfLoanBrokerPrivate))
+    if (brokerSle->isFlag(lsfLoanBrokerPrivate))
     {
         auto const domainID = brokerSle->at(~sfDomainID);
         if (!domainID)
@@ -478,19 +477,10 @@ LoanSet::doApply()
             JLOG(j_.warn()) << "Private LoanBroker must have a DomainID.";
             return tecNO_AUTH;
         }
-
-        // The domain owner is always a member and does not need a credential.
-        // Returns tecOBJECT_NOT_FOUND if the domain was deleted, and tecEXPIRED
-        // after deleting the borrower's expired credentials. A borrower with no
-        // valid credential is reported as tecNO_AUTH.
         if (auto const ter = verifyDomainAndPurgeExpired(view, borrower, *domainID, j_);
             !isTesSuccess(ter))
         {
-            if (ter == tecNO_PERMISSION)
-            {
-                JLOG(j_.warn()) << "Borrower is not a member of the LoanBroker's domain.";
-                return tecNO_AUTH;
-            }
+            JLOG(j_.warn()) << "Borrower is not a member of the LoanBroker's domain.";
             return ter;
         }
     }
