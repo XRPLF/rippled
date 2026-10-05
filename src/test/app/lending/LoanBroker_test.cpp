@@ -2537,10 +2537,12 @@ class LoanBroker_test : public beast::unit_test::Suite
             env.balance(alice) - accountReserve(*env.current(), alice.id(), env.journal) - fee));
         env(noop(alice), Fee(env.current()->fees().increment * 2));
         env.close();
+        auto const ownerCount = env.le(alice)->at(sfOwnerCount);
 
         env(del(alice, brokerKeylet.key), Ter(tecINSUFFICIENT_RESERVE));
         env.close();
         BEAST_EXPECT(env.le(brokerKeylet) != nullptr);
+        BEAST_EXPECT(env.le(alice)->at(sfOwnerCount) == ownerCount);
     }
 
     void
