@@ -1080,8 +1080,8 @@ public:
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
             auto const info = submitSTTx(local);
             BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
-            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
-            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidTransaction);
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Transaction is invalid.");
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Empty SigningPubKey.");
@@ -1097,8 +1097,8 @@ public:
             // Signature should fail.
             auto const info = submitSTTx(local);
             BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
-            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
-            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidTransaction);
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Transaction is invalid.");
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Invalid signature.");
@@ -1113,8 +1113,8 @@ public:
             // Signature should fail.
             auto const info = submitSTTx(local);
             BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
-            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
-            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidTransaction);
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Transaction is invalid.");
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Invalid signature.");
@@ -1126,8 +1126,8 @@ public:
             local[sfSigningPubKey] = alice.pk();  // Insert sfSigningPubKey
             auto const info = submitSTTx(local);
             BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
-            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
-            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidTransaction);
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Transaction is invalid.");
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Cannot both single- and multi-sign.");
@@ -1140,8 +1140,8 @@ public:
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
             auto const info = submitSTTx(local);
             BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
-            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
-            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidTransaction);
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Transaction is invalid.");
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Cannot both single- and multi-sign.");
@@ -1158,8 +1158,8 @@ public:
             // Signature should fail.
             auto const info = submitSTTx(local);
             BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
-            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
-            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidTransaction);
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Transaction is invalid.");
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception].asString().contains(
                     "Invalid signature on account r"));
@@ -1171,8 +1171,8 @@ public:
             local.peekFieldArray(sfSigners).clear();  // Empty Signers array.
             auto const info = submitSTTx(local);
             BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
-            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
-            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidTransaction);
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Transaction is invalid.");
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Invalid Signers array size.");
@@ -1219,8 +1219,8 @@ public:
             STTx const local = *tx.stx;
             auto const info = submitSTTx(local);
             BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
-            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
-            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidTransaction);
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Transaction is invalid.");
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Invalid Signers array size.");
@@ -1231,8 +1231,8 @@ public:
             STTx const local = *tx.stx;
             auto const info = submitSTTx(local);
             BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
-            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
-            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidTransaction);
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Transaction is invalid.");
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Invalid multisigner.");
@@ -1243,8 +1243,8 @@ public:
             STTx const local = *tx.stx;
             auto const info = submitSTTx(local);
             BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
-            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
-            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidTransaction);
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Transaction is invalid.");
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Duplicate Signers not allowed.");
@@ -1259,8 +1259,8 @@ public:
             // Signature should fail.
             auto const info = submitSTTx(local);
             BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
-            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
-            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidTransaction);
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Transaction is invalid.");
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Unsorted Signers array.");
