@@ -198,6 +198,8 @@ public:
      * that side's owner count, and then calls removeFromLedger(). The
      * balance check is skipped when @p account is @p issuer.
      *
+     * @param account the account whose balance is checked.
+     * @param issuer the account on the other side of the line.
      * @return tesSUCCESS, tecHAS_OBLIGATIONS if the balance is not zero, or
      * tecINTERNAL / tefBAD_LEDGER on failure
      */
