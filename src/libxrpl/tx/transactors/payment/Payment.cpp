@@ -143,7 +143,8 @@ Payment::preflight(PreflightContext const& ctx)
             return temMALFORMED;
 
         // MPT path elements are part of MPTokensV2
-        if (std::ranges::any_of(ctx.tx.getFieldPathSet(sfPaths), [](STPath const& path) {
+        if (ctx.rules.enabled(fixCleanup3_5_0) &&
+            std::ranges::any_of(ctx.tx.getFieldPathSet(sfPaths), [](STPath const& path) {
                 return std::ranges::any_of(
                     path, [](STPathElement const& pe) { return pe.hasMPT(); });
             }))

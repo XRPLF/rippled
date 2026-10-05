@@ -978,9 +978,10 @@ class MPToken_test : public beast::unit_test::Suite
             env(pay(alice, carol, mpt(100)), Path(~usd), err);
         }
 
-        // MPT path element is invalid in V1
+        // MPT path element is invalid in V1 with fixCleanup3_5_0
+        for (bool const withFix : {true, false})
         {
-            Env env{*this, features};
+            Env env{*this, withFix ? features : features - fixCleanup3_5_0};
 
             MPTTester mptAlice(env, alice, {.holders = {carol}});
 
@@ -992,11 +993,12 @@ class MPToken_test : public beast::unit_test::Suite
             env(trust(carol, usd(1'000)));
             env.close();
 
-            auto const err = !mpTokensV2 ? Ter(temDISABLED) : Ter(tesSUCCESS);
+            bool const rejected = !mpTokensV2 && withFix;
+            auto const err = rejected ? Ter(temDISABLED) : Ter(tesSUCCESS);
             env(pay(alice, carol, usd(100)), Path(~mpt), err);
             env(pay(alice, carol, usd(100)), Path(~mpt), Sendmax(usd(100)), err);
             env.close();
-            env.require(Balance(carol, usd(mpTokensV2 ? 200 : 0)));
+            env.require(Balance(carol, usd(rejected ? 0 : 200)));
         }
 
         // build_path is invalid if MPT
