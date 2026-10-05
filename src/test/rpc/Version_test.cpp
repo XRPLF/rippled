@@ -128,21 +128,22 @@ class Version_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto const withoutApiVerion = std::string("{ ") +
-            "\"jsonrpc\": \"2.0\", "
-            "\"ripplerpc\": \"2.0\", "
-            "\"id\": 5, "
-            "\"method\": \"version\", "
-            "\"params\": {}}";
-        auto const withApiVerion = std::string("{ ") +
-            "\"jsonrpc\": \"2.0\", "
-            "\"ripplerpc\": \"2.0\", "
-            "\"id\": 6, "
-            "\"method\": \"version\", "
-            "\"params\": { "
-            "\"api_version\": " +
-            std::to_string(rpc::kApiMaximumSupportedVersion) + "}}";
-        auto re = env.rpc("json2", '[' + withoutApiVerion + ", " + withApiVerion + ']');
+        // Both entries name the same version: the command-line client fills kApiCommandLineVersion
+        // into an entry naming none, and one batch is served at one version, so an entry naming
+        // none beside one naming another version would be a mixed body and be refused whole.
+        auto const entry = [](int id) {
+            return std::string("{ ") +
+                "\"jsonrpc\": \"2.0\", "
+                "\"ripplerpc\": \"2.0\", "
+                "\"id\": " +
+                std::to_string(id) +
+                ", "
+                "\"method\": \"version\", "
+                "\"params\": { "
+                "\"api_version\": " +
+                std::to_string(rpc::kApiMaximumSupportedVersion) + "}}";
+        };
+        auto re = env.rpc("json2", '[' + entry(5) + ", " + entry(6) + ']');
 
         if (!BEAST_EXPECT(re.isArray()))
             return;
