@@ -332,8 +332,8 @@ TrustSet::doApply()
     // The "free-tier" shortcut (ownerCount < 2) only applies when there is no sponsor.
     // With any sponsor on the tx, the sponsor must cover the reserve (via balance or
     // prefunded budget), so the reserve check always runs.
-    bool const freeTrustLine = !sponsorSle && (ownerCount(sle, j_) < 2);
-    std::uint32_t const uOwnerCount = ownerCount(sle, j_);
+    bool const freeTrustLine = !sponsorSle && (sle.ownerCount() < 2);
+    std::uint32_t const uOwnerCount = sle.ownerCount();
     XRPAmount const reserveCreate(
         (uOwnerCount < 2) ? XRPAmount(beast::kZero) : sle.reserve({.ownerCountDelta = 1}));
 
