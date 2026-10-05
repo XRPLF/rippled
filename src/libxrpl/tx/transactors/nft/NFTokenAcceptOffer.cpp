@@ -8,12 +8,14 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -46,6 +48,13 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 
         if (*bf <= beast::kZero)
             return temMALFORMED;
+
+        if (ctx.rules.enabled(fixCleanup3_4_0))
+        {
+            // We don't allow a non-native currency to use the currency code XRP.
+            if (badAsset() == bf->asset())
+                return temBAD_CURRENCY;
+        }
     }
 
     return tesSUCCESS;
@@ -55,7 +64,7 @@ TER
 NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 {
     auto const checkOffer =
-        [&ctx](std::optional<uint256> id) -> std::pair<SLE::const_pointer, TER> {
+        [&ctx](std::optional<UInt256> id) -> std::pair<SLE::const_pointer, TER> {
         if (id)
         {
             if (id->isZero())
@@ -356,7 +365,7 @@ TER
 NFTokenAcceptOffer::transferNFToken(
     AccountID const& buyer,
     AccountID const& seller,
-    uint256 const& nftokenID)
+    UInt256 const& nftokenID)
 {
     auto tokenAndPage = nft::findTokenAndPage(view(), seller, nftokenID);
 
@@ -396,7 +405,7 @@ NFTokenAcceptOffer::transferNFToken(
 }
 
 TER
-NFTokenAcceptOffer::acceptOffer(SLE::ref offer)
+NFTokenAcceptOffer::acceptOffer(SLE::Ref offer)
 {
     bool const isSell = offer->isFlag(lsfSellNFToken);
     AccountID const owner = (*offer)[sfOwner];
@@ -433,7 +442,7 @@ NFTokenAcceptOffer::acceptOffer(SLE::ref offer)
 TER
 NFTokenAcceptOffer::doApply()
 {
-    auto const loadToken = [this](std::optional<uint256> const& id) {
+    auto const loadToken = [this](std::optional<UInt256> const& id) {
         SLE::pointer sle;
         if (id)
             sle = view().peek(keylet::nftokenOffer(*id));
@@ -449,7 +458,7 @@ NFTokenAcceptOffer::doApply()
     {
         bool foundExpired = false;
 
-        auto const deleteOfferIfExpired = [this, &foundExpired](SLE::ref offer) -> TER {
+        auto const deleteOfferIfExpired = [this, &foundExpired](SLE::Ref offer) -> TER {
             if (offer && hasExpired(view(), (*offer)[~sfExpiration]))
             {
                 JLOG(j_.trace()) << "Offer is expired, deleting: " << offer->key();
@@ -561,7 +570,7 @@ NFTokenAcceptOffer::doApply()
 }
 
 void
-NFTokenAcceptOffer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+NFTokenAcceptOffer::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

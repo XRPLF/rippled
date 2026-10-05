@@ -19,9 +19,6 @@
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include <rocksdb/advanced_options.h>
 #include <rocksdb/cache.h>
 #include <rocksdb/compression_type.h>
@@ -37,6 +34,8 @@
 
 #include <atomic>
 #include <cstddef>
+#include <filesystem>
+#include <format>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -195,7 +194,7 @@ public:
             if (!s.ok())
             {
                 Throw<std::runtime_error>(
-                    std::string("Unable to set RocksDB bbt_options: ") + s.ToString());
+                    std::format("Unable to set RocksDB bbt_options: {}", s.ToString()));
             }
         }
 
@@ -208,7 +207,7 @@ public:
             if (!s.ok())
             {
                 Throw<std::runtime_error>(
-                    std::string("Unable to set RocksDB options: ") + s.ToString());
+                    std::format("Unable to set RocksDB options: {}", s.ToString()));
             }
         }
 
@@ -243,7 +242,7 @@ public:
         if (!status.ok() || (localDb == nullptr))
         {
             Throw<std::runtime_error>(
-                std::string("Unable to open/create RocksDB: ") + status.ToString());
+                std::format("Unable to open/create RocksDB: {}", status.ToString()));
         }
         db.reset(localDb);
     }
@@ -262,8 +261,8 @@ public:
             db.reset();
             if (deletePath_)
             {
-                boost::filesystem::path const dir = name;
-                boost::filesystem::remove_all(dir);
+                std::filesystem::path const dir = name;
+                std::filesystem::remove_all(dir);
             }
         }
     }
@@ -277,7 +276,7 @@ public:
     //--------------------------------------------------------------------------
 
     Status
-    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
+    fetch(UInt256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
         XRPL_ASSERT(db, "xrpl::node_store::RocksDBBackend::fetch : non-null database");
         pObject->reset();
@@ -358,7 +357,7 @@ public:
         auto ret = db->Write(options, &wb);
 
         if (!ret.ok())
-            Throw<std::runtime_error>("storeBatch failed: " + ret.ToString());
+            Throw<std::runtime_error>(std::format("storeBatch failed: {}", ret.ToString()));
     }
 
     void

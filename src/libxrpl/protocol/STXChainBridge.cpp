@@ -11,9 +11,8 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/format/free_funcs.hpp>
-
 #include <cstddef>
+#include <format>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -71,7 +70,8 @@ STXChainBridge::STXChainBridge(SField const& name, json::Value const& v) : STBas
             std::string const name = it.memberName();
             if (!kBridgeJson.isMember(name))
             {
-                Throw<std::runtime_error>("STXChainBridge extra field detected: " + name);
+                Throw<std::runtime_error>(
+                    std::format("STXChainBridge extra field detected: {}", name));
             }
         }
         return true;
@@ -141,10 +141,15 @@ STXChainBridge::getJson(JsonOptions jo) const
 std::string
 STXChainBridge::getText() const
 {
-    return str(
-        boost::format("{ %s = %s, %s = %s, %s = %s, %s = %s }") % sfLockingChainDoor.getName() %
-        lockingChainDoor_.getText() % sfLockingChainIssue.getName() % lockingChainIssue_.getText() %
-        sfIssuingChainDoor.getName() % issuingChainDoor_.getText() % sfIssuingChainIssue.getName() %
+    return std::format(
+        "{{ {} = {}, {} = {}, {} = {}, {} = {} }}",
+        sfLockingChainDoor.getName(),
+        lockingChainDoor_.getText(),
+        sfLockingChainIssue.getName(),
+        lockingChainIssue_.getText(),
+        sfIssuingChainDoor.getName(),
+        issuingChainDoor_.getText(),
+        sfIssuingChainIssue.getName(),
         issuingChainIssue_.getText());
 }
 

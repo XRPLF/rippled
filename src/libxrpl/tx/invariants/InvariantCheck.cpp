@@ -25,6 +25,7 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/TxSettings.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
@@ -40,12 +41,15 @@
 
 namespace xrpl {
 
+#pragma push_macro("UNWRAP")
+#undef UNWRAP
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegable, amendment, privileges, ...) \
-    case tag: {                                                              \
-        return (privileges) & priv;                                          \
+#define UNWRAP(...) __VA_ARGS__
+#define TRANSACTION(tag, value, name, settings, ...)                                  \
+    case tag: {                                                                       \
+        return ((TxSettings UNWRAP settings).privileges & priv) != Privilege::NoPriv; \
     }
 
 bool
@@ -63,6 +67,8 @@ hasPrivilege(STTx const& tx, Privilege priv)
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
+#undef UNWRAP
+#pragma pop_macro("UNWRAP")
 
 // Returns the human-readable name of a ledger entry's type, falling back to
 // the numeric type if the format is somehow unknown.
@@ -82,7 +88,7 @@ ledgerEntryTypeName(SLE const& sle)
 }
 
 void
-TransactionFeeCheck::visitEntry(bool, SLE::const_ref, SLE::const_ref)
+TransactionFeeCheck::visitEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // nothing to do
 }
@@ -125,7 +131,7 @@ TransactionFeeCheck::finalize(
 //------------------------------------------------------------------------------
 
 void
-XRPNotCreated::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+XRPNotCreated::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     /* We go through all modified ledger entries, looking only at account roots,
      * escrow payments, and payment channels. We remove from the total any
@@ -226,7 +232,7 @@ XRPNotCreated::finalize(
 //------------------------------------------------------------------------------
 
 void
-XRPBalanceChecks::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+XRPBalanceChecks::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef after)
 {
     auto isBad = [](STAmount const& balance) {
         if (!balance.native())
@@ -273,7 +279,7 @@ XRPBalanceChecks::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoBadOffers::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+NoBadOffers::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     auto isBad = [](STAmount const& pays, STAmount const& gets) {
         // An offer should never be negative
@@ -314,7 +320,7 @@ NoBadOffers::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoZeroEscrow::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+NoZeroEscrow::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     auto isBad = [](STAmount const& amount) {
         // XRP case
@@ -418,7 +424,7 @@ NoZeroEscrow::finalize(
 //------------------------------------------------------------------------------
 
 void
-AccountRootsNotDeleted::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref)
+AccountRootsNotDeleted::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
         accountsDeleted_++;
@@ -436,7 +442,7 @@ AccountRootsNotDeleted::finalize(
     // transaction when the total AMM LP Tokens balance goes to 0.
     // A successful AccountDelete or AMMDelete MUST delete exactly
     // one account root.
-    if (hasPrivilege(tx, MustDeleteAcct) && isTesSuccess(result))
+    if (hasPrivilege(tx, Privilege::MustDeleteAcct) && isTesSuccess(result))
     {
         if (accountsDeleted_ == 1)
             return true;
@@ -457,7 +463,7 @@ AccountRootsNotDeleted::finalize(
     // A successful AMMWithdraw/AMMClawback MAY delete one account root
     // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
     // deletes the AMM account, accountsDeleted_ is set if it is deleted.
-    if (hasPrivilege(tx, MayDeleteAcct) && isTesSuccess(result) && accountsDeleted_ == 1)
+    if (hasPrivilege(tx, Privilege::MayDeleteAcct) && isTesSuccess(result) && accountsDeleted_ == 1)
         return true;
 
     if (accountsDeleted_ == 0)
@@ -470,7 +476,7 @@ AccountRootsNotDeleted::finalize(
 //------------------------------------------------------------------------------
 
 void
-AccountRootsDeletedClean::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+AccountRootsDeletedClean::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
         accountsDeleted_.emplace_back(before, after);
@@ -567,7 +573,7 @@ AccountRootsDeletedClean::finalize(
             Keylet const first = keylet::nftokenPageMin(accountID);
             Keylet const last = keylet::nftokenPageMax(accountID);
 
-            std::optional<uint256> key = view.succ(first.key, last.key.next());
+            std::optional<UInt256> key = view.succ(first.key, last.key.next());
 
             // current page
             if (key && objectExists(Keylet{ltNFTOKEN_PAGE, *key}) && enforce)
@@ -593,7 +599,7 @@ AccountRootsDeletedClean::finalize(
 //------------------------------------------------------------------------------
 
 void
-LedgerEntryTypesMatch::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+LedgerEntryTypesMatch::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (before && after && before->getType() != after->getType())
         typeMismatch_ = true;
@@ -647,7 +653,7 @@ LedgerEntryTypesMatch::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoXRPTrustLines::visitEntry(bool, SLE::const_ref, SLE::const_ref after)
+NoXRPTrustLines::visitEntry(bool, SLE::ConstRef, SLE::ConstRef after)
 {
     bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
@@ -687,7 +693,7 @@ NoXRPTrustLines::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(bool, SLE::const_ref, SLE::const_ref after)
+NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(bool, SLE::ConstRef, SLE::ConstRef after)
 {
     if (after && after->getType() == ltRIPPLE_STATE)
     {
@@ -730,7 +736,7 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
 //------------------------------------------------------------------------------
 
 void
-ValidNewAccountRoot::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+ValidNewAccountRoot::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (!before && after->getType() == ltACCOUNT_ROOT)
     {
@@ -760,14 +766,15 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if (hasPrivilege(tx, CreateAcct | CreatePseudoAcct) && isTesSuccess(result))
+    if (hasPrivilege(tx, Privilege::CreateAcct | Privilege::CreatePseudoAcct) &&
+        isTesSuccess(result))
     {
         bool const pseudoAccount =
             (pseudoAccount_ &&
              (view.rules().enabled(featureSingleAssetVault) ||
               view.rules().enabled(featureLendingProtocol)));
 
-        if (pseudoAccount && !hasPrivilege(tx, CreatePseudoAcct))
+        if (pseudoAccount && !hasPrivilege(tx, Privilege::CreatePseudoAcct))
         {
             JLOG(j.fatal()) << "Invariant failed: pseudo-account created by a "
                                "wrong transaction type";
@@ -827,7 +834,7 @@ clawbackTrustLineBalanceInHolderTerms(
 }
 
 void
-ValidClawback::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidClawback::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (before && before->getType() == ltRIPPLE_STATE)
     {
@@ -1002,7 +1009,7 @@ ValidClawback::finalize(
 //------------------------------------------------------------------------------
 
 void
-ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidPseudoAccounts::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (isDelete)
     {
@@ -1097,7 +1104,7 @@ ValidPseudoAccounts::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoModifiedUnmodifiableFields::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+NoModifiedUnmodifiableFields::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (isDelete || !before)
     {
@@ -1116,30 +1123,34 @@ NoModifiedUnmodifiableFields::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    static auto const kFieldChanged = [](auto const& before, auto const& after, auto const& field) {
+    auto const kFieldChanged = [&j, &tx](auto const& before, auto const& after, auto const& field) {
         bool const beforeField = before->isFieldPresent(field);
         bool const afterField = after->isFieldPresent(field);
-        return beforeField != afterField || (afterField && before->at(field) != after->at(field));
+        bool const changed =
+            beforeField != afterField || (afterField && before->at(field) != after->at(field));
+        if (changed)
+        {
+            JLOG(j.fatal()) << "Invariant failed: " << field.getName()
+                            << " changed on immutable ledger entry in " << tx.getTransactionID();
+        }
+        return changed;
     };
     for (auto const& slePair : changedEntries_)
     {
         auto const& before = slePair.first;
         auto const& after = slePair.second;
         auto const type = after->getType();
-        bool bad = false;
-        [[maybe_unused]] bool enforce = false;
+        // featureLendingProtocol gates enforcement, not detection: changes are
+        // always logged, but the transaction is only failed once the amendment
+        // is enabled. Type-specific field lists may add their own gates (see
+        // ltVAULT).
+        bool const enforce = view.rules().enabled(featureLendingProtocol);
+        bool bad = kFieldChanged(before, after, sfLedgerEntryType) ||
+            kFieldChanged(before, after, sfLedgerIndex);
         switch (type)
         {
             case ltLOAN_BROKER:
-                /*
-                 * We check this invariant regardless of lending protocol
-                 * amendment status, allowing for detection and logging of
-                 * potential issues even when the amendment is disabled.
-                 */
-                enforce = view.rules().enabled(featureLendingProtocol);
-                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
-                    kFieldChanged(before, after, sfLedgerIndex) ||
-                    kFieldChanged(before, after, sfSequence) ||
+                bad = bad || kFieldChanged(before, after, sfSequence) ||
                     kFieldChanged(before, after, sfOwnerNode) ||
                     kFieldChanged(before, after, sfVaultNode) ||
                     kFieldChanged(before, after, sfVaultID) ||
@@ -1150,15 +1161,7 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfCoverRateLiquidation);
                 break;
             case ltLOAN:
-                /*
-                 * We check this invariant regardless of lending protocol
-                 * amendment status, allowing for detection and logging of
-                 * potential issues even when the amendment is disabled.
-                 */
-                enforce = view.rules().enabled(featureLendingProtocol);
-                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
-                    kFieldChanged(before, after, sfLedgerIndex) ||
-                    kFieldChanged(before, after, sfSequence) ||
+                bad = bad || kFieldChanged(before, after, sfSequence) ||
                     kFieldChanged(before, after, sfOwnerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerID) ||
@@ -1176,20 +1179,59 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfPaymentInterval) ||
                     kFieldChanged(before, after, sfGracePeriod) ||
                     kFieldChanged(before, after, sfLoanScale);
+
+                // lsfLoanOverpayment must never toggle. lsfLoanDefault may only
+                // transition from unset to set, which combined with ValidLoan's rule that
+                // only LoanManage may change it makes the flag write-once.
+                if (view.rules().enabled(featureLendingProtocolV1_1))
+                {
+                    std::uint32_t const beforeFlags = before->getFlags();
+                    std::uint32_t const afterFlags = after->getFlags();
+                    bool const overpaymentChanged =
+                        (beforeFlags & lsfLoanOverpayment) != (afterFlags & lsfLoanOverpayment);
+                    if (overpaymentChanged)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: lsfLoanOverpayment flag "
+                                           "toggled on immutable ledger entry in "
+                                        << tx.getTransactionID();
+                    }
+                    bad = bad || overpaymentChanged;
+                    bool const defaultCleared =
+                        (beforeFlags & lsfLoanDefault) != 0 && (afterFlags & lsfLoanDefault) == 0;
+                    if (defaultCleared)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: lsfLoanDefault flag "
+                                           "cleared on immutable ledger entry in "
+                                        << tx.getTransactionID();
+                    }
+                    bad = bad || defaultCleared;
+                }
+                break;
+            case ltVAULT:
+                /*
+                 * All the fields below are only immutable from
+                 * featureLendingProtocolV1_1 onwards; some of them only exist on
+                 * V1_1 vaults. Before that amendment, sfAsset, sfAccount and
+                 * sfShareMPTID are checked by VaultInvariant instead.
+                 */
+                if (view.rules().enabled(featureLendingProtocolV1_1))
+                {
+                    bad = bad || kFieldChanged(before, after, sfVaultKind) ||
+                        kFieldChanged(before, after, sfSubscriptionDate) ||
+                        kFieldChanged(before, after, sfRedemptionDate) ||
+                        kFieldChanged(before, after, sfSequence) ||
+                        kFieldChanged(before, after, sfOwnerNode) ||
+                        kFieldChanged(before, after, sfOwner) ||
+                        kFieldChanged(before, after, sfWithdrawalPolicy) ||
+                        kFieldChanged(before, after, sfScale) ||
+                        kFieldChanged(before, after, sfLEVersion) ||
+                        kFieldChanged(before, after, sfAsset) ||
+                        kFieldChanged(before, after, sfAccount) ||
+                        kFieldChanged(before, after, sfShareMPTID);
+                }
                 break;
             default:
-                /*
-                 * We check this invariant regardless of lending protocol
-                 * amendment status, allowing for detection and logging of
-                 * potential issues even when the amendment is disabled.
-                 *
-                 * We use the lending protocol as a gate, even though
-                 * all transactions are affected because that's when it
-                 * was added.
-                 */
-                enforce = view.rules().enabled(featureLendingProtocol);
-                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
-                    kFieldChanged(before, after, sfLedgerIndex);
+                break;
         }
         XRPL_ASSERT(
             !bad || enforce,
@@ -1238,7 +1280,7 @@ ValidAmounts::finalize(
 }
 
 void
-ObjectHasPseudoAccount::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ObjectHasPseudoAccount::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (!isDelete)
         return;

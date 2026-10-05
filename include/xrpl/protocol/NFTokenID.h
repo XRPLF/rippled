@@ -22,10 +22,10 @@ namespace xrpl {
 bool
 canHaveNFTokenID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& transactionMeta);
 
-std::optional<uint256>
+std::optional<UInt256>
 getNFTokenIDFromPage(TxMeta const& transactionMeta);
 
-std::vector<uint256>
+std::vector<UInt256>
 getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta);
 
 void

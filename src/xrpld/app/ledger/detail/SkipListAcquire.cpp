@@ -32,15 +32,15 @@ namespace xrpl {
 SkipListAcquire::SkipListAcquire(
     Application& app,
     InboundLedgers& inboundLedgers,
-    uint256 const& ledgerHash,
+    UInt256 const& ledgerHash,
     std::unique_ptr<PeerSet> peerSet)
     : TimeoutCounter(
           app,
           ledgerHash,
-          LedgerReplayParameters::kSubTaskTimeout,
+          ledger_replay_parameters::kSubTaskTimeout,
           {.jobType = JtReplayTask,
            .jobName = "SkipListAcq",
-           .jobLimit = LedgerReplayParameters::kMaxQueuedTasks},
+           .jobLimit = ledger_replay_parameters::kMaxQueuedTasks},
           app.getJournal("LedgerReplaySkipList"))
     , inboundLedgers_(inboundLedgers)
     , peerSet_(std::move(peerSet))
@@ -96,10 +96,10 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                 {
                     JLOG(journal_.trace())
                         << "Add a no feature peer " << peer->id() << " for " << hash_;
-                    if (++noFeaturePeerCount_ >= LedgerReplayParameters::kMaxNoFeaturePeerCount)
+                    if (++noFeaturePeerCount_ >= ledger_replay_parameters::kMaxNoFeaturePeerCount)
                     {
                         JLOG(journal_.debug()) << "Fall back for " << hash_;
-                        timerInterval_ = LedgerReplayParameters::kSubTaskFallbackTimeout;
+                        timerInterval_ = ledger_replay_parameters::kSubTaskFallbackTimeout;
                         fallBack_ = true;
                     }
                 }
@@ -114,7 +114,7 @@ void
 SkipListAcquire::onTimer(bool progress, ScopedLockType& sl)
 {
     JLOG(journal_.trace()) << "timeouts_=" << timeouts_ << " for " << hash_;
-    if (timeouts_ > LedgerReplayParameters::kSubTaskMaxTimeouts)
+    if (timeouts_ > ledger_replay_parameters::kSubTaskMaxTimeouts)
     {
         failed_ = true;
         JLOG(journal_.debug()) << "too many timeouts " << hash_;
@@ -201,7 +201,7 @@ SkipListAcquire::retrieveSkipList(std::shared_ptr<Ledger const> const& ledger, S
 
 void
 SkipListAcquire::onSkipListAcquired(
-    std::vector<uint256> const& skipList,
+    std::vector<UInt256> const& skipList,
     std::uint32_t ledgerSeq,
     ScopedLockType& sl)
 {

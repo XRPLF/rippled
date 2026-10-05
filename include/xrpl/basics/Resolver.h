@@ -11,7 +11,7 @@ namespace xrpl {
 class Resolver
 {
 public:
-    using HandlerType = std::function<void(std::string, std::vector<beast::IP::Endpoint>)>;
+    using HandlerType = std::function<void(std::string, std::vector<beast::ip::Endpoint>)>;
 
     virtual ~Resolver() = 0;
 

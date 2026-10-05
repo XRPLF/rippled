@@ -8,8 +8,10 @@ RUN mkdir -p ~/.config/nix && \
 
 # Copy our source and setup our working dir.
 COPY nix/ci-env.nix /tmp/build/nix/ci-env.nix
-COPY nix/compilers.nix /tmp/build/nix/compilers.nix
+COPY nix/linux.nix /tmp/build/nix/linux.nix
 COPY nix/packages.nix /tmp/build/nix/packages.nix
+COPY nix/rust-nightly.sh /tmp/build/nix/rust-nightly.sh
+COPY nix/rust.nix /tmp/build/nix/rust.nix
 COPY nix/utils.nix /tmp/build/nix/utils.nix
 COPY flake.nix /tmp/build/
 COPY flake.lock /tmp/build/

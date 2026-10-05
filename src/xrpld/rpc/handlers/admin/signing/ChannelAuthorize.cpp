@@ -15,6 +15,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Fees.h>
 
 #include <cstdint>
 #include <exception>
@@ -30,40 +31,42 @@ namespace xrpl {
 //   drops: 64-bit uint (as string)
 // }
 json::Value
-doChannelAuthorize(RPC::JsonContext& context)
+doChannelAuthorize(rpc::JsonContext& context)
 {
     if (context.role != Role::ADMIN && !context.app.config().canSign())
     {
-        return RPC::makeError(RpcNotSupported, "Signing is not supported by this server.");
+        return rpc::makeError(RpcNotSupported, "Signing is not supported by this server.");
     }
+
+    context.loadType = resource::kFeeHeavyBurdenRpc;
 
     auto const& params(context.params);
     for (auto const& p : {jss::channel_id, jss::amount})
     {
         if (!params.isMember(p))
-            return RPC::missingFieldError(p);
+            return rpc::missingFieldError(p);
     }
 
     // Compatibility if a key type isn't specified. If it is, the
     // keypairForSignature code will validate parameters and return
     // the appropriate error.
     if (!params.isMember(jss::key_type) && !params.isMember(jss::secret))
-        return RPC::missingFieldError(jss::secret);
+        return rpc::missingFieldError(jss::secret);
 
     json::Value result;
     std::optional<std::pair<PublicKey, SecretKey>> const keyPair =
-        RPC::keypairForSignature(params, result, context.apiVersion);
+        rpc::keypairForSignature(params, result, context.apiVersion);
 
     XRPL_ASSERT(
-        keyPair || RPC::containsError(result),
+        keyPair || rpc::containsError(result),
         "xrpl::doChannelAuthorize : valid keyPair or an error");
-    if (!keyPair || RPC::containsError(result))
+    if (!keyPair || rpc::containsError(result))
         return result;
 
     PublicKey const& pk = keyPair->first;
     SecretKey const& sk = keyPair->second;
 
-    uint256 channelId;
+    UInt256 channelId;
     if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(RpcChannelMalformed);
 
@@ -86,7 +89,7 @@ doChannelAuthorize(RPC::JsonContext& context)
     catch (std::exception const& ex)
     {
         // LCOV_EXCL_START
-        result = RPC::makeError(
+        result = rpc::makeError(
             RpcInternal, "Exception occurred during signing: " + std::string(ex.what()));
         // LCOV_EXCL_STOP
     }

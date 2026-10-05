@@ -22,7 +22,7 @@
 #include <string>
 #include <unordered_set>
 
-namespace beast::IP {
+namespace beast::ip {
 
 //------------------------------------------------------------------------------
 
@@ -475,4 +475,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(IPEndpoint, beast, beast);
 
-}  // namespace beast::IP
+}  // namespace beast::ip
