@@ -8,6 +8,7 @@
 #include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
+#include <test/jtx/proposal.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/sponsor.h>
 #include <test/jtx/ticket.h>
@@ -33,6 +34,7 @@
 #include <xrpl/tx/transactors/nft/NFTokenMint.h>
 
 #include <algorithm>
+#include <chrono>  // IWYU pragma: keep
 #include <cstdint>
 #include <iterator>
 #include <optional>
@@ -628,7 +630,7 @@ public:
         BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::NegativeUNL)));
 
         // gw mints an NFT so we can find it.
-        uint256 const nftID{token::getNextID(env, gw, 0u, tfTransferable)};
+        UInt256 const nftID{token::getNextID(env, gw, 0u, tfTransferable)};
         env(token::mint(gw, 0u), Txflags(tfTransferable));
         env.close();
         {
@@ -1582,6 +1584,64 @@ public:
         BEAST_EXPECT(res[jss::result].isMember(jss::marker));
     }
 
+    // A TransactionProposal blocks AccountDelete (it is not in
+    // nonObligationDeleter) but was omitted from kDeletionBlockers, so
+    // deletion_blockers_only reported a clean directory. Tickets on the
+    // same account are auto-removed at delete time and must stay omitted.
+    void
+    testDeletionBlockersProposal()
+    {
+        testcase("deletion_blockers_only includes TransactionProposal");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, testableAmendments()};
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        std::uint32_t const ticketSeq = proposal::createTicket(env, alice);
+        env(proposal::create(
+                alice,
+                proposal::unsignedPayload(env, pay(alice, bob, XRP(1)), ticketSeq),
+                proposal::expiration(env, 100s)),
+            proposal::verify::create());
+        env.close();
+
+        json::Value params;
+        params[jss::account] = alice.human();
+        params[jss::deletion_blockers_only] = true;
+        params[jss::ledger_index] = "validated";
+
+        {
+            auto const resp = env.rpc("json", "account_objects", to_string(params));
+            auto const& aobjs = resp[jss::result][jss::account_objects];
+            if (BEAST_EXPECT(aobjs.isArray() && aobjs.size() == 1))
+            {
+                BEAST_EXPECT(aobjs[0u][sfLedgerEntryType.jsonName] == jss::TransactionProposal);
+                BEAST_EXPECT(aobjs[0u][sfOwner.jsonName] == alice.human());
+            }
+        }
+
+        {
+            params[jss::type] = jss::transaction_proposal;
+            auto const resp = env.rpc("json", "account_objects", to_string(params));
+            auto const& aobjs = resp[jss::result][jss::account_objects];
+            if (BEAST_EXPECT(aobjs.isArray() && aobjs.size() == 1))
+                BEAST_EXPECT(aobjs[0u][sfLedgerEntryType.jsonName] == jss::TransactionProposal);
+        }
+
+        {
+            params[jss::type] = jss::check;
+            auto const resp = env.rpc("json", "account_objects", to_string(params));
+            auto const& aobjs = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(aobjs.isArray() && aobjs.size() == 0);
+        }
+    }
+
     void
     run() override
     {
@@ -1594,6 +1654,7 @@ public:
         testAccountObjectMarker();
         testSponsoredFilter();
         testAccountObjectDoesntShowCancelledOffers();
+        testDeletionBlockersProposal();
     }
 };
 

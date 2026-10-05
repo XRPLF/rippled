@@ -32,7 +32,8 @@
 #include <xrpl/ledger/entries/SignerListEntry.h>          // IWYU pragma: keep
 #include <xrpl/ledger/entries/SponsorshipEntry.h>         // IWYU pragma: keep
 #include <xrpl/ledger/entries/TicketEntry.h>
-#include <xrpl/ledger/entries/VaultEntry.h>  // IWYU pragma: keep
+#include <xrpl/ledger/entries/TransactionProposalEntry.h>  // IWYU pragma: keep
+#include <xrpl/ledger/entries/VaultEntry.h>                // IWYU pragma: keep
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -146,7 +147,7 @@ protected:
     }
 };
 
-TEST_F(SLEBaseTests, ReadOnly)
+TEST_F(SLEBaseTests, read_only)
 {
     AccountRootEntryR const absent(bob_.id(), env_.getClosedLedger());
     EXPECT_FALSE(absent.exists());
@@ -165,7 +166,7 @@ TEST_F(SLEBaseTests, ReadOnly)
     EXPECT_EQ(&present.readView(), &env_.getClosedLedger());
 }
 
-TEST_F(SLEBaseTests, AdoptSLE)
+TEST_F(SLEBaseTests, adopt_sle)
 {
     auto const sle = env_.getClosedLedger().read(keylet::account(alice_.id()));
     ASSERT_NE(sle, nullptr);
@@ -198,7 +199,7 @@ TEST_F(SLEBaseTests, AdoptSLE)
         "writable entries must not be constructible from a bare SLE");
 }
 
-TEST_F(SLEBaseTests, WritableAccessors)
+TEST_F(SLEBaseTests, writable_accessors)
 {
     ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
     beast::Journal const j{beast::Journal::getNullSink()};
@@ -233,7 +234,7 @@ TEST_F(SLEBaseTests, WritableAccessors)
         !HasApplyView<AccountRootEntryR>, "applyView() must not exist on a read-only entry");
 }
 
-TEST_F(SLEBaseTests, ApplyViewContextCtor)
+TEST_F(SLEBaseTests, apply_view_context_ctor)
 {
     ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
     beast::Journal const j{beast::Journal::getNullSink()};
@@ -257,7 +258,7 @@ TEST_F(SLEBaseTests, ApplyViewContextCtor)
     EXPECT_EQ(fromCtx.rawSle(), fromView.rawSle());
 }
 
-TEST_F(SLEBaseTests, WritableLifecycle)
+TEST_F(SLEBaseTests, writable_lifecycle)
 {
     // A view we never apply, so nothing here reaches the ledger.
     ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
@@ -315,7 +316,7 @@ TEST_F(SLEBaseTests, WritableLifecycle)
     }
 }
 
-TEST_F(SLEBaseTests, Conversion)
+TEST_F(SLEBaseTests, conversion)
 {
     ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
 
@@ -333,7 +334,7 @@ TEST_F(SLEBaseTests, Conversion)
     EXPECT_EQ(generic.type(), ltACCOUNT_ROOT);
 }
 
-TEST_F(SLEBaseTests, ResolveEntryPeeks)
+TEST_F(SLEBaseTests, resolve_entry_peeks)
 {
     // getOpenLedger() is an OpenView, which derives from ReadView but not
     // from ApplyView, so resolveEntry's dynamic_cast fails and this takes
@@ -365,7 +366,7 @@ TEST_F(SLEBaseTests, ResolveEntryPeeks)
     EXPECT_EQ(readOnly->getFieldU32(sfSequence), bumped);
 }
 
-TEST_F(SLEBaseTests, ThrowsOnMissingEntry)
+TEST_F(SLEBaseTests, throws_on_missing_entry)
 {
     // A generic read-only entry has no static type to fall back on, so
     // type() must read it off the (absent) SLE and throw.
@@ -386,7 +387,7 @@ TEST_F(SLEBaseTests, ThrowsOnMissingEntry)
     EXPECT_THROW(std::ignore = (*missing).getType(), std::logic_error);
 }
 
-TEST_F(SLEBaseTests, ThrowsOnMissingWritableEntry)
+TEST_F(SLEBaseTests, throws_on_missing_writable_entry)
 {
     // A view we never apply, so nothing here reaches the ledger.
     ApplyViewImpl av(&env_.getClosedLedger(), TapNone);

@@ -16,6 +16,7 @@
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>
 
 #include <cstddef>
+#include <format>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -24,26 +25,26 @@
 
 namespace xrpl {
 
-class OpenView::TxsIterImpl : public TxsType::iter_base
+class OpenView::TxsIterImpl : public TxsType::IterBase
 {
 private:
     bool metadata_;
-    txs_map::const_iterator iter_;
+    TxsMap::const_iterator iter_;
 
 public:
-    explicit TxsIterImpl(bool metadata, txs_map::const_iterator iter)
+    explicit TxsIterImpl(bool metadata, TxsMap::const_iterator iter)
         : metadata_(metadata), iter_(iter)
     {
     }
 
-    [[nodiscard]] std::unique_ptr<base_type>
+    [[nodiscard]] std::unique_ptr<BaseType>
     copy() const override
     {
         return std::make_unique<TxsIterImpl>(metadata_, iter_);
     }
 
     [[nodiscard]] bool
-    equal(base_type const& impl) const override
+    equal(BaseType const& impl) const override
     {
         if (auto const p = dynamic_cast<TxsIterImpl const*>(&impl))
             return iter_ == p->iter_;
@@ -170,31 +171,31 @@ OpenView::read(Keylet const& k) const
 }
 
 auto
-OpenView::slesBegin() const -> std::unique_ptr<SlesType::iter_base>
+OpenView::slesBegin() const -> std::unique_ptr<SlesType::IterBase>
 {
     return items_.slesBegin(*base_);
 }
 
 auto
-OpenView::slesEnd() const -> std::unique_ptr<SlesType::iter_base>
+OpenView::slesEnd() const -> std::unique_ptr<SlesType::IterBase>
 {
     return items_.slesEnd(*base_);
 }
 
 auto
-OpenView::slesUpperBound(uint256 const& key) const -> std::unique_ptr<SlesType::iter_base>
+OpenView::slesUpperBound(UInt256 const& key) const -> std::unique_ptr<SlesType::IterBase>
 {
     return items_.slesUpperBound(*base_, key);
 }
 
 auto
-OpenView::txsBegin() const -> std::unique_ptr<TxsType::iter_base>
+OpenView::txsBegin() const -> std::unique_ptr<TxsType::IterBase>
 {
     return std::make_unique<TxsIterImpl>(!open(), txs_.cbegin());
 }
 
 auto
-OpenView::txsEnd() const -> std::unique_ptr<TxsType::iter_base>
+OpenView::txsEnd() const -> std::unique_ptr<TxsType::IterBase>
 {
     return std::make_unique<TxsIterImpl>(!open(), txs_.cend());
 }
@@ -206,14 +207,14 @@ OpenView::txExists(key_type const& key) const
 }
 
 auto
-OpenView::txRead(key_type const& key) const -> tx_type
+OpenView::txRead(key_type const& key) const -> TxType
 {
     auto const iter = txs_.find(key);
     if (iter == txs_.end())
         return base_->txRead(key);
     auto const& item = iter->second;
     auto stx = std::make_shared<STTx const>(SerialIter{item.txn->slice()});
-    decltype(tx_type::second) sto;
+    decltype(TxType::second) sto;
     if (item.meta)
     {
         sto = std::make_shared<STObject const>(SerialIter{item.meta->slice()}, sfMetadata);
@@ -228,19 +229,19 @@ OpenView::txRead(key_type const& key) const -> tx_type
 //---
 
 void
-OpenView::rawErase(SLE::ref sle)
+OpenView::rawErase(SLE::Ref sle)
 {
     items_.erase(sle);
 }
 
 void
-OpenView::rawInsert(SLE::ref sle)
+OpenView::rawInsert(SLE::Ref sle)
 {
     items_.insert(sle);
 }
 
 void
-OpenView::rawReplace(SLE::ref sle)
+OpenView::rawReplace(SLE::Ref sle)
 {
     items_.replace(sle);
 }
@@ -264,7 +265,7 @@ OpenView::rawTxInsert(
     auto const result = txs_.emplace(
         std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(txn, metaData));
     if (!result.second)
-        Throw<std::logic_error>("rawTxInsert: duplicate TX id: " + to_string(key));
+        Throw<std::logic_error>(std::format("rawTxInsert: duplicate TX id: {}", to_string(key)));
 }
 
 }  // namespace xrpl
