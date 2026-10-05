@@ -41,7 +41,7 @@ template <
 class TaggedCache;
 class STLedgerEntry;
 using SLE = STLedgerEntry;
-using CachedSLEs = TaggedCache<uint256, SLE const>;
+using CachedSLEs = TaggedCache<UInt256, SLE const>;
 
 // Forward declarations
 class AcceptedLedger;
@@ -181,7 +181,7 @@ public:
     virtual InboundTransactions&
     getInboundTransactions() = 0;
 
-    virtual TaggedCache<uint256, AcceptedLedger>&
+    virtual TaggedCache<UInt256, AcceptedLedger>&
     getAcceptedLedgerCache() = 0;
 
     virtual LedgerMaster&
@@ -238,7 +238,7 @@ public:
     virtual Logs&
     getLogs() = 0;
 
-    [[nodiscard]] virtual std::optional<uint256> const&
+    [[nodiscard]] virtual std::optional<UInt256> const&
     getTrapTxID() const = 0;
 
     /**

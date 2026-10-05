@@ -23,6 +23,7 @@ on:
       - ".github/workflows/reusable-build-test.yml"
       - ".github/workflows/reusable-check-autogen.yml"
       - ".github/workflows/reusable-clang-tidy.yml"
+      - ".github/workflows/reusable-package-test-install.yml"
       - ".github/workflows/reusable-package.yml"
       - ".github/workflows/reusable-rust.yml"
       - ".github/workflows/reusable-strategy-matrix.yml"
@@ -128,3 +129,7 @@ jobs:
       remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
       remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
       signing_key: ${{ secrets.NEXUS_PACKAGES_PRIVATE_KEY }}
+      dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
+      antithesis_docker_host: ${{ secrets.ANTITHESIS_DOCKER_HOST }}
+      antithesis_docker_path: ${{ secrets.ANTITHESIS_DOCKER_PATH }}
+      antithesis_docker_credentials: ${{ secrets.ANTITHESIS_DOCKER_CREDENTIALS }}
