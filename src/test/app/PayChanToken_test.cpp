@@ -5065,9 +5065,10 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env(paychan::clawback(gw, chan), Ter(tecNO_PERMISSION));
         }
 
-        // The clawback authority can be delegated. The tx is Delegable, which
-        // registers automatically from the macro; only a delegate the issuer
-        // authorized for PaymentChannelClawback may claw on its behalf.
+        // PaymentChannelClawback is not delegable (XLS-75: a new transaction
+        // type stays non-delegable until integrated and tested with
+        // delegation): DelegateSet cannot grant it, and a transaction naming
+        // a Delegate fails in preflight1 before any permission lookup.
         if (features[featurePermissionDelegationV1_1])
         {
             Env env{*this, features};
@@ -5085,15 +5086,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env.close();
             auto const chan = paychan::channel(alice, bob, seq1);
 
-            // Unauthorized delegate is rejected.
-            env(paychan::clawback(gw, chan), delegate::As(dan), Ter(terNO_DELEGATE_PERMISSION));
-
-            env(delegate::set(gw, dan, {"PaymentChannelClawback"}));
+            env(delegate::set(gw, dan, {"PaymentChannelClawback"}), Ter(temMALFORMED));
+            env(paychan::clawback(gw, chan), delegate::As(dan), Ter(temINVALID));
             env.close();
-            env(paychan::clawback(gw, chan), delegate::As(dan));
-            env.close();
-            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
-            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(0));
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(4'000));
         }
 
         // Clawback requires the issuer opt-in (lsfAllowTrustLineClawback).

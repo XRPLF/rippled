@@ -1167,7 +1167,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, 93, ConfidentialMPTHolderKeyUp
 #   include <xrpl/tx/transactors/payment_channel/PaymentChannelClawback.h>
 #endif
 TRANSACTION(ttPAYCHAN_CLAWBACK, 94, PaymentChannelClawback,
-    ({.delegable = Delegation::Delegable, .amendment = featureTokenPaychan}),
+    ({.amendment = featureTokenPaychan}),
     ({
     {sfChannel, SoeRequired},
     {sfAmount, SoeOptional, SoeMptSupported},

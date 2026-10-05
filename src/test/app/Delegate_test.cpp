@@ -260,6 +260,7 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(gw, alice, {"UNLModify"}), Ter(temMALFORMED));
             env(delegate::set(gw, alice, {"SetFee"}), Ter(temMALFORMED));
             env(delegate::set(gw, alice, {"Batch"}), Ter(temMALFORMED));
+            env(delegate::set(gw, alice, {"PaymentChannelClawback"}), Ter(temMALFORMED));
         }
     }
 
@@ -2838,7 +2839,7 @@ class Delegate_test : public beast::unit_test::Suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        std::size_t const expectedDelegableCount = 58;
+        std::size_t const expectedDelegableCount = 57;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,
