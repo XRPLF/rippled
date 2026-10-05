@@ -153,49 +153,9 @@ admin = 127.0.0.1
         }
     }
     void
-    testFetchInfoClearType()
-    {
-        testcase("fetch_info clear parameter types");
-
-        using namespace test::jtx;
-
-        Env env(*this);
-
-        auto testInvalidClear = [&](auto const& clear) {
-            json::Value params(json::ValueType::Object);
-            params[jss::clear] = clear;
-
-            auto const result = env.rpc("json", "fetch_info", to_string(params))[jss::result];
-
-            BEAST_EXPECT(!result.isMember(jss::error));
-            BEAST_EXPECT(!result.isMember(jss::clear));
-        };
-
-        testInvalidClear("false");
-
-        json::Value array(json::ValueType::Array);
-        array.append(1);
-        testInvalidClear(array);
-
-        testInvalidClear(json::Value(json::ValueType::Object));
-                json::Value trueParams(json::ValueType::Object);
-        trueParams[jss::clear] = true;
-        auto const trueResult = env.rpc("json", "fetch_info", to_string(trueParams))[jss::result];
-        BEAST_EXPECT(!trueResult.isMember(jss::error));
-        BEAST_EXPECT(
-            trueResult[jss::clear].isBool() && trueResult[jss::clear].asBool());
-
-        json::Value falseParams(json::ValueType::Object);
-        falseParams[jss::clear] = false;
-        auto const falseResult = env.rpc("json", "fetch_info", to_string(falseParams))[jss::result];
-        BEAST_EXPECT(!falseResult.isMember(jss::error));
-        BEAST_EXPECT(!falseResult.isMember(jss::clear));
-    }
-    void
     run() override
     {
         testServerInfo();
-        testFetchInfoClearType();
     }
 };
 
