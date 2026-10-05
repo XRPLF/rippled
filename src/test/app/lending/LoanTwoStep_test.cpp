@@ -537,6 +537,105 @@ private:
             if (auto const l1 = env.le(l1Keylet); BEAST_EXPECT(l1))
                 BEAST_EXPECT(l1->at(sfPaymentRemaining) < payTotal_);
         }
+
+        // Impairing an active loan must succeed while another loan on the same
+        // vault is pending. The unrealized loss is bounded by the assets lent
+        // out by active loans: AssetsTotal - AssetsAvailable - AssetsReserved.
+        // The reserved principal of the pending loan is still held by the
+        // vault, so the impairment must not be able to discount it.
+        //
+        // A FixedPrecision vault takes the adjustVaultBalances path; a Legacy
+        // vault takes LoanManage's own AssetsTotal-based bound. The Legacy
+        // LEVersion rewrite does not survive a ledger close, so that variant
+        // runs without fixCleanup3_4_0 (impair would otherwise need a late
+        // payment, which needs a close) and never closes the ledger.
+        for (bool const legacyVault : {false, true})
+        {
+            testcase << "Two-step: impair accepted loan while another loan is pending ("
+                     << (legacyVault ? "Legacy" : "FixedPrecision") << " vault)";
+
+            Env env(*this, legacyVault ? features_ - fixCleanup3_4_0 : features_);
+            auto const broker = makeBroker(env, AssetType::XRP);
+            auto const closeIfAllowed = [&] {
+                if (!legacyVault)
+                    env.close();
+            };
+
+            if (legacyVault)
+                makeVaultInstantRecognition(env, broker);
+            if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+            {
+                BEAST_EXPECT(
+                    getVaultVersion(v) ==
+                    (legacyVault ? VaultVersion::Legacy : VaultVersion::FixedPrecision));
+            }
+
+            // L1: accepted (borrower).
+            auto const l1Keylet = nextLoanKeylet(env, broker);
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
+            closeIfAllowed();
+            env(accept(borrower_, l1Keylet.key));
+            closeIfAllowed();
+            if (auto const l1 = env.le(l1Keylet); BEAST_EXPECT(l1))
+                BEAST_EXPECT(!l1->isFlag(lsfLoanPending));
+
+            // L2: still pending (evan) — leaves AssetsReserved > 0.
+            auto const l2Keylet = nextLoanKeylet(env, broker);
+            propose(env, broker, lender_, evan_, (env.now() + 2h).time_since_epoch().count());
+            closeIfAllowed();
+            expectStillPending(env, l2Keylet);
+
+            auto const vault0 = readVault(env, broker);
+            Number const l2Principal = broker.asset(200).number();
+            BEAST_EXPECT(vault0.reserved == l2Principal);
+
+            // Impair L1 while L2 is pending. Under fixCleanup3_4_0 the payment
+            // must already be late.
+            advancePastDueDate(env, l1Keylet);
+            env(manage(lender_, l1Keylet.key, tfLoanImpair));
+            closeIfAllowed();
+            if (auto const l1 = env.le(l1Keylet); BEAST_EXPECT(l1))
+                BEAST_EXPECT(l1->isFlag(lsfLoanImpaired));
+
+            // The loss covers L1 only, and stays within the assets lent out by
+            // active loans; the reserved principal of L2 is untouched.
+            auto const vault1 = readVault(env, broker);
+            if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+            {
+                Number const loss = v->at(sfLossUnrealized);
+                BEAST_EXPECT(loss > beast::kZero);
+                BEAST_EXPECT(loss <= vault1.total - vault1.available - vault1.reserved);
+            }
+            BEAST_EXPECT(vault1.reserved == vault0.reserved);
+            BEAST_EXPECT(vault1.available == vault0.available);
+            expectStillPending(env, l2Keylet);
+
+            // L2 can still be accepted: its principal was never discounted by
+            // the impairment, and acceptance releases it from AssetsReserved.
+            env(accept(evan_, l2Keylet.key));
+            closeIfAllowed();
+            if (auto const l2 = env.le(l2Keylet); BEAST_EXPECT(l2))
+                BEAST_EXPECT(!l2->isFlag(lsfLoanPending));
+            auto const vault2 = readVault(env, broker);
+            BEAST_EXPECT(vault2.reserved == vault1.reserved - l2Principal);
+            BEAST_EXPECT(vault2.available == vault1.available);
+            if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+            {
+                Number const loss = v->at(sfLossUnrealized);
+                BEAST_EXPECT(loss <= vault2.total - vault2.available - vault2.reserved);
+            }
+
+            // Reversing the impairment on L1 clears the loss.
+            env(manage(lender_, l1Keylet.key, tfLoanUnimpair));
+            closeIfAllowed();
+            if (auto const l1 = env.le(l1Keylet); BEAST_EXPECT(l1))
+                BEAST_EXPECT(!l1->isFlag(lsfLoanImpaired));
+            if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+            {
+                Number const loss = v->at(sfLossUnrealized);
+                BEAST_EXPECT(loss == Number{0});
+            }
+        }
     }
 
     // Proposal-time and acceptance-time input validation: missing / conflicting
