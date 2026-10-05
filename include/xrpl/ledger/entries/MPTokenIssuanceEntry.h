@@ -51,6 +51,8 @@ public:
 
     /**
      * Returns true if the issuance is locked (lsfMPTLocked).
+     *
+     * @return true if lsfMPTLocked is set, false otherwise.
      */
     [[nodiscard]] bool
     isGlobalFrozen() const
