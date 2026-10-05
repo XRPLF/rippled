@@ -178,6 +178,11 @@ public:
      * (sfReferenceHolding present) it recurses into the underlying asset's
      * transferability; @p depth is bounded at kMaxAssetCheckDepth.
      *
+     * @param from the account the MPT is transferred from.
+     * @param to the account the MPT is transferred to.
+     * @param waive whether to waive the lsfMPTCanTransfer check.
+     * @param depth Current recursion depth; callers outside the
+     *              transferability checks should pass 0.
      * @return tesSUCCESS if the transfer is allowed, tecNO_AUTH otherwise.
      */
     [[nodiscard]] TER
