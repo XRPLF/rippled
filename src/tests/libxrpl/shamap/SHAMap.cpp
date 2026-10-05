@@ -121,10 +121,14 @@ protected:
     }
 
     // kH3 and kH4 differ only in the leaf, same terminal node (level 19)
-    constexpr UInt256 kH1("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
-    constexpr UInt256 kH2("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
-    constexpr UInt256 kH3("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
-    constexpr UInt256 kH4("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
+    static constexpr UInt256 kH1{
+        "092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7"};
+    static constexpr UInt256 kH2{
+        "436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe"};
+    static constexpr UInt256 kH3{
+        "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"};
+    static constexpr UInt256 kH4{
+        "b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8"};
 
     // SHAMap is neither copyable nor movable, so the map is configured in
     // place rather than returned.
@@ -233,25 +237,25 @@ TEST_P(SHAMapTest, a_snapshot_is_unaffected_by_later_edits)
 TEST_P(SHAMapTest, the_hash_after_each_add_is_undone_by_the_matching_delete)
 {
     constexpr std::array kKeys{
-        uint256{"b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        uint256{"b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        uint256{"b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        uint256{"b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        uint256{"b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        uint256{"b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        uint256{"f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        uint256{"292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
     };
 
     constexpr std::array kHashes{
-        uint256{"B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C64B6281F7F"},
-        uint256{"FBC195A9592A54AB44010274163CB6BA95F497EC5BA0A8831845467FB2ECE266"},
-        uint256{"4E7D2684B65DFD48937FFB775E20175C43AF0C94066F7D5679F51AE756795B75"},
-        uint256{"7A2F312EB203695FFD164E038E281839EEF06A1B99BFC263F3CECC6C74F93E07"},
-        uint256{"395A6691A372387A703FB0F2C6D2C405DAF307D0817F8F0E207596462B0E3A3E"},
-        uint256{"D044C0A696DE3169CC70AE216A1564D69DE96582865796142CE7D98A84D9DDE4"},
-        uint256{"76DCC77C4027309B5A91AD164083264D70B77B5E43E08AEDA5EBF94361143615"},
-        uint256{"DF4220E93ADC6F5569063A01B4DC79F8DB9553B6A3222ADE23DEA02BBE7230E5"},
+        UInt256{"B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C64B6281F7F"},
+        UInt256{"FBC195A9592A54AB44010274163CB6BA95F497EC5BA0A8831845467FB2ECE266"},
+        UInt256{"4E7D2684B65DFD48937FFB775E20175C43AF0C94066F7D5679F51AE756795B75"},
+        UInt256{"7A2F312EB203695FFD164E038E281839EEF06A1B99BFC263F3CECC6C74F93E07"},
+        UInt256{"395A6691A372387A703FB0F2C6D2C405DAF307D0817F8F0E207596462B0E3A3E"},
+        UInt256{"D044C0A696DE3169CC70AE216A1564D69DE96582865796142CE7D98A84D9DDE4"},
+        UInt256{"76DCC77C4027309B5A91AD164083264D70B77B5E43E08AEDA5EBF94361143615"},
+        UInt256{"DF4220E93ADC6F5569063A01B4DC79F8DB9553B6A3222ADE23DEA02BBE7230E5"},
     };
 
     tests::TestNodeFamily f{j_};
@@ -261,77 +265,19 @@ TEST_P(SHAMapTest, the_hash_after_each_add_is_undone_by_the_matching_delete)
     EXPECT_EQ(map.getHash(), beast::kZero);
     for (std::size_t k = 0; k < kKeys.size(); ++k)
     {
-        constexpr std::array kKeys{
-            UInt256{"b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            UInt256{"b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            UInt256{"b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            UInt256{"b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            UInt256{"b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            UInt256{"b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            UInt256{"f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            UInt256{"292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        };
-
-        constexpr std::array kHashes{
-            UInt256{"B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C64B6281F7F"},
-            UInt256{"FBC195A9592A54AB44010274163CB6BA95F497EC5BA0A8831845467FB2ECE266"},
-            UInt256{"4E7D2684B65DFD48937FFB775E20175C43AF0C94066F7D5679F51AE756795B75"},
-            UInt256{"7A2F312EB203695FFD164E038E281839EEF06A1B99BFC263F3CECC6C74F93E07"},
-            UInt256{"395A6691A372387A703FB0F2C6D2C405DAF307D0817F8F0E207596462B0E3A3E"},
-            UInt256{"D044C0A696DE3169CC70AE216A1564D69DE96582865796142CE7D98A84D9DDE4"},
-            UInt256{"76DCC77C4027309B5A91AD164083264D70B77B5E43E08AEDA5EBF94361143615"},
-            UInt256{"DF4220E93ADC6F5569063A01B4DC79F8DB9553B6A3222ADE23DEA02BBE7230E5"},
-        };
-
-        SHAMap map{SHAMapType::FREE, f};
-        if (!testMode.backed)
-            map.setUnbacked();
-
-        EXPECT_EQ(map.getHash(), beast::kZero);
-        for (std::size_t k = 0; k < kKeys.size(); ++k)
-        {
-            EXPECT_TRUE(map.addItem(
-                SHAMapNodeType::TnTransactionNm,
-                makeShamapitem(kKeys[k], intToVuc(static_cast<std::uint8_t>(k)))));
-            EXPECT_EQ(map.getHash().asUInt256(), kHashes[k]);
-            map.invariants();
-        }
-        for (std::size_t k = kKeys.size(); k-- > 0;)
-        {
-            EXPECT_EQ(map.getHash().asUInt256(), kHashes[k]);
-            EXPECT_TRUE(map.delItem(kKeys[k]));
-            map.invariants();
-        }
-        EXPECT_EQ(map.getHash(), beast::kZero);
+        EXPECT_TRUE(map.addItem(
+            SHAMapNodeType::TnTransactionNm,
+            makeShamapitem(kKeys[k], intToVuc(static_cast<std::uint8_t>(k)))));
+        EXPECT_EQ(map.getHash().asUInt256(), kHashes[k]);
+        map.invariants();
     }
 
     // Removing the items in reverse must walk back through the same hashes.
     for (std::size_t k = kKeys.size(); k-- > 0;)
     {
-        constexpr std::array kKeys{
-            UInt256{"f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            UInt256{"b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            UInt256{"b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            UInt256{"b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            UInt256{"b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            UInt256{"b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            UInt256{"b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            UInt256{"292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        };
-
-        tests::TestNodeFamily tf{j_};
-        SHAMap map{SHAMapType::FREE, tf};
-        if (!testMode.backed)
-            map.setUnbacked();
-        for (auto const& k : kKeys)
-        {
-            map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(k, intToVuc(0)));
-            map.invariants();
-        }
-
-        auto keyIndex = kKeys.size();
-        for (auto const& k : map)
-            EXPECT_EQ(k.key(), kKeys[--keyIndex]);
+        EXPECT_EQ(map.getHash().asUInt256(), kHashes[k]);
+        EXPECT_TRUE(map.delItem(kKeys[k]));
+        map.invariants();
     }
     EXPECT_EQ(map.getHash(), beast::kZero);
 }
@@ -340,14 +286,14 @@ TEST_P(SHAMapTest, iteration_yields_keys_in_ascending_order)
 {
     // Listed in descending order, so iteration must reverse them.
     constexpr std::array kKeys{
-        uint256{"f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        uint256{"b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        uint256{"b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        uint256{"b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        uint256{"b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        uint256{"b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        uint256{"b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        uint256{"292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
     };
 
     tests::TestNodeFamily tf{j_};
