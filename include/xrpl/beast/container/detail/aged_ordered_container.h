@@ -820,7 +820,7 @@ public:
     template <class P, bool MaybeMap = IsMap>
     std::conditional_t<IsMulti, iterator, std::pair<iterator, bool>>
     insert(P&& value)
-        requires(MaybeMap && std::is_constructible_v<value_type, P &&>)
+        requires(MaybeMap && std::is_constructible_v<value_type, P&&>)
     {
         return emplace(std::forward<P>(value));
     }
@@ -829,7 +829,7 @@ public:
     template <class P, bool MaybeMap = IsMap>
     std::conditional_t<IsMulti, iterator, std::pair<iterator, bool>>
     insert(const_iterator hint, P&& value)
-        requires(MaybeMap && std::is_constructible_v<value_type, P &&>)
+        requires(MaybeMap && std::is_constructible_v<value_type, P&&>)
     {
         return emplaceHint(hint, std::forward<P>(value));
     }
