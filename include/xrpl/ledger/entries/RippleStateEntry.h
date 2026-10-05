@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -10,8 +11,11 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -129,6 +133,63 @@ public:
      */
     [[nodiscard]] TER
     removeFromLedger(AccountID const& lowAccount, AccountID const& highAccount)
+        requires Base::kIsWritable;
+
+    /**
+     * Create a trust line
+     *
+     * This can set an initial balance.
+     *
+     * @param view the view to apply the trust line creation to.
+     * @param bSrcHigh true if the source account is the high side of the
+     * line.
+     * @param uSrcAccountID the account the balance and limit are set from.
+     * @param uDstAccountID the other account on the line.
+     * @param uIndex the ledger index of the new ripple state entry.
+     * @param sleAccount the account being set (the high or low side,
+     * depending on bSrcHigh and the limit's issuer).
+     * @param bAuth whether to authorize the account.
+     * @param bNoRipple whether to disable rippling through the account being
+     * set.
+     * @param bFreeze whether the account being set cannot have funds leave.
+     * @param bDeepFreeze whether the account being set can neither send nor
+     * receive funds.
+     * @param saBalance the balance of the account being set; the issuer
+     * should be noAccount().
+     * @param saLimit the limit for the account being set; the issuer should
+     * be the account being set.
+     * @param uQualityIn the inbound quality for the account being set, or 0
+     * to leave it unset.
+     * @param uQualityOut the outbound quality for the account being set, or
+     * 0 to leave it unset.
+     * @param sponsorSle the sponsor to charge the new line's reserve to, if
+     * any.
+     * @param j the journal to log to.
+     * @return tesSUCCESS, tecDIR_FULL if either owner directory is full,
+     * tefINTERNAL if @p sleAccount is null, tecNO_TARGET if the peer account
+     * does not exist, or tecINTERNAL if the line would be to self and the
+     * lending protocol is enabled
+     */
+    [[nodiscard]] static TER
+    create(
+        ApplyView& view,
+        bool const bSrcHigh,
+        AccountID const& uSrcAccountID,
+        AccountID const& uDstAccountID,
+        UInt256 const& uIndex,      // --> ripple state entry
+        SLE::Ref sleAccount,        // --> the account being set.
+        bool const bAuth,           // --> authorize account.
+        bool const bNoRipple,       // --> others cannot ripple through
+        bool const bFreeze,         // --> funds cannot leave
+        bool bDeepFreeze,           // --> can neither receive nor send funds
+        STAmount const& saBalance,  // --> balance of account being set.
+                                    // Issuer should be noAccount()
+        STAmount const& saLimit,    // --> limit for account being set.
+                                    // Issuer should be the account being set.
+        std::uint32_t uQualityIn,
+        std::uint32_t uQualityOut,
+        SLE::Ref sponsorSle,
+        beast::Journal j)
         requires Base::kIsWritable;
 };
 
