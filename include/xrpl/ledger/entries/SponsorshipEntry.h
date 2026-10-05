@@ -63,6 +63,8 @@ public:
      *
      * @param feeAmountDelta The requested FeeAmount change, if any
      * @param remainingOwnerCountDelta The requested RemainingOwnerCount change, if any
+     * @return True if the resulting FeeAmount or RemainingOwnerCount would be
+     *     positive; false otherwise
      */
     [[nodiscard]] bool
     hasBudget(
