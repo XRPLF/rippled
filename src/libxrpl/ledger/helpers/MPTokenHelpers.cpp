@@ -1051,8 +1051,7 @@ issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue)
     MPTokenIssuanceEntryR const sle(issue.getMptID(), view);
     if (!sle)
         return amount;
-    auto const available = sle.availableAmount();
-    return view.balanceHookSelfIssueMPT(issue, available);
+    return sle.issuerFundsToSelfIssue();
 }
 
 void
