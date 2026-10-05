@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -25,7 +26,10 @@
 namespace xrpl {
 
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& assets)
+assetsToSharesDeposit(
+    SLE::ConstRef vault,
+    MPTokenIssuanceEntryR const& issuance,
+    STAmount const& assets)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
@@ -49,7 +53,10 @@ assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount cons
 }
 
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& shares)
+sharesToAssetsDeposit(
+    SLE::ConstRef vault,
+    MPTokenIssuanceEntryR const& issuance,
+    STAmount const& shares)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
     XRPL_ASSERT(
@@ -150,7 +157,7 @@ debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
     SLE::ConstRef vault,
-    SLE::ConstRef issuance,
+    MPTokenIssuanceEntryR const& issuance,
     STAmount const& assets,
     TruncateShares truncate,
     WaiveUnrealizedLoss waive)
@@ -177,7 +184,7 @@ assetsToSharesWithdraw(
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
     SLE::ConstRef vault,
-    SLE::ConstRef issuance,
+    MPTokenIssuanceEntryR const& issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive)
 {
@@ -198,7 +205,10 @@ sharesToAssetsWithdraw(
 }
 
 [[nodiscard]] bool
-isSoleShareholder(ReadView const& view, AccountID const& account, SLE::ConstRef issuance)
+isSoleShareholder(
+    ReadView const& view,
+    AccountID const& account,
+    MPTokenIssuanceEntryR const& issuance)
 {
     XRPL_ASSERT(
         issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
@@ -308,7 +318,7 @@ getVaultPhase(
 [[nodiscard]] TER
 checkVaultDomain(
     ReadView const& view,
-    SLE::ConstRef issuance,
+    MPTokenIssuanceEntryR const& issuance,
     AccountID const& subject,
     SuppressExpired suppressExpired)
 {

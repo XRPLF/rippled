@@ -9,6 +9,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -86,24 +87,24 @@ bool
 isVaultPseudoAccountFrozenForIssuance(
     ReadView const& view,
     AccountID const& account,
-    SLE const& issuanceSle,
+    MPTokenIssuanceEntryR const& issuanceSle,
     std::uint8_t depth)
 {
     XRPL_ASSERT(
-        issuanceSle.getType() == ltMPTOKEN_ISSUANCE,
+        issuanceSle->getType() == ltMPTOKEN_ISSUANCE,
         "xrpl::isVaultPseudoAccountFrozenForIssuance : MPTokenIssuance SLE");
 
-    auto const issuer = issuanceSle.getAccountID(sfIssuer);
+    auto const issuer = issuanceSle->getAccountID(sfIssuer);
 
     // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
     // to the vault pseudo's MPToken or RippleState for the underlying.
     // Read it to derive the underlying asset and recurse, skipping the
     // issuer-account-then-vault chain. Pre-amendment shares (no field)
     // fall back to the chain lookup below.
-    if (issuanceSle.isFieldPresent(sfReferenceHolding))
+    if (issuanceSle->isFieldPresent(sfReferenceHolding))
     {
         auto const sleHolding =
-            view.read(keylet::unchecked(issuanceSle.getFieldH256(sfReferenceHolding)));
+            view.read(keylet::unchecked(issuanceSle->getFieldH256(sfReferenceHolding)));
         if (!sleHolding)
         {
             // LCOV_EXCL_START
@@ -144,7 +145,7 @@ bool
 isVaultPseudoAccountFrozen(
     ReadView const& view,
     AccountID const& account,
-    SLE const& issuanceSle,
+    MPTokenIssuanceEntryR const& issuanceSle,
     std::uint8_t depth)
 {
     if (auto const result = checkVaultPseudoAccountFrozenPreconditions(view, depth))
@@ -163,11 +164,11 @@ isVaultPseudoAccountFrozen(
     if (auto const result = checkVaultPseudoAccountFrozenPreconditions(view, depth))
         return *result;
 
-    auto const issuanceSle = view.read(keylet::mptokenIssuance(mptShare.getMptID()));
-    if (issuanceSle == nullptr)
+    MPTokenIssuanceEntryR const issuanceSle(mptShare.getMptID(), view);
+    if (!issuanceSle)
         return false;  // zero MPToken won't block deletion of MPTokenIssuance
 
-    return isVaultPseudoAccountFrozenForIssuance(view, account, *issuanceSle, depth);
+    return isVaultPseudoAccountFrozenForIssuance(view, account, issuanceSle, depth);
 }
 
 bool

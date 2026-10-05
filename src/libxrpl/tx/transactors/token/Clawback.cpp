@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -154,7 +155,7 @@ preclaimHelper<MPTIssue>(
     STAmount const& clawAmount)
 {
     auto const issuanceKey = keylet::mptokenIssuance(clawAmount.get<MPTIssue>().getMptID());
-    auto const sleIssuance = ctx.view.read(issuanceKey);
+    MPTokenIssuanceEntryR const sleIssuance(issuanceKey, ctx.view);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 

@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -141,7 +142,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntryR const sleIssuance(mptIssuanceID, ctx.view);
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -253,7 +254,7 @@ VaultDeposit::doApply()
 
     // Make sure the depositor can hold shares.
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntryR const sleIssuance(mptIssuanceID, view());
     if (!sleIssuance)
     {
         // LCOV_EXCL_START

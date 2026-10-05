@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -109,7 +110,7 @@ ConfidentialMPTHolderKeyUpdate::preclaim(PreclaimContext const& ctx)
     auto const account = ctx.tx[sfAccount];
     auto const mptIssuanceID = ctx.tx[sfMPTokenIssuanceID];
 
-    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
+    auto const sleIssuance = MPTokenIssuanceEntryR(mptIssuanceID, ctx.view);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 

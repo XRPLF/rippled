@@ -1,5 +1,7 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceDestroy.h>
 
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -21,7 +23,7 @@ TER
 MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists
-    auto const sleMPT = ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    MPTokenIssuanceEntryR const sleMPT(ctx.tx[sfMPTokenIssuanceID], ctx.view);
     if (!sleMPT)
         return tecOBJECT_NOT_FOUND;
 
@@ -42,15 +44,15 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 TER
 MPTokenIssuanceDestroy::doApply()
 {
-    auto const mpt = view().peek(keylet::mptokenIssuance(ctx_.tx[sfMPTokenIssuanceID]));
+    MPTokenIssuanceEntryW mpt(ctx_.tx[sfMPTokenIssuanceID], view(), j_);
     if (accountID_ != mpt->getAccountID(sfIssuer))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (!view().dirRemove(keylet::ownerDir(accountID_), (*mpt)[sfOwnerNode], mpt->key(), false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    decreaseOwnerCountForObject(view(), accountID_, mpt, 1, j_);
-    view().erase(mpt);
+    decreaseOwnerCountForObject(view(), accountID_, mpt.mutableRawSle(), 1, j_);
+    mpt.erase();
 
     return tesSUCCESS;
 }
