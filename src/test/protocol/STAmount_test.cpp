@@ -997,6 +997,95 @@ public:
     }
 
     void
+    testIsExactSum()
+    {
+        testcase("is exact sum");
+
+        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+        MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+
+        // Exact IOU sum
+        {
+            STAmount const amt1(usd, 500);
+            STAmount const amt2(usd, 1500);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == true);
+        }
+
+        // Exact IOU sum with a zero operand
+        {
+            STAmount const amt1(usd, 0);
+            STAmount const amt2(usd, 15, -19);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == true);
+        }
+
+        // Exact IOU sum whose exponent exceeds both operands'
+        {
+            STAmount const amt1(usd, std::uint64_t{9999999999999999});
+            STAmount const amt2(usd, 1);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == true);
+        }
+
+        // IOU sum that drops the finer operand: 1.5e-18 + 1 rounds to 1, and
+        // 1 - 1.5e-18 rounds back to 1, so only the difference with the
+        // coarser operand exposes the loss
+        {
+            STAmount const amt1(usd, 15, -19);
+            STAmount const amt2(usd, 1);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == false);
+            BEAST_EXPECT(isExactSum(amt2, amt1) == false);
+        }
+
+        // IOU sum that rounds the smaller operand away entirely
+        {
+            STAmount const amt1(usd, 1, 15);
+            STAmount const amt2(usd, 1, -3);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == false);
+        }
+
+        // IOU sum that rounds to a different nonzero increase
+        {
+            STAmount const amt1(usd, std::uint64_t{1234567890123456});
+            STAmount const amt2(usd, 600025, -2);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == false);
+        }
+
+        // Exact XRP sum
+        {
+            STAmount const amt1(XRPAmount(500));
+            STAmount const amt2(XRPAmount(1500));
+            BEAST_EXPECT(isExactSum(amt1, amt2) == true);
+        }
+
+        // XRP overflow
+        {
+            STAmount const amt1(std::numeric_limits<XRPAmount::value_type>::max());
+            STAmount const amt2(XRPAmount(1));
+            BEAST_EXPECT(isExactSum(amt1, amt2) == false);
+        }
+
+        // Exact MPT sum
+        {
+            STAmount const amt1(mpt, 500);
+            STAmount const amt2(mpt, 1500);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == true);
+        }
+
+        // MPT overflow
+        {
+            STAmount const amt1(mpt, std::numeric_limits<MPTAmount::value_type>::max());
+            STAmount const amt2(mpt, 1);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == false);
+        }
+
+        // Not comparable
+        {
+            STAmount const amt1(XRPAmount(1));
+            STAmount const amt2(usd, 1);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == false);
+        }
+    }
+
+    void
     testMPTRateRounding()
     {
         testcase("MPT transfer rate rounding uses Number arithmetic");
@@ -1351,6 +1440,7 @@ public:
         testCanAddXRP();
         testCanAddIOU();
         testCanAddMPT();
+        testIsExactSum();
         testMPTRateRounding();
         testCanSubtractXRP();
         testCanSubtractIOU();

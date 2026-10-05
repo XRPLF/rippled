@@ -188,15 +188,10 @@ PaymentChannelFund::doApply()
             !isTesSuccess(ret))
             return ret;
 
-        // Guard the channel-amount accumulation itself: a small IOU amount
-        // added to a much larger channel amount would be rounded away below
-        // after the source had already been debited. sfAmount is never
-        // reduced by a claim, so repeated fund/claim cycles on the same
-        // tokens can carry an MPT channel's historical sfAmount close to
-        // kMaxMpTokenAmount even while the source's live balance stays
-        // small; MPTAmount's addition is a signed 64-bit add and overflows
-        // past that point. canAdd() catches both.
-        if (!canAdd(chanAmt, amount))
+        // sfAmount must become exactly chanAmt + amount: an IOU sum that
+        // rounds or an MPT sum that overflows would record an increase other
+        // than what the source paid.
+        if (!isExactSum(chanAmt, amount))
             return tecPRECISION_LOSS;
     }
 

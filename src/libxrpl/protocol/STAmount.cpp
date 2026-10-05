@@ -522,6 +522,26 @@ canAdd(STAmount const& a, STAmount const& b)
 }
 
 /**
+ * Integral types defer to canAdd(). For IOU amounts the rounding error of the
+ * sum is a multiple of the finer operand's unit in the last place, so
+ * subtracting the coarser operand back from the sum returns the finer one
+ * only when that error is zero. Both differences are checked because either
+ * operand may be the finer.
+ */
+bool
+isExactSum(STAmount const& a, STAmount const& b)
+{
+    if (!areComparable(a, b))
+        return false;
+
+    if (a.integral())
+        return canAdd(a, b);
+
+    STAmount const sum = a + b;
+    return sum - a == b && sum - b == a;
+}
+
+/**
  * @brief Determines if it is safe to subtract one STAmount from another.
  *
  * This function checks whether subtracting amount `b` from amount `a` is valid,

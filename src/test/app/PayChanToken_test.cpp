@@ -923,9 +923,8 @@ struct PayChanToken_test : public beast::unit_test::Suite
         }
 
         // tecPRECISION_LOSS: cannot fund an amount the channel amount cannot
-        // absorb, even when the source's spendable balance can. Without the
-        // channel-amount canAdd guard the source would be debited while the
-        // channel amount rounds back unchanged.
+        // absorb, even when the source's spendable balance can: the sum
+        // rounds back to the unchanged channel amount.
         {
             Env env{*this, features};
             env.fund(XRP(10'000), alice, bob, gw);
@@ -956,6 +955,74 @@ struct PayChanToken_test : public beast::unit_test::Suite
             // neither the channel amount nor alice's balance changed
             BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(1000000000000000));
             BEAST_EXPECT(env.balance(alice, usd) == usd(5));
+        }
+
+        // tecPRECISION_LOSS: an IOU sum that rounds to a different nonzero
+        // increase is rejected, not only one rounded away entirely
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(100000000000000000), alice);
+            env.trust(usd(100000000000000000), bob);
+            env.close();
+            env(pay(gw, alice, usd(10000000000000000)));
+            env.close();
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(1234567890123456), settleDelay, pk));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            auto const balance = env.balance(alice, usd);
+
+            // 1234567890123456 + 6000.25 needs 18 digits, so the sum rounds
+            // under either mantissa size
+            env(paychan::fund(alice, chan, usd(6000.25)), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(1234567890123456));
+            BEAST_EXPECT(env.balance(alice, usd) == balance);
+
+            // an exact sum is accepted
+            env(paychan::fund(alice, chan, usd(6000)));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(1234567890129456));
+        }
+
+        // tecPRECISION_LOSS: a channel holding a dust amount cannot be funded
+        // with a much larger one. The sum rounds the dust away while
+        // subtracting the channel amount from it still gives back the funded
+        // amount.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(100'000), alice);
+            env.trust(usd(100'000), bob);
+            env.close();
+            STAmount const dust{usd.issue(), 15, -19};
+            env(pay(gw, alice, STAmount{usd.issue(), 20, -19}));
+            env.close();
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, dust, settleDelay, pk));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == dust);
+
+            env(pay(gw, alice, usd(100)));
+            env.close();
+            auto const balance = env.balance(alice, usd);
+
+            env(paychan::fund(alice, chan, usd(1)), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == dust);
+            BEAST_EXPECT(env.balance(alice, usd) == balance);
         }
     }
 

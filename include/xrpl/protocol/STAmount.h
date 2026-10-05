@@ -781,6 +781,21 @@ bool
 canSubtract(STAmount const& amt1, STAmount const& amt2);
 
 /**
+ * Determine whether `amt1 + amt2` equals the mathematical sum.
+ *
+ * XRP and MPT sums are integer additions, so this is canAdd(). An IOU sum is
+ * rounded to the mantissa width and is exact only if subtracting each
+ * operand from it gives back the other.
+ *
+ * @param amt1 The first addend.
+ * @param amt2 The second addend.
+ * @return true if the sum is exact; false if it rounds, overflows, or the
+ *     amounts are not comparable.
+ */
+bool
+isExactSum(STAmount const& amt1, STAmount const& amt2);
+
+/**
  * Get the scale of a Number for a given asset.
  *
  * "scale" is similar to "exponent", but from the perspective of STAmount, which has different rules
