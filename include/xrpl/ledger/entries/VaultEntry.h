@@ -168,6 +168,10 @@ public:
      * Returns the amount a VaultClawback claws back: @p maybeAmount if set;
      * otherwise zero shares when @p account is the vault owner, or zero of
      * the vault asset for anyone else.
+     *
+     * @param maybeAmount The amount to claw back, if the transaction set one.
+     * @param account The account the clawback is issued against.
+     * @return The amount to claw back.
      */
     [[nodiscard]] STAmount
     clawbackAmount(std::optional<STAmount> const& maybeAmount, AccountID const& account) const
