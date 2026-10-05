@@ -204,16 +204,6 @@ Ledger::Ledger(
             sle->at(sfBytecodeSizeLimit) = fees.bytecodeSizeLimit;
             sle->at(sfGasPrice) = fees.gasPrice;
         }
-        else
-        {
-            // This ledger does not carry the gas settings, so it must not
-            // report them either. Otherwise a node reads its own config back
-            // as though the network had agreed to it, and never votes for the
-            // values it wants.
-            fees_.gasLimit = 0;
-            fees_.bytecodeSizeLimit = 0;
-            fees_.gasPrice = 0;
-        }
         rawInsert(sle);
     }
 
@@ -621,15 +611,13 @@ Ledger::setup()
                 auto const bytecodeSizeLimit = sle->at(~sfBytecodeSizeLimit);
                 auto const gasPrice = sle->at(~sfGasPrice);
 
-                auto assign = [](std::uint32_t& dest, std::optional<std::uint32_t> const& src) {
-                    if (src)
-                    {
-                        dest = src.value();
-                    }
-                };
-                assign(fees_.gasLimit, gasLimit);
-                assign(fees_.bytecodeSizeLimit, bytecodeSizeLimit);
-                assign(fees_.gasPrice, gasPrice);
+                // An absent field resolves to the protocol constant.
+                if (rules_.enabled(featureSmartEscrow))
+                {
+                    fees_.gasLimit = gasLimit.value_or(kDefaultGasLimit);
+                    fees_.bytecodeSizeLimit = bytecodeSizeLimit.value_or(kDefaultBytecodeSizeLimit);
+                    fees_.gasPrice = gasPrice.value_or(kDefaultGasPrice);
+                }
                 extensionFees = gasLimit || bytecodeSizeLimit || gasPrice;
             }
             if (oldFees && newFees)
