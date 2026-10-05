@@ -235,10 +235,11 @@ json::Value
 PathRequestManager::makePathRequest(
     std::shared_ptr<InfoSub> const& subscriber,
     std::shared_ptr<ReadView const> const& inLedger,
-    json::Value const& requestJson)
+    json::Value const& requestJson,
+    unsigned int apiVersion)
 {
-    auto const req =
-        std::make_shared<PathRequest>(app_, subscriber, ++lastIdentifier_, *this, journal_);
+    auto const req = std::make_shared<PathRequest>(
+        app_, subscriber, ++lastIdentifier_, *this, journal_, apiVersion);
 
     auto [valid, jvRes] = req->doCreate(getAssetCache(inLedger, false), requestJson);
 
