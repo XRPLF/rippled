@@ -5,6 +5,7 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -35,6 +36,7 @@
 #include <optional>
 #include <source_location>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
