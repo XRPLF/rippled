@@ -16,6 +16,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <optional>
@@ -171,6 +172,18 @@ AccountRootEntry<ViewT>::checkReserve(ApplyViewContext ctx, XRPAmount accBalance
     if (*sponsorExp)
         sponsorSle.emplace(**sponsorExp);
     return checkReserve(ctx, accBalance, sponsorSle, adj);
+}
+
+template <typename ViewT>
+bool
+AccountRootEntry<ViewT>::isPseudoAccount() const
+{
+    // Intentionally use defensive coding here because it's cheap and makes the
+    // semantics of true return value clean.
+    return this->exists() && (*this)->getType() == ltACCOUNT_ROOT &&
+        std::ranges::any_of(getPseudoAccountFields(), [this](SField const* sf) {
+               return (*this)->isFieldPresent(*sf);
+           });
 }
 
 template <typename ViewT>
