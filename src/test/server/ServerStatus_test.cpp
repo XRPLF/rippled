@@ -57,6 +57,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <random>
@@ -953,6 +954,91 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             BEAST_EXPECT(resp.isMember(jss::status) && resp[jss::status] == "error");
         }
 
+        {  // an unsupported api_version is answered in the legacy shape, since the server cannot
+           // know which envelope such a client speaks
+            json::Value jv;
+            jv[jss::command] = "ping";
+            jv[jss::api_version] = 99u;
+            auto resp = sendAndParse(to_string(jv));
+            BEAST_EXPECT(resp[jss::error] == "invalid_API_version");
+            BEAST_EXPECT(resp[jss::status] == "error");
+        }
+
+        {  // from api version 3 a request naming no one method to dispatch on travels in the
+           // specification envelope, and each of the four ways to do that says which one it was.
+           // None carries `data`: a pre-dispatch rejection is not an XRPL error and has no token.
+            struct Rejection
+            {
+                char const* label;
+                json::Value request;
+                char const* message;
+            };
+
+            auto const named = [](std::initializer_list<std::pair<char const*, json::Value>> ms) {
+                json::Value jv(json::ValueType::Object);
+                jv[jss::api_version] = 3u;
+                for (auto const& [name, value] : ms)
+                    jv[name] = value;
+                return jv;
+            };
+
+            for (auto const& [label, request, message] : {
+                     Rejection{
+                         .label = "neither named",
+                         .request = named({}),
+                         .message = "Missing command entry."},
+                     Rejection{
+                         .label = "command is not a string",
+                         .request = named({{"command", 7}}),
+                         .message = "command is not a string"},
+                     Rejection{
+                         .label = "method is not string",
+                         .request = named({{"method", 7}}),
+                         .message = "method is not string"},
+                     Rejection{
+                         .label = "two methods named",
+                         .request = named({{"command", "ping"}, {"method", "server_info"}}),
+                         .message = "command and method disagree"},
+                 })
+            {
+                auto resp = sendAndParse(to_string(request));
+                BEAST_EXPECTS(resp[jss::jsonrpc] == rpc::kJsonRpcVersion, label);
+                BEAST_EXPECTS(resp[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest, label);
+                BEAST_EXPECTS(resp[jss::error][jss::message] == message, label);
+                BEAST_EXPECTS(!resp[jss::error].isMember(jss::data), label);
+                BEAST_EXPECTS(!resp.isMember(jss::status), label);
+                BEAST_EXPECTS(resp[jss::type] == jss::response, label);
+            }
+        }
+
+        {  // from api version 3 an `id` that is neither a string, a number nor null is an invalid
+           // request as well, and that reply names no id: the id is what was wrong, so there is
+           // none to correlate by. The same request below that version is served, id and all.
+            for (auto const& id : unusableIds())
+            {
+                auto const label = idLabel(id);
+
+                json::Value jv;
+                jv[jss::command] = "ping";
+                jv[jss::api_version] = 3u;
+                jv[jss::id] = id;
+
+                auto resp = sendAndParse(to_string(jv));
+                BEAST_EXPECTS(resp[jss::jsonrpc] == rpc::kJsonRpcVersion, label);
+                BEAST_EXPECTS(resp[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest, label);
+                BEAST_EXPECTS(
+                    resp[jss::error][jss::message] == "id is not a string, a number or null",
+                    label);
+                BEAST_EXPECTS(resp.isMember(jss::id) && resp[jss::id].isNull(), label);
+                BEAST_EXPECTS(resp[jss::type] == jss::response, label);
+
+                jv.removeMember(jss::api_version);
+                auto served = sendAndParse(to_string(jv));
+                BEAST_EXPECTS(served[jss::status] == "success", label);
+                BEAST_EXPECTS(served[jss::id] == id, label);
+            }
+        }
+
         {  // send a ping (not an error)
             json::Value jv;
             jv[jss::command] = "ping";
@@ -961,6 +1047,93 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             BEAST_EXPECT(
                 resp.isMember(jss::result) && resp[jss::result].isMember(jss::role) &&
                 resp[jss::result][jss::role] == "admin");
+        }
+    }
+
+    /**
+     * A role the server refuses is the other rejection a WebSocket session
+     * receives before dispatch, so from API version 3 it reports the code the
+     * JSON-RPC transport reports for it rather than traveling as an
+     * application-level failure of a call that was never made.
+     */
+    void
+    testWSForbiddenRole()
+    {
+        testcase("A WebSocket forbidden role reports the specification's code");
+
+        using namespace test::jtx;
+
+        // A WebSocket port with no admin net, so a method that requires admin is refused the role.
+        Env env{*this, makeConfig("ws", false, false)};
+
+        auto wsc = makeWSClient(env.app().config(), false, 2, {}, 3u);
+        auto const raw = wsc->invokeRaw("ledger_accept", json::Value(json::ValueType::Object));
+        if (!BEAST_EXPECT(raw))
+            return;
+
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) the return above holds it
+        json::Value const& reply = *raw;
+
+        BEAST_EXPECT(reply[jss::jsonrpc] == rpc::kJsonRpcVersion);
+        BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcForbidden);
+        BEAST_EXPECT(reply[jss::error][jss::message] == "Forbidden");
+        BEAST_EXPECT(!reply[jss::error].isMember(jss::data));
+        BEAST_EXPECT(!reply.isMember(jss::status));
+        BEAST_EXPECT(reply[jss::type] == jss::response);
+
+        // The id is judged before the role on this transport too: the same refused request with an
+        // object id is told about its id. The `command` form sends the parameters as the message,
+        // which is where the id travels.
+        auto plain = makeWSClient(env.app().config(), false, 1, {}, 3u);
+        json::Value withBadId(json::ValueType::Object);
+        withBadId[jss::id] = json::ValueType::Object;
+        auto const rejected = plain->invokeRaw("ledger_accept", withBadId);
+        if (!BEAST_EXPECT(rejected))
+            return;
+
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) the return above holds it
+        json::Value const& badId = *rejected;
+        BEAST_EXPECT(badId[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
+        BEAST_EXPECT(badId[jss::error][jss::message] == "id is not a string, a number or null");
+        BEAST_EXPECT(badId.isMember(jss::id) && badId[jss::id].isNull());
+    }
+
+    /**
+     * The WebSocket client rewrites a version 3 reply into the legacy envelope
+     * so that a test can assert one shape whichever version it ran under.
+     * Pinned here: a caller reading the wrong member compares a null with a
+     * null and passes.
+     */
+    void
+    testWSInvokeReadsBothEnvelopes()
+    {
+        testcase("The WebSocket client reads either envelope");
+
+        using namespace test::jtx;
+
+        Env env{*this};
+
+        json::Value params(json::ValueType::Object);
+        params[jss::account] = "rNotAnAccountAtAll";
+
+        for (auto const apiVersion : {1u, 3u})
+        {
+            auto wsc = makeWSClient(env.app().config(), false, 2, {}, apiVersion);
+            auto const reply = wsc->invoke("account_info", params);
+            auto const label = std::to_string(apiVersion);
+
+            // The legacy shape the client promises: the error under `result`, and again at the top
+            // level, with the token a version 1 caller matches on.
+            BEAST_EXPECTS(reply[jss::result][jss::error] == "actMalformed", label);
+            BEAST_EXPECTS(reply[jss::result][jss::status] == jss::error, label);
+            BEAST_EXPECTS(reply[jss::error] == "actMalformed", label);
+            BEAST_EXPECTS(!reply[jss::result][jss::error_message].asString().empty(), label);
+
+            // A success reply keeps `id` at the top level at both versions, as the client
+            // promises; an error reply at version 1 nests it under `result`.
+            auto const ok = wsc->invoke("server_info", json::Value(json::ValueType::Object));
+            BEAST_EXPECTS(ok[jss::id] == 5, label);
+            BEAST_EXPECTS(ok[jss::result][jss::status] == jss::success, label);
         }
     }
 
@@ -2917,6 +3090,17 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             BEAST_EXPECT(resp.result() == kBadRequest);
             BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
             BEAST_EXPECT(reply[jss::error][jss::message] == "id is not a string, a number or null");
+
+            // The overload check comes before the id check: an overloaded server sheds the request
+            // without reading it, so the same request is answered as overloaded, not as invalid.
+            // Pinned on this transport; the WebSocket transport closes an overloaded session before
+            // reading the message at all.
+            overloadEndpoint(unprivileged, getEnvLocalhostAddr());
+            Response shed;
+            auto const overloaded = postAndParse(unprivileged, yield, shed, ec, to_string(jv));
+            BEAST_EXPECT(shed.result() == boost::beast::http::status::service_unavailable);
+            BEAST_EXPECT(overloaded[jss::error][jss::code] == rpc::kJsonRpcServerOverloaded);
+            BEAST_EXPECT(overloaded[jss::error][jss::message] == "Server is overloaded");
         }
 
         // A request naming one method at its top level and another in its parameters cannot go
@@ -3665,6 +3849,9 @@ public:
             testAdminRequest(it, true, false);
             testAdminRequest(it, false, false);
         }
+
+        testWSForbiddenRole();
+        testWSInvokeReadsBothEnvelopes();
 
         yieldTo([&](boost::asio::yield_context& yield) {
             testWSClientToHttpServer(yield);

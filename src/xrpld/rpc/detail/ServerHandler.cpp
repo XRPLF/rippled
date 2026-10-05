@@ -764,16 +764,54 @@ ServerHandler::processSession(
     // Requests without "command" are invalid.
     json::Value jr(json::ValueType::Object);
     resource::Charge loadType = resource::kFeeReferenceRpc;
+    // Needed after the try block as well, since it selects the reply envelope.
+    auto const apiVersion = rpc::getAPIVersionNumber(jv, app_.config().betaRpcApi);
+
+    // Marks a specification reply as a reply: a session also receives server-initiated messages,
+    // and `type` is how a client tells the two apart.
+    auto const asWsResponse = [](json::Value r) {
+        r[jss::type] = jss::response;
+        return r;
+    };
     try
     {
-        auto apiVersion = rpc::getAPIVersionNumber(jv, app_.config().betaRpcApi);
-        if (apiVersion == rpc::kApiInvalidVersion ||
-            (!jv.isMember(jss::command) && !jv.isMember(jss::method)) ||
-            (jv.isMember(jss::command) && !jv[jss::command].isString()) ||
-            (jv.isMember(jss::method) && !jv[jss::method].isString()) ||
-            (jv.isMember(jss::command) && jv.isMember(jss::method) &&
-             jv[jss::command].asString() != jv[jss::method].asString()))
+        // The reason the message names no one method the server can look up, or nullptr when it
+        // names one, a client being told which of the four it did rather than that one of them
+        // happened. Below version 3 every one answers the single `missingCommand` token, which is
+        // what a client on those versions matches on.
+        auto const badMethod = [&] -> char const* {
+            if (!jv.isMember(jss::command) && !jv.isMember(jss::method))
+                return "Missing command entry.";
+            if (jv.isMember(jss::command) && !jv[jss::command].isString())
+                return "command is not a string";
+            if (jv.isMember(jss::method) && !jv[jss::method].isString())
+                return "method is not string";
+            if (jv.isMember(jss::command) && jv.isMember(jss::method) &&
+                jv[jss::command].asString() != jv[jss::method].asString())
+            {
+                return "command and method disagree";
+            }
+            return nullptr;
+        }();
+
+        // An `id` the specification does not allow is an invalid request, read before the method.
+        // Earlier versions, and a version the server cannot serve, echo an id of any shape.
+        if (rpc::isSpecVersion(apiVersion) && !hasUsableSpecId(jv))
         {
+            is->getConsumer().charge(resource::kFeeMalformedRpc);
+            return asWsResponse(unusableIdRejection());
+        }
+
+        if (apiVersion == rpc::kApiInvalidVersion || badMethod != nullptr)
+        {
+            is->getConsumer().charge(resource::kFeeMalformedRpc);
+
+            // Each of these is an Invalid Request; kJsonRpcServerError is for a well-formed call
+            // that failed. An unsupported version reads as 0 and takes the legacy shape: the server
+            // cannot know which envelope that client speaks.
+            if (badMethod != nullptr && rpc::isSpecVersion(apiVersion))
+                return asWsResponse(specError(jv, rpc::kJsonRpcInvalidRequest, badMethod));
+
             jr[jss::type] = jss::response;
             jr[jss::status] = jss::error;
             jr[jss::error] = apiVersion == rpc::kApiInvalidVersion ? jss::invalid_API_version
@@ -788,7 +826,6 @@ ServerHandler::processSession(
             if (jv.isMember(jss::api_version))
                 jr[jss::api_version] = jv[jss::api_version];
 
-            is->getConsumer().charge(resource::kFeeMalformedRpc);
             return jr;
         }
 
@@ -805,6 +842,16 @@ ServerHandler::processSession(
         if (Role::FORBID == role)
         {
             loadType = resource::kFeeMalformedRpc;
+
+            // A refused role is a pre-dispatch rejection, so from version 3 it reports the
+            // transport's code rather than an XRPL error inside the result. The charge is the one
+            // the fall-through applies.
+            if (rpc::isSpecVersion(apiVersion))
+            {
+                is->getConsumer().charge(loadType);
+                return asWsResponse(specError(jv, rpc::kJsonRpcForbidden, "Forbidden"));
+            }
+
             jr[jss::result] = rpcError(RpcForbidden);
         }
         else
@@ -836,9 +883,24 @@ ServerHandler::processSession(
                                << "Input JSON: " << rpc::loggable(jv);
     }
 
+    // From version 3 the notice goes inside the result, where shapeSpecReply hoists it to the top
+    // level; below it stays beside the result.
     is->getConsumer().charge(loadType);
     if (is->getConsumer().warn())
-        jr[jss::warning] = jss::load;
+    {
+        auto& carrier = rpc::isSpecVersion(apiVersion) ? jr[jss::result] : jr;
+        carrier[jss::warning] = jss::load;
+    }
+
+    // Shaped by the same helper the JSON-RPC transport uses, so a version selects one shape
+    // whichever transport carries it. A WebSocket message arrives as a flat object rather than
+    // nested under `params`, so the specification's `id` is read from that same object.
+    if (rpc::isSpecVersion(apiVersion))
+    {
+        json::Value r(json::ValueType::Object);
+        shapeSpecReply(std::move(jr[jss::result]), jv, r, journal_);
+        return asWsResponse(std::move(r));
+    }
 
     // Currently we will simply unwrap errors returned by the RPC
     // API, in the future maybe we can make the responses
