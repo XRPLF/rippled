@@ -12,6 +12,16 @@
 
 namespace xrpl {
 
+/**
+ * Serves `path_find`: `create` opens a path request that pushes updates to the
+ * connection, recording the API version this request named on it, `close` ends
+ * the connection's open request and `status` reports it.
+ *
+ * @param context The request and the connection it arrived on.
+ * @return The subcommand's result, or an error when pathfinding is disabled,
+ *         the subcommand is missing or unknown, no connection can receive
+ *         updates, or there is no open request to close or report.
+ */
 json::Value
 doPathFind(rpc::JsonContext& context)
 {
@@ -28,8 +38,6 @@ doPathFind(rpc::JsonContext& context)
     if (!context.infoSub)
         return rpcError(RpcNoEvents);
 
-    context.infoSub->setApiVersion(context.apiVersion);
-
     auto sSubCommand = context.params[jss::subcommand].asString();
 
     if (sSubCommand == "create")
@@ -37,7 +45,7 @@ doPathFind(rpc::JsonContext& context)
         context.loadType = resource::kFeeHeavyBurdenRpc;
         context.infoSub->clearRequest();
         return context.app.getPathRequestManager().makePathRequest(
-            context.infoSub, lpLedger, context.params);
+            context.infoSub, lpLedger, context.params, context.apiVersion);
     }
 
     if (sSubCommand == "close")

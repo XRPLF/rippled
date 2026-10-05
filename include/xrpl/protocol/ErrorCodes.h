@@ -192,8 +192,11 @@ enum ErrorCodeI {
     RpcMalformedXChainOwnedClaimID = 128,
     RpcMalformedXChainOwnedCreateAccountClaimID = 129,
 
+    // subscribe
+    RpcApiVersionConflict = 130,
+
     // RpcLast should always equal the last code.
-    RpcLast = RpcMalformedXChainOwnedCreateAccountClaimID
+    RpcLast = RpcApiVersionConflict
 };
 
 /**

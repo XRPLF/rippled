@@ -46,6 +46,18 @@ wouldExceedSubscriptionCap(InfoSub::Ref ispSub, std::size_t additional, std::siz
 
 }  // namespace
 
+/**
+ * Registers the streams, accounts, books and MPT issuances @p context names
+ * for the connection the request arrived on, or for the webhook url it names.
+ *
+ * Every subscription one subscriber holds is served at one API version, so a
+ * request naming a version other than the one already established is refused
+ * with `apiVersionConflict` before anything is registered.
+ *
+ * @param context The request, its connection and the server it runs on.
+ * @return The registrations' first messages, for the streams that send one, or
+ *         an error.
+ */
 json::Value
 doSubscribe(rpc::JsonContext& context)
 {
@@ -58,6 +70,29 @@ doSubscribe(rpc::JsonContext& context)
         JLOG(context.j.info()) << "doSubscribe: RPC subscribe requires a url";
         return rpcError(RpcInvalidParams);
     }
+
+    // Every subscription on a subscriber is served at one API version; see
+    // establishSubscriptionVersion. Checked before any stream is registered, so a refused call
+    // still fixes the version, which is why the message says "served at". An ordinary request is
+    // answered at its own version.
+    auto const refuseVersionConflict = [&] -> std::optional<json::Value> {
+        if (auto const established = ispSub->establishSubscriptionVersion(context.apiVersion))
+        {
+            // The url message states the condition and no remedy: the subscriber is keyed on its
+            // url alone, so releasing it would remove whoever subscribed it first, and the server
+            // cannot tell the two callers apart. The connection message does name its remedy, a
+            // second connection harming nobody.
+            auto const subject = context.params.isMember(jss::url)
+                ? "Subscriptions on this url are served at api_version " +
+                    std::to_string(*established) + "."
+                : "Subscriptions on this connection are served at api_version " +
+                    std::to_string(*established) + "; use a new connection.";
+
+            JLOG(context.j.debug()) << "doSubscribe: " << subject;
+            return rpc::makeError(RpcApiVersionConflict, subject);
+        }
+        return std::nullopt;
+    };
 
     if (context.params.isMember(jss::url))
     {
@@ -106,6 +141,13 @@ doSubscribe(rpc::JsonContext& context)
         {
             JLOG(context.j.trace()) << "doSubscribe: reusing: " << strUrl;
 
+            // Checked before the credentials are written, because this subscriber belongs to
+            // whoever subscribed the url first: a refused subscribe that had already overwritten
+            // their username would leave their endpoint rejecting the stream it still receives,
+            // with nothing to tell them why.
+            if (auto const conflict = refuseVersionConflict())
+                return *conflict;
+
             if (auto rpcSub = std::dynamic_pointer_cast<RPCSub>(ispSub))
             {
                 // Why do we need to check isMember against jss::username and
@@ -123,7 +165,9 @@ doSubscribe(rpc::JsonContext& context)
     {
         ispSub = context.infoSub;
     }
-    ispSub->setApiVersion(context.apiVersion);
+
+    if (auto const conflict = refuseVersionConflict())
+        return *conflict;
 
     // Effective per-connection subscription cap: a configured override if set,
     // otherwise the built-in default. Resolved once and reused by every branch.
@@ -146,43 +190,44 @@ doSubscribe(rpc::JsonContext& context)
             std::string const streamName = it.asString();
             if (streamName == "server")
             {
-                context.netOps.subServer(ispSub, jvResult, context.role == Role::ADMIN);
+                context.netOps.subServer(
+                    ispSub, jvResult, context.role == Role::ADMIN, context.apiVersion);
             }
             else if (streamName == "ledger")
             {
-                context.netOps.subLedger(ispSub, jvResult);
+                context.netOps.subLedger(ispSub, jvResult, context.apiVersion);
             }
             else if (streamName == "book_changes")
             {
-                context.netOps.subBookChanges(ispSub);
+                context.netOps.subBookChanges(ispSub, context.apiVersion);
             }
             else if (streamName == "manifests")
             {
-                context.netOps.subManifests(ispSub);
+                context.netOps.subManifests(ispSub, context.apiVersion);
             }
             else if (streamName == "transactions")
             {
-                context.netOps.subTransactions(ispSub);
+                context.netOps.subTransactions(ispSub, context.apiVersion);
             }
             else if (
                 streamName == "transactions_proposed" ||
                 streamName == "rt_transactions")  // DEPRECATED
             {
-                context.netOps.subRTTransactions(ispSub);
+                context.netOps.subRTTransactions(ispSub, context.apiVersion);
             }
             else if (streamName == "validations")
             {
-                context.netOps.subValidations(ispSub);
+                context.netOps.subValidations(ispSub, context.apiVersion);
             }
             else if (streamName == "peer_status")
             {
                 if (context.role != Role::ADMIN)
                     return rpcError(RpcNoPermission);
-                context.netOps.subPeerStatus(ispSub);
+                context.netOps.subPeerStatus(ispSub, context.apiVersion);
             }
             else if (streamName == "consensus")
             {
-                context.netOps.subConsensus(ispSub);
+                context.netOps.subConsensus(ispSub, context.apiVersion);
             }
             else
             {
@@ -238,11 +283,11 @@ doSubscribe(rpc::JsonContext& context)
     }
 
     if (hasProposed)
-        context.netOps.subAccount(ispSub, proposedIds, true);
+        context.netOps.subAccount(ispSub, proposedIds, true, context.apiVersion);
 
     if (hasAccounts)
     {
-        context.netOps.subAccount(ispSub, accountIds, false);
+        context.netOps.subAccount(ispSub, accountIds, false, context.apiVersion);
         JLOG(context.j.debug()) << "doSubscribe: accounts: " << accountIds.size();
     }
 
@@ -267,7 +312,8 @@ doSubscribe(rpc::JsonContext& context)
         if (wouldExceedSubscriptionCap(ispSub, historyCharge, subscriptionCap))
             return rpc::makeParamError("Too many subscriptions for this connection.");
 
-        if (auto result = context.netOps.subAccountHistory(ispSub, *id); result != RpcSuccess)
+        if (auto result = context.netOps.subAccountHistory(ispSub, *id, context.apiVersion);
+            result != RpcSuccess)
         {
             return rpcError(result);
         }
@@ -337,14 +383,14 @@ doSubscribe(rpc::JsonContext& context)
                 return rpcError(RpcBadMarket);
             }
 
-            context.netOps.subBook(ispSub, book);
+            context.netOps.subBook(ispSub, book, context.apiVersion);
 
             // both_sides is deprecated.
             bool const both = (j.isMember(jss::both) && j[jss::both].asBool()) ||
                 (j.isMember(jss::both_sides) && j[jss::both_sides].asBool());
 
             if (both)
-                context.netOps.subBook(ispSub, reversed(book));
+                context.netOps.subBook(ispSub, reversed(book), context.apiVersion);
 
             // state_now is deprecated.
             if ((j.isMember(jss::snapshot) && j[jss::snapshot].asBool()) ||
@@ -409,7 +455,7 @@ doSubscribe(rpc::JsonContext& context)
         if (!ispSub->tryReserveMPTSubscriptions(ids, subscriptionCap))
             return rpc::makeParamError("Too many subscriptions for this connection.");
 
-        context.netOps.subMPT(ispSub, ids);
+        context.netOps.subMPT(ispSub, ids, context.apiVersion);
         JLOG(context.j.debug()) << "doSubscribe: mpts: " << ids.size();
     }
 

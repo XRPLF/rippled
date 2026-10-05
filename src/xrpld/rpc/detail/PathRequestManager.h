@@ -50,13 +50,22 @@ public:
     std::shared_ptr<AssetCache>
     getAssetCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative);
 
-    // Create a new-style path request that pushes
-    // updates to a subscriber
+    /**
+     * Creates a path request that pushes updates to @p subscriber.
+     *
+     * @param subscriber The connection the updates go to.
+     * @param ledger The ledger the first search runs against.
+     * @param request The `path_find create` parameters.
+     * @param apiVersion The API version the request named, recorded on the
+     *        request.
+     * @return The first result, or an error when the request is malformed.
+     */
     json::Value
     makePathRequest(
         std::shared_ptr<InfoSub> const& subscriber,
         std::shared_ptr<ReadView const> const& ledger,
-        json::Value const& request);
+        json::Value const& request,
+        unsigned int apiVersion);
 
     // Create an old-style path request that is
     // managed by a coroutine and updated by

@@ -75,12 +75,11 @@ TEST(ErrorCodes, code_for_token_resolves_known_tokens)
     EXPECT_EQ(rpc::codeForToken("invalidParams"), RpcInvalidParams);
     EXPECT_EQ(rpc::codeForToken("malformedSeq"), RpcMalformedSeq);
 
-    // The first and last entries, so a probe that wraps or stops short is caught.
+    // The first and last entries, so a probe that wraps or stops short is caught. The static
+    // assert is what keeps the second one the last entry as codes are appended.
     EXPECT_EQ(rpc::codeForToken("badSyntax"), RpcBadSyntax);
-    EXPECT_EQ(
-        rpc::codeForToken("malformedXChainOwnedCreateAccountClaimID"),
-        RpcMalformedXChainOwnedCreateAccountClaimID);
-    static_assert(RpcMalformedXChainOwnedCreateAccountClaimID == RpcLast);
+    EXPECT_EQ(rpc::codeForToken("apiVersionConflict"), RpcApiVersionConflict);
+    static_assert(RpcApiVersionConflict == RpcLast);
 }
 
 TEST(ErrorCodes, code_for_token_rejects_unnamed_tokens)
