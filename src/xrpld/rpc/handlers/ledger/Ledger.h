@@ -44,7 +44,7 @@ public:
     explicit LedgerHandler(JsonContext&);
 
     [[nodiscard]] std::expected<Output, ::rpc::Status>
-    process(Input const& input) const;
+    process(Input const& input);
 
     void
     writeResult(json::Value& value, Output const& output) const;

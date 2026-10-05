@@ -20,7 +20,6 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
-#include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/shamap/SHAMap.h>
 
 #include <grpcpp/support/status.h>
@@ -43,7 +42,7 @@ LedgerHandler::LedgerHandler(JsonContext& context) : context_(context)
 }
 
 std::expected<LedgerHandler::Output, ::rpc::Status>
-LedgerHandler::process(Input const& input) const
+LedgerHandler::process(Input const& input)
 {
     Output output;
     output.options = (input.full ? static_cast<int>(LedgerFill::Options::Full) : 0) |
@@ -67,13 +66,6 @@ LedgerHandler::process(Input const& input) const
         if (!isUnlimited(context_.get().role))
             return std::unexpected{::rpc::Status{RpcNoPermission}};
 
-        // Dead code: the check above already returns for any role that is not
-        // unlimited, so this condition can never be true. Safe to remove; kept
-        // to keep this migration a strict port of the original handler.
-        if (context_.get().app.getFeeTrack().isLoadedLocal() && !isUnlimited(context_.get().role))
-        {
-            return std::unexpected{::rpc::Status{RpcTooBusy}};
-        }
         context_.get().loadType =
             input.binary ? resource::kFeeMediumBurdenRpc : resource::kFeeHeavyBurdenRpc;
     }
