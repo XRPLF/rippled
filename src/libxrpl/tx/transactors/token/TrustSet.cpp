@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -129,9 +130,8 @@ TrustSet::checkGranularSemantics(
     std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
 {
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
-    auto const sleRippleState = view.read(
-        keylet::trustLine(
-            tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.get<Issue>().currency));
+    RippleStateEntryR const sleRippleState(
+        tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.get<Issue>().currency, view);
 
     // granular permissions are not allowed to create a trustline
     if (!sleRippleState)
@@ -258,7 +258,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
         bool const bHigh = id > uDstAccountID;
         // Fetching current state of trust line
-        auto const sleRippleState = ctx.view.read(keylet::trustLine(id, uDstAccountID, currency));
+        RippleStateEntryR const sleRippleState(id, uDstAccountID, currency, ctx.view);
         std::uint32_t uFlags = sleRippleState ? sleRippleState->getFieldU32(sfFlags) : 0u;
         // Computing expected trust line state
         uFlags = computeFreezeFlags(
@@ -361,8 +361,7 @@ TrustSet::doApply()
     STAmount saLimitAllow = saLimitAmount;
     saLimitAllow.get<Issue>().account = accountID_;
 
-    SLE::pointer const sleRippleState =
-        view().peek(keylet::trustLine(accountID_, uDstAccountID, currency));
+    RippleStateEntryW sleRippleState(accountID_, uDstAccountID, currency, view(), j_);
 
     if (sleRippleState)
     {
@@ -519,9 +518,9 @@ TrustSet::doApply()
         bool bReserveIncrease = false;
 
         auto const currentHighSponsor =
-            getLedgerEntryReserveSponsor(view(), sleRippleState, sfHighSponsor);
+            getLedgerEntryReserveSponsor(view(), sleRippleState.rawSle(), sfHighSponsor);
         auto const currentLowSponsor =
-            getLedgerEntryReserveSponsor(view(), sleRippleState, sfLowSponsor);
+            getLedgerEntryReserveSponsor(view(), sleRippleState.rawSle(), sfLowSponsor);
 
         if (bSetAuth)
         {
@@ -552,7 +551,7 @@ TrustSet::doApply()
             increaseOwnerCount(view(), sleLowAccount, lowSponsor, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
-            addSponsorToLedgerEntry(sleRippleState, lowSponsor, sfLowSponsor);
+            addSponsorToLedgerEntry(sleRippleState.mutableRawSle(), lowSponsor, sfLowSponsor);
 
             if (!bHigh)
                 bReserveIncrease = true;
@@ -564,7 +563,7 @@ TrustSet::doApply()
             decreaseOwnerCount(view(), sleLowAccount, currentLowSponsor, 1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
 
-            removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsor);
+            removeSponsorFromLedgerEntry(sleRippleState.mutableRawSle(), sfLowSponsor);
         }
 
         if (bHighReserveSet && !bHighReserved)
@@ -594,7 +593,7 @@ TrustSet::doApply()
             increaseOwnerCount(view(), sleHighAccount, highSponsor, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
-            addSponsorToLedgerEntry(sleRippleState, highSponsor, sfHighSponsor);
+            addSponsorToLedgerEntry(sleRippleState.mutableRawSle(), highSponsor, sfHighSponsor);
 
             if (bHigh)
                 bReserveIncrease = true;
@@ -606,7 +605,7 @@ TrustSet::doApply()
             decreaseOwnerCount(view(), sleHighAccount, currentHighSponsor, 1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
 
-            removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsor);
+            removeSponsorFromLedgerEntry(sleRippleState.mutableRawSle(), sfHighSponsor);
         }
 
         if (uFlagsIn != uFlagsOut)
@@ -642,7 +641,7 @@ TrustSet::doApply()
             }
             else
             {
-                view().update(sleRippleState);
+                sleRippleState.update();
 
                 JLOG(j_.trace()) << "Modify ripple line";
             }
@@ -668,7 +667,7 @@ TrustSet::doApply()
             }
             else
             {
-                view().update(sleRippleState);
+                sleRippleState.update();
 
                 JLOG(j_.trace()) << "Modify ripple line";
             }

@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -32,6 +33,7 @@
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
+#include <optional>
 #include <string>
 #include <variant>
 
@@ -265,7 +267,7 @@ checkDepositFreeze(
 //
 //------------------------------------------------------------------------------
 
-static SLE::const_pointer
+static std::optional<RippleStateEntryR>
 getLineIfUsable(
     ReadView const& view,
     AccountID const& account,
@@ -274,11 +276,11 @@ getLineIfUsable(
     FreezeHandling zeroIfFrozen,
     beast::Journal j)
 {
-    auto sle = view.read(keylet::trustLine(account, issuer, currency));
+    RippleStateEntryR sle(account, issuer, currency, view);
 
     if (!sle)
     {
-        return nullptr;
+        return std::nullopt;
     }
 
     if (zeroIfFrozen == FreezeHandling::ZeroIfFrozen)
@@ -286,7 +288,7 @@ getLineIfUsable(
         if (isFrozen(view, account, currency, issuer) ||
             isDeepFrozen(view, account, currency, issuer))
         {
-            return nullptr;
+            return std::nullopt;
         }
 
         // when fixFrozenLPTokenTransfer is enabled, if currency is lptoken,
@@ -296,7 +298,7 @@ getLineIfUsable(
             auto const sleIssuer = view.read(keylet::account(issuer));
             if (!sleIssuer)
             {
-                return nullptr;  // LCOV_EXCL_LINE
+                return std::nullopt;  // LCOV_EXCL_LINE
             }
             if (sleIssuer->isFieldPresent(sfAMMID))
             {
@@ -305,7 +307,7 @@ getLineIfUsable(
                 if (!sleAmm ||
                     isLPTokenFrozen(view, account, (*sleAmm)[sfAsset], (*sleAmm)[sfAsset2]))
                 {
-                    return nullptr;
+                    return std::nullopt;
                 }
             }
         }
@@ -316,7 +318,7 @@ getLineIfUsable(
         // gated by featureMPTokensV2.
         if (!isTesSuccess(canTransferLPToken(view, account, account, issuer)))
         {
-            return nullptr;
+            return std::nullopt;
         }
     }
 
@@ -326,7 +328,7 @@ getLineIfUsable(
 static STAmount
 getTrustLineBalance(
     ReadView const& view,
-    SLE::ConstRef sle,
+    std::optional<RippleStateEntryR> const& sle,
     AccountID const& account,
     Currency const& currency,
     AccountID const& issuer,
@@ -336,7 +338,7 @@ getTrustLineBalance(
     STAmount amount;
     if (sle)
     {
-        amount = sle->getFieldAmount(sfBalance);
+        amount = (*sle)->getFieldAmount(sfBalance);
         bool const accountHigh = account > issuer;
         auto const& oppositeField = accountHigh ? sfLowLimit : sfHighLimit;
         if (accountHigh)
@@ -346,7 +348,7 @@ getTrustLineBalance(
         }
         if (includeOppositeLimit)
         {
-            amount += sle->getFieldAmount(oppositeField);
+            amount += (*sle)->getFieldAmount(oppositeField);
         }
         amount.get<Issue>().account = issuer;
     }
@@ -386,7 +388,7 @@ accountHolds(
     }
 
     // IOU: Return balance on trust line modulo freeze
-    SLE::const_pointer const sle =
+    std::optional<RippleStateEntryR> const sle =
         getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
 
     return getTrustLineBalance(view, sle, account, currency, issuer, returnSpendable, j);
@@ -713,7 +715,7 @@ directSendNoFeeIOU(
         "xrpl::directSendNoFeeIOU : receiver is not XRP");
 
     // If the line exists, modify it accordingly.
-    if (auto const sleRippleState = view.peek(index))
+    if (RippleStateEntryW sleRippleState(index, view, j); sleRippleState)
     {
         STAmount saBalance = sleRippleState->getFieldAmount(sfBalance);
 
@@ -759,11 +761,11 @@ directSendNoFeeIOU(
         {
             // Clear the reserve of the sender, possibly delete the line!
             auto const currentSponsor = getLedgerEntryReserveSponsor(
-                view, sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
+                view, sleRippleState.rawSle(), !bSenderHigh ? sfLowSponsor : sfHighSponsor);
             decreaseOwnerCount(view, view.peek(keylet::account(uSenderID)), currentSponsor, 1, j);
 
             removeSponsorFromLedgerEntry(
-                sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
+                sleRippleState.mutableRawSle(), !bSenderHigh ? sfLowSponsor : sfHighSponsor);
 
             // Clear reserve flag.
             sleRippleState->clearFlag(senderReserveFlag);
@@ -791,7 +793,7 @@ directSendNoFeeIOU(
                 j);
         }
 
-        view.update(sleRippleState);
+        sleRippleState.update();
         return tesSUCCESS;
     }
 

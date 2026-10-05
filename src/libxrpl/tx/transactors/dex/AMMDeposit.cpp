@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -233,8 +234,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         {
             auto const lpIssue = (*ammSle)[sfLPTokenBalance].get<Issue>();
             // Adjust the reserve if LP doesn't have LPToken trustline
-            auto const sle =
-                ctx.view.read(keylet::trustLine(accountID, lpIssue.account, lpIssue.currency));
+            RippleStateEntryR const sle(accountID, lpIssue.account, lpIssue.currency, ctx.view);
             if (xrpLiquid(ctx.view, accountID, !sle, ctx.j) >= deposit)
                 return TER(tesSUCCESS);
             if (sle)
@@ -584,8 +584,7 @@ AMMDeposit::deposit(
         {
             auto const& lpIssue = lpTokensDeposit.get<Issue>();
             // Adjust the reserve if LP doesn't have LPToken trustline
-            auto const sle =
-                view.read(keylet::trustLine(accountID_, lpIssue.account, lpIssue.currency));
+            RippleStateEntryR const sle(accountID_, lpIssue.account, lpIssue.currency, view);
             if (xrpLiquid(view, accountID_, !sle, j_) >= depositAmount)
                 return tesSUCCESS;
         }

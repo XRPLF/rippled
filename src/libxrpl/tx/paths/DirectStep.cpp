@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -345,7 +346,7 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
     if (src_ == dst_)
         return QUALITY_ONE;
 
-    auto const sle = sb.read(keylet::trustLine(dst_, src_, currency_));
+    RippleStateEntryR const sle(dst_, src_, currency_, sb);
 
     if (!sle)
         return QUALITY_ONE;
@@ -421,7 +422,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::ConstRef sleSrc) const
     // Since this is a payment a trust line must be present.  Perform all
     // trust line related checks.
     {
-        auto const sleLine = ctx.view.read(keylet::trustLine(src_, dst_, currency_));
+        RippleStateEntryR const sleLine(src_, dst_, currency_, ctx.view);
         if (!sleLine)
         {
             JLOG(j_.trace()) << "DirectStepI: No credit line. " << *this;

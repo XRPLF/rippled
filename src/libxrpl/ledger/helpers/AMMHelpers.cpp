@@ -11,6 +11,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -21,6 +22,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
@@ -556,7 +558,7 @@ ammLPHolds(
     auto const currency = ammLPTCurrency(asset1, asset2);
     STAmount amount;
 
-    auto const sle = view.read(keylet::trustLine(lpAccount, ammAccount, currency));
+    RippleStateEntryR const sle(lpAccount, ammAccount, currency, view);
     if (!sle)
     {
         amount.clear(Issue{currency, ammAccount});
@@ -646,7 +648,7 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
             }
             else if (
                 auto const sle =
-                    view.read(keylet::trustLine(ammAccountID, issue.account, issue.currency));
+                    RippleStateEntryR(ammAccountID, issue.account, issue.currency, view);
                 sle && !isFrozen(view, ammAccountID, issue.currency, issue.account))
             {
                 STAmount amount = (*sle)[sfBalance];
@@ -688,7 +690,8 @@ deleteAMMTrustLines(
                     // LCOV_EXCL_STOP
                 }
 
-                return {deleteAMMTrustLine(sb, sleItem, ammAccountID, j), SkipEntry::No};
+                RippleStateEntryW line(Keylet(ltRIPPLE_STATE, sleItem->key()), sb, j);
+                return {deleteAMMTrustLine(sb, line, ammAccountID, j), SkipEntry::No};
             }
             // LCOV_EXCL_START
             JLOG(j.error()) << "deleteAMMObjects: deleting non-trustline or non-MPT " << nodeType;

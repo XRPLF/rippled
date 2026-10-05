@@ -11,6 +11,7 @@
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
@@ -1277,7 +1278,7 @@ removeDeletedTrustLines(
 
     for (auto const& index : trustLines)
     {
-        if (auto const sleState = view.peek({ltRIPPLE_STATE, index});
+        if (RippleStateEntryW sleState(Keylet(ltRIPPLE_STATE, index), view, viewJ);
             !isTesSuccess(deleteAMMTrustLine(view, sleState, std::nullopt, viewJ)))
         {
             JLOG(viewJ.error()) << "removeDeletedTrustLines: failed to delete AMM trustline";

@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -841,7 +842,7 @@ tokenOfferCreatePreclaim(
         if (view.rules().enabled(featureNFTokenMintOffer))
         {
             if (nftIssuer != amount.getIssuer() &&
-                !view.read(keylet::trustLine(nftIssuer, amount.get<Issue>())))
+                !RippleStateEntryR(nftIssuer, amount.get<Issue>(), view))
                 return tecNO_LINE;
         }
         else if (!view.exists(keylet::trustLine(nftIssuer, amount.get<Issue>())))
@@ -1028,7 +1029,7 @@ checkTrustlineAuthorized(
 
         if (issuerAccount->isFlag(lsfRequireAuth))
         {
-            auto const trustLine = view.read(keylet::trustLine(id, issue.account, issue.currency));
+            RippleStateEntryR const trustLine(id, issue.account, issue.currency, view);
 
             if (!trustLine)
             {
@@ -1078,7 +1079,7 @@ checkTrustlineDeepFrozen(
             return tesSUCCESS;
         }
 
-        auto const trustLine = view.read(keylet::trustLine(id, issue.account, issue.currency));
+        RippleStateEntryR const trustLine(id, issue.account, issue.currency, view);
 
         if (!trustLine)
         {
