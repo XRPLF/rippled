@@ -191,6 +191,21 @@ public:
         SLE::Ref sponsorSle,
         beast::Journal j)
         requires Base::kIsWritable;
+
+    /**
+     * Removes this line if @p account holds no balance on it. Clears the
+     * reserve flag and sponsor of each side that has a reserve, decreases
+     * that side's owner count, and then calls removeFromLedger(). The
+     * balance check is skipped when @p account is @p issuer.
+     *
+     * @param account the account whose balance is checked.
+     * @param issuer the account on the other side of the line.
+     * @return tesSUCCESS, tecHAS_OBLIGATIONS if the balance is not zero, or
+     * tecINTERNAL / tefBAD_LEDGER on failure
+     */
+    [[nodiscard]] TER
+    removeIfEmpty(AccountID const& account, AccountID const& issuer)
+        requires Base::kIsWritable;
 };
 
 using RippleStateEntryR = RippleStateEntry<ReadView>;
