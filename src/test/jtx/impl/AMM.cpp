@@ -2,6 +2,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/ter.h>
@@ -237,8 +238,14 @@ AMM::ammRpcInfo(
         (apiVersion == rpc::kApiInvalidVersion
              ? env_.rpc("json", "amm_info", to_string(jv))
              : env_.rpc(apiVersion, "json", "amm_info", to_string(jv)));
-    if (jr.isObject() && jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))
-        return jr[jss::result];
+    if (!jr.isObject())
+        return json::ValueType::Null;
+
+    // rpcPayload normalizes the specification envelope that API version 3 returns, which has no
+    // `status` member, back to the shape callers assert against.
+    auto payload = rpcPayload(jr);
+    if (payload.isMember(jss::status))
+        return payload;
     return json::ValueType::Null;
 }
 

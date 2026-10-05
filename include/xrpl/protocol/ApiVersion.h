@@ -53,6 +53,18 @@ static constexpr auto kApiMaximumValidVersion = kApiBetaVersion;
  */
 static constexpr auto kApiMinimumSpecVersion = kApiVersion<3>;
 
+/**
+ * Whether @p apiVersion follows the JSON-RPC 2.0 specification.
+ *
+ * @param apiVersion The version a request asked for.
+ * @return Whether that version follows the specification.
+ */
+[[nodiscard]] constexpr bool
+isSpecVersion(unsigned apiVersion)
+{
+    return apiVersion >= kApiMinimumSpecVersion;
+}
+
 static_assert(kApiInvalidVersion < kApiMinimumSupportedVersion);
 static_assert(
     kApiVersionIfUnspecified >= kApiMinimumSupportedVersion &&

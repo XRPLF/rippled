@@ -8,6 +8,7 @@
 #include <test/jtx/pay.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/rpc/RPCCall.h>
 #include <xrpld/rpc/detail/MaskSecrets.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
@@ -17,6 +18,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -239,6 +241,37 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
     static constexpr auto kOk = boost::beast::http::status::ok;
     static constexpr auto kBadRequest = boost::beast::http::status::bad_request;
+
+    /**
+     * The `id` values the specification does not allow, one per rejected kind.
+     *
+     * @return An object, an array and a boolean.
+     */
+    static std::array<json::Value, 3> const&
+    unusableIds()
+    {
+        static std::array<json::Value, 3> const kIds{
+            json::Value(json::ValueType::Object),
+            json::Value(json::ValueType::Array),
+            json::Value(true)};
+        return kIds;
+    }
+
+    /**
+     * Names the kind of an unusable `id`, for the label of a failing assertion.
+     *
+     * @param id One of unusableIds().
+     * @return The kind, as text.
+     */
+    static char const*
+    idLabel(json::Value const& id)
+    {
+        if (id.isObject())
+            return "object id";
+        if (id.isArray())
+            return "array id";
+        return "boolean id";
+    }
 
     /**
      * Posts @p body to the RPC port and returns the reply, parsed.
@@ -1838,6 +1871,273 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     }
 
     /**
+     * A reply at API version 3 is a JSON-RPC 2.0 response object.
+     *
+     * Split into its sub-cases, each under its own `testcase` name, so a
+     * failure says which property broke rather than reporting under the name
+     * of the first.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testSpecEnvelope(boost::asio::yield_context& yield)
+    {
+        using namespace test::jtx;
+        Env env{*this};
+
+        boost::system::error_code ec;
+
+        // Builds a request naming `method`, carrying `api_version` inside the parameters where a
+        // JSON-RPC request puts them, and `id` at the top level where the specification puts it.
+        auto const makeRequest = [](char const* method,
+                                    unsigned apiVersion,
+                                    std::optional<json::Value> id = std::nullopt) {
+            json::Value params(json::ValueType::Object);
+            params[jss::api_version] = apiVersion;
+
+            json::Value jv;
+            jv[jss::jsonrpc] = rpc::kJsonRpcVersion;
+            jv[jss::method] = method;
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = params;
+            if (id)
+                jv[jss::id] = *id;
+            return to_string(jv);
+        };
+
+        // No `status`, since `result` versus `error` already says which it was.
+        {
+            testcase("A successful reply names the protocol and carries no status");
+
+            Response resp;
+            auto const reply =
+                postAndParse(env, yield, resp, ec, makeRequest("ledger_closed", 3, 7));
+
+            BEAST_EXPECT(resp.result() == kOk);
+            BEAST_EXPECT(reply[jss::jsonrpc] == rpc::kJsonRpcVersion);
+            BEAST_EXPECT(reply[jss::id] == 7);
+            BEAST_EXPECT(reply.isMember(jss::result));
+            BEAST_EXPECT(!reply.isMember(jss::status));
+            BEAST_EXPECT(!reply[jss::result].isMember(jss::status));
+        }
+
+        // The top level is the only place a client can name an id and still correlate the reply.
+        {
+            testcase("The id is echoed from the top level of the request");
+
+            Response resp;
+            auto const reply =
+                postAndParse(env, yield, resp, ec, makeRequest("ledger_closed", 3, 42));
+            BEAST_EXPECT(reply[jss::id] == 42);
+        }
+
+        // The specification allows a string or a number, and a number may be fractional. Each
+        // comes back as the type it was sent, not coerced.
+        {
+            testcase("A string id and a fractional id are echoed as sent");
+
+            Response resp;
+            auto const text =
+                postAndParse(env, yield, resp, ec, makeRequest("ledger_closed", 3, "abc"));
+            BEAST_EXPECT(text[jss::id].isString() && text[jss::id] == "abc");
+
+            auto const fraction =
+                postAndParse(env, yield, resp, ec, makeRequest("ledger_closed", 3, 1.5));
+            BEAST_EXPECT(fraction[jss::id].isDouble() && fraction[jss::id].asDouble() == 1.5);
+        }
+
+        // The member is required, so a response is always distinguishable from a notification.
+        {
+            testcase("A request naming no id still gets one, as null");
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, makeRequest("ledger_closed", 3));
+            BEAST_EXPECT(reply.isMember(jss::id));
+            BEAST_EXPECT(reply[jss::id] == json::ValueType::Null);
+        }
+
+        // No command ran for it, and the specification names a code for that condition. The XRPL
+        // token and code still travel in `data`: the two code spaces stay separate.
+        {
+            testcase("A method the server does not have reports the specification's code");
+
+            Response resp;
+            auto const reply =
+                postAndParse(env, yield, resp, ec, makeRequest("no_such_method", 3, 1));
+
+            BEAST_EXPECT(reply[jss::jsonrpc] == rpc::kJsonRpcVersion);
+            BEAST_EXPECT(reply[jss::id] == 1);
+            BEAST_EXPECT(!reply.isMember(jss::result));
+            BEAST_EXPECT(!reply.isMember(jss::status));
+
+            auto const& err = reply[jss::error];
+            BEAST_EXPECT(err[jss::code] == rpc::kJsonRpcMethodNotFound);
+            BEAST_EXPECT(err[jss::message] == "Unknown method.");
+            BEAST_EXPECT(err[jss::data][jss::error] == "unknownCmd");
+            BEAST_EXPECT(err[jss::data][jss::error_code] == RpcUnknownCommand);
+        }
+
+        // The field is ignored rather than refused when a request names both.
+        testcase("ripplerpc is ignored once api_version selects version 3");
+        for (auto const version : {rpc::kRippleRpcVersion1, rpc::kRippleRpcVersion3})
+        {
+            json::Value params(json::ValueType::Object);
+            params[jss::api_version] = 3u;
+            params[jss::ripplerpc] = std::string{version};
+
+            json::Value jv;
+            jv[jss::method] = "ledger_closed";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = params;
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv), version);
+
+            BEAST_EXPECTS(resp.result() == kOk, std::string{version});
+            BEAST_EXPECTS(reply[jss::jsonrpc] == rpc::kJsonRpcVersion, std::string{version});
+            BEAST_EXPECTS(!reply.isMember(jss::ripplerpc), std::string{version});
+        }
+
+        // A `deprecated` notice describes the command, not this failure, the same handler reporting
+        // it when the call succeeds, so it stays at the top level rather than being filed under
+        // `data` as failure detail. `sign` reports one either way, so both paths can be compared.
+        {
+            testcase("A deprecated notice stays top-level on a failing call");
+
+            json::Value params(json::ValueType::Object);
+            params[jss::api_version] = 3u;
+
+            json::Value jv;
+            jv[jss::method] = "sign";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = params;
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+
+            // The call fails: `sign` was given neither a key nor a transaction.
+            BEAST_EXPECT(reply[jss::error][jss::data][jss::error] == "invalidParams");
+            BEAST_EXPECT(reply.isMember(jss::deprecated));
+            BEAST_EXPECT(!reply[jss::error][jss::data].isMember(jss::deprecated));
+        }
+
+        // Hoisting on the failure path alone would leave a client reading one notice from two
+        // places depending on how the call went. `ledger` reports a `warnings` array for a
+        // deprecated request field, and succeeds while doing so.
+        {
+            testcase("The same notice stays top-level on a succeeding call");
+
+            json::Value params(json::ValueType::Object);
+            params[jss::api_version] = 3u;
+            params[jss::type] = "account";
+
+            json::Value jv;
+            jv[jss::method] = "ledger";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = params;
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+
+            BEAST_EXPECT(resp.result() == kOk);
+            BEAST_EXPECT(reply.isMember(jss::result));
+            BEAST_EXPECT(reply[jss::warnings].isArray());
+            BEAST_EXPECT(reply[jss::warnings][0u][jss::id] == WarnRpcFieldsDeprecated);
+            BEAST_EXPECT(!reply[jss::result].isMember(jss::warnings));
+        }
+
+        {
+            testcase("The HTTP status still derives from the XRPL code under data");
+
+            json::Value params(json::ValueType::Object);
+            params[jss::api_version] = 3u;
+            params[jss::ledger_index] = 999999;
+
+            json::Value jv;
+            jv[jss::method] = "ledger";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = params;
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+
+            BEAST_EXPECT(resp.result() == boost::beast::http::status::not_found);
+            BEAST_EXPECT(reply[jss::error][jss::data][jss::error] == "lgrNotFound");
+        }
+
+        // A code naming no status in the table would fall back to 200, claiming success on a reply
+        // that carries an error. `actMalformed` and `actNotFound` each name their own, 400 and
+        // 404, so `account_info` says which of the two it was.
+        {
+            testcase("The status falls back correctly for a code naming its own");
+
+            auto const accountInfo = [&](char const* account) {
+                json::Value params(json::ValueType::Object);
+                params[jss::api_version] = 3u;
+                params[jss::account] = account;
+
+                json::Value jv;
+                jv[jss::method] = "account_info";
+                jv[jss::params] = json::ValueType::Array;
+                jv[jss::params][0u] = params;
+                return jv;
+            };
+
+            Response resp;
+            auto const malformed =
+                postAndParse(env, yield, resp, ec, to_string(accountInfo("bogus")), "bogus");
+
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(malformed[jss::error][jss::data][jss::error] == "actMalformed");
+            BEAST_EXPECT(malformed[jss::error][jss::data][jss::error_code] == RpcActMalformed);
+
+            // Well formed, but not funded, so the ledger has no entry for it.
+            auto const absent = Account{"absent"};
+            Response notFoundResp;
+            auto const missing = postAndParse(
+                env,
+                yield,
+                notFoundResp,
+                ec,
+                to_string(accountInfo(absent.human().c_str())),
+                "absent");
+
+            BEAST_EXPECT(notFoundResp.result() == boost::beast::http::status::not_found);
+            BEAST_EXPECT(missing[jss::error][jss::data][jss::error] == "actNotFound");
+            BEAST_EXPECT(missing[jss::error][jss::data][jss::error_code] == RpcActNotFound);
+        }
+
+        // `submit` and `simulate` report the detail of a failure in `error_exception` rather than
+        // narrowing `error_message`, so the envelope would carry a generic message beside a
+        // specific one. The specific one is the message, and no separate member survives.
+        {
+            testcase("submit's detail lands in message, not error_exception");
+
+            json::Value params(json::ValueType::Object);
+            params[jss::api_version] = 3u;
+            params[jss::tx_blob] = "DEADBEEF";
+
+            json::Value jv;
+            jv[jss::method] = "submit";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = params;
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+
+            auto const& err = reply[jss::error];
+            BEAST_EXPECT(err[jss::message] == "Transaction length invalid");
+            BEAST_EXPECT(!err[jss::data].isMember(jss::error_exception));
+            // A failure a command reported carries the implementation-defined code, which is
+            // every failure except the one the specification names a code for.
+            BEAST_EXPECT(err[jss::code] == rpc::kJsonRpcServerError);
+            // The token and code still say what kind of failure it was.
+            BEAST_EXPECT(err[jss::data][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(err[jss::data][jss::error_code] == RpcInvalidTransaction);
+        }
+    }
+
+    /**
      * A batch charges for every entry and stops once the connection cannot take
      * another. The `method: "batch"` form is uncapped, so without both one body
      * buys around 333,000 entries' worth of work and reply.
@@ -2266,10 +2566,15 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         BEAST_EXPECT(ran(answer(env, yield, ec, txHistory(99, std::nullopt))));
 
         // Version 3 is honored there. `tx_history` is absent from it as well, so the handler that
-        // ran for the version 1 answers above is not reached.
-        BEAST_EXPECT(
-            answer(env, yield, ec, txHistory(3, std::nullopt))[jss::result][jss::error] ==
-            "unknownCmd");
+        // ran for the version 1 answers above is not reached. The reply is the specification
+        // envelope, which answers the 405 the token names and carries the token under `data`.
+        {
+            Response resp;
+            auto const reply =
+                postAndParse(env, yield, resp, ec, to_string(txHistory(3, std::nullopt)));
+            BEAST_EXPECT(resp.result() == boost::beast::http::status::method_not_allowed);
+            BEAST_EXPECT(reply[jss::error][jss::data][jss::error] == "unknownCmd");
+        }
 
         // Naming a version in both places, the one with the parameters decides. A `method: "batch"`
         // entry is itself the object a handler reads, so `start` sits at its top level and the
@@ -2440,6 +2745,273 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     }
 
     /**
+     * API version 3 reads a request shaped the way the specification writes
+     * one.
+     *
+     * The version and `id` at the top level beside `method`, and `params` as
+     * the object itself rather than an array holding it. Both are additive, so
+     * the shapes XRPL clients already send are asserted to still work.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testSpecRequestForms(boost::asio::yield_context& yield)
+    {
+        testcase("API version 3 reads a specification-shaped request");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        boost::system::error_code ec;
+
+        // The version is read from the request's top level, beside `id` and `method`, which is
+        // where the specification's own members sit. A client that names the version there can ask
+        // for version 3 and correlate the reply at the same time.
+        {
+            json::Value jv;
+            jv[jss::method] = "ledger_closed";
+            jv[jss::api_version] = 3u;
+            jv[jss::id] = 9;
+
+            auto const reply = answer(env, yield, ec, jv);
+            BEAST_EXPECT(reply[jss::jsonrpc] == rpc::kJsonRpcVersion);
+            BEAST_EXPECT(reply[jss::id] == 9);
+            BEAST_EXPECT(reply.isMember(jss::result));
+        }
+
+        // Parameters may be named rather than positioned: `params` is the object a handler reads,
+        // instead of an array holding it. Either form reaches the handler with its parameters.
+        {
+            json::Value jv;
+            jv[jss::method] = "ledger_closed";
+            jv[jss::id] = 11;
+            jv[jss::params] = json::ValueType::Object;
+            jv[jss::params][jss::api_version] = 3u;
+
+            auto const reply = answer(env, yield, ec, jv);
+            BEAST_EXPECT(reply[jss::jsonrpc] == rpc::kJsonRpcVersion);
+            BEAST_EXPECT(reply[jss::id] == 11);
+            BEAST_EXPECT(reply.isMember(jss::result));
+        }
+    }
+
+    /**
+     * A lone request rejected before it reaches a handler is answered with a
+     * specification error object from API version 3, where every earlier
+     * version receives a plain text body. Below that version the body is
+     * unchanged, so a client that speaks the specification can parse every
+     * answer it gets and one that does not sees nothing new.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testSpecRejections(boost::asio::yield_context& yield)
+    {
+        testcase("API version 3 answers a rejected request with an error object");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        boost::system::error_code ec;
+
+        // Sends `request` as it stands, then again naming API version 3 and an id at its top level,
+        // which is the only place a request whose parameters cannot be read can name either. The
+        // first answer is a plain text body, the second the same message in a specification error
+        // object reporting `code`.
+        auto const check = [&](json::Value request, json::Int code, char const* message) {
+            Response legacy;
+            doHTTPRequest(env, yield, false, legacy, ec, to_string(request));
+            BEAST_EXPECTS(legacy.result() == kBadRequest, message);
+            BEAST_EXPECTS(legacy.body() == std::string{message} + "\r\n", message);
+
+            request[jss::api_version] = 3u;
+            request[jss::id] = 4;
+
+            Response spec;
+            auto const reply = postAndParse(env, yield, spec, ec, to_string(request), message);
+            BEAST_EXPECTS(spec.result() == kBadRequest, message);
+            BEAST_EXPECTS(reply[jss::jsonrpc] == rpc::kJsonRpcVersion, message);
+            BEAST_EXPECTS(reply[jss::id] == 4, message);
+            BEAST_EXPECTS(reply[jss::error][jss::code] == code, message);
+            BEAST_EXPECTS(reply[jss::error][jss::message] == message, message);
+            // Nothing the request carried comes back out with it.
+            BEAST_EXPECTS(!reply.isMember(jss::request), message);
+            BEAST_EXPECTS(!reply.isMember(jss::method), message);
+        };
+
+        // A request naming no usable method is an invalid request rather than one whose method
+        // could not be found, which is the code the earlier versions report and keep.
+        {
+            json::Value jv;
+            jv[jss::method] = json::ValueType::Null;
+            check(jv, rpc::kJsonRpcInvalidRequest, "Null method");
+        }
+        {
+            json::Value jv;
+            jv[jss::method] = 1;
+            check(jv, rpc::kJsonRpcInvalidRequest, "method is not string");
+        }
+        {
+            json::Value jv;
+            jv[jss::method] = "";
+            check(jv, rpc::kJsonRpcInvalidRequest, "method is empty");
+        }
+
+        // Parameters that are neither the named form nor an array holding one object.
+        {
+            json::Value jv;
+            jv[jss::method] = "ping";
+            jv[jss::params] = "params";
+            check(jv, rpc::kJsonRpcInvalidParams, "params unparsable");
+        }
+        {
+            json::Value jv;
+            jv[jss::method] = "ping";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = "not an object";
+            check(jv, rpc::kJsonRpcInvalidParams, "params unparsable");
+        }
+
+        // An `id` the specification does not allow is an invalid request too, and it cannot go
+        // through `check`: the reply names no id rather than echoing the one the request sent, the
+        // id being the thing that was wrong. Earlier versions echo an id of any shape, so this is
+        // version 3 alone, and a version 1 request naming the same id is served.
+        for (auto const& id : unusableIds())
+        {
+            auto const label = idLabel(id);
+
+            json::Value jv;
+            jv[jss::method] = "ping";
+            jv[jss::api_version] = 3u;
+            jv[jss::id] = id;
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv), label);
+            BEAST_EXPECTS(resp.result() == kBadRequest, label);
+            BEAST_EXPECTS(reply[jss::jsonrpc] == rpc::kJsonRpcVersion, label);
+            BEAST_EXPECTS(reply.isMember(jss::id), label);
+            BEAST_EXPECTS(reply[jss::id] == json::ValueType::Null, label);
+            BEAST_EXPECTS(reply[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest, label);
+            BEAST_EXPECTS(
+                reply[jss::error][jss::message] == "id is not a string, a number or null", label);
+
+            // The same request at version 1 is served, id and all.
+            jv.removeMember(jss::api_version);
+            Response legacy;
+            auto const served = postAndParse(env, yield, legacy, ec, to_string(jv), label);
+            BEAST_EXPECTS(legacy.result() == kOk, label);
+            BEAST_EXPECTS(served[jss::result][jss::status] == jss::success, label);
+        }
+
+        // The id is judged before the role, on both transports, so a client without the privilege
+        // a method needs is told about its id and not about the method.
+        {
+            Env unprivileged{*this, envconfig(noAdmin)};
+            json::Value jv;
+            jv[jss::method] = "ledger_accept";
+            jv[jss::api_version] = 3u;
+            jv[jss::id] = json::ValueType::Object;
+
+            Response resp;
+            auto const reply = postAndParse(unprivileged, yield, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
+            BEAST_EXPECT(reply[jss::error][jss::message] == "id is not a string, a number or null");
+        }
+
+        // A request naming one method at its top level and another in its parameters cannot go
+        // through `check` either: below version 3 it is not a plain-text rejection but a served
+        // reply carrying `unknownCmd`, which is the answer this screening exists to replace.
+        {
+            json::Value params(json::ValueType::Object);
+            params[jss::method] = "ping";
+            params[jss::api_version] = 3u;
+
+            json::Value jv;
+            jv[jss::method] = "server_info";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = params;
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECTS(resp.result() == kBadRequest, to_string(reply));
+            BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
+            BEAST_EXPECT(reply[jss::error][jss::message] == "command and method disagree");
+            BEAST_EXPECT(!reply.isMember(jss::request));
+
+            // Below version 3 the answer is `unknownCmd` inside `result` at HTTP 200; `shapeReply`
+            // derives a status from the code only for the `ripplerpc: "3.0"` envelope and for
+            // version 3.
+            jv[jss::params][0u][jss::api_version] = 2u;
+            Response legacy;
+            auto const served = postAndParse(env, yield, legacy, ec, to_string(jv));
+            BEAST_EXPECTS(legacy.result() == kOk, to_string(served));
+            BEAST_EXPECT(served[jss::result][jss::error] == "unknownCmd");
+        }
+
+        // A request naming a version the server cannot serve is answered as plain text whatever the
+        // version it named: the server cannot know which envelope such a client speaks.
+        {
+            json::Value jv;
+            jv[jss::method] = "ping";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = json::ValueType::Object;
+            jv[jss::params][0u][jss::api_version] = 99u;
+
+            Response resp;
+            doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(resp.body() == "invalid_API_version\r\n");
+        }
+
+        // A rejection inside a `method: "batch"` body takes the specification shape and does not
+        // stop the entries after it. Each entry names its version at its own top level.
+        {
+            json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u][jss::method] = 1;
+            jv[jss::params][0u][jss::api_version] = 3u;
+            jv[jss::params][0u][jss::id] = 7;
+            jv[jss::params][1u][jss::method] = "ping";
+            jv[jss::params][1u][jss::api_version] = 3u;
+            jv[jss::params][1u][jss::id] = json::ValueType::Object;
+            jv[jss::params][2u][jss::method] = "ping";
+            jv[jss::params][2u][jss::api_version] = 3u;
+            jv[jss::params][2u][jss::id] = 9;
+
+            Response resp;
+            auto const replies = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECTS(resp.result() == kOk, to_string(replies));
+            BEAST_EXPECTS(replies.isArray() && replies.size() == 3, to_string(replies));
+
+            auto const& first = replies[0u];
+            BEAST_EXPECTS(first[jss::jsonrpc] == rpc::kJsonRpcVersion, to_string(first));
+            BEAST_EXPECTS(first[jss::id] == 7, to_string(first));
+            BEAST_EXPECTS(
+                first[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest, to_string(first));
+            BEAST_EXPECTS(
+                first[jss::error][jss::message] == "method is not string", to_string(first));
+            BEAST_EXPECTS(!first.isMember(jss::request), to_string(first));
+            BEAST_EXPECTS(!first.isMember(jss::method), to_string(first));
+
+            auto const& second = replies[1u];
+            BEAST_EXPECTS(second.isMember(jss::id), to_string(second));
+            BEAST_EXPECTS(second[jss::id] == json::ValueType::Null, to_string(second));
+            BEAST_EXPECTS(
+                second[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest, to_string(second));
+            BEAST_EXPECTS(
+                second[jss::error][jss::message] == "id is not a string, a number or null",
+                to_string(second));
+
+            auto const& third = replies[2u];
+            BEAST_EXPECTS(third[jss::id] == 9, to_string(third));
+            BEAST_EXPECTS(third[jss::result].isObject(), to_string(third));
+            BEAST_EXPECTS(!third.isMember(jss::error), to_string(third));
+        }
+    }
+
+    /**
      * The `ripplerpc: "3.0"` envelope reports 200 for the codes below.
      *
      * `account_info` on an account the ledger does not hold is a routine call,
@@ -2541,9 +3113,10 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
      * Every reply begins with a status line, including one whose status the
      * status-line switch does not spell out. `highFee` reports 402, one of
      * the two statuses the switch names no case for, and a reply that begins
-     * with a header instead is not an HTTP response at all.
+     * with a header instead is not an HTTP response at all. Both envelopes that
+     * derive the status from the error code report it.
      *
-     * @param yield The coroutine the request runs on.
+     * @param yield The coroutine the requests run on.
      */
     void
     testUncommonHttpStatus(boost::asio::yield_context& yield)
@@ -2561,28 +3134,73 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         env.fund(XRP(10000), alice, bob);
         env.close();
 
-        // A fee ceiling of zero covers no fee at all, which is what `highFee` reports. The
-        // `ripplerpc: "3.0"` envelope derives the HTTP status from the code.
-        json::Value params(json::ValueType::Object);
-        params[jss::ripplerpc] = rpc::kRippleRpcVersion3;
-        params[jss::secret] = toBase58(generateSeed("alice"));
-        params[jss::fee_mult_max] = 0;
-        params[jss::tx_json] = pay(alice, bob, XRP(1));
+        // A fee ceiling of zero covers no fee at all, which is what `highFee` reports. `version`
+        // is a `ripplerpc` string or an `api_version` number.
+        auto const highFee = [&alice, &bob](json::Value version) {
+            json::Value params(json::ValueType::Object);
+            params[version.isString() ? jss::ripplerpc : jss::api_version] = std::move(version);
+            params[jss::secret] = toBase58(generateSeed("alice"));
+            params[jss::fee_mult_max] = 0;
+            params[jss::tx_json] = pay(alice, bob, XRP(1));
 
-        json::Value jv;
-        jv[jss::method] = "sign";
-        jv[jss::params] = json::ValueType::Array;
-        jv[jss::params][0u] = params;
+            json::Value jv;
+            jv[jss::method] = "sign";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = params;
+            return to_string(jv);
+        };
 
-        Response resp;
-        boost::system::error_code ec;
-        auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+        // The legacy envelope, selected by `ripplerpc`, reports the code's own status.
+        {
+            Response resp;
+            boost::system::error_code ec;
+            auto const reply = postAndParse(env, yield, resp, ec, highFee(rpc::kRippleRpcVersion3));
 
-        // The reply parsed as a response, which is what a missing status line breaks.
-        BEAST_EXPECT(!ec);
-        BEAST_EXPECT(resp.result_int() == rpc::errorCodeHttpStatus(RpcHighFee));
-        BEAST_EXPECT(resp.result() == boost::beast::http::status::payment_required);
-        BEAST_EXPECT(reply[jss::error][jss::error] == "highFee");
+            // The reply parsed as a response, which is what a missing status line breaks.
+            BEAST_EXPECT(!ec);
+            BEAST_EXPECT(resp.result_int() == rpc::errorCodeHttpStatus(RpcHighFee));
+            BEAST_EXPECT(resp.result() == boost::beast::http::status::payment_required);
+            BEAST_EXPECT(reply[jss::error][jss::error] == "highFee");
+        }
+
+        // API version 3 reports it too, from the specification envelope, where the code sits under
+        // `error.data` instead.
+        {
+            Response resp;
+            boost::system::error_code ec;
+            auto const reply =
+                postAndParse(env, yield, resp, ec, highFee(unsigned{rpc::kApiMinimumSpecVersion}));
+
+            BEAST_EXPECT(!ec);
+            BEAST_EXPECT(resp.result_int() == rpc::errorCodeHttpStatus(RpcHighFee));
+            BEAST_EXPECT(resp.result() == boost::beast::http::status::payment_required);
+            BEAST_EXPECT(reply[jss::error][jss::data][jss::error] == "highFee");
+        }
+    }
+
+    /**
+     * The command line client reads the XRPL error code out of whichever
+     * version 3 envelope carries it, so its exit code is that code there too.
+     *
+     * `Env::rpc` goes through the same client and retries on `internal`, so a
+     * code it cannot read would also defeat the retry.
+     */
+    void
+    testClientExitCode()
+    {
+        testcase("The client's exit code is the error code in either envelope");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        // An account the ledger does not hold: the request passes the client's own parsing and
+        // fails at the server, which is the reply whose code the client must read. Only version 3
+        // is pinned: a version 1 reply nests its error under `result`, where the client has never
+        // looked, so it reports success for one, and that is unchanged here.
+        Account const alice{"alice"};
+        auto const [exitCode, reply] =
+            rpcClient({"account_info", alice.human()}, env.app().config(), env.app().getLogs(), 3u);
+        BEAST_EXPECTS(exitCode == RpcActNotFound, to_string(reply));
     }
 
     /**
@@ -3074,6 +3692,9 @@ public:
             testWSUnparsableFrames(yield);
             testPrivilegedWSFramesAreExempt(yield);
             testRPCRequests(yield);
+            testSpecRequestForms(yield);
+            testSpecRejections(yield);
+            testClientExitCode();
             testMaskedCredentials(yield);
             testTheLoggedRequestIsMaskedAndCapped(yield);
             testTheLoggedReplyIsMaskedOnlyWhenItCarriesACredential(yield);
@@ -3083,6 +3704,7 @@ public:
             testPrivilegedRequestIsNotShed(yield);
             testLegacyBatchEntryRejections(yield);
             testAnErrorReplyDoesNotFollowTheLogLevel(yield);
+            testSpecEnvelope(yield);
             testBatchOverload(yield);
             testUnreadBodiesAreCharged(yield);
             testPrivilegedBodiesAreNotCharged(yield);

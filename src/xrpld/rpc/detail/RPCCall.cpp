@@ -2148,6 +2148,13 @@ rpcClient(
             {
                 nRet = std::stoi(jvOutput[jss::error][jss::error_code].asString());
             }
+            else if (
+                jvOutput[jss::error].isMember(jss::data) &&
+                jvOutput[jss::error][jss::data].isMember(jss::error_code))
+            {
+                // The specification envelope, from API version 3, carries the XRPL code in `data`.
+                nRet = std::stoi(jvOutput[jss::error][jss::data][jss::error_code].asString());
+            }
             else
             {
                 nRet = RpcBadSyntax;

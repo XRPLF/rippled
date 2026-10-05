@@ -108,6 +108,30 @@ statusRequestResponse(HttpRequestType const& request, boost::beast::http::status
 }
 
 /**
+ * Moves the notices a handler reported from its @p result to the top level of
+ * the reply @p r.
+ *
+ * The rule is positional: a notice at the top level of the result is moved,
+ * whatever it describes and whoever put it there, and one nested deeper stays
+ * where it was put. The specification reserves no place for them, so they sit
+ * beside its members either way, and a client reads one notice from one place.
+ *
+ * @param result The handler result to take the notices out of.
+ * @param r The reply to write them to.
+ */
+static void
+hoistNotices(json::Value& result, json::Value& r)
+{
+    for (auto const& name : {jss::warning, jss::warnings, jss::deprecated})
+    {
+        // One lookup per notice rather than two, `removeMember` answering null for a name the
+        // result does not carry. No handler reports a notice set to null, which this would drop.
+        if (json::Value notice = result.removeMember(name.cStr()); !notice.isNull())
+            r[name] = std::move(notice);
+    }
+}
+
+/**
  * The object a request presents its parameters in.
  *
  * `params` is an array holding one object for the by-position form and is that
@@ -177,6 +201,216 @@ apiVersionOf(json::Value const& request, unsigned honorTopLevelFrom, bool betaEn
     }
 
     return rpc::kApiVersionIfUnspecified;
+}
+
+/**
+ * Whether @p request names an `id` the specification allows.
+ *
+ * The specification allows a string, a number or null there, and calls a
+ * request naming anything else an invalid request. One naming no `id` at all is
+ * allowed: every version answers such a request, and the reply names a null id.
+ *
+ * @param request The request being answered, which need not be an object.
+ * @return true if the `id` is one the reply can echo.
+ */
+static bool
+hasUsableSpecId(json::Value const& request)
+{
+    // isMember answers false for a request that is not an object, which names no id either.
+    if (!request.isMember(jss::id))
+        return true;
+
+    json::Value const& id = request[jss::id];
+    // Not isNumeric(), which defers to isIntegral() and so answers true for a boolean.
+    return id.isNull() || id.isString() || id.isInt() || id.isUInt() || id.isDouble();
+}
+
+/**
+ * The two JSON-RPC 2.0 members every reply carries, whether it reports a result
+ * or a failure.
+ *
+ * `id` is read from the request's top level, where the specification puts it,
+ * and is always present: the specification requires it either way, so a client
+ * can always tell a response from a notification.
+ *
+ * An `id` the specification does not allow is answered with a null one rather
+ * than echoed, since echoing it would answer with an object the specification
+ * does not define. The check runs once the role is computed, since the charge
+ * needs the `usage` that exists only then, and before the role and method
+ * checks, so a client is told about its id whatever it asked for.
+ *
+ * @param request The request being answered, which need not be an object.
+ * @return An object carrying `jsonrpc` and `id`, and nothing else.
+ */
+static json::Value
+specEnvelope(json::Value const& request)
+{
+    json::Value r(json::ValueType::Object);
+    r[jss::jsonrpc] = rpc::kJsonRpcVersion;
+    r[jss::id] =
+        hasUsableSpecId(request) && request.isMember(jss::id) ? request[jss::id] : json::Value();
+    return r;
+}
+
+/**
+ * A JSON-RPC 2.0 error response for a @p request rejected before it reached a
+ * handler.
+ *
+ * Nothing the request carried is echoed: the specification makes `error.data`
+ * optional, the client already knows what it sent, and copying a request per
+ * rejection is what an overloaded server must not do.
+ *
+ * @param request The request being rejected.
+ * @param code The class of failure, from JsonRpc.h.
+ * @param message What the failure was.
+ * @return The whole reply, ready to send.
+ */
+static json::Value
+specError(json::Value const& request, json::Int code, std::string_view message)
+{
+    json::Value r = specEnvelope(request);
+
+    json::Value err(json::ValueType::Object);
+    err[jss::code] = code;
+    err[jss::message] = message;
+    r[jss::error] = std::move(err);
+
+    return r;
+}
+
+/**
+ * The reply to a request whose `id` the specification does not allow.
+ *
+ * It names no id at all: the id is the thing that was wrong, and the
+ * specification asks for a null one wherever the id could not be read.
+ *
+ * @return The whole reply, ready to send.
+ */
+static json::Value
+unusableIdRejection()
+{
+    return specError(
+        json::Value(json::ValueType::Object),
+        rpc::kJsonRpcInvalidRequest,
+        "id is not a string, a number or null");
+}
+
+/**
+ * Selects the member of a reported error that states what went wrong.
+ *
+ * `submit` and `simulate` put the specific detail in `error_exception` and
+ * leave a generic `error_message` beside it, "Transaction is invalid." next
+ * to "Transaction length invalid", so the more specific member is preferred
+ * where both are present.
+ *
+ * @param reported An error a handler reported, which carries `error`. Only
+ *        members it carries are read, so no read inserts a null one.
+ * @return The member stating the failure, for the caller to move out of
+ *         @p reported. Falls back to the error token.
+ */
+static json::Value&
+errorMessageOf(json::Value& reported)
+{
+    if (reported.isMember(jss::error_exception))
+        return reported[jss::error_exception];
+    if (reported.isMember(jss::error_message))
+        return reported[jss::error_message];
+    return reported[jss::error];
+}
+
+/**
+ * Shapes a handler @p result into a JSON-RPC 2.0 response object.
+ *
+ * An XRPL error is an application-level failure of a well-formed call, so it
+ * reports the reserved implementation-defined code and carries its own token
+ * and code in `data`. See kJsonRpcServerError. A method the server does not
+ * have is the one exception: no command ran for it, and the specification
+ * defines a code for that condition, so the token selects it.
+ *
+ * The specification's own members come from specEnvelope, so a reply and a
+ * pre-dispatch rejection name the protocol and correlate with their request the
+ * same way.
+ *
+ * @param result A handler result, consumed.
+ * @param request The request being answered, where `id` is read.
+ * @param r The reply this writes.
+ * @param journal Where the error is logged.
+ * @return The HTTP status the reply is sent with.
+ */
+static int
+shapeSpecReply(
+    json::Value result,
+    json::Value const& request,
+    json::Value& r,
+    beast::Journal journal)
+{
+    r = specEnvelope(request);
+
+    hoistNotices(result, r);
+
+    if (!result.isMember(jss::error))
+    {
+        // `status` is dropped for the same reason it is on the error path below: which of `result`
+        // or `error` is present already says whether the call succeeded. Only `path_find`'s status
+        // subcommand sets it on a result, so it would otherwise survive there and nowhere else.
+        result.removeMember(jss::status);
+        r[jss::result] = std::move(result);
+        return 200;
+    }
+
+    // Read through a const reference: `result`'s non-const `operator[]` inserts a null member for
+    // an absent name, and the JLOG argument below is evaluated only when the journal is active.
+    json::Value const& reported = result;
+
+    JLOG(journal.debug()) << "rpcError: " << reported[jss::error] << ": "
+                          << reported[jss::error_message];
+
+    // Report the code that belongs to the token. Some handlers report a token whose own code they
+    // cannot use, `error_code` being a value clients match on: the ledger_entry helpers name a
+    // `malformed*` token per field and report `invalidParams` (31) for all of them. Those clients
+    // are on an earlier version, so from version 3 the token and the code agree.
+    json::Value data(json::ValueType::Object);
+    json::Value const& reportedToken = reported[jss::error];
+    data[jss::error] = reportedToken;
+
+    // The token is read in place, `asString` copying it into a std::string once per error reply.
+    // `codeForToken` answers RpcUnknown for the null pointer a string value can hold.
+    char const* const tokenChars = reportedToken.isString() ? reportedToken.asCString() : nullptr;
+    std::string_view const token{tokenChars != nullptr ? tokenChars : ""};
+
+    auto code = rpc::codeForToken(token);
+    if (code == RpcUnknown && reported[jss::error_code].isInt())
+        code = static_cast<ErrorCodeI>(reported[jss::error_code].asInt());
+
+    if (code != RpcUnknown)
+        data[jss::error_code] = code;
+
+    json::Value err(json::ValueType::Object);
+    err[jss::code] =
+        code == RpcUnknownCommand ? rpc::kJsonRpcMethodNotFound : rpc::kJsonRpcServerError;
+    // Moved rather than copied: `result` is consumed, and the loop below skips the member.
+    err[jss::message] = std::move(errorMessageOf(result));
+
+    // Everything else the handler reported is detail about the failure, so it moves into `data`;
+    // one member can be a whole partial result. The notices have already been hoisted out.
+    for (auto it = result.begin(); it != result.end(); ++it)
+    {
+        // memberName() borrows the key; it.key() would build a Value and copy the string, per
+        // member of every error reply.
+        std::string_view const key{it.memberName()};
+        if (key == jss::error.cStr() || key == jss::error_code.cStr() ||
+            key == jss::error_message.cStr() || key == jss::error_exception.cStr() ||
+            key == jss::status.cStr())
+        {
+            continue;
+        }
+        data[it.memberName()] = std::move(*it);
+    }
+    err[jss::data] = std::move(data);
+
+    r[jss::error] = std::move(err);
+
+    return code != RpcUnknown ? rpc::errorCodeHttpStatus(code) : 200;
 }
 
 // VFALCO TODO Rewrite to use boost::beast::http::fields
@@ -677,8 +911,13 @@ makeJsonError(json::Int code, json::Value&& message)
     return r;
 }
 
-// Version of the JSON-RPC reply envelope, selected by the `ripplerpc` request parameter. It shapes
-// a completed result into a reply; no handler observes it.
+// Shape of the JSON-RPC reply envelope. The shape affects only how a completed request's result is
+// wrapped for the wire; no request handler observes it.
+//
+// V1 through V3 are selected by the legacy `ripplerpc` request parameter. Spec is selected by
+// `api_version` 3 and above, which takes precedence: a request naming both gets the spec envelope,
+// and its `ripplerpc` selects nothing, so it is neither read nor checked. Below that version the
+// field is validated, and a value naming no version is refused.
 enum class RpcVersion {
     // Errors are returned under `result`, keyed by `error_message`, and echo the (secret-masked)
     // request. HTTP status is always 200.
@@ -688,6 +927,10 @@ enum class RpcVersion {
     V2,
     // As V2, but the error code selects a 4xx/5xx HTTP status.
     V3,
+    // Conforms to the JSON-RPC 2.0 specification: `jsonrpc` and `id` members, the result under
+    // `result` or the failure under `error` as {code, message, data}, and no `status`. The error
+    // code selects a 4xx/5xx HTTP status.
+    Spec,
 };
 
 constexpr RpcVersion kRpcVersionIfUnspecified = RpcVersion::V1;
@@ -744,18 +987,23 @@ legacyHttpStatus(ErrorCodeI code)
  * @param version The envelope the reply takes.
  * @param result A handler result, consumed.
  * @param request The request's parameters, echoed on a version 1 error only,
- *        and where the `jsonrpc`, `ripplerpc` and `id` members are read.
+ *        and where a legacy envelope reads `jsonrpc`, `ripplerpc` and `id`.
+ * @param topLevel The object those parameters arrived in, where the
+ *        specification envelope reads `id`.
  * @param batch Whether to append to @p reply rather than assign it.
  * @param reply The reply this writes.
  * @param journal Where an error is logged.
- * @return The HTTP status the reply is sent with. Only version 3 derives it
- *         from the error code; the others report 200. A batch discards it.
+ * @return The HTTP status the reply is sent with. Versions 3 and Spec derive it
+ *         from the error code, the others always reporting 200. Returned
+ *         rather than read back off the reply, since only this function knows
+ *         where in the shape it wrote the code. A batch discards it.
  */
 static int
 shapeReply(
     RpcVersion version,
     json::Value result,
     json::Value const& request,
+    json::Value const& topLevel,
     bool batch,
     json::Value& reply,
     beast::Journal journal)
@@ -763,7 +1011,11 @@ shapeReply(
     json::Value r(json::ValueType::Object);
     int status = 200;
 
-    if (!result.isMember(jss::error))
+    if (version == RpcVersion::Spec)
+    {
+        status = shapeSpecReply(std::move(result), topLevel, r, journal);
+    }
+    else if (!result.isMember(jss::error))
     {
         result[jss::status] = jss::success;
         r[jss::result] = std::move(result);
@@ -796,12 +1048,17 @@ shapeReply(
         }
     }
 
-    if (request.isMember(jss::jsonrpc))
-        r[jss::jsonrpc] = request[jss::jsonrpc];
-    if (request.isMember(jss::ripplerpc))
-        r[jss::ripplerpc] = request[jss::ripplerpc];
-    if (request.isMember(jss::id))
-        r[jss::id] = request[jss::id];
+    // A legacy envelope echoes these from the request's parameters. The specification envelope
+    // reads `jsonrpc` and `id` from the request itself, which specEnvelope has already done.
+    if (version != RpcVersion::Spec)
+    {
+        if (request.isMember(jss::jsonrpc))
+            r[jss::jsonrpc] = request[jss::jsonrpc];
+        if (request.isMember(jss::ripplerpc))
+            r[jss::ripplerpc] = request[jss::ripplerpc];
+        if (request.isMember(jss::id))
+            r[jss::id] = request[jss::id];
+    }
 
     if (batch)
     {
@@ -929,7 +1186,8 @@ ServerHandler::processRequest(
 
         // Only an entry of a batch can be a non-object; a lone request was checked before the loop.
         // Inline rather than through `reject` below: an entry with no members carries the copy
-        // under `request` whatever a caller asks for.
+        // under `request` whatever a caller asks for. It names no version either, so it is
+        // answered in the legacy shape at every version.
         if (!jsonRPC.isObject())
         {
             // Only a batch reaches here, so the loop can act on the threshold. The entry presents
@@ -939,7 +1197,7 @@ ServerHandler::processRequest(
             json::Value r(json::ValueType::Object);
             r[jss::request] = rpc::maskSecrets(jsonRPC);
             r[jss::error] = makeJsonError(rpc::kJsonRpcMethodNotFound, "Method not found");
-            reply.append(r);
+            reply.append(std::move(r));
 
             if (overloaded)
                 break;
@@ -955,32 +1213,60 @@ ServerHandler::processRequest(
             batch ? unsigned{rpc::kApiInvalidVersion} : unsigned{rpc::kApiMinimumSpecVersion},
             app_.config().betaRpcApi);
 
-        // Answers a request rejected before it reaches a handler. A lone request receives the
-        // HTTP status and `message` as the whole body; a batch entry receives an error object
-        // beside a copy of the entry, one reply array having no other place to name the entry that
-        // failed. `wrapRequest` puts that copy under `request` instead.
-        //
-        // Returns whether the loop continues, which it does only for a batch.
-        auto const reject =
-            [&](int status, json::Int code, char const* message, bool wrapRequest = false) {
+        // The request's own resource entry, assigned once its role is known below. A rejection
+        // before that point charges through chargeWithoutRole.
+        resource::Consumer usage;
+
+        // For the two rejections that charge nothing here: an overloaded server sheds without
+        // charging, disconnect() having counted the load already, and a version the server cannot
+        // serve was charged before the role was known.
+        constexpr resource::Charge const* kNoCharge = nullptr;
+
+        // Answers a request rejected before it reached a handler, charging `fee` for it, and
+        // reports whether the loop continues, which it does only for a batch: a lone request has
+        // been answered in full. From API version 3 the answer is a specification error object that
+        // echoes nothing; earlier versions answer a lone request with `message` as the whole body
+        // and a batch entry with the error spliced into a copy of the entry, under `request` when
+        // `wrapRequest` asks, reporting `legacyCode` where one is given.
+        auto const reject = [&](int status,
+                                json::Int code,
+                                char const* message,
+                                resource::Charge const* fee = & resource::kFeeMalformedRpc,
+                                std::optional<json::Int> legacyCode = std::nullopt,
+                                bool wrapRequest = false) {
+            if (fee != nullptr)
+                usage.charge(*fee);
+
+            if (rpc::isSpecVersion(apiVersion))
+            {
                 if (!batch)
                 {
-                    httpReply(status, message, output, rpcJ);
+                    httpReply(status, to_string(specError(jsonRPC, code, message)), output, rpcJ);
                     return false;
                 }
-                json::Value r(json::ValueType::Object);
-                if (!wrapRequest)
-                {
-                    r = rpc::maskSecrets(jsonRPC);
-                }
-                else
-                {
-                    r[jss::request] = rpc::maskSecrets(jsonRPC);
-                }
-                r[jss::error] = makeJsonError(code, message);
-                reply.append(std::move(r));
+                reply.append(specError(jsonRPC, code, message));
                 return true;
-            };
+            }
+
+            if (!batch)
+            {
+                httpReply(status, message, output, rpcJ);
+                return false;
+            }
+
+            json::Value r(json::ValueType::Object);
+            if (wrapRequest)
+            {
+                r[jss::request] = rpc::maskSecrets(jsonRPC);
+            }
+            else
+            {
+                r = rpc::maskSecrets(jsonRPC);
+            }
+            r[jss::error] = makeJsonError(legacyCode.value_or(code), message);
+            reply.append(std::move(r));
+            return true;
+        };
 
         if (apiVersion == rpc::kApiInvalidVersion)
         {
@@ -992,6 +1278,8 @@ ServerHandler::processRequest(
                     400,
                     rpc::kJsonRpcWrongVersion,
                     jss::invalid_API_version.cStr(),
+                    kNoCharge,
+                    std::nullopt,
                     /*wrapRequest=*/true))
             {
                 return;
@@ -1014,8 +1302,7 @@ ServerHandler::processRequest(
         // whichever form they take.
         role = requestRole(required, port, requestParams(jsonRPC), remoteIPAddress, user);
 
-        auto usage =
-            requestInboundEndpoint(resourceManager_, remoteIPAddress, role, user, forwardedFor);
+        usage = requestInboundEndpoint(resourceManager_, remoteIPAddress, role, user, forwardedFor);
 
         // An overloaded server sheds the request without charging for it; disconnect() has already
         // accounted for the load that got it here. The loop then stops: every later entry of the
@@ -1023,14 +1310,28 @@ ServerHandler::processRequest(
         // must not do.
         if (!isUnlimited(role) && usage.disconnect(journal_))
         {
-            if (!reject(503, rpc::kJsonRpcServerOverloaded, "Server is overloaded"))
+            if (!reject(503, rpc::kJsonRpcServerOverloaded, "Server is overloaded", kNoCharge))
                 return;
             break;
         }
 
-        if (role == Role::FORBID)
+        // An `id` the specification does not allow makes this an invalid request. Answered here
+        // rather than through `reject`, which would echo the id. Earlier versions echo an id of
+        // any shape.
+        if (rpc::isSpecVersion(apiVersion) && !hasUsableSpecId(jsonRPC))
         {
             usage.charge(resource::kFeeMalformedRpc);
+            if (!batch)
+            {
+                httpReply(400, to_string(unusableIdRejection()), output, rpcJ);
+                return;
+            }
+            reply.append(unusableIdRejection());
+            continue;
+        }
+
+        if (role == Role::FORBID)
+        {
             if (!reject(403, rpc::kJsonRpcForbidden, "Forbidden"))
                 return;
             continue;
@@ -1038,27 +1339,45 @@ ServerHandler::processRequest(
 
         if (!jsonRPC.isMember(jss::method) || jsonRPC[jss::method].isNull())
         {
-            usage.charge(resource::kFeeMalformedRpc);
-            if (!reject(400, rpc::kJsonRpcMethodNotFound, "Null method"))
+            if (!reject(
+                    400,
+                    rpc::kJsonRpcInvalidRequest,
+                    "Null method",
+                    &resource::kFeeMalformedRpc,
+                    rpc::kJsonRpcMethodNotFound))
+            {
                 return;
+            }
             continue;
         }
 
         json::Value const& method = jsonRPC[jss::method];
         if (!method.isString())
         {
-            usage.charge(resource::kFeeMalformedRpc);
-            if (!reject(400, rpc::kJsonRpcMethodNotFound, "method is not string"))
+            if (!reject(
+                    400,
+                    rpc::kJsonRpcInvalidRequest,
+                    "method is not string",
+                    &resource::kFeeMalformedRpc,
+                    rpc::kJsonRpcMethodNotFound))
+            {
                 return;
+            }
             continue;
         }
 
         std::string const strMethod = method.asString();
         if (strMethod.empty())
         {
-            usage.charge(resource::kFeeMalformedRpc);
-            if (!reject(400, rpc::kJsonRpcMethodNotFound, "method is empty"))
+            if (!reject(
+                    400,
+                    rpc::kJsonRpcInvalidRequest,
+                    "method is empty",
+                    &resource::kFeeMalformedRpc,
+                    rpc::kJsonRpcMethodNotFound))
+            {
                 return;
+            }
             continue;
         }
 
@@ -1076,16 +1395,14 @@ ServerHandler::processRequest(
             {
                 if (!params.isArray() || params.size() != 1)
                 {
-                    usage.charge(resource::kFeeMalformedRpc);
-                    httpReply(400, "params unparsable", output, rpcJ);
+                    reject(400, rpc::kJsonRpcInvalidParams, "params unparsable");
                     return;
                 }
 
                 params = std::move(params[0u]);
                 if (!params.isObjectOrNull())
                 {
-                    usage.charge(resource::kFeeMalformedRpc);
-                    httpReply(400, "params unparsable", output, rpcJ);
+                    reject(400, rpc::kJsonRpcInvalidParams, "params unparsable");
                     return;
                 }
             }
@@ -1095,14 +1412,30 @@ ServerHandler::processRequest(
             params = jsonRPC;
         }
 
+        // Two methods name no one method to dispatch on. From version 3 the request is invalid;
+        // earlier versions keep `unknownCmd`, at HTTP 200 unless the `ripplerpc: "3.0"` envelope
+        // derives 405 from it.
+        if (rpc::isSpecVersion(apiVersion) && params.isMember(jss::method) &&
+            (!params[jss::method].isString() || params[jss::method].asString() != strMethod))
+        {
+            if (!reject(400, rpc::kJsonRpcInvalidRequest, "command and method disagree"))
+                return;
+            continue;
+        }
+
+        // `ripplerpc` selects nothing from version 3, so it is ignored rather than refused, as
+        // every other field the server does not honor is.
         RpcVersion envelope = kRpcVersionIfUnspecified;
-        if (params.isMember(jss::ripplerpc))
+        if (rpc::isSpecVersion(apiVersion))
+        {
+            envelope = RpcVersion::Spec;
+        }
+        else if (params.isMember(jss::ripplerpc))
         {
             // A `ripplerpc` the server cannot honor is a bad parameter, so the second check reports
             // that code. The first keeps the method-not-found code shipped versions report.
             if (!params[jss::ripplerpc].isString())
             {
-                usage.charge(resource::kFeeMalformedRpc);
                 if (!reject(400, rpc::kJsonRpcMethodNotFound, "ripplerpc is not a string"))
                     return;
                 continue;
@@ -1111,7 +1444,6 @@ ServerHandler::processRequest(
             auto const parsed = rpcVersion(params[jss::ripplerpc].asString());
             if (!parsed)
             {
-                usage.charge(resource::kFeeMalformedRpc);
                 if (!reject(
                         400, rpc::kJsonRpcInvalidParams, "ripplerpc is not a supported version"))
                     return;
@@ -1170,11 +1502,15 @@ ServerHandler::processRequest(
         if (usage.warn())
             result[jss::warning] = jss::load;
 
-        int const status = shapeReply(envelope, std::move(result), params, batch, reply, journal_);
+        int const status =
+            shapeReply(envelope, std::move(result), params, jsonRPC, batch, reply, journal_);
         if (!batch)
             httpStatus = status;
 
-        if (reply.isMember(jss::result) && reply[jss::result].isMember(jss::result))
+        // A handler that returns its own `result` member leaves the legacy envelope with a doubly
+        // nested one. The specification envelope has a fixed shape, so it is left alone.
+        if (envelope != RpcVersion::Spec && reply.isMember(jss::result) &&
+            reply[jss::result].isMember(jss::result))
         {
             reply = reply[jss::result];
             if (reply.isMember(jss::status))

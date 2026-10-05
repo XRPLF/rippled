@@ -145,7 +145,8 @@ class AccountTx_test : public beast::unit_test::Suite
         // Ledger 3 has the two txs associated with funding the account
         // All other ledgers have no txs
 
-        auto hasTxs = [apiVersion](json::Value const& j) {
+        auto hasTxs = [apiVersion](json::Value const& reply) {
+            auto const j = jtx::rpcLegacyReply(reply);
             switch (apiVersion)
             {
                 case 1:
@@ -190,12 +191,14 @@ class AccountTx_test : public beast::unit_test::Suite
             }
         };
 
-        auto noTxs = [](json::Value const& j) {
+        auto noTxs = [](json::Value const& reply) {
+            auto const j = jtx::rpcLegacyReply(reply);
             return j.isMember(jss::result) && (j[jss::result][jss::status] == "success") &&
                 (j[jss::result][jss::transactions].size() == 0);
         };
 
-        auto isErr = [](json::Value const& j, ErrorCodeI code) {
+        auto isErr = [](json::Value const& reply, ErrorCodeI code) {
+            auto const j = jtx::rpcLegacyReply(reply);
             return j.isMember(jss::result) && j[jss::result].isMember(jss::error) &&
                 j[jss::result][jss::error] == rpc::getErrorInfo(code).token;
         };
@@ -410,7 +413,7 @@ class AccountTx_test : public beast::unit_test::Suite
             }
 
             p[jss::binary] = true;
-            json::Value result{env.rpc("json", "account_tx", to_string(p))};
+            json::Value result{jtx::rpcLegacyReply(env.rpc("json", "account_tx", to_string(p)))};
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
 
             p[jss::forward] = "true";
@@ -424,7 +427,7 @@ class AccountTx_test : public beast::unit_test::Suite
             }
 
             p[jss::forward] = false;
-            result = env.rpc("json", "account_tx", to_string(p));
+            result = jtx::rpcLegacyReply(env.rpc("json", "account_tx", to_string(p)));
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
         }
         // test limit with malformed values
@@ -438,56 +441,56 @@ class AccountTx_test : public beast::unit_test::Suite
             // Test case: limit = 1.2 should fail (not an integer)
             p[jss::limit] = 1.2;
             BEAST_EXPECT(
-                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
+                jtx::rpcPayload(env.rpc("json", "account_tx", to_string(p)))[jss::error_message] ==
                 rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = "10" should fail (string instead of integer)
             p[jss::limit] = "10";
             BEAST_EXPECT(
-                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
+                jtx::rpcPayload(env.rpc("json", "account_tx", to_string(p)))[jss::error_message] ==
                 rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = true should fail (boolean instead of integer)
             p[jss::limit] = true;
             BEAST_EXPECT(
-                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
+                jtx::rpcPayload(env.rpc("json", "account_tx", to_string(p)))[jss::error_message] ==
                 rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = false should fail (boolean instead of integer)
             p[jss::limit] = false;
             BEAST_EXPECT(
-                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
+                jtx::rpcPayload(env.rpc("json", "account_tx", to_string(p)))[jss::error_message] ==
                 rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = -1 should fail (negative number)
             p[jss::limit] = -1;
             BEAST_EXPECT(
-                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
+                jtx::rpcPayload(env.rpc("json", "account_tx", to_string(p)))[jss::error_message] ==
                 rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = [] should fail (array instead of integer)
             p[jss::limit] = json::Value(json::ValueType::Array);
             BEAST_EXPECT(
-                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
+                jtx::rpcPayload(env.rpc("json", "account_tx", to_string(p)))[jss::error_message] ==
                 rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = {} should fail (object instead of integer)
             p[jss::limit] = json::Value(json::ValueType::Object);
             BEAST_EXPECT(
-                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
+                jtx::rpcPayload(env.rpc("json", "account_tx", to_string(p)))[jss::error_message] ==
                 rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = "malformed" should fail (malformed string)
             p[jss::limit] = "malformed";
             BEAST_EXPECT(
-                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
+                jtx::rpcPayload(env.rpc("json", "account_tx", to_string(p)))[jss::error_message] ==
                 rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = ["limit"] should fail (array with string)
             p[jss::limit] = json::Value(json::ValueType::Array);
             p[jss::limit].append("limit");
             BEAST_EXPECT(
-                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
+                jtx::rpcPayload(env.rpc("json", "account_tx", to_string(p)))[jss::error_message] ==
                 rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = {"limit": 10} should fail (object with
@@ -495,13 +498,14 @@ class AccountTx_test : public beast::unit_test::Suite
             p[jss::limit] = json::Value(json::ValueType::Object);
             p[jss::limit][jss::limit] = 10;
             BEAST_EXPECT(
-                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
+                jtx::rpcPayload(env.rpc("json", "account_tx", to_string(p)))[jss::error_message] ==
                 rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = 10 should succeed (valid integer)
             p[jss::limit] = 10;
             BEAST_EXPECT(
-                env.rpc("json", "account_tx", to_string(p))[jss::result][jss::status] == "success");
+                jtx::rpcPayload(env.rpc("json", "account_tx", to_string(p)))[jss::status] ==
+                "success");
         }
     }
 
