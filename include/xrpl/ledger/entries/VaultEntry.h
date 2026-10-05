@@ -122,6 +122,7 @@ public:
      * rate.
      *
      * @param waive Whether to skip subtracting the unrealized loss.
+     * @return The assets backing outstanding shares for a withdrawal.
      */
     [[nodiscard]] Number
     assetsTotalForWithdrawal(WaiveUnrealizedLoss waive) const;
