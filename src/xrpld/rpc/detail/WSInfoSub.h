@@ -49,6 +49,13 @@ public:
         return fwdfor_;
     }
 
+    /**
+     * Writes @p jv to the session as built: the shape belongs to the
+     * subscription the message answers, not to the connection, so the publisher
+     * shapes it. See sendShaped.
+     *
+     * @param jv The message, in the shape the subscriber receives.
+     */
     void
     send(json::Value const& jv, bool) override
     {

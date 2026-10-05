@@ -125,11 +125,17 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
                             ipSub.reset();
                             json::Value update = request->doUpdate(cache, false, continueCallback);
                             request->updateComplete();
+                            // From API version 3 this `type` names the method of a notification:
+                            // the request that started the path finding has had its one response.
+                            // The `id` doUpdate copied in travels inside `params`. False says the
+                            // update was directed at this subscriber, which only a diagnostic
+                            // reads.
                             update[jss::type] = "path_find";
                             ipSub = getSubscriber(request);
                             if (ipSub)
                             {
-                                ipSub->send(update, false);
+                                sendShaped(
+                                    *ipSub, request->apiVersion(), update, /*broadcast=*/false);
                                 remove = false;
                                 ++processed;
                             }

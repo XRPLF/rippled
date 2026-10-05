@@ -2507,7 +2507,7 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
         {
             if (auto p = i->second.sink.lock())
             {
-                p->send(jvObj, true);
+                sendShaped(*p, i->second.apiVersion, jvObj);
                 toRelease.push_back(std::move(p));
                 ++i;
             }
@@ -2614,7 +2614,7 @@ NetworkOPsImp::pubServer()
             //             sending of JSON data.
             if (p)
             {
-                p->send(jvObj, true);
+                sendShaped(*p, i->second.apiVersion, jvObj);
                 toRelease.push_back(std::move(p));
                 ++i;
             }
@@ -2647,7 +2647,7 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
         {
             if (auto p = i->second.sink.lock())
             {
-                p->send(jvObj, true);
+                sendShaped(*p, i->second.apiVersion, jvObj);
                 toRelease.push_back(std::move(p));
                 ++i;
             }
@@ -2759,7 +2759,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             {
                 multiObj.visit(
                     i->second.apiVersion,  //
-                    [&](json::Value const& jv) { p->send(jv, true); });
+                    [&](json::Value const& jv) { sendShaped(*p, i->second.apiVersion, jv); });
                 toRelease.push_back(std::move(p));
                 ++i;
             }
@@ -2793,7 +2793,7 @@ NetworkOPsImp::pubPeerStatus(std::function<json::Value()> const& func)
 
             if (p)
             {
-                p->send(jvObj, true);
+                sendShaped(*p, i->second.apiVersion, jvObj);
                 toRelease.push_back(std::move(p));
                 ++i;
             }
@@ -3355,7 +3355,7 @@ NetworkOPsImp::pubProposedTransaction(
             {
                 jvObj.visit(
                     it->second.apiVersion,  //
-                    [&](json::Value const& jv) { p->send(jv, true); });
+                    [&](json::Value const& jv) { sendShaped(*p, it->second.apiVersion, jv); });
                 toRelease.push_back(std::move(p));
                 ++it;
             }
@@ -3449,7 +3449,7 @@ NetworkOPsImp::publishLedgerStreams(
             InfoSub::pointer p = it->second.sink.lock();
             if (p)
             {
-                p->send(jvObj, true);
+                sendShaped(*p, it->second.apiVersion, jvObj);
                 toRelease.push_back(std::move(p));
                 ++it;
             }
@@ -3470,7 +3470,7 @@ NetworkOPsImp::publishLedgerStreams(
             InfoSub::pointer p = it->second.sink.lock();
             if (p)
             {
-                p->send(jvObj, true);
+                sendShaped(*p, it->second.apiVersion, jvObj);
                 toRelease.push_back(std::move(p));
                 ++it;
             }
@@ -3683,7 +3683,7 @@ NetworkOPsImp::pubValidatedTransaction(
             {
                 jvObj.visit(
                     it->second.apiVersion,  //
-                    [&](json::Value const& jv) { p->send(jv, true); });
+                    [&](json::Value const& jv) { sendShaped(*p, it->second.apiVersion, jv); });
                 toRelease.push_back(std::move(p));
                 ++it;
             }
@@ -3703,7 +3703,7 @@ NetworkOPsImp::pubValidatedTransaction(
             {
                 jvObj.visit(
                     it->second.apiVersion,  //
-                    [&](json::Value const& jv) { p->send(jv, true); });
+                    [&](json::Value const& jv) { sendShaped(*p, it->second.apiVersion, jv); });
                 toRelease.push_back(std::move(p));
                 ++it;
             }
@@ -3799,7 +3799,7 @@ NetworkOPsImp::pubBookTransaction(AcceptedLedgerTx const& alTx, MultiApiJson con
     {
         jvObj.visit(
             entry.apiVersion,  //
-            [&](json::Value const& jv) { entry.sink->send(jv, true); });
+            [&](json::Value const& jv) { sendShaped(*entry.sink, entry.apiVersion, jv); });
     }
     // listeners destructs here, outside bookLock_; ~InfoSub (if any fires)
     // will reacquire bookLock_ via unsubBook with no iterator hazard.
@@ -3918,7 +3918,8 @@ NetworkOPsImp::pubAccountTransaction(
             for (auto const& [seq, entry] : notify)
             {
                 jvObj.visit(
-                    entry.apiVersion, [&](json::Value const& jv) { entry.sink->send(jv, true); });
+                    entry.apiVersion,  //
+                    [&](json::Value const& jv) { sendShaped(*entry.sink, entry.apiVersion, jv); });
             }
         }
 
@@ -3937,9 +3938,9 @@ NetworkOPsImp::pubAccountTransaction(
 
             jvObj.set(jss::account_history_tx_index, index->forwardTxIndex++);
 
-            jvObj.visit(
-                info.apiVersion,  //
-                [&](json::Value const& jv) { info.sink->send(jv, true); });
+            jvObj.visit(info.apiVersion, [&](json::Value const& jv) {
+                sendShaped(*info.sink, info.apiVersion, jv);
+            });
         }
     }
 }
@@ -3996,7 +3997,8 @@ NetworkOPsImp::pubProposedAccountTransaction(
             for (auto const& [seq, entry] : notify)
             {
                 jvObj.visit(
-                    entry.apiVersion, [&](json::Value const& jv) { entry.sink->send(jv, true); });
+                    entry.apiVersion,  //
+                    [&](json::Value const& jv) { sendShaped(*entry.sink, entry.apiVersion, jv); });
             }
         }
     }
@@ -4259,7 +4261,7 @@ NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson cons
     {
         jvObj.visit(
             entry.apiVersion,  //
-            [&](json::Value const& jv) { entry.sink->send(jv, true); });
+            [&](json::Value const& jv) { sendShaped(*entry.sink, entry.apiVersion, jv); });
     }
 }
 
@@ -4376,10 +4378,18 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             });
         };
 
+        // Every message this sends reports a failure of the history job, an error object naming no
+        // `type`, so the stream it concerns is named for a subscriber a notification is built for.
         auto send = [&](json::Value const& jvObj, bool unsubscribe) -> bool {
             if (auto sptr = subInfo.sinkWptr.lock())
             {
-                sptr->send(jvObj, true);
+                auto const stamped = stampStreamError(
+                    jvObj,
+                    subInfo.apiVersion,
+                    sptr->wantsNotifications(),
+                    jss::account_history_tx_stream);
+                sendShaped(*sptr, subInfo.apiVersion, stamped ? *stamped : jvObj);
+
                 if (unsubscribe)
                     unsubAccountHistory(sptr, accountId, false);
                 return true;
@@ -4391,9 +4401,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
         auto sendMultiApiJson = [&](MultiApiJson const& jvObj, bool unsubscribe) -> bool {
             if (auto sptr = subInfo.sinkWptr.lock())
             {
-                jvObj.visit(
-                    subInfo.apiVersion,  //
-                    [&](json::Value const& jv) { sptr->send(jv, true); });
+                jvObj.visit(subInfo.apiVersion, [&](json::Value const& jv) {
+                    sendShaped(*sptr, subInfo.apiVersion, jv);
+                });
 
                 if (unsubscribe)
                     unsubAccountHistory(sptr, accountId, false);
