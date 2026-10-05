@@ -217,12 +217,13 @@ The `release-info` action decides the channel from the event, and
 | tag                      | `X.Y.Z-bN`         | `beta`    | `deb-beta`     | `rpm-beta-hosted`     |
 | tag, any other           | `xrpld --version`  | `custom`  | `deb-custom`   | `rpm-custom-hosted`   |
 | push to `develop`        | `0.0.0-dev+<hash>` | `develop` | `deb-develop`  | `rpm-develop-hosted`  |
-| tag, non-public codebase | _any_              | `private` | `deb-private`  | `rpm-private-hosted`  |
+| tag, non-public codebase | _any but `X.Y.Z`_  | `private` | `deb-private`  | `rpm-private-hosted`  |
 
 A variant is published to the same channel under its own name, so
 `xrpld-assert` never overwrites `xrpld`.
 
-Only a tag picks a release channel. Versions sort in row order, so moving to a
+Only a tag picks a release channel. A final release, `X.Y.Z`, goes to `stable`
+even from a non-public codebase. Versions sort in row order, so moving to a
 more mature channel never downgrades. A tag matching none of the release
 patterns, such as `X.Y.Z-hotfix1`, publishes to `custom`, which sits outside
 that order.
@@ -284,8 +285,9 @@ checks that the server starts in each image. A tag's images are tagged with the
 tag name, a develop image as `develop`. With `publish: true`:
 
 - `xrpld` is pushed to `xrplf/xrpld` on Docker Hub using the `DOCKERHUB_TOKEN`
-  secret, an organization access token for `xrplf`. Private builds are never
-  pushed there.
+  secret, an organization access token for `xrplf`. Builds of a non-public
+  codebase are pushed there only for `stable` releases, whose packages are
+  public too.
 - `voidstar` replaces `/usr/bin/xrpld` with the binary of the `voidstar` build
   config, adds `libvoidstar.so` and links the binary into `/symbols`, as
   Antithesis expects. It is pushed as `xrpld-voidstar` to the Antithesis
