@@ -76,6 +76,7 @@ public:
      *
      * @param account The holder of this MPToken.
      * @param depth Current recursion depth for the vault-share walk.
+     * @return true if @p account is frozen out of this MPToken's issuance
      */
     [[nodiscard]] bool
     isFrozen(AccountID const& account, std::uint8_t depth = 0) const;
