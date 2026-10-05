@@ -164,30 +164,32 @@ deltasMatch(Map const& actual, Map const& expected)
 void
 ValidTransactionProposal::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    // LedgerEntryTypesMatch owns malformed type transitions. Avoid interpreting
-    // either side using the other side's schema.
-    if (before && after && before->getType() != after->getType())
+    // `after` is always present (on deletion it holds the final state), so it
+    // alone determines the entry type. LedgerEntryTypesMatch owns malformed
+    // type transitions; skip them rather than read one side with the other's
+    // schema.
+    if (!after || (before && before->getType() != after->getType()))
         return;
 
-    if ((before && before->getType() == ltACCOUNT_ROOT) ||
-        (after && after->getType() == ltACCOUNT_ROOT))
+    auto const type = after->getType();
+
+    if (type == ltACCOUNT_ROOT)
     {
-        auto const& accountSle = after ? after : before;
-        auto const account = accountSle->getAccountID(sfAccount);
+        auto const account = after->getAccountID(sfAccount);
         ownerCountDelta_[account] += fieldDelta(isDelete, before, after, sfOwnerCount);
         sponsoredOwnerCountDelta_[account] +=
             fieldDelta(isDelete, before, after, sfSponsoredOwnerCount);
         sponsoringOwnerCountDelta_[account] +=
             fieldDelta(isDelete, before, after, sfSponsoringOwnerCount);
+        return;
     }
 
     // A TransactionProposalCreate may itself consume a different Ticket.
     // Account for that independent owner-count change so the proposal's
     // five- or ten-unit reserve delta is still checked exactly.
-    if ((before && before->getType() == ltTICKET) || (after && after->getType() == ltTICKET))
+    if (type == ltTICKET)
     {
-        auto const& ticket = before ? before : after;
-        auto const owner = ticket->getAccountID(sfAccount);
+        auto const owner = after->getAccountID(sfAccount);
         if (!before && !isDelete)
         {
             expectedOwnerCountDelta_[owner] += 1;
@@ -196,16 +198,15 @@ ValidTransactionProposal::visitEntry(bool isDelete, SLE::const_ref before, SLE::
         {
             expectedOwnerCountDelta_[owner] -= 1;
         }
+        return;
     }
 
-    bool const proposalBefore = before && before->getType() == ltTRANSACTION_PROPOSAL;
-    bool const proposalAfter = after && after->getType() == ltTRANSACTION_PROPOSAL;
-    if (!proposalBefore && !proposalAfter)
+    if (type != ltTRANSACTION_PROPOSAL)
         return;
 
     changes_.push_back({.isDelete = isDelete, .before = before, .after = after});
 
-    if (!proposalBefore)
+    if (!before)
     {
         ++created_;
     }
@@ -218,8 +219,7 @@ ValidTransactionProposal::visitEntry(bool isDelete, SLE::const_ref before, SLE::
         ++modified_;
     }
 
-    if (!isDelete && proposalAfter &&
-        !validSignerArrays(after->getFieldObject(sfProposedTransaction)))
+    if (!isDelete && !validSignerArrays(after->getFieldObject(sfProposedTransaction)))
         invalidSignerArrays_ = true;
 
     auto recordReserveState = [&](SLE::const_ref sle, std::int64_t direction) {
@@ -232,9 +232,9 @@ ValidTransactionProposal::visitEntry(bool isDelete, SLE::const_ref before, SLE::
             expectedSponsoringOwnerCountDelta_[sle->getAccountID(sfSponsor)] += reserve;
     };
 
-    if (proposalBefore)
+    if (before)
         recordReserveState(before, -1);
-    if (!isDelete && proposalAfter)
+    if (!isDelete)
         recordReserveState(after, 1);
 }
 
