@@ -59,6 +59,8 @@ public:
      *
      * The caller must make sure that the token belongs on this page and that
      * the page has space for it.
+     *
+     * @param nft the token to add.
      */
     void
     insertToken(STObject&& nft)
