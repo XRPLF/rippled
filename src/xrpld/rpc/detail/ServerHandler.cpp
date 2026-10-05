@@ -29,6 +29,7 @@
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/JsonRpc.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/jss.h>
@@ -593,11 +594,6 @@ makeJsonError(json::Int code, json::Value&& message)
     return r;
 }
 
-constexpr json::Int kMethodNotFound = -32601;
-constexpr json::Int kServerOverloaded = -32604;
-constexpr json::Int kForbidden = -32605;
-constexpr json::Int kWrongVersion = -32606;
-
 /**
  * The HTTP status the `ripplerpc: "3.0"` envelope reports for @p code.
  *
@@ -671,11 +667,14 @@ ServerHandler::processRequest(
     {
         json::Value const& jsonRPC = batch ? jsonOrig[jss::params][i] : jsonOrig;
 
+        // Only an entry of a batch can be a non-object; a lone request was checked before the loop.
+        // Inline rather than through `reject` below: an entry with no members carries the copy
+        // under `request` whatever a caller asks for.
         if (!jsonRPC.isObject())
         {
             json::Value r(json::ValueType::Object);
             r[jss::request] = rpc::maskSecrets(jsonRPC);
-            r[jss::error] = makeJsonError(kMethodNotFound, "Method not found");
+            r[jss::error] = makeJsonError(rpc::kJsonRpcMethodNotFound, "Method not found");
             reply.append(r);
             continue;
         }
@@ -694,17 +693,45 @@ ServerHandler::processRequest(
             apiVersion = rpc::getAPIVersionNumber(jsonRPC, app_.config().betaRpcApi);
         }
 
+        // Answers a request rejected before it reaches a handler. A lone request receives the
+        // HTTP status and `message` as the whole body; a batch entry receives an error object
+        // beside a copy of the entry, one reply array having no other place to name the entry that
+        // failed. `wrapRequest` puts that copy under `request` instead.
+        //
+        // Returns whether the loop continues, which it does only for a batch.
+        auto const reject =
+            [&](int status, json::Int code, char const* message, bool wrapRequest = false) {
+                if (!batch)
+                {
+                    httpReply(status, message, output, rpcJ);
+                    return false;
+                }
+                json::Value r(json::ValueType::Object);
+                if (!wrapRequest)
+                {
+                    r = rpc::maskSecrets(jsonRPC);
+                }
+                else
+                {
+                    r[jss::request] = rpc::maskSecrets(jsonRPC);
+                }
+                r[jss::error] = makeJsonError(code, message);
+                reply.append(std::move(r));
+                return true;
+            };
+
         if (apiVersion == rpc::kApiInvalidVersion)
         {
-            if (!batch)
+            // An object-shaped rejection returns this entry under `request`, where a client
+            // correlating by `reply[i].request` finds it.
+            if (!reject(
+                    400,
+                    rpc::kJsonRpcWrongVersion,
+                    jss::invalid_API_version.cStr(),
+                    /*wrapRequest=*/true))
             {
-                httpReply(400, jss::invalid_API_version.cStr(), output, rpcJ);
                 return;
             }
-            json::Value r(json::ValueType::Object);
-            r[jss::request] = rpc::maskSecrets(jsonRPC);
-            r[jss::error] = makeJsonError(kWrongVersion, jss::invalid_API_version.cStr());
-            reply.append(r);
             continue;
         }
 
@@ -728,54 +755,31 @@ ServerHandler::processRequest(
             role = requestRole(required, port, json::ValueType::Object, remoteIPAddress, user);
         }
 
-        resource::Consumer usage;
-        if (isUnlimited(role))
+        auto usage =
+            requestInboundEndpoint(resourceManager_, remoteIPAddress, role, user, forwardedFor);
+
+        // An overloaded server sheds the request without charging for it; disconnect() has already
+        // accounted for the load that got it here.
+        if (!isUnlimited(role) && usage.disconnect(journal_))
         {
-            usage = resourceManager_.newUnlimitedEndpoint(remoteIPAddress);
-        }
-        else
-        {
-            usage = resourceManager_.newInboundEndpoint(
-                remoteIPAddress, role == Role::PROXY, forwardedFor);
-            if (usage.disconnect(journal_))
-            {
-                if (!batch)
-                {
-                    httpReply(503, "Server is overloaded", output, rpcJ);
-                    return;
-                }
-                json::Value r = rpc::maskSecrets(jsonRPC);
-                r[jss::error] = makeJsonError(kServerOverloaded, "Server is overloaded");
-                reply.append(r);
-                continue;
-            }
+            if (!reject(503, rpc::kJsonRpcServerOverloaded, "Server is overloaded"))
+                return;
+            continue;
         }
 
         if (role == Role::FORBID)
         {
             usage.charge(resource::kFeeMalformedRpc);
-            if (!batch)
-            {
-                httpReply(403, "Forbidden", output, rpcJ);
+            if (!reject(403, rpc::kJsonRpcForbidden, "Forbidden"))
                 return;
-            }
-            json::Value r = rpc::maskSecrets(jsonRPC);
-            r[jss::error] = makeJsonError(kForbidden, "Forbidden");
-            reply.append(r);
             continue;
         }
 
         if (!jsonRPC.isMember(jss::method) || jsonRPC[jss::method].isNull())
         {
             usage.charge(resource::kFeeMalformedRpc);
-            if (!batch)
-            {
-                httpReply(400, "Null method", output, rpcJ);
+            if (!reject(400, rpc::kJsonRpcMethodNotFound, "Null method"))
                 return;
-            }
-            json::Value r = rpc::maskSecrets(jsonRPC);
-            r[jss::error] = makeJsonError(kMethodNotFound, "Null method");
-            reply.append(r);
             continue;
         }
 
@@ -783,14 +787,8 @@ ServerHandler::processRequest(
         if (!method.isString())
         {
             usage.charge(resource::kFeeMalformedRpc);
-            if (!batch)
-            {
-                httpReply(400, "method is not string", output, rpcJ);
+            if (!reject(400, rpc::kJsonRpcMethodNotFound, "method is not string"))
                 return;
-            }
-            json::Value r = rpc::maskSecrets(jsonRPC);
-            r[jss::error] = makeJsonError(kMethodNotFound, "method is not string");
-            reply.append(r);
             continue;
         }
 
@@ -798,14 +796,8 @@ ServerHandler::processRequest(
         if (strMethod.empty())
         {
             usage.charge(resource::kFeeMalformedRpc);
-            if (!batch)
-            {
-                httpReply(400, "method is empty", output, rpcJ);
+            if (!reject(400, rpc::kJsonRpcMethodNotFound, "method is empty"))
                 return;
-            }
-            json::Value r = rpc::maskSecrets(jsonRPC);
-            r[jss::error] = makeJsonError(kMethodNotFound, "method is empty");
-            reply.append(r);
             continue;
         }
 
@@ -848,18 +840,12 @@ ServerHandler::processRequest(
         std::string ripplerpc = "1.0";
         if (params.isMember(jss::ripplerpc))
         {
+            // Not a method-not-found condition, but it is the code shipped versions report.
             if (!params[jss::ripplerpc].isString())
             {
                 usage.charge(resource::kFeeMalformedRpc);
-                if (!batch)
-                {
-                    httpReply(400, "ripplerpc is not a string", output, rpcJ);
+                if (!reject(400, rpc::kJsonRpcMethodNotFound, "ripplerpc is not a string"))
                     return;
-                }
-
-                json::Value r = rpc::maskSecrets(jsonRPC);
-                r[jss::error] = makeJsonError(kMethodNotFound, "ripplerpc is not a string");
-                reply.append(r);
                 continue;
             }
             ripplerpc = params[jss::ripplerpc].asString();

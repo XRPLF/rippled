@@ -11,6 +11,7 @@
 #include <xrpld/rpc/detail/MaskSecrets.h>
 
 #include <xrpl/basics/base64.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/test/yield_to.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -20,8 +21,13 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/JsonRpc.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/ResourceManager.h>
+#include <xrpl/resource/detail/Tuning.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 
@@ -248,6 +254,25 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         json::Value reply;
         BEAST_EXPECTS(json::Reader{}.parse(resp.body(), reply), label);
         return reply;
+    }
+
+    /**
+     * Charges the inbound resource entry of @p ip past the drop threshold.
+     *
+     * The balance sums charges over the decay window, so one large charge
+     * stands in for thousands of requests.
+     *
+     * @param env The environment whose resource manager holds the entry.
+     * @param ip The address the entry is keyed by.
+     */
+    static void
+    overloadEndpoint(test::jtx::Env& env, std::string const& ip)
+    {
+        auto usage =
+            env.app().getResourceManager().newInboundEndpoint(beast::ip::Endpoint::fromString(ip));
+        usage.charge(
+            resource::Charge{
+                2 * resource::kDropThreshold * resource::kDecayWindowSeconds, "test overload"});
     }
 
     void
@@ -1256,6 +1281,181 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     }
 
     /**
+     * An overloaded endpoint sheds a request unless the connection holds a
+     * privileged role, whose resource entry is exempt.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testPrivilegedRequestIsNotShed(boost::asio::yield_context& yield)
+    {
+        testcase("A privileged request is not shed from an overloaded endpoint");
+
+        using namespace test::jtx;
+
+        boost::system::error_code ec;
+
+        json::Value ping;
+        ping[jss::method] = "ping";
+
+        // Without privilege the request is shed, which is what the case below contrasts.
+        {
+            Env env{*this, envconfig(noAdmin)};
+            auto const ip = env.app().config()[Sections::kPortRpc].get<std::string>(Keys::kIp);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            overloadEndpoint(env, *ip);
+
+            Response resp;
+            doHTTPRequest(env, yield, false, resp, ec, to_string(ping));
+            BEAST_EXPECT(resp.result() == boost::beast::http::status::service_unavailable);
+            BEAST_EXPECT(resp.body() == "Server is overloaded\r\n");
+        }
+
+        // With privilege it is answered, the connection holding an exempt resource entry.
+        {
+            Env env{*this};
+            auto const ip = env.app().config()[Sections::kPortRpc].get<std::string>(Keys::kIp);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            overloadEndpoint(env, *ip);
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(ping));
+            BEAST_EXPECT(resp.result() == kOk);
+            BEAST_EXPECT(reply[jss::result][jss::status] == jss::success);
+        }
+    }
+
+    /**
+     * `ripplerpc` is refused when it is not a string and echoed back at every
+     * version the server serves. An entry naming an `api_version` the server
+     * cannot serve is returned under `request`.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testRipplerpcVersions(boost::asio::yield_context& yield)
+    {
+        testcase("RPC client sends assorted ripplerpc versions");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        boost::system::error_code ec;
+
+        // A non-string is reported separately, before any version parsing.
+        {
+            Response resp;
+            json::Value jv;
+            jv[jss::method] = "ping";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = json::ValueType::Object;
+            jv[jss::params][0u][jss::ripplerpc] = 2;
+            doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(resp.body() == "ripplerpc is not a string\r\n");
+        }
+
+        // Each supported version is accepted and echoed back.
+        for (auto const version :
+             {rpc::kRippleRpcVersion1, rpc::kRippleRpcVersion2, rpc::kRippleRpcVersion3})
+        {
+            Response resp;
+            auto const reply =
+                postAndParse(env, yield, resp, ec, makeRippleRpcRequest("ping", version), version);
+            BEAST_EXPECTS(resp.result() == kOk, version);
+            BEAST_EXPECTS(reply[jss::ripplerpc] == version, version);
+            BEAST_EXPECTS(reply[jss::result][jss::status] == jss::success, version);
+        }
+
+        // An entry naming an `api_version` the server cannot serve is returned under `request`,
+        // rather than spliced beside the error the way other rejections are.
+        {
+            Response resp;
+            json::Value entry(json::ValueType::Object);
+            entry[jss::method] = "ping";
+            entry[jss::api_version] = 99u;
+            entry[jss::secret] = "sensitive";
+
+            json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = entry;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == kOk);
+            BEAST_EXPECT(reply.isArray() && reply.size() == 1);
+
+            auto const& echoed = reply[0u][jss::request];
+            BEAST_EXPECT(echoed[jss::method] == "ping");
+            BEAST_EXPECT(echoed[jss::api_version] == 99u);
+            BEAST_EXPECT(echoed[jss::secret] == "<masked>");
+            BEAST_EXPECT(!reply[0u].isMember(jss::method));
+
+            auto const& error = reply[0u][jss::error][jss::error];
+            BEAST_EXPECT(error[jss::code] == rpc::kJsonRpcWrongVersion);
+            BEAST_EXPECT(error[jss::message] == jss::invalid_API_version);
+        }
+    }
+
+    /**
+     * Two `method: "batch"` entry rejections answer the shape shipped versions
+     * report. A null `method` reports `-32601`, which the specification would
+     * call an invalid request rather than a method it could not find; a lone
+     * request is answered with text, so only an entry carries the code at all.
+     * An entry that is not an object is echoed under `request` with the same
+     * code and `Method not found`.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testLegacyBatchEntryRejections(boost::asio::yield_context& yield)
+    {
+        testcase("A rejected batch entry reports the code shipped versions report");
+
+        using namespace test::jtx;
+        Env env{*this};
+        boost::system::error_code ec;
+
+        // A null `method`: the entry is echoed with the error beside its own members.
+        {
+            json::Value entry(json::ValueType::Object);
+            entry[jss::method] = json::ValueType::Null;
+
+            json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = entry;
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == kOk);
+            BEAST_EXPECT(reply.isArray() && reply.size() == 1);
+
+            auto const& error = reply[0u][jss::error][jss::error];
+            BEAST_EXPECT(error[jss::code] == rpc::kJsonRpcMethodNotFound);
+            BEAST_EXPECT(error[jss::code] == -32601);
+            BEAST_EXPECT(error[jss::message] == "Null method");
+        }
+
+        // An entry that is not an object: echoed under `request`, having no members of its own.
+        {
+            json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = 7;
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == kOk);
+            BEAST_EXPECT(reply.isArray() && reply.size() == 1);
+            BEAST_EXPECT(reply[0u][jss::request] == 7);
+
+            auto const& error = reply[0u][jss::error][jss::error];
+            BEAST_EXPECT(error[jss::code] == rpc::kJsonRpcMethodNotFound);
+            BEAST_EXPECT(error[jss::message] == "Method not found");
+        }
+    }
+
+    /**
      * The five handlers that report a bare token carry a code and message with
      * it.
      *
@@ -2038,6 +2238,9 @@ public:
             testTheLoggedReplyIsMaskedOnlyWhenItCarriesACredential(yield);
             testInternalErrorIsReportedOnBothTransports(yield);
             testNoCredentialReachesTheLogAtTrace(yield);
+            testRipplerpcVersions(yield);
+            testPrivilegedRequestIsNotShed(yield);
+            testLegacyBatchEntryRejections(yield);
             testHandlerErrorsCarryCodes(yield);
             testGainedStatusesStayOffLegacyEnvelope(yield);
             testUncommonHttpStatus(yield);
