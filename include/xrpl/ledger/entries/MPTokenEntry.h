@@ -74,6 +74,8 @@ public:
      * This is only the MPToken-side part of requireAuth(). It does not check
      * whether the issuance requires authorization, the issuance's domain, or
      * the pseudo-account and vault-share rules.
+     *
+     * @return true if lsfMPTAuthorized is set on this MPToken
      */
     [[nodiscard]] bool
     isAuthorized() const
