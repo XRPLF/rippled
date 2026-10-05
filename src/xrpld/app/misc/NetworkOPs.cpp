@@ -3870,37 +3870,31 @@ NetworkOPsImp::pubProposedAccountTransaction(
     HashSet<InfoSub::pointer> notify;
     int iProposed = 0;
 
-    std::vector<SubAccountHistoryInfo> accountHistoryNotify;
-
     {
         std::scoped_lock const sl(accountLock_);
 
         if (subRTAccount_.empty())
             return;
 
-        if (!subAccount_.empty() || !subRTAccount_.empty() || !subAccountHistory_.empty())
+        for (auto const& affectedAccount : tx->getMentionedAccounts())
         {
-            for (auto const& affectedAccount : tx->getMentionedAccounts())
+            if (auto simiIt = subRTAccount_.find(affectedAccount); simiIt != subRTAccount_.end())
             {
-                if (auto simiIt = subRTAccount_.find(affectedAccount);
-                    simiIt != subRTAccount_.end())
+                auto it = simiIt->second.begin();
+
+                while (it != simiIt->second.end())
                 {
-                    auto it = simiIt->second.begin();
+                    InfoSub::pointer const p = it->second.lock();
 
-                    while (it != simiIt->second.end())
+                    if (p)
                     {
-                        InfoSub::pointer const p = it->second.lock();
-
-                        if (p)
-                        {
-                            notify.insert(p);
-                            ++it;
-                            ++iProposed;
-                        }
-                        else
-                        {
-                            it = simiIt->second.erase(it);
-                        }
+                        notify.insert(p);
+                        ++it;
+                        ++iProposed;
+                    }
+                    else
+                    {
+                        it = simiIt->second.erase(it);
                     }
                 }
             }
@@ -3909,31 +3903,16 @@ NetworkOPsImp::pubProposedAccountTransaction(
 
     JLOG(journal_.trace()) << "pubProposedAccountTransaction: " << iProposed;
 
-    if (!notify.empty() || !accountHistoryNotify.empty())
+    if (!notify.empty())
     {
         // Create two different Json objects, for different API versions
-        MultiApiJson jvObj = transJson(tx, result, false, ledger, std::nullopt);
+        MultiApiJson const jvObj = transJson(tx, result, false, ledger, std::nullopt);
 
         for (InfoSub::Ref isrListener : notify)
         {
             jvObj.visit(
                 isrListener->getApiVersion(),  //
                 [&](json::Value const& jv) { isrListener->send(jv, true); });
-        }
-
-        XRPL_ASSERT(
-            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::IsMemberResult::None,
-            "xrpl::NetworkOPs::pubProposedAccountTransaction : "
-            "account_history_tx_stream not set");
-        for (auto& info : accountHistoryNotify)
-        {
-            auto& index = info.index;
-            if (index->forwardTxIndex == 0 && !index->haveHistorical)
-                jvObj.set(jss::account_history_tx_first, true);
-            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex++);
-            jvObj.visit(
-                info.sink->getApiVersion(),  //
-                [&](json::Value const& jv) { info.sink->send(jv, true); });
         }
     }
 }
