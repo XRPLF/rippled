@@ -37,7 +37,8 @@ public:
     }
 
     /**
-     * Update all of the contained PathRequest instances.
+     * Updates every contained PathRequest against @p ledger and sends each
+     * update to its subscriber, shaped for the API version the request named.
      *
      * @param ledger Ledger we are pathfinding in.
      */

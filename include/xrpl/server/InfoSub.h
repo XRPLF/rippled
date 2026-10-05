@@ -58,6 +58,87 @@ exceedsSubscriptionCap(
     return additional > cap || current > cap - additional;
 }
 
+/**
+ * Returns @p jvObj reshaped as a JSON-RPC 2.0 notification, or nullopt when the
+ * message already has the shape @p apiVersion expects.
+ *
+ * From version 3 a message a subscription pushes is shaped as the
+ * specification's notification: an object naming the protocol and the method,
+ * the message's content under `params`, and no `id`. The `type` naming the
+ * event becomes the `method`.
+ *
+ * A path finding update is one of these, though directed at the one subscriber
+ * that asked: the specification allows one response per request and
+ * `path_find create` consumed it. The `id` the client correlates by travels
+ * inside `params`, where the update carries it.
+ *
+ * A message naming no `type`, or one whose `type` is not a string, names no
+ * method, so it is passed through unshaped. Shaping reports that `type` as the
+ * `method` and leaves none behind, so shaping a message a second time changes
+ * nothing.
+ *
+ * @param jvObj The message to shape.
+ * @param apiVersion The subscriber's API version.
+ * @return The notification, or nullopt if no reshaping is needed.
+ */
+[[nodiscard]] std::optional<json::Value>
+shapeAsNotification(json::Value const& jvObj, unsigned int apiVersion);
+
+/**
+ * Returns a copy of the stream error @p error naming @p stream as its `type`,
+ * or nullopt when the error is sent as it stands.
+ *
+ * An error object names no `type`, so shapeAsNotification would pass it
+ * through and a version 3 client could not classify it. The name is added only
+ * where a notification is built from it: for a version below 3, or a subscriber
+ * that cannot receive a notification, the object goes out unshaped and the
+ * member would reach the wire undefined. Nothing is copied in that case.
+ *
+ * @param error The error a stream reports, as rpcError builds it.
+ * @param apiVersion The subscriber's API version.
+ * @param wantsNotifications Whether the subscriber can receive a notification.
+ *        See InfoSub::wantsNotifications.
+ * @param stream The stream the error concerns, which becomes the `method`.
+ * @return The stamped copy, or nullopt if the error needs no name.
+ */
+[[nodiscard]] std::optional<json::Value>
+stampStreamError(
+    json::Value const& error,
+    unsigned int apiVersion,
+    bool wantsNotifications,
+    json::StaticString const& stream);
+
+class InfoSub;
+
+/**
+ * Sends @p jvObj to @p subscriber in the shape @p apiVersion expects.
+ *
+ * The version belongs to the subscription the message answers, so the caller
+ * passes it from the entry it took the subscriber from. A `path_find` update
+ * is served at the version its own request named, which can differ from the
+ * version the connection's subscriptions are served at, and one webhook may
+ * be shared by several callers.
+ *
+ * A shape is not transport-independent either, so a subscriber whose transport
+ * cannot carry a notification is sent the message as the publisher built it.
+ * See InfoSub::wantsNotifications.
+ *
+ * Every caller shapes for the one subscriber in front of it, so a stream event
+ * reaching many subscribers is shaped once for each of them.
+ *
+ * @param subscriber Where the message is going.
+ * @param apiVersion The version the subscription was registered at.
+ * @param jvObj The message.
+ * @param broadcast Whether the message was published to a stream rather than
+ *        directed at this subscriber. Only a diagnostic reads it.
+ */
+void
+sendShaped(
+    InfoSub& subscriber,
+    unsigned int apiVersion,
+    json::Value const& jvObj,
+    bool broadcast = true);
+
 class InfoSubRequest : public CountedObject<InfoSubRequest>
 {
 public:
@@ -332,8 +413,40 @@ public:
     Consumer&
     getConsumer();
 
+    /**
+     * Deliver a message to this subscriber.
+     *
+     * @param jvObj The message.
+     * @param broadcast True for a stream event published to every subscriber of
+     *        that stream, false for one directed at this subscriber alone
+     *        because it asked (a path finding update). Both are shaped the same
+     *        way, since neither is a response. This reports only how far the
+     *        message traveled, which is what a diagnostic reads.
+     */
     virtual void
     send(json::Value const& jvObj, bool broadcast) = 0;
+
+    /**
+     * Whether a message sent to this subscriber may be shaped as a JSON-RPC
+     * 2.0 notification.
+     *
+     * True for a subscriber the server writes a message to as it is, which
+     * every WebSocket session is. False for one whose transport puts what it
+     * is given inside another request, which a subscriber named by a url does:
+     * a notification would reach it nested in a request and beside a member
+     * the specification does not define, so it would not be a notification at
+     * all. Such a subscriber receives the message as the publisher built it, at
+     * every API version.
+     *
+     * A publisher that shapes a message asks this first.
+     *
+     * @return true if a notification is a shape this subscriber can receive.
+     */
+    [[nodiscard]] virtual bool
+    wantsNotifications() const noexcept
+    {
+        return true;
+    }
 
     [[nodiscard]] std::uint64_t
     getSeq() const;
