@@ -56,6 +56,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <random>
 #include <regex>
 #include <string>
@@ -2211,6 +2212,89 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     }
 
     /**
+     * A request may name its API version beside its method, as an XRPL
+     * extension placed alongside the members the specification defines, as
+     * well as inside its parameters. A value beside the method is honored from
+     * version 3 up, and the value with the parameters decides when both are
+     * present.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testTopLevelVersion(boost::asio::yield_context& yield)
+    {
+        testcase("A request may name its version beside its method");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        boost::system::error_code ec;
+
+        // The top level is read as well as the parameters, but only a specification version is
+        // honored there. `tx_history` is absent from version 2, so it answers `unknownCmd` there.
+        auto const txHistory = [](std::optional<unsigned> atTopLevel,
+                                  std::optional<unsigned> inParams) {
+            json::Value jv;
+            jv[jss::method] = "tx_history";
+            if (atTopLevel)
+                jv[jss::api_version] = *atTopLevel;
+
+            // `start` is required, so without it the reply says nothing about the handler.
+            json::Value params(json::ValueType::Object);
+            params[jss::start] = 0u;
+            if (inParams)
+                params[jss::api_version] = *inParams;
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = params;
+            return jv;
+        };
+
+        // An absent `unknownCmd` proves nothing, a reply carrying no `result` lacking it too.
+        // `index` is what the handler writes; `txs` is null when there is nothing to report.
+        auto const ran = [](json::Value const& reply) {
+            return reply[jss::result].isMember(jss::index) &&
+                !reply[jss::result].isMember(jss::error);
+        };
+
+        BEAST_EXPECT(
+            answer(env, yield, ec, txHistory(std::nullopt, 2))[jss::result][jss::error] ==
+            "unknownCmd");
+        BEAST_EXPECT(ran(answer(env, yield, ec, txHistory(2, std::nullopt))));
+
+        // A version the server cannot serve is ignored there too, rather than rejecting a request
+        // that is otherwise answerable.
+        BEAST_EXPECT(ran(answer(env, yield, ec, txHistory(99, std::nullopt))));
+
+        // Version 3 is honored there. `tx_history` is absent from it as well, so the handler that
+        // ran for the version 1 answers above is not reached.
+        BEAST_EXPECT(
+            answer(env, yield, ec, txHistory(3, std::nullopt))[jss::result][jss::error] ==
+            "unknownCmd");
+
+        // Naming a version in both places, the one with the parameters decides. A `method: "batch"`
+        // entry is itself the object a handler reads, so `start` sits at its top level and the
+        // version in its `params`.
+        {
+            json::Value entry;
+            entry[jss::method] = "tx_history";
+            entry[jss::api_version] = 2u;
+            entry[jss::start] = 0u;
+            entry[jss::params] = json::ValueType::Array;
+            entry[jss::params][0u] = json::ValueType::Object;
+            entry[jss::params][0u][jss::api_version] = 1u;
+
+            json::Value batch;
+            batch[jss::method] = "batch";
+            batch[jss::params] = json::ValueType::Array;
+            batch[jss::params][0u] = entry;
+
+            auto const reply = answer(env, yield, ec, batch);
+            BEAST_EXPECT(reply.isArray() && reply.size() == 1);
+            BEAST_EXPECT(ran(reply[0u]));
+        }
+    }
+
+    /**
      * The five handlers that report a bare token carry a code and message with
      * it.
      *
@@ -3004,6 +3088,7 @@ public:
             testPrivilegedBodiesAreNotCharged(yield);
             testBatchIdentity(yield);
             testRequestForms(yield);
+            testTopLevelVersion(yield);
             testHandlerErrorsCarryCodes(yield);
             testGainedStatusesStayOffLegacyEnvelope(yield);
             testUncommonHttpStatus(yield);

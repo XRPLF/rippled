@@ -139,6 +139,46 @@ requestParams(json::Value const& request)
     return kNoParams;
 }
 
+/**
+ * Reads the API version a JSON-RPC @p request asks for.
+ *
+ * The version lives with the request's parameters, where a client puts it, and
+ * @p honorTopLevelFrom also accepts it beside the method.
+ *
+ * @param request The request to read.
+ * @param honorTopLevelFrom The lowest version a value beside the method may
+ *        select. kApiInvalidVersion honors any of them, including one the
+ *        server cannot serve; kApiMinimumSpecVersion leaves such a request at
+ *        version 1.
+ * @param betaEnabled Whether the beta version counts as supported.
+ * @return The version asked for. kApiInvalidVersion if the parameters name one
+ *         the server cannot serve, or if the top level does and
+ *         @p honorTopLevelFrom is kApiInvalidVersion. kApiVersionIfUnspecified
+ *         if the request names none, and also if the only value is beside the
+ *         method and below @p honorTopLevelFrom: a value the server cannot
+ *         serve reads as kApiInvalidVersion, so it is below any other
+ *         threshold, and such a request is answered as if it had named none,
+ *         as it always has been.
+ */
+static unsigned
+apiVersionOf(json::Value const& request, unsigned honorTopLevelFrom, bool betaEnabled)
+{
+    // Whichever object carries the member decides, so a request naming the version explicitly is
+    // told apart from one naming none.
+    auto const& params = requestParams(request);
+    if (params.isMember(jss::api_version))
+        return rpc::getAPIVersionNumber(params, betaEnabled);
+
+    if (request.isMember(jss::api_version))
+    {
+        auto const version = rpc::getAPIVersionNumber(request, betaEnabled);
+        if (version >= honorTopLevelFrom)
+            return version;
+    }
+
+    return rpc::kApiVersionIfUnspecified;
+}
+
 // VFALCO TODO Rewrite to use boost::beast::http::fields
 static bool
 authorized(Port const& port, std::map<std::string, std::string> const& h)
@@ -906,12 +946,14 @@ ServerHandler::processRequest(
             continue;
         }
 
-        // The version lives with the request's parameters, in whichever form the request presents
-        // them. A `method: "batch"` entry that names none there carries it beside its method.
-        unsigned apiVersion =
-            rpc::getAPIVersionNumber(requestParams(jsonRPC), app_.config().betaRpcApi);
-        if (apiVersion == rpc::kApiVersionIfUnspecified && batch)
-            apiVersion = rpc::getAPIVersionNumber(jsonRPC, app_.config().betaRpcApi);
+        // A `method: "batch"` entry names its version beside its method, that form having no
+        // parameters to nest inside. A lone request may spell it there too, but only a value naming
+        // a specification version is honored: a top-level `api_version: 2` answers as version 1,
+        // and honoring it would change a shipped reply shape.
+        unsigned const apiVersion = apiVersionOf(
+            jsonRPC,
+            batch ? unsigned{rpc::kApiInvalidVersion} : unsigned{rpc::kApiMinimumSpecVersion},
+            app_.config().betaRpcApi);
 
         // Answers a request rejected before it reaches a handler. A lone request receives the
         // HTTP status and `message` as the whole body; a batch entry receives an error object
