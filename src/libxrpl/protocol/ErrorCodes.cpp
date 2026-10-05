@@ -5,8 +5,10 @@
 #include <xrpl/protocol/jss.h>
 
 #include <array>
+#include <cstddef>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 namespace xrpl {
 namespace rpc {
@@ -116,6 +118,26 @@ static constexpr ErrorInfo kUnorderedErrorInfos[]{
     {RpcMalformedRequest,                         "malformedRequest",                         "Request is malformed.",                                               400},
     {RpcNotStandAlone,                            "notStandAlone",                            "Server is not running stand-alone.",                                  501},
     {RpcUnknownOption,                            "unknownOption",                            "Unknown option.",                                                     400},
+    {RpcMalformedAccount,                         "malformedAccount",                         "Account is malformed.",                                               400},
+    {RpcMalformedAddress,                         "malformedAddress",                         "Address is malformed.",                                               400},
+    {RpcMalformedAuthorized,                      "malformedAuthorized",                      "Authorized is malformed.",                                            400},
+    {RpcMalformedAuthorizedCredentials,           "malformedAuthorizedCredentials",           "AuthorizedCredentials is malformed.",                                 400},
+    {RpcMalformedBridgeAccount,                   "malformedBridgeAccount",                   "BridgeAccount is malformed.",                                         400},
+    {RpcMalformedBroker,                          "malformedBroker",                          "Broker is malformed.",                                                400},
+    {RpcMalformedCurrency,                        "malformedCurrency",                        "Currency is malformed.",                                              400},
+    {RpcMalformedDirRoot,                         "malformedDirRoot",                         "DirRoot is malformed.",                                               400},
+    {RpcMalformedDocumentID,                      "malformedDocumentID",                      "DocumentID is malformed.",                                            400},
+    {RpcMalformedIssue,                           "malformedIssue",                           "Issue is malformed.",                                                 400},
+    {RpcMalformedIssuingChainDoor,                "malformedIssuingChainDoor",                "IssuingChainDoor is malformed.",                                      400},
+    {RpcMalformedLockingChainDoor,                "malformedLockingChainDoor",                "LockingChainDoor is malformed.",                                      400},
+    {RpcMalformedMPTIssuanceID,                   "malformedMPTIssuanceID",                   "MPTIssuanceID is malformed.",                                         400},
+    {RpcMalformedMPTokenIssuance,                 "malformedMPTokenIssuance",                 "MPTokenIssuance is malformed.",                                       400},
+    {RpcMalformedOwner,                           "malformedOwner",                           "Owner is malformed.",                                                 400},
+    {RpcMalformedSeq,                             "malformedSeq",                             "Seq is malformed.",                                                   400},
+    {RpcMalformedSponsee,                         "malformedSponsee",                         "Sponsee is malformed.",                                               400},
+    {RpcMalformedSponsor,                         "malformedSponsor",                         "Sponsor is malformed.",                                               400},
+    {RpcMalformedXChainOwnedClaimID,              "malformedXChainOwnedClaimID",              "XChainOwnedClaimID is malformed.",                                    400},
+    {RpcMalformedXChainOwnedCreateAccountClaimID, "malformedXChainOwnedCreateAccountClaimID", "XChainOwnedCreateAccountClaimID is malformed.",                       400},
 };
 // clang-format on
 
@@ -131,7 +153,7 @@ sortErrorInfos(ErrorInfo const (&unordered)[N]) -> std::array<ErrorInfo, M>
         if (info.code <= RpcSuccess || info.code > RpcLast)
             throw(std::out_of_range("Invalid error_code_i"));
 
-        // The first valid code follows rpcSUCCESS immediately.
+        // The first valid code follows RpcSuccess immediately.
         static_assert(RpcSuccess == 0, "Unexpected error_code_i layout.");
         int const index{info.code - 1};
 
@@ -142,10 +164,10 @@ sortErrorInfos(ErrorInfo const (&unordered)[N]) -> std::array<ErrorInfo, M>
     }
 
     // Verify that all entries are filled in starting with 1 and proceeding
-    // to rpcLAST.
+    // to RpcLast.
     //
     // It's okay for there to be missing entries; they will contain the code
-    // rpcUNKNOWN.  But other than that all entries should match their index.
+    // RpcUnknown.  But other than that all entries should match their index.
     int codeCount{0};
     int expect{RpcBadSyntax - 1};
     for (ErrorInfo const& info : ret)
@@ -169,6 +191,68 @@ sortErrorInfos(ErrorInfo const (&unordered)[N]) -> std::array<ErrorInfo, M>
 constexpr auto kSortedErrorInfos{sortErrorInfos<RpcLast>(kUnorderedErrorInfos)};
 
 constexpr ErrorInfo kUnknownError;
+
+/**
+ * Asserts that no two rows of @p sorted name the same token.
+ *
+ * A duplicate is then a build error rather than a reply reporting the wrong
+ * `error_code`. `consteval` admits no run-time call, so the two `throw`
+ * statements are how a constant evaluation fails and are otherwise unreachable.
+ *
+ * @param sorted The table, ordered by code, with a gap for every unused code.
+ * @return True. It reports failure by failing to be a constant expression.
+ */
+template <std::size_t N>
+consteval bool
+tokensAreUnique(std::array<ErrorInfo, N> const& sorted)
+{
+    for (std::size_t i{0}; i < N; ++i)
+    {
+        // Gaps in the table name no error, so they name no token either.
+        if (sorted[i].code == RpcUnknown)
+            continue;
+
+        std::string_view const token{sorted[i].token.cStr()};
+        if (token.empty())
+            throw(std::invalid_argument("Empty token in list"));
+
+        for (std::size_t j{i + 1}; j < N; ++j)
+        {
+            if (sorted[j].code != RpcUnknown && std::string_view{sorted[j].token.cStr()} == token)
+                throw(std::invalid_argument("Duplicate token in list"));
+        }
+    }
+    return true;
+}
+
+static_assert(tokensAreUnique(kSortedErrorInfos), "Duplicate token in list");
+
+/**
+ * The tokens of @p sorted, measured at compile time.
+ *
+ * A lookup compares a caller's token against these rather than against the
+ * table's own `char const*`, which it would have to measure first: comparing a
+ * view with a pointer calls strlen on every row the scan passes. Built from the
+ * same table, so the two cannot name different tokens.
+ *
+ * @param sorted The table, ordered by code, with a gap for every unused code.
+ * @return One view per row, the empty view for a gap. No token a caller can
+ *         pass is equal to the empty view.
+ */
+template <std::size_t N>
+consteval std::array<std::string_view, N>
+tokenViews(std::array<ErrorInfo, N> const& sorted)
+{
+    std::array<std::string_view, N> ret{};
+    for (std::size_t i{0}; i < N; ++i)
+    {
+        if (sorted[i].code != RpcUnknown)
+            ret[i] = std::string_view{sorted[i].token.cStr()};
+    }
+    return ret;
+}
+
+constexpr auto kSortedTokens{tokenViews(kSortedErrorInfos)};
 
 }  // namespace detail
 
@@ -198,6 +282,21 @@ getErrorInfo(ErrorCodeI code)
     if (code <= RpcSuccess || code > RpcLast)
         return detail::kUnknownError;
     return detail::kSortedErrorInfos[code - 1];
+}
+
+ErrorCodeI
+codeForToken(std::string_view token)
+{
+    if (token.empty())
+        return RpcUnknown;
+
+    for (std::size_t i{0}; i < detail::kSortedTokens.size(); ++i)
+    {
+        // A gap holds the empty view, which the token is not, so a gap names no code here either.
+        if (detail::kSortedTokens[i] == token)
+            return detail::kSortedErrorInfos[i].code;
+    }
+    return RpcUnknown;
 }
 
 json::Value

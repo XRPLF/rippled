@@ -69,3 +69,48 @@ TEST(ErrorCodes, every_code_names_an_http_status)
         }
     }
 }
+
+TEST(ErrorCodes, code_for_token_resolves_known_tokens)
+{
+    EXPECT_EQ(rpc::codeForToken("invalidParams"), RpcInvalidParams);
+    EXPECT_EQ(rpc::codeForToken("malformedSeq"), RpcMalformedSeq);
+
+    // The first and last entries, so a probe that wraps or stops short is caught.
+    EXPECT_EQ(rpc::codeForToken("badSyntax"), RpcBadSyntax);
+    EXPECT_EQ(
+        rpc::codeForToken("malformedXChainOwnedCreateAccountClaimID"),
+        RpcMalformedXChainOwnedCreateAccountClaimID);
+    static_assert(RpcMalformedXChainOwnedCreateAccountClaimID == RpcLast);
+}
+
+TEST(ErrorCodes, code_for_token_rejects_unnamed_tokens)
+{
+    EXPECT_EQ(rpc::codeForToken("notATokenAnyEntryNames"), RpcUnknown);
+    EXPECT_EQ(rpc::codeForToken(""), RpcUnknown);
+
+    // Tokens are matched whole, not by prefix, and the comparison is case-sensitive.
+    EXPECT_EQ(rpc::codeForToken("invalidParam"), RpcUnknown);
+    EXPECT_EQ(rpc::codeForToken("invalidParamsX"), RpcUnknown);
+    EXPECT_EQ(rpc::codeForToken("invalidparams"), RpcUnknown);
+
+    // The placeholder that gaps in the table report names no error, so it resolves to nothing.
+    EXPECT_EQ(rpc::codeForToken("unknown"), RpcUnknown);
+}
+
+TEST(ErrorCodes, every_token_round_trips_to_its_own_code)
+{
+    // The views the lookup scans and the rows it answers from are two arrays built from one table.
+    // Every row's token resolving to that row's code is what proves the two are index-aligned,
+    // which no static assertion checks.
+    for (int i = RpcBadSyntax; i <= RpcLast; ++i)
+    {
+        auto const code = static_cast<ErrorCodeI>(i);
+        auto const& info = rpc::getErrorInfo(code);
+
+        // Gaps report the placeholder, which is covered above.
+        if (info.code == RpcUnknown)
+            continue;
+
+        EXPECT_EQ(rpc::codeForToken(info.token.cStr()), code) << "token: " << info.token.cStr();
+    }
+}

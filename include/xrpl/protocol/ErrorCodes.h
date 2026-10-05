@@ -3,6 +3,7 @@
 #include <xrpl/json/json_value.h>
 
 #include <string>
+#include <string_view>
 
 namespace xrpl {
 
@@ -164,7 +165,35 @@ enum ErrorCodeI {
     // ledger_entry, API version 1 only
     RpcUnknownOption = 109,
 
-    RpcLast = RpcUnknownOption  // rpcLAST should always equal the last code.
+    // ledger_entry field validation, one code per malformed field. The ledger_entry helpers report
+    // invalidParams (31) for all of them, so each token needs a row of its own. Alphabetical by
+    // token here only: the enum is append-only once a code ships.
+    //
+    // `malformedIssue` duplicates `issueMalformed` (93): same message, same status, two tokens,
+    // both on the wire already. Do not add a third spelling.
+    RpcMalformedAccount = 110,
+    RpcMalformedAddress = 111,
+    RpcMalformedAuthorized = 112,
+    RpcMalformedAuthorizedCredentials = 113,
+    RpcMalformedBridgeAccount = 114,
+    RpcMalformedBroker = 115,
+    RpcMalformedCurrency = 116,
+    RpcMalformedDirRoot = 117,
+    RpcMalformedDocumentID = 118,
+    RpcMalformedIssue = 119,
+    RpcMalformedIssuingChainDoor = 120,
+    RpcMalformedLockingChainDoor = 121,
+    RpcMalformedMPTIssuanceID = 122,
+    RpcMalformedMPTokenIssuance = 123,
+    RpcMalformedOwner = 124,
+    RpcMalformedSeq = 125,
+    RpcMalformedSponsee = 126,
+    RpcMalformedSponsor = 127,
+    RpcMalformedXChainOwnedClaimID = 128,
+    RpcMalformedXChainOwnedCreateAccountClaimID = 129,
+
+    // RpcLast should always equal the last code.
+    RpcLast = RpcMalformedXChainOwnedCreateAccountClaimID
 };
 
 /**
@@ -216,6 +245,18 @@ struct ErrorInfo
  */
 ErrorInfo const&
 getErrorInfo(ErrorCodeI code);
+
+/**
+ * Returns the error code that owns @p token.
+ *
+ * A linear scan over views measured at compile time, run once per error reply.
+ * A duplicate token is a build error, so the answer is never ambiguous.
+ *
+ * @param token The error token to resolve.
+ * @return The code the table gives @p token, or RpcUnknown if no row names it.
+ */
+ErrorCodeI
+codeForToken(std::string_view token);
 
 /**
  * Add or update the json update to reflect the error code.
