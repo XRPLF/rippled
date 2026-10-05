@@ -40,6 +40,10 @@ public:
      * size of its PriceDataSeries.
      *
      * @throws std::logic_error if exists() is false.
+     *
+     * @return The number of owner reserves: kMinOracleReserveCount, or
+     *         kMaxOracleReserveCount if the PriceDataSeries size exceeds
+     *         kOracleReserveCountThreshold.
      */
     [[nodiscard]] std::uint32_t
     reserveCount() const
