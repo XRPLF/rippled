@@ -37,10 +37,10 @@ public:
      *
      * @return the set of enabled amendments.
      */
-    [[nodiscard]] std::set<uint256>
+    [[nodiscard]] std::set<UInt256>
     enabledAmendments() const
     {
-        std::set<uint256> amendments;
+        std::set<UInt256> amendments;
 
         if (this->exists() && (*this)->isFieldPresent(sfAmendments))
         {
@@ -57,10 +57,10 @@ public:
      *
      * @return a map of amendment to the time majority was reached.
      */
-    [[nodiscard]] std::map<uint256, NetClock::time_point>
+    [[nodiscard]] std::map<UInt256, NetClock::time_point>
     majorityAmendments() const
     {
-        std::map<uint256, NetClock::time_point> ret;
+        std::map<UInt256, NetClock::time_point> ret;
 
         if (this->exists() && (*this)->isFieldPresent(sfMajorities))
         {
