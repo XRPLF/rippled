@@ -131,7 +131,7 @@ using Vector256Value = std::decay_t<typename SF_VECTOR256::type::value_type>;
 inline Vector256Value
 canonical_VECTOR256()
 {
-    return Vector256Value{uint256{1}};
+    return Vector256Value{UInt256{1}};
 }
 
 using BlobValue = std::decay_t<typename SF_VL::type::value_type>;
