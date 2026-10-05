@@ -43,6 +43,10 @@ Version 3.5.0 is not yet released.
 
 - `feature`: The admin-only `vetoed` field now returns `invalidParams` unless its value is a boolean. [#7583](https://github.com/XRPLF/rippled/pull/7583)
 
+### Bugfixes in 3.5.0
+
+- `log_level`: The `severity` and `partition` parameters now return `invalidParams` when supplied with non-string values, instead of causing an internal error. ([#7595](https://github.com/XRPLF/rippled/pull/7595))
+
 ## XRP Ledger server version 3.4.0
 
 Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta releases.
