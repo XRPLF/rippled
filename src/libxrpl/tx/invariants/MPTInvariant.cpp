@@ -23,6 +23,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/InvariantCheck.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
 #include <algorithm>
@@ -893,7 +894,7 @@ ValidMPTTransfer::visitEntry(
     // no trace of its pseudo-account status in the post-transaction view
     // isAuthorized() sees at finalize() time.
     if (before && before->getType() == ltACCOUNT_ROOT)
-        pseudoAccountsBefore_[before->at(sfAccount)] = isPseudoAccount(before);
+        pseudoAccountsBefore_[before->at(sfAccount)] = isPseudoAccountSle(before);
 }
 
 bool

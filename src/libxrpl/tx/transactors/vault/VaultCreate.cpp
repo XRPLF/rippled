@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -181,8 +182,8 @@ VaultCreate::doApply()
     auto const& tx = ctx_.tx;
     auto applyViewContext = ctx_.getApplyViewContext();
     auto const sequence = tx.getSeqProxy();
-    auto const owner = view().peek(keylet::account(accountID_));
-    if (owner == nullptr)
+    auto owner = AccountRootEntryW(accountID_, view());
+    if (!owner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
@@ -190,7 +191,8 @@ VaultCreate::doApply()
     if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    increaseOwnerCount(view(), owner, {}, 2, j_);
+    std::optional<AccountRootEntryW> noSponsor;
+    increaseOwnerCount(view(), owner, noSponsor, 2, j_);
     if (preFeeBalance_ < accountReserve(view(), owner, j_))
         return tecINSUFFICIENT_RESERVE;
 

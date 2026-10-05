@@ -10,6 +10,7 @@
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -125,8 +126,7 @@ checkAttestationPublicKey(
 
     AccountID const accountFromPK = calcAccountID(pk);
 
-    if (auto const sleAttestationSigningAccount =
-            view.read(keylet::account(attestationSignerAccount)))
+    if (auto const sleAttestationSigningAccount = AccountRootEntryR(attestationSignerAccount, view))
     {
         if (accountFromPK == attestationSignerAccount)
         {
@@ -404,7 +404,7 @@ transferHelper(
         return tesSUCCESS;
 
     auto const dstK = keylet::account(dst);
-    if (auto sleDst = psb.read(dstK))
+    if (auto sleDst = AccountRootEntryR(dstK, psb))
     {
         // Check dst tag and deposit auth
 
@@ -430,7 +430,7 @@ transferHelper(
 
     if (amt.native())
     {
-        auto const sleSrc = psb.peek(keylet::account(src));
+        auto sleSrc = AccountRootEntryW(src, psb);
         XRPL_ASSERT(sleSrc, "xrpl::transferHelper : non-null source account");
         if (!sleSrc)
             return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -455,7 +455,7 @@ transferHelper(
             }
         }
 
-        auto sleDst = psb.peek(dstK);
+        auto sleDst = AccountRootEntryW(dstK, psb);
         if (!sleDst)
         {
             if (canCreate == CanCreateDstPolicy::No)
@@ -470,17 +470,17 @@ transferHelper(
             }
 
             // Create the account.
-            sleDst = std::make_shared<SLE>(dstK);
+            sleDst.newSLE();
             sleDst->setAccountID(sfAccount, dst);
             sleDst->setFieldU32(sfSequence, psb.seq());
 
-            psb.insert(sleDst);
+            sleDst.insert();
         }
 
         (*sleSrc)[sfBalance] = (*sleSrc)[sfBalance] - amt;
         (*sleDst)[sfBalance] = (*sleDst)[sfBalance] + amt;
-        psb.update(sleSrc);
-        psb.update(sleDst);
+        sleSrc.update();
+        sleDst.update();
 
         return tesSUCCESS;
     }
@@ -724,7 +724,7 @@ finalizeClaimHelper(
         auto const cidOwner = (*sleClaimID)[sfAccount];
         {
             // Remove the claim id
-            auto const sleOwner = outerSb.peek(keylet::account(cidOwner));
+            auto sleOwner = AccountRootEntryW(cidOwner, outerSb);
             auto const page = (*sleClaimID)[sfOwnerNode];
             if (!outerSb.dirRemove(keylet::ownerDir(cidOwner), page, sleClaimID->key(), true))
             {
@@ -759,7 +759,7 @@ getSignersListAndQuorum(ReadView const& view, SLE const& sleBridge, beast::Journ
     std::uint32_t q = std::numeric_limits<std::uint32_t>::max();
 
     AccountID const thisDoor = sleBridge[sfAccount];
-    auto const sleDoor = [&] { return view.read(keylet::account(thisDoor)); }();
+    auto const sleDoor = [&] { return AccountRootEntryR(thisDoor, view); }();
 
     if (!sleDoor)
     {
@@ -1036,7 +1036,8 @@ applyCreateAccountAttestations(
 
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
-            auto const reserve = accountReserve(psb, sleDoor, j, {.ownerCountDelta = 1});
+            auto const reserve =
+                accountReserve(psb, AccountRootEntryR(sleDoor, psb), j, {.ownerCountDelta = 1});
 
             if (balance < reserve)
                 return std::unexpected(tecINSUFFICIENT_RESERVE);
@@ -1145,7 +1146,9 @@ applyCreateAccountAttestations(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // Reserve was already checked
-        increaseOwnerCount(psb, sleDoor, {}, 1, j);
+        AccountRootEntryW doorSle(doorK, psb);
+        std::optional<AccountRootEntryW> noSponsor;
+        increaseOwnerCount(psb, doorSle, noSponsor, 1, j);
         psb.insert(createdSleClaimID);
         psb.update(sleDoor);
     }
@@ -1429,7 +1432,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 
     if (!isXRP(bridgeSpec.issue(chainType)))
     {
-        auto const sleIssuer = ctx.view.read(keylet::account(bridgeSpec.issue(chainType).account));
+        auto const sleIssuer = AccountRootEntryR(bridgeSpec.issue(chainType).account, ctx.view);
 
         if (!sleIssuer)
             return tecNO_ISSUER;
@@ -1442,7 +1445,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 
     {
         // Check reserve
-        auto const sleAcc = ctx.view.read(keylet::account(account));
+        auto const sleAcc = AccountRootEntryR(account, ctx.view);
         if (!sleAcc)
             return terNO_ACCOUNT;
 
@@ -1464,7 +1467,7 @@ XChainCreateBridge::doApply()
     auto const reward = ctx_.tx[sfSignatureReward];
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
 
-    auto const sleAcct = ctx_.view().peek(keylet::account(account));
+    auto sleAcct = AccountRootEntryW(account, ctx_.view());
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -1492,10 +1495,11 @@ XChainCreateBridge::doApply()
         (*sleBridge)[sfOwnerNode] = *page;
     }
 
-    increaseOwnerCount(ctx_.view(), sleAcct, {}, 1, ctx_.journal);
+    std::optional<AccountRootEntryW> noSponsor;
+    increaseOwnerCount(ctx_.view(), sleAcct, noSponsor, 1, ctx_.journal);
 
     ctx_.view().insert(sleBridge);
-    ctx_.view().update(sleAcct);
+    sleAcct.update();
 
     return tesSUCCESS;
 }
@@ -1575,7 +1579,7 @@ BridgeModify::doApply()
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
     bool const clearAccountCreate = ctx_.tx.isFlag(tfClearAccountCreateAmount);
 
-    auto const sleAcct = ctx_.view().peek(keylet::account(account));
+    auto const sleAcct = AccountRootEntryW(account, ctx_.view());
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -1633,7 +1637,7 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    if (!ctx.view.read(keylet::account(ctx.tx[sfDestination])))
+    if (!AccountRootEntryR(ctx.tx[sfDestination], ctx.view))
     {
         return tecNO_DST;
     }
@@ -1738,7 +1742,7 @@ XChainClaim::doApply()
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
         // views, it's important that the sle's lifetime doesn't overlap.
 
-        auto const sleAcct = psb.peek(keylet::account(account));
+        auto const sleAcct = AccountRootEntryW(account, psb);
         auto const sleBridge = peekBridge(psb, bridgeSpec);
         auto const sleClaimID = psb.peek(claimIDKeylet);
 
@@ -1919,7 +1923,7 @@ XChainCommit::doApply()
     auto const amount = ctx_.tx[sfAmount];
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
 
-    auto const sleAccount = psb.read(keylet::account(account));
+    auto const sleAccount = AccountRootEntryR(account, psb);
     if (!sleAccount)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -1990,7 +1994,7 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
 
     {
         // Check reserve
-        auto const sleAcc = ctx.view.read(keylet::account(account));
+        auto const sleAcc = AccountRootEntryR(account, ctx.view);
         if (!sleAcc)
             return terNO_ACCOUNT;
 
@@ -2011,7 +2015,7 @@ XChainCreateClaimID::doApply()
     auto const reward = ctx_.tx[sfSignatureReward];
     auto const otherChainSrc = ctx_.tx[sfOtherChainSource];
 
-    auto const sleAcct = ctx_.view().peek(keylet::account(account));
+    auto sleAcct = AccountRootEntryW(account, ctx_.view());
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -2053,11 +2057,12 @@ XChainCreateClaimID::doApply()
         (*sleClaimID)[sfOwnerNode] = *page;
     }
 
-    increaseOwnerCount(ctx_.view(), sleAcct, {}, 1, ctx_.journal);
+    std::optional<AccountRootEntryW> noSponsor;
+    increaseOwnerCount(ctx_.view(), sleAcct, noSponsor, 1, ctx_.journal);
 
     ctx_.view().insert(sleClaimID);
     ctx_.view().update(sleBridge);
-    ctx_.view().update(sleAcct);
+    sleAcct.update();
 
     return tesSUCCESS;
 }
@@ -2195,7 +2200,7 @@ XChainCreateAccountCommit::doApply()
     STAmount const reward = ctx_.tx[sfSignatureReward];
     STXChainBridge const bridge = ctx_.tx[sfXChainBridge];
 
-    auto const sle = psb.peek(keylet::account(account));
+    auto const sle = AccountRootEntryW(account, psb);
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

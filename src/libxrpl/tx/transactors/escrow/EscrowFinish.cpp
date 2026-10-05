@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
@@ -314,12 +315,12 @@ EscrowFinish::doApply()
 
     // NOTE: Escrow payments cannot be used to fund accounts.
     AccountID const destID = (*slep)[sfDestination];
-    auto const sled = ctx_.view().peek(keylet::account(destID));
+    auto sled = AccountRootEntryW(destID, ctx_.view());
     if (!sled)
         return tecNO_DST;
 
-    if (auto err =
-            verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
+    if (auto err = verifyDepositPreauth(
+            ctx_.tx, ctx_.view(), accountID_, destID, sled.rawSle(), ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -378,7 +379,7 @@ EscrowFinish::doApply()
                     return escrowUnlockApplyHelper<T>(
                         ctx_.getApplyViewContext(),
                         lockedRate,
-                        sled,
+                        sled.mutableRawSle(),
                         preFeeBalance_,
                         amount,
                         issuer,
@@ -404,7 +405,7 @@ EscrowFinish::doApply()
         }
     }
 
-    ctx_.view().update(sled);
+    sled.update();
 
     if (!recycleReserve)
         decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);

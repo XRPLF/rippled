@@ -4,8 +4,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -69,7 +69,11 @@ struct Adjustment
  * @return The account reserve amount in drops
  */
 [[nodiscard]] XRPAmount
-accountReserve(ReadView const& view, SLE::ConstRef sle, beast::Journal j, Adjustment adj = {});
+accountReserve(
+    ReadView const& view,
+    AccountRootEntryR const& sle,
+    beast::Journal j,
+    Adjustment adj = {});
 
 /**
  * Convenience overload that accepts AccountID instead of SLE.
@@ -84,7 +88,7 @@ accountReserve(ReadView const& view, SLE::ConstRef sle, beast::Journal j, Adjust
 [[nodiscard]] inline XRPAmount
 accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adjustment adj = {})
 {
-    return accountReserve(view, view.read(keylet::account(id)), j, adj);
+    return accountReserve(view, AccountRootEntryR(id, view), j, adj);
 }
 
 /**
@@ -105,9 +109,9 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
 [[nodiscard]] TER
 checkReserve(
     ApplyViewContext ctx,
-    SLE::ConstRef accSle,
+    AccountRootEntryR const& accSle,
     XRPAmount accBalance,
-    SLE::ConstRef sponsorSle,
+    std::optional<AccountRootEntryR> const& sponsorSle,
     Adjustment adj,
     beast::Journal j,
     TER insufReserveCode = tecINSUFFICIENT_RESERVE);
@@ -132,7 +136,7 @@ checkReserve(
 [[nodiscard]] TER
 checkReserve(
     ApplyViewContext ctx,
-    SLE::ConstRef accSle,
+    AccountRootEntryR const& accSle,
     XRPAmount accBalance,
     Adjustment adj,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
@@ -147,7 +151,7 @@ checkReserve(
  * @return The adjusted owner count
  */
 std::uint32_t
-ownerCount(SLE::ConstRef sle, beast::Journal j, std::int32_t ownerCountAdj = 0);
+ownerCount(AccountRootEntryR const& sle, beast::Journal j, std::int32_t ownerCountAdj = 0);
 
 /**
  * Increase owner-count fields when the caller supplies the sponsor.
@@ -166,8 +170,8 @@ ownerCount(SLE::ConstRef sle, beast::Journal j, std::int32_t ownerCountAdj = 0);
 void
 increaseOwnerCount(
     ApplyView& view,
-    SLE::Ref accountSle,
-    SLE::Ref sponsorSle,
+    AccountRootEntryW& accountSle,
+    std::optional<AccountRootEntryW>& sponsorSle,
     std::uint32_t count,
     beast::Journal j);
 
@@ -188,7 +192,7 @@ increaseOwnerCount(
 void
 increaseOwnerCount(
     ApplyViewContext ctx,
-    SLE::Ref accountSle,
+    AccountRootEntryW& accountSle,
     std::uint32_t count,
     beast::Journal j);
 
@@ -209,12 +213,11 @@ increaseOwnerCount(
     std::uint32_t count,
     beast::Journal j)
 {
-    increaseOwnerCount(
-        view,
-        view.peek(keylet::account(account)),
-        sponsor ? view.peek(keylet::account(*sponsor)) : SLE::pointer(),
-        count,
-        j);
+    AccountRootEntryW accountSle(account, view);
+    std::optional<AccountRootEntryW> sponsorSle;
+    if (sponsor)
+        sponsorSle.emplace(*sponsor, view);
+    increaseOwnerCount(view, accountSle, sponsorSle, count, j);
 }
 
 /**
@@ -234,8 +237,8 @@ increaseOwnerCount(
 void
 decreaseOwnerCount(
     ApplyView& view,
-    SLE::Ref accountSle,
-    SLE::Ref sponsorSle,
+    AccountRootEntryW& accountSle,
+    std::optional<AccountRootEntryW>& sponsorSle,
     std::uint32_t count,
     beast::Journal j);
 
@@ -256,12 +259,11 @@ decreaseOwnerCount(
     std::uint32_t count,
     beast::Journal j)
 {
-    decreaseOwnerCount(
-        view,
-        view.peek(keylet::account(account)),
-        sponsor ? view.peek(keylet::account(*sponsor)) : SLE::pointer(),
-        count,
-        j);
+    AccountRootEntryW accountSle(account, view);
+    std::optional<AccountRootEntryW> sponsorSle;
+    if (sponsor)
+        sponsorSle.emplace(*sponsor, view);
+    decreaseOwnerCount(view, accountSle, sponsorSle, count, j);
 }
 
 /**
@@ -281,7 +283,7 @@ decreaseOwnerCount(
 void
 decreaseOwnerCountForObject(
     ApplyView& view,
-    SLE::Ref accountSle,
+    AccountRootEntryW& accountSle,
     SLE::Ref objectSle,
     std::uint32_t count,
     beast::Journal j);
@@ -303,7 +305,7 @@ decreaseOwnerCountForObject(
     std::uint32_t count,
     beast::Journal j)
 {
-    SLE::Ref accountSle = view.peek(keylet::account(account));
+    AccountRootEntryW accountSle(account, view);
     decreaseOwnerCountForObject(view, accountSle, objectSle, count, j);
 }
 
@@ -367,7 +369,7 @@ getPseudoAccountFields();
  * - null pointer
  */
 [[nodiscard]] bool
-isPseudoAccount(SLE::const_pointer sleAcct);
+isPseudoAccount(AccountRootEntryR const& sleAcct);
 
 /**
  * Convenience overload that reads the account from the view.
@@ -375,7 +377,7 @@ isPseudoAccount(SLE::const_pointer sleAcct);
 [[nodiscard]] inline bool
 isPseudoAccount(ReadView const& view, AccountID const& accountId)
 {
-    return isPseudoAccount(view.read(keylet::account(accountId)));
+    return isPseudoAccount(AccountRootEntryR(accountId, view));
 }
 
 /**
@@ -396,6 +398,6 @@ createPseudoAccount(ApplyView& view, UInt256 const& pseudoOwnerKey, SField const
  * - If the SLE requires a destination tag, checks that there is a tag.
  */
 [[nodiscard]] TER
-checkDestinationAndTag(SLE::ConstRef toSle, bool hasDestinationTag);
+checkDestinationAndTag(AccountRootEntryR const& toSle, bool hasDestinationTag);
 
 }  // namespace xrpl

@@ -27,6 +27,18 @@
 
 namespace xrpl {
 
+/**
+ * Returns true if sleAcct is an AccountRoot carrying a pseudo-account field.
+ *
+ * isPseudoAccount() takes a view-bound AccountRootEntry, which is not
+ * available while visiting entries, so invariant checks use this instead.
+ *
+ * @param sleAcct the SLE to check.
+ * @return true if sleAcct is an AccountRoot carrying a pseudo-account field.
+ */
+[[nodiscard]] bool
+isPseudoAccountSle(SLE::ConstRef sleAcct);
+
 #if GENERATING_DOCS
 /**
  * @brief Prototype for invariant check implementations.

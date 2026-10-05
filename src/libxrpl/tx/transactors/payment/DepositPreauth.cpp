@@ -4,6 +4,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -103,7 +104,7 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
     {
         // Verify that the Authorize account is present in the ledger.
         AccountID const auth{ctx.tx[sfAuthorize]};
-        auto const sleAuth = ctx.view.read(keylet::account(auth));
+        auto const sleAuth = AccountRootEntryR(auth, ctx.view);
         if (!sleAuth)
             return tecNO_TARGET;
 
@@ -161,7 +162,7 @@ DepositPreauth::doApply()
     auto applyViewContext = ctx_.getApplyViewContext();
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
-        auto const sleOwner = view().peek(keylet::account(accountID_));
+        auto sleOwner = AccountRootEntryW(accountID_, view());
         if (!sleOwner)
             return {tefINTERNAL};
 
@@ -206,7 +207,7 @@ DepositPreauth::doApply()
     }
     else if (ctx_.tx.isFieldPresent(sfAuthorizeCredentials))
     {
-        auto const sleOwner = view().peek(keylet::account(accountID_));
+        auto sleOwner = AccountRootEntryW(accountID_, view());
         if (!sleOwner)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -289,7 +290,7 @@ DepositPreauth::removeFromLedger(ApplyView& view, UInt256 const& preauthIndex, b
     }
 
     // If we succeeded, update the DepositPreauth owner's reserve.
-    auto const sleOwner = view.peek(keylet::account(account));
+    auto sleOwner = AccountRootEntryW(account, view);
     if (!sleOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

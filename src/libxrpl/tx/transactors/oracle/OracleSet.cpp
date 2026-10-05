@@ -3,6 +3,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
@@ -27,6 +28,7 @@
 #include <cstdlib>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <utility>
 
@@ -64,7 +66,7 @@ OracleSet::preflight(PreflightContext const& ctx)
 TER
 OracleSet::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleSetter = ctx.view.read(keylet::account(ctx.tx.getAccountID(sfAccount)));
+    auto const sleSetter = AccountRootEntryR(ctx.tx.getAccountID(sfAccount), ctx.view);
     if (!sleSetter)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
@@ -187,22 +189,22 @@ adjustOracleOwnerCount(ApplyContext& ctx, int count)
 {
     XRPL_ASSERT(std::abs(count) <= 2, "xrpl::adjustOracleOwnerCount abs(counter) <= 2");
 
-    if (auto const sleAccount = ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
-    {
-        if (count > 0)
-        {
-            increaseOwnerCount(
-                ctx.view(), sleAccount, {}, static_cast<std::uint32_t>(count), ctx.journal);
-        }
-        else if (count < 0)
-        {
-            decreaseOwnerCount(
-                ctx.view(), sleAccount, {}, static_cast<std::uint32_t>(-count), ctx.journal);
-        }
-        return true;
-    }
+    auto sleAccount = AccountRootEntryW(ctx.tx[sfAccount], ctx.view());
+    if (!sleAccount)
+        return false;  // LCOV_EXCL_LINE
 
-    return false;  // LCOV_EXCL_LINE
+    std::optional<AccountRootEntryW> noSponsor;
+    if (count > 0)
+    {
+        increaseOwnerCount(
+            ctx.view(), sleAccount, noSponsor, static_cast<std::uint32_t>(count), ctx.journal);
+    }
+    else if (count < 0)
+    {
+        decreaseOwnerCount(
+            ctx.view(), sleAccount, noSponsor, static_cast<std::uint32_t>(-count), ctx.journal);
+    }
+    return true;
 }
 
 static void

@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -161,7 +162,7 @@ LoanBrokerDelete::doApply()
     if (auto ter = removeEmptyHolding(ctx_.getApplyViewContext(), brokerPseudoID, vaultAsset, j_))
         return ter;
 
-    auto brokerPseudoSLE = view().peek(keylet::account(brokerPseudoID));
+    auto brokerPseudoSLE = AccountRootEntryW(brokerPseudoID, view());
     if (!brokerPseudoSLE)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -183,10 +184,10 @@ LoanBrokerDelete::doApply()
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
     }
 
-    view().erase(brokerPseudoSLE);
+    brokerPseudoSLE.erase();
 
     {
-        auto owner = view().peek(keylet::account(accountID_));
+        auto owner = AccountRootEntryW(accountID_, view());
         if (!owner)
             return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
