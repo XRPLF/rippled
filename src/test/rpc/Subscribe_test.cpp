@@ -2398,6 +2398,38 @@ public:
             expectNotification(wsc->getMsg(5s), "ledgerClosed", jss::ledger_index);
         }
 
+        // Two subscribers on one version read one shape; a third on version 1 reads the unshaped
+        // event from the same publish, so the memo is keyed on the version.
+        {
+            Env env{*this, singleThreadIo(envconfig())};
+
+            json::Value stream;
+            stream[jss::streams] = json::ValueType::Array;
+            stream[jss::streams].append("ledger");
+
+            auto specA = makeWSClient(env.app().config(), true, 2, {}, 3u);
+            auto specB = makeWSClient(env.app().config(), true, 2, {}, 3u);
+            auto legacy = makeWSClient(env.app().config(), true, 2, {}, 1u);
+            specA->invoke("subscribe", stream);
+            specB->invoke("subscribe", stream);
+            legacy->invoke("subscribe", stream);
+
+            BEAST_EXPECT(env.syncClose());
+
+            for (auto* wsc : {&specA, &specB})
+                expectNotification((*wsc)->getMsg(5s), "ledgerClosed", jss::ledger_index);
+
+            auto const msg = legacy->getMsg(5s);
+            if (BEAST_EXPECT(msg.has_value()))
+            {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access) checked above
+                json::Value const& event = *msg;
+                BEAST_EXPECT(event[jss::type] == "ledgerClosed");
+                BEAST_EXPECT(event.isMember(jss::ledger_index));
+                BEAST_EXPECT(!event.isMember(jss::method));
+            }
+        }
+
         // A path_find update is a notification too, though the server directs it at the one client
         // that asked rather than publishing it to a stream. The specification allows one response
         // per request and `path_find create` consumed it, so no later update can be one. The `id`
@@ -2939,6 +2971,54 @@ public:
     }
 
     /**
+     * Two events published from one ledger close reach one version 3
+     * subscriber each in its own shape.
+     *
+     * `publishLedgerStreams` publishes the ledger event and the book-changes
+     * event from one close, and each has a `StreamBroadcast` of its own. One
+     * broadcast hoisted over both would hand the second event's subscribers
+     * the shape held for the first, so a connection subscribed to both would
+     * read the ledger event twice. The two notifications are told apart by
+     * `method` and by the member only one of them carries: `txn_count` for the
+     * ledger event, `changes` for the book changes, `ledger_index` being in
+     * both.
+     */
+    void
+    testTwoEventsFromOneCloseKeepTheirOwnShapes()
+    {
+        testcase("Two events from one close keep their own shapes");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+
+        Env env{*this, singleThreadIo(envconfig())};
+        placeCrossingOffers(env);
+
+        auto wsc = makeWSClient(env.app().config(), true, 2, {}, 3u);
+        json::Value stream;
+        stream[jss::streams] = json::ValueType::Array;
+        stream[jss::streams].append("ledger");
+        stream[jss::streams].append("book_changes");
+        wsc->invoke("subscribe", stream);
+
+        BEAST_EXPECT(env.syncClose());
+
+        auto const byMethod = [](char const* method) {
+            return [method](json::Value const& jv) { return jv[jss::method] == method; };
+        };
+
+        auto const ledger = wsc->findMsg(5s, byMethod("ledgerClosed"));
+        expectNotification(ledger, "ledgerClosed", jss::txn_count);
+        if (ledger)
+            BEAST_EXPECTS(!(*ledger)[jss::params].isMember(jss::changes), to_string(*ledger));
+
+        auto const books = wsc->findMsg(5s, byMethod("bookChanges"));
+        expectNotification(books, "bookChanges", jss::changes);
+        if (books)
+            BEAST_EXPECTS(!(*books)[jss::params].isMember(jss::txn_count), to_string(*books));
+    }
+
+    /**
      * A `path_find` update is served at the version its own `path_find create`
      * named, not at the version the connection's subscriptions named.
      *
@@ -3016,7 +3096,9 @@ public:
      * notification.
      *
      * This stream carries per-subscriber content, its own transaction index, so
-     * each event is shaped for the subscriber it goes to.
+     * each event is shaped for the subscriber it goes to. Every other stream is
+     * shaped once per version by its publisher, so this is the one delivery
+     * path the broadcast cases do not reach.
      *
      * The event is named `transaction` rather than by the stream: `method`
      * carries the name the legacy `type` carried. Both assertions below are
@@ -3077,6 +3159,59 @@ public:
             BEAST_EXPECT(!jv.isMember(jss::jsonrpc));
             BEAST_EXPECTS(jv.isMember(jss::account_history_tx_index), to_string(jv));
         }
+    }
+
+    /**
+     * Two version 3 subscribers of one account's history read their own
+     * transaction index from one publish.
+     *
+     * The index is written per subscriber between sends, so a shape shared
+     * across subscribers would hand the second the first's index. The clients
+     * subscribe one payment apart, and the payment that reaches both is read at
+     * index 1 by the first and index 0 by the second.
+     */
+    void
+    testHistoryTxStreamIndexIsPerSubscriber()
+    {
+        testcase("Account history indices are per subscriber at version 3");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+
+        Env env(*this, singleThreadIo(envconfig()));
+        Account const alice("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto const subscribe = [&](WSClient& wsc) {
+            json::Value request;
+            request[jss::account_history_tx_stream] = json::ValueType::Object;
+            request[jss::account_history_tx_stream][jss::account] = alice.human();
+            auto const reply = wsc.invoke("subscribe", request);
+            BEAST_EXPECTS(reply[jss::status] == jss::success, to_string(reply));
+        };
+
+        auto first = makeWSClient(env.app().config(), true, 2, {}, 3u);
+        subscribe(*first);
+        env(pay(env.master, alice, XRP(10)));
+        BEAST_EXPECT(env.syncClose());
+
+        auto second = makeWSClient(env.app().config(), true, 2, {}, 3u);
+        subscribe(*second);
+        env(pay(env.master, alice, XRP(10)));
+        auto const hash = to_string(env.tx()->getTransactionID());
+        BEAST_EXPECT(env.syncClose());
+
+        // The event for the second payment, told from the backfill by its hash.
+        auto const indexOf = [&](WSClient& wsc) -> std::optional<int> {
+            auto const msg = wsc.findMsg(
+                5s, [&](json::Value const& jv) { return jv[jss::params][jss::hash] == hash; });
+            if (!BEAST_EXPECT(msg.has_value()))
+                return std::nullopt;
+            return (*msg)[jss::params][jss::account_history_tx_index].asInt();
+        };
+        BEAST_EXPECT(indexOf(*first) == 1);
+        BEAST_EXPECT(indexOf(*second) == 0);
     }
 
     void
@@ -3368,6 +3503,7 @@ public:
         testSubByUrlPostsLegacyEvent();
         testHistoryTxStream();
         testHistoryTxStreamNotification();
+        testHistoryTxStreamIndexIsPerSubscriber();
         testSubBookChanges();
         testNFToken(all);
         testNFToken(all - featureNFTokenMintOffer);
@@ -3393,6 +3529,7 @@ public:
         testOneApiVersionPerUrl();
         testSubscribeToConsensusAndPeerStatus();
         testEveryStreamIsANotificationAtApiVersion3();
+        testTwoEventsFromOneCloseKeepTheirOwnShapes();
     }
 };
 
