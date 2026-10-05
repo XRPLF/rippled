@@ -15,7 +15,7 @@ bytesOfSteps(std::vector<std::int32_t> const& steps)
     for (auto const step : steps)
     {
         auto const wire = bytesOfScalar(step);
-        bytes.insert(bytes.end(), wire.begin(), wire.end());
+        bytes.insert_range(bytes.end(), wire);
     }
     return bytes;
 }

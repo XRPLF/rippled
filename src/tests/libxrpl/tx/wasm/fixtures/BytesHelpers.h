@@ -14,7 +14,7 @@ namespace xrpl::test {
 // The ABI's wire encodings, spelled independently of the code that produces them.
 //
 // Apart from either layer's fixture because both build them: the direct `HostContext` tests
-// and the guest-side `guest_calls` tests.
+// and the guest-side `guest_to_host_calls` tests.
 
 // A scalar's wire form: its bytes little-endian, the way a wasm guest lays them out in
 // memory.

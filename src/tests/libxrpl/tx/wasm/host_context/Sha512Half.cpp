@@ -12,8 +12,8 @@
 
 namespace xrpl::test {
 
-// `guest_calls/Sha512Half.cpp` runs the digest through the engine; what is left at this layer is
-// its own contract - the out-region rule, `guarded`, and an empty input.
+// `guest_to_host_calls/Sha512Half.cpp` runs the digest through the engine; what is left at this
+// layer is its own contract - the out-region rule, `guarded`, and an empty input.
 struct Sha512HalfCall : HostContextTest
 {
     Bytes const data{'a', 'b', 'c'};
