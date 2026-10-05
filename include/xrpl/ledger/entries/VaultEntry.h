@@ -189,6 +189,9 @@ public:
     /**
      * Rounds @p amount down to the scale the vault's sfAssetsTotal would have
      * after adding @p amount. Integral amounts are returned unchanged.
+     *
+     * @param amount The amount to round.
+     * @return @p amount rounded down to the vault's post-deposit scale.
      */
     [[nodiscard]] STAmount
     roundToScale(STAmount const& amount) const
