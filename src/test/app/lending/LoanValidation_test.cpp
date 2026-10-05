@@ -23,6 +23,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -196,8 +197,9 @@ private:
             jvResult[jss::tx_blob] = strHex(local.getSerializer().slice());
             auto res = env.rpc("json", "submit", to_string(jvResult))["result"];
             BEAST_EXPECT(
-                res[jss::error] == "invalidTransaction" && !res.isMember(jss::error_code) &&
-                res[jss::error_message].isNull() &&
+                res[jss::error] == "invalidTransaction" &&
+                res[jss::error_code] == RpcInvalidTransaction &&
+                res[jss::error_message] == "Transaction is invalid." &&
                 res[jss::error_exception] ==
                     "fails local checks: Counterparty: Invalid signature.");
         });
