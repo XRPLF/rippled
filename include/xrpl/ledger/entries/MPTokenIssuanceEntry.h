@@ -90,6 +90,8 @@ public:
     /**
      * Returns the MPT transfer fee as a Rate, in fractions of 1 billion
      * (a 1% fee is 1,010,000,000). Returns parity if TransferFee is absent.
+     *
+     * @return the transfer fee rate for this issuance.
      */
     [[nodiscard]] Rate
     transferRate() const;
