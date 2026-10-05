@@ -98,6 +98,8 @@ public:
      * Sets the URI of the token with ID @p id on this page to @p uri, or
      * removes the URI if @p uri is not set, and updates the page.
      *
+     * @param id the ID of the token to update.
+     * @param uri the new URI, or std::nullopt to remove the URI.
      * @return tesSUCCESS, or tecINTERNAL if this page does not hold the token
      */
     [[nodiscard]] TER
