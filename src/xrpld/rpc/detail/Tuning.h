@@ -70,6 +70,18 @@ constexpr auto kMaxValidatedLedgerAge = std::chrono::minutes{2};
 static constexpr int kMaxRequestSize = 1000000;
 
 /**
+ * Maximum number of entries in a batch, in either of its two forms, from API
+ * version 3 up.
+ *
+ * A batch dispatches one command per entry, and an entry can be small, so the
+ * body size limit bounds the bytes rather than the work.
+ *
+ * Below version 3 the `method: "batch"` form is bounded by the body size limit
+ * and the resource drop threshold only.
+ */
+static constexpr unsigned kMaxBatchEntries = 100;
+
+/**
  * Maximum number of pages in one response from a binary LedgerData request.
  */
 static constexpr int kBinaryPageLength = 2048;
