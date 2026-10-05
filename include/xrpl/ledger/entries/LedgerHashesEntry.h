@@ -40,6 +40,11 @@ public:
      * target ledger sequence into `diff`; this only does the bounds check
      * and vector indexing shared by both the recent (stride 1) and distant
      * (stride 256) skip lists.
+     *
+     * @param diff how many slots back from the most recent hash to look up;
+     * 0 is the most recent hash.
+     * @return the hash at that slot, or std::nullopt if the entry does not
+     * exist or `diff` is out of range.
      */
     [[nodiscard]] std::optional<uint256>
     hashAt(std::size_t diff) const
