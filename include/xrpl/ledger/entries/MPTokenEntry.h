@@ -89,6 +89,11 @@ public:
      *
      * Does not change the owner count.
      *
+     * @param view The apply view to create the MPToken in.
+     * @param mptIssuanceID The issuance this MPToken is for.
+     * @param account The holder to create the MPToken for.
+     * @param sponsorSle The sponsor to record on the MPToken, or nullptr.
+     * @param flags The flags to set on the new MPToken.
      * @return tesSUCCESS, or tecDIR_FULL if the owner directory is full
      */
     [[nodiscard]] static TER
