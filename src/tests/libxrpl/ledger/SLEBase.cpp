@@ -38,6 +38,7 @@
 #include <xrpl/ledger/entries/XChainOwnedClaimIDEntry.h>               // IWYU pragma: keep
 #include <xrpl/ledger/entries/XChainOwnedCreateAccountClaimIDEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -76,12 +77,22 @@ template class SLEBase<ApplyView>;
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
+// No explicit instantiation here, neither a definition nor a declaration.
+// A definition would instantiate an entry a second time once its member
+// bodies live in its own .cpp (MSVC rejects that with C4661 under /WX), and a
+// declaration (`extern template`) stops clang from emitting the inline
+// constructors of the header-only entries at -O0, which leaves them undefined
+// at link time in the debug builds. Naming the class in a static_assert is
+// enough to instantiate its definition, which is all this exhaustiveness
+// check needs; the per-type suites exercise the members.
 #define LEDGER_ENTRY(tag, value, name, ...)                                                    \
-    template class name##Entry<ReadView>;                                                      \
-    template class name##Entry<ApplyView>;                                                     \
     static_assert(                                                                             \
         name##Entry<ReadView>::kEntryType == tag && name##Entry<ApplyView>::kEntryType == tag, \
-        #name "Entry must be bound to " #tag);
+        #name "Entry must be bound to " #tag);                                                 \
+    static_assert(                                                                             \
+        std::is_constructible_v<name##Entry<ReadView>, Keylet const&, ReadView const&> &&      \
+            std::is_constructible_v<name##Entry<ApplyView>, Keylet const&, ApplyView&>,        \
+        #name "Entry must be constructible from a Keylet and a view");
 
 #include <xrpl/protocol/detail/ledger_entries.macro>
 

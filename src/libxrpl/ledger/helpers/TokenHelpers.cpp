@@ -1222,7 +1222,7 @@ directSendNoFeeMPT(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    auto const maxAmount = maxMPTAmount(*sleIssuance);
+    auto const maxAmount = sleIssuance.maxAmount();
     auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
     auto const available = availableMPTAmount(sleIssuance);
     auto const amt = saAmount.mpt().value();
@@ -1319,7 +1319,7 @@ directSendNoLimitMPT(
         if (uSenderID == issuer)
         {
             auto const sendAmount = saAmount.mpt().value();
-            auto const maxAmount = maxMPTAmount(*sle);
+            auto const maxAmount = sle.maxAmount();
             auto const outstanding = sle->getFieldU64(sfOutstandingAmount);
             auto const mptokensV2 = view.rules().enabled(featureMPTokensV2);
             allowOverflow = (allowOverflow == AllowMPTOverflow::Yes && mptokensV2)

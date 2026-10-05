@@ -1044,7 +1044,7 @@ maxMPTAmount(SLE const& sleIssuance)
 std::int64_t
 availableMPTAmount(MPTokenIssuanceEntryR const& sleIssuance)
 {
-    auto const max = maxMPTAmount(*sleIssuance);
+    auto const max = sleIssuance.maxAmount();
     auto const outstanding = (*sleIssuance)[sfOutstandingAmount];
     return max - outstanding;
 }
