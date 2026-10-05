@@ -13,6 +13,8 @@ namespace xrpl {
  * credential this library cannot mask, so the caller logs it masked.
  *
  * A 401 with an empty body is answered with the fixed authentication page.
+ * The status line carries the phrase Beast's registry gives @p nStatus, except
+ * for 401 and 503, which carry a phrase of this server's own.
  *
  * @param nStatus The HTTP status code.
  * @param strMsg The body.

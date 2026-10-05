@@ -5,6 +5,7 @@
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/pay.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/rpc/detail/MaskSecrets.h>
@@ -1498,6 +1499,54 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     }
 
     /**
+     * Every reply begins with a status line, including one whose status the
+     * status-line switch does not spell out. `highFee` reports 402, one of
+     * the two statuses the switch names no case for, and a reply that begins
+     * with a header instead is not an HTTP response at all.
+     *
+     * @param yield The coroutine the request runs on.
+     */
+    void
+    testUncommonHttpStatus(boost::asio::yield_context& yield)
+    {
+        testcase("A reply names an HTTP status the status-line switch does not spell out");
+
+        using namespace test::jtx;
+        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->loadFromString(std::string("[") + Sections::kSigningSupport + "]\ntrue");
+                    return cfg;
+                })};
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        // A fee ceiling of zero covers no fee at all, which is what `highFee` reports. The
+        // `ripplerpc: "3.0"` envelope derives the HTTP status from the code.
+        json::Value params(json::ValueType::Object);
+        params[jss::ripplerpc] = rpc::kRippleRpcVersion3;
+        params[jss::secret] = toBase58(generateSeed("alice"));
+        params[jss::fee_mult_max] = 0;
+        params[jss::tx_json] = pay(alice, bob, XRP(1));
+
+        json::Value jv;
+        jv[jss::method] = "sign";
+        jv[jss::params] = json::ValueType::Array;
+        jv[jss::params][0u] = params;
+
+        Response resp;
+        boost::system::error_code ec;
+        auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+
+        // The reply parsed as a response, which is what a missing status line breaks.
+        BEAST_EXPECT(!ec);
+        BEAST_EXPECT(resp.result_int() == rpc::errorCodeHttpStatus(RpcHighFee));
+        BEAST_EXPECT(resp.result() == boost::beast::http::status::payment_required);
+        BEAST_EXPECT(reply[jss::error][jss::error] == "highFee");
+    }
+
+    /**
      * A credential the server echoes back is masked, on every path that echoes.
      *
      * Driven from `kCredentialFields` itself, so a field added to the list is
@@ -1991,6 +2040,7 @@ public:
             testNoCredentialReachesTheLogAtTrace(yield);
             testHandlerErrorsCarryCodes(yield);
             testGainedStatusesStayOffLegacyEnvelope(yield);
+            testUncommonHttpStatus(yield);
             testStatusNotOkay(yield);
         });
 
