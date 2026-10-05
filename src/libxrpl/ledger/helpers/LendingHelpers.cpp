@@ -2551,6 +2551,21 @@ checkLoanFreeze(
 }
 
 TER
+checkLoanRecipientAuth(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& borrower,
+    AccountID const& brokerOwner)
+{
+    if (auto const ter = requireAuth(view, asset, borrower, AuthType::WeakAuth))
+        return ter;
+    if (auto const ter = requireAuth(view, asset, brokerOwner, AuthType::WeakAuth))
+        return ter;
+
+    return tesSUCCESS;
+}
+
+TER
 reserveLoanOwner(
     ApplyView& view,
     AccountID const& owner,

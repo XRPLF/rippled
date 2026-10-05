@@ -996,16 +996,11 @@ LoanSet::preclaim(PreclaimContext const& ctx)
 
     if (twoStepFlow)
     {
-        // Reject a pending loan up front if the borrower or broker owner (the
-        // origination-fee recipient) is not authorised to hold the vault asset,
-        // rather than creating a loan that can never be disbursed by LoanAccept.
-        // WeakAuth is used because the holdings need not exist yet; they are
-        // created at disbursement. This is confined to the two-step flow (gated
-        // by featureLendingProtocolV1_2); the immediate flow already fails in
-        // doApply if disbursement is not possible.
-        if (auto const ter = requireAuth(ctx.view, asset, borrower, AuthType::WeakAuth))
-            return ter;
-        if (auto const ter = requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
+        // Reject a pending loan up front if a disbursement recipient is not
+        // authorised to hold the vault asset, rather than creating a loan that
+        // can never be disbursed by LoanAccept. LoanAccept re-checks at
+        // acceptance.
+        if (auto const ter = checkLoanRecipientAuth(ctx.view, asset, borrower, brokerOwner))
             return ter;
 
         if (hasExpired(ctx.view, tx[~sfStartDate]))

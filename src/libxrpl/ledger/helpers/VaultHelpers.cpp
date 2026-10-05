@@ -14,6 +14,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -434,6 +435,19 @@ vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount)
         "xrpl::vaultOpenZoneCapacity : FixedPrecision Vault");
     NumberRoundModeGuard const rg(Number::RoundingMode::TowardsZero);
     return getAssetsTotal(vault) + vault->at(sfYieldUnrealized) + roundedAmount;
+}
+
+[[nodiscard]] Number
+getVaultAssetsLentOut(
+    Rules const& rules,
+    Number const& assetsTotal,
+    Number const& assetsAvailable,
+    Number const& assetsReserved)
+{
+    Number lentOut = assetsTotal - assetsAvailable;
+    if (rules.enabled(featureLendingProtocolV1_2))
+        lentOut -= assetsReserved;
+    return lentOut;
 }
 
 [[nodiscard]] std::optional<STAmount>

@@ -814,6 +814,24 @@ checkLoanFreeze(
     beast::Journal j);
 
 /**
+ * Check that the two accounts that receive funds at disbursement.
+ *
+ * @param view        Read view used for the authorisation checks.
+ * @param asset       The vault asset being lent.
+ * @param borrower    The borrower, who receives the principal.
+ * @param brokerOwner The LoanBroker owner, who receives the origination fee.
+ *
+ * @return `tesSUCCESS` if both accounts are authorised, otherwise the first
+ * failing check's error code.
+ */
+[[nodiscard]] TER
+checkLoanRecipientAuth(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& borrower,
+    AccountID const& brokerOwner);
+
+/**
  * Increment the loan owner's owner count for the new loan object and verify
  * that it still meets its reserve requirement.
  *

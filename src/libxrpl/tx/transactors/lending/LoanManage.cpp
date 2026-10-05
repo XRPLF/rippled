@@ -442,13 +442,12 @@ LoanManage::impairLoan(
         // scale.
         auto const vaultScale = getVaultScale(vaultSle);
         adjustImpreciseNumber(vaultLossUnrealizedProxy, lossUnrealized, vaultAsset, vaultScale);
-        // The loss is bounded by the assets lent out by active loans. Under
-        // featureLendingProtocolV1_2 the principal reserved for pending loans
-        // is part of AssetsTotal but is still held by the vault, so it is
-        // excluded from that bound.
-        Number lentOut = vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable);
-        if (view.rules().enabled(featureLendingProtocolV1_2))
-            lentOut -= Number(vaultSle->at(sfAssetsReserved));
+        // The loss is bounded by the assets lent out by active loans.
+        Number const lentOut = getVaultAssetsLentOut(
+            view.rules(),
+            vaultSle->at(sfAssetsTotal),
+            vaultSle->at(sfAssetsAvailable),
+            vaultSle->at(sfAssetsReserved));
         if (vaultLossUnrealizedProxy > lentOut)
         {
             // Having a loss greater than the assets lent out will leave the

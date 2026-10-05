@@ -787,12 +787,11 @@ ValidVault::finalize(
                 return afterVault.lossUnrealized > afterVault.assetsDeployed;
             }
             // The loss is bounded by the assets lent out by active loans.
-            // Under featureLendingProtocolV1_2 the principal reserved for
-            // pending loans is part of AssetsTotal but is still held by the
-            // vault, so it is excluded from that bound.
-            Number lentOut = afterVault.assetsTotal - afterVault.assetsAvailable;
-            if (lendingV12Enabled)
-                lentOut -= afterVault.assetsReserved;
+            Number const lentOut = getVaultAssetsLentOut(
+                view.rules(),
+                afterVault.assetsTotal,
+                afterVault.assetsAvailable,
+                afterVault.assetsReserved);
 
             if (!fix340Enabled)
                 return afterVault.lossUnrealized > lentOut;

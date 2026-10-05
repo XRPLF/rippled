@@ -13,6 +13,7 @@
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
 
@@ -25,6 +26,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -642,6 +644,215 @@ private:
                 Number const loss = v->at(sfLossUnrealized);
                 BEAST_EXPECT(loss == Number{0});
             }
+        }
+    }
+
+    // A loan that has been accepted while the ledger clock is still before its
+    // StartDate is live but has not started yet. Only the two-step flow can
+    // reach that window: a one-step loan starts in the ledger that creates it.
+    // The schedule is anchored to StartDate, and no interest accrues until the
+    // loan starts, so paying is allowed but impairing and defaulting are not.
+    void
+    testTwoStepBeforeStartDate()
+    {
+        using namespace jtx;
+        using namespace jtx::loan;
+        using namespace std::chrono_literals;
+
+        // Propose a loan starting at `startDate` and accept it immediately.
+        // Only the two closes advance the clock, so a StartDate an hour out
+        // leaves the accepted loan unstarted. Returns the Loan's keylet.
+        auto proposeAndAccept =
+            [&](Env& env, BrokerInfo const& broker, std::uint32_t startDate, auto const&... extra) {
+                auto const loanKeylet = nextLoanKeylet(env, broker);
+                propose(env, broker, lender_, borrower_, startDate, extra...);
+                env.close();
+                env(accept(borrower_, loanKeylet.key));
+                env.close();
+                // The loan is accepted, and the first instalment is not due until
+                // one payment interval after StartDate.
+                if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+                    BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
+                BEAST_EXPECT(env.now().time_since_epoch().count() < startDate);
+                return loanKeylet;
+            };
+
+        {
+            testcase("Two-step: regular payment before StartDate");
+
+            Env env(*this, features_);
+            auto const broker = makeBroker(env, AssetType::XRP);
+
+            std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
+            auto const loanKeylet = proposeAndAccept(env, broker, startDate);
+
+            auto const state = getCurrentState(env, broker, loanKeylet);
+            BEAST_EXPECT(state.previousPaymentDate == 0);
+            BEAST_EXPECT(state.nextPaymentDate == startDate + payInterval_);
+            BEAST_EXPECT(state.paymentRemaining == payTotal_);
+
+            // Nothing has accrued yet, so one periodic payment is enough to
+            // settle the first instalment: no flag, and no extra funds.
+            STAmount const due{
+                broker.asset,
+                roundPeriodicPayment(broker.asset, state.periodicPayment, state.loanScale)};
+            auto const vault0 = readVault(env, broker);
+            STAmount const borrowerBal0 = env.balance(borrower_, broker.asset).value();
+
+            env(pay(borrower_, loanKeylet.key, due));
+            env.close();
+
+            // One instalment was taken, and the schedule moved on by one
+            // interval from StartDate: the acceptance time plays no part.
+            auto const state1 = getCurrentState(env, broker, loanKeylet);
+            BEAST_EXPECT(state1.paymentRemaining == payTotal_ - 1);
+            BEAST_EXPECT(state1.previousPaymentDate == startDate + payInterval_);
+            BEAST_EXPECT(state1.nextPaymentDate == startDate + 2 * payInterval_);
+            BEAST_EXPECT(state1.principalOutstanding < state.principalOutstanding);
+            // The money reached the vault, and the borrower was charged no
+            // more than the instalment (plus the transaction fee): starting
+            // early costs nothing extra.
+            BEAST_EXPECT(readVault(env, broker).available > vault0.available);
+            BEAST_EXPECT(
+                env.balance(borrower_, broker.asset).value() > borrowerBal0 - due - XRP(1).value());
+        }
+
+        {
+            testcase("Two-step: overpayment before StartDate");
+
+            Env env(*this, features_);
+            auto const broker = makeBroker(env, AssetType::XRP);
+
+            std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
+            auto const loanKeylet =
+                proposeAndAccept(env, broker, startDate, Txflags(tfLoanOverpayment));
+            if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+                BEAST_EXPECT(loan->isFlag(lsfLoanOverpayment));
+
+            auto const state = getCurrentState(env, broker, loanKeylet);
+            STAmount const due{
+                broker.asset,
+                roundPeriodicPayment(broker.asset, state.periodicPayment, state.loanScale)};
+            // The extra is smaller than a second instalment, so exactly one
+            // scheduled payment is taken and the remainder is the overpayment.
+            STAmount const extra = broker.asset(5).value();
+            BEAST_EXPECT(extra < due);
+
+            env(pay(borrower_, loanKeylet.key, due + extra, tfLoanOverpayment));
+            env.close();
+
+            auto const state1 = getCurrentState(env, broker, loanKeylet);
+            // The overpayment consumes no scheduled payment of its own, so the
+            // schedule advances by exactly one interval.
+            BEAST_EXPECT(state1.paymentRemaining == payTotal_ - 1);
+            BEAST_EXPECT(state1.previousPaymentDate == startDate + payInterval_);
+            BEAST_EXPECT(state1.nextPaymentDate == startDate + 2 * payInterval_);
+            // The extra came off the principal on top of the instalment's own
+            // principal part, and the loan re-amortised to a smaller payment.
+            BEAST_EXPECT(state1.principalOutstanding <= state.principalOutstanding - Number(extra));
+            BEAST_EXPECT(state1.periodicPayment < state.periodicPayment);
+        }
+
+        {
+            testcase("Two-step: full payment before StartDate charges principal only");
+
+            Env env(*this, features_);
+            auto const broker = makeBroker(env, AssetType::XRP);
+
+            auto const vault0 = readVault(env, broker);
+            auto const broker0 = readBroker(env, broker);
+
+            std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
+            auto const loanKeylet = proposeAndAccept(env, broker, startDate);
+
+            auto const state = getCurrentState(env, broker, loanKeylet);
+            // The loan carries scheduled interest, none of which is owed on a
+            // close this early: no time has passed since StartDate, and the
+            // proposal set no close fee or close interest rate.
+            BEAST_EXPECT(state.totalValue > state.principalOutstanding);
+            STAmount const principal{broker.asset, state.principalOutstanding};
+            STAmount const borrowerBal0 = env.balance(borrower_, broker.asset).value();
+
+            env(pay(borrower_,
+                    loanKeylet.key,
+                    principal - STAmount{broker.asset, 1},
+                    tfLoanFullPayment),
+                Ter(tecINSUFFICIENT_PAYMENT));
+            env.close();
+
+            env(pay(borrower_, loanKeylet.key, principal, tfLoanFullPayment));
+            env.close();
+
+            // The loan is fully paid.
+            auto const state1 = getCurrentState(env, broker, loanKeylet);
+            BEAST_EXPECT(state1.paymentRemaining == 0);
+            BEAST_EXPECT(state1.principalOutstanding == beast::kZero);
+            BEAST_EXPECT(state1.totalValue == beast::kZero);
+
+            // Only the principal was taken from the borrower. The comparison
+            // allows for the transaction fees of the two LoanPays above.
+            STAmount const borrowerBal1 = env.balance(borrower_, broker.asset).value();
+            BEAST_EXPECT(borrowerBal1 < borrowerBal0 - principal);
+            BEAST_EXPECT(borrowerBal1 > borrowerBal0 - principal - XRP(1).value());
+
+            // The vault and the broker are back where they were before the
+            // proposal: a loan closed before it starts earns the vault nothing.
+            auto const vault1 = readVault(env, broker);
+            auto const broker1 = readBroker(env, broker);
+            BEAST_EXPECTS(
+                vault1.available == vault0.available,
+                "AssetsAvailable: " + to_string(vault1.available) +
+                    " != " + to_string(vault0.available));
+            BEAST_EXPECT(vault1.reserved == vault0.reserved);
+            BEAST_EXPECTS(
+                vault1.total == vault0.total,
+                "AssetsTotal: " + to_string(vault1.total) + " != " + to_string(vault0.total));
+            BEAST_EXPECT(broker1.debtTotal == broker0.debtTotal);
+            BEAST_EXPECT(broker1.coverAvailable == broker0.coverAvailable);
+
+            // Nothing is outstanding, so the loan can now be deleted.
+            env(del(borrower_, loanKeylet.key));
+            env.close();
+            BEAST_EXPECT(!env.le(loanKeylet));
+        }
+
+        {
+            testcase("Two-step: impair, default and late payment rejected before StartDate");
+
+            Env env(*this, features_);
+            auto const broker = makeBroker(env, AssetType::XRP);
+
+            std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
+            auto const loanKeylet = proposeAndAccept(env, broker, startDate);
+
+            auto const state = getCurrentState(env, broker, loanKeylet);
+
+            // The first instalment is not due until one interval after
+            // StartDate, so there is nothing yet to impair or default on.
+            env(manage(lender_, loanKeylet.key, tfLoanImpair), Ter(tecTOO_SOON));
+            env.close();
+            env(manage(lender_, loanKeylet.key, tfLoanDefault), Ter(tecTOO_SOON));
+            env.close();
+
+            // A payment flagged as late is rejected for the same reason.
+            STAmount const due{
+                broker.asset,
+                roundPeriodicPayment(broker.asset, state.periodicPayment, state.loanScale)};
+            env(pay(borrower_, loanKeylet.key, due + due, tfLoanLatePayment), Ter(tecTOO_SOON));
+            env.close();
+
+            // Neither party can simply walk away from the accepted loan: it
+            // has to be paid off first.
+            env(del(borrower_, loanKeylet.key), Ter(tecHAS_OBLIGATIONS));
+            env(del(lender_, loanKeylet.key), Ter(tecHAS_OBLIGATIONS));
+            env.close();
+
+            // None of the failures changed the loan.
+            auto const state1 = getCurrentState(env, broker, loanKeylet);
+            BEAST_EXPECT((state1.flags & (lsfLoanImpaired | lsfLoanDefault)) == 0);
+            BEAST_EXPECT(state1.nextPaymentDate == state.nextPaymentDate);
+            BEAST_EXPECT(state1.paymentRemaining == payTotal_);
+            BEAST_EXPECT(state1.principalOutstanding == state.principalOutstanding);
         }
     }
 
@@ -2659,6 +2870,7 @@ private:
         }
 
         testTwoStepBasics();
+        testTwoStepBeforeStartDate();
         testTwoStepValidation();
         testTwoStepFreeze();
         testTwoStepPendingLifecycle();

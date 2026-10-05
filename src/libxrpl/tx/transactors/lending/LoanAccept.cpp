@@ -140,13 +140,9 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
             ctx.j))
         return ter;
 
-    // Re-verify that the borrower and broker owner (the two accounts that
-    // receive funds at disbursement) are authorised to hold the vault asset.
-    // WeakAuth is used because the holdings need not exist yet; they are
-    // created at disbursement.
-    if (auto const ter = requireAuth(ctx.view, asset, account, AuthType::WeakAuth))
-        return ter;
-    if (auto const ter = requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
+    // Re-verify the disbursement recipients: LoanSet checked them when the
+    // pending loan was created, but authorisation can be revoked in between.
+    if (auto const ter = checkLoanRecipientAuth(ctx.view, asset, account, brokerOwner))
         return ter;
 
     return tesSUCCESS;
