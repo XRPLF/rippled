@@ -75,6 +75,8 @@ public:
      *
      * OutstandingAmount may overflow, so the result might be negative, but it
      * is always <= |MaximumAmount - OutstandingAmount|.
+     *
+     * @return the amount of this issuance still available to be issued.
      */
     [[nodiscard]] std::int64_t
     availableAmount() const
