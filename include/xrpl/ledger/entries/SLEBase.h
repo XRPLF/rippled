@@ -351,17 +351,13 @@ public:
     STLedgerEntry const*
     operator->() const
     {
-        if (!exists())
-            Throw<std::logic_error>("xrpl::SLEBase::operator-> : entry does not exist");
-        return sle_.get();
+        return &sleRef();
     }
 
     STLedgerEntry const&
     operator*() const
     {
-        if (!exists())
-            Throw<std::logic_error>("xrpl::SLEBase::operator* : entry does not exist");
-        return *sle_;
+        return sleRef();
     }
 
     // --- Writable interface (compile-time gated) ---
@@ -402,18 +398,14 @@ public:
     operator->()
         requires kIsWritable
     {
-        if (!exists())
-            Throw<std::logic_error>("xrpl::SLEBase::operator-> : entry does not exist");
-        return sle_.get();
+        return &sleRef();
     }
 
     STLedgerEntry&
     operator*()
         requires kIsWritable
     {
-        if (!exists())
-            Throw<std::logic_error>("xrpl::SLEBase::operator* : entry does not exist");
-        return *sle_;
+        return sleRef();
     }
 
     /**
@@ -485,6 +477,39 @@ public:
     }
 
 protected:
+    /**
+     * Returns the underlying SLE, for derived entries to call member
+     * functions on without spelling out `(*this)->`:
+     * `this->sleRef().getFieldX(...)` reads like an ordinary method call.
+     * operator-> and operator* are implemented on top of this, so the
+     * "does not exist" throw lives in one place.
+     *
+     * @return The underlying SLE.
+     * @throws std::logic_error if exists() is false.
+     */
+    [[nodiscard]] SLE const&
+    sleRef() const
+    {
+        if (!exists())
+            Throw<std::logic_error>("xrpl::SLEBase::sleRef : entry does not exist");
+        return *sle_;
+    }
+
+    /**
+     * Returns the underlying SLE for write access.
+     *
+     * @return The underlying SLE.
+     * @throws std::logic_error if exists() is false.
+     */
+    [[nodiscard]] SLE&
+    sleRef()
+        requires kIsWritable
+    {
+        if (!exists())
+            Throw<std::logic_error>("xrpl::SLEBase::sleRef : entry does not exist");
+        return *sle_;
+    }
+
     // Stored as a pointer, not ViewRefType, so the entry stays assignable --
     // see the assignment operators above. Declared first: the writable
     // constructor initializes sle_ from view_->peek(key), so view_ must be
