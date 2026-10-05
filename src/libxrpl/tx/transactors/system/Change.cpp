@@ -131,7 +131,8 @@ Change::preclaim(PreclaimContext const& ctx)
                     !ctx.tx.isFieldPresent(sfGasPrice))
                     return temMALFORMED;
                 if (ctx.tx[sfGasLimit] > kMaxGasLimit ||
-                    ctx.tx[sfBytecodeSizeLimit] > kMaxBytecodeSizeLimit)
+                    ctx.tx[sfBytecodeSizeLimit] > kMaxBytecodeSizeLimit ||
+                    ctx.tx[sfGasPrice] < kMinGasPrice)
                     return temBAD_FEE;
             }
             else
@@ -174,10 +175,34 @@ Change::preCompute()
     XRPL_ASSERT(accountID_ == beast::kZero, "xrpl::Change::preCompute : zero account");
 }
 
+void
+Change::initializeVMFees()
+{
+    auto const k = keylet::feeSettings();
+
+    auto feeObject = view().peek(k);
+
+    if (!feeObject)
+    {
+        feeObject = std::make_shared<SLE>(k);
+        view().insert(feeObject);
+    }
+
+    // Compile-time constants, never `FeeSetup`: every node applies this
+    // pseudo-transaction, so reading local config here would diverge.
+    feeObject->at(sfGasLimit) = kDefaultGasLimit;
+    feeObject->at(sfBytecodeSizeLimit) = kDefaultBytecodeSizeLimit;
+    feeObject->at(sfGasPrice) = kDefaultGasPrice;
+
+    view().update(feeObject);
+
+    JLOG(j_.info()) << "Feature Extension fees initialized on SmartEscrow activation";
+}
+
 TER
 Change::applyAmendment()
 {
-    uint256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
+    UInt256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
 
     auto const k = keylet::amendments();
 
@@ -252,6 +277,9 @@ Change::applyAmendment()
                              << " activated: server blocked.";
             ctx_.registry.get().getOPs().setAmendmentBlocked();
         }
+
+        if (amendment == featureSmartEscrow)
+            initializeVMFees();
     }
 
     if (newMajorities.empty())
@@ -432,7 +460,7 @@ Change::applyUNLModify()
 }
 
 void
-Change::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+Change::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

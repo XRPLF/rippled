@@ -967,6 +967,75 @@ class InvariantsMPT_test : public InvariantsBase
                 });
         }
 
+        // LoanSet / VaultWithdraw MayAuthorizeMpt caps (fixCleanup3_4_0):
+        // LoanSet allows at most two creates and no deletes; VaultWithdraw
+        // allows at most one of each. Fabricate one extra mutation so a
+        // too-loose cap would miss these.
+        {
+            auto const insertHolderTokens =
+                [](Account const& issuer, Account const& holder, ApplyContext& ac, int n) {
+                    auto const sle = ac.view().peek(keylet::account(issuer.id()));
+                    if (!sle)
+                        return false;
+                    auto seq = sle->getFieldU32(sfSequence);
+                    for (int i = 0; i < n; ++i)
+                    {
+                        MPTIssue const mpt{makeMptID(seq + i, issuer)};
+                        auto sleNew =
+                            std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), holder));
+                        (*sleNew)[sfAccount] = holder.id();
+                        (*sleNew)[sfMPTokenIssuanceID] = mpt.getMptID();
+                        ac.view().insert(sleNew);
+                    }
+                    return true;
+                };
+
+            std::array<std::pair<xrpl::TxType, std::uint8_t>, 2> const createOverCap{
+                {{ttLOAN_SET, 3}, {ttVAULT_WITHDRAW, 2}}};
+            for (auto const& [txnType, nTokens] : createOverCap)
+            {
+                doInvariantCheck(
+                    {{"MPT authorize succeeded but created/deleted bad number mptokens"}},
+                    [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                        return insertHolderTokens(a1, a2, ac, nTokens);
+                    },
+                    XRPAmount{},
+                    STTx{txnType, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+            }
+
+            MPTID id;
+            auto const precloseTwoHolders = [&id](Account const& a1, Account const& a2, Env& env) {
+                Account const gw("gw");
+                env.fund(XRP(1'000), gw);
+                MPTTester const mpt({.env = env, .issuer = gw, .holders = {a1, a2}});
+                id = mpt.issuanceID();
+                return true;
+            };
+            std::array<std::pair<xrpl::TxType, std::uint8_t>, 2> const deleteOverCap{
+                {{ttLOAN_SET, 1}, {ttVAULT_WITHDRAW, 2}}};
+            for (auto const& [txnType, nTokens] : deleteOverCap)
+            {
+                doInvariantCheck(
+                    {{"MPT authorize succeeded but created/deleted bad number mptokens"}},
+                    [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                        std::array const holders{a1, a2};
+                        for (int i = 0; i < nTokens; ++i)
+                        {
+                            auto sle = ac.view().peek(keylet::mptoken(id, holders[i]));
+                            if (!sle)
+                                return false;
+                            ac.view().erase(sle);
+                        }
+                        return true;
+                    },
+                    XRPAmount{},
+                    STTx{txnType, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    precloseTwoHolders);
+            }
+        }
+
         // sfReferenceHolding can only be set on creation by VaultCreate. A
         // non-VaultCreate transaction that creates an MPTokenIssuance with
         // sfReferenceHolding present must trip the invariant.
@@ -979,7 +1048,7 @@ class InvariantsMPT_test : public InvariantsBase
                     return false;
                 MPTIssue const mpt{makeMptID(sleAcct->getFieldU32(sfSequence), a1)};
                 auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
-                sleNew->setFieldH256(sfReferenceHolding, uint256{1});
+                sleNew->setFieldH256(sfReferenceHolding, UInt256{1});
                 ac.view().insert(sleNew);
                 return true;
             },
@@ -992,7 +1061,7 @@ class InvariantsMPT_test : public InvariantsBase
         // sfReferenceHolding), then mutate it in precheck to produce a
         // before/after pair.
         {
-            uint256 vaultKey;
+            UInt256 vaultKey;
             doInvariantCheck(
                 {{"sfReferenceHolding was modified on an existing "
                   "MPTokenIssuance"}},
@@ -1004,7 +1073,7 @@ class InvariantsMPT_test : public InvariantsBase
                         ac.view().peek(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
                     if (!sleIssuance)
                         return false;
-                    sleIssuance->setFieldH256(sfReferenceHolding, uint256{2});
+                    sleIssuance->setFieldH256(sfReferenceHolding, UInt256{2});
                     ac.view().update(sleIssuance);
                     return true;
                 },
@@ -1034,7 +1103,7 @@ class InvariantsMPT_test : public InvariantsBase
         // other than a VaultDelete transaction. Set up a vault, then have
         // an arbitrary tx erase the pseudo's MPToken in precheck.
         {
-            uint256 vaultKey;
+            UInt256 vaultKey;
             doInvariantCheck(
                 {{"vault pseudo-account holding deleted by a "
                   "non-VaultDelete transaction"}},
@@ -1563,12 +1632,121 @@ class InvariantsMPT_test : public InvariantsBase
             precloseOrphan);
     }
 
+    // deletedHoldings_ in ValidMPTIssuance captures every erased MPToken
+    // per-holder, so finalize()'s fixCleanup3_5_0 balance check must reject
+    // a funded MPToken erased alongside an empty sibling regardless of the
+    // order the two are visited in.
+    void
+    testDeleteWithBalanceTwoHolders()
+    {
+        using namespace test::jtx;
+        testcase << "MPToken deleted with non-zero balance, two holders";
+
+        MPTID mptID;
+        Account const carol{"carol"};
+
+        // Single-holder setup used by the baseline and the amendment-gate
+        // cases.
+        auto const setupSingle = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
+            mpt.create({.flags = tfMPTCanTransfer});
+            mptID = mpt.issuanceID();
+            mpt.authorize({.account = a2});
+            mpt.pay(a1, a2, 100);
+            return true;
+        };
+
+        Precheck const eraseSingle = [&](Account const&, Account const& a2, ApplyContext& ac) {
+            auto sleA2 = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+            if (!sleA2)
+                return false;
+            ac.view().erase(sleA2);
+            return true;
+        };
+
+        Precheck const eraseBoth = [&](Account const&, Account const& a2, ApplyContext& ac) {
+            auto sleA2 = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+            auto sleCarol = ac.view().peek(keylet::mptoken(mptID, carol.id()));
+            if (!sleA2 || !sleCarol)
+                return false;
+            ac.view().erase(sleA2);
+            ac.view().erase(sleCarol);
+            return true;
+        };
+
+        // Cases below expecting `tecINVARIANT_FAILED` use ttACCOUNT_SET; the
+        // success case (fixCleanup3_5_0 disabled) uses ttMPTOKEN_AUTHORIZE
+        // to sidestep unrelated invariants that would otherwise mask the
+        // tesSUCCESS signal.
+
+        // Baseline: a single funded MPToken erased on its own.
+        doInvariantCheck(
+            {{"MPToken deleted with non-zero balance"}},
+            eraseSingle,
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            setupSingle);
+
+        // Two-holder erase: whichever key sorts last is visited last, so
+        // funding each holder in turn guarantees one run where the funded
+        // MPToken is visited first and an empty sibling follows it.
+        for (bool const fundCarol : {false, true})
+        {
+            auto const setupTwo = [&, fundCarol](
+                                      Account const& a1, Account const& a2, Env& env) -> bool {
+                env.fund(XRP(1'000), carol);
+                MPTTester mpt(env, a1, {.holders = {a2, carol}, .fund = false});
+                mpt.create({.flags = tfMPTCanTransfer});
+                mptID = mpt.issuanceID();
+                mpt.authorize({.account = a2});
+                mpt.authorize({.account = carol});
+                mpt.pay(a1, fundCarol ? carol : a2, 100);
+                return true;
+            };
+
+            doInvariantCheck(
+                {{"MPToken deleted with non-zero balance"}},
+                eraseBoth,
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                setupTwo);
+        }
+
+        // fixCleanup3_5_0 enabled, fixCleanup3_2_0 disabled: the two
+        // amendments are independent, so this is the only configuration in
+        // which the `|| isFeatureEnabled(fixCleanup3_5_0)` half of the
+        // deletedHoldings_ capture gate in ValidMPTIssuance::visitEntry is
+        // load-bearing.
+        doInvariantCheck(
+            makeEnv(all_ - fixCleanup3_2_0),
+            {{"MPToken deleted with non-zero balance"}},
+            eraseSingle,
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            setupSingle);
+
+        // fixCleanup3_5_0 disabled: erasing a funded MPToken must not trip
+        // the new check. This pins the fixCleanup3_5_0 gate in finalize().
+        doInvariantCheck(
+            makeEnv(all_ - fixCleanup3_5_0),
+            {},
+            eraseSingle,
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tesSUCCESS, tesSUCCESS},
+            setupSingle);
+    }
+
 public:
     void
     run() override
     {
         testConfidentialMPTTransfer();
         testMPT();
+        testDeleteWithBalanceTwoHolders();
     }
 };
 

@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -69,17 +70,17 @@ struct FeeSetup
     /**
      * The gas limit for Feature Extensions.
      */
-    std::uint32_t gasLimit{1'000'000};
+    std::uint32_t gasLimit{kDefaultGasLimit};
 
     /**
      * The bytecode size limit for Feature Extensions.
      */
-    std::uint32_t bytecodeSizeLimit{100'000};
+    std::uint32_t bytecodeSizeLimit{kDefaultBytecodeSizeLimit};
 
     /**
      * The price of 1 WASM gas, in micro-drops.
      */
-    std::uint32_t gasPrice{1'000'000};
+    std::uint32_t gasPrice{kDefaultGasPrice};
 
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
@@ -90,11 +91,8 @@ struct FeeSetup
     [[nodiscard]] Fees
     toFees() const
     {
-        Fees fees{referenceFee, accountReserve, ownerReserve};
-        fees.gasLimit = gasLimit;
-        fees.bytecodeSizeLimit = bytecodeSizeLimit;
-        fees.gasPrice = gasPrice;
-        return fees;
+        return Fees{
+            referenceFee, accountReserve, ownerReserve, gasLimit, bytecodeSizeLimit, gasPrice};
     }
 };
 
@@ -107,10 +105,10 @@ class Config : public BasicConfig
 {
 public:
     // Settings related to the configuration file location and directories
-    static char const* const kConfigFileName;
-    static char const* const kConfigLegacyName;
-    static char const* const kDatabaseDirName;
-    static char const* const kValidatorsFileName;
+    static constexpr std::string_view kConfigFileName = "xrpld.cfg";
+    static constexpr std::string_view kConfigLegacyName = "rippled.cfg";
+    static constexpr std::string_view kDatabaseDirName = "db";
+    static constexpr std::string_view kValidatorsFileName = "validators.txt";
 
     /**
      * Returns the full path and filename of the debug log file.
@@ -175,7 +173,7 @@ public:
 
     std::string startLedger;
 
-    std::optional<uint256> trapTxHash;
+    std::optional<UInt256> trapTxHash;
 
     // Network parameters
     uint32_t networkId = 0;
@@ -303,7 +301,7 @@ public:
     // These override the command line client settings
     std::optional<beast::ip::Endpoint> rpcIp;
 
-    std::unordered_set<uint256, beast::Uhash<>> features;
+    std::unordered_set<UInt256, beast::Uhash<>> features;
 
     std::string serverDomain;
 

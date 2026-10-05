@@ -6,7 +6,6 @@
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/Fees.h>
 
 #include <boost/asio.hpp>
 
@@ -41,7 +40,7 @@ template <
 class TaggedCache;
 class STLedgerEntry;
 using SLE = STLedgerEntry;
-using CachedSLEs = TaggedCache<uint256, SLE const>;
+using CachedSLEs = TaggedCache<UInt256, SLE const>;
 
 // Forward declarations
 class AcceptedLedger;
@@ -181,7 +180,7 @@ public:
     virtual InboundTransactions&
     getInboundTransactions() = 0;
 
-    virtual TaggedCache<uint256, AcceptedLedger>&
+    virtual TaggedCache<UInt256, AcceptedLedger>&
     getAcceptedLedgerCache() = 0;
 
     virtual LedgerMaster&
@@ -238,7 +237,7 @@ public:
     virtual Logs&
     getLogs() = 0;
 
-    [[nodiscard]] virtual std::optional<uint256> const&
+    [[nodiscard]] virtual std::optional<UInt256> const&
     getTrapTxID() const = 0;
 
     /**
@@ -246,9 +245,6 @@ public:
      */
     virtual DatabaseCon&
     getWalletDB() = 0;
-
-    [[nodiscard]] virtual Fees
-    getFees() const = 0;
 
     // Temporary: Get the underlying Application for functions that haven't
     // been migrated yet. This should be removed once all code is migrated.

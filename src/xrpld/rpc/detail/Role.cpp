@@ -248,7 +248,7 @@ extractIpAddrFromField(std::string_view field)
 }
 
 std::string_view
-forwardedFor(http_request_type const& request)
+forwardedFor(HttpRequestType const& request)
 {
     // Look for the Forwarded field in the request.
     if (auto it = request.find(boost::beast::http::field::forwarded); it != request.end())

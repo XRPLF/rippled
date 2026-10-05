@@ -34,7 +34,7 @@ TER
 escrowUnlockApplyHelper(
     ApplyViewContext ctx,
     Rate lockedRate,
-    SLE::ref sleDest,
+    SLE::Ref sleDest,
     XRPAmount xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -48,7 +48,7 @@ inline TER
 escrowUnlockApplyHelper<Issue>(
     ApplyViewContext ctx,
     Rate lockedRate,
-    SLE::ref sleDest,
+    SLE::Ref sleDest,
     XRPAmount xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -189,7 +189,7 @@ inline TER
 escrowUnlockApplyHelper<MPTIssue>(
     ApplyViewContext ctx,
     Rate lockedRate,
-    SLE::ref sleDest,
+    SLE::Ref sleDest,
     XRPAmount xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
