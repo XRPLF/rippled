@@ -134,6 +134,8 @@ public:
      * Records @p amount of this MPT sold by the issuer through an
      * issuer-owned sell offer, via the view's issuerSelfDebitHookMPT().
      * See ApplyView::issuerSelfDebitHookMPT().
+     *
+     * @param amount the amount of this MPT the issuer sold.
      */
     void
     issuerSelfDebitHook(std::uint64_t amount)
