@@ -46,7 +46,7 @@ public:
      * @return the hash at that slot, or std::nullopt if the entry does not
      * exist or `diff` is out of range.
      */
-    [[nodiscard]] std::optional<uint256>
+    [[nodiscard]] std::optional<UInt256>
     hashAt(std::size_t diff) const
     {
         if (!this->exists())
