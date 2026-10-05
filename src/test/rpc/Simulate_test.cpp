@@ -329,6 +329,21 @@ class Simulate_test : public beast::unit_test::Suite
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'tx.Account'.");
         }
         {
+            // A non-string `Account`, which no earlier check rejects: the `tx_json` arm validates
+            // only that it is an object, and the check above only that `Account` is present.
+            json::Value params;
+            json::Value txJson = json::ValueType::Object;
+            txJson[jss::TransactionType] = jss::AccountSet;
+            txJson[jss::Account] = 123;
+            params[jss::tx_json] = txJson;
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECTS(
+                resp[jss::result][jss::error] == "invalidParams",
+                resp[jss::result][jss::error].toStyledString());
+            BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'tx.Account'.");
+        }
+        {
             // Account doesn't exist for Sequence autofill
             json::Value params;
             json::Value txJson = json::ValueType::Object;

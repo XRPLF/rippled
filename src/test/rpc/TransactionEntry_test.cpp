@@ -18,6 +18,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
+#include <source_location>
 #include <stdexcept>
 #include <string>
 
@@ -25,6 +26,45 @@ namespace xrpl {
 
 class TransactionEntry_test : public beast::unit_test::Suite
 {
+    /**
+     * Asserts the reply carries the whole error, not just the token.
+     *
+     * @param result The reply's payload.
+     * @param token The `error` token expected.
+     * @param code The `error_code` expected.
+     * @param message The `error_message` expected.
+     * @param location The caller, reported when an assertion fails.
+     */
+    void
+    checkCodedError(
+        json::Value const& result,
+        std::string const& token,
+        ErrorCodeI code,
+        std::string const& message,
+        std::source_location const location = std::source_location::current())
+    {
+        auto const at = std::to_string(location.line());
+
+        BEAST_EXPECTS(result[jss::error] == token, at);
+        BEAST_EXPECTS(result[jss::error_code] == code, at);
+        BEAST_EXPECTS(result[jss::error_message] == message, at);
+        BEAST_EXPECTS(result[jss::status] == "error", at);
+    }
+
+    /**
+     * Wire values pinned as literals, so reassigning a code fails here.
+     */
+    void
+    testErrorCodeValues()
+    {
+        testcase("Error code values are stable");
+
+        BEAST_EXPECT(static_cast<int>(RpcFieldNotFoundTransaction) == 104);
+        BEAST_EXPECT(static_cast<int>(RpcNotYetImplemented) == 105);
+        BEAST_EXPECT(static_cast<int>(RpcTransactionNotFound) == 106);
+        BEAST_EXPECT(static_cast<int>(RpcMalformedRequest) == 107);
+    }
+
     void
     testBadInput()
     {
@@ -38,8 +78,12 @@ class TransactionEntry_test : public beast::unit_test::Suite
         {
             // no params
             auto const result = env.client().invoke("transaction_entry", {})[jss::result];
-            BEAST_EXPECT(result[jss::error] == "fieldNotFoundTransaction");
-            BEAST_EXPECT(result[jss::status] == "error");
+            // The message names the missing field rather than the table's default.
+            checkCodedError(
+                result,
+                "fieldNotFoundTransaction",
+                RpcFieldNotFoundTransaction,
+                "Missing field 'tx_hash'.");
         }
 
         {
@@ -55,8 +99,8 @@ class TransactionEntry_test : public beast::unit_test::Suite
             params[jss::ledger] = "current";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
-            BEAST_EXPECT(result[jss::error] == "notYetImplemented");
-            BEAST_EXPECT(result[jss::status] == "error");
+            checkCodedError(
+                result, "notYetImplemented", RpcNotYetImplemented, "Not yet implemented.");
         }
 
         {
@@ -65,8 +109,8 @@ class TransactionEntry_test : public beast::unit_test::Suite
             params[jss::tx_hash] =
                 "E2FE8D4AF3FCC3944DDF6CD8CDDC5E3F0AD50863EF8919AFEF10CB6408CD4D05";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
-            BEAST_EXPECT(result[jss::error] == "notYetImplemented");
-            BEAST_EXPECT(result[jss::status] == "error");
+            checkCodedError(
+                result, "notYetImplemented", RpcNotYetImplemented, "Not yet implemented.");
             BEAST_EXPECT(result.isMember(jss::ledger_current_index));
             BEAST_EXPECT(!result.isMember(jss::ledger_hash));
             BEAST_EXPECT(result[jss::validated] == false);
@@ -78,18 +122,19 @@ class TransactionEntry_test : public beast::unit_test::Suite
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
             BEAST_EXPECT(!result[jss::ledger_hash].asString().empty());
-            BEAST_EXPECT(result[jss::error] == "malformedRequest");
-            BEAST_EXPECT(result[jss::status] == "error");
+            checkCodedError(
+                result, "malformedRequest", RpcMalformedRequest, "Request is malformed.");
         }
 
+        // A `tx_hash` that is not a string is malformed, the same as one that is not hex.
         for (auto const type : {json::ValueType::Object, json::ValueType::Array})
         {
             json::Value params{json::ValueType::Object};
             params[jss::ledger] = "closed";
             params[jss::tx_hash] = json::Value{type};
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
-            BEAST_EXPECT(result[jss::error] == "malformedRequest");
-            BEAST_EXPECT(result[jss::status] == "error");
+            checkCodedError(
+                result, "malformedRequest", RpcMalformedRequest, "Request is malformed.");
         }
 
         std::string const txHash{
@@ -150,8 +195,11 @@ class TransactionEntry_test : public beast::unit_test::Suite
             // Valid structure, but transaction not found.
             json::Value const result{env.rpc("transaction_entry", txHash, "closed")};
             BEAST_EXPECT(!result[jss::result][jss::ledger_hash].asString().empty());
-            BEAST_EXPECT(result[jss::result][jss::error] == "transactionNotFound");
-            BEAST_EXPECT(result[jss::result][jss::status] == "error");
+            checkCodedError(
+                result[jss::result],
+                "transactionNotFound",
+                RpcTransactionNotFound,
+                "Transaction not found.");
         }
     }
 
@@ -374,6 +422,7 @@ public:
     void
     run() override
     {
+        testErrorCodeValues();
         testBadInput();
         forAllApiVersions([this](unsigned apiVersion) { testRequest(apiVersion); });
     }

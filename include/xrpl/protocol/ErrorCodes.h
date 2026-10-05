@@ -144,7 +144,27 @@ enum ErrorCodeI {
     RpcEntryNotFound = 98,
     RpcUnexpectedLedgerType = 99,
 
-    RpcLast = RpcUnexpectedLedgerType  // rpcLAST should always equal the last code.
+    // submit + simulate
+    RpcInvalidTransaction = 100,
+    RpcInternalSubmit = 101,
+    RpcInternalJson = 102,
+    RpcInternalSimulate = 103,
+
+    // transaction_entry
+    RpcFieldNotFoundTransaction = 104,
+    RpcNotYetImplemented = 105,
+    RpcTransactionNotFound = 106,
+
+    // transaction_entry + ledger_entry
+    RpcMalformedRequest = 107,
+
+    // ledger_accept
+    RpcNotStandAlone = 108,
+
+    // ledger_entry, API version 1 only
+    RpcUnknownOption = 109,
+
+    RpcLast = RpcUnknownOption  // rpcLAST should always equal the last code.
 };
 
 /**

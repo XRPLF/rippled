@@ -4,6 +4,7 @@
 #include <xrpld/rpc/Context.h>
 
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
@@ -11,6 +12,13 @@
 
 namespace xrpl {
 
+/**
+ * Closes the open ledger on a stand-alone server.
+ *
+ * @param context The request. Its `params` are not read.
+ * @return `ledger_current_index` of the ledger the close opens, or
+ *         `notStandAlone` when the server is on a network.
+ */
 json::Value
 doLedgerAccept(rpc::JsonContext& context)
 {
@@ -18,7 +26,7 @@ doLedgerAccept(rpc::JsonContext& context)
 
     if (!context.app.config().standalone())
     {
-        jvResult[jss::error] = "notStandAlone";
+        rpc::injectError(RpcNotStandAlone, jvResult);
     }
     else
     {
