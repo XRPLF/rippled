@@ -41,7 +41,7 @@ struct LedgerObjArrayLenGuest : GuestCallTest
     }
 };
 
-TEST_F(LedgerObjArrayLenGuest, SlotAndFieldCodeReachHostInOrder)
+TEST_F(LedgerObjArrayLenGuest, slot_and_field_code_reach_host_in_order)
 {
     EXPECT_CALL(host, getLedgerObjArrayLen(kSlot, testing::Ref(sfBalance)))
         .WillOnce(Return(kCount));
@@ -49,7 +49,7 @@ TEST_F(LedgerObjArrayLenGuest, SlotAndFieldCodeReachHostInOrder)
     EXPECT_EQ(hostAnswer(watFor(kCacheIdx, field())), kCount);
 }
 
-TEST_F(LedgerObjArrayLenGuest, UnknownFieldCodeIsRefusedWithoutAskingHost)
+TEST_F(LedgerObjArrayLenGuest, unknown_field_code_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getLedgerObjArrayLen).Times(0);
 
@@ -60,7 +60,7 @@ TEST_F(LedgerObjArrayLenGuest, UnknownFieldCodeIsRefusedWithoutAskingHost)
 
 // The slot is the one scalar the ABI carries as signed, so a negative one reaches the host as
 // itself and is the host's to refuse.
-TEST_F(LedgerObjArrayLenGuest, NegativeSlotCrossesVerbatim)
+TEST_F(LedgerObjArrayLenGuest, negative_slot_crosses_verbatim)
 {
     EXPECT_CALL(host, getLedgerObjArrayLen(kNegativeSlot, testing::Ref(sfBalance)))
         .WillOnce(Return(std::unexpected(HostFunctionError::SlotOutRange)));
@@ -71,7 +71,7 @@ TEST_F(LedgerObjArrayLenGuest, NegativeSlotCrossesVerbatim)
 
 // `NoArray` is what a field that is not an array actually answers, so it stands for the host
 // error axis here rather than an arbitrary code.
-TEST_F(LedgerObjArrayLenGuest, HostErrorBecomesContractReturnValue)
+TEST_F(LedgerObjArrayLenGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getLedgerObjArrayLen(kSlot, testing::Ref(sfBalance)))
         .WillOnce(Return(std::unexpected(HostFunctionError::NoArray)));
@@ -79,7 +79,7 @@ TEST_F(LedgerObjArrayLenGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(watFor(kCacheIdx, field())), hfErrorToInt(HostFunctionError::NoArray));
 }
 
-TEST_F(LedgerObjArrayLenGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(LedgerObjArrayLenGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getLedgerObjArrayLen(kSlot, testing::Ref(sfBalance)))
         .WillOnce(testing::Throw(std::runtime_error{"ledger obj array len came apart"}));

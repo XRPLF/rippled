@@ -111,40 +111,40 @@ struct TraceGuest : GuestCallTest
 
 // The eight-byte types are the pair worth naming: the same bytes, and the type is the whole
 // difference between the two readings.
-TEST_F(TraceGuest, Int64ReadsTheBufferSigned)
+TEST_F(TraceGuest, int64_reads_the_buffer_signed)
 {
     expectTraced(watFor(TraceDataType::Int64, Bytes(8, 0xff)), "-1");
 }
 
-TEST_F(TraceGuest, Uint64ReadsTheSameBufferUnsigned)
+TEST_F(TraceGuest, uint64_reads_the_same_buffer_unsigned)
 {
     expectTraced(watFor(TraceDataType::Uint64, Bytes(8, 0xff)), "18446744073709551615");
 }
 
-TEST_F(TraceGuest, AsTextTakesTheBufferVerbatim)
+TEST_F(TraceGuest, as_text_takes_the_buffer_verbatim)
 {
     expectTraced(watFor(TraceDataType::AsText, "hello"), "hello");
 }
 
-TEST_F(TraceGuest, AsHexEncodesTheBuffer)
+TEST_F(TraceGuest, as_hex_encodes_the_buffer)
 {
     expectTraced(watFor(TraceDataType::AsHex, Bytes{0x07, 0x08, 0xff}), "0708FF");
 }
 
 // The zero account, so the expectation is the well-known base58 rather than a rendering of
 // whatever the renderer happened to do.
-TEST_F(TraceGuest, AccountIsBase58)
+TEST_F(TraceGuest, account_is_base58)
 {
     expectTraced(
         watFor(TraceDataType::Account, Bytes(AccountID::size(), 0)), "rrrrrrrrrrrrrrrrrrrrrhoLvTp");
 }
 
-TEST_F(TraceGuest, AmountCarriesItsAssetIntoTheText)
+TEST_F(TraceGuest, amount_carries_its_asset_into_the_text)
 {
     expectTraced(watFor(TraceDataType::Amount, serialized(STAmount{XRPAmount{1000}})), "1000/XRP");
 }
 
-TEST_F(TraceGuest, XfloatIsDecodedToItsValue)
+TEST_F(TraceGuest, xfloat_is_decoded_to_its_value)
 {
     auto const encoded = wasm_float::floatFromIntImpl(
         42, static_cast<std::int32_t>(Number::RoundingMode::ToNearest));
@@ -155,7 +155,7 @@ TEST_F(TraceGuest, XfloatIsDecodedToItsValue)
 
 // The width is part of the type, and a buffer that is not it holds no value to print. The
 // contract is not told: a trace answers nothing at all.
-TEST_F(TraceGuest, ABufferOfTheWrongWidthIsDropped)
+TEST_F(TraceGuest, a_buffer_of_the_wrong_width_is_dropped)
 {
     EXPECT_CALL(host, trace).Times(0);
 
@@ -163,7 +163,7 @@ TEST_F(TraceGuest, ABufferOfTheWrongWidthIsDropped)
 }
 
 // `STAmount`'s deserializer rejects this by throwing, which must not escape into the run.
-TEST_F(TraceGuest, AMalformedAmountIsDroppedRatherThanThrown)
+TEST_F(TraceGuest, a_malformed_amount_is_dropped_rather_than_thrown)
 {
     EXPECT_CALL(host, trace).Times(0);
 
@@ -171,7 +171,7 @@ TEST_F(TraceGuest, AMalformedAmountIsDroppedRatherThanThrown)
 }
 
 // Zero is the code a guest sends by omission, which is why no type carries it.
-TEST_F(TraceGuest, ACodeThatNamesNoTypeIsDropped)
+TEST_F(TraceGuest, a_code_that_names_no_type_is_dropped)
 {
     EXPECT_CALL(host, trace).Times(0);
 
@@ -179,7 +179,7 @@ TEST_F(TraceGuest, ACodeThatNamesNoTypeIsDropped)
 }
 
 // The memory policy every input region is held to, on the one call that cannot report it.
-TEST_F(TraceGuest, ARegionPastMemoryIsDropped)
+TEST_F(TraceGuest, a_region_past_memory_is_dropped)
 {
     EXPECT_CALL(host, trace).Times(0);
 
@@ -187,7 +187,7 @@ TEST_F(TraceGuest, ARegionPastMemoryIsDropped)
     EXPECT_EQ(hostAnswer(wat), 1);
 }
 
-TEST_F(TraceGuest, AMessageAndBufferPastTheDataCapAreDropped)
+TEST_F(TraceGuest, a_message_and_buffer_past_the_data_cap_are_dropped)
 {
     EXPECT_CALL(host, trace).Times(0);
 

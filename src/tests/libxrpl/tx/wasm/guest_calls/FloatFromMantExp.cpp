@@ -51,7 +51,7 @@ struct FloatFromMantExpGuest : GuestCallTest
     }
 };
 
-TEST_F(FloatFromMantExpGuest, MantissaExponentAndModeReachHostInOrderAndFloatComesBack)
+TEST_F(FloatFromMantExpGuest, mantissa_exponent_and_mode_reach_host_in_order_and_float_comes_back)
 {
     EXPECT_CALL(host, floatFromMantExp(kMantissa, kExponent, kMode)).WillOnce(Return(result));
 
@@ -59,7 +59,7 @@ TEST_F(FloatFromMantExpGuest, MantissaExponentAndModeReachHostInOrderAndFloatCom
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the float's first four bytes, little-endian";
 }
 
-TEST_F(FloatFromMantExpGuest, StatusIsTheFloatsLength)
+TEST_F(FloatFromMantExpGuest, status_is_the_floats_length)
 {
     EXPECT_CALL(host, floatFromMantExp(kMantissa, kExponent, kMode)).WillOnce(Return(result));
 
@@ -67,7 +67,7 @@ TEST_F(FloatFromMantExpGuest, StatusIsTheFloatsLength)
     EXPECT_EQ(hostAnswer(wat), kFloatLen);
 }
 
-TEST_F(FloatFromMantExpGuest, HostErrorBecomesContractReturnValue)
+TEST_F(FloatFromMantExpGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatFromMantExp(kMantissa, kExponent, kMode))
         .WillOnce(Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -76,7 +76,7 @@ TEST_F(FloatFromMantExpGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatComputationError));
 }
 
-TEST_F(FloatFromMantExpGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(FloatFromMantExpGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, floatFromMantExp(kMantissa, kExponent, kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float from mant exp came apart"}));
@@ -87,7 +87,7 @@ TEST_F(FloatFromMantExpGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("floatFromMantExp"));
 }
 
-TEST_F(FloatFromMantExpGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(FloatFromMantExpGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatFromMantExp(kMantissa, kExponent, kMode)).WillOnce(Return(result));
 
@@ -95,7 +95,7 @@ TEST_F(FloatFromMantExpGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(FloatFromMantExpGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(FloatFromMantExpGuest, out_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatFromMantExp).Times(0);
 
@@ -103,7 +103,7 @@ TEST_F(FloatFromMantExpGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatFromMantExpGuest, NegativeOutPointerIsRefusedWithoutAskingHost)
+TEST_F(FloatFromMantExpGuest, negative_out_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatFromMantExp).Times(0);
 

@@ -64,7 +64,7 @@ struct IsAmendmentEnabledGuest : GuestCallTest
     }
 };
 
-TEST_F(IsAmendmentEnabledGuest, EnabledIdReachesHostAndAnswersOneWithoutNameLookup)
+TEST_F(IsAmendmentEnabledGuest, enabled_id_reaches_host_and_answers_one_without_name_lookup)
 {
     EXPECT_CALL(host, isAmendmentEnabled(IdMatcher(Eq(id)))).WillOnce(Return(1));
     EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(testing::_))).Times(0);
@@ -73,7 +73,7 @@ TEST_F(IsAmendmentEnabledGuest, EnabledIdReachesHostAndAnswersOneWithoutNameLook
     EXPECT_EQ(hostAnswer(wat), 1);
 }
 
-TEST_F(IsAmendmentEnabledGuest, DisabledIdFallsThroughToNameLookupWithTheSameGuestBytes)
+TEST_F(IsAmendmentEnabledGuest, disabled_id_falls_through_to_name_lookup_with_the_same_guest_bytes)
 {
     EXPECT_CALL(host, isAmendmentEnabled(IdMatcher(Eq(id)))).WillOnce(Return(0));
     EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(Eq(idAsName)))).WillOnce(Return(1));
@@ -82,7 +82,7 @@ TEST_F(IsAmendmentEnabledGuest, DisabledIdFallsThroughToNameLookupWithTheSameGue
     EXPECT_EQ(hostAnswer(wat), 1);
 }
 
-TEST_F(IsAmendmentEnabledGuest, IdLookupErrorFallsThroughToNameLookup)
+TEST_F(IsAmendmentEnabledGuest, id_lookup_error_falls_through_to_name_lookup)
 {
     EXPECT_CALL(host, isAmendmentEnabled(IdMatcher(Eq(id))))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -92,7 +92,7 @@ TEST_F(IsAmendmentEnabledGuest, IdLookupErrorFallsThroughToNameLookup)
     EXPECT_EQ(hostAnswer(wat), 0);
 }
 
-TEST_F(IsAmendmentEnabledGuest, NameReachesHostVerbatim)
+TEST_F(IsAmendmentEnabledGuest, name_reaches_host_verbatim)
 {
     EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(Eq(kAmendmentName)))).WillOnce(Return(1));
 
@@ -100,7 +100,7 @@ TEST_F(IsAmendmentEnabledGuest, NameReachesHostVerbatim)
     EXPECT_EQ(hostAnswer(wat), 1);
 }
 
-TEST_F(IsAmendmentEnabledGuest, InputOverSixtyFourBytesIsRefusedWithoutAskingHost)
+TEST_F(IsAmendmentEnabledGuest, input_over_sixty_four_bytes_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, isAmendmentEnabled(IdMatcher(testing::_))).Times(0);
     EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(testing::_))).Times(0);
@@ -109,7 +109,7 @@ TEST_F(IsAmendmentEnabledGuest, InputOverSixtyFourBytesIsRefusedWithoutAskingHos
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::DataFieldTooLarge));
 }
 
-TEST_F(IsAmendmentEnabledGuest, HostErrorBecomesContractReturnValue)
+TEST_F(IsAmendmentEnabledGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(Eq(kAmendmentName))))
         .WillOnce(Return(std::unexpected(HostFunctionError::FieldNotFound)));
@@ -118,7 +118,7 @@ TEST_F(IsAmendmentEnabledGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FieldNotFound));
 }
 
-TEST_F(IsAmendmentEnabledGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(IsAmendmentEnabledGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(Eq(kAmendmentName))))
         .WillOnce(testing::Throw(std::runtime_error{"amendment lookup came apart"}));
@@ -129,7 +129,7 @@ TEST_F(IsAmendmentEnabledGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("isAmendmentEnabled"));
 }
 
-TEST_F(IsAmendmentEnabledGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(IsAmendmentEnabledGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, isAmendmentEnabled(IdMatcher(testing::_))).Times(0);
     EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(testing::_))).Times(0);
@@ -138,7 +138,7 @@ TEST_F(IsAmendmentEnabledGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(IsAmendmentEnabledGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(IsAmendmentEnabledGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, isAmendmentEnabled(IdMatcher(testing::_))).Times(0);
     EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(testing::_))).Times(0);

@@ -50,7 +50,7 @@ struct Sha512HalfGuest : GuestCallTest
 
 // Both directions in one call: the guest's bytes reach the host borrowed from its memory, and
 // the answer comes back into the same memory through the engine's buffer.
-TEST_F(Sha512HalfGuest, GuestBytesReachHostAndDigestComesBack)
+TEST_F(Sha512HalfGuest, guest_bytes_reach_host_and_digest_comes_back)
 {
     EXPECT_CALL(host, computeSha512HalfHash(BytesAre("abc"))).WillOnce(Return(digest()));
 
@@ -58,7 +58,7 @@ TEST_F(Sha512HalfGuest, GuestBytesReachHostAndDigestComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the digest's first four bytes, little-endian";
 }
 
-TEST_F(Sha512HalfGuest, DigestIsThirtyTwoBytes)
+TEST_F(Sha512HalfGuest, digest_is_thirty_two_bytes)
 {
     EXPECT_CALL(host, computeSha512HalfHash).WillOnce(Return(digest()));
 
@@ -66,7 +66,7 @@ TEST_F(Sha512HalfGuest, DigestIsThirtyTwoBytes)
     EXPECT_EQ(hostAnswer(wat), kDigestLen);
 }
 
-TEST_F(Sha512HalfGuest, HostErrorBecomesContractReturnValue)
+TEST_F(Sha512HalfGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, computeSha512HalfHash)
         .WillOnce(Return(std::unexpected(HostFunctionError::InvalidParams)));
@@ -75,7 +75,7 @@ TEST_F(Sha512HalfGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(Sha512HalfGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(Sha512HalfGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, computeSha512HalfHash)
         .WillOnce(testing::Throw(std::runtime_error{"digest came apart"}));
@@ -86,7 +86,7 @@ TEST_F(Sha512HalfGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("sha512Half"));
 }
 
-TEST_F(Sha512HalfGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(Sha512HalfGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, computeSha512HalfHash).Times(0);
 
@@ -94,7 +94,7 @@ TEST_F(Sha512HalfGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(Sha512HalfGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(Sha512HalfGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, computeSha512HalfHash).Times(0);
 
@@ -102,7 +102,7 @@ TEST_F(Sha512HalfGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(Sha512HalfGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(Sha512HalfGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, computeSha512HalfHash(BytesAre("abc"))).WillOnce(Return(digest()));
 
@@ -110,7 +110,7 @@ TEST_F(Sha512HalfGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(Sha512HalfGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(Sha512HalfGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, computeSha512HalfHash(BytesAre("abc"))).WillOnce(Return(digest()));
 
@@ -118,7 +118,7 @@ TEST_F(Sha512HalfGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(Sha512HalfGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(Sha512HalfGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, computeSha512HalfHash(BytesAre("abc"))).WillOnce(Return(digest()));
 

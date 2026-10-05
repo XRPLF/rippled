@@ -72,7 +72,7 @@ struct PaychannelKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(PaychannelKeyletGuest, AccountsAndSeqReachHostInOrderAndKeyletComesBack)
+TEST_F(PaychannelKeyletGuest, accounts_and_seq_reach_host_in_order_and_keylet_comes_back)
 {
     EXPECT_CALL(host, paychannelKeylet(account, destination, kSeqValue)).WillOnce(Return(keylet));
 
@@ -80,7 +80,7 @@ TEST_F(PaychannelKeyletGuest, AccountsAndSeqReachHostInOrderAndKeyletComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(PaychannelKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(PaychannelKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, paychannelKeylet(account, destination, kSeqValue)).WillOnce(Return(keylet));
 
@@ -88,7 +88,7 @@ TEST_F(PaychannelKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(PaychannelKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(PaychannelKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, paychannelKeylet(account, destination, kSeqValue))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -97,7 +97,7 @@ TEST_F(PaychannelKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(PaychannelKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(PaychannelKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, paychannelKeylet(account, destination, kSeqValue))
         .WillOnce(testing::Throw(std::runtime_error{"paychannel keylet came apart"}));
@@ -108,7 +108,7 @@ TEST_F(PaychannelKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("paychannelKeylet"));
 }
 
-TEST_F(PaychannelKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(PaychannelKeyletGuest, account_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, paychannelKeylet).Times(0);
 
@@ -116,7 +116,7 @@ TEST_F(PaychannelKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(PaychannelKeyletGuest, DestinationOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(PaychannelKeyletGuest, destination_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, paychannelKeylet).Times(0);
 
@@ -124,7 +124,7 @@ TEST_F(PaychannelKeyletGuest, DestinationOfTheWrongLengthIsRefusedWithoutAskingH
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(PaychannelKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAskingHost)
+TEST_F(PaychannelKeyletGuest, seq_region_of_any_width_but_four_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, paychannelKeylet).Times(0);
 
@@ -136,7 +136,7 @@ TEST_F(PaychannelKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAskingHo
     }
 }
 
-TEST_F(PaychannelKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(PaychannelKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, paychannelKeylet).Times(0);
 
@@ -144,7 +144,7 @@ TEST_F(PaychannelKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(PaychannelKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(PaychannelKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, paychannelKeylet).Times(0);
 
@@ -152,7 +152,7 @@ TEST_F(PaychannelKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(PaychannelKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(PaychannelKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, paychannelKeylet(account, destination, kSeqValue)).WillOnce(Return(keylet));
 
@@ -160,7 +160,7 @@ TEST_F(PaychannelKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(PaychannelKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(PaychannelKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, paychannelKeylet(account, destination, kSeqValue)).WillOnce(Return(keylet));
 
@@ -168,7 +168,7 @@ TEST_F(PaychannelKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(PaychannelKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(PaychannelKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, paychannelKeylet(account, destination, kSeqValue)).WillOnce(Return(keylet));
 

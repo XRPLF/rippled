@@ -49,7 +49,7 @@ struct LedgerObjFieldGuest : GuestCallTest
     }
 };
 
-TEST_F(LedgerObjFieldGuest, SlotAndFieldCodeReachHostInOrder)
+TEST_F(LedgerObjFieldGuest, slot_and_field_code_reach_host_in_order)
 {
     EXPECT_CALL(host, getLedgerObjField(kSlot, testing::Ref(sfBalance))).WillOnce(Return(value));
 
@@ -57,7 +57,7 @@ TEST_F(LedgerObjFieldGuest, SlotAndFieldCodeReachHostInOrder)
     EXPECT_EQ(hostAnswer(wat), kValueLen) << "the length the host reported";
 }
 
-TEST_F(LedgerObjFieldGuest, FieldBytesReachTheGuestsOutRegion)
+TEST_F(LedgerObjFieldGuest, field_bytes_reach_the_guests_out_region)
 {
     EXPECT_CALL(host, getLedgerObjField(kSlot, testing::Ref(sfBalance))).WillOnce(Return(value));
 
@@ -65,7 +65,7 @@ TEST_F(LedgerObjFieldGuest, FieldBytesReachTheGuestsOutRegion)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the first four bytes, little-endian";
 }
 
-TEST_F(LedgerObjFieldGuest, UnknownFieldCodeIsRefusedWithoutAskingHost)
+TEST_F(LedgerObjFieldGuest, unknown_field_code_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getLedgerObjField).Times(0);
 
@@ -76,7 +76,7 @@ TEST_F(LedgerObjFieldGuest, UnknownFieldCodeIsRefusedWithoutAskingHost)
 
 // The slot is the one scalar the ABI carries as signed, so a negative one reaches the host as
 // itself and is the host's to refuse.
-TEST_F(LedgerObjFieldGuest, NegativeSlotCrossesVerbatim)
+TEST_F(LedgerObjFieldGuest, negative_slot_crosses_verbatim)
 {
     EXPECT_CALL(host, getLedgerObjField(kNegativeSlot, testing::Ref(sfBalance)))
         .WillOnce(Return(std::unexpected(HostFunctionError::SlotOutRange)));
@@ -85,7 +85,7 @@ TEST_F(LedgerObjFieldGuest, NegativeSlotCrossesVerbatim)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::SlotOutRange));
 }
 
-TEST_F(LedgerObjFieldGuest, HostErrorBecomesContractReturnValue)
+TEST_F(LedgerObjFieldGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getLedgerObjField(kSlot, testing::Ref(sfBalance)))
         .WillOnce(Return(std::unexpected(HostFunctionError::FieldNotFound)));
@@ -94,7 +94,7 @@ TEST_F(LedgerObjFieldGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FieldNotFound));
 }
 
-TEST_F(LedgerObjFieldGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(LedgerObjFieldGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getLedgerObjField(kSlot, testing::Ref(sfBalance)))
         .WillOnce(testing::Throw(std::runtime_error{"ledger obj field came apart"}));
@@ -105,7 +105,7 @@ TEST_F(LedgerObjFieldGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getLedgerObjField"));
 }
 
-TEST_F(LedgerObjFieldGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(LedgerObjFieldGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getLedgerObjField(kSlot, testing::Ref(sfBalance))).WillOnce(Return(value));
 
@@ -113,7 +113,7 @@ TEST_F(LedgerObjFieldGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(LedgerObjFieldGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(LedgerObjFieldGuest, out_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getLedgerObjField).Times(0);
 
@@ -121,7 +121,7 @@ TEST_F(LedgerObjFieldGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(LedgerObjFieldGuest, NegativeOutPointerIsRefusedWithoutAskingHost)
+TEST_F(LedgerObjFieldGuest, negative_out_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getLedgerObjField).Times(0);
 

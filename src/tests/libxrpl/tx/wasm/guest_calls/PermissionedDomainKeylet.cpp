@@ -58,7 +58,7 @@ struct PermissionedDomainKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(PermissionedDomainKeyletGuest, AccountAndSeqReachHostAndKeyletComesBack)
+TEST_F(PermissionedDomainKeyletGuest, account_and_seq_reach_host_and_keylet_comes_back)
 {
     EXPECT_CALL(host, permissionedDomainKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -66,7 +66,7 @@ TEST_F(PermissionedDomainKeyletGuest, AccountAndSeqReachHostAndKeyletComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(PermissionedDomainKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(PermissionedDomainKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, permissionedDomainKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -74,7 +74,7 @@ TEST_F(PermissionedDomainKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(PermissionedDomainKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(PermissionedDomainKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, permissionedDomainKeylet(account, kSeqValue))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -83,7 +83,7 @@ TEST_F(PermissionedDomainKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(PermissionedDomainKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(PermissionedDomainKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, permissionedDomainKeylet(account, kSeqValue))
         .WillOnce(testing::Throw(std::runtime_error{"permissioned domain keylet came apart"}));
@@ -94,7 +94,7 @@ TEST_F(PermissionedDomainKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("permissionedDomainKeylet"));
 }
 
-TEST_F(PermissionedDomainKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(PermissionedDomainKeyletGuest, account_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, permissionedDomainKeylet).Times(0);
 
@@ -102,7 +102,9 @@ TEST_F(PermissionedDomainKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAsk
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(PermissionedDomainKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAskingHost)
+TEST_F(
+    PermissionedDomainKeyletGuest,
+    seq_region_of_any_width_but_four_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, permissionedDomainKeylet).Times(0);
 
@@ -114,7 +116,7 @@ TEST_F(PermissionedDomainKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithout
     }
 }
 
-TEST_F(PermissionedDomainKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(PermissionedDomainKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, permissionedDomainKeylet).Times(0);
 
@@ -122,7 +124,7 @@ TEST_F(PermissionedDomainKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskin
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(PermissionedDomainKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(PermissionedDomainKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, permissionedDomainKeylet).Times(0);
 
@@ -130,7 +132,7 @@ TEST_F(PermissionedDomainKeyletGuest, NegativeInputPointerIsRefusedWithoutAsking
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(PermissionedDomainKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(PermissionedDomainKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, permissionedDomainKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -138,7 +140,7 @@ TEST_F(PermissionedDomainKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingH
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(PermissionedDomainKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(PermissionedDomainKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, permissionedDomainKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -146,7 +148,7 @@ TEST_F(PermissionedDomainKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHos
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(PermissionedDomainKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(PermissionedDomainKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, permissionedDomainKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 

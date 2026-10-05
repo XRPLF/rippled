@@ -44,7 +44,7 @@ struct TxNestedFieldGuest : GuestCallTest
     }
 };
 
-TEST_F(TxNestedFieldGuest, LocatorStepsReachHostAndBytesComeBack)
+TEST_F(TxNestedFieldGuest, locator_steps_reach_host_and_bytes_come_back)
 {
     EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps))).WillOnce(Return(value));
 
@@ -52,7 +52,7 @@ TEST_F(TxNestedFieldGuest, LocatorStepsReachHostAndBytesComeBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the first four bytes, little-endian";
 }
 
-TEST_F(TxNestedFieldGuest, StatusIsTheValuesLength)
+TEST_F(TxNestedFieldGuest, status_is_the_values_length)
 {
     EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps))).WillOnce(Return(value));
 
@@ -60,7 +60,7 @@ TEST_F(TxNestedFieldGuest, StatusIsTheValuesLength)
     EXPECT_EQ(hostAnswer(wat), kValueLen);
 }
 
-TEST_F(TxNestedFieldGuest, HostErrorBecomesContractReturnValue)
+TEST_F(TxNestedFieldGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps)))
         .WillOnce(Return(std::unexpected(HostFunctionError::NotLeafField)));
@@ -69,7 +69,7 @@ TEST_F(TxNestedFieldGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::NotLeafField));
 }
 
-TEST_F(TxNestedFieldGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(TxNestedFieldGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps)))
         .WillOnce(testing::Throw(std::runtime_error{"tx nested field came apart"}));
@@ -80,7 +80,7 @@ TEST_F(TxNestedFieldGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getTxNestedField"));
 }
 
-TEST_F(TxNestedFieldGuest, EmptyLocatorIsRefusedWithoutAskingHost)
+TEST_F(TxNestedFieldGuest, empty_locator_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getTxNestedField).Times(0);
 
@@ -90,7 +90,7 @@ TEST_F(TxNestedFieldGuest, EmptyLocatorIsRefusedWithoutAskingHost)
 
 // A locator is whole `i32` steps, so a length not divisible by four is malformed however many
 // bytes it has.
-TEST_F(TxNestedFieldGuest, MisalignedLocatorLengthIsRefusedWithoutAskingHost)
+TEST_F(TxNestedFieldGuest, misaligned_locator_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getTxNestedField).Times(0);
 
@@ -98,7 +98,7 @@ TEST_F(TxNestedFieldGuest, MisalignedLocatorLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LocatorMalformed));
 }
 
-TEST_F(TxNestedFieldGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(TxNestedFieldGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getTxNestedField).Times(0);
 
@@ -106,7 +106,7 @@ TEST_F(TxNestedFieldGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(TxNestedFieldGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(TxNestedFieldGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getTxNestedField).Times(0);
 
@@ -114,7 +114,7 @@ TEST_F(TxNestedFieldGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(TxNestedFieldGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(TxNestedFieldGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps))).WillOnce(Return(value));
 
@@ -122,7 +122,7 @@ TEST_F(TxNestedFieldGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(TxNestedFieldGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(TxNestedFieldGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps))).WillOnce(Return(value));
 
@@ -130,7 +130,7 @@ TEST_F(TxNestedFieldGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(TxNestedFieldGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(TxNestedFieldGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps))).WillOnce(Return(value));
 

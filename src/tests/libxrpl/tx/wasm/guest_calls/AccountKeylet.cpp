@@ -49,7 +49,7 @@ struct AccountKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(AccountKeyletGuest, AccountReachesHostAndKeyletComesBack)
+TEST_F(AccountKeyletGuest, account_reaches_host_and_keylet_comes_back)
 {
     EXPECT_CALL(host, accountKeylet(account)).WillOnce(Return(keylet));
 
@@ -57,7 +57,7 @@ TEST_F(AccountKeyletGuest, AccountReachesHostAndKeyletComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(AccountKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(AccountKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, accountKeylet(account)).WillOnce(Return(keylet));
 
@@ -65,7 +65,7 @@ TEST_F(AccountKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(AccountKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(AccountKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, accountKeylet(account))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -74,7 +74,7 @@ TEST_F(AccountKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(AccountKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(AccountKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, accountKeylet(account))
         .WillOnce(testing::Throw(std::runtime_error{"account keylet came apart"}));
@@ -85,7 +85,7 @@ TEST_F(AccountKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("accountKeylet"));
 }
 
-TEST_F(AccountKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(AccountKeyletGuest, account_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, accountKeylet).Times(0);
 
@@ -93,7 +93,7 @@ TEST_F(AccountKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(AccountKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(AccountKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, accountKeylet).Times(0);
 
@@ -101,7 +101,7 @@ TEST_F(AccountKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(AccountKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(AccountKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, accountKeylet).Times(0);
 
@@ -109,7 +109,7 @@ TEST_F(AccountKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(AccountKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(AccountKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, accountKeylet(account)).WillOnce(Return(keylet));
 
@@ -117,7 +117,7 @@ TEST_F(AccountKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(AccountKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(AccountKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, accountKeylet(account)).WillOnce(Return(keylet));
 
@@ -125,7 +125,7 @@ TEST_F(AccountKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(AccountKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(AccountKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, accountKeylet(account)).WillOnce(Return(keylet));
 

@@ -57,7 +57,7 @@ struct FloatSubtractGuest : GuestCallTest
     }
 };
 
-TEST_F(FloatSubtractGuest, OperandsAndModeReachHostInOrder)
+TEST_F(FloatSubtractGuest, operands_and_mode_reach_host_in_order)
 {
     EXPECT_CALL(host, floatSubtract(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(result));
@@ -66,7 +66,7 @@ TEST_F(FloatSubtractGuest, OperandsAndModeReachHostInOrder)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the float's first four bytes, little-endian";
 }
 
-TEST_F(FloatSubtractGuest, StatusIsTheFloatsLength)
+TEST_F(FloatSubtractGuest, status_is_the_floats_length)
 {
     EXPECT_CALL(host, floatSubtract(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(result));
@@ -75,7 +75,7 @@ TEST_F(FloatSubtractGuest, StatusIsTheFloatsLength)
     EXPECT_EQ(hostAnswer(wat), kFloatLen);
 }
 
-TEST_F(FloatSubtractGuest, HostErrorBecomesContractReturnValue)
+TEST_F(FloatSubtractGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatSubtract(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -84,7 +84,7 @@ TEST_F(FloatSubtractGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatComputationError));
 }
 
-TEST_F(FloatSubtractGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(FloatSubtractGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, floatSubtract(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float subtract came apart"}));
@@ -95,7 +95,7 @@ TEST_F(FloatSubtractGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("floatSubtract"));
 }
 
-TEST_F(FloatSubtractGuest, FirstOperandPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(FloatSubtractGuest, first_operand_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatSubtract).Times(0);
 
@@ -103,7 +103,7 @@ TEST_F(FloatSubtractGuest, FirstOperandPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatSubtractGuest, SecondOperandPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(FloatSubtractGuest, second_operand_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatSubtract).Times(0);
 
@@ -111,7 +111,7 @@ TEST_F(FloatSubtractGuest, SecondOperandPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatSubtractGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(FloatSubtractGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatSubtract).Times(0);
 
@@ -119,7 +119,7 @@ TEST_F(FloatSubtractGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(FloatSubtractGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(FloatSubtractGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatSubtract(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(result));
@@ -128,7 +128,7 @@ TEST_F(FloatSubtractGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(FloatSubtractGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(FloatSubtractGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatSubtract(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(result));
@@ -137,7 +137,7 @@ TEST_F(FloatSubtractGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatSubtractGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(FloatSubtractGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatSubtract(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(result));

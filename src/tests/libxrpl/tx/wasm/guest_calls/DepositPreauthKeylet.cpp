@@ -54,7 +54,7 @@ struct DepositPreauthKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(DepositPreauthKeyletGuest, AccountAndAuthorizeReachHostInOrderAndKeyletComesBack)
+TEST_F(DepositPreauthKeyletGuest, account_and_authorize_reach_host_in_order_and_keylet_comes_back)
 {
     EXPECT_CALL(host, depositPreauthKeylet(account, authorize)).WillOnce(Return(keylet));
 
@@ -62,7 +62,7 @@ TEST_F(DepositPreauthKeyletGuest, AccountAndAuthorizeReachHostInOrderAndKeyletCo
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(DepositPreauthKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(DepositPreauthKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, depositPreauthKeylet(account, authorize)).WillOnce(Return(keylet));
 
@@ -70,7 +70,7 @@ TEST_F(DepositPreauthKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(DepositPreauthKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(DepositPreauthKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, depositPreauthKeylet(account, authorize))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -79,7 +79,7 @@ TEST_F(DepositPreauthKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(DepositPreauthKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(DepositPreauthKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, depositPreauthKeylet(account, authorize))
         .WillOnce(testing::Throw(std::runtime_error{"deposit preauth keylet came apart"}));
@@ -90,7 +90,7 @@ TEST_F(DepositPreauthKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("depositPreauthKeylet"));
 }
 
-TEST_F(DepositPreauthKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(DepositPreauthKeyletGuest, account_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, depositPreauthKeylet).Times(0);
 
@@ -98,7 +98,7 @@ TEST_F(DepositPreauthKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingH
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(DepositPreauthKeyletGuest, AuthorizeOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(DepositPreauthKeyletGuest, authorize_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, depositPreauthKeylet).Times(0);
 
@@ -106,7 +106,7 @@ TEST_F(DepositPreauthKeyletGuest, AuthorizeOfTheWrongLengthIsRefusedWithoutAskin
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(DepositPreauthKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(DepositPreauthKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, depositPreauthKeylet).Times(0);
 
@@ -114,7 +114,7 @@ TEST_F(DepositPreauthKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHos
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(DepositPreauthKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(DepositPreauthKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, depositPreauthKeylet).Times(0);
 
@@ -122,7 +122,7 @@ TEST_F(DepositPreauthKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(DepositPreauthKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(DepositPreauthKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, depositPreauthKeylet(account, authorize)).WillOnce(Return(keylet));
 
@@ -130,7 +130,7 @@ TEST_F(DepositPreauthKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(DepositPreauthKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(DepositPreauthKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, depositPreauthKeylet(account, authorize)).WillOnce(Return(keylet));
 
@@ -138,7 +138,7 @@ TEST_F(DepositPreauthKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(DepositPreauthKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(DepositPreauthKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, depositPreauthKeylet(account, authorize)).WillOnce(Return(keylet));
 

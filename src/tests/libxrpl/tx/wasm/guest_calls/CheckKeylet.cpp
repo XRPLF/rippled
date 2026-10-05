@@ -61,7 +61,7 @@ struct CheckKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(CheckKeyletGuest, AccountAndSeqReachHostAndKeyletComesBack)
+TEST_F(CheckKeyletGuest, account_and_seq_reach_host_and_keylet_comes_back)
 {
     EXPECT_CALL(host, checkKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -69,7 +69,7 @@ TEST_F(CheckKeyletGuest, AccountAndSeqReachHostAndKeyletComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(CheckKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(CheckKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, checkKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -77,7 +77,7 @@ TEST_F(CheckKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(CheckKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(CheckKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, checkKeylet(account, kSeqValue))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -86,7 +86,7 @@ TEST_F(CheckKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(CheckKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(CheckKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, checkKeylet(account, kSeqValue))
         .WillOnce(testing::Throw(std::runtime_error{"check keylet came apart"}));
@@ -97,7 +97,7 @@ TEST_F(CheckKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("checkKeylet"));
 }
 
-TEST_F(CheckKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(CheckKeyletGuest, account_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, checkKeylet).Times(0);
 
@@ -107,7 +107,7 @@ TEST_F(CheckKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
 
 // Refused by the engine, not by `HostContext`: `InU32::read` holds the region to the ABI's
 // four bytes before any of it reaches C++.
-TEST_F(CheckKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAskingHost)
+TEST_F(CheckKeyletGuest, seq_region_of_any_width_but_four_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, checkKeylet).Times(0);
 
@@ -119,7 +119,7 @@ TEST_F(CheckKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAskingHost)
     }
 }
 
-TEST_F(CheckKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(CheckKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, checkKeylet).Times(0);
 
@@ -127,7 +127,7 @@ TEST_F(CheckKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(CheckKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(CheckKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, checkKeylet).Times(0);
 
@@ -135,7 +135,7 @@ TEST_F(CheckKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(CheckKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(CheckKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, checkKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -143,7 +143,7 @@ TEST_F(CheckKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(CheckKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(CheckKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, checkKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -151,7 +151,7 @@ TEST_F(CheckKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(CheckKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(CheckKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, checkKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 

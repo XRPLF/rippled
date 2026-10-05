@@ -37,7 +37,7 @@ struct CurrentLedgerObjArrayLenGuest : GuestCallTest
     }
 };
 
-TEST_F(CurrentLedgerObjArrayLenGuest, FieldCodeBecomesSFieldHostIsAskedFor)
+TEST_F(CurrentLedgerObjArrayLenGuest, field_code_becomes_sfield_host_is_asked_for)
 {
     EXPECT_CALL(host, getCurrentLedgerObjArrayLen(testing::Ref(sfBalance)))
         .WillOnce(Return(kCount));
@@ -45,7 +45,7 @@ TEST_F(CurrentLedgerObjArrayLenGuest, FieldCodeBecomesSFieldHostIsAskedFor)
     EXPECT_EQ(hostAnswer(watFor(field())), kCount);
 }
 
-TEST_F(CurrentLedgerObjArrayLenGuest, UnknownFieldCodeIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjArrayLenGuest, unknown_field_code_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getCurrentLedgerObjArrayLen).Times(0);
 
@@ -55,7 +55,7 @@ TEST_F(CurrentLedgerObjArrayLenGuest, UnknownFieldCodeIsRefusedWithoutAskingHost
 
 // `NoArray` is what a field that is not an array actually answers, so it stands for the host
 // error axis here rather than an arbitrary code.
-TEST_F(CurrentLedgerObjArrayLenGuest, HostErrorBecomesContractReturnValue)
+TEST_F(CurrentLedgerObjArrayLenGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getCurrentLedgerObjArrayLen(testing::Ref(sfBalance)))
         .WillOnce(Return(std::unexpected(HostFunctionError::NoArray)));
@@ -63,7 +63,7 @@ TEST_F(CurrentLedgerObjArrayLenGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(watFor(field())), hfErrorToInt(HostFunctionError::NoArray));
 }
 
-TEST_F(CurrentLedgerObjArrayLenGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(CurrentLedgerObjArrayLenGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getCurrentLedgerObjArrayLen(testing::Ref(sfBalance)))
         .WillOnce(testing::Throw(std::runtime_error{"current ledger obj array len came apart"}));

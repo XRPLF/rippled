@@ -42,7 +42,7 @@ struct ParentLedgerHashGuest : GuestCallTest
     }
 };
 
-TEST_F(ParentLedgerHashGuest, HashReachesTheGuestsOutRegion)
+TEST_F(ParentLedgerHashGuest, hash_reaches_the_guests_out_region)
 {
     EXPECT_CALL(host, getParentLedgerHash()).WillOnce(Return(hash));
 
@@ -50,7 +50,7 @@ TEST_F(ParentLedgerHashGuest, HashReachesTheGuestsOutRegion)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the hash's first four bytes, little-endian";
 }
 
-TEST_F(ParentLedgerHashGuest, StatusIsTheHashLength)
+TEST_F(ParentLedgerHashGuest, status_is_the_hash_length)
 {
     EXPECT_CALL(host, getParentLedgerHash()).WillOnce(Return(hash));
 
@@ -58,7 +58,7 @@ TEST_F(ParentLedgerHashGuest, StatusIsTheHashLength)
     EXPECT_EQ(hostAnswer(wat), kHashLen);
 }
 
-TEST_F(ParentLedgerHashGuest, HostErrorBecomesContractReturnValue)
+TEST_F(ParentLedgerHashGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getParentLedgerHash())
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -67,7 +67,7 @@ TEST_F(ParentLedgerHashGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(ParentLedgerHashGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(ParentLedgerHashGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getParentLedgerHash())
         .WillOnce(testing::Throw(std::runtime_error{"parent ledger hash came apart"}));
@@ -78,7 +78,7 @@ TEST_F(ParentLedgerHashGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getParentLedgerHash"));
 }
 
-TEST_F(ParentLedgerHashGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(ParentLedgerHashGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getParentLedgerHash()).WillOnce(Return(hash));
 
@@ -86,7 +86,7 @@ TEST_F(ParentLedgerHashGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(ParentLedgerHashGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(ParentLedgerHashGuest, out_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getParentLedgerHash).Times(0);
 
@@ -94,7 +94,7 @@ TEST_F(ParentLedgerHashGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(ParentLedgerHashGuest, NegativeOutPointerIsRefusedWithoutAskingHost)
+TEST_F(ParentLedgerHashGuest, negative_out_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getParentLedgerHash).Times(0);
 

@@ -41,7 +41,7 @@ struct CacheLedgerObjGuest : GuestCallTest
     }
 };
 
-TEST_F(CacheLedgerObjGuest, ObjIdAndCacheIdxReachHostAndTheSlotIsTheAnswer)
+TEST_F(CacheLedgerObjGuest, obj_id_and_cache_idx_reach_host_and_the_slot_is_the_answer)
 {
     EXPECT_CALL(host, cacheLedgerObj(Eq(objId), kSlot)).WillOnce(Return(7));
 
@@ -49,7 +49,7 @@ TEST_F(CacheLedgerObjGuest, ObjIdAndCacheIdxReachHostAndTheSlotIsTheAnswer)
     EXPECT_EQ(hostAnswer(wat), 7);
 }
 
-TEST_F(CacheLedgerObjGuest, HostErrorBecomesContractReturnValue)
+TEST_F(CacheLedgerObjGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, cacheLedgerObj(Eq(objId), kSlot))
         .WillOnce(Return(std::unexpected(HostFunctionError::SlotsFull)));
@@ -58,7 +58,7 @@ TEST_F(CacheLedgerObjGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::SlotsFull));
 }
 
-TEST_F(CacheLedgerObjGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(CacheLedgerObjGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, cacheLedgerObj(Eq(objId), kSlot))
         .WillOnce(testing::Throw(std::runtime_error{"cache slot came apart"}));
@@ -69,7 +69,7 @@ TEST_F(CacheLedgerObjGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("cacheLedgerObj"));
 }
 
-TEST_F(CacheLedgerObjGuest, ObjIdOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(CacheLedgerObjGuest, obj_id_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, cacheLedgerObj).Times(0);
 
@@ -77,7 +77,7 @@ TEST_F(CacheLedgerObjGuest, ObjIdOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(CacheLedgerObjGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(CacheLedgerObjGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, cacheLedgerObj).Times(0);
 
@@ -85,7 +85,7 @@ TEST_F(CacheLedgerObjGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(CacheLedgerObjGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(CacheLedgerObjGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, cacheLedgerObj).Times(0);
 
@@ -95,7 +95,7 @@ TEST_F(CacheLedgerObjGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
 
 // 0 asks the host to pick a free slot, so it is a meaningful argument rather than an absent
 // one and must cross as itself.
-TEST_F(CacheLedgerObjGuest, ZeroCacheIdxCrossesVerbatim)
+TEST_F(CacheLedgerObjGuest, zero_cache_idx_crosses_verbatim)
 {
     EXPECT_CALL(host, cacheLedgerObj(Eq(objId), 0)).WillOnce(Return(3));
 
@@ -106,7 +106,7 @@ TEST_F(CacheLedgerObjGuest, ZeroCacheIdxCrossesVerbatim)
 // `cacheIdx` is the one scalar the ABI carries as signed: unlike a `seq`, it is not
 // reinterpreted as unsigned on its way across, so a negative value reaches the host as
 // itself and is the host's to refuse.
-TEST_F(CacheLedgerObjGuest, NegativeCacheIdxCrossesVerbatim)
+TEST_F(CacheLedgerObjGuest, negative_cache_idx_crosses_verbatim)
 {
     EXPECT_CALL(host, cacheLedgerObj(Eq(objId), -1))
         .WillOnce(Return(std::unexpected(HostFunctionError::SlotOutRange)));

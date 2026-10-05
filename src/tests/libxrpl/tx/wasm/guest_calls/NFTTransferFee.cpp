@@ -35,7 +35,7 @@ struct NFTTransferFeeGuest : GuestCallTest
     }
 };
 
-TEST_F(NFTTransferFeeGuest, NftIdReachesHostAndTransferFeeComesBack)
+TEST_F(NFTTransferFeeGuest, nft_id_reaches_host_and_transfer_fee_comes_back)
 {
     EXPECT_CALL(host, getNFTTransferFee(Eq(nftId))).WillOnce(Return(kTransferFee));
 
@@ -43,7 +43,7 @@ TEST_F(NFTTransferFeeGuest, NftIdReachesHostAndTransferFeeComesBack)
     EXPECT_EQ(hostAnswer(wat), kTransferFee);
 }
 
-TEST_F(NFTTransferFeeGuest, HostErrorBecomesContractReturnValue)
+TEST_F(NFTTransferFeeGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getNFTTransferFee(Eq(nftId)))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -52,7 +52,7 @@ TEST_F(NFTTransferFeeGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(NFTTransferFeeGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(NFTTransferFeeGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getNFTTransferFee(Eq(nftId)))
         .WillOnce(testing::Throw(std::runtime_error{"nft transfer fee came apart"}));
@@ -63,7 +63,7 @@ TEST_F(NFTTransferFeeGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getNFTTransferFee"));
 }
 
-TEST_F(NFTTransferFeeGuest, NftIdOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(NFTTransferFeeGuest, nft_id_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFTTransferFee).Times(0);
 
@@ -71,7 +71,7 @@ TEST_F(NFTTransferFeeGuest, NftIdOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NFTTransferFeeGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(NFTTransferFeeGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFTTransferFee).Times(0);
 
@@ -79,7 +79,7 @@ TEST_F(NFTTransferFeeGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(NFTTransferFeeGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(NFTTransferFeeGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFTTransferFee).Times(0);
 

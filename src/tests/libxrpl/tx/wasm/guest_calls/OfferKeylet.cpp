@@ -58,7 +58,7 @@ struct OfferKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(OfferKeyletGuest, AccountAndSeqReachHostAndKeyletComesBack)
+TEST_F(OfferKeyletGuest, account_and_seq_reach_host_and_keylet_comes_back)
 {
     EXPECT_CALL(host, offerKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -66,7 +66,7 @@ TEST_F(OfferKeyletGuest, AccountAndSeqReachHostAndKeyletComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(OfferKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(OfferKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, offerKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -74,7 +74,7 @@ TEST_F(OfferKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(OfferKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(OfferKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, offerKeylet(account, kSeqValue))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -83,7 +83,7 @@ TEST_F(OfferKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(OfferKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(OfferKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, offerKeylet(account, kSeqValue))
         .WillOnce(testing::Throw(std::runtime_error{"offer keylet came apart"}));
@@ -94,7 +94,7 @@ TEST_F(OfferKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("offerKeylet"));
 }
 
-TEST_F(OfferKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(OfferKeyletGuest, account_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, offerKeylet).Times(0);
 
@@ -102,7 +102,7 @@ TEST_F(OfferKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(OfferKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAskingHost)
+TEST_F(OfferKeyletGuest, seq_region_of_any_width_but_four_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, offerKeylet).Times(0);
 
@@ -114,7 +114,7 @@ TEST_F(OfferKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAskingHost)
     }
 }
 
-TEST_F(OfferKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(OfferKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, offerKeylet).Times(0);
 
@@ -122,7 +122,7 @@ TEST_F(OfferKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(OfferKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(OfferKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, offerKeylet).Times(0);
 
@@ -130,7 +130,7 @@ TEST_F(OfferKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(OfferKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(OfferKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, offerKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -138,7 +138,7 @@ TEST_F(OfferKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(OfferKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(OfferKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, offerKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -146,7 +146,7 @@ TEST_F(OfferKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(OfferKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(OfferKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, offerKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 

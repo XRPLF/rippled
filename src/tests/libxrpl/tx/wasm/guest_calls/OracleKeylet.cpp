@@ -58,7 +58,7 @@ struct OracleKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(OracleKeyletGuest, AccountAndDocIdReachHostAndKeyletComesBack)
+TEST_F(OracleKeyletGuest, account_and_doc_id_reach_host_and_keylet_comes_back)
 {
     EXPECT_CALL(host, oracleKeylet(account, kDocIdValue)).WillOnce(Return(keylet));
 
@@ -66,7 +66,7 @@ TEST_F(OracleKeyletGuest, AccountAndDocIdReachHostAndKeyletComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(OracleKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(OracleKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, oracleKeylet(account, kDocIdValue)).WillOnce(Return(keylet));
 
@@ -74,7 +74,7 @@ TEST_F(OracleKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(OracleKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(OracleKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, oracleKeylet(account, kDocIdValue))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -83,7 +83,7 @@ TEST_F(OracleKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(OracleKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(OracleKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, oracleKeylet(account, kDocIdValue))
         .WillOnce(testing::Throw(std::runtime_error{"oracle keylet came apart"}));
@@ -94,7 +94,7 @@ TEST_F(OracleKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("oracleKeylet"));
 }
 
-TEST_F(OracleKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(OracleKeyletGuest, account_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, oracleKeylet).Times(0);
 
@@ -102,7 +102,7 @@ TEST_F(OracleKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(OracleKeyletGuest, DocIdRegionOfAnyWidthButFourIsRefusedWithoutAskingHost)
+TEST_F(OracleKeyletGuest, doc_id_region_of_any_width_but_four_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, oracleKeylet).Times(0);
 
@@ -114,7 +114,7 @@ TEST_F(OracleKeyletGuest, DocIdRegionOfAnyWidthButFourIsRefusedWithoutAskingHost
     }
 }
 
-TEST_F(OracleKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(OracleKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, oracleKeylet).Times(0);
 
@@ -122,7 +122,7 @@ TEST_F(OracleKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(OracleKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(OracleKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, oracleKeylet).Times(0);
 
@@ -130,7 +130,7 @@ TEST_F(OracleKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(OracleKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(OracleKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, oracleKeylet(account, kDocIdValue)).WillOnce(Return(keylet));
 
@@ -138,7 +138,7 @@ TEST_F(OracleKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(OracleKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(OracleKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, oracleKeylet(account, kDocIdValue)).WillOnce(Return(keylet));
 
@@ -146,7 +146,7 @@ TEST_F(OracleKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(OracleKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(OracleKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, oracleKeylet(account, kDocIdValue)).WillOnce(Return(keylet));
 

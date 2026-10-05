@@ -58,7 +58,7 @@ struct LoanBrokerKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(LoanBrokerKeyletGuest, OwnerAndSeqReachHostAndKeyletComesBack)
+TEST_F(LoanBrokerKeyletGuest, owner_and_seq_reach_host_and_keylet_comes_back)
 {
     EXPECT_CALL(host, loanBrokerKeylet(owner, kSeqValue)).WillOnce(Return(keylet));
 
@@ -66,7 +66,7 @@ TEST_F(LoanBrokerKeyletGuest, OwnerAndSeqReachHostAndKeyletComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(LoanBrokerKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(LoanBrokerKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, loanBrokerKeylet(owner, kSeqValue)).WillOnce(Return(keylet));
 
@@ -74,7 +74,7 @@ TEST_F(LoanBrokerKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(LoanBrokerKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(LoanBrokerKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, loanBrokerKeylet(owner, kSeqValue))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -83,7 +83,7 @@ TEST_F(LoanBrokerKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(LoanBrokerKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(LoanBrokerKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, loanBrokerKeylet(owner, kSeqValue))
         .WillOnce(testing::Throw(std::runtime_error{"loan broker keylet came apart"}));
@@ -94,7 +94,7 @@ TEST_F(LoanBrokerKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("loanBrokerKeylet"));
 }
 
-TEST_F(LoanBrokerKeyletGuest, OwnerOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(LoanBrokerKeyletGuest, owner_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, loanBrokerKeylet).Times(0);
 
@@ -102,7 +102,7 @@ TEST_F(LoanBrokerKeyletGuest, OwnerOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(LoanBrokerKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAskingHost)
+TEST_F(LoanBrokerKeyletGuest, seq_region_of_any_width_but_four_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, loanBrokerKeylet).Times(0);
 
@@ -114,7 +114,7 @@ TEST_F(LoanBrokerKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAskingHo
     }
 }
 
-TEST_F(LoanBrokerKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(LoanBrokerKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, loanBrokerKeylet).Times(0);
 
@@ -122,7 +122,7 @@ TEST_F(LoanBrokerKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(LoanBrokerKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(LoanBrokerKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, loanBrokerKeylet).Times(0);
 
@@ -130,7 +130,7 @@ TEST_F(LoanBrokerKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(LoanBrokerKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(LoanBrokerKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, loanBrokerKeylet(owner, kSeqValue)).WillOnce(Return(keylet));
 
@@ -138,7 +138,7 @@ TEST_F(LoanBrokerKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(LoanBrokerKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(LoanBrokerKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, loanBrokerKeylet(owner, kSeqValue)).WillOnce(Return(keylet));
 
@@ -146,7 +146,7 @@ TEST_F(LoanBrokerKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(LoanBrokerKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(LoanBrokerKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, loanBrokerKeylet(owner, kSeqValue)).WillOnce(Return(keylet));
 

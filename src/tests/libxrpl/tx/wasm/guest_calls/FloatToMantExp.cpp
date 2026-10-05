@@ -89,7 +89,7 @@ struct FloatToMantExpGuest : GuestCallTest
     }
 };
 
-TEST_F(FloatToMantExpGuest, OperandReachesHostAndMantissaLandsInItsRegion)
+TEST_F(FloatToMantExpGuest, operand_reaches_host_and_mantissa_lands_in_its_region)
 {
     EXPECT_CALL(host, floatToMantExp(BytesAre(kXText))).WillOnce(Return(kPair));
 
@@ -97,7 +97,7 @@ TEST_F(FloatToMantExpGuest, OperandReachesHostAndMantissaLandsInItsRegion)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the mantissa's first four bytes, little-endian";
 }
 
-TEST_F(FloatToMantExpGuest, ExponentLandsInItsOwnRegion)
+TEST_F(FloatToMantExpGuest, exponent_lands_in_its_own_region)
 {
     EXPECT_CALL(host, floatToMantExp(BytesAre(kXText))).WillOnce(Return(kPair));
 
@@ -107,7 +107,7 @@ TEST_F(FloatToMantExpGuest, ExponentLandsInItsOwnRegion)
 
 // Both widths are the ABI's rather than the guest's, so the status is their sum and not
 // either length the guest declared.
-TEST_F(FloatToMantExpGuest, StatusIsBothWidthsSummed)
+TEST_F(FloatToMantExpGuest, status_is_both_widths_summed)
 {
     EXPECT_CALL(host, floatToMantExp(BytesAre(kXText))).WillOnce(Return(kPair));
 
@@ -115,7 +115,7 @@ TEST_F(FloatToMantExpGuest, StatusIsBothWidthsSummed)
     EXPECT_EQ(hostAnswer(wat), kMantissaLen + kExponentLen);
 }
 
-TEST_F(FloatToMantExpGuest, HostErrorBecomesContractReturnValue)
+TEST_F(FloatToMantExpGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatToMantExp(BytesAre(kXText)))
         .WillOnce(Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -124,7 +124,7 @@ TEST_F(FloatToMantExpGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatComputationError));
 }
 
-TEST_F(FloatToMantExpGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(FloatToMantExpGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, floatToMantExp(BytesAre(kXText)))
         .WillOnce(testing::Throw(std::runtime_error{"float to mant exp came apart"}));
@@ -135,7 +135,7 @@ TEST_F(FloatToMantExpGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("floatToMantExp"));
 }
 
-TEST_F(FloatToMantExpGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(FloatToMantExpGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatToMantExp).Times(0);
 
@@ -143,7 +143,7 @@ TEST_F(FloatToMantExpGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatToMantExpGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(FloatToMantExpGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatToMantExp).Times(0);
 

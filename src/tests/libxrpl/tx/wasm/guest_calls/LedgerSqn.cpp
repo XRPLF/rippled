@@ -31,7 +31,7 @@ struct LedgerSqnGuest : GuestCallTest
     }
 };
 
-TEST_F(LedgerSqnGuest, SequenceReachesGuestAsFourLittleEndianBytes)
+TEST_F(LedgerSqnGuest, sequence_reaches_guest_as_four_little_endian_bytes)
 {
     EXPECT_CALL(host, getLedgerSqn()).WillOnce(Return(0x01020304u));
 
@@ -41,7 +41,7 @@ TEST_F(LedgerSqnGuest, SequenceReachesGuestAsFourLittleEndianBytes)
     EXPECT_EQ(hostAnswer(wat), 0x01020304);
 }
 
-TEST_F(LedgerSqnGuest, HostErrorBecomesContractReturnValue)
+TEST_F(LedgerSqnGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getLedgerSqn())
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -56,7 +56,7 @@ TEST_F(LedgerSqnGuest, HostErrorBecomesContractReturnValue)
 //
 // Its own module, because showing that the refusal wrote *nothing* needs the guest to read
 // its memory back after the call, which is more than one host call's worth of module.
-TEST_F(LedgerSqnGuest, BufferTooSmallIsRefusedWholeNotTruncated)
+TEST_F(LedgerSqnGuest, buffer_too_small_is_refused_whole_not_truncated)
 {
     EXPECT_CALL(host, getLedgerSqn()).WillOnce(Return(0x01020304u));
 
@@ -78,7 +78,7 @@ TEST_F(LedgerSqnGuest, BufferTooSmallIsRefusedWholeNotTruncated)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(LedgerSqnGuest, StatusIsTheScalarWidth)
+TEST_F(LedgerSqnGuest, status_is_the_scalar_width)
 {
     EXPECT_CALL(host, getLedgerSqn()).WillOnce(Return(0x01020304u));
 
@@ -86,7 +86,7 @@ TEST_F(LedgerSqnGuest, StatusIsTheScalarWidth)
     EXPECT_EQ(hostAnswer(wat), kSeqLen);
 }
 
-TEST_F(LedgerSqnGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(LedgerSqnGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getLedgerSqn())
         .WillOnce(testing::Throw(std::runtime_error{"ledger sequence came apart"}));
@@ -97,7 +97,7 @@ TEST_F(LedgerSqnGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getLedgerSqn"));
 }
 
-TEST_F(LedgerSqnGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(LedgerSqnGuest, out_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getLedgerSqn).Times(0);
 
@@ -105,7 +105,7 @@ TEST_F(LedgerSqnGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(LedgerSqnGuest, NegativeOutPointerIsRefusedWithoutAskingHost)
+TEST_F(LedgerSqnGuest, negative_out_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getLedgerSqn).Times(0);
 

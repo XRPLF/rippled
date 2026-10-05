@@ -52,7 +52,7 @@ struct NFTGuest : GuestCallTest
     }
 };
 
-TEST_F(NFTGuest, AccountAndNftIdReachHostAndUriComesBack)
+TEST_F(NFTGuest, account_and_nft_id_reach_host_and_uri_comes_back)
 {
     EXPECT_CALL(host, getNFT(Eq(account), Eq(nftId))).WillOnce(Return(uri));
 
@@ -60,7 +60,7 @@ TEST_F(NFTGuest, AccountAndNftIdReachHostAndUriComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x73667069) << "the URI's first four bytes ('ipfs'), little-endian";
 }
 
-TEST_F(NFTGuest, StatusIsTheUriLength)
+TEST_F(NFTGuest, status_is_the_uri_length)
 {
     EXPECT_CALL(host, getNFT(Eq(account), Eq(nftId))).WillOnce(Return(uri));
 
@@ -68,7 +68,7 @@ TEST_F(NFTGuest, StatusIsTheUriLength)
     EXPECT_EQ(hostAnswer(wat), kUriLen);
 }
 
-TEST_F(NFTGuest, HostErrorBecomesContractReturnValue)
+TEST_F(NFTGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getNFT(Eq(account), Eq(nftId)))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -77,7 +77,7 @@ TEST_F(NFTGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(NFTGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(NFTGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getNFT(Eq(account), Eq(nftId)))
         .WillOnce(testing::Throw(std::runtime_error{"nft uri came apart"}));
@@ -88,7 +88,7 @@ TEST_F(NFTGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getNFT"));
 }
 
-TEST_F(NFTGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(NFTGuest, account_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFT).Times(0);
 
@@ -96,7 +96,7 @@ TEST_F(NFTGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NFTGuest, NftIdOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(NFTGuest, nft_id_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFT).Times(0);
 
@@ -104,7 +104,7 @@ TEST_F(NFTGuest, NftIdOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NFTGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(NFTGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFT).Times(0);
 
@@ -112,7 +112,7 @@ TEST_F(NFTGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(NFTGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(NFTGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFT).Times(0);
 
@@ -120,7 +120,7 @@ TEST_F(NFTGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NFTGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(NFTGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getNFT(Eq(account), Eq(nftId))).WillOnce(Return(uri));
 
@@ -128,7 +128,7 @@ TEST_F(NFTGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(NFTGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(NFTGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getNFT(Eq(account), Eq(nftId))).WillOnce(Return(uri));
 
@@ -136,7 +136,7 @@ TEST_F(NFTGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(NFTGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(NFTGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getNFT(Eq(account), Eq(nftId))).WillOnce(Return(uri));
 

@@ -53,7 +53,7 @@ struct FloatFromIntGuest : GuestCallTest
     }
 };
 
-TEST_F(FloatFromIntGuest, IntAndModeReachHostInOrderAndFloatComesBack)
+TEST_F(FloatFromIntGuest, int_and_mode_reach_host_in_order_and_float_comes_back)
 {
     EXPECT_CALL(host, floatFromInt(kX, kMode)).WillOnce(Return(result));
 
@@ -61,7 +61,7 @@ TEST_F(FloatFromIntGuest, IntAndModeReachHostInOrderAndFloatComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the float's first four bytes, little-endian";
 }
 
-TEST_F(FloatFromIntGuest, StatusIsTheFloatsLength)
+TEST_F(FloatFromIntGuest, status_is_the_floats_length)
 {
     EXPECT_CALL(host, floatFromInt(kX, kMode)).WillOnce(Return(result));
 
@@ -71,7 +71,7 @@ TEST_F(FloatFromIntGuest, StatusIsTheFloatsLength)
 
 // Nothing between the guest and the host judges the mode, so a value naming no rounding rule
 // is the host's to refuse rather than the engine's.
-TEST_F(FloatFromIntGuest, ModeOutOfRangeCrossesVerbatim)
+TEST_F(FloatFromIntGuest, mode_out_of_range_crosses_verbatim)
 {
     static constexpr std::int32_t kNonsenseMode = 424242;
     EXPECT_CALL(host, floatFromInt(kX, kNonsenseMode))
@@ -81,7 +81,7 @@ TEST_F(FloatFromIntGuest, ModeOutOfRangeCrossesVerbatim)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatComputationError));
 }
 
-TEST_F(FloatFromIntGuest, HostErrorBecomesContractReturnValue)
+TEST_F(FloatFromIntGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatFromInt(kX, kMode))
         .WillOnce(Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -90,7 +90,7 @@ TEST_F(FloatFromIntGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatComputationError));
 }
 
-TEST_F(FloatFromIntGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(FloatFromIntGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, floatFromInt(kX, kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float from int came apart"}));
@@ -104,7 +104,7 @@ TEST_F(FloatFromIntGuest, HostExceptionStopsTheRunAndIsLogged)
 // This call reads no guest memory, so `abi.rs`'s `write_into` hands the host the guest's own
 // region and judges where it points *before* calling: only the fit, which is judged against
 // the length the host reports, is decided after.
-TEST_F(FloatFromIntGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(FloatFromIntGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatFromInt(kX, kMode)).WillOnce(Return(result));
 
@@ -112,7 +112,7 @@ TEST_F(FloatFromIntGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(FloatFromIntGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(FloatFromIntGuest, out_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatFromInt).Times(0);
 
@@ -120,7 +120,7 @@ TEST_F(FloatFromIntGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatFromIntGuest, NegativeOutPointerIsRefusedWithoutAskingHost)
+TEST_F(FloatFromIntGuest, negative_out_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatFromInt).Times(0);
 

@@ -35,7 +35,7 @@ struct UpdateDataGuest : GuestCallTest
     }
 };
 
-TEST_F(UpdateDataGuest, GuestBytesReachHostAndTheStoredCountIsTheAnswer)
+TEST_F(UpdateDataGuest, guest_bytes_reach_host_and_the_stored_count_is_the_answer)
 {
     EXPECT_CALL(host, updateData(BytesAre("hello"))).WillOnce(Return(kDataLen));
 
@@ -43,7 +43,7 @@ TEST_F(UpdateDataGuest, GuestBytesReachHostAndTheStoredCountIsTheAnswer)
     EXPECT_EQ(hostAnswer(wat), kDataLen);
 }
 
-TEST_F(UpdateDataGuest, HostErrorBecomesContractReturnValue)
+TEST_F(UpdateDataGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, updateData(BytesAre("hello")))
         .WillOnce(Return(std::unexpected(HostFunctionError::DataFieldTooLarge)));
@@ -52,7 +52,7 @@ TEST_F(UpdateDataGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::DataFieldTooLarge));
 }
 
-TEST_F(UpdateDataGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(UpdateDataGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, updateData(BytesAre("hello")))
         .WillOnce(testing::Throw(std::runtime_error{"update data came apart"}));
@@ -63,7 +63,7 @@ TEST_F(UpdateDataGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("updateData"));
 }
 
-TEST_F(UpdateDataGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(UpdateDataGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, updateData).Times(0);
 
@@ -71,7 +71,7 @@ TEST_F(UpdateDataGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(UpdateDataGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(UpdateDataGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, updateData).Times(0);
 

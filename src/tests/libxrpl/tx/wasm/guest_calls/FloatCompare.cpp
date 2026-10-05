@@ -45,7 +45,7 @@ struct FloatCompareGuest : GuestCallTest
     }
 };
 
-TEST_F(FloatCompareGuest, OperandsReachHostInOrderAndVerdictIsTheAnswer)
+TEST_F(FloatCompareGuest, operands_reach_host_in_order_and_verdict_is_the_answer)
 {
     EXPECT_CALL(host, floatCompare(BytesAre(kXText), BytesAre(kYText))).WillOnce(Return(2));
 
@@ -53,7 +53,7 @@ TEST_F(FloatCompareGuest, OperandsReachHostInOrderAndVerdictIsTheAnswer)
     EXPECT_EQ(hostAnswer(wat), 2);
 }
 
-TEST_F(FloatCompareGuest, HostErrorBecomesContractReturnValue)
+TEST_F(FloatCompareGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatCompare(BytesAre(kXText), BytesAre(kYText)))
         .WillOnce(Return(std::unexpected(HostFunctionError::FloatInputMalformed)));
@@ -62,7 +62,7 @@ TEST_F(FloatCompareGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatInputMalformed));
 }
 
-TEST_F(FloatCompareGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(FloatCompareGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, floatCompare(BytesAre(kXText), BytesAre(kYText)))
         .WillOnce(testing::Throw(std::runtime_error{"float compare came apart"}));
@@ -73,7 +73,7 @@ TEST_F(FloatCompareGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("floatCompare"));
 }
 
-TEST_F(FloatCompareGuest, FirstOperandPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(FloatCompareGuest, first_operand_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatCompare).Times(0);
 
@@ -81,7 +81,7 @@ TEST_F(FloatCompareGuest, FirstOperandPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatCompareGuest, SecondOperandPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(FloatCompareGuest, second_operand_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatCompare).Times(0);
 
@@ -89,7 +89,7 @@ TEST_F(FloatCompareGuest, SecondOperandPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatCompareGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(FloatCompareGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatCompare).Times(0);
 

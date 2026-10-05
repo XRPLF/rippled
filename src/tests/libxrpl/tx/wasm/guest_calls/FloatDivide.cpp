@@ -57,7 +57,7 @@ struct FloatDivideGuest : GuestCallTest
     }
 };
 
-TEST_F(FloatDivideGuest, OperandsAndModeReachHostInOrder)
+TEST_F(FloatDivideGuest, operands_and_mode_reach_host_in_order)
 {
     EXPECT_CALL(host, floatDivide(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(result));
@@ -66,7 +66,7 @@ TEST_F(FloatDivideGuest, OperandsAndModeReachHostInOrder)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the float's first four bytes, little-endian";
 }
 
-TEST_F(FloatDivideGuest, StatusIsTheFloatsLength)
+TEST_F(FloatDivideGuest, status_is_the_floats_length)
 {
     EXPECT_CALL(host, floatDivide(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(result));
@@ -75,7 +75,7 @@ TEST_F(FloatDivideGuest, StatusIsTheFloatsLength)
     EXPECT_EQ(hostAnswer(wat), kFloatLen);
 }
 
-TEST_F(FloatDivideGuest, HostErrorBecomesContractReturnValue)
+TEST_F(FloatDivideGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatDivide(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -84,7 +84,7 @@ TEST_F(FloatDivideGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatComputationError));
 }
 
-TEST_F(FloatDivideGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(FloatDivideGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, floatDivide(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float divide came apart"}));
@@ -95,7 +95,7 @@ TEST_F(FloatDivideGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("floatDivide"));
 }
 
-TEST_F(FloatDivideGuest, FirstOperandPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(FloatDivideGuest, first_operand_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatDivide).Times(0);
 
@@ -103,7 +103,7 @@ TEST_F(FloatDivideGuest, FirstOperandPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatDivideGuest, SecondOperandPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(FloatDivideGuest, second_operand_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatDivide).Times(0);
 
@@ -111,7 +111,7 @@ TEST_F(FloatDivideGuest, SecondOperandPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatDivideGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(FloatDivideGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatDivide).Times(0);
 
@@ -119,7 +119,7 @@ TEST_F(FloatDivideGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(FloatDivideGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(FloatDivideGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatDivide(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(result));
@@ -128,7 +128,7 @@ TEST_F(FloatDivideGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(FloatDivideGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(FloatDivideGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatDivide(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(result));
@@ -137,7 +137,7 @@ TEST_F(FloatDivideGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatDivideGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(FloatDivideGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatDivide(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(result));

@@ -58,7 +58,7 @@ struct TicketKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(TicketKeyletGuest, AccountAndSeqReachHostAndKeyletComesBack)
+TEST_F(TicketKeyletGuest, account_and_seq_reach_host_and_keylet_comes_back)
 {
     EXPECT_CALL(host, ticketKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -66,7 +66,7 @@ TEST_F(TicketKeyletGuest, AccountAndSeqReachHostAndKeyletComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(TicketKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(TicketKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, ticketKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -74,7 +74,7 @@ TEST_F(TicketKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(TicketKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(TicketKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, ticketKeylet(account, kSeqValue))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -83,7 +83,7 @@ TEST_F(TicketKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(TicketKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(TicketKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, ticketKeylet(account, kSeqValue))
         .WillOnce(testing::Throw(std::runtime_error{"ticket keylet came apart"}));
@@ -94,7 +94,7 @@ TEST_F(TicketKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("ticketKeylet"));
 }
 
-TEST_F(TicketKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(TicketKeyletGuest, account_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, ticketKeylet).Times(0);
 
@@ -102,7 +102,7 @@ TEST_F(TicketKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(TicketKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAskingHost)
+TEST_F(TicketKeyletGuest, seq_region_of_any_width_but_four_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, ticketKeylet).Times(0);
 
@@ -114,7 +114,7 @@ TEST_F(TicketKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAskingHost)
     }
 }
 
-TEST_F(TicketKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(TicketKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, ticketKeylet).Times(0);
 
@@ -122,7 +122,7 @@ TEST_F(TicketKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(TicketKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(TicketKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, ticketKeylet).Times(0);
 
@@ -130,7 +130,7 @@ TEST_F(TicketKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(TicketKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(TicketKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, ticketKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -138,7 +138,7 @@ TEST_F(TicketKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(TicketKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(TicketKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, ticketKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -146,7 +146,7 @@ TEST_F(TicketKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(TicketKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(TicketKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, ticketKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 

@@ -66,7 +66,7 @@ struct TrustLineKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(TrustLineKeyletGuest, AccountsAndCurrencyReachHostInOrderAndKeyletComesBack)
+TEST_F(TrustLineKeyletGuest, accounts_and_currency_reach_host_in_order_and_keylet_comes_back)
 {
     EXPECT_CALL(host, trustLineKeylet(account1, account2, currency)).WillOnce(Return(keylet));
 
@@ -74,7 +74,7 @@ TEST_F(TrustLineKeyletGuest, AccountsAndCurrencyReachHostInOrderAndKeyletComesBa
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(TrustLineKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(TrustLineKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, trustLineKeylet(account1, account2, currency)).WillOnce(Return(keylet));
 
@@ -82,7 +82,7 @@ TEST_F(TrustLineKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(TrustLineKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(TrustLineKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, trustLineKeylet(account1, account2, currency))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -91,7 +91,7 @@ TEST_F(TrustLineKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(TrustLineKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(TrustLineKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, trustLineKeylet(account1, account2, currency))
         .WillOnce(testing::Throw(std::runtime_error{"trust line keylet came apart"}));
@@ -102,7 +102,7 @@ TEST_F(TrustLineKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("trustLineKeylet"));
 }
 
-TEST_F(TrustLineKeyletGuest, Account1OfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(TrustLineKeyletGuest, account1_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, trustLineKeylet).Times(0);
 
@@ -110,7 +110,7 @@ TEST_F(TrustLineKeyletGuest, Account1OfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(TrustLineKeyletGuest, Account2OfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(TrustLineKeyletGuest, account2_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, trustLineKeylet).Times(0);
 
@@ -120,7 +120,7 @@ TEST_F(TrustLineKeyletGuest, Account2OfTheWrongLengthIsRefusedWithoutAskingHost)
 
 // `HostContext::trustLineKeylet` checks the currency's length ahead of either account's, but
 // all three answer the same `InvalidParams`, so which check fired is not observable here.
-TEST_F(TrustLineKeyletGuest, CurrencyOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(TrustLineKeyletGuest, currency_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, trustLineKeylet).Times(0);
 
@@ -128,7 +128,7 @@ TEST_F(TrustLineKeyletGuest, CurrencyOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(TrustLineKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(TrustLineKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, trustLineKeylet).Times(0);
 
@@ -136,7 +136,7 @@ TEST_F(TrustLineKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(TrustLineKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(TrustLineKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, trustLineKeylet).Times(0);
 
@@ -144,7 +144,7 @@ TEST_F(TrustLineKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(TrustLineKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(TrustLineKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, trustLineKeylet(account1, account2, currency)).WillOnce(Return(keylet));
 
@@ -153,7 +153,7 @@ TEST_F(TrustLineKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(TrustLineKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(TrustLineKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, trustLineKeylet(account1, account2, currency)).WillOnce(Return(keylet));
 
@@ -161,7 +161,7 @@ TEST_F(TrustLineKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(TrustLineKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(TrustLineKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, trustLineKeylet(account1, account2, currency)).WillOnce(Return(keylet));
 

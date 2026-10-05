@@ -50,7 +50,7 @@ struct NFTIssuerGuest : GuestCallTest
     }
 };
 
-TEST_F(NFTIssuerGuest, NftIdReachesHostAndIssuerComesBack)
+TEST_F(NFTIssuerGuest, nft_id_reaches_host_and_issuer_comes_back)
 {
     EXPECT_CALL(host, getNFTIssuer(Eq(nftId))).WillOnce(Return(issuer));
 
@@ -58,7 +58,7 @@ TEST_F(NFTIssuerGuest, NftIdReachesHostAndIssuerComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x44332211) << "the issuer's first four bytes, little-endian";
 }
 
-TEST_F(NFTIssuerGuest, StatusIsTheIssuerLength)
+TEST_F(NFTIssuerGuest, status_is_the_issuer_length)
 {
     EXPECT_CALL(host, getNFTIssuer(Eq(nftId))).WillOnce(Return(issuer));
 
@@ -66,7 +66,7 @@ TEST_F(NFTIssuerGuest, StatusIsTheIssuerLength)
     EXPECT_EQ(hostAnswer(wat), kIssuerLen);
 }
 
-TEST_F(NFTIssuerGuest, HostErrorBecomesContractReturnValue)
+TEST_F(NFTIssuerGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getNFTIssuer(Eq(nftId)))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -75,7 +75,7 @@ TEST_F(NFTIssuerGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(NFTIssuerGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(NFTIssuerGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getNFTIssuer(Eq(nftId)))
         .WillOnce(testing::Throw(std::runtime_error{"nft issuer came apart"}));
@@ -86,7 +86,7 @@ TEST_F(NFTIssuerGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getNFTIssuer"));
 }
 
-TEST_F(NFTIssuerGuest, NftIdOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(NFTIssuerGuest, nft_id_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFTIssuer).Times(0);
 
@@ -94,7 +94,7 @@ TEST_F(NFTIssuerGuest, NftIdOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NFTIssuerGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(NFTIssuerGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFTIssuer).Times(0);
 
@@ -102,7 +102,7 @@ TEST_F(NFTIssuerGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(NFTIssuerGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(NFTIssuerGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFTIssuer).Times(0);
 
@@ -110,7 +110,7 @@ TEST_F(NFTIssuerGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NFTIssuerGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(NFTIssuerGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getNFTIssuer(Eq(nftId))).WillOnce(Return(issuer));
 
@@ -118,7 +118,7 @@ TEST_F(NFTIssuerGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(NFTIssuerGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(NFTIssuerGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getNFTIssuer(Eq(nftId))).WillOnce(Return(issuer));
 
@@ -126,7 +126,7 @@ TEST_F(NFTIssuerGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(NFTIssuerGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(NFTIssuerGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getNFTIssuer(Eq(nftId))).WillOnce(Return(issuer));
 

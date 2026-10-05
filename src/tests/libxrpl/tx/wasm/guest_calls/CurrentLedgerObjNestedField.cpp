@@ -47,7 +47,7 @@ struct CurrentLedgerObjNestedFieldGuest : GuestCallTest
     }
 };
 
-TEST_F(CurrentLedgerObjNestedFieldGuest, LocatorStepsReachHostAndBytesComeBack)
+TEST_F(CurrentLedgerObjNestedFieldGuest, locator_steps_reach_host_and_bytes_come_back)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps))).WillOnce(Return(value));
 
@@ -55,7 +55,7 @@ TEST_F(CurrentLedgerObjNestedFieldGuest, LocatorStepsReachHostAndBytesComeBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the first four bytes, little-endian";
 }
 
-TEST_F(CurrentLedgerObjNestedFieldGuest, StatusIsTheValuesLength)
+TEST_F(CurrentLedgerObjNestedFieldGuest, status_is_the_values_length)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps))).WillOnce(Return(value));
 
@@ -63,7 +63,7 @@ TEST_F(CurrentLedgerObjNestedFieldGuest, StatusIsTheValuesLength)
     EXPECT_EQ(hostAnswer(wat), kValueLen);
 }
 
-TEST_F(CurrentLedgerObjNestedFieldGuest, HostErrorBecomesContractReturnValue)
+TEST_F(CurrentLedgerObjNestedFieldGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps)))
         .WillOnce(Return(std::unexpected(HostFunctionError::NotLeafField)));
@@ -72,7 +72,7 @@ TEST_F(CurrentLedgerObjNestedFieldGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::NotLeafField));
 }
 
-TEST_F(CurrentLedgerObjNestedFieldGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(CurrentLedgerObjNestedFieldGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps)))
         .WillOnce(testing::Throw(std::runtime_error{"current ledger obj nested field came apart"}));
@@ -83,7 +83,7 @@ TEST_F(CurrentLedgerObjNestedFieldGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getCurrentLedgerObjNestedField"));
 }
 
-TEST_F(CurrentLedgerObjNestedFieldGuest, EmptyLocatorIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjNestedFieldGuest, empty_locator_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedField).Times(0);
 
@@ -93,7 +93,7 @@ TEST_F(CurrentLedgerObjNestedFieldGuest, EmptyLocatorIsRefusedWithoutAskingHost)
 
 // A locator is whole `i32` steps, so a length not divisible by four is malformed however many
 // bytes it has.
-TEST_F(CurrentLedgerObjNestedFieldGuest, MisalignedLocatorLengthIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjNestedFieldGuest, misaligned_locator_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedField).Times(0);
 
@@ -101,7 +101,7 @@ TEST_F(CurrentLedgerObjNestedFieldGuest, MisalignedLocatorLengthIsRefusedWithout
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LocatorMalformed));
 }
 
-TEST_F(CurrentLedgerObjNestedFieldGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjNestedFieldGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedField).Times(0);
 
@@ -109,7 +109,7 @@ TEST_F(CurrentLedgerObjNestedFieldGuest, InputRegionPastMemoryIsRefusedWithoutAs
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(CurrentLedgerObjNestedFieldGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjNestedFieldGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedField).Times(0);
 
@@ -117,7 +117,7 @@ TEST_F(CurrentLedgerObjNestedFieldGuest, NegativeInputPointerIsRefusedWithoutAsk
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(CurrentLedgerObjNestedFieldGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(CurrentLedgerObjNestedFieldGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps))).WillOnce(Return(value));
 
@@ -125,7 +125,7 @@ TEST_F(CurrentLedgerObjNestedFieldGuest, OutRegionOneByteShortIsRefusedAfterAski
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(CurrentLedgerObjNestedFieldGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(CurrentLedgerObjNestedFieldGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps))).WillOnce(Return(value));
 
@@ -133,7 +133,7 @@ TEST_F(CurrentLedgerObjNestedFieldGuest, OutRegionPastMemoryIsRefusedAfterAsking
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(CurrentLedgerObjNestedFieldGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(CurrentLedgerObjNestedFieldGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps))).WillOnce(Return(value));
 

@@ -39,7 +39,7 @@ struct NFTSequenceGuest : GuestCallTest
     }
 };
 
-TEST_F(NFTSequenceGuest, NftIdReachesHostAndSequenceComesBack)
+TEST_F(NFTSequenceGuest, nft_id_reaches_host_and_sequence_comes_back)
 {
     EXPECT_CALL(host, getNFTSequence(Eq(nftId))).WillOnce(Return(kSequence));
 
@@ -47,7 +47,7 @@ TEST_F(NFTSequenceGuest, NftIdReachesHostAndSequenceComesBack)
     EXPECT_EQ(hostAnswer(wat), static_cast<std::int32_t>(kSequence));
 }
 
-TEST_F(NFTSequenceGuest, StatusIsTheSequenceLength)
+TEST_F(NFTSequenceGuest, status_is_the_sequence_length)
 {
     EXPECT_CALL(host, getNFTSequence(Eq(nftId))).WillOnce(Return(kSequence));
 
@@ -55,7 +55,7 @@ TEST_F(NFTSequenceGuest, StatusIsTheSequenceLength)
     EXPECT_EQ(hostAnswer(wat), kSequenceLen);
 }
 
-TEST_F(NFTSequenceGuest, HostErrorBecomesContractReturnValue)
+TEST_F(NFTSequenceGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getNFTSequence(Eq(nftId)))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -64,7 +64,7 @@ TEST_F(NFTSequenceGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(NFTSequenceGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(NFTSequenceGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getNFTSequence(Eq(nftId)))
         .WillOnce(testing::Throw(std::runtime_error{"nft sequence came apart"}));
@@ -75,7 +75,7 @@ TEST_F(NFTSequenceGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getNFTSequence"));
 }
 
-TEST_F(NFTSequenceGuest, NftIdOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(NFTSequenceGuest, nft_id_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFTSequence).Times(0);
 
@@ -83,7 +83,7 @@ TEST_F(NFTSequenceGuest, NftIdOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NFTSequenceGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(NFTSequenceGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFTSequence).Times(0);
 
@@ -91,7 +91,7 @@ TEST_F(NFTSequenceGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(NFTSequenceGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(NFTSequenceGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFTSequence).Times(0);
 
@@ -99,7 +99,7 @@ TEST_F(NFTSequenceGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NFTSequenceGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(NFTSequenceGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getNFTSequence(Eq(nftId))).WillOnce(Return(kSequence));
 
@@ -107,7 +107,7 @@ TEST_F(NFTSequenceGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(NFTSequenceGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(NFTSequenceGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getNFTSequence(Eq(nftId))).WillOnce(Return(kSequence));
 
@@ -115,7 +115,7 @@ TEST_F(NFTSequenceGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(NFTSequenceGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(NFTSequenceGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getNFTSequence(Eq(nftId))).WillOnce(Return(kSequence));
 

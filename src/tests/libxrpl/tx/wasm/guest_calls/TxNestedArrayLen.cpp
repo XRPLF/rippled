@@ -38,7 +38,7 @@ struct TxNestedArrayLenGuest : GuestCallTest
     }
 };
 
-TEST_F(TxNestedArrayLenGuest, LocatorStepsReachHostAndCountComesBack)
+TEST_F(TxNestedArrayLenGuest, locator_steps_reach_host_and_count_comes_back)
 {
     EXPECT_CALL(host, getTxNestedArrayLen(LocatorEquals(steps))).WillOnce(Return(kCount));
 
@@ -47,7 +47,7 @@ TEST_F(TxNestedArrayLenGuest, LocatorStepsReachHostAndCountComesBack)
 
 // `NoArray` is what a field that is not an array actually answers, so it stands for the host
 // error axis here rather than an arbitrary code.
-TEST_F(TxNestedArrayLenGuest, HostErrorBecomesContractReturnValue)
+TEST_F(TxNestedArrayLenGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getTxNestedArrayLen(LocatorEquals(steps)))
         .WillOnce(Return(std::unexpected(HostFunctionError::NoArray)));
@@ -55,7 +55,7 @@ TEST_F(TxNestedArrayLenGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(watFor(kLocator)), hfErrorToInt(HostFunctionError::NoArray));
 }
 
-TEST_F(TxNestedArrayLenGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(TxNestedArrayLenGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getTxNestedArrayLen(LocatorEquals(steps)))
         .WillOnce(testing::Throw(std::runtime_error{"tx nested array len came apart"}));
@@ -66,7 +66,7 @@ TEST_F(TxNestedArrayLenGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getTxNestedArrayLen"));
 }
 
-TEST_F(TxNestedArrayLenGuest, EmptyLocatorIsRefusedWithoutAskingHost)
+TEST_F(TxNestedArrayLenGuest, empty_locator_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getTxNestedArrayLen).Times(0);
 
@@ -76,7 +76,7 @@ TEST_F(TxNestedArrayLenGuest, EmptyLocatorIsRefusedWithoutAskingHost)
 
 // A locator is whole `i32` steps, so a length not divisible by four is malformed however many
 // bytes it has.
-TEST_F(TxNestedArrayLenGuest, MisalignedLocatorLengthIsRefusedWithoutAskingHost)
+TEST_F(TxNestedArrayLenGuest, misaligned_locator_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getTxNestedArrayLen).Times(0);
 
@@ -84,7 +84,7 @@ TEST_F(TxNestedArrayLenGuest, MisalignedLocatorLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LocatorMalformed));
 }
 
-TEST_F(TxNestedArrayLenGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(TxNestedArrayLenGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getTxNestedArrayLen).Times(0);
 
@@ -92,7 +92,7 @@ TEST_F(TxNestedArrayLenGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(TxNestedArrayLenGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(TxNestedArrayLenGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getTxNestedArrayLen).Times(0);
 

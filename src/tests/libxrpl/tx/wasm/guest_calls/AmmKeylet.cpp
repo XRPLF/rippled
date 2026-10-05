@@ -69,7 +69,7 @@ struct AmmKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(AmmKeyletGuest, MptAndIssueAssetsReachHostAndKeyletComesBack)
+TEST_F(AmmKeyletGuest, mpt_and_issue_assets_reach_host_and_keylet_comes_back)
 {
     EXPECT_CALL(host, ammKeylet(Eq(asset1), Eq(asset2))).WillOnce(Return(keylet));
 
@@ -77,7 +77,7 @@ TEST_F(AmmKeyletGuest, MptAndIssueAssetsReachHostAndKeyletComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(AmmKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(AmmKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, ammKeylet(Eq(asset1), Eq(asset2))).WillOnce(Return(keylet));
 
@@ -85,7 +85,7 @@ TEST_F(AmmKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(AmmKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(AmmKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, ammKeylet(Eq(asset1), Eq(asset2)))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -94,7 +94,7 @@ TEST_F(AmmKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(AmmKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(AmmKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, ammKeylet(Eq(asset1), Eq(asset2)))
         .WillOnce(testing::Throw(std::runtime_error{"amm keylet came apart"}));
@@ -105,7 +105,7 @@ TEST_F(AmmKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("ammKeylet"));
 }
 
-TEST_F(AmmKeyletGuest, Asset1OfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(AmmKeyletGuest, asset1_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, ammKeylet).Times(0);
 
@@ -113,7 +113,7 @@ TEST_F(AmmKeyletGuest, Asset1OfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(AmmKeyletGuest, Asset2OfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(AmmKeyletGuest, asset2_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, ammKeylet).Times(0);
 
@@ -121,7 +121,7 @@ TEST_F(AmmKeyletGuest, Asset2OfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(AmmKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(AmmKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, ammKeylet).Times(0);
 
@@ -129,7 +129,7 @@ TEST_F(AmmKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(AmmKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(AmmKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, ammKeylet).Times(0);
 
@@ -137,7 +137,7 @@ TEST_F(AmmKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(AmmKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(AmmKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, ammKeylet(Eq(asset1), Eq(asset2))).WillOnce(Return(keylet));
 
@@ -145,7 +145,7 @@ TEST_F(AmmKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(AmmKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(AmmKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, ammKeylet(Eq(asset1), Eq(asset2))).WillOnce(Return(keylet));
 
@@ -153,7 +153,7 @@ TEST_F(AmmKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(AmmKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(AmmKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, ammKeylet(Eq(asset1), Eq(asset2))).WillOnce(Return(keylet));
 

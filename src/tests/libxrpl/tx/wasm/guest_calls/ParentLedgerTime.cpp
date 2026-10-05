@@ -31,7 +31,7 @@ struct ParentLedgerTimeGuest : GuestCallTest
     }
 };
 
-TEST_F(ParentLedgerTimeGuest, CloseTimeReachesGuestAsFourLittleEndianBytes)
+TEST_F(ParentLedgerTimeGuest, close_time_reaches_guest_as_four_little_endian_bytes)
 {
     EXPECT_CALL(host, getParentLedgerTime()).WillOnce(Return(kCloseTime));
 
@@ -39,7 +39,7 @@ TEST_F(ParentLedgerTimeGuest, CloseTimeReachesGuestAsFourLittleEndianBytes)
     EXPECT_EQ(hostAnswer(wat), static_cast<std::int32_t>(kCloseTime));
 }
 
-TEST_F(ParentLedgerTimeGuest, StatusIsTheScalarWidth)
+TEST_F(ParentLedgerTimeGuest, status_is_the_scalar_width)
 {
     EXPECT_CALL(host, getParentLedgerTime()).WillOnce(Return(kCloseTime));
 
@@ -47,7 +47,7 @@ TEST_F(ParentLedgerTimeGuest, StatusIsTheScalarWidth)
     EXPECT_EQ(hostAnswer(wat), kTimeLen);
 }
 
-TEST_F(ParentLedgerTimeGuest, HostErrorBecomesContractReturnValue)
+TEST_F(ParentLedgerTimeGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getParentLedgerTime())
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -56,7 +56,7 @@ TEST_F(ParentLedgerTimeGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(ParentLedgerTimeGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(ParentLedgerTimeGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getParentLedgerTime())
         .WillOnce(testing::Throw(std::runtime_error{"parent ledger time came apart"}));
@@ -67,7 +67,7 @@ TEST_F(ParentLedgerTimeGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getParentLedgerTime"));
 }
 
-TEST_F(ParentLedgerTimeGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(ParentLedgerTimeGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getParentLedgerTime()).WillOnce(Return(kCloseTime));
 
@@ -75,7 +75,7 @@ TEST_F(ParentLedgerTimeGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(ParentLedgerTimeGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(ParentLedgerTimeGuest, out_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getParentLedgerTime).Times(0);
 
@@ -83,7 +83,7 @@ TEST_F(ParentLedgerTimeGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(ParentLedgerTimeGuest, NegativeOutPointerIsRefusedWithoutAskingHost)
+TEST_F(ParentLedgerTimeGuest, negative_out_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getParentLedgerTime).Times(0);
 

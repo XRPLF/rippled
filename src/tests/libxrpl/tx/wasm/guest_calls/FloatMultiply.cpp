@@ -56,7 +56,7 @@ struct FloatMultiplyGuest : GuestCallTest
     }
 };
 
-TEST_F(FloatMultiplyGuest, OperandsAndModeReachHostInOrder)
+TEST_F(FloatMultiplyGuest, operands_and_mode_reach_host_in_order)
 {
     EXPECT_CALL(host, floatMultiply(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(result));
@@ -65,7 +65,7 @@ TEST_F(FloatMultiplyGuest, OperandsAndModeReachHostInOrder)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the float's first four bytes, little-endian";
 }
 
-TEST_F(FloatMultiplyGuest, StatusIsTheFloatsLength)
+TEST_F(FloatMultiplyGuest, status_is_the_floats_length)
 {
     EXPECT_CALL(host, floatMultiply(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(result));
@@ -74,7 +74,7 @@ TEST_F(FloatMultiplyGuest, StatusIsTheFloatsLength)
     EXPECT_EQ(hostAnswer(wat), kFloatLen);
 }
 
-TEST_F(FloatMultiplyGuest, HostErrorBecomesContractReturnValue)
+TEST_F(FloatMultiplyGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatMultiply(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -83,7 +83,7 @@ TEST_F(FloatMultiplyGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatComputationError));
 }
 
-TEST_F(FloatMultiplyGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(FloatMultiplyGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, floatMultiply(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float multiply came apart"}));
@@ -94,7 +94,7 @@ TEST_F(FloatMultiplyGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("floatMultiply"));
 }
 
-TEST_F(FloatMultiplyGuest, FirstOperandPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(FloatMultiplyGuest, first_operand_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatMultiply).Times(0);
 
@@ -102,7 +102,7 @@ TEST_F(FloatMultiplyGuest, FirstOperandPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatMultiplyGuest, SecondOperandPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(FloatMultiplyGuest, second_operand_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatMultiply).Times(0);
 
@@ -110,7 +110,7 @@ TEST_F(FloatMultiplyGuest, SecondOperandPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatMultiplyGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(FloatMultiplyGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatMultiply).Times(0);
 
@@ -118,7 +118,7 @@ TEST_F(FloatMultiplyGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(FloatMultiplyGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(FloatMultiplyGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatMultiply(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(result));
@@ -127,7 +127,7 @@ TEST_F(FloatMultiplyGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(FloatMultiplyGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(FloatMultiplyGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatMultiply(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(result));
@@ -136,7 +136,7 @@ TEST_F(FloatMultiplyGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatMultiplyGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(FloatMultiplyGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatMultiply(BytesAre(kXText), BytesAre(kYText), kMode))
         .WillOnce(Return(result));

@@ -58,7 +58,7 @@ struct NftokenOfferKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(NftokenOfferKeyletGuest, AccountAndSeqReachHostAndKeyletComesBack)
+TEST_F(NftokenOfferKeyletGuest, account_and_seq_reach_host_and_keylet_comes_back)
 {
     EXPECT_CALL(host, nftokenOfferKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -66,7 +66,7 @@ TEST_F(NftokenOfferKeyletGuest, AccountAndSeqReachHostAndKeyletComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(NftokenOfferKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(NftokenOfferKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, nftokenOfferKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -74,7 +74,7 @@ TEST_F(NftokenOfferKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(NftokenOfferKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(NftokenOfferKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, nftokenOfferKeylet(account, kSeqValue))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -83,7 +83,7 @@ TEST_F(NftokenOfferKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(NftokenOfferKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(NftokenOfferKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, nftokenOfferKeylet(account, kSeqValue))
         .WillOnce(testing::Throw(std::runtime_error{"nftoken offer keylet came apart"}));
@@ -94,7 +94,7 @@ TEST_F(NftokenOfferKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("nftokenOfferKeylet"));
 }
 
-TEST_F(NftokenOfferKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(NftokenOfferKeyletGuest, account_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, nftokenOfferKeylet).Times(0);
 
@@ -102,7 +102,7 @@ TEST_F(NftokenOfferKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHos
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NftokenOfferKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAskingHost)
+TEST_F(NftokenOfferKeyletGuest, seq_region_of_any_width_but_four_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, nftokenOfferKeylet).Times(0);
 
@@ -114,7 +114,7 @@ TEST_F(NftokenOfferKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAsking
     }
 }
 
-TEST_F(NftokenOfferKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(NftokenOfferKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, nftokenOfferKeylet).Times(0);
 
@@ -122,7 +122,7 @@ TEST_F(NftokenOfferKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(NftokenOfferKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(NftokenOfferKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, nftokenOfferKeylet).Times(0);
 
@@ -130,7 +130,7 @@ TEST_F(NftokenOfferKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NftokenOfferKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(NftokenOfferKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, nftokenOfferKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -138,7 +138,7 @@ TEST_F(NftokenOfferKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(NftokenOfferKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(NftokenOfferKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, nftokenOfferKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -146,7 +146,7 @@ TEST_F(NftokenOfferKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(NftokenOfferKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(NftokenOfferKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, nftokenOfferKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 

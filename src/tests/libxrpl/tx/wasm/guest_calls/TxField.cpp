@@ -42,7 +42,7 @@ struct TxFieldGuest : GuestCallTest
     }
 };
 
-TEST_F(TxFieldGuest, FieldCodeBecomesSFieldHostIsAskedFor)
+TEST_F(TxFieldGuest, field_code_becomes_sfield_host_is_asked_for)
 {
     EXPECT_CALL(host, getTxField(testing::Ref(sfBalance))).WillOnce(Return(value));
 
@@ -50,7 +50,7 @@ TEST_F(TxFieldGuest, FieldCodeBecomesSFieldHostIsAskedFor)
     EXPECT_EQ(hostAnswer(wat), kValueLen) << "the length the host reported";
 }
 
-TEST_F(TxFieldGuest, FieldBytesReachTheGuestsOutRegion)
+TEST_F(TxFieldGuest, field_bytes_reach_the_guests_out_region)
 {
     EXPECT_CALL(host, getTxField(testing::Ref(sfBalance))).WillOnce(Return(value));
 
@@ -58,7 +58,7 @@ TEST_F(TxFieldGuest, FieldBytesReachTheGuestsOutRegion)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the first four bytes, little-endian";
 }
 
-TEST_F(TxFieldGuest, UnknownFieldCodeIsRefusedWithoutAskingHost)
+TEST_F(TxFieldGuest, unknown_field_code_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getTxField).Times(0);
 
@@ -66,7 +66,7 @@ TEST_F(TxFieldGuest, UnknownFieldCodeIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidField));
 }
 
-TEST_F(TxFieldGuest, HostErrorBecomesContractReturnValue)
+TEST_F(TxFieldGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getTxField(testing::Ref(sfBalance)))
         .WillOnce(Return(std::unexpected(HostFunctionError::FieldNotFound)));
@@ -75,7 +75,7 @@ TEST_F(TxFieldGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FieldNotFound));
 }
 
-TEST_F(TxFieldGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(TxFieldGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getTxField(testing::Ref(sfBalance)))
         .WillOnce(testing::Throw(std::runtime_error{"tx field came apart"}));
@@ -86,7 +86,7 @@ TEST_F(TxFieldGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getTxField"));
 }
 
-TEST_F(TxFieldGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(TxFieldGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, getTxField(testing::Ref(sfBalance))).WillOnce(Return(value));
 
@@ -94,7 +94,7 @@ TEST_F(TxFieldGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(TxFieldGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(TxFieldGuest, out_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getTxField).Times(0);
 
@@ -102,7 +102,7 @@ TEST_F(TxFieldGuest, OutRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(TxFieldGuest, NegativeOutPointerIsRefusedWithoutAskingHost)
+TEST_F(TxFieldGuest, negative_out_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getTxField).Times(0);
 

@@ -58,7 +58,7 @@ struct EscrowKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(EscrowKeyletGuest, AccountAndSeqReachHostAndKeyletComesBack)
+TEST_F(EscrowKeyletGuest, account_and_seq_reach_host_and_keylet_comes_back)
 {
     EXPECT_CALL(host, escrowKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -66,7 +66,7 @@ TEST_F(EscrowKeyletGuest, AccountAndSeqReachHostAndKeyletComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(EscrowKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(EscrowKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, escrowKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -74,7 +74,7 @@ TEST_F(EscrowKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(EscrowKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(EscrowKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, escrowKeylet(account, kSeqValue))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -83,7 +83,7 @@ TEST_F(EscrowKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(EscrowKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(EscrowKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, escrowKeylet(account, kSeqValue))
         .WillOnce(testing::Throw(std::runtime_error{"escrow keylet came apart"}));
@@ -94,7 +94,7 @@ TEST_F(EscrowKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("escrowKeylet"));
 }
 
-TEST_F(EscrowKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(EscrowKeyletGuest, account_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, escrowKeylet).Times(0);
 
@@ -102,7 +102,7 @@ TEST_F(EscrowKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(EscrowKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAskingHost)
+TEST_F(EscrowKeyletGuest, seq_region_of_any_width_but_four_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, escrowKeylet).Times(0);
 
@@ -114,7 +114,7 @@ TEST_F(EscrowKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAskingHost)
     }
 }
 
-TEST_F(EscrowKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(EscrowKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, escrowKeylet).Times(0);
 
@@ -122,7 +122,7 @@ TEST_F(EscrowKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(EscrowKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(EscrowKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, escrowKeylet).Times(0);
 
@@ -130,7 +130,7 @@ TEST_F(EscrowKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(EscrowKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(EscrowKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, escrowKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -138,7 +138,7 @@ TEST_F(EscrowKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(EscrowKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(EscrowKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, escrowKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 
@@ -146,7 +146,7 @@ TEST_F(EscrowKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(EscrowKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(EscrowKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, escrowKeylet(account, kSeqValue)).WillOnce(Return(keylet));
 

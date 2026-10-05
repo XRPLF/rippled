@@ -52,7 +52,7 @@ struct FloatFromUintGuest : GuestCallTest
     }
 };
 
-TEST_F(FloatFromUintGuest, UintBytesAndModeReachHostInOrderAndFloatComesBack)
+TEST_F(FloatFromUintGuest, uint_bytes_and_mode_reach_host_in_order_and_float_comes_back)
 {
     EXPECT_CALL(host, floatFromUint(kValue, kMode)).WillOnce(Return(result));
 
@@ -60,7 +60,7 @@ TEST_F(FloatFromUintGuest, UintBytesAndModeReachHostInOrderAndFloatComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the float's first four bytes, little-endian";
 }
 
-TEST_F(FloatFromUintGuest, StatusIsTheFloatsLength)
+TEST_F(FloatFromUintGuest, status_is_the_floats_length)
 {
     EXPECT_CALL(host, floatFromUint(kValue, kMode)).WillOnce(Return(result));
 
@@ -68,7 +68,7 @@ TEST_F(FloatFromUintGuest, StatusIsTheFloatsLength)
     EXPECT_EQ(hostAnswer(wat), kFloatLen);
 }
 
-TEST_F(FloatFromUintGuest, HostErrorBecomesContractReturnValue)
+TEST_F(FloatFromUintGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatFromUint(kValue, kMode))
         .WillOnce(Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -77,7 +77,7 @@ TEST_F(FloatFromUintGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatComputationError));
 }
 
-TEST_F(FloatFromUintGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(FloatFromUintGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, floatFromUint(kValue, kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float from uint came apart"}));
@@ -88,7 +88,7 @@ TEST_F(FloatFromUintGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("floatFromUint"));
 }
 
-TEST_F(FloatFromUintGuest, OperandOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(FloatFromUintGuest, operand_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatFromUint).Times(0);
 
@@ -96,7 +96,7 @@ TEST_F(FloatFromUintGuest, OperandOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(FloatFromUintGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(FloatFromUintGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatFromUint).Times(0);
 
@@ -104,7 +104,7 @@ TEST_F(FloatFromUintGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatFromUintGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(FloatFromUintGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatFromUint).Times(0);
 
@@ -112,7 +112,7 @@ TEST_F(FloatFromUintGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(FloatFromUintGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(FloatFromUintGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatFromUint(kValue, kMode)).WillOnce(Return(result));
 
@@ -120,7 +120,7 @@ TEST_F(FloatFromUintGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(FloatFromUintGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(FloatFromUintGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatFromUint(kValue, kMode)).WillOnce(Return(result));
 
@@ -128,7 +128,7 @@ TEST_F(FloatFromUintGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatFromUintGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(FloatFromUintGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatFromUint(kValue, kMode)).WillOnce(Return(result));
 

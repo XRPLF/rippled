@@ -38,7 +38,7 @@ struct CurrentLedgerObjNestedArrayLenGuest : GuestCallTest
     }
 };
 
-TEST_F(CurrentLedgerObjNestedArrayLenGuest, LocatorStepsReachHostAndCountComesBack)
+TEST_F(CurrentLedgerObjNestedArrayLenGuest, locator_steps_reach_host_and_count_comes_back)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedArrayLen(LocatorEquals(steps)))
         .WillOnce(Return(kCount));
@@ -48,7 +48,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenGuest, LocatorStepsReachHostAndCountComesBa
 
 // `NoArray` is what a field that is not an array actually answers, so it stands for the host
 // error axis here rather than an arbitrary code.
-TEST_F(CurrentLedgerObjNestedArrayLenGuest, HostErrorBecomesContractReturnValue)
+TEST_F(CurrentLedgerObjNestedArrayLenGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedArrayLen(LocatorEquals(steps)))
         .WillOnce(Return(std::unexpected(HostFunctionError::NoArray)));
@@ -56,7 +56,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(watFor(kLocator)), hfErrorToInt(HostFunctionError::NoArray));
 }
 
-TEST_F(CurrentLedgerObjNestedArrayLenGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(CurrentLedgerObjNestedArrayLenGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedArrayLen(LocatorEquals(steps)))
         .WillOnce(
@@ -68,7 +68,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getCurrentLedgerObjNestedArrayLen"));
 }
 
-TEST_F(CurrentLedgerObjNestedArrayLenGuest, EmptyLocatorIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjNestedArrayLenGuest, empty_locator_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedArrayLen).Times(0);
 
@@ -78,7 +78,9 @@ TEST_F(CurrentLedgerObjNestedArrayLenGuest, EmptyLocatorIsRefusedWithoutAskingHo
 
 // A locator is whole `i32` steps, so a length not divisible by four is malformed however many
 // bytes it has.
-TEST_F(CurrentLedgerObjNestedArrayLenGuest, MisalignedLocatorLengthIsRefusedWithoutAskingHost)
+TEST_F(
+    CurrentLedgerObjNestedArrayLenGuest,
+    misaligned_locator_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedArrayLen).Times(0);
 
@@ -86,7 +88,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenGuest, MisalignedLocatorLengthIsRefusedWith
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LocatorMalformed));
 }
 
-TEST_F(CurrentLedgerObjNestedArrayLenGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjNestedArrayLenGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedArrayLen).Times(0);
 
@@ -94,7 +96,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenGuest, InputRegionPastMemoryIsRefusedWithou
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(CurrentLedgerObjNestedArrayLenGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(CurrentLedgerObjNestedArrayLenGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getCurrentLedgerObjNestedArrayLen).Times(0);
 

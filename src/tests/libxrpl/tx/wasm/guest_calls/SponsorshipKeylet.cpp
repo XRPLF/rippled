@@ -53,7 +53,7 @@ struct SponsorshipKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(SponsorshipKeyletGuest, SponsorAndSponseeReachHostInOrderAndKeyletComesBack)
+TEST_F(SponsorshipKeyletGuest, sponsor_and_sponsee_reach_host_in_order_and_keylet_comes_back)
 {
     EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee)).WillOnce(Return(keylet));
 
@@ -61,7 +61,7 @@ TEST_F(SponsorshipKeyletGuest, SponsorAndSponseeReachHostInOrderAndKeyletComesBa
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(SponsorshipKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(SponsorshipKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee)).WillOnce(Return(keylet));
 
@@ -69,7 +69,7 @@ TEST_F(SponsorshipKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(SponsorshipKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(SponsorshipKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -78,7 +78,7 @@ TEST_F(SponsorshipKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(SponsorshipKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(SponsorshipKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee))
         .WillOnce(testing::Throw(std::runtime_error{"sponsorship keylet came apart"}));
@@ -89,7 +89,7 @@ TEST_F(SponsorshipKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("sponsorshipKeylet"));
 }
 
-TEST_F(SponsorshipKeyletGuest, SponsorOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(SponsorshipKeyletGuest, sponsor_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, sponsorshipKeylet).Times(0);
 
@@ -97,7 +97,7 @@ TEST_F(SponsorshipKeyletGuest, SponsorOfTheWrongLengthIsRefusedWithoutAskingHost
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(SponsorshipKeyletGuest, SponseeOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(SponsorshipKeyletGuest, sponsee_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, sponsorshipKeylet).Times(0);
 
@@ -105,7 +105,7 @@ TEST_F(SponsorshipKeyletGuest, SponseeOfTheWrongLengthIsRefusedWithoutAskingHost
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(SponsorshipKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(SponsorshipKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, sponsorshipKeylet).Times(0);
 
@@ -113,7 +113,7 @@ TEST_F(SponsorshipKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(SponsorshipKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(SponsorshipKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, sponsorshipKeylet).Times(0);
 
@@ -121,7 +121,7 @@ TEST_F(SponsorshipKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(SponsorshipKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(SponsorshipKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee)).WillOnce(Return(keylet));
 
@@ -129,7 +129,7 @@ TEST_F(SponsorshipKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(SponsorshipKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(SponsorshipKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee)).WillOnce(Return(keylet));
 
@@ -137,7 +137,7 @@ TEST_F(SponsorshipKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(SponsorshipKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(SponsorshipKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee)).WillOnce(Return(keylet));
 

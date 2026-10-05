@@ -49,7 +49,7 @@ struct SignerListKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(SignerListKeyletGuest, AccountReachesHostAndKeyletComesBack)
+TEST_F(SignerListKeyletGuest, account_reaches_host_and_keylet_comes_back)
 {
     EXPECT_CALL(host, signerListKeylet(account)).WillOnce(Return(keylet));
 
@@ -57,7 +57,7 @@ TEST_F(SignerListKeyletGuest, AccountReachesHostAndKeyletComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(SignerListKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(SignerListKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, signerListKeylet(account)).WillOnce(Return(keylet));
 
@@ -65,7 +65,7 @@ TEST_F(SignerListKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(SignerListKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(SignerListKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, signerListKeylet(account))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -74,7 +74,7 @@ TEST_F(SignerListKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(SignerListKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(SignerListKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, signerListKeylet(account))
         .WillOnce(testing::Throw(std::runtime_error{"signer list keylet came apart"}));
@@ -85,7 +85,7 @@ TEST_F(SignerListKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("signerListKeylet"));
 }
 
-TEST_F(SignerListKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(SignerListKeyletGuest, account_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, signerListKeylet).Times(0);
 
@@ -93,7 +93,7 @@ TEST_F(SignerListKeyletGuest, AccountOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(SignerListKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(SignerListKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, signerListKeylet).Times(0);
 
@@ -101,7 +101,7 @@ TEST_F(SignerListKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(SignerListKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(SignerListKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, signerListKeylet).Times(0);
 
@@ -109,7 +109,7 @@ TEST_F(SignerListKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(SignerListKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(SignerListKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, signerListKeylet(account)).WillOnce(Return(keylet));
 
@@ -117,7 +117,7 @@ TEST_F(SignerListKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(SignerListKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(SignerListKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, signerListKeylet(account)).WillOnce(Return(keylet));
 
@@ -125,7 +125,7 @@ TEST_F(SignerListKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(SignerListKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(SignerListKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, signerListKeylet(account)).WillOnce(Return(keylet));
 

@@ -66,7 +66,7 @@ struct FloatFromSTAmountGuest : GuestCallTest
     }
 };
 
-TEST_F(FloatFromSTAmountGuest, AmountAndModeReachHostInOrderAndFloatComesBack)
+TEST_F(FloatFromSTAmountGuest, amount_and_mode_reach_host_in_order_and_float_comes_back)
 {
     EXPECT_CALL(host, floatFromSTAmount(Eq(amount), kMode)).WillOnce(Return(result));
 
@@ -74,7 +74,7 @@ TEST_F(FloatFromSTAmountGuest, AmountAndModeReachHostInOrderAndFloatComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the float's first four bytes, little-endian";
 }
 
-TEST_F(FloatFromSTAmountGuest, StatusIsTheFloatsLength)
+TEST_F(FloatFromSTAmountGuest, status_is_the_floats_length)
 {
     EXPECT_CALL(host, floatFromSTAmount(Eq(amount), kMode)).WillOnce(Return(result));
 
@@ -82,7 +82,7 @@ TEST_F(FloatFromSTAmountGuest, StatusIsTheFloatsLength)
     EXPECT_EQ(hostAnswer(wat), kFloatLen);
 }
 
-TEST_F(FloatFromSTAmountGuest, HostErrorBecomesContractReturnValue)
+TEST_F(FloatFromSTAmountGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatFromSTAmount(Eq(amount), kMode))
         .WillOnce(Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -91,7 +91,7 @@ TEST_F(FloatFromSTAmountGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatComputationError));
 }
 
-TEST_F(FloatFromSTAmountGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(FloatFromSTAmountGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, floatFromSTAmount(Eq(amount), kMode))
         .WillOnce(testing::Throw(std::runtime_error{"float from st amount came apart"}));
@@ -105,7 +105,7 @@ TEST_F(FloatFromSTAmountGuest, HostExceptionStopsTheRunAndIsLogged)
 // Three bytes of a well-formed amount are still not one. `HostContext`'s `parseST` catches
 // `SerialIter`'s throw itself, so the refusal is an ordinary status and the host is never
 // asked.
-TEST_F(FloatFromSTAmountGuest, TruncatedAmountIsRefusedWithoutAskingHost)
+TEST_F(FloatFromSTAmountGuest, truncated_amount_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatFromSTAmount).Times(0);
 
@@ -113,7 +113,7 @@ TEST_F(FloatFromSTAmountGuest, TruncatedAmountIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(FloatFromSTAmountGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(FloatFromSTAmountGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatFromSTAmount).Times(0);
 
@@ -121,7 +121,7 @@ TEST_F(FloatFromSTAmountGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatFromSTAmountGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(FloatFromSTAmountGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, floatFromSTAmount).Times(0);
 
@@ -129,7 +129,7 @@ TEST_F(FloatFromSTAmountGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(FloatFromSTAmountGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(FloatFromSTAmountGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatFromSTAmount(Eq(amount), kMode)).WillOnce(Return(result));
 
@@ -137,7 +137,7 @@ TEST_F(FloatFromSTAmountGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(FloatFromSTAmountGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(FloatFromSTAmountGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatFromSTAmount(Eq(amount), kMode)).WillOnce(Return(result));
 
@@ -145,7 +145,7 @@ TEST_F(FloatFromSTAmountGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(FloatFromSTAmountGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(FloatFromSTAmountGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, floatFromSTAmount(Eq(amount), kMode)).WillOnce(Return(result));
 

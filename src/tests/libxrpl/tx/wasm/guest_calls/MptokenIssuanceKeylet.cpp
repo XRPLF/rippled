@@ -58,7 +58,7 @@ struct MptokenIssuanceKeyletGuest : GuestCallTest
     }
 };
 
-TEST_F(MptokenIssuanceKeyletGuest, IssuerAndSeqReachHostAndKeyletComesBack)
+TEST_F(MptokenIssuanceKeyletGuest, issuer_and_seq_reach_host_and_keylet_comes_back)
 {
     EXPECT_CALL(host, mptokenIssuanceKeylet(issuer, kSeqValue)).WillOnce(Return(keylet));
 
@@ -66,7 +66,7 @@ TEST_F(MptokenIssuanceKeyletGuest, IssuerAndSeqReachHostAndKeyletComesBack)
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
 }
 
-TEST_F(MptokenIssuanceKeyletGuest, StatusIsTheKeyletsLength)
+TEST_F(MptokenIssuanceKeyletGuest, status_is_the_keylets_length)
 {
     EXPECT_CALL(host, mptokenIssuanceKeylet(issuer, kSeqValue)).WillOnce(Return(keylet));
 
@@ -74,7 +74,7 @@ TEST_F(MptokenIssuanceKeyletGuest, StatusIsTheKeyletsLength)
     EXPECT_EQ(hostAnswer(wat), kKeyletLen);
 }
 
-TEST_F(MptokenIssuanceKeyletGuest, HostErrorBecomesContractReturnValue)
+TEST_F(MptokenIssuanceKeyletGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, mptokenIssuanceKeylet(issuer, kSeqValue))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -83,7 +83,7 @@ TEST_F(MptokenIssuanceKeyletGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(MptokenIssuanceKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(MptokenIssuanceKeyletGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, mptokenIssuanceKeylet(issuer, kSeqValue))
         .WillOnce(testing::Throw(std::runtime_error{"mptoken issuance keylet came apart"}));
@@ -94,7 +94,7 @@ TEST_F(MptokenIssuanceKeyletGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("mptokenIssuanceKeylet"));
 }
 
-TEST_F(MptokenIssuanceKeyletGuest, IssuerOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(MptokenIssuanceKeyletGuest, issuer_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, mptokenIssuanceKeylet).Times(0);
 
@@ -102,7 +102,7 @@ TEST_F(MptokenIssuanceKeyletGuest, IssuerOfTheWrongLengthIsRefusedWithoutAskingH
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(MptokenIssuanceKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAskingHost)
+TEST_F(MptokenIssuanceKeyletGuest, seq_region_of_any_width_but_four_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, mptokenIssuanceKeylet).Times(0);
 
@@ -114,7 +114,7 @@ TEST_F(MptokenIssuanceKeyletGuest, SeqRegionOfAnyWidthButFourIsRefusedWithoutAsk
     }
 }
 
-TEST_F(MptokenIssuanceKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(MptokenIssuanceKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, mptokenIssuanceKeylet).Times(0);
 
@@ -122,7 +122,7 @@ TEST_F(MptokenIssuanceKeyletGuest, InputRegionPastMemoryIsRefusedWithoutAskingHo
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(MptokenIssuanceKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(MptokenIssuanceKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, mptokenIssuanceKeylet).Times(0);
 
@@ -130,7 +130,7 @@ TEST_F(MptokenIssuanceKeyletGuest, NegativeInputPointerIsRefusedWithoutAskingHos
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(MptokenIssuanceKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost)
+TEST_F(MptokenIssuanceKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, mptokenIssuanceKeylet(issuer, kSeqValue)).WillOnce(Return(keylet));
 
@@ -138,7 +138,7 @@ TEST_F(MptokenIssuanceKeyletGuest, OutRegionOneByteShortIsRefusedAfterAskingHost
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(MptokenIssuanceKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
+TEST_F(MptokenIssuanceKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, mptokenIssuanceKeylet(issuer, kSeqValue)).WillOnce(Return(keylet));
 
@@ -146,7 +146,7 @@ TEST_F(MptokenIssuanceKeyletGuest, OutRegionPastMemoryIsRefusedAfterAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(MptokenIssuanceKeyletGuest, NegativeOutPointerIsRefusedAfterAskingHost)
+TEST_F(MptokenIssuanceKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
 {
     EXPECT_CALL(host, mptokenIssuanceKeylet(issuer, kSeqValue)).WillOnce(Return(keylet));
 

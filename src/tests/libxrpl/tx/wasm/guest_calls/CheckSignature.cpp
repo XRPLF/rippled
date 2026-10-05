@@ -44,7 +44,7 @@ struct CheckSignatureGuest : GuestCallTest
     }
 };
 
-TEST_F(CheckSignatureGuest, MessageSignatureAndPubkeyReachHostInOrder)
+TEST_F(CheckSignatureGuest, message_signature_and_pubkey_reach_host_in_order)
 {
     EXPECT_CALL(host, checkSignature(BytesAre("msg"), BytesAre("sig"), BytesAre("key")))
         .WillOnce(Return(1));
@@ -55,7 +55,7 @@ TEST_F(CheckSignatureGuest, MessageSignatureAndPubkeyReachHostInOrder)
 
 // Nothing on this path holds the three regions to a length, deliberately rather than by
 // oversight: empty ones reach the host like any others.
-TEST_F(CheckSignatureGuest, EmptyRegionsReachHostUnvalidated)
+TEST_F(CheckSignatureGuest, empty_regions_reach_host_unvalidated)
 {
     auto const isEmpty = testing::Property(&Slice::empty, true);
     EXPECT_CALL(host, checkSignature(isEmpty, isEmpty, isEmpty)).WillOnce(Return(0));
@@ -65,7 +65,7 @@ TEST_F(CheckSignatureGuest, EmptyRegionsReachHostUnvalidated)
     EXPECT_EQ(hostAnswer(wat), 0);
 }
 
-TEST_F(CheckSignatureGuest, HostErrorBecomesContractReturnValue)
+TEST_F(CheckSignatureGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, checkSignature(BytesAre("msg"), BytesAre("sig"), BytesAre("key")))
         .WillOnce(Return(std::unexpected(HostFunctionError::InvalidParams)));
@@ -74,7 +74,7 @@ TEST_F(CheckSignatureGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(CheckSignatureGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(CheckSignatureGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, checkSignature(BytesAre("msg"), BytesAre("sig"), BytesAre("key")))
         .WillOnce(testing::Throw(std::runtime_error{"signature check came apart"}));
@@ -85,7 +85,7 @@ TEST_F(CheckSignatureGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("checkSignature"));
 }
 
-TEST_F(CheckSignatureGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(CheckSignatureGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, checkSignature).Times(0);
 
@@ -93,7 +93,7 @@ TEST_F(CheckSignatureGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(CheckSignatureGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(CheckSignatureGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, checkSignature).Times(0);
 

@@ -35,7 +35,7 @@ struct NFTFlagsGuest : GuestCallTest
     }
 };
 
-TEST_F(NFTFlagsGuest, NftIdReachesHostAndFlagsComeBack)
+TEST_F(NFTFlagsGuest, nft_id_reaches_host_and_flags_come_back)
 {
     EXPECT_CALL(host, getNFTFlags(Eq(nftId))).WillOnce(Return(kFlags));
 
@@ -43,7 +43,7 @@ TEST_F(NFTFlagsGuest, NftIdReachesHostAndFlagsComeBack)
     EXPECT_EQ(hostAnswer(wat), kFlags);
 }
 
-TEST_F(NFTFlagsGuest, HostErrorBecomesContractReturnValue)
+TEST_F(NFTFlagsGuest, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getNFTFlags(Eq(nftId)))
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -52,7 +52,7 @@ TEST_F(NFTFlagsGuest, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(NFTFlagsGuest, HostExceptionStopsTheRunAndIsLogged)
+TEST_F(NFTFlagsGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getNFTFlags(Eq(nftId)))
         .WillOnce(testing::Throw(std::runtime_error{"nft flags came apart"}));
@@ -63,7 +63,7 @@ TEST_F(NFTFlagsGuest, HostExceptionStopsTheRunAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getNFTFlags"));
 }
 
-TEST_F(NFTFlagsGuest, NftIdOfTheWrongLengthIsRefusedWithoutAskingHost)
+TEST_F(NFTFlagsGuest, nft_id_of_the_wrong_length_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFTFlags).Times(0);
 
@@ -71,7 +71,7 @@ TEST_F(NFTFlagsGuest, NftIdOfTheWrongLengthIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NFTFlagsGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
+TEST_F(NFTFlagsGuest, input_region_past_memory_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFTFlags).Times(0);
 
@@ -79,7 +79,7 @@ TEST_F(NFTFlagsGuest, InputRegionPastMemoryIsRefusedWithoutAskingHost)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
 }
 
-TEST_F(NFTFlagsGuest, NegativeInputPointerIsRefusedWithoutAskingHost)
+TEST_F(NFTFlagsGuest, negative_input_pointer_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, getNFTFlags).Times(0);
 
