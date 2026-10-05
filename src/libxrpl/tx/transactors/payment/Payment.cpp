@@ -768,13 +768,13 @@ Payment::doApply()
 
     // Direct XRP payment.
 
-    auto sleSrc = AccountRootEntryW(accountID_, view());
+    auto sleSrc = AccountRootEntryW(accountID_, view(), j_);
     if (!sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // the number of reserves in this ledger for this account that require a
     // reserve.
-    auto const reserve = accountReserve(view(), sleSrc, j_);
+    auto const reserve = sleSrc.reserve();
 
     // In a delegated / fee sponsored payment, the fee payer is not the source account (accountID_).
     bool const accountIsPayer = ctx_.tx.getFeePayerID() == accountID_;

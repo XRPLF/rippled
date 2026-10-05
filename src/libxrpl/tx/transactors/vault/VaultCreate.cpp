@@ -182,7 +182,7 @@ VaultCreate::doApply()
     auto const& tx = ctx_.tx;
     auto applyViewContext = ctx_.getApplyViewContext();
     auto const sequence = tx.getSeqProxy();
-    auto owner = AccountRootEntryW(accountID_, view());
+    auto owner = AccountRootEntryW(accountID_, view(), j_);
     if (!owner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -193,7 +193,7 @@ VaultCreate::doApply()
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
     std::optional<AccountRootEntryW> noSponsor;
     increaseOwnerCount(view(), owner, noSponsor, 2, j_);
-    if (preFeeBalance_ < accountReserve(view(), owner, j_))
+    if (preFeeBalance_ < owner.reserve())
         return tecINSUFFICIENT_RESERVE;
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);

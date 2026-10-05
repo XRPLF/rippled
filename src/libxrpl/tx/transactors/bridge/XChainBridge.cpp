@@ -430,13 +430,13 @@ transferHelper(
 
     if (amt.native())
     {
-        auto sleSrc = AccountRootEntryW(src, psb);
+        auto sleSrc = AccountRootEntryW(src, psb, j);
         XRPL_ASSERT(sleSrc, "xrpl::transferHelper : non-null source account");
         if (!sleSrc)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         {
-            auto const reserve = accountReserve(psb, sleSrc, j);
+            auto const reserve = sleSrc.reserve();
 
             auto const availableBalance = [&]() -> STAmount {
                 STAmount curBal = (*sleSrc)[sfBalance];
@@ -1036,8 +1036,7 @@ applyCreateAccountAttestations(
 
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
-            auto const reserve =
-                accountReserve(psb, AccountRootEntryR(sleDoor, psb), j, {.ownerCountDelta = 1});
+            auto const reserve = AccountRootEntryR(sleDoor, psb, j).reserve({.ownerCountDelta = 1});
 
             if (balance < reserve)
                 return std::unexpected(tecINSUFFICIENT_RESERVE);
@@ -1445,12 +1444,12 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 
     {
         // Check reserve
-        auto const sleAcc = AccountRootEntryR(account, ctx.view);
+        auto const sleAcc = AccountRootEntryR(account, ctx.view, ctx.j);
         if (!sleAcc)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = accountReserve(ctx.view, sleAcc, ctx.j, {.ownerCountDelta = 1});
+        auto const reserve = sleAcc.reserve({.ownerCountDelta = 1});
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -1994,12 +1993,12 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
 
     {
         // Check reserve
-        auto const sleAcc = AccountRootEntryR(account, ctx.view);
+        auto const sleAcc = AccountRootEntryR(account, ctx.view, ctx.j);
         if (!sleAcc)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = accountReserve(ctx.view, sleAcc, ctx.j, {.ownerCountDelta = 1});
+        auto const reserve = sleAcc.reserve({.ownerCountDelta = 1});
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }

@@ -456,7 +456,7 @@ LoanSet::doApply()
 
     auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
     auto const borrower = counterparty == brokerOwner ? accountID_ : counterparty;
-    auto borrowerSle = AccountRootEntryW(borrower, view);
+    auto borrowerSle = AccountRootEntryW(borrower, view, j_);
     if (!borrowerSle)
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
@@ -588,7 +588,7 @@ LoanSet::doApply()
     {
         auto const balance =
             accountID_ == borrower ? preFeeBalance_ : borrowerSle->at(sfBalance).value().xrp();
-        if (balance < accountReserve(view, borrowerSle, j_))
+        if (balance < borrowerSle.reserve())
             return tecINSUFFICIENT_RESERVE;
     }
 

@@ -296,7 +296,7 @@ TrustSet::doApply()
     // true, if current is high account.
     bool const bHigh = accountID_ > uDstAccountID;
 
-    auto sle = AccountRootEntryW(accountID_, view());
+    auto sle = AccountRootEntryW(accountID_, view(), j_);
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -335,8 +335,7 @@ TrustSet::doApply()
     bool const freeTrustLine = !sponsorSle && (ownerCount(sle, j_) < 2);
     std::uint32_t const uOwnerCount = ownerCount(sle, j_);
     XRPAmount const reserveCreate(
-        (uOwnerCount < 2) ? XRPAmount(beast::kZero)
-                          : accountReserve(view(), sle, j_, {.ownerCountDelta = 1}));
+        (uOwnerCount < 2) ? XRPAmount(beast::kZero) : sle.reserve({.ownerCountDelta = 1}));
 
     std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
