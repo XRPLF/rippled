@@ -367,6 +367,9 @@ public:
      * This function is used when receiving the root node of a SHAMap from a peer during ledger
      * synchronization. The node must already have been deserialized.
      *
+     * A root offered under a hash the map does not hold names another tree and
+     * is reported as invalid data. A root matching that hash is a duplicate.
+     *
      * @param hash The expected hash of the root node.
      * @param rootNode A deserialized root node to add.
      * @param filter Optional sync filter to track received nodes.
@@ -385,6 +388,9 @@ public:
      * This function is used when receiving nodes from peers during ledger synchronization. The node
      * is inserted at the position specified by nodeID. The node must already have been
      * deserialized.
+     *
+     * A node that no valid tree can hold makes the map Invalid: the root hash
+     * committed to an impossible shape, so no peer can satisfy it.
      *
      * @param nodeID The position in the tree where this node belongs.
      * @param treeNode A deserialized tree node to add.
