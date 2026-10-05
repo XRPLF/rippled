@@ -5,6 +5,6 @@
 
 namespace xrpl {
 
-using KeyCache = TaggedCache<uint256, int, true>;
+using KeyCache = TaggedCache<UInt256, int, true>;
 
 }  // namespace xrpl

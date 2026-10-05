@@ -44,30 +44,30 @@ class TransfersNotFrozen
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 
 private:
     bool
-    isValidEntry(SLE::const_ref before, SLE::const_ref after);
+    isValidEntry(SLE::ConstRef before, SLE::ConstRef after);
 
     static STAmount
-    calculateBalanceChange(SLE::const_ref before, SLE::const_ref after, bool isDelete);
+    calculateBalanceChange(SLE::ConstRef before, SLE::ConstRef after, bool isDelete);
 
     void
     recordBalance(Issue const& issue, BalanceChange change);
 
     void
-    recordBalanceChanges(SLE::const_ref after, STAmount const& balanceChange);
+    recordBalanceChanges(SLE::ConstRef after, STAmount const& balanceChange);
 
     SLE::const_pointer
     findIssuer(AccountID const& issuerID, ReadView const& view);
 
     static bool
     validateIssuerChanges(
-        SLE::const_ref issuer,
+        SLE::ConstRef issuer,
         IssuerChanges const& changes,
         STTx const& tx,
         beast::Journal const& j,
