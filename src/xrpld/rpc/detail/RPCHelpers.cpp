@@ -31,6 +31,8 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
+#include <rpcspec/Errors.hpp>
+
 #include <algorithm>
 #include <array>
 #include <cstdint>

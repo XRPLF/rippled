@@ -14,7 +14,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
-#include <xrpl/protocol/ErrorCodes.h>
 
 #include <rpcspec/Errors.hpp>
 #include <rpcspec/Types.hpp>
