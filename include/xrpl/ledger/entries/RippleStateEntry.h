@@ -107,6 +107,10 @@ public:
      * @note This checks only the line's auth flag. Whether the issuer
      * requires authorization (lsfRequireAuth) is on the issuer AccountRoot;
      * see requireAuth().
+     *
+     * @param account the account whose authorization is checked.
+     * @param issuer the account on the other side of the line.
+     * @return true if @p issuer authorized @p account on this line.
      */
     [[nodiscard]] bool
     isAuthorized(AccountID const& account, AccountID const& issuer) const
