@@ -190,15 +190,37 @@ private:
      * Whether either map of the ledger being acquired has been found invalid.
      *
      * A walk returns a bare list of hashes, so this is what tells a satisfied
-     * map from an abandoned one. Callers ask it before reading emptiness as
-     * "nothing left to fetch". See SHAMap::addKnownNode for why the verdict is
-     * final.
+     * map from an abandoned one. See SHAMap::addKnownNode for why the verdict
+     * is final.
      *
-     * @return Whether either map is Invalid, and false while there is no ledger
-     *         yet, since then there is no map to judge.
+     * @return Whether either map is Invalid, and false while there is no
+     *         ledger, since then there is no map to judge.
      */
     [[nodiscard]] bool
     hasInvalidMap() const;
+
+    /**
+     * Whether nothing is left to fetch. Not the same as complete: done()
+     * settles the ledger before publishing that.
+     *
+     * @return Whether the header and both maps have been obtained.
+     */
+    [[nodiscard]] bool
+    haveEverything() const
+    {
+        return haveHeader_ && haveState_ && haveTransactions_;
+    }
+
+    /**
+     * Record what one peer's packet achieved, and report its yield. Only a
+     * useful node counts as progress. Call under mtx_.
+     *
+     * @param san What the packet's nodes achieved, accumulated over the whole
+     *        packet.
+     * @return How many good nodes the packet held.
+     */
+    [[nodiscard]] int
+    recordPacket(SHAMapAddNode const& san);
 
     void
     onTimer(bool progress, ScopedLockType& sl) override;
