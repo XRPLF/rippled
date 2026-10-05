@@ -162,12 +162,12 @@ SHAMap::visitDifferences(
         if (!function(*node))
             return;
 
-        // Nibbles run out at kLeafDepth, so only a leaf belongs there. A well-formed map never
-        // holds an inner node at that depth: addKnownNode marks the map invalid rather than hooking
-        // one in, and fetch-pack data is hash-verified against a validated root, so reaching this
-        // means a defect or a corrupt store, not something a peer can provoke. Report the node
-        // anyway - the wire form carries no depth, and the recipient hooks blobs in by hash - but
-        // skip the children rather than letting getChildNodeID throw on them.
+        // Nibbles run out at kLeafDepth, so only a leaf belongs there. addKnownNode marks the map
+        // invalid on meeting an inner node at that depth, and fetch-pack data is hash-verified
+        // against a validated root, so reaching this means a defect or a corrupt store. The
+        // node is still reported, since the wire form carries no depth and the recipient hooks
+        // blobs in by hash. Its children are skipped, since getChildNodeID has no answer past
+        // kLeafDepth.
         if (nodeID.getDepth() >= kLeafDepth)
         {
             // LCOV_EXCL_START
@@ -226,7 +226,12 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
             // we already know this child node is missing
             fullBelow = false;
         }
-        else if (!backed_ || !f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
+        // The depth test precedes the cache lookup for the same reason it does in addKnownNode():
+        // the cache is keyed by node hash and shared across maps, and a hash covers a node's
+        // children but not its depth. Skipping the shortcut forgoes an optimization only.
+        else if (
+            !backed_ || isLeafDepth(nodeID.getDepth() + 1) ||
+            !f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
         {
             bool pending = false;
             auto d = descendAsync(
@@ -256,6 +261,17 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 
                 if (--mn.max <= 0)
                     return;
+            }
+            else if (d->isInner() && isLeafDepth(nodeID.getDepth() + 1))
+            {
+                // Only a leaf belongs that deep (see isLeafDepth and SHAMap::addKnownNode). A node
+                // resolved locally reaches the walk without passing through addKnownNode(), so the
+                // walk reaches this verdict itself. Ordered ahead of the full-below test below,
+                // which canonicalization shares across maps.
+                JLOG(journal_.warn()) << "Inner node at branch " << branch << " below " << nodeID
+                                      << " makes the map invalid";
+                setInvalid();
+                return;
             }
             else if (d->isInner() && !safeDowncast<SHAMapInnerNode*>(d)->isFullBelow(mn.generation))
             {
@@ -320,6 +336,8 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
         }
         else if ((mn.max > 0) && (mn.missingHashes.insert(nodeHash).second))
         {
+            // getChildNodeID() is safe here: gmnProcessNodes refuses to descend into an inner node
+            // at kLeafDepth, so a deferred parent sits at most one level above it.
             mn.missingNodes.emplace_back(parentID.getChildNodeID(branch), nodeHash.asUInt256());
             --mn.max;
         }
@@ -330,16 +348,19 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
     mn.deferred = 0;
 }
 
-/**
- * Get a list of node IDs and hashes for nodes that are part of this SHAMap
- * but not available locally.  The filter can hold alternate sources of
- * nodes that are not permanently stored locally
- */
 std::vector<std::pair<SHAMapNodeID, UInt256>>
 SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
 {
     XRPL_ASSERT(root_->getHash().isNonZero(), "xrpl::SHAMap::getMissingNodes : nonzero root hash");
     XRPL_ASSERT(max > 0, "xrpl::SHAMap::getMissingNodes : valid max input");
+
+    if (!isValid())
+    {
+        // The root node's own hash, since getHash() unshares the tree on a zero hash.
+        JLOG(journal_.warn()) << "getMissingNodes called on an invalid map, root hash "
+                              << root_->getHash() << " seq " << ledgerSeq();
+        return {};
+    }
 
     MissingNodes mn(
         max,
@@ -373,6 +394,11 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
         {
             gmnProcessNodes(mn, pos);
 
+            // The walk just invalidated the map. The loop stops descending here but falls through
+            // to the drain below, since every posted read must be drained while `mn` is alive.
+            if (!isValid())
+                break;
+
             if (mn.max <= 0)
                 break;
 
@@ -401,6 +427,11 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
         // posted as many deferred reads as we can
         if (mn.deferred != 0)
             gmnProcessDeferredReads(mn);
+
+        // Reads are drained, so the map can be abandoned. What was collected belongs to a tree
+        // that cannot exist.
+        if (!isValid())
+            return {};
 
         if (mn.max <= 0)
             return std::move(mn.missingNodes);
@@ -434,6 +465,11 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
         // and we have no nodes to resume
 
     } while (node != nullptr);
+
+    // addKnownNode() on another thread can write the verdict after the loop's own test, so the map
+    // is judged once more before the result is returned.
+    if (!isValid())
+        return {};  // LCOV_EXCL_LINE: only that other thread reaches this, so no test does
 
     if (mn.missingNodes.empty())
         clearSynching();
@@ -650,11 +686,11 @@ SHAMap::addKnownNode(
         }
 
         // Only leaves may sit at kLeafDepth (see isLeafDepth), so an inner node there makes the map
-        // impossible. Nothing is hooked in, so this is bad data rather than progress.
+        // impossible. The node is reported as bad data.
         //
         // Every node from the root down hash-verified to get here, so it is the requested root hash
         // itself that commits to a shape no valid tree can have. The verdict belongs to that hash
-        // rather than to our copy of the tree: no peer can satisfy it, so retrying is futile.
+        // rather than to our copy of the tree.
         bool const badDepth = treeNode->isInner() && isLeafDepth(currNodeID.getDepth());
         SOMETIMES(badDepth, "xrpl::SHAMap::addKnownNode : map is invalid");
         if (badDepth)
@@ -899,10 +935,9 @@ SHAMap::verifyProofPath(UInt256 const& rootHash, UInt256 const& key, std::vector
             }
             else
             {
-                // The hash chain up to rootHash only proves this leaf sits where the path claims,
-                // not that it is the leaf for `key`: a peer could substitute any other leaf whose
-                // subtree hashes to the same value at every level above it. Checking the terminal
-                // leaf's own key is what ties the proof to `key` specifically.
+                // The hash chain up to rootHash proves this leaf sits where the path claims. Any
+                // leaf whose subtree hashes the same at every level above satisfies that chain, so
+                // the terminal leaf's own key is what ties the proof to `key`.
                 if (leafKey(*node) != key)
                     return false;
 
