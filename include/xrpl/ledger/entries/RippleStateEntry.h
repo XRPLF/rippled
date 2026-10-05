@@ -92,6 +92,8 @@ public:
 
     /**
      * Returns true if either side deep-froze this line.
+     *
+     * @return true if either side deep-froze this line.
      */
     [[nodiscard]] bool
     isDeepFrozen() const
