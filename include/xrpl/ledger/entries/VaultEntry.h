@@ -69,6 +69,8 @@ public:
      * always NoPhase. For closed-ended vaults the phase is derived from the
      * parent close time of the entry's view and the vault's immutable
      * SubscriptionDate and RedemptionDate.
+     *
+     * @return The vault's current VaultPhase.
      */
     [[nodiscard]] VaultPhase
     phase() const;
