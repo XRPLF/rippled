@@ -20,21 +20,25 @@ namespace detail {
 // will remain in the object file.  But the string literals will remain.
 //
 // There's a certain amount of tension in determining the correct HTTP
-// status to associate with a given RPC error.  Initially all RPC errors
-// returned 200 (OK).  And that's the default behavior if no HTTP status code
-// is specified below.
+// status to associate with a given RPC error.  Every row below names its
+// HTTP status, and a row that omits it does not compile, since ErrorInfo has
+// no constructor that leaves the status out.
 //
 // The codes currently selected target the load balancer fail-over use case.
 // If a query fails on one node but is likely to have a positive outcome
 // on a different node, then the failure should return a 4xx/5xx range
 // status code.
 
+// The rows below are aligned by hand into four columns, so that a wrong status or a mistyped token
+// is visible by scanning one column. That cannot be had inside the 100-column limit once the
+// longest enumerator and the longest message sit in one row. So this region is exempt from the
+// limit by design rather than by oversight.
 // clang-format off
 static constexpr ErrorInfo kUnorderedErrorInfos[]{
-    {RpcActMalformed,                             "actMalformed",                             "Account malformed."},
-    {RpcActNotFound,                              "actNotFound",                              "Account not found."},
-    {RpcAlreadyMultisig,                          "alreadyMultisig",                          "Already multisigned."},
-    {RpcAlreadySingleSig,                         "alreadySingleSig",                         "Already single-signed."},
+    {RpcActMalformed,                             "actMalformed",                             "Account malformed.",                                                  400},
+    {RpcActNotFound,                              "actNotFound",                              "Account not found.",                                                  404},
+    {RpcAlreadyMultisig,                          "alreadyMultisig",                          "Already multisigned.",                                                400},
+    {RpcAlreadySingleSig,                         "alreadySingleSig",                         "Already single-signed.",                                              400},
     {RpcAmendmentBlocked,                         "amendmentBlocked",                         "Amendment blocked, need upgrade.",                                    503},
     {RpcExpiredValidatorList,                     "unlBlocked",                               "Validator list expired.",                                             503},
     {RpcAtxDeprecated,                            "deprecated",                               "Use the new API or specify a ledger range.",                          400},
