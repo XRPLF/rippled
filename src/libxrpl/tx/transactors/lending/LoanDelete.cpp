@@ -9,8 +9,10 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -46,7 +48,7 @@ reversePendingLoan(
     if (!brokerOwnerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = getVaultScale(vaultSle);
     Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
     auto const state = constructLoanState(loanSle);
 
@@ -58,9 +60,28 @@ reversePendingLoan(
         loanOriginationDeltas(vaultSle, principalOutstanding, state.interestDue);
 
     // Reverse the vault bookkeeping from the proposal.
-    vaultSle->at(sfAssetsAvailable) += principalOutstanding;
-    vaultSle->at(sfAssetsReserved) -= principalOutstanding;
-    vaultSle->at(sfAssetsTotal) -= assetsTotalDelta;
+    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+    {
+        auto const principalRequested = STAmount{vaultAsset, principalOutstanding};
+        if (auto const ter = adjustVaultBalances(
+                vaultSle,
+                {
+                    .cash = principalRequested,
+                    .deployed = -debtTotalDelta,
+                    .reserved = -principalRequested,
+                },
+                j);
+            !isTesSuccess(ter))
+        {
+            return ter;
+        }
+    }
+    else
+    {
+        vaultSle->at(sfAssetsAvailable) += principalOutstanding;
+        vaultSle->at(sfAssetsReserved) -= principalOutstanding;
+        vaultSle->at(sfAssetsTotal) -= assetsTotalDelta;
+    }
     view.update(vaultSle);
 
     // Reverse the broker debt.
@@ -127,7 +148,7 @@ releaseLoanFromBroker(
         roundToAsset(
             vaultSle->at(sfAsset),
             debtTotalProxy,
-            getAssetsTotalScale(vaultSle),
+            getVaultScale(vaultSle),
             Number::RoundingMode::TowardsZero) == beast::kZero,
         "xrpl::LoanDelete::releaseLoanFromBroker",
         "last loan, remaining debt rounds to zero");

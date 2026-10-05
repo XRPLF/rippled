@@ -166,6 +166,7 @@ LoanAccept::doApply()
     Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
     Number const originationFee = loanSle->at(sfLoanOriginationFee);
     auto const loanAssetsToBorrower = principalOutstanding - originationFee;
+    auto const state = constructLoanState(loanSle);
 
     loanSle->clearFlag(lsfLoanPending);
 
@@ -189,7 +190,24 @@ LoanAccept::doApply()
             j_))
         return ter;
 
-    vaultSle->at(sfAssetsReserved) -= principalOutstanding;
+    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+    {
+        if (auto ter = adjustVaultBalances(
+                vaultSle,
+                {
+                    .yield = state.interestDue,
+                    .reserved = -principalOutstanding,
+                },
+                j_);
+            !isTesSuccess(ter))
+        {
+            return ter;
+        }
+    }
+    else
+    {
+        vaultSle->at(sfAssetsReserved) -= principalOutstanding;
+    }
     view.update(vaultSle);
 
     if (auto const ter = dirLink(view, borrower, loanSle, sfOwnerNode))

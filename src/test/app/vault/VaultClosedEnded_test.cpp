@@ -744,12 +744,13 @@ private:
         balancesEq(XRP(140).value(), XRP(200).value());
 
         // bob has 200 XRP-worth of shares but only 140 XRP is available (the remaining 60 XRP
-        // sits in the outstanding loan). A full 200 XRP withdrawal fails against the
-        // AssetsAvailable cap; bob redeems 140 XRP instead and is left holding 60M shares backed
-        // by the loan receivable — the realistic outcome when capital is still deployed at
-        // Redemption.
+        // sits in the outstanding loan). Requesting the full 200 XRP is a final withdrawal
+        // (it would burn all of bob's remaining shares), and FixedPrecision refuses to empty
+        // the vault while AssetsDeployed is non-zero, ahead of the ordinary insufficient-funds
+        // guard; bob redeems 140 XRP instead and is left holding 60M shares backed by the loan
+        // receivable — the realistic outcome when capital is still deployed at Redemption.
         env(vault.withdraw({.depositor = bob, .id = keylet.key, .amount = XRP(200).value()}),
-            Ter{tecINSUFFICIENT_FUNDS});
+            Ter{tecHAS_OBLIGATIONS});
         env.close();
         env(vault.withdraw({.depositor = bob, .id = keylet.key, .amount = XRP(140).value()}));
         env.close();

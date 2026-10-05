@@ -229,12 +229,14 @@ setupLoan(ApplyContext& ctx, AccountID const& accountID, LoanFlow flow, beast::J
     if (!vaultSle)
         return std::unexpected(tefBAD_LEDGER);  // LCOV_EXCL_LINE
     Asset const vaultAsset = vaultSle->at(sfAsset);
+    auto const vaultVersion = getVaultVersion(vaultSle);
 
     auto const principalRequested = tx[sfPrincipalRequested];
 
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    // For Legacy/CashBasis, getVaultBaseScale falls through to getVaultScale.
+    auto const vaultScale = getVaultBaseScale(vaultSle);
     if (vaultAvailableProxy < principalRequested)
     {
         JLOG(j.warn()) << "Insufficient assets available in the Vault to fund the loan.";
@@ -262,8 +264,7 @@ setupLoan(ApplyContext& ctx, AccountID const& accountID, LoanFlow flow, beast::J
         properties.loanState.managementFeeDue);
 
     XRPL_ASSERT_PARTS(
-        *vaultSle->at(sfAssetsMaximum) == 0 ||
-            getVaultVersion(vaultSle) == VaultVersion::CashBasis ||
+        *vaultSle->at(sfAssetsMaximum) == 0 || vaultVersion >= VaultVersion::CashBasis ||
             *vaultSle->at(sfAssetsMaximum) > *vaultTotalProxy,
         "xrpl::LoanSet::setupLoan",
         "instant-recognition vault is below maximum limit");
@@ -308,6 +309,20 @@ setupLoan(ApplyContext& ctx, AccountID const& accountID, LoanFlow flow, beast::J
                        << ". PeriodicPayment: " << properties.periodicPayment;
         return std::unexpected(tecINTERNAL);
         // LCOV_EXCL_STOP
+    }
+
+    if (vaultVersion == VaultVersion::FixedPrecision)
+    {
+        // Reject origination if this loan's interest would grow the Vault past its Open-zone
+        // capacity.
+        if (vaultOpenZoneCapacity(vaultSle, state.interestDue) > getVaultOpenLimit(vaultSle))
+        {
+            JLOG(j.warn()) << "Loan interest would exceed the FixedPrecision Vault's Open zone.";
+            return std::unexpected(tecLIMIT_EXCEEDED);
+        }
+        XRPL_ASSERT(
+            properties.loanScale == getVaultBaseScale(vaultSle),
+            "xrpl::LoanSet::doApply : FixedPrecision loan uses Vault base scale");
     }
 
     auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
@@ -497,7 +512,8 @@ createLoan(
 
     AccountID const brokerPseudo = brokerSle->at(sfAccount);
     Asset const vaultAsset = vaultSle->at(sfAsset);
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = getVaultScale(vaultSle);
+    auto const vaultVersion = getVaultVersion(vaultSle);
 
     auto loan = buildLoan(ctx, plan, brokerSle, pending);
     view.insert(loan);
@@ -510,10 +526,32 @@ createLoan(
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
     auto vaultReservedProxy = vaultSle->at(sfAssetsReserved);
-    vaultAvailableProxy -= plan.principalRequested;
-    vaultTotalProxy += plan.assetsTotalDelta;
-    if (pending == IsLoanPending::Yes)
-        vaultReservedProxy += plan.principalRequested;
+
+    if (vaultVersion == VaultVersion::FixedPrecision)
+    {
+        auto const cashDelta = STAmount{vaultAsset, plan.principalRequested};
+        auto const assetReserved = pending == IsLoanPending::Yes ? cashDelta : STAmount{};
+        auto const yield = pending == IsLoanPending::No ? plan.interestDue : 0;
+        if (auto const ter = adjustVaultBalances(
+                vaultSle,
+                {
+                    .cash = -cashDelta,
+                    .deployed = plan.debtTotalDelta,
+                    .yield = yield,
+                    .reserved = assetReserved,
+                },
+                j);
+            !isTesSuccess(ter))
+            return ter;
+    }
+    else
+    {
+        auto const assetReserved = pending == IsLoanPending::Yes ? plan.principalRequested : 0;
+        vaultAvailableProxy -= plan.principalRequested;
+        vaultTotalProxy += plan.assetsTotalDelta;
+        vaultReservedProxy += assetReserved;
+    }
+
     XRPL_ASSERT_PARTS(
         *vaultAvailableProxy + *vaultReservedProxy <= *vaultTotalProxy,
         "xrpl::LoanSet::createLoan",
@@ -521,7 +559,7 @@ createLoan(
     view.update(vaultSle);
 
     // Update the balances in the loan broker
-    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), plan.debtTotalDelta, vaultAsset, vaultScale);
+    adjustBrokerDebtTotal(brokerSle, vaultSle, plan.debtTotalDelta, vaultScale);
     adjustLoanBrokerOwnerCount(view, brokerSle, 1, j);
     auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
     loanSequenceProxy += 1;
@@ -877,6 +915,8 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
+    auto const vaultVersion = getVaultVersion(vault);
+
     if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
     {
         auto const phase = getVaultPhase(ctx.view, vault);
@@ -907,11 +947,22 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     // already at AssetsMaximum cannot take another loan. Cash-basis origination
     // does not change AssetsTotal (see cash_basis::loanOriginationDeltas), so
     // this leftover instant-recognition gate must not apply there.
-    if (getVaultVersion(vault) != VaultVersion::CashBasis && vault->at(sfAssetsMaximum) != 0 &&
+    if (vaultVersion < VaultVersion::CashBasis && vault->at(sfAssetsMaximum) != 0 &&
         vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
     {
         JLOG(ctx.j.warn()) << "Vault at maximum assets limit. Can't add another loan.";
         return tecLIMIT_EXCEEDED;
+    }
+
+    if (vaultVersion == VaultVersion::FixedPrecision)
+    {
+        // Reject origination if the Vault is already coarsened.
+        if (getVaultScale(vault) != getVaultBaseScale(vault))
+        {
+            JLOG(ctx.j.warn()) << "FixedPrecision Vault is already coarsened; no further loans can "
+                                  "be originated until it returns to its base scale.";
+            return tecLIMIT_EXCEEDED;
+        }
     }
 
     Asset const asset = vault->at(sfAsset);
@@ -935,7 +986,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     if (auto const ter = checkLoanFreeze(
             ctx.view,
             asset,
-            tx[~sfLoanOriginationFee].value_or(Number{}),
+            tx[~sfLoanOriginationFee].value_or(0),
             vaultPseudo,
             brokerPseudo,
             borrower,

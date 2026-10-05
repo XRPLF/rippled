@@ -22,6 +22,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -1323,7 +1324,7 @@ private:
                 roundToAsset(
                     v->at(sfAsset),
                     Number{kResidual},
-                    getAssetsTotalScale(v),
+                    getVaultScale(v),
                     Number::RoundingMode::TowardsZero) == beast::kZero);
         }
 

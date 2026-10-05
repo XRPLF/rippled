@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/vault/VaultCreate.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -101,7 +102,10 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
             return temMALFORMED;
 
-        if (scale > kVaultMaximumIouScale)
+        auto const maximumScale = vaultVersionFor(ctx.rules) == VaultVersion::FixedPrecision
+            ? kVaultMaximumFixedPrecisionIouScale
+            : kVaultMaximumLegacyIouScale;
+        if (scale > maximumScale)
             return temMALFORMED;
     }
 
@@ -167,6 +171,21 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     if (hasExpired(ctx.view, ctx.tx[~sfSubscriptionDate]) ||
         hasExpired(ctx.view, ctx.tx[~sfRedemptionDate]))
         return tecEXPIRED;
+
+    // FixedPrecision: AssetsMaximum must be exactly representable on the Vault's base grid,
+    // otherwise associateAsset would silently round the cap the owner asked for.
+    if (auto const assetMax = ctx.tx[~sfAssetsMaximum];
+        assetMax && ctx.view.rules().enabled(featureLendingProtocolV1_2))
+    {
+        int const baseScale =
+            vaultBaseScale(vaultAsset, ctx.tx[~sfScale].value_or(kVaultDefaultIouScale));
+        if (!isOnVaultBaseGrid(vaultAsset, *assetMax, baseScale))
+        {
+            JLOG(ctx.j.debug()) << "VaultCreate: AssetsMaximum " << *assetMax
+                                << " is not representable at the Vault scale.";
+            return tecPRECISION_LOSS;
+        }
+    }
 
     return tesSUCCESS;
 }
@@ -273,10 +292,20 @@ VaultCreate::doApply()
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
-    if (view().rules().enabled(featureLendingProtocolV1_1))
+    VaultVersion const version = vaultVersionFor(view().rules());
+    if (version == VaultVersion::FixedPrecision)
+    {
+        vault->at(sfLEVersion) = std::to_underlying(VaultVersion::FixedPrecision);
+        vault->at(sfYieldUnrealized) = Number(0);
+        vault->at(sfAssetsDeployed) = Number(0);
+    }
+    else if (version == VaultVersion::CashBasis)
     {
         vault->at(sfLEVersion) = std::to_underlying(VaultVersion::CashBasis);
+    }
 
+    if (version != VaultVersion::Legacy)
+    {
         auto const kind = getVaultKind(tx);
         vault->at(sfVaultKind) = std::to_underlying(kind);
         if (kind == VaultKind::ClosedEnded)

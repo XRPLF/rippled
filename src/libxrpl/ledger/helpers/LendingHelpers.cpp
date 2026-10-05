@@ -71,6 +71,161 @@ canApplyToBrokerCover(
     return tesSUCCESS;
 }
 
+namespace detail {
+
+[[nodiscard]] int
+getPosteriorBrokerCoverScale(SLE::ConstRef vault, SLE::ConstRef broker, Number const& delta)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT,
+        "xrpl::detail::getPosteriorBrokerCoverScale : valid Vault sle");
+    XRPL_ASSERT(
+        broker && broker->getType() == ltLOAN_BROKER,
+        "xrpl::detail::getPosteriorBrokerCoverScale : valid LoanBroker sle");
+
+    return posteriorAssetScale(
+        getVaultVersion(vault),
+        vault->at(sfAsset),
+        getVaultBaseScale(vault),
+        broker->at(sfCoverAvailable),
+        delta);
+}
+
+[[nodiscard]] STAmount
+roundToPosteriorBrokerCoverScale(
+    SLE::ConstRef vault,
+    SLE::ConstRef broker,
+    STAmount const& delta,
+    Number::RoundingMode roundingMode)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT,
+        "xrpl::detail::roundToPosteriorBrokerCoverScale : valid Vault sle");
+    XRPL_ASSERT(
+        broker && broker->getType() == ltLOAN_BROKER,
+        "xrpl::detail::roundToPosteriorBrokerCoverScale : valid LoanBroker sle");
+    XRPL_ASSERT(
+        delta.asset() == vault->at(sfAsset),
+        "xrpl::detail::roundToPosteriorBrokerCoverScale : delta and Vault asset match");
+    if (delta.integral())
+        return delta;
+    return roundToScale(delta, getPosteriorBrokerCoverScale(vault, broker, delta), roundingMode);
+}
+
+}  // namespace detail
+
+[[nodiscard]] STAmount
+creditToPosteriorBrokerCoverScale(
+    SLE::ConstRef vault,
+    SLE::ConstRef broker,
+    Number const& raw,
+    Number::RoundingMode roundingMode)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT,
+        "xrpl::creditToPosteriorBrokerCoverScale : valid Vault sle");
+    XRPL_ASSERT(
+        broker && broker->getType() == ltLOAN_BROKER,
+        "xrpl::creditToPosteriorBrokerCoverScale : valid LoanBroker sle");
+    Asset const asset = vault->at(sfAsset);
+    if (asset.integral())
+    {
+        NumberRoundModeGuard const rg(roundingMode);
+        return STAmount{asset, raw};
+    }
+
+    Number const reference = broker->at(sfCoverAvailable);
+    int const scale = detail::getPosteriorBrokerCoverScale(vault, broker, raw);
+    return detail::creditToPosteriorScale(asset, reference, scale, raw, roundingMode);
+}
+
+[[nodiscard]] STAmount
+debitToPosteriorBrokerCoverScale(
+    SLE::ConstRef vault,
+    SLE::ConstRef broker,
+    STAmount const& amount,
+    Number::RoundingMode roundingMode)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT,
+        "xrpl::debitToPosteriorBrokerCoverScale : valid Vault sle");
+    XRPL_ASSERT(
+        broker && broker->getType() == ltLOAN_BROKER,
+        "xrpl::debitToPosteriorBrokerCoverScale : valid LoanBroker sle");
+    XRPL_ASSERT(
+        amount.asset() == vault->at(sfAsset),
+        "xrpl::debitToPosteriorBrokerCoverScale : amount and Vault asset match");
+    XRPL_ASSERT(!amount.negative(), "xrpl::debitToPosteriorBrokerCoverScale : non-negative amount");
+    return -detail::roundToPosteriorBrokerCoverScale(vault, broker, -amount, roundingMode);
+}
+
+[[nodiscard]] TER
+checkOptionalBrokerCoverInflow(SLE::ConstRef vault, SLE::ConstRef broker, STAmount const& amount)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT,
+        "xrpl::checkOptionalBrokerCoverInflow : valid Vault sle");
+    XRPL_ASSERT(
+        broker && broker->getType() == ltLOAN_BROKER,
+        "xrpl::checkOptionalBrokerCoverInflow : valid LoanBroker sle");
+    XRPL_ASSERT(
+        amount.asset() == vault->at(sfAsset),
+        "xrpl::checkOptionalBrokerCoverInflow : amount and Vault asset match");
+    XRPL_ASSERT(!amount.negative(), "xrpl::checkOptionalBrokerCoverInflow : non-negative amount");
+    if (getVaultVersion(vault) != VaultVersion::FixedPrecision)
+        return tesSUCCESS;
+
+    // amount is the effective credit (already floored on the posterior
+    // CoverAvailable grid by creditToPosteriorBrokerCoverScale); rounding it
+    // again as a standalone delta could hide a crossing.
+    STAmount const& rounded = amount;
+    int const baseScale = getVaultBaseScale(vault);
+    // Keep this explicit even though the Open-limit capacity check below rejects
+    // every coarsening transition too. The protocol defines both conditions
+    // independently.
+    if (detail::getPosteriorBrokerCoverScale(vault, broker, rounded) != baseScale)
+        return tecLIMIT_EXCEEDED;
+
+    Number const posterior = [&] {
+        NumberRoundModeGuard const rg(Number::RoundingMode::TowardsZero);
+        return broker->at(sfCoverAvailable) + rounded;
+    }();
+    if (posterior > getVaultOpenLimit(vault))
+        return tecLIMIT_EXCEEDED;
+    return tesSUCCESS;
+}
+
+void
+adjustBrokerDebtTotal(
+    SLE::Ref brokerSle,
+    SLE::ConstRef vaultSle,
+    Number const& delta,
+    int vaultScale)
+{
+    // On FixedPrecision Vaults, LoanSet adds principal to DebtTotal exactly, LoanPay and default
+    // subtract exact amounts. Thus DebtTotal must not be rounded coarser than the base scale.
+    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+    {
+        brokerSle->at(sfDebtTotal) += delta;
+    }
+    else
+    {
+        adjustImpreciseNumber(brokerSle->at(sfDebtTotal), delta, vaultSle->at(sfAsset), vaultScale);
+    }
+}
+
+Number
+minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::ConstRef vaultSle)
+{
+    XRPL_ASSERT(
+        vaultSle && vaultSle->getType() == ltVAULT, "xrpl::minimumBrokerCover : valid Vault sle");
+    NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+    return roundToAsset(
+        vaultSle->at(sfAsset),
+        tenthBipsOfValue(debtTotal, coverRateMinimum),
+        getVaultBaseScale(vaultSle));
+}
+
 bool
 checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
 {
@@ -253,14 +408,13 @@ loanPaymentDeltas(LoanPaymentParts const& parts)
 
 namespace {
 
-// Cash-basis accounting applies only when featureLendingProtocolV1_1 is
-// enabled AND the specific Vault was created under it (LEVersion ==
-// VaultVersion::CashBasis). Vaults created before activation keep instant
-// interest recognition forever, even after the amendment later turns on.
+// Cash-basis accounting applies to Vaults created under
+// featureLendingProtocolV1_1 or a later version. Vaults created before
+// activation keep instant interest recognition forever.
 bool
 cashBasisEnabled(SLE::ConstRef vaultSle)
 {
-    return getVaultVersion(vaultSle) == VaultVersion::CashBasis;
+    return getVaultVersion(vaultSle) >= VaultVersion::CashBasis;
 }
 
 }  // namespace

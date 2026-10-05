@@ -67,6 +67,101 @@
 
 namespace xrpl::test {
 
+// FixedPrecision-only: asserts, on the given vault, that:
+//  - AssetsDeployed exactly equals the sum of the given loans'
+//    PrincipalOutstanding, and (when brokerKeylets is non-empty) also
+//    exactly equals the sum of the given brokers' DebtTotal;
+//  - stored AssetsTotal <= derived getAssetsTotal, with the gap under one
+//    live unit (equal below coarsening), since the stored field is a
+//    Downward-rounded cache;
+//  - AssetsAvailable <= stored AssetsTotal;
+//  - AssetsAvailable exactly equals the vault pseudo-account's real balance
+//    of the underlying asset.
+// No-op on non-FixedPrecision vaults. Call after every vault-touching step
+// (LoanSet, LoanPay, LoanManage, VaultDeposit/Withdraw/Clawback) in a
+// FixedPrecision scenario to catch a single-writer drift between the
+// vault's own bookkeeping fields and the ledger's real balances.
+//
+// A free function (not a LoanTestBase member) so it is usable from any
+// beast::unit_test::Suite, including suites in this family that do not
+// derive from LoanTestBase (e.g. LoanBroker_test, VaultFixedPrecision_test).
+// Pass an empty brokerKeylets when the broker-sum cross-check does not apply;
+// it is then skipped.
+inline void
+checkFixedPrecisionVaultAssetsDeployed(
+    beast::unit_test::Suite& suite,
+    jtx::Env& env,
+    Keylet const& vaultKeylet,
+    std::vector<Keylet> const& brokerKeylets,
+    std::vector<Keylet> const& loanKeylets,
+    std::string const& label = {})
+{
+    auto const vaultSle = env.le(vaultKeylet);
+    if (!suite.expect(static_cast<bool>(vaultSle)))
+        return;
+    if (getVaultVersion(vaultSle) != VaultVersion::FixedPrecision)
+        return;
+
+    Number const vaultAssetsDeployed = vaultSle->at(sfAssetsDeployed);
+
+    Number principalSum{0};
+    for (auto const& loanKeylet : loanKeylets)
+    {
+        if (auto const loanSle = env.le(loanKeylet))
+            principalSum += loanSle->at(sfPrincipalOutstanding);
+    }
+    suite.expect(
+        vaultAssetsDeployed == principalSum,
+        (label.empty() ? "" : label + ": ") +
+            std::string{"AssetsDeployed vs PrincipalOutstanding sum mismatch"});
+
+    if (!brokerKeylets.empty())
+    {
+        Number brokerDebtSum{0};
+        for (auto const& brokerKeylet : brokerKeylets)
+        {
+            if (auto const brokerSle = env.le(brokerKeylet))
+                brokerDebtSum += brokerSle->at(sfDebtTotal);
+        }
+        suite.expect(
+            vaultAssetsDeployed == brokerDebtSum,
+            (label.empty() ? "" : label + ": ") +
+                std::string{"AssetsDeployed vs broker DebtTotal sum mismatch"});
+    }
+
+    bool const coarsened = getVaultScale(vaultSle) > getVaultBaseScale(vaultSle);
+    Number const liveUnit{1, getVaultScale(vaultSle)};
+    Number const derived = getAssetsTotal(vaultSle);
+    Number const stored = vaultSle->at(sfAssetsTotal);
+    suite.expect(
+        stored <= derived,
+        (label.empty() ? "" : label + ": ") +
+            std::string{"stored AssetsTotal must not exceed derived AssetsTotal"});
+    Number const atGap = derived - stored;
+    suite.expect(
+        coarsened ? atGap < liveUnit : atGap == beast::kZero,
+        (label.empty() ? "" : label + ": ") +
+            std::string{"AssetsTotal cache gap exceeds one live unit"});
+
+    suite.expect(
+        Number(vaultSle->at(sfAssetsAvailable)) <= stored,
+        (label.empty() ? "" : label + ": ") +
+            std::string{"AssetsAvailable must not exceed stored AssetsTotal"});
+
+    // AssetsAvailable must exactly track the vault pseudo-account's real
+    // balance: adjustVaultBalances applies the same arithmetic the ledger
+    // uses for the transfer, so the two never drift apart.
+    jtx::Account const vaultAccount("vault", vaultSle->at(sfAccount));
+    env.memoize(vaultAccount);
+    Asset const vaultAsset = vaultSle->at(sfAsset);
+    Number const pseudoBalance = env.balance(vaultAccount, vaultAsset).value();
+    Number const assetsAvailable = vaultSle->at(sfAssetsAvailable);
+    suite.expect(
+        assetsAvailable == pseudoBalance,
+        (label.empty() ? "" : label + ": ") +
+            std::string{"AssetsAvailable vs pseudo-account balance mismatch"});
+}
+
 /**
  * The LoanSet flow a test scenario drives: the immediate one-step flow with a
  * CounterpartySignature, or the two-step flow where the LoanBroker owner
@@ -95,7 +190,9 @@ protected:
     // most of this file's tests assert instant-interest-recognition-specific expected values
     // for those fields. Tests that specifically exercise the amendment opt
     // it back in explicitly (e.g. `all_ | featureLendingProtocolV1_1`).
-    FeatureBitset const all_{jtx::testableAmendments() - featureLendingProtocolV1_1};
+    // featureLendingProtocolV1_2 is also excluded: it changes vault precision.
+    FeatureBitset const all_{
+        jtx::testableAmendments() - featureLendingProtocolV1_1 - featureLendingProtocolV1_2};
     std::string const iouCurrency_{"IOU"};
 
     struct BrokerParameters
@@ -197,7 +294,7 @@ protected:
             using namespace jtx;
 
             auto const vaultSle = env.le(keylet::vault(vaultID));
-            return getAssetsTotalScale(vaultSle);
+            return getVaultScale(vaultSle);
         }
     };
 
@@ -380,7 +477,7 @@ protected:
                 {
                     auto const expectedDebt =
                         env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                            getVaultVersion(vaultSle) == VaultVersion::CashBasis
+                            getVaultVersion(vaultSle) >= VaultVersion::CashBasis
                         ? principalOutstanding
                         : principalOutstanding + interestOwed;
                     env.test.BEAST_EXPECT(brokerDebt == expectedDebt);
@@ -485,7 +582,7 @@ protected:
                             env.test.BEAST_EXPECT(
                                 vaultSle->at(sfLossUnrealized) ==
                                 (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                                         getVaultVersion(vaultSle) == VaultVersion::CashBasis
+                                         getVaultVersion(vaultSle) >= VaultVersion::CashBasis
                                      ? principalOutstanding
                                      : totalValue - managementFeeOutstanding));
                         }
@@ -700,7 +797,7 @@ protected:
                     vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable);
                 auto const unrealizedLoss = vaultSle->at(sfLossUnrealized) +
                     (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                             getVaultVersion(vaultSle) == VaultVersion::CashBasis
+                             getVaultVersion(vaultSle) >= VaultVersion::CashBasis
                          ? state.principalOutstanding
                          : state.totalValue - state.managementFeeOutstanding);
 
@@ -921,17 +1018,6 @@ protected:
             total,
             feeRate,
             asset(brokerParams.vaultDeposit).number().exponent());
-        log << "Loan properties:\n"
-            << "\tPrincipal: " << principal << std::endl
-            << "\tInterest rate: " << interest << std::endl
-            << "\tPayment interval: " << interval << std::endl
-            << "\tManagement Fee Rate: " << feeRate << std::endl
-            << "\tTotal Payments: " << total << std::endl
-            << "\tPeriodic Payment: " << props.periodicPayment << std::endl
-            << "\tTotal Value: " << props.loanState.valueOutstanding << std::endl
-            << "\tManagement Fee: " << props.loanState.managementFeeDue << std::endl
-            << "\tLoan Scale: " << props.loanScale << std::endl
-            << "\tFirst payment principal: " << props.firstPaymentPrincipal << std::endl;
 
         // checkGuards returns a TER, so success is 0
         BEAST_EXPECT(!checkLoanGuards(
