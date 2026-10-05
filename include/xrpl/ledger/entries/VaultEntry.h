@@ -8,6 +8,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SeqProxy.h>
 
 namespace xrpl {
@@ -38,6 +39,19 @@ public:
         : Base(keylet::vault(vaultID), view, j)
     {
     }
+
+    /**
+     * Resolves the Vault's LEVersion, the single point every accounting touch
+     * point should call to determine which recognition model (instant
+     * interest recognition vs. cash-basis) the Vault uses. Vaults created
+     * before featureLendingProtocolV1_1 activated never have sfLEVersion set,
+     * which resolves here to VaultVersion::Legacy.
+     *
+     * @return The Vault's LEVersion, or VaultVersion::Legacy if the field is
+     * absent.
+     */
+    [[nodiscard]] VaultVersion
+    version() const;
 };
 
 using VaultEntryR = VaultEntry<ReadView>;
