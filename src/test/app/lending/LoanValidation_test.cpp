@@ -301,9 +301,10 @@ private:
     }
 
     // A LoanSet with a fractional IOU value field, on a vault whose loanScale
-    // is whole units, is rejected with tecPRECISION_LOSS in doApply. The
-    // vault's sfAssetsTotal is set directly on the open ledger to pin
-    // loanScale to 0. One field per iteration.
+    // is whole units, is rejected with tecPRECISION_LOSS in doApply. A
+    // FixedPrecision vault's loanScale is its base scale, so the vault is
+    // created with sfScale 0 to pin loanScale to whole units. One field per
+    // iteration.
     void
     testLoanSetDoApplyPrecisionLoss()
     {
@@ -328,24 +329,8 @@ private:
                 lender,
                 {.vaultDeposit = 100'000,
                  .debtMax = 25'000,
-                 .managementFeeRate = TenthBips16{1000}})};
-
-            // Set sfAssetsTotal and sfAssetsAvailable to 1e15, pinning
-            // loanScale to whole units.
-            STAmount const inflated{iouAsset.raw(), Number{1, 15}};
-            auto const changed =
-                env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
-                    Sandbox sb(&view, TapNone);
-                    auto vault = sb.peek(brokerInfo.vaultKeylet());
-                    if (!vault)
-                        return false;
-                    vault->at(sfAssetsTotal) = inflated;
-                    vault->at(sfAssetsAvailable) = inflated;
-                    sb.update(vault);
-                    sb.apply(view);
-                    return true;
-                });
-            BEAST_EXPECT(changed);
+                 .managementFeeRate = TenthBips16{1000},
+                 .vaultScale = 0})};
 
             auto const loanSetFee = Fee(env.current()->fees().base * 2);
             Number const kLegalPrincipal{1'000};

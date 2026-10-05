@@ -886,12 +886,12 @@ ValidVault::finalize(
         return !enforce;  // That's all we can do here
     }
 
-    // ttLOAN_SET, ttLOAN_PAY and ttLOAN_MANAGE are the only transactors allowed to
-    // write AssetsDeployed and YieldUnrealized; any new transactor that writes
+    // ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE, and LOAN_DELETE are the only transactors
+    // allowed to write AssetsDeployed and YieldUnrealized; any new transactor that writes
     // either field must be added to both allow-lists below.
     if (afterVault.version == VaultVersion::FixedPrecision && !beforeVault_.empty() &&
         afterVault.assetsDeployed != beforeVault_[0].assetsDeployed && txnType != ttLOAN_SET &&
-        txnType != ttLOAN_PAY && txnType != ttLOAN_MANAGE)
+        txnType != ttLOAN_PAY && txnType != ttLOAN_MANAGE && txnType != ttLOAN_DELETE)
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault transaction must not change AssetsDeployed";
@@ -909,7 +909,7 @@ ValidVault::finalize(
 
     if (afterVault.version == VaultVersion::FixedPrecision && !beforeVault_.empty() &&
         afterVault.yieldUnrealized != beforeVault_[0].yieldUnrealized && txnType != ttLOAN_SET &&
-        txnType != ttLOAN_PAY && txnType != ttLOAN_MANAGE)
+        txnType != ttLOAN_PAY && txnType != ttLOAN_MANAGE && txnType != ttLOAN_ACCEPT)
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault transaction must not change yield "

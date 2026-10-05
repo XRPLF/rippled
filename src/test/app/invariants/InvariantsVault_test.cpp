@@ -1903,6 +1903,10 @@ class InvariantsVault_test : public InvariantsBase
                     auto sleVault = std::make_shared<SLE>(*ov.read(vaultKeylet));
                     sleVault->at(sfAssetsAvailable) -= Number(kPrincipal);
                     sleVault->at(sfAssetsReserved) += Number(kPrincipal);
+                    // A FixedPrecision LoanSet also books the principal as
+                    // deployed, keeping AssetsTotal equal to AssetsAvailable
+                    // plus AssetsDeployed.
+                    sleVault->at(sfAssetsDeployed) += Number(kPrincipal);
                     ov.rawReplace(sleVault);
                 }
 
@@ -1971,11 +1975,13 @@ class InvariantsVault_test : public InvariantsBase
             };
 
             // Vault side of a legitimate LoanDelete of a pending loan: the
-            // reserved principal returns to the available pool.
+            // reserved principal returns to the available pool and is no
+            // longer deployed.
             auto const deleteVault =
                 [&](SLE::pointer const& sleVault, SLE::pointer const&, SLE::pointer const&) {
                     sleVault->at(sfAssetsReserved) -= Number(kPrincipal);
                     sleVault->at(sfAssetsAvailable) += Number(kPrincipal);
+                    sleVault->at(sfAssetsDeployed) -= Number(kPrincipal);
                 };
 
             // The legitimate accept passes.
