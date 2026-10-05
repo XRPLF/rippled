@@ -192,6 +192,43 @@ TEST(SHAMapNodeIDDeathTest, select_branch_clamps_leaf_depth)
 #endif
 }
 
+TEST(SHAMapNodeIDDeathTest, same_position_at_depth_holds_its_own_bound)
+{
+    // Differs from kTestKey in the last nibble only, so the two agree at every depth below
+    // kLeafDepth and only kLeafDepth itself tells them apart.
+    constexpr UInt256 kLastNibbleDiffers(
+        "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca9");
+
+    // Depth 0 names no nibble, so every key shares the root position.
+    EXPECT_TRUE(samePositionAtDepth(0, kTestKey, kLastNibbleDiffers));
+    EXPECT_TRUE(samePositionAtDepth(0, kTestKey, UInt256{}));
+
+    // kLeafDepth is in range here, unlike in selectBranch, since the position at that depth is
+    // the whole key. A bound borrowed from selectBranch would clamp this to 63 and call the two
+    // keys equal, so the pair below is what holds the bound at the right value.
+    EXPECT_TRUE(samePositionAtDepth(SHAMap::kLeafDepth - 1u, kTestKey, kLastNibbleDiffers));
+    EXPECT_FALSE(samePositionAtDepth(SHAMap::kLeafDepth, kTestKey, kLastNibbleDiffers));
+    EXPECT_TRUE(samePositionAtDepth(SHAMap::kLeafDepth, kTestKey, kTestKey));
+
+    // Past kLeafDepth there is no mask in depthMask's 65-entry table, so the call clamps. That
+    // clamp is marked UNREACHABLE, which is an assert and therefore fatal wherever asserts are
+    // live, so only a build with them compiled out (or routed to Antithesis's non-fatal handler)
+    // reaches the clamp itself and can be asserted on.
+#if defined(NDEBUG) || defined(ENABLE_VOIDSTAR)
+    for (auto const depth : {SHAMap::kLeafDepth + 1u, 100u, 255u, 256u, 320u})
+    {
+        // Answers as kLeafDepth does, rather than reading past the table or narrowing the depth
+        // to a byte: 256 would otherwise become 0 and call the two keys equal.
+        EXPECT_FALSE(samePositionAtDepth(depth, kTestKey, kLastNibbleDiffers)) << "depth " << depth;
+        EXPECT_TRUE(samePositionAtDepth(depth, kTestKey, kTestKey)) << "depth " << depth;
+    }
+#else
+    EXPECT_DEATH(
+        (void)samePositionAtDepth(SHAMap::kLeafDepth + 1u, kTestKey, kTestKey),
+        "depth within tree");
+#endif
+}
+
 TEST(SHAMapNodeIDTest, deserialize_rejects_out_of_range_depth)
 {
     // getRawString() only serializes a depth already accepted by the constructor's own
