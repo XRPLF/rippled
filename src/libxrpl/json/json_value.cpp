@@ -1039,7 +1039,8 @@ Value::removeMember(char const* key)
     if (it == value_.mapVal->end())
         return kNull;
 
-    Value old(it->second);
+    // The entry is erased on the next line, so nothing observes what the move leaves behind.
+    Value old(std::move(it->second));
     value_.mapVal->erase(it);
     return old;
 }

@@ -2,6 +2,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 
@@ -280,7 +281,7 @@ public:
         // the purpose in this test is to force the ledger expiration/out of
         // date check to trigger
         env.timeKeeper().adjustCloseTime(Weeks{3});
-        auto const result = env.rpc(apiVersion, "ledger_request", "1")[jss::result];
+        auto const result = test::jtx::rpcPayload(env.rpc(apiVersion, "ledger_request", "1"));
         BEAST_EXPECT(result[jss::status] == "error");
         if (apiVersion == 1)
         {
