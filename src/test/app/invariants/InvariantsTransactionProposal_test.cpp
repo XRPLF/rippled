@@ -31,6 +31,7 @@
 #include <initializer_list>
 #include <memory>
 #include <optional>
+#include <source_location>
 #include <string>
 #include <vector>
 
@@ -97,34 +98,98 @@ class InvariantsTransactionProposal_test : public InvariantsBase
                 return true;
             };
 
-        auto insertStagedProposal =
-            [&](Account const& owner, ApplyContext& ac, bool updateOwnerCount) {
-                if (!stagedPayload || !stagedProposalKeylet)
+        // With a sponsor, the entry is stamped and the owner's sponsored count
+        // moves with the owner count; charging the sponsor is left to the caller.
+        auto insertStagedProposal = [&](Account const& owner,
+                                        ApplyContext& ac,
+                                        bool updateOwnerCount,
+                                        std::optional<AccountID> const& sponsor = std::nullopt) {
+            if (!stagedPayload || !stagedProposalKeylet)
+                return false;
+
+            auto sle = std::make_shared<SLE>(*stagedProposalKeylet);
+            sle->setAccountID(sfOwner, owner.id());
+            sle->setFieldObject(sfProposedTransaction, *stagedPayload);
+            sle->setFieldU32(sfExpiration, 1);
+            sle->setFieldU64(sfOwnerNode, 0);
+            if (sponsor)
+                sle->setAccountID(sfSponsor, *sponsor);
+            ac.view().insert(sle);
+
+            if (updateOwnerCount)
+            {
+                auto account = ac.view().peek(keylet::account(owner.id()));
+                if (!account)
                     return false;
-
-                auto sle = std::make_shared<SLE>(*stagedProposalKeylet);
-                sle->setAccountID(sfOwner, owner.id());
-                sle->setFieldObject(sfProposedTransaction, *stagedPayload);
-                sle->setFieldU32(sfExpiration, 1);
-                sle->setFieldU64(sfOwnerNode, 0);
-                ac.view().insert(sle);
-
-                if (updateOwnerCount)
-                {
-                    auto account = ac.view().peek(keylet::account(owner.id()));
-                    if (!account)
-                        return false;
-                    account->at(sfOwnerCount) += xrpl::proposal::proposalOwnerCount(*stagedPayload);
-                    ac.view().update(account);
-                }
-                return true;
-            };
+                auto const reserve = xrpl::proposal::proposalOwnerCount(*stagedPayload);
+                account->at(sfOwnerCount) += reserve;
+                if (sponsor)
+                    account->at(sfSponsoredOwnerCount) += reserve;
+                ac.view().update(account);
+            }
+            return true;
+        };
 
         testcase("TransactionProposal reserve accounting");
         doInvariantCheck(
             {{"TransactionProposal reserve accounting is inconsistent"}},
             [&](Account const& owner, Account const&, ApplyContext& ac) {
                 return insertStagedProposal(owner, ac, false);
+            },
+            XRPAmount{},
+            STTx{ttTRANSACTION_PROPOSAL_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseStagedPayload);
+
+        // The totals still balance when a sponsored proposal's reserve is
+        // charged to the wrong sponsor, so SponsorshipOwnerCountsMatch stays
+        // quiet and only this invariant's per-account SponsoringOwnerCount
+        // comparison can catch it.
+        Account const bystander{"bystander"};
+        Preclose const precloseStagedPayloadAndBystander =
+            [&](Account const& owner, Account const& destination, Env& env) {
+                env.fund(XRP(1000), bystander);
+                env.close();
+                return precloseStagedPayload(owner, destination, env);
+            };
+
+        testcase("TransactionProposal reserve charged to the wrong sponsor");
+        doInvariantCheck(
+            {{"TransactionProposal reserve accounting is inconsistent"}},
+            [&](Account const& owner, Account const& sponsor, ApplyContext& ac) {
+                if (!insertStagedProposal(owner, ac, true, sponsor.id()))
+                    return false;
+                auto wrongSponsor = ac.view().peek(keylet::account(bystander.id()));
+                if (!wrongSponsor)
+                    return false;
+                wrongSponsor->at(sfSponsoringOwnerCount) +=
+                    xrpl::proposal::proposalOwnerCount(*stagedPayload);
+                ac.view().update(wrongSponsor);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttTRANSACTION_PROPOSAL_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseStagedPayloadAndBystander);
+
+        // The sponsor is charged and the owner count moves, but the owner's
+        // sponsored count never does.
+        testcase("TransactionProposal sponsored count not raised");
+        doInvariantCheck(
+            {{"TransactionProposal reserve accounting is inconsistent"}},
+            [&](Account const& owner, Account const& sponsor, ApplyContext& ac) {
+                if (!insertStagedProposal(owner, ac, false, sponsor.id()))
+                    return false;
+                auto const reserve = xrpl::proposal::proposalOwnerCount(*stagedPayload);
+                auto ownerRoot = ac.view().peek(keylet::account(owner.id()));
+                auto sponsorRoot = ac.view().peek(keylet::account(sponsor.id()));
+                if (!ownerRoot || !sponsorRoot)
+                    return false;
+                ownerRoot->at(sfOwnerCount) += reserve;
+                ac.view().update(ownerRoot);
+                sponsorRoot->at(sfSponsoringOwnerCount) += reserve;
+                ac.view().update(sponsorRoot);
+                return true;
             },
             XRPAmount{},
             STTx{ttTRANSACTION_PROPOSAL_CREATE, [](STObject&) {}},
@@ -141,6 +206,54 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             STTx{ttACCOUNT_SET, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseStagedPayload);
+
+        // The harness runs no transactor, so a failed result has to be fed in
+        // directly. A failed create must leave no trace.
+        testcase("TransactionProposal failed create still inserts");
+        doInvariantCheck(
+            {{"TransactionProposal changes do not match transaction result"}},
+            [&](Account const& owner, Account const&, ApplyContext& ac) {
+                return insertStagedProposal(owner, ac, true);
+            },
+            XRPAmount{},
+            STTx{ttTRANSACTION_PROPOSAL_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseStagedPayload,
+            TxAccount::None,
+            std::source_location::current(),
+            tecNO_PERMISSION);
+
+        // A failed transfer must not have reassigned anything. The counters are
+        // kept consistent so only the result mismatch is left to catch.
+        testcase("TransactionProposal failed sponsorship transfer still reassigns");
+        doInvariantCheck(
+            {{"TransactionProposal changes do not match transaction result"}},
+            [&](Account const& owner, Account const& sponsor, ApplyContext& ac) {
+                auto sle = peekLiveProposal(ac);
+                if (!sle)
+                    return false;
+                auto const reserve =
+                    xrpl::proposal::proposalOwnerCount(sle->getFieldObject(sfProposedTransaction));
+                sle->setAccountID(sfSponsor, sponsor.id());
+                ac.view().update(sle);
+
+                auto account = ac.view().peek(keylet::account(owner.id()));
+                auto sponsorRoot = ac.view().peek(keylet::account(sponsor.id()));
+                if (!account || !sponsorRoot)
+                    return false;
+                account->at(sfSponsoredOwnerCount) += reserve;
+                ac.view().update(account);
+                sponsorRoot->at(sfSponsoringOwnerCount) += reserve;
+                ac.view().update(sponsorRoot);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttSPONSORSHIP_TRANSFER, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseLiveProposal,
+            TxAccount::None,
+            std::source_location::current(),
+            tecNO_PERMISSION);
 
         // No transaction type on this amendment branch deletes a proposal yet,
         // so a deletion has to be staged by hand. Releasing the reserve, as a
