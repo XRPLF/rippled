@@ -122,6 +122,8 @@ public:
 
     /**
      * Returns true if this account has the global freeze flag set.
+     *
+     * @return true if this account has the global freeze flag set.
      */
     [[nodiscard]] bool
     isGlobalFrozen() const
