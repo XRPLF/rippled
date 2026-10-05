@@ -20,6 +20,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -3788,7 +3789,12 @@ class InvariantsVault_test : public InvariantsBase
             {
                 // A pending (two-step) loan: proposed by the broker owner,
                 // never accepted. Its principal moves from AssetsAvailable
-                // to AssetsReserved and stays there.
+                // to AssetsReserved and stays there. The two-step fields need
+                // featureLendingProtocolV1_2; enabling it only now lets a
+                // caller build the vault without it, so the vault stays
+                // CashBasis rather than FixedPrecision.
+                if (!env.enabled(featureLendingProtocolV1_2))
+                    env.enableFeature(featureLendingProtocolV1_2);
                 std::uint32_t const startDate =
                     (env.now() + std::chrono::hours{1}).time_since_epoch().count();
                 env(set(owner, brokerKeylet.key, usd(100).value()),
@@ -3821,8 +3827,11 @@ class InvariantsVault_test : public InvariantsBase
     //      featureLendingProtocolV1_2 the bound is (T - A - R): the
     //      principal reserved for a pending loan is still held by the
     //      vault and must not be discounted by an unrealized loss. The
-    //      mutation rewrites the vault to Legacy so the AssetsTotal-based
-    //      branches run rather than the FixedPrecision AssetsDeployed one.
+    //      vault is created before the amendment so it is CashBasis and
+    //      the AssetsTotal-based branches run rather than the
+    //      FixedPrecision AssetsDeployed one. (Rewriting sfLEVersion in the
+    //      mutation instead would trip the immutable-fields invariant,
+    //      which is not result-gated and would escalate to tef.)
     void
     testVaultLossExceedsGap()
     {
@@ -3917,7 +3926,9 @@ class InvariantsVault_test : public InvariantsBase
             // Variant 3: L = (T - A) while a pending loan holds R > 0.  This
             // satisfied the pre-featureLendingProtocolV1_2 bound (T - A) but
             // exceeds (T - A - R) by the whole reserved principal, far more
-            // than the one-unit tolerance.
+            // than the one-unit tolerance. The vault is built without the
+            // amendment, so it is CashBasis; makeImpairedVault enables the
+            // amendment before proposing the pending loan.
             {
                 Keylet vaultKeylet = keylet::vault(UInt256{});
                 Account const issuer{"issuer_loss_gap3"};
@@ -3925,24 +3936,24 @@ class InvariantsVault_test : public InvariantsBase
 
                 auto preclose = [&, this](Account const& owner, Account const&, Env& env) -> bool {
                     vaultKeylet = this->makeImpairedVault(owner, borrower, issuer, env, true);
-                    return BEAST_EXPECT(env.le(vaultKeylet));
+                    return BEAST_EXPECT(env.le(vaultKeylet)) &&
+                        BEAST_EXPECT(env.enabled(featureLendingProtocolV1_2));
                 };
 
                 doInvariantCheck(
-                    makeEnv(amendments),
+                    makeEnv(amendments - featureLendingProtocolV1_2),
                     kExpectedLog,
                     [&vaultKeylet, this](Account const&, Account const&, ApplyContext& ac) -> bool {
                         auto sle = ac.view().peek(vaultKeylet);
                         if (!sle)
+                            return false;
+                        if (!BEAST_EXPECT(getVaultVersion(sle) == VaultVersion::CashBasis))
                             return false;
                         Number const total = sle->at(sfAssetsTotal);
                         Number const available = sle->at(sfAssetsAvailable);
                         Number const reserved = sle->at(sfAssetsReserved);
                         if (!BEAST_EXPECT(reserved > beast::kZero))
                             return false;
-                        // Take the AssetsTotal-based branches rather than the
-                        // FixedPrecision AssetsDeployed comparison.
-                        sle->setFieldU8(sfLEVersion, std::to_underlying(VaultVersion::Legacy));
                         (*sle)[sfLossUnrealized] = total - available;
                         ac.view().update(sle);
                         return true;

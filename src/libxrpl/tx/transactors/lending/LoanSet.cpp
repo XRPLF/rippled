@@ -102,7 +102,7 @@ struct LoanPlan
 };
 
 std::uint32_t
-currentLedgerCloseTime(ReadView const& view)
+getCurrentLedgerCloseTime(ReadView const& view)
 {
     return view.header().closeTime.time_since_epoch().count();
 }
@@ -153,7 +153,7 @@ getStartDate(ReadView const& view, STTx const& tx, LoanFlow flow)
     {
         return tx[sfStartDate];
     }
-    return currentLedgerCloseTime(view);
+    return getCurrentLedgerCloseTime(view);
 }
 
 /**

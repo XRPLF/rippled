@@ -159,6 +159,15 @@ private:
         });
     }
 
+    // The accounting model a vault version uses, for test case names.
+    // Legacy recognises interest at proposal; CashBasis and FixedPrecision
+    // recognise it as payments arrive.
+    static char const*
+    getVersionName(VaultVersion version)
+    {
+        return version == VaultVersion::Legacy ? "accrual" : "cash-basis";
+    }
+
     // The keylet of the next loan the broker will create.
     static Keylet
     nextLoanKeylet(jtx::Env& env, BrokerInfo const& broker)
@@ -259,19 +268,17 @@ private:
         using namespace jtx::loan;
         using namespace std::chrono_literals;
 
-        // Run under both accounting models: cash-basis (the V1.1 default)
-        // and accrual (a Legacy vault, via makeVaultInstantRecognition).
-        // Cash-basis recognises interest into Vault.AssetsTotal as payments
-        // arrive; accrual recognises it at proposal time.
-        for (auto const vaultVersion : {VaultVersion::CashBasis, VaultVersion::Legacy})
+        // Run under both accounting models: cash-basis (a FixedPrecision
+        // vault, the default once V1.2 is enabled) and accrual (a Legacy
+        // vault, via makeVaultInstantRecognition). Cash-basis recognises
+        // interest into Vault.AssetsTotal as payments arrive; accrual
+        // recognises it at proposal time.
+        for (auto const vaultVersion : {VaultVersion::FixedPrecision, VaultVersion::Legacy})
         {
-            char const* const versionName =
-                vaultVersion == VaultVersion::CashBasis ? "cash-basis" : "accrual";
-
             for (auto const assetType : {AssetType::XRP, AssetType::IOU, AssetType::MPT})
             {
-                testcase << "Two-step: propose then accept (" << versionName << ", "
-                         << assetTypeName(assetType) << ")";
+                testcase << "Two-step: propose then accept (" << getVersionName(vaultVersion)
+                         << ", " << assetTypeName(assetType) << ")";
 
                 Env env(*this, features_);
                 auto const broker = makeBroker(env, assetType);
@@ -279,7 +286,7 @@ private:
                 // Under Legacy, skip the close until the accept has been
                 // applied and checked.
                 auto const closeIfCashBasis = [&]() {
-                    if (vaultVersion == VaultVersion::CashBasis)
+                    if (vaultVersion == VaultVersion::FixedPrecision)
                         env.close();
                 };
                 if (vaultVersion == VaultVersion::Legacy)
@@ -2497,6 +2504,147 @@ private:
         }
     }
 
+    // On a FixedPrecision vault a pending loan's interest only lands in
+    // YieldUnrealized at acceptance. LoanSet's Open-zone guard passed at
+    // proposal, but another loan originated in between does not see the
+    // pending interest and may use up the headroom that guard relied on.
+    // (A deposit cannot: brokers sit on closed-ended vaults, which refuse
+    // deposits once in the Investment phase.) LoanAccept must re-run the
+    // guard rather than push the vault past the Open zone.
+    void
+    testTwoStepFixedPrecisionOpenZone()
+    {
+        using namespace jtx;
+        using namespace jtx::loan;
+        using namespace std::chrono_literals;
+
+        for (bool const fillHeadroom : {false, true})
+        {
+            testcase << "Two-step: LoanAccept re-checks the FixedPrecision Open zone ("
+                     << (fillHeadroom ? "headroom taken by a second loan" : "headroom intact")
+                     << ")";
+
+            Env env(*this, features_);
+            env.fund(XRP(100'000'000), noripple(lender_));
+            env.fund(XRP(1'000'000), issuer_, borrower_, evan_);
+            env.close();
+
+            // Scale 6 puts the Open-zone ceiling at 9e9 units.
+            std::uint8_t const vaultScale{6};
+            Number const openLimit{9, 9};
+            PrettyAsset const asset{issuer_[iouCurrency_]};
+            Number const principal = asset(200).number();
+
+            BrokerParameters params{};
+            params.vaultScale = vaultScale;
+
+            // The interest the proposal will carry, computed as LoanSet does.
+            auto const properties = computeLoanProperties(
+                env.current()->rules(),
+                asset.raw(),
+                principal,
+                interest_,
+                payInterval_,
+                payTotal_,
+                params.managementFeeRate,
+                -static_cast<std::int32_t>(vaultScale));
+            Number const interestDue = properties.loanState.interestDue;
+            BEAST_EXPECT(interestDue > beast::kZero);
+
+            // Fill the vault so that exactly interestDue of Open-zone headroom
+            // remains: the proposal fits, and nothing more.
+            params.vaultDeposit = openLimit - interestDue;
+            createAsset(env, AssetType::IOU, params, issuer_, lender_, borrower_);
+            env.close();
+            env(pay(
+                issuer_, lender_, asset(params.vaultDeposit + params.coverDeposit + interestDue)));
+            env.close();
+            auto const broker = createVaultAndBroker(env, asset, lender_, params);
+            if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+            {
+                BEAST_EXPECT(getVaultVersion(v) == VaultVersion::FixedPrecision);
+                BEAST_EXPECT(getVaultOpenLimit(v) == openLimit);
+            }
+
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
+            env.close();
+            if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+            {
+                BEAST_EXPECT(loan->isFlag(lsfLoanPending));
+                BEAST_EXPECT(constructLoanState(loan).interestDue == interestDue);
+            }
+            // While pending, the interest is not yet in YieldUnrealized.
+            if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+                BEAST_EXPECT(v->at(sfYieldUnrealized) == beast::kZero);
+
+            if (fillHeadroom)
+            {
+                // A second, immediately active loan on the same terms. Its
+                // Open-zone guard does not count the pending interest, so it
+                // takes the last of the headroom and books its own interest
+                // into YieldUnrealized.
+                auto const secondKeylet = nextLoanKeylet(env, broker);
+                env(set(borrower_, broker.brokerID, principal),
+                    kInterestRate(interest_),
+                    kPaymentTotal(payTotal_),
+                    kPaymentInterval(payInterval_),
+                    Sig(sfCounterpartySignature, lender_),
+                    Fee(env.current()->fees().base * 2));
+                env.close();
+                if (auto const second = env.le(secondKeylet); BEAST_EXPECT(second))
+                    BEAST_EXPECT(!second->isFlag(lsfLoanPending));
+                if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+                {
+                    BEAST_EXPECT(v->at(sfYieldUnrealized) == interestDue);
+                    BEAST_EXPECT(vaultOpenZoneCapacity(v, kNumZero) == openLimit);
+                }
+            }
+
+            auto const vault1 = readVault(env, broker);
+            auto const broker1 = readBroker(env, broker);
+            auto const lenderOwners1 = env.ownerCount(lender_);
+            auto const borrowerOwners1 = env.ownerCount(borrower_);
+
+            if (fillHeadroom)
+            {
+                // Accepting now would push the Open-zone capacity past the
+                // ceiling. Nothing changes.
+                env(accept(borrower_, loanKeylet.key), Ter(tecLIMIT_EXCEEDED));
+                env.close();
+                expectStillPending(env, loanKeylet);
+
+                auto const vault2 = readVault(env, broker);
+                BEAST_EXPECT(vault2.available == vault1.available);
+                BEAST_EXPECT(vault2.reserved == vault1.reserved);
+                BEAST_EXPECT(vault2.total == vault1.total);
+                if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+                    BEAST_EXPECT(v->at(sfYieldUnrealized) == interestDue);
+                auto const broker2 = readBroker(env, broker);
+                BEAST_EXPECT(broker2.debtTotal == broker1.debtTotal);
+                BEAST_EXPECT(broker2.ownerCount == broker1.ownerCount);
+                BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners1);
+                BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners1);
+            }
+            else
+            {
+                // With the headroom intact the capacity lands exactly on the
+                // ceiling, which the guard allows.
+                env(accept(borrower_, loanKeylet.key));
+                env.close();
+                if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+                    BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
+                if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+                {
+                    BEAST_EXPECT(v->at(sfYieldUnrealized) == interestDue);
+                    BEAST_EXPECT(vaultOpenZoneCapacity(v, kNumZero) == openLimit);
+                }
+                auto const vault2 = readVault(env, broker);
+                BEAST_EXPECT(vault2.reserved == vault1.reserved - principal);
+            }
+        }
+    }
+
     // Top-level dispatcher: gates on featureLendingProtocolV1_2 and delegates
     // to the amendment-disabled path or the individual enabled-feature groups.
     void
@@ -2516,14 +2664,17 @@ private:
         testTwoStepPendingLifecycle();
         testTwoStepLegacyVault();
         testTwoStepEdgeCases();
+        testTwoStepFixedPrecisionOpenZone();
     }
 
 public:
     void
     run() override
     {
-        testTwoStep((all_ | featureLendingProtocolV1_1) - featureLendingProtocolV1_2);
+        // all_ excludes featureLendingProtocolV1_2, so the enabled run must opt
+        // back in explicitly; without it both runs take the disabled path.
         testTwoStep(all_ | featureLendingProtocolV1_1);
+        testTwoStep(all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
     }
 };
 

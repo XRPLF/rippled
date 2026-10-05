@@ -110,6 +110,25 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
             break;
     }
 
+    // On a FixedPrecision vault the proposal booked no yield (see
+    // LoanSet::createLoan): the interest only lands in YieldUnrealized here.
+    // LoanSet's Open-zone guard passed at proposal time, but loans originated
+    // since then do not see the pending interest and may have used up the
+    // headroom it relied on, so re-run the guard against the vault as it
+    // stands now.
+    // A coarsened vault fails this check too: its AssetsTotal is at least
+    // 10^(16 + baseScale), above the Open limit of 9 * 10^(15 + baseScale).
+    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+    {
+        auto const state = constructLoanState(loanSle);
+        if (vaultOpenZoneCapacity(vaultSle, state.interestDue) > getVaultOpenLimit(vaultSle))
+        {
+            JLOG(ctx.j.warn())
+                << "Loan interest would exceed the FixedPrecision Vault's Open zone.";
+            return tecLIMIT_EXCEEDED;
+        }
+    }
+
     if (auto const ter = checkLoanFreeze(
             ctx.view,
             asset,
