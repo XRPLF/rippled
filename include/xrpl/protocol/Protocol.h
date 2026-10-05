@@ -377,6 +377,11 @@ constexpr std::uint32_t kMaxInvestmentPeriod = std::chrono::seconds{std::chrono:
 constexpr std::uint8_t kMaxAssetCheckDepth = 5;
 
 /**
+ * Maximum length of a Data field in Escrow object that can be updated by WASM code.
+ */
+constexpr std::size_t kMaxWasmDataLength = 1 * 1024;  // 1KB
+
+/**
  * A ledger index.
  */
 using LedgerIndex = std::uint32_t;
