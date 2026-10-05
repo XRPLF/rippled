@@ -6,7 +6,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -261,7 +260,8 @@ LoanBrokerSet::doApply()
         if (preFeeBalance_ < owner.reserve())
             return tecINSUFFICIENT_RESERVE;
 
-        auto maybePseudo = createPseudoAccount(view, broker->key(), sfLoanBrokerID);
+        auto maybePseudo =
+            AccountRootEntryW::createPseudoAccount(view, broker->key(), sfLoanBrokerID);
         if (!maybePseudo)
             return maybePseudo.error();  // LCOV_EXCL_LINE
         auto& pseudo = *maybePseudo;
