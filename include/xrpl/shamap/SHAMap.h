@@ -617,6 +617,31 @@ private:
         }
 
         /**
+         * Shorten the path by one node and move that node out, leaving its ID
+         * behind.
+         *
+         * A caller that wants the ID reads `top().second` first, which costs
+         * the same either way: `SHAMapNodeID` declares no move constructor.
+         *
+         * @return the node that was at the end of the path, or an empty
+         *         pointer if there was none.
+         */
+        [[nodiscard]] SHAMapTreeNodePtr
+        releaseNode()
+        {
+            if (stack_.empty())
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::SHAMap::NodePathStack::releaseNode : empty stack");
+                return {};
+                // LCOV_EXCL_STOP
+            }
+            auto node = std::move(stack_.top().first);
+            stack_.pop();
+            return node;
+        }
+
+        /**
          * Start a path at the root of the map, whose ID is the zero-depth ID by definition.
          *
          * @return false, leaving the path unchanged, if a path was already
@@ -800,9 +825,13 @@ private:
     dirtyUp(NodePathStack& stack, UInt256 const& target, SHAMapTreeNodePtr terminal);
 
     /**
-     * Walk towards the specified id, returning the node.  Caller must check
-     *  if the return is nullptr, and if not, if the node->peekItem()->key() ==
-     * id
+     * Walk towards the specified id, returning the node.
+     *
+     * @param id the key to walk towards, which need not be in the map.
+     * @param stack records the path walked, or nullptr to skip recording it.
+     * @return the leaf the walk ended on, or nullptr if it ended on an inner
+     *         node or was refused. A returned leaf need not hold `id`, so
+     *         callers compare its key themselves.
      */
     SHAMapLeafNode*
     walkTowardsKey(UInt256 const& id, NodePathStack* stack = nullptr) const;
