@@ -152,11 +152,38 @@ admin = 127.0.0.1
             }
         }
     }
+    void
+    testFetchInfoClearType()
+    {
+        testcase("fetch_info clear parameter types");
 
+        using namespace test::jtx;
+
+        Env env(*this);
+
+        auto testInvalidClear = [&](auto const& clear) {
+            json::Value params(json::ValueType::Object);
+            params[jss::clear] = clear;
+
+            auto const result = env.rpc("json", "fetch_info", to_string(params))[jss::result];
+
+            BEAST_EXPECT(!result.isMember(jss::error));
+            BEAST_EXPECT(!result.isMember(jss::clear));
+        };
+
+        testInvalidClear("false");
+
+        json::Value array(json::ValueType::Array);
+        array.append(1);
+        testInvalidClear(array);
+
+        testInvalidClear(json::Value(json::ValueType::Object));
+    }
     void
     run() override
     {
         testServerInfo();
+        testFetchInfoClearType();
     }
 };
 
