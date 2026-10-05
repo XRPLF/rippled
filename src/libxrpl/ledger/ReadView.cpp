@@ -73,8 +73,7 @@ makeRulesGivenLedger(
     std::optional const digest = ledger.digest(k.key);
     if (digest)
     {
-        AmendmentsEntryR const entry(k, ledger);
-        if (entry)
+        if (AmendmentsEntryR const entry(k, ledger); entry)
             return Rules(presets, digest, entry->getFieldV256(sfAmendments));
     }
     return Rules(presets);
