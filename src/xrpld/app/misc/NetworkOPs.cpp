@@ -32,6 +32,7 @@
 #include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/ToString.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/UptimeClock.h>
@@ -4924,6 +4925,19 @@ NetworkOPsImp::tryRemoveRpcSub(std::string const& strUrl)
 
 #ifndef USE_NEW_BOOK_PAGE
 
+// Same as std::min(takerPays, multiply(funded, rate, asset)), but compares
+// before building the amount, so an unrepresentable product is never built.
+// multiply() uses this same Number product (the rate is a quality, never
+// native or MPT), so the result is unchanged.
+static STAmount
+takerPaysFunded(STAmount const& takerPays, STAmount const& takerGetsFunded, STAmount const& rate)
+{
+    Number const product = Number{takerGetsFunded} * Number{rate};
+    if (product >= Number{takerPays})
+        return takerPays;
+    return STAmount{takerPays.asset(), product};
+}
+
 // NIKB FIXME this should be looked at. There's no reason why this shouldn't
 //            work, but it demonstrated poor performance.
 //
@@ -5125,8 +5139,7 @@ NetworkOPsImp::getBookPage(
                     saTakerGetsFunded = saOwnerFundsLimit;
 
                     saTakerGetsFunded.setJson(jvOffer[jss::taker_gets_funded]);
-                    std::min(
-                        saTakerPays, multiply(saTakerGetsFunded, saDirRate, saTakerPays.asset()))
+                    takerPaysFunded(saTakerPays, saTakerGetsFunded, saDirRate)
                         .setJson(jvOffer[jss::taker_pays_funded]);
                 }
 
