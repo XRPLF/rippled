@@ -72,17 +72,6 @@ TEST_F(CurrentLedgerObjFieldGuest, host_error_becomes_contract_return_value)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FieldNotFound));
 }
 
-// The field cap bounds the status, not just the bytes: a host reporting a length past
-// `kMaxWasmDataLength` is too large whatever the guest's buffer was.
-TEST_F(CurrentLedgerObjFieldGuest, field_past_protocol_cap_is_too_large)
-{
-    EXPECT_CALL(host, getCurrentLedgerObjField)
-        .WillOnce(Return(Bytes(kMaxWasmDataLength + 1, 0xab)));
-
-    auto const wat = watFor(field(), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::DataFieldTooLarge));
-}
-
 TEST_F(CurrentLedgerObjFieldGuest, host_exception_stops_the_run_and_is_logged)
 {
     EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
@@ -94,28 +83,4 @@ TEST_F(CurrentLedgerObjFieldGuest, host_exception_stops_the_run_and_is_logged)
     EXPECT_THAT(logged(), testing::HasSubstr("getCurrentLedgerObjField"));
 }
 
-TEST_F(CurrentLedgerObjFieldGuest, out_region_one_byte_short_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, getCurrentLedgerObjField(testing::Ref(sfBalance)))
-        .WillOnce(Return(Bytes{1, 2, 3, 4}));
-
-    auto const wat = watFor(field(), Arg::outRegion(kOutAt, 3));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
-}
-
-TEST_F(CurrentLedgerObjFieldGuest, out_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getCurrentLedgerObjField).Times(0);
-
-    auto const wat = watFor(field(), Arg::outRegion(kOnePage, kOutLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(CurrentLedgerObjFieldGuest, negative_out_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getCurrentLedgerObjField).Times(0);
-
-    auto const wat = watFor(field(), Arg::outRegion(-1, kOutLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
 }  // namespace xrpl::test

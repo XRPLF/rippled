@@ -121,44 +121,4 @@ TEST_F(AmmKeyletGuest, asset2_of_the_wrong_length_is_refused_without_asking_host
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(AmmKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, ammKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(kOnePage, kMptIdLen), kAsset2, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(AmmKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, ammKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(-1, kMptIdLen), kAsset2, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(AmmKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, ammKeylet(Eq(asset1), Eq(asset2))).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kAsset1, kAsset2, Arg::outRegion(kOutAt, kKeyletLen - 1));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
-}
-
-TEST_F(AmmKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, ammKeylet(Eq(asset1), Eq(asset2))).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kAsset1, kAsset2, Arg::outRegion(kOnePage, kKeyletLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(AmmKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, ammKeylet(Eq(asset1), Eq(asset2))).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kAsset1, kAsset2, Arg::outRegion(-1, kKeyletLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

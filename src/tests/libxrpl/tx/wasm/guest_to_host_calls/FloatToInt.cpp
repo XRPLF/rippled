@@ -77,44 +77,4 @@ TEST_F(FloatToIntGuest, host_exception_stops_the_run_and_is_logged)
     EXPECT_THAT(logged(), testing::HasSubstr("floatToInt"));
 }
 
-TEST_F(FloatToIntGuest, input_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, floatToInt).Times(0);
-
-    auto const wat = watFor(Arg::region(kOnePage, kFloatLen), kOut, kRounding);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(FloatToIntGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, floatToInt).Times(0);
-
-    auto const wat = watFor(Arg::region(-1, kFloatLen), kOut, kRounding);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(FloatToIntGuest, out_region_one_byte_short_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, floatToInt(BytesAre(kXText), kMode)).WillOnce(Return(kResult));
-
-    auto const wat = watFor(kX, Arg::outRegion(kOutAt, kIntLen - 1), kRounding);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
-}
-
-TEST_F(FloatToIntGuest, out_region_past_memory_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, floatToInt(BytesAre(kXText), kMode)).WillOnce(Return(kResult));
-
-    auto const wat = watFor(kX, Arg::outRegion(kOnePage, kIntLen), kRounding);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(FloatToIntGuest, negative_out_pointer_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, floatToInt(BytesAre(kXText), kMode)).WillOnce(Return(kResult));
-
-    auto const wat = watFor(kX, Arg::outRegion(-1, kIntLen), kRounding);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

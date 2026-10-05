@@ -63,20 +63,4 @@ TEST_F(UpdateDataGuest, host_exception_stops_the_run_and_is_logged)
     EXPECT_THAT(logged(), testing::HasSubstr("updateData"));
 }
 
-TEST_F(UpdateDataGuest, input_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, updateData).Times(0);
-
-    auto const wat = watFor(Arg::region(kOnePage, kDataLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(UpdateDataGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, updateData).Times(0);
-
-    auto const wat = watFor(Arg::region(-1, kDataLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

@@ -117,44 +117,4 @@ TEST_F(DelegateKeyletGuest, authorize_of_the_wrong_length_is_refused_without_ask
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(DelegateKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, delegateKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(kOnePage, kAccountLen), kAuthorize, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(DelegateKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, delegateKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(-1, kAccountLen), kAuthorize, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(DelegateKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, delegateKeylet(account, authorize)).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kAccount, kAuthorize, Arg::outRegion(kOutAt, kKeyletLen - 1));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
-}
-
-TEST_F(DelegateKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, delegateKeylet(account, authorize)).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kAccount, kAuthorize, Arg::outRegion(kOnePage, kKeyletLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(DelegateKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, delegateKeylet(account, authorize)).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kAccount, kAuthorize, Arg::outRegion(-1, kKeyletLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

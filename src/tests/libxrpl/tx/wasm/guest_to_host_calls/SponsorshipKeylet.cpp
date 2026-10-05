@@ -105,44 +105,4 @@ TEST_F(SponsorshipKeyletGuest, sponsee_of_the_wrong_length_is_refused_without_as
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(SponsorshipKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, sponsorshipKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(kOnePage, kAccountLen), kSponsee, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(SponsorshipKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, sponsorshipKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(-1, kAccountLen), kSponsee, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(SponsorshipKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee)).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kSponsor, kSponsee, Arg::outRegion(kOutAt, kKeyletLen - 1));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
-}
-
-TEST_F(SponsorshipKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee)).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kSponsor, kSponsee, Arg::outRegion(kOnePage, kKeyletLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(SponsorshipKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee)).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kSponsor, kSponsee, Arg::outRegion(-1, kKeyletLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

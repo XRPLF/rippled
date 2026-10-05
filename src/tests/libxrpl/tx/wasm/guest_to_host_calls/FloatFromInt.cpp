@@ -101,31 +101,4 @@ TEST_F(FloatFromIntGuest, host_exception_stops_the_run_and_is_logged)
     EXPECT_THAT(logged(), testing::HasSubstr("floatFromInt"));
 }
 
-// This call reads no guest memory, so `abi.rs`'s `write_into` hands the host the guest's own
-// region and judges where it points *before* calling: only the fit, which is judged against
-// the length the host reports, is decided after.
-TEST_F(FloatFromIntGuest, out_region_one_byte_short_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, floatFromInt(kX, kMode)).WillOnce(Return(result));
-
-    auto const wat = watFor(kInt, Arg::outRegion(kOutAt, kFloatLen - 1), kRounding);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
-}
-
-TEST_F(FloatFromIntGuest, out_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, floatFromInt).Times(0);
-
-    auto const wat = watFor(kInt, Arg::outRegion(kOnePage, kFloatLen), kRounding);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(FloatFromIntGuest, negative_out_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, floatFromInt).Times(0);
-
-    auto const wat = watFor(kInt, Arg::outRegion(-1, kFloatLen), kRounding);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

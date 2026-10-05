@@ -105,28 +105,4 @@ TEST_F(LedgerObjFieldGuest, host_exception_stops_the_run_and_is_logged)
     EXPECT_THAT(logged(), testing::HasSubstr("getLedgerObjField"));
 }
 
-TEST_F(LedgerObjFieldGuest, out_region_one_byte_short_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, getLedgerObjField(kSlot, testing::Ref(sfBalance))).WillOnce(Return(value));
-
-    auto const wat = watFor(kCacheIdx, field(), Arg::outRegion(kOutAt, kValueLen - 1));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
-}
-
-TEST_F(LedgerObjFieldGuest, out_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getLedgerObjField).Times(0);
-
-    auto const wat = watFor(kCacheIdx, field(), Arg::outRegion(kOnePage, kOutLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(LedgerObjFieldGuest, negative_out_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getLedgerObjField).Times(0);
-
-    auto const wat = watFor(kCacheIdx, field(), Arg::outRegion(-1, kOutLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

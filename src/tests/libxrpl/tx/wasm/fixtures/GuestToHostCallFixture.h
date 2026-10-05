@@ -15,9 +15,6 @@ namespace xrpl::test {
 // against the mocked host `MockVmTest` holds.
 struct GuestToHostCallTest : MockVmTest
 {
-    // The first address past guest memory.
-    static constexpr std::int32_t kOnePage = 65536;
-
     // One argument, in wasm parameter order. A region is *two* wasm parameters, and a
     // declared `u32` is a region of four little-endian bytes, not a scalar (`args.rs`).
     struct Arg

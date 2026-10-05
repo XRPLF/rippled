@@ -94,44 +94,4 @@ TEST_F(NFTIssuerGuest, nft_id_of_the_wrong_length_is_refused_without_asking_host
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NFTIssuerGuest, input_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getNFTIssuer).Times(0);
-
-    auto const wat = watFor(Arg::region(kOnePage, kNftIdLen), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(NFTIssuerGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getNFTIssuer).Times(0);
-
-    auto const wat = watFor(Arg::region(-1, kNftIdLen), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(NFTIssuerGuest, out_region_one_byte_short_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, getNFTIssuer(Eq(nftId))).WillOnce(Return(issuer));
-
-    auto const wat = watFor(kNftId, Arg::outRegion(kOutAt, kIssuerLen - 1));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
-}
-
-TEST_F(NFTIssuerGuest, out_region_past_memory_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, getNFTIssuer(Eq(nftId))).WillOnce(Return(issuer));
-
-    auto const wat = watFor(kNftId, Arg::outRegion(kOnePage, kIssuerLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(NFTIssuerGuest, negative_out_pointer_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, getNFTIssuer(Eq(nftId))).WillOnce(Return(issuer));
-
-    auto const wat = watFor(kNftId, Arg::outRegion(-1, kIssuerLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

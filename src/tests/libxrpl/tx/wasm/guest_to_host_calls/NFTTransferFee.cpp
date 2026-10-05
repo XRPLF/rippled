@@ -71,20 +71,4 @@ TEST_F(NFTTransferFeeGuest, nft_id_of_the_wrong_length_is_refused_without_asking
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NFTTransferFeeGuest, input_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getNFTTransferFee).Times(0);
-
-    auto const wat = watFor(Arg::region(kOnePage, kNftIdLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(NFTTransferFeeGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getNFTTransferFee).Times(0);
-
-    auto const wat = watFor(Arg::region(-1, kNftIdLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

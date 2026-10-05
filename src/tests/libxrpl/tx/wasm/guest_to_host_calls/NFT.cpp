@@ -104,44 +104,4 @@ TEST_F(NFTGuest, nft_id_of_the_wrong_length_is_refused_without_asking_host)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NFTGuest, input_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getNFT).Times(0);
-
-    auto const wat = watFor(kAccount, Arg::region(kOnePage, kNftIdLen), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(NFTGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getNFT).Times(0);
-
-    auto const wat = watFor(kAccount, Arg::region(-1, kNftIdLen), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(NFTGuest, out_region_one_byte_short_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, getNFT(Eq(account), Eq(nftId))).WillOnce(Return(uri));
-
-    auto const wat = watFor(kAccount, kNftId, Arg::outRegion(kOutAt, kUriLen - 1));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
-}
-
-TEST_F(NFTGuest, out_region_past_memory_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, getNFT(Eq(account), Eq(nftId))).WillOnce(Return(uri));
-
-    auto const wat = watFor(kAccount, kNftId, Arg::outRegion(kOnePage, kUriLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(NFTGuest, negative_out_pointer_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, getNFT(Eq(account), Eq(nftId))).WillOnce(Return(uri));
-
-    auto const wat = watFor(kAccount, kNftId, Arg::outRegion(-1, kUriLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

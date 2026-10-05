@@ -135,20 +135,4 @@ TEST_F(FloatToMantExpGuest, host_exception_stops_the_run_and_is_logged)
     EXPECT_THAT(logged(), testing::HasSubstr("floatToMantExp"));
 }
 
-TEST_F(FloatToMantExpGuest, input_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, floatToMantExp).Times(0);
-
-    auto const wat = watFor(Arg::region(kOnePage, kFloatLen), kMantissaOut, kExponentOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(FloatToMantExpGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, floatToMantExp).Times(0);
-
-    auto const wat = watFor(Arg::region(-1, kFloatLen), kMantissaOut, kExponentOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

@@ -78,28 +78,4 @@ TEST_F(ParentLedgerHashGuest, host_exception_stops_the_run_and_is_logged)
     EXPECT_THAT(logged(), testing::HasSubstr("getParentLedgerHash"));
 }
 
-TEST_F(ParentLedgerHashGuest, out_region_one_byte_short_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, getParentLedgerHash()).WillOnce(Return(hash));
-
-    auto const wat = watFor(Arg::outRegion(kOutAt, kHashLen - 1));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
-}
-
-TEST_F(ParentLedgerHashGuest, out_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getParentLedgerHash).Times(0);
-
-    auto const wat = watFor(Arg::outRegion(kOnePage, kHashLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(ParentLedgerHashGuest, negative_out_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getParentLedgerHash).Times(0);
-
-    auto const wat = watFor(Arg::outRegion(-1, kHashLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

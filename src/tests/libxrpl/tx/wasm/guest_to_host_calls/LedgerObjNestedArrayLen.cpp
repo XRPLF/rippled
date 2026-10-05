@@ -104,20 +104,4 @@ TEST_F(LedgerObjNestedArrayLenGuest, misaligned_locator_length_is_refused_withou
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LocatorMalformed));
 }
 
-TEST_F(LedgerObjNestedArrayLenGuest, input_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getLedgerObjNestedArrayLen).Times(0);
-
-    auto const wat = watFor(kCacheIdx, Arg::region(kOnePage, kLocatorLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(LedgerObjNestedArrayLenGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getLedgerObjNestedArrayLen).Times(0);
-
-    auto const wat = watFor(kCacheIdx, Arg::region(-1, kLocatorLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

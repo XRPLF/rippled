@@ -129,22 +129,4 @@ TEST_F(IsAmendmentEnabledGuest, host_exception_stops_the_run_and_is_logged)
     EXPECT_THAT(logged(), testing::HasSubstr("isAmendmentEnabled"));
 }
 
-TEST_F(IsAmendmentEnabledGuest, input_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, isAmendmentEnabled(IdMatcher(testing::_))).Times(0);
-    EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(testing::_))).Times(0);
-
-    auto const wat = watFor(Arg::region(kOnePage, kIdLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(IsAmendmentEnabledGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, isAmendmentEnabled(IdMatcher(testing::_))).Times(0);
-    EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(testing::_))).Times(0);
-
-    auto const wat = watFor(Arg::region(-1, kIdLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

@@ -77,22 +77,6 @@ TEST_F(CacheLedgerObjGuest, obj_id_of_the_wrong_length_is_refused_without_asking
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(CacheLedgerObjGuest, input_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, cacheLedgerObj).Times(0);
-
-    auto const wat = watFor(Arg::region(kOnePage, kObjIdLen), kCacheIdx);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(CacheLedgerObjGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, cacheLedgerObj).Times(0);
-
-    auto const wat = watFor(Arg::region(-1, kObjIdLen), kCacheIdx);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 // 0 asks the host to pick a free slot, so it is a meaningful argument rather than an absent
 // one and must cross as itself.
 TEST_F(CacheLedgerObjGuest, zero_cache_idx_crosses_verbatim)

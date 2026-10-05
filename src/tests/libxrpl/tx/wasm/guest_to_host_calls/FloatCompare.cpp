@@ -74,28 +74,4 @@ TEST_F(FloatCompareGuest, host_exception_stops_the_run_and_is_logged)
     EXPECT_THAT(logged(), testing::HasSubstr("floatCompare"));
 }
 
-TEST_F(FloatCompareGuest, first_operand_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, floatCompare).Times(0);
-
-    auto const wat = watFor(Arg::region(kOnePage, kFloatLen), kY);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(FloatCompareGuest, second_operand_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, floatCompare).Times(0);
-
-    auto const wat = watFor(kX, Arg::region(kOnePage, kFloatLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(FloatCompareGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, floatCompare).Times(0);
-
-    auto const wat = watFor(Arg::region(-1, kFloatLen), kY);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

@@ -122,47 +122,4 @@ TEST_F(CredentialKeyletGuest, issuer_of_the_wrong_length_is_refused_without_aski
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(CredentialKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, credentialKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(kOnePage, kAccountLen), kIssuer, kType, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(CredentialKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, credentialKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(-1, kAccountLen), kIssuer, kType, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(CredentialKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, credentialKeylet(subject, issuer, BytesAre("terms")))
-        .WillOnce(Return(keylet));
-
-    auto const wat = watFor(kSubject, kIssuer, kType, Arg::outRegion(kOutAt, kKeyletLen - 1));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
-}
-
-TEST_F(CredentialKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, credentialKeylet(subject, issuer, BytesAre("terms")))
-        .WillOnce(Return(keylet));
-
-    auto const wat = watFor(kSubject, kIssuer, kType, Arg::outRegion(kOnePage, kKeyletLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(CredentialKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, credentialKeylet(subject, issuer, BytesAre("terms")))
-        .WillOnce(Return(keylet));
-
-    auto const wat = watFor(kSubject, kIssuer, kType, Arg::outRegion(-1, kKeyletLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

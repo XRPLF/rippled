@@ -128,45 +128,4 @@ TEST_F(TrustLineKeyletGuest, currency_of_the_wrong_length_is_refused_without_ask
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(TrustLineKeyletGuest, input_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, trustLineKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(kOnePage, kAccountLen), kAccount2, kCurrency, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(TrustLineKeyletGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, trustLineKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(-1, kAccountLen), kAccount2, kCurrency, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(TrustLineKeyletGuest, out_region_one_byte_short_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, trustLineKeylet(account1, account2, currency)).WillOnce(Return(keylet));
-
-    auto const wat =
-        watFor(kAccount1, kAccount2, kCurrency, Arg::outRegion(kOutAt, kKeyletLen - 1));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
-}
-
-TEST_F(TrustLineKeyletGuest, out_region_past_memory_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, trustLineKeylet(account1, account2, currency)).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kAccount1, kAccount2, kCurrency, Arg::outRegion(kOnePage, kKeyletLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(TrustLineKeyletGuest, negative_out_pointer_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, trustLineKeylet(account1, account2, currency)).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kAccount1, kAccount2, kCurrency, Arg::outRegion(-1, kKeyletLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

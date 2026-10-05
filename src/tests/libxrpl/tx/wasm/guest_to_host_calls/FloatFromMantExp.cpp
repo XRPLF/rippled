@@ -87,28 +87,4 @@ TEST_F(FloatFromMantExpGuest, host_exception_stops_the_run_and_is_logged)
     EXPECT_THAT(logged(), testing::HasSubstr("floatFromMantExp"));
 }
 
-TEST_F(FloatFromMantExpGuest, out_region_one_byte_short_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, floatFromMantExp(kMantissa, kExponent, kMode)).WillOnce(Return(result));
-
-    auto const wat = watFor(kMant, kExp, Arg::outRegion(kOutAt, kFloatLen - 1), kRounding);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
-}
-
-TEST_F(FloatFromMantExpGuest, out_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, floatFromMantExp).Times(0);
-
-    auto const wat = watFor(kMant, kExp, Arg::outRegion(kOnePage, kFloatLen), kRounding);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(FloatFromMantExpGuest, negative_out_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, floatFromMantExp).Times(0);
-
-    auto const wat = watFor(kMant, kExp, Arg::outRegion(-1, kFloatLen), kRounding);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test

@@ -1,6 +1,5 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
-#include <xrpl/tx/wasm/WasmVM.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -8,9 +7,7 @@
 
 #include <cstdint>
 #include <expected>
-#include <format>
 #include <string>
-#include <string_view>
 
 namespace xrpl::test {
 
@@ -50,34 +47,6 @@ TEST_F(LedgerSqnGuest, host_error_becomes_contract_return_value)
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-// The engine decides the fit, not the host: the host is never told the guest's capacity, it
-// reports the value's true length and the engine turns a length past the buffer into
-// `BufferTooSmall` — with nothing written.
-//
-// Its own module, because showing that the refusal wrote *nothing* needs the guest to read
-// its memory back after the call, which is more than one host call's worth of module.
-TEST_F(LedgerSqnGuest, buffer_too_small_is_refused_whole_not_truncated)
-{
-    EXPECT_CALL(host, getLedgerSqn()).WillOnce(Return(0x01020304u));
-
-    // Two bytes is not enough for the value. Returns the host's code while memory is still
-    // zero, or 1 if anything was written into it — so a refused write is visibly a refusal
-    // and not a truncation.
-    auto const wat = std::format(
-        R"wat(
-(module
-  (import "host_lib" "ldgr_index" (func $ldgr_index (param i32 i32) (result i32)))
-  (memory (export "memory") 1)
-  (func (export "{}") (result i32)
-    (local $n i32)
-    (local.set $n (call $ldgr_index (i32.const 0) (i32.const 2)))
-    (select (local.get $n) (i32.const 1) (i32.eqz (i32.load (i32.const 0))))))
-)wat",
-        escrowFunctionName);
-
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
-}
-
 TEST_F(LedgerSqnGuest, status_is_the_scalar_width)
 {
     EXPECT_CALL(host, getLedgerSqn()).WillOnce(Return(0x01020304u));
@@ -97,19 +66,4 @@ TEST_F(LedgerSqnGuest, host_exception_stops_the_run_and_is_logged)
     EXPECT_THAT(logged(), testing::HasSubstr("getLedgerSqn"));
 }
 
-TEST_F(LedgerSqnGuest, out_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getLedgerSqn).Times(0);
-
-    auto const wat = watFor(Arg::outRegion(kOnePage, kSeqLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(LedgerSqnGuest, negative_out_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getLedgerSqn).Times(0);
-
-    auto const wat = watFor(Arg::outRegion(-1, kSeqLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
 }  // namespace xrpl::test

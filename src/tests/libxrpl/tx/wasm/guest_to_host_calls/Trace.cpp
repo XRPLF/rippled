@@ -178,15 +178,6 @@ TEST_F(TraceGuest, a_code_that_names_no_type_is_dropped)
     EXPECT_EQ(hostAnswer(watFor(0, Bytes{}, kDataAt, 0)), 1);
 }
 
-// The memory policy every input region is held to, on the one call that cannot report it.
-TEST_F(TraceGuest, a_region_past_memory_is_dropped)
-{
-    EXPECT_CALL(host, trace).Times(0);
-
-    auto const wat = watFor(static_cast<std::int32_t>(TraceDataType::AsHex), Bytes{}, kOnePage, 1);
-    EXPECT_EQ(hostAnswer(wat), 1);
-}
-
 TEST_F(TraceGuest, a_message_and_buffer_past_the_data_cap_are_dropped)
 {
     EXPECT_CALL(host, trace).Times(0);

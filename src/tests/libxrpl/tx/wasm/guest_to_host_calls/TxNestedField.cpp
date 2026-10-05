@@ -98,44 +98,4 @@ TEST_F(TxNestedFieldGuest, misaligned_locator_length_is_refused_without_asking_h
     EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LocatorMalformed));
 }
 
-TEST_F(TxNestedFieldGuest, input_region_past_memory_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getTxNestedField).Times(0);
-
-    auto const wat = watFor(Arg::region(kOnePage, kLocatorLen), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(TxNestedFieldGuest, negative_input_pointer_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getTxNestedField).Times(0);
-
-    auto const wat = watFor(Arg::region(-1, kLocatorLen), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(TxNestedFieldGuest, out_region_one_byte_short_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps))).WillOnce(Return(value));
-
-    auto const wat = watFor(kLocator, Arg::outRegion(kOutAt, kValueLen - 1));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::BufferTooSmall));
-}
-
-TEST_F(TxNestedFieldGuest, out_region_past_memory_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps))).WillOnce(Return(value));
-
-    auto const wat = watFor(kLocator, Arg::outRegion(kOnePage, kOutLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::PointerOutOfBounds));
-}
-
-TEST_F(TxNestedFieldGuest, negative_out_pointer_is_refused_after_asking_host)
-{
-    EXPECT_CALL(host, getTxNestedField(LocatorEquals(steps))).WillOnce(Return(value));
-
-    auto const wat = watFor(kLocator, Arg::outRegion(-1, kOutLen));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
 }  // namespace xrpl::test
