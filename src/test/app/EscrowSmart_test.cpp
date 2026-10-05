@@ -2,27 +2,22 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/balance.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
-#include <test/jtx/noop.h>
 #include <test/jtx/ter.h>
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/core/StartUpType.h>
-#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -56,9 +51,9 @@ struct EscrowSmart_test : public beast::unit_test::Suite
     static std::string
     bytecodeOfSize(std::size_t bytes)
     {
-        static std::string const preamble = "0061736D01000000";
-        std::string hex = preamble;
-        hex.append(bytes * 2 - preamble.size(), 'A');
+        static std::string const kPreamble = "0061736D01000000";
+        std::string hex = kPreamble;
+        hex.append((bytes * 2) - kPreamble.size(), 'A');
         return hex;
     }
 
