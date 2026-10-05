@@ -111,6 +111,8 @@ public:
      * - is NOT a pseudo-account OR
      * - is NOT a ltACCOUNT_ROOT OR
      * - does not exist
+     *
+     * @return true if and only if this entry is a pseudo-account of any kind.
      */
     [[nodiscard]] bool
     isPseudoAccount() const;
