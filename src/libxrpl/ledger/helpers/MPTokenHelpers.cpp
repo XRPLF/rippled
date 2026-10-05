@@ -92,7 +92,7 @@ isFrozen(ReadView const& view, AccountID const& account, SLE const& sle, std::ui
             return true;
 
         if (issuanceSle)
-            return isVaultPseudoAccountFrozen(view, account, issuanceSle, depth);
+            return issuanceSle.isVaultPseudoAccountFrozen(account, depth);
 
         return isVaultPseudoAccountFrozen(view, account, MPTIssue{mptID}, depth);
     }
@@ -102,7 +102,7 @@ isFrozen(ReadView const& view, AccountID const& account, SLE const& sle, std::ui
     MPTokenIssuanceEntryR const issuanceSle(SLE::const_pointer(SLE::const_pointer{}, &sle), view);
     MPTIssue const mptIssue{sle[sfSequence], sle[sfIssuer]};
     return issuanceSle.isGlobalFrozen() || isIndividualFrozen(view, account, mptIssue) ||
-        isVaultPseudoAccountFrozen(view, account, issuanceSle, depth);
+        issuanceSle.isVaultPseudoAccountFrozen(account, depth);
 }
 
 [[nodiscard]] bool
@@ -122,15 +122,11 @@ isAnyFrozen(
             return true;
     }
 
-    // Pass the issuance SLE when we have it to avoid re-reading it per account;
-    // otherwise defer to the MPTIssue overload, which handles a missing issuance.
-    auto const anyVaultFrozen = [&](auto const& shareOrIssuance) {
-        return std::ranges::any_of(accounts, [&](auto const& account) {
-            return isVaultPseudoAccountFrozen(view, account, shareOrIssuance, depth);
-        });
-    };
-
-    return issuanceSle ? anyVaultFrozen(issuanceSle) : anyVaultFrozen(mptIssue);
+    // Reuse the issuance entry to avoid re-reading it per account; the member
+    // also handles a missing issuance.
+    return std::ranges::any_of(accounts, [&](auto const& account) {
+        return issuanceSle.isVaultPseudoAccountFrozen(account, depth);
+    });
 }
 
 Rate
