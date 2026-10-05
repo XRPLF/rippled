@@ -219,9 +219,7 @@ EscrowCancel::doApply()
     }
 
     if (!recycleReserve)
-    {
         decreaseOwnerCountForObject(ctx_.view(), sle, escrow.mutableRawSle(), 1, ctx_.journal);
-    }
 
     // Remove escrow from ledger
     escrow.erase();
