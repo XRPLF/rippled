@@ -73,7 +73,8 @@ class AMMExtended_test : public jtx::AMMTest
     // For now, just disable SAV entirely, which locks in the small Number
     // mantissas
     FeatureBitset const all_{
-        testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
+        testableAmendments() - featureSingleAssetVault - featureLendingProtocol -
+        featureMPTokensV2};
 
 private:
     void
@@ -267,39 +268,20 @@ private:
             {features});
 
         // tfPassive -- place the offer without crossing it.
-        if (features[featureMPTokensV2])
-        {
-            Env env{*this, features};
-            fund(env, gw_, {alice_, carol_}, XRP(30'000'000), {USD(30'000'000)});
-
-            AMM const ammAlice(env, alice_, XRP(10'100'000), USD(10'000'000));
-
-            // Scale the exact-quality fixture up so the visual relationship
-            // stays clear: the passive CLOB offer has the same 1:1 quality as
-            // the generated AMM offer, so it should not cross.
-            env(offer(carol_, XRP(100'000), USD(100'000), tfPassive));
-            env.close();
-            BEAST_EXPECT(
-                ammAlice.expectBalances(XRP(10'100'000), USD(10'000'000), ammAlice.tokens()));
-            BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100'000), USD(100'000)}}}));
-        }
-        else
-        {
-            testAMM(
-                [&](AMM& ammAlice, Env& env) {
-                    // Carol creates a passive offer that could cross AMM.
-                    // Carol's offer should stay in the ledger.
-                    env(offer(carol_, XRP(100), USD(100), tfPassive));
-                    env.close();
-                    BEAST_EXPECT(ammAlice.expectBalances(
-                        XRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
-                    BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100), STAmount{USD, 100}}}}));
-                },
-                {{XRP(10'100), USD(10'000)}},
-                0,
-                std::nullopt,
-                {features});
-        }
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // Carol creates a passive offer that could cross AMM.
+                // Carol's offer should stay in the ledger.
+                env(offer(carol_, XRP(100), USD(100), tfPassive));
+                env.close();
+                BEAST_EXPECT(
+                    ammAlice.expectBalances(XRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
+                BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100), STAmount{USD, 100}}}}));
+            },
+            {{XRP(10'100), USD(10'000)}},
+            0,
+            std::nullopt,
+            {features});
 
         // tfPassive -- cross only offers of better quality.
         testAMM(
@@ -1450,7 +1432,6 @@ private:
         testRmFundedOffer(all_ - fixAMMv1_1 - fixAMMv1_3);
         testEnforceNoRipple(all_);
         testFillModes(all_);
-        testFillModes(all_ - featureMPTokensV2);
         testOfferCrossWithXRP(all_);
         testOfferCrossWithLimitOverride(all_);
         testCurrencyConversionEntire(all_);
