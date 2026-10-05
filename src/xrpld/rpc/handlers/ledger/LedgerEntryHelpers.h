@@ -24,50 +24,90 @@
 
 namespace xrpl::ledger_entry_helpers {
 
-// These helpers name the malformed field in the `error` token and report `invalidParams` as the
-// code, whatever the token is. A client has read 31 for every one of these tokens for years, so the
-// code is deliberately not derived from the token here.
+/**
+ * Reports @p field as absent, under the token @p code names.
+ *
+ * `error_code` is `invalidParams` (31) whatever @p code is: clients match on 31
+ * for these tokens, so a token whose own code differs disagrees with the code
+ * beside it, and reconciling the two is the reply envelope's concern.
+ *
+ * @param field The field the request did not name.
+ * @param code The code whose token names the field.
+ * @return The error, as an unexpected value.
+ */
 inline std::unexpected<json::Value>
-missingFieldError(json::StaticString const field, std::optional<std::string> err = std::nullopt)
+missingFieldError(json::StaticString const field, ErrorCodeI code = RpcMalformedRequest)
 {
     json::Value json = json::ValueType::Object;
-    json[jss::error] = err.value_or("malformedRequest");
+    json[jss::error] = rpc::getErrorInfo(code).token;
     json[jss::error_code] = RpcInvalidParams;
     json[jss::error_message] = rpc::missingFieldMessage(std::string(field.cStr()));
     return std::unexpected(json);
 }
 
+/**
+ * Reports @p field as holding something that is not @p type, under the token
+ * @p code names.
+ *
+ * Reports `invalidParams` as the code, for the reason missingFieldError gives.
+ *
+ * @param code The code whose token names the field.
+ * @param field The field whose value is wrong.
+ * @param type The type the field was expected to hold, named in the message.
+ * @return The error, as an unexpected value.
+ */
 inline std::unexpected<json::Value>
-invalidFieldError(std::string const& err, json::StaticString const field, std::string const& type)
+invalidFieldError(ErrorCodeI code, json::StaticString const field, std::string const& type)
 {
     json::Value json = json::ValueType::Object;
-    json[jss::error] = err;
+    json[jss::error] = rpc::getErrorInfo(code).token;
     json[jss::error_code] = RpcInvalidParams;
     json[jss::error_message] = rpc::expectedFieldMessage(field, type);
     return std::unexpected(json);
 }
 
+/**
+ * Reports @p message under the token @p code names.
+ *
+ * For a value of the right type that is wrong in a way only the caller can
+ * state. Reports `invalidParams` as the code, for the reason
+ * missingFieldError gives.
+ *
+ * @param code The code whose token names the error. Callers pass a field's
+ *        token or a condition's, such as a trust line to self.
+ * @param message What is wrong.
+ * @return The error, as an unexpected value.
+ */
 inline std::unexpected<json::Value>
-malformedError(std::string const& err, std::string const& message)
+malformedError(ErrorCodeI code, std::string const& message)
 {
     json::Value json = json::ValueType::Object;
-    json[jss::error] = err;
+    json[jss::error] = rpc::getErrorInfo(code).token;
     json[jss::error_code] = RpcInvalidParams;
     json[jss::error_message] = message;
     return std::unexpected(json);
 }
 
+/**
+ * Reports the first of @p fields the request does not name, if any.
+ *
+ * @param params The request's parameters.
+ * @param fields The fields the request must name.
+ * @param code The code whose token names a missing field. Defaults to
+ *        `RpcMalformedRequest`, as missingFieldError's does.
+ * @return true if every field is named, otherwise the error.
+ */
 inline std::expected<bool, json::Value>
 hasRequired(
     json::Value const& params,
     std::initializer_list<json::StaticString> fields,
-    std::optional<std::string> err = std::nullopt)
+    ErrorCodeI code = RpcMalformedRequest)
 {
     for (auto const field : fields)
     {
         if (!params.isMember(field) || params[field].isNull())
         {
-            return missingFieldError(field, err);
+            return missingFieldError(field, code);
         }
     }
     return true;
@@ -77,12 +117,25 @@ template <class T>
 std::optional<T>
 parse(json::Value const& param);
 
+/**
+ * Reads @p fieldName out of @p params, parsed as T.
+ *
+ * Absent or null is a missing field; present but unparsable is an invalid one
+ * of @p expectedType.
+ *
+ * @param params The request parameters.
+ * @param fieldName The field to read.
+ * @param code The code whose token names the field in an error. `error_code`
+ *        stays `invalidParams` whatever it is.
+ * @param expectedType The type named in an invalid-field message.
+ * @return The parsed value, or the error to report.
+ */
 template <class T>
 std::expected<T, json::Value>
 required(
     json::Value const& params,
     json::StaticString const fieldName,
-    std::string const& err,
+    ErrorCodeI code,
     std::string const& expectedType)
 {
     if (!params.isMember(fieldName) || params[fieldName].isNull())
@@ -93,7 +146,7 @@ required(
     {
         return *obj;
     }
-    return invalidFieldError(err, fieldName, expectedType);
+    return invalidFieldError(code, fieldName, expectedType);
 }
 
 template <>
@@ -112,13 +165,14 @@ parse(json::Value const& param)
     return account;
 }
 
+/**
+ * @param code The code whose token names the field in an error. `error_code`
+ *        stays `invalidParams` whatever it is.
+ */
 inline std::expected<AccountID, json::Value>
-requiredAccountID(
-    json::Value const& params,
-    json::StaticString const fieldName,
-    std::string const& err)
+requiredAccountID(json::Value const& params, json::StaticString const fieldName, ErrorCodeI code)
 {
-    return required<AccountID>(params, fieldName, err, "AccountID");
+    return required<AccountID>(params, fieldName, code, "AccountID");
 }
 
 inline std::optional<Blob>
@@ -134,12 +188,16 @@ parseHexBlob(json::Value const& param, std::size_t maxLength)
     return blob;
 }
 
+/**
+ * @param code The code whose token names the field in an error. `error_code`
+ *        stays `invalidParams` whatever it is.
+ */
 inline std::expected<Blob, json::Value>
 requiredHexBlob(
     json::Value const& params,
     json::StaticString const fieldName,
     std::size_t maxLength,
-    std::string const& err)
+    ErrorCodeI code)
 {
     if (!params.isMember(fieldName) || params[fieldName].isNull())
     {
@@ -149,7 +207,7 @@ requiredHexBlob(
     {
         return *blob;
     }
-    return invalidFieldError(err, fieldName, "hex string");
+    return invalidFieldError(code, fieldName, "hex string");
 }
 
 template <>
@@ -169,13 +227,14 @@ parse(json::Value const& param)
     return std::nullopt;
 }
 
+/**
+ * @param code The code whose token names the field in an error. `error_code`
+ *        stays `invalidParams` whatever it is.
+ */
 inline std::expected<std::uint32_t, json::Value>
-requiredUInt32(
-    json::Value const& params,
-    json::StaticString const fieldName,
-    std::string const& err)
+requiredUInt32(json::Value const& params, json::StaticString const fieldName, ErrorCodeI code)
 {
-    return required<std::uint32_t>(params, fieldName, err, "number");
+    return required<std::uint32_t>(params, fieldName, code, "number");
 }
 
 template <>
@@ -191,13 +250,14 @@ parse(json::Value const& param)
     return uNodeIndex;
 }
 
+/**
+ * @param code The code whose token names the field in an error. `error_code`
+ *        stays `invalidParams` whatever it is.
+ */
 inline std::expected<UInt256, json::Value>
-requiredUInt256(
-    json::Value const& params,
-    json::StaticString const fieldName,
-    std::string const& err)
+requiredUInt256(json::Value const& params, json::StaticString const fieldName, ErrorCodeI code)
 {
-    return required<UInt256>(params, fieldName, err, "Hash256");
+    return required<UInt256>(params, fieldName, code, "Hash256");
 }
 
 template <>
@@ -213,13 +273,14 @@ parse(json::Value const& param)
     return field;
 }
 
+/**
+ * @param code The code whose token names the field in an error. `error_code`
+ *        stays `invalidParams` whatever it is.
+ */
 inline std::expected<UInt192, json::Value>
-requiredUInt192(
-    json::Value const& params,
-    json::StaticString const fieldName,
-    std::string const& err)
+requiredUInt192(json::Value const& params, json::StaticString const fieldName, ErrorCodeI code)
 {
-    return required<UInt192>(params, fieldName, err, "Hash192");
+    return required<UInt192>(params, fieldName, code, "Hash192");
 }
 
 template <>
@@ -236,12 +297,24 @@ parse(json::Value const& param)
     }
 }
 
+/**
+ * @param code The code whose token names the field in an error. `error_code`
+ *        stays `invalidParams` whatever it is.
+ */
 inline std::expected<Asset, json::Value>
-requiredAsset(json::Value const& params, json::StaticString const fieldName, std::string const& err)
+requiredAsset(json::Value const& params, json::StaticString const fieldName, ErrorCodeI code)
 {
-    return required<Asset>(params, fieldName, err, "Asset");
+    return required<Asset>(params, fieldName, code, "Asset");
 }
 
+/**
+ * Builds the bridge the four `*ChainDoor` and `*ChainIssue` fields of @p params
+ * describe.
+ *
+ * @param params The request object naming the four fields.
+ * @return The bridge, or the error of the first field that is missing or
+ *         malformed.
+ */
 inline std::expected<STXChainBridge, json::Value>
 parseBridgeFields(json::Value const& params)
 {
@@ -257,14 +330,14 @@ parseBridgeFields(json::Value const& params)
     }
 
     auto const lockingChainDoor =
-        requiredAccountID(params, jss::LockingChainDoor, "malformedLockingChainDoor");
+        requiredAccountID(params, jss::LockingChainDoor, RpcMalformedLockingChainDoor);
     if (!lockingChainDoor)
     {
         return std::unexpected(lockingChainDoor.error());
     }
 
     auto const issuingChainDoor =
-        requiredAccountID(params, jss::IssuingChainDoor, "malformedIssuingChainDoor");
+        requiredAccountID(params, jss::IssuingChainDoor, RpcMalformedIssuingChainDoor);
     if (!issuingChainDoor)
     {
         return std::unexpected(issuingChainDoor.error());
@@ -277,7 +350,7 @@ parseBridgeFields(json::Value const& params)
     }
     catch (std::runtime_error const& ex)
     {
-        return invalidFieldError("malformedIssue", jss::LockingChainIssue, "Issue");
+        return invalidFieldError(RpcMalformedIssue, jss::LockingChainIssue, "Issue");
     }
 
     Issue issuingChainIssue;
@@ -287,7 +360,7 @@ parseBridgeFields(json::Value const& params)
     }
     catch (std::runtime_error const& ex)
     {
-        return invalidFieldError("malformedIssue", jss::IssuingChainIssue, "Issue");
+        return invalidFieldError(RpcMalformedIssue, jss::IssuingChainIssue, "Issue");
     }
 
     return STXChainBridge(
