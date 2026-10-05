@@ -125,6 +125,11 @@ public:
      *
      * - Checks that the entry exists.
      * - If the entry requires a destination tag, checks that there is a tag.
+     *
+     * @param hasDestinationTag Whether the transaction supplies a destination tag
+     * @return tecNO_DST if the entry does not exist; tecDST_TAG_NEEDED if the
+     *         entry requires a destination tag and hasDestinationTag is false;
+     *         tesSUCCESS otherwise
      */
     [[nodiscard]] TER
     checkDestinationAndTag(bool hasDestinationTag) const
