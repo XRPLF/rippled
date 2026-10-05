@@ -595,7 +595,7 @@ doWithdraw(
 
         if (auto const ter = directSendNoFee(ctx.view, sourceAcct, issuer, sourceAmount, false, j);
             !isTesSuccess(ter))
-            return ter;
+            return ter;  // LCOV_EXCL_LINE
 
         return directSendNoFee(ctx.view, issuer, dstAcct, destinationAmount, false, j);
     }

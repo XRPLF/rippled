@@ -882,6 +882,56 @@ private:
         testTransferFeeRoundsDown(testableAmendments());
         testTransferFeeRoundsDown(testableAmendments() - featureMPTokensV2);
 
+        testCase(
+            [this](
+                Env& env,
+                Account const& issuer,
+                Account const& owner,
+                Account const& depositor,
+                PrettyAsset const& asset,
+                Vault& vault,
+                MPTTester& mptt) {
+                testcase("MPT transfer fee leaves other depositors whole");
+
+                Account const charlie{"charlie"};
+                env.fund(XRP(1000), charlie);
+                env.close();
+                mptt.authorize({.account = charlie});
+                mptt.authorize({.account = issuer, .holder = charlie});
+                env(pay(issuer, owner, asset(100)));
+                env.close();
+
+                auto const funded = createFundedVault(env, vault, owner, depositor, asset(100));
+                env(vault.deposit(
+                    {.depositor = owner, .id = funded.keylet.key, .amount = asset(100)}));
+                env.close();
+                auto const shareIssue = funded.shares.raw().get<MPTIssue>();
+
+                auto const vaultBefore = env.le(funded.keylet);
+                Number const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
+                Number const assetsAvailableBefore = vaultBefore->at(sfAssetsAvailable);
+
+                // Delivering 40 to charlie costs the depositor 50 gross.
+                auto tx = vault.withdraw(
+                    {.depositor = depositor, .id = funded.keylet.key, .amount = asset(40)});
+                tx[sfDestination] = charlie.human();
+                env(tx);
+                env.close();
+
+                BEAST_EXPECT(mptt.checkMPTokenAmount(charlie, 40));
+                auto const vaultAfter = env.le(funded.keylet);
+                BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore - 50);
+                BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == assetsAvailableBefore - 50);
+
+                // The owner's 100 shares still redeem for the 100 it deposited.
+                BEAST_EXPECT(env.balance(owner, shareIssue) == funded.shares(100));
+                env(vault.withdraw(
+                    {.depositor = owner, .id = funded.keylet.key, .amount = funded.shares(100)}));
+                env.close();
+                BEAST_EXPECT(mptt.checkMPTokenAmount(owner, 100));
+            },
+            feeArgs);
+
         testCase([this](
                      Env& env,
                      Account const& issuer,
