@@ -124,6 +124,8 @@ public:
      * Returns the funds the issuer can still self-issue through an
      * issuer-owned MPT sell offer: availableAmount(), less amounts already
      * self-sold, as tracked by the view's balanceHookSelfIssueMPT().
+     *
+     * @return the amount the issuer may still self-issue.
      */
     [[nodiscard]] STAmount
     issuerFundsToSelfIssue() const;
