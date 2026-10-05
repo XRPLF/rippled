@@ -1342,6 +1342,41 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         boost::system::error_code ec;
 
+        // A value naming no supported version is rejected rather than coerced.
+        for (auto const* version : {
+                 "0.0",                            // unsupported major
+                 "4.0",                            //
+                 "10.0",                           // would sort below "3.0" lexicographically
+                 "02.0",                           // leading zero
+                 "2.00",                           // non-canonical minor
+                 "2",                              // missing minor
+                 "2.",                             //
+                 ".0",                             // missing major
+                 "2.x",                            // non-numeric minor
+                 "2x",                             // trailing junk
+                 "x2",                             //
+                 "abc",                            //
+                 "-1.0",                           // signs are not part of a version
+                 "+2.0",                           //
+                 " 2.0",                           // surrounding whitespace
+                 "2.0 ",                           //
+                 "2.0.0",                          // patch component is not accepted
+                 "2e0",                            //
+                 "2.7",                            // no version defines a nonzero minor
+                 "2.99",                           //
+                 "3.99",                           //
+                 "2.01",                           // leading zero in the minor
+                 "1.4294967295",                   //
+                 "999999999999999999999999999.0",  // too long to name a version
+                 "1.999999999999999999999999999",  // too long to name a version
+             })
+        {
+            Response resp;
+            doHTTPRequest(env, yield, false, resp, ec, makeRippleRpcRequest("ping", version));
+            BEAST_EXPECTS(resp.result() == kBadRequest, version);
+            BEAST_EXPECTS(resp.body() == "ripplerpc is not a supported version\r\n", version);
+        }
+
         // A non-string is reported separately, before any version parsing.
         {
             Response resp;
@@ -1365,6 +1400,91 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             BEAST_EXPECTS(resp.result() == kOk, version);
             BEAST_EXPECTS(reply[jss::ripplerpc] == version, version);
             BEAST_EXPECTS(reply[jss::result][jss::status] == jss::success, version);
+        }
+
+        // Every version reports success the same way, so only the error envelope
+        // distinguishes them. `account_info` without an account fails in the handler,
+        // carrying an `error_code` that version 3 maps onto an HTTP status.
+        {
+            Response resp;
+            doHTTPRequest(
+                env,
+                yield,
+                false,
+                resp,
+                ec,
+                makeRippleRpcRequest("account_info", rpc::kRippleRpcVersion1));
+            BEAST_EXPECT(resp.result() == kOk);
+
+            json::Value reply;
+            BEAST_EXPECT(json::Reader{}.parse(resp.body(), reply));
+            BEAST_EXPECT(reply[jss::result][jss::status] == jss::error);
+            BEAST_EXPECT(reply[jss::result].isMember(jss::error_message));
+            BEAST_EXPECT(reply[jss::result].isMember(jss::request));
+            BEAST_EXPECT(!reply.isMember(jss::error));
+        }
+
+        // Versions 2 and 3 share an error envelope, so one loop covers both.
+        for (auto const version : {rpc::kRippleRpcVersion2, rpc::kRippleRpcVersion3})
+        {
+            Response resp;
+            auto const reply = postAndParse(
+                env, yield, resp, ec, makeRippleRpcRequest("account_info", version), version);
+            BEAST_EXPECTS(reply[jss::error][jss::status] == jss::error, version);
+            BEAST_EXPECTS(reply[jss::error].isMember(jss::message), version);
+            BEAST_EXPECTS(!reply[jss::error].isMember(jss::error_message), version);
+            BEAST_EXPECTS(!reply[jss::error].isMember(jss::request), version);
+            BEAST_EXPECTS(!reply.isMember(jss::request), version);
+
+            auto const expected = version == rpc::kRippleRpcVersion3 ? kBadRequest : kOk;
+            BEAST_EXPECTS(resp.result() == expected, version);
+        }
+
+        // A batch entry rejected before dispatch is echoed back, so it is masked too.
+        {
+            Response resp;
+            json::Value entry(json::ValueType::Object);
+            entry[jss::method] = "ping";
+            entry[jss::ripplerpc] = "10.0";
+            for (auto const field : rpc::kCredentialFields)
+                entry[std::string{field}] = "sensitive";
+
+            json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = entry;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECT(reply.isArray() && reply.size() == 1);
+            for (auto const field : rpc::kCredentialFields)
+                BEAST_EXPECTS(reply[0u][std::string{field}] == "<masked>", std::string{field});
+        }
+
+        // A rejected entry does not decide the version for the rest, and the batch returns 200.
+        {
+            Response resp;
+            json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::params] = json::ValueType::Array;
+            for (auto const& [index, version] :
+                 {std::pair{0u, "2.0"}, std::pair{1u, "abc"}, std::pair{2u, "1.0"}})
+            {
+                json::Value entry(json::ValueType::Object);
+                entry[jss::method] = "ping";
+                entry[jss::ripplerpc] = version;
+                entry[jss::id] = index;
+                jv[jss::params][index] = entry;
+            }
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == kOk);
+            BEAST_EXPECT(reply.isArray() && reply.size() == 3);
+            BEAST_EXPECT(reply[0u][jss::result][jss::status] == jss::success);
+            BEAST_EXPECT(reply[2u][jss::result][jss::status] == jss::success);
+            // A version the server cannot honor is a bad parameter, not a missing method.
+            BEAST_EXPECT(
+                reply[1u][jss::error][jss::error][jss::message] ==
+                "ripplerpc is not a supported version");
+            BEAST_EXPECT(reply[1u][jss::error][jss::error][jss::code] == -32602);
+            BEAST_EXPECT(reply[1u][jss::ripplerpc] == "abc");
         }
 
         // An entry naming an `api_version` the server cannot serve is returned under `request`,
@@ -1452,6 +1572,37 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             auto const& error = reply[0u][jss::error][jss::error];
             BEAST_EXPECT(error[jss::code] == rpc::kJsonRpcMethodNotFound);
             BEAST_EXPECT(error[jss::message] == "Method not found");
+        }
+    }
+
+    /**
+     * What a client receives cannot depend on how the server logs.
+     *
+     * Reading an absent member off a non-const value inserts it as an explicit
+     * null, so reading `error_message` after the rename to `message` puts
+     * `"error_message": null` back into the reply. The Env below logs at debug,
+     * which is what arms these assertions.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testAnErrorReplyDoesNotFollowTheLogLevel(boost::asio::yield_context& yield)
+    {
+        testcase("An error reply is the same at every log level");
+
+        using namespace test::jtx;
+        Env env{*this, envconfig(), nullptr, beast::Severity::Debug};
+
+        boost::system::error_code ec;
+
+        // `account_info` naming no account fails in the handler, where both members come from.
+        for (auto const version : {rpc::kRippleRpcVersion2, rpc::kRippleRpcVersion3})
+        {
+            boost::beast::http::response<boost::beast::http::string_body> resp;
+            auto const reply = postAndParse(
+                env, yield, resp, ec, makeRippleRpcRequest("account_info", version), version);
+            BEAST_EXPECTS(reply[jss::error].isMember(jss::message), version);
+            BEAST_EXPECTS(!reply[jss::error].isMember(jss::error_message), version);
         }
     }
 
@@ -2241,6 +2392,7 @@ public:
             testRipplerpcVersions(yield);
             testPrivilegedRequestIsNotShed(yield);
             testLegacyBatchEntryRejections(yield);
+            testAnErrorReplyDoesNotFollowTheLogLevel(yield);
             testHandlerErrorsCarryCodes(yield);
             testGainedStatusesStayOffLegacyEnvelope(yield);
             testUncommonHttpStatus(yield);
