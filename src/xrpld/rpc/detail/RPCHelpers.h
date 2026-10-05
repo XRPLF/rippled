@@ -5,6 +5,7 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
@@ -14,9 +15,12 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/server/NetworkOPs.h>
 
 #include <cstdint>
@@ -44,7 +48,7 @@ struct JsonContext;
  * @return A 64-bit unsigned integer representing the start hint for traversal.
  */
 std::uint64_t
-getStartHint(SLE::const_ref sle, AccountID const& accountID);
+getStartHint(SLE::ConstRef sle, AccountID const& accountID);
 
 /**
  * @brief Tests if a ledger entry (SLE) is owned by the specified account.
@@ -58,7 +62,18 @@ getStartHint(SLE::const_ref sle, AccountID const& accountID);
  * @return true if the SLE is owned by the account, false otherwise.
  */
 bool
-isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& accountID);
+isRelatedToAccount(ReadView const& ledger, SLE::ConstRef sle, AccountID const& accountID);
+
+/**
+ * @brief Checks whether an SField is a UINT64 sf*Node owner-directory
+ *        page-hint field probed by `isRelatedToAccount`.
+ *
+ * @param field The SField to test.
+ * @return true if the field is one of the owner-directory page-hint
+ *         fields, false otherwise.
+ */
+bool
+isOwnerDirNodeField(SField const& field);
 
 /**
  * @brief Parses an array of account IDs from a JSON value.
@@ -66,10 +81,21 @@ isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& 
  * Extracts and returns a set of AccountID objects from the provided JSON array.
  *
  * @param jvArray The JSON value containing an array of account IDs.
- * @return A hash_set containing the parsed AccountID objects.
+ * @return A HashSet containing the parsed AccountID objects.
  */
-hash_set<AccountID>
+HashSet<AccountID>
 parseAccountIds(json::Value const& jvArray);
+
+/**
+ * @brief Parses an array of MPT issuance IDs from a JSON value.
+ *
+ * Extracts and returns a set of MPTID objects from the provided JSON array.
+ *
+ * @param jvArray The JSON value containing an array of MPT issuance IDs.
+ * @return A HashSet containing the parsed MPTID objects.
+ */
+HashSet<MPTID>
+parseMPTIssuanceIDs(json::Value const& jvArray);
 
 /**
  * @brief Retrieves the limit value from a JsonContext or sets a default.
@@ -161,6 +187,21 @@ keypairForSignature(
     json::Value const& params,
     json::Value& error,
     unsigned int apiVersion = kApiVersionIfUnspecified);
+
+/**
+ * Serialize the payment channel claim authorization message for the `amount`
+ * of a channel_authorize or channel_verify request.
+ *
+ * @param msg Serializer the message is appended to.
+ * @param channelId The channel the claim is for.
+ * @param amount A string of drops for an XRP channel, or the transaction
+ *     Amount JSON object (currency/issuer/value or mpt_issuance_id/value) for a
+ *     token channel.
+ * @return false, with nothing appended, if `amount` is neither a string of
+ *     drops nor a valid non-negative token Amount object.
+ */
+bool
+serializeChannelAuthorization(Serializer& msg, uint256 const& channelId, json::Value const& amount);
 
 /**
  * Parse subscribe/unsubscribe parameters

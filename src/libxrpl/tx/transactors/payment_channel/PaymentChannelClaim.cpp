@@ -12,6 +12,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rate.h>
@@ -57,8 +58,18 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
     if (amt && *amt <= beast::kZero)
         return temBAD_AMOUNT;
 
-    if (((bal && !isXRP(*bal)) || (amt && !isXRP(*amt))) && !ctx.rules.enabled(featureTokenPaychan))
-        return temBAD_AMOUNT;
+    if ((bal && !isXRP(*bal)) || (amt && !isXRP(*amt)))
+    {
+        if (!ctx.rules.enabled(featureTokenPaychan))
+            return temBAD_AMOUNT;
+
+        // PaymentChannelCreate and PaymentChannelFund gate an MPT-denominated
+        // Amount on featureMPTokensV1 (payChanAmountPreflightHelper); apply
+        // the same gate here for sfBalance and sfAmount.
+        if (((bal && bal->holds<MPTIssue>()) || (amt && amt->holds<MPTIssue>())) &&
+            !ctx.rules.enabled(featureMPTokensV1))
+            return temDISABLED;
+    }
 
     // Both bal and amt must reference the same asset before comparing,
     // otherwise STAmount comparison throws.
@@ -125,16 +136,15 @@ PaymentChannelClaim::preclaim(PreclaimContext const& ctx)
         AccountID const dest = (*slep)[sfDestination];
         auto const& chanFunds = slep->getFieldAmount(sfAmount);
 
-        if (auto const bal = ctx.tx[~sfBalance])
-        {
-            // The requested balance (and optional amount) must match the
-            // channel's asset; otherwise STAmount comparisons/subtractions
-            // in doApply would throw on mismatched issues.
-            if (bal->asset() != chanFunds.asset())
-                return tecWRONG_ASSET;
-            if (auto const amt = ctx.tx[~sfAmount]; amt && amt->asset() != chanFunds.asset())
-                return tecWRONG_ASSET;
-        }
+        // The requested balance and the optional amount must each match
+        // the channel's asset; otherwise the STAmount comparisons and
+        // subtractions in doApply would throw on mismatched issues. amount
+        // is checked independently of balance: a claim can carry Amount
+        // without Balance (the signature-authorized ceiling alone).
+        if (auto const bal = ctx.tx[~sfBalance]; bal && bal->asset() != chanFunds.asset())
+            return tecWRONG_ASSET;
+        if (auto const amt = ctx.tx[~sfAmount]; amt && amt->asset() != chanFunds.asset())
+            return tecWRONG_ASSET;
 
         if (!isXRP(chanFunds) && ctx.tx.isFieldPresent(sfBalance))
         {
@@ -303,7 +313,7 @@ PaymentChannelClaim::doApply()
 }
 
 void
-PaymentChannelClaim::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+PaymentChannelClaim::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

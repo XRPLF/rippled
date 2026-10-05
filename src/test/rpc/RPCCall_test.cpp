@@ -3,6 +3,9 @@
 #include <test/jtx/utility.h>
 
 #include <xrpld/core/Config.h>
+#include <xrpld/rpc/MethodNames.h>
+#include <xrpld/rpc/RPCCall.h>
+#include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_reader.h>
@@ -12,11 +15,14 @@
 
 #include <boost/algorithm/string/replace.hpp>
 
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstring>
 #include <initializer_list>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <typeinfo>
 #include <vector>
 
@@ -1907,6 +1913,45 @@ static RPCCallTestData const kRpcCallTestArray[] = {
       }
     ]
     })"},
+    {"channel_authorize: token amount.",
+     __LINE__,
+     {"channel_authorize",
+      "secret_can_be_anything",
+      "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+      R"({"currency":"USD","issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","value":"10.5"})"},
+     RPCCallTestData::Exception::NoException,
+     R"({
+    "method" : "channel_authorize",
+    "params" : [
+      {
+         "api_version" : %API_VER%,
+         "amount" : {
+            "currency" : "USD",
+            "issuer" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+            "value" : "10.5"
+         },
+         "channel_id" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+         "secret" : "secret_can_be_anything"
+      }
+    ]
+    })"},
+    {"channel_authorize: amount JSON not an object.",
+     __LINE__,
+     {"channel_authorize",
+      "secret_can_be_anything",
+      "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+      R"(["10","USD"])"},
+     RPCCallTestData::Exception::NoException,
+     R"({
+    "method" : "channel_authorize",
+    "params" : [
+      {
+         "error" : "channelAmtMalformed",
+         "error_code" : 43,
+         "error_message" : "Payment channel amount is malformed."
+      }
+    ]
+    })"},
     {"channel_authorize: too few arguments.",
      __LINE__,
      {
@@ -2086,6 +2131,29 @@ static RPCCallTestData const kRpcCallTestArray[] = {
          "amount" : "18446744073709551615",
          "channel_id" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
          "public_key" : "021D93E21C44160A1B3B66DA1F37B86BE39FFEA3FC4B95FAA2063F82EE823599F6",
+         "signature" : "DEADBEEF"
+      }
+    ]
+    })"},
+    {"channel_verify: token amount.",
+     __LINE__,
+     {"channel_verify",
+      "aB4BXXLuPu8DpVuyq1DBiu3SrPdtK9AYZisKhu8mvkoiUD8J9Gov",
+      "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+      R"({"mpt_issuance_id":"00000001A407AF5856CCF3C42619DAA925813FC955C72983","value":"10"})",
+      "DEADBEEF"},
+     RPCCallTestData::Exception::NoException,
+     R"({
+    "method" : "channel_verify",
+    "params" : [
+      {
+         "api_version" : %API_VER%,
+         "amount" : {
+            "mpt_issuance_id" : "00000001A407AF5856CCF3C42619DAA925813FC955C72983",
+            "value" : "10"
+         },
+         "channel_id" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+         "public_key" : "aB4BXXLuPu8DpVuyq1DBiu3SrPdtK9AYZisKhu8mvkoiUD8J9Gov",
          "signature" : "DEADBEEF"
       }
     ]
@@ -5923,10 +5991,67 @@ public:
         }
     }
 
+    // The command-line table and the dispatch table must agree.
+    //
+    // Forwards: every name the command line accepts must reach a handler at the
+    // version the command-line client requests. Presence in the dispatch table is
+    // not enough: a handler whose API range excludes kApiCommandLineVersion parses
+    // the command and then answers RpcUnknownCommand.
+    //
+    // Backwards: a handler that claims a command-line form must have one, and
+    // one that denies it must not, so that Handler::hasCommandLineForm cannot go
+    // stale.
+    //
+    // Three command-line names are exempt from the forward check because they
+    // are wrappers that forward a caller-supplied method rather than naming one
+    // themselves, so they have no handler of their own.
+    void
+    testCommandLineTableMatchesHandlers()
+    {
+        testcase("Command-line and dispatch tables agree");
+
+        static constexpr std::array kWrappers{
+            rpc::method::kInternal, rpc::method::kJson, rpc::method::kJson2};
+
+        auto const commandLine = commandLineMethodNames();
+        auto const handlers = rpc::getHandlerNames();
+        BEAST_EXPECT(!commandLine.empty());
+        BEAST_EXPECT(!handlers.empty());
+
+        // The command-line client always requests this version, so this is the
+        // only version at which its commands have to be dispatchable. Beta
+        // methods are off: a command must work against a stock server.
+        auto const handlerFor = [](std::string_view name) {
+            return rpc::getHandler(rpc::kApiCommandLineVersion, false, name);
+        };
+
+        for (auto const& name : commandLine)
+        {
+            if (std::ranges::find(kWrappers, name) != kWrappers.end())
+                continue;
+
+            auto const* handler = handlerFor(name);
+            if (BEAST_EXPECTS(handler != nullptr, std::string{name}))
+                BEAST_EXPECTS(handler->hasCommandLineForm, std::string{name});
+        }
+
+        for (auto const& name : handlers)
+        {
+            auto const* handler = handlerFor(name);
+            bool const claimsCommandLine = handler != nullptr && handler->hasCommandLineForm;
+
+            // Both name lists are sorted, so a binary search suffices.
+            BEAST_EXPECTS(
+                claimsCommandLine == std::ranges::binary_search(commandLine, name.view()),
+                std::string{name});
+        }
+    }
+
     void
     run() override
     {
         forAllApiVersions([this](unsigned apiVersion) { testRPCCall(apiVersion); });
+        testCommandLineTableMatchesHandlers();
     }
 };
 

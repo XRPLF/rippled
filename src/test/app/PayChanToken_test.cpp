@@ -16,29 +16,157 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <algorithm>
 #include <array>
 #include <cstdint>
 #include <iterator>
+#include <optional>
+#include <string>
 
 namespace xrpl::test {
 struct PayChanToken_test : public beast::unit_test::Suite
 {
+    /**
+     * Sign `authAmt` for `chan` with channel_authorize, check the signature
+     * against jtx signClaimAuth and channel_verify, then submit it in a
+     * PaymentChannelClaim from `dst`.
+     */
+    void
+    checkAuthVerifyRPC(
+        jtx::Env& env,
+        jtx::Account const& src,
+        jtx::Account const& dst,
+        uint256 const& chan,
+        STAmount const& authAmt,
+        STAmount const& otherAmt)
+    {
+        using namespace jtx;
+
+        auto const chanStr = to_string(chan);
+        auto const pkStr = toBase58(TokenType::AccountPublic, src.pk());
+        auto const jvAmount = authAmt.getJson(JsonOptions::Values::None);
+        auto const expectedSig = strHex(paychan::signClaimAuth(src.pk(), src.sk(), chan, authAmt));
+
+        auto authorize = [&](json::Value const& amount) {
+            json::Value args{json::ValueType::Object};
+            args[jss::channel_id] = chanStr;
+            args[jss::secret] = src.name();
+            args[jss::amount] = amount;
+            return env.rpc("json", "channel_authorize", to_string(args))[jss::result];
+        };
+        auto verify = [&](json::Value const& amount, std::string const& sig) {
+            json::Value args{json::ValueType::Object};
+            args[jss::channel_id] = chanStr;
+            args[jss::public_key] = pkStr;
+            args[jss::amount] = amount;
+            args[jss::signature] = sig;
+            return env.rpc("json", "channel_verify", to_string(args))[jss::result];
+        };
+
+        // JSON request: the signature matches signClaimAuth and verifies
+        auto const rs = authorize(jvAmount);
+        auto const sig = rs[jss::signature].asString();
+        BEAST_EXPECT(sig == expectedSig);
+        BEAST_EXPECT(verify(jvAmount, sig)[jss::signature_verified].asBool());
+
+        // Command line: the amount argument carries the JSON object
+        {
+            auto const rsCli =
+                env.rpc("channel_authorize", src.name(), chanStr, to_string(jvAmount));
+            BEAST_EXPECT(rsCli[jss::result][jss::signature].asString() == expectedSig);
+            auto const rvCli = env.rpc("channel_verify", pkStr, chanStr, to_string(jvAmount), sig);
+            BEAST_EXPECT(rvCli[jss::result][jss::signature_verified].asBool());
+        }
+
+        // A different amount or asset, or a drops string, does not verify
+        auto expectNotVerified = [&](json::Value const& amount) {
+            auto const verified = verify(amount, sig)[jss::signature_verified];
+            BEAST_EXPECT(verified.isBool() && !verified.asBool());
+        };
+        expectNotVerified(otherAmt.getJson(JsonOptions::Values::None));
+        expectNotVerified("10");
+
+        // Malformed amount objects
+        auto expectMalformed = [&](json::Value const& amount) {
+            BEAST_EXPECT(authorize(amount)[jss::error] == "channelAmtMalformed");
+            BEAST_EXPECT(verify(amount, sig)[jss::error] == "channelAmtMalformed");
+        };
+        {
+            json::Value xrpObject{json::ValueType::Object};
+            xrpObject[jss::currency] = "XRP";
+            xrpObject[jss::value] = "10";
+            expectMalformed(xrpObject);
+        }
+        {
+            auto negative = jvAmount;
+            negative[jss::value] = "-" + jvAmount[jss::value].asString();
+            expectMalformed(negative);
+        }
+        {
+            auto badValue = jvAmount;
+            badValue[jss::value] = "ten";
+            expectMalformed(badValue);
+        }
+        if (authAmt.holds<Issue>())
+        {
+            auto noIssuer = jvAmount;
+            noIssuer.removeMember(jss::issuer);
+            expectMalformed(noIssuer);
+        }
+        else
+        {
+            auto fractional = jvAmount;
+            fractional[jss::value] = "1.5";
+            expectMalformed(fractional);
+        }
+        {
+            json::Value array{json::ValueType::Array};
+            array.append(jvAmount[jss::value]);
+            expectMalformed(array);
+        }
+        {
+            auto const rvCli = env.rpc("channel_verify", pkStr, chanStr, "{\"value\":", sig);
+            BEAST_EXPECT(rvCli[jss::error] == "channelAmtMalformed");
+        }
+
+        // PaymentChannelClaim accepts the RPC signature
+        auto const sigBlob = strUnHex(sig);
+        BEAST_EXPECT(sigBlob);
+        if (!sigBlob)
+            return;
+        env(paychan::claim(dst, chan, authAmt, authAmt, makeSlice(*sigBlob), src.pk()),
+            Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == authAmt);
+    }
+
     void
     testIOUEnablement(FeatureBitset features)
     {
@@ -405,8 +533,8 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env.close();
 
             // With a larger mantissa the amounts remain addable
-            bool const largeMantissa =
-                features[featureSingleAssetVault] || features[featureLendingProtocol];
+            bool const largeMantissa = features[featureSingleAssetVault] ||
+                features[featureLendingProtocol] || features[featureMPTokensV2];
 
             // alice cannot create paychan for 1/10 iou - precision loss
             env(paychan::create(alice, bob, usd(1), 100s, alice.pk()),
@@ -800,9 +928,8 @@ struct PayChanToken_test : public beast::unit_test::Suite
         }
 
         // tecPRECISION_LOSS: cannot fund an amount the channel amount cannot
-        // absorb, even when the source's spendable balance can. Without the
-        // channel-amount canAdd guard the source would be debited while the
-        // channel amount rounds back unchanged.
+        // absorb, even when the source's spendable balance can: the sum
+        // rounds back to the unchanged channel amount.
         {
             Env env{*this, features};
             env.fund(XRP(10'000), alice, bob, gw);
@@ -833,6 +960,74 @@ struct PayChanToken_test : public beast::unit_test::Suite
             // neither the channel amount nor alice's balance changed
             BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(1000000000000000));
             BEAST_EXPECT(env.balance(alice, usd) == usd(5));
+        }
+
+        // tecPRECISION_LOSS: an IOU sum that rounds to a different nonzero
+        // increase is rejected, not only one rounded away entirely
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(100000000000000000), alice);
+            env.trust(usd(100000000000000000), bob);
+            env.close();
+            env(pay(gw, alice, usd(10000000000000000)));
+            env.close();
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(1234567890123456), settleDelay, pk));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            auto const balance = env.balance(alice, usd);
+
+            // 1234567890123456 + 6000.25 needs 18 digits, so the sum rounds
+            // under either mantissa size
+            env(paychan::fund(alice, chan, usd(6000.25)), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(1234567890123456));
+            BEAST_EXPECT(env.balance(alice, usd) == balance);
+
+            // an exact sum is accepted
+            env(paychan::fund(alice, chan, usd(6000)));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(1234567890129456));
+        }
+
+        // tecPRECISION_LOSS: a channel holding a dust amount cannot be funded
+        // with a much larger one. The sum rounds the dust away while
+        // subtracting the channel amount from it still gives back the funded
+        // amount.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(100'000), alice);
+            env.trust(usd(100'000), bob);
+            env.close();
+            STAmount const dust{usd.issue(), 15, -19};
+            env(pay(gw, alice, STAmount{usd.issue(), 20, -19}));
+            env.close();
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, dust, settleDelay, pk));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == dust);
+
+            env(pay(gw, alice, usd(100)));
+            env.close();
+            auto const balance = env.balance(alice, usd);
+
+            env(paychan::fund(alice, chan, usd(1)), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == dust);
+            BEAST_EXPECT(env.balance(alice, usd) == balance);
         }
     }
 
@@ -942,9 +1137,16 @@ struct PayChanToken_test : public beast::unit_test::Suite
             // tecWRONG_ASSET: claims must use the channel's asset
             env(paychan::claim(alice, chan, eur(10), eur(10)), Ter(tecWRONG_ASSET));
             env(paychan::claim(alice, chan, XRP(10), XRP(10)), Ter(tecWRONG_ASSET));
+
+            // tecWRONG_ASSET: an Amount of a different asset is rejected
+            // even without a Balance
+            env(paychan::claim(bob, chan, std::nullopt, eur(10)),
+                Txflags(tfClose),
+                Ter(tecWRONG_ASSET));
             env.close();
 
             // The channel is unchanged and bob received nothing
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
             BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(1'000));
             BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == usd(0));
             BEAST_EXPECT(env.balance(bob, usd) == usd(0));
@@ -2524,8 +2726,8 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env.close();
 
             // With a larger mantissa the amounts remain addable
-            bool const largeMantissa =
-                features[featureSingleAssetVault] || features[featureLendingProtocol];
+            bool const largeMantissa = features[featureSingleAssetVault] ||
+                features[featureLendingProtocol] || features[featureMPTokensV2];
 
             // alice cannot create paychan for 1/10 iou - precision loss
             auto const pk = alice.pk();
@@ -3310,6 +3512,91 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == mpt(200));
             BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 200);
         }
+
+        // tecPRECISION_LOSS: the channel's sfAmount is never reduced by a
+        // claim, so funding the same tokens back into a channel after they
+        // have been claimed out and paid back to the source can carry
+        // sfAmount past kMaxMpTokenAmount even though the source's live
+        // balance is tiny. canAdd(chanAmt, amount) catches the overflow
+        // before the source is debited, the same guard IOU funding uses.
+        {
+            Env env{*this, features};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create(
+                {.maxAmt = kMaxMpTokenAmount,
+                 .ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(kMaxMpTokenAmount)));
+            env.close();
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, mpt(kMaxMpTokenAmount), settleDelay, pk));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            // alice, the channel owner, claims the whole channel out to bob;
+            // this leaves the channel open with sfAmount still
+            // kMaxMpTokenAmount (a claim never reduces it).
+            env(paychan::claim(alice, chan, mpt(kMaxMpTokenAmount), mpt(kMaxMpTokenAmount)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, mpt) == mpt(kMaxMpTokenAmount));
+
+            // bob pays one token back to alice; the token supply never
+            // exceeded kMaxMpTokenAmount, but the channel has already
+            // recorded kMaxMpTokenAmount as funded once.
+            env(pay(bob, alice, mpt(1)));
+            env.close();
+
+            env(paychan::fund(alice, chan, mpt(1)), Ter(tecPRECISION_LOSS));
+            env.close();
+
+            // neither the channel amount nor alice's balance changed
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == mpt(kMaxMpTokenAmount));
+            BEAST_EXPECT(env.balance(alice, mpt) == mpt(1));
+        }
+    }
+
+    void
+    testMPTClaimPreflight(FeatureBitset features)
+    {
+        testcase("MPT Claim Preflight");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        // temDISABLED: an MPT-denominated Balance is rejected before any
+        // ledger lookup when featureMPTokensV1 is disabled. With the
+        // amendment enabled, the same transaction clears preflight and
+        // fails in preclaim instead, because the channel does not exist.
+        for (bool const withMPT : {true, false})
+        {
+            auto const amend = withMPT ? features : features - featureMPTokensV1;
+            Env env{*this, amend};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(1'000), alice, bob);
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            json::Value jv = paychan::claim(alice, chan, XRP(1));
+            jv.removeMember("Balance");
+            jv["Balance"][jss::mpt_issuance_id] =
+                "00000004A407AF5856CCF3C42619DAA925813FC955C72983";
+            jv["Balance"][jss::value] = "1";
+
+            auto const result = withMPT ? Ter(tecNO_TARGET) : Ter(temDISABLED);
+            env(jv, result);
+            env.close();
+        }
     }
 
     void
@@ -3417,9 +3704,16 @@ struct PayChanToken_test : public beast::unit_test::Suite
             // tecWRONG_ASSET: claims must use the channel's asset
             env(paychan::claim(alice, chan, usd(10), usd(10)), Ter(tecWRONG_ASSET));
             env(paychan::claim(alice, chan, XRP(10), XRP(10)), Ter(tecWRONG_ASSET));
+
+            // tecWRONG_ASSET: an Amount of a different asset is rejected
+            // even without a Balance
+            env(paychan::claim(bob, chan, std::nullopt, XRP(10)),
+                Txflags(tfClose),
+                Ter(tecWRONG_ASSET));
             env.close();
 
             // The channel is unchanged and the funds remain locked
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
             BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == mpt(1'000));
             BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == mpt(0));
             BEAST_EXPECT(env.balance(alice, mpt) == mpt(9'000));
@@ -5002,6 +5296,109 @@ struct PayChanToken_test : public beast::unit_test::Suite
     }
 
     void
+    testIOUAuthVerifyRPC(FeatureBitset features)
+    {
+        testcase("IOU Auth/Verify RPC");
+        using namespace jtx;
+        using namespace std::literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account{"gateway"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(5000), alice, bob, gw);
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.close();
+        env.trust(usd(10'000), alice, bob);
+        env.close();
+        env(pay(gw, alice, usd(5'000)));
+        env.close();
+
+        auto const chan = paychan::channel(alice, bob, env.seq(alice));
+        env(paychan::create(alice, bob, usd(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
+        env.close();
+
+        checkAuthVerifyRPC(env, alice, bob, chan, usd(10.5), gw["EUR"](10.5));
+    }
+
+    void
+    testMPTAuthVerifyRPC(FeatureBitset features)
+    {
+        testcase("MPT Auth/Verify RPC");
+        using namespace jtx;
+        using namespace std::literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+        mptGw.create(
+            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+        mptGw.authorize({.account = alice});
+        mptGw.authorize({.account = bob});
+        auto const mpt = mptGw["MPT"];
+        env(pay(gw, alice, mpt(10'000)));
+        env.close();
+
+        auto const chan = paychan::channel(alice, bob, env.seq(alice));
+        env(paychan::create(alice, bob, mpt(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
+        env.close();
+
+        checkAuthVerifyRPC(env, alice, bob, chan, mpt(10), mpt(11));
+    }
+
+    void
+    testClaimAuthorizationSerialization()
+    {
+        testcase("Claim Authorization Serialization");
+        using namespace jtx;
+
+        auto const gw = Account("gw");
+        UInt256 const chan{7};
+
+        Serializer prefix;
+        prefix.add32(HashPrefix::PaymentChannelClaim);
+        prefix.addBitString(chan);
+
+        // XRP: the prefix, the channel and the drops as a 64-bit integer
+        {
+            Serializer msg;
+            serializePayChanAuthorization(msg, chan, XRP(10).value());
+            Serializer expected = prefix;
+            expected.add64(std::uint64_t{10'000'000});
+            BEAST_EXPECT(msg.getData() == expected.getData());
+        }
+
+        // IOU: the prefix, the channel and the Amount field serialization
+        {
+            STAmount const amt = gw["USD"](10.5).value();
+            Serializer msg;
+            serializePayChanAuthorization(msg, chan, amt);
+            Serializer expected = prefix;
+            amt.add(expected);
+            BEAST_EXPECT(msg.getData() == expected.getData());
+            BEAST_EXPECT(msg.getDataLength() == 4 + 32 + 8 + 20 + 20);
+        }
+
+        // MPT: the prefix, the channel and the Amount field serialization;
+        // the MPTokenIssuanceID already names the issuer, so none follows
+        {
+            STAmount const amt{MPTIssue{makeMptID(1, gw.id())}, 10};
+            Serializer msg;
+            serializePayChanAuthorization(msg, chan, amt);
+            Serializer expected = prefix;
+            amt.add(expected);
+            BEAST_EXPECT(msg.getData() == expected.getData());
+            BEAST_EXPECT(msg.getDataLength() == 4 + 32 + 1 + 8 + 24);
+            BEAST_EXPECT(
+                msg.getData()[36] ==
+                static_cast<unsigned char>((STAmount::kMpToken | STAmount::kPositive) >> 56));
+        }
+    }
+
+    void
     testIOUWithFeats(FeatureBitset features)
     {
         testIOUEnablement(features);
@@ -5033,6 +5430,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         testIOUPrecisionLoss(features);
         testIOUClawbackInteraction(features);
         testIOUChannelClawback(features);
+        testIOUAuthVerifyRPC(features);
     }
 
     void
@@ -5045,6 +5443,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         testMPTFundPreclaim(features);
         testMPTFundDoApply(features);
         testMPTFundIssuerControls(features);
+        testMPTClaimPreflight(features);
         testMPTClaimPreclaim(features);
         testMPTClaimDoApply(features);
         testMPTClaimClosePreclaim(features);
@@ -5061,6 +5460,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         testMPTDestroy(features);
         testMPTClawbackInteraction(features);
         testMPTChannelClawback(features);
+        testMPTAuthVerifyRPC(features);
     }
 
 public:
@@ -5068,9 +5468,11 @@ public:
     run() override
     {
         using namespace test::jtx;
+        testClaimAuthorizationSerialization();
+
         FeatureBitset const all{testableAmendments()};
         for (FeatureBitset const& feats :
-             {all - featureSingleAssetVault - featureLendingProtocol, all})
+             {all - featureSingleAssetVault - featureLendingProtocol - featureMPTokensV2, all})
         {
             testIOUWithFeats(feats);
             testIOUWithFeats(feats - fixCleanup3_2_0);

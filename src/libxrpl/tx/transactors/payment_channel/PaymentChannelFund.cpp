@@ -188,12 +188,10 @@ PaymentChannelFund::doApply()
             !isTesSuccess(ret))
             return ret;
 
-        // Guard the channel-amount accumulation itself: a small IOU amount
-        // added to a much larger channel amount would be rounded away below
-        // after the source had already been debited. MPT amounts are exact
-        // integers bounded by the outstanding supply, so only IOUs can lose
-        // precision here.
-        if (amount.holds<Issue>() && !canAdd(chanAmt, amount))
+        // sfAmount must become exactly chanAmt + amount: an IOU sum that
+        // rounds or an MPT sum that overflows would record an increase other
+        // than what the source paid.
+        if (!isExactSum(chanAmt, amount))
             return tecPRECISION_LOSS;
     }
 
@@ -221,7 +219,7 @@ PaymentChannelFund::doApply()
 }
 
 void
-PaymentChannelFund::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+PaymentChannelFund::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
