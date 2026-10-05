@@ -38,6 +38,7 @@
 #include <xrpl/ledger/entries/XChainOwnedClaimIDEntry.h>               // IWYU pragma: keep
 #include <xrpl/ledger/entries/XChainOwnedCreateAccountClaimIDEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
