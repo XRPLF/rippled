@@ -76,19 +76,22 @@ template class SLEBase<ApplyView>;
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
-// Explicit instantiation *declarations*, not definitions: an entry whose
-// member bodies live in its own .cpp (with the explicit instantiation
-// definition there) must not be instantiated a second time here. MSVC also
-// rejects (C4661, an error under /WX) an explicit instantiation definition of
-// a class whose out-of-line members are not visible in this translation unit.
-// A declaration still instantiates the class definition itself, which is all
-// this exhaustiveness check needs.
+// No explicit instantiation here, neither a definition nor a declaration.
+// A definition would instantiate an entry a second time once its member
+// bodies live in its own .cpp (MSVC rejects that with C4661 under /WX), and a
+// declaration (`extern template`) stops clang from emitting the inline
+// constructors of the header-only entries at -O0, which leaves them undefined
+// at link time in the debug builds. Naming the class in a static_assert is
+// enough to instantiate its definition, which is all this exhaustiveness
+// check needs; the per-type suites exercise the members.
 #define LEDGER_ENTRY(tag, value, name, ...)                                                    \
-    extern template class name##Entry<ReadView>;                                               \
-    extern template class name##Entry<ApplyView>;                                              \
     static_assert(                                                                             \
         name##Entry<ReadView>::kEntryType == tag && name##Entry<ApplyView>::kEntryType == tag, \
-        #name "Entry must be bound to " #tag);
+        #name "Entry must be bound to " #tag);                                                 \
+    static_assert(                                                                             \
+        std::is_constructible_v<name##Entry<ReadView>, Keylet const&, ReadView const&> &&      \
+            std::is_constructible_v<name##Entry<ApplyView>, Keylet const&, ApplyView&>,        \
+        #name "Entry must be constructible from a Keylet and a view");
 
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
