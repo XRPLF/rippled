@@ -707,7 +707,7 @@ private:
             auto const state1 = getCurrentState(env, broker, loanKeylet);
             BEAST_EXPECT(state1.paymentRemaining == payTotal_ - 1);
             BEAST_EXPECT(state1.previousPaymentDate == startDate + payInterval_);
-            BEAST_EXPECT(state1.nextPaymentDate == startDate + 2 * payInterval_);
+            BEAST_EXPECT(state1.nextPaymentDate == startDate + (2 * payInterval_));
             BEAST_EXPECT(state1.principalOutstanding < state.principalOutstanding);
             // The money reached the vault, and the borrower was charged no
             // more than the instalment (plus the transaction fee): starting
@@ -746,9 +746,9 @@ private:
             // schedule advances by exactly one interval.
             BEAST_EXPECT(state1.paymentRemaining == payTotal_ - 1);
             BEAST_EXPECT(state1.previousPaymentDate == startDate + payInterval_);
-            BEAST_EXPECT(state1.nextPaymentDate == startDate + 2 * payInterval_);
+            BEAST_EXPECT(state1.nextPaymentDate == startDate + (2 * payInterval_));
             // The extra came off the principal on top of the instalment's own
-            // principal part, and the loan re-amortised to a smaller payment.
+            // principal part, and the loan re-amortized to a smaller payment.
             BEAST_EXPECT(state1.principalOutstanding <= state.principalOutstanding - Number(extra));
             BEAST_EXPECT(state1.periodicPayment < state.periodicPayment);
         }
