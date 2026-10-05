@@ -36,6 +36,9 @@ public:
 
     /**
      * Returns the token with ID @p id if this page holds it.
+     *
+     * @param id the ID of the token to look for.
+     * @return the token, or std::nullopt if this page does not hold it.
      */
     [[nodiscard]] std::optional<STObject>
     findToken(UInt256 const& id) const
