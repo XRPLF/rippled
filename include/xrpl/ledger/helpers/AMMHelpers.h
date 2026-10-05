@@ -814,21 +814,6 @@ checkAMMPrecisionLoss(
     beast::Journal const j);
 
 /**
- * Get AMM pool and LP token balances. If both optIssue are
- * provided then they are used as the AMM token pair issues.
- * Otherwise the missing issues are fetched from ammSle.
- */
-std::expected<std::tuple<STAmount, STAmount, STAmount>, TER>
-ammHolds(
-    ReadView const& view,
-    AMMEntryR const& ammSle,
-    std::optional<Asset> const& optAsset1,
-    std::optional<Asset> const& optAsset2,
-    FreezeHandling freezeHandling,
-    AuthHandling authHandling,
-    beast::Journal const j);
-
-/**
  * Get the balance of LP tokens.
  */
 STAmount
