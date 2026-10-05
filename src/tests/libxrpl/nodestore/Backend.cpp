@@ -1,8 +1,8 @@
 #include <xrpl/nodestore/Backend.h>
 
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
@@ -71,7 +71,7 @@ protected:
         params_.set("type", GetParam());
         params_.set("path", tempDir_.path());
 
-        beast::xor_shift_engine rng(kSeedValue);
+        beast::XorShiftEngine rng(kSeedValue);
         batch_ = createPredictableBatch(kNumObjects, rng());
     }
 
@@ -84,7 +84,7 @@ protected:
     }
 
     DummyScheduler scheduler_;
-    beast::TempDir const tempDir_;
+    TempDir const tempDir_;
     beast::Journal const journal_{TestSink::instance()};
     Section params_;
     Batch batch_;
@@ -103,7 +103,7 @@ TEST_P(BackendTypeTest, store_and_fetch)
 
     {
         SCOPED_TRACE("read in shuffled order");
-        beast::xor_shift_engine rng(kSeedValue);
+        beast::XorShiftEngine rng(kSeedValue);
         std::shuffle(batch_.begin(), batch_.end(), rng);
         auto const copy = fetchCopyOfBatch(*backend, batch_);
         EXPECT_EQ(batch_, copy);

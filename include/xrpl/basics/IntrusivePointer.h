@@ -97,9 +97,6 @@ public:
     operator=(SharedIntrusive const& rhs);
 
     bool
-    operator!=(std::nullptr_t) const;
-
-    bool
     operator==(std::nullptr_t) const;
 
     template <class TT>

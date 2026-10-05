@@ -15,7 +15,6 @@
 #include <cstdint>
 #include <expected>
 #include <optional>
-#include <set>
 #include <vector>
 
 namespace xrpl {
@@ -70,7 +69,7 @@ struct Adjustment
  * @return The account reserve amount in drops
  */
 [[nodiscard]] XRPAmount
-accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjustment adj = {});
+accountReserve(ReadView const& view, SLE::ConstRef sle, beast::Journal j, Adjustment adj = {});
 
 /**
  * Convenience overload that accepts AccountID instead of SLE.
@@ -106,9 +105,9 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
 [[nodiscard]] TER
 checkReserve(
     ApplyViewContext ctx,
-    SLE::const_ref accSle,
+    SLE::ConstRef accSle,
     XRPAmount accBalance,
-    SLE::const_ref sponsorSle,
+    SLE::ConstRef sponsorSle,
     Adjustment adj,
     beast::Journal j,
     TER insufReserveCode = tecINSUFFICIENT_RESERVE);
@@ -133,7 +132,7 @@ checkReserve(
 [[nodiscard]] TER
 checkReserve(
     ApplyViewContext ctx,
-    SLE::const_ref accSle,
+    SLE::ConstRef accSle,
     XRPAmount accBalance,
     Adjustment adj,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
@@ -148,7 +147,7 @@ checkReserve(
  * @return The adjusted owner count
  */
 std::uint32_t
-ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj = 0);
+ownerCount(SLE::ConstRef sle, beast::Journal j, std::int32_t ownerCountAdj = 0);
 
 /**
  * Increase owner-count fields when the caller supplies the sponsor.
@@ -167,8 +166,8 @@ ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj = 0)
 void
 increaseOwnerCount(
     ApplyView& view,
-    SLE::ref accountSle,
-    SLE::ref sponsorSle,
+    SLE::Ref accountSle,
+    SLE::Ref sponsorSle,
     std::uint32_t count,
     beast::Journal j);
 
@@ -189,7 +188,7 @@ increaseOwnerCount(
 void
 increaseOwnerCount(
     ApplyViewContext ctx,
-    SLE::ref accountSle,
+    SLE::Ref accountSle,
     std::uint32_t count,
     beast::Journal j);
 
@@ -235,8 +234,8 @@ increaseOwnerCount(
 void
 decreaseOwnerCount(
     ApplyView& view,
-    SLE::ref accountSle,
-    SLE::ref sponsorSle,
+    SLE::Ref accountSle,
+    SLE::Ref sponsorSle,
     std::uint32_t count,
     beast::Journal j);
 
@@ -282,8 +281,8 @@ decreaseOwnerCount(
 void
 decreaseOwnerCountForObject(
     ApplyView& view,
-    SLE::ref accountSle,
-    SLE::ref objectSle,
+    SLE::Ref accountSle,
+    SLE::Ref objectSle,
     std::uint32_t count,
     beast::Journal j);
 
@@ -300,11 +299,11 @@ inline void
 decreaseOwnerCountForObject(
     ApplyView& view,
     AccountID const& account,
-    SLE::ref objectSle,
+    SLE::Ref objectSle,
     std::uint32_t count,
     beast::Journal j)
 {
-    SLE::ref accountSle = view.peek(keylet::account(account));
+    SLE::Ref accountSle = view.peek(keylet::account(account));
     decreaseOwnerCountForObject(view, accountSle, objectSle, count, j);
 }
 
@@ -326,7 +325,7 @@ decreaseOwnerCountForObject(
 void
 adjustLoanBrokerOwnerCount(
     ApplyView& view,
-    SLE::ref brokerSle,
+    SLE::Ref brokerSle,
     std::int32_t delta,
     beast::Journal j);
 
@@ -345,7 +344,7 @@ transferRate(ReadView const& view, AccountID const& issuer);
  * @return The generated account ID
  */
 AccountID
-pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey);
+pseudoAccountAddress(ReadView const& view, UInt256 const& pseudoOwnerKey);
 
 /**
  * Returns the list of fields that define an ACCOUNT_ROOT as a pseudo-account
@@ -353,14 +352,14 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey);
  *
  * The list is constructed during initialization and is const after that.
  * Pseudo-account designator fields MUST be maintained by including the
- * SField::sMD_PseudoAccount flag in the SField definition.
+ * SField::kSmdPseudoAccount flag in the SField definition.
  */
 [[nodiscard]] std::vector<SField const*> const&
 getPseudoAccountFields();
 
 /**
- * Returns true if and only if sleAcct is a pseudo-account or specific
- * pseudo-accounts in pseudoFieldFilter.
+ * Returns true if and only if sleAcct is a pseudo-account of any kind
+ * (i.e. carries at least one field flagged with SField::kSmdPseudoAccount).
  *
  * Returns false if sleAcct is:
  * - NOT a pseudo-account OR
@@ -368,18 +367,15 @@ getPseudoAccountFields();
  * - null pointer
  */
 [[nodiscard]] bool
-isPseudoAccount(SLE::const_pointer sleAcct, std::set<SField const*> const& pseudoFieldFilter = {});
+isPseudoAccount(SLE::const_pointer sleAcct);
 
 /**
  * Convenience overload that reads the account from the view.
  */
 [[nodiscard]] inline bool
-isPseudoAccount(
-    ReadView const& view,
-    AccountID const& accountId,
-    std::set<SField const*> const& pseudoFieldFilter = {})
+isPseudoAccount(ReadView const& view, AccountID const& accountId)
 {
-    return isPseudoAccount(view.read(keylet::account(accountId)), pseudoFieldFilter);
+    return isPseudoAccount(view.read(keylet::account(accountId)));
 }
 
 /**
@@ -391,7 +387,7 @@ isPseudoAccount(
  * createPseudoAccount.
  */
 [[nodiscard]] std::expected<SLE::pointer, TER>
-createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField);
+createPseudoAccount(ApplyView& view, UInt256 const& pseudoOwnerKey, SField const& ownerField);
 
 /**
  * Checks the destination and tag.
@@ -400,6 +396,6 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
  * - If the SLE requires a destination tag, checks that there is a tag.
  */
 [[nodiscard]] TER
-checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag);
+checkDestinationAndTag(SLE::ConstRef toSle, bool hasDestinationTag);
 
 }  // namespace xrpl

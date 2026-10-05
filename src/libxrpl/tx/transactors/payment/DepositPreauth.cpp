@@ -103,8 +103,15 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
     {
         // Verify that the Authorize account is present in the ledger.
         AccountID const auth{ctx.tx[sfAuthorize]};
-        if (!ctx.view.exists(keylet::account(auth)))
+        auto const sleAuth = ctx.view.read(keylet::account(auth));
+        if (!sleAuth)
             return tecNO_TARGET;
+
+        if (ctx.view.rules().enabled(fixCleanup3_3_0) && isPseudoAccount(sleAuth))
+        {
+            JLOG(ctx.j.debug()) << "Authorized account is a pseudo-account.";
+            return tecPSEUDO_ACCOUNT;
+        }
 
         // Verify that the Preauth entry they asked to add is not already
         // in the ledger.
@@ -261,7 +268,7 @@ DepositPreauth::doApply()
 }
 
 TER
-DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, beast::Journal j)
+DepositPreauth::removeFromLedger(ApplyView& view, UInt256 const& preauthIndex, beast::Journal j)
 {
     // Existence already checked in preclaim and AccountDelete
     auto const slePreauth{view.peek(keylet::depositPreauth(preauthIndex))};
@@ -294,7 +301,7 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
 }
 
 void
-DepositPreauth::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+DepositPreauth::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

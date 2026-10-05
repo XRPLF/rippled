@@ -2,6 +2,8 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -16,7 +18,7 @@ namespace xrpl {
 class SponsorshipSet : public Transactor
 {
 public:
-    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
 
     explicit SponsorshipSet(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -38,7 +40,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -47,6 +49,15 @@ public:
         XRPAmount fee,
         ReadView const& view,
         beast::Journal const& j) override;
+
+private:
+    TER
+    createSponsorship(
+        Keylet const& sponsorshipKeylet,
+        AccountID const& sponsorID,
+        AccountID const& sponseeID,
+        SLE::Ref sponsorAccSle,
+        SLE::Ref reserveSponsorAccSle);
 };
 
 }  // namespace xrpl

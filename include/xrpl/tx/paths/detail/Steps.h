@@ -96,7 +96,7 @@ public:
     virtual std::pair<EitherAmount, EitherAmount>
     rev(PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         EitherAmount const& out) = 0;
 
     /**
@@ -114,7 +114,7 @@ public:
     virtual std::pair<EitherAmount, EitherAmount>
     fwd(PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         EitherAmount const& in) = 0;
 
     /**
@@ -275,19 +275,6 @@ public:
     }
 
     /**
-     * Return true if lhs != rhs.
-     *
-     * @param lhs Step to compare.
-     * @param rhs Step to compare.
-     * @return true if lhs != rhs.
-     */
-    friend bool
-    operator!=(Step const& lhs, Step const& rhs)
-    {
-        return !(lhs == rhs);
-    }
-
-    /**
      * Streaming operator for a Step.
      */
     friend std::ostream&
@@ -402,7 +389,7 @@ toStrand(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
-    std::optional<uint256> const& domainID,
+    std::optional<UInt256> const& domainID,
     beast::Journal j);
 
 /**
@@ -444,7 +431,7 @@ toStrands(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
-    std::optional<uint256> const& domainID,
+    std::optional<UInt256> const& domainID,
     beast::Journal j);
 
 /** @cond INTERNAL */
@@ -458,7 +445,7 @@ public:
     std::pair<EitherAmount, EitherAmount>
     rev(PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         EitherAmount const& out) override
     {
         auto const r = static_cast<TDerived*>(this)->revImp(sb, afView, ofrsToRm, get<TOut>(out));
@@ -470,7 +457,7 @@ public:
     std::pair<EitherAmount, EitherAmount>
     fwd(PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         EitherAmount const& in) override
     {
         auto const r = static_cast<TDerived*>(this)->fwdImp(sb, afView, ofrsToRm, get<TIn>(in));
@@ -565,7 +552,7 @@ struct StrandContext
      */
     boost::container::flat_set<Asset>& seenBookOuts;
     AMMContext& ammContext;
-    std::optional<uint256> domainID;  // the domain the order book will use
+    std::optional<UInt256> domainID;  // the domain the order book will use
     beast::Journal const j;
 
     /**
@@ -588,7 +575,7 @@ struct StrandContext
             seenDirectAssets,                             ///< For detecting currency loops
         boost::container::flat_set<Asset>& seenBookOuts,  ///< For detecting book loops
         AMMContext& ammContext,
-        std::optional<uint256> const& domainID,
+        std::optional<UInt256> const& domainID,
         beast::Journal j);  ///< Journal for logging
 };
 

@@ -35,14 +35,14 @@ namespace xrpl {
  * }
  */
 json::Value
-doAccountNFTs(RPC::JsonContext& context)
+doAccountNFTs(rpc::JsonContext& context)
 {
     auto const& params = context.params;
     if (!params.isMember(jss::account))
-        return RPC::missingFieldError(jss::account);
+        return rpc::missingFieldError(jss::account);
 
     if (!params[jss::account].isString())
-        return RPC::invalidFieldError(jss::account);
+        return rpc::invalidFieldError(jss::account);
 
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
@@ -51,7 +51,7 @@ doAccountNFTs(RPC::JsonContext& context)
     }
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
+    auto result = rpc::lookupLedger(ledger, context);
     if (ledger == nullptr)
         return result;
     auto const accountID{id.value()};
@@ -60,20 +60,20 @@ doAccountNFTs(RPC::JsonContext& context)
         return rpcError(RpcActNotFound);
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kAccountNfTokens, context))
+    if (auto err = readLimitField(limit, rpc::tuning::kAccountNfTokens, context))
         return *err;
 
-    uint256 marker;
+    UInt256 marker;
     bool const markerSet = params.isMember(jss::marker);
 
     if (markerSet)
     {
         auto const& m = params[jss::marker];
         if (!m.isString())
-            return RPC::expectedFieldError(jss::marker, "string");
+            return rpc::expectedFieldError(jss::marker, "string");
 
         if (!marker.parseHex(m.asString()))
-            return RPC::invalidFieldError(jss::marker);
+            return rpc::invalidFieldError(jss::marker);
     }
 
     auto const first = keylet::nftokenPage(keylet::nftokenPageMin(accountID), marker);
@@ -88,7 +88,7 @@ doAccountNFTs(RPC::JsonContext& context)
     // Continue iteration from the current page:
     bool pastMarker = marker.isZero();
     bool markerFound = false;
-    uint256 const maskedMarker = marker & nft::kPageMask;
+    UInt256 const maskedMarker = marker & nft::kPageMask;
     while (cp)
     {
         auto arr = cp->getFieldArray(sfNFTokens);
@@ -106,8 +106,8 @@ doAccountNFTs(RPC::JsonContext& context)
             //     NFTokenIDs that all have the same low 96 bits.  If we're
             //     in that case then we need to compare against the full
             //     256 bits.
-            uint256 const nftokenID = o[sfNFTokenID];
-            uint256 const maskedNftokenID = nftokenID & nft::kPageMask;
+            UInt256 const nftokenID = o[sfNFTokenID];
+            UInt256 const maskedNftokenID = nftokenID & nft::kPageMask;
 
             if (!pastMarker)
             {
@@ -125,7 +125,7 @@ doAccountNFTs(RPC::JsonContext& context)
             }
 
             if (markerSet && !markerFound)
-                return RPC::invalidFieldError(jss::marker);
+                return rpc::invalidFieldError(jss::marker);
 
             pastMarker = true;
 
@@ -160,10 +160,10 @@ doAccountNFTs(RPC::JsonContext& context)
     }
 
     if (markerSet && !markerFound)
-        return RPC::invalidFieldError(jss::marker);
+        return rpc::invalidFieldError(jss::marker);
 
     result[jss::account] = toBase58(accountID);
-    context.loadType = Resource::kFeeMediumBurdenRpc;
+    context.loadType = resource::kFeeMediumBurdenRpc;
     return result;
 }
 

@@ -235,7 +235,7 @@ publicKeyType(PublicKey const& publicKey)
 [[nodiscard]] bool
 verifyDigest(
     PublicKey const& publicKey,
-    uint256 const& digest,
+    UInt256 const& digest,
     Slice const& sig,
     bool mustBeFullyCanonical = true) noexcept;
 
@@ -260,7 +260,7 @@ calcAccountID(PublicKey const& pk);
 
 inline std::string
 getFingerprint(
-    beast::IP::Endpoint const& address,
+    beast::ip::Endpoint const& address,
     std::optional<PublicKey> const& publicKey = std::nullopt,
     std::optional<std::string> const& id = std::nullopt)
 {

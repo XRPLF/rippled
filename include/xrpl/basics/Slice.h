@@ -209,12 +209,6 @@ operator==(Slice const& lhs, Slice const& rhs) noexcept
 }
 
 inline bool
-operator!=(Slice const& lhs, Slice const& rhs) noexcept
-{
-    return !(lhs == rhs);
-}
-
-inline bool
 operator<(Slice const& lhs, Slice const& rhs) noexcept
 {
     return std::lexicographical_compare(

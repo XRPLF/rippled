@@ -20,8 +20,8 @@ class UNLModifyBuilder;
  *
  * Type: ttUNL_MODIFY (102)
  * Delegable: Delegation::NotDelegable
- * Amendment: uint256{}
- * Privileges: NoPriv
+ * Amendment: UInt256{}
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use UNLModifyBuilder to construct new transactions.

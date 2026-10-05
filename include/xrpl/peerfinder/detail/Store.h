@@ -6,7 +6,7 @@
 #include <functional>
 #include <vector>
 
-namespace xrpl::PeerFinder {
+namespace xrpl::peer_finder {
 
 /**
  * Abstract persistence for PeerFinder data.
@@ -17,20 +17,20 @@ public:
     virtual ~Store() = default;
 
     // load the bootstrap cache
-    using load_callback = std::function<void(beast::IP::Endpoint, int)>;
+    using LoadCallback = std::function<void(beast::ip::Endpoint, int)>;
     virtual std::size_t
-    load(load_callback const& cb) = 0;
+    load(LoadCallback const& cb) = 0;
 
     // save the bootstrap cache
     struct Entry
     {
         explicit Entry() = default;
 
-        beast::IP::Endpoint endpoint;
+        beast::ip::Endpoint endpoint;
         int valence{};
     };
     virtual void
     save(std::vector<Entry> const& v) = 0;
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

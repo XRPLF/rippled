@@ -61,13 +61,13 @@ toIso8601(NetClock::time_point tp)
 }
 
 json::Value
-doAMMInfo(RPC::JsonContext& context)
+doAMMInfo(rpc::JsonContext& context)
 {
     auto const& params(context.params);
     json::Value result;
 
     std::shared_ptr<ReadView const> ledger;
-    result = RPC::lookupLedger(ledger, context);
+    result = rpc::lookupLedger(ledger, context);
     if (!ledger)
         return result;
 
@@ -83,7 +83,7 @@ doAMMInfo(RPC::JsonContext& context)
         std::optional<AccountID> accountID;
         std::optional<Asset> asset1;
         std::optional<Asset> asset2;
-        std::optional<uint256> ammID;
+        std::optional<UInt256> ammID;
 
         static constexpr auto kInvalid = [](json::Value const& params) -> bool {
             return (params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
@@ -174,7 +174,7 @@ doAMMInfo(RPC::JsonContext& context)
     auto const r = getValuesFromContextParams();
     if (!r)
     {
-        RPC::injectError(r.error(), result);
+        rpc::injectError(r.error(), result);
         return result;
     }
 

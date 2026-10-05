@@ -77,23 +77,29 @@ jobs:
 
             # Keep the paths below in sync with those in `on-trigger.yml`.
             .github/actions/build-deps/**
-            .github/actions/generate-version/**
+            .github/actions/release-info/**
             .github/actions/setup-conan/**
+            .github/actions/setup-nix-env/**
             .github/scripts/strategy-matrix/**
             .github/workflows/reusable-build-test-config.yml
             .github/workflows/reusable-build-test.yml
+            .github/workflows/reusable-check-autogen.yml
             .github/workflows/reusable-clang-tidy.yml
+            .github/workflows/reusable-package-test-install.yml
             .github/workflows/reusable-package.yml
+            .github/workflows/reusable-rust.yml
             .github/workflows/reusable-strategy-matrix.yml
             .github/workflows/reusable-test.yml
             .github/workflows/reusable-upload-recipe.yml
             .clang-tidy
             .codecov.yml
+            bin/check-nix-store-refs.sh
             bin/check-tools.sh
             bin/default-loader-path.sh
             cfg/**
             cmake/**
             conan/**
+            crates/**
             external/**
             include/**
             src/**
@@ -101,6 +107,9 @@ jobs:
             CMakeLists.txt
             conanfile.py
             conan.lock
+            flake.lock
+            flake.nix
+            nix/**
             LICENSE.md
             package/**
             README.md
@@ -126,6 +135,11 @@ jobs:
     outputs:
       go: ${{ steps.go.outputs.go == 'true' }}
 
+  check-autogen:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-check-autogen.yml
+
   check-levelization:
     needs: should-run
     if: ${{ needs.should-run.outputs.go == 'true' }}
@@ -135,6 +149,48 @@ jobs:
     needs: should-run
     if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-check-rename.yml
+
+  # Runs regardless of the changed files.
+  # PRs into staging branches are skipped, since fixes may be cherry-picked between release lines.
+  check-release-commits:
+    needs: should-run
+    if: ${{ github.event.pull_request.base.ref == 'develop' || github.event.merge_group.base_ref == 'refs/heads/develop' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The check needs the full history of the release and staging branches.
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check for copied release commits
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: .github/scripts/releasing/check-no-copied-release-commits.sh "${BASE}" "${HEAD}"
+      # Runs even if the previous check fails, so that both problems are reported at once.
+      - name: Check merge-back has no new commits
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: .github/scripts/releasing/check-merge-back-commits.sh "${BASE}" "${HEAD}"
+      # The queue squashes PRs, so check the PR's own branch, named in the queue branch.
+      - name: Check the merge queue doesn't merge a release back
+        if: ${{ github.event_name == 'merge_group' }}
+        env:
+          BASE: ${{ github.event.merge_group.base_sha }}
+          HEAD_REF: ${{ github.event.merge_group.head_ref }}
+        run: |
+          if ! [[ "${HEAD_REF}" =~ /pr-([0-9]+)-[0-9a-f]+$ ]]; then
+              echo "Error: Can't find the PR number in '${HEAD_REF}'."
+              exit 1
+          fi
+          git fetch --no-tags origin "refs/pull/${BASH_REMATCH[1]}/head"
+          .github/scripts/releasing/check-no-merge-back.sh "${BASE}" FETCH_HEAD
 
   clang-tidy:
     needs: should-run
@@ -162,6 +218,13 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  rust:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-rust.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
   package:
     needs: [should-run, build-test]
     # Packaging consumes the debian/rhel release binaries, which are only built
@@ -169,6 +232,12 @@ jobs:
     # matrix (i.e. not yet labeled "Ready to merge" or "Full CI build").
     if: ${{ needs.should-run.outputs.go == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Ready to merge') || contains(github.event.pull_request.labels.*.name, 'Full CI build')) }}
     uses: ./.github/workflows/reusable-package.yml
+    with:
+      # A pull request builds packages to prove they still build, and publishes
+      # nothing. Stated rather than left to the input's default, so that changing
+      # that default cannot start publishing from pull requests. No secrets are
+      # passed either, which is the second reason a publish here cannot succeed.
+      publish: false
 
   upload-recipe:
     needs:
@@ -200,10 +269,13 @@ jobs:
   passed:
     if: failure() || cancelled()
     needs:
+      - check-autogen
       - check-levelization
       - check-rename
+      - check-release-commits
       - clang-tidy
       - build-test
+      - rust
       - package
       - upload-recipe
       - notify-clio

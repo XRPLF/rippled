@@ -33,7 +33,7 @@ struct RunState
     std::unique_ptr<BackendHarness> harness;  ///< backend under test, rebuilt per run
     Batch present;                            ///< prefix-1 objects, eligible to be stored
     Batch recent;                             ///< prefix-1 objects in the "future" key space
-    std::vector<uint256> missing;             ///< prefix-2 keys that are never stored
+    std::vector<UInt256> missing;             ///< prefix-2 keys that are never stored
     std::vector<std::size_t> shuffle;         ///< [0, poolSize) permutation for random-like access
     std::size_t avgPayload = 0;               ///< mean getData().size() over `present`
 
@@ -41,10 +41,11 @@ struct RunState
     release()
     {
         harness.reset();
-        Batch{}.swap(present);
-        Batch{}.swap(recent);
-        std::vector<uint256>{}.swap(missing);
-        std::vector<std::size_t>{}.swap(shuffle);
+        present = Batch{};
+        recent = Batch{};
+        missing = std::vector<UInt256>{};
+        shuffle = std::vector<std::size_t>{};
+        avgPayload = 0;
     }
 };
 
@@ -239,9 +240,13 @@ registerWorkload(BackendConfig const& bc, Workload const& w)
     if (!w.pinToPool)
     {
         auto rs = std::make_shared<RunState>();
-        auto* b = benchmark::RegisterBenchmark(name, makeRunner(w, cfg, rs));
-        b->RangeMultiplier(10)->Range(kPoolSizes.front(), kPoolSizes.back());
-        b->Threads(1)->Threads(4)->Threads(8)->UseRealTime();
+        benchmark::RegisterBenchmark(name, makeRunner(w, cfg, rs))
+            ->RangeMultiplier(10)
+            ->Range(kPoolSizes.front(), kPoolSizes.back())
+            ->Threads(1)
+            ->Threads(4)
+            ->Threads(8)
+            ->UseRealTime();
 
         return;
     }

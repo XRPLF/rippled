@@ -27,9 +27,9 @@ struct Signer
 {
     std::uint32_t weight;
     Account account;
-    std::optional<uint256> tag;
+    std::optional<UInt256> tag;
 
-    Signer(Account account, std::uint32_t weight = 1, std::optional<uint256> tag = std::nullopt)
+    Signer(Account account, std::uint32_t weight = 1, std::optional<UInt256> tag = std::nullopt)
         : weight(weight), account(std::move(account)), tag(tag)
     {
     }
@@ -115,6 +115,6 @@ public:
 /**
  * The number of signer lists matches.
  */
-using siglists = OwnerCount<ltSIGNER_LIST>;
+using SigLists = OwnerCount<ltSIGNER_LIST>;
 
 }  // namespace xrpl::test::jtx

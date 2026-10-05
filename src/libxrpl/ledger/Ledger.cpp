@@ -50,7 +50,7 @@ CreateGenesisT const kCreateGenesis{};
 
 //------------------------------------------------------------------------------
 
-class Ledger::SlesIterImpl : public SlesType::iter_base
+class Ledger::SlesIterImpl : public SlesType::IterBase
 {
 private:
     SHAMap::ConstIterator iter_;
@@ -66,14 +66,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::unique_ptr<base_type>
+    [[nodiscard]] std::unique_ptr<BaseType>
     copy() const override
     {
         return std::make_unique<SlesIterImpl>(*this);
     }
 
     [[nodiscard]] bool
-    equal(base_type const& impl) const override
+    equal(BaseType const& impl) const override
     {
         if (auto const p = dynamic_cast<SlesIterImpl const*>(&impl))
             return iter_ == p->iter_;
@@ -96,7 +96,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-class Ledger::TxsIterImpl : public TxsType::iter_base
+class Ledger::TxsIterImpl : public TxsType::IterBase
 {
 private:
     bool metadata_;
@@ -113,14 +113,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::unique_ptr<base_type>
+    [[nodiscard]] std::unique_ptr<BaseType>
     copy() const override
     {
         return std::make_unique<TxsIterImpl>(*this);
     }
 
     [[nodiscard]] bool
-    equal(base_type const& impl) const override
+    equal(BaseType const& impl) const override
     {
         if (auto const p = dynamic_cast<TxsIterImpl const*>(&impl))
             return iter_ == p->iter_;
@@ -149,7 +149,7 @@ Ledger::Ledger(
     CreateGenesisT,
     Rules rules,
     Fees const& fees,
-    std::vector<uint256> const& amendments,
+    std::vector<UInt256> const& amendments,
     Family& family)
     : immutable_(false)
     , txMap_(SHAMapType::TRANSACTION, family)
@@ -261,7 +261,7 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
 {
     header_.seq = prevLedger.header_.seq + 1;
     header_.parentCloseTime = prevLedger.header_.closeTime;
-    header_.hash = prevLedger.header().hash + uint256(1);
+    header_.hash = prevLedger.header().hash + UInt256(1);
     header_.drops = prevLedger.header().drops;
     header_.closeTimeResolution = prevLedger.header_.closeTimeResolution;
     header_.parentHash = prevLedger.header().hash;
@@ -385,13 +385,13 @@ Ledger::exists(Keylet const& k) const
 }
 
 bool
-Ledger::exists(uint256 const& key) const
+Ledger::exists(UInt256 const& key) const
 {
     return stateMap_.hasItem(key);
 }
 
-std::optional<uint256>
-Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
+std::optional<UInt256>
+Ledger::succ(UInt256 const& key, std::optional<UInt256> const& last) const
 {
     auto item = stateMap_.upperBound(key);
     if (item == stateMap_.end())
@@ -423,43 +423,43 @@ Ledger::read(Keylet const& k) const
 //------------------------------------------------------------------------------
 
 auto
-Ledger::slesBegin() const -> std::unique_ptr<SlesType::iter_base>
+Ledger::slesBegin() const -> std::unique_ptr<SlesType::IterBase>
 {
     return std::make_unique<SlesIterImpl>(stateMap_.begin());
 }
 
 auto
-Ledger::slesEnd() const -> std::unique_ptr<SlesType::iter_base>
+Ledger::slesEnd() const -> std::unique_ptr<SlesType::IterBase>
 {
     return std::make_unique<SlesIterImpl>(stateMap_.end());
 }
 
 auto
-Ledger::slesUpperBound(uint256 const& key) const -> std::unique_ptr<SlesType::iter_base>
+Ledger::slesUpperBound(UInt256 const& key) const -> std::unique_ptr<SlesType::IterBase>
 {
     return std::make_unique<SlesIterImpl>(stateMap_.upperBound(key));
 }
 
 auto
-Ledger::txsBegin() const -> std::unique_ptr<TxsType::iter_base>
+Ledger::txsBegin() const -> std::unique_ptr<TxsType::IterBase>
 {
     return std::make_unique<TxsIterImpl>(!open(), txMap_.begin());
 }
 
 auto
-Ledger::txsEnd() const -> std::unique_ptr<TxsType::iter_base>
+Ledger::txsEnd() const -> std::unique_ptr<TxsType::IterBase>
 {
     return std::make_unique<TxsIterImpl>(!open(), txMap_.end());
 }
 
 bool
-Ledger::txExists(uint256 const& key) const
+Ledger::txExists(UInt256 const& key) const
 {
     return txMap_.hasItem(key);
 }
 
 auto
-Ledger::txRead(key_type const& key) const -> tx_type
+Ledger::txRead(key_type const& key) const -> TxType
 {
     auto const& item = txMap_.peekItem(key);
     if (!item)
@@ -473,7 +473,7 @@ Ledger::txRead(key_type const& key) const -> tx_type
 }
 
 auto
-Ledger::digest(key_type const& key) const -> std::optional<digest_type>
+Ledger::digest(key_type const& key) const -> std::optional<DigestType>
 {
     SHAMapHash digest;
     // VFALCO Unfortunately this loads the item
@@ -486,21 +486,21 @@ Ledger::digest(key_type const& key) const -> std::optional<digest_type>
 //------------------------------------------------------------------------------
 
 void
-Ledger::rawErase(SLE::ref sle)
+Ledger::rawErase(SLE::Ref sle)
 {
     if (!stateMap_.delItem(sle->key()))
         logicError("Ledger::rawErase: key not found");
 }
 
 void
-Ledger::rawErase(uint256 const& key)
+Ledger::rawErase(UInt256 const& key)
 {
     if (!stateMap_.delItem(key))
         logicError("Ledger::rawErase: key not found");
 }
 
 void
-Ledger::rawInsert(SLE::ref sle)
+Ledger::rawInsert(SLE::Ref sle)
 {
     Serializer ss;
     sle->add(ss);
@@ -512,7 +512,7 @@ Ledger::rawInsert(SLE::ref sle)
 }
 
 void
-Ledger::rawReplace(SLE::ref sle)
+Ledger::rawReplace(SLE::Ref sle)
 {
     Serializer ss;
     sle->add(ss);
@@ -525,7 +525,7 @@ Ledger::rawReplace(SLE::ref sle)
 
 void
 Ledger::rawTxInsert(
-    uint256 const& key,
+    UInt256 const& key,
     std::shared_ptr<Serializer const> const& txn,
     std::shared_ptr<Serializer const> const& metaData)
 {
@@ -635,10 +635,10 @@ Ledger::peek(Keylet const& k) const
     return sle;
 }
 
-hash_set<PublicKey>
+HashSet<PublicKey>
 Ledger::negativeUNL() const
 {
-    hash_set<PublicKey> negUnl;
+    HashSet<PublicKey> negUnl;
     if (auto sle = read(keylet::negativeUNL()); sle && sle->isFieldPresent(sfDisabledValidators))
     {
         auto const& nUnlData = sle->getFieldArray(sfDisabledValidators);
@@ -817,7 +817,7 @@ Ledger::updateSkipList()
     {
         auto const k = keylet::skip(prevIndex);
         auto sle = peek(k);
-        std::vector<uint256> hashes;
+        std::vector<UInt256> hashes;
 
         bool created = false;
         if (!sle)
@@ -849,7 +849,7 @@ Ledger::updateSkipList()
     // update record of past 256 ledger
     auto const k = keylet::skip();
     auto sle = peek(k);
-    std::vector<uint256> hashes;
+    std::vector<UInt256> hashes;
     bool created = false;
     if (!sle)
     {

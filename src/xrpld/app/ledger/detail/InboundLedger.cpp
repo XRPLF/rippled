@@ -70,10 +70,10 @@ constexpr auto kLedgerAcquireTimeout = 3000ms;
 
 InboundLedger::InboundLedger(
     Application& app,
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t seq,
     Reason reason,
-    clock_type& clock,
+    ClockType& clock,
     std::unique_ptr<PeerSet> peerSet)
     : TimeoutCounter(
           app,
@@ -187,10 +187,10 @@ InboundLedger::~InboundLedger()
     }
 }
 
-static std::vector<uint256>
-neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter const* filter)
+static std::vector<UInt256>
+neededHashes(UInt256 const& root, SHAMap& map, int max, SHAMapSyncFilter const* filter)
 {
-    std::vector<uint256> ret;
+    std::vector<UInt256> ret;
 
     if (!root.isZero())
     {
@@ -210,13 +210,13 @@ neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter const* 
     return ret;
 }
 
-std::vector<uint256>
+std::vector<UInt256>
 InboundLedger::neededTxHashes(int max, SHAMapSyncFilter const* filter) const
 {
     return neededHashes(ledger_->header().txHash, ledger_->txMap(), max, filter);
 }
 
-std::vector<uint256>
+std::vector<UInt256>
 InboundLedger::neededStateHashes(int max, SHAMapSyncFilter const* filter) const
 {
     return neededHashes(ledger_->header().accountHash, ledger_->stateMap(), max, filter);
@@ -737,7 +737,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
 void
 InboundLedger::filterNodes(
-    std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
+    std::vector<std::pair<SHAMapNodeID, UInt256>>& nodes,
     TriggerReason reason)
 {
     // Sort nodes so that the ones we haven't recently
@@ -879,7 +879,7 @@ InboundLedger::receiveNode(
             {
                 JLOG(journal_.warn())
                     << "Got invalid node data for ledger " << hash_ << " from peer " << peer->id();
-                peer->charge(Resource::kFeeInvalidData, "ledger_node.node_data invalid");
+                peer->charge(resource::kFeeInvalidData, "ledger_node.node_data invalid");
                 san.incInvalid();
                 return;
             }
@@ -889,7 +889,7 @@ InboundLedger::receiveNode(
             {
                 JLOG(journal_.warn())
                     << "Got invalid node id for ledger " << hash_ << " from peer " << peer->id();
-                peer->charge(Resource::kFeeInvalidData, "ledger_node.node_id invalid");
+                peer->charge(resource::kFeeInvalidData, "ledger_node.node_id invalid");
                 san.incInvalid();
                 return;
             }
@@ -903,7 +903,7 @@ InboundLedger::receiveNode(
             {
                 JLOG(journal_.warn()) << "Got invalid node " << *nodeID << " for ledger " << hash_
                                       << " from peer " << peer->id();
-                peer->charge(Resource::kFeeInvalidData, "ledger_node invalid");
+                peer->charge(resource::kFeeInvalidData, "ledger_node invalid");
                 return;
             }
         }
@@ -1008,10 +1008,10 @@ InboundLedger::takeTxRootNode(std::string_view data, SHAMapAddNode& san)
     return !result.isInvalid();
 }
 
-std::vector<InboundLedger::neededHash_t>
+std::vector<InboundLedger::NeededHashT>
 InboundLedger::getNeededHashes()
 {
-    std::vector<neededHash_t> ret;
+    std::vector<NeededHashT> ret;
 
     if (!haveHeader_)
     {
@@ -1068,7 +1068,7 @@ InboundLedger::gotData(
  * Returns the number of useful nodes
  */
 // VFALCO NOTE, it is not necessary to pass the entire Peer,
-//              we can get away with just a Resource::Consumer endpoint.
+//              we can get away with just a resource::Consumer endpoint.
 //
 //        TODO Change peer to Consumer
 //
@@ -1080,7 +1080,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
         if (packet.nodes().empty())
         {
             JLOG(journal_.warn()) << peer->id() << ": empty header data";
-            peer->charge(Resource::kFeeMalformedRequest, "ledger_data empty header");
+            peer->charge(resource::kFeeMalformedRequest, "ledger_data empty header");
             return -1;
         }
 
@@ -1095,7 +1095,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
                 if (!takeHeader(packet.nodes(0).nodedata()))
                 {
                     JLOG(journal_.warn()) << "Got invalid header data";
-                    peer->charge(Resource::kFeeMalformedRequest, "ledger_data invalid header");
+                    peer->charge(resource::kFeeMalformedRequest, "ledger_data invalid header");
                     return -1;
                 }
 
@@ -1109,7 +1109,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
                                       << " from peer " << peer->id();
                 if (san.isInvalid())
                 {
-                    peer->charge(Resource::kFeeInvalidData, "ledger_data invalid AS root");
+                    peer->charge(resource::kFeeInvalidData, "ledger_data invalid AS root");
                     return -1;
                 }
             }
@@ -1121,7 +1121,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
                                       << " from peer " << peer->id();
                 if (san.isInvalid())
                 {
-                    peer->charge(Resource::kFeeInvalidData, "ledger_data invalid TX root");
+                    peer->charge(resource::kFeeInvalidData, "ledger_data invalid TX root");
                     return -1;
                 }
             }
@@ -1131,7 +1131,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
             JLOG(journal_.warn()) << "Included AS/TX root invalid for ledger " << hash_
                                   << " from peer " << peer->id() << ": " << ex.what();
             using namespace std::string_literals;
-            peer->charge(Resource::kFeeInvalidData, "ledger_data "s + ex.what());
+            peer->charge(resource::kFeeInvalidData, "ledger_data "s + ex.what());
             return -1;
         }
 
@@ -1147,7 +1147,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
         if (packet.nodes().empty())
         {
             JLOG(journal_.info()) << peer->id() << ": response with no nodes";
-            peer->charge(Resource::kFeeMalformedRequest, "ledger_data no nodes");
+            peer->charge(resource::kFeeMalformedRequest, "ledger_data no nodes");
             return -1;
         }
 

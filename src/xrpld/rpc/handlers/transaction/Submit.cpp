@@ -27,11 +27,11 @@
 namespace xrpl {
 
 static std::expected<NetworkOPs::FailHard, json::Value>
-getFailHard(RPC::JsonContext const& context)
+getFailHard(rpc::JsonContext const& context)
 {
     if (context.params.isMember(jss::fail_hard) && !context.params[jss::fail_hard].isBool())
     {
-        return std::unexpected(RPC::expectedFieldError(jss::fail_hard, "boolean"));
+        return std::unexpected(rpc::expectedFieldError(jss::fail_hard, "boolean"));
     }
     return NetworkOPs::doFailHard(
         context.params.isMember(jss::fail_hard) && context.params[jss::fail_hard].asBool());
@@ -42,9 +42,9 @@ getFailHard(RPC::JsonContext const& context)
 //   secret: <secret>
 // }
 json::Value
-doSubmit(RPC::JsonContext& context)
+doSubmit(rpc::JsonContext& context)
 {
-    context.loadType = Resource::kFeeMediumBurdenRpc;
+    context.loadType = resource::kFeeMediumBurdenRpc;
 
     if (!context.params.isMember(jss::tx_blob))
     {
@@ -53,16 +53,16 @@ doSubmit(RPC::JsonContext& context)
             return failType.error();
 
         if (context.role != Role::ADMIN && !context.app.config().canSign())
-            return RPC::makeError(RpcNotSupported, "Signing is not supported by this server.");
+            return rpc::makeError(RpcNotSupported, "Signing is not supported by this server.");
 
-        auto ret = RPC::transactionSubmit(
+        auto ret = rpc::transactionSubmit(
             context.params,
             context.apiVersion,
             *failType,
             context.role,
             context.ledgerMaster.getValidatedLedgerAge(),
             context.app,
-            RPC::getProcessTxnFn(context.netOps));
+            rpc::getProcessTxnFn(context.netOps));
 
         ret[jss::deprecated] =
             "Signing support in the 'submit' command has been "
