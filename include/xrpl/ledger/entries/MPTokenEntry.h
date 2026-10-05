@@ -161,6 +161,7 @@ public:
      * owner directory and erases it. Does not change the owner count, which
      * is irrelevant for an AMM.
      *
+     * @param ammAccountID The AMM pseudo-account that owns this MPToken.
      * @return tesSUCCESS, or tefBAD_LEDGER if the directory removal fails
      */
     [[nodiscard]] TER
