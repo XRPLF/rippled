@@ -51,8 +51,7 @@ Version 3.5.0 is not yet released.
 - `feature`: The admin-only `vetoed` field now returns `invalidParams` unless its value is a boolean. [#7583](https://github.com/XRPLF/rippled/pull/7583)
 
 ### Bugfixes in 3.5.0
-
-* `fetch_info`: The `clear` parameter is now honored only when its value is a Boolean. Previously, non-Boolean values could be coerced to `true` and unexpectedly clear fetch state. ([#7606](https://github.com/XRPLF/rippled/pull/7606))
+- `fetch_info`: The `clear` parameter now returns `invalidParams` unless it is a Boolean. Previously, non-Boolean values could be coerced to `true` and unexpectedly clear fetch state. ([#7606](https://github.com/XRPLF/rippled/pull/7606))
 
 ## XRP Ledger server version 3.4.0
 

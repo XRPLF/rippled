@@ -11,10 +11,16 @@ doFetchInfo(rpc::JsonContext& context)
 {
     json::Value ret(json::ValueType::Object);
 
-    if (context.params.isMember(jss::clear) && context.params[jss::clear].isBool() && context.params[jss::clear].asBool())
+    if (context.params.isMember(jss::clear))
     {
-        context.netOps.clearLedgerFetch();
-        ret[jss::clear] = true;
+        if (!context.params[jss::clear].isBool())
+            return rpcError(RpcInvalidParams);
+
+        if (context.params[jss::clear].asBool())
+        {
+            context.netOps.clearLedgerFetch();
+            ret[jss::clear] = true;
+        }
     }
 
     ret[jss::info] = context.netOps.getLedgerFetchInfo();
