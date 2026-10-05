@@ -10,6 +10,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
 namespace xrpl {
@@ -117,6 +118,18 @@ public:
     {
         return (*this)->isFlag((account > issuer) ? lsfLowAuth : lsfHighAuth);
     }
+
+    /**
+     * Removes this line from the owner directories of @p lowAccount and
+     * @p highAccount, clears both sponsors, and erases it.
+     *
+     * @param lowAccount the account on the low side of the line.
+     * @param highAccount the account on the high side of the line.
+     * @return tesSUCCESS, or tefBAD_LEDGER if a directory removal fails
+     */
+    [[nodiscard]] TER
+    removeFromLedger(AccountID const& lowAccount, AccountID const& highAccount)
+        requires Base::kIsWritable;
 };
 
 using RippleStateEntryR = RippleStateEntry<ReadView>;

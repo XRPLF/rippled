@@ -21,7 +21,6 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -381,7 +380,7 @@ class InvariantsMisc_test : public InvariantsBase
                 for (auto const& trustKeylet :
                      {keylet::trustLine(ammAcctID, a1["USD"]), keylet::trustLine(a1, ammIssue)})
                 {
-                    RippleStateEntryW line(trustKeylet, ac.view());
+                    RippleStateEntryW line(trustKeylet, ac.view(), ac.journal);
                     if (!line)
                     {
                         return false;
@@ -390,12 +389,8 @@ class InvariantsMisc_test : public InvariantsBase
                     STAmount const lowLimit = line->at(sfLowLimit);
                     STAmount const highLimit = line->at(sfHighLimit);
                     BEAST_EXPECT(
-                        trustDelete(
-                            ac.view(),
-                            line,
-                            lowLimit.getIssuer(),
-                            highLimit.getIssuer(),
-                            ac.journal) == tesSUCCESS);
+                        line.removeFromLedger(lowLimit.getIssuer(), highLimit.getIssuer()) ==
+                        tesSUCCESS);
                 }
 
                 auto const ammSle = ac.view().peek(keylet::amm(ammKey));
