@@ -414,11 +414,11 @@ public:
      * @throws std::logic_error if exists() is false.
      */
     void
-    insert()
+    insertIntoView()
         requires kIsWritable
     {
         if (!exists())
-            Throw<std::logic_error>("xrpl::SLEBase::insert : entry does not exist");
+            Throw<std::logic_error>("xrpl::SLEBase::insertIntoView : entry does not exist");
         view_->insert(sle_);
     }
 
@@ -430,17 +430,17 @@ public:
      * ApplyStateTable or -- worse -- silently succeeding. For an
      * entry that already existed, ApplyStateTable::erase keeps holding this
      * exact SLE and builds the DeletedNode's FinalFields from it, so a write
-     * through the entry after erase() would land in transaction metadata
-     * with no diagnostic at all.
+     * through the entry after eraseFromView() would land in transaction
+     * metadata with no diagnostic at all.
      *
      * @throws std::logic_error if exists() is false.
      */
     void
-    erase()
+    eraseFromView()
         requires kIsWritable
     {
         if (!exists())
-            Throw<std::logic_error>("xrpl::SLEBase::erase : entry does not exist");
+            Throw<std::logic_error>("xrpl::SLEBase::eraseFromView : entry does not exist");
         view_->erase(sle_);
         sle_ = nullptr;
     }
@@ -449,11 +449,11 @@ public:
      * @throws std::logic_error if exists() is false.
      */
     void
-    update()
+    updateView()
         requires kIsWritable
     {
         if (!exists())
-            Throw<std::logic_error>("xrpl::SLEBase::update : entry does not exist");
+            Throw<std::logic_error>("xrpl::SLEBase::updateView : entry does not exist");
         view_->update(sle_);
     }
 
