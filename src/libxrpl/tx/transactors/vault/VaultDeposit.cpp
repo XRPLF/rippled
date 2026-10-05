@@ -351,7 +351,7 @@ VaultDeposit::doApply()
             // than the depositor paid. Keep the share count from the first round trip: the clamp
             // only drops a last digit of the new total. Converting the clamped amount back to
             // shares would mint fewer shares while still charging the N-share debit.
-            auto const maybeClamped = clampToAssetsTotalScale(vault, assetsDeposited);
+            auto const maybeClamped = vault.clampToAssetsTotalScale(assetsDeposited);
             if (!maybeClamped)
                 return maybeClamped.error();
             assetsDeposited = *maybeClamped;
