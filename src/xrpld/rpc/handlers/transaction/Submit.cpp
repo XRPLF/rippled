@@ -37,10 +37,21 @@ getFailHard(rpc::JsonContext const& context)
         context.params.isMember(jss::fail_hard) && context.params[jss::fail_hard].asBool());
 }
 
-// {
-//   tx_blob: <string> XOR tx_json: <object>,
-//   secret: <secret>
-// }
+/**
+ * Submits a transaction to the network.
+ *
+ * `params` carry `tx_blob`, a signed transaction, or `tx_json` with a
+ * signing credential, which the server signs first when it allows signing;
+ * that path is deprecated. `fail_hard` keeps a transaction the local checks
+ * fail from being relayed.
+ *
+ * @param context The request.
+ * @return The engine result and the transaction, or an error object:
+ *         `invalidTransaction` with `error_exception` when the blob does not
+ *         decode or fails the local checks, `internalSubmit` with
+ *         `error_exception` when processing throws, `internalJson` when
+ *         building the reply throws.
+ */
 json::Value
 doSubmit(rpc::JsonContext& context)
 {
@@ -90,7 +101,7 @@ doSubmit(rpc::JsonContext& context)
     }
     catch (std::exception& e)
     {
-        jvResult[jss::error] = "invalidTransaction";
+        rpc::injectError(RpcInvalidTransaction, jvResult);
         jvResult[jss::error_exception] = e.what();
 
         return jvResult;
@@ -106,7 +117,7 @@ doSubmit(rpc::JsonContext& context)
             context.app.getHashRouter(), *stTx, context.ledgerMaster.getCurrentLedger()->rules());
         if (validity != Validity::Valid)
         {
-            jvResult[jss::error] = "invalidTransaction";
+            rpc::injectError(RpcInvalidTransaction, jvResult);
             jvResult[jss::error_exception] = "fails local checks: " + reason;
 
             return jvResult;
@@ -117,7 +128,7 @@ doSubmit(rpc::JsonContext& context)
     auto transaction = std::make_shared<Transaction>(stTx, reason, context.app);
     if (transaction->getStatus() != TransStatus::NEW)
     {
-        jvResult[jss::error] = "invalidTransaction";
+        rpc::injectError(RpcInvalidTransaction, jvResult);
         jvResult[jss::error_exception] = "fails local checks: " + reason;
 
         return jvResult;
@@ -133,7 +144,7 @@ doSubmit(rpc::JsonContext& context)
     }
     catch (std::exception& e)
     {
-        jvResult[jss::error] = "internalSubmit";
+        rpc::injectError(RpcInternalSubmit, jvResult);
         jvResult[jss::error_exception] = e.what();
 
         return jvResult;
@@ -179,7 +190,7 @@ doSubmit(rpc::JsonContext& context)
     }
     catch (std::exception& e)
     {
-        jvResult[jss::error] = "internalJson";
+        rpc::injectError(RpcInternalJson, jvResult);
         jvResult[jss::error_exception] = e.what();
 
         return jvResult;
