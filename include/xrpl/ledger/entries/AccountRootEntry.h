@@ -173,6 +173,13 @@ public:
      * the caller to this function must perform necessary amendment check(s)
      * before using a field. The amendment check is **not** performed in
      * createPseudoAccount.
+     *
+     * @param view The ledger view to create the pseudo-account in
+     * @param pseudoOwnerKey The key of the object that owns the pseudo-account,
+     *                       stored into ownerField
+     * @param ownerField The field linking the pseudo-account to its owner
+     * @return The newly created pseudo-account, or tecDUPLICATE if an account
+     *         already exists at the derived pseudo-account address
      */
     [[nodiscard]] static std::expected<AccountRootEntry<ApplyView>, TER>
     createPseudoAccount(ApplyView& view, UInt256 const& pseudoOwnerKey, SField const& ownerField)
