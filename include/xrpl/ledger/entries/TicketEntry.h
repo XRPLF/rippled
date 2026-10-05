@@ -48,6 +48,11 @@ public:
      *
      * @throws std::logic_error if exists() is false (via the underlying
      *         erase()/mutation calls).
+     *
+     * @param owner The account that owns this Ticket.
+     * @return tesSUCCESS on success; tefBAD_LEDGER if the owner's directory
+     *         entry, account root, or TicketCount field is missing or
+     *         inconsistent.
      */
     TER
     removeFromLedger(AccountID const& owner)
