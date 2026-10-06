@@ -1,5 +1,4 @@
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -7,8 +6,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 
 namespace xrpl::test {
@@ -71,50 +68,6 @@ TEST_F(DelegateKeyletGuest, both_accounts_reach_host_in_order_and_keylet_comes_b
 
     auto const wat = watFor(kAccount, kAuthorize, kOut);
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
-}
-
-TEST_F(DelegateKeyletGuest, status_is_the_keylets_length)
-{
-    EXPECT_CALL(host, delegateKeylet(account, authorize)).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kAccount, kAuthorize, kOut, Answer::Status);
-    EXPECT_EQ(hostAnswer(wat), kKeyletLen);
-}
-
-TEST_F(DelegateKeyletGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, delegateKeylet(account, authorize))
-        .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
-
-    auto const wat = watFor(kAccount, kAuthorize, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
-}
-
-TEST_F(DelegateKeyletGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, delegateKeylet(account, authorize))
-        .WillOnce(testing::Throw(std::runtime_error{"delegate keylet came apart"}));
-
-    auto const outcome = run(watFor(kAccount, kAuthorize, kOut));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("delegateKeylet"));
-}
-
-TEST_F(DelegateKeyletGuest, account_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, delegateKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(kAccountAt, kAccountLen - 1), kAuthorize, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(DelegateKeyletGuest, authorize_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, delegateKeylet).Times(0);
-
-    auto const wat = watFor(kAccount, Arg::region(kAuthorizeAt, kAccountLen + 1), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
 }  // namespace xrpl::test

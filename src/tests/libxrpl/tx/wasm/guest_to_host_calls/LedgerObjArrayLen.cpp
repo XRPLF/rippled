@@ -1,5 +1,4 @@
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -7,8 +6,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 
 namespace xrpl::test {
@@ -23,7 +20,6 @@ struct LedgerObjArrayLenGuest : GuestToHostCallTest
 {
     static constexpr std::int32_t kCount = 5;
     static constexpr std::int32_t kSlot = 7;
-    static constexpr std::int32_t kNegativeSlot = -3;
 
     static constexpr Arg kCacheIdx = Arg::scalar(kSlot);
 
@@ -47,47 +43,6 @@ TEST_F(LedgerObjArrayLenGuest, slot_and_field_code_reach_host_in_order)
         .WillOnce(Return(kCount));
 
     EXPECT_EQ(hostAnswer(watFor(kCacheIdx, field())), kCount);
-}
-
-TEST_F(LedgerObjArrayLenGuest, unknown_field_code_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getLedgerObjArrayLen).Times(0);
-
-    // A type nothing is registered under.
-    auto const wat = watFor(kCacheIdx, Arg::scalar(0x7fff'0000));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidField));
-}
-
-// The slot is the one scalar the ABI carries as signed, so a negative one reaches the host as
-// itself and is the host's to refuse.
-TEST_F(LedgerObjArrayLenGuest, negative_slot_crosses_verbatim)
-{
-    EXPECT_CALL(host, getLedgerObjArrayLen(kNegativeSlot, testing::Ref(sfBalance)))
-        .WillOnce(Return(std::unexpected(HostFunctionError::SlotOutRange)));
-
-    auto const wat = watFor(Arg::scalar(kNegativeSlot), field());
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::SlotOutRange));
-}
-
-// `NoArray` is what a field that is not an array actually answers, so it stands for the host
-// error axis here rather than an arbitrary code.
-TEST_F(LedgerObjArrayLenGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, getLedgerObjArrayLen(kSlot, testing::Ref(sfBalance)))
-        .WillOnce(Return(std::unexpected(HostFunctionError::NoArray)));
-
-    EXPECT_EQ(hostAnswer(watFor(kCacheIdx, field())), hfErrorToInt(HostFunctionError::NoArray));
-}
-
-TEST_F(LedgerObjArrayLenGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, getLedgerObjArrayLen(kSlot, testing::Ref(sfBalance)))
-        .WillOnce(testing::Throw(std::runtime_error{"ledger obj array len came apart"}));
-
-    auto const outcome = run(watFor(kCacheIdx, field()));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("getLedgerObjArrayLen"));
 }
 
 }  // namespace xrpl::test

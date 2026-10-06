@@ -1,5 +1,4 @@
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -8,8 +7,6 @@
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 
 namespace xrpl::test {
@@ -75,51 +72,6 @@ TEST_F(CredentialKeyletGuest, subject_issuer_and_type_reach_host_in_order_and_ke
 
     auto const wat = watFor(kSubject, kIssuer, kType, kOut);
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
-}
-
-TEST_F(CredentialKeyletGuest, status_is_the_keylets_length)
-{
-    EXPECT_CALL(host, credentialKeylet(subject, issuer, BytesAre("terms")))
-        .WillOnce(Return(keylet));
-
-    auto const wat = watFor(kSubject, kIssuer, kType, kOut, Answer::Status);
-    EXPECT_EQ(hostAnswer(wat), kKeyletLen);
-}
-
-TEST_F(CredentialKeyletGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, credentialKeylet(subject, issuer, BytesAre("terms")))
-        .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
-
-    auto const wat = watFor(kSubject, kIssuer, kType, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
-}
-
-TEST_F(CredentialKeyletGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, credentialKeylet(subject, issuer, BytesAre("terms")))
-        .WillOnce(testing::Throw(std::runtime_error{"credential keylet came apart"}));
-
-    auto const outcome = run(watFor(kSubject, kIssuer, kType, kOut));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("credentialKeylet"));
-}
-
-TEST_F(CredentialKeyletGuest, subject_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, credentialKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(kSubjectAt, kAccountLen - 1), kIssuer, kType, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(CredentialKeyletGuest, issuer_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, credentialKeylet).Times(0);
-
-    auto const wat = watFor(kSubject, Arg::region(kIssuerAt, kAccountLen + 1), kType, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
 }  // namespace xrpl::test

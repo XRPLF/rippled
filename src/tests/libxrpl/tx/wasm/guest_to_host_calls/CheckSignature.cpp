@@ -1,5 +1,4 @@
 #include <xrpl/basics/Slice.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -8,8 +7,6 @@
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 
 namespace xrpl::test {
@@ -51,38 +48,6 @@ TEST_F(CheckSignatureGuest, message_signature_and_pubkey_reach_host_in_order)
 
     auto const wat = watFor(kMessage, kSignature, kPubkey);
     EXPECT_EQ(hostAnswer(wat), 1);
-}
-
-// Nothing on this path holds the three regions to a length, deliberately rather than by
-// oversight: empty ones reach the host like any others.
-TEST_F(CheckSignatureGuest, empty_regions_reach_host_unvalidated)
-{
-    auto const isEmpty = testing::Property(&Slice::empty, true);
-    EXPECT_CALL(host, checkSignature(isEmpty, isEmpty, isEmpty)).WillOnce(Return(0));
-
-    auto const wat =
-        watFor(Arg::region(kMessageAt, 0), Arg::region(kSignatureAt, 0), Arg::region(kPubkeyAt, 0));
-    EXPECT_EQ(hostAnswer(wat), 0);
-}
-
-TEST_F(CheckSignatureGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, checkSignature(BytesAre("msg"), BytesAre("sig"), BytesAre("key")))
-        .WillOnce(Return(std::unexpected(HostFunctionError::InvalidParams)));
-
-    auto const wat = watFor(kMessage, kSignature, kPubkey);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(CheckSignatureGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, checkSignature(BytesAre("msg"), BytesAre("sig"), BytesAre("key")))
-        .WillOnce(testing::Throw(std::runtime_error{"signature check came apart"}));
-
-    auto const outcome = run(watFor(kMessage, kSignature, kPubkey));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("checkSignature"));
 }
 
 }  // namespace xrpl::test

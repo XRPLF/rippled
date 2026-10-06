@@ -1,4 +1,3 @@
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -7,7 +6,6 @@
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
 #include <cstdint>
-#include <expected>
 #include <string>
 
 namespace xrpl::test {
@@ -56,34 +54,6 @@ TEST_F(Sha512HalfGuest, guest_bytes_reach_host_and_digest_comes_back)
 
     auto const wat = watFor(kInput, kOut);
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the digest's first four bytes, little-endian";
-}
-
-TEST_F(Sha512HalfGuest, digest_is_thirty_two_bytes)
-{
-    EXPECT_CALL(host, computeSha512HalfHash).WillOnce(Return(digest()));
-
-    auto const wat = watFor(kInput, kOut, Answer::Status);
-    EXPECT_EQ(hostAnswer(wat), kDigestLen);
-}
-
-TEST_F(Sha512HalfGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, computeSha512HalfHash)
-        .WillOnce(Return(std::unexpected(HostFunctionError::InvalidParams)));
-
-    auto const wat = watFor(kInput, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(Sha512HalfGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, computeSha512HalfHash)
-        .WillOnce(testing::Throw(std::runtime_error{"digest came apart"}));
-
-    auto const outcome = run(watFor(kInput, kOut));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("sha512Half"));
 }
 
 }  // namespace xrpl::test

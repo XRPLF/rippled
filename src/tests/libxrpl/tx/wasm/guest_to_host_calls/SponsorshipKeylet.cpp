@@ -1,5 +1,4 @@
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -7,8 +6,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 
 namespace xrpl::test {
@@ -59,50 +56,6 @@ TEST_F(SponsorshipKeyletGuest, sponsor_and_sponsee_reach_host_in_order_and_keyle
 
     auto const wat = watFor(kSponsor, kSponsee, kOut);
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
-}
-
-TEST_F(SponsorshipKeyletGuest, status_is_the_keylets_length)
-{
-    EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee)).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kSponsor, kSponsee, kOut, Answer::Status);
-    EXPECT_EQ(hostAnswer(wat), kKeyletLen);
-}
-
-TEST_F(SponsorshipKeyletGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee))
-        .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
-
-    auto const wat = watFor(kSponsor, kSponsee, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
-}
-
-TEST_F(SponsorshipKeyletGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee))
-        .WillOnce(testing::Throw(std::runtime_error{"sponsorship keylet came apart"}));
-
-    auto const outcome = run(watFor(kSponsor, kSponsee, kOut));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("sponsorshipKeylet"));
-}
-
-TEST_F(SponsorshipKeyletGuest, sponsor_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, sponsorshipKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(kSponsorAt, kAccountLen - 1), kSponsee, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(SponsorshipKeyletGuest, sponsee_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, sponsorshipKeylet).Times(0);
-
-    auto const wat = watFor(kSponsor, Arg::region(kSponseeAt, kAccountLen + 1), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
 }  // namespace xrpl::test

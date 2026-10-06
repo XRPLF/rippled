@@ -1,4 +1,3 @@
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -7,8 +6,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -26,9 +23,7 @@ struct LedgerObjNestedFieldGuest : GuestToHostCallTest
     static constexpr std::int32_t kLocatorLen = 12;
     static constexpr std::int32_t kOutAt = 64;
     static constexpr std::int32_t kOutLen = 32;
-    static constexpr std::int32_t kValueLen = 6;
     static constexpr std::int32_t kSlot = 7;
-    static constexpr std::int32_t kNegativeSlot = -3;
 
     static constexpr Arg kCacheIdx = Arg::scalar(kSlot);
     static constexpr Arg kLocator = Arg::region(kLocatorAt, kLocatorLen);
@@ -59,63 +54,6 @@ TEST_F(LedgerObjNestedFieldGuest, slot_and_locator_reach_host_in_order_and_bytes
 
     auto const wat = watFor(kCacheIdx, kLocator, kOut);
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the first four bytes, little-endian";
-}
-
-TEST_F(LedgerObjNestedFieldGuest, status_is_the_values_length)
-{
-    EXPECT_CALL(host, getLedgerObjNestedField(kSlot, LocatorEquals(steps))).WillOnce(Return(value));
-
-    auto const wat = watFor(kCacheIdx, kLocator, kOut, Answer::Status);
-    EXPECT_EQ(hostAnswer(wat), kValueLen);
-}
-
-// The slot is the one scalar the ABI carries as signed, so a negative one reaches the host as
-// itself and is the host's to refuse.
-TEST_F(LedgerObjNestedFieldGuest, negative_slot_crosses_verbatim)
-{
-    EXPECT_CALL(host, getLedgerObjNestedField(kNegativeSlot, LocatorEquals(steps)))
-        .WillOnce(Return(std::unexpected(HostFunctionError::SlotOutRange)));
-
-    auto const wat = watFor(Arg::scalar(kNegativeSlot), kLocator, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::SlotOutRange));
-}
-
-TEST_F(LedgerObjNestedFieldGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, getLedgerObjNestedField(kSlot, LocatorEquals(steps)))
-        .WillOnce(Return(std::unexpected(HostFunctionError::NotLeafField)));
-
-    auto const wat = watFor(kCacheIdx, kLocator, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::NotLeafField));
-}
-
-TEST_F(LedgerObjNestedFieldGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, getLedgerObjNestedField(kSlot, LocatorEquals(steps)))
-        .WillOnce(testing::Throw(std::runtime_error{"ledger obj nested field came apart"}));
-
-    auto const outcome = run(watFor(kCacheIdx, kLocator, kOut));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("getLedgerObjNestedField"));
-}
-
-TEST_F(LedgerObjNestedFieldGuest, empty_locator_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getLedgerObjNestedField).Times(0);
-
-    auto const wat = watFor(kCacheIdx, Arg::region(kLocatorAt, 0), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LocatorMalformed));
-}
-
-// A locator is whole `i32` steps, so a length not divisible by four is malformed however many
-// bytes it has.
-TEST_F(LedgerObjNestedFieldGuest, misaligned_locator_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getLedgerObjNestedField).Times(0);
-
-    auto const wat = watFor(kCacheIdx, Arg::region(kLocatorAt, kLocatorLen - 1), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LocatorMalformed));
 }
 
 }  // namespace xrpl::test

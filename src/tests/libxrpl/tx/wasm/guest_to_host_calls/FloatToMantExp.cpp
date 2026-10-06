@@ -1,4 +1,3 @@
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
@@ -9,10 +8,8 @@
 #include <tx/wasm/fixtures/WasmRun.h>
 
 #include <cstdint>
-#include <expected>
 #include <format>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -103,36 +100,6 @@ TEST_F(FloatToMantExpGuest, exponent_lands_in_its_own_region)
 
     auto const wat = watFor(kX, kMantissaOut, kExponentOut, kExponentAt);
     EXPECT_EQ(hostAnswer(wat), kPair.second);
-}
-
-// Both widths are the ABI's rather than the guest's, so the status is their sum and not
-// either length the guest declared.
-TEST_F(FloatToMantExpGuest, status_is_both_widths_summed)
-{
-    EXPECT_CALL(host, floatToMantExp(BytesAre(kXText))).WillOnce(Return(kPair));
-
-    auto const wat = watFor(kX, kMantissaOut, kExponentOut);
-    EXPECT_EQ(hostAnswer(wat), kMantissaLen + kExponentLen);
-}
-
-TEST_F(FloatToMantExpGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, floatToMantExp(BytesAre(kXText)))
-        .WillOnce(Return(std::unexpected(HostFunctionError::FloatComputationError)));
-
-    auto const wat = watFor(kX, kMantissaOut, kExponentOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatComputationError));
-}
-
-TEST_F(FloatToMantExpGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, floatToMantExp(BytesAre(kXText)))
-        .WillOnce(testing::Throw(std::runtime_error{"float to mant exp came apart"}));
-
-    auto const outcome = run(watFor(kX, kMantissaOut, kExponentOut));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("floatToMantExp"));
 }
 
 }  // namespace xrpl::test

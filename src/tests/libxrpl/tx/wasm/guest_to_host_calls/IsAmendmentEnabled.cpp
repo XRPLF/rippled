@@ -1,5 +1,4 @@
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -8,7 +7,6 @@
 
 #include <cstdint>
 #include <expected>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -27,18 +25,13 @@ struct IsAmendmentEnabledGuest : GuestToHostCallTest
 {
     static constexpr std::int32_t kIdAt = 0;
     static constexpr std::int32_t kNameAt = 64;
-    static constexpr std::int32_t kTooLongAt = 128;
     static constexpr std::int32_t kIdLen = static_cast<std::int32_t>(uint256::size());
-
-    // One past the 64 bytes the shim will read as a name.
-    static constexpr std::int32_t kTooLongLen = 65;
 
     static constexpr std::string_view kAmendmentName = "MyAmendment";
     static constexpr std::int32_t kNameLen = static_cast<std::int32_t>(kAmendmentName.size());
 
     static constexpr Arg kId = Arg::region(kIdAt, kIdLen);
     static constexpr Arg kName = Arg::region(kNameAt, kNameLen);
-    static constexpr Arg kTooLong = Arg::region(kTooLongAt, kTooLongLen);
 
     // The overload set means a matcher has to say which of the two it is for, even where it
     // matches anything.
@@ -50,7 +43,6 @@ struct IsAmendmentEnabledGuest : GuestToHostCallTest
     std::string_view const idAsName{reinterpret_cast<char const*>(idBytes.data()), idBytes.size()};
 
     Bytes const nameBytes{kAmendmentName.begin(), kAmendmentName.end()};
-    Bytes const tooLongBytes = Bytes(kTooLongLen, 0x22);
 
     [[nodiscard]] std::string
     watFor(Arg amendmentArg) const
@@ -58,9 +50,7 @@ struct IsAmendmentEnabledGuest : GuestToHostCallTest
         return hostCallWat(
             "amendment_enabled",
             {amendmentArg},
-            {{.at = kIdAt, .bytes = idBytes},
-             {.at = kNameAt, .bytes = nameBytes},
-             {.at = kTooLongAt, .bytes = tooLongBytes}});
+            {{.at = kIdAt, .bytes = idBytes}, {.at = kNameAt, .bytes = nameBytes}});
     }
 };
 
@@ -98,35 +88,6 @@ TEST_F(IsAmendmentEnabledGuest, name_reaches_host_verbatim)
 
     auto const wat = watFor(kName);
     EXPECT_EQ(hostAnswer(wat), 1);
-}
-
-TEST_F(IsAmendmentEnabledGuest, input_over_sixty_four_bytes_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, isAmendmentEnabled(IdMatcher(testing::_))).Times(0);
-    EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(testing::_))).Times(0);
-
-    auto const wat = watFor(kTooLong);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::DataFieldTooLarge));
-}
-
-TEST_F(IsAmendmentEnabledGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(Eq(kAmendmentName))))
-        .WillOnce(Return(std::unexpected(HostFunctionError::FieldNotFound)));
-
-    auto const wat = watFor(kName);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FieldNotFound));
-}
-
-TEST_F(IsAmendmentEnabledGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(Eq(kAmendmentName))))
-        .WillOnce(testing::Throw(std::runtime_error{"amendment lookup came apart"}));
-
-    auto const outcome = run(watFor(kName));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("isAmendmentEnabled"));
 }
 
 }  // namespace xrpl::test

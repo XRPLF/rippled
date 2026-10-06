@@ -1,5 +1,4 @@
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -7,8 +6,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 
 namespace xrpl::test {
@@ -43,35 +40,6 @@ TEST_F(CurrentLedgerObjArrayLenGuest, field_code_becomes_sfield_host_is_asked_fo
         .WillOnce(Return(kCount));
 
     EXPECT_EQ(hostAnswer(watFor(field())), kCount);
-}
-
-TEST_F(CurrentLedgerObjArrayLenGuest, unknown_field_code_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getCurrentLedgerObjArrayLen).Times(0);
-
-    auto const wat = watFor(Arg::scalar(0x7fff'0000));  // a type nothing is registered under
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidField));
-}
-
-// `NoArray` is what a field that is not an array actually answers, so it stands for the host
-// error axis here rather than an arbitrary code.
-TEST_F(CurrentLedgerObjArrayLenGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, getCurrentLedgerObjArrayLen(testing::Ref(sfBalance)))
-        .WillOnce(Return(std::unexpected(HostFunctionError::NoArray)));
-
-    EXPECT_EQ(hostAnswer(watFor(field())), hfErrorToInt(HostFunctionError::NoArray));
-}
-
-TEST_F(CurrentLedgerObjArrayLenGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, getCurrentLedgerObjArrayLen(testing::Ref(sfBalance)))
-        .WillOnce(testing::Throw(std::runtime_error{"current ledger obj array len came apart"}));
-
-    auto const outcome = run(watFor(field()));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("getCurrentLedgerObjArrayLen"));
 }
 
 }  // namespace xrpl::test

@@ -1,4 +1,3 @@
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -7,8 +6,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -43,45 +40,6 @@ TEST_F(TxNestedArrayLenGuest, locator_steps_reach_host_and_count_comes_back)
     EXPECT_CALL(host, getTxNestedArrayLen(LocatorEquals(steps))).WillOnce(Return(kCount));
 
     EXPECT_EQ(hostAnswer(watFor(kLocator)), kCount);
-}
-
-// `NoArray` is what a field that is not an array actually answers, so it stands for the host
-// error axis here rather than an arbitrary code.
-TEST_F(TxNestedArrayLenGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, getTxNestedArrayLen(LocatorEquals(steps)))
-        .WillOnce(Return(std::unexpected(HostFunctionError::NoArray)));
-
-    EXPECT_EQ(hostAnswer(watFor(kLocator)), hfErrorToInt(HostFunctionError::NoArray));
-}
-
-TEST_F(TxNestedArrayLenGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, getTxNestedArrayLen(LocatorEquals(steps)))
-        .WillOnce(testing::Throw(std::runtime_error{"tx nested array len came apart"}));
-
-    auto const outcome = run(watFor(kLocator));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("getTxNestedArrayLen"));
-}
-
-TEST_F(TxNestedArrayLenGuest, empty_locator_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getTxNestedArrayLen).Times(0);
-
-    auto const wat = watFor(Arg::region(kLocatorAt, 0));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LocatorMalformed));
-}
-
-// A locator is whole `i32` steps, so a length not divisible by four is malformed however many
-// bytes it has.
-TEST_F(TxNestedArrayLenGuest, misaligned_locator_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getTxNestedArrayLen).Times(0);
-
-    auto const wat = watFor(Arg::region(kLocatorAt, kLocatorLen - 1));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LocatorMalformed));
 }
 
 }  // namespace xrpl::test

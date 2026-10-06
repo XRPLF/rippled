@@ -1,5 +1,4 @@
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
@@ -8,8 +7,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 
 namespace xrpl::test {
@@ -72,60 +69,6 @@ TEST_F(TrustLineKeyletGuest, accounts_and_currency_reach_host_in_order_and_keyle
 
     auto const wat = watFor(kAccount1, kAccount2, kCurrency, kOut);
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
-}
-
-TEST_F(TrustLineKeyletGuest, status_is_the_keylets_length)
-{
-    EXPECT_CALL(host, trustLineKeylet(account1, account2, currency)).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kAccount1, kAccount2, kCurrency, kOut, Answer::Status);
-    EXPECT_EQ(hostAnswer(wat), kKeyletLen);
-}
-
-TEST_F(TrustLineKeyletGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, trustLineKeylet(account1, account2, currency))
-        .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
-
-    auto const wat = watFor(kAccount1, kAccount2, kCurrency, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
-}
-
-TEST_F(TrustLineKeyletGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, trustLineKeylet(account1, account2, currency))
-        .WillOnce(testing::Throw(std::runtime_error{"trust line keylet came apart"}));
-
-    auto const outcome = run(watFor(kAccount1, kAccount2, kCurrency, kOut));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("trustLineKeylet"));
-}
-
-TEST_F(TrustLineKeyletGuest, account1_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, trustLineKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(kAccount1At, kAccountLen - 1), kAccount2, kCurrency, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(TrustLineKeyletGuest, account2_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, trustLineKeylet).Times(0);
-
-    auto const wat = watFor(kAccount1, Arg::region(kAccount2At, kAccountLen + 1), kCurrency, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-// `HostContext::trustLineKeylet` checks the currency's length ahead of either account's, but
-// all three answer the same `InvalidParams`, so which check fired is not observable here.
-TEST_F(TrustLineKeyletGuest, currency_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, trustLineKeylet).Times(0);
-
-    auto const wat = watFor(kAccount1, kAccount2, Arg::region(kCurrencyAt, kCurrencyLen - 1), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
 }  // namespace xrpl::test

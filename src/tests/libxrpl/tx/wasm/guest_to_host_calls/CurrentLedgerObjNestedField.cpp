@@ -1,4 +1,3 @@
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -7,8 +6,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -23,7 +20,6 @@ struct CurrentLedgerObjNestedFieldGuest : GuestToHostCallTest
     static constexpr std::int32_t kLocatorLen = 12;
     static constexpr std::int32_t kOutAt = 64;
     static constexpr std::int32_t kOutLen = 32;
-    static constexpr std::int32_t kValueLen = 6;
 
     static constexpr Arg kLocator = Arg::region(kLocatorAt, kLocatorLen);
     static constexpr Arg kOut = Arg::outRegion(kOutAt, kOutLen);
@@ -53,52 +49,6 @@ TEST_F(CurrentLedgerObjNestedFieldGuest, locator_steps_reach_host_and_bytes_come
 
     auto const wat = watFor(kLocator, kOut);
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the first four bytes, little-endian";
-}
-
-TEST_F(CurrentLedgerObjNestedFieldGuest, status_is_the_values_length)
-{
-    EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps))).WillOnce(Return(value));
-
-    auto const wat = watFor(kLocator, kOut, Answer::Status);
-    EXPECT_EQ(hostAnswer(wat), kValueLen);
-}
-
-TEST_F(CurrentLedgerObjNestedFieldGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps)))
-        .WillOnce(Return(std::unexpected(HostFunctionError::NotLeafField)));
-
-    auto const wat = watFor(kLocator, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::NotLeafField));
-}
-
-TEST_F(CurrentLedgerObjNestedFieldGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, getCurrentLedgerObjNestedField(LocatorEquals(steps)))
-        .WillOnce(testing::Throw(std::runtime_error{"current ledger obj nested field came apart"}));
-
-    auto const outcome = run(watFor(kLocator, kOut));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("getCurrentLedgerObjNestedField"));
-}
-
-TEST_F(CurrentLedgerObjNestedFieldGuest, empty_locator_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getCurrentLedgerObjNestedField).Times(0);
-
-    auto const wat = watFor(Arg::region(kLocatorAt, 0), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LocatorMalformed));
-}
-
-// A locator is whole `i32` steps, so a length not divisible by four is malformed however many
-// bytes it has.
-TEST_F(CurrentLedgerObjNestedFieldGuest, misaligned_locator_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getCurrentLedgerObjNestedField).Times(0);
-
-    auto const wat = watFor(Arg::region(kLocatorAt, kLocatorLen - 1), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LocatorMalformed));
 }
 
 }  // namespace xrpl::test

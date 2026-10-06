@@ -1,4 +1,3 @@
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -6,8 +5,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 
 namespace xrpl::test {
@@ -58,42 +55,6 @@ TEST_F(FloatFromUintGuest, uint_bytes_and_mode_reach_host_in_order_and_float_com
 
     auto const wat = watFor(kX, kOut, kRounding);
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the float's first four bytes, little-endian";
-}
-
-TEST_F(FloatFromUintGuest, status_is_the_floats_length)
-{
-    EXPECT_CALL(host, floatFromUint(kValue, kMode)).WillOnce(Return(result));
-
-    auto const wat = watFor(kX, kOut, kRounding, Answer::Status);
-    EXPECT_EQ(hostAnswer(wat), kFloatLen);
-}
-
-TEST_F(FloatFromUintGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, floatFromUint(kValue, kMode))
-        .WillOnce(Return(std::unexpected(HostFunctionError::FloatComputationError)));
-
-    auto const wat = watFor(kX, kOut, kRounding);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatComputationError));
-}
-
-TEST_F(FloatFromUintGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, floatFromUint(kValue, kMode))
-        .WillOnce(testing::Throw(std::runtime_error{"float from uint came apart"}));
-
-    auto const outcome = run(watFor(kX, kOut, kRounding));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("floatFromUint"));
-}
-
-TEST_F(FloatFromUintGuest, operand_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, floatFromUint).Times(0);
-
-    auto const wat = watFor(Arg::region(kXAt, kUintLen - 1), kOut, kRounding);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
 }  // namespace xrpl::test

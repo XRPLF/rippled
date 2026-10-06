@@ -170,21 +170,4 @@ TEST_F(TraceGuest, a_malformed_amount_is_dropped_rather_than_thrown)
     EXPECT_EQ(hostAnswer(watFor(TraceDataType::Amount, Bytes(3, 0xff))), 1);
 }
 
-// Zero is the code a guest sends by omission, which is why no type carries it.
-TEST_F(TraceGuest, a_code_that_names_no_type_is_dropped)
-{
-    EXPECT_CALL(host, trace).Times(0);
-
-    EXPECT_EQ(hostAnswer(watFor(0, Bytes{}, kDataAt, 0)), 1);
-}
-
-TEST_F(TraceGuest, a_message_and_buffer_past_the_data_cap_are_dropped)
-{
-    EXPECT_CALL(host, trace).Times(0);
-
-    auto const wat = watFor(
-        static_cast<std::int32_t>(TraceDataType::AsHex), Bytes{}, kDataAt, kMaxWasmDataLength);
-    EXPECT_EQ(hostAnswer(wat), 1);
-}
-
 }  // namespace xrpl::test

@@ -1,4 +1,3 @@
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -7,8 +6,6 @@
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -52,26 +49,6 @@ TEST_F(FloatCompareGuest, operands_reach_host_in_order_and_verdict_is_the_answer
 
     auto const wat = watFor(kX, kY);
     EXPECT_EQ(hostAnswer(wat), floatOrderingToInt(FloatOrdering::Less));
-}
-
-TEST_F(FloatCompareGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, floatCompare(BytesAre(kXText), BytesAre(kYText)))
-        .WillOnce(Return(std::unexpected(HostFunctionError::FloatInputMalformed)));
-
-    auto const wat = watFor(kX, kY);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatInputMalformed));
-}
-
-TEST_F(FloatCompareGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, floatCompare(BytesAre(kXText), BytesAre(kYText)))
-        .WillOnce(testing::Throw(std::runtime_error{"float compare came apart"}));
-
-    auto const outcome = run(watFor(kX, kY));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("floatCompare"));
 }
 
 }  // namespace xrpl::test

@@ -1,6 +1,5 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -8,8 +7,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -58,50 +55,6 @@ TEST_F(NFTGuest, account_and_nft_id_reach_host_and_uri_comes_back)
 
     auto const wat = watFor(kAccount, kNftId, kOut);
     EXPECT_EQ(hostAnswer(wat), 0x73667069) << "the URI's first four bytes ('ipfs'), little-endian";
-}
-
-TEST_F(NFTGuest, status_is_the_uri_length)
-{
-    EXPECT_CALL(host, getNFT(Eq(account), Eq(nftId))).WillOnce(Return(uri));
-
-    auto const wat = watFor(kAccount, kNftId, kOut, Answer::Status);
-    EXPECT_EQ(hostAnswer(wat), kUriLen);
-}
-
-TEST_F(NFTGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, getNFT(Eq(account), Eq(nftId)))
-        .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
-
-    auto const wat = watFor(kAccount, kNftId, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
-}
-
-TEST_F(NFTGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, getNFT(Eq(account), Eq(nftId)))
-        .WillOnce(testing::Throw(std::runtime_error{"nft uri came apart"}));
-
-    auto const outcome = run(watFor(kAccount, kNftId, kOut));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("getNFT"));
-}
-
-TEST_F(NFTGuest, account_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getNFT).Times(0);
-
-    auto const wat = watFor(Arg::region(kAccountAt, kAccountLen - 1), kNftId, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(NFTGuest, nft_id_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getNFT).Times(0);
-
-    auto const wat = watFor(kAccount, Arg::region(kNftIdAt, kNftIdLen - 1), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
 }  // namespace xrpl::test

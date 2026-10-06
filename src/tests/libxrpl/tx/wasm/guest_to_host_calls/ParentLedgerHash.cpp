@@ -1,5 +1,4 @@
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -7,8 +6,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 
 namespace xrpl::test {
@@ -48,34 +45,6 @@ TEST_F(ParentLedgerHashGuest, hash_reaches_the_guests_out_region)
 
     auto const wat = watFor(kOut);
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the hash's first four bytes, little-endian";
-}
-
-TEST_F(ParentLedgerHashGuest, status_is_the_hash_length)
-{
-    EXPECT_CALL(host, getParentLedgerHash()).WillOnce(Return(hash));
-
-    auto const wat = watFor(kOut, Answer::Status);
-    EXPECT_EQ(hostAnswer(wat), kHashLen);
-}
-
-TEST_F(ParentLedgerHashGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, getParentLedgerHash())
-        .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
-
-    auto const wat = watFor(kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
-}
-
-TEST_F(ParentLedgerHashGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, getParentLedgerHash())
-        .WillOnce(testing::Throw(std::runtime_error{"parent ledger hash came apart"}));
-
-    auto const outcome = run(watFor(kOut));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("getParentLedgerHash"));
 }
 
 }  // namespace xrpl::test

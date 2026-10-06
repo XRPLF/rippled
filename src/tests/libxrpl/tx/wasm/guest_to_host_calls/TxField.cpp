@@ -1,5 +1,4 @@
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -7,8 +6,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 
 namespace xrpl::test {
@@ -20,7 +17,6 @@ struct TxFieldGuest : GuestToHostCallTest
 {
     static constexpr std::int32_t kOutAt = 64;
     static constexpr std::int32_t kOutLen = 8;
-    static constexpr std::int32_t kValueLen = 6;
 
     static constexpr Arg kOut = Arg::outRegion(kOutAt, kOutLen);
 
@@ -42,48 +38,12 @@ struct TxFieldGuest : GuestToHostCallTest
     }
 };
 
-TEST_F(TxFieldGuest, field_code_becomes_sfield_host_is_asked_for)
-{
-    EXPECT_CALL(host, getTxField(testing::Ref(sfBalance))).WillOnce(Return(value));
-
-    auto const wat = watFor(field(), kOut, Answer::Status);
-    EXPECT_EQ(hostAnswer(wat), kValueLen) << "the length the host reported";
-}
-
 TEST_F(TxFieldGuest, field_bytes_reach_the_guests_out_region)
 {
     EXPECT_CALL(host, getTxField(testing::Ref(sfBalance))).WillOnce(Return(value));
 
     auto const wat = watFor(field(), kOut);
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the first four bytes, little-endian";
-}
-
-TEST_F(TxFieldGuest, unknown_field_code_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getTxField).Times(0);
-
-    auto const wat = watFor(Arg::scalar(0x7fff'0000), kOut);  // a type nothing is registered under
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidField));
-}
-
-TEST_F(TxFieldGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, getTxField(testing::Ref(sfBalance)))
-        .WillOnce(Return(std::unexpected(HostFunctionError::FieldNotFound)));
-
-    auto const wat = watFor(field(), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FieldNotFound));
-}
-
-TEST_F(TxFieldGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, getTxField(testing::Ref(sfBalance)))
-        .WillOnce(testing::Throw(std::runtime_error{"tx field came apart"}));
-
-    auto const outcome = run(watFor(field(), kOut));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("getTxField"));
 }
 
 }  // namespace xrpl::test

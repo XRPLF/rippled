@@ -73,6 +73,25 @@ one shape, so a 19th keylet e2e proves nothing the 1st did. The inventory is mea
 Adding a function needs no new e2e case unless it introduces a shape not in that table. Per-function
 breadth lives in `host_functions/` and `guest_to_host_calls/`, one case each.
 
+## What `guest_to_host_calls/` covers — the rule
+
+**One happy-path case per function, every argument filled with its own byte pattern.** The engine
+and `HostContext` are each tested alone; what only this layer reaches is the bridge's per-function
+code — the `extern "C++"` declarations and the hand-written `CxxHost` forwarding in
+`crates/xrpl-wasm-vm-ffi/src/lib.rs`. cxx checks types, not order, so two swapped `&[u8]` arguments
+compile; distinct byte patterns are what catch them.
+
+Everything else a call crosses is shared by every function, so it is tested once, where it lives —
+not per function here:
+
+| Property                                                       | Lives in                                         | Tested in                                       |
+| -------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------- |
+| region bounds, field cap, `u32` width, output fit              | engine: `args.rs`, `write_buffered`/`write_into` | `crates/xrpl-wasm-vm` (`memory_policy.rs`, ...) |
+| error codes, exceptions and lengths crossing back              | `HostContext`'s `guarded`, the bridge's helpers  | `host_context/`, `crates/xrpl-wasm-vm-ffi`      |
+| argument validation: lengths, field codes, locators, `parseST` | `HostContext`                                    | `host_context/`                                 |
+
+A function earns a second case here only when its bridge body does more than forward.
+
 ## Out of scope
 
 **The guest SDK** (`xrpl-std` / `xrpl-escrow`, external `xrpl-wasm-stdlib` repo) is the SDK repo's

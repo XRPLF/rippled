@@ -1,4 +1,3 @@
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -6,8 +5,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 
 namespace xrpl::test {
@@ -59,46 +56,6 @@ TEST_F(FloatFromIntGuest, int_and_mode_reach_host_in_order_and_float_comes_back)
 
     auto const wat = watFor(kInt, kOut, kRounding);
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the float's first four bytes, little-endian";
-}
-
-TEST_F(FloatFromIntGuest, status_is_the_floats_length)
-{
-    EXPECT_CALL(host, floatFromInt(kX, kMode)).WillOnce(Return(result));
-
-    auto const wat = watFor(kInt, kOut, kRounding, Answer::Status);
-    EXPECT_EQ(hostAnswer(wat), kFloatLen);
-}
-
-// Nothing between the guest and the host judges the mode, so a value naming no rounding rule
-// is the host's to refuse rather than the engine's.
-TEST_F(FloatFromIntGuest, mode_out_of_range_crosses_verbatim)
-{
-    static constexpr std::int32_t kNonsenseMode = 424242;
-    EXPECT_CALL(host, floatFromInt(kX, kNonsenseMode))
-        .WillOnce(Return(std::unexpected(HostFunctionError::FloatComputationError)));
-
-    auto const wat = watFor(kInt, kOut, Arg::scalar(kNonsenseMode));
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatComputationError));
-}
-
-TEST_F(FloatFromIntGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, floatFromInt(kX, kMode))
-        .WillOnce(Return(std::unexpected(HostFunctionError::FloatComputationError)));
-
-    auto const wat = watFor(kInt, kOut, kRounding);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FloatComputationError));
-}
-
-TEST_F(FloatFromIntGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, floatFromInt(kX, kMode))
-        .WillOnce(testing::Throw(std::runtime_error{"float from int came apart"}));
-
-    auto const outcome = run(watFor(kInt, kOut, kRounding));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("floatFromInt"));
 }
 
 }  // namespace xrpl::test

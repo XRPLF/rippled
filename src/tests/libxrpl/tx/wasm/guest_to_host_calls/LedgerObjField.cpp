@@ -1,5 +1,4 @@
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -7,8 +6,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 
 namespace xrpl::test {
@@ -26,7 +23,6 @@ struct LedgerObjFieldGuest : GuestToHostCallTest
     static constexpr std::int32_t kOutLen = 8;
     static constexpr std::int32_t kValueLen = 6;
     static constexpr std::int32_t kSlot = 7;
-    static constexpr std::int32_t kNegativeSlot = -3;
 
     static constexpr Arg kCacheIdx = Arg::scalar(kSlot);
     static constexpr Arg kOut = Arg::outRegion(kOutAt, kOutLen);
@@ -63,46 +59,6 @@ TEST_F(LedgerObjFieldGuest, field_bytes_reach_the_guests_out_region)
 
     auto const wat = watFor(kCacheIdx, field(), kOut);
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the first four bytes, little-endian";
-}
-
-TEST_F(LedgerObjFieldGuest, unknown_field_code_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getLedgerObjField).Times(0);
-
-    auto const wat =
-        watFor(kCacheIdx, Arg::scalar(0x7fff'0000), kOut);  // a type nothing is registered under
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidField));
-}
-
-// The slot is the one scalar the ABI carries as signed, so a negative one reaches the host as
-// itself and is the host's to refuse.
-TEST_F(LedgerObjFieldGuest, negative_slot_crosses_verbatim)
-{
-    EXPECT_CALL(host, getLedgerObjField(kNegativeSlot, testing::Ref(sfBalance)))
-        .WillOnce(Return(std::unexpected(HostFunctionError::SlotOutRange)));
-
-    auto const wat = watFor(Arg::scalar(kNegativeSlot), field(), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::SlotOutRange));
-}
-
-TEST_F(LedgerObjFieldGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, getLedgerObjField(kSlot, testing::Ref(sfBalance)))
-        .WillOnce(Return(std::unexpected(HostFunctionError::FieldNotFound)));
-
-    auto const wat = watFor(kCacheIdx, field(), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::FieldNotFound));
-}
-
-TEST_F(LedgerObjFieldGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, getLedgerObjField(kSlot, testing::Ref(sfBalance)))
-        .WillOnce(testing::Throw(std::runtime_error{"ledger obj field came apart"}));
-
-    auto const outcome = run(watFor(kCacheIdx, field(), kOut));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("getLedgerObjField"));
 }
 
 }  // namespace xrpl::test

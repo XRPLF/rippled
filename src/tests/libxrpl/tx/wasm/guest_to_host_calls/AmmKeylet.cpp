@@ -1,7 +1,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
@@ -10,8 +9,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 
 namespace xrpl::test {
@@ -75,50 +72,6 @@ TEST_F(AmmKeyletGuest, mpt_and_issue_assets_reach_host_and_keylet_comes_back)
 
     auto const wat = watFor(kAsset1, kAsset2, kOut);
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
-}
-
-TEST_F(AmmKeyletGuest, status_is_the_keylets_length)
-{
-    EXPECT_CALL(host, ammKeylet(Eq(asset1), Eq(asset2))).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kAsset1, kAsset2, kOut, Answer::Status);
-    EXPECT_EQ(hostAnswer(wat), kKeyletLen);
-}
-
-TEST_F(AmmKeyletGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, ammKeylet(Eq(asset1), Eq(asset2)))
-        .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
-
-    auto const wat = watFor(kAsset1, kAsset2, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
-}
-
-TEST_F(AmmKeyletGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, ammKeylet(Eq(asset1), Eq(asset2)))
-        .WillOnce(testing::Throw(std::runtime_error{"amm keylet came apart"}));
-
-    auto const outcome = run(watFor(kAsset1, kAsset2, kOut));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("ammKeylet"));
-}
-
-TEST_F(AmmKeyletGuest, asset1_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, ammKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(kAsset1At, kMptIdLen - 1), kAsset2, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
-}
-
-TEST_F(AmmKeyletGuest, asset2_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, ammKeylet).Times(0);
-
-    auto const wat = watFor(kAsset1, Arg::region(kAsset2At, kIssueLen - 1), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
 }  // namespace xrpl::test

@@ -1,5 +1,4 @@
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -7,8 +6,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 
 namespace xrpl::test {
@@ -66,42 +63,6 @@ TEST_F(LoanKeyletGuest, loan_broker_id_and_seq_reach_host_and_keylet_comes_back)
 
     auto const wat = watFor(kLoanBrokerId, kSeq, kOut);
     EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the keylet's first four bytes, little-endian";
-}
-
-TEST_F(LoanKeyletGuest, status_is_the_keylets_length)
-{
-    EXPECT_CALL(host, loanKeylet(Eq(loanBrokerId), kSeqValue)).WillOnce(Return(keylet));
-
-    auto const wat = watFor(kLoanBrokerId, kSeq, kOut, Answer::Status);
-    EXPECT_EQ(hostAnswer(wat), kKeyletLen);
-}
-
-TEST_F(LoanKeyletGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, loanKeylet(Eq(loanBrokerId), kSeqValue))
-        .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
-
-    auto const wat = watFor(kLoanBrokerId, kSeq, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
-}
-
-TEST_F(LoanKeyletGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, loanKeylet(Eq(loanBrokerId), kSeqValue))
-        .WillOnce(testing::Throw(std::runtime_error{"loan keylet came apart"}));
-
-    auto const outcome = run(watFor(kLoanBrokerId, kSeq, kOut));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("loanKeylet"));
-}
-
-TEST_F(LoanKeyletGuest, loan_broker_id_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, loanKeylet).Times(0);
-
-    auto const wat = watFor(Arg::region(kLoanBrokerIdAt, kLoanBrokerIdLen - 1), kSeq, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
 }  // namespace xrpl::test

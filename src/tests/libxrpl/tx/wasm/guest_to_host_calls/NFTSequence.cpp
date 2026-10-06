@@ -1,5 +1,4 @@
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -7,8 +6,6 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
 #include <cstdint>
-#include <expected>
-#include <stdexcept>
 #include <string>
 
 namespace xrpl::test {
@@ -45,42 +42,6 @@ TEST_F(NFTSequenceGuest, nft_id_reaches_host_and_sequence_comes_back)
 
     auto const wat = watFor(kNftId, kOut);
     EXPECT_EQ(hostAnswer(wat), static_cast<std::int32_t>(kSequence));
-}
-
-TEST_F(NFTSequenceGuest, status_is_the_sequence_length)
-{
-    EXPECT_CALL(host, getNFTSequence(Eq(nftId))).WillOnce(Return(kSequence));
-
-    auto const wat = watFor(kNftId, kOut, Answer::Status);
-    EXPECT_EQ(hostAnswer(wat), kSequenceLen);
-}
-
-TEST_F(NFTSequenceGuest, host_error_becomes_contract_return_value)
-{
-    EXPECT_CALL(host, getNFTSequence(Eq(nftId)))
-        .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
-
-    auto const wat = watFor(kNftId, kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::LedgerObjNotFound));
-}
-
-TEST_F(NFTSequenceGuest, host_exception_stops_the_run_and_is_logged)
-{
-    EXPECT_CALL(host, getNFTSequence(Eq(nftId)))
-        .WillOnce(testing::Throw(std::runtime_error{"nft sequence came apart"}));
-
-    auto const outcome = run(watFor(kNftId, kOut));
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_THAT(logged(), testing::HasSubstr("getNFTSequence"));
-}
-
-TEST_F(NFTSequenceGuest, nft_id_of_the_wrong_length_is_refused_without_asking_host)
-{
-    EXPECT_CALL(host, getNFTSequence).Times(0);
-
-    auto const wat = watFor(Arg::region(kNftIdAt, kNftIdLen - 1), kOut);
-    EXPECT_EQ(hostAnswer(wat), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
 }  // namespace xrpl::test
