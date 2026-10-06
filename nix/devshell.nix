@@ -31,6 +31,13 @@ let
   };
   customGccGcov = if pkgs.stdenv.hostPlatform.isLinux then linux.gcov else plainGcov;
 
+  # commonPackages whose clang tools parse with the custom toolchain's headers.
+  customCommonPackages =
+    (import ./packages.nix {
+      inherit pkgs;
+      clang = if pkgs.stdenv.hostPlatform.isLinux then linux.clang else null;
+    }).commonPackages;
+
   # Whole directory: init.sh locates the profiles relative to itself.
   conanDir = ../conan;
 
@@ -86,11 +93,11 @@ let
       version ? null,
       versionedTools ? [ ],
       extraPackages ? [ ],
-      warningHook ? "",
-      # Opt out of PatchNixBinary.cmake retargeting binaries to the system
-      # loader. The plain toolchain links a newer glibc, so it must not be
-      # patched; the custom toolchain patches by default.
-      noPatchNixBinary ? false,
+      # The stock nixpkgs toolchain: warn that it doesn't match CI, keep the
+      # clang tools off the custom toolchain, and opt out of PatchNixBinary.cmake
+      # retargeting binaries to the system loader (the plain toolchain links a
+      # newer glibc, so it must not be patched).
+      plain ? false,
     }:
     let
       compilerVersionHook =
@@ -110,7 +117,8 @@ let
     in
     (pkgs.mkShell.override { inherit stdenv; }) (
       {
-        packages = commonPackages ++ versionedLinks ++ extraPackages;
+        packages =
+          (if plain then commonPackages else customCommonPackages) ++ versionedLinks ++ extraPackages;
         # Marks a managed dev shell, so the build (XrplSanity.cmake) can tell an
         # intentional Nix toolchain from one leaked into a bare shell.
         XRPL_DEVSHELL = shellName;
@@ -119,10 +127,10 @@ let
           ${compilerVersionHook}
           ${darwinLibresolvHook}
           ${conanHook}
-          ${warningHook}
+          ${pkgs.lib.optionalString plain plainWarningHook}
         '';
       }
-      // pkgs.lib.optionalAttrs noPatchNixBinary { XRPLD_NO_PATCH_NIX_BINARY = "1"; }
+      // pkgs.lib.optionalAttrs plain { XRPLD_NO_PATCH_NIX_BINARY = "1"; }
     );
 in
 rec {
@@ -180,8 +188,7 @@ rec {
     version = gccVersion;
     versionedTools = gccVersionedTools;
     extraPackages = [ plainGcov ];
-    warningHook = plainWarningHook;
-    noPatchNixBinary = true;
+    plain = true;
   };
 
   clang-plain = makeShell {
@@ -190,7 +197,6 @@ rec {
     compilerName = "clang";
     version = llvmVersion;
     versionedTools = clangVersionedTools;
-    warningHook = plainWarningHook;
-    noPatchNixBinary = true;
+    plain = true;
   };
 }
