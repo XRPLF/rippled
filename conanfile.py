@@ -49,8 +49,8 @@ class Xrpl(ConanFile):
     ]
 
     tool_requires = [
-        "grpc/1.81.1",
-        "protobuf/6.33.5",
+        "grpc/<host_version>",
+        "protobuf/<host_version>",
     ]
 
     default_options = {
