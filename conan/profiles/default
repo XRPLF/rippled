@@ -52,11 +52,13 @@ tools.info.package_id:confs+=["user.package:cppstd_version"]
 {% if os == "Linux" %}
 {# Executables we run (protoc, grpc_cpp_plugin, build tools) would otherwise load libstdc++/libgcc #}
 {# from a Nix store path that might change with a Nix toolchain update. #}
-{% set static_runtime = ["-static-libstdc++", "-static-libgcc"] %}
+{# --as-needed drops the ones they link but don't use, #}
+{# such as libatomic for grpc_cpp_plugin on arm64. #}
+{% set exe_link_flags = ["-static-libstdc++", "-static-libgcc", "-Wl,--as-needed"] %}
 {% if context == "build" %}
-tools.build:exelinkflags+={{ static_runtime }}
+tools.build:exelinkflags+={{ exe_link_flags }}
 {% else %}
-grpc/*:tools.build:exelinkflags+={{ static_runtime }}
+grpc/*:tools.build:exelinkflags+={{ exe_link_flags }}
 {% endif %}
 tools.info.package_id:confs+=["tools.build:exelinkflags"]
 {% endif %}
