@@ -1593,8 +1593,8 @@ public:
         auto const usd = gw["USD"];
 
         STAmount const carolPays{XRPAmount{static_cast<std::int64_t>(STAmount::kMaxNativeN)}};
-        STAmount const carolGets{usd.issue(), 9'999'999'999'999'995ull, -15};
-        STAmount const carolFunds{usd.issue(), 9'999'999'999'999'994ull, -15};
+        STAmount const carolGets{usd.issue(), UINT64_C(9'999'999'999'999'995), -15};
+        STAmount const carolFunds{usd.issue(), UINT64_C(9'999'999'999'999'994), -15};
 
         env.fund(XRP(10'000), gw, carol);
         env.close();
