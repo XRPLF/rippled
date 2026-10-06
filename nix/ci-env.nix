@@ -7,18 +7,11 @@
   ...
 }:
 let
+  inherit (import ./packages.nix { inherit pkgs customGlibc; }) commonPackages;
+
   # Each forces something absent on the other platform, so both stay lazy.
   linux = import ./linux.nix { inherit pkgs customGlibc; };
   darwin = import ./darwin.nix { inherit pkgs; };
-
-  # On Linux, the clang tools parse code with the CI compiler's headers.
-  inherit
-    (import ./packages.nix {
-      inherit pkgs;
-      clang = if pkgs.stdenv.hostPlatform.isLinux then linux.clang else null;
-    })
-    commonPackages
-    ;
 
   # What a buildEnv cannot express: environment variables. $GITHUB_ENV format;
   # `set -a; . env; set +a` loads it in a shell.

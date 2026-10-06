@@ -32,11 +32,7 @@ let
   customGccGcov = if pkgs.stdenv.hostPlatform.isLinux then linux.gcov else plainGcov;
 
   # commonPackages whose clang tools parse with the custom toolchain's headers.
-  customCommonPackages =
-    (import ./packages.nix {
-      inherit pkgs;
-      clang = if pkgs.stdenv.hostPlatform.isLinux then linux.clang else null;
-    }).commonPackages;
+  customCommonPackages = (import ./packages.nix { inherit pkgs customGlibc; }).commonPackages;
 
   # Whole directory: init.sh locates the profiles relative to itself.
   conanDir = ../conan;

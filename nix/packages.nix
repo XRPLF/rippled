@@ -1,9 +1,9 @@
 {
   pkgs,
-  # Wrapped clang whose headers the clang tools (clang-tidy, ...) parse code
-  # with. Pass the toolchain's compiler so they see the same glibc and
-  # libstdc++ headers as the build; null keeps the nixpkgs default compiler's.
-  clang ? null,
+  # With the custom glibc, the clang tools (clang-tidy, ...) parse code with the
+  # Linux custom toolchain's headers, i.e. the same glibc and libstdc++ as the
+  # build. Without it, they use the nixpkgs default compiler's.
+  customGlibc ? null,
 }:
 let
   # Compiler versions used across the dev shell and the CI environment.
@@ -14,8 +14,11 @@ let
   llvmPackages = pkgs."llvmPackages_${toString llvmVersion}";
 
   # Bound explicitly so it tracks llvmPackages above, not the `with pkgs` default.
+  # isLinux first: darwin must not evaluate the custom glibc.
   clangTools = llvmPackages.clang-tools.override (
-    pkgs.lib.optionalAttrs (clang != null) { inherit clang; }
+    pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux && customGlibc != null) {
+      inherit (import ./linux.nix { inherit pkgs customGlibc; }) clang;
+    }
   );
 
   # In LLVM 22, run-clang-tidy.py moved from share/clang/ to bin/, so nixpkgs
