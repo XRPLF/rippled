@@ -375,7 +375,7 @@ PathRequest::parseJson(json::Value const& jvParams)
             }
             else
             {
-                uint192 u;
+                UInt192 u;
                 if (!c[jss::mpt_issuance_id].isString() ||
                     !u.parseHex(c[jss::mpt_issuance_id].asString()))
                 {
@@ -416,20 +416,22 @@ PathRequest::parseJson(json::Value const& jvParams)
                 // If the assets don't match, ignore the source asset.
                 if (srcPathAsset == saSendMax_->asset())
                 {
-                    // If neither is the source and they are not equal, then the
-                    // source issuer is illegal.
-                    if (srcIssuerID != *raSrcAccount_ &&
-                        saSendMax_->getIssuer() != *raSrcAccount_ &&
-                        srcIssuerID != saSendMax_->getIssuer())
-                    {
-                        jvStatus_ = rpcError(RpcSrcIsrMalformed);
-                        return PFR_PJ_INVALID;
-                    }
-
-                    // If both are the source, use the source.
-                    // Otherwise, use the one that's not the source.
-                    srcPathAsset.visit(
+                    auto const status = srcPathAsset.visit(
                         [&](Currency const& currency) {
+                            // If neither is the source and they are not equal,
+                            // then the source issuer is illegal. srcIssuerID
+                            // comes from the optional IOU source_currencies
+                            // issuer field, so this reconciliation is IOU-only.
+                            if (srcIssuerID != *raSrcAccount_ &&
+                                saSendMax_->getIssuer() != *raSrcAccount_ &&
+                                srcIssuerID != saSendMax_->getIssuer())
+                            {
+                                jvStatus_ = rpcError(RpcSrcIsrMalformed);
+                                return PFR_PJ_INVALID;
+                            }
+
+                            // If both are the source, use the source.
+                            // Otherwise, use the one that's not the source.
                             if (srcIssuerID != *raSrcAccount_)
                             {
                                 sciSourceAssets_.insert(Issue{currency, srcIssuerID});
@@ -438,11 +440,18 @@ PathRequest::parseJson(json::Value const& jvParams)
                             {
                                 sciSourceAssets_.insert(Issue{currency, saSendMax_->getIssuer()});
                             }
+                            else
                             {
                                 sciSourceAssets_.insert(Issue{currency, *raSrcAccount_});
                             }
+                            return PFR_PJ_NOCHANGE;
                         },
-                        [&](MPTID const& mpt) { sciSourceAssets_.insert(mpt); });
+                        [&](MPTID const& mpt) {
+                            sciSourceAssets_.insert(mpt);
+                            return PFR_PJ_NOCHANGE;
+                        });
+                    if (status == PFR_PJ_INVALID)
+                        return status;
                 }
             }
             else
@@ -461,7 +470,7 @@ PathRequest::parseJson(json::Value const& jvParams)
 
     if (jvParams.isMember(jss::domain))
     {
-        uint256 num;
+        UInt256 num;
         if (!jvParams[jss::domain].isString() || !num.parseHex(jvParams[jss::domain].asString()))
         {
             jvStatus_ = rpcError(RpcDomainMalformed);
@@ -500,7 +509,7 @@ PathRequest::doAborting() const
 std::unique_ptr<Pathfinder> const&
 PathRequest::getPathFinder(
     std::shared_ptr<AssetCache> const& cache,
-    hash_map<PathAsset, std::unique_ptr<Pathfinder>>& currencyMap,
+    HashMap<PathAsset, std::unique_ptr<Pathfinder>>& currencyMap,
     PathAsset const& currency,
     STAmount const& dstAmount,
     int const level,
@@ -578,7 +587,7 @@ PathRequest::findPaths(
     }
 
     auto const dstAmount = convertAmount(saDstAmount_, convertAll_);
-    hash_map<PathAsset, std::unique_ptr<Pathfinder>> currencyMap;
+    HashMap<PathAsset, std::unique_ptr<Pathfinder>> currencyMap;
     for (auto const& asset : sourceAssets)
     {
         if (continueCallback && !continueCallback())

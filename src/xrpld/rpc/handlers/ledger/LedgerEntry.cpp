@@ -18,6 +18,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
@@ -34,12 +35,12 @@
 
 namespace xrpl {
 
-using FunctionType = std::function<std::expected<uint256, json::Value>(
+using FunctionType = std::function<std::expected<UInt256, json::Value>(
     json::Value const&,
     json::StaticString const,
     unsigned const apiVersion)>;
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseFixed(
     Keylet const& keylet,
     json::Value const& params,
@@ -55,25 +56,25 @@ fixed(Keylet const& keylet)
     return [keylet](
                json::Value const& params,
                json::StaticString const fieldName,
-               unsigned const apiVersion) -> std::expected<uint256, json::Value> {
+               unsigned const apiVersion) -> std::expected<UInt256, json::Value> {
         return parseFixed(keylet, params, fieldName, apiVersion);
     };
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseObjectID(
     json::Value const& params,
     json::StaticString const fieldName,
     std::string const& expectedType = "hex string or object")
 {
-    if (auto const uNodeIndex = ledger_entry_helpers::parse<uint256>(params))
+    if (auto const uNodeIndex = ledger_entry_helpers::parse<UInt256>(params))
     {
         return *uNodeIndex;
     }
     return ledger_entry_helpers::invalidFieldError("malformedRequest", fieldName, expectedType);
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseIndex(json::Value const& params, json::StaticString const fieldName, unsigned const apiVersion)
 {
     if (apiVersion > 2u && params.isString())
@@ -95,7 +96,7 @@ parseIndex(json::Value const& params, json::StaticString const fieldName, unsign
     return parseObjectID(params, fieldName, "hex string");
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseAccountRoot(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -111,7 +112,7 @@ parseAccountRoot(
 
 auto const parseAmendments = fixed(keylet::amendments());
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseAMM(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -140,7 +141,7 @@ parseAMM(
     return keylet::amm(*asset, *asset2).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseBridge(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -173,16 +174,32 @@ parseBridge(
     return keylet::bridge(*bridge, chainType).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseCheck(
     json::Value const& params,
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const account =
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
+    if (!account)
+        return std::unexpected(account.error());
+
+    auto const sequence =
+        ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!sequence)
+        return std::unexpected(sequence.error());
+
+    auto const seqProxy = SeqProxy::rawSequence(*sequence);
+    return keylet::check(*account, seqProxy).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseCredential(
     json::Value const& cred,
     json::StaticString const fieldName,
@@ -211,7 +228,7 @@ parseCredential(
     return keylet::credential(*subject, *issuer, Slice(credType->data(), credType->size())).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseDelegate(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -297,7 +314,7 @@ parseAuthorizeCredentials(json::Value const& jv)
     return arr;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseDepositPreauth(
     json::Value const& dp,
     json::StaticString const fieldName,
@@ -348,7 +365,7 @@ parseDepositPreauth(
     return keylet::depositPreauth(*owner, sorted).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseDID(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -363,7 +380,7 @@ parseDID(
     return keylet::did(*account).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseDirectoryNode(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -392,7 +409,7 @@ parseDirectoryNode(
 
     if (params.isMember(jss::dir_root))
     {
-        if (auto const uDirRoot = ledger_entry_helpers::parse<uint256>(params[jss::dir_root]))
+        if (auto const uDirRoot = ledger_entry_helpers::parse<UInt256>(params[jss::dir_root]))
         {
             return keylet::page(*uDirRoot, uSubIndex).key;
         }
@@ -415,7 +432,7 @@ parseDirectoryNode(
     return ledger_entry_helpers::malformedError("malformedRequest", "");
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseEscrow(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -433,12 +450,13 @@ parseEscrow(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::escrow(*id, *seq).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::escrow(*id, seqProxy).key;
 }
 
 auto const parseFeeSettings = fixed(keylet::feeSettings());
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseFixed(
     Keylet const& keylet,
     json::Value const& params,
@@ -457,7 +475,7 @@ parseFixed(
     return keylet.key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseLedgerHashes(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -477,7 +495,7 @@ parseLedgerHashes(
     return parseFixed(keylet::skip(), params, fieldName, apiVersion);
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseLoanBroker(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -495,10 +513,11 @@ parseLoanBroker(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::loanBroker(*id, *seq).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::loanBroker(*id, seqProxy).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseLoan(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -517,10 +536,11 @@ parseLoan(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::loan(*id, *seq).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::loan(*id, seqProxy).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseMPToken(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -544,13 +564,13 @@ parseMPToken(
     return keylet::mptoken(*mptIssuanceID, *account).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseMPTokenIssuance(
     json::Value const& params,
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    auto const mptIssuanceID = ledger_entry_helpers::parse<uint192>(params);
+    auto const mptIssuanceID = ledger_entry_helpers::parse<UInt192>(params);
     if (!mptIssuanceID)
     {
         return ledger_entry_helpers::invalidFieldError(
@@ -560,16 +580,32 @@ parseMPTokenIssuance(
     return keylet::mptokenIssuance(*mptIssuanceID).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseNFTokenOffer(
     json::Value const& params,
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const owner =
+        ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    if (!owner)
+        return std::unexpected(owner.error());
+
+    auto const sequence =
+        ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!sequence)
+        return std::unexpected(sequence.error());
+
+    auto const seqProxy = SeqProxy::rawSequence(*sequence);
+    return keylet::nftokenOffer(*owner, seqProxy).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseNFTokenPage(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -580,7 +616,7 @@ parseNFTokenPage(
 
 auto const parseNegativeUNL = fixed(keylet::negativeUNL());
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseOffer(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -600,10 +636,11 @@ parseOffer(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::offer(*id, *seq).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::offer(*id, seqProxy).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseOracle(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -627,16 +664,37 @@ parseOracle(
     return keylet::oracle(*id, *seq).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parsePayChannel(
     json::Value const& params,
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const account =
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
+    if (!account)
+        return std::unexpected(account.error());
+
+    auto const destination =
+        ledger_entry_helpers::requiredAccountID(params, jss::destination, "malformedAddress");
+    if (!destination)
+        return std::unexpected(destination.error());
+
+    auto const sequence =
+        ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!sequence)
+        return std::unexpected(sequence.error());
+
+    auto const seqProxy = SeqProxy::rawSequence(*sequence);
+    return keylet::payChannel(*account, *destination, seqProxy).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parsePermissionedDomain(
     json::Value const& pd,
     json::StaticString const fieldName,
@@ -662,10 +720,11 @@ parsePermissionedDomain(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::permissionedDomain(*account, pd[jss::seq].asUInt()).key;
+    auto const seqProxy = SeqProxy::rawSequence(pd[jss::seq].asUInt());
+    return keylet::permissionedDomain(*account, seqProxy).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseRippleState(
     json::Value const& jvRippleState,
     json::StaticString const fieldName,
@@ -714,16 +773,26 @@ parseRippleState(
     return keylet::trustLine(*id1, *id2, uCurrency).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseSignerList(
     json::Value const& params,
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const id =
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
+    if (!id)
+        return std::unexpected(id.error());
+
+    return keylet::signerList(*id).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseSponsorship(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -745,7 +814,36 @@ parseSponsorship(
     return keylet::sponsorship(*sponsorID, *sponseeID).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
+parseTransactionProposal(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    // In the non-object branch the caller must supply the proposal ID as a
+    // hex string (the object form is the {account, ticket_seq} pair handled
+    // below). Passing "hex string" here — rather than the more general
+    // "hex string or object" default — makes the error message name the
+    // exact form still on the table once an object has been ruled out.
+    if (!params.isObject())
+        return parseObjectID(params, fieldName, "hex string");
+
+    auto const targetID =
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
+    if (!targetID)
+        return std::unexpected(targetID.error());
+
+    // The proposed transaction's TicketSequence (a proposed transaction is
+    // ticket-only), mirroring how parseTicket looks up a Ticket object.
+    auto const ticketSequence =
+        ledger_entry_helpers::requiredUInt32(params, jss::ticket_seq, "malformedRequest");
+    if (!ticketSequence)
+        return std::unexpected(ticketSequence.error());
+
+    return keylet::txProposal(*targetID, *ticketSequence).key;
+}
+
+static std::expected<UInt256, json::Value>
 parseTicket(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -766,10 +864,11 @@ parseTicket(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return getTicketIndex(*id, *seq);
+    auto const seqProxy = SeqProxy::rawTicket(*seq);
+    return keylet::ticket(*id, seqProxy).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseVault(
     json::Value const& params,
     json::StaticString const fieldName,
@@ -788,10 +887,11 @@ parseVault(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::vault(*id, *seq).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::vault(*id, seqProxy).key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseXChainOwnedClaimID(
     json::Value const& claimId,
     json::StaticString const fieldName,
@@ -817,7 +917,7 @@ parseXChainOwnedClaimID(
     return keylet.key;
 }
 
-static std::expected<uint256, json::Value>
+static std::expected<UInt256, json::Value>
 parseXChainOwnedCreateAccountClaimID(
     json::Value const& claimId,
     json::StaticString const fieldName,
@@ -906,7 +1006,7 @@ doLedgerEntry(rpc::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    uint256 uNodeIndex;
+    UInt256 uNodeIndex;
     LedgerEntryType expectedType = ltANY;
 
     try
@@ -1022,7 +1122,7 @@ doLedgerEntryGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& c
         return {response, errorStatus};
     }
 
-    auto const key = uint256::fromVoidChecked(request.key());
+    auto const key = UInt256::fromVoidChecked(request.key());
     if (!key)
     {
         grpc::Status const errorStatus{grpc::StatusCode::INVALID_ARGUMENT, "index malformed"};

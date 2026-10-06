@@ -13,6 +13,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/resource/Fees.h>
 
 #include <cstdint>
 #include <optional>
@@ -36,6 +37,8 @@ doChannelVerify(rpc::JsonContext& context)
             return rpc::missingFieldError(p);
     }
 
+    context.loadType = resource::kFeeHeavyBurdenRpc;
+
     std::optional<PublicKey> pk;
     {
         std::string const strPk = params[jss::public_key].asString();
@@ -53,7 +56,9 @@ doChannelVerify(rpc::JsonContext& context)
         }
     }
 
-    uint256 channelId;
+    if (!params[jss::channel_id].isString())
+        return rpcError(RpcInvalidParams);
+    UInt256 channelId;
     if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(RpcChannelMalformed);
 
@@ -64,6 +69,9 @@ doChannelVerify(rpc::JsonContext& context)
         return rpcError(RpcChannelAmtMalformed);
 
     std::uint64_t const drops = *optDrops;
+
+    if (!params[jss::signature].isString())
+        return rpcError(RpcInvalidParams);
 
     auto sig = strUnHex(params[jss::signature].asString());
     if (!sig || sig->empty())

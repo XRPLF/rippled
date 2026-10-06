@@ -56,10 +56,15 @@ STObject::STObject(SOTemplate const& type, SField const& name) : STBase(name)
     set(type);
 }
 
-STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name) : STBase(name)
+STObject::STObject(
+    SOTemplate const& type,
+    SerialIter& sit,
+    SField const& name,
+    bool requireCanonicalOrder)
+    : STBase(name)
 {
     v_.reserve(type.size());
-    set(sit);
+    set(sit, 0, requireCanonicalOrder);
     applyTemplate(type);  // May throw
 }
 
@@ -208,12 +213,13 @@ STObject::applyTemplateFromSField(SField const& sField)
 
 // return true = terminated with end-of-object
 bool
-STObject::set(SerialIter& sit, int depth)
+STObject::set(SerialIter& sit, int depth, bool requireCanonicalOrder)
 {
     bool reachedEndOfObject = false;
 
     v_.clear();
 
+    std::optional<int> prevFieldCode;
     // Consume data in the pipe until we run out or reach the end
     while (!sit.empty())
     {
@@ -238,13 +244,19 @@ STObject::set(SerialIter& sit, int depth)
         }
 
         auto const& fn = SField::getField(type, field);
-
         if (fn.isInvalid())
         {
             JLOG(debugLog().error())
                 << "Unknown field: field_type=" << type << ", field_name=" << field;
             Throw<std::runtime_error>("Unknown field");
         }
+
+        if (requireCanonicalOrder && prevFieldCode.has_value() && fn.fieldCodeMem <= *prevFieldCode)
+        {
+            JLOG(debugLog().error()) << "Fields in object are not in canonical order";
+            Throw<std::runtime_error>("Fields in object are not in canonical order");
+        }
+        prevFieldCode = fn.fieldCodeMem;
 
         // Unflatten the field
         v_.emplace_back(sit, fn, depth + 1);
@@ -359,7 +371,7 @@ STObject::isEquivalent(STBase const& t) const
     });
 }
 
-uint256
+UInt256
 STObject::getHash(HashPrefix prefix) const
 {
     Serializer s;
@@ -368,7 +380,7 @@ STObject::getHash(HashPrefix prefix) const
     return s.getSHA512Half();
 }
 
-uint256
+UInt256
 STObject::getSigningHash(HashPrefix prefix) const
 {
     Serializer s;
@@ -597,25 +609,25 @@ STObject::getFieldU64(SField const& field) const
     return getFieldByValue<STUInt64>(field);
 }
 
-uint128
+UInt128
 STObject::getFieldH128(SField const& field) const
 {
     return getFieldByValue<STUInt128>(field);
 }
 
-uint160
+UInt160
 STObject::getFieldH160(SField const& field) const
 {
     return getFieldByValue<STUInt160>(field);
 }
 
-uint192
+UInt192
 STObject::getFieldH192(SField const& field) const
 {
     return getFieldByValue<STUInt192>(field);
 }
 
-uint256
+UInt256
 STObject::getFieldH256(SField const& field) const
 {
     return getFieldByValue<STUInt256>(field);
@@ -740,19 +752,19 @@ STObject::setFieldU64(SField const& field, std::uint64_t v)
 }
 
 void
-STObject::setFieldH128(SField const& field, uint128 const& v)
+STObject::setFieldH128(SField const& field, UInt128 const& v)
 {
     setFieldUsingSetValue<STUInt128>(field, v);
 }
 
 void
-STObject::setFieldH192(SField const& field, uint192 const& v)
+STObject::setFieldH192(SField const& field, UInt192 const& v)
 {
     setFieldUsingSetValue<STUInt192>(field, v);
 }
 
 void
-STObject::setFieldH256(SField const& field, uint256 const& v)
+STObject::setFieldH256(SField const& field, UInt256 const& v)
 {
     setFieldUsingSetValue<STUInt256>(field, v);
 }

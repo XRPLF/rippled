@@ -7,10 +7,10 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/Ledger.h>
-#include <xrpl/protocol/LedgerShortcut.h>
 #include <xrpl/server/NetworkOPs.h>
 
 #include <org/xrpl/rpc/v1/ledger.pb.h>
+#include <rpcspec/Ledger.hpp>
 
 #include <cstdint>
 #include <expected>
@@ -40,7 +40,7 @@ struct JsonContext;
  */
 template <class T>
 Status
-getLedger(T& ledger, uint256 const& ledgerHash, Context const& context);
+getLedger(T& ledger, UInt256 const& ledgerHash, Context const& context);
 
 /**
  * @brief Retrieves a ledger by its sequence index.
@@ -76,7 +76,22 @@ getLedger(T& ledger, uint32_t ledgerIndex, Context const& context);
  */
 template <class T>
 Status
-getLedger(T& ledger, LedgerShortcut shortcut, Context const& context);
+getLedger(T& ledger, ::rpc::spec::LedgerShortcut shortcut, Context const& context);
+
+/**
+ * @brief Retrieves the ledger a spec-parsed request selects.
+ *
+ * An unspecified selection means the current ledger.
+ *
+ * @tparam T Type of the ledger pointer to be filled.
+ * @param ledger Reference to the ledger pointer to be filled.
+ * @param specifier The ledger the request selects.
+ * @param context The RPC context.
+ * @return Status indicating success or failure of the operation.
+ */
+template <class T>
+Status
+getLedger(T& ledger, ::rpc::spec::LedgerSpecifier const& specifier, Context const& context);
 
 /**
  * @brief Looks up a ledger from a request and returns a json::Value with either

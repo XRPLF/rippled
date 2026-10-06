@@ -47,13 +47,13 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TER.h>
@@ -68,7 +68,6 @@
 #include <xrpl/tx/transactors/payment/Payment.h>
 #include <xrpl/tx/transactors/system/Batch.h>
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -120,15 +119,6 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
-    validateInnerTxn(jtx::Env& env, std::string const& batchID, TestLedgerData const& ledgerResult)
-    {
-        json::Value const jrr = env.rpc("tx", ledgerResult.txHash)[jss::result];
-        BEAST_EXPECT(jrr[sfTransactionType.jsonName] == ledgerResult.txType);
-        BEAST_EXPECT(jrr[jss::meta][sfTransactionResult.jsonName] == ledgerResult.result);
-        BEAST_EXPECT(jrr[jss::meta][sfParentBatchID.jsonName] == batchID);
-    }
-
-    void
     validateClosedLedger(jtx::Env& env, std::vector<TestLedgerData> const& ledgerResults)
     {
         auto const jrr = getLastLedger(env);
@@ -143,7 +133,14 @@ class Batch_test : public beast::unit_test::Suite
             BEAST_EXPECT(txn[sfTransactionType.jsonName] == ledgerResult.txType);
             BEAST_EXPECT(meta[sfTransactionResult.jsonName] == ledgerResult.result);
             if (ledgerResult.batchID)
-                validateInnerTxn(env, *ledgerResult.batchID, ledgerResult);
+            {
+                jtx::batch::validateInnerTxn(
+                    env,
+                    *ledgerResult.batchID,
+                    ledgerResult.txHash,
+                    ledgerResult.txType,
+                    ledgerResult.result);
+            }
         }
     }
 
@@ -163,10 +160,10 @@ class Batch_test : public beast::unit_test::Suite
         return std::make_pair(txIDs, strHex(batchID));
     }
 
-    static uint256
+    static UInt256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
     {
-        return keylet::check(account, uSequence).key;
+        return keylet::check(account, SeqProxy::rawSequence(uSequence)).key;
     }
 
     static std::unique_ptr<Config>
@@ -461,7 +458,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             auto jtx = env.jt(pay(alice, bob, XRP(1)));
             PreflightContext const pfCtx(
-                env.app(), *jtx.stx, uint256{1}, env.current()->rules(), TapBatch, env.journal);
+                env.app(), *jtx.stx, UInt256{1}, env.current()->rules(), TapBatch, env.journal);
             auto const pf = Transactor::invokePreflight<Payment>(pfCtx);
             BEAST_EXPECT(pf == temINVALID_INNER_BATCH);
         }
@@ -648,7 +645,7 @@ class Batch_test : public beast::unit_test::Suite
             serializeBatch(
                 msg,
                 jt.stx->getAccountID(sfAccount),
-                jt.stx->getSeqValue(),
+                jt.stx->getSeqProxy().value(),
                 tfAllOrNothing,
                 jt.stx->getBatchTransactionIDs());
             finishMultiSigningData(bob.id(), msg);
@@ -3139,9 +3136,7 @@ class Batch_test : public beast::unit_test::Suite
     {
         testcase("loan");
 
-        bool const lendingBatchEnabled = !std::ranges::any_of(
-            Batch::kDisabledTxTypes,
-            [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; });
+        bool const lendingBatchEnabled = features[featureLendingProtocolV1_2];
 
         using namespace test::jtx;
 
@@ -3168,7 +3163,12 @@ class Batch_test : public beast::unit_test::Suite
         auto const debtMaximumValue = asset(25'000).value();
         auto const coverDepositValue = asset(1000).value();
 
-        auto [tx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults, so build one with a subscription
+        // window that lets the lender deposit now, then advance the clock
+        // past SubscriptionDate before creating loans.
+        auto [tx, vaultKeylet, subscriptionDate] =
+            vault.createClosedEnded({.owner = lender, .asset = asset});
         env(tx);
         env.close();
         BEAST_EXPECT(env.le(vaultKeylet));
@@ -3176,7 +3176,11 @@ class Batch_test : public beast::unit_test::Suite
         env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = deposit}));
         env.close();
 
-        auto const brokerKeylet = keylet::loanBroker(lender.id(), env.seq(lender));
+        // Move into the Investment phase before creating loans.
+        vault.closePastSubscription(subscriptionDate);
+
+        auto const brokerKeylet =
+            keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
 
         {
             using namespace loan_broker;
@@ -3198,7 +3202,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const lenderSeq = env.seq(lender);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
-            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
                 auto const [txIDs, batchID] = submitBatch(
                     env,
@@ -3281,8 +3285,12 @@ class Batch_test : public beast::unit_test::Suite
                     batch::Sig(borrower));
             }
             env.close();
-            BEAST_EXPECT(env.le(brokerKeylet));
             BEAST_EXPECT(!env.le(loanKeylet));
+            auto const brokerSleBefore = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(brokerSleBefore))
+                return;
+            auto const coverAvailableBefore = brokerSleBefore->at(sfCoverAvailable);
+            auto const coverDepositAmount = asset(100).value();
             {
                 // LoanSet normally charges at least 2x base fee, but since the
                 // signature check is done by the batch, it only charges the
@@ -3301,17 +3309,63 @@ class Batch_test : public beast::unit_test::Suite
                             Fee(kNone),
                             Seq(kNone)),
                         lenderSeq + 1),
-                    batch::Inner(manage(lender, loanKeylet.key, tfLoanImpair), lenderSeq + 2),
+                    batch::Inner(
+                        loan_broker::coverDeposit(lender, brokerKeylet.key, coverDepositAmount),
+                        lenderSeq + 2),
                     batch::Sig(borrower));
             }
             env.close();
-            BEAST_EXPECT(env.le(brokerKeylet));
-            if (auto const sleLoan = env.le(loanKeylet);
-                lendingBatchEnabled ? BEAST_EXPECT(sleLoan) : !BEAST_EXPECT(!sleLoan))
+            BEAST_EXPECT(static_cast<bool>(env.le(loanKeylet)) == lendingBatchEnabled);
+            if (auto const brokerSle = env.le(brokerKeylet); BEAST_EXPECT(brokerSle))
             {
-                BEAST_EXPECT(sleLoan->isFlag(lsfLoanImpaired));
+                auto const expectedCover = lendingBatchEnabled
+                    ? coverAvailableBefore + coverDepositAmount
+                    : coverAvailableBefore;
+                BEAST_EXPECT(brokerSle->at(sfCoverAvailable) == expectedCover);
             }
         }
+    }
+
+    void
+    testLendingAmendment(FeatureBitset features)
+    {
+        testcase("lending amendment");
+
+        using namespace test::jtx;
+
+        // Before LendingProtocolV1_2 a Vault inner transaction rejects the whole batch.
+        auto const checkVaultBatch = [this](FeatureBitset amendments) {
+            bool const lendingBatchEnabled = amendments[featureLendingProtocolV1_2];
+            Env env{*this, amendments};
+
+            Account const payer{"payer"};
+            Account const lender{"lender"};
+            env.fund(XRP(100'000), payer, lender);
+            env.close();
+
+            Vault const vault{env};
+            auto [create, vaultKeylet] = vault.create({.owner = lender, .asset = xrpIssue()});
+
+            auto const payerSeq = env.seq(payer);
+            auto const lenderSeq = env.seq(lender);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            submitBatch(
+                env,
+                lendingBatchEnabled ? TER{tesSUCCESS} : TER{temINVALID_INNER_BATCH},
+                batch::outer(payer, payerSeq, batchFee, tfAllOrNothing),
+                batch::Inner(create, lenderSeq),
+                batch::Inner(
+                    vault.deposit(
+                        {.depositor = lender, .id = vaultKeylet.key, .amount = XRP(1'000)}),
+                    lenderSeq + 1),
+                batch::Sig(lender));
+            env.close();
+
+            BEAST_EXPECT(static_cast<bool>(env.le(vaultKeylet)) == lendingBatchEnabled);
+        };
+
+        checkVaultBatch(features - featureLendingProtocolV1_2);
+        checkVaultBatch(features);
     }
 
     void
@@ -3347,7 +3401,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const preBobUSD = env.balance(bob, usd.issue());
 
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            uint256 const chkID{getCheckIndex(bob, env.seq(bob))};
+            UInt256 const chkID{getCheckIndex(bob, env.seq(bob))};
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -3404,7 +3458,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const preBobUSD = env.balance(bob, usd.issue());
 
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            uint256 const chkID{getCheckIndex(bob, env.seq(bob))};
+            UInt256 const chkID{getCheckIndex(bob, env.seq(bob))};
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -3481,7 +3535,7 @@ class Batch_test : public beast::unit_test::Suite
         auto const preBobUSD = env.balance(bob, usd.issue());
 
         auto const batchFee = batch::calcBatchFee(env, 1, 3);
-        uint256 const chkID{getCheckIndex(bob, bobSeq + 1)};
+        UInt256 const chkID{getCheckIndex(bob, bobSeq + 1)};
         auto const [txIDs, batchID] = submitBatch(
             env,
             tesSUCCESS,
@@ -3558,7 +3612,7 @@ class Batch_test : public beast::unit_test::Suite
         auto const preBobUSD = env.balance(bob, usd.issue());
 
         auto const batchFee = batch::calcBatchFee(env, 2, 2);
-        uint256 const chkID{getCheckIndex(bob, env.seq(bob))};
+        UInt256 const chkID{getCheckIndex(bob, env.seq(bob))};
         auto const [txIDs, batchID] = submitBatch(
             env,
             tesSUCCESS,
@@ -4184,7 +4238,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const aliceSeq = env.seq(alice);
 
             // CheckCash Txn
-            uint256 const chkID{getCheckIndex(alice, aliceSeq)};
+            UInt256 const chkID{getCheckIndex(alice, aliceSeq)};
             auto const objTxn = env.jt(check::cash(bob, chkID, XRP(10)));
             auto const objTxnID = to_string(objTxn.stx->getTransactionID());
             env(objTxn, Ter(tecNO_ENTRY));
@@ -4248,7 +4302,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const bobSeq = env.seq(bob);
 
             // CheckCreate Txn
-            uint256 const chkID{getCheckIndex(alice, aliceSeq)};
+            UInt256 const chkID{getCheckIndex(alice, aliceSeq)};
             auto const objTxn = env.jt(check::create(alice, bob, XRP(10)));
             auto const objTxnID = to_string(objTxn.stx->getTransactionID());
             env(objTxn, Ter(tesSUCCESS));
@@ -4311,7 +4365,7 @@ class Batch_test : public beast::unit_test::Suite
 
             // Batch Txn
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            uint256 const chkID{getCheckIndex(alice, aliceSeq)};
+            UInt256 const chkID{getCheckIndex(alice, aliceSeq)};
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -4371,7 +4425,7 @@ class Batch_test : public beast::unit_test::Suite
 
         STTx const stx = STTx(ttAMENDMENT, [&](auto& obj) {
             obj.setAccountID(sfAccount, AccountID());
-            obj.setFieldH256(sfAmendment, uint256(2));
+            obj.setFieldH256(sfAmendment, UInt256(2));
             obj.setFieldU32(sfLedgerSequence, env.seq(alice));
             obj.setFieldU32(sfFlags, tfInnerBatchTxn);
         });
@@ -4652,7 +4706,7 @@ class Batch_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice, bob);
         env.close();
 
-        auto submitTx = [&](std::uint32_t flags) -> uint256 {
+        auto submitTx = [&](std::uint32_t flags) -> UInt256 {
             auto jt = env.jt(pay(alice, bob, XRP(1)), Txflags(flags));
             Serializer s;
             jt.stx->add(s);
@@ -4660,7 +4714,7 @@ class Batch_test : public beast::unit_test::Suite
             return jt.stx->getTransactionID();
         };
 
-        auto processTxn = [&](std::uint32_t flags) -> uint256 {
+        auto processTxn = [&](std::uint32_t flags) -> UInt256 {
             auto jt = env.jt(pay(alice, bob, XRP(1)), Txflags(flags));
             Serializer s;
             jt.stx->add(s);
@@ -4674,13 +4728,13 @@ class Batch_test : public beast::unit_test::Suite
         // Validate: NetworkOPs::submitTransaction()
         {
             // Submit a tx with tfInnerBatchTxn
-            uint256 const txBad = submitTx(tfInnerBatchTxn);
+            UInt256 const txBad = submitTx(tfInnerBatchTxn);
             BEAST_EXPECT(env.app().getHashRouter().getFlags(txBad) == HashRouterFlags::UNDEFINED);
         }
 
         // Validate: NetworkOPs::processTransaction()
         {
-            uint256 const txid = processTxn(tfInnerBatchTxn);
+            UInt256 const txid = processTxn(tfInnerBatchTxn);
             // HashRouter::getFlags() should return LedgerFlags::BAD
             BEAST_EXPECT(env.app().getHashRouter().getFlags(txid) == HashRouterFlags::BAD);
         }
@@ -5905,6 +5959,7 @@ class Batch_test : public beast::unit_test::Suite
         testCheckAllSignatures(features);
         testAccountSet(features);
         testAccountDelete(features);
+        testLendingAmendment(features);
         testLoan(features);
         testObjectCreateSequence(features);
         testObjectCreateTicket(features);

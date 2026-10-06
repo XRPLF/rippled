@@ -11,13 +11,13 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
-#include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
-
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -89,25 +89,25 @@ class Config : public BasicConfig
 {
 public:
     // Settings related to the configuration file location and directories
-    static char const* const kConfigFileName;
-    static char const* const kConfigLegacyName;
-    static char const* const kDatabaseDirName;
-    static char const* const kValidatorsFileName;
+    static constexpr std::string_view kConfigFileName = "xrpld.cfg";
+    static constexpr std::string_view kConfigLegacyName = "rippled.cfg";
+    static constexpr std::string_view kDatabaseDirName = "db";
+    static constexpr std::string_view kValidatorsFileName = "validators.txt";
 
     /**
      * Returns the full path and filename of the debug log file.
      */
-    [[nodiscard]] boost::filesystem::path
+    [[nodiscard]] std::filesystem::path
     getDebugLogFile() const;
 
 private:
-    boost::filesystem::path configFile_;
+    std::filesystem::path configFile_;
 
 public:
-    boost::filesystem::path configDir;
+    std::filesystem::path configDir;
 
 private:
-    boost::filesystem::path debugLogfile_;
+    std::filesystem::path debugLogfile_;
 
     void
     load();
@@ -157,7 +157,7 @@ public:
 
     std::string startLedger;
 
-    std::optional<uint256> trapTxHash;
+    std::optional<UInt256> trapTxHash;
 
     // Network parameters
     uint32_t networkId = 0;
@@ -229,6 +229,12 @@ public:
     static constexpr int kMaxJobQueueTx = 1000;
     static constexpr int kMinJobQueueTx = 100;
 
+    // Optional override for the per-connection subscription cap. Unset means
+    // use the built-in default (kMaxSubscriptionsPerConnection in InfoSub.h).
+    // Kept as an override here, rather than the default itself, so the core
+    // module need not depend on the server module that owns the constant.
+    std::optional<std::size_t> maxSubscriptionsPerConnection;
+
     // Amendment majority time
     std::chrono::seconds amendmentMajorityTime = kDefaultAmendmentMajorityTime;
 
@@ -279,7 +285,7 @@ public:
     // These override the command line client settings
     std::optional<beast::ip::Endpoint> rpcIp;
 
-    std::unordered_set<uint256, beast::Uhash<>> features;
+    std::unordered_set<UInt256, beast::Uhash<>> features;
 
     std::string serverDomain;
 
@@ -288,6 +294,23 @@ public:
 
     // How long can a peer remain in the "diverged" state
     std::chrono::seconds maxDivergedTime{300};
+
+    // Optional overrides for how many manifests are kept in the cache and
+    // carried in one TMManifests message, split by whether this node lists the
+    // validator. Unset means use the built-in defaults (kMaxUntrustedCount and
+    // kMaxTrustedCount in Manifest.h). Kept as overrides here, rather than the
+    // defaults themselves, so the core module need not depend on the server
+    // module that owns the constants.
+    std::optional<std::size_t> maxUntrustedCount;
+    std::optional<std::size_t> maxTrustedCount;
+
+    // Bounds for both counts above. The lower bound leaves room for a small
+    // network or a deliberately tight limit; note that setting a count below
+    // what peers actually send means their manifest messages are dropped for
+    // being oversized. The upper bound keeps the implied message size well
+    // under the overall protocol message limit.
+    static constexpr std::size_t kMinManifestCount = 50;
+    static constexpr std::size_t kMaxManifestCount = 1000;
 
     // Enable the beta API version
     bool betaRpcApi = false;

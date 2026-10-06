@@ -22,6 +22,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -112,21 +113,26 @@ private:
             txJson[sfTransactionType] = "AccountSet";
             txJson[sfAccount] = borrower.human();
 
-            auto const borrowerSignParams = [&]() {
-                json::Value params{json::ValueType::Object};
-                params[jss::passphrase] = borrowerPass;
-                params[jss::key_type] = "ed25519";
-                params[jss::signature_target] = "Destination";
-                params[jss::tx_json] = txJson;
-                return params;
-            }();
-            auto const jSignBorrower = env.rpc("json", "sign", to_string(borrowerSignParams));
-            BEAST_EXPECT(
-                jSignBorrower.isMember(jss::result) &&
-                jSignBorrower[jss::result].isMember(jss::error) &&
-                jSignBorrower[jss::result][jss::error] == "invalidParams" &&
-                jSignBorrower[jss::result].isMember(jss::error_message) &&
-                jSignBorrower[jss::result][jss::error_message] == "Destination");
+            // "Destination" is not an inner object at all. "Book" is one, but
+            // it holds no transaction signature, so it is not a target either.
+            for (char const* target : {"Destination", "Book", "Signer"})
+            {
+                auto const borrowerSignParams = [&]() {
+                    json::Value params{json::ValueType::Object};
+                    params[jss::passphrase] = borrowerPass;
+                    params[jss::key_type] = "ed25519";
+                    params[jss::signature_target] = target;
+                    params[jss::tx_json] = txJson;
+                    return params;
+                }();
+                auto const jSignBorrower = env.rpc("json", "sign", to_string(borrowerSignParams));
+                BEAST_EXPECT(
+                    jSignBorrower.isMember(jss::result) &&
+                    jSignBorrower[jss::result].isMember(jss::error) &&
+                    jSignBorrower[jss::result][jss::error] == "invalidParams" &&
+                    jSignBorrower[jss::result].isMember(jss::error_message) &&
+                    jSignBorrower[jss::result][jss::error_message] == target);
+            }
         }
         {
             testcase("RPC LoanSet - sign and submit borrower initiated");
@@ -363,8 +369,7 @@ private:
             {.env = env,
              .issuer = issuer,
              .holders = {lender, borrower},
-             .flags = tfMPTCanTransfer | tfMPTCanLock,
-             .mutableFlags = tmfMPTCanEnableCanTrade});
+             .flags = tfMPTCanTransfer | tfMPTCanLock});
         PrettyAsset const asset = mpt.issuanceID();
         env(pay(issuer, lender, asset(10'000'000)));
         env(pay(issuer, borrower, asset(100'000)));
@@ -387,7 +392,7 @@ private:
             Sig(sfCounterpartySignature, lender),
             loanSetFee);
         env.close();
-        auto const loanKeylet = keylet::loan(broker.brokerID, 1);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(1));
         BEAST_EXPECT(env.le(loanKeylet));
 
         // Repayment still works.
@@ -399,7 +404,7 @@ private:
         env.close();
 
         // Enable CanTrade and verify the DEX path is restored.
-        mpt.set({.mutableFlags = tmfMPTSetCanTrade});
+        mpt.set({.flags = tfMPTSetCanTrade});
         env.close();
 
         env(offer(lender, XRP(1), asset(10)));
@@ -433,7 +438,7 @@ public:
 class LoanBatch_test : public LoanTestBase
 {
 protected:
-    beast::xor_shift_engine engine_;
+    beast::XorShiftEngine engine_;
 
     std::uniform_int_distribution<> assetDist_{0, 2};
     std::uniform_int_distribution<std::int64_t> principalDist_{100'000, 1'000'000'000};
@@ -473,14 +478,21 @@ protected:
         TenthBips16 const managementFeeRate{managementFeeRateDist_(engine_)};
         auto const serviceFee = serviceFeeDist_(engine_);
         TenthBips32 interest{interestRateDist_(engine_)};
-        auto const payTotal = paymentTotalDist_(engine_);
+        auto payTotal = paymentTotalDist_(engine_);
         auto const payInterval = paymentIntervalDist_(engine_);
+        // The end of the last payment's grace period must fit in a 32-bit
+        // ripple-epoch timestamp, or LoanSet fails with tecKILLED. Cap the
+        // schedule well below that horizon (2e9 seconds is roughly 63 years,
+        // leaving ample headroom over the ledger start date).
+        constexpr std::uint32_t kMaxScheduleSeconds = 2'000'000'000;
+        payTotal = std::min(payTotal, static_cast<int>(kMaxScheduleSeconds / payInterval));
 
         BrokerParameters const brokerParams{
             .vaultDeposit = principalRequest * 10,
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
-            .managementFeeRate = managementFeeRate};
+            .managementFeeRate = managementFeeRate,
+            .coverRateLiquidation = TenthBips32{0}};
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,

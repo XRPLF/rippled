@@ -92,7 +92,7 @@ RCLConsensus::RCLConsensus(
     LedgerMaster& ledgerMaster,
     LocalTxs& localTxs,
     InboundTransactions& inboundTransactions,
-    Consensus<Adaptor>::clock_type const& clock,
+    Consensus<Adaptor>::ClockType const& clock,
     ValidatorKeys const& validatorKeys,
     beast::Journal journal)
     : adaptor_(
@@ -212,7 +212,7 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
         msg.set_rawtransaction(slice.data(), slice.size());
         msg.set_status(protocol::tsNEW);
         msg.set_receivetimestamp(app_.getTimeKeeper().now().time_since_epoch().count());
-        static std::set<Peer::id_t> const kSkip{};
+        static std::set<Peer::ID> const kSkip{};
         app_.getOverlay().relay(tx.id(), msg, kSkip);
     }
     else
@@ -297,14 +297,14 @@ RCLConsensus::Adaptor::proposersFinished(RCLCxLedger const& ledger, LedgerHash c
     return vals.getNodesAfter(RCLValidatedLedger(ledger.ledger, vals.adaptor().journal()), h);
 }
 
-uint256
+UInt256
 RCLConsensus::Adaptor::getPrevLedger(
-    uint256 ledgerID,
+    UInt256 ledgerID,
     RCLCxLedger const& ledger,
     ConsensusMode mode)
 {
     RCLValidations& vals = app_.getValidations();
-    uint256 netLgr = vals.getPreferred(
+    UInt256 netLgr = vals.getPreferred(
         RCLValidatedLedger{ledger.ledger, vals.adaptor().journal()},
         ledgerMaster_.getValidLedgerIndex());
 
@@ -549,7 +549,7 @@ RCLConsensus::Adaptor::doAccept(
         censorshipDetector_.check(
             std::move(accepted),
             [curr = built.seq(), j = app_.getJournal("CensorshipDetector"), &failed](
-                uint256 const& id, LedgerIndex seq) {
+                UInt256 const& id, LedgerIndex seq) {
                 if (failed.contains(id))
                     return true;
 
@@ -684,28 +684,17 @@ RCLConsensus::Adaptor::doAccept(
     //  close time reports, and update our clock.
     if ((mode == ConsensusMode::Proposing || mode == ConsensusMode::Observing) && !consensusFail)
     {
-        auto closeTime = rawCloseTimes.self;
-
-        JLOG(j_.info()) << "We closed at " << closeTime.time_since_epoch().count();
-        using usec64_t = std::chrono::duration<std::uint64_t>;
-        auto closeTotal = std::chrono::duration_cast<usec64_t>(closeTime.time_since_epoch());
+        JLOG(j_.info()) << "We closed at " << rawCloseTimes.self.time_since_epoch().count();
         int closeCount = 1;
-
         for (auto const& [t, v] : rawCloseTimes.peers)
         {
             JLOG(j_.info()) << std::to_string(v) << " time votes for "
                             << std::to_string(t.time_since_epoch().count());
             closeCount += v;
-            closeTotal += std::chrono::duration_cast<usec64_t>(t.time_since_epoch()) * v;
         }
 
-        closeTotal += usec64_t(closeCount / 2);  // for round to nearest
-        closeTotal /= closeCount;
-
-        // Use signed times since we are subtracting
-        using duration = std::chrono::duration<std::int32_t>;
-        using time_point = std::chrono::time_point<NetClock, duration>;
-        auto offset = time_point{closeTotal} - std::chrono::time_point_cast<duration>(closeTime);
+        // Median handles outliers better than mean.
+        auto const offset = medianCloseOffset(rawCloseTimes);
         JLOG(j_.info()) << "Our close offset is estimated at " << offset.count() << " ("
                         << closeCount << ")";
 
@@ -974,7 +963,7 @@ RCLConsensus::peerProposal(NetClock::time_point const& now, RCLCxPeerPos const& 
 }
 
 bool
-RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, hash_set<NodeID> const& nowTrusted)
+RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, HashSet<NodeID> const& nowTrusted)
 {
     // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
@@ -1032,7 +1021,7 @@ RCLConsensus::Adaptor::getValidLedgerIndex() const
     return ledgerMaster_.getValidLedgerIndex();
 }
 
-std::pair<std::size_t, hash_set<RCLConsensus::Adaptor::NodeKey_t>>
+std::pair<std::size_t, HashSet<RCLConsensus::Adaptor::NodeKeyT>>
 RCLConsensus::Adaptor::getQuorumKeys() const
 {
     return app_.getValidators().getQuorumKeys();
@@ -1040,8 +1029,8 @@ RCLConsensus::Adaptor::getQuorumKeys() const
 
 std::size_t
 RCLConsensus::Adaptor::laggards(
-    Ledger_t::Seq const seq,
-    hash_set<RCLConsensus::Adaptor::NodeKey_t>& trustedKeys) const
+    LedgerT::Seq const seq,
+    HashSet<RCLConsensus::Adaptor::NodeKeyT>& trustedKeys) const
 {
     return app_.getValidations().laggards(seq, trustedKeys);
 }
@@ -1064,8 +1053,8 @@ RCLConsensus::startRound(
     NetClock::time_point const& now,
     RCLCxLedger::ID const& prevLgrId,
     RCLCxLedger const& prevLgr,
-    hash_set<NodeID> const& nowUntrusted,
-    hash_set<NodeID> const& nowTrusted,
+    HashSet<NodeID> const& nowUntrusted,
+    HashSet<NodeID> const& nowTrusted,
     std::unique_ptr<std::stringstream> const& clog)
 {
     std::scoped_lock const _{mutex_};

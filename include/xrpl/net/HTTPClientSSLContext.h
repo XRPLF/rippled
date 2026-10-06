@@ -8,11 +8,11 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
-#include <boost/format.hpp>
 
 #include <openssl/err.h>
 #include <openssl/tls1.h>
 
+#include <format>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -38,8 +38,8 @@ public:
 
             if (ec && sslVerifyDir.empty())
             {
-                Throw<std::runtime_error>(boost::str(
-                    boost::format("Failed to set_default_verify_paths: %s") % ec.message()));
+                Throw<std::runtime_error>(
+                    std::format("Failed to set_default_verify_paths: {}", ec.message()));
             }
         }
         else
@@ -54,7 +54,7 @@ public:
             if (ec)
             {
                 Throw<std::runtime_error>(
-                    boost::str(boost::format("Failed to add verify path: %s") % ec.message()));
+                    std::format("Failed to add verify path: {}", ec.message()));
             }
         }
     }

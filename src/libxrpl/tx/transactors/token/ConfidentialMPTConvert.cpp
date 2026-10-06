@@ -3,10 +3,12 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -89,7 +91,14 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     // already checked in preflight, but should also check that issuer on the
     // issuance isn't the account either
     if (sleIssuance->getAccountID(sfIssuer) == account)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::ConfidentialMPTConvert::preclaim : issuer derived from the MPT ID must "
+            "match the ledger's stored issuer");
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
     bool const requiresAuditor = sleIssuance->isFieldPresent(sfAuditorEncryptionKey);
@@ -102,6 +111,17 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     auto const sleMptoken = ctx.view.read(keylet::mptoken(issuanceID, account));
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
+
+    // An already-initialized holder has their new ciphertexts homomorphically
+    // added to their existing mirrors, so those mirrors must be encrypted under
+    // the currently registered keys. A first-time convert creates the mirrors
+    // under those keys instead, and has nothing to be stale.
+    if (ctx.view.rules().enabled(featureConfidentialMPTKeyRotation) &&
+        sleMptoken->isFieldPresent(sfIssuerEncryptedBalance) &&
+        !areMirrorsCurrent(*sleIssuance, *sleMptoken))
+    {
+        return tecNO_PERMISSION;
+    }
 
     auto const mptIssue = MPTIssue{issuanceID};
 
@@ -207,11 +227,25 @@ ConfidentialMPTConvert::doApply()
 
     auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::ConfidentialMPTConvert::doApply : preclaim already validated the MPToken "
+            "exists");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     auto sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::ConfidentialMPTConvert::doApply : preclaim already validated the issuance "
+            "exists");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     auto const amtToConvert = ctx_.tx[sfMPTAmount];
     auto const amt = (*sleMptoken)[~sfMPTAmount].valueOr(0);
@@ -273,7 +307,14 @@ ConfidentialMPTConvert::doApply()
         if (auditorEc)
         {
             if (!sleMptoken->isFieldPresent(sfAuditorEncryptedBalance))
-                return tecINTERNAL;  // LCOV_EXCL_LINE
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE(
+                    "xrpl::ConfidentialMPTConvert::doApply : issuance-level auditing implies "
+                    "the MPToken already carries an auditor balance");
+                return tecINTERNAL;
+                // LCOV_EXCL_STOP
+            }
 
             auto sum = homomorphicAdd(*auditorEc, (*sleMptoken)[sfAuditorEncryptedBalance]);
             if (!sum)
@@ -302,13 +343,24 @@ ConfidentialMPTConvert::doApply()
         if (auditorEc)
             (*sleMptoken)[sfAuditorEncryptedBalance] = *auditorEc;
 
+        // Initialize key epochs when registering the keys.
+        if (view().rules().enabled(featureConfidentialMPTKeyRotation))
+            setMirrorEpochs(*sleIssuance, *sleMptoken);
+
         // Spending balance starts at zero. Must use canonical zero encryption
         // (deterministic ciphertext) so the ledger state is reproducible.
         auto zeroBalance = encryptCanonicalZeroAmount(
             (*sleMptoken)[sfHolderEncryptionKey], accountID_, mptIssuanceID);
 
         if (!zeroBalance)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE(
+                "xrpl::ConfidentialMPTConvert::doApply : canonical zero encryption cannot fail "
+                "for an already-valid holder public key");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleMptoken)[sfConfidentialBalanceSpending] = std::move(*zeroBalance);
     }
@@ -316,7 +368,12 @@ ConfidentialMPTConvert::doApply()
     {
         // both sfIssuerEncryptedBalance and sfConfidentialBalanceInbox should
         // exist together
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::ConfidentialMPTConvert::doApply : confidential balance fields must be all "
+            "present or all absent");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     view().update(sleIssuance);

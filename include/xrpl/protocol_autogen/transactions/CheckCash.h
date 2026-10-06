@@ -20,8 +20,8 @@ class CheckCashBuilder;
  *
  * Type: ttCHECK_CASH (17)
  * Delegable: Delegation::Delegable
- * Amendment: uint256{}
- * Privileges: MayCreateMpt
+ * Amendment: UInt256{}
+ * Privileges: Privilege::MayCreateMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use CheckCashBuilder to construct new transactions.

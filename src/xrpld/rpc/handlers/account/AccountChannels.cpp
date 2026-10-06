@@ -3,6 +3,7 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -21,9 +22,6 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Fees.h>
-
-#include <boost/lexical_cast.hpp>
-#include <boost/lexical_cast/bad_lexical_cast.hpp>
 
 #include <cstdint>
 #include <memory>
@@ -120,7 +118,7 @@ doAccountChannels(rpc::JsonContext& context)
     };
     VisitData visitData = {.items = {}, .accountID = accountID, .raDstAccount = raDstAccount};
     visitData.items.reserve(limit);
-    uint256 startAfter = beast::kZero;
+    UInt256 startAfter = beast::kZero;
     std::uint64_t startHint = 0;
 
     if (params.isMember(jss::marker))
@@ -129,7 +127,7 @@ doAccountChannels(rpc::JsonContext& context)
             return rpc::expectedFieldError(jss::marker, "string");
 
         // Marker is composed of a comma separated index and start hint. The
-        // former will be read as hex, and the latter using boost lexical cast.
+        // former will be read as hex, and the latter as a decimal integer.
         std::stringstream marker(params[jss::marker].asString());
         std::string value;
         if (!std::getline(marker, value, ','))
@@ -141,14 +139,10 @@ doAccountChannels(rpc::JsonContext& context)
         if (!std::getline(marker, value, ','))
             return rpcError(RpcInvalidParams);
 
-        try
-        {
-            startHint = boost::lexical_cast<std::uint64_t>(value);
-        }
-        catch (boost::bad_lexical_cast&)
-        {
+        auto const hint = toUInt64(value);
+        if (!hint.has_value())
             return rpcError(RpcInvalidParams);
-        }
+        startHint = *hint;
 
         // We then must check if the object pointed to by the marker is actually
         // owned by the account in the request.
@@ -162,7 +156,7 @@ doAccountChannels(rpc::JsonContext& context)
     }
 
     auto count = 0;
-    std::optional<uint256> marker = {};
+    std::optional<UInt256> marker = {};
     std::uint64_t nextHint = 0;
     if (!forEachItemAfter(
             *ledger,
@@ -170,7 +164,7 @@ doAccountChannels(rpc::JsonContext& context)
             startAfter,
             startHint,
             limit + 1,
-            [&visitData, &accountID, &count, &limit, &marker, &nextHint](SLE::const_ref sleCur) {
+            [&visitData, &accountID, &count, &limit, &marker, &nextHint](SLE::ConstRef sleCur) {
                 if (!sleCur)
                 {
                     // LCOV_EXCL_START

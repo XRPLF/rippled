@@ -49,7 +49,7 @@ private:
     Application& app_;
     std::mutex fetchRateMutex_;
     // measures ledgers per second, constants are important
-    DecayWindow<30, clock_type> fetchRate_;
+    DecayWindow<30, ClockType> fetchRate_;
     beast::Journal const j_;
 
 public:
@@ -58,8 +58,8 @@ public:
 
     InboundLedgersImp(
         Application& app,
-        clock_type& clock,
-        beast::insight::Collector::ptr const& collector,
+        ClockType& clock,
+        beast::insight::Collector::Ptr const& collector,
         std::unique_ptr<PeerSetBuilder> peerSetBuilder)
         : app_(app)
         , fetchRate_(clock.now())
@@ -75,7 +75,7 @@ public:
      * @callgraph
      */
     std::shared_ptr<Ledger const>
-    acquire(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
+    acquire(UInt256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
     {
         auto doAcquire = [&, seq, reason]() -> std::shared_ptr<Ledger const> {
             XRPL_ASSERT(
@@ -141,7 +141,7 @@ public:
     acquireAsync(
         JobType type,
         std::string const& name,
-        uint256 const& hash,
+        UInt256 const& hash,
         std::uint32_t seq,
         InboundLedger::Reason reason) override
     {
@@ -171,7 +171,7 @@ public:
     }
 
     std::shared_ptr<InboundLedger>
-    find(uint256 const& hash) override
+    find(UInt256 const& hash) override
     {
         XRPL_ASSERT(hash.isNonZero(), "xrpl::InboundLedgersImp::find : nonzero input");
 
@@ -241,7 +241,7 @@ public:
     }
 
     void
-    logFailure(uint256 const& h, std::uint32_t seq) override
+    logFailure(UInt256 const& h, std::uint32_t seq) override
     {
         ScopedLockType const sl(lock_);
 
@@ -249,7 +249,7 @@ public:
     }
 
     bool
-    isFailure(uint256 const& h) override
+    isFailure(UInt256 const& h) override
     {
         ScopedLockType const sl(lock_);
 
@@ -318,7 +318,7 @@ public:
     {
         json::Value ret(json::ValueType::Object);
 
-        std::vector<std::pair<uint256, std::shared_ptr<InboundLedger>>> acqs;
+        std::vector<std::pair<UInt256, std::shared_ptr<InboundLedger>>> acqs;
 
         {
             ScopedLockType const sl(lock_);
@@ -448,22 +448,22 @@ public:
     }
 
 private:
-    clock_type& clock_;
+    ClockType& clock_;
 
     using ScopedLockType = std::unique_lock<std::recursive_mutex>;
     std::recursive_mutex lock_;
 
     bool stopping_ = false;
-    using MapType = hash_map<uint256, std::shared_ptr<InboundLedger>>;
+    using MapType = HashMap<UInt256, std::shared_ptr<InboundLedger>>;
     MapType ledgers_;
 
-    beast::aged_map<uint256, std::uint32_t> recentFailures_;
+    beast::AgedMap<UInt256, std::uint32_t> recentFailures_;
 
     beast::insight::Counter counter_;
 
     std::unique_ptr<PeerSetBuilder> peerSetBuilder_;
 
-    std::set<uint256> pendingAcquires_;
+    std::set<UInt256> pendingAcquires_;
     std::mutex acquiresMutex_;
 };
 
@@ -472,8 +472,8 @@ private:
 std::unique_ptr<InboundLedgers>
 makeInboundLedgers(
     Application& app,
-    InboundLedgers::clock_type& clock,
-    beast::insight::Collector::ptr const& collector)
+    InboundLedgers::ClockType& clock,
+    beast::insight::Collector::Ptr const& collector)
 {
     return std::make_unique<InboundLedgersImp>(app, clock, collector, makePeerSetBuilder(app));
 }

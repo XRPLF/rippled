@@ -81,7 +81,7 @@ void
 ApplyStateTable::visit(
     ReadView const& to,
     std::function<
-        void(uint256 const& key, bool isDelete, SLE::const_ref before, SLE::const_ref after)> const&
+        void(UInt256 const& key, bool isDelete, SLE::ConstRef before, SLE::ConstRef after)> const&
         func) const
 {
     for (auto& item : items_)
@@ -112,7 +112,7 @@ ApplyStateTable::apply(
     STTx const& tx,
     TER ter,
     std::optional<STAmount> const& deliver,
-    std::optional<uint256 const> const& parentBatchId,
+    std::optional<UInt256 const> const& parentBatchId,
     bool isDryRun,
     beast::Journal j)
 {
@@ -309,7 +309,7 @@ ApplyStateTable::succ(
     std::optional<key_type> const& last) const -> std::optional<key_type>
 {
     std::optional<key_type> next = key;
-    items_t::const_iterator iter;
+    ItemsT::const_iterator iter;
     // Find base successor that is
     // not also deleted in our list
     do
@@ -394,7 +394,7 @@ ApplyStateTable::peek(ReadView const& base, Keylet const& k)
 }
 
 void
-ApplyStateTable::erase(ReadView const& base, SLE::ref sle)
+ApplyStateTable::erase(ReadView const& base, SLE::Ref sle)
 {
     auto const iter = items_.find(sle->key());
     if (iter == items_.end())
@@ -418,7 +418,7 @@ ApplyStateTable::erase(ReadView const& base, SLE::ref sle)
 }
 
 void
-ApplyStateTable::rawErase(ReadView const& base, SLE::ref sle)
+ApplyStateTable::rawErase(ReadView const& base, SLE::Ref sle)
 {
     using namespace std;
     auto const result = items_.emplace(
@@ -443,7 +443,7 @@ ApplyStateTable::rawErase(ReadView const& base, SLE::ref sle)
 }
 
 void
-ApplyStateTable::insert(ReadView const& base, SLE::ref sle)
+ApplyStateTable::insert(ReadView const& base, SLE::Ref sle)
 {
     auto const iter = items_.lower_bound(sle->key());
     if (iter == items_.end() || iter->first != sle->key())
@@ -473,7 +473,7 @@ ApplyStateTable::insert(ReadView const& base, SLE::ref sle)
 }
 
 void
-ApplyStateTable::replace(ReadView const& base, SLE::ref sle)
+ApplyStateTable::replace(ReadView const& base, SLE::Ref sle)
 {
     auto const iter = items_.lower_bound(sle->key());
     if (iter == items_.end() || iter->first != sle->key())
@@ -502,7 +502,7 @@ ApplyStateTable::replace(ReadView const& base, SLE::ref sle)
 }
 
 void
-ApplyStateTable::update(ReadView const& base, SLE::ref sle)
+ApplyStateTable::update(ReadView const& base, SLE::Ref sle)
 {
     auto const iter = items_.find(sle->key());
     if (iter == items_.end())
@@ -534,7 +534,7 @@ ApplyStateTable::destroyXRP(XRPAmount const& fee)
 
 // Insert this transaction to the SLE's threading list
 void
-ApplyStateTable::threadItem(TxMeta& meta, SLE::ref sle)
+ApplyStateTable::threadItem(TxMeta& meta, SLE::Ref sle)
 {
     key_type prevTxID;
     LedgerIndex prevLgrID = 0;
@@ -638,7 +638,7 @@ void
 ApplyStateTable::threadOwners(
     ReadView const& base,
     TxMeta& meta,
-    SLE::const_ref sle,
+    SLE::ConstRef sle,
     Mods& mods,
     beast::Journal j)
 {

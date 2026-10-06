@@ -28,9 +28,8 @@
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/rpc/BookChanges.h>
 #include <xrpld/rpc/CTID.h>
-#include <xrpld/rpc/DeliveredAmount.h>
-#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
+#include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/CanProcess.h>
 #include <xrpl/basics/Log.h>
@@ -75,10 +74,11 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/BuildInfo.h>
@@ -86,10 +86,12 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/MultiApiJson.h>
-#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -103,6 +105,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -155,6 +158,13 @@
 
 namespace xrpl {
 
+/**
+ * Concrete NetworkOPs: server sequencer, network tracker, and owner of all
+ * client subscription state (accounts, books, MPTs, streams). Subscriptions use
+ * four independent non-recursive locks (accountLock_, bookLock_, mptLock_,
+ * streamLock_); see their declarations for the locking and deferred-destruction
+ * rules.
+ */
 class NetworkOPsImp final : public NetworkOPs
 {
     /**
@@ -195,7 +205,7 @@ class NetworkOPsImp final : public NetworkOPs
     /**
      * State accounting records two attributes for each possible server state:
      * 1) Amount of time spent in each state (in microseconds). This value is
-     *    updated upon each state transition.
+     * updated upon each state transition.
      * 2) Number of transitions to each state.
      *
      * This data can be polled through server_info and represented by
@@ -296,7 +306,7 @@ class NetworkOPsImp final : public NetworkOPs
 public:
     NetworkOPsImp(
         ServiceRegistry& registry,
-        NetworkOPs::clock_type& clock,
+        NetworkOPs::ClockType& clock,
         bool standalone,
         std::size_t minPeerCount,
         bool startValid,
@@ -305,7 +315,7 @@ public:
         ValidatorKeys const& validatorKeys,
         boost::asio::io_context& ioCtx,
         beast::Journal journal,
-        beast::insight::Collector::ptr const& collector)
+        beast::insight::Collector::Ptr const& collector)
         : registry_(registry)
         , journal_(journal)
         , localTX_(makeLocalTxs())
@@ -461,11 +471,11 @@ private:
     void
     switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLCL);
     bool
-    checkLastClosedLedger(Overlay::PeerSequence const&, uint256& networkClosed);
+    checkLastClosedLedger(Overlay::PeerSequence const&, UInt256& networkClosed);
 
 public:
     bool
-    beginConsensus(uint256 const& networkClosed, std::unique_ptr<std::stringstream> const& clog)
+    beginConsensus(UInt256 const& networkClosed, std::unique_ptr<std::stringstream> const& clog)
         override;
     void
     endConsensus(std::unique_ptr<std::stringstream> const& clog) override;
@@ -552,90 +562,117 @@ public:
     // InfoSub::Source.
     //
     void
-    subAccount(InfoSub::ref ispListener, hash_set<AccountID> const& vnaAccountIDs, bool rt)
-        override;
+    subAccount(InfoSub::Ref ispListener, HashSet<AccountID> const& vnaAccountIDs, bool rt) override;
     void
-    unsubAccount(InfoSub::ref ispListener, hash_set<AccountID> const& vnaAccountIDs, bool rt)
+    unsubAccount(InfoSub::Ref ispListener, HashSet<AccountID> const& vnaAccountIDs, bool rt)
         override;
 
     // Just remove the subscription from the tracking
     // not from the InfoSub. Needed for InfoSub destruction
     void
-    unsubAccountInternal(std::uint64_t seq, hash_set<AccountID> const& vnaAccountIDs, bool rt)
+    unsubAccountInternal(std::uint64_t seq, HashSet<AccountID> const& vnaAccountIDs, bool rt)
         override;
 
-    ErrorCodeI
-    subAccountHistory(InfoSub::ref ispListener, AccountID const& account) override;
     void
-    unsubAccountHistory(InfoSub::ref ispListener, AccountID const& account, bool historyOnly)
+    subMPT(InfoSub::Ref ispListener, HashSet<MPTID> const& mptIDs) override;
+    void
+    unsubMPT(InfoSub::Ref ispListener, HashSet<MPTID> const& mptIDs) override;
+    void
+    unsubMPTInternal(std::uint64_t seq, MPTID const& mptID) override;
+
+    ErrorCodeI
+    subAccountHistory(InfoSub::Ref ispListener, AccountID const& account) override;
+    void
+    unsubAccountHistory(InfoSub::Ref ispListener, AccountID const& account, bool historyOnly)
         override;
 
     void
     unsubAccountHistoryInternal(std::uint64_t seq, AccountID const& account, bool historyOnly)
         override;
 
+    void
+    scheduleAccountCleanup(
+        std::uint64_t seq,
+        HashSet<AccountID> rtAccounts,
+        HashSet<AccountID> normalAccounts,
+        HashSet<AccountID> historyAccounts) override;
+
     bool
-    subLedger(InfoSub::ref ispListener, json::Value& jvResult) override;
+    subLedger(InfoSub::Ref ispListener, json::Value& jvResult) override;
     bool
     unsubLedger(std::uint64_t uListener) override;
 
     bool
-    subBookChanges(InfoSub::ref ispListener) override;
+    subBookChanges(InfoSub::Ref ispListener) override;
     bool
     unsubBookChanges(std::uint64_t uListener) override;
 
     bool
-    subServer(InfoSub::ref ispListener, json::Value& jvResult, bool admin) override;
+    subServer(InfoSub::Ref ispListener, json::Value& jvResult, bool admin) override;
     bool
     unsubServer(std::uint64_t uListener) override;
 
     bool
-    subBook(InfoSub::ref ispListener, Book const&) override;
+    subBook(InfoSub::Ref ispListener, Book const&) override;
     bool
-    unsubBook(InfoSub::ref ispListener, Book const&) override;
+    unsubBook(InfoSub::Ref ispListener, Book const&) override;
     bool
     unsubBookInternal(std::uint64_t uListener, Book const&) override;
 
     bool
-    subManifests(InfoSub::ref ispListener) override;
+    subManifests(InfoSub::Ref ispListener) override;
     bool
     unsubManifests(std::uint64_t uListener) override;
     void
     pubManifest(Manifest const&) override;
 
     bool
-    subTransactions(InfoSub::ref ispListener) override;
+    subTransactions(InfoSub::Ref ispListener) override;
     bool
     unsubTransactions(std::uint64_t uListener) override;
 
     bool
-    subRTTransactions(InfoSub::ref ispListener) override;
+    subRTTransactions(InfoSub::Ref ispListener) override;
     bool
     unsubRTTransactions(std::uint64_t uListener) override;
 
     bool
-    subValidations(InfoSub::ref ispListener) override;
+    subValidations(InfoSub::Ref ispListener) override;
     bool
     unsubValidations(std::uint64_t uListener) override;
 
     bool
-    subPeerStatus(InfoSub::ref ispListener) override;
+    subPeerStatus(InfoSub::Ref ispListener) override;
     bool
     unsubPeerStatus(std::uint64_t uListener) override;
     void
     pubPeerStatus(std::function<json::Value(void)> const&) override;
 
     bool
-    subConsensus(InfoSub::ref ispListener) override;
+    subConsensus(InfoSub::Ref ispListener) override;
     bool
     unsubConsensus(std::uint64_t uListener) override;
 
     InfoSub::pointer
     findRpcSub(std::string const& strUrl) override;
     InfoSub::pointer
-    addRpcSub(std::string const& strUrl, InfoSub::ref) override;
+    addRpcSub(std::string const& strUrl, InfoSub::Ref) override;
     bool
     tryRemoveRpcSub(std::string const& strUrl) override;
+
+    /**
+     * Look up an RPC subscription without taking streamLock_.
+     *
+     * Callers MUST already hold streamLock_. This exists so tryRemoveRpcSub
+     * can reuse the lookup while holding the lock; the plain std::mutex is not
+     * recursive, so calling the public findRpcSub (which locks) from under the
+     * lock would self-deadlock.
+     *
+     * @param strUrl The subscription URL key into rpcSubMap_.
+     * @return The matching InfoSub, or an empty pointer if not found.
+     */
+    InfoSub::pointer
+    findRpcSubLocked(std::string const& strUrl);
 
     beast::Journal const&
     journal() const override
@@ -725,22 +762,22 @@ private:
      * Extracts the set of order books affected by @p transaction, then
      * delivers @p jvObj to every live subscriber of those books.
      *
-     * Uses a two-pass design to keep subLock_ hold time short:
-     *   1. Under subLock_, collect strong InfoSub pointers for all live
-     *      subscribers and prune any expired weak_ptrs encountered.
-     *   2. Release subLock_, then call send() on each collected pointer.
+     * Uses a two-pass design to keep bookLock_ hold time short:
+     * 1. Under bookLock_, collect strong InfoSub pointers for all live
+     * subscribers and prune any expired weak_ptrs encountered.
+     * 2. Release bookLock_, then call send() on each collected pointer.
      *
      * @param transaction The accepted ledger transaction to inspect.
      * @param jvObj JSON representation of the transaction to deliver.
      *
-     * @note Thread-safety: acquires subLock_ for the collection pass only.
-     *       send() is intentionally called outside the lock to avoid blocking
-     *       all other sub/unsub/publish paths while I/O is in progress.
-     * @note Contention: subLock_ is shared with all other subscription types.
-     *       On high-throughput nodes processing multi-hop payments that touch
-     *       many offer nodes, this pass holds subLock_ longer than the old
-     *       per-book BookListeners locks did. This is an accepted trade-off
-     *       for lock-domain simplicity.
+     * @note Thread-safety: acquires bookLock_ for the collection pass only.
+     * send() is intentionally called outside the lock to avoid blocking
+     * other book sub/unsub/publish paths while I/O is in progress.
+     * @note Contention: bookLock_ guards only book subscriptions, so this pass
+     * no longer competes with account or stream traffic. On high-throughput
+     * nodes processing multi-hop payments that touch many offer nodes, it
+     * still holds bookLock_ longer than the old per-book BookListeners
+     * locks did. This is an accepted trade-off for lock-domain simplicity.
      */
     void
     pubBookTransaction(AcceptedLedgerTx const& transaction, MultiApiJson const& jvObj);
@@ -751,18 +788,38 @@ private:
         std::shared_ptr<STTx const> const& transaction,
         TER result);
 
+    /**
+     * Send the ledgerClosed and book-changes stream updates for a ledger.
+     * Takes streamLock_ only.
+     */
+    void
+    publishLedgerStreams(
+        std::shared_ptr<ReadView const> const& lpAccepted,
+        std::shared_ptr<AcceptedLedger const> const& alpAccepted);
+
+    /**
+     * On the first published ledger only, start the delayed account-history
+     * streaming for any subscriptions that were registered before a validated
+     * ledger existed. Takes accountLock_ only.
+     */
+    void
+    kickoffAccountHistory(std::shared_ptr<AcceptedLedger const> const& alpAccepted);
+
     void
     pubServer();
     void
     pubConsensus(ConsensusPhase phase);
+    void
+    pubMPTTransaction(AcceptedLedgerTx const& transaction, MultiApiJson const& jvObj);
 
     std::string
     getHostId(bool forAdmin);
 
 private:
-    using SubMapType = hash_map<std::uint64_t, InfoSub::wptr>;
-    using SubInfoMapType = hash_map<AccountID, SubMapType>;
-    using subRpcMapType = hash_map<std::string, InfoSub::pointer>;
+    using SubMapType = HashMap<std::uint64_t, InfoSub::Wptr>;
+    using SubInfoMapType = HashMap<AccountID, SubMapType>;
+    using SubRpcMapType = HashMap<std::string, InfoSub::pointer>;
+    using SubMPTInfoMapType = HashMap<MPTID, SubMapType>;
 
     /*
      * With a validated ledger to separate history and future, the node
@@ -796,14 +853,16 @@ private:
     };
     struct SubAccountHistoryInfoWeak
     {
-        InfoSub::wptr sinkWptr;
+        InfoSub::Wptr sinkWptr;
         std::shared_ptr<SubAccountHistoryIndex> index;
     };
     using SubAccountHistoryMapType =
-        hash_map<AccountID, hash_map<std::uint64_t, SubAccountHistoryInfoWeak>>;
+        HashMap<AccountID, HashMap<std::uint64_t, SubAccountHistoryInfoWeak>>;
 
     /**
-     * @note called while holding subLock_
+     * @note called while holding accountLock_ (it only touches
+     * subAccountHistory_ and posts a JobQueue task; it never reacquires
+     * a subscription lock nor touches the stream maps).
      */
     void
     subAccountHistoryStart(
@@ -814,12 +873,87 @@ private:
     void
     setAccountHistoryJobTimer(SubAccountHistoryInfoWeak subInfo);
 
+    /**
+     * Maximum number of account entries erased per accountLock_ acquisition
+     * during disconnect-time cleanup.
+     *
+     * The cleanup erase loops drop and reacquire accountLock_ after every
+     * chunk of this many accounts, bounding how long a large teardown holds
+     * the lock. A concurrent publish may interleave between chunks; that is
+     * safe because publishing tolerates a partially-cleaned map (a dead
+     * subscriber is simply not notified).
+     */
+    static constexpr std::size_t kAccountCleanupChunk = 4096;
+
+    /**
+     * Erase one connection's entries from a subscription map in
+     * accountLock_-bounded chunks.
+     *
+     * Shared engine behind cleanupAccountSubscriptions and
+     * cleanupAccountHistorySubscriptions: both walk @p accounts, and for each
+     * remove this connection's @p seq from the inner per-account map, dropping
+     * the outer entry once its last subscriber leaves. The lock is released
+     * between chunks so a competing publish can interleave; no iterator is held
+     * across the unlock, so a concurrent mutation cannot dangle.
+     *
+     * @tparam OuterMap    HashMap<AccountID, HashMap<seq, value>>.
+     * @tparam BeforeErase Invoked with the inner value about to be erased, for
+     * per-entry teardown the plain account maps do not need
+     * (the history map uses it to stop its paging job).
+     * @param seq          The disconnecting connection's subscription id.
+     * @param accounts     The accounts this connection was subscribed to.
+     * @param outerMap     The subscription map to erase from.
+     * @param beforeErase  Called on each inner value just before it is erased.
+     * See kAccountCleanupChunk.
+     */
+    template <typename OuterMap, typename BeforeErase>
+    void
+    cleanupSubscriptionMap(
+        std::uint64_t seq,
+        HashSet<AccountID> const& accounts,
+        OuterMap& outerMap,
+        BeforeErase&& beforeErase);
+
+    /**
+     * Erase one connection's entries from the given account map (subAccount_
+     * or subRTAccount_) in accountLock_-bounded chunks. The caller selects the
+     * map, so this need not know about the real-time/normal distinction. Keyed
+     * on seq, so it only removes the disconnecting connection's entries.
+     * See kAccountCleanupChunk.
+     */
+    void
+    cleanupAccountSubscriptions(
+        std::uint64_t seq,
+        HashSet<AccountID> const& accounts,
+        SubInfoMapType& subMap);
+
+    /**
+     * Erase one connection's entries from subAccountHistory_ in
+     * accountLock_-bounded chunks. Keyed on seq. See kAccountCleanupChunk.
+     */
+    void
+    cleanupAccountHistorySubscriptions(std::uint64_t seq, HashSet<AccountID> const& accounts);
+
     std::reference_wrapper<ServiceRegistry> registry_;
     beast::Journal journal_;
 
     std::unique_ptr<LocalTxs> localTX_;
 
-    std::recursive_mutex subLock_;
+    // Independent lock domains so a long cleanup/publish on one does not stall
+    // the others. Hold at most one at a time; if ever more, order: accountLock_,
+    // bookLock_, mptLock_, streamLock_.
+    //
+    // Deferred-destruction rule (non-recursive mutexes): under bookLock_,
+    // mptLock_, or streamLock_, never let the last InfoSub pointer die inside the
+    // lock - ~InfoSub re-acquires it via unsub* -> self-deadlock. Publishers
+    // collect the locked pointers in a container declared before the lock and
+    // destruct after release (see pubServer / pubBookTransaction /
+    // pubMPTTransaction). accountLock_ is exempt: ~InfoSub offloads account
+    // teardown to scheduleAccountCleanup.
+    std::mutex accountLock_;  ///< Guards subAccount_, subRTAccount_, subAccountHistory_.
+    std::mutex bookLock_;     ///< Guards subBook_.
+    std::mutex mptLock_;      ///< Guards subMPT_.
+    std::mutex streamLock_;   ///< Guards streamMaps_[] and rpcSubMap_.
 
     std::atomic<OperatingMode> mode_;
 
@@ -844,20 +978,21 @@ private:
 
     /**
      * Maps each order book to its current set of subscribers.
-     *  Outer key: the Book (currency pair + optional domain).
-     *  Inner key: InfoSub::seq (unique per connection).
-     *  Inner value: weak_ptr so that a dropped connection does not prevent
-     *  the InfoSub from being destroyed; expired entries are pruned lazily
-     *  by pubBookTransaction and eagerly by unsubBookInternal (~InfoSub path).
-     *  Guarded by subLock_.
+     * Outer key: the Book (currency pair + optional domain).
+     * Inner key: InfoSub::seq (unique per connection).
+     * Inner value: weak_ptr so that a dropped connection does not prevent
+     * the InfoSub from being destroyed; expired entries are pruned lazily
+     * by pubBookTransaction and eagerly by unsubBookInternal (~InfoSub path).
+     * Guarded by bookLock_.
      */
-    using SubBookMapType = hash_map<Book, SubMapType>;
+    using SubBookMapType = HashMap<Book, SubMapType>;
 
     SubInfoMapType subAccount_;
     SubInfoMapType subRTAccount_;
-    SubBookMapType subBook_;  ///< Guarded by subLock_.
+    SubBookMapType subBook_;    ///< Guarded by bookLock_.
+    SubMPTInfoMapType subMPT_;  ///< Guarded by mptLock_.
 
-    subRpcMapType rpcSubMap_;
+    SubRpcMapType rpcSubMap_;
 
     SubAccountHistoryMapType subAccountHistory_;
 
@@ -876,6 +1011,10 @@ private:
         SLastEntry        // Any new entry must be ADDED ABOVE this one
     };
 
+    /**
+     * One weak_ptr subscriber map per stream type. Guarded by streamLock_;
+     * subject to its deferred-destruction rule (see pubServer).
+     */
     std::array<SubMapType, SubTypes::SLastEntry> streamMaps_;
 
     ServerFeeSummary lastFeeSummary_;
@@ -896,14 +1035,14 @@ private:
 
     StateAccounting accounting_;
 
-    std::set<uint256> pendingValidations_;
+    std::set<UInt256> pendingValidations_;
     std::mutex validationsMutex_;
 
 private:
     struct Stats
     {
         template <class Handler>
-        Stats(Handler const& handler, beast::insight::Collector::ptr const& collector)
+        Stats(Handler const& handler, beast::insight::Collector::Ptr const& collector)
             : hook(collector->makeHook(handler))
             , disconnectedDuration(
                   collector->makeGauge("State_Accounting", "Disconnected_duration"))
@@ -1336,11 +1475,17 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
 
     // NOTE ximinez - I think this check is redundant,
     // but I'm not 100% sure yet.
-    // If so, only cost is looking up HashRouter flags.
-    auto const [validity, reason] =
-        checkValidity(registry_.get().getHashRouter(), sttx, view->rules());
-    XRPL_ASSERT(
-        validity == Validity::Valid, "xrpl::NetworkOPsImp::processTransaction : valid validity");
+    //
+    // For an ordinary transaction it is: the relay and submit paths have
+    // already run checkValidity, so this costs a HashRouter lookup. It is not
+    // redundant for a role-signature transaction while fixCleanup3_4_0 is
+    // activating. Those paths verify against the validated rules, which lag
+    // the open ledger rules used here, and checkValidity scopes a cached
+    // verdict to the rules that reached it, so this call can verify the
+    // signature again and come to a different answer. SigBad is therefore
+    // reachable, and the handler below is the correct response to it.
+    auto const& viewRules = view->rules();
+    auto const [validity, reason] = checkValidity(registry_.get().getHashRouter(), sttx, viewRules);
 
     // Not concerned with local checks at this point.
     if (validity == Validity::SigBad)
@@ -1348,7 +1493,15 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
         JLOG(journal_.info()) << "Transaction has bad signature: " << reason;
         transaction->setStatus(TransStatus::INVALID);
         transaction->setResult(temBAD_SIGNATURE);
-        registry_.get().getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
+        // See the matching guard in PeerImp::checkTransaction: only cache
+        // BAD for a role-signature transaction once fixCleanup3_4_0 is
+        // enabled on this node. Remove together with the amendment.
+        if (viewRules.enabled(fixCleanup3_4_0) ||
+            (!sttx.isFieldPresent(sfSponsorSignature) &&
+             !sttx.isFieldPresent(sfCounterpartySignature)))
+        {
+            registry_.get().getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
+        }
         return false;
     }
 
@@ -1748,11 +1901,21 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
             if (validatedLedgerIndex)
             {
-                auto [fee, accountSeq, availableSeq] =
-                    registry_.get().getTxQ().getTxRequiredFeeAndSeq(
-                        *newOL, e.transaction->getSTransaction());
-                e.transaction->setCurrentLedgerState(
-                    *validatedLedgerIndex, fee, accountSeq, availableSeq);
+                auto maybeFeeAndSeq = registry_.get().getTxQ().getTxRequiredFeeAndSeq(
+                    *newOL, e.transaction->getSTransaction());
+                if (maybeFeeAndSeq.has_value())
+                {
+                    auto [fee, accountSeq, availableSeq] = *maybeFeeAndSeq;
+                    e.transaction->setCurrentLedgerState(
+                        *validatedLedgerIndex, fee, accountSeq, availableSeq);
+                }
+                else
+                {
+                    JLOG(journal_.debug())
+                        << "Unable to compute current ledger state for tx "
+                        << e.transaction->getID() << " in validated ledger "
+                        << *validatedLedgerIndex << ": " << transToken(maybeFeeAndSeq.error());
+                }
             }
         }
     }
@@ -1907,7 +2070,7 @@ NetworkOPsImp::clearUNLBlocked()
 }
 
 bool
-NetworkOPsImp::checkLastClosedLedger(Overlay::PeerSequence const& peerList, uint256& networkClosed)
+NetworkOPsImp::checkLastClosedLedger(Overlay::PeerSequence const& peerList, UInt256& networkClosed)
 {
     // Returns true if there's an *abnormal* ledger issue, normal changing in
     // TRACKING mode should return false.  Do we have sufficient validations for
@@ -1921,8 +2084,8 @@ NetworkOPsImp::checkLastClosedLedger(Overlay::PeerSequence const& peerList, uint
     if (!ourClosed)
         return false;
 
-    uint256 closedLedger = ourClosed->header().hash;
-    uint256 const prevClosedLedger = ourClosed->header().parentHash;
+    UInt256 closedLedger = ourClosed->header().hash;
+    UInt256 const prevClosedLedger = ourClosed->header().parentHash;
     JLOG(journal_.trace()) << "OurClosed:  " << closedLedger;
     JLOG(journal_.trace()) << "PrevClosed: " << prevClosedLedger;
 
@@ -1933,14 +2096,14 @@ NetworkOPsImp::checkLastClosedLedger(Overlay::PeerSequence const& peerList, uint
     JLOG(journal_.debug()) << "ValidationTrie " << json::Compact(validations.getJsonTrie());
 
     // Will rely on peer LCL if no trusted validations exist
-    hash_map<uint256, std::uint32_t> peerCounts;
+    HashMap<UInt256, std::uint32_t> peerCounts;
     peerCounts[closedLedger] = 0;
     if (mode_ >= OperatingMode::TRACKING)
         peerCounts[closedLedger]++;
 
     for (auto& peer : peerList)
     {
-        uint256 const peerLedger = peer->getClosedLedgerHash();
+        UInt256 const peerLedger = peer->getClosedLedgerHash();
 
         if (peerLedger.isNonZero())
             ++peerCounts[peerLedger];
@@ -1949,7 +2112,7 @@ NetworkOPsImp::checkLastClosedLedger(Overlay::PeerSequence const& peerList, uint
     for (auto const& it : peerCounts)
         JLOG(journal_.debug()) << "L: " << it.first << " n=" << it.second;
 
-    uint256 const preferredLCL = validations.getPreferredLCL(
+    UInt256 const preferredLCL = validations.getPreferredLCL(
         RCLValidatedLedger{ourClosed, validations.adaptor().journal()},
         ledgerMaster_.getValidLedgerIndex(),
         peerCounts);
@@ -2068,7 +2231,7 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
 
 bool
 NetworkOPsImp::beginConsensus(
-    uint256 const& networkClosed,
+    UInt256 const& networkClosed,
     std::unique_ptr<std::stringstream> const& clog)
 {
     XRPL_ASSERT(networkClosed.isNonZero(), "xrpl::NetworkOPsImp::beginConsensus : nonzero input");
@@ -2182,7 +2345,7 @@ NetworkOPsImp::mapComplete(std::shared_ptr<SHAMap> const& map, bool fromAcquire)
 void
 NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
 {
-    uint256 const deadLedger = ledgerMaster_.getClosedLedger()->header().parentHash;
+    UInt256 const deadLedger = ledgerMaster_.getClosedLedger()->header().parentHash;
     for (auto const& it : registry_.get().getOverlay().getActivePeers())
     {
         if (it && (it->getClosedLedgerHash() == deadLedger))
@@ -2192,7 +2355,7 @@ NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
         }
     }
 
-    uint256 networkClosed;
+    UInt256 networkClosed;
     bool const ledgerChange =
         checkLastClosedLedger(registry_.get().getOverlay().getActivePeers(), networkClosed);
 
@@ -2246,8 +2409,14 @@ NetworkOPsImp::consensusViewChange()
 void
 NetworkOPsImp::pubManifest(Manifest const& mo)
 {
+    // Hold each locked subscriber alive until after streamLock_ is released:
+    // if this is the last reference, ~InfoSub re-acquires streamLock_ (via its
+    // unsub* calls), which would self-deadlock on this non-recursive mutex.
+    // Declared before the lock so it is destroyed after the lock is dropped.
+    std::vector<InfoSub::pointer> toRelease;
+
     // VFALCO consider std::shared_mutex
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
 
     if (!streamMaps_[SManifests].empty())
     {
@@ -2270,6 +2439,7 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
             if (auto p = i->second.lock())
             {
                 p->send(jvObj, true);
+                toRelease.push_back(std::move(p));
                 ++i;
             }
             else
@@ -2321,11 +2491,16 @@ trunc32(std::uint64_t v)
 void
 NetworkOPsImp::pubServer()
 {
+    // Hold each locked subscriber alive until after streamLock_ is released; a
+    // last-reference ~InfoSub would otherwise re-acquire this non-recursive
+    // mutex and self-deadlock. Declared before the lock, destroyed after it.
+    std::vector<InfoSub::pointer> toRelease;
+
     // VFALCO TODO Don't hold the lock across calls to send...make a copy of the
     //             list into a local array while holding the lock then release
     //             the lock and call send on everyone.
     //
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
 
     if (!streamMaps_[SServer].empty())
     {
@@ -2363,7 +2538,7 @@ NetworkOPsImp::pubServer()
 
         for (auto i = streamMaps_[SServer].begin(); i != streamMaps_[SServer].end();)
         {
-            InfoSub::pointer const p = i->second.lock();
+            InfoSub::pointer p = i->second.lock();
 
             // VFALCO TODO research the possibility of using thread queues and
             //             linearizing the deletion of subscribers with the
@@ -2371,6 +2546,7 @@ NetworkOPsImp::pubServer()
             if (p)
             {
                 p->send(jvObj, true);
+                toRelease.push_back(std::move(p));
                 ++i;
             }
             else
@@ -2384,7 +2560,12 @@ NetworkOPsImp::pubServer()
 void
 NetworkOPsImp::pubConsensus(ConsensusPhase phase)
 {
-    std::scoped_lock const sl(subLock_);
+    // Hold each locked subscriber alive until after streamLock_ is released; a
+    // last-reference ~InfoSub would otherwise re-acquire this non-recursive
+    // mutex and self-deadlock. Declared before the lock, destroyed after it.
+    std::vector<InfoSub::pointer> toRelease;
+
+    std::scoped_lock const sl(streamLock_);
 
     auto& streamMap = streamMaps_[SConsensusPhase];
     if (!streamMap.empty())
@@ -2398,6 +2579,7 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
             if (auto p = i->second.lock())
             {
                 p->send(jvObj, true);
+                toRelease.push_back(std::move(p));
                 ++i;
             }
             else
@@ -2411,8 +2593,13 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
 void
 NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 {
+    // Hold each locked subscriber alive until after streamLock_ is released; a
+    // last-reference ~InfoSub would otherwise re-acquire this non-recursive
+    // mutex and self-deadlock. Declared before the lock, destroyed after it.
+    std::vector<InfoSub::pointer> toRelease;
+
     // VFALCO consider std::shared_mutex
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
 
     if (!streamMaps_[SValidations].empty())
     {
@@ -2504,6 +2691,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
                 multiObj.visit(
                     p->getApiVersion(),  //
                     [&](json::Value const& jv) { p->send(jv, true); });
+                toRelease.push_back(std::move(p));
                 ++i;
             }
             else
@@ -2517,7 +2705,12 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 void
 NetworkOPsImp::pubPeerStatus(std::function<json::Value(void)> const& func)
 {
-    std::scoped_lock const sl(subLock_);
+    // Hold each locked subscriber alive until after streamLock_ is released; a
+    // last-reference ~InfoSub would otherwise re-acquire this non-recursive
+    // mutex and self-deadlock. Declared before the lock, destroyed after it.
+    std::vector<InfoSub::pointer> toRelease;
+
+    std::scoped_lock const sl(streamLock_);
 
     if (!streamMaps_[SPeerStatus].empty())
     {
@@ -2527,11 +2720,12 @@ NetworkOPsImp::pubPeerStatus(std::function<json::Value(void)> const& func)
 
         for (auto i = streamMaps_[SPeerStatus].begin(); i != streamMaps_[SPeerStatus].end();)
         {
-            InfoSub::pointer const p = i->second.lock();
+            InfoSub::pointer p = i->second.lock();
 
             if (p)
             {
                 p->send(jvObj, true);
+                toRelease.push_back(std::move(p));
                 ++i;
             }
             else
@@ -3064,7 +3258,13 @@ NetworkOPsImp::pubProposedTransaction(
     MultiApiJson const jvObj = transJson(transaction, result, false, ledger, std::nullopt);
 
     {
-        std::scoped_lock const sl(subLock_);
+        // Hold each locked subscriber alive until after streamLock_ is
+        // released; a last-reference ~InfoSub would otherwise re-acquire this
+        // non-recursive mutex and self-deadlock. Declared before the lock,
+        // destroyed after the block ends.
+        std::vector<InfoSub::pointer> toRelease;
+
+        std::scoped_lock const sl(streamLock_);
 
         auto it = streamMaps_[SRtTransactions].begin();
         while (it != streamMaps_[SRtTransactions].end())
@@ -3076,6 +3276,7 @@ NetworkOPsImp::pubProposedTransaction(
                 jvObj.visit(
                     p->getApiVersion(),  //
                     [&](json::Value const& jv) { p->send(jv, true); });
+                toRelease.push_back(std::move(p));
                 ++it;
             }
             else
@@ -3107,100 +3308,121 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
         alpAccepted->getLedger().get() == lpAccepted.get(),
         "xrpl::NetworkOPsImp::pubLedger : accepted input");
 
-    {
-        JLOG(journal_.debug()) << "Publishing ledger " << lpAccepted->header().seq << " "
-                               << lpAccepted->header().hash;
+    JLOG(journal_.debug()) << "Publishing ledger " << lpAccepted->header().seq << " "
+                           << lpAccepted->header().hash;
 
-        std::scoped_lock const sl(subLock_);
-
-        if (!streamMaps_[SLedger].empty())
-        {
-            json::Value jvObj(json::ValueType::Object);
-
-            jvObj[jss::type] = "ledgerClosed";
-            jvObj[jss::ledger_index] = lpAccepted->header().seq;
-            jvObj[jss::ledger_hash] = to_string(lpAccepted->header().hash);
-            jvObj[jss::ledger_time] =
-                json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
-
-            jvObj[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
-
-            if (!lpAccepted->rules().enabled(featureXRPFees))
-                jvObj[jss::fee_ref] = kFeeUnitsDeprecated;
-            jvObj[jss::fee_base] = lpAccepted->fees().base.jsonClipped();
-            jvObj[jss::reserve_base] = lpAccepted->fees().reserve.jsonClipped();
-            jvObj[jss::reserve_inc] = lpAccepted->fees().increment.jsonClipped();
-
-            jvObj[jss::txn_count] = json::UInt(alpAccepted->size());
-
-            if (mode_ >= OperatingMode::SYNCING)
-            {
-                jvObj[jss::validated_ledgers] =
-                    registry_.get().getLedgerMaster().getCompleteLedgers();
-            }
-
-            auto it = streamMaps_[SLedger].begin();
-            while (it != streamMaps_[SLedger].end())
-            {
-                InfoSub::pointer const p = it->second.lock();
-                if (p)
-                {
-                    p->send(jvObj, true);
-                    ++it;
-                }
-                else
-                {
-                    it = streamMaps_[SLedger].erase(it);
-                }
-            }
-        }
-
-        if (!streamMaps_[SBookChanges].empty())
-        {
-            json::Value const jvObj = xrpl::rpc::computeBookChanges(lpAccepted);
-
-            auto it = streamMaps_[SBookChanges].begin();
-            while (it != streamMaps_[SBookChanges].end())
-            {
-                InfoSub::pointer const p = it->second.lock();
-                if (p)
-                {
-                    p->send(jvObj, true);
-                    ++it;
-                }
-                else
-                {
-                    it = streamMaps_[SBookChanges].erase(it);
-                }
-            }
-        }
-
-        {
-            static bool kFirstTime = true;
-            if (kFirstTime)
-            {
-                // First validated ledger, start delayed SubAccountHistory
-                kFirstTime = false;
-                for (auto& outer : subAccountHistory_)
-                {
-                    for (auto& inner : outer.second)
-                    {
-                        auto& subInfo = inner.second;
-                        if (subInfo.index->separationLedgerSeq == 0)
-                        {
-                            subAccountHistoryStart(alpAccepted->getLedger(), subInfo);
-                        }
-                    }
-                }
-            }
-        }
-    }
+    // Stream updates and the account-history kick-off touch different lock
+    // domains; each helper takes only its own lock, so the two are never held
+    // together.
+    publishLedgerStreams(lpAccepted, alpAccepted);
+    kickoffAccountHistory(alpAccepted);
 
     // Don't lock since pubAcceptedTransaction is locking.
     for (auto const& accTx : *alpAccepted)
     {
         JLOG(journal_.trace()) << "pubAccepted: " << accTx->getJson();
-        pubValidatedTransaction(lpAccepted, *accTx, accTx == *(--alpAccepted->end()));
+        bool const last = &*accTx == &alpAccepted->back();
+        pubValidatedTransaction(lpAccepted, *accTx, last);
+    }
+}
+
+void
+NetworkOPsImp::publishLedgerStreams(
+    std::shared_ptr<ReadView const> const& lpAccepted,
+    std::shared_ptr<AcceptedLedger const> const& alpAccepted)
+{
+    // Hold each locked subscriber alive until after streamLock_ is released; a
+    // last-reference ~InfoSub would otherwise re-acquire this non-recursive
+    // mutex and self-deadlock. Declared before the lock, destroyed after it;
+    // covers both the ledger and book-changes loops below.
+    std::vector<InfoSub::pointer> toRelease;
+
+    std::scoped_lock const sl(streamLock_);
+
+    if (!streamMaps_[SLedger].empty())
+    {
+        json::Value jvObj(json::ValueType::Object);
+
+        jvObj[jss::type] = "ledgerClosed";
+        jvObj[jss::ledger_index] = lpAccepted->header().seq;
+        jvObj[jss::ledger_hash] = to_string(lpAccepted->header().hash);
+        jvObj[jss::ledger_time] =
+            json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
+
+        jvObj[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
+
+        if (!lpAccepted->rules().enabled(featureXRPFees))
+            jvObj[jss::fee_ref] = kFeeUnitsDeprecated;
+        jvObj[jss::fee_base] = lpAccepted->fees().base.jsonClipped();
+        jvObj[jss::reserve_base] = lpAccepted->fees().reserve.jsonClipped();
+        jvObj[jss::reserve_inc] = lpAccepted->fees().increment.jsonClipped();
+
+        jvObj[jss::txn_count] = json::UInt(alpAccepted->size());
+
+        if (mode_ >= OperatingMode::SYNCING)
+        {
+            jvObj[jss::validated_ledgers] = registry_.get().getLedgerMaster().getCompleteLedgers();
+        }
+        auto it = streamMaps_[SLedger].begin();
+        while (it != streamMaps_[SLedger].end())
+        {
+            InfoSub::pointer p = it->second.lock();
+            if (p)
+            {
+                p->send(jvObj, true);
+                toRelease.push_back(std::move(p));
+                ++it;
+            }
+            else
+            {
+                it = streamMaps_[SLedger].erase(it);
+            }
+        }
+    }
+
+    if (!streamMaps_[SBookChanges].empty())
+    {
+        json::Value const jvObj = xrpl::rpc::computeBookChanges(lpAccepted);
+
+        auto it = streamMaps_[SBookChanges].begin();
+        while (it != streamMaps_[SBookChanges].end())
+        {
+            InfoSub::pointer p = it->second.lock();
+            if (p)
+            {
+                p->send(jvObj, true);
+                toRelease.push_back(std::move(p));
+                ++it;
+            }
+            else
+            {
+                it = streamMaps_[SBookChanges].erase(it);
+            }
+        }
+    }
+}
+
+void
+NetworkOPsImp::kickoffAccountHistory(std::shared_ptr<AcceptedLedger const> const& alpAccepted)
+{
+    // Runs exactly once, the first time a ledger is published. The atomic
+    // exchange lets the common post-first-ledger path return without taking
+    // accountLock_, while still admitting exactly one caller even if ledger
+    // publishing is ever made concurrent.
+    static std::atomic<bool> done{false};
+    if (done.exchange(true))
+        return;
+
+    // It only reads/writes subAccountHistory_, so it takes accountLock_ alone.
+    std::scoped_lock const sl(accountLock_);
+    for (auto& outer : subAccountHistory_)
+    {
+        for (auto& inner : outer.second)
+        {
+            auto& subInfo = inner.second;
+            if (subInfo.index->separationLedgerSeq == 0)
+                subAccountHistoryStart(alpAccepted->getLedger(), subInfo);
+        }
     }
 }
 
@@ -3239,7 +3461,7 @@ NetworkOPsImp::getLocalTxCount()
 std::size_t
 NetworkOPsImp::getBookSubscribersCount()
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(bookLock_);
     std::size_t total = 0;
     for (auto const& [_, subs] : subBook_)
         total += subs.size();
@@ -3271,9 +3493,7 @@ NetworkOPsImp::transJson(
     if (meta)
     {
         jvObj[jss::meta] = meta->get().getJson(JsonOptions::Values::None);
-        rpc::insertDeliveredAmount(jvObj[jss::meta], *ledger, transaction, meta->get());
-        rpc::insertNFTSyntheticInJson(jvObj, transaction, meta->get());
-        rpc::insertMPTokenIssuanceID(jvObj[jss::meta], transaction, meta->get());
+        rpc::insertAllSyntheticInJson(jvObj[jss::meta], *ledger, transaction, meta->get());
     }
 
     // add CTID where the needed data for it exists
@@ -3366,7 +3586,13 @@ NetworkOPsImp::pubValidatedTransaction(
     MultiApiJson const jvObj = transJson(stTxn, trResult, true, ledger, metaRef);
 
     {
-        std::scoped_lock const sl(subLock_);
+        // Hold each locked subscriber alive until after streamLock_ is
+        // released; a last-reference ~InfoSub would otherwise re-acquire this
+        // non-recursive mutex and self-deadlock. Declared before the lock,
+        // destroyed after the block ends; covers both loops below.
+        std::vector<InfoSub::pointer> toRelease;
+
+        std::scoped_lock const sl(streamLock_);
 
         auto it = streamMaps_[STransactions].begin();
         while (it != streamMaps_[STransactions].end())
@@ -3378,6 +3604,7 @@ NetworkOPsImp::pubValidatedTransaction(
                 jvObj.visit(
                     p->getApiVersion(),  //
                     [&](json::Value const& jv) { p->send(jv, true); });
+                toRelease.push_back(std::move(p));
                 ++it;
             }
             else
@@ -3397,6 +3624,7 @@ NetworkOPsImp::pubValidatedTransaction(
                 jvObj.visit(
                     p->getApiVersion(),  //
                     [&](json::Value const& jv) { p->send(jv, true); });
+                toRelease.push_back(std::move(p));
                 ++it;
             }
             else
@@ -3410,6 +3638,7 @@ NetworkOPsImp::pubValidatedTransaction(
         pubBookTransaction(transaction, jvObj);
 
     pubAccountTransaction(ledger, transaction, last);
+    pubMPTTransaction(transaction, jvObj);
 }
 
 void
@@ -3421,24 +3650,24 @@ NetworkOPsImp::pubBookTransaction(AcceptedLedgerTx const& alTx, MultiApiJson con
 
     // Two-pass design:
     //
-    //   1. Under subLock_, walk subBook_, collect a strong pointer for each
+    //   1. Under bookLock_, walk subBook_, collect a strong pointer for each
     //      unique listener (and prune any expired weak_ptrs we encounter).
-    //   2. Release subLock_, then send to each collected listener.
+    //   2. Release bookLock_, then send to each collected listener.
     //
     // Reasoning:
-    //   * send() can be slow / blocking, so holding subLock_ across it would
-    //     stall every other sub/unsub/pub path on this server (see the matching
-    //     TODO above pubServer at line ~2275).
-    //   * A strong pointer destructed while subLock_ is held risks running
+    //   * send() can be slow / blocking, so holding bookLock_ across it would
+    //     stall every other book sub/unsub/pub path on this server (see the
+    //     matching TODO above pubServer at line ~2275).
+    //   * A strong pointer destructed while bookLock_ is held risks running
     //     ~InfoSub() in-line, which re-enters unsubBook() and mutates the very
     //     subBook_/SubMapType being iterated -> dangling iterator UB.
     //
-    // Releasing subLock_ before any InfoSub::pointer can decay solves both.
-    // ~InfoSub() reacquires subLock_ via unsubBook() on its own and serializes
+    // Releasing bookLock_ before any InfoSub::pointer can decay solves both.
+    // ~InfoSub() reacquires bookLock_ via unsubBook() on its own and serializes
     // safely with concurrent traffic.
 
     std::vector<InfoSub::pointer> listeners;
-    hash_set<std::uint64_t> seen;
+    HashSet<std::uint64_t> seen;
 
     // Sized for the common case where every affected book has at most
     // one subscriber. Multi-subscriber books trigger reallocation, but
@@ -3448,7 +3677,7 @@ NetworkOPsImp::pubBookTransaction(AcceptedLedgerTx const& alTx, MultiApiJson con
     seen.reserve(books.size());
 
     {
-        std::scoped_lock const sl(subLock_);
+        std::scoped_lock const sl(bookLock_);
 
         for (auto const& book : books)
         {
@@ -3486,8 +3715,8 @@ NetworkOPsImp::pubBookTransaction(AcceptedLedgerTx const& alTx, MultiApiJson con
     {
         jvObj.visit(p->getApiVersion(), [&](json::Value const& jv) { p->send(jv, true); });
     }
-    // listeners destructs here, outside subLock_; ~InfoSub (if any fires)
-    // will reacquire subLock_ via unsubBook with no iterator hazard.
+    // listeners destructs here, outside bookLock_; ~InfoSub (if any fires)
+    // will reacquire bookLock_ via unsubBook with no iterator hazard.
 }
 
 void
@@ -3496,14 +3725,14 @@ NetworkOPsImp::pubAccountTransaction(
     AcceptedLedgerTx const& transaction,
     bool last)
 {
-    hash_set<InfoSub::pointer> notify;
+    HashSet<InfoSub::pointer> notify;
     int iProposed = 0;
     int iAccepted = 0;
 
     std::vector<SubAccountHistoryInfo> accountHistoryNotify;
     auto const currLedgerSeq = ledger->seq();
     {
-        std::scoped_lock const sl(subLock_);
+        std::scoped_lock const sl(accountLock_);
 
         if (!subAccount_.empty() || !subRTAccount_.empty() || !subAccountHistory_.empty())
         {
@@ -3595,7 +3824,7 @@ NetworkOPsImp::pubAccountTransaction(
         auto const trResult = transaction.getResult();
         MultiApiJson jvObj = transJson(stTxn, trResult, true, ledger, metaRef);
 
-        for (InfoSub::ref isrListener : notify)
+        for (InfoSub::Ref isrListener : notify)
         {
             jvObj.visit(
                 isrListener->getApiVersion(),  //
@@ -3630,13 +3859,13 @@ NetworkOPsImp::pubProposedAccountTransaction(
     std::shared_ptr<STTx const> const& tx,
     TER result)
 {
-    hash_set<InfoSub::pointer> notify;
+    HashSet<InfoSub::pointer> notify;
     int iProposed = 0;
 
     std::vector<SubAccountHistoryInfo> accountHistoryNotify;
 
     {
-        std::scoped_lock const sl(subLock_);
+        std::scoped_lock const sl(accountLock_);
 
         if (subRTAccount_.empty())
             return;
@@ -3677,7 +3906,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
         // Create two different Json objects, for different API versions
         MultiApiJson jvObj = transJson(tx, result, false, ledger, std::nullopt);
 
-        for (InfoSub::ref isrListener : notify)
+        for (InfoSub::Ref isrListener : notify)
         {
             jvObj.visit(
                 isrListener->getApiVersion(),  //
@@ -3707,8 +3936,8 @@ NetworkOPsImp::pubProposedAccountTransaction(
 
 void
 NetworkOPsImp::subAccount(
-    InfoSub::ref isrListener,
-    hash_set<AccountID> const& vnaAccountIDs,
+    InfoSub::Ref isrListener,
+    HashSet<AccountID> const& vnaAccountIDs,
     bool rt)
 {
     SubInfoMapType& subMap = rt ? subRTAccount_ : subAccount_;
@@ -3720,7 +3949,7 @@ NetworkOPsImp::subAccount(
         isrListener->insertSubAccountInfo(naAccountID, rt);
     }
 
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(accountLock_);
 
     for (auto const& naAccountID : vnaAccountIDs)
     {
@@ -3743,8 +3972,8 @@ NetworkOPsImp::subAccount(
 
 void
 NetworkOPsImp::unsubAccount(
-    InfoSub::ref isrListener,
-    hash_set<AccountID> const& vnaAccountIDs,
+    InfoSub::Ref isrListener,
+    HashSet<AccountID> const& vnaAccountIDs,
     bool rt)
 {
     for (auto const& naAccountID : vnaAccountIDs)
@@ -3760,10 +3989,10 @@ NetworkOPsImp::unsubAccount(
 void
 NetworkOPsImp::unsubAccountInternal(
     std::uint64_t uSeq,
-    hash_set<AccountID> const& vnaAccountIDs,
+    HashSet<AccountID> const& vnaAccountIDs,
     bool rt)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(accountLock_);
 
     SubInfoMapType& subMap = rt ? subRTAccount_ : subAccount_;
 
@@ -3782,6 +4011,249 @@ NetworkOPsImp::unsubAccountInternal(
                 subMap.erase(simIterator);
             }
         }
+    }
+}
+
+template <typename OuterMap, typename BeforeErase>
+void
+NetworkOPsImp::cleanupSubscriptionMap(
+    std::uint64_t seq,
+    HashSet<AccountID> const& accounts,
+    OuterMap& outerMap,
+    BeforeErase&& beforeErase)
+{
+    // Walk the disconnecting connection's accounts in chunks. Each chunk takes
+    // accountLock_, erases up to kAccountCleanupChunk entries, then releases
+    // the lock so a competing account-publish can run before the next chunk.
+    // No iterator into outerMap is held across the unlock: every chunk re-finds
+    // each account, so a concurrent mutation between chunks cannot dangle.
+    auto it = accounts.begin();
+    auto const end = accounts.end();
+    while (it != end)
+    {
+        std::scoped_lock const sl(accountLock_);
+
+        for (std::size_t n = 0; n < kAccountCleanupChunk && it != end; ++n, ++it)
+        {
+            auto outerIter = outerMap.find(*it);
+            if (outerIter != outerMap.end())
+            {
+                // Give the caller a chance to tear down this connection's inner
+                // entry before it is erased (the history map stops its paging
+                // job here); the plain account maps pass a no-op.
+                auto innerIter = outerIter->second.find(seq);
+                if (innerIter != outerIter->second.end())
+                    beforeErase(innerIter->second);
+
+                // Erase only this connection's seq; other connections sharing
+                // the account keep their entry, so a reconnect is unaffected.
+                outerIter->second.erase(seq);
+                if (outerIter->second.empty())
+                    outerMap.erase(outerIter);
+            }
+        }
+    }
+}
+
+void
+NetworkOPsImp::cleanupAccountSubscriptions(
+    std::uint64_t seq,
+    HashSet<AccountID> const& accounts,
+    SubInfoMapType& subMap)
+{
+    // Plain account maps need no per-entry teardown before erase.
+    cleanupSubscriptionMap(seq, accounts, subMap, [](InfoSub::Wptr const&) {});
+}
+
+void
+NetworkOPsImp::cleanupAccountHistorySubscriptions(
+    std::uint64_t seq,
+    HashSet<AccountID> const& accounts)
+{
+    // Cancel any in-flight historical paging job for this connection before
+    // dropping its record. The job holds its own shared_ptr to the index, so
+    // erasing the map entry alone would not stop it; it reads this atomic
+    // between pages and exits promptly once set.
+    cleanupSubscriptionMap(
+        seq, accounts, subAccountHistory_, [](SubAccountHistoryInfoWeak const& info) {
+            info.index->stopHistorical = true;
+        });
+}
+
+void
+NetworkOPsImp::scheduleAccountCleanup(
+    std::uint64_t seq,
+    HashSet<AccountID> rtAccounts,
+    HashSet<AccountID> normalAccounts,
+    HashSet<AccountID> historyAccounts)
+{
+    // Nothing to do for a connection that never subscribed to any account.
+    if (rtAccounts.empty() && normalAccounts.empty() && historyAccounts.empty())
+        return;
+
+    // Post the erase work to a low-priority job so the disconnect thread (and
+    // ~InfoSub) returns immediately. The job captures the sets BY MOVE and
+    // operates purely on seq + the captured accounts; it never touches the
+    // destroyed InfoSub. `this` outlives the job per the Source lifetime
+    // contract. Running on a JobQueue thread, it cannot re-enter accountLock_
+    // held by the disconnecting thread, so the plain std::mutex is safe.
+    //
+    // The body is exception-guarded: the JobQueue invokes it bare, so an
+    // escaping exception on the worker thread would terminate the process.
+    //
+    // addJob returns false only once the JobQueue has been stopped, i.e. during
+    // process shutdown. At that point NetworkOPsImp's maps are about to be
+    // destroyed wholesale and no publish path can run, so dropping the cleanup
+    // is harmless; no inline fallback is needed.
+    jobQueue_.addJob(
+        JtClientAcctHist,
+        "SubCleanup",
+        [this,
+         seq,
+         rt = std::move(rtAccounts),
+         normal = std::move(normalAccounts),
+         history = std::move(historyAccounts)]() noexcept {
+            try
+            {
+                cleanupAccountSubscriptions(seq, rt, subRTAccount_);
+                cleanupAccountSubscriptions(seq, normal, subAccount_);
+                cleanupAccountHistorySubscriptions(seq, history);
+            }
+            catch (std::exception const& e)
+            {
+                JLOG(journal_.error()) << "SubCleanup[seq=" << seq << "]: " << e.what();
+            }
+            catch (...)
+            {
+                JLOG(journal_.error()) << "SubCleanup[seq=" << seq << "]: unknown exception";
+            }
+        });
+}
+
+void
+NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson const& jvObj)
+{
+    {
+        std::scoped_lock const sl(mptLock_);
+        if (subMPT_.empty())
+            return;
+    }
+
+    // getAffectedMPTs derives the issuance id for MPTokenIssuance entries from
+    // the metadata, so it also covers transactions whose top-level STTx carries
+    // no MPTokenIssuanceID, such as the inner transactions of a Batch. It reads
+    // only the metadata, so it runs outside mptLock_.
+    auto const affectedMPTs = alTx.getMeta().getAffectedMPTs();
+    if (affectedMPTs.empty())
+        return;
+
+    // Declared before the lock so a last-reference ~InfoSub runs after
+    // mptLock_ is released (see the deferred-destruction rule).
+    HashSet<InfoSub::pointer> notify;
+
+    {
+        std::scoped_lock const sl(mptLock_);
+
+        for (auto const& affectedMPT : affectedMPTs)
+        {
+            if (auto simiIt = subMPT_.find(affectedMPT); simiIt != subMPT_.end())
+            {
+                auto it = simiIt->second.begin();
+                while (it != simiIt->second.end())
+                {
+                    InfoSub::pointer const p = it->second.lock();
+
+                    if (p)
+                    {
+                        notify.insert(p);
+                        ++it;
+                    }
+                    else
+                    {
+                        it = simiIt->second.erase(it);
+                    }
+                }
+            }
+        }
+    }
+
+    if (notify.empty())
+        return;
+
+    // Reuse the transaction JSON built by pubValidatedTransaction; only the
+    // message type differs for this stream.
+    MultiApiJson jvMPT = jvObj;
+    jvMPT.set(jss::type, "mptTransaction");
+
+    for (InfoSub::Ref isrListener : notify)
+    {
+        jvMPT.visit(isrListener->getApiVersion(), [&](json::Value const& jv) {
+            isrListener->send(jv, true);
+        });
+    }
+}
+
+void
+NetworkOPsImp::subMPT(InfoSub::Ref isrListener, HashSet<MPTID> const& mptIDs)
+{
+    // Insert into subMPT_ before the InfoSub (unsubMPT removes in reverse), as
+    // subBook does, so a racing unsubMPT cannot leave a subMPT_ entry that the
+    // InfoSub doesn't know about.
+    {
+        std::scoped_lock const sl(mptLock_);
+
+        for (auto const& mptID : mptIDs)
+        {
+            JLOG(journal_.trace()) << "subMPT: MPT: " << to_string(mptID);
+
+            auto simIterator = subMPT_.find(mptID);
+            if (simIterator == subMPT_.end())
+            {
+                // Not found, note that the MPT issuance has a new single listener.
+                SubMapType usisElement;
+                usisElement[isrListener->getSeq()] = isrListener;
+                subMPT_.insert(simIterator, make_pair(mptID, usisElement));
+            }
+            else
+            {
+                // Found, note that the MPT issuance has another listener.
+                simIterator->second[isrListener->getSeq()] = isrListener;
+            }
+        }
+    }
+
+    for (auto const& mptID : mptIDs)
+        isrListener->insertSubMPTInfo(mptID);
+}
+
+void
+NetworkOPsImp::unsubMPT(InfoSub::Ref isrListener, HashSet<MPTID> const& mptIDs)
+{
+    for (auto const& mptID : mptIDs)
+    {
+        // Remove from the InfoSub first so ~InfoSub does not re-issue an
+        // unsubMPTInternal for an issuance the caller already removed, then
+        // remove from the server.
+        isrListener->deleteSubMPTInfo(mptID);
+        unsubMPTInternal(isrListener->getSeq(), mptID);
+    }
+}
+
+void
+NetworkOPsImp::unsubMPTInternal(std::uint64_t uSeq, MPTID const& mptID)
+{
+    // Only weak_ptrs are erased, so no InfoSub can be destroyed under the lock.
+    std::scoped_lock const sl(mptLock_);
+
+    auto simIterator = subMPT_.find(mptID);
+    if (simIterator == subMPT_.end())
+        return;
+
+    simIterator->second.erase(uSeq);
+    if (simIterator->second.empty())
+    {
+        // Don't need hash entry.
+        subMPT_.erase(simIterator);
     }
 }
 
@@ -3805,7 +4277,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             if (accountId == kGenesisAccountId)
             {
                 auto stx = tx->getSTransaction();
-                if (stx->getAccountID(sfAccount) == accountId && stx->getSeqValue() == 1)
+                if (stx->getAccountID(sfAccount) == accountId && stx->getSeqProxy().value() == 1)
                     return true;
             }
 
@@ -4058,7 +4530,7 @@ NetworkOPsImp::subAccountHistoryStart(
 }
 
 ErrorCodeI
-NetworkOPsImp::subAccountHistory(InfoSub::ref isrListener, AccountID const& accountId)
+NetworkOPsImp::subAccountHistory(InfoSub::Ref isrListener, AccountID const& accountId)
 {
     if (!isrListener->insertSubAccountHistory(accountId))
     {
@@ -4067,13 +4539,13 @@ NetworkOPsImp::subAccountHistory(InfoSub::ref isrListener, AccountID const& acco
         return RpcInvalidParams;
     }
 
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(accountLock_);
     SubAccountHistoryInfoWeak ahi{
         .sinkWptr = isrListener, .index = std::make_shared<SubAccountHistoryIndex>(accountId)};
     auto simIterator = subAccountHistory_.find(accountId);
     if (simIterator == subAccountHistory_.end())
     {
-        hash_map<std::uint64_t, SubAccountHistoryInfoWeak> inner;
+        HashMap<std::uint64_t, SubAccountHistoryInfoWeak> inner;
         inner.emplace(isrListener->getSeq(), ahi);
         subAccountHistory_.insert(simIterator, std::make_pair(accountId, inner));
     }
@@ -4100,7 +4572,7 @@ NetworkOPsImp::subAccountHistory(InfoSub::ref isrListener, AccountID const& acco
 
 void
 NetworkOPsImp::unsubAccountHistory(
-    InfoSub::ref isrListener,
+    InfoSub::Ref isrListener,
     AccountID const& account,
     bool historyOnly)
 {
@@ -4115,7 +4587,7 @@ NetworkOPsImp::unsubAccountHistoryInternal(
     AccountID const& account,
     bool historyOnly)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(accountLock_);
     auto simIterator = subAccountHistory_.find(account);
     if (simIterator != subAccountHistory_.end())
     {
@@ -4140,14 +4612,14 @@ NetworkOPsImp::unsubAccountHistoryInternal(
 }
 
 bool
-NetworkOPsImp::subBook(InfoSub::ref isrListener, Book const& book)
+NetworkOPsImp::subBook(InfoSub::Ref isrListener, Book const& book)
 {
     // Server-side insert first, then InfoSub bookkeeping. If the InfoSub-side
     // insert throws, the orphan in subBook_ is cleared by the expired-weak_ptr
     // prune in pubBookTransaction. With the reverse ordering, ~InfoSub would
     // call unsubBookInternal for a key that was never inserted server-side.
     {
-        std::scoped_lock const sl(subLock_);
+        std::scoped_lock const sl(bookLock_);
         subBook_[book].try_emplace(isrListener->getSeq(), isrListener);
     }
     isrListener->insertBookSubscription(book);
@@ -4155,7 +4627,7 @@ NetworkOPsImp::subBook(InfoSub::ref isrListener, Book const& book)
 }
 
 bool
-NetworkOPsImp::unsubBook(InfoSub::ref isrListener, Book const& book)
+NetworkOPsImp::unsubBook(InfoSub::Ref isrListener, Book const& book)
 {
     // Mirrors unsubAccount: clear the per-subscriber tracking set first so
     // ~InfoSub does not re-issue an unsubBookInternal for a book the caller
@@ -4167,7 +4639,7 @@ NetworkOPsImp::unsubBook(InfoSub::ref isrListener, Book const& book)
 bool
 NetworkOPsImp::unsubBookInternal(std::uint64_t uSeq, Book const& book)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(bookLock_);
     auto it = subBook_.find(book);
     if (it == subBook_.end())
         return false;
@@ -4196,7 +4668,7 @@ NetworkOPsImp::acceptLedger(std::optional<std::chrono::milliseconds> consensusDe
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subLedger(InfoSub::ref isrListener, json::Value& jvResult)
+NetworkOPsImp::subLedger(InfoSub::Ref isrListener, json::Value& jvResult)
 {
     if (auto lpClosed = ledgerMaster_.getValidatedLedger())
     {
@@ -4217,15 +4689,15 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, json::Value& jvResult)
         jvResult[jss::validated_ledgers] = registry_.get().getLedgerMaster().getCompleteLedgers();
     }
 
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SLedger].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subBookChanges(InfoSub::ref isrListener)
+NetworkOPsImp::subBookChanges(InfoSub::Ref isrListener)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SBookChanges].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4233,7 +4705,7 @@ NetworkOPsImp::subBookChanges(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubLedger(std::uint64_t uSeq)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SLedger].erase(uSeq) != 0u;
 }
 
@@ -4241,15 +4713,15 @@ NetworkOPsImp::unsubLedger(std::uint64_t uSeq)
 bool
 NetworkOPsImp::unsubBookChanges(std::uint64_t uSeq)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SBookChanges].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subManifests(InfoSub::ref isrListener)
+NetworkOPsImp::subManifests(InfoSub::Ref isrListener)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SManifests].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4257,15 +4729,15 @@ NetworkOPsImp::subManifests(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubManifests(std::uint64_t uSeq)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SManifests].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subServer(InfoSub::ref isrListener, json::Value& jvResult, bool admin)
+NetworkOPsImp::subServer(InfoSub::Ref isrListener, json::Value& jvResult, bool admin)
 {
-    uint256 uRandom;
+    UInt256 uRandom;
 
     if (standalone_)
         jvResult[jss::stand_alone] = standalone_;
@@ -4282,7 +4754,7 @@ NetworkOPsImp::subServer(InfoSub::ref isrListener, json::Value& jvResult, bool a
     jvResult[jss::pubkey_node] =
         toBase58(TokenType::NodePublic, registry_.get().getApp().nodeIdentity().first);
 
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SServer].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4290,15 +4762,15 @@ NetworkOPsImp::subServer(InfoSub::ref isrListener, json::Value& jvResult, bool a
 bool
 NetworkOPsImp::unsubServer(std::uint64_t uSeq)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SServer].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subTransactions(InfoSub::ref isrListener)
+NetworkOPsImp::subTransactions(InfoSub::Ref isrListener)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[STransactions].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4306,15 +4778,15 @@ NetworkOPsImp::subTransactions(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubTransactions(std::uint64_t uSeq)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[STransactions].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subRTTransactions(InfoSub::ref isrListener)
+NetworkOPsImp::subRTTransactions(InfoSub::Ref isrListener)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SRtTransactions].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4322,15 +4794,15 @@ NetworkOPsImp::subRTTransactions(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubRTTransactions(std::uint64_t uSeq)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SRtTransactions].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subValidations(InfoSub::ref isrListener)
+NetworkOPsImp::subValidations(InfoSub::Ref isrListener)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SValidations].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4344,15 +4816,15 @@ NetworkOPsImp::stateAccounting(json::Value& obj)
 bool
 NetworkOPsImp::unsubValidations(std::uint64_t uSeq)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SValidations].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subPeerStatus(InfoSub::ref isrListener)
+NetworkOPsImp::subPeerStatus(InfoSub::Ref isrListener)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SPeerStatus].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4360,15 +4832,15 @@ NetworkOPsImp::subPeerStatus(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubPeerStatus(std::uint64_t uSeq)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SPeerStatus].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subConsensus(InfoSub::ref isrListener)
+NetworkOPsImp::subConsensus(InfoSub::Ref isrListener)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SConsensusPhase].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4376,15 +4848,14 @@ NetworkOPsImp::subConsensus(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubConsensus(std::uint64_t uSeq)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
     return streamMaps_[SConsensusPhase].erase(uSeq) != 0u;
 }
 
 InfoSub::pointer
-NetworkOPsImp::findRpcSub(std::string const& strUrl)
+NetworkOPsImp::findRpcSubLocked(std::string const& strUrl)
 {
-    std::scoped_lock const sl(subLock_);
-
+    // Caller already holds streamLock_; this performs the lookup only.
     auto const it = rpcSubMap_.find(strUrl);
 
     if (it != rpcSubMap_.end())
@@ -4394,9 +4865,16 @@ NetworkOPsImp::findRpcSub(std::string const& strUrl)
 }
 
 InfoSub::pointer
-NetworkOPsImp::addRpcSub(std::string const& strUrl, InfoSub::ref rspEntry)
+NetworkOPsImp::findRpcSub(std::string const& strUrl)
 {
-    std::scoped_lock const sl(subLock_);
+    std::scoped_lock const sl(streamLock_);
+    return findRpcSubLocked(strUrl);
+}
+
+InfoSub::pointer
+NetworkOPsImp::addRpcSub(std::string const& strUrl, InfoSub::Ref rspEntry)
+{
+    std::scoped_lock const sl(streamLock_);
 
     rpcSubMap_.emplace(strUrl, rspEntry);
 
@@ -4406,20 +4884,31 @@ NetworkOPsImp::addRpcSub(std::string const& strUrl, InfoSub::ref rspEntry)
 bool
 NetworkOPsImp::tryRemoveRpcSub(std::string const& strUrl)
 {
-    std::scoped_lock const sl(subLock_);
-    auto pInfo = findRpcSub(strUrl);
-
-    if (!pInfo)
-        return false;
-
-    // check to see if any of the stream maps still hold a weak reference to
-    // this entry before removing
-    for (SubMapType const& map : streamMaps_)
+    // Declared before the lock so it outlives the scoped_lock and is destroyed
+    // only after streamLock_ is released. The erase below may drop the last
+    // strong reference; if so, ~InfoSub runs and its unsub* calls re-acquire
+    // the non-recursive streamLock_. Destroying pInfo inside the lock would
+    // self-deadlock.
+    InfoSub::pointer pInfo;
     {
-        if (map.contains(pInfo->getSeq()))
+        std::scoped_lock const sl(streamLock_);
+        // Use the no-lock helper: we already hold streamLock_ and the mutex is
+        // not recursive, so calling the public findRpcSub here would deadlock.
+        pInfo = findRpcSubLocked(strUrl);
+
+        if (!pInfo)
             return false;
+
+        // check to see if any of the stream maps still hold a weak reference to
+        // this entry before removing
+        for (SubMapType const& map : streamMaps_)
+        {
+            if (map.contains(pInfo->getSeq()))
+                return false;
+        }
+        rpcSubMap_.erase(strUrl);
     }
-    rpcSubMap_.erase(strUrl);
+    // pInfo destroyed here, after streamLock_ is released.
     return true;
 }
 
@@ -4441,9 +4930,9 @@ NetworkOPsImp::getBookPage(
     json::Value& jvOffers = (jvResult[jss::offers] = json::Value(json::ValueType::Array));
 
     std::unordered_map<AccountID, STAmount> umBalance;
-    uint256 const uBookBase = getBookBase(book);
-    uint256 const uBookEnd = getQualityNext(uBookBase);
-    uint256 uTipIndex = uBookBase;
+    UInt256 const uBookBase = getBookBase(book);
+    UInt256 const uBookEnd = getQualityNext(uBookBase);
+    UInt256 uTipIndex = uBookBase;
 
     if (auto stream = journal_.trace())
     {
@@ -4455,18 +4944,17 @@ NetworkOPsImp::getBookPage(
 
     ReadView const& view = *lpLedger;
 
-    bool const bGlobalFreeze =
-        isGlobalFrozen(view, book.out.getIssuer()) || isGlobalFrozen(view, book.in.getIssuer());
+    bool const bGlobalFreeze = isGlobalFrozen(view, book.out) || isGlobalFrozen(view, book.in);
 
     bool bDone = false;
     bool bDirectAdvance = true;
 
     SLE::const_pointer sleOfferDir;
-    uint256 offerIndex;
+    UInt256 offerIndex;
     unsigned int uBookEntry = 0;
     STAmount saDirRate;
 
-    auto const rate = transferRate(view, book.out.getIssuer());
+    auto const rate = transferRate(view, book.out);
     auto viewJ = registry_.get().getJournal("View");
 
     while (!bDone && iLimit-- > 0)
@@ -4515,12 +5003,37 @@ NetworkOPsImp::getBookPage(
                 auto const& saTakerPays = sleOffer->getFieldAmount(sfTakerPays);
                 STAmount saOwnerFunds;
                 bool firstOwnerOffer(true);
+                auto foundBalance = [&]() {
+                    auto umBalanceEntry = umBalance.find(uOfferOwnerID);
+                    if (umBalanceEntry == umBalance.end())
+                        return false;
+
+                    // Found in running balance table.
+                    saOwnerFunds = umBalanceEntry->second;
+                    firstOwnerOffer = false;
+                    return true;
+                };
 
                 if (book.out.getIssuer() == uOfferOwnerID)
                 {
-                    // If an offer is selling issuer's own IOUs, it is fully
-                    // funded.
-                    saOwnerFunds = saTakerGets;
+                    book.out.visit(
+                        [&](Issue const&) {
+                            // If an offer is selling issuer's own IOUs, it is
+                            // fully funded.
+                            saOwnerFunds = saTakerGets;
+                        },
+                        [&](MPTIssue const& issue) {
+                            // MPT issuers have bounded self-issuance. Use the
+                            // running balance table so multiple issuer-owned
+                            // offers share the same remaining issuance
+                            // headroom.
+                            if (!foundBalance())
+                            {
+                                // Did not find balance in table.
+
+                                saOwnerFunds = issuerFundsToSelfIssue(view, issue);
+                            }
+                        });
                 }
                 else if (bGlobalFreeze)
                 {
@@ -4530,15 +5043,7 @@ NetworkOPsImp::getBookPage(
                 }
                 else
                 {
-                    auto umBalanceEntry = umBalance.find(uOfferOwnerID);
-                    if (umBalanceEntry != umBalance.end())
-                    {
-                        // Found in running balance table.
-
-                        saOwnerFunds = umBalanceEntry->second;
-                        firstOwnerOffer = false;
-                    }
-                    else
+                    if (!foundBalance())
                     {
                         // Did not find balance in table.
 
@@ -4574,7 +5079,28 @@ NetworkOPsImp::getBookPage(
                 {
                     // Need to charge a transfer fee to offer owner.
                     offerRate = rate;
-                    saOwnerFundsLimit = divide(saOwnerFunds, offerRate);
+                    // Why MPT does not use divide(): divide() is built for an
+                    // IOU mantissa, which is always normalized into
+                    // [1e15, 1e16]. An MPT mantissa is the raw int64 balance,
+                    // and divide() scales the numerator by 1e17, so a balance
+                    // over ~1.8e17 leaves uint64 range and throws -- failing
+                    // the whole RPC rather than this one offer.
+                    //
+                    // Why mulRatio is safe: it evaluates in 128 bits, and here
+                    // it cannot overflow either. offerRate is
+                    // 1e9 + 10'000 * TransferFee, so this branch runs only with
+                    // offerRate > kParityRate, making the quotient smaller than
+                    // saOwnerFunds. Rounded down, so reported liquidity is
+                    // never overstated.
+                    saOwnerFundsLimit = saOwnerFunds.holds<MPTIssue>()
+                        ? toSTAmount(
+                              mulRatio(
+                                  saOwnerFunds.mpt(),
+                                  kParityRate.value,
+                                  offerRate.value,
+                                  /*roundUp*/ false),
+                              saOwnerFunds.asset())
+                        : divide(saOwnerFunds, offerRate);
                 }
 
                 if (saOwnerFundsLimit >= saTakerGets)
@@ -4594,9 +5120,27 @@ NetworkOPsImp::getBookPage(
                         .setJson(jvOffer[jss::taker_pays_funded]);
                 }
 
+                // What the owner pays for this offer, charged against the
+                // running balance for the owner's later offers. BookStep
+                // rounds the MPT owner's fee-grossed cost up; multiply() rounds
+                // to nearest and would leave one unit per offer over-reported
+                // to the next offer. Can't overflow: saTakerGetsFunded <=
+                // floor(saOwnerFunds / offerRate).
+                auto const grossed = [&]() {
+                    return saOwnerFunds.asset().visit(
+                        [&](MPTIssue const&) {
+                            auto const mpt = mulRatio(
+                                saTakerGetsFunded.mpt(),
+                                offerRate.value,
+                                kParityRate.value,
+                                /*roundUp*/ true);
+                            return toSTAmount(mpt, saOwnerFunds.asset());
+                        },
+                        [&](Issue const&) { return multiply(saTakerGetsFunded, offerRate); });
+                };
                 STAmount const saOwnerPays = (kParityRate == offerRate)
                     ? saTakerGetsFunded
-                    : std::min(saOwnerFunds, multiply(saTakerGetsFunded, offerRate));
+                    : std::min(saOwnerFunds, grossed());
 
                 umBalance[uOfferOwnerID] = saOwnerFunds - saOwnerPays;
 
@@ -4631,6 +5175,8 @@ NetworkOPsImp::getBookPage(
 
 // This is the new code that uses the book iterators
 // It has temporarily been disabled
+// If this path is re-enabled, add MPT support mirroring the functional
+// getBookPage() implementation above.
 
 void
 NetworkOPsImp::getBookPage(
@@ -4839,7 +5385,7 @@ NetworkOPsImp::StateAccounting::json(json::Value& obj) const
 std::unique_ptr<NetworkOPs>
 makeNetworkOPs(
     ServiceRegistry& registry,
-    NetworkOPs::clock_type& clock,
+    NetworkOPs::ClockType& clock,
     bool standalone,
     std::size_t minPeerCount,
     bool startValid,
@@ -4848,7 +5394,7 @@ makeNetworkOPs(
     ValidatorKeys const& validatorKeys,
     boost::asio::io_context& ioCtx,
     beast::Journal journal,
-    beast::insight::Collector::ptr const& collector)
+    beast::insight::Collector::Ptr const& collector)
 {
     return std::make_unique<NetworkOPsImp>(
         registry,

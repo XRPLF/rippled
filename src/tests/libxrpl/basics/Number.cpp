@@ -1,5 +1,6 @@
 #include <xrpl/basics/Number.h>
 
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
@@ -16,6 +17,7 @@
 #include <array>
 #include <cctype>
 #include <cstdint>
+#include <functional>
 #include <iomanip>
 #include <limits>
 #include <map>
@@ -182,6 +184,17 @@ TEST(NumberTest, limits)
             caught = true;
         }
         EXPECT_TRUE(caught);
+
+        try
+        {
+            Number{1, 2000000, Number::Normalized{}};
+            ADD_FAILURE();
+        }
+        catch (std::overflow_error const& e)
+        {
+            std::string const expected = "Number::normalize 2";
+            EXPECT_EQ(e.what(), expected) << e.what();
+        }
 
         if (scale == MantissaRange::MantissaScale::Large330)
         {
@@ -402,6 +415,158 @@ TEST(NumberTest, add)
                 caught = true;
             }
             EXPECT_TRUE(caught);
+        }
+    }
+}
+
+TEST(NumberTest, add_sub_extreme_exponents)
+{
+    for (auto const mantissaScale : MantissaRange::getAllScales())
+    {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
+        auto const scale = Number::getMantissaScale();
+
+        EXPECT_EQ(Number::getround(), Number::RoundingMode::ToNearest)
+            << to_string(Number::getround());
+
+        // Special cases: Exponents at each end of the allowable range
+        for (auto const round :
+             {Number::RoundingMode::ToNearest,
+              Number::RoundingMode::TowardsZero,
+              Number::RoundingMode::Downward,
+              Number::RoundingMode::Upward})
+        {
+            NumberRoundModeGuard const rg{round};
+
+            auto const bigMantissa = std::invoke([scale, round] {
+                auto m = Number::maxMantissa();
+                if (scale != MantissaRange::MantissaScale::Small)
+                {
+                    // At the large scales, the maxMantissa is not representable, so we need to
+                    // shrink it down to a representable value.
+                    m /= 10;
+                }
+                if (round == Number::RoundingMode::Upward)
+                {
+                    // Rounding upward will overflow if the mantissa is at maxMantissa. Subtract an
+                    // arbitrary small value to keep the mantissa near the limit, but with a
+                    // little room to grow. 67 has no meaning, except that it's, you know,
+                    // six seven.
+                    m -= 67;
+                }
+                return m;
+            });
+            auto const params = {
+                std::make_pair(Number::minMantissa(), 0),
+                // At the large scales, the maxMantissa is not representable, so we need to shrink
+                // it down to a representable value. Rounding upward will overflow if the mantissa
+                // is right at the all nines value. To keep things a little simpler, do those
+                // modifications unconditionally.
+                std::make_pair(bigMantissa, 1),
+            };
+            for (auto const& [mantissa, exponentOffset] : params)
+            {
+                auto const x = Number{mantissa, Number::kMaxExponent, Number::Normalized{}};
+                auto const y =
+                    Number{mantissa, Number::kMinExponent + exponentOffset, Number::Normalized{}};
+
+                std::ostringstream detail;
+                detail << "Scale: " << to_string(scale) << ", round: " << to_string(round)
+                       << ", x: " << x << ", y: " << y;
+
+                EXPECT_EQ(x.mantissa(), mantissa);
+                EXPECT_EQ(x.exponent(), Number::kMaxExponent);
+                EXPECT_NE(x, beast::kZero);
+                EXPECT_EQ(y.mantissa(), mantissa);
+                EXPECT_EQ(y.exponent(), Number::kMinExponent + exponentOffset);
+                EXPECT_NE(y, beast::kZero);
+
+                {
+                    // x + y
+                    auto const result = x + y;
+
+                    if (round == Number::RoundingMode::Upward)
+                    {
+                        // Rounding upward will take that little x-bit and round result up to the
+                        // next representable value.
+                        EXPECT_NE(result, x);
+                        EXPECT_EQ(result, (Number{x.mantissa() + 1, x.exponent()}));
+                    }
+                    else
+                    {
+                        EXPECT_EQ(result, x);
+                    }
+                }
+                {
+                    // x - y
+                    auto const result = x - y;
+
+                    switch (round)
+                    {
+                        case Number::RoundingMode::TowardsZero:
+                            if (scale < MantissaRange::MantissaScale::Large330)
+                            {
+                                // Rounding TowardsZero was broken before Large330.
+                                EXPECT_EQ(result, x) << detail.str();
+                                break;
+                            }
+                            [[fallthrough]];
+                        case Number::RoundingMode::Downward:
+                            // Rounding downward (or toward zero in Large330) will take that little
+                            // x-bit and round result down to the next representable value.
+                            EXPECT_NE(result, x) << detail.str();
+                            EXPECT_EQ(result, (Number{x.mantissa() - 1, x.exponent()}))
+                                << detail.str();
+                            break;
+                        default:
+                            // Rounding up and toNearest rounds back to the original value
+                            EXPECT_EQ(result, x) << detail.str();
+                    }
+                }
+                {
+                    // y + x
+                    auto const result = y + x;
+
+                    if (round == Number::RoundingMode::Upward)
+                    {
+                        // Rounding upward will take that little x-bit and round result up to the
+                        // next representable value.
+                        EXPECT_NE(result, x);
+                        EXPECT_EQ(result, (Number{x.mantissa() + 1, x.exponent()}));
+                    }
+                    else
+                    {
+                        EXPECT_EQ(result, x);
+                    }
+                }
+                {
+                    // y - x
+                    auto const result = y - x;
+
+                    switch (round)
+                    {
+                        case Number::RoundingMode::TowardsZero:
+                            if (scale < MantissaRange::MantissaScale::Large330)
+                            {
+                                // Rounding TowardsZero was broken before Large330.
+                                EXPECT_EQ(result, -x) << detail.str();
+                                break;
+                            }
+                            [[fallthrough]];
+                        case Number::RoundingMode::Upward:
+                            // Rounding upward (or toward zero in Large330) will take that little
+                            // x-bit and round result up to the next representable negative value.
+                            EXPECT_NE(result, -x) << detail.str();
+                            EXPECT_EQ(result, (Number{-x.mantissa() + 1, x.exponent()}))
+                                << detail.str();
+                            break;
+                        default:
+                            // Rounding up and toNearest rounds back to the original value
+                            EXPECT_EQ(result, -x) << detail.str();
+                    }
+                }
+            }
         }
     }
 }

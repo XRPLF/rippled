@@ -5,8 +5,9 @@
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
-#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/Status.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/RangeSet.h>
@@ -18,7 +19,6 @@
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
@@ -38,7 +38,7 @@
 namespace xrpl {
 
 static bool
-isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, uint256 const& hash)
+isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, UInt256 const& hash)
 {
     if (!ledgerMaster.haveLedger(seq))
         return false;
@@ -56,13 +56,13 @@ struct TxResult
     bool validated = false;
     std::optional<std::string> ctid;
     std::optional<NetClock::time_point> closeTime;
-    std::optional<uint256> ledgerHash;
+    std::optional<UInt256> ledgerHash;
     TxSearched searchedAll = TxSearched::Unknown;
 };
 
 struct TxArgs
 {
-    std::optional<uint256> hash;
+    std::optional<UInt256> hash;
     std::optional<std::pair<uint32_t, uint16_t>> ctid;
     bool binary = false;
     std::optional<std::pair<uint32_t, uint32_t>> ledgerRange;
@@ -206,8 +206,8 @@ populateJsonResponse(
         if (context.apiVersion > 1)
         {
             static constexpr auto kOptionsJson =
-                static_cast<JsonOptions::underlying_t>(JsonOptions::Values::IncludeDate) |
-                static_cast<JsonOptions::underlying_t>(JsonOptions::Values::DisableApiPriorV2);
+                static_cast<JsonOptions::UnderlyingT>(JsonOptions::Values::IncludeDate) |
+                static_cast<JsonOptions::UnderlyingT>(JsonOptions::Values::DisableApiPriorV2);
             if (args.binary)
             {
                 response[jss::tx_blob] = result.txn->getJson(kOptionsJson, true);
@@ -253,9 +253,7 @@ populateJsonResponse(
             if (meta)
             {
                 response[jss::meta] = meta->getJson(JsonOptions::Values::None);
-                insertDeliveredAmount(response[jss::meta], context, result.txn, *meta);
-                rpc::insertNFTSyntheticInJson(response, sttx, *meta);
-                rpc::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);
+                rpc::insertAllSyntheticInJson(response[jss::meta], context, sttx, *meta);
             }
         }
         response[jss::validated] = result.validated;
@@ -284,7 +282,7 @@ doTxJson(rpc::JsonContext& context)
 
     if (context.params.isMember(jss::transaction))
     {
-        uint256 hash;
+        UInt256 hash;
         if (!hash.parseHex(context.params[jss::transaction].asString()))
             return rpcError(RpcNotImpl);
         args.hash = hash;
