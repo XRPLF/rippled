@@ -737,6 +737,14 @@ public:
         std::optional<Account> const& issuerKeyOwner,
         std::optional<Account> const& auditorKeyOwner) const;
 
+    bool
+    checkInitialIssuerKey(std::optional<Buffer> const& expected) const;
+
+    bool
+    checkIssuerMirrorEncryptionKey(
+        std::optional<Buffer> const& expected,
+        Account const& holder) const;
+
     [[nodiscard]] Account const&
     issuer() const
     {
@@ -963,6 +971,12 @@ private:
         json::Value& jv,
         Account const& account,
         std::uint64_t const amount) const;
+
+    bool
+    checkEncryptionKey(
+        std::optional<Buffer> const& expected,
+        SF_VL const& field,
+        std::optional<Account> const& holder = std::nullopt) const;
 };
 
 }  // namespace xrpl::test::jtx

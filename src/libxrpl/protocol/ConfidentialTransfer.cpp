@@ -435,28 +435,35 @@ areMirrorsCurrent(SLE const& issuance, SLE const& mptoken)
 }
 
 void
-setIssuerMirrorEpoch(SLE const& issuance, SLE& mptoken)
+setIssuerMirrorCurrent(SLE const& issuance, SLE& mptoken)
 {
     XRPL_ASSERT(
         issuance.getType() == ltMPTOKEN_ISSUANCE,
-        "xrpl::setIssuerMirrorEpoch : issuance MPTokenIssuance object");
+        "xrpl::setIssuerMirrorCurrent : issuance MPTokenIssuance object");
     XRPL_ASSERT(
-        mptoken.getType() == ltMPTOKEN, "xrpl::setIssuerMirrorEpoch : mptoken MPToken object");
+        mptoken.getType() == ltMPTOKEN, "xrpl::setIssuerMirrorCurrent : mptoken MPToken object");
 
     // Unlike the auditor mirror, the issuer mirror is not optional: every
     // confidential MPToken carries one, so there is no existence check here.
+    //
+    // Record the key and epoch under which the mirror is now encrypted.  Both fields remain absent
+    // at epoch 0: such mirrors use the original issuer key. The original key is stored in
+    // sfInitialIssuerEncryptionKey after the first rotation.
     if (auto const epoch = issuance[~sfIssuerKeyEpoch].value_or(0); epoch != 0)
+    {
         mptoken[sfIssuerKeyMirrorEpoch] = epoch;
+        mptoken[sfIssuerMirrorEncryptionKey] = issuance[sfIssuerEncryptionKey];
+    }
 }
 
 void
-setAuditorMirrorEpoch(SLE const& issuance, SLE& mptoken)
+setAuditorMirrorCurrent(SLE const& issuance, SLE& mptoken)
 {
     XRPL_ASSERT(
         issuance.getType() == ltMPTOKEN_ISSUANCE,
-        "xrpl::setAuditorMirrorEpoch : issuance MPTokenIssuance object");
+        "xrpl::setAuditorMirrorCurrent : issuance MPTokenIssuance object");
     XRPL_ASSERT(
-        mptoken.getType() == ltMPTOKEN, "xrpl::setAuditorMirrorEpoch : mptoken MPToken object");
+        mptoken.getType() == ltMPTOKEN, "xrpl::setAuditorMirrorCurrent : mptoken MPToken object");
 
     if (!mptoken.isFieldPresent(sfAuditorEncryptedBalance))
         return;
@@ -468,8 +475,8 @@ setAuditorMirrorEpoch(SLE const& issuance, SLE& mptoken)
 void
 setMirrorEpochs(SLE const& issuance, SLE& mptoken)
 {
-    setIssuerMirrorEpoch(issuance, mptoken);
-    setAuditorMirrorEpoch(issuance, mptoken);
+    setIssuerMirrorCurrent(issuance, mptoken);
+    setAuditorMirrorCurrent(issuance, mptoken);
 }
 
 TER

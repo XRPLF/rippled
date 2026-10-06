@@ -454,6 +454,19 @@ MPTokenIssuanceSet::doApply()
 
         // NOTE: presence must be checked before the key is overwritten below.
         bool const isRotation = sle->isFieldPresent(keyField);
+
+        // Proofs over sfIssuerEncryptedBalance must be verified against the issuer key
+        // that encrypted the mirror balance.
+        //
+        // - Mirrors migrated after an issuer key rotation store their new key in
+        //   MPToken's sfIssuerMirrorEncryptionKey.
+        // - Mirrors that were never migrated carry no record and remain under the original key.
+        //
+        // Save the original key here in MPTokenIssuance object during the first key rotation
+        bool const isIEK = &keyField == &sfIssuerEncryptionKey;
+        if (isRotation && isIEK && !sle->isFieldPresent(epochField))
+            sle->at(sfInitialIssuerEncryptionKey) = sle->at(keyField);
+
         sle->setFieldVL(keyField, *pubKey);
 
         if (isRotation)

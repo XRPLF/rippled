@@ -331,6 +331,8 @@ TYPED_SFIELD(sfAmountCommitment,            VL,     45)
 TYPED_SFIELD(sfBalanceCommitment,           VL,     46)
 TYPED_SFIELD(sfBytecode,                    VL,     47)
 TYPED_SFIELD(sfRecoveryKey,                 VL,     48)
+TYPED_SFIELD(sfInitialIssuerEncryptionKey,  VL,     49)
+TYPED_SFIELD(sfIssuerMirrorEncryptionKey,   VL,     50)
 
 // account (common)
 TYPED_SFIELD(sfAccount,                  ACCOUNT,    1)

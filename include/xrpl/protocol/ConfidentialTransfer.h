@@ -352,12 +352,14 @@ areMirrorsCurrent(SLE const& issuance, SLE const& mptoken);
  *
  * Call this after writing the issuer mirror ciphertext under the issuance's
  * currently registered issuer key, so that the mirror reads as current afterwards.
+ * Also records sfIssuerMirrorEncryptionKey as the issuance's current issuer key
+ * (both fields stay absent at epoch 0, where the original issuer key applies).
  *
  * @param issuance The MPTokenIssuance ledger object.
  * @param mptoken  The holder's MPToken ledger entry to update.
  */
 void
-setIssuerMirrorEpoch(SLE const& issuance, SLE& mptoken);
+setIssuerMirrorCurrent(SLE const& issuance, SLE& mptoken);
 
 /**
  * @brief Set the holder's auditor mirror epoch to match the issuance's current auditor key epoch.
@@ -369,13 +371,14 @@ setIssuerMirrorEpoch(SLE const& issuance, SLE& mptoken);
  * @param mptoken  The holder's MPToken ledger entry to update.
  */
 void
-setAuditorMirrorEpoch(SLE const& issuance, SLE& mptoken);
+setAuditorMirrorCurrent(SLE const& issuance, SLE& mptoken);
 
 /**
  * @brief Set the holder's MPToken mirror epochs to match the issuance's current key epochs.
  *
  * Call this after writing mirror ciphertexts under the issuance's currently
- * registered keys, so that the mirrors read as current afterwards.
+ * registered keys, so that the mirrors read as current afterwards. Also records
+ * sfIssuerMirrorEncryptionKey via setIssuerMirrorCurrent.
  *
  * @param issuance The MPTokenIssuance ledger object.
  * @param mptoken  The holder's MPToken ledger entry to update.
