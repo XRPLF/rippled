@@ -8,6 +8,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/ledger/entries/NegativeUNLEntry.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -261,16 +262,14 @@ Change::applyAmendment()
 TER
 Change::applyFee()
 {
-    auto const k = keylet::feeSettings();
-
-    SLE::pointer feeObject = view().peek(k);
+    FeeSettingsEntryW feeObject(view());
 
     if (!feeObject)
     {
-        feeObject = std::make_shared<SLE>(k);
-        view().insert(feeObject);
+        feeObject.newSLE();
+        feeObject.insert();
     }
-    auto set = [](SLE::pointer& feeObject, STTx const& tx, auto const& field) {
+    auto set = [](FeeSettingsEntryW& feeObject, STTx const& tx, auto const& field) {
         feeObject->at(field) = tx[field];
     };
     if (view().rules().enabled(featureXRPFees))
@@ -292,7 +291,7 @@ Change::applyFee()
         set(feeObject, ctx_.tx, sfReserveIncrement);
     }
 
-    view().update(feeObject);
+    feeObject.update();
 
     JLOG(j_.warn()) << "Fees have been changed";
     return tesSUCCESS;

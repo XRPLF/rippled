@@ -11,6 +11,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/LedgerTiming.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/ledger/entries/NegativeUNLEntry.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/Feature.h>
@@ -561,7 +562,7 @@ Ledger::setup()
 
     try
     {
-        if (auto const sle = read(keylet::feeSettings()))
+        if (auto const sle = FeeSettingsEntryR(*this))
         {
             bool oldFees = false;
             bool newFees = false;
