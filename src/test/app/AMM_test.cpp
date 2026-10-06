@@ -11,6 +11,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/paychan.h>
 #include <test/jtx/rate.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
@@ -84,7 +85,8 @@ private:
     {
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
-        return jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol;
+        return jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol -
+            featureMPTokensV2;
     }
 
     // Seed from the local testableAmendments() which strips SAV and Lending.
@@ -3813,7 +3815,7 @@ private:
                     BEAST_EXPECT(amm.expectBalances(XRP(1'000), USD(500), amm.tokens()));
                     BEAST_EXPECT(expectOffers(env, carol_, 1, {{Amounts{XRP(100), USD(55)}}}));
                 }
-                else if (!features[featureMPTokensV2])
+                else
                 {
                     BEAST_EXPECT(amm.expectBalances(
                         XRPAmount(909'090'909),
@@ -3827,30 +3829,6 @@ private:
                     BEAST_EXPECT(
                         env.balance(carol_, USD) ==
                         STAmount(USD, UINT64_C(29'949'94999999494), -11));
-                }
-                else
-                {
-                    // Post-amendment the transfer fee is taken into account
-                    // when calculating the limit out based on limitQuality.
-                    // This increases the limitQuality and decreases
-                    // the limit out. Consequently, AMM offer size is decreased,
-                    // and the quality is increased, matching the overall
-                    // quality.
-                    // AMM offer ~50USD/91XRP
-                    BEAST_EXPECT(amm.expectBalances(
-                        XRPAmount(909'090'910),
-                        STAmount{USD, UINT64_C(549'99999945), -8},
-                        amm.tokens()));
-                    // Offer ~91XRP/50USD
-                    BEAST_EXPECT(expectOffers(
-                        env,
-                        carol_,
-                        1,
-                        {{Amounts{XRPAmount{9'090'910}, STAmount{USD, 5'0000005, -7}}}}));
-                    // Carol pays 0.1% fee on ~50USD =~ 0.05USD
-                    BEAST_EXPECT(
-                        env.balance(carol_, USD) ==
-                        STAmount(USD, UINT64_C(29'949'95000060055), -11));
                 }
             },
             {{XRP(1'000), USD(500)}},
@@ -6501,7 +6479,7 @@ private:
                 BEAST_EXPECT(expectOffers(env, bob_, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
                 BEAST_EXPECT(expectOffers(env, carol_, 1, {{Amounts{XRP(100), USD(55)}}}));
             }
-            else if (!features[featureMPTokensV2])
+            else
             {
                 BEAST_EXPECT(amm.expectBalances(
                     XRPAmount(909'090'909),
@@ -6512,19 +6490,6 @@ private:
                     carol_,
                     1,
                     {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
-                BEAST_EXPECT(expectOffers(env, bob_, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
-            }
-            else
-            {
-                BEAST_EXPECT(amm.expectBalances(
-                    XRPAmount(909'090'910),
-                    STAmount{USD, UINT64_C(549'99999945), -8},
-                    amm.tokens()));
-                BEAST_EXPECT(expectOffers(
-                    env,
-                    carol_,
-                    1,
-                    {{Amounts{XRPAmount{9'090'910}, STAmount{USD, 5'0000005, -7}}}}));
                 BEAST_EXPECT(expectOffers(env, bob_, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
             }
         }
@@ -6538,30 +6503,10 @@ private:
             AMM const amm(env, alice_, XRP(1'000), USD(500));
             env(offer(carol_, XRP(100), USD(55)));
             env.close();
-            if (!features[featureMPTokensV2])
-            {
-                BEAST_EXPECT(amm.expectBalances(
-                    XRPAmount(909'090'909),
-                    STAmount{USD, UINT64_C(550'000000055), -9},
-                    amm.tokens()));
-                BEAST_EXPECT(expectOffers(
-                    env,
-                    carol_,
-                    1,
-                    {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
-            }
-            else
-            {
-                BEAST_EXPECT(amm.expectBalances(
-                    XRPAmount(909'090'910),
-                    STAmount{USD, UINT64_C(549'99999945), -8},
-                    amm.tokens()));
-                BEAST_EXPECT(expectOffers(
-                    env,
-                    carol_,
-                    1,
-                    {{Amounts{XRPAmount{9'090'910}, STAmount{USD, 5'0000005, -7}}}}));
-            }
+            BEAST_EXPECT(amm.expectBalances(
+                XRPAmount(909'090'909), STAmount{USD, UINT64_C(550'000000055), -9}, amm.tokens()));
+            BEAST_EXPECT(expectOffers(
+                env, carol_, 1, {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
         }
     }
 
@@ -7451,8 +7396,6 @@ private:
                     .err = Ter(tecAMM_BALANCE)});
         };
 
-        // Bound holds regardless of the deposit-side fix amendment.
-        test(all - featureMPTokensV2);
         test(all);
     }
 
@@ -7484,7 +7427,6 @@ private:
         testFlags();
         testRippling();
         testAMMAndCLOB(all);
-        testAMMAndCLOB(all - featureMPTokensV2);
         testAMMAndCLOB(all - fixAMMv1_1 - fixAMMv1_3);
         testTradingFee(all);
         testTradingFee(all - fixAMMv1_3);
@@ -7504,10 +7446,8 @@ private:
         testOverflowOffer(all - fixAMMv1_1 - fixAMMv1_3);
         testSwapRounding();
         testFixChangeSpotPriceQuality(all);
-        testFixChangeSpotPriceQuality(all - featureMPTokensV2);
         testFixChangeSpotPriceQuality(all - fixAMMv1_1 - fixAMMv1_3);
         testFixAMMOfferBlockedByLOB(all);
-        testFixAMMOfferBlockedByLOB(all - featureMPTokensV2);
         testFixAMMOfferBlockedByLOB(all - fixAMMv1_1 - fixAMMv1_3);
         testLPTokenBalance(all);
         testLPTokenBalance(all - fixAMMv1_3);

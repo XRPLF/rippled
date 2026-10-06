@@ -7,10 +7,10 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/EscrowEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -18,6 +18,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -371,60 +372,12 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
 
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
-                    return escrowCreatePreclaimHelper<T>(ctx, account, dest, amount);
+                    return escrowLockPreclaimHelper<T>(ctx.view, account, dest, amount, ctx.j);
                 },
                 amount.asset().value());
             !isTesSuccess(ret))
             return ret;
     }
-    return tesSUCCESS;
-}
-
-template <ValidIssueType T>
-static TER
-escrowLockApplyHelper(
-    ApplyView& view,
-    AccountID const& issuer,
-    AccountID const& sender,
-    STAmount const& amount,
-    beast::Journal journal);
-
-template <>
-TER
-escrowLockApplyHelper<Issue>(
-    ApplyView& view,
-    AccountID const& issuer,
-    AccountID const& sender,
-    STAmount const& amount,
-    beast::Journal journal)
-{
-    // Defensive: Issuer cannot create an escrow
-    if (issuer == sender)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const ter =
-        directSendNoFee(view, sender, issuer, amount, !amount.holds<MPTIssue>(), journal);
-    if (!isTesSuccess(ter))
-        return ter;  // LCOV_EXCL_LINE
-    return tesSUCCESS;
-}
-
-template <>
-TER
-escrowLockApplyHelper<MPTIssue>(
-    ApplyView& view,
-    AccountID const& issuer,
-    AccountID const& sender,
-    STAmount const& amount,
-    beast::Journal journal)
-{
-    // Defensive: Issuer cannot create an escrow
-    if (issuer == sender)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const ter = lockEscrowMPT(view, sender, amount, journal);
-    if (!isTesSuccess(ter))
-        return ter;  // LCOV_EXCL_LINE
     return tesSUCCESS;
 }
 
@@ -487,30 +440,31 @@ EscrowCreate::doApply()
 
     // Create escrow in ledger.  Note that we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
-    Keylet const escrowKeylet = keylet::escrow(accountID_, ctx_.tx.getSeqProxy());
-    auto const slep = std::make_shared<SLE>(escrowKeylet);
-    (*slep)[sfAmount] = amount;
-    (*slep)[sfAccount] = accountID_;
-    (*slep)[~sfCondition] = ctx_.tx[~sfCondition];
-    (*slep)[~sfSourceTag] = ctx_.tx[~sfSourceTag];
-    (*slep)[sfDestination] = ctx_.tx[sfDestination];
-    (*slep)[~sfCancelAfter] = ctx_.tx[~sfCancelAfter];
-    (*slep)[~sfFinishAfter] = ctx_.tx[~sfFinishAfter];
-    (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
+    EscrowEntryW escrow(accountID_, ctx_.tx.getSeqProxy(), ctx_.view(), j_);
+    Keylet const escrowKeylet = escrow.keylet();
+    escrow.newSLE();
+    (*escrow)[sfAmount] = amount;
+    (*escrow)[sfAccount] = accountID_;
+    (*escrow)[~sfCondition] = ctx_.tx[~sfCondition];
+    (*escrow)[~sfSourceTag] = ctx_.tx[~sfSourceTag];
+    (*escrow)[sfDestination] = ctx_.tx[sfDestination];
+    (*escrow)[~sfCancelAfter] = ctx_.tx[~sfCancelAfter];
+    (*escrow)[~sfFinishAfter] = ctx_.tx[~sfFinishAfter];
+    (*escrow)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
 
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
     {
-        (*slep)[sfSequence] = ctx_.tx.getSeqProxy().value();
+        (*escrow)[sfSequence] = ctx_.tx.getSeqProxy().value();
     }
 
     if (ctx_.view().rules().enabled(featureTokenEscrow) && !isXRP(amount))
     {
         auto const xferRate = transferRate(ctx_.view(), amount);
         if (xferRate != kParityRate)
-            (*slep)[sfTransferRate] = xferRate.value;
+            (*escrow)[sfTransferRate] = xferRate.value;
     }
 
-    ctx_.view().insert(slep);
+    escrow.insert();
 
     // Add escrow to sender's owner directory
     {
@@ -518,7 +472,7 @@ EscrowCreate::doApply()
             keylet::ownerDir(accountID_), escrowKeylet, describeOwnerDir(accountID_));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*slep)[sfOwnerNode] = *page;
+        (*escrow)[sfOwnerNode] = *page;
     }
 
     // If it's not a self-send, add escrow to recipient's owner directory.
@@ -529,7 +483,7 @@ EscrowCreate::doApply()
             ctx_.view().dirInsert(keylet::ownerDir(dest), escrowKeylet, describeOwnerDir(dest));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*slep)[sfDestinationNode] = *page;
+        (*escrow)[sfDestinationNode] = *page;
     }
 
     // IOU escrow objects are added to the issuer's owner directory to help
@@ -542,7 +496,7 @@ EscrowCreate::doApply()
             ctx_.view().dirInsert(keylet::ownerDir(issuer), escrowKeylet, describeOwnerDir(issuer));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*slep)[sfIssuerNode] = *page;
+        (*escrow)[sfIssuerNode] = *page;
     }
 
     // Deduct owner's balance
@@ -565,7 +519,7 @@ EscrowCreate::doApply()
 
     // increment owner count
     increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, ctx_.journal);
-    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), slep);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), escrow.mutableRawSle());
     ctx_.view().update(sle);
     return tesSUCCESS;
 }

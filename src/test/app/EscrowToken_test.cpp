@@ -1,6 +1,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/escrow.h>
@@ -17,7 +18,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/OpenView.h>
@@ -25,7 +25,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -46,52 +45,6 @@ namespace xrpl::test {
 
 struct EscrowToken_test : public beast::unit_test::Suite
 {
-    static uint64_t
-    mptEscrowed(jtx::Env const& env, jtx::Account const& account, jtx::MPT const& mpt)
-    {
-        auto const sle = env.le(keylet::mptoken(mpt.mpt(), account));
-        if (sle && sle->isFieldPresent(sfLockedAmount))
-            return (*sle)[sfLockedAmount];
-        return 0;
-    }
-
-    static uint64_t
-    issuerMPTEscrowed(jtx::Env const& env, jtx::MPT const& mpt)
-    {
-        auto const sle = env.le(keylet::mptokenIssuance(mpt.mpt()));
-        if (sle && sle->isFieldPresent(sfLockedAmount))
-            return (*sle)[sfLockedAmount];
-        return 0;
-    }
-
-    static jtx::PrettyAmount
-    issuerBalance(jtx::Env& env, jtx::Account const& account, Issue const& issue)
-    {
-        json::Value params;
-        params[jss::account] = account.human();
-        auto jrr = env.rpc("json", "gateway_balances", to_string(params));
-        auto const result = jrr[jss::result];
-        auto const obligations = result[jss::obligations][to_string(issue.currency)];
-        if (obligations.isNull())
-            return {STAmount(issue, 0), account.name()};
-        STAmount const amount = amountFromString(issue, obligations.asString());
-        return {amount, account.name()};
-    }
-
-    static jtx::PrettyAmount
-    issuerEscrowed(jtx::Env& env, jtx::Account const& account, Issue const& issue)
-    {
-        json::Value params;
-        params[jss::account] = account.human();
-        auto jrr = env.rpc("json", "gateway_balances", to_string(params));
-        auto const result = jrr[jss::result];
-        auto const locked = result[jss::locked][to_string(issue.currency)];
-        if (locked.isNull())
-            return {STAmount(issue, 0), account.name()};
-        STAmount const amount = amountFromString(issue, locked.asString());
-        return {amount, account.name()};
-    }
-
     void
     testIOUEnablement(FeatureBitset features)
     {
@@ -573,8 +526,8 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env(pay(gw, bob, usd(1)));
             env.close();
 
-            bool const largeMantissa =
-                features[featureSingleAssetVault] || features[featureLendingProtocol];
+            bool const largeMantissa = features[featureSingleAssetVault] ||
+                features[featureLendingProtocol] || features[featureMPTokensV2];
 
             // alice cannot create escrow for 1/10 iou - precision loss
             env(escrow::create(alice, bob, usd(1)),
@@ -2294,8 +2247,8 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env(pay(gw, bob, usd(1)));
             env.close();
 
-            bool const largeMantissa =
-                features[featureSingleAssetVault] || features[featureLendingProtocol];
+            bool const largeMantissa = features[featureSingleAssetVault] ||
+                features[featureLendingProtocol] || features[featureMPTokensV2];
 
             // alice cannot create escrow for 1/10 iou - precision loss
             env(escrow::create(alice, bob, usd(1)),
@@ -4334,7 +4287,7 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{testableAmendments()};
         for (FeatureBitset const& feats :
-             {all - featureSingleAssetVault - featureLendingProtocol, all})
+             {all - featureSingleAssetVault - featureLendingProtocol - featureMPTokensV2, all})
         {
             testIOUWithFeats(feats);
             testIOUWithFeats(feats - fixCleanup3_2_0);
