@@ -224,7 +224,7 @@ Pathfinder::Pathfinder(
     , dstAmount_(saDstAmount)
     , srcPathAsset_(uSrcPathAsset)
     , srcIssuer_(uSrcIssuer)
-    , srcAmount_(amountFromPathAsset(uSrcPathAsset, uSrcIssuer, uSrcAccount))
+    , srcAmount_(srcAmount.value_or(amountFromPathAsset(uSrcPathAsset, uSrcIssuer, uSrcAccount)))
     , convertAll_(convertAllCheck(dstAmount_))
     , domain_(domain)
     , ledger_(cache->getLedger())
@@ -815,8 +815,8 @@ Pathfinder::getPathsOut(
                 {
                     for (auto const& mpt : *mpts)
                     {
-                        if (pathAsset.get<MPTID>() != mpt.getMptID() || mpt.isZeroBalance() ||
-                            mpt.isMaxedOut() || bAuthRequired)
+                        if (pathAsset.get<MPTID>() != mpt.getMptID() || !mpt.canSend(account) ||
+                            bAuthRequired)
                             continue;
                         if (isDstAsset && dstAccount == getMPTIssuer(mpt))
                         {
@@ -1079,7 +1079,10 @@ Pathfinder::addLink(
                             }
                             if constexpr (kIsMpt)
                             {
-                                return asset.isZeroBalance() || asset.isMaxedOut() ||
+                                // `asset` came from uEndAccount's cached MPTs.
+                                // `acct` is the next issuer hop, not the
+                                // account whose balance is being tested.
+                                return !asset.canSend(uEndAccount) ||
                                     requireAuth(*ledger_, MPTIssue{asset}, acct);
                             }
                         };

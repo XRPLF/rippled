@@ -15,7 +15,6 @@
 #include <cstdint>
 #include <expected>
 #include <optional>
-#include <set>
 #include <vector>
 
 namespace xrpl {
@@ -353,14 +352,14 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey);
  *
  * The list is constructed during initialization and is const after that.
  * Pseudo-account designator fields MUST be maintained by including the
- * SField::sMD_PseudoAccount flag in the SField definition.
+ * SField::kSmdPseudoAccount flag in the SField definition.
  */
 [[nodiscard]] std::vector<SField const*> const&
 getPseudoAccountFields();
 
 /**
- * Returns true if and only if sleAcct is a pseudo-account or specific
- * pseudo-accounts in pseudoFieldFilter.
+ * Returns true if and only if sleAcct is a pseudo-account of any kind
+ * (i.e. carries at least one field flagged with SField::kSmdPseudoAccount).
  *
  * Returns false if sleAcct is:
  * - NOT a pseudo-account OR
@@ -368,18 +367,15 @@ getPseudoAccountFields();
  * - null pointer
  */
 [[nodiscard]] bool
-isPseudoAccount(SLE::const_pointer sleAcct, std::set<SField const*> const& pseudoFieldFilter = {});
+isPseudoAccount(SLE::const_pointer sleAcct);
 
 /**
  * Convenience overload that reads the account from the view.
  */
 [[nodiscard]] inline bool
-isPseudoAccount(
-    ReadView const& view,
-    AccountID const& accountId,
-    std::set<SField const*> const& pseudoFieldFilter = {})
+isPseudoAccount(ReadView const& view, AccountID const& accountId)
 {
-    return isPseudoAccount(view.read(keylet::account(accountId)), pseudoFieldFilter);
+    return isPseudoAccount(view.read(keylet::account(accountId)));
 }
 
 /**

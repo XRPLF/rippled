@@ -366,7 +366,6 @@ words:
   - venv
   - vfalco
   - vinnie
-  - vkeylet
   - wasmi
   - wextra
   - wptr
@@ -387,3 +386,4 @@ words:
   - xxhasher
   - zstdio
   - CGNAT
+  - ungated

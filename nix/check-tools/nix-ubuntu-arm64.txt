@@ -114,8 +114,8 @@ Development tooling:
 
 Rust toolchain:
   ✅ cargo
-     cargo 1.95.0 (f2d3ce0bd 2026-03-21)
-     /nix/store/yw1rs50s6qpsw0zyl7j3dpm18swbl0ag-cargo-1.95.0-aarch64-unknown-linux-gnu/bin/cargo
+     cargo 1.97.1 (c980f4866 2026-06-30)
+     /nix/store/6hch2qrr86n2sa2m90lrpxrfxxwbkayl-cargo-1.97.1-aarch64-unknown-linux-gnu/bin/cargo
   ✅ cargo-audit
      cargo-audit-audit 0.22.1
      /nix/store/9rxbrn9aa2r1z96186s69pc7vzizyfch-cargo-audit-0.22.1/bin/cargo-audit
@@ -126,17 +126,17 @@ Rust toolchain:
      cargo-nextest 0.9.137
      /nix/store/qb6bcg2fjvm3r9s9j98nmffmf9xwh45s-cargo-nextest-0.9.137/bin/cargo-nextest
   ✅ clippy-driver
-     clippy 0.1.95 (59807616e1 2026-04-14)
-     /nix/store/nz4qv12pf16c092qr9hh4dsn0fzf47da-rust-minimal-1.95.0/bin/clippy-driver
+     clippy 0.1.97 (8bab26f4f6 2026-07-14)
+     /nix/store/a6p27cg6b8szfixfyvkssx6l0c345zw8-rust-minimal-1.97.1/bin/clippy-driver
   ✅ rust-analyzer
-     rust-analyzer 1.95.0 (5980761 2026-04-14)
-     /nix/store/m1rn67sqfz8s44idcxqallg680ifk71r-rust-analyzer-preview-1.95.0-aarch64-unknown-linux-gnu/bin/rust-analyzer
+     rust-analyzer 1.97.1 (8bab26f 2026-07-14)
+     /nix/store/262830dlw2517lnagfx7i7agqgl4fmsd-rust-analyzer-preview-1.97.1-aarch64-unknown-linux-gnu/bin/rust-analyzer
   ✅ rustc
-     rustc 1.95.0 (59807616e 2026-04-14)
-     /nix/store/nz4qv12pf16c092qr9hh4dsn0fzf47da-rust-minimal-1.95.0/bin/rustc
+     rustc 1.97.1 (8bab26f4f 2026-07-14)
+     /nix/store/a6p27cg6b8szfixfyvkssx6l0c345zw8-rust-minimal-1.97.1/bin/rustc
   ✅ rustfmt
-     rustfmt 1.9.0-stable (59807616e1 2026-04-14)
-     /nix/store/jidfsprj2820glyzjn54ldn3j1fmz8c5-rustfmt-preview-1.95.0-aarch64-unknown-linux-gnu/bin/rustfmt
+     rustfmt 1.9.0-stable (8bab26f4f6 2026-07-14)
+     /nix/store/nd8g81wv1smnvdpy4whpcyv2siwjmaan-rustfmt-preview-1.97.1-aarch64-unknown-linux-gnu/bin/rustfmt
 
 GCC toolchain:
   ✅ gcc

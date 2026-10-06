@@ -1901,11 +1901,18 @@ public:
         env.fund(XRP(10'000), lender, borrower);
         env.close();
 
-        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = xrpIssue()});
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults, so build one with a near-future
+        // SubscriptionDate, deposit while still in the Subscription phase,
+        // and advance past SubscriptionDate before creating the broker.
+        auto [vaultTx, vaultKeylet, subscriptionDate] =
+            vault.createClosedEnded({.owner = lender, .asset = xrpIssue()});
         env(vaultTx);
         env.close();
         env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = XRP(1'000)}));
         env.close();
+
+        vault.closePastSubscription(subscriptionDate);
 
         auto const brokerKeylet =
             keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));

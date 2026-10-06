@@ -65,6 +65,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 {
     auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
+    auto const fix340Enabled = ctx.view.rules().enabled(fixCleanup3_4_0);
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
@@ -139,6 +140,12 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // Destination MPToken must exist (if asset is an MPT)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType))
         return ter;
+
+    if (fix340Enabled && account == dstAcct && !holdingExists(ctx.view, dstAcct, vaultAsset))
+    {
+        if (auto const ter = canAddHolding(ctx.view, vaultAsset); !isTesSuccess(ter))
+            return ter;
+    }
 
     if (fix330Enabled)
     {

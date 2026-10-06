@@ -44,6 +44,7 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/peerfinder/Slot.h>
 #include <xrpl/peerfinder/Types.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
@@ -3087,8 +3088,9 @@ PeerImp::checkTransaction(
         if (checkSignature)
         {
             // Check the signature before handing off to the job queue.
-            if (auto [valid, validReason] = checkValidity(
-                    app_.getHashRouter(), *stx, app_.getLedgerMaster().getValidatedRules());
+            auto const& validatedRules = app_.getLedgerMaster().getValidatedRules();
+            if (auto [valid, validReason] =
+                    checkValidity(app_.getHashRouter(), *stx, validatedRules);
                 valid != Validity::Valid)
             {
                 if (!validReason.empty())
@@ -3096,9 +3098,20 @@ PeerImp::checkTransaction(
                     JLOG(pJournal_.debug()) << "Exception checking transaction: " << validReason;
                 }
 
-                // Probably not necessary to set HashRouterFlags::BAD, but
-                // doesn't hurt.
-                app_.getHashRouter().setFlags(stx->getTransactionID(), HashRouterFlags::BAD);
+                // For a role-signature transaction, only cache BAD once
+                // fixCleanup3_4_0 is enabled on this node: the SigBad verdict
+                // then covers the post-fix prefix and cannot flip back.
+                // Before the amendment activates, checkValidity's own
+                // era-scoped cache handles the repeat lookups; setting BAD
+                // would block a correctly new-prefix-signed transaction until
+                // the router entry ages out. Remove the guard together with
+                // the amendment.
+                if (validatedRules.enabled(fixCleanup3_4_0) ||
+                    (!stx->isFieldPresent(sfSponsorSignature) &&
+                     !stx->isFieldPresent(sfCounterpartySignature)))
+                {
+                    app_.getHashRouter().setFlags(stx->getTransactionID(), HashRouterFlags::BAD);
+                }
                 charge(resource::kFeeInvalidSignature, "check transaction signature failure");
                 return;
             }

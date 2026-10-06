@@ -68,12 +68,20 @@ private:
             return sleIssuance->at(sfOutstandingAmount);
         };
 
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults, so build vaults in this suite as
+        // closed-ended and advance past SubscriptionDate before creating
+        // brokers/loans. VaultClawback itself is not phase-gated. The
+        // subscription offset must be large enough that the deposit
+        // ledger close does not accidentally push us past SubscriptionDate
+        // (which would land the deposit in Investment phase and fail).
         auto const setupVault = [&](PrettyAsset const& asset,
                                     Account const& owner,
                                     Account const& depositor) -> std::pair<Vault, Keylet> {
             Vault const vault{env};
 
-            auto const& [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+            auto const& [tx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner, .asset = asset, .subscriptionOffset = std::chrono::seconds{60}});
             env(tx, Ter(tesSUCCESS));
             env.close();
 
@@ -86,6 +94,10 @@ private:
                     {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)}),
                 Ter(tesSUCCESS));
             env.close();
+
+            // Move past SubscriptionDate so LoanBrokerSet/LoanSet run in
+            // the Investment phase.
+            vault.closePastSubscription(subscriptionDate);
 
             auto const& [availablePreDefault, totalPreDefault] = vaultAssetBalance(vaultKeylet);
             BEAST_EXPECT(availablePreDefault == totalPreDefault);
@@ -313,13 +325,21 @@ private:
         Env env(*this);
         env.enableFeature(fixCleanup3_1_3);
 
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults; some tests using this helper later
+        // attach loan brokers to the vault. Build it as closed-ended and
+        // advance past SubscriptionDate so subsequent broker/loan setup
+        // runs in the Investment phase. VaultClawback itself is not
+        // phase-gated. See the other setupVault (share tests) for why the
+        // subscription offset must be generous.
         auto const setupVault = [&](PrettyAsset const& asset,
                                     Account const& owner,
                                     Account const& depositor,
                                     Account const& issuer) -> std::pair<Vault, Keylet> {
             Vault const vault{env};
 
-            auto const& [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+            auto const& [tx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner, .asset = asset, .subscriptionOffset = std::chrono::seconds{60}});
             env(tx, Ter(tesSUCCESS));
             env.close();
 
@@ -330,6 +350,8 @@ private:
                     {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)}),
                 Ter(tesSUCCESS));
             env.close();
+
+            vault.closePastSubscription(subscriptionDate);
 
             return std::make_pair(vault, vaultKeylet);
         };
@@ -1107,12 +1129,95 @@ private:
         }
     }
 
+    // The vault's pseudo-account issues the shares, so it never holds any, and naming it as Holder
+    // asks for a clawback that cannot move anything. Before the rule an implicit amount resolved to
+    // zero shares and ended in tecPRECISION_LOSS, while an explicit one debited the vault first and
+    // was caught by the invariant that shares must move.
+    void
+    testClawbackPseudoAccountHolder()
+    {
+        using namespace test::jtx;
+
+        auto const runScenario = [this](FeatureBitset features, std::string const& prefix) {
+            bool const guarded = features[fixCleanup3_4_0];
+            Env env{*this, features};
+
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            Account const issuer{"issuer"};
+
+            env.fund(XRP(1'000), owner, depositor, issuer);
+            env.close();
+
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const asset = issuer["IOU"];
+            env.trust(asset(1'000), owner);
+            env.trust(asset(1'000), depositor);
+            env(pay(issuer, depositor, asset(200)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const vaultSle = env.le(keylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+            Account const pseudo{"vault pseudo-account", vaultSle->at(sfAccount)};
+            env.memoize(pseudo);
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            auto const assetsBefore = [&]() -> Number {
+                auto const sle = env.le(keylet);
+                if (!BEAST_EXPECT(sle))
+                    return Number{};
+                return sle->at(sfAssetsTotal);
+            }();
+
+            {
+                testcase("VaultClawback - " + prefix + " pseudo-account holder, implicit amount");
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = keylet.key,
+                        .holder = pseudo,
+                    }),
+                    Ter(guarded ? TER{tecPSEUDO_ACCOUNT} : TER{tecPRECISION_LOSS}));
+                env.close();
+            }
+
+            {
+                testcase("VaultClawback - " + prefix + " pseudo-account holder, explicit amount");
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = keylet.key,
+                        .holder = pseudo,
+                        .amount = asset(10).value(),
+                    }),
+                    Ter(guarded ? TER{tecPSEUDO_ACCOUNT} : TER{tecINVARIANT_FAILED}));
+                env.close();
+            }
+
+            // Neither attempt may touch the vault, whichever way it was refused.
+            auto const sleAfter = env.le(keylet);
+            BEAST_EXPECT(sleAfter && sleAfter->at(sfAssetsTotal) == assetsBefore);
+        };
+
+        runScenario(all_, "post-rule");
+        runScenario(all_ - fixCleanup3_4_0, "pre-rule");
+    }
+
 public:
     void
     run() override
     {
         testVaultClawbackBurnShares();
         testVaultClawbackAssets();
+        testClawbackPseudoAccountHolder();
         testVaultEscrowedMPT();
     }
 };

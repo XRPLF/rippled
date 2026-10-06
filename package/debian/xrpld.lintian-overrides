@@ -1,0 +1,6 @@
+# The /usr/local/bin/rippled symlink is deliberate compatibility for pre-FHS
+# layouts, so the Policy 9.1.2 tags it raises are expected.
+# TODO: remove alongside debian/xrpld.links after rippled fully deprecated.
+xrpld: dir-in-usr-local [usr/local/bin/]
+xrpld: file-in-usr-local [usr/local/bin/rippled]
+xrpld: file-in-unusual-dir [usr/local/bin/rippled]
