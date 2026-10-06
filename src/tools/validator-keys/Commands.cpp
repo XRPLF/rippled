@@ -18,12 +18,16 @@
 
 #include <boost/preprocessor/stringize.hpp>
 
+#include <sys/file.h>
 #include <tools/validator-keys/ListSigning.h>
 #include <tools/validator-keys/OwnerOnlyFile.h>
 #include <tools/validator-keys/SigningKeys.h>
 
+#include <dirent.h>
+
 #include <algorithm>
 #include <array>
+#include <cerrno>
 #include <cstddef>
 #include <cstdlib>
 #include <filesystem>
@@ -69,6 +73,53 @@ struct Context
     ToolOptions const& options;
     std::ostream& out;
     std::ostream& err;
+};
+
+// An exclusive flock on the key file's directory, held while a command loads,
+// changes and rewrites the key file; OwnerOnlyFile::commit renames a new inode
+// over the key file, so a lock on the file itself would not serialize.
+class KeyFileLock
+{
+    // opendir gives a read-only, close-on-exec descriptor of the directory;
+    // null when the directory does not exist.
+    DIR* dir_ = nullptr;
+
+public:
+    explicit KeyFileLock(std::filesystem::path const& keyFile)
+    {
+        auto dir = keyFile.parent_path();
+        if (dir.empty())
+            dir = ".";
+        dir_ = ::opendir(dir.c_str());
+        if (dir_ == nullptr)
+        {
+            // No directory means no key file to protect; the command reports
+            // the missing key file itself.
+            if (errno == ENOENT || errno == ENOTDIR)
+                return;
+            throw std::runtime_error("Cannot lock key file: " + keyFile.string());
+        }
+        int rc = 0;
+        do
+        {
+            rc = ::flock(::dirfd(dir_), LOCK_EX);
+        } while (rc != 0 && errno == EINTR);
+        if (rc != 0)
+        {
+            ::closedir(dir_);
+            throw std::runtime_error("Cannot lock key file: " + keyFile.string());
+        }
+    }
+
+    ~KeyFileLock()
+    {
+        if (dir_ != nullptr)
+            ::closedir(dir_);
+    }
+
+    KeyFileLock(KeyFileLock const&) = delete;
+    KeyFileLock&
+    operator=(KeyFileLock const&) = delete;
 };
 
 /**
@@ -579,28 +630,86 @@ struct Command
     char const* name;
     std::size_t minArgs;
     std::size_t maxArgs;
+    // Loads, changes and rewrites the key file, so runs under KeyFileLock.
+    bool updatesKeyFile;
     int (*run)(Args const&, Context&);
 };
 
 constexpr std::array<Command, 18> kCommands{{
-    {.name = "create_keys", .minArgs = 0, .maxArgs = 0, .run = cmdCreateKeys},
-    {.name = "create_external", .minArgs = 1, .maxArgs = 1, .run = cmdCreateExternal},
-    {.name = "create_token", .minArgs = 0, .maxArgs = 0, .run = cmdCreateToken},
-    {.name = "start_token", .minArgs = 0, .maxArgs = 0, .run = cmdStartToken},
-    {.name = "finish_token", .minArgs = 1, .maxArgs = 2, .run = cmdFinishToken},
-    {.name = "revoke_keys", .minArgs = 0, .maxArgs = 0, .run = cmdRevokeKeys},
-    {.name = "start_revoke_keys", .minArgs = 0, .maxArgs = 0, .run = cmdStartRevokeKeys},
-    {.name = "finish_revoke_keys", .minArgs = 1, .maxArgs = 1, .run = cmdFinishRevokeKeys},
-    {.name = "set_domain", .minArgs = 1, .maxArgs = 1, .run = cmdSetDomain},
-    {.name = "clear_domain", .minArgs = 0, .maxArgs = 0, .run = cmdClearDomain},
-    {.name = "attest_domain", .minArgs = 0, .maxArgs = 0, .run = cmdAttestDomain},
-    {.name = "sign", .minArgs = 1, .maxArgs = 1, .run = cmdSign},
-    {.name = "sign_hex", .minArgs = 1, .maxArgs = 1, .run = cmdSignHex},
-    {.name = "show_manifest", .minArgs = 1, .maxArgs = 1, .run = cmdShowManifest},
-    {.name = "sign_list", .minArgs = 1, .maxArgs = 1, .run = cmdSignList},
-    {.name = "start_sign_list", .minArgs = 1, .maxArgs = 1, .run = cmdStartSignList},
-    {.name = "finish_sign_list", .minArgs = 2, .maxArgs = 2, .run = cmdFinishSignList},
-    {.name = "verify_list", .minArgs = 1, .maxArgs = 1, .run = cmdVerifyList},
+    {.name = "create_keys",
+     .minArgs = 0,
+     .maxArgs = 0,
+     .updatesKeyFile = false,
+     .run = cmdCreateKeys},
+    {.name = "create_external",
+     .minArgs = 1,
+     .maxArgs = 1,
+     .updatesKeyFile = false,
+     .run = cmdCreateExternal},
+    {.name = "create_token",
+     .minArgs = 0,
+     .maxArgs = 0,
+     .updatesKeyFile = true,
+     .run = cmdCreateToken},
+    {.name = "start_token",
+     .minArgs = 0,
+     .maxArgs = 0,
+     .updatesKeyFile = true,
+     .run = cmdStartToken},
+    {.name = "finish_token",
+     .minArgs = 1,
+     .maxArgs = 2,
+     .updatesKeyFile = true,
+     .run = cmdFinishToken},
+    {.name = "revoke_keys",
+     .minArgs = 0,
+     .maxArgs = 0,
+     .updatesKeyFile = true,
+     .run = cmdRevokeKeys},
+    {.name = "start_revoke_keys",
+     .minArgs = 0,
+     .maxArgs = 0,
+     .updatesKeyFile = false,
+     .run = cmdStartRevokeKeys},
+    {.name = "finish_revoke_keys",
+     .minArgs = 1,
+     .maxArgs = 1,
+     .updatesKeyFile = true,
+     .run = cmdFinishRevokeKeys},
+    {.name = "set_domain", .minArgs = 1, .maxArgs = 1, .updatesKeyFile = true, .run = cmdSetDomain},
+    {.name = "clear_domain",
+     .minArgs = 0,
+     .maxArgs = 0,
+     .updatesKeyFile = true,
+     .run = cmdClearDomain},
+    {.name = "attest_domain",
+     .minArgs = 0,
+     .maxArgs = 0,
+     .updatesKeyFile = false,
+     .run = cmdAttestDomain},
+    {.name = "sign", .minArgs = 1, .maxArgs = 1, .updatesKeyFile = false, .run = cmdSign},
+    {.name = "sign_hex", .minArgs = 1, .maxArgs = 1, .updatesKeyFile = false, .run = cmdSignHex},
+    {.name = "show_manifest",
+     .minArgs = 1,
+     .maxArgs = 1,
+     .updatesKeyFile = false,
+     .run = cmdShowManifest},
+    {.name = "sign_list", .minArgs = 1, .maxArgs = 1, .updatesKeyFile = false, .run = cmdSignList},
+    {.name = "start_sign_list",
+     .minArgs = 1,
+     .maxArgs = 1,
+     .updatesKeyFile = false,
+     .run = cmdStartSignList},
+    {.name = "finish_sign_list",
+     .minArgs = 2,
+     .maxArgs = 2,
+     .updatesKeyFile = false,
+     .run = cmdFinishSignList},
+    {.name = "verify_list",
+     .minArgs = 1,
+     .maxArgs = 1,
+     .updatesKeyFile = false,
+     .run = cmdVerifyList},
 }};
 
 }  // namespace
@@ -643,6 +752,9 @@ runCommand(
     if (args.size() < it->minArgs || args.size() > it->maxArgs)
         throw std::runtime_error("Syntax error: Wrong number of arguments");
 
+    std::optional<KeyFileLock> lock;
+    if (it->updatesKeyFile)
+        lock.emplace(options.keyFile);
     Context ctx{.options = options, .out = out, .err = err};
     int const rc = it->run(args, ctx);
     // A result that never reached the caller, such as a token, is a failure.

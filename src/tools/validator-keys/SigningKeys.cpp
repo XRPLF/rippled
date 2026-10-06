@@ -48,6 +48,9 @@ namespace {
 // Key files are small; anything larger is not one.
 constexpr std::size_t kMaxKeyFileBytes = 64 * 1024;
 
+// The mode of each directory created for a key file: rwx for the owner only.
+constexpr int kOwnerOnlyDirectory = 0700;
+
 char const* const kRevokedError = "Validator keys have been revoked.";
 char const* const kExhaustedError =
     "Maximum number of tokens have already been generated.\n"
@@ -298,7 +301,7 @@ SigningKeys::writeToFile(std::filesystem::path const& keyFile, OwnerOnlyFile::Ex
         for (auto const& component : parent)
         {
             made /= component;
-            if (::mkdir(made.c_str(), S_IRWXU) != 0 && errno != EEXIST)
+            if (::mkdir(made.c_str(), kOwnerOnlyDirectory) != 0 && errno != EEXIST)
                 throw std::runtime_error("Cannot create directory: " + parent.string());
         }
         std::error_code ec;

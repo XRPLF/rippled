@@ -16,19 +16,26 @@
 #include <xrpl/server/Manifest.h>
 
 #include <gtest/gtest.h>
+#include <sys/file.h>
 #include <tools/validator-keys/ListSigning.h>
 #include <tools/validator-keys/SigningKeys.h>
 
 #include <Fixtures.h>
+#include <dirent.h>
 
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
+#include <exception>
 #include <filesystem>
+#include <future>
 #include <ios>
 #include <limits>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <vector>
 
 namespace xrpl::tools::test {
@@ -93,6 +100,37 @@ protected:
     }
 };
 
+// An exclusive flock on a directory, the lock a command updating a key file
+// in that directory waits for; closing the directory releases it.
+class HeldDirectory
+{
+    DIR* dir_;
+
+public:
+    explicit HeldDirectory(std::filesystem::path const& dir) : dir_(::opendir(dir.c_str()))
+    {
+        if (dir_ == nullptr || ::flock(::dirfd(dir_), LOCK_EX) != 0)
+            throw std::runtime_error("cannot lock " + dir.string());
+    }
+
+    ~HeldDirectory()
+    {
+        release();
+    }
+
+    HeldDirectory(HeldDirectory const&) = delete;
+    HeldDirectory&
+    operator=(HeldDirectory const&) = delete;
+
+    void
+    release()
+    {
+        if (dir_ != nullptr)
+            ::closedir(dir_);
+        dir_ = nullptr;
+    }
+};
+
 }  // namespace
 
 TEST_F(CommandsTest, dispatch)
@@ -153,6 +191,11 @@ TEST_F(CommandsTest, create_token)
     EXPECT_EQ(
         commandError("create_token", {}, options_),
         "Failed to open key file: " + options_.keyFile.string());
+    // A missing directory is reported as the missing key file, not as a lock failure
+    auto const inMissingDir = file("missing") / "k.json";
+    EXPECT_EQ(
+        commandError("create_token", {}, optionsFor(inMissingDir)),
+        "Failed to open key file: " + inMissingDir.string());
     run("create_keys", {}, options_);
 
     auto const r = run("create_token", {}, options_);
@@ -310,6 +353,36 @@ TEST_F(CommandsTest, output_failure)
     EXPECT_EQ(
         errorOf([&] { runCommand("create_token", {}, options_, out, err); }),
         "Cannot write the output");
+}
+
+TEST_F(CommandsTest, key_file_lock)
+{
+    run("create_keys", {}, options_);
+    std::promise<int> promise;
+    auto result = promise.get_future();
+    // Declared before the lock so unwinding on a failed expectation releases
+    // the lock before the thread is joined.
+    std::jthread worker;
+    HeldDirectory held(options_.keyFile.parent_path());
+    worker = std::jthread([&] {
+        try
+        {
+            promise.set_value(run("create_token", {}, options_).rc);
+        }
+        catch (...)
+        {
+            promise.set_exception(std::current_exception());
+        }
+    });
+
+    // Blocked before loading the key file while the directory lock is held
+    EXPECT_EQ(result.wait_for(std::chrono::milliseconds(300)), std::future_status::timeout);
+    EXPECT_EQ(keys(options_).sequence(), 0u);
+
+    held.release();
+    worker.join();
+    EXPECT_EQ(result.get(), EXIT_SUCCESS);
+    EXPECT_EQ(keys(options_).sequence(), 1u);
 }
 
 TEST_F(CommandsTest, default_key_file)

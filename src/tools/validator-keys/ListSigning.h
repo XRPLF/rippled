@@ -63,8 +63,11 @@ struct UnsignedList
  * preserved.
  *
  * @throws std::runtime_error if the text is not a JSON object, has a block
- *         comment without its closing `*` `/`, or has anything but
- *         whitespace and comments after the object
+ *         comment without its closing `*` `/`, has anything but whitespace
+ *         and comments after the object, or has whitespace or a comment
+ *         inside a number or a literal (`1 2`, `tr ue`, a block comment
+ *         between the digits of `12`), which removing it would merge into
+ *         one value
  */
 std::string
 canonicalJson(std::string const& text);

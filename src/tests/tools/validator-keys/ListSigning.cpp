@@ -113,6 +113,15 @@ TEST_F(ListSigningTest, canonical_json)
         "{\"sequence\": 1, \"x\": 2}");
     EXPECT_EQ(canonicalJson("{\"u\": \"http://x\"}"), "{\"u\": \"http://x\"}");
 
+    // Whitespace or a comment inside a value is not dropped into one value
+    std::string const runTogether = "Values run together";
+    EXPECT_EQ(canonicalJson("{\"a\": 1 /*c*/ , \"b\": 2}"), "{\"a\": 1, \"b\": 2}");
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1/*c*/2}"); }), runTogether);
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1 2}"); }), runTogether);
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": tr ue}"); }), runTogether);
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1 .5}"); }), runTogether);
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1 // c\n2}"); }), runTogether);
+
     EXPECT_EQ(errorOf([] { canonicalJson("[1, 2]"); }), kNotObject);
     EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": "); }), kNotObject);
     EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1 /* open"); }), "Unterminated comment");

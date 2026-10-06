@@ -56,6 +56,8 @@ defaultKeyFile(std::filesystem::path const& home);
 
 /**
  * Runs one command. Results go to @p out, warnings and notes to @p err.
+ * A command that updates the key file holds an exclusive lock on the key
+ * file's directory for its whole run, so concurrent runs are serialized.
  *
  * @return The process exit code
  *

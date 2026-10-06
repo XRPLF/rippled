@@ -50,6 +50,14 @@ readFile(std::filesystem::path const& file, std::size_t maxSize)
     return text;
 }
 
+// A character of a number, `true`, `false` or `null` outside a string.
+bool
+scalarChar(char c)
+{
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '.' ||
+        c == '+' || c == '-';
+}
+
 // The base64 lines of a config-style block, without its section header or
 // comment lines.
 std::vector<std::string>
@@ -210,6 +218,9 @@ canonicalJson(std::string const& text)
     // whitespace and comments may follow.
     std::size_t depth = 0;
     bool closed = false;
+    // Whitespace or a comment was skipped since the last emitted character;
+    // dropping it between two scalar characters would merge two tokens.
+    bool separated = false;
     for (std::size_t i = 0; i < text.size(); ++i)
     {
         char const c = text[i];
@@ -232,6 +243,7 @@ canonicalJson(std::string const& text)
         }
         if (c == '/' && i + 1 < text.size() && text[i + 1] == '/')
         {
+            separated = true;
             i = text.find('\n', i);
             if (i == std::string::npos)
                 break;
@@ -239,6 +251,7 @@ canonicalJson(std::string const& text)
         }
         if (c == '/' && i + 1 < text.size() && text[i + 1] == '*')
         {
+            separated = true;
             i = text.find("*/", i + 2);
             if (i == std::string::npos)
                 throw std::runtime_error("Unterminated comment");
@@ -246,9 +259,15 @@ canonicalJson(std::string const& text)
             continue;
         }
         if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
+        {
+            separated = true;
             continue;
+        }
         if (closed)
             throw std::runtime_error("Content after the JSON object");
+        if (separated && scalarChar(c) && !out.empty() && scalarChar(out.back()))
+            throw std::runtime_error("Values run together");
+        separated = false;
         switch (c)
         {
             case '"':
