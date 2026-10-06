@@ -5065,6 +5065,33 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(4'000));
         }
 
+        // tecPRECISION_LOSS: a partial claw whose difference check overflows
+        // is rejected. With the channel at the largest IOU value, the
+        // difference rounds half to even and adding the claw back rounds past
+        // that value.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+            STAmount const max{usd.issue(), STAmount::kMaxValue, STAmount::kMaxOffset};
+            env.trust(max, alice);
+            env.trust(max, bob);
+            env.close();
+            env(pay(gw, alice, max));
+            env.close();
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, max, settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            env(paychan::clawback(gw, chan, STAmount{usd.issue(), 15, 79}), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == max);
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == max);
+        }
+
         // Clawback after a partial claim: only the unclaimed remainder is
         // taken and the destination's already-claimed balance is untouched.
         // This is also the regression test for the full-claw amount being set

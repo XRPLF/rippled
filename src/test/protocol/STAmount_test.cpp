@@ -1156,6 +1156,26 @@ public:
             BEAST_EXPECT(isExactDifference(amt1, amt2) == false);
         }
 
+        // IOU difference whose check overflows: max - 1.5e80 rounds half to
+        // even to 9999999999999998e80, and adding 1.5e80 back rounds past the
+        // largest IOU value, so the difference is not exact
+        {
+            STAmount const max(usd, STAmount::kMaxValue, STAmount::kMaxOffset);
+            STAmount const claw(usd, 15, 79);
+            STAmount const diff = max - claw;
+            BEAST_EXPECT(diff == STAmount(usd, std::uint64_t{9999999999999998}, 80));
+            try
+            {
+                auto _ = diff + claw;
+                BEAST_EXPECT(false);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECT(e.what() == std::string("value overflow"));
+            }
+            BEAST_EXPECT(isExactDifference(max, claw) == false);
+        }
+
         // Exact XRP difference
         {
             STAmount const amt1(XRPAmount(1500));

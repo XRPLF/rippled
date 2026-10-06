@@ -556,6 +556,8 @@ isExactSum(STAmount const& a, STAmount const& b)
  * subtrahend, a - b rounds to a and adding b back rounds to a again, so only
  * a - diff != b shows the loss. With a dust minuend, a - b rounds to -b and
  * a - diff rounds to b, so only diff + b != a shows it. Both are checked.
+ * IOUAmount throws std::overflow_error when a step rounds past the largest
+ * IOU value; the difference is then not exact.
  */
 bool
 isExactDifference(STAmount const& a, STAmount const& b)
@@ -566,8 +568,15 @@ isExactDifference(STAmount const& a, STAmount const& b)
     if (a.integral())
         return canSubtract(a, b);
 
-    STAmount const diff = a - b;
-    return diff + b == a && a - diff == b;
+    try
+    {
+        STAmount const diff = a - b;
+        return diff + b == a && a - diff == b;
+    }
+    catch (std::overflow_error const&)
+    {
+        return false;
+    }
 }
 
 /**

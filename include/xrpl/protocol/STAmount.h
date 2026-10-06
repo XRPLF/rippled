@@ -807,7 +807,8 @@ isExactSum(STAmount const& amt1, STAmount const& amt2);
  * @param amt1 The minuend.
  * @param amt2 The subtrahend.
  * @return true if the difference is exact; false if it rounds, underflows,
- *     or the amounts are not comparable.
+ *     exceeds the largest amount the asset can represent, or the amounts are
+ *     not comparable. Never throws.
  */
 bool
 isExactDifference(STAmount const& amt1, STAmount const& amt2);
