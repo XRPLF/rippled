@@ -3348,7 +3348,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             jv[jss::Holder] = bob.human();
             jv[sfMPTokenIssuanceID.jsonName] = to_string(mptAlice.issuanceID());
             jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
-            jv[sfZKProof.jsonName] = strHex(getTrivialCiphertext());
+            jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(kEcEqualityProofLength));
 
             env(jv, Ter(tecOBJECT_NOT_FOUND));
         }
@@ -3384,7 +3384,30 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             jv[jss::Holder] = bob.human();
             jv[sfMPTokenIssuanceID.jsonName] = to_string(mptAlice.issuanceID());
             jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
-            jv[sfZKProof.jsonName] = strHex(getTrivialCiphertext());
+            jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(kEcEqualityProofLength));
+
+            env(jv, Ter(tecNO_PERMISSION));
+        }
+
+        // Test issuance does not allow confidential balance
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            // Create a non-confidential issuance (no
+            // lsfMPTCanHoldConfidentialBalance flag)
+            mptAlice.create({});
+
+            // Submit transaction directly with dummy data
+            json::Value jv;
+            jv[jss::TransactionType] = jss::ConfidentialMPTRecoverBalance;
+            jv[jss::Account] = alice.human();
+            jv[jss::Holder] = bob.human();
+            jv[sfMPTokenIssuanceID.jsonName] = to_string(mptAlice.issuanceID());
+            jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
+            jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(kEcEqualityProofLength));
 
             env(jv, Ter(tecNO_PERMISSION));
         }
@@ -3410,7 +3433,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             jv[jss::Holder] = bob.human();
             jv[sfMPTokenIssuanceID.jsonName] = to_string(mptAlice.issuanceID());
             jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
-            jv[sfZKProof.jsonName] = strHex(getTrivialCiphertext());
+            jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(kEcEqualityProofLength));
 
             env(jv, Ter(tecNO_PERMISSION));
         }

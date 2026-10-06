@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTRecoverBalance.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -9,6 +10,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
@@ -27,9 +29,6 @@ ConfidentialMPTRecoverBalance::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 ConfidentialMPTRecoverBalance::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureConfidentialMPTKeyRotation))
-        return temDISABLED;
-
     auto const account = ctx.tx[sfAccount];
     auto const issuer = MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer();
 
@@ -41,10 +40,6 @@ ConfidentialMPTRecoverBalance::preflight(PreflightContext const& ctx)
     if (account == ctx.tx[sfHolder])
         return temMALFORMED;
 
-    // Verify ConfidentialBalanceSpending field is present and has valid length
-    if (!ctx.tx.isFieldPresent(sfConfidentialBalanceSpending))
-        return temMALFORMED;
-
     if (ctx.tx[sfConfidentialBalanceSpending].length() != kEcGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
 
@@ -52,11 +47,7 @@ ConfidentialMPTRecoverBalance::preflight(PreflightContext const& ctx)
     if (!isValidCiphertext(ctx.tx[sfConfidentialBalanceSpending]))
         return temBAD_CIPHERTEXT;
 
-    // Verify ZKProof is present
-    if (!ctx.tx.isFieldPresent(sfZKProof))
-        return temMALFORMED;
-
-    if (ctx.tx[sfZKProof].empty())
+    if (ctx.tx[sfZKProof].length() != kEcEqualityProofLength)
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -76,7 +67,7 @@ ConfidentialMPTRecoverBalance::preclaim(PreclaimContext const& ctx)
 
     // Check if issuer account exists
     if (!ctx.view.exists(keylet::account(account)))
-        return terNO_ACCOUNT;
+        return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
     // Check if holder account exists
     if (!ctx.view.exists(keylet::account(holder)))
@@ -86,11 +77,15 @@ ConfidentialMPTRecoverBalance::preclaim(PreclaimContext const& ctx)
     auto const mptIssuanceID = ctx.tx[sfMPTokenIssuanceID];
     auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tecOBJECT_NOT_FOUND;
+        return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
 
     // Sanity check: account must be the issuer
     if (sleIssuance->getAccountID(sfIssuer) != account)
-        return tecNO_PERMISSION;
+    {  // LCOV_EXCL_START
+        UNREACHABLE("xrpl::ConfidentialMPTRecoverBalance::preclaim : account is not issuer");
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     // Check if issuance allows confidential transfer
     if (!sleIssuance->isFlag(lsfMPTCanHoldConfidentialBalance))
@@ -113,14 +108,7 @@ ConfidentialMPTRecoverBalance::preclaim(PreclaimContext const& ctx)
     if (!sleHolderMPToken->isFieldPresent(sfRecoveryKey))
         return tecNO_PERMISSION;
 
-    // Check if holder's issuer mirror is stale (needs migration first).
-    // This check ensures the mirror is encrypted under the current issuer key.
-    // Absent epoch fields default to 0, the sentinel for "never rotated", so a
-    // holder whose mirror epoch is absent is stale once the issuance has rotated.
-    auto const issuanceEpoch = (*sleIssuance)[~sfIssuerKeyEpoch].value_or(0);
-    auto const holderMirrorEpoch = (*sleHolderMPToken)[~sfIssuerKeyMirrorEpoch].value_or(0);
-
-    if (holderMirrorEpoch < issuanceEpoch)
+    if (!isIssuerMirrorCurrent(*sleIssuance, *sleHolderMPToken))
         return tecNO_PERMISSION;  // Mirror is stale
 
     return tesSUCCESS;

@@ -1891,7 +1891,7 @@ MPTTester::recover(MPTConfidentialRecover const& arg, std::source_location const
     else
     {
         // Placeholder: use zero buffer for proof (crypto function not yet available)
-        jv[sfZKProof] = strHex(gMakeZeroBuffer(kEcGamalEncryptedTotalLength));
+        jv[sfZKProof] = strHex(gMakeZeroBuffer(kEcEqualityProofLength));
     }
 
     submit(arg, {jv, loc});
