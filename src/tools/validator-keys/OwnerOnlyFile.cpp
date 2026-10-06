@@ -5,6 +5,8 @@
 #include <dirent.h>
 #include <unistd.h>
 
+#include <algorithm>
+#include <array>
 #include <cerrno>
 #include <cstddef>
 #include <cstdio>
@@ -38,11 +40,14 @@ syncDirectory(fs::path const& file)
 }
 
 // A filesystem without hard links (FAT, exFAT, SMB and some FUSE mounts)
-// refuses link with one of these.
+// refuses link with one of these. ENOTSUP and EOPNOTSUPP are one value on
+// Linux and two on macOS, so they are listed rather than compared.
+constexpr std::array kNoHardLinkErrors{EPERM, ENOTSUP, EOPNOTSUPP};
+
 bool
 noHardLinks(int error)
 {
-    return error == EPERM || error == ENOTSUP || error == EOPNOTSUPP;
+    return std::ranges::find(kNoHardLinkErrors, error) != kNoHardLinkErrors.end();
 }
 
 // Creates @p target empty, failing with EEXIST in errno when it exists:
