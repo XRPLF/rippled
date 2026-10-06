@@ -12,7 +12,6 @@
 #include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/ledger/entries/NegativeUNLEntry.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
@@ -28,7 +27,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
-#include <memory>
 
 namespace xrpl {
 
