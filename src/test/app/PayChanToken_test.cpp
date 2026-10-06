@@ -2949,6 +2949,66 @@ struct PayChanToken_test : public beast::unit_test::Suite
     }
 
     void
+    testIOULockPrecision(FeatureBitset features)
+    {
+        testcase("IOU Lock Precision");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account{"gateway"};
+        auto const usd = gw["USD"];
+
+        // A lock must debit the source's trust line by exactly the locked
+        // amount. 1e20 - 1'000'000'001 needs 20 digits, so the debit would
+        // round to 1e9 while the channel records 1e9 + 1.
+        Env env(*this, features);
+        env.fund(XRP(10'000), alice, bob, gw);
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.close();
+        STAmount const limit{usd.issue(), 1, 21};
+        env.trust(limit, alice);
+        env.trust(limit, bob);
+        env.close();
+        STAmount const start{usd.issue(), 1, 20};
+        env(pay(gw, alice, start));
+        env.close();
+
+        STAmount const inexact{usd.issue(), 1'000'000'001};
+        STAmount const exact{usd.issue(), 1'000'000'000};
+        BEAST_EXPECT(canAdd(start, inexact));
+        BEAST_EXPECT(!isExactDifference(start, inexact));
+
+        auto const pk = alice.pk();
+        auto const settleDelay = 100s;
+        env(paychan::create(alice, bob, inexact, settleDelay, pk), Ter(tecPRECISION_LOSS));
+        env.close();
+        BEAST_EXPECT(env.balance(alice, usd) == start);
+
+        // an exact lock is accepted and debits exactly the locked amount
+        auto const seq = env.seq(alice);
+        env(paychan::create(alice, bob, exact, settleDelay, pk));
+        env.close();
+        auto const chan = paychan::channel(alice, bob, seq);
+        auto const afterCreate = env.balance(alice, usd);
+        BEAST_EXPECT(afterCreate == start - exact);
+        BEAST_EXPECT(isExactDifference(start, exact));
+
+        // fund applies the same rule to the source's remaining balance
+        BEAST_EXPECT(!isExactDifference(afterCreate, inexact));
+        env(paychan::fund(alice, chan, inexact), Ter(tecPRECISION_LOSS));
+        env.close();
+        BEAST_EXPECT(env.balance(alice, usd) == afterCreate);
+        BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == exact);
+
+        env(paychan::fund(alice, chan, exact));
+        env.close();
+        BEAST_EXPECT(env.balance(alice, usd) == afterCreate - exact);
+        BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == exact + exact);
+    }
+
+    void
     testIOUClawbackInteraction(FeatureBitset features)
     {
         testcase("IOU Clawback Interaction");
@@ -3603,13 +3663,28 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env.close();
             BEAST_EXPECT(env.balance(alice, mpt) == mpt(9'000));
 
+            // Drain alice's balance to zero: the locked amount alone keeps her
+            // MPToken from being deleted, so the refund lands in it rather
+            // than creating one
+            env(pay(alice, gw, mpt(9'000)));
+            env.close();
+            BEAST_EXPECT(env.balance(alice, mpt) == mpt(0));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 1'000);
+            mptGw.authorize(
+                {.account = alice, .flags = tfMPTUnauthorize, .err = tecHAS_OBLIGATIONS});
+            BEAST_EXPECT(env.le(keylet::mptoken(mpt.mpt(), alice)));
+            auto const ownerCountBefore = ownerCount(env, alice);
+
             // Passing the CancelAfter time closes the channel instead
             env.close();
             env(paychan::fund(alice, chan, mpt(100)), Ter(tesSUCCESS));
             env.close();
 
             BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
-            BEAST_EXPECT(env.balance(alice, mpt) == mpt(10'000));
+            BEAST_EXPECT(env.le(keylet::mptoken(mpt.mpt(), alice)));
+            BEAST_EXPECT(ownerCount(env, alice) == ownerCountBefore - 1);
+            BEAST_EXPECT(env.balance(alice, mpt) == mpt(1'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
         }
 
         // tesSUCCESS: funding accumulates into the channel amount
@@ -5766,6 +5841,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         testIOUInsf(features);
         testIOUMultiChannelDrain(features);
         testIOUPrecisionLoss(features);
+        testIOULockPrecision(features);
         testIOUClawbackInteraction(features);
         testIOUChannelClawback(features);
         testIOUAuthVerifyRPC(features);

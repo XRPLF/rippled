@@ -3,6 +3,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Issue.h>
@@ -37,6 +38,25 @@ payChanAmountPreflightHelper<Issue>(Rules const&, STAmount const& amount);
 template <>
 NotTEC
 payChanAmountPreflightHelper<MPTIssue>(Rules const& rules, STAmount const& amount);
+
+/**
+ * Check that locking @p amount debits the source's trust line by exactly
+ * @p amount.
+ *
+ * @param view The ledger view holding the source's trust line.
+ * @param account The channel source whose balance is debited.
+ * @param amount The amount to lock in the channel.
+ * @param j Journal passed to the balance lookup.
+ * @return tecPRECISION_LOSS if @p amount is an IOU and the source's balance
+ *     less @p amount is not exactly representable; tesSUCCESS otherwise,
+ *     including for XRP and MPT amounts.
+ */
+TER
+payChanLockPrecisionHelper(
+    ReadView const& view,
+    AccountID const& account,
+    STAmount const& amount,
+    beast::Journal j);
 
 /**
  * Close a payment channel and return its remaining funds to the channel owner.
