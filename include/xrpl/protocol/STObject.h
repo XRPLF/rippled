@@ -66,13 +66,13 @@ class STObject : public STBase, public CountedObject<STObject>
         operator()(detail::STVar const& e) const;
     };
 
-    using list_type = std::vector<detail::STVar>;
+    using ListType = std::vector<detail::STVar>;
 
-    list_type v_;
+    ListType v_;
     SOTemplate const* type_{};
 
 public:
-    using iterator = boost::transform_iterator<Transform, STObject::list_type::const_iterator>;
+    using iterator = boost::transform_iterator<Transform, STObject::ListType::const_iterator>;
 
     ~STObject() override = default;
     STObject(STObject const&) = default;
@@ -90,7 +90,11 @@ public:
     operator=(STObject&& other);
 
     STObject(SOTemplate const& type, SField const& name);
-    STObject(SOTemplate const& type, SerialIter& sit, SField const& name);
+    STObject(
+        SOTemplate const& type,
+        SerialIter& sit,
+        SField const& name,
+        bool requireCanonicalOrder = false);
     STObject(SerialIter& sit, SField const& name, int depth = 0);
     STObject(SerialIter&& sit, SField const& name);
     explicit STObject(SField const& name);
@@ -123,7 +127,7 @@ public:
     set(SOTemplate const&);
 
     bool
-    set(SerialIter& u, int depth = 0);
+    set(SerialIter& u, int depth = 0, bool requireCanonicalOrder = false);
 
     [[nodiscard]] SerializedTypeID
     getSType() const override;
@@ -169,10 +173,10 @@ public:
     [[nodiscard]] std::uint32_t
     getFlags() const;
 
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     getHash(HashPrefix prefix) const;
 
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     getSigningHash(HashPrefix prefix) const;
 
     [[nodiscard]] STBase const&
@@ -215,14 +219,14 @@ public:
     getFieldU32(SField const& field) const;
     [[nodiscard]] std::uint64_t
     getFieldU64(SField const& field) const;
-    [[nodiscard]] uint128
+    [[nodiscard]] UInt128
     getFieldH128(SField const& field) const;
 
-    [[nodiscard]] uint160
+    [[nodiscard]] UInt160
     getFieldH160(SField const& field) const;
-    [[nodiscard]] uint192
+    [[nodiscard]] UInt192
     getFieldH192(SField const& field) const;
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     getFieldH256(SField const& field) const;
     [[nodiscard]] std::int32_t
     getFieldI32(SField const& field) const;
@@ -368,11 +372,11 @@ public:
     void
     setFieldU64(SField const& field, std::uint64_t);
     void
-    setFieldH128(SField const& field, uint128 const&);
+    setFieldH128(SField const& field, UInt128 const&);
     void
-    setFieldH192(SField const& field, uint192 const&);
+    setFieldH192(SField const& field, UInt192 const&);
     void
-    setFieldH256(SField const& field, uint256 const&);
+    setFieldH256(SField const& field, UInt256 const&);
     void
     setFieldI32(SField const& field, std::int32_t);
     void
@@ -428,8 +432,6 @@ public:
 
     bool
     operator==(STObject const& o) const;
-    bool
-    operator!=(STObject const& o) const;
 
     class FieldErr;
 
@@ -536,7 +538,7 @@ protected:
 template <typename U>
 concept IsArithmeticNumber =
     std::is_arithmetic_v<U> || std::is_same_v<U, Number> || std::is_same_v<U, STAmount>;
-template <typename U, typename Value = U::value_type, typename Unit = U::unit_type>
+template <typename U, typename Value = U::value_type, typename Unit = U::UnitType>
 concept IsArithmeticValueUnit = std::is_same_v<U, unit::ValueUnit<Unit, Value>> &&
     IsArithmeticNumber<Value> && std::is_class_v<Unit>;
 template <typename U, typename Value = U::value_type>
@@ -603,7 +605,7 @@ class STObject::OptionalProxy : public Proxy<T>
 private:
     using value_type = T::value_type;
 
-    using optional_type = std::optional<std::decay_t<value_type>>;
+    using OptionalType = std::optional<std::decay_t<value_type>>;
 
 public:
     OptionalProxy(OptionalProxy const&) = default;
@@ -619,12 +621,12 @@ public:
     explicit
     operator bool() const noexcept;
 
-    operator optional_type() const;
+    operator OptionalType() const;
 
     /**
      * Explicit conversion to std::optional
      */
-    optional_type
+    OptionalType
     operator~() const;
 
     friend bool
@@ -640,7 +642,7 @@ public:
     }
 
     friend bool
-    operator==(OptionalProxy const& lhs, optional_type const& rhs) noexcept
+    operator==(OptionalProxy const& lhs, OptionalType const& rhs) noexcept
     {
         if (!lhs.engaged())
             return !rhs;
@@ -650,7 +652,7 @@ public:
     }
 
     friend bool
-    operator==(optional_type const& lhs, OptionalProxy const& rhs) noexcept
+    operator==(OptionalType const& lhs, OptionalProxy const& rhs) noexcept
     {
         return rhs == lhs;
     }
@@ -663,36 +665,6 @@ public:
         return !lhs.engaged() || *lhs == *rhs;
     }
 
-    friend bool
-    operator!=(OptionalProxy const& lhs, std::nullopt_t) noexcept
-    {
-        return !(lhs == std::nullopt);
-    }
-
-    friend bool
-    operator!=(std::nullopt_t, OptionalProxy const& rhs) noexcept
-    {
-        return !(rhs == std::nullopt);
-    }
-
-    friend bool
-    operator!=(OptionalProxy const& lhs, optional_type const& rhs) noexcept
-    {
-        return !(lhs == rhs);
-    }
-
-    friend bool
-    operator!=(optional_type const& lhs, OptionalProxy const& rhs) noexcept
-    {
-        return !(lhs == rhs);
-    }
-
-    friend bool
-    operator!=(OptionalProxy const& lhs, OptionalProxy const& rhs) noexcept
-    {
-        return !(lhs == rhs);
-    }
-
     // Emulate std::optional::value_or
     [[nodiscard]] value_type
     valueOr(value_type val) const;
@@ -700,9 +672,9 @@ public:
     OptionalProxy&
     operator=(std::nullopt_t const&);
     OptionalProxy&
-    operator=(optional_type&& v);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    operator=(OptionalType&& v);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     OptionalProxy&
-    operator=(optional_type const& v);
+    operator=(OptionalType const& v);
 
     template <class U>
     OptionalProxy&
@@ -720,7 +692,7 @@ private:
     void
     disengage();
 
-    [[nodiscard]] optional_type
+    [[nodiscard]] OptionalType
     optionalValue() const;
 };
 
@@ -867,13 +839,13 @@ operator bool() const noexcept
 
 template <class T>
 STObject::OptionalProxy<T>::
-operator typename STObject::OptionalProxy<T>::optional_type() const
+operator typename STObject::OptionalProxy<T>::OptionalType() const
 {
     return optionalValue();
 }
 
 template <class T>
-STObject::OptionalProxy<T>::optional_type
+STObject::OptionalProxy<T>::OptionalType
 STObject::OptionalProxy<T>::operator~() const
 {
     return optionalValue();
@@ -890,7 +862,7 @@ STObject::OptionalProxy<T>::operator=(std::nullopt_t const&) -> OptionalProxy&
 template <class T>
 auto
 STObject::OptionalProxy<T>::operator=(
-    optional_type&& v)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    OptionalType&& v)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     -> OptionalProxy&
 {
     if (v)
@@ -906,7 +878,7 @@ STObject::OptionalProxy<T>::operator=(
 
 template <class T>
 auto
-STObject::OptionalProxy<T>::operator=(optional_type const& v) -> OptionalProxy&
+STObject::OptionalProxy<T>::operator=(OptionalType const& v) -> OptionalProxy&
 {
     if (v)
     {
@@ -959,7 +931,7 @@ STObject::OptionalProxy<T>::disengage()
 
 template <class T>
 auto
-STObject::OptionalProxy<T>::optionalValue() const -> optional_type
+STObject::OptionalProxy<T>::optionalValue() const -> OptionalType
 {
     if (!engaged())
         return std::nullopt;
@@ -1196,12 +1168,6 @@ STObject::setFieldH160(SField const& field, BaseUInt<160, Tag> const& v)
     {
         Throw<std::runtime_error>("Wrong field type");
     }
-}
-
-inline bool
-STObject::operator!=(STObject const& o) const
-{
-    return !(*this == o);
 }
 
 template <typename T, typename V>

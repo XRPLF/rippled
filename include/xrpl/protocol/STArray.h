@@ -19,15 +19,15 @@ namespace xrpl {
 class STArray final : public STBase, public CountedObject<STArray>
 {
 private:
-    using list_type = std::vector<STObject>;
+    using ListType = std::vector<STObject>;
 
-    list_type v_;
+    ListType v_;
 
 public:
     using value_type = STObject;
-    using size_type = list_type::size_type;
-    using iterator = list_type::iterator;
-    using const_iterator = list_type::const_iterator;
+    using size_type = ListType::size_type;
+    using iterator = ListType::iterator;
+    using const_iterator = ListType::const_iterator;
 
     STArray() = default;
     STArray(STArray const&) = default;
@@ -132,9 +132,6 @@ public:
 
     bool
     operator==(STArray const& s) const;
-
-    bool
-    operator!=(STArray const& s) const;
 
     iterator
     erase(iterator pos);
@@ -281,12 +278,6 @@ inline bool
 STArray::operator==(STArray const& s) const
 {
     return v_ == s.v_;
-}
-
-inline bool
-STArray::operator!=(STArray const& s) const
-{
-    return v_ != s.v_;
 }
 
 inline STArray::iterator

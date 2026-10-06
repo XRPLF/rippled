@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -49,7 +50,7 @@ struct StrandResult
     TInAmt in = beast::kZero;                      ///< Currency amount in
     TOutAmt out = beast::kZero;                    ///< Currency amount out
     std::optional<PaymentSandbox> sandbox;         ///< Resulting Sandbox state
-    boost::container::flat_set<uint256> ofrsToRm;  ///< Offers to remove
+    boost::container::flat_set<UInt256> ofrsToRm;  ///< Offers to remove
     // Num offers consumed or partially consumed (includes expired and unfunded
     // offers)
     std::uint32_t ofrsUsed = 0;
@@ -68,7 +69,7 @@ struct StrandResult
         TInAmt const& in,
         TOutAmt const& out,
         PaymentSandbox&& sandbox,
-        boost::container::flat_set<uint256> ofrsToRemoveMember,
+        boost::container::flat_set<UInt256> ofrsToRemoveMember,
         bool inactive)
         : success(true)
         , in(in)
@@ -80,7 +81,7 @@ struct StrandResult
     {
     }
 
-    StrandResult(Strand const& strand, boost::container::flat_set<uint256> ofrsToRemoveMember)
+    StrandResult(Strand const& strand, boost::container::flat_set<UInt256> ofrsToRemoveMember)
         : ofrsToRm(std::move(ofrsToRemoveMember)), ofrsUsed(offersUsed(strand))
     {
     }
@@ -113,7 +114,7 @@ flow(
         return {};
     }
 
-    boost::container::flat_set<uint256> ofrsToRm;
+    boost::container::flat_set<UInt256> ofrsToRm;
 
     if (isDirectXrpToXrp<TInAmt, TOutAmt>(strand))
     {
@@ -307,7 +308,7 @@ struct FlowResult
     TInAmt in = beast::kZero;
     TOutAmt out = beast::kZero;
     std::optional<PaymentSandbox> sandbox;
-    boost::container::flat_set<uint256> removableOffers;
+    boost::container::flat_set<UInt256> removableOffers;
     TER ter = temUNKNOWN;
 
     FlowResult() = default;
@@ -316,7 +317,7 @@ struct FlowResult
         TInAmt const& in,
         TOutAmt const& out,
         PaymentSandbox&& sandbox,
-        boost::container::flat_set<uint256> ofrsToRm)
+        boost::container::flat_set<UInt256> ofrsToRm)
         : in(in)
         , out(out)
         , sandbox(std::move(sandbox))
@@ -325,7 +326,7 @@ struct FlowResult
     {
     }
 
-    FlowResult(TER ter, boost::container::flat_set<uint256> ofrsToRm)
+    FlowResult(TER ter, boost::container::flat_set<UInt256> ofrsToRm)
         : removableOffers(std::move(ofrsToRm)), ter(ter)
     {
     }
@@ -334,7 +335,7 @@ struct FlowResult
         TER ter,
         TInAmt const& in,
         TOutAmt const& out,
-        boost::container::flat_set<uint256> ofrsToRm)
+        boost::container::flat_set<UInt256> ofrsToRm)
         : in(in), out(out), removableOffers(std::move(ofrsToRm)), ter(ter)
     {
     }
@@ -373,7 +374,7 @@ qualityUpperBound(ReadView const& v, Strand const& strand)
  * increases quality of AMM steps, increasing the strand's composite
  * quality as the result.
  */
-template <typename TOutAmt>
+template <StepAmount TOutAmt>
 inline TOutAmt
 limitOut(
     ReadView const& v,
@@ -411,21 +412,29 @@ limitOut(
         auto const out = qf->outFromAvgQ(limitQuality);
         if (!out)
             return remainingOut;
-        if constexpr (std::is_same_v<TOutAmt, XRPAmount>)
+        if constexpr (std::is_same_v<TOutAmt, XRPAmount> || std::is_same_v<TOutAmt, MPTAmount>)
         {
-            return XRPAmount{*out};
+            auto const roundedOut = TOutAmt{*out};
+            // Integral outputs that round above the continuous target can
+            // realize worse average quality than the requested limit. Keep the
+            // default rounded value when it still satisfies the limit, since it
+            // is the largest matching offer; otherwise round down.
+            if (v.rules().enabled(featureMPTokensV2) && roundedOut > *out &&
+                !qf->satisfiesAvgQ(limitQuality, roundedOut))
+            {
+                NumberRoundModeGuard const g(Number::RoundingMode::Downward);
+                return TOutAmt{*out};
+            }
+            return roundedOut;
         }
         else if constexpr (std::is_same_v<TOutAmt, IOUAmount>)
         {
             return IOUAmount{*out};
         }
-        else if constexpr (std::is_same_v<TOutAmt, MPTAmount>)
-        {
-            return MPTAmount{*out};
-        }
         else
         {
-            return STAmount{remainingOut.asset(), out->mantissa(), out->exponent()};
+            static constexpr bool kAlwaysFalse = !std::is_same_v<TOutAmt, TOutAmt>;
+            static_assert(kAlwaysFalse, "Unhandled StepAmount type");
         }
     }();
     // A tiny difference could be due to the round off
@@ -646,7 +655,7 @@ flow(
 
     // These offers only need to be removed if the payment is not
     // successful
-    boost::container::flat_set<uint256> ofrsToRmOnFail;
+    boost::container::flat_set<UInt256> ofrsToRmOnFail;
 
     while (remainingOut > beast::kZero && (!remainingIn || *remainingIn > beast::kZero))
     {
@@ -671,7 +680,7 @@ flow(
         }();
         auto const adjustedRemOut = limitRemainingOut != remainingOut;
 
-        boost::container::flat_set<uint256> ofrsToRm;
+        boost::container::flat_set<UInt256> ofrsToRm;
         std::optional<BestStrand> best;
         if (flowDebugInfo)
             flowDebugInfo->newLiquidityPass();

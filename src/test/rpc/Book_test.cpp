@@ -42,7 +42,7 @@ class Book_test : public beast::unit_test::Suite
         jtx::Env& env,
         Issue const& in,
         Issue const& out,
-        std::optional<uint256> const& domain = std::nullopt)
+        std::optional<UInt256> const& domain = std::nullopt)
     {
         std::string dir;
         auto uBookBase = getBookBase({in, out, domain});
@@ -52,7 +52,7 @@ class Book_test : public beast::unit_test::Suite
         if (key)
         {
             auto sleOfferDir = view->read(keylet::page(key.value()));
-            uint256 offerIndex;
+            UInt256 offerIndex;
             unsigned int bookEntry = 0;
             cdirFirst(*view, sleOfferDir->key(), sleOfferDir, bookEntry, offerIndex);
             auto sleOffer = view->read(keylet::offer(offerIndex));
@@ -1113,7 +1113,7 @@ public:
         // Charlie places an offer that crosses Alice and Charlie's offers
         env(offer(charlie, usd(1000), XRP(1000)));
         env.close();
-        env.require(offers(alice, 0), offers(bob, 0), offers(charlie, 0));
+        env.require(Offers(alice, 0), Offers(bob, 0), Offers(charlie, 0));
         using namespace std::chrono_literals;
         BEAST_EXPECT(offerOnlyOnceInStream(wsc, 1s, XRP(1000), usd(1000)));
 
@@ -1548,7 +1548,7 @@ public:
 
         auto usd = gw["USD"];
 
-        for (auto i = 0; i <= RPC::Tuning::kBookOffers.rmax; i++)
+        for (auto i = 0; i <= rpc::tuning::kBookOffers.rmax; i++)
             env(offer(gw, XRP(50 + (1 * i)), usd(1.0 + (0.1 * i))));
 
         if (asAdmin)
@@ -1565,15 +1565,15 @@ public:
         BEAST_EXPECT(jrr[jss::offers].size() == (asAdmin ? 1u : 0u));
         // NOTE - a marker field is not returned for this method
 
-        jvParams[jss::limit] = RPC::Tuning::kBookOffers.rmax + 1;
+        jvParams[jss::limit] = rpc::tuning::kBookOffers.rmax + 1;
         jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
         BEAST_EXPECT(jrr[jss::offers].isArray());
-        BEAST_EXPECT(jrr[jss::offers].size() == (asAdmin ? RPC::Tuning::kBookOffers.rmax + 1 : 0u));
+        BEAST_EXPECT(jrr[jss::offers].size() == (asAdmin ? rpc::tuning::kBookOffers.rmax + 1 : 0u));
 
         jvParams[jss::limit] = json::ValueType::Null;
         jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
         BEAST_EXPECT(jrr[jss::offers].isArray());
-        BEAST_EXPECT(jrr[jss::offers].size() == (asAdmin ? RPC::Tuning::kBookOffers.rDefault : 0u));
+        BEAST_EXPECT(jrr[jss::offers].size() == (asAdmin ? rpc::tuning::kBookOffers.rDefault : 0u));
     }
 
     void

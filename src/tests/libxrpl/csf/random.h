@@ -24,11 +24,12 @@ randomWeightedShuffle(std::vector<T> v, std::vector<double> w, G& g)
 {
     using std::swap;
 
-    for (int i = 0; i < v.size() - 1; ++i)
+    for (auto i = 0uz; i + 1 < v.size(); ++i)
     {
-        // pick a random item weighted by w
-        std::discrete_distribution<> dd(w.begin() + i, w.end());  // NOLINT(misc-const-correctness)
-        auto idx = dd(g);
+        // Pick a random item from the unplaced tail, weighted by w.
+        // NOLINTNEXTLINE(misc-const-correctness)
+        std::discrete_distribution<std::size_t> dd(w.begin() + i, w.end());
+        auto const idx = i + dd(g);
         std::swap(v[i], v[idx]);
         std::swap(w[i], w[idx]);
     }
@@ -79,9 +80,9 @@ public:
     Selector(RAIter first, RAIter last, std::vector<double> const& w, Generator& g)
         : first_{first}, last_{last}, dd_{w.begin(), w.end()}, g_{g}
     {
-        using tag = std::iterator_traits<RAIter>::iterator_category;
+        using Tag = std::iterator_traits<RAIter>::iterator_category;
         static_assert(
-            std::is_same_v<tag, std::random_access_iterator_tag>,
+            std::is_same_v<Tag, std::random_access_iterator_tag>,
             "Selector only supports random access iterators.");
         // TODO: Allow for forward iterators
     }

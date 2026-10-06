@@ -75,7 +75,7 @@ public:
         }
         path_ = pUrl.path;
 
-        JLOG(j_.info()) << "RPCCall::fromNetwork sub: ip=" << ip_ << " port=" << port_
+        JLOG(j_.info()) << "rpc_call::fromNetwork sub: ip=" << ip_ << " port=" << port_
                         << " ssl= " << (ssl_ ? "yes" : "no") << " path='" << path_ << "'";
     }
 
@@ -87,14 +87,14 @@ public:
         std::scoped_lock const sl(lock_);
 
         auto jm = broadcast ? j_.debug() : j_.info();
-        JLOG(jm) << "RPCCall::fromNetwork push: " << jvObj;
+        JLOG(jm) << "rpc_call::fromNetwork push: " << jvObj;
 
         deque_.emplace_back(seq_++, jvObj);
 
         if (!sending_)
         {
             // Start a sending thread.
-            JLOG(j_.info()) << "RPCCall::fromNetwork start";
+            JLOG(j_.info()) << "rpc_call::fromNetwork start";
 
             sending_ =
                 jobQueue_.addJob(JtClientSubscribe, "RPCSubSendThr", [this]() { sendThread(); });
@@ -156,9 +156,9 @@ private:
                 // XXX Might not need this in a try.
                 try
                 {
-                    JLOG(j_.info()) << "RPCCall::fromNetwork: " << ip_;
+                    JLOG(j_.info()) << "rpc_call::fromNetwork: " << ip_;
 
-                    RPCCall::fromNetwork(
+                    rpc_call::fromNetwork(
                         ioContext_,
                         ip_,
                         port_,
@@ -173,7 +173,7 @@ private:
                 }
                 catch (std::exception const& e)
                 {
-                    JLOG(j_.info()) << "RPCCall::fromNetwork exception: " << e.what();
+                    JLOG(j_.info()) << "rpc_call::fromNetwork exception: " << e.what();
                 }
             }
         } while (bSend);

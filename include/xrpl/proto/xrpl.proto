@@ -1,10 +1,10 @@
 syntax = "proto2";
 package protocol;
 
-// Unused numbers in the list below may have been used previously. Please don't
-// reassign them for reuse unless you are 100% certain that there won't be a
-// conflict. Even if you're sure, it's probably best to assign a new type.
 enum MessageType {
+  // Previously used - don't reuse.
+  reserved 0 to 1, 4, 6 to 14, 16 to 29, 36 to 40, 43 to 54, 61 to 62;
+
   mtMANIFESTS = 2;
   mtPING = 3;
   mtCLUSTER = 5;
@@ -17,7 +17,6 @@ enum MessageType {
   mtHAVE_SET = 35;
   mtVALIDATION = 41;
   mtGET_OBJECTS = 42;
-  mtVALIDATOR_LIST = 54;
   mtSQUELCH = 55;
   mtVALIDATOR_LIST_COLLECTION = 56;
   mtPROOF_PATH_REQ = 57;
@@ -162,14 +161,6 @@ message TMHaveTransactionSet {
   required bytes hash = 2;
 }
 
-// Validator list (UNL)
-message TMValidatorList {
-  required bytes manifest = 1;
-  required bytes blob = 2;
-  required bytes signature = 3;
-  required uint32 version = 4;
-}
-
 // Validator List v2
 message ValidatorBlobInfo {
   optional bytes manifest = 1;
@@ -246,7 +237,15 @@ message TMGetObjectByHash {
 
 message TMLedgerNode {
   required bytes nodedata = 1;
-  optional bytes nodeid = 2;  // missing for ledger base data
+
+  // Used when protocol version <2.3. Not set for ledger base data.
+  optional bytes nodeid = 2;
+
+  // Used when protocol version >=2.3. Neither value is set for ledger base data.
+  oneof reference {
+    bytes id = 3;      // Set for inner nodes.
+    uint32 depth = 4;  // Set for leaf nodes.
+  }
 }
 
 enum TMLedgerInfoType {
@@ -293,14 +292,15 @@ message TMLedgerData {
 }
 
 message TMPing {
+  // Previously used - don't reuse.
+  reserved 3, 4;
+
   enum pingType {
     ptPING = 0;  // we want a reply
     ptPONG = 1;  // this is a reply
   }
   required pingType type = 1;
-  optional uint32 seq = 2;       // detect stale replies, ensure other side is reading
-  optional uint64 pingTime = 3;  // know when we think we sent the ping
-  optional uint64 netTime = 4;
+  optional uint32 seq = 2;  // detect stale replies, ensure other side is reading
 }
 
 message TMSquelch {

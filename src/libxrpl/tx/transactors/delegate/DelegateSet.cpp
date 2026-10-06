@@ -57,7 +57,7 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
         return tecNO_TARGET;
 
     if (isPseudoAccount(sleAuthorize))
-        return tecNO_PERMISSION;
+        return tecPSEUDO_ACCOUNT;
 
     // Deleting the delegate object is invalid if it doesn’t exist.
     if (ctx.tx.getFieldArray(sfPermissions).empty() &&
@@ -140,7 +140,7 @@ DelegateSet::doApply()
 }
 
 TER
-DelegateSet::deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j)
+DelegateSet::deleteDelegate(ApplyView& view, SLE::Ref sle, beast::Journal j)
 {
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -182,7 +182,7 @@ DelegateSet::deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j)
 }
 
 void
-DelegateSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+DelegateSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -27,10 +27,10 @@ makeOverlay(
     Application& app,
     Overlay::Setup const& setup,
     ServerHandler& serverHandler,
-    Resource::Manager& resourceManager,
+    resource::Manager& resourceManager,
     Resolver& resolver,
     boost::asio::io_context& ioContext,
     BasicConfig const& config,
-    beast::insight::Collector::ptr const& collector);
+    beast::insight::Collector::Ptr const& collector);
 
 }  // namespace xrpl

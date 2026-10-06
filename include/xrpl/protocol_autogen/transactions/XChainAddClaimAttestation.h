@@ -21,7 +21,7 @@ class XChainAddClaimAttestationBuilder;
  * Type: ttXCHAIN_ADD_CLAIM_ATTESTATION (45)
  * Delegable: Delegation::Delegable
  * Amendment: featureXChainBridge
- * Privileges: CreateAcct
+ * Privileges: Privilege::CreateAcct
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use XChainAddClaimAttestationBuilder to construct new transactions.

@@ -18,7 +18,7 @@ namespace xrpl {
 //   vetoed : true/false
 // }
 json::Value
-doFeature(RPC::JsonContext& context)
+doFeature(rpc::JsonContext& context)
 {
     if (context.params.isMember(jss::feature))
     {
@@ -31,7 +31,7 @@ doFeature(RPC::JsonContext& context)
 
     bool const isAdmin = context.role == Role::ADMIN;
     // Get majority amendment status
-    majorityAmendments_t majorities;
+    MajorityAmendmentsT majorities;
 
     if (auto const valLedger = context.ledgerMaster.getValidatedLedger())
         majorities = getMajorityAmendments(*valLedger);
@@ -63,6 +63,11 @@ doFeature(RPC::JsonContext& context)
     {
         if (!isAdmin)
             return rpcError(RpcNoPermission);
+
+        if (!context.params[jss::vetoed].isBool())
+        {
+            return rpcError(RpcInvalidParams);
+        }
 
         if (context.params[jss::vetoed].asBool())
         {

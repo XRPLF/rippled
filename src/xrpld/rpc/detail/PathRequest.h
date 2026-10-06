@@ -44,10 +44,10 @@ class PathRequest final : public InfoSubRequest,
                           public CountedObject<PathRequest>
 {
 public:
-    using wptr = std::weak_ptr<PathRequest>;
+    using Wptr = std::weak_ptr<PathRequest>;
     using pointer = std::shared_ptr<PathRequest>;
-    using ref = pointer const&;
-    using wref = wptr const&;
+    using Ref = pointer const&;
+    using Wref = Wptr const&;
 
 public:
     // path_find semantics
@@ -64,7 +64,7 @@ public:
     PathRequest(
         Application& app,
         std::function<void(void)> completion,
-        Resource::Consumer& consumer,
+        resource::Consumer& consumer,
         int id,
         PathRequestManager&,
         beast::Journal journal);
@@ -108,7 +108,7 @@ private:
     std::unique_ptr<Pathfinder> const&
     getPathFinder(
         std::shared_ptr<AssetCache> const&,
-        hash_map<PathAsset, std::unique_ptr<Pathfinder>>&,
+        HashMap<PathAsset, std::unique_ptr<Pathfinder>>&,
         PathAsset const&,
         STAmount const&,
         int const,
@@ -137,7 +137,7 @@ private:
 
     std::weak_ptr<InfoSub> wpSubscriber_;  // Who this request came from
     std::function<void(void)> fCompletion_;
-    Resource::Consumer& consumer_;  // Charge according to source currencies
+    resource::Consumer& consumer_;  // Charge according to source currencies
 
     json::Value jvId_;
     json::Value jvStatus_;  // Last result
@@ -151,7 +151,7 @@ private:
     std::set<Asset> sciSourceAssets_;
     std::map<Asset, STPathSet> context_;
 
-    std::optional<uint256> domain_;
+    std::optional<UInt256> domain_;
 
     bool convertAll_{};
 

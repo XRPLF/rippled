@@ -1,0 +1,177 @@
+Detected OS: linux (Linux x86_64)
+
+Core build tools:
+  ✅ cmake
+     cmake version 4.4.3
+     /nix/store/jcvvpih1046akxcwh9hdiak5q24jqcf0-cmake-4.4.3/bin/cmake
+  ✅ conan
+     Conan version 2.32.0
+     /nix/store/q0g5grbh7zm8gfhhnq5h6fm1rbs9yv3n-conan-2.32.0/bin/conan
+  ✅ git
+     git version 2.55.0
+     /nix/store/lg46w7hrjx7kylsh6645c9l975i8h43b-git-2.55.0/bin/git
+  ✅ python3
+     Python 3.14.7
+     /nix/store/lb41b0anx1f98y9y5s9mdv97gjgsq740-python3-3.14.7/bin/python3.14
+
+Development tooling:
+  ✅ ccache
+     ccache version 4.13.6
+     /nix/store/p1a1s700dqsw1b3b8d2ba64nqw68zgpy-ccache-4.13.6/bin/ccache
+  ✅ clang
+     clang version 22.1.8
+     /nix/store/dggxva67vs7virgsmd6xkwd6p7zsc5pn-clang-wrapper-22.1.8/bin/clang
+  ✅ clang-22
+     clang version 22.1.8
+     /nix/store/ckz6y10v5dbyswpf9f6hd8kjfv84f920-clang-22/bin/clang-22
+  ✅ clang++
+     clang version 22.1.8
+     /nix/store/dggxva67vs7virgsmd6xkwd6p7zsc5pn-clang-wrapper-22.1.8/bin/clang++
+  ✅ clang++-22
+     clang version 22.1.8
+     /nix/store/lsishk8fwbdmlwr5fbwyd3yhhjsm67qr-clang++-22/bin/clang++-22
+  ✅ ClangBuildAnalyzer
+     ClangBuildAnalyzer 1.6.0
+     /nix/store/gvx8im1c89vspwb8ixa91lr1dagbi241-clangbuildanalyzer-1.6.0/bin/ClangBuildAnalyzer
+  ✅ curl
+     curl 8.22.0 (x86_64-pc-linux-gnu) libcurl/8.22.0 OpenSSL/3.5.8 zlib/1.3.2 libssh2/1.11.1 nghttp2/1.70.0 mit-krb5/1.22.2
+     /nix/store/305w9ipyg497mz9dq31abdf61qk58k29-curl-8.22.0-bin/bin/curl
+  ✅ file
+     file-5.48
+     /nix/store/g0fbnccaan8q0rxlw43xnbyb90i94vlc-file-5.48/bin/file
+  ✅ jq
+     jq-1.8.2
+     /nix/store/m3y7hqmy20nd1ps6qy8410a326255bf0-jq-1.8.2-bin/bin/jq
+  ✅ less
+     less 710 (PCRE2 regular expressions)
+     /nix/store/zi4d0awnc6crz18s177bv9y2yz9al3lq-less-710/bin/less
+  ✅ make
+     GNU Make 4.4.1
+     /nix/store/z565rgmn9vccv2h0g87z725pw610jmm8-gnumake-4.4.1/bin/make
+  ✅ netstat
+     net-tools 2.10
+     /nix/store/9i6j9lrsliyz1ww2f8xx18z36wc9n38a-net-tools-2.10/bin/netstat
+  ✅ ninja
+     1.13.2
+     /nix/store/4nsdla28c4177ssp0hlyv5l2yzj8wcba-ninja-1.13.2/bin/ninja
+  ✅ perl
+     v5.42.3
+     /nix/store/8g4dmf7l8q1mf9w4wfmlcl8gvdgmhb8v-perl-5.42.3/bin/perl
+  ✅ pkg-config
+     0.29.2
+     /nix/store/b9izmrfjp0qnnyahdwwrzdwi87s1h179-pkg-config-wrapper-0.29.2/bin/pkg-config
+  ✅ vim
+     VIM - Vi IMproved 9.2 (2026 Feb 14, compiled Jan 01 1980 00:00:00)
+     /nix/store/9swnd5pf8p8w1gwcbhdpm2yx705kbp38-vim-9.2.1001/bin/vim
+  ✅ zip
+     Zip 3.0
+     /nix/store/5ypvkry3qra47dylc9kfk36r1q9vha80-zip-3.0/bin/zip
+  ✅ clang-apply-replacements
+     clang-apply-replacements version 22.1.8
+     /nix/store/37jhp4j3y339zmkx09qbr3fpfy3q0kl0-clang-tools-22.1.8/bin/clang-apply-replacements
+  ✅ clang-apply-replacements-22
+     clang-apply-replacements version 22.1.8
+     /nix/store/qg0b99zn522gl3vz9hx9ni9ianb11d1r-clang-apply-replacements-22/bin/clang-apply-replacements-22
+  ✅ clang-format
+     clang-format version 22.1.8
+     /nix/store/37jhp4j3y339zmkx09qbr3fpfy3q0kl0-clang-tools-22.1.8/bin/clang-format
+  ✅ clang-format-22
+     clang-format version 22.1.8
+     /nix/store/m1al4bygpn7i13q1kalavybwh9ldg6rz-clang-format-22/bin/clang-format-22
+  ✅ clang-tidy
+     LLVM version 22.1.8
+     /nix/store/37jhp4j3y339zmkx09qbr3fpfy3q0kl0-clang-tools-22.1.8/bin/clang-tidy
+  ✅ clang-tidy-22
+     LLVM version 22.1.8
+     /nix/store/h51xrqf8xgx4zil2rm1ydp909858y4xm-clang-tidy-22/bin/clang-tidy-22
+  ✅ dot
+     dot - graphviz version 15.1.1 (0)
+     /nix/store/f7r47nc0d13xa4c2xaaxa6dp3pzm9sp1-graphviz-15.1.1/bin/dot
+  ✅ doxygen
+     1.17.0
+     /nix/store/q6yx2nsimj9xmckmgw4br2cnapbgnqpk-doxygen-1.17.0/bin/doxygen
+  ✅ gcovr
+     gcovr 8.4
+     /nix/store/shx7mfl8n4kx11icvwyj5x7cmf6z5ahq-python3.14-gcovr-8.4/bin/gcovr
+  ✅ gh
+     gh version 2.102.0 (2026-09-30)
+     /nix/store/66h5dr9v94x04myh2kabx06rq9763jfc-gh-2.102.0/bin/gh
+  ✅ git-cliff
+     git-cliff 2.14.2
+     /nix/store/sl19b42d69b3w2vb9pxp6jbqk841z8vj-git-cliff-2.14.2/bin/git-cliff
+  ✅ git-lfs
+     git-lfs/3.8.0 (3.8.0; linux amd64; go 1.26.8)
+     /nix/store/rp9ld1f6h83xmf2rb5fpib5wmr46fy9f-git-lfs-3.8.0/bin/git-lfs
+  ✅ gpg
+     gpg (GnuPG) 2.4.9
+     /nix/store/8gm9aq3sspqmvvh7c0x7djcivj2x7yvn-gnupg-2.4.9/bin/gpg
+  ✅ pre-commit
+     pre-commit 4.6.2
+     /nix/store/6blf72f7sdmlrqjggxvk5ij4cxb7fk4c-pre-commit-4.6.2/bin/pre-commit
+  ✅ run-clang-tidy
+     usage: run-clang-tidy [-h] [-allow-enabling-alpha-checkers]
+     /nix/store/a760dc8nldq1715410384bkk83idmm00-run-clang-tidy/bin/run-clang-tidy
+  ✅ run-clang-tidy-22
+     usage: run-clang-tidy [-h] [-allow-enabling-alpha-checkers]
+     /nix/store/xwh85m9sa5h8fnpnlmqwfnf2sz9l59mm-run-clang-tidy-22/bin/run-clang-tidy-22
+
+Rust toolchain:
+  ✅ cargo
+     cargo 1.97.1 (c980f4866 2026-06-30)
+     /nix/store/60b0cz400q34wj2gzav5a41i7y6jzlw3-cargo-1.97.1-x86_64-unknown-linux-gnu/bin/cargo
+  ✅ cargo-audit
+     cargo-audit-audit 0.22.2
+     /nix/store/kksgynfwir3pfii9qkbj3gcc61an0d4s-cargo-audit-0.22.2/bin/cargo-audit
+  ✅ cargo-llvm-cov
+     cargo-llvm-cov 0.9.0
+     /nix/store/4y8qxx0mlm22hnxlw2cmbcwpxispw02h-cargo-llvm-cov-0.9.0/bin/cargo-llvm-cov
+  ✅ cargo-nextest
+     cargo-nextest 0.9.146
+     /nix/store/q0anzqrazmdr8n1049ca28098q6lv2y8-cargo-nextest-0.9.146/bin/cargo-nextest
+  ✅ clippy-driver
+     clippy 0.1.97 (8bab26f4f6 2026-07-14)
+     /nix/store/kk0kqdc4f7am21yp30rr8jcrnib5xqzy-rust-minimal-1.97.1/bin/clippy-driver
+  ✅ rust-analyzer
+     rust-analyzer 1.97.1 (8bab26f 2026-07-14)
+     /nix/store/4mglk7qw9jqbv5nwlx9ahdnpcn5sz70r-rust-analyzer-preview-1.97.1-x86_64-unknown-linux-gnu/bin/rust-analyzer
+  ✅ rust-nightly
+     rustc 1.101.0-nightly (282215592 2026-10-04)
+     /nix/store/qwyzkvba3f9569wjj45b4iyb7nz7qbnr-rust-nightly/bin/rust-nightly
+  ✅ rustc
+     rustc 1.97.1 (8bab26f4f 2026-07-14)
+     /nix/store/kk0kqdc4f7am21yp30rr8jcrnib5xqzy-rust-minimal-1.97.1/bin/rustc
+  ✅ rustfmt
+     rustfmt 1.9.0-stable (8bab26f4f6 2026-07-14)
+     /nix/store/y5gf8a3hix7pnwzdwcfpf3acqhzv3xy6-rustfmt-preview-1.97.1-x86_64-unknown-linux-gnu/bin/rustfmt
+
+GCC toolchain:
+  ✅ gcc
+     gcc (GCC) 15.3.0
+     /nix/store/bslmkbaiymxxdc6lwcdb1qyw745nds5j-gcc-wrapper-15.3.0/bin/gcc
+  ✅ gcc-15
+     gcc (GCC) 15.3.0
+     /nix/store/h6f2qc8kgwf7r81gwb10csvpjqfc2404-gcc-15/bin/gcc-15
+  ✅ g++
+     g++ (GCC) 15.3.0
+     /nix/store/bslmkbaiymxxdc6lwcdb1qyw745nds5j-gcc-wrapper-15.3.0/bin/g++
+  ✅ g++-15
+     g++ (GCC) 15.3.0
+     /nix/store/jwncv76v61ld9l99v0b1dkmf810if65s-g++-15/bin/g++-15
+  ✅ cpp
+     cpp (GCC) 15.3.0
+     /nix/store/bslmkbaiymxxdc6lwcdb1qyw745nds5j-gcc-wrapper-15.3.0/bin/cpp
+  ✅ cpp-15
+     cpp (GCC) 15.3.0
+     /nix/store/jmi558xj8v7lz2fm6wrradh40dp48zx9-cpp-15/bin/cpp-15
+  ✅ gcov
+     gcov (GCC) 15.3.0
+     /nix/store/n2ab7kf7mm84hna35x463mizcy52pf1h-gcc-15.3.0/bin/gcov
+
+Mold:
+  ✅ mold
+     mold 2.42.1 (compatible with GNU ld)
+     /nix/store/9dcddrfxlfl9n3wfibi5jkmp22bjkvkh-mold-unwrapped-wrapper-2.42.1/bin/mold
+
+Skipping git-over-HTTPS check (CHECK_TOOLS_SKIP_CLONE is set).
+
+✅ All 54 checked tools are present and runnable.

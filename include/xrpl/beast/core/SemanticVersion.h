@@ -17,14 +17,14 @@ namespace beast {
 class SemanticVersion
 {
 public:
-    using identifier_list = std::vector<std::string>;
+    using IdentifierList = std::vector<std::string>;
 
     int majorVersion;
     int minorVersion;
     int patchVersion;
 
-    identifier_list preReleaseIdentifiers;
-    identifier_list metaData;
+    IdentifierList preReleaseIdentifiers;
+    IdentifierList metaData;
 
     SemanticVersion();
 

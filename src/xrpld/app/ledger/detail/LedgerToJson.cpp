@@ -3,15 +3,16 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/TxQ.h>
+#include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/DeliveredAmount.h>
-#include <xrpld/rpc/MPTokenIssuanceID.h>
+#include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -19,6 +20,7 @@
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -27,6 +29,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/serialize.h>
 
+#include <cstdint>
 #include <exception>
 #include <memory>
 #include <string>
@@ -135,25 +138,18 @@ fillJsonTx(
     {
         copyFrom(txJson[jss::tx_json], txn->getJson(JsonOptions::Values::DisableApiPriorV2, false));
         txJson[jss::hash] = to_string(txn->getTransactionID());
-        RPC::insertDeliverMax(txJson[jss::tx_json], txnType, fill.context->apiVersion);
+        rpc::insertDeliverMax(txJson[jss::tx_json], txnType, fill.context->apiVersion);
 
         if (stMeta)
         {
             txJson[jss::meta] = stMeta->getJson(JsonOptions::Values::None);
 
-            // If applicable, insert delivered amount
-            if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
-            {
-                RPC::insertDeliveredAmount(
-                    txJson[jss::meta],
-                    fill.ledger,
-                    txn,
-                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
-            }
-
-            // If applicable, insert mpt issuance id
-            RPC::insertMPTokenIssuanceID(
-                txJson[jss::meta], txn, {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+            // Insert all synthetic fields
+            rpc::insertAllSyntheticInJson(
+                txJson[jss::meta],
+                fill.ledger,
+                txn,
+                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
 
         if (!fill.ledger.open())
@@ -172,25 +168,31 @@ fillJsonTx(
     else
     {
         copyFrom(txJson, txn->getJson(JsonOptions::Values::None));
-        RPC::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
+        rpc::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
         if (stMeta)
         {
             txJson[jss::metaData] = stMeta->getJson(JsonOptions::Values::None);
 
-            // If applicable, insert delivered amount
-            if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
-            {
-                RPC::insertDeliveredAmount(
-                    txJson[jss::metaData],
-                    fill.ledger,
-                    txn,
-                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
-            }
-
-            // If applicable, insert mpt issuance id
-            RPC::insertMPTokenIssuanceID(
-                txJson[jss::metaData], txn, {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+            // Insert all synthetic fields
+            rpc::insertAllSyntheticInJson(
+                txJson[jss::metaData],
+                fill.ledger,
+                txn,
+                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
+    }
+
+    // compute outgoing CTID
+    if (stMeta && stMeta->isFieldPresent(sfTransactionIndex))
+    {
+        uint32_t const lgrSeq = fill.ledger.seq();
+        uint32_t const txnIdx = stMeta->getFieldU32(sfTransactionIndex);
+        uint32_t netID = fill.context->app.getNetworkIDService().getNetworkID();
+        if (txn->isFieldPresent(sfNetworkID))
+            netID = txn->getFieldU32(sfNetworkID);
+
+        if (auto ctid = rpc::encodeCTID(lgrSeq, txnIdx, netID))
+            txJson[jss::ctid] = *ctid;
     }
 
     if (((fill.options & static_cast<int>(LedgerFill::Options::OwnerFunds)) != 0) &&
@@ -208,6 +210,7 @@ fillJsonTx(
                 account,
                 amount,
                 FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
                 beast::Journal{beast::Journal::getNullSink()});
             txJson[jss::owner_funds] = ownerFunds.getText();
         }
@@ -337,7 +340,7 @@ fillJson(json::Value& json, LedgerFill const& fill)
             fill.ledger.header(),
             bFull,
             ((fill.context != nullptr) ? fill.context->apiVersion
-                                       : RPC::kApiMaximumSupportedVersion));
+                                       : rpc::kApiMaximumSupportedVersion));
     }
 
     if (bFull || ((fill.options & static_cast<int>(LedgerFill::Options::DumpTxrp)) != 0))

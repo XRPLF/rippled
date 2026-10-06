@@ -12,6 +12,7 @@
 #include <exception>
 #include <initializer_list>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -176,61 +177,32 @@ struct STNumber_test : public beast::unit_test::Suite
                 numberFromJson(sfNumber, std::to_string(kUMax)) ==
                 STNumber(sfNumber, Number(kUMax, 0)));
 
+            auto const expectJsonThrows = [this](
+                                              json::Value const& num, std::string const& expected) {
+                try
+                {
+                    numberFromJson(sfNumber, num);
+                    fail();
+                }
+                catch (std::exception const& e)
+                {
+                    std::ostringstream out;
+                    out << "Json: " << num.asString() << " got exception: " << e.what()
+                        << ", expected: " << expected;
+                    BEAST_EXPECTS(std::string(e.what()) == expected, out.str());
+                }
+            };
+
+            // Obvious overflows tested here
+            expectJsonThrows("1e2000000", "Number::normalize 2");
+            expectJsonThrows("1e2000000000", "Number::normalize 2");
+
             // Obvious non-numbers tested here
-            try
-            {
-                auto _ = numberFromJson(sfNumber, "");
-                BEAST_EXPECT(false);
-            }
-            catch (std::runtime_error const& e)
-            {
-                std::string const expected = "'' is not a number";
-                BEAST_EXPECT(e.what() == expected);
-            }
-
-            try
-            {
-                auto _ = numberFromJson(sfNumber, "e");
-                BEAST_EXPECT(false);
-            }
-            catch (std::runtime_error const& e)
-            {
-                std::string const expected = "'e' is not a number";
-                BEAST_EXPECT(e.what() == expected);
-            }
-
-            try
-            {
-                auto _ = numberFromJson(sfNumber, "1e");
-                BEAST_EXPECT(false);
-            }
-            catch (std::runtime_error const& e)
-            {
-                std::string const expected = "'1e' is not a number";
-                BEAST_EXPECT(e.what() == expected);
-            }
-
-            try
-            {
-                auto _ = numberFromJson(sfNumber, "e2");
-                BEAST_EXPECT(false);
-            }
-            catch (std::runtime_error const& e)
-            {
-                std::string const expected = "'e2' is not a number";
-                BEAST_EXPECT(e.what() == expected);
-            }
-
-            try
-            {
-                auto _ = numberFromJson(sfNumber, json::Value());
-                BEAST_EXPECT(false);
-            }
-            catch (std::runtime_error const& e)
-            {
-                std::string const expected = "not a number";
-                BEAST_EXPECT(e.what() == expected);
-            }
+            expectJsonThrows("", "'' is not a number");
+            expectJsonThrows("e", "'e' is not a number");
+            expectJsonThrows("1e", "'1e' is not a number");
+            expectJsonThrows("e2", "'e2' is not a number");
+            expectJsonThrows(json::Value(), "not a number");
 
             try
             {

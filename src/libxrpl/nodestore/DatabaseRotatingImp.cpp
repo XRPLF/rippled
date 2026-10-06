@@ -22,7 +22,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 DatabaseRotatingImp::DatabaseRotatingImp(
     Scheduler& scheduler,
@@ -43,7 +43,7 @@ DatabaseRotatingImp::DatabaseRotatingImp(
 
 void
 DatabaseRotatingImp::rotate(
-    std::unique_ptr<NodeStore::Backend>&& newBackend,
+    std::unique_ptr<node_store::Backend>&& newBackend,
     std::function<void(std::string const& writableName, std::string const& archiveName)> const& f)
 {
     // Pass these two names to the callback function
@@ -52,7 +52,7 @@ DatabaseRotatingImp::rotate(
     // Hold on to current archive backend pointer until after the
     // callback finishes. Only then will the archive directory be
     // deleted.
-    std::shared_ptr<NodeStore::Backend> oldArchiveBackend;
+    std::shared_ptr<node_store::Backend> oldArchiveBackend;
     std::uint64_t copyForwards = 0;
     {
         std::scoped_lock const lock(mutex_);
@@ -119,7 +119,7 @@ DatabaseRotatingImp::sync()
 }
 
 void
-DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
+DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, UInt256 const& hash, std::uint32_t)
 {
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
 
@@ -140,7 +140,7 @@ DatabaseRotatingImp::sweep()
 
 std::shared_ptr<NodeObject>
 DatabaseRotatingImp::fetchNodeObject(
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t,
     FetchReport& fetchReport,
     bool duplicate)
@@ -232,4 +232,4 @@ DatabaseRotatingImp::forEach(std::function<void(std::shared_ptr<NodeObject>)> f)
     archive->forEach(f);
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

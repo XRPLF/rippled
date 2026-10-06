@@ -90,7 +90,7 @@ class TestServiceRegistry : public ServiceRegistry
         stopwatch(),
         logs_.journal("TaggedCache")};
     PendingSaves pendingSaves_;
-    std::optional<uint256> trapTxID_;
+    std::optional<UInt256> trapTxID_;
 
 public:
     TestServiceRegistry() = default;
@@ -213,14 +213,14 @@ public:
         throw std::logic_error("TestServiceRegistry::peerReservations() not implemented");
     }
 
-    Resource::Manager&
+    resource::Manager&
     getResourceManager() override
     {
         throw std::logic_error("TestServiceRegistry::getResourceManager() not implemented");
     }
 
     // Storage services
-    NodeStore::Database&
+    node_store::Database&
     getNodeStore() override
     {
         throw std::logic_error("TestServiceRegistry::getNodeStore() not implemented");
@@ -251,7 +251,7 @@ public:
         throw std::logic_error("TestServiceRegistry::getInboundTransactions() not implemented");
     }
 
-    TaggedCache<uint256, AcceptedLedger>&
+    TaggedCache<UInt256, AcceptedLedger>&
     getAcceptedLedgerCache() override
     {
         throw std::logic_error("TestServiceRegistry::getAcceptedLedgerCache() not implemented");
@@ -362,7 +362,7 @@ public:
         return logs_;
     }
 
-    std::optional<uint256> const&
+    std::optional<UInt256> const&
     getTrapTxID() const override
     {
         return trapTxID_;

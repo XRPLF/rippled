@@ -10,7 +10,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/nodestore/NodeObject.h>
-#include <xrpl/nodestore/detail/varint.h>
+#include <xrpl/nodestore/detail/Varint.h>
 #include <xrpl/protocol/HashPrefix.h>
 
 #include <nudb/detail/field.hpp>
@@ -21,7 +21,7 @@
 #include <cstring>
 #include <string>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 template <class BufferFactory>
 std::pair<void const*, std::size_t>
@@ -59,7 +59,7 @@ lz4Compress(void const* in, std::size_t inSize, BufferFactory&& bf)
     using std::runtime_error;
     using namespace nudb::detail;
     std::pair<void const*, std::size_t> result;
-    std::array<std::uint8_t, varint_traits<std::size_t>::kMax> vi{};
+    std::array<std::uint8_t, VarintTraits<std::size_t>::kMax> vi{};
     auto const n = writeVarint(vi.data(), inSize);
     auto const outMax = LZ4_compressBound(inSize);
     auto* out = reinterpret_cast<std::uint8_t*>(bf(n + outMax));
@@ -240,7 +240,7 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
                 auto* out = reinterpret_cast<std::uint8_t*>(bf(result.second));
                 result.first = out;
                 ostream os(out, result.second);
-                write<varint>(os, type);
+                write<Varint>(os, type);
                 write<std::uint16_t>(os, mask);
                 write(os, vh.data(), n * 32);
                 return result;
@@ -252,13 +252,13 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
             auto* out = reinterpret_cast<std::uint8_t*>(bf(result.second));
             result.first = out;
             ostream os(out, result.second);
-            write<varint>(os, type);
+            write<Varint>(os, type);
             write(os, vh.data(), n * 32);
             return result;
         }
     }
 
-    std::array<std::uint8_t, varint_traits<std::size_t>::kMax> vi{};
+    std::array<std::uint8_t, VarintTraits<std::size_t>::kMax> vi{};
 
     static constexpr std::size_t kCodecType = 1;
     auto const vn = writeVarint(vi.data(), kCodecType);
@@ -269,7 +269,7 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
         case 1:  // lz4
         {
             std::uint8_t* p = nullptr;
-            auto const lzr = NodeStore::lz4Compress(in, inSize, [&p, &vn, &bf](std::size_t n) {
+            auto const lzr = node_store::lz4Compress(in, inSize, [&p, &vn, &bf](std::size_t n) {
                 p = reinterpret_cast<std::uint8_t*>(bf(vn + n));
                 return p + vn;
             });
@@ -316,4 +316,4 @@ filterInner(void* in, std::size_t inSize)
     }
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

@@ -21,6 +21,7 @@
 #include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/vault.h>
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -28,6 +29,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -419,7 +421,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             env(ticket::create(alice, 2));
             std::uint32_t const aliceSeq{env.seq(alice)};
             env.close();
-            env.require(tickets(alice, 2));
+            env.require(Tickets(alice, 2));
 
             // Consume the tickets from biggest seq to smallest 'cuz we can.
             std::uint32_t aliceTicketSeq{env.seq(alice)};
@@ -428,7 +430,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             env(deposit::auth(alice, becky), ticket::Use(--aliceTicketSeq));
             env.close();
             // Alice uses a ticket but gains a preauth entry.
-            env.require(tickets(alice, 1));
+            env.require(Tickets(alice, 1));
             env.require(Owners(alice, 2));
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
             env.require(Owners(becky, 0));
@@ -436,7 +438,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             // Remove a DepositPreauth from alice.
             env(deposit::unauth(alice, becky), ticket::Use(--aliceTicketSeq));
             env.close();
-            env.require(tickets(alice, 0));
+            env.require(Tickets(alice, 0));
             env.require(Owners(alice, 0));
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
             env.require(Owners(becky, 0));
@@ -444,7 +446,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
     }
 
     void
-    testInvalid()
+    testInvalid(FeatureBitset features)
     {
         testcase("Invalid");
 
@@ -453,7 +455,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
         Account const becky{"becky"};
         Account const carol{"carol"};
 
-        Env env(*this);
+        Env env(*this, features);
 
         // Tell env about alice, becky and carol since they are not yet funded.
         env.memoize(alice);
@@ -559,6 +561,25 @@ struct DepositPreauth_test : public beast::unit_test::Suite
         env.close();
         env.require(Owners(alice, 0));
         env.require(Owners(becky, 0));
+
+        {
+            // alice attempts to authorize a pseudo-account.
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = becky, .asset = xrpIssue()});
+            env(tx);
+            env.close();
+
+            auto const sleVault = env.le(keylet);
+            if (!BEAST_EXPECT(sleVault))
+                return;
+            Account const vaultPseudo{"vault", sleVault->at(sfAccount)};
+
+            auto const expectedResult =
+                features[fixCleanup3_3_0] ? Ter(tecPSEUDO_ACCOUNT) : Ter(tesSUCCESS);
+            env(deposit::auth(alice, vaultPseudo), expectedResult);
+            env.close();
+            env.require(Owners(alice, features[fixCleanup3_3_0] ? 0 : 1));
+        }
     }
 
     void
@@ -587,7 +608,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             env(pay(gw, alice, usd(500)));
             env.close();
 
-            env(offer(alice, XRP(100), usd(100), tfPassive), Require(offers(alice, 1)));
+            env(offer(alice, XRP(100), usd(100), tfPassive), Require(Offers(alice, 1)));
             env.close();
 
             // becky pays herself USD (10) by consuming part of alice's offer.
@@ -911,6 +932,46 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             env(pay(alice, bob, XRP(100)), credentials::Ids({credIdx}));
             env.close();
         }
+    }
+
+    void
+    testZeroCredentialID(FeatureBitset features)
+    {
+        testcase("Zero credential ID");
+
+        using namespace jtx;
+
+        char const credType[] = "abcde";
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        Env env(*this, features);
+
+        env.fund(XRP(5000), issuer, alice, bob);
+        env.close();
+
+        env(credentials::create(alice, issuer, credType));
+        env.close();
+        env(credentials::accept(alice, issuer, credType));
+        env.close();
+
+        auto const jv = credentials::ledgerEntry(env, alice, issuer, credType);
+        std::string const credIdx = jv[jss::result][jss::index].asString();
+
+        std::string const zeroIdx(64, '0');
+
+        // post-fixCleanup3_4_0: a zero ID is rejected by checkFields in
+        // preflight; pre-fixCleanup3_4_0, it will trigger assertion, so it is not testable.
+        env(pay(alice, bob, XRP(100)), credentials::Ids({zeroIdx}), Ter(temMALFORMED));
+        env.close();
+
+        env(pay(alice, bob, XRP(100)), credentials::Ids({credIdx, zeroIdx}), Ter(temMALFORMED));
+        env.close();
+
+        // A valid credential succeeds
+        env(pay(alice, bob, XRP(100)), credentials::Ids({credIdx}));
+        env.close();
     }
 
     void
@@ -1419,11 +1480,13 @@ struct DepositPreauth_test : public beast::unit_test::Suite
     run() override
     {
         testEnable();
-        testInvalid();
         auto const supported{jtx::testableAmendments()};
+        testInvalid(supported);
+        testInvalid(supported - fixCleanup3_3_0);
         testPayment(supported - featureCredentials);
         testPayment(supported);
         testCredentialsPayment();
+        testZeroCredentialID(supported);
         testCredentialsCreation();
         testExpiredCreds();
         testSortingCredentials();

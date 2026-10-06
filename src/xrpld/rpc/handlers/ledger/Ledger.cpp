@@ -9,6 +9,7 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -19,11 +20,11 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
-#include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/shamap/SHAMap.h>
 
 #include <grpcpp/support/status.h>
 #include <org/xrpl/rpc/v1/get_ledger.pb.h>
+#include <rpcspec/Errors.hpp>
 
 #include <chrono>
 #include <exception>
@@ -34,138 +35,95 @@
 #include <utility>
 
 namespace xrpl {
-namespace RPC {
+namespace rpc {
 
 LedgerHandler::LedgerHandler(JsonContext& context) : context_(context)
 {
 }
 
-Status
-LedgerHandler::check()
+std::expected<LedgerHandler::Output, ::rpc::Status>
+LedgerHandler::process(Input const& input)
 {
-    auto const& params = context_.params;
+    Output output;
+    output.options = (input.full ? static_cast<int>(LedgerFill::Options::Full) : 0) |
+        (input.expand ? static_cast<int>(LedgerFill::Options::Expand) : 0) |
+        (input.transactions ? static_cast<int>(LedgerFill::Options::DumpTxrp) : 0) |
+        (input.accounts ? static_cast<int>(LedgerFill::Options::DumpState) : 0) |
+        (input.binary ? static_cast<int>(LedgerFill::Options::Binary) : 0) |
+        (input.ownerFunds ? static_cast<int>(LedgerFill::Options::OwnerFunds) : 0) |
+        (input.queue ? static_cast<int>(LedgerFill::Options::DumpQueue) : 0);
 
-    auto getBool = [&](json::StaticString const& field) -> std::expected<bool, Status> {
-        if (!params.isMember(field))
-        {
-            return false;
-        }
-        if (!params[field].isBool())
-        {
-            return std::unexpected(RpcInvalidParams);
-        }
+    if (input.ledger.isUnspecified())
+        return output;
 
-        return params[field].asBool();
-    };
+    if (auto const status = getLedger(output.ledger, input.ledger, context_.get()))
+        return std::unexpected{::rpc::Status{status.toErrorCode(), status.message()}};
 
-    auto const full = getBool(jss::full);
-    auto const transactions = getBool(jss::transactions);
-    auto const accounts = getBool(jss::accounts);
-    auto const expand = getBool(jss::expand);
-    auto const binary = getBool(jss::binary);
-    auto const ownerFunds = getBool(jss::owner_funds);
-    auto const queue = getBool(jss::queue);
-
-    if (!full.has_value())
-        return full.error();
-    if (!transactions.has_value())
-        return transactions.error();
-    if (!accounts.has_value())
-        return accounts.error();
-    if (!expand.has_value())
-        return expand.error();
-    if (!binary.has_value())
-        return binary.error();
-    if (!ownerFunds.has_value())
-        return ownerFunds.error();
-    if (!queue.has_value())
-        return queue.error();
-
-    options_ = (*full ? static_cast<int>(LedgerFill::Options::Full) : 0) |
-        (*expand ? static_cast<int>(LedgerFill::Options::Expand) : 0) |
-        (*transactions ? static_cast<int>(LedgerFill::Options::DumpTxrp) : 0) |
-        (*accounts ? static_cast<int>(LedgerFill::Options::DumpState) : 0) |
-        (*binary ? static_cast<int>(LedgerFill::Options::Binary) : 0) |
-        (*ownerFunds ? static_cast<int>(LedgerFill::Options::OwnerFunds) : 0) |
-        (*queue ? static_cast<int>(LedgerFill::Options::DumpQueue) : 0);
-
-    bool const needsLedger = params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) ||
-        params.isMember(jss::ledger_index);
-    if (!needsLedger)
-        return Status::kOK;
-    if (auto s = lookupLedger(ledger_, context_, result_))
-        return s;
-
-    if (*full || *accounts)
+    if (input.full || input.accounts)
     {
         // Until some sane way to get full ledgers has been implemented,
         // disallow retrieving all state nodes.
-        if (!isUnlimited(context_.role))
-            return RpcNoPermission;
+        if (!isUnlimited(context_.get().role))
+            return std::unexpected{::rpc::Status{RpcNoPermission}};
 
-        if (context_.app.getFeeTrack().isLoadedLocal() && !isUnlimited(context_.role))
-        {
-            return RpcTooBusy;
-        }
-        context_.loadType = binary ? Resource::kFeeMediumBurdenRpc : Resource::kFeeHeavyBurdenRpc;
+        context_.get().loadType =
+            input.binary ? resource::kFeeMediumBurdenRpc : resource::kFeeHeavyBurdenRpc;
     }
 
-    if (*queue)
+    if (input.queue)
     {
-        if (!ledger_ || !ledger_->open())
+        if (!output.ledger || !output.ledger->open())
         {
             // It doesn't make sense to request the queue
             // with a non-existent or closed/validated ledger.
-            return RpcInvalidParams;
+            return std::unexpected{::rpc::Status{RpcInvalidParams}};
         }
 
-        queueTxs_ = context_.app.getTxQ().getTxs();
+        output.queueTxs = context_.get().app.getTxQ().getTxs();
     }
 
-    return Status::kOK;
+    return output;
 }
 
 void
-LedgerHandler::writeResult(json::Value& value)
+LedgerHandler::writeResult(json::Value& value, Output const& output) const
 {
-    if (ledger_)
+    if (output.ledger)
     {
-        copyFrom(value, result_);
-        addJson(value, {*ledger_, &context_, options_, queueTxs_});
+        auto const& header = output.ledger->header();
+
+        if (output.ledger->open())
+        {
+            value[jss::ledger_current_index] = header.seq;
+        }
+        else
+        {
+            value[jss::ledger_hash] = to_string(header.hash);
+            value[jss::ledger_index] = header.seq;
+        }
+
+        value[jss::validated] = context_.get().ledgerMaster.isValidated(*output.ledger);
+
+        addJson(value, {*output.ledger, &context_.get(), output.options, output.queueTxs});
     }
     else
     {
-        auto& master = context_.app.getLedgerMaster();
+        auto& master = context_.get().app.getLedgerMaster();
         {
             auto& closed = value[jss::closed] = json::ValueType::Object;
-            addJson(closed, {*master.getClosedLedger(), &context_, 0});
+            addJson(closed, {*master.getClosedLedger(), &context_.get(), 0});
         }
         {
             auto& open = value[jss::open] = json::ValueType::Object;
-            addJson(open, {*master.getCurrentLedger(), &context_, 0});
+            addJson(open, {*master.getCurrentLedger(), &context_.get(), 0});
         }
     }
-
-    json::Value warnings{json::ValueType::Array};
-    if (context_.params.isMember(jss::type))
-    {
-        json::Value& w = warnings.append(json::ValueType::Object);
-        w[jss::id] = WarnRpcFieldsDeprecated;
-        w[jss::message] =
-            "Some fields from your request are deprecated. Please check the "
-            "documentation at "
-            "https://xrpl.org/docs/references/http-websocket-apis/ "
-            "and update your request. Field `type` is deprecated.";
-    }
-
-    if (warnings.size() != 0u)
-        value[jss::warnings] = std::move(warnings);
 }
 
-}  // namespace RPC
+}  // namespace rpc
 
 std::pair<org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status>
-doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
+doLedgerGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 {
     auto begin = std::chrono::system_clock::now();
     org::xrpl::rpc::v1::GetLedgerRequest const& request = context.params;
@@ -173,7 +131,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
     grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (auto status = RPC::ledgerFromRequest(ledger, context))
+    if (auto status = rpc::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
         if (status.toErrorCode() == RpcInvalidParams)

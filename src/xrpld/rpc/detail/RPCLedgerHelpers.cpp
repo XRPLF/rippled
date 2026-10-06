@@ -16,7 +16,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/LedgerShortcut.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/jss.h>
@@ -25,14 +24,27 @@
 #include <org/xrpl/rpc/v1/get_ledger_data.pb.h>   // IWYU pragma: keep
 #include <org/xrpl/rpc/v1/get_ledger_entry.pb.h>  // IWYU pragma: keep
 #include <org/xrpl/rpc/v1/ledger.pb.h>
+#include <rpcspec/Ledger.hpp>
 
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <utility>
+#include <variant>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 namespace {
+
+template <typename... Ts>
+struct Overload : Ts...
+{
+    using Ts::operator()...;
+
+    constexpr Overload(Ts&&... ts) : Ts(std::forward<Ts>(ts))...
+    {
+    }
+};
 
 bool
 isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
@@ -40,7 +52,7 @@ isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
     if (standalone)
         return false;
 
-    return ledgerMaster.getValidatedLedgerAge() > Tuning::kMaxValidatedLedgerAge;
+    return ledgerMaster.getValidatedLedgerAge() > tuning::kMaxValidatedLedgerAge;
 }
 
 template <class T>
@@ -51,7 +63,7 @@ ledgerFromHash(
     Context const& context,
     json::StaticString const fieldName)
 {
-    uint256 ledgerHash;
+    UInt256 ledgerHash;
     if (!ledgerHash.parseHex(hash.asString()))
         return {RpcInvalidParams, expectedFieldMessage(fieldName, "hex string")};
     return getLedger(ledger, ledgerHash, context);
@@ -68,13 +80,13 @@ ledgerFromIndex(
     auto const index = indexValue.asString();
 
     if (index == "current" || index.empty())
-        return getLedger(ledger, LedgerShortcut::Current, context);
+        return getLedger(ledger, ::rpc::spec::LedgerShortcut::Current, context);
 
     if (index == "validated")
-        return getLedger(ledger, LedgerShortcut::Validated, context);
+        return getLedger(ledger, ::rpc::spec::LedgerShortcut::Validated, context);
 
     if (index == "closed")
-        return getLedger(ledger, LedgerShortcut::Closed, context);
+        return getLedger(ledger, ::rpc::spec::LedgerShortcut::Closed, context);
 
     std::uint32_t iVal = 0;
     if (!beast::lexicalCastChecked(iVal, index))
@@ -146,7 +158,7 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
     }
 
     // nothing specified, `index` has a default setting
-    return getLedger(ledger, LedgerShortcut::Current, context);
+    return getLedger(ledger, ::rpc::spec::LedgerShortcut::Current, context);
 }
 }  // namespace
 
@@ -190,7 +202,7 @@ ledgerFromSpecifier(
     switch (ledgerCase)
     {
         case LedgerCase::kHash: {
-            if (auto hash = uint256::fromVoidChecked(specifier.hash()))
+            if (auto hash = UInt256::fromVoidChecked(specifier.hash()))
             {
                 return getLedger(ledger, *hash, context);
             }
@@ -204,17 +216,17 @@ ledgerFromSpecifier(
             auto const shortcut = specifier.shortcut();
             if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_VALIDATED)
             {
-                return getLedger(ledger, LedgerShortcut::Validated, context);
+                return getLedger(ledger, ::rpc::spec::LedgerShortcut::Validated, context);
             }
 
             if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CURRENT ||
                 shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_UNSPECIFIED)
             {
-                return getLedger(ledger, LedgerShortcut::Current, context);
+                return getLedger(ledger, ::rpc::spec::LedgerShortcut::Current, context);
             }
             if (shortcut == org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CLOSED)
             {
-                return getLedger(ledger, LedgerShortcut::Closed, context);
+                return getLedger(ledger, ::rpc::spec::LedgerShortcut::Closed, context);
             }
         }
     }
@@ -224,7 +236,7 @@ ledgerFromSpecifier(
 
 template <class T>
 Status
-getLedger(T& ledger, uint256 const& ledgerHash, Context const& context)
+getLedger(T& ledger, UInt256 const& ledgerHash, Context const& context)
 {
     ledger = context.ledgerMaster.getLedgerByHash(ledgerHash);
     if (ledger == nullptr)
@@ -263,7 +275,7 @@ getLedger(T& ledger, uint32_t ledgerIndex, Context const& context)
 
 template <class T>
 Status
-getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
+getLedger(T& ledger, ::rpc::spec::LedgerShortcut shortcut, Context const& context)
 {
     if (isValidatedOld(context.ledgerMaster, context.app.config().standalone()))
     {
@@ -272,7 +284,7 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
         return {RpcNotSynced, "notSynced"};
     }
 
-    if (shortcut == LedgerShortcut::Validated)
+    if (shortcut == ::rpc::spec::LedgerShortcut::Validated)
     {
         ledger = context.ledgerMaster.getValidatedLedger();
         if (ledger == nullptr)
@@ -282,19 +294,19 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
             return {RpcNotSynced, "notSynced"};
         }
 
-        XRPL_ASSERT(!ledger->open(), "xrpl::RPC::getLedger : validated is not open");
+        XRPL_ASSERT(!ledger->open(), "xrpl::rpc::getLedger : validated is not open");
     }
     else
     {
-        if (shortcut == LedgerShortcut::Current)
+        if (shortcut == ::rpc::spec::LedgerShortcut::Current)
         {
             ledger = context.ledgerMaster.getCurrentLedger();
-            XRPL_ASSERT(ledger->open(), "xrpl::RPC::getLedger : current is open");
+            XRPL_ASSERT(ledger->open(), "xrpl::rpc::getLedger : current is open");
         }
-        else if (shortcut == LedgerShortcut::Closed)
+        else if (shortcut == ::rpc::spec::LedgerShortcut::Closed)
         {
             ledger = context.ledgerMaster.getClosedLedger();
-            XRPL_ASSERT(!ledger->open(), "xrpl::RPC::getLedger : closed is not open");
+            XRPL_ASSERT(!ledger->open(), "xrpl::rpc::getLedger : closed is not open");
         }
         else
         {
@@ -321,15 +333,39 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
     return Status::kOK;
 }
 
-// Explicit instantiation of above three functions
+template <class T>
+Status
+getLedger(T& ledger, ::rpc::spec::LedgerSpecifier const& specifier, Context const& context)
+{
+    return std::visit(
+        Overload{
+            [&](std::monostate) {
+                return getLedger(ledger, ::rpc::spec::kDefaultLedgerShortcut, context);
+            },
+            [&](auto const& value) { return getLedger(ledger, value, context); },
+        },
+        specifier.value);
+}
+
+// Explicit instantiation of above four functions
 template Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint32_t, Context const&);
 
 template Status
-getLedger<>(std::shared_ptr<ReadView const>&, LedgerShortcut shortcut, Context const&);
+getLedger<>(std::shared_ptr<ReadView const>&, ::rpc::spec::LedgerShortcut shortcut, Context const&);
 
 template Status
-getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context const&);
+getLedger<>(std::shared_ptr<ReadView const>&, UInt256 const&, Context const&);
+
+template Status
+getLedger<>(std::shared_ptr<ReadView const>&, ::rpc::spec::LedgerSpecifier const&, Context const&);
+
+// explicit instantiation of ledgerFromSpecifier
+template Status
+ledgerFromSpecifier<>(
+    std::shared_ptr<ReadView const>&,
+    org::xrpl::rpc::v1::LedgerSpecifier const&,
+    Context const&);
 
 // The previous version of the lookupLedger command would accept the
 // "ledger_index" argument as a string and silently treat it as a request to
@@ -386,7 +422,7 @@ lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext const& context
 }
 
 std::expected<std::shared_ptr<Ledger const>, json::Value>
-getOrAcquireLedger(RPC::JsonContext const& context)
+getOrAcquireLedger(rpc::JsonContext const& context)
 {
     auto const hasHash = context.params.isMember(jss::ledger_hash);
     auto const hasIndex = context.params.isMember(jss::ledger_index);
@@ -398,7 +434,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
     if ((static_cast<int>(hasHash) + static_cast<int>(hasIndex)) != 1)
     {
         return std::unexpected(
-            RPC::makeParamError(
+            rpc::makeParamError(
                 "Exactly one of 'ledger_hash' or "
                 "'ledger_index' can be specified."));
     }
@@ -407,16 +443,16 @@ getOrAcquireLedger(RPC::JsonContext const& context)
     {
         auto const& jsonHash = context.params.get(jss::ledger_hash, json::ValueType::Null);
         if (!jsonHash.isString() || !ledgerHash.parseHex(jsonHash.asString()))
-            return std::unexpected(RPC::expectedFieldError(jss::ledger_hash, "hex string"));
+            return std::unexpected(rpc::expectedFieldError(jss::ledger_hash, "hex string"));
     }
     else
     {
         auto const& jsonIndex = context.params.get(jss::ledger_index, json::ValueType::Null);
         if (!jsonIndex.isInt() && !jsonIndex.isUInt())
-            return std::unexpected(RPC::expectedFieldError(jss::ledger_index, "number"));
+            return std::unexpected(rpc::expectedFieldError(jss::ledger_index, "number"));
 
         // We need a validated ledger to get the hash from the sequence
-        if (ledgerMaster.getValidatedLedgerAge() > RPC::Tuning::kMaxValidatedLedgerAge)
+        if (ledgerMaster.getValidatedLedgerAge() > rpc::tuning::kMaxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
                 return std::unexpected(rpcError(RpcNoCurrent));
@@ -427,9 +463,9 @@ getOrAcquireLedger(RPC::JsonContext const& context)
         auto ledger = ledgerMaster.getValidatedLedger();
 
         if (ledgerIndex >= ledger->header().seq)
-            return std::unexpected(RPC::makeParamError("Ledger index too large"));
+            return std::unexpected(rpc::makeParamError("Ledger index too large"));
         if (ledgerIndex <= 0)
-            return std::unexpected(RPC::makeParamError("Ledger index too small"));
+            return std::unexpected(rpc::makeParamError("Ledger index too small"));
 
         auto const j = context.app.getJournal("RPCHandler");
         // Try to get the hash of the desired ledger from the validated
@@ -441,7 +477,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
             // ledger
             auto const refIndex = getCandidateLedger(ledgerIndex);
             auto refHash = hashOfSeq(*ledger, refIndex, j);
-            XRPL_ASSERT(refHash, "xrpl::RPC::getOrAcquireLedger : nonzero ledger hash");
+            XRPL_ASSERT(refHash, "xrpl::rpc::getOrAcquireLedger : nonzero ledger hash");
 
             // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
             ledger = ledgerMaster.getLedgerByHash(*refHash);
@@ -453,7 +489,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
                 if (auto il = context.app.getInboundLedgers().acquire(
                         *refHash, refIndex, InboundLedger::Reason::GENERIC))
                 {
-                    json::Value jvResult = RPC::makeError(
+                    json::Value jvResult = rpc::makeError(
                         RpcLgrNotFound, "acquiring ledger containing requested index");
                     jvResult[jss::acquiring] = getJson(LedgerFill(*il, &context));
                     return std::unexpected(jvResult);
@@ -462,7 +498,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
                 if (auto il = context.app.getInboundLedgers().find(*refHash))
                 // NOLINTEND(bugprone-unchecked-optional-access)
                 {
-                    json::Value jvResult = RPC::makeError(
+                    json::Value jvResult = rpc::makeError(
                         RpcLgrNotFound, "acquiring ledger containing requested index");
                     jvResult[jss::acquiring] = il->getJson(0);
                     return std::unexpected(jvResult);
@@ -474,7 +510,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
 
             neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         }
-        XRPL_ASSERT(neededHash, "xrpl::RPC::getOrAcquireLedger : nonzero needed hash");
+        XRPL_ASSERT(neededHash, "xrpl::rpc::getOrAcquireLedger : nonzero needed hash");
         ledgerHash = neededHash ? *neededHash : beast::kZero;  // kludge
     }
 
@@ -494,7 +530,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
         return std::unexpected(il->getJson(0));
 
     return std::unexpected(
-        RPC::makeError(RpcNotReady, "findCreate failed to return an inbound ledger"));
+        rpc::makeError(RpcNotReady, "findCreate failed to return an inbound ledger"));
 }
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

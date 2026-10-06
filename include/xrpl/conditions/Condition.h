@@ -92,10 +92,4 @@ operator==(Condition const& lhs, Condition const& rhs)
         lhs.fingerprint == rhs.fingerprint;
 }
 
-inline bool
-operator!=(Condition const& lhs, Condition const& rhs)
-{
-    return !(lhs == rhs);
-}
-
 }  // namespace xrpl::cryptoconditions

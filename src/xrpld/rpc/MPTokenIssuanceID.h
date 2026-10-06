@@ -8,7 +8,7 @@
 #include <memory>
 #include <optional>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 /**
  * Add a `mpt_issuance_id` field to the `meta` input/output parameter.
@@ -32,4 +32,4 @@ insertMPTokenIssuanceID(
     TxMeta const& transactionMeta);
 /** @} */
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

@@ -16,7 +16,6 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 
-#include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
@@ -46,16 +45,16 @@ namespace xrpl::test {
 
 class TrustedPublisherServer : public std::enable_shared_from_this<TrustedPublisherServer>
 {
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using address_type = boost::asio::ip::address;
-    using socket_type = boost::asio::ip::tcp::socket;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
+    using AddressType = boost::asio::ip::address;
+    using SocketType = boost::asio::ip::tcp::socket;
 
-    using req_type = boost::beast::http::request<boost::beast::http::string_body>;
-    using resp_type = boost::beast::http::response<boost::beast::http::string_body>;
-    using error_code = boost::system::error_code;
+    using ReqType = boost::beast::http::request<boost::beast::http::string_body>;
+    using RespType = boost::beast::http::response<boost::beast::http::string_body>;
+    using ErrorCode = boost::system::error_code;
 
-    socket_type sock_;
-    endpoint_type ep_;
+    SocketType sock_;
+    EndpointType ep_;
     boost::asio::ip::tcp::acceptor acceptor_;
     // Generates a version 1 validator list, using the int parameter as the
     // actual version.
@@ -253,13 +252,13 @@ public:
     void
     start()
     {
-        error_code ec;
+        ErrorCode ec;
         acceptor_.open(ep_.protocol());
         acceptor_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
         acceptor_.bind(ep_);
         acceptor_.listen(boost::asio::socket_base::max_listen_connections);
         acceptor_.async_accept(
-            sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](error_code ec) {
+            sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](ErrorCode ec) {
                 if (auto p = wp.lock())
                 {
                     p->onAccept(ec);
@@ -270,7 +269,7 @@ public:
     void
     stop()
     {
-        error_code ec;
+        ErrorCode ec;
         acceptor_.close(ec);
         // TODO: consider making this join
         // any running do_peer threads
@@ -281,7 +280,7 @@ public:
         stop();
     }
 
-    endpoint_type
+    EndpointType
     localEndpoint() const
     {
         return acceptor_.local_endpoint();
@@ -470,11 +469,11 @@ private:
     {
         int id;
         TrustedPublisherServer& self;
-        socket_type sock;
+        SocketType sock;
         boost::asio::executor_work_guard<boost::asio::executor> work;
         bool ssl;
 
-        Lambda(int id, TrustedPublisherServer& self, socket_type&& sock, bool ssl)
+        Lambda(int id, TrustedPublisherServer& self, SocketType&& sock, bool ssl)
             : id(id), self(self), sock(std::move(sock)), work(this->sock.get_executor()), ssl(ssl)
         {
         }
@@ -487,7 +486,7 @@ private:
     };
 
     void
-    onAccept(error_code ec)
+    onAccept(ErrorCode ec)
     {
         if (ec || !acceptor_.is_open())
             return;
@@ -495,7 +494,7 @@ private:
         static int nextId = 0;  // NOLINT(readability-identifier-naming)
         std::thread{Lambda{++nextId, *this, std::move(sock_), useSSL_}}.detach();
         acceptor_.async_accept(
-            sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](error_code ec) {
+            sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](ErrorCode ec) {
                 if (auto p = wp.lock())
                 {
                     p->onAccept(ec);
@@ -504,13 +503,13 @@ private:
     }
 
     void
-    doPeer(int id, socket_type&& s, bool ssl)
+    doPeer(int id, SocketType&& s, bool ssl)
     {
         using namespace boost::beast;
         using namespace boost::asio;
-        socket_type sock(std::move(s));
+        SocketType sock(std::move(s));
         flat_buffer sb;
-        error_code ec;
+        ErrorCode ec;
         std::optional<ssl_stream<ip::tcp::socket&>> sslStream;
 
         if (ssl)
@@ -525,8 +524,8 @@ private:
 
         for (;;)
         {
-            resp_type res;
-            req_type req;
+            RespType res;
+            ReqType req;
             try
             {
                 if (ssl)
@@ -549,7 +548,7 @@ private:
                 res.keep_alive(req.keep_alive());
                 bool prepare = true;
 
-                if (boost::starts_with(path, "/validators2"))
+                if (path.starts_with("/validators2"))
                 {
                     res.result(http::status::ok);
                     res.insert("Content-Type", "application/json");
@@ -565,7 +564,7 @@ private:
                     {
                         int refresh = 5;
                         static constexpr char const* kRefreshPrefix = "/validators2/refresh/";
-                        if (boost::starts_with(path, kRefreshPrefix))
+                        if (path.starts_with(kRefreshPrefix))
                         {
                             refresh = boost::lexical_cast<unsigned int>(
                                 path.substr(strlen(kRefreshPrefix)));
@@ -573,7 +572,7 @@ private:
                         res.body() = getList2_(refresh);
                     }
                 }
-                else if (boost::starts_with(path, "/validators"))
+                else if (path.starts_with("/validators"))
                 {
                     res.result(http::status::ok);
                     res.insert("Content-Type", "application/json");
@@ -589,7 +588,7 @@ private:
                     {
                         int refresh = 5;
                         static constexpr char const* kRefreshPrefix = "/validators/refresh/";
-                        if (boost::starts_with(path, kRefreshPrefix))
+                        if (path.starts_with(kRefreshPrefix))
                         {
                             refresh = boost::lexical_cast<unsigned int>(
                                 path.substr(strlen(kRefreshPrefix)));
@@ -597,13 +596,13 @@ private:
                         res.body() = getList_(refresh);
                     }
                 }
-                else if (boost::starts_with(path, "/textfile"))
+                else if (path.starts_with("/textfile"))
                 {
                     prepare = false;
                     res.result(http::status::ok);
                     res.insert("Content-Type", "text/example");
                     // if huge was requested, lie about content length
-                    std::uint64_t const cl = boost::starts_with(path, "/textfile/huge")
+                    std::uint64_t const cl = path.starts_with("/textfile/huge")
                         ? std::numeric_limits<uint64_t>::max()
                         : 1024;
                     res.content_length(cl);
@@ -617,41 +616,39 @@ private:
                         }
                     }
                 }
-                else if (boost::starts_with(path, "/sleep/"))
+                else if (path.starts_with("/sleep/"))
                 {
                     auto const sleepSec = boost::lexical_cast<unsigned int>(path.substr(7));
                     std::this_thread::sleep_for(std::chrono::seconds(sleepSec));
                 }
-                else if (boost::starts_with(path, "/redirect"))
+                else if (path.starts_with("/redirect"))
                 {
-                    if (boost::ends_with(path, "/301"))
+                    if (path.ends_with("/301"))
                     {
                         res.result(http::status::moved_permanently);
                     }
-                    else if (boost::ends_with(path, "/302"))
+                    else if (path.ends_with("/302"))
                     {
                         res.result(http::status::found);
                     }
-                    else if (boost::ends_with(path, "/307"))
+                    else if (path.ends_with("/307"))
                     {
                         res.result(http::status::temporary_redirect);
                     }
-                    else if (boost::ends_with(path, "/308"))
+                    else if (path.ends_with("/308"))
                     {
                         res.result(http::status::permanent_redirect);
                     }
 
                     std::stringstream location;
-                    if (boost::starts_with(path, "/redirect_to/"))
+                    if (path.starts_with("/redirect_to/"))
                     {
                         location << path.substr(13);
                     }
-                    else if (!boost::starts_with(path, "/redirect_nolo"))
+                    else if (!path.starts_with("/redirect_nolo"))
                     {
                         location << (ssl ? "https://" : "http://") << localEndpoint()
-                                 << (boost::starts_with(path, "/redirect_forever/")
-                                         ? path
-                                         : "/validators");
+                                 << (path.starts_with("/redirect_forever/") ? path : "/validators");
                     }
                     if (!location.str().empty())
                         res.insert("Location", location.str());

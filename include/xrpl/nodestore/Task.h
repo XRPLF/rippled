@@ -1,6 +1,6 @@
 #pragma once
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 /**
  * Derived classes perform scheduled tasks.
@@ -17,4 +17,4 @@ struct Task
     performScheduledTask() = 0;
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store
