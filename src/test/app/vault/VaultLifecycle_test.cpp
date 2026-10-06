@@ -1279,7 +1279,7 @@ private:
                                               Account const& alice,
                                               Account const& bob,
                                               Account const& carol,
-                                              std::function<void(bool)> const& freezeAlice) {
+                                              std::function<void(bool)> const& setAliceFrozen) {
             Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
@@ -1302,7 +1302,7 @@ private:
             env(offer(bob, XRP(2), shares(1)));
             env.close();
 
-            freezeAlice(true);
+            setAliceFrozen(true);
 
             auto const aliceShares = shareBalance(alice);
             auto const bobShares = shareBalance(bob);
@@ -1332,7 +1332,7 @@ private:
             expectUnchanged();
 
             // Both succeed once alice is unfrozen
-            freezeAlice(false);
+            setAliceFrozen(false);
 
             env(pay(alice, carol, XRP(1)),
                 Sendmax(shares(1)),
@@ -1360,7 +1360,7 @@ private:
                                             Account const& alice,
                                             Account const& bob,
                                             Account const& carol,
-                                            std::function<void(bool)> const& freezeAlice) {
+                                            std::function<void(bool)> const& setAliceFrozen) {
             Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
@@ -1383,7 +1383,7 @@ private:
                 env(offer(bob, shares(1), asset(1)));
                 env.close();
 
-                freezeAlice(true);
+                setAliceFrozen(true);
 
                 auto const aliceShares = shareBalance(alice);
                 auto const bobShares = shareBalance(bob);
@@ -1396,7 +1396,7 @@ private:
                 BEAST_EXPECT(shareBalance(alice) == aliceShares);
                 BEAST_EXPECT(shareBalance(bob) == bobShares);
 
-                freezeAlice(false);
+                setAliceFrozen(false);
 
                 env(pay(carol, owner, asset(1)),
                     Sendmax(XRP(1)),
@@ -1415,7 +1415,7 @@ private:
                 env(offer(alice, shares(1), XRP(1)));
                 env.close();
 
-                freezeAlice(true);
+                setAliceFrozen(true);
 
                 auto const aliceShares = shareBalance(alice);
                 auto const bobShares = shareBalance(bob);
@@ -1428,7 +1428,7 @@ private:
                 BEAST_EXPECT(shareBalance(alice) == aliceShares);
                 BEAST_EXPECT(shareBalance(bob) == bobShares);
 
-                freezeAlice(false);
+                setAliceFrozen(false);
 
                 env(pay(owner, carol, XRP(1)),
                     Sendmax(asset(1)),
@@ -1464,12 +1464,12 @@ private:
             env(pay(issuer, bob, asset(2'000)));
             env.close();
 
-            auto const freezeAlice = [&](bool freeze) {
-                asset.set({.holder = alice, .flags = freeze ? tfMPTLock : tfMPTUnlock});
+            auto const setAliceFrozen = [&](bool frozen) {
+                asset.set({.holder = alice, .flags = frozen ? tfMPTLock : tfMPTUnlock});
                 env.close();
             };
-            testShareDEXEndpointFrozen(env, asset, owner, alice, bob, carol, freezeAlice);
-            testShareDEXMiddleFrozen(env, asset, owner, alice, bob, carol, freezeAlice);
+            testShareDEXEndpointFrozen(env, asset, owner, alice, bob, carol, setAliceFrozen);
+            testShareDEXMiddleFrozen(env, asset, owner, alice, bob, carol, setAliceFrozen);
         }
 
         {
@@ -1493,12 +1493,12 @@ private:
             env(pay(issuer, bob, asset(2'000)));
             env.close();
 
-            auto const freezeAlice = [&](bool freeze) {
-                env(trust(issuer, asset(0), alice, freeze ? tfSetFreeze : tfClearFreeze));
+            auto const setAliceFrozen = [&](bool frozen) {
+                env(trust(issuer, asset(0), alice, frozen ? tfSetFreeze : tfClearFreeze));
                 env.close();
             };
-            testShareDEXEndpointFrozen(env, asset, owner, alice, bob, carol, freezeAlice);
-            testShareDEXMiddleFrozen(env, asset, owner, alice, bob, carol, freezeAlice);
+            testShareDEXEndpointFrozen(env, asset, owner, alice, bob, carol, setAliceFrozen);
+            testShareDEXMiddleFrozen(env, asset, owner, alice, bob, carol, setAliceFrozen);
         }
 
         {
