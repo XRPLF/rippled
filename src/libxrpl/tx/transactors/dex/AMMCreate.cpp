@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -330,7 +331,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                     return err;
                 }
 
-                if (auto const err = createMPToken(sb, mptID, accountId, {}, flags);
+                if (auto const err = MPTokenEntryW::create(sb, mptID, accountId, {}, flags);
                     !isTesSuccess(err))
                     return err;
                 // Don't adjust AMM owner count.
