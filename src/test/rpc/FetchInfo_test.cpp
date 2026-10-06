@@ -31,6 +31,7 @@ class FetchInfo_test : public beast::unit_test::Suite
         json::Value falseParams(json::ValueType::Object);
         falseParams[jss::clear] = false;
         auto const falseResult = callFetchInfo(falseParams);
+        BEAST_EXPECT(!falseResult.isMember(jss::error));
         BEAST_EXPECT(!falseResult.isMember(jss::clear));
 
         auto testInvalidClear = [&](json::Value const& clear) {
