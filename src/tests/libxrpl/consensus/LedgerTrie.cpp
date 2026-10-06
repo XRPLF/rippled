@@ -9,10 +9,11 @@
 
 namespace xrpl::test {
 
+using namespace csf;
+using Seq = Ledger::Seq;
+
 TEST(LedgerTrieTest, insert_single_entry_by_itself)
 {
-    using namespace csf;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abc"]);
@@ -28,8 +29,6 @@ TEST(LedgerTrieTest, insert_single_entry_by_itself)
 
 TEST(LedgerTrieTest, insert_suffix_of_existing_extending_tree)
 {
-    using namespace csf;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abc"]);
@@ -55,8 +54,6 @@ TEST(LedgerTrieTest, insert_suffix_of_existing_extending_tree)
 
 TEST(LedgerTrieTest, insert_uncommitted_of_existing_node)
 {
-    using namespace csf;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abcd"]);
@@ -84,8 +81,6 @@ TEST(LedgerTrieTest, insert_uncommitted_of_existing_node)
 
 TEST(LedgerTrieTest, insert_suffix_uncommitted_of_existing_node)
 {
-    using namespace csf;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abcd"]);
@@ -103,8 +98,6 @@ TEST(LedgerTrieTest, insert_suffix_uncommitted_of_existing_node)
 
 TEST(LedgerTrieTest, insert_suffix_uncommitted_with_existing_child)
 {
-    using namespace csf;
-
     //  abcd : abcde, abcf
 
     LedgerTrie<Ledger> t;
@@ -128,8 +121,6 @@ TEST(LedgerTrieTest, insert_suffix_uncommitted_with_existing_child)
 
 TEST(LedgerTrieTest, insert_multiple_counts)
 {
-    using namespace csf;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["ab"], 4);
@@ -149,8 +140,6 @@ TEST(LedgerTrieTest, insert_multiple_counts)
 
 TEST(LedgerTrieTest, remove_not_in_trie)
 {
-    using namespace csf;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abc"]);
@@ -163,8 +152,6 @@ TEST(LedgerTrieTest, remove_not_in_trie)
 
 TEST(LedgerTrieTest, remove_in_trie_but_with_0_tip_support)
 {
-    using namespace csf;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abcd"]);
@@ -180,8 +167,6 @@ TEST(LedgerTrieTest, remove_in_trie_but_with_0_tip_support)
 
 TEST(LedgerTrieTest, remove_in_trie_with_multiple_tip_support)
 {
-    using namespace csf;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abc"], 2);
@@ -206,8 +191,6 @@ TEST(LedgerTrieTest, remove_in_trie_with_multiple_tip_support)
 
 TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_no_children)
 {
-    using namespace csf;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["ab"]);
@@ -228,8 +211,6 @@ TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_no_children)
 
 TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_1_child)
 {
-    using namespace csf;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["ab"]);
@@ -251,8 +232,6 @@ TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_1_child)
 
 TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_multiple_children)
 {
-    using namespace csf;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["ab"]);
@@ -271,8 +250,6 @@ TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_multiple_children)
 
 TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_parent_compaction)
 {
-    using namespace csf;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["ab"]);
@@ -295,7 +272,6 @@ TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_parent_compaction)
 
 TEST(LedgerTrieTest, empty)
 {
-    using namespace csf;
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     EXPECT_TRUE(t.empty());
@@ -314,8 +290,6 @@ TEST(LedgerTrieTest, empty)
 
 TEST(LedgerTrieTest, support)
 {
-    using namespace csf;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     EXPECT_TRUE(t.tipSupport(h["a"]) == 0);
@@ -360,9 +334,6 @@ TEST(LedgerTrieTest, support)
 
 TEST(LedgerTrieTest, preferred_empty)
 {
-    using namespace csf;
-    using Seq = Ledger::Seq;
-
     LedgerTrie<Ledger> const t;
     EXPECT_TRUE(t.getPreferred(Seq{0}) == std::nullopt);
     EXPECT_TRUE(t.getPreferred(Seq{2}) == std::nullopt);
@@ -370,9 +341,6 @@ TEST(LedgerTrieTest, preferred_empty)
 
 TEST(LedgerTrieTest, preferred_genesis_support_is_not_empty)
 {
-    using namespace csf;
-    using Seq = Ledger::Seq;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     Ledger const genesis = h[""];
@@ -387,9 +355,6 @@ TEST(LedgerTrieTest, preferred_genesis_support_is_not_empty)
 
 TEST(LedgerTrieTest, preferred_single_node_no_children)
 {
-    using namespace csf;
-    using Seq = Ledger::Seq;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abc"]);
@@ -400,9 +365,6 @@ TEST(LedgerTrieTest, preferred_single_node_no_children)
 
 TEST(LedgerTrieTest, preferred_single_node_smaller_child_support)
 {
-    using namespace csf;
-    using Seq = Ledger::Seq;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abc"]);
@@ -417,9 +379,6 @@ TEST(LedgerTrieTest, preferred_single_node_smaller_child_support)
 
 TEST(LedgerTrieTest, preferred_single_node_larger_child)
 {
-    using namespace csf;
-    using Seq = Ledger::Seq;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abc"]);
@@ -434,9 +393,6 @@ TEST(LedgerTrieTest, preferred_single_node_larger_child)
 
 TEST(LedgerTrieTest, preferred_single_node_smaller_children_support)
 {
-    using namespace csf;
-    using Seq = Ledger::Seq;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abc"]);
@@ -456,9 +412,6 @@ TEST(LedgerTrieTest, preferred_single_node_smaller_children_support)
 
 TEST(LedgerTrieTest, preferred_single_node_larger_children)
 {
-    using namespace csf;
-    using Seq = Ledger::Seq;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abc"]);
@@ -478,9 +431,6 @@ TEST(LedgerTrieTest, preferred_single_node_larger_children)
 
 TEST(LedgerTrieTest, preferred_tie_breaker_by_id)
 {
-    using namespace csf;
-    using Seq = Ledger::Seq;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abcd"], 2);
@@ -500,9 +450,6 @@ TEST(LedgerTrieTest, preferred_tie_breaker_by_id)
 
 TEST(LedgerTrieTest, preferred_tie_breaker_not_needed)
 {
-    using namespace csf;
-    using Seq = Ledger::Seq;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abc"]);
@@ -526,9 +473,6 @@ TEST(LedgerTrieTest, preferred_tie_breaker_not_needed)
 
 TEST(LedgerTrieTest, preferred_single_node_larger_grand_child)
 {
-    using namespace csf;
-    using Seq = Ledger::Seq;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abc"]);
@@ -544,9 +488,6 @@ TEST(LedgerTrieTest, preferred_single_node_larger_grand_child)
 
 TEST(LedgerTrieTest, preferred_too_much_uncommitted_support_from_competing_branches)
 {
-    using namespace csf;
-    using Seq = Ledger::Seq;
-
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
     t.insert(h["abc"]);
@@ -574,9 +515,6 @@ TEST(LedgerTrieTest, preferred_too_much_uncommitted_support_from_competing_branc
 
 TEST(LedgerTrieTest, preferred_changing_largestseq_perspective_changes_preferred_branch)
 {
-    using namespace csf;
-    using Seq = Ledger::Seq;
-
     /**
      * Build the tree below with initial tip support annotated
      *       A
@@ -679,7 +617,6 @@ TEST(LedgerTrieTest, preferred_changing_largestseq_perspective_changes_preferred
 
 TEST(LedgerTrieTest, root_related)
 {
-    using namespace csf;
     // Since the root is a special node that breaks the no-single child
     // invariant, do some tests that exercise it.
 
@@ -707,7 +644,6 @@ TEST(LedgerTrieTest, root_related)
 
 TEST(LedgerTrieTest, stress)
 {
-    using namespace csf;
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
 

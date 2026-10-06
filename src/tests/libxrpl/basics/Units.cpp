@@ -152,13 +152,13 @@ struct FeeLevel64Test : public ::testing::Test
 {
     using FeeLevel32 = FeeLevel<std::uint32_t>;
 
-    static FeeLevel64
+    [[nodiscard]] static FeeLevel64
     make(auto x)
     {
         return x;
     }
 
-    static FeeLevel64
+    [[nodiscard]] static FeeLevel64
     explicitMake(auto x)
     {
         return FeeLevel64{x};
@@ -305,13 +305,13 @@ TEST_F(FeeLevel64Test, truthiness_signum_and_to_string)
 
 struct FeeLevelDoubleTest : public ::testing::Test
 {
-    static FeeLevelDouble
+    [[nodiscard]] static FeeLevelDouble
     make(auto x)
     {
         return x;
     }
 
-    static FeeLevelDouble
+    [[nodiscard]] static FeeLevelDouble
     explicitMake(auto x)
     {
         return FeeLevelDouble{x};

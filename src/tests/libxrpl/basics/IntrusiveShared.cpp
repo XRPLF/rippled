@@ -93,7 +93,7 @@ public:
     static std::array<std::atomic<TrackedState>, kMaxStates> state;
     static std::atomic<std::size_t> nextId;
 
-    static TrackedState
+    [[nodiscard]] static TrackedState
     getState(std::size_t id)
     {
         if (id >= state.size())
@@ -171,7 +171,7 @@ public:
     std::size_t const id;
 
 private:
-    static std::size_t
+    [[nodiscard]] static std::size_t
     checkoutID()
     {
         auto const id = nextId.fetch_add(1, std::memory_order_acq_rel);
@@ -219,9 +219,12 @@ TEST(IntrusiveSharedTest, strong_and_weak_containers_track_liveness)
     auto id = b->id;
     EXPECT_EQ(TIBase::getState(id), Alive);
     EXPECT_EQ(b->useCount(), 1);
-    strong.reserve(10);
+    // No reserve(): letting the vectors reallocate also exercises moving the pointers.
     for (auto i = 0uz; i < 10; ++i)
+    {
+        // NOLINTNEXTLINE(performance-inefficient-vector-operation)
         strong.push_back(b);
+    }
     b.reset();
     EXPECT_EQ(TIBase::getState(id), Alive);
     strong.resize(strong.size() - 1);
@@ -233,7 +236,6 @@ TEST(IntrusiveSharedTest, strong_and_weak_containers_track_liveness)
     id = b->id;
     EXPECT_EQ(TIBase::getState(id), Alive);
     EXPECT_EQ(b->useCount(), 1);
-    weak.reserve(10);
     for (auto i = 0uz; i < 10; ++i)
     {
         weak.emplace_back(b);

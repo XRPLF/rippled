@@ -7,6 +7,7 @@
 
 #include <array>
 #include <cstdint>
+#include <format>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -57,11 +58,13 @@ struct ParseUrlCase
     std::string_view name;
     std::string_view url;
     std::string_view scheme;
-    std::string_view username = {};          // NOLINT(readability-redundant-member-init)
-    std::string_view password = {};          // NOLINT(readability-redundant-member-init)
-    std::string_view domain = {};            // NOLINT(readability-redundant-member-init)
-    std::optional<std::uint16_t> port = {};  // NOLINT(readability-redundant-member-init)
-    std::string_view path = {};              // NOLINT(readability-redundant-member-init)
+    // NOLINTBEGIN(readability-redundant-member-init)
+    std::string_view username = {};
+    std::string_view password = {};
+    std::string_view domain = {};
+    std::optional<std::uint16_t> port = {};
+    std::string_view path = {};
+    // NOLINTEND(readability-redundant-member-init)
 };
 
 constexpr auto kParseUrlCases = std::to_array<ParseUrlCase>({
@@ -288,7 +291,7 @@ INSTANTIATE_TEST_SUITE_P(
 TEST_F(StringUtilitiesTest, parse_url_rejects_an_overlong_authority)
 {
     ParsedUrl parsed;
-    EXPECT_FALSE(parseUrl(parsed, "s://" + std::string(8192, ':')));
+    EXPECT_FALSE(parseUrl(parsed, std::format("s://{}", std::string(8192, ':'))));
 }
 
 TEST_F(StringUtilitiesTest, to_string)
@@ -330,7 +333,7 @@ TEST_F(StringUtilitiesTest, trim_and_lower_ignore_locale)
     // 0xA0 is NO-BREAK SPACE in Latin-1 and is whitespace to some locales.
     std::string const nbsp("\xA0", 1);
     EXPECT_EQ(trimWhitespace(nbsp), nbsp);
-    EXPECT_EQ(trimWhitespace(" " + nbsp + " "), nbsp);
+    EXPECT_EQ(trimWhitespace(std::format(" {} ", nbsp)), nbsp);
 
     // 0xC0 is LATIN CAPITAL LETTER A WITH GRAVE in Latin-1.
     std::string const agrave("\xC0", 1);

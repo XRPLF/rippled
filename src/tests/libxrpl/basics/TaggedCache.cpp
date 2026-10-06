@@ -17,11 +17,9 @@
 
 namespace xrpl {
 
-struct TaggedCacheTest : public ::testing::Test
+struct TaggedCacheTestBase : public ::testing::Test
 {
     using Key = LedgerIndex;
-    using Value = std::string;
-    using Cache = TaggedCache<Key, Value>;
 
     // A single `++clock` plus a sweep is enough to age any entry out.
     static constexpr std::chrono::seconds kExpiration{1};
@@ -29,6 +27,13 @@ struct TaggedCacheTest : public ::testing::Test
 
     beast::Journal const journal{TestSink::instance()};
     TestStopwatch clock;  ///< ManualClock starts at zero
+};
+
+struct TaggedCacheTest : public TaggedCacheTestBase
+{
+    using Value = std::string;
+    using Cache = TaggedCache<Key, Value>;
+
     Cache cache{"test", kTargetSize, kExpiration, clock, journal};
 };
 
@@ -201,7 +206,7 @@ struct TestRefCountObject : IntrusiveRefCounts
 
 }  // namespace
 
-struct IntrusiveTaggedCacheTest : public TaggedCacheTest
+struct IntrusiveTaggedCacheTest : public TaggedCacheTestBase
 {
     using IntrPtrCache = TaggedCache<
         Key,
@@ -253,6 +258,25 @@ TEST_F(IntrusiveTaggedCacheTest, an_entry_can_be_reinserted_after_del)
     intrPtrCache.canonicalizeReplaceCache(
         1, intr_ptr::makeShared<TestRefCountObject>("one_replaced_3"));
     EXPECT_EQ(*intrPtrCache.fetch(1), "one_replaced_3");
+}
+
+TEST_F(IntrusiveTaggedCacheTest, an_expired_weak_entry_is_replaced_after_del)
+{
+    intrPtrCache.canonicalizeReplaceCache(1, intr_ptr::makeShared<TestRefCountObject>("one"));
+    {
+        // While held, del() only demotes the entry to a weak pointer, so it
+        // stays in the map and expires once this scope releases it.
+        auto const held = intrPtrCache.fetch(1);
+        EXPECT_TRUE(intrPtrCache.del(1, true));
+        EXPECT_EQ(intrPtrCache.getCacheSize(), 0);
+        EXPECT_EQ(intrPtrCache.size(), 1);
+    }
+
+    EXPECT_FALSE(intrPtrCache.canonicalizeReplaceCache(
+        1, intr_ptr::makeShared<TestRefCountObject>("one_replaced")));
+    EXPECT_EQ(intrPtrCache.getCacheSize(), 1);
+    EXPECT_EQ(intrPtrCache.size(), 1);
+    EXPECT_EQ(*intrPtrCache.fetch(1), "one_replaced");
 }
 
 TEST_F(IntrusiveTaggedCacheTest, sweep_empties_the_cache_once_nothing_is_held)

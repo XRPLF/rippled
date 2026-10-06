@@ -14,6 +14,7 @@
 #include <complex>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <iterator>
 #include <stdexcept>
 #include <string>
@@ -62,74 +63,9 @@ struct BaseUintTest : public ::testing::Test
     Blob const raw{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
     BaseUInt96 const ascending{BaseUInt96::fromRaw(raw)};
     BaseUInt96 const zero{beast::kZero};
-
-    static void
-    testComparisons()
-    {
-        using HexPair = std::pair<std::string_view, std::string_view>;
-
-        {
-            static constexpr auto kTestArgs = std::to_array<HexPair>({
-                {"0000000000000000", "0000000000000001"},
-                {"0000000000000000", "ffffffffffffffff"},
-                {"1234567812345678", "2345678923456789"},
-                {"8000000000000000", "8000000000000001"},
-                {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
-                {"fffffffffffffffe", "ffffffffffffffff"},
-            });
-
-            for (auto const& [smallerText, largerText] : kTestArgs)
-            {
-                xrpl::BaseUInt<64> const smaller{smallerText}, larger{largerText};
-                // For code readability, we want to use general boolean
-                // expectations instead of specific EXPECT_LT etc.
-                EXPECT_TRUE(smaller < larger);
-                EXPECT_TRUE(smaller <= larger);
-                EXPECT_TRUE(smaller != larger);
-                EXPECT_FALSE(smaller == larger);
-                EXPECT_FALSE(smaller > larger);
-                EXPECT_FALSE(smaller >= larger);
-                EXPECT_FALSE(larger < smaller);
-                EXPECT_FALSE(larger <= smaller);
-                EXPECT_TRUE(larger != smaller);
-                EXPECT_FALSE(larger == smaller);
-                EXPECT_TRUE(larger > smaller);
-                EXPECT_TRUE(larger >= smaller);
-                EXPECT_TRUE(smaller == smaller);
-                EXPECT_TRUE(larger == larger);
-            }
-        }
-
-        {
-            static constexpr auto kTestArgs = std::to_array<HexPair>({
-                {"000000000000000000000000", "000000000000000000000001"},
-                {"000000000000000000000000", "ffffffffffffffffffffffff"},
-                {"0123456789ab0123456789ab", "123456789abc123456789abc"},
-                {"555555555555555555555555", "55555555555a555555555555"},
-                {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
-                {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
-            });
-
-            for (auto const& [smallerText, largerText] : kTestArgs)
-            {
-                xrpl::BaseUInt<96> const smaller{smallerText}, larger{largerText};
-                EXPECT_TRUE(smaller < larger);
-                EXPECT_TRUE(smaller <= larger);
-                EXPECT_TRUE(smaller != larger);
-                EXPECT_FALSE(smaller == larger);
-                EXPECT_FALSE(smaller > larger);
-                EXPECT_FALSE(smaller >= larger);
-                EXPECT_FALSE(larger < smaller);
-                EXPECT_FALSE(larger <= smaller);
-                EXPECT_TRUE(larger != smaller);
-                EXPECT_FALSE(larger == smaller);
-                EXPECT_TRUE(larger > smaller);
-                EXPECT_TRUE(larger >= smaller);
-                EXPECT_TRUE(smaller == smaller);
-                EXPECT_TRUE(larger == larger);
-            }
-        }
-    }
+    BaseUInt96 const complement{~ascending};
+    // All ones XOR one: every bit set except the lowest.
+    BaseUInt96 const xored{~zero ^ BaseUInt96{1}};
 };
 
 using BaseUintDeathTest = BaseUintTest;
@@ -201,7 +137,69 @@ TEST_F(BaseUintDeathTest, from_raw_size_mismatch)
 
 TEST_F(BaseUintTest, comparisons)
 {
-    testComparisons();
+    using HexPair = std::pair<std::string_view, std::string_view>;
+
+    {
+        static constexpr auto kTestArgs = std::to_array<HexPair>({
+            {"0000000000000000", "0000000000000001"},
+            {"0000000000000000", "ffffffffffffffff"},
+            {"1234567812345678", "2345678923456789"},
+            {"8000000000000000", "8000000000000001"},
+            {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
+            {"fffffffffffffffe", "ffffffffffffffff"},
+        });
+
+        for (auto const& [smallerText, largerText] : kTestArgs)
+        {
+            xrpl::BaseUInt<64> const smaller{smallerText}, larger{largerText};
+            // For code readability, we want to use general boolean
+            // expectations instead of specific EXPECT_LT etc.
+            EXPECT_TRUE(smaller < larger);
+            EXPECT_TRUE(smaller <= larger);
+            EXPECT_TRUE(smaller != larger);
+            EXPECT_FALSE(smaller == larger);
+            EXPECT_FALSE(smaller > larger);
+            EXPECT_FALSE(smaller >= larger);
+            EXPECT_FALSE(larger < smaller);
+            EXPECT_FALSE(larger <= smaller);
+            EXPECT_TRUE(larger != smaller);
+            EXPECT_FALSE(larger == smaller);
+            EXPECT_TRUE(larger > smaller);
+            EXPECT_TRUE(larger >= smaller);
+            EXPECT_TRUE(smaller == smaller);
+            EXPECT_TRUE(larger == larger);
+        }
+    }
+
+    {
+        static constexpr auto kTestArgs = std::to_array<HexPair>({
+            {"000000000000000000000000", "000000000000000000000001"},
+            {"000000000000000000000000", "ffffffffffffffffffffffff"},
+            {"0123456789ab0123456789ab", "123456789abc123456789abc"},
+            {"555555555555555555555555", "55555555555a555555555555"},
+            {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
+            {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
+        });
+
+        for (auto const& [smallerText, largerText] : kTestArgs)
+        {
+            xrpl::BaseUInt<96> const smaller{smallerText}, larger{largerText};
+            EXPECT_TRUE(smaller < larger);
+            EXPECT_TRUE(smaller <= larger);
+            EXPECT_TRUE(smaller != larger);
+            EXPECT_FALSE(smaller == larger);
+            EXPECT_FALSE(smaller > larger);
+            EXPECT_FALSE(smaller >= larger);
+            EXPECT_FALSE(larger < smaller);
+            EXPECT_FALSE(larger <= smaller);
+            EXPECT_TRUE(larger != smaller);
+            EXPECT_FALSE(larger == smaller);
+            EXPECT_TRUE(larger > smaller);
+            EXPECT_TRUE(larger >= smaller);
+            EXPECT_TRUE(smaller == smaller);
+            EXPECT_TRUE(larger == larger);
+        }
+    }
 }
 
 TEST_F(BaseUintTest, from_raw)
@@ -235,8 +233,6 @@ TEST_F(BaseUintTest, hash_append_writes_the_raw_bytes)
 
 TEST_F(BaseUintTest, complement)
 {
-    BaseUInt96 complement{~ascending};
-
     EXPECT_EQ(to_string(complement), "FEFDFCFBFAF9F8F7F6F5F4F3");
     EXPECT_EQ(toShortString(complement), "FEFDFCFB...");
     EXPECT_EQ(*complement.data(), 0xfe);
@@ -252,8 +248,9 @@ TEST_F(BaseUintTest, complement)
     EXPECT_LT(ascending, complement);
     EXPECT_GT(complement, ascending);
 
-    complement = ascending;
-    EXPECT_EQ(complement, ascending);
+    BaseUInt96 assigned{complement};
+    assigned = ascending;
+    EXPECT_EQ(assigned, ascending);
 }
 
 TEST_F(BaseUintTest, zero)
@@ -306,12 +303,6 @@ TEST_F(BaseUintTest, increment_and_decrement)
 
 TEST_F(BaseUintTest, exclusive_or)
 {
-    BaseUInt96 zeroPlusOne{zero};
-    zeroPlusOne++;
-    BaseUInt96 zeroMinusOne{zero};
-    zeroMinusOne--;
-
-    BaseUInt96 const xored{zeroMinusOne ^ zeroPlusOne};
     EXPECT_EQ(to_string(xored), "FFFFFFFFFFFFFFFFFFFFFFFE") << to_string(xored);
     EXPECT_EQ(toShortString(xored), "FFFFFFFF...") << toShortString(xored);
 }
@@ -321,15 +312,10 @@ TEST_F(BaseUintTest, distinct_values_hash_into_a_set)
     // Requires hashing to work; four distinct values must stay four entries.
     std::unordered_set<BaseUInt96, HardenedHash<>> uset;
 
-    BaseUInt96 zeroPlusOne{zero};
-    zeroPlusOne++;
-    BaseUInt96 zeroMinusOne{zero};
-    zeroMinusOne--;
-
     uset.insert(ascending);
-    uset.insert(BaseUInt96{~ascending});
+    uset.insert(complement);
     uset.insert(zero);
-    uset.insert(BaseUInt96{zeroMinusOne ^ zeroPlusOne});
+    uset.insert(xored);
 
     EXPECT_EQ(uset.size(), 4);
 }
@@ -346,14 +332,14 @@ TEST_F(BaseUintTest, parse_hex_rejects_an_extra_leading_character)
 {
     BaseUInt96 parsed{zero};
 
-    EXPECT_FALSE(parsed.parseHex("A" + to_string(ascending)));
+    EXPECT_FALSE(parsed.parseHex(std::format("A{}", to_string(ascending))));
 }
 
 TEST_F(BaseUintTest, parse_hex_rejects_an_extra_trailing_character)
 {
     BaseUInt96 parsed{zero};
 
-    EXPECT_FALSE(parsed.parseHex(to_string(ascending) + "A"));
+    EXPECT_FALSE(parsed.parseHex(std::format("{}A", to_string(ascending))));
 }
 
 TEST_F(BaseUintTest, parse_hex_rejects_a_non_hex_character_at_any_position)

@@ -24,7 +24,7 @@ namespace xrpl::test::csf {
 
 namespace {
 
-beast::Journal
+[[nodiscard]] beast::Journal
 journal()
 {
     return beast::Journal{TestSink::instance()};
@@ -42,7 +42,7 @@ using ClockType = beast::AbstractClock<std::chrono::steady_clock> const;
 
 // Helper to convert steady_clock to a reasonable NetClock
 // This allows a single manual clock in the unit tests
-NetClock::time_point
+[[nodiscard]] NetClock::time_point
 toNetClock(ClockType const& c)
 {
     // We don't care about the actual epochs, but do want the
@@ -186,7 +186,7 @@ public:
         return toNetClock(c_);
     }
 
-    std::optional<Ledger>
+    [[nodiscard]] std::optional<Ledger>
     acquire(Ledger::ID const& id)
     {
         return oracle_.lookup(id);
@@ -210,31 +210,31 @@ public:
     {
     }
 
-    ValStatus
+    [[nodiscard]] ValStatus
     add(Validation const& v)
     {
         return tv_.add(v.nodeID(), v);
     }
 
-    TestValidations&
+    [[nodiscard]] TestValidations&
     vals()
     {
         return tv_;
     }
 
-    Node
+    [[nodiscard]] Node
     makeNode()
     {
         return Node(nextNodeId_++, clock_);
     }
 
-    ValidationParms
+    [[nodiscard]] ValidationParms
     parms() const
     {
         return p_;
     }
 
-    auto&
+    [[nodiscard]] auto&
     clock()
     {
         return clock_;

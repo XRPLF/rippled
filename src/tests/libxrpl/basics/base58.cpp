@@ -130,7 +130,7 @@ printAsInt(std::span<std::uint8_t> a, std::span<std::uint8_t> b)
 
 namespace multiprecision_utils {
 
-boost::multiprecision::checked_uint512_t
+[[nodiscard]] boost::multiprecision::checked_uint512_t
 toBoostMP(std::span<std::uint64_t> in)
 {
     boost::multiprecision::checked_uint512_t mbp = 0;
@@ -142,10 +142,10 @@ toBoostMP(std::span<std::uint64_t> in)
     return mbp;
 }
 
-std::vector<std::uint64_t>
+[[nodiscard]] std::vector<std::uint64_t>
 randomBigInt(std::uint8_t minSize = 1, std::uint8_t maxSize = 5)
 {
-    auto eng = randEngine();
+    auto& eng = randEngine();
     std::uniform_int_distribution<std::uint8_t> numCoeffDist(minSize, maxSize);
     std::uniform_int_distribution<std::uint64_t> dist;
     auto const numCoeff = numCoeffDist(eng);
@@ -163,8 +163,7 @@ struct Base58MultiprecisionTest : public ::testing::Test
 {
     static constexpr std::size_t kIters = 100000;
 
-    // Copied, as the original test did, so each case advances its own engine.
-    std::mt19937 eng{randEngine()};
+    std::mt19937& eng = randEngine();
     std::uniform_int_distribution<std::uint64_t> dist;
     std::uniform_int_distribution<std::uint64_t> dist1{1};
 };
@@ -292,7 +291,7 @@ TEST_F(Base58MultiprecisionTest, mul_reports_input_too_large)
 struct Base58FastMatchesRefTest : public ::testing::Test
 {
     static void
-    testRawEncode(std::span<std::uint8_t> const& b256Data)
+    testRawEncode(std::span<std::uint8_t> b256Data)
     {
         std::array<std::uint8_t, 64> b58ResultBuf[2];
         std::array<std::span<std::uint8_t>, 2> b58Result;
@@ -367,7 +366,7 @@ struct Base58FastMatchesRefTest : public ::testing::Test
     }
 
     static void
-    testTokenEncode(xrpl::TokenType const tokType, std::span<std::uint8_t> const& b256Data)
+    testTokenEncode(xrpl::TokenType const tokType, std::span<std::uint8_t> b256Data)
     {
         std::array<std::uint8_t, 64> b58ResultBuf[2];
         std::array<std::span<std::uint8_t>, 2> b58Result;
@@ -441,7 +440,7 @@ struct Base58FastMatchesRefTest : public ::testing::Test
     }
 
     static void
-    testIt(xrpl::TokenType const tokType, std::span<std::uint8_t> const& b256Data)
+    testIt(xrpl::TokenType const tokType, std::span<std::uint8_t> b256Data)
     {
         testRawEncode(b256Data);
         testTokenEncode(tokType, b256Data);

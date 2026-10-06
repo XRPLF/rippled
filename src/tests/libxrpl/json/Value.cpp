@@ -11,15 +11,43 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
+#include <format>
 #include <limits>
 #include <numbers>
 #include <optional>
+#include <ranges>
 #include <regex>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace xrpl {
+
+namespace {
+
+[[nodiscard]] json::Value
+testCopy(json::ValueType typ)
+{
+    json::Value val{typ};
+    json::Value const cpy{val};
+    EXPECT_EQ(val.type(), typ);
+    EXPECT_EQ(cpy.type(), typ);
+    return val;
+}
+
+[[nodiscard]] std::string
+repeated(std::string_view fragment, std::uint32_t count)
+{
+    return std::views::repeat(fragment, count) | std::views::join | std::ranges::to<std::string>();
+}
+
+constexpr std::uint32_t kMaxUInt = std::numeric_limits<std::uint32_t>::max();
+constexpr std::int32_t kMaxInt = std::numeric_limits<std::int32_t>::max();
+constexpr std::int32_t kMinInt = std::numeric_limits<std::int32_t>::min();
+constexpr std::uint64_t kUIntOverflow = std::uint64_t(kMaxUInt) + 1;
+
+}  // namespace
 
 TEST(JsonValue, limits)
 {
@@ -54,14 +82,6 @@ TEST(JsonValue, construct_and_compare_json_static_string)
 
 TEST(JsonValue, type_null)
 {
-    auto testCopy = [](json::ValueType typ) {
-        json::Value val{typ};
-        json::Value const cpy{val};
-        EXPECT_EQ(val.type(), typ);
-        EXPECT_EQ(cpy.type(), typ);
-        return val;
-    };
-
     json::Value const nullV{testCopy(json::ValueType::Null)};
     EXPECT_TRUE(nullV.isNull());
     EXPECT_FALSE(nullV.isBool());
@@ -79,14 +99,6 @@ TEST(JsonValue, type_null)
 
 TEST(JsonValue, type_int)
 {
-    auto testCopy = [](json::ValueType typ) {
-        json::Value val{typ};
-        json::Value const cpy{val};
-        EXPECT_EQ(val.type(), typ);
-        EXPECT_EQ(cpy.type(), typ);
-        return val;
-    };
-
     json::Value const intV{testCopy(json::ValueType::Int)};
     EXPECT_FALSE(intV.isNull());
     EXPECT_FALSE(intV.isBool());
@@ -104,14 +116,6 @@ TEST(JsonValue, type_int)
 
 TEST(JsonValue, type_uint)
 {
-    auto testCopy = [](json::ValueType typ) {
-        json::Value val{typ};
-        json::Value const cpy{val};
-        EXPECT_EQ(val.type(), typ);
-        EXPECT_EQ(cpy.type(), typ);
-        return val;
-    };
-
     json::Value const uintV{testCopy(json::ValueType::UInt)};
     EXPECT_FALSE(uintV.isNull());
     EXPECT_FALSE(uintV.isBool());
@@ -129,14 +133,6 @@ TEST(JsonValue, type_uint)
 
 TEST(JsonValue, type_real)
 {
-    auto testCopy = [](json::ValueType typ) {
-        json::Value val{typ};
-        json::Value const cpy{val};
-        EXPECT_EQ(val.type(), typ);
-        EXPECT_EQ(cpy.type(), typ);
-        return val;
-    };
-
     json::Value const realV{testCopy(json::ValueType::Real)};
     EXPECT_FALSE(realV.isNull());
     EXPECT_FALSE(realV.isBool());
@@ -154,14 +150,6 @@ TEST(JsonValue, type_real)
 
 TEST(JsonValue, type_string)
 {
-    auto testCopy = [](json::ValueType typ) {
-        json::Value val{typ};
-        json::Value const cpy{val};
-        EXPECT_EQ(val.type(), typ);
-        EXPECT_EQ(cpy.type(), typ);
-        return val;
-    };
-
     json::Value const stringV{testCopy(json::ValueType::String)};
     EXPECT_FALSE(stringV.isNull());
     EXPECT_FALSE(stringV.isBool());
@@ -203,14 +191,6 @@ TEST(JsonValue, type_static_string)
 
 TEST(JsonValue, type_bool)
 {
-    auto testCopy = [](json::ValueType typ) {
-        json::Value val{typ};
-        json::Value const cpy{val};
-        EXPECT_EQ(val.type(), typ);
-        EXPECT_EQ(cpy.type(), typ);
-        return val;
-    };
-
     json::Value const boolV{testCopy(json::ValueType::Boolean)};
     EXPECT_FALSE(boolV.isNull());
     EXPECT_TRUE(boolV.isBool());
@@ -228,14 +208,6 @@ TEST(JsonValue, type_bool)
 
 TEST(JsonValue, type_array)
 {
-    auto testCopy = [](json::ValueType typ) {
-        json::Value val{typ};
-        json::Value const cpy{val};
-        EXPECT_EQ(val.type(), typ);
-        EXPECT_EQ(cpy.type(), typ);
-        return val;
-    };
-
     json::Value const arrayV{testCopy(json::ValueType::Array)};
     EXPECT_FALSE(arrayV.isNull());
     EXPECT_FALSE(arrayV.isBool());
@@ -253,14 +225,6 @@ TEST(JsonValue, type_array)
 
 TEST(JsonValue, type_object)
 {
-    auto testCopy = [](json::ValueType typ) {
-        json::Value val{typ};
-        json::Value const cpy{val};
-        EXPECT_EQ(val.type(), typ);
-        EXPECT_EQ(cpy.type(), typ);
-        return val;
-    };
-
     json::Value const objectV{testCopy(json::ValueType::Object)};
     EXPECT_FALSE(objectV.isNull());
     EXPECT_FALSE(objectV.isBool());
@@ -655,7 +619,10 @@ TEST(JsonValue, bool)
 
 TEST(JsonValue, bad_json)
 {
-    char const* s(R"({"method":"ledger","params":[{"ledger_index":1e300}]})");
+    char const* s(R"JSON({
+        "method": "ledger",
+        "params": [{"ledger_index": 1e300}]
+    })JSON");
 
     json::Value j;
     json::Reader r;
@@ -665,12 +632,12 @@ TEST(JsonValue, bad_json)
 
 namespace {
 
-std::optional<json::Value>
+[[nodiscard]] std::optional<json::Value>
 parseValue(std::string const& doc)
 {
     json::Value j;
     json::Reader r;
-    if (!r.parse("{\"v\":" + doc + "}", j))
+    if (!r.parse(std::format(R"JSON({{"v": {}}})JSON", doc), j))
         return std::nullopt;
     return j["v"];
 }
@@ -716,32 +683,36 @@ TEST(JsonValue, parse_double_malformed)
 
 TEST(JsonValue, parses_integers_at_the_edges_of_the_32_bit_range)
 {
-    std::uint32_t const maxUInt = std::numeric_limits<std::uint32_t>::max();
-    std::int32_t const maxInt = std::numeric_limits<std::int32_t>::max();
-    std::int32_t const minInt = std::numeric_limits<std::int32_t>::min();
+    std::uint32_t const aUInt = kMaxUInt - 1978;
+    std::int32_t const aLargeInt = kMaxInt - 1978;
+    std::int32_t const aSmallInt = kMinInt + 1978;
 
-    std::uint32_t const aUInt = maxUInt - 1978;
-    std::int32_t const aLargeInt = maxInt - 1978;
-    std::int32_t const aSmallInt = minInt + 1978;
-
-    std::string json = "{\"max_uint\":" + std::to_string(maxUInt);
-    json += ",\"max_int\":" + std::to_string(maxInt);
-    json += ",\"min_int\":" + std::to_string(minInt);
-    json += ",\"a_uint\":" + std::to_string(aUInt);
-    json += ",\"a_large_int\":" + std::to_string(aLargeInt);
-    json += ",\"a_small_int\":" + std::to_string(aSmallInt);
-    json += "}";
+    std::string const json = std::format(
+        R"JSON({{
+            "max_uint": {},
+            "max_int": {},
+            "min_int": {},
+            "a_uint": {},
+            "a_large_int": {},
+            "a_small_int": {}
+        }})JSON",
+        kMaxUInt,
+        kMaxInt,
+        kMinInt,
+        aUInt,
+        aLargeInt,
+        aSmallInt);
 
     json::Value j1;
     json::Reader r1;
 
     EXPECT_TRUE(r1.parse(json, j1));
-    EXPECT_EQ(j1["max_uint"].asUInt(), maxUInt);
-    EXPECT_EQ(j1["max_uint"].asAbsUInt(), maxUInt);
-    EXPECT_EQ(j1["max_int"].asInt(), maxInt);
-    EXPECT_EQ(j1["max_int"].asAbsUInt(), maxInt);
-    EXPECT_EQ(j1["min_int"].asInt(), minInt);
-    EXPECT_EQ(j1["min_int"].asAbsUInt(), static_cast<std::int64_t>(minInt) * -1);
+    EXPECT_EQ(j1["max_uint"].asUInt(), kMaxUInt);
+    EXPECT_EQ(j1["max_uint"].asAbsUInt(), kMaxUInt);
+    EXPECT_EQ(j1["max_int"].asInt(), kMaxInt);
+    EXPECT_EQ(j1["max_int"].asAbsUInt(), kMaxInt);
+    EXPECT_EQ(j1["min_int"].asInt(), kMinInt);
+    EXPECT_EQ(j1["min_int"].asAbsUInt(), static_cast<std::int64_t>(kMinInt) * -1);
     EXPECT_EQ(j1["a_uint"].asUInt(), aUInt);
     EXPECT_EQ(j1["a_uint"].asAbsUInt(), aUInt);
     EXPECT_GT(j1["a_uint"], aLargeInt);
@@ -757,13 +728,7 @@ TEST(JsonValue, parses_integers_at_the_edges_of_the_32_bit_range)
 
 TEST(JsonValue, rejects_an_unsigned_value_one_past_the_maximum)
 {
-    std::uint32_t const maxUInt = std::numeric_limits<std::uint32_t>::max();
-
-    std::uint64_t const overflow = std::uint64_t(maxUInt) + 1;
-
-    std::string json = "{\"overflow\":";
-    json += std::to_string(overflow);
-    json += "}";
+    std::string const json = std::format(R"JSON({{"overflow": {}}})JSON", kUIntOverflow);
 
     json::Value j2;
     json::Reader r2;
@@ -773,13 +738,9 @@ TEST(JsonValue, rejects_an_unsigned_value_one_past_the_maximum)
 
 TEST(JsonValue, rejects_a_signed_value_one_below_the_minimum)
 {
-    std::int32_t const minInt = std::numeric_limits<std::int32_t>::min();
+    std::int64_t const underflow = std::int64_t(kMinInt) - 1;
 
-    std::int64_t const underflow = std::int64_t(minInt) - 1;
-
-    std::string json = "{\"underflow\":";
-    json += std::to_string(underflow);
-    json += "}";
+    std::string const json = std::format(R"JSON({{"underflow": {}}})JSON", underflow);
 
     json::Value j3;
     json::Reader r3;
@@ -789,11 +750,7 @@ TEST(JsonValue, rejects_a_signed_value_one_below_the_minimum)
 
 TEST(JsonValue, converting_a_string_valued_json_number)
 {
-    std::uint32_t const maxUInt = std::numeric_limits<std::uint32_t>::max();
-
-    std::uint64_t const overflow = std::uint64_t(maxUInt) + 1;
-
-    json::Value intString{std::to_string(overflow)};
+    json::Value intString{std::to_string(kUIntOverflow)};
     EXPECT_THROW([&] { return intString.asUInt(); }(), beast::BadLexicalCast);
     EXPECT_THROW([&] { return intString.asAbsUInt(); }(), json::Error);
 
@@ -972,7 +929,7 @@ TEST(JsonValue, compact)
 {
     json::Value j;
     json::Reader r;
-    char const* s(R"({"array":[{"12":23},{},null,false,0.5]})");
+    char const* s(R"JSON({"array": [{"12": 23}, {}, null, false, 0.5]})JSON");
 
     auto countLines = [](std::string const& str) {
         return 1 + std::count_if(str.begin(), str.end(), [](char c) { return c == '\n'; });
@@ -1062,7 +1019,8 @@ TEST(JsonValue, converts_uint)
 
 TEST(JsonValue, converts_real)
 {
-    // real
+    // We have json::ValueType::Real but json::Value::asDouble.
+    // TODO: What's the thinking here?
     json::Value const val = 2.0;
     EXPECT_TRUE(val.isDouble());
     // val.asCString() should trigger an assertion failure
@@ -1431,14 +1389,11 @@ TEST(JsonValue, nest_limits)
 {
     json::Reader r;
     {
-        auto nest = [](std::uint32_t depth) -> std::string {
-            std::string s = "{";
-            for (std::uint32_t i{1}; i <= depth; ++i)
-                s += "\"obj\":{";
-            for (std::uint32_t i{1}; i <= depth; ++i)
-                s += "}";
-            s += "}";
-            return s;
+        auto nest = [](std::uint32_t depth) {
+            return std::format(
+                R"JSON({{ {}{} }})JSON",
+                repeated(R"JSON("obj": {)JSON", depth),
+                repeated("}", depth));
         };
 
         {
@@ -1456,15 +1411,20 @@ TEST(JsonValue, nest_limits)
         }
     }
 
-    auto nest = [](std::uint32_t depth) -> std::string {
-        std::string s = "{";
-        for (std::uint32_t i{1}; i <= depth; ++i)
-            s += "\"array\":[{";
-        for (std::uint32_t i{1}; i <= depth; ++i)
-            s += "]}";
-        s += "}";
-        return s;
+    auto nest = [](std::uint32_t depth) {
+        return std::format(
+            R"JSON({{ {}{} }})JSON",
+            repeated(R"JSON("array": [{)JSON", depth),
+            repeated("}]", depth));
     };
+
+    {
+        // Within array nest limit
+        auto json{nest(std::min(10u, json::Reader::kNestLimit))};
+        json::Value j;
+        EXPECT_TRUE(r.parse(json, j));
+    }
+
     {
         // Exceed array nest limit
         auto json{nest(json::Reader::kNestLimit + 1)};

@@ -23,6 +23,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -101,7 +102,7 @@ struct SHAMapBackingMode
 constexpr SHAMapBackingMode kBackedMode{.backed = true, .testName = "backed"};
 constexpr SHAMapBackingMode kUnbackedMode{.backed = false, .testName = "unbacked"};
 
-std::string
+[[nodiscard]] std::string
 shamapBackingModeName(::testing::TestParamInfo<SHAMapBackingMode> const& info)
 {
     return std::string{info.param.testName};
@@ -112,7 +113,7 @@ class SHAMapTest : public ::testing::TestWithParam<SHAMapBackingMode>
 protected:
     beast::Journal const j_{TestSink::instance()};
 
-    static Buffer
+    [[nodiscard]] static Buffer
     intToVuc(std::uint8_t v)
     {
         Buffer vuc{32};
@@ -138,6 +139,21 @@ protected:
         map.invariants();
         if (!GetParam().backed)
             map.setUnbacked();
+    }
+
+    // Leaves the map holding kH1, kH3 and kH4, reached by deleting kH2 (which
+    // collapses an inner node) before kH3 is added.
+    static void
+    addThenDeleteAndReAdd(SHAMap& map)
+    {
+        map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(kH2, intToVuc(2)));
+        map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(kH1, intToVuc(1)));
+        map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(kH4, intToVuc(4)));
+        map.invariants();
+        map.delItem(kH2);
+        map.invariants();
+        map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(kH3, intToVuc(3)));
+        map.invariants();
     }
 };
 
@@ -171,18 +187,10 @@ TEST_P(SHAMapTest, traverse_after_add_and_delete)
     applyBackingMode(sMap);
 
     auto i1 = makeShamapitem(kH1, intToVuc(1));
-    auto i2 = makeShamapitem(kH2, intToVuc(2));
     auto i3 = makeShamapitem(kH3, intToVuc(3));
     auto i4 = makeShamapitem(kH4, intToVuc(4));
 
-    sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i2));
-    sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i1));
-    sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i4));
-    sMap.invariants();
-    sMap.delItem(i2->key());
-    sMap.invariants();
-    sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i3));
-    sMap.invariants();
+    addThenDeleteAndReAdd(sMap);
 
     auto i = sMap.begin();
     auto e = sMap.end();
@@ -200,14 +208,7 @@ TEST_P(SHAMapTest, a_snapshot_is_unaffected_by_later_edits)
     tests::TestNodeFamily f{j_};
     SHAMap sMap{SHAMapType::FREE, f};
     applyBackingMode(sMap);
-
-    auto i1 = makeShamapitem(kH1, intToVuc(1));
-    auto i3 = makeShamapitem(kH3, intToVuc(3));
-    auto i4 = makeShamapitem(kH4, intToVuc(4));
-    sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i1));
-    sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i3));
-    sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i4));
-    sMap.invariants();
+    addThenDeleteAndReAdd(sMap);
 
     SHAMapHash const mapHash = sMap.getHash();
     std::shared_ptr<SHAMap> const map2 = sMap.snapShot(false);
@@ -326,14 +327,14 @@ protected:
 
     // Keys that share a long prefix and then fan out across distinct branches, so the deeper inner
     // nodes have several children and traversal must descend many levels.
-    static std::vector<UInt256>
+    [[nodiscard]] static std::vector<UInt256>
     deepFanOutKeys()
     {
         std::vector<UInt256> keys;
         for (unsigned int branch = 0; branch < SHAMap::kBranchFactor; ++branch)
         {
             // Vary the 6th nibble, keeping the first five identical.
-            auto text = std::string("abcde") + "0123456789abcdef"[branch];
+            auto text = std::format("abcde{}", "0123456789abcdef"[branch]);
             text.append(64 - text.size(), '7');
             keys.emplace_back(std::string_view{text});
         }
@@ -344,13 +345,13 @@ protected:
     // chain of single-child inner nodes down to depth 63 with the leaves as siblings at depth 64.
     // This exercises kLeafDepth directly, unlike deepFanOutKeys() above, whose fan-out at the 6th
     // nibble keeps the tree only about 6 levels deep.
-    static std::vector<UInt256>
+    [[nodiscard]] static std::vector<UInt256>
     deepFanOutKeysAtLeafDepth()
     {
         std::vector<UInt256> keys;
         for (unsigned int branch = 0; branch < SHAMap::kBranchFactor; ++branch)
         {
-            auto text = std::string(63, 'a') + "0123456789abcdef"[branch];
+            auto const text = std::format("{}{}", std::string(63, 'a'), "0123456789abcdef"[branch]);
             keys.emplace_back(std::string_view{text});
         }
         return keys;
@@ -469,7 +470,7 @@ TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys)
     // the first key, and 'f' padded with 'f' lands above the last.
     for (char const nibble : {'0', 'f'})
     {
-        auto text = std::string("abcde") + nibble;
+        auto text = std::format("abcde{}", nibble);
         text.append(64 - text.size(), nibble);
         UInt256 const probe{std::string_view{text}};
 
@@ -701,7 +702,7 @@ TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys_at_leaf_dept
         // over the whole key block -- driving belowHelper's First and Last descents respectively.
         for (char const nibble : {'9', 'b'})
         {
-            auto text = std::string(divergeAt, 'a') + nibble;
+            auto text = std::format("{}{}", std::string(divergeAt, 'a'), nibble);
             text.append(64 - text.size(), '0');
             UInt256 const probe{std::string_view{text}};
 
@@ -855,8 +856,8 @@ TEST_F(SHAMapPathProof, legitimate_deep_path_is_sixty_five_elements)
     SHAMap map{SHAMapType::FREE, f};
     map.setUnbacked();
 
-    auto const kA = UInt256{std::string_view{std::string(63, 'a') + "1"}};
-    auto const kB = UInt256{std::string_view{std::string(63, 'a') + "2"}};
+    auto const kA = UInt256{std::string_view{std::format("{}1", std::string(63, 'a'))}};
+    auto const kB = UInt256{std::string_view{std::format("{}2", std::string(63, 'a'))}};
 
     for (auto const& k : {kA, kB})
     {
@@ -925,7 +926,7 @@ TEST_F(SHAMapPathProof, all_inner_path_at_leaf_depth_is_rejected)
  * @return the path (deepest element first) and the forged root hash, or an empty path if the leaf
  *         blob does not parse.
  */
-static std::pair<std::vector<Blob>, UInt256>
+[[nodiscard]] static std::pair<std::vector<Blob>, UInt256>
 forgeRootOverLeaf(Blob const& leafBlob, UInt256 const& key)
 {
     auto leaf = SHAMapTreeNode::makeFromWire(makeSlice(leafBlob));
