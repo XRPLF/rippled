@@ -9,6 +9,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/LedgerHashesEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -51,12 +52,12 @@ hasExpired(
     std::optional<std::uint32_t> const& exp,
     ExpiryComparison comparison)
 {
-    using d = NetClock::duration;
-    using tp = NetClock::time_point;
+    using D = NetClock::duration;
+    using Tp = NetClock::time_point;
 
     if (!exp)
         return false;
-    auto const boundary = tp{d{*exp}};
+    auto const boundary = Tp{D{*exp}};
     return comparison == ExpiryComparison::Inclusive  //
         ? view.parentCloseTime() >= boundary
         : view.parentCloseTime() > boundary;
@@ -267,7 +268,7 @@ areCompatible(
 
 bool
 areCompatible(
-    uint256 const& validHash,
+    UInt256 const& validHash,
     LedgerIndex validIndex,
     ReadView const& testLedger,
     beast::Journal::Stream& s,
@@ -305,10 +306,10 @@ areCompatible(
     return ret;
 }
 
-std::set<uint256>
+std::set<UInt256>
 getEnabledAmendments(ReadView const& view)
 {
-    std::set<uint256> amendments;
+    std::set<UInt256> amendments;
 
     if (auto const sle = view.read(keylet::amendments()))
     {
@@ -322,29 +323,29 @@ getEnabledAmendments(ReadView const& view)
     return amendments;
 }
 
-majorityAmendments_t
+MajorityAmendmentsT
 getMajorityAmendments(ReadView const& view)
 {
-    majorityAmendments_t ret;
+    MajorityAmendmentsT ret;
 
     if (auto const sle = view.read(keylet::amendments()))
     {
         if (sle->isFieldPresent(sfMajorities))
         {
-            using tp = NetClock::time_point;
-            using d = tp::duration;
+            using Tp = NetClock::time_point;
+            using D = Tp::duration;
 
             auto const majorities = sle->getFieldArray(sfMajorities);
 
             for (auto const& m : majorities)
-                ret[m.getFieldH256(sfAmendment)] = tp(d(m.getFieldU32(sfCloseTime)));
+                ret[m.getFieldH256(sfAmendment)] = Tp(D(m.getFieldU32(sfCloseTime)));
         }
     }
 
     return ret;
 }
 
-std::optional<uint256>
+std::optional<UInt256>
 hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 {
     // Easy cases...
@@ -361,17 +362,16 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     if (int const diff = ledger.seq() - seq; diff <= 256)
     {
         // Within 256...
-        auto const hashIndex = ledger.read(keylet::skip());
+        LedgerHashesEntryR const hashIndex(ledger, journal);
         if (hashIndex)
         {
             XRPL_ASSERT(
                 hashIndex->getFieldU32(sfLastLedgerSequence) == (ledger.seq() - 1),
                 "xrpl::hashOfSeq : matching ledger sequence");
-            STVector256 vec = hashIndex->getFieldV256(sfHashes);
-            if (vec.size() >= diff)
-                return vec[vec.size() - diff];
+            if (auto const hash = hashIndex.hashAt(diff - 1))
+                return hash;
             JLOG(journal.warn()) << "Ledger " << ledger.seq() << " missing hash for " << seq << " ("
-                                 << vec.size() << "," << diff << ")";
+                                 << hashIndex->getFieldV256(sfHashes).size() << "," << diff << ")";
         }
         else
         {
@@ -387,16 +387,14 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     }
 
     // in skiplist
-    auto const hashIndex = ledger.read(keylet::skip(seq));
+    LedgerHashesEntryR const hashIndex(keylet::skip(seq), ledger, journal);
     if (hashIndex)
     {
         auto const lastSeq = hashIndex->getFieldU32(sfLastLedgerSequence);
         XRPL_ASSERT(lastSeq >= seq, "xrpl::hashOfSeq : minimum last ledger");
         XRPL_ASSERT((lastSeq & 0xff) == 0, "xrpl::hashOfSeq : valid last ledger");
-        auto const diff = (lastSeq - seq) >> 8;
-        STVector256 vec = hashIndex->getFieldV256(sfHashes);
-        if (vec.size() > diff)
-            return vec[vec.size() - diff - 1];
+        if (auto const hash = hashIndex.hashAt((lastSeq - seq) >> 8))
+            return hash;
     }
     JLOG(journal.warn()) << "Can't get seq " << seq << " from " << ledger.seq() << " error";
     return std::nullopt;
@@ -466,10 +464,10 @@ canWithdraw(
     ReadView const& view,
     AccountID const& from,
     AccountID const& to,
-    SLE::const_ref toSle,
+    SLE::ConstRef toSle,
     STAmount const& amount,
     bool hasDestinationTag,
-    std::optional<std::vector<uint256>> const& credentialIDs)
+    std::optional<std::vector<UInt256>> const& credentialIDs)
 {
     if (auto const ret = checkDestinationAndTag(toSle, hasDestinationTag))
         return ret;
@@ -514,7 +512,7 @@ canWithdraw(
     AccountID const& to,
     STAmount const& amount,
     bool hasDestinationTag,
-    std::optional<std::vector<uint256>> const& credentialIDs)
+    std::optional<std::vector<UInt256>> const& credentialIDs)
 {
     auto const toSle = view.read(keylet::account(to));
 
@@ -543,12 +541,19 @@ doWithdraw(
 {
     auto const dstSle = ctx.view.read(keylet::account(dstAcct));
 
-    // Create trust line or MPToken for the receiving account
+    // Create a trust line or MPToken for a self-destination only when there
+    // is a payout to credit. Post-fixCleanup3_4_0, a zero-value withdraw
+    // (e.g. share redemption from a fully impaired vault) must not insert
+    // an empty holding: that records a one-sided zero delta and can also
+    // create+delete MPTokens in the same transaction.
     if (dstAcct == senderAcct)
     {
-        if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset(), j);
-            !isTesSuccess(ter) && ter != tecDUPLICATE)
-            return ter;
+        if (amount > beast::kZero || !ctx.view.rules().enabled(fixCleanup3_4_0))
+        {
+            if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset(), j);
+                !isTesSuccess(ter) && ter != tecDUPLICATE)
+                return ter;
+        }
     }
     else
     {
@@ -596,7 +601,7 @@ cleanupOnAccountDelete(
     // Delete all the entries in the account directory.
     SLE::pointer sleDirNode{};
     unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::kZero};
+    UInt256 dirEntry{beast::kZero};
     std::uint32_t deleted = 0;
 
     if (view.exists(ownerDirKeylet) &&

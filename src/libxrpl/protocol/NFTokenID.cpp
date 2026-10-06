@@ -37,14 +37,14 @@ canHaveNFTokenID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& 
     return true;
 }
 
-std::optional<uint256>
+std::optional<UInt256>
 getNFTokenIDFromPage(TxMeta const& transactionMeta)
 {
     // The metadata does not make it obvious which NFT was added.  To figure
     // that out we gather up all of the previous NFT IDs and all of the final
     // NFT IDs and compare them to find what changed.
-    std::vector<uint256> prevIDs;
-    std::vector<uint256> finalIDs;
+    std::vector<UInt256> prevIDs;
+    std::vector<UInt256> finalIDs;
 
     for (STObject const& node : transactionMeta.getNodes())
     {
@@ -108,10 +108,10 @@ getNFTokenIDFromPage(TxMeta const& transactionMeta)
     return *diff.in1;
 }
 
-std::vector<uint256>
+std::vector<UInt256>
 getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta)
 {
-    std::vector<uint256> tokenIDResult;
+    std::vector<UInt256> tokenIDResult;
     for (STObject const& node : transactionMeta.getNodes())
     {
         if (node.getFieldU16(sfLedgerEntryType) != ltNFTOKEN_OFFER ||
@@ -143,20 +143,20 @@ insertNFTokenID(
     // We extract the NFTokenID from metadata by comparing affected nodes
     if (auto const type = transaction->getTxnType(); type == ttNFTOKEN_MINT)
     {
-        std::optional<uint256> result = getNFTokenIDFromPage(transactionMeta);
+        std::optional<UInt256> result = getNFTokenIDFromPage(transactionMeta);
         if (result.has_value())
             response[jss::nftoken_id] = to_string(result.value());
     }
     else if (type == ttNFTOKEN_ACCEPT_OFFER)
     {
-        std::vector<uint256> result = getNFTokenIDFromDeletedOffer(transactionMeta);
+        std::vector<UInt256> result = getNFTokenIDFromDeletedOffer(transactionMeta);
 
         if (!result.empty())
             response[jss::nftoken_id] = to_string(result.front());
     }
     else if (type == ttNFTOKEN_CANCEL_OFFER)
     {
-        std::vector<uint256> const result = getNFTokenIDFromDeletedOffer(transactionMeta);
+        std::vector<UInt256> const result = getNFTokenIDFromDeletedOffer(transactionMeta);
 
         response[jss::nftoken_ids] = json::Value(json::ValueType::Array);
         for (auto const& nftID : result)

@@ -72,8 +72,8 @@ protected:
             loc.line());
     }
 
-    using d = NetClock::duration;
-    using tp = NetClock::time_point;
+    using D = NetClock::duration;
+    using Tp = NetClock::time_point;
 
     // Vault holds an Env& so no default initializer is possible; the
     // struct is always aggregate-initialized by makeClosedEndedVault.

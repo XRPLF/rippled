@@ -42,13 +42,13 @@ public:
     STTx const& tx;
     Rules const rules;
     ApplyFlags flags;
-    std::optional<uint256 const> parentBatchId;
+    std::optional<UInt256 const> parentBatchId;
     beast::Journal const j;
 
     PreflightContext(
         ServiceRegistry& registry,
         STTx const& tx,
-        uint256 parentBatchId,
+        UInt256 parentBatchId,
         Rules rules,
         ApplyFlags flags,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
@@ -60,6 +60,10 @@ public:
         , j(j)
     {
         XRPL_ASSERT((flags & TapBatch) == TapBatch, "Batch apply flag should be set");
+        XRPL_ASSERT_IF(
+            (flags & TapProposal) != TapNone,
+            (flags & TapDryRun) != TapNone,
+            "xrpl::PreflightContext : proposal preflight implies dry run");
     }
 
     PreflightContext(
@@ -71,6 +75,10 @@ public:
         : registry(registry), tx(tx), rules(std::move(rules)), flags(flags), j(j)
     {
         XRPL_ASSERT((flags & TapBatch) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT_IF(
+            (flags & TapProposal) != TapNone,
+            (flags & TapDryRun) != TapNone,
+            "xrpl::PreflightContext : proposal preflight implies dry run");
     }
 
     PreflightContext&
@@ -88,7 +96,7 @@ public:
     TER preflightResult;
     ApplyFlags flags;
     STTx const& tx;
-    std::optional<uint256 const> const parentBatchId;
+    std::optional<UInt256 const> const parentBatchId;
     beast::Journal const j;
 
     PreclaimContext(
@@ -97,7 +105,7 @@ public:
         TER preflightResult,
         STTx const& tx,
         ApplyFlags flags,
-        std::optional<uint256> parentBatchId,
+        std::optional<UInt256> parentBatchId,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : registry(registry)
         , view(view)
@@ -259,6 +267,13 @@ public:
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx, std::uint32_t extraBaseFeeMultiplier);
 
+    // Exposed for invariant checks (e.g. ValidVault) that need to know which
+    // ledger entry actually pays a transaction's fee, distinguishing an
+    // ordinary sender, a delegate, and pre-funded vs. co-signed fee
+    // sponsorship.
+    static FeePayer
+    getFeePayer(ReadView const& view, STTx const& tx);
+
     /* Do NOT define an invokePreflight function in a derived class.
        Instead, define:
 
@@ -364,7 +379,7 @@ public:
     ticketDelete(
         ApplyView& view,
         AccountID const& account,
-        uint256 const& ticketIndex,
+        UInt256 const& ticketIndex,
         beast::Journal j);
 
 protected:
@@ -397,7 +412,7 @@ protected:
      *                  to detect deletions.
      */
     virtual void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) = 0;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) = 0;
 
     /**
      * Check transaction-specific post-conditions after all entries have
@@ -445,7 +460,7 @@ protected:
     checkSign(
         ReadView const& view,
         ApplyFlags flags,
-        std::optional<uint256 const> const& parentBatchId,
+        std::optional<UInt256 const> const& parentBatchId,
         AccountID const& idAccount,
         STObject const& sigObject,
         beast::Journal const j,
@@ -525,9 +540,6 @@ private:
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
 
-    static FeePayer
-    getFeePayer(ReadView const& view, STTx const& tx);
-
     TER
     consumeSeqProxy(SLE::pointer const& sleAccount);
     TER
@@ -536,7 +548,7 @@ private:
     std::tuple<TER, XRPAmount, bool>
     processPersistentChanges(TER result, XRPAmount fee);
 
-    void trapTransaction(uint256) const;
+    void trapTransaction(UInt256) const;
 
     /**
      * Performs early sanity checks on the account and fee fields.
@@ -578,7 +590,7 @@ private:
      * ordering is enforced.
      */
     void
-    visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) final
+    visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) final
     {
         visitInvariantEntry(isDelete, before, after);
     }
