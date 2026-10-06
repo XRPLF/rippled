@@ -41,7 +41,7 @@ Development tooling:
      /nix/store/y44vpziwbzfm8020dzlqqbybyyy7lb6g-file-5.48/bin/file
   ✅ jq
      jq-1.8.2
-     /opt/homebrew/Cellar/jq/1.8.2/bin/jq
+     /nix/store/wm7v59a2lhj1w2k8jz53spcs1iizm9lv-jq-1.8.2-bin/bin/jq
   ✅ less
      less 710 (PCRE2 regular expressions)
      /nix/store/3yn3dx5fwg5i0inqqzwnxq7f6lwhpjqa-less-710/bin/less
