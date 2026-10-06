@@ -193,6 +193,11 @@ PaymentChannelFund::doApply()
         // than what the source paid.
         if (!isExactSum(chanAmt, amount))
             return tecPRECISION_LOSS;
+
+        // The unclaimed remainder sfAmount - sfBalance must stay exact so
+        // that close refunds exactly what was not paid out.
+        if (!isExactDifference(chanAmt + amount, (*slep)[sfBalance]))
+            return tecPRECISION_LOSS;
     }
 
     if (isXRP(amount))

@@ -224,6 +224,13 @@ PaymentChannelClaim::doApply()
             return tecUNFUNDED_PAYMENT;
         }
 
+        // The payout reqBalance - sfBalance and the unclaimed remainder
+        // sfAmount - reqBalance must both be exact so that the destination
+        // and the close refund receive exactly what sfBalance records.
+        if (!isExactDifference(chanFunds, reqBalance) ||
+            !isExactDifference(reqBalance, chanBalance))
+            return tecPRECISION_LOSS;
+
         auto const sled = ctx_.view().peek(keylet::account(dst));
         if (!sled)
             return tecNO_DST;

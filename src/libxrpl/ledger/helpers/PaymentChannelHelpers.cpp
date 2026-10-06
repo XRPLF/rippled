@@ -72,6 +72,9 @@ closeChannel(
 
     XRPL_ASSERT(
         (*slep)[sfAmount] >= (*slep)[sfBalance], "xrpl::closeChannel : minimum channel amount");
+    XRPL_ASSERT(
+        isExactDifference((*slep)[sfAmount], (*slep)[sfBalance]),
+        "xrpl::closeChannel : exact refund");
 
     auto const reqDelta = (*slep)[sfAmount] - (*slep)[sfBalance];
     auto const& issuer = reqDelta.getIssuer();

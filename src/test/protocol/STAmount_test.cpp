@@ -1104,6 +1104,115 @@ public:
     }
 
     void
+    testIsExactDifference()
+    {
+        testcase("is exact difference");
+
+        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+        MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+
+        // Exact IOU difference
+        {
+            STAmount const amt1(usd, 1500);
+            STAmount const amt2(usd, 500);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == true);
+        }
+
+        // Exact IOU difference with a zero subtrahend
+        {
+            STAmount const amt1(usd, 15, -19);
+            STAmount const amt2(usd, 0);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == true);
+        }
+
+        // Exact IOU difference of equal operands
+        {
+            STAmount const amt1(usd, 4000);
+            BEAST_EXPECT(isExactDifference(amt1, amt1) == true);
+        }
+
+        // IOU difference that rounds to a different nonzero decrease
+        {
+            STAmount const amt1(usd, std::uint64_t{1234567890123456});
+            STAmount const amt2(usd, 600025, -2);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == false);
+        }
+
+        // IOU difference that drops a dust subtrahend: 1 - 1.5e-18 rounds to
+        // 1 and 1 + 1.5e-18 rounds back to 1, so only the minuend minus the
+        // difference exposes the loss
+        {
+            STAmount const amt1(usd, 1);
+            STAmount const amt2(usd, 15, -19);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == false);
+        }
+
+        // IOU difference that drops a dust minuend: 1.5e-18 - 1 rounds to -1
+        // and 1.5e-18 - (-1) rounds back to 1, so only the difference plus
+        // the subtrahend exposes the loss
+        {
+            STAmount const amt1(usd, 15, -19);
+            STAmount const amt2(usd, 1);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == false);
+        }
+
+        // IOU difference whose check overflows: max - 1.5e80 rounds half to
+        // even to 9999999999999998e80, and adding 1.5e80 back rounds past the
+        // largest IOU value, so the difference is not exact
+        {
+            STAmount const max(usd, STAmount::kMaxValue, STAmount::kMaxOffset);
+            STAmount const claw(usd, 15, 79);
+            STAmount const diff = max - claw;
+            BEAST_EXPECT(diff == STAmount(usd, std::uint64_t{9999999999999998}, 80));
+            try
+            {
+                auto _ = diff + claw;
+                BEAST_EXPECT(false);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECT(e.what() == std::string("value overflow"));
+            }
+            BEAST_EXPECT(isExactDifference(max, claw) == false);
+        }
+
+        // Exact XRP difference
+        {
+            STAmount const amt1(XRPAmount(1500));
+            STAmount const amt2(XRPAmount(500));
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == true);
+        }
+
+        // XRP underflow
+        {
+            STAmount const amt1(XRPAmount(1));
+            STAmount const amt2(XRPAmount(2));
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == false);
+        }
+
+        // Exact MPT difference
+        {
+            STAmount const amt1(mpt, 1500);
+            STAmount const amt2(mpt, 500);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == true);
+        }
+
+        // MPT underflow
+        {
+            STAmount const amt1(mpt, 1);
+            STAmount const amt2(mpt, 2);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == false);
+        }
+
+        // Not comparable
+        {
+            STAmount const amt1(XRPAmount(1));
+            STAmount const amt2(usd, 1);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == false);
+        }
+    }
+
+    void
     testMPTRateRounding()
     {
         testcase("MPT transfer rate rounding uses Number arithmetic");
@@ -1459,6 +1568,7 @@ public:
         testCanAddIOU();
         testCanAddMPT();
         testIsExactSum();
+        testIsExactDifference();
         testMPTRateRounding();
         testCanSubtractXRP();
         testCanSubtractIOU();
