@@ -24,10 +24,12 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <sys/stat.h>
 #include <tools/validator-keys/OwnerOnlyFile.h>
 
 #include <algorithm>
 #include <array>
+#include <cerrno>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -288,13 +290,19 @@ SigningKeys::writeToFile(std::filesystem::path const& keyFile, OwnerOnlyFile::Ex
         }
     }
 
-    std::error_code ec;
     if (auto const parent = keyFile.parent_path(); !parent.empty())
     {
-        // A directory made here is the owner's alone.
-        if (fs::create_directories(parent, ec) && !ec)
-            fs::permissions(parent, fs::perms::owner_all, ec);
-        if (ec || !fs::is_directory(parent))
+        // Each missing directory is made owner-only by mkdir itself; existing ones stay as
+        // they are.
+        fs::path made;
+        for (auto const& component : parent)
+        {
+            made /= component;
+            if (::mkdir(made.c_str(), S_IRWXU) != 0 && errno != EEXIST)
+                throw std::runtime_error("Cannot create directory: " + parent.string());
+        }
+        std::error_code ec;
+        if (!fs::is_directory(parent, ec))
             throw std::runtime_error("Cannot create directory: " + parent.string());
     }
 
