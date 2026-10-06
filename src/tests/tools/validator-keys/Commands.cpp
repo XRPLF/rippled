@@ -110,7 +110,11 @@ public:
     explicit HeldDirectory(std::filesystem::path const& dir) : dir_(::opendir(dir.c_str()))
     {
         if (dir_ == nullptr || ::flock(::dirfd(dir_), LOCK_EX) != 0)
+        {
+            // The destructor does not run when the constructor throws.
+            release();
             throw std::runtime_error("cannot lock " + dir.string());
+        }
     }
 
     ~HeldDirectory()
