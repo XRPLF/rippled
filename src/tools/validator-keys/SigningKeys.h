@@ -8,6 +8,8 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/server/Manifest.h>
 
+#include <tools/validator-keys/OwnerOnlyFile.h>
+
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -138,11 +140,15 @@ public:
      * is replaced whole, so a failed write leaves the previous content.
      *
      * @param keyFile Path to file to write
+     * @param existing `Refuse` to create a new key file only
      *
-     * @throws std::runtime_error if the file cannot be written
+     * @throws std::runtime_error if the file cannot be written, or with
+     *         `Existing::Refuse` it exists
      */
     void
-    writeToFile(std::filesystem::path const& keyFile) const;
+    writeToFile(
+        std::filesystem::path const& keyFile,
+        OwnerOnlyFile::Existing existing = OwnerOnlyFile::Existing::Replace) const;
 
     /**
      * Starts a token: fixes the next manifest's contents and returns the

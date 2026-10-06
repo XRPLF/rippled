@@ -259,7 +259,8 @@ SigningKeys::makeSigningKeys(std::filesystem::path const& keyFile)
 }
 
 void
-SigningKeys::writeToFile(std::filesystem::path const& keyFile) const
+SigningKeys::writeToFile(std::filesystem::path const& keyFile, OwnerOnlyFile::Existing existing)
+    const
 {
     namespace fs = std::filesystem;
 
@@ -297,7 +298,7 @@ SigningKeys::writeToFile(std::filesystem::path const& keyFile) const
             throw std::runtime_error("Cannot create directory: " + parent.string());
     }
 
-    OwnerOnlyFile file(keyFile, "key file");
+    OwnerOnlyFile file(keyFile, "key file", existing);
     file.write(jv.toStyledString());
     file.commit();
 }

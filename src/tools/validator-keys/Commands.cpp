@@ -208,13 +208,6 @@ nodePublic(SigningKeys const& keys)
 }
 
 void
-refuseExisting(std::filesystem::path const& keyFile)
-{
-    if (std::filesystem::exists(keyFile))
-        throw std::runtime_error("Refusing to overwrite existing key file: " + keyFile.string());
-}
-
-void
 storedNotice(std::filesystem::path const& keyFile, std::ostream& out)
 {
     out << "Validator keys stored in " << keyFile.string()
@@ -287,9 +280,8 @@ emitAttestation(SigningKeys const& keys, Context& ctx)
 int
 cmdCreateKeys(Args const&, Context& ctx)
 {
-    refuseExisting(ctx.options.keyFile);
     SigningKeys const keys(KeyType::Ed25519);
-    keys.writeToFile(ctx.options.keyFile);
+    keys.writeToFile(ctx.options.keyFile, OwnerOnlyFile::Existing::Refuse);
     storedNotice(ctx.options.keyFile, ctx.out);
     return EXIT_SUCCESS;
 }
@@ -297,13 +289,12 @@ cmdCreateKeys(Args const&, Context& ctx)
 int
 cmdCreateExternal(Args const& args, Context& ctx)
 {
-    refuseExisting(ctx.options.keyFile);
     auto const publicKey = parsePublicKey(args[0]);
     auto const keyType = publicKeyType(publicKey);
     if (!keyType)
         logicError("create_external: public key without a key type");  // LCOV_EXCL_LINE
     SigningKeys const keys(*keyType, publicKey);
-    keys.writeToFile(ctx.options.keyFile);
+    keys.writeToFile(ctx.options.keyFile, OwnerOnlyFile::Existing::Refuse);
     storedNotice(ctx.options.keyFile, ctx.out);
     return EXIT_SUCCESS;
 }

@@ -16,10 +16,12 @@
 #include <xrpl/server/Manifest.h>
 
 #include <gtest/gtest.h>
+#include <tools/validator-keys/OwnerOnlyFile.h>
 
 #include <Fixtures.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <limits>
@@ -184,6 +186,33 @@ TEST_F(SigningKeysTest, write_to_file_errors)
     keys.writeToFile(linked);
     EXPECT_TRUE(keys == SigningKeys::makeSigningKeys(linked));
     EXPECT_TRUE(std::filesystem::is_symlink(stale));
+}
+
+TEST_F(SigningKeysTest, create_refuses_existing)
+{
+    SigningKeys const first(KeyType::Ed25519);
+    SigningKeys const second(KeyType::Ed25519);
+
+    // A second creator that passed the same missing-file state commits after the first
+    OwnerOnlyFile late(keyFile_, "key file", OwnerOnlyFile::Existing::Refuse);
+    late.write("{}");
+    first.writeToFile(keyFile_, OwnerOnlyFile::Existing::Refuse);
+    EXPECT_EQ(
+        errorOf([&] { late.commit(); }),
+        "Refusing to overwrite existing key file: " + keyFile_.string());
+    EXPECT_TRUE(first == SigningKeys::makeSigningKeys(keyFile_));
+
+    EXPECT_EQ(
+        errorOf([&] { second.writeToFile(keyFile_, OwnerOnlyFile::Existing::Refuse); }),
+        "Refusing to overwrite existing key file: " + keyFile_.string());
+    EXPECT_TRUE(first == SigningKeys::makeSigningKeys(keyFile_));
+
+    // Only the target is left in the directory: no temporary survives either path
+    std::size_t entries = 0;
+    for ([[maybe_unused]] auto const& entry :
+         std::filesystem::directory_iterator(keyFile_.parent_path()))
+        ++entries;
+    EXPECT_EQ(entries, 1u);
 }
 
 TEST_F(SigningKeysTest, key_file_fields)
