@@ -383,16 +383,14 @@ sponsoringAccountCount(test::jtx::Env const& env, test::jtx::Account const& acco
 inline bool
 checkVL(Slice const& result, std::string const& expected)
 {
-    Serializer s;
-    s.addRaw(result);
-    return s.getString() == expected;
+    return result == makeSlice(expected);
 }
 
 [[nodiscard]]
 inline bool
 checkVL(SLE::ConstRef sle, SField const& field, std::string const& expected)
 {
-    return strHex(expected) == strHex(sle->getFieldVL(field));
+    return makeSlice(sle->getFieldVL(field)) == makeSlice(expected);
 }
 
 /* Path finding */

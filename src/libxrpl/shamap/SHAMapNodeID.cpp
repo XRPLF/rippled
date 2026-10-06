@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMap.h>
@@ -87,8 +88,8 @@ SHAMapNodeID::getRawString() const
 {
     Serializer s(33);
     s.addBitString(id_);
-    s.add8(depth_);
-    return s.getString();
+    s.add8(checkedCast<std::uint8_t>(depth_));
+    return std::string(static_cast<char const*>(s.data()), s.size());
 }
 
 SHAMapNodeID
@@ -134,11 +135,11 @@ deserializeSHAMapNodeID(void const* data, std::size_t size)
     {
         std::span const bytes{static_cast<unsigned char const*>(data), size};
 
-        if (unsigned int const depth = bytes[uint256::size()]; depth <= SHAMap::kLeafDepth)
+        if (unsigned int const depth = bytes[UInt256::size()]; depth <= SHAMap::kLeafDepth)
         {
             // Reject a serialized ID carrying bits below its own depth. Checked before
             // constructing the node, since the constructor asserts that same property.
-            if (uint256 const id{bytes.first<uint256::size()>()}; isPrefixOfAtDepth(id, depth, id))
+            if (UInt256 const id{bytes.first<UInt256::size()>()}; isPrefixOfAtDepth(id, depth, id))
                 ret.emplace(depth, id);
         }
     }

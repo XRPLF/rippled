@@ -26,6 +26,29 @@
 
 namespace xrpl {
 
+namespace {
+
+// A leaf node is serialized as the item data followed by a 32-byte tag.
+// Returns {item, tag}. Throws if there isn't room for the tag.
+std::pair<Slice, UInt256>
+splitTag(Slice data, char const* nodeType)
+{
+    if (data.size() < kMinShaMapItemBytes + UInt256::kBytes)
+    {
+        Throw<std::runtime_error>(std::format(
+            "Short {} node: {} bytes (minimum {} required)",
+            nodeType,
+            data.size(),
+            (kMinShaMapItemBytes + UInt256::kBytes)));
+    }
+
+    auto const itemSize = data.size() - UInt256::kBytes;
+
+    return {data.substr(0, itemSize), SerialIter{data + itemSize}.get256()};
+}
+
+}  // namespace
+
 SHAMapTreeNodePtr
 SHAMapTreeNode::makeTransaction(Slice data, SHAMapHash const& hash, bool hashValid)
 {
@@ -46,80 +69,26 @@ SHAMapTreeNode::makeTransaction(Slice data, SHAMapHash const& hash, bool hashVal
 SHAMapTreeNodePtr
 SHAMapTreeNode::makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool hashValid)
 {
-    Serializer s(data.data(), data.size());
-
-    UInt256 tag;
-
-    if (s.size() < tag.kBytes)
-    {
-        Throw<std::runtime_error>(std::format(
-            "Short TXN+MD node: {} bytes (minimum {} required for tag)", s.size(), tag.kBytes));
-    }
-
-    // FIXME: improve this interface so that the above check isn't needed
-    if (!s.getBitString(tag, s.size() - tag.kBytes))
-    {
-        Throw<std::out_of_range>(std::format(
-            "Short TXN+MD node: failed to read tag at offset {}", s.size() - tag.kBytes));
-    }
-
-    s.chop(tag.kBytes);
-
-    if (s.size() < kMinShaMapItemBytes)
-    {
-        Throw<std::runtime_error>(std::format(
-            "Short TXN+MD node: {} bytes after tag removal (minimum {} required)",
-            s.size(),
-            kMinShaMapItemBytes));
-    }
-
-    auto item = makeShamapitem(tag, s.slice());
+    auto const [item, tag] = splitTag(data, "TXN+MD");
 
     if (hashValid)
-        return intr_ptr::makeShared<SHAMapTxPlusMetaLeafNode>(std::move(item), 0, hash);
+        return intr_ptr::makeShared<SHAMapTxPlusMetaLeafNode>(makeShamapitem(tag, item), 0, hash);
 
-    return intr_ptr::makeShared<SHAMapTxPlusMetaLeafNode>(std::move(item), 0);
+    return intr_ptr::makeShared<SHAMapTxPlusMetaLeafNode>(makeShamapitem(tag, item), 0);
 }
 
 SHAMapTreeNodePtr
 SHAMapTreeNode::makeAccountState(Slice data, SHAMapHash const& hash, bool hashValid)
 {
-    Serializer s(data.data(), data.size());
-
-    UInt256 tag;
-
-    if (s.size() < tag.kBytes)
-    {
-        Throw<std::runtime_error>(std::format(
-            "Short AS node: {} bytes (minimum {} required for tag)", s.size(), tag.kBytes));
-    }
-
-    // FIXME: improve this interface so that the above check isn't needed
-    if (!s.getBitString(tag, s.size() - tag.kBytes))
-    {
-        Throw<std::out_of_range>(
-            std::format("Short AS node: failed to read tag at offset {}", s.size() - tag.kBytes));
-    }
-
-    s.chop(tag.kBytes);
+    auto const [item, tag] = splitTag(data, "AS");
 
     if (tag.isZero())
         Throw<std::runtime_error>("Invalid AS node");
 
-    if (s.size() < kMinShaMapItemBytes)
-    {
-        Throw<std::runtime_error>(std::format(
-            "Short AS node: {} bytes after tag removal (minimum {} required)",
-            s.size(),
-            kMinShaMapItemBytes));
-    }
-
-    auto item = makeShamapitem(tag, s.slice());
-
     if (hashValid)
-        return intr_ptr::makeShared<SHAMapAccountStateLeafNode>(std::move(item), 0, hash);
+        return intr_ptr::makeShared<SHAMapAccountStateLeafNode>(makeShamapitem(tag, item), 0, hash);
 
-    return intr_ptr::makeShared<SHAMapAccountStateLeafNode>(std::move(item), 0);
+    return intr_ptr::makeShared<SHAMapAccountStateLeafNode>(makeShamapitem(tag, item), 0);
 }
 
 SHAMapTreeNodePtr
@@ -159,11 +128,7 @@ SHAMapTreeNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
     if (rawNode.size() < 4)
         Throw<std::runtime_error>("prefix: short node");
 
-    // FIXME: Use SerialIter::get32?
-    // Extract the prefix
-    auto const type = safeCast<HashPrefix>(
-        (safeCast<std::uint32_t>(rawNode[0]) << 24) + (safeCast<std::uint32_t>(rawNode[1]) << 16) +
-        (safeCast<std::uint32_t>(rawNode[2]) << 8) + (safeCast<std::uint32_t>(rawNode[3])));
+    auto const type = safeCast<HashPrefix>(SerialIter{rawNode}.get32());
 
     rawNode.removePrefix(4);
 

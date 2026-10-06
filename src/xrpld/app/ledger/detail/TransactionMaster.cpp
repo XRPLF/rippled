@@ -123,8 +123,9 @@ TransactionMaster::fetch(
         }
         else if (type == SHAMapNodeType::TnTransactionMd)
         {
+            // Safe: the slice that getVL() returns points into `item`.
             auto blob = SerialIter{item->slice()}.getVL();
-            txn = std::make_shared<STTx const>(SerialIter{blob.data(), blob.size()});
+            txn = std::make_shared<STTx const>(SerialIter{blob});
         }
     }
     else

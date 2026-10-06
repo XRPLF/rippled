@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
 
 #include <boost/utility/string_view.hpp>
 
@@ -28,7 +29,7 @@ namespace xrpl {
  * @return The input, encoded as a blob literal.
  */
 std::string
-sqlBlobLiteral(Blob const& blob);
+sqlBlobLiteral(Slice blob);
 
 namespace detail {
 

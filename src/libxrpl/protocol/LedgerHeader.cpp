@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
@@ -20,8 +21,8 @@ addRaw(LedgerHeader const& info, Serializer& s, bool includeHash)
     s.addBitString(info.accountHash);
     s.add32(info.parentCloseTime.time_since_epoch().count());
     s.add32(info.closeTime.time_since_epoch().count());
-    s.add8(info.closeTimeResolution.count());
-    s.add8(info.closeFlags);
+    s.add8(unsafeCast<std::uint8_t>(info.closeTimeResolution.count()));
+    s.add8(unsafeCast<std::uint8_t>(info.closeFlags));
 
     if (includeHash)
         s.addBitString(info.hash);
@@ -30,7 +31,7 @@ addRaw(LedgerHeader const& info, Serializer& s, bool includeHash)
 LedgerHeader
 deserializeHeader(Slice data, bool hasHash)
 {
-    SerialIter sit(data.data(), data.size());
+    SerialIter sit{data};
 
     LedgerHeader header;
 
@@ -48,12 +49,6 @@ deserializeHeader(Slice data, bool hasHash)
         header.hash = sit.get256();
 
     return header;
-}
-
-LedgerHeader
-deserializePrefixedHeader(Slice data, bool hasHash)
-{
-    return deserializeHeader(data + 4, hasHash);
 }
 
 UInt256

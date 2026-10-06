@@ -90,7 +90,8 @@ public:
         STObject object1(elements, sfTestObject);
         STObject const object2(object1);
 
-        unexpected(object1.getSerializer() != object2.getSerializer(), "STObject error 1");
+        unexpected(
+            object1.getSerializer().slice() != object2.getSerializer().slice(), "STObject error 1");
 
         unexpected(
             object1.isFieldPresent(sfTestH256) || !object1.isFieldPresent(sfTestVL),
@@ -102,7 +103,7 @@ public:
 
         unexpected(object1.getFieldH256(sfTestH256) != UInt256{}, "STObject error 3");
 
-        if (object1.getSerializer() == object2.getSerializer())
+        if (object1.getSerializer().slice() == object2.getSerializer().slice())
         {
             log << "O1: " << object1.getJson(JsonOptions::Values::None) << '\n'
                 << "O2: " << object2.getJson(JsonOptions::Values::None) << std::endl;
@@ -119,7 +120,8 @@ public:
 
         unexpected(object1.getFlags() != 0, "STObject error 6");
 
-        unexpected(object1.getSerializer() != object2.getSerializer(), "STObject error 7");
+        unexpected(
+            object1.getSerializer().slice() != object2.getSerializer().slice(), "STObject error 7");
 
         STObject copy(object1);
 
@@ -127,11 +129,13 @@ public:
 
         unexpected(copy.isFieldPresent(sfTestH256), "STObject error 9");
 
-        unexpected(object1.getSerializer() != copy.getSerializer(), "STObject error 10");
+        unexpected(
+            object1.getSerializer().slice() != copy.getSerializer().slice(), "STObject error 10");
 
         copy.setFieldU32(sfTestU32, 1);
 
-        unexpected(object1.getSerializer() == copy.getSerializer(), "STObject error 11");
+        unexpected(
+            object1.getSerializer().slice() == copy.getSerializer().slice(), "STObject error 11");
 
         for (int i = 0; i < 1000; i++)
         {

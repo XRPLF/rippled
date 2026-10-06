@@ -197,9 +197,7 @@ logMftAct(
 bool
 Manifest::verify() const
 {
-    STObject st(sfGeneric);
-    SerialIter sit(serialized.data(), serialized.size());
-    st.set(sit);
+    STObject const st(SerialIter{makeSlice(serialized)}, sfGeneric);
 
     // The manifest must either have a signing key or be revoked.  This check
     // prevents us from accessing an unseated signingKey in the next check.
@@ -217,9 +215,7 @@ Manifest::verify() const
 UInt256
 Manifest::hash() const
 {
-    STObject st(sfGeneric);
-    SerialIter sit(serialized.data(), serialized.size());
-    st.set(sit);
+    STObject const st(SerialIter{makeSlice(serialized)}, sfGeneric);
     return st.getHash(HashPrefix::Manifest);
 }
 
@@ -245,7 +241,7 @@ std::optional<Blob>
 Manifest::getSignature() const
 {
     STObject st(sfGeneric);
-    SerialIter sit(serialized.data(), serialized.size());
+    SerialIter sit(makeSlice(serialized));
     st.set(sit);
     if (!get(st, sfSignature))
         return std::nullopt;
@@ -256,7 +252,7 @@ Blob
 Manifest::getMasterSignature() const
 {
     STObject st(sfGeneric);
-    SerialIter sit(serialized.data(), serialized.size());
+    SerialIter sit(makeSlice(serialized));
     st.set(sit);
     return st.getFieldVL(sfMasterSignature);
 }

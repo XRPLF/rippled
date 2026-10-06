@@ -190,7 +190,7 @@ doLedgerGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
     Serializer s;
     addRaw(ledger->header(), s, true);
 
-    response.set_ledger_header(s.peekData().data(), s.getLength());
+    response.set_ledger_header(s.data(), s.size());
 
     if (request.transactions())
     {
@@ -203,11 +203,11 @@ doLedgerGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                 {
                     auto txn = response.mutable_transactions_list()->add_transactions();
                     Serializer const sTxn = i.first->getSerializer();
-                    txn->set_transaction_blob(sTxn.data(), sTxn.getLength());
+                    txn->set_transaction_blob(sTxn.data(), sTxn.size());
                     if (i.second)
                     {
                         Serializer const sMeta = i.second->getSerializer();
-                        txn->set_metadata_blob(sMeta.data(), sMeta.getLength());
+                        txn->set_metadata_blob(sMeta.data(), sMeta.size());
                     }
                 }
                 else

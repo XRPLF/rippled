@@ -230,6 +230,9 @@ InboundLedger::tryDB(node_store::Database& srcDB)
 {
     if (!haveHeader_)
     {
+        // FIXME: should we check/validate the prefix here?
+        auto deserializePrefixedHeader = [](Slice data) { return deserializeHeader(data + 4); };
+
         auto makeLedger = [&, this](Blob const& data) {
             JLOG(journal_.trace()) << "Ledger header found in fetch pack";
             Rules const rules{app_.config().features};
@@ -807,8 +810,8 @@ InboundLedger::takeHeader(std::string_view data)
 
     Serializer s(data.size() + 4);
     s.add32(HashPrefix::LedgerMaster);
-    s.addRaw(data.data(), data.size());
-    f->db().store(NodeObjectType::Ledger, std::move(s.modData()), hash_, seq_);
+    s.addRaw(makeSlice(data));
+    f->db().store(NodeObjectType::Ledger, s.takeData(), hash_, seq_);
 
     if (ledger_->header().txHash.isZero())
         haveTransactions_ = true;

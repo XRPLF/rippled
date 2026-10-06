@@ -261,7 +261,7 @@ public:
             parentHash = ledgerHash(info);
             Serializer nData;
             xrpl::addRaw(info, nData);
-            ledgerData->add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
+            ledgerData->add_nodes()->set_nodedata(nData.data(), nData.size());
         }
 
         return ledgerData;

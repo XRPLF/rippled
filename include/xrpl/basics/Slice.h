@@ -253,4 +253,27 @@ makeSlice(std::basic_string_view<char, Traits> s)
     return Slice(s.data(), s.size());
 }
 
+/**
+ * Checks whether two byte ranges share at least one byte of storage.
+ *
+ *  Each slice is treated as the half-open range [data, data + size), so
+ *  ranges that merely touch do not overlap. An empty slice overlaps
+ *  nothing, wherever it points.
+ *
+ *  @param a The first range.
+ *  @param b The second range.
+ *  @return true if the ranges overlap, false otherwise.
+ */
+[[nodiscard]] inline bool
+overlap(Slice a, Slice b) noexcept
+{
+    if (a.empty() || b.empty())
+        return false;
+
+    auto const a0 = reinterpret_cast<std::uintptr_t>(a.data());
+    auto const b0 = reinterpret_cast<std::uintptr_t>(b.data());
+
+    return a0 < b0 + b.size() && b0 < a0 + a.size();
+}
+
 }  // namespace xrpl

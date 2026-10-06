@@ -33,13 +33,13 @@ AcceptedLedgerTx::AcceptedLedgerTx(
 
     Serializer s;
     met->add(s);
-    rawMeta_ = std::move(s.modData());
+    rawMeta_ = s.takeData();
 
     json_ = json::ValueType::Object;
     json_[jss::transaction] = txn_->getJson(JsonOptions::Values::None);
 
     json_[jss::meta] = meta_.getJson(JsonOptions::Values::None);
-    json_[jss::raw_meta] = strHex(rawMeta_);
+    json_[jss::raw_meta] = strHex(makeSlice(rawMeta_));
 
     json_[jss::result] = transHuman(meta_.getResultTER());
 
@@ -74,7 +74,7 @@ std::string
 AcceptedLedgerTx::getEscMeta() const
 {
     XRPL_ASSERT(!rawMeta_.empty(), "xrpl::AcceptedLedgerTx::getEscMeta : metadata is set");
-    return sqlBlobLiteral(rawMeta_);
+    return sqlBlobLiteral(makeSlice(rawMeta_));
 }
 
 }  // namespace xrpl

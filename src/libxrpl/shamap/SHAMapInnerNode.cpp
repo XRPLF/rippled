@@ -135,7 +135,7 @@ SHAMapInnerNode::makeFullInner(Slice data, SHAMapHash const& hash, bool hashVali
 
     for (auto i = 0u; i < kBranchFactor; ++i)
     {
-        hashes[i].asUInt256() = si.getBitString<256>();
+        hashes[i].asUInt256() = si.get256();
 
         if (hashes[i].isNonZero())
             ret->isBranch_ |= (1u << i);
@@ -173,7 +173,7 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
 
     while (!si.empty())
     {
-        auto const hash = si.getBitString<256>();
+        auto const hash = si.get256();
         auto const pos = si.get8();
 
         if (pos >= kBranchFactor)
@@ -231,7 +231,7 @@ SHAMapInnerNode::serializeForWire(Serializer& s) const
         auto hashes = hashesAndChildren_.getHashes();
         iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
             s.addBitString(hashes[indexNum].asUInt256());
-            s.add8(branchNum);
+            s.add8(checkedCast<std::uint8_t>(branchNum));
         });
         s.add8(kWireTypeCompressedInner);
     }

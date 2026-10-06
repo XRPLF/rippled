@@ -283,8 +283,8 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
     {
         if (isBinaryOutput)
         {
-            auto const metaBlob = result.metadata->getAsObject().getSerializer().getData();
-            jvResult[jss::meta_blob] = strHex(makeSlice(metaBlob));
+            jvResult[jss::meta_blob] =
+                strHex(result.metadata->getAsObject().getSerializer().slice());
         }
         else
         {
@@ -296,8 +296,7 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
 
     if (isBinaryOutput)
     {
-        auto const txBlob = transaction->getSTransaction()->getSerializer().getData();
-        jvResult[jss::tx_blob] = strHex(makeSlice(txBlob));
+        jvResult[jss::tx_blob] = strHex(transaction->getSTransaction()->getSerializer().slice());
     }
     else
     {

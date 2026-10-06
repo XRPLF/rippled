@@ -173,12 +173,13 @@ TEST(SHAMapNodeIDTest, deserialize_rejects_out_of_range_depth)
         Serializer s;
         s.addBitString(UInt256{});
         s.add8(static_cast<unsigned char>(depth));
-        return s.getString();
+        return s.takeData();
     };
 
     for (auto const depth : {65u, 100u, 255u})
     {
-        EXPECT_FALSE(deserializeSHAMapNodeID(serializeWithRawDepth(depth)).has_value())
+        auto const raw = serializeWithRawDepth(depth);
+        EXPECT_FALSE(deserializeSHAMapNodeID(raw.data(), raw.size()).has_value())
             << "depth " << depth;
     }
 

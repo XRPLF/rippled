@@ -308,10 +308,11 @@ public:
                     static_cast<unsigned char>(vector >> 8),
                     static_cast<unsigned char>(vector >> 16),
                     static_cast<unsigned char>(vector >> 24)};
-                expected.addRaw(bytes.data(), bytes.size());
+                expected.addRaw(makeSlice(bytes));
             }
 
-            BEAST_EXPECTS(strHex(actual) == strHex(expected), strHex(actual));
+            BEAST_EXPECTS(
+                strHex(actual.slice()) == strHex(expected.slice()), strHex(actual.slice()));
 
             // Decoding the preserved wire format must recover the canonical MPTID.
             SerialIter iter(expected.slice());
@@ -322,7 +323,8 @@ public:
             // A decoded ledger value must serialize back to the same bytes.
             Serializer roundTrip;
             decoded.add(roundTrip);
-            BEAST_EXPECTS(strHex(roundTrip) == strHex(expected), strHex(roundTrip));
+            BEAST_EXPECTS(
+                strHex(roundTrip.slice()) == strHex(expected.slice()), strHex(roundTrip.slice()));
         }
     }
 

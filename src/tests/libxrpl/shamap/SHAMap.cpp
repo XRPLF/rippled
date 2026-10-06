@@ -890,7 +890,7 @@ TEST_F(SHAMapPathProof, all_inner_path_at_leaf_depth_is_rejected)
         for (auto i = 0u; i < SHAMap::kBranchFactor; ++i)
             s.addBitString(i == branch ? childHash.asUInt256() : UInt256{});
         s.add8(kWireTypeInner);
-        path.push_back(s.getData());
+        path.push_back(s.takeData());
 
         auto node = SHAMapTreeNode::makeFromWire(makeSlice(path.back()));
         ASSERT_TRUE(node);
@@ -927,12 +927,12 @@ forgeRootOverLeaf(Blob const& leafBlob, UInt256 const& key)
         s.addBitString(i == branch ? leaf->getHash().asUInt256() : UInt256{});
     s.add8(kWireTypeInner);
 
-    auto root = SHAMapTreeNode::makeFromWire(makeSlice(s.peekData()));
+    auto root = SHAMapTreeNode::makeFromWire(s.slice());
     if (!root)
         return {};
     root->updateHash();
 
-    return {std::vector<Blob>{leafBlob, s.getData()}, root->getHash().asUInt256()};
+    return {std::vector<Blob>{leafBlob, s.takeData()}, root->getHash().asUInt256()};
 }
 
 // The hash chain above a leaf proves nothing about which key that leaf holds, so a peer can graft a

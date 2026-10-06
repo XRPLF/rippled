@@ -363,17 +363,13 @@ Ledger::deserializeTx(SHAMapItem const& item)
 std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
 Ledger::deserializeTxPlusMeta(SHAMapItem const& item)
 {
-    std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>> result;
     SerialIter sit(item.slice());
-    {
-        SerialIter s(sit.getSlice(sit.getVLDataLength()));
-        result.first = std::make_shared<STTx const>(s);
-    }
-    {
-        SerialIter s(sit.getSlice(sit.getVLDataLength()));
-        result.second = std::make_shared<STObject const>(s, sfMetadata);
-    }
-    return result;
+
+    SerialIter txSit(sit.getVL());
+    SerialIter metaSit(sit.getVL());
+
+    return {
+        std::make_shared<STTx const>(txSit), std::make_shared<STObject const>(metaSit, sfMetadata)};
 }
 
 //------------------------------------------------------------------------------
@@ -533,9 +529,9 @@ Ledger::rawTxInsert(
     XRPL_ASSERT(metaData, "xrpl::Ledger::rawTxInsert : non-null metadata input");
 
     // low-level - just add to table
-    Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
-    s.addVL(txn->peekData());
-    s.addVL(metaData->peekData());
+    Serializer s(txn->size() + metaData->size() + 16);
+    s.addVL(txn->slice());
+    s.addVL(metaData->slice());
     if (!txMap_.addGiveItem(SHAMapNodeType::TnTransactionMd, makeShamapitem(key, s.slice())))
         logicError("duplicate_tx: " + to_string(key));
 }

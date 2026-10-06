@@ -12,7 +12,7 @@
 
 namespace xrpl {
 
-STBlob::STBlob(SerialIter& st, SField const& name) : STBase(name), value_(st.getVLBuffer())
+STBlob::STBlob(SerialIter& st, SField const& name) : STBase(name), value_(st.getVL())
 {
 }
 
@@ -47,7 +47,7 @@ STBlob::add(Serializer& s) const
     XRPL_ASSERT(
         (getFName().fieldType == STI_VL) || (getFName().fieldType == STI_ACCOUNT),
         "xrpl::STBlob::add : valid field type");
-    s.addVL(value_.data(), value_.size());
+    s.addVL(Slice{value_.data(), value_.size()});
 }
 
 bool
