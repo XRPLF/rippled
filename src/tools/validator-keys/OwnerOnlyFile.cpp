@@ -1,9 +1,13 @@
 #include <tools/validator-keys/OwnerOnlyFile.h>
 
+#include <sys/stat.h>
+
+#include <dirent.h>
 #include <unistd.h>
 
 #include <cerrno>
 #include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <stdexcept>
@@ -15,8 +19,54 @@ namespace xrpl {
 
 namespace fs = std::filesystem;
 
-OwnerOnlyFile::OwnerOnlyFile(fs::path target, std::string what, Existing existing)
-    : target_(std::move(target)), what_(std::move(what)), existing_(existing)
+namespace {
+
+// Syncs the directory holding @p file, so the entry a rename or link made
+// survives a crash. opendir gives the descriptor without a variadic open.
+bool
+syncDirectory(fs::path const& file)
+{
+    auto dir = file.parent_path();
+    if (dir.empty())
+        dir = ".";
+    DIR* const d = ::opendir(dir.c_str());
+    if (d == nullptr)
+        return false;
+    bool const synced = ::fsync(::dirfd(d)) == 0;
+    ::closedir(d);
+    return synced;
+}
+
+// A filesystem without hard links (FAT, exFAT, SMB and some FUSE mounts)
+// refuses link with one of these.
+bool
+noHardLinks(int error)
+{
+    return error == EPERM || error == ENOTSUP || error == EOPNOTSUPP;
+}
+
+// Creates @p target empty, failing with EEXIST in errno when it exists:
+// "wx" is O_CREAT with O_EXCL, without a variadic open. A claim whose
+// stream cannot be closed is removed again, so a false return leaves no file.
+bool
+claimName(fs::path const& target)
+{
+    std::FILE* const file = std::fopen(target.c_str(), "wx");
+    if (file == nullptr)
+        return false;
+    if (std::fclose(file) == 0)
+        return true;
+    int const error = errno;
+    std::error_code ec;
+    fs::remove(target, ec);
+    errno = error;
+    return false;
+}
+
+}  // namespace
+
+OwnerOnlyFile::OwnerOnlyFile(fs::path target, std::string what, Existing existing, int mode)
+    : target_(std::move(target)), what_(std::move(what)), existing_(existing), mode_(mode)
 {
     if (fs::is_symlink(target_))
         throw std::runtime_error("Refusing to write through a symlink: " + target_.string());
@@ -28,6 +78,15 @@ OwnerOnlyFile::OwnerOnlyFile(fs::path target, std::string what, Existing existin
     if (fd_ < 0)
         throw std::runtime_error("Cannot write " + what_ + ": " + target_.string());
     temp_ = templ;
+    // A published mode is set before the first byte, on the descriptor.
+    if (mode_ != kOwnerOnly && ::fchmod(fd_, mode_) != 0)
+    {
+        ::close(fd_);
+        fd_ = -1;
+        std::error_code ec;
+        fs::remove(temp_, ec);
+        throw std::runtime_error("Cannot write " + what_ + ": " + target_.string());
+    }
 }
 
 OwnerOnlyFile::~OwnerOnlyFile()
@@ -60,28 +119,50 @@ OwnerOnlyFile::write(std::string const& text)
 void
 OwnerOnlyFile::commit()
 {
-    auto const closeRc = ::close(fd_);
+    // Synced before the rename: a file renamed into place with its data still
+    // in the page cache can survive a crash empty.
+    bool written = !failed_ && ::fsync(fd_) == 0;
+    written = ::close(fd_) == 0 && written;
     fd_ = -1;
-    bool written = !failed_ && closeRc == 0;
     bool exists = false;
-    if (written && existing_ == Existing::Replace)
+    bool linked = false;
+    bool claimed = false;
+    if (written && existing_ == Existing::Refuse)
+    {
+        // link fails with EEXIST instead of replacing, so a concurrent creator is never lost.
+        linked = ::link(temp_.c_str(), target_.c_str()) == 0;
+        if (!linked && noHardLinks(errno))
+        {
+            // Without hard links the name is claimed exclusively and the
+            // temporary is renamed over the claim.
+            claimed = claimName(target_);
+            written = claimed;
+        }
+        else if (!linked)
+        {
+            written = false;
+        }
+        exists = !written && errno == EEXIST;
+    }
+    if (written && !linked)
     {
         std::error_code ec;
         fs::rename(temp_, target_, ec);
         written = !ec;
     }
-    else if (written)
-    {
-        // link fails with EEXIST instead of replacing, so a concurrent creator is never lost.
-        written = ::link(temp_.c_str(), target_.c_str()) == 0;
-        exists = !written && errno == EEXIST;
-    }
 
     // A successful link leaves the temporary as a second name for the target.
-    if (!written || existing_ == Existing::Refuse)
+    if (!written || linked)
     {
         std::error_code ec;
         fs::remove(temp_, ec);
+    }
+    // A claim the rename did not cover is an empty target the next create
+    // would refuse to overwrite.
+    if (claimed && !written)
+    {
+        std::error_code ec;
+        fs::remove(target_, ec);
     }
     if (exists)
     {
@@ -90,6 +171,8 @@ OwnerOnlyFile::commit()
     }
     if (!written)
         throw std::runtime_error("Cannot write " + what_ + ": " + target_.string());
+    if (!syncDirectory(target_))
+        throw std::runtime_error("Cannot sync " + what_ + ": " + target_.string());
     committed_ = true;
 }
 

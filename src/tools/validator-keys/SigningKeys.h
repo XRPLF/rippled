@@ -162,8 +162,10 @@ public:
      * bytes again, so a lost signature can be made over the same bytes.
      *
      * @throws std::runtime_error if the keys are revoked, the sequence is
-     *         exhausted, the external signing key is the master key, or a
-     *         token with another signing key or key type is pending
+     *         exhausted, the stored manifest's sequence is above the token
+     *         sequence, the external signing key is the master key or the
+     *         stored manifest's signing key, or a token with another signing
+     *         key or key type is pending
      */
     std::string
     startToken(
@@ -187,7 +189,8 @@ public:
      * @param keyType Key type of the token's signing key
      *
      * @throws std::runtime_error if the master key is external, the keys are
-     *         revoked, or the sequence is exhausted
+     *         revoked, the sequence is exhausted, or the stored manifest's
+     *         sequence is above the token sequence
      */
     ValidatorToken
     createToken(KeyType const& keyType = KeyType::Secp256k1);
@@ -300,8 +303,18 @@ private:
     partialRevocation() const;
 
     /**
+     * The last manifest generated, deserialized; empty if none.
+     */
+    [[nodiscard]] std::optional<Manifest>
+    storedManifest() const;
+
+    /**
      * Fixes the next manifest for @p pending and returns the bytes both its
      * signatures cover.
+     *
+     * @throws std::runtime_error if the keys are revoked, the sequence is
+     *         exhausted, or the stored manifest's sequence is above the
+     *         token sequence, which the next token would not exceed
      */
     Blob
     startPending(Pending const& pending);

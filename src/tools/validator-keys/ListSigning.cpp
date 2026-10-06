@@ -173,6 +173,20 @@ parseObject(std::string const& text)
     return jv;
 }
 
+// The sequence of a published blob's list.
+std::uint32_t
+blobSequence(std::string const& blobBytes)
+{
+    json::Reader reader;
+    json::Value jv;
+    if (!reader.parse(blobBytes, jv) || !jv.isObject())
+        throw std::runtime_error("The list to append to holds an invalid blob");
+    auto const sequence = listInteger(jv, jss::sequence);
+    if (!sequence)
+        throw std::runtime_error("The list to append to holds an invalid blob");
+    return *sequence;
+}
+
 }  // namespace
 
 std::optional<PublicKey>
@@ -405,6 +419,7 @@ makeSignedList(
             bool current;
         };
         std::vector<Entry> entries;
+        std::uint32_t highest = 0;
         for (auto const& entry : existing[jss::blobs_v2])
         {
             if (!entry.isObject() || !entry.isMember(jss::blob) || !entry[jss::blob].isString() ||
@@ -429,6 +444,14 @@ makeSignedList(
                     "The list to append to holds a blob whose signature does not verify");
             }
             entries.push_back({.blob = *bytes, .current = signer.current});
+            highest = std::max(highest, blobSequence(*bytes));
+        }
+        // A server ignores a blob whose sequence is not above the one it holds.
+        if (list.sequence <= highest)
+        {
+            throw std::runtime_error(
+                "The list to append has sequence " + std::to_string(list.sequence) +
+                "; the document already holds sequence " + std::to_string(highest));
         }
 
         if (std::ranges::all_of(entries, [](Entry const& e) { return e.current; }))

@@ -76,7 +76,7 @@ protected:
         return SigningKeys::makeSigningKeys(opts.keyFile);
     }
 
-    // The token base64 inside a [validator_token] or [validator_manifest] block.
+    // The base64 inside a [validator_token] or [validator_key_revocation] block.
     static std::string
     blockBody(std::string const& text, std::string const& section)
     {
@@ -144,7 +144,16 @@ TEST_F(CommandsTest, dispatch)
     EXPECT_EQ(commandError("finish_token", {}, options_), kArgError);
     EXPECT_EQ(commandError("finish_token", {"a", "b", "c"}, options_), kArgError);
     EXPECT_EQ(commandError("finish_sign_list", {"a"}, options_), kArgError);
-    EXPECT_FALSE(getVersionString().empty());
+}
+
+TEST_F(CommandsTest, parse_public_key)
+{
+    SigningKeys const external(KeyType::Ed25519);
+    auto const& key = external.publicKey();
+    EXPECT_EQ(parsePublicKey(toBase58(TokenType::NodePublic, key)), key);
+    EXPECT_EQ(parsePublicKey(strHex(key)), key);
+    EXPECT_EQ(parsePublicKey(base64Encode(key.data(), key.size())), key);
+    EXPECT_EQ(errorOf([] { parsePublicKey("abcd"); }), "Unable to parse public key: abcd");
 }
 
 TEST_F(CommandsTest, create_keys)
@@ -302,20 +311,47 @@ TEST_F(CommandsTest, external_token)
     EXPECT_EQ(run("finish_token", {signer.signHex(pendingBytes)}, options_).rc, EXIT_SUCCESS);
     EXPECT_EQ(keys(options_).sequence(), 3u);
 
-    // An external signing key too: two signatures, a manifest without a secret
-    auto const start = run("start_token", {}, both);
-    EXPECT_EQ(run("start_token", {}, both).out, start.out);
+    // An external signing key too: two signatures, and a manifest without a
+    // secret printed as base64 for a list publisher's --manifest-file
+    ToolOptions toStdout = both;
+    toStdout.outFile.reset();
+    auto const start = run("start_token", {}, toStdout);
+    EXPECT_EQ(run("start_token", {}, toStdout).out, start.out);
     EXPECT_EQ(commandError("start_token", {}, options_), pendingError);
     auto const bytes = start.out.substr(0, start.out.find('\n'));
     EXPECT_EQ(
-        commandError("finish_token", {signer.signHex(bytes)}, both),
+        commandError("finish_token", {signer.signHex(bytes)}, toStdout),
         "The pending token's signing key is external; pass its signature too");
     auto const finish =
-        run("finish_token", {signer.signHex(bytes), signingKey.signHex(bytes)}, both);
+        run("finish_token", {signer.signHex(bytes), signingKey.signHex(bytes)}, toStdout);
     EXPECT_EQ(finish.rc, EXIT_SUCCESS);
+    EXPECT_NE(finish.out.find("--manifest-file"), std::string::npos);
+    EXPECT_EQ(finish.out.find('['), std::string::npos);
+    {
+        auto const lastLine = finish.out.substr(finish.out.rfind('\n', finish.out.size() - 2) + 1);
+        auto const printed =
+            required(deserializeManifest(base64Decode(lastLine.substr(0, lastLine.find('\n')))));
+        EXPECT_EQ(required(printed.signingKey), signingKey.publicKey());
+        EXPECT_EQ(printed.sequence, 4u);
+    }
+
+    // The current manifest's signing key is refused for the next token; with
+    // another key the manifest goes to --out as the base64 alone
+    EXPECT_EQ(
+        commandError("start_token", {}, both),
+        "The signing key is the current manifest's; a server rejects a manifest that reuses it");
+    SigningKeys const signingKey2(KeyType::Ed25519);
+    both.signingKey = signingKey2.publicKey();
+    auto const start2 = run("start_token", {}, both);
+    auto const bytes2 = start2.out.substr(0, start2.out.find('\n'));
+    EXPECT_NE(
+        run("finish_token", {signer.signHex(bytes2), signingKey2.signHex(bytes2)}, both)
+            .out.find("The manifest written to"),
+        std::string::npos);
     auto const manifest = loadManifestFile(*both.outFile);
-    EXPECT_EQ(required(manifest.signingKey), signingKey.publicKey());
-    EXPECT_EQ(manifest.sequence, 4u);
+    EXPECT_EQ(required(manifest.signingKey), signingKey2.publicKey());
+    EXPECT_EQ(manifest.sequence, 5u);
+    EXPECT_EQ(readFile(*both.outFile), base64Encode(manifest.serialized) + "\n");
 
     // The domain is stored for the next token; the attestation bytes are printed
     // for the external signer
@@ -496,9 +532,15 @@ TEST_F(CommandsTest, list_commands)
     publisher.outFile.reset();
     auto const master = keys(publisher).publicKey();
 
-    auto const unsignedList = file("unsigned.json");
+    // Three lists with rising sequences, over the same validators
+    auto const validators = makeValidators(2);
     auto const now = netClockNow();
-    writeFile(unsignedList, unsignedListText(makeValidators(2), 2026091301, now + 3600));
+    auto const unsignedList = file("unsigned.json");
+    auto const unsignedList2 = file("unsigned2.json");
+    auto const unsignedList3 = file("unsigned3.json");
+    writeFile(unsignedList, unsignedListText(validators, 2026091301, now + 3600));
+    writeFile(unsignedList2, unsignedListText(validators, 2026091302, now + 3600));
+    writeFile(unsignedList3, unsignedListText(validators, 2026091303, now + 3600));
 
     ToolOptions noToken = publisher;
     noToken.tokenFile.reset();
@@ -506,12 +548,16 @@ TEST_F(CommandsTest, list_commands)
         commandError("sign_list", {unsignedList.string()}, noToken),
         "sign_list needs --token-file");
 
-    // Sign to a file, then verify with every check on
+    // Sign to a file readable by everyone, then verify with every check on
     ToolOptions signer = publisher;
     signer.outFile = file("vl.json");
     EXPECT_NE(
         run("sign_list", {unsignedList.string()}, signer).out.find("written to"),
         std::string::npos);
+    EXPECT_EQ(
+        std::filesystem::status(*signer.outFile).permissions() &
+            std::filesystem::perms::others_read,
+        std::filesystem::perms::others_read);
 
     ToolOptions verifier = optionsFor(publisher.keyFile);
     verifier.validatorsFile = unsignedList;
@@ -534,23 +580,31 @@ TEST_F(CommandsTest, list_commands)
         EXPECT_EQ(jv[jss::public_key].asString(), strHex(master));
     }
 
-    // Version 2, appended to itself, then appended again after a key rotation
+    // Version 2, the next list appended in place, then another appended after
+    // a key rotation
     ToolOptions v2 = signer;
     v2.listVersion = 2;
     v2.outFile = file("vl2.json");
     run("sign_list", {unsignedList.string()}, v2);
     v2.appendFile = v2.outFile;
-    v2.outFile = file("vl2b.json");
-    run("sign_list", {unsignedList.string()}, v2);
-    EXPECT_EQ(run("verify_list", {v2.outFile->string()}, verifier).rc, EXIT_SUCCESS);
+    EXPECT_EQ(run("sign_list", {unsignedList2.string()}, v2).rc, EXIT_SUCCESS);
+    {
+        auto const r = run("verify_list", {v2.outFile->string()}, verifier);
+        EXPECT_EQ(r.rc, EXIT_SUCCESS) << r.out;
+        json::Reader reader;
+        json::Value report;
+        reader.parse(r.out, report);
+        EXPECT_EQ(report["blobs"].size(), 2u);
+    }
     {
         ToolOptions rotated = v2;
+        rotated.appendFile.reset();
         rotated.outFile = file("publisher-token-2.txt");
         run("create_token", {}, rotated);
         rotated.tokenFile = rotated.outFile;
         rotated.appendFile = v2.outFile;
         rotated.outFile = file("vl2c.json");
-        run("sign_list", {unsignedList.string()}, rotated);
+        run("sign_list", {unsignedList3.string()}, rotated);
         auto const r = run("verify_list", {rotated.outFile->string()}, verifier);
         EXPECT_EQ(r.rc, EXIT_SUCCESS) << r.out;
         json::Reader reader;
@@ -631,8 +685,17 @@ TEST_F(CommandsTest, external_list_signing)
     auto const bytes = start.out.substr(0, start.out.find('\n'));
     run("finish_token", {keys(publisher).signHex(bytes), external.signHex(bytes)}, delegate);
 
+    auto const validators = makeValidators(2);
+    auto const now = netClockNow();
     auto const unsignedList = file("unsigned.json");
-    writeFile(unsignedList, unsignedListText(makeValidators(2), 2026091301, netClockNow() + 3600));
+    auto const unsignedList2 = file("unsigned2.json");
+    auto const unsignedList3 = file("unsigned3.json");
+    writeFile(unsignedList, unsignedListText(validators, 2026091301, now + 3600));
+    writeFile(unsignedList2, unsignedListText(validators, 2026091302, now + 3600));
+    writeFile(unsignedList3, unsignedListText(validators, 2026091303, now + 3600));
+    auto const signExternally = [&](std::filesystem::path const& list) {
+        return external.signHex(strHex(makeSlice(loadUnsignedList(list).canonical)));
+    };
 
     ToolOptions hardware = publisher;
     EXPECT_EQ(
@@ -669,7 +732,7 @@ TEST_F(CommandsTest, external_list_signing)
     run("finish_sign_list", {external.signHex(listBytes), unsignedList.string()}, v2);
     v2.appendFile = v2.outFile;
     v2.outFile = file("vl2b.json");
-    run("finish_sign_list", {external.signHex(listBytes), unsignedList.string()}, v2);
+    run("finish_sign_list", {signExternally(unsignedList2), unsignedList2.string()}, v2);
     EXPECT_EQ(run("verify_list", {v2.outFile->string()}, verifier).rc, EXIT_SUCCESS);
     {
         ToolOptions rotated = publisher;
@@ -680,7 +743,7 @@ TEST_F(CommandsTest, external_list_signing)
         append.tokenFile = rotated.outFile;
         append.appendFile = v2.outFile;
         append.outFile = file("vl2c.json");
-        EXPECT_EQ(run("sign_list", {unsignedList.string()}, append).rc, EXIT_SUCCESS);
+        EXPECT_EQ(run("sign_list", {unsignedList3.string()}, append).rc, EXIT_SUCCESS);
         EXPECT_EQ(run("verify_list", {append.outFile->string()}, verifier).rc, EXIT_SUCCESS);
     }
 

@@ -23,6 +23,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl::tools::test {
@@ -515,6 +516,53 @@ TEST_F(ListSigningTest, append_checks_entries)
         EXPECT_EQ(out[jss::blobs_v2][0u][jss::manifest].asString(), publisher_.token.manifest);
         expectOk(out);
     }
+}
+
+TEST_F(ListSigningTest, append_requires_higher_sequence)
+{
+    // A server ignores a blob whose sequence is not above the one it holds,
+    // so a list at or below any existing blob's sequence is refused.
+    auto const appendError = [&](UnsignedList const& list, json::Value const& existing) {
+        return errorOf([&] {
+            makeSignedList(
+                publisher_.token.manifest,
+                publisher_.manifest.masterKey,
+                list,
+                signList(list, publisher_.signingKey, publisher_.token.validationSecret),
+                2,
+                existing,
+                {});
+        });
+    };
+    auto const v2 = signed2();
+    EXPECT_EQ(
+        appendError(list_, v2),
+        "The list to append has sequence 7; the document already holds sequence 7");
+    auto const earlier = parseUnsignedList(unsignedListText(validators_, 6, now_ + 100));
+    EXPECT_EQ(
+        appendError(earlier, v2),
+        "The list to append has sequence 6; the document already holds sequence 7");
+
+    // The highest sequence counts, wherever it is in the document
+    auto const later = parseUnsignedList(unsignedListText(validators_, 9, now_ + 300));
+    auto const laterSig = signList(later, publisher_.signingKey, publisher_.token.validationSecret);
+    auto doc = makeSignedList(
+        publisher_.token.manifest, publisher_.manifest.masterKey, later, laterSig, 2, v2, {});
+    std::swap(doc[jss::blobs_v2][0u], doc[jss::blobs_v2][1u]);
+    auto const between = parseUnsignedList(unsignedListText(validators_, 8, now_ + 200));
+    EXPECT_EQ(
+        appendError(between, doc),
+        "The list to append has sequence 8; the document already holds sequence 9");
+    auto const tenth = parseUnsignedList(unsignedListText(validators_, 10, now_ + 400));
+    EXPECT_EQ(appendError(tenth, doc), "");
+
+    // A blob that is not a list has no sequence to compare
+    std::string const notAList = "[]";
+    auto broken = v2;
+    broken[jss::blobs_v2][0u][jss::blob] = base64Encode(notAList);
+    broken[jss::blobs_v2][0u][jss::signature] =
+        strHex(sign(publisher_.signingKey, publisher_.token.validationSecret, makeSlice(notAList)));
+    EXPECT_EQ(appendError(tenth, broken), "The list to append to holds an invalid blob");
 }
 
 TEST_F(ListSigningTest, append_reads_entry_manifests)

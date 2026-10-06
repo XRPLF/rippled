@@ -375,7 +375,10 @@ TEST_F(SigningKeysTest, create_token)
         SigningKeys keys(KeyType::Ed25519, kp.first);
         EXPECT_EQ(
             errorOf([&] { keys.createToken(); }), "This key file cannot be used to sign tokens.");
-        EXPECT_EQ(errorOf([&] { keys.revoke(); }), "This key file cannot be used to sign tokens.");
+        EXPECT_EQ(
+            errorOf([&] { keys.revoke(); }),
+            "This key file cannot sign a revocation: the master key is external; use "
+            "start_revoke_keys and finish_revoke_keys.");
     }
 }
 
@@ -538,6 +541,15 @@ TEST_F(SigningKeysTest, external_signing_key)
     EXPECT_EQ(
         errorOf([&] { fileKeys.finishToken(masterSig, signingSig); }),
         "No pending token to finish");
+
+    // The signing key the current manifest names is refused for the next
+    // token: ManifestCache::applyManifest returns BadEphemeralKey for it
+    EXPECT_EQ(
+        errorOf([&] { fileKeys.startToken(KeyType::Ed25519, signer.publicKey()); }),
+        "The signing key is the current manifest's; a server rejects a manifest that reuses it");
+    EXPECT_EQ(fileKeys.sequence(), 1u);
+    SigningKeys const next(KeyType::Ed25519);
+    EXPECT_EQ(errorOf([&] { fileKeys.startToken(KeyType::Ed25519, next.publicKey()); }), "");
 }
 
 TEST_F(SigningKeysTest, pending_token_is_kept)
@@ -604,6 +616,32 @@ TEST_F(SigningKeysTest, stored_manifest_is_checked)
     jv["secret_key"] =
         toBase58(TokenType::NodePrivate, generateKeyPair(KeyType::Ed25519, randomSeed()).second);
     EXPECT_EQ(loadError(jv), kBadManifest);
+
+    // A manifest above token_sequence loads, so the keys can still be revoked,
+    // but makes no token: the next one would not be newer than it
+    jv = good;
+    jv["token_sequence"] = 0;
+    EXPECT_EQ(loadError(jv), "");
+    {
+        auto loaded = SigningKeys::makeSigningKeys(keyFile_);
+        std::string const stale =
+            "The stored manifest has sequence 1, above token_sequence 0; a server would reject "
+            "the next token as stale";
+        EXPECT_EQ(errorOf([&] { loaded.createToken(); }), stale);
+        EXPECT_EQ(errorOf([&] { loaded.startToken(); }), stale);
+        EXPECT_EQ(loaded.sequence(), 0u);
+        EXPECT_TRUE(manifestOf(loaded.revoke(), loaded).revoked());
+    }
+
+    // A token_sequence above the manifest, as a migrated key file sets it,
+    // continues from there
+    jv = good;
+    jv["token_sequence"] = 5;
+    EXPECT_EQ(loadError(jv), "");
+    {
+        auto loaded = SigningKeys::makeSigningKeys(keyFile_);
+        EXPECT_EQ(manifestOf(loaded.createToken().manifest, loaded).sequence, 6u);
+    }
 }
 
 }  // namespace xrpl::tools::test

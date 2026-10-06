@@ -7,7 +7,6 @@
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
-#include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/KeyType.h>
@@ -15,8 +14,6 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Manifest.h>
-
-#include <boost/preprocessor/stringize.hpp>
 
 #include <sys/file.h>
 #include <tools/validator-keys/ListSigning.h>
@@ -43,25 +40,6 @@
 namespace xrpl::tools {
 
 namespace {
-
-// The build version number: edit for each release, in semantic version form.
-char const* const kVersionString =
-    "0.4.0"
-
-#if defined(DEBUG) || defined(SANITIZER)
-    "+"
-#ifdef DEBUG
-    "DEBUG"
-#ifdef SANITIZER
-    "."
-#endif
-#endif
-
-#ifdef SANITIZER
-    BOOST_PP_STRINGIZE(SANITIZER)
-#endif
-#endif
-        ;
 
 constexpr std::size_t kMaxDocumentBytes = 4 * 1024 * 1024;
 constexpr std::size_t kBlockLineLength = 72;
@@ -136,9 +114,14 @@ class Output
 public:
     /**
      * @param inputs Files the command reads besides those in the options;
-     *        `--out` may not name any input, since the output replaces it.
+     *        `--out` may not name any input except `--append`, whose document
+     *        the output replaces once it is complete.
+     * @param mode The file's mode: `OwnerOnlyFile::kPublished` for a list
      */
-    Output(Context const& ctx, std::vector<std::filesystem::path> const& inputs = {})
+    Output(
+        Context const& ctx,
+        std::vector<std::filesystem::path> const& inputs = {},
+        int mode = OwnerOnlyFile::kOwnerOnly)
         : out_(ctx.out)
     {
         auto const& options = ctx.options;
@@ -147,8 +130,7 @@ public:
 
         std::vector<std::filesystem::path> read(inputs);
         read.push_back(options.keyFile);
-        for (auto const& file :
-             {options.tokenFile, options.manifestFile, options.appendFile, options.validatorsFile})
+        for (auto const& file : {options.tokenFile, options.manifestFile, options.validatorsFile})
         {
             if (file)
                 read.push_back(*file);
@@ -160,7 +142,8 @@ public:
                 throw std::runtime_error("--out names an input file: " + options.outFile->string());
         }
 
-        file_ = std::make_unique<OwnerOnlyFile>(*options.outFile, "output file");
+        file_ = std::make_unique<OwnerOnlyFile>(
+            *options.outFile, "output file", OwnerOnlyFile::Existing::Replace, mode);
     }
 
     // A config block in 72-character lines.
@@ -178,6 +161,20 @@ public:
             return;
         }
         write(text, "[" + section + "]");
+    }
+
+    // A base64 manifest alone: the file a list publisher names with --manifest-file.
+    void
+    manifest(std::string const& base64)
+    {
+        if (!file_)
+        {
+            out_ << "The manifest for a validator-list publisher; save it and pass it to\n"
+                    "start_sign_list and finish_sign_list with --manifest-file:\n\n"
+                 << base64 << std::endl;
+            return;
+        }
+        write(base64 + "\n", "The manifest");
     }
 
     void
@@ -200,23 +197,6 @@ private:
         out_ << what << " written to " << file_->target().string() << "\n";
     }
 };
-
-/**
- * Parses a public key given as base58, hex or base64.
- *
- * @throws std::runtime_error if none of the encodings yields a public key
- */
-PublicKey
-parsePublicKey(std::string const& data)
-{
-    if (auto const key = parseBase58<PublicKey>(TokenType::NodePublic, data))
-        return *key;
-    if (auto const key = parseHexKey(data))
-        return *key;
-    if (auto const bytes = decodeBase64Exact(data); bytes && publicKeyType(makeSlice(*bytes)))
-        return PublicKey(makeSlice(*bytes));
-    throw std::runtime_error("Unable to parse public key: " + data);
-}
 
 /**
  * Decodes a signature given as hex or base64. Only using it shows whether it
@@ -295,7 +275,7 @@ emitFinished(SigningKeys const& keys, SigningKeys::Finished const& finished, Out
     }
     else
     {
-        output.block("validator_manifest", nodePublic(keys), finished.manifest);
+        output.manifest(finished.manifest);
     }
 }
 
@@ -553,7 +533,7 @@ cmdSignList(Args const& args, Context& ctx)
 {
     if (!ctx.options.tokenFile)
         throw std::runtime_error("sign_list needs --token-file");
-    Output output(ctx, {args[0]});
+    Output output(ctx, {args[0]}, OwnerOnlyFile::kPublished);
 
     auto const token = loadTokenFile(*ctx.options.tokenFile);
     auto const manifest = deserializeManifest(base64Decode(token.manifest));
@@ -587,7 +567,7 @@ int
 cmdFinishSignList(Args const& args, Context& ctx)
 {
     auto const [manifest, signingKey] = loadSigningManifest(ctx, "finish_sign_list");
-    Output output(ctx, {args[1]});
+    Output output(ctx, {args[1]}, OwnerOnlyFile::kPublished);
 
     auto const list = loadUnsignedList(args[1]);
     auto const sig = decodeSignature(args[0]);
@@ -701,17 +681,16 @@ constexpr std::array<Command, 18> kCommands{{
 
 }  // namespace
 
-std::string const&
-getVersionString()
+PublicKey
+parsePublicKey(std::string const& data)
 {
-    static std::string const kValue = [] {
-        std::string const s = kVersionString;
-        beast::SemanticVersion v;
-        if (!v.parse(s) || v.print() != s)
-            throw std::logic_error(s + ": Bad version string");  // LCOV_EXCL_LINE
-        return s;
-    }();
-    return kValue;
+    if (auto const key = parseBase58<PublicKey>(TokenType::NodePublic, data))
+        return *key;
+    if (auto const key = parseHexKey(data))
+        return *key;
+    if (auto const bytes = decodeBase64Exact(data); bytes && publicKeyType(makeSlice(*bytes)))
+        return PublicKey(makeSlice(*bytes));
+    throw std::runtime_error("Unable to parse public key: " + data);
 }
 
 std::filesystem::path

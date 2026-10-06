@@ -1,8 +1,5 @@
-#include <xrpl/basics/Slice.h>
-#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/tokens.h>
 
 #include <boost/program_options.hpp>
 
@@ -71,17 +68,6 @@ printHelp(boost::program_options::options_description const& desc)
                  "--validators and --expected-key add checks.\n";
 }
 
-xrpl::PublicKey
-publicKeyOption(std::string const& value)
-{
-    if (auto const key = xrpl::parseBase58<xrpl::PublicKey>(xrpl::TokenType::NodePublic, value))
-        return *key;
-    if (auto const bytes = xrpl::strUnHex(value);
-        bytes && xrpl::publicKeyType(xrpl::makeSlice(*bytes)))
-        return xrpl::PublicKey(xrpl::makeSlice(*bytes));
-    throw std::runtime_error("Unable to parse public key: " + value);
-}
-
 }  // namespace
 
 int
@@ -102,12 +88,13 @@ main(int argc, char** argv)
         "from [validator_token]) or ed25519 (for a publisher's signing key).")(
         "signing-key",
         po::value<std::string>(),
-        "External signing key a token delegates to (start_token).")(
+        "External signing key a token delegates to, as base58, hex or base64 (start_token).")(
         "token-file", po::value<std::string>(), "File holding a [validator_token] block.")(
         "manifest-file", po::value<std::string>(), "File holding a base64 manifest.")(
         "out",
         po::value<std::string>(),
-        "Write the token, revocation or signed list to this file.")(
+        "Write the token, manifest, revocation or signed list to this file; a signed list "
+        "is readable by everyone, the rest by the owner only.")(
         "list-version", po::value<unsigned>(), "Signed list version: 1 (default) or 2.")(
         "append", po::value<std::string>(), "Version 2 list to add the new blob to.")(
         "validators",
@@ -145,7 +132,7 @@ main(int argc, char** argv)
 
     if (vm.contains("version"))
     {
-        std::cout << "validator-keys version " << getVersionString() << std::endl;
+        std::cout << "validator-keys version " << xrpl::build_info::getVersionString() << std::endl;
         return EXIT_SUCCESS;
     }
 
@@ -176,7 +163,7 @@ main(int argc, char** argv)
             options.tokenKeyType = *keyType;
         }
         if (vm.contains("signing-key"))
-            options.signingKey = publicKeyOption(vm["signing-key"].as<std::string>());
+            options.signingKey = parsePublicKey(vm["signing-key"].as<std::string>());
         if (vm.contains("token-file"))
             options.tokenFile = vm["token-file"].as<std::string>();
         if (vm.contains("manifest-file"))
@@ -190,7 +177,7 @@ main(int argc, char** argv)
         if (vm.contains("validators"))
             options.validatorsFile = vm["validators"].as<std::string>();
         if (vm.contains("expected-key"))
-            options.expectedKey = publicKeyOption(vm["expected-key"].as<std::string>());
+            options.expectedKey = parsePublicKey(vm["expected-key"].as<std::string>());
 
         return runCommand(
             vm["command"].as<std::string>(),

@@ -123,7 +123,9 @@ using Resigner = std::function<std::string(std::string const& blobBytes)>;
  * signature must verify under the signing key of its effective manifest (its
  * own, else the top-level one). When that manifest is @p manifestBase64 for
  * every entry the entries are copied, otherwise every blob is signed again
- * with @p resign and the per-entry manifests are dropped.
+ * with @p resign and the per-entry manifests are dropped. A server ignores a
+ * blob whose `sequence` is not above the one it holds, so @p list's must be
+ * above every existing blob's.
  *
  * @throws std::runtime_error if @p append is not a version 2 document for
  *         @p masterKey, already holds the maximum number of blobs, holds a
@@ -131,7 +133,8 @@ using Resigner = std::function<std::string(std::string const& blobBytes)>;
  *         verify or has no signing key, holds a manifest for another master
  *         key, holds a manifest whose sequence is not below the token's,
  *         holds a blob whose signature does not verify under its effective
- *         manifest's signing key, or needs re-signing and @p resign is empty
+ *         manifest's signing key, holds a blob whose `sequence` is not below
+ *         @p list's, or needs re-signing and @p resign is empty
  */
 json::Value
 makeSignedList(

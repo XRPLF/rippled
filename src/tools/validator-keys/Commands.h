@@ -27,7 +27,9 @@ struct ToolOptions
     std::optional<std::filesystem::path> tokenFile;
     // File holding a base64 manifest.
     std::optional<std::filesystem::path> manifestFile;
-    // File to write a token, a revocation or a signed list to instead of stdout.
+    // File to write a token, a manifest, a revocation or a signed list to
+    // instead of stdout; a signed list is readable by everyone, the rest by
+    // the owner only.
     std::optional<std::filesystem::path> outFile;
     // Version of the signed list document.
     unsigned listVersion = 1;
@@ -40,10 +42,13 @@ struct ToolOptions
 };
 
 /**
- * The tool's version, checked to be a semantic version.
+ * Parses a public key given as base58 (`nHB...`), hex or base64: the
+ * encodings `create_external`, `--signing-key` and `--expected-key` take.
+ *
+ * @throws std::runtime_error if none of the encodings yields a public key
  */
-std::string const&
-getVersionString();
+PublicKey
+parsePublicKey(std::string const& data);
 
 /**
  * The key file used when `--keyfile` is not given:

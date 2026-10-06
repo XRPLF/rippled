@@ -138,12 +138,17 @@ revocation works the same way with `start_revoke_keys` and
 `finish_revoke_keys <signature>`.
 
 When the signing key is also held by the hardware, name it when starting the
-token. The bytes are then signed twice, once by each key, and the result is a
-manifest without a secret:
+token, in base58, hex or base64. The bytes are then signed twice, once by each
+key, and the result is a manifest without a secret, printed as plain base64:
+it is the manifest a [list publisher](#validator-list-publishers) passes to
+`start_sign_list` and `finish_sign_list` with `--manifest-file`, so save it
+with `--out manifest.txt`. It is not a `[validator_token]` and nothing in
+`xrpld.cfg` takes it. Each token needs a new signing key: a server rejects a
+manifest that names the signing key of the one it already holds.
 
 ```
   $ validator-keys start_token --signing-key <signing public key>
-  $ validator-keys finish_token <master signature> <signing signature>
+  $ validator-keys finish_token <master signature> <signing signature> --out manifest.txt
 ```
 
 A secp256k1 signature from an external signer must be in the fully canonical
@@ -206,10 +211,14 @@ and one space is placed after each `,` and `:` before signing.
 ```
 
 `vl.json` is the version 1 document a server fetches: `blob`, `manifest`,
-`public_key`, `signature`, `version`. `--list-version 2` writes the blob into
-`blobs_v2` instead, and `--append <existing.json>` adds it to a version 2
-document, which carries at most five blobs, so a list can be published
-alongside the one it will replace.
+`public_key`, `signature`, `version`. Unlike a token, it is written readable
+by everyone, since it is meant to be served. `--list-version 2` writes the
+blob into `blobs_v2` instead, and `--append <existing.json>` adds it to a
+version 2 document, which carries at most five blobs, so a list can be
+published alongside the one it will replace. The appended list's `sequence`
+must be above every blob's in the document, as a server ignores the rest.
+`--out` may name the `--append` file: the document is replaced in one step
+once the new one is complete.
 
 When the signing key is held by a hardware signer, the list is signed in two
 steps against the manifest from `finish_token`:

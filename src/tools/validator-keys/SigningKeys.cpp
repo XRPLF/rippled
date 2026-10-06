@@ -351,11 +351,28 @@ SigningKeys::storeManifest(STObject const& st)
     }
 }
 
+std::optional<Manifest>
+SigningKeys::storedManifest() const
+{
+    if (manifest_.empty())
+        return std::nullopt;
+    return deserializeManifest(manifest_);
+}
+
 std::string
 SigningKeys::startToken(KeyType const& keyType, std::optional<PublicKey> const& externalSigningKey)
 {
     if (externalSigningKey && *externalSigningKey == keys_.publicKey)
         throw std::runtime_error("The signing key must differ from the master key");
+    // ManifestCache::applyManifest looks the signing key up before it erases
+    // the previous manifest's entry, so a reused one is BadEphemeralKey.
+    if (auto const stored = storedManifest();
+        externalSigningKey && stored && stored->signingKey == *externalSigningKey)
+    {
+        throw std::runtime_error(
+            "The signing key is the current manifest's; a server rejects a manifest that "
+            "reuses it");
+    }
 
     if (pending_)
     {
@@ -394,6 +411,15 @@ SigningKeys::startPending(Pending const& pending)
         throw std::runtime_error(kRevokedError);
     if (tokenSequence_ >= std::numeric_limits<std::uint32_t>::max() - 1)
         throw std::runtime_error(kExhaustedError);
+    // A server keeps the highest sequence it has seen, so a token below the
+    // stored manifest would be stale.
+    if (auto const stored = storedManifest(); stored && stored->sequence > tokenSequence_)
+    {
+        throw std::runtime_error(
+            "The stored manifest has sequence " + std::to_string(stored->sequence) +
+            ", above token_sequence " + std::to_string(tokenSequence_) +
+            "; a server would reject the next token as stale");
+    }
 
     pending_ = pending;
     return manifestSigningData(partialManifest(tokenSequence_ + 1, pending.signingKey));
@@ -495,7 +521,11 @@ std::string
 SigningKeys::revoke()
 {
     if (!keys_.secretKey)
-        throw std::runtime_error("This key file cannot be used to sign tokens.");
+    {
+        throw std::runtime_error(
+            "This key file cannot sign a revocation: the master key is external; use "
+            "start_revoke_keys and finish_revoke_keys.");
+    }
 
     return finishRevoke(masterSign(makeSlice(manifestSigningData(partialRevocation()))));
 }
