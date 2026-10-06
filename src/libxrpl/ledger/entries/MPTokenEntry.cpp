@@ -1,5 +1,6 @@
 #include <xrpl/ledger/entries/MPTokenEntry.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -13,6 +14,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -89,6 +91,51 @@ MPTokenEntry<ViewT>::hasObligations() const
         sle.isFieldPresent(sfConfidentialBalanceSpending) ||
         sle.isFieldPresent(sfIssuerEncryptedBalance) ||
         sle.isFieldPresent(sfAuditorEncryptedBalance);
+}
+
+template <typename ViewT>
+TER
+MPTokenEntry<ViewT>::lockEscrow(STAmount const& amount)
+    requires Base::kIsWritable
+{
+    auto const j = this->journal();
+    auto const mptIssue = amount.get<MPTIssue>();
+    auto const holder = (*this)->getAccountID(sfAccount);
+
+    auto const amt = (*this)->getFieldU64(sfMPTAmount);
+    auto const pay = amount.mpt().value();
+
+    // Underflow check for subtraction
+    if (!canSubtract(STAmount(mptIssue, amt), STAmount(mptIssue, pay)))
+    {  // LCOV_EXCL_START
+        JLOG(j.error()) << "lockEscrowMPT: insufficient MPTAmount for " << to_string(holder) << ": "
+                        << amt << " < " << pay;
+        return tecINTERNAL;
+    }  // LCOV_EXCL_STOP
+
+    (**this)[sfMPTAmount] = amt - pay;
+
+    // Overflow check for addition
+    uint64_t const locked = (**this)[~sfLockedAmount].valueOr(0);
+
+    if (!canAdd(STAmount(mptIssue, locked), STAmount(mptIssue, pay)))
+    {  // LCOV_EXCL_START
+        JLOG(j.error()) << "lockEscrowMPT: overflow on locked amount for " << to_string(holder)
+                        << ": " << locked << " + " << pay;
+        return tecINTERNAL;
+    }  // LCOV_EXCL_STOP
+
+    if ((*this)->isFieldPresent(sfLockedAmount))
+    {
+        (**this)[sfLockedAmount] += pay;
+    }
+    else
+    {
+        (*this)->setFieldU64(sfLockedAmount, pay);
+    }
+
+    this->update();
+    return tesSUCCESS;
 }
 
 template class MPTokenEntry<ReadView>;
