@@ -9,6 +9,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AmendmentsEntry.h>
 #include <xrpl/ledger/entries/LedgerHashesEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -309,40 +310,13 @@ areCompatible(
 std::set<UInt256>
 getEnabledAmendments(ReadView const& view)
 {
-    std::set<UInt256> amendments;
-
-    if (auto const sle = view.read(keylet::amendments()))
-    {
-        if (sle->isFieldPresent(sfAmendments))
-        {
-            auto const& v = sle->getFieldV256(sfAmendments);
-            amendments.insert(v.begin(), v.end());
-        }
-    }
-
-    return amendments;
+    return AmendmentsEntryR(view).enabledAmendments();
 }
 
 MajorityAmendmentsT
 getMajorityAmendments(ReadView const& view)
 {
-    MajorityAmendmentsT ret;
-
-    if (auto const sle = view.read(keylet::amendments()))
-    {
-        if (sle->isFieldPresent(sfMajorities))
-        {
-            using Tp = NetClock::time_point;
-            using D = Tp::duration;
-
-            auto const majorities = sle->getFieldArray(sfMajorities);
-
-            for (auto const& m : majorities)
-                ret[m.getFieldH256(sfAmendment)] = Tp(D(m.getFieldU32(sfCloseTime)));
-        }
-    }
-
-    return ret;
+    return AmendmentsEntryR(view).majorityAmendments();
 }
 
 std::optional<UInt256>
