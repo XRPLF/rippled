@@ -148,6 +148,18 @@ class Xrpl(ConanFile):
         self.requires("sqlite3/3.53.0", force=True)
         self.requires("xxhash/0.8.3", transitive_headers=True)
 
+    def build_requirements(self):
+        # grpc_cpp_plugin runs during the build, so take it from the build context.
+        # default_options only reach the host context, so pass grpc's on explicitly.
+        self.tool_requires(
+            "grpc/1.81.1",
+            options={
+                key.removeprefix("grpc/*:"): value
+                for key, value in self.default_options.items()
+                if key.startswith("grpc/*:")
+            },
+        )
+
     exports_sources = (
         "bin/default-loader-path.sh",
         "CMakeLists.txt",

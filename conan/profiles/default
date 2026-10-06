@@ -49,17 +49,13 @@ tools.build:compiler_executables={'c':'{{ cc_exe }}','cpp':'{{ cxx_exe }}'}
 user.package:cppstd_version=23
 tools.info.package_id:confs+=["user.package:cppstd_version"]
 
-{% if os == "Linux" %}
-{# Executables we run (protoc, grpc_cpp_plugin, build tools) would otherwise load libstdc++/libgcc #}
-{# from a Nix store path that might change with a Nix toolchain update. #}
+{% if os == "Linux" and context == "build" %}
+{# Build-context executables (protoc, grpc_cpp_plugin, build tools) run during the build #}
+{# and would otherwise load libstdc++/libgcc from a Nix store path #}
+{# that might change with a Nix toolchain update. #}
 {# --as-needed drops the ones they link but don't use, #}
 {# such as libatomic for grpc_cpp_plugin on arm64. #}
-{% set exe_link_flags = ["-static-libstdc++", "-static-libgcc", "-Wl,--as-needed"] %}
-{% if context == "build" %}
-tools.build:exelinkflags+={{ exe_link_flags }}
-{% else %}
-grpc/*:tools.build:exelinkflags+={{ exe_link_flags }}
-{% endif %}
+tools.build:exelinkflags+=["-static-libstdc++", "-static-libgcc", "-Wl,--as-needed"]
 tools.info.package_id:confs+=["tools.build:exelinkflags"]
 {% endif %}
 
