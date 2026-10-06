@@ -57,6 +57,8 @@ char const* const kExhaustedError =
     "Revoke validator keys if previous token has been compromised.";
 char const* const kNoSecretError = "This key file cannot be used to sign.";
 char const* const kBadManifestError = "Manifest is not properly signed";
+char const* const kPendingError =
+    "A token is pending: finish it with finish_token before starting another";
 
 }  // namespace
 
@@ -383,10 +385,7 @@ SigningKeys::startToken(KeyType const& keyType, std::optional<PublicKey> const& 
             ? !pending_->generated && pending_->signingKey == *externalSigningKey
             : pending_->generated && pending_->generated->keyType == keyType;
         if (!same)
-        {
-            throw std::runtime_error(
-                "A token is pending: finish it with finish_token before starting another");
-        }
+            throw std::runtime_error(kPendingError);
         auto const pending = *pending_;
         return strHex(startPending(pending));
     }
@@ -479,6 +478,9 @@ SigningKeys::createToken(KeyType const& keyType)
 {
     if (!keys_.secretKey)
         throw std::runtime_error("This key file cannot be used to sign tokens.");
+    // Making a token would replace the pending one, discarding what its signer holds.
+    if (pending_)
+        throw std::runtime_error(kPendingError);
 
     auto const secret = generateSecretKey(keyType, randomSeed());
     Pending const pending{

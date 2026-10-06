@@ -586,6 +586,9 @@ TEST_F(SigningKeysTest, pending_token_is_kept)
         errorOf(
             [&] { keys.startToken(KeyType::Ed25519, SigningKeys(KeyType::Ed25519).publicKey()); }),
         pendingError);
+    // createToken would replace the pending token too, so it is refused
+    EXPECT_EQ(errorOf([&] { keys.createToken(); }), pendingError);
+    EXPECT_EQ(keys.startToken(KeyType::Ed25519, signer.publicKey()), external);
     auto const masterSig = required(strUnHex(keys.signHex(external)));
     auto const signingSig = required(strUnHex(signer.signHex(external)));
     EXPECT_EQ(manifestOf(keys.finishToken(masterSig, signingSig).manifest, keys).sequence, 2u);

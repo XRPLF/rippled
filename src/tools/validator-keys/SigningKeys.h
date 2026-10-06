@@ -188,9 +188,9 @@ public:
      *
      * @param keyType Key type of the token's signing key
      *
-     * @throws std::runtime_error if the master key is external, the keys are
-     *         revoked, the sequence is exhausted, or the stored manifest's
-     *         sequence is above the token sequence
+     * @throws std::runtime_error if the master key is external, a token is
+     *         pending, the keys are revoked, the sequence is exhausted, or the
+     *         stored manifest's sequence is above the token sequence
      */
     ValidatorToken
     createToken(KeyType const& keyType = KeyType::Secp256k1);
