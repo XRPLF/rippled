@@ -540,6 +540,45 @@ TEST_F(SigningKeysTest, external_signing_key)
         "No pending token to finish");
 }
 
+TEST_F(SigningKeysTest, pending_token_is_kept)
+{
+    SigningKeys const signer(KeyType::Ed25519);
+    SigningKeys keys(KeyType::Ed25519);
+    std::string const pendingError =
+        "A token is pending: finish it with finish_token before starting another";
+
+    // A generated signing key: the same key type gets the same bytes, through
+    // the key file too, and another request is refused
+    auto const data = keys.startToken(KeyType::Secp256k1);
+    EXPECT_EQ(keys.startToken(KeyType::Secp256k1), data);
+    keys.writeToFile(keyFile_);
+    auto fileKeys = SigningKeys::makeSigningKeys(keyFile_);
+    EXPECT_EQ(fileKeys.startToken(KeyType::Secp256k1), data);
+    EXPECT_TRUE(keys == fileKeys);
+    EXPECT_EQ(errorOf([&] { keys.startToken(KeyType::Ed25519); }), pendingError);
+    EXPECT_EQ(
+        errorOf([&] { keys.startToken(KeyType::Secp256k1, signer.publicKey()); }), pendingError);
+    EXPECT_TRUE(keys == fileKeys);
+    auto const finished = keys.finishToken(required(strUnHex(keys.signHex(data))));
+    auto const m = manifestOf(finished.manifest, keys);
+    EXPECT_EQ(m.sequence, 1u);
+    EXPECT_EQ(
+        required(m.signingKey), derivePublicKey(KeyType::Secp256k1, required(finished.secret)));
+
+    // An external signing key: the same key gets the same bytes, whatever key
+    // type the call names; another key or a generated key is refused
+    auto const external = keys.startToken(KeyType::Ed25519, signer.publicKey());
+    EXPECT_EQ(keys.startToken(KeyType::Secp256k1, signer.publicKey()), external);
+    EXPECT_EQ(errorOf([&] { keys.startToken(KeyType::Ed25519); }), pendingError);
+    EXPECT_EQ(
+        errorOf(
+            [&] { keys.startToken(KeyType::Ed25519, SigningKeys(KeyType::Ed25519).publicKey()); }),
+        pendingError);
+    auto const masterSig = required(strUnHex(keys.signHex(external)));
+    auto const signingSig = required(strUnHex(signer.signHex(external)));
+    EXPECT_EQ(manifestOf(keys.finishToken(masterSig, signingSig).manifest, keys).sequence, 2u);
+}
+
 TEST_F(SigningKeysTest, stored_manifest_is_checked)
 {
     SigningKeys keys(KeyType::Ed25519);

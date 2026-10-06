@@ -354,10 +354,28 @@ SigningKeys::storeManifest(STObject const& st)
 std::string
 SigningKeys::startToken(KeyType const& keyType, std::optional<PublicKey> const& externalSigningKey)
 {
+    if (externalSigningKey && *externalSigningKey == keys_.publicKey)
+        throw std::runtime_error("The signing key must differ from the master key");
+
+    if (pending_)
+    {
+        // The pending manifest is fixed: the same request gets its bytes again so a
+        // lost signature can be made over them, and another request would discard
+        // the generated secret or the bytes an external signer already signed.
+        bool const same = externalSigningKey
+            ? !pending_->generated && pending_->signingKey == *externalSigningKey
+            : pending_->generated && pending_->generated->keyType == keyType;
+        if (!same)
+        {
+            throw std::runtime_error(
+                "A token is pending: finish it with finish_token before starting another");
+        }
+        auto const pending = *pending_;
+        return strHex(startPending(pending));
+    }
+
     if (externalSigningKey)
     {
-        if (*externalSigningKey == keys_.publicKey)
-            throw std::runtime_error("The signing key must differ from the master key");
         return strHex(
             startPending(Pending{.signingKey = *externalSigningKey, .generated = std::nullopt}));
     }

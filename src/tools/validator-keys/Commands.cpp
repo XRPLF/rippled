@@ -202,19 +202,6 @@ private:
 };
 
 /**
- * Decodes canonical base64, or nothing. base64Decode returns partial data for
- * invalid input, so the decoded bytes must encode back to @p data.
- */
-std::optional<std::string>
-decodeBase64Exact(std::string const& data)
-{
-    auto bytes = base64Decode(data);
-    if (base64Encode(bytes) != data)
-        return std::nullopt;
-    return bytes;
-}
-
-/**
  * Parses a public key given as base58, hex or base64.
  *
  * @throws std::runtime_error if none of the encodings yields a public key

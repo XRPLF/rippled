@@ -22,6 +22,13 @@ std::optional<PublicKey>
 parseHexKey(std::string const& hex);
 
 /**
+ * Decodes canonical base64, or nothing. base64Decode returns partial data for
+ * invalid input, so the decoded bytes must encode back to @p data.
+ */
+std::optional<std::string>
+decodeBase64Exact(std::string const& data);
+
+/**
  * Reads a token from a file holding the [validator_token] block as
  * `create_token` prints it. The section header and `#` comment lines are
  * ignored and the base64 lines are joined.
@@ -110,12 +117,21 @@ using Resigner = std::function<std::string(std::string const& blobBytes)>;
  * carries the blob and signature inside `blobs_v2`; when @p append is given it
  * must be a version 2 document for the same master key and the new blob is
  * added to it. A server verifies every blob under the newest manifest it has
- * seen for the publisher, so when @p append was signed under another manifest
- * its blobs are signed again with @p resign.
+ * seen for the publisher, so a manifest in @p append, top-level or per entry,
+ * whose sequence is not below @p manifestBase64's is refused; any other
+ * manifest must verify for @p masterKey and name a signing key. Every entry's
+ * signature must verify under the signing key of its effective manifest (its
+ * own, else the top-level one). When that manifest is @p manifestBase64 for
+ * every entry the entries are copied, otherwise every blob is signed again
+ * with @p resign and the per-entry manifests are dropped.
  *
  * @throws std::runtime_error if @p append is not a version 2 document for
- *         @p masterKey, already holds the maximum number of blobs, or needs
- *         re-signing and @p resign is empty
+ *         @p masterKey, already holds the maximum number of blobs, holds a
+ *         malformed entry, holds a manifest that does not deserialize and
+ *         verify or has no signing key, holds a manifest for another master
+ *         key, holds a manifest whose sequence is not below the token's,
+ *         holds a blob whose signature does not verify under its effective
+ *         manifest's signing key, or needs re-signing and @p resign is empty
  */
 json::Value
 makeSignedList(

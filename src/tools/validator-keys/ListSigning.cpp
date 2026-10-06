@@ -187,6 +187,15 @@ parseHexKey(std::string const& hex)
     return PublicKey(slice);
 }
 
+std::optional<std::string>
+decodeBase64Exact(std::string const& data)
+{
+    auto bytes = base64Decode(data);
+    if (base64Encode(bytes) != data)
+        return std::nullopt;
+    return bytes;
+}
+
 ValidatorToken
 loadTokenFile(std::filesystem::path const& tokenFile)
 {
@@ -352,18 +361,33 @@ makeSignedList(
                 "The list to append to already holds " + std::to_string(kMaxBlobs) + " blobs");
         }
 
-        jv[jss::blobs_v2] = existing[jss::blobs_v2];
-        if (existing[jss::manifest].asString() != manifestBase64)
+        auto const current = deserializeManifest(base64Decode(manifestBase64));
+        if (!current || !current->signingKey)
+            throw std::runtime_error("The token holds an invalid manifest");
+
+        // The signing key a manifest in the document delegates to, and whether
+        // the manifest is the token's. A server that applied a manifest
+        // rejects an older or equal one, and with it every blob signed under
+        // it, so any other manifest must be older; it must also verify for
+        // the list's master key, or its blobs were never the publisher's.
+        struct Signer
         {
-            // A server that applied the existing manifest rejects an older or
-            // equal one, and with it every blob signed under it.
-            auto const published =
-                deserializeManifest(base64Decode(existing[jss::manifest].asString()));
+            PublicKey key;
+            bool current;
+        };
+        auto const signerOf = [&](std::string const& base64) -> Signer {
+            if (base64 == manifestBase64)
+                return {.key = *current->signingKey, .current = true};
+            auto const published = parseManifest(base64);
             if (!published)
                 throw std::runtime_error("The list to append to holds an invalid manifest");
-            auto const current = deserializeManifest(base64Decode(manifestBase64));
-            if (!current)
-                throw std::runtime_error("The token holds an invalid manifest");
+            if (published->masterKey != masterKey)
+            {
+                throw std::runtime_error(
+                    "The list to append to holds a manifest for another master key");
+            }
+            if (!published->signingKey)
+                throw std::runtime_error("The list to append to holds an invalid manifest");
             if (published->sequence >= current->sequence)
             {
                 throw std::runtime_error(
@@ -371,18 +395,61 @@ makeSignedList(
                     std::to_string(published->sequence) +
                     "; append with a token whose manifest sequence is higher");
             }
+            return {.key = *published->signingKey, .current = false};
+        };
+        auto const top = signerOf(existing[jss::manifest].asString());
+
+        struct Entry
+        {
+            std::string blob;
+            bool current;
+        };
+        std::vector<Entry> entries;
+        for (auto const& entry : existing[jss::blobs_v2])
+        {
+            if (!entry.isObject() || !entry.isMember(jss::blob) || !entry[jss::blob].isString() ||
+                !entry.isMember(jss::signature) || !entry[jss::signature].isString())
+                throw std::runtime_error("The list to append to holds an invalid blob");
+            auto const bytes = decodeBase64Exact(entry[jss::blob].asString());
+            auto const signature = strUnHex(entry[jss::signature].asString());
+            if (!bytes || !signature)
+                throw std::runtime_error("The list to append to holds an invalid blob");
+            auto signer = top;
+            if (entry.isMember(jss::manifest))
+            {
+                if (!entry[jss::manifest].isString())
+                    throw std::runtime_error("The list to append to holds an invalid manifest");
+                signer = signerOf(entry[jss::manifest].asString());
+            }
+            // Signed under the key its own manifest names: a tampered blob
+            // must not be signed again under the token's key.
+            if (!verify(signer.key, makeSlice(*bytes), makeSlice(*signature)))
+            {
+                throw std::runtime_error(
+                    "The list to append to holds a blob whose signature does not verify");
+            }
+            entries.push_back({.blob = *bytes, .current = signer.current});
+        }
+
+        if (std::ranges::all_of(entries, [](Entry const& e) { return e.current; }))
+        {
+            jv[jss::blobs_v2] = existing[jss::blobs_v2];
+        }
+        else
+        {
             if (!resign)
             {
                 throw std::runtime_error(
                     "The list to append to was signed under another manifest and its blobs "
                     "need signing again");
             }
-            for (auto& entry : jv[jss::blobs_v2])
+            jv[jss::blobs_v2] = json::Value(json::ValueType::Array);
+            for (auto const& entry : entries)
             {
-                if (!entry.isObject() || !entry.isMember(jss::blob) || !entry[jss::blob].isString())
-                    throw std::runtime_error("The list to append to holds an invalid blob");
-                entry[jss::signature] = resign(base64Decode(entry[jss::blob].asString()));
-                entry.removeMember(jss::manifest);
+                json::Value resigned(json::ValueType::Object);
+                resigned[jss::blob] = base64Encode(entry.blob);
+                resigned[jss::signature] = resign(entry.blob);
+                jv[jss::blobs_v2].append(resigned);
             }
         }
     }

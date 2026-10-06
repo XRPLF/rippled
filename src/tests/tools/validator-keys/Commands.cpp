@@ -282,18 +282,30 @@ TEST_F(CommandsTest, external_token)
     }
     EXPECT_EQ(
         commandError("finish_token", {"bad signature"}, options_), "Invalid signature encoding");
-    run("start_token", {}, options_);
+    auto const pending = run("start_token", {}, options_);
     EXPECT_EQ(
         commandError("finish_token", {signer.sign("foo")}, options_),
         "Manifest is not properly signed");
     EXPECT_EQ(keys(options_).sequence(), 2u);
 
-    // An external signing key too: two signatures, a manifest without a secret
+    // The token stays pending: start_token prints the same bytes again, and a
+    // start with another signing key is refused until it is finished
+    std::string const pendingError =
+        "A token is pending: finish it with finish_token before starting another";
+    EXPECT_EQ(run("start_token", {}, options_).out, pending.out);
     SigningKeys const signingKey(KeyType::Ed25519);
     ToolOptions both = options_;
     both.signingKey = signingKey.publicKey();
     both.outFile = file("manifest.txt");
+    EXPECT_EQ(commandError("start_token", {}, both), pendingError);
+    auto const pendingBytes = pending.out.substr(0, pending.out.find('\n'));
+    EXPECT_EQ(run("finish_token", {signer.signHex(pendingBytes)}, options_).rc, EXIT_SUCCESS);
+    EXPECT_EQ(keys(options_).sequence(), 3u);
+
+    // An external signing key too: two signatures, a manifest without a secret
     auto const start = run("start_token", {}, both);
+    EXPECT_EQ(run("start_token", {}, both).out, start.out);
+    EXPECT_EQ(commandError("start_token", {}, options_), pendingError);
     auto const bytes = start.out.substr(0, start.out.find('\n'));
     EXPECT_EQ(
         commandError("finish_token", {signer.signHex(bytes)}, both),
@@ -303,7 +315,7 @@ TEST_F(CommandsTest, external_token)
     EXPECT_EQ(finish.rc, EXIT_SUCCESS);
     auto const manifest = loadManifestFile(*both.outFile);
     EXPECT_EQ(required(manifest.signingKey), signingKey.publicKey());
-    EXPECT_EQ(manifest.sequence, 3u);
+    EXPECT_EQ(manifest.sequence, 4u);
 
     // The domain is stored for the next token; the attestation bytes are printed
     // for the external signer

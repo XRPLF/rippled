@@ -432,6 +432,283 @@ TEST_F(ListSigningTest, sign_and_verify_version_2)
     }
 }
 
+TEST_F(ListSigningTest, append_checks_entries)
+{
+    auto const v2 = signed2();
+    std::string const invalidBlob = "The list to append to holds an invalid blob";
+    std::string const invalidManifest = "The list to append to holds an invalid manifest";
+    std::string const badSignature =
+        "The list to append to holds a blob whose signature does not verify";
+    auto const later = parseUnsignedList(unsignedListText(validators_, 8, now_ + 300));
+    auto const laterSig = signList(later, publisher_.signingKey, publisher_.token.validationSecret);
+    auto const append = [&](json::Value const& existing) {
+        return makeSignedList(
+            publisher_.token.manifest,
+            publisher_.manifest.masterKey,
+            later,
+            laterSig,
+            2,
+            existing,
+            {});
+    };
+    auto const appendError = [&](json::Value const& existing) {
+        return errorOf([&] { append(existing); });
+    };
+
+    // Malformed entries
+    {
+        auto doc = v2;
+        doc[jss::blobs_v2][0u].removeMember(jss::signature);
+        EXPECT_EQ(appendError(doc), invalidBlob);
+    }
+    {
+        auto doc = v2;
+        doc[jss::blobs_v2][0u][jss::blob] = "not base64!";
+        EXPECT_EQ(appendError(doc), invalidBlob);
+    }
+    {
+        // Not canonical: the decoder drops the extra padding
+        auto doc = v2;
+        doc[jss::blobs_v2][0u][jss::blob] = v2[jss::blobs_v2][0u][jss::blob].asString() + "=";
+        EXPECT_EQ(appendError(doc), invalidBlob);
+    }
+    {
+        auto doc = v2;
+        doc[jss::blobs_v2][0u][jss::signature] = "zz";
+        EXPECT_EQ(appendError(doc), invalidBlob);
+    }
+    {
+        auto doc = v2;
+        doc[jss::blobs_v2][0u][jss::manifest] = 5;
+        EXPECT_EQ(appendError(doc), invalidManifest);
+    }
+    {
+        auto doc = v2;
+        doc[jss::blobs_v2][0u][jss::manifest] = "AAAA";
+        EXPECT_EQ(appendError(doc), invalidManifest);
+    }
+    {
+        auto doc = v2;
+        doc[jss::manifest] = "AAAA";
+        EXPECT_EQ(appendError(doc), invalidManifest);
+    }
+
+    // A signature or a blob changed under the same manifest
+    {
+        auto doc = v2;
+        doc[jss::blobs_v2][0u][jss::signature] = laterSig;
+        EXPECT_EQ(appendError(doc), badSignature);
+    }
+    {
+        auto doc = v2;
+        doc[jss::blobs_v2][0u][jss::blob] = base64Encode(later.canonical);
+        EXPECT_EQ(appendError(doc), badSignature);
+    }
+
+    // An entry carrying the token's manifest is verified and copied as it is
+    {
+        auto doc = v2;
+        doc[jss::blobs_v2][0u][jss::manifest] = publisher_.token.manifest;
+        auto const out = append(doc);
+        EXPECT_EQ(out[jss::blobs_v2].size(), 2u);
+        EXPECT_EQ(out[jss::blobs_v2][0u][jss::signature].asString(), signature_);
+        EXPECT_EQ(out[jss::blobs_v2][0u][jss::manifest].asString(), publisher_.token.manifest);
+        expectOk(out);
+    }
+}
+
+TEST_F(ListSigningTest, append_reads_entry_manifests)
+{
+    auto const v2 = signed2();
+    SigningKeys rotated = publisher_.keys;
+    auto const token2 = rotated.createToken(KeyType::Ed25519);
+    auto const manifest2 = required(deserializeManifest(base64Decode(token2.manifest)));
+    auto const signingKey2 = required(manifest2.signingKey);
+    auto const resign2 = [&](std::string const& bytes) {
+        return strHex(sign(signingKey2, token2.validationSecret, makeSlice(bytes)));
+    };
+    auto const later = parseUnsignedList(unsignedListText(validators_, 8, now_ + 300));
+    auto const third = parseUnsignedList(unsignedListText(validators_, 9, now_ + 400));
+    std::string const needsResign =
+        "The list to append to was signed under another manifest and its blobs need signing "
+        "again";
+
+    // A server emitted this document under the first manifest and added a blob
+    // carrying the second: the first token is refused, the second re-signs the
+    // blob whose effective manifest is the older top-level one.
+    {
+        auto doc = v2;
+        json::Value entry(json::ValueType::Object);
+        entry[jss::blob] = base64Encode(later.canonical);
+        entry[jss::signature] = resign2(later.canonical);
+        entry[jss::manifest] = token2.manifest;
+        doc[jss::blobs_v2].append(entry);
+        EXPECT_EQ(
+            errorOf([&] {
+                makeSignedList(
+                    publisher_.token.manifest,
+                    publisher_.manifest.masterKey,
+                    third,
+                    signList(third, publisher_.signingKey, publisher_.token.validationSecret),
+                    2,
+                    doc,
+                    {});
+            }),
+            "The list to append to was signed under manifest sequence 2; append with a token "
+            "whose manifest sequence is higher");
+        EXPECT_EQ(
+            errorOf([&] {
+                makeSignedList(
+                    token2.manifest,
+                    manifest2.masterKey,
+                    third,
+                    resign2(third.canonical),
+                    2,
+                    doc,
+                    {});
+            }),
+            needsResign);
+        auto const out = makeSignedList(
+            token2.manifest, manifest2.masterKey, third, resign2(third.canonical), 2, doc, resign2);
+        EXPECT_EQ(out[jss::blobs_v2].size(), 3u);
+        EXPECT_NE(out[jss::blobs_v2][0u][jss::signature].asString(), signature_);
+        EXPECT_FALSE(out[jss::blobs_v2][1u].isMember(jss::manifest));
+        auto const report = verifyList(out, std::nullopt, std::nullopt, now_);
+        EXPECT_TRUE(report["ok"].asBool()) << to_string(report);
+        EXPECT_EQ(report["manifest_sequence"].asUInt(), 2u);
+    }
+
+    // The top-level manifest is the token's but one blob still carries the
+    // older manifest it was signed under: every blob is signed again.
+    {
+        json::Value doc(json::ValueType::Object);
+        doc[jss::version] = 2;
+        doc[jss::public_key] = strHex(manifest2.masterKey);
+        doc[jss::manifest] = token2.manifest;
+        doc[jss::blobs_v2] = json::Value(json::ValueType::Array);
+        auto first = v2[jss::blobs_v2][0u];
+        first[jss::manifest] = publisher_.token.manifest;
+        doc[jss::blobs_v2].append(first);
+        json::Value second(json::ValueType::Object);
+        second[jss::blob] = base64Encode(later.canonical);
+        second[jss::signature] = resign2(later.canonical);
+        doc[jss::blobs_v2].append(second);
+        EXPECT_EQ(
+            errorOf([&] {
+                makeSignedList(
+                    token2.manifest,
+                    manifest2.masterKey,
+                    third,
+                    resign2(third.canonical),
+                    2,
+                    doc,
+                    {});
+            }),
+            needsResign);
+        auto const out = makeSignedList(
+            token2.manifest, manifest2.masterKey, third, resign2(third.canonical), 2, doc, resign2);
+        EXPECT_EQ(out[jss::blobs_v2].size(), 3u);
+        EXPECT_NE(out[jss::blobs_v2][0u][jss::signature].asString(), signature_);
+        EXPECT_FALSE(out[jss::blobs_v2][0u].isMember(jss::manifest));
+        auto const report = verifyList(out, std::nullopt, std::nullopt, now_);
+        EXPECT_TRUE(report["ok"].asBool()) << to_string(report);
+        EXPECT_EQ(report["manifest_sequence"].asUInt(), 2u);
+    }
+}
+
+TEST_F(ListSigningTest, append_verifies_blobs_before_resigning)
+{
+    // Two blobs signed under the first manifest, the second one's signature
+    // swapped for the first's: every server refuses it today, and the rotated
+    // token must not sign it again under the new key.
+    auto const later = parseUnsignedList(unsignedListText(validators_, 8, now_ + 300));
+    auto const laterSig = signList(later, publisher_.signingKey, publisher_.token.validationSecret);
+    auto doc = makeSignedList(
+        publisher_.token.manifest,
+        publisher_.manifest.masterKey,
+        later,
+        laterSig,
+        2,
+        signed2(),
+        {});
+    doc[jss::blobs_v2][1u][jss::signature] = signature_;
+
+    SigningKeys rotated = publisher_.keys;
+    auto const token2 = rotated.createToken(KeyType::Ed25519);
+    auto const manifest2 = required(deserializeManifest(base64Decode(token2.manifest)));
+    auto const signingKey2 = required(manifest2.signingKey);
+    auto const sign2 = [&](std::string const& bytes) {
+        return strHex(sign(signingKey2, token2.validationSecret, makeSlice(bytes)));
+    };
+    bool resigned = false;
+    auto const resign2 = [&](std::string const& bytes) {
+        resigned = true;
+        return sign2(bytes);
+    };
+    auto const third = parseUnsignedList(unsignedListText(validators_, 9, now_ + 400));
+    EXPECT_EQ(
+        errorOf([&] {
+            makeSignedList(
+                token2.manifest,
+                manifest2.masterKey,
+                third,
+                sign2(third.canonical),
+                2,
+                doc,
+                resign2);
+        }),
+        "The list to append to holds a blob whose signature does not verify");
+    EXPECT_FALSE(resigned);
+}
+
+TEST_F(ListSigningTest, append_refuses_manifest_of_another_master_key)
+{
+    std::string const anotherMaster =
+        "The list to append to holds a manifest for another master key";
+    SigningKeys rotated = publisher_.keys;
+    auto const token2 = rotated.createToken(KeyType::Ed25519);
+    auto const manifest2 = required(deserializeManifest(base64Decode(token2.manifest)));
+    auto const signingKey2 = required(manifest2.signingKey);
+    auto const resign2 = [&](std::string const& bytes) {
+        return strHex(sign(signingKey2, token2.validationSecret, makeSlice(bytes)));
+    };
+    auto const later = parseUnsignedList(unsignedListText(validators_, 8, now_ + 300));
+    auto const appendError = [&](json::Value const& existing) {
+        return errorOf([&] {
+            makeSignedList(
+                token2.manifest,
+                manifest2.masterKey,
+                later,
+                resign2(later.canonical),
+                2,
+                existing,
+                resign2);
+        });
+    };
+
+    // Another publisher's manifest at sequence 1, below the token's 2, so
+    // the sequence check alone would take it for an older manifest of ours
+    Publisher const other;
+    {
+        auto doc = signed2();
+        doc[jss::blobs_v2][0u][jss::manifest] = other.token.manifest;
+        EXPECT_EQ(appendError(doc), anotherMaster);
+    }
+    {
+        auto doc = signed2();
+        doc[jss::manifest] = other.token.manifest;
+        EXPECT_EQ(appendError(doc), anotherMaster);
+    }
+
+    // A revocation of the list's master key verifies but names no signing key
+    {
+        SigningKeys revoking = publisher_.keys;
+        auto doc = signed2();
+        doc[jss::blobs_v2][0u][jss::manifest] = revoking.revoke();
+        EXPECT_EQ(appendError(doc), "The list to append to holds an invalid manifest");
+    }
+}
+
 TEST_F(ListSigningTest, verify_rejects)
 {
     auto const good = signed1();

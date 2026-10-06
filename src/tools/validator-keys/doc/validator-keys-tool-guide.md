@@ -208,7 +208,7 @@ and one space is placed after each `,` and `:` before signing.
 `vl.json` is the version 1 document a server fetches: `blob`, `manifest`,
 `public_key`, `signature`, `version`. `--list-version 2` writes the blob into
 `blobs_v2` instead, and `--append <existing.json>` adds it to a version 2
-document that already holds up to four blobs, so a list can be published
+document, which carries at most five blobs, so a list can be published
 alongside the one it will replace.
 
 When the signing key is held by a hardware signer, the list is signed in two

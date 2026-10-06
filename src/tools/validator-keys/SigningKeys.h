@@ -158,8 +158,12 @@ public:
      * signature must come from outside too; otherwise a signing key of
      * @p keyType is generated and kept pending until `finishToken`.
      *
+     * While a token is pending, the same call returns the pending token's
+     * bytes again, so a lost signature can be made over the same bytes.
+     *
      * @throws std::runtime_error if the keys are revoked, the sequence is
-     *         exhausted, or the external signing key is the master key
+     *         exhausted, the external signing key is the master key, or a
+     *         token with another signing key or key type is pending
      */
     std::string
     startToken(
