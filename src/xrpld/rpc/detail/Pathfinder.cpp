@@ -392,7 +392,7 @@ Pathfinder::getPathLiquidity(
     path::RippleCalc::Input rcInput;
     rcInput.defaultPathsAllowed = false;
 
-    PaymentSandbox sandbox(&*ledger_, TapNone);
+    PaymentSandbox sandbox(&*ledger_, ApplyFlags::None);
 
     try
     {
@@ -455,7 +455,7 @@ Pathfinder::computePathRanks(int maxPaths, std::function<bool(void)> const& cont
     // Must subtract liquidity in default path from remaining amount.
     try
     {
-        PaymentSandbox sandbox(&*ledger_, TapNone);
+        PaymentSandbox sandbox(&*ledger_, ApplyFlags::None);
 
         path::RippleCalc::Input rcInput;
         rcInput.partialPaymentAllowed = true;

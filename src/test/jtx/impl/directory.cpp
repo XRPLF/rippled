@@ -32,7 +32,7 @@ bumpLastPage(
 {
     std::expected<void, Error> res{};
     env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) -> bool {
-        Sandbox sb(&view, TapNone);
+        Sandbox sb(&view, ApplyFlags::None);
 
         // Find the root page
         auto sleRoot = sb.peek(directory);

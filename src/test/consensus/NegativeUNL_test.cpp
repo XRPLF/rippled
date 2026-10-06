@@ -1902,7 +1902,7 @@ negUnlSizeTest(
 bool
 applyAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx, bool pass)
 {
-    auto const res = apply(env.app(), view, tx, ApplyFlags::TapNone, env.journal);
+    auto const res = apply(env.app(), view, tx, ApplyFlags::None, env.journal);
     if (pass)
     {
         return isTesSuccess(res.ter);

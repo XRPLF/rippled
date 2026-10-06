@@ -333,8 +333,9 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
     if (pfResult->rules != view.rules() || pfResult->flags != flags)
     {
         JLOG(j.debug()) << "Queued transaction " << txID
-                        << " rules or flags have changed. Flags from " << pfResult->flags << " to "
-                        << flags;
+                        << " rules or flags have changed. Flags from "
+                        << std::to_underlying(pfResult->flags) << " to "
+                        << std::to_underlying(flags);
 
         pfResult.emplace(preflight(app, view.rules(), pfResult->tx, flags, pfResult->j));
     }
@@ -425,7 +426,7 @@ TxQ::canBeHeld(
     // queue yet, but should be added in the future.
     // TapFailHard transactions are never held
     if (tx.isFieldPresent(sfPreviousTxnID) || tx.isFieldPresent(sfAccountTxnID) ||
-        ((flags & TapFailHard) != 0u))
+        ((flags & ApplyFlags::FailHard) != ApplyFlags::None))
         return telCAN_NOT_QUEUE;
 
     // Disallow delegated transactions from being queued.
@@ -777,7 +778,7 @@ TxQ::apply(
     if (auto directApplied = tryDirectApply(app, view, tx, flags, j))
         return *directApplied;
 
-    if ((flags & TapDryRun) != 0u)
+    if ((flags & ApplyFlags::DryRun) != ApplyFlags::None)
         return {telCAN_NOT_QUEUE, false};
 
     // If we get past tryDirectApply() without returning then we expect
@@ -1345,7 +1346,7 @@ TxQ::apply(
     // will not be checked again, so the cost should be minimal.
 
     // Don't allow soft failures, which can lead to retries
-    flags &= ~TapRetry;
+    flags &= ~ApplyFlags::Retry;
 
     auto& candidate = accountIter->second.add({tx, transactionID, feeLevelPaid, flags, pfResult});
 
@@ -1354,8 +1355,7 @@ TxQ::apply(
     JLOG(j_.debug()) << "Added transaction " << candidate.txID << " with result "
                      << transToken(pfResult.ter) << " from "
                      << (accountIsInQueue ? "existing" : "new") << " account " << candidate.account
-                     << " to queue."
-                     << " Flags: " << flags;
+                     << " to queue. Flags: " << std::to_underlying(flags);
 
     return {terQUEUED, false};
 }
@@ -1473,7 +1473,8 @@ TxQ::accept(Application& app, OpenView& view)
             candidateIter++;
             continue;
         }
-        auto const requiredFeeLevel = getRequiredFeeLevel(view, TapNone, metricsSnapshot, lock);
+        auto const requiredFeeLevel =
+            getRequiredFeeLevel(view, ApplyFlags::None, metricsSnapshot, lock);
         auto const feeLevelPaid = candidateIter->feeLevel;
         JLOG(j_.trace()) << "Queued transaction " << candidateIter->txID << " from account "
                          << candidateIter->account << " has fee level of " << feeLevelPaid
@@ -1515,7 +1516,8 @@ TxQ::accept(Application& app, OpenView& view)
             {
                 JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID << " failed with "
                                  << transToken(txnResult) << ". Leave in queue."
-                                 << " Applied: " << didApply << ". Flags: " << candidateIter->flags;
+                                 << " Applied: " << didApply
+                                 << ". Flags: " << std::to_underlying(candidateIter->flags);
                 if (account.retryPenalty && candidateIter->retriesRemaining > 2)
                 {
                     candidateIter->retriesRemaining = 1;

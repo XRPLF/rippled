@@ -4059,7 +4059,7 @@ class MPToken_test : public beast::unit_test::Suite
                                  TER expectedTer,
                                  std::optional<std::uint64_t> expectedOutstanding,
                                  std::string const& label) {
-            ApplyViewImpl av(&*env.current(), TapNone);
+            ApplyViewImpl av(&*env.current(), ApplyFlags::None);
             auto const ter =
                 accountSendMulti(av, issuer.id(), asset, receivers, env.app().getJournal("View"));
             BEAST_EXPECTS(ter == expectedTer, label);

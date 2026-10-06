@@ -359,7 +359,8 @@ Batch::preflight(PreflightContext const& ctx)
         // TapBatch — PreflightContext with a parentBatchId requires it.
         // LoanSet already short-circuits on tfInnerBatchTxn; it is also in
         // kDisabledTxTypes, so it never reaches this call.
-        ApplyFlags const innerFlags = TapBatch | (ctx.flags & (TapProposal | TapDryRun));
+        ApplyFlags const innerFlags =
+            ApplyFlags::Batch | (ctx.flags & (ApplyFlags::Proposal | ApplyFlags::DryRun));
         if (auto const preflightResult =
                 xrpl::preflight(ctx.registry, ctx.rules, parentBatchId, stx, innerFlags, ctx.j);
             !isTesSuccess(preflightResult.ter))
@@ -431,7 +432,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
     // A proposed Batch is stored unsigned; its BatchSigners are collected
     // on-ledger afterward, so the signer-presence match belongs to submission
     // time, not proposal creation (On-Chain Cosigner spec §5.3.1.2).
-    if ((ctx.flags & TapProposal) != 0)
+    if ((ctx.flags & ApplyFlags::Proposal) != ApplyFlags::None)
         return tesSUCCESS;
 
     auto const parentBatchId = ctx.tx.getTransactionID();

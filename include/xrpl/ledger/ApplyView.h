@@ -1,7 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/safe_cast.h>
+#include <xrpl/basics/enum_bitops.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/ReadView.h>
@@ -22,80 +22,39 @@
 
 namespace xrpl {
 
-// Bitwise flag enum with existing operator overloads
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum ApplyFlags : std::uint32_t {
-    TapNone = 0x00,
+enum class ApplyFlags : std::uint32_t {
+    None = 0x00,
 
     // This is a local transaction with the
     // fail_hard flag set.
-    TapFailHard = 0x10,
+    FailHard = 0x10,
 
     // This is not the transaction's last pass
     // Transaction can be retried, soft failures allowed
-    TapRetry = 0x20,
+    Retry = 0x20,
 
     // Transaction came from a privileged source
-    TapUnlimited = 0x400,
+    Unlimited = 0x400,
 
     // Transaction is executing as part of a batch
-    TapBatch = 0x800,
+    Batch = 0x800,
 
     // Transaction shouldn't be applied
     // Signatures shouldn't be checked
-    TapDryRun = 0x1000,
+    DryRun = 0x1000,
 
     // Transaction is being preflighted as the payload of a
     // TransactionProposalCreate. Its signatures are collected on-ledger
     // afterward, so signature-presence checks (e.g. Batch signer matching)
     // are skipped at proposal-creation time (On-Chain Cosigner spec
     // §5.3.1.2).
-    TapProposal = 0x2000
+    Proposal = 0x2000
 };
 
-constexpr ApplyFlags
-operator|(ApplyFlags const& lhs, ApplyFlags const& rhs)
+template <>
+struct enum_bitops::OptIn<ApplyFlags> : std::true_type
 {
-    return safeCast<ApplyFlags>(
-        safeCast<std::underlying_type_t<ApplyFlags>>(lhs) |
-        safeCast<std::underlying_type_t<ApplyFlags>>(rhs));
-}
-
-static_assert((TapFailHard | TapRetry) == safeCast<ApplyFlags>(0x30u), "ApplyFlags operator |");
-static_assert((TapRetry | TapFailHard) == safeCast<ApplyFlags>(0x30u), "ApplyFlags operator |");
-
-constexpr ApplyFlags
-operator&(ApplyFlags const& lhs, ApplyFlags const& rhs)
-{
-    return safeCast<ApplyFlags>(
-        safeCast<std::underlying_type_t<ApplyFlags>>(lhs) &
-        safeCast<std::underlying_type_t<ApplyFlags>>(rhs));
-}
-
-static_assert((TapFailHard & TapRetry) == TapNone, "ApplyFlags operator &");
-static_assert((TapRetry & TapFailHard) == TapNone, "ApplyFlags operator &");
-
-constexpr ApplyFlags
-operator~(ApplyFlags const& flags)
-{
-    return safeCast<ApplyFlags>(~safeCast<std::underlying_type_t<ApplyFlags>>(flags));
-}
-
-static_assert(~TapRetry == safeCast<ApplyFlags>(0xFFFFFFDFu), "ApplyFlags operator ~");
-
-inline ApplyFlags
-operator|=(ApplyFlags& lhs, ApplyFlags const& rhs)
-{
-    lhs = lhs | rhs;
-    return lhs;
-}
-
-inline ApplyFlags
-operator&=(ApplyFlags& lhs, ApplyFlags const& rhs)
-{
-    lhs = lhs & rhs;
-    return lhs;
-}
+};
 
 //------------------------------------------------------------------------------
 

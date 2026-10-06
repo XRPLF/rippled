@@ -41,7 +41,7 @@ struct ApplyResult
 inline bool
 isTecClaimHardFail(TER ter, ApplyFlags flags)
 {
-    return isTecClaim(ter) && ((flags & TapRetry) == 0u);
+    return isTecClaim(ter) && ((flags & ApplyFlags::Retry) == ApplyFlags::None);
 }
 
 /**

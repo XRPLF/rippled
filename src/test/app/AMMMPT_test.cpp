@@ -4158,7 +4158,7 @@ private:
                 auto jtx = env.jt(tx, Seq(1), Fee(10));
                 env.app().config().features.erase(featureMPTokensV2);
                 PreflightContext const ctx(
-                    env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
+                    env.app(), *jtx.stx, env.current()->rules(), ApplyFlags::None, env.journal);
                 auto pf = AMMBid::checkExtraFeatures(ctx);
                 BEAST_EXPECT(pf == false);
                 env.app().config().features.insert(featureMPTokensV2);
@@ -4170,7 +4170,7 @@ private:
                 jtx.jv["Asset2"].removeMember("mpt_issuance_id");
                 jtx.stx = env.ust(jtx);
                 PreflightContext const ctx(
-                    env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
+                    env.app(), *jtx.stx, env.current()->rules(), ApplyFlags::None, env.journal);
                 auto pf = AMMBid::preflight(ctx);
                 BEAST_EXPECT(pf == temBAD_AMM_TOKENS);
             }

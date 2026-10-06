@@ -91,7 +91,8 @@ LoanSet::preflight(PreflightContext const& ctx)
     // A proposed LoanSet is stored unsigned; its CounterpartySignature is
     // collected on-ledger afterward, so its absence here is expected, not an
     // error (On-Chain Cosigner spec §5.3.1.2).
-    if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig && (ctx.flags & TapProposal) == 0)
+    if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig &&
+        (ctx.flags & ApplyFlags::Proposal) == ApplyFlags::None)
     {
         JLOG(ctx.j.warn()) << "LoanSet transaction must have a CounterpartySignature.";
         return temBAD_SIGNER;

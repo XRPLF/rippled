@@ -476,7 +476,7 @@ struct Flow_test : public beast::unit_test::Suite
             auto const flowResult = [&] {
                 STAmount const deliver(usd(51));
                 STAmount smax(btc(61));
-                PaymentSandbox sb(env.current().get(), TapNone);
+                PaymentSandbox sb(env.current().get(), ApplyFlags::None);
                 STPathSet paths;
                 auto ipe = [](Issue const& iss) {
                     return STPathElement(
@@ -514,7 +514,7 @@ struct Flow_test : public beast::unit_test::Suite
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 if (flowResult.removableOffers.empty())
                     return false;
-                Sandbox sb(&view, TapNone);
+                Sandbox sb(&view, ApplyFlags::None);
                 for (auto const& o : flowResult.removableOffers)
                 {
                     if (auto ok = sb.peek(keylet::offer(o)))

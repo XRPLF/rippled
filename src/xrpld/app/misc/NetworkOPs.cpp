@@ -1706,12 +1706,12 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 for (TransactionStatus& e : transactions)
                 {
                     // we check before adding to the batch
-                    ApplyFlags flags = TapNone;
+                    ApplyFlags flags = ApplyFlags::None;
                     if (e.admin)
-                        flags |= TapUnlimited;
+                        flags |= ApplyFlags::Unlimited;
 
                     if (e.failType == FailHard::Yes)
-                        flags |= TapFailHard;
+                        flags |= ApplyFlags::FailHard;
 
                     auto const result = registry_.get().getTxQ().apply(
                         registry_.get().getApp(), view, e.transaction->getSTransaction(), flags, j);
@@ -2207,7 +2207,7 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
             OrderedTxs({}),
             false,
             retries,
-            TapNone,
+            ApplyFlags::None,
             "jump",
             [&](OpenView& view, beast::Journal j) {
                 // Stuff the ledger with transactions from the queue.

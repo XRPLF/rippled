@@ -51,7 +51,8 @@ public:
         beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
         : ApplyContext(registry, base, std::nullopt, tx, preclaimResult, baseFee, flags, journal)
     {
-        XRPL_ASSERT((flags & TapBatch) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT(
+            (flags & ApplyFlags::Batch) == ApplyFlags::None, "Batch apply flag should not be set");
     }
 
     std::reference_wrapper<ServiceRegistry> registry;

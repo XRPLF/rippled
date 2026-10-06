@@ -1302,8 +1302,8 @@ struct Escrow_test : public beast::unit_test::Suite
                 escrow::kFinishTime(env.now() + 1s),
                 Seq(1),
                 Fee(baseFee));
-            auto const pf =
-                preflight(env.app(), env.current()->rules(), *jtx.stx, TapNone, env.journal);
+            auto const pf = preflight(
+                env.app(), env.current()->rules(), *jtx.stx, ApplyFlags::None, env.journal);
             BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(baseFee));
@@ -1312,8 +1312,8 @@ struct Escrow_test : public beast::unit_test::Suite
 
         {
             auto const jtx = env.jt(escrow::cancel("bob", "alice", 3), Seq(1), Fee(baseFee));
-            auto const pf =
-                preflight(env.app(), env.current()->rules(), *jtx.stx, TapNone, env.journal);
+            auto const pf = preflight(
+                env.app(), env.current()->rules(), *jtx.stx, ApplyFlags::None, env.journal);
             BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(baseFee));
@@ -1322,8 +1322,8 @@ struct Escrow_test : public beast::unit_test::Suite
 
         {
             auto const jtx = env.jt(escrow::finish("bob", "alice", 3), Seq(1), Fee(baseFee));
-            auto const pf =
-                preflight(env.app(), env.current()->rules(), *jtx.stx, TapNone, env.journal);
+            auto const pf = preflight(
+                env.app(), env.current()->rules(), *jtx.stx, ApplyFlags::None, env.journal);
             BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(baseFee));
