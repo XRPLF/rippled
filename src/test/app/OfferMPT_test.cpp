@@ -1222,6 +1222,116 @@ public:
         env.require(Offers(alice, 0), Offers(bondIssuer, 0));
     }
 
+    // A funds-limited MPT offer delivers floor(funds / rate), so the owner
+    // owes ceil(out × rate), not all of funds. With a 1.5 rate, 10 funds 6 out,
+    // which costs 9; 11 funds 7 out, which costs exactly 11.
+    void
+    testMPTOfferFundsLimitedOwnerPays(FeatureBitset features)
+    {
+        testcase("Funds-limited MPT offer owner pays ceil(out * rate)");
+
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const seller{"seller"};
+        Account const buyer{"buyer"};
+
+        struct TestCase
+        {
+            std::int64_t funds;
+            std::int64_t out;
+            std::int64_t paid;
+        };
+        for (auto const& tc :
+             {TestCase{.funds = 10, .out = 6, .paid = 9},
+              TestCase{.funds = 11, .out = 7, .paid = 11}})
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), issuer, seller, buyer);
+            env.close();
+
+            // TransferFee 50'000 is a 1.5 rate.
+            MPT const usd = MPTTester(
+                {.env = env, .issuer = issuer, .holders = {seller, buyer}, .transferFee = 50'000});
+
+            env(pay(issuer, seller, usd(tc.funds)));
+            env.close();
+
+            env(offer(seller, XRP(100), usd(100)));
+            env.close();
+
+            auto const sellerXRPBefore = env.balance(seller);
+
+            env(offer(buyer, usd(100), XRP(100)));
+            env.close();
+
+            // Only the fee is burned: OutstandingAmount drops by paid - out.
+            BEAST_EXPECT(env.balance(buyer, usd) == usd(tc.out));
+            BEAST_EXPECT(env.balance(seller, usd) == usd(tc.funds - tc.paid));
+            BEAST_EXPECT(env.balance(seller) == sellerXRPBefore + XRP(tc.out));
+            BEAST_EXPECT(env.balance(issuer, usd) == usd(-(tc.funds - tc.paid + tc.out)));
+            env.require(Offers(seller, 0), Offers(buyer, 1));
+        }
+    }
+
+    // After the fix the owner keeps a unit that can't fund any output. The
+    // zero-out removal deletes the offer, and the same crossing reaches Carol.
+    void
+    testMPTOfferFundsLimitedDustUnblocksBook(FeatureBitset features)
+    {
+        testcase("Funds-limited MPT offer leftover does not block the book");
+
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const seller{"seller"};
+        Account const carol{"carol"};
+        Account const buyer{"buyer"};
+
+        Env env{*this, features};
+        env.fund(XRP(10'000), issuer, seller, carol, buyer);
+        env.close();
+
+        MPT const usd = MPTTester(
+            {.env = env,
+             .issuer = issuer,
+             .holders = {seller, carol, buyer},
+             .transferFee = 50'000});
+
+        env(pay(issuer, seller, usd(10)));
+        env(pay(issuer, carol, usd(100)));
+        env.close();
+
+        // The seller's offer is the better quality, so it sits at the tip.
+        auto const sellerOfferSeq = env.seq(seller);
+        env(offer(seller, XRP(100), usd(100)));
+        auto const carolOfferSeq = env.seq(carol);
+        env(offer(carol, XRP(200), usd(100)));
+        env.close();
+
+        env(offer(buyer, usd(10), XRP(20)));
+        env.close();
+
+        // The seller gives 6 for 6 XRP and pays 9, keeping 1. That unit funds
+        // floor(1 / 1.5) = 0, so the offer is removed. Carol gives the other 4
+        // for 8 XRP and pays ceil(4 * 1.5) = 6.
+        BEAST_EXPECT(
+            env.le(keylet::offer(seller.id(), SeqProxy::rawSequence(sellerOfferSeq))) == nullptr);
+        BEAST_EXPECT(env.balance(seller, usd) == usd(1));
+        BEAST_EXPECT(env.balance(carol, usd) == usd(94));
+        BEAST_EXPECT(env.balance(buyer, usd) == usd(10));
+        BEAST_EXPECT(env.balance(issuer, usd) == usd(-105));
+
+        auto const sle = env.le(keylet::offer(carol.id(), SeqProxy::rawSequence(carolOfferSeq)));
+        BEAST_EXPECT(sle != nullptr);
+        if (sle)
+        {
+            BEAST_EXPECT((*sle)[sfTakerPays] == XRP(192));
+            BEAST_EXPECT((*sle)[sfTakerGets] == usd(96));
+        }
+        env.require(Offers(seller, 0), Offers(carol, 1), Offers(buyer, 0));
+    }
+
     // XRP twin of the zero-in fee clip. TakerPays of 1 drop truncates to 0
     // in the same funds window. XrpEndpointStep precedes BookStep, so the
     // strand dries instead of applying the zero-in slice: pre-amendment the
@@ -7820,6 +7930,8 @@ public:
         testMPTOfferFeeZeroInRemoved(features);
         testMPTOfferFeeZeroInUnblocksBook(features);
         testMPTOfferFeePartialInStillFills(features);
+        testMPTOfferFundsLimitedOwnerPays(features);
+        testMPTOfferFundsLimitedDustUnblocksBook(features);
         testXRPOfferFeeZeroInSlice(features);
         testMPTOfferLargeTakerPaysQuality(features);
         testPartiallyFundedMPTInputOfferZeroInput(features);

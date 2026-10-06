@@ -842,6 +842,16 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                         "zero");
                     return true;
                 }
+
+                // out = floor(funds / rate), so out × rate <= funds and
+                // ceil(out × rate) <= funds since funds is an integer. Charge
+                // that instead of funds; charging all of funds would burn the
+                // fraction that can't be delivered. IOU keeps funds; the
+                // difference is sub-epsilon there.
+                if constexpr (std::is_same_v<TOut, MPTAmount>)
+                {
+                    ownerGives = mulRatio(stpAmt.out, ofrOutRate, QUALITY_ONE, /*roundUp*/ true);
+                }
             }
 
             // Limit offer's input if MPT and the offer is not owned by the
