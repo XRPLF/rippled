@@ -39,6 +39,9 @@ Development tooling:
   ✅ file
      file-5.48
      /nix/store/66sd1x1hls0yijibn00iz08jh4fnas9z-file-5.48/bin/file
+  ✅ jq
+     jq-1.8.2
+     /nix/store/kr5py0dcqc9f3l9148qd1axh0z77lld3-jq-1.8.2-bin/bin/jq
   ✅ less
      less 710 (PCRE2 regular expressions)
      /nix/store/n6z9dv3yjlgvfx1nmrx6qzyv8vzim1l2-less-710/bin/less
@@ -65,22 +68,22 @@ Development tooling:
      /nix/store/lfwhq17wfcmjy823fldhlhxj1hjchdzc-zip-3.0/bin/zip
   ✅ clang-apply-replacements
      clang-apply-replacements version 22.1.8
-     /nix/store/iv4dxwnzvl0lqj8jfyibwf5ijb8hjw2i-clang-tools-22.1.8/bin/clang-apply-replacements
+     /nix/store/6jr2pbz9mzxznf47lw1w6ss1arqsakw6-clang-tools-22.1.8/bin/clang-apply-replacements
   ✅ clang-apply-replacements-22
      clang-apply-replacements version 22.1.8
-     /nix/store/7gq05wr155k0pm1b2k73pya3l35hgifl-clang-apply-replacements-22/bin/clang-apply-replacements-22
+     /nix/store/mgcaw2063w2d4s61fz023bd0pf3vq5y7-clang-apply-replacements-22/bin/clang-apply-replacements-22
   ✅ clang-format
      clang-format version 22.1.8
-     /nix/store/iv4dxwnzvl0lqj8jfyibwf5ijb8hjw2i-clang-tools-22.1.8/bin/clang-format
+     /nix/store/6jr2pbz9mzxznf47lw1w6ss1arqsakw6-clang-tools-22.1.8/bin/clang-format
   ✅ clang-format-22
      clang-format version 22.1.8
-     /nix/store/54pnici9imw8ff0j5m7nig7dwaxrnlhv-clang-format-22/bin/clang-format-22
+     /nix/store/2iwvl9784yrjfjhfac46z5ihwmbaavk7-clang-format-22/bin/clang-format-22
   ✅ clang-tidy
      LLVM version 22.1.8
-     /nix/store/iv4dxwnzvl0lqj8jfyibwf5ijb8hjw2i-clang-tools-22.1.8/bin/clang-tidy
+     /nix/store/6jr2pbz9mzxznf47lw1w6ss1arqsakw6-clang-tools-22.1.8/bin/clang-tidy
   ✅ clang-tidy-22
      LLVM version 22.1.8
-     /nix/store/0mmdxscn11irlmm7jvp1c0a32712s026-clang-tidy-22/bin/clang-tidy-22
+     /nix/store/2b7hn8hyp02yfarh8c40c4jsjkm789l0-clang-tidy-22/bin/clang-tidy-22
   ✅ dot
      dot - graphviz version 15.1.1 (0)
      /nix/store/vz4zb8d1rfigzzdn3i0hd4kff28vk02l-graphviz-15.1.1/bin/dot
@@ -171,4 +174,4 @@ Mold:
 
 Skipping git-over-HTTPS check (CHECK_TOOLS_SKIP_CLONE is set).
 
-✅ All 53 checked tools are present and runnable.
+✅ All 54 checked tools are present and runnable.
