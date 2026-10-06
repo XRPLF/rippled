@@ -1383,10 +1383,8 @@ struct PayChan_test : public beast::unit_test::Suite
             {
                 // zero drops - must be rejected as malformed (fix for #6764)
                 auto const pkAsHex = sliceToHex(pk.slice());
-                auto rv = env.rpc("channel_authorize", "alice", chan1Str, "0");
-                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
-                rv = env.rpc("channel_verify", pkAsHex, chan1Str, "0", sig);
-                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                BEAST_EXPECT(env.rpc("channel_authorize", "alice", chan1Str, "0")[jss::error] == "channelAmtMalformed");
+                BEAST_EXPECT(env.rpc("channel_verify", pkAsHex, chan1Str, "0", sig)[jss::error] == "channelAmtMalformed");
 
                 json::Value args{json::ValueType::Object};
                 args[jss::amount] = "0";
