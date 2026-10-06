@@ -427,6 +427,25 @@ struct MPTHolderKeyUpdate
 };
 
 /**
+ * @brief Arguments for building a ConfidentialMPTRecoverBalance test transaction.
+ */
+struct MPTConfidentialRecover
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<Account> holder = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<Buffer> spendingCiphertext = std::nullopt;
+    std::optional<std::string> proof = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+/**
  * @brief Stores the parameters that are exclusively used to generate a
  * Pedersen linkage proof.
  */
@@ -684,6 +703,11 @@ public:
         std::source_location const& loc = std::source_location::current());
     // NOLINTEND(readability-trailing-comma)
 
+    void
+    recoverBalance(
+        MPTConfidentialRecover const& arg = MPTConfidentialRecover{},
+        std::source_location const& loc = std::source_location::current());
+
     [[nodiscard]] bool
     checkDomainID(std::optional<UInt256> expected) const;
 
@@ -880,6 +904,10 @@ private:
     // Reads one of the holder's mirror key epochs off their MPToken.
     [[nodiscard]] std::optional<std::uint32_t>
     getMirrorEpoch(Account const& holder, SF_UINT32 const& field) const;
+
+    // Epoch for the holder balance key, which can be not the latest generated key
+    [[nodiscard]] std::optional<std::uint32_t>
+    getHolderEpoch(Account const& holder) const;
 
     template <typename A>
     TER
