@@ -180,7 +180,7 @@ SigningKeys::makeSigningKeys(std::filesystem::path const& keyFile)
                 parseBase58<PublicKey>(TokenType::NodePublic, jKeys["public_key"].asString());
             if (!pubKey)
                 throw invalidField("public_key");
-            if (*keyType != *publicKeyType(*pubKey))
+            if (publicKeyType(*pubKey) != keyType)
             {
                 throw std::runtime_error(
                     "Key file '" + keyFile.string() +

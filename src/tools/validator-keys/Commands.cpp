@@ -156,6 +156,19 @@ private:
 };
 
 /**
+ * Decodes canonical base64, or nothing. base64Decode returns partial data for
+ * invalid input, so the decoded bytes must encode back to @p data.
+ */
+std::optional<std::string>
+decodeBase64Exact(std::string const& data)
+{
+    auto bytes = base64Decode(data);
+    if (base64Encode(bytes) != data)
+        return std::nullopt;
+    return bytes;
+}
+
+/**
  * Parses a public key given as base58, hex or base64.
  *
  * @throws std::runtime_error if none of the encodings yields a public key
@@ -167,8 +180,8 @@ parsePublicKey(std::string const& data)
         return *key;
     if (auto const key = parseHexKey(data))
         return *key;
-    if (auto const bytes = base64Decode(data); publicKeyType(makeSlice(bytes)))
-        return PublicKey(makeSlice(bytes));
+    if (auto const bytes = decodeBase64Exact(data); bytes && publicKeyType(makeSlice(*bytes)))
+        return PublicKey(makeSlice(*bytes));
     throw std::runtime_error("Unable to parse public key: " + data);
 }
 
@@ -181,9 +194,8 @@ decodeSignature(std::string const& data)
 {
     if (auto const bytes = strUnHex(data))
         return *bytes;
-    // base64Decode returns partial data for invalid input, so require a round trip.
-    if (auto const bytes = base64Decode(data); base64Encode(bytes) == data)
-        return Blob(bytes.begin(), bytes.end());
+    if (auto const bytes = decodeBase64Exact(data))
+        return Blob(bytes->begin(), bytes->end());
     throw std::runtime_error("Invalid signature encoding");
 }
 

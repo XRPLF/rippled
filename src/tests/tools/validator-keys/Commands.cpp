@@ -138,6 +138,10 @@ TEST_F(CommandsTest, create_external)
     EXPECT_EQ(
         commandError("create_external", {badHex}, options_),
         "Unable to parse public key: " + badHex);
+    auto const trailing = base64Encode(key.data(), key.size()) + "!";
+    EXPECT_EQ(
+        commandError("create_external", {trailing}, options_),
+        "Unable to parse public key: " + trailing);
     run("create_external", {strHex(key)}, options_);
     EXPECT_EQ(
         commandError("create_external", {strHex(key)}, options_),
