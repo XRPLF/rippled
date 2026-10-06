@@ -124,7 +124,7 @@ SHAMapTreeNodePtr
 SHAMapInnerNode::makeFullInner(Slice data, SHAMapHash const& hash, bool hashValid)
 {
     // A full inner node is serialized as 16 256-bit hashes, back to back:
-    if (data.size() != kBranchFactor * uint256::kBytes)
+    if (data.size() != kBranchFactor * UInt256::kBytes)
         Throw<std::runtime_error>("Invalid FI node");
 
     auto ret = intr_ptr::makeShared<SHAMapInnerNode>(0, kBranchFactor);
@@ -160,7 +160,7 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
 {
     // A compressed inner node is serialized as a series of 33 byte chunks,
     // representing a one byte "position" and a 256-bit hash:
-    static constexpr std::size_t kChunkSize = uint256::kBytes + 1;
+    static constexpr std::size_t kChunkSize = UInt256::kBytes + 1;
 
     if (auto const s = data.size(); (s % kChunkSize != 0) || (s > kChunkSize * kBranchFactor))
         Throw<std::runtime_error>("Invalid CI node");
@@ -193,14 +193,14 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
 void
 SHAMapInnerNode::updateHash()
 {
-    uint256 nh;
+    UInt256 nh;
     if (isBranch_ != 0)
     {
-        sha512_half_hasher h;
+        Sha512HalfHasher h;
         using beast::hash_append;
         hash_append(h, HashPrefix::InnerNode);
         iterChildren([&](SHAMapHash const& hh) { hash_append(h, hh); });
-        nh = static_cast<sha512_half_hasher::result_type>(h);
+        nh = static_cast<Sha512HalfHasher::result_type>(h);
     }
     hash_ = SHAMapHash{nh};
 }

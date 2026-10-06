@@ -47,7 +47,7 @@ public:
         std::optional<AccountID> const& uSrcIssuer,
         STAmount const& dstAmount,
         std::optional<STAmount> const& srcAmount,
-        std::optional<uint256> const& domain,
+        std::optional<UInt256> const& domain,
         Application& app);
     Pathfinder(Pathfinder const&) = delete;
     Pathfinder&
@@ -200,18 +200,18 @@ private:
      */
     STAmount remainingAmount_;
     bool convertAll_;
-    std::optional<uint256> domain_;
+    std::optional<UInt256> domain_;
 
     std::shared_ptr<ReadView const> ledger_;
     std::unique_ptr<LoadEvent> loadEvent_;
     std::shared_ptr<AssetCache> rLCache_;
 
     STPathElement source_;
-    STPathSet completePaths_;
+    STPathSet completePaths_{STPathSet::DeduplicationTag{}};
     std::vector<PathRank> pathRanks_;
     std::map<PathType, STPathSet> paths_;
 
-    hash_map<Asset, int> pathsOutCountMap_;
+    HashMap<Asset, int> pathsOutCountMap_;
 
     Application& app_;
     beast::Journal const j_;

@@ -158,7 +158,7 @@ private:
             }
             // empty/zero broker ID
             {
-                auto jv = set(borrower, uint256{}, debtMaximumRequest);
+                auto jv = set(borrower, UInt256{}, debtMaximumRequest);
 
                 auto testZeroBrokerID = [&](std::string const& id, std::uint32_t flags = 0) {
                     // empty broker ID
@@ -174,7 +174,7 @@ private:
                 // zero broker ID
                 // needs a flag to distinguish the parsed STTx from the prior
                 // test
-                testZeroBrokerID(to_string(uint256{}), tfFullyCanonicalSig);
+                testZeroBrokerID(to_string(UInt256{}), tfFullyCanonicalSig);
             }
 
             // preflightCheckSigningKey() failure:

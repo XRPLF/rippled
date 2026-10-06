@@ -20,7 +20,7 @@ class AccountDeleteBuilder;
  *
  * Type: ttACCOUNT_DELETE (21)
  * Delegable: Delegation::NotDelegable
- * Amendment: uint256{}
+ * Amendment: UInt256{}
  * Privileges: Privilege::MustDeleteAcct
  *
  * Immutable wrapper around STTx providing type-safe field access.

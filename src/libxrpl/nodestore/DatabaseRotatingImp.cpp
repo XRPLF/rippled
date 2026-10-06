@@ -142,7 +142,7 @@ DatabaseRotatingImp::sync()
 }
 
 void
-DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
+DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, UInt256 const& hash, std::uint32_t)
 {
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
 
@@ -163,8 +163,8 @@ DatabaseRotatingImp::sweep()
 
 std::shared_ptr<NodeObject>
 DatabaseRotatingImp::fetchNodeObject(
-    uint256 const& hash,
-    std::uint32_t ledgerSeq,
+    UInt256 const& hash,
+    std::uint32_t,
     FetchReport& fetchReport,
     bool duplicate)
 {
