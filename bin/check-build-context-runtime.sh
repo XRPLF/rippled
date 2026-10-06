@@ -2,6 +2,10 @@
 # Fail if a binary of a build-context Conan package loads anything from the Nix
 # store other than glibc, or cannot resolve a library at all.
 #
+# Only binaries linked by the Nix toolchain are checked, i.e. those recording a
+# store path as their interpreter or RUNPATH. Prebuilt upstream binaries (such
+# as the ones the cmake package ships) use the system loader instead.
+#
 # Build-context packages provide the tools that run during the build (protoc,
 # grpc_cpp_plugin, ...). Their package ID does not change when a Nix toolchain
 # update moves the GCC runtime to a new store path, so a cached binary has to
@@ -38,6 +42,7 @@ while IFS= read -r file; do
         ELF*) ;;
         *) continue ;;
     esac
+    [[ "$(readelf -ldW "${file}")" == */nix/store/* ]] || continue
     checked=$((checked + 1))
 
     # `ldd` lists the interpreter and every library as the loader resolves them.
