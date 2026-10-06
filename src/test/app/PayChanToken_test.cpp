@@ -3662,13 +3662,28 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env.close();
             BEAST_EXPECT(env.balance(alice, mpt) == mpt(9'000));
 
+            // Drain alice's balance to zero: the locked amount alone keeps her
+            // MPToken from being deleted, so the refund lands in it rather
+            // than creating one
+            env(pay(alice, gw, mpt(9'000)));
+            env.close();
+            BEAST_EXPECT(env.balance(alice, mpt) == mpt(0));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 1'000);
+            mptGw.authorize(
+                {.account = alice, .flags = tfMPTUnauthorize, .err = tecHAS_OBLIGATIONS});
+            BEAST_EXPECT(env.le(keylet::mptoken(mpt.mpt(), alice)));
+            auto const ownerCountBefore = ownerCount(env, alice);
+
             // Passing the CancelAfter time closes the channel instead
             env.close();
             env(paychan::fund(alice, chan, mpt(100)), Ter(tesSUCCESS));
             env.close();
 
             BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
-            BEAST_EXPECT(env.balance(alice, mpt) == mpt(10'000));
+            BEAST_EXPECT(env.le(keylet::mptoken(mpt.mpt(), alice)));
+            BEAST_EXPECT(ownerCount(env, alice) == ownerCountBefore - 1);
+            BEAST_EXPECT(env.balance(alice, mpt) == mpt(1'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
         }
 
         // tesSUCCESS: funding accumulates into the channel amount
