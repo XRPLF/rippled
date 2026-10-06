@@ -438,10 +438,12 @@ ValidPaymentChannel::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstR
 
     auto const& balance = (*after)[sfBalance];
 
-    // Amount and balance must name the same asset, both non-negative, and the
-    // paid-out balance must never exceed the locked amount.
+    // Amount and balance must name the same asset, both non-negative, the
+    // paid-out balance must never exceed the locked amount, and the unclaimed
+    // remainder sfAmount - sfBalance must be exact so a close refunds it
+    // without rounding.
     if (amount.asset() != balance.asset() || amount < beast::kZero || balance < beast::kZero ||
-        amount < balance)
+        amount < balance || !isExactDifference(amount, balance))
     {
         bad_ = true;
         return;

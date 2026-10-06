@@ -309,10 +309,10 @@ public:
  *
  * For any non-XRP `PayChannel` (only reachable once `featureTokenPaychan` is
  * enabled): the paid-out `sfBalance` must never exceed the locked `sfAmount`,
- * `sfBalance` and `sfAmount` must name the same asset, `sfBalance` must never
- * decrease, and neither may go negative. This guards every operation that
- * mutates a channel (create, fund, claim, clawback) against corrupting the
- * amount/balance relationship.
+ * `sfBalance` and `sfAmount` must name the same asset, `sfAmount - sfBalance`
+ * must be exact, `sfBalance` must never decrease, and neither may go negative.
+ * This guards every operation that mutates a channel (create, fund, claim,
+ * clawback) against corrupting the amount/balance relationship.
  */
 class ValidPaymentChannel
 {
