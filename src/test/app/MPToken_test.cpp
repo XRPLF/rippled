@@ -8145,7 +8145,11 @@ public:
         testPartialPaymentRounding(all - featureMPTokensV2 - fixCleanup3_5_0);
         testPartialPaymentDivideOverflow(all);
         testPartialPaymentDivideOverflow(all - featureMPTokensV2);
+#ifndef XRPL_UBSAN
+        // Without the fix, the legacy divide() relies on unsigned wraparound,
+        // which UBSan reports as unsigned-integer-overflow.
         testPartialPaymentDivideOverflow(all - featureMPTokensV2 - fixCleanup3_5_0);
+#endif
 
         // Number has a 16-digit mantissa without these amendments.
         auto const smallNumber =
