@@ -2,6 +2,7 @@
 #include <test/jtx/ConfidentialTransfer.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
@@ -31,6 +32,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/apply.h>
 
@@ -3039,6 +3041,464 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // All rejected sends must leave balances unchanged.
         BEAST_EXPECT(mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
         BEAST_EXPECT(mptAlice.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 0);
+    }
+
+    void
+    testRecoverBalance(FeatureBitset features)
+    {
+        if (!features[featureConfidentialMPTKeyRotation])
+            return;
+
+        testcase("test ConfidentialMPTRecoverBalance");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
+        });
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 100);
+
+        // Generate keys for alice (issuer)
+        mptAlice.generateKeyPair(alice);
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        // Bob converts funds to confidential
+        mptAlice.generateKeyPair(bob);
+        mptAlice.convert({
+            .account = bob,
+            .amt = 60,
+            .holderPubKey = mptAlice.getPubKey(bob),
+        });
+
+        // Verify bob has confidential balance in inbox (convert puts funds in inbox)
+        BEAST_EXPECT(mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox) == 60);
+
+        // Verify Bob's MPToken has the issuer mirror
+        {
+            auto const sleMPToken = env.le(keylet::mptoken(mptAlice.issuanceID(), bob.id()));
+            BEAST_EXPECT(sleMPToken);
+            BEAST_EXPECT(sleMPToken->isFieldPresent(sfIssuerEncryptedBalance));
+
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(mptAlice.issuanceID()));
+            BEAST_EXPECT(sleIssuance);
+
+            // Debug: check epoch fields
+            // If epochs exist, they should match (no rotation happened yet)
+        }
+
+        // Generate recovery key for bob
+        auto recoveryKey = mptAlice.generateKeyPair();
+
+        // Bob authorizes recovery under the new key.
+        mptAlice.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = recoveryKey.first,
+            .proof = gMakeZeroBuffer(1),
+            .flags = tfHolderKeyRecovery,
+        });
+
+        // Alice performs recovery
+        mptAlice.recover({
+            .account = alice,
+            .holder = bob,
+            .recoveryPrivKey = recoveryKey.second,  // recovery private key
+        });
+
+        // Verify holder encryption key has been updated to recovery key
+        auto const mptokenID = keylet::mptoken(mptAlice.issuanceID(), bob.id());
+        auto const sleAfter = env.le(mptokenID);
+        BEAST_EXPECT(sleAfter);
+        auto const holderKey = sleAfter->getFieldVL(sfHolderEncryptionKey);
+        BEAST_EXPECT(Buffer(holderKey.data(), holderKey.size()) == recoveryKey.first);
+        // Verify RecoveryKey field has been removed
+        BEAST_EXPECT(!sleAfter->isFieldPresent(sfRecoveryKey));
+
+        // Verify confidential balance can be decrypted with recovery key
+        BEAST_EXPECT(
+            mptAlice.getDecryptedBalance(
+                bob, MPTTester::holderEncryptedSpending, recoveryKey.second) == 60);
+
+        // Verify inbox has been reset to encrypted zero
+        BEAST_EXPECT(
+            mptAlice.getDecryptedBalance(
+                bob, MPTTester::holderEncryptedInbox, recoveryKey.second) == 0);
+    }
+
+    void
+    testRecoverBalanceDelegated(FeatureBitset features)
+    {
+        if (!features[featureConfidentialMPTKeyRotation])
+            return;
+
+        testcase("test ConfidentialMPTRecoverBalance delegated");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");  // issuer
+        Account const bob("bob");      // holder
+        Account const dgt("dgt");      // delegate acting for the issuer
+        env.fund(XRP(1000), dgt);
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
+        });
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 100);
+
+        // Generate keys for alice (issuer)
+        mptAlice.generateKeyPair(alice);
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        // Bob converts funds to confidential
+        mptAlice.generateKeyPair(bob);
+        mptAlice.convert({
+            .account = bob,
+            .amt = 60,
+            .holderPubKey = mptAlice.getPubKey(bob),
+        });
+
+        // Generate recovery key for bob and register it (bob authorizes).
+        auto recoveryKey = mptAlice.generateKeyPair();
+        mptAlice.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = recoveryKey.first,
+            .proof = gMakeZeroBuffer(1),
+            .flags = tfHolderKeyRecovery,
+        });
+
+        auto const baseFee = env.current()->fees().base;
+        auto const expectedFee = baseFee * (kConfidentialFeeMultiplier + 1);
+
+        // Failure: a delegate without permission cannot recover, and no fee is
+        // deducted for terNO_DELEGATE_PERMISSION.
+        {
+            auto const dgtBalance = env.balance(dgt);
+            mptAlice.recover({
+                .account = alice,
+                .holder = bob,
+                .recoveryPrivKey = recoveryKey.second,
+                .delegate = dgt,
+                .fee = expectedFee,
+                .err = terNO_DELEGATE_PERMISSION,
+            });
+            BEAST_EXPECT(env.balance(dgt) == dgtBalance);
+        }
+
+        // Grant the delegate permission for ConfidentialMPTRecoverBalance.
+        env(delegate::set(alice, dgt, {"ConfidentialMPTRecoverBalance"}));
+        env.close();
+
+        // Success: the delegate recovers on behalf of the issuer and pays the fee.
+        {
+            auto const dgtBalance = env.balance(dgt);
+            mptAlice.recover({
+                .account = alice,
+                .holder = bob,
+                .recoveryPrivKey = recoveryKey.second,
+                .delegate = dgt,
+                .fee = expectedFee,
+            });
+            // The delegate (signer) pays the fee.
+            BEAST_EXPECT(dgtBalance - env.balance(dgt) == expectedFee);
+        }
+
+        // Verify holder encryption key has been updated to the recovery key.
+        auto const mptokenID = keylet::mptoken(mptAlice.issuanceID(), bob.id());
+        auto const sleAfter = env.le(mptokenID);
+        BEAST_EXPECT(sleAfter);
+        auto const holderKey = sleAfter->getFieldVL(sfHolderEncryptionKey);
+        BEAST_EXPECT(Buffer(holderKey.data(), holderKey.size()) == recoveryKey.first);
+        // Verify RecoveryKey field has been removed.
+        BEAST_EXPECT(!sleAfter->isFieldPresent(sfRecoveryKey));
+
+        // Verify confidential balance can be decrypted with the recovery key.
+        BEAST_EXPECT(
+            mptAlice.getDecryptedBalance(
+                bob, MPTTester::holderEncryptedSpending, recoveryKey.second) == 60);
+    }
+
+    void
+    testRecoverBalanceBadParams(FeatureBitset features)
+    {
+        testcase("test ConfidentialMPTRecoverBalance bad parameters");
+        using namespace test::jtx;
+
+        // Test feature disabled
+        {
+            Env env{*this, features - featureConfidentialMPTKeyRotation};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({.flags = tfMPTCanHoldConfidentialBalance});
+            mptAlice.authorize({.account = bob});
+
+            // Submit transaction directly with valid dummy data
+            json::Value jv;
+            jv[jss::TransactionType] = jss::ConfidentialMPTRecoverBalance;
+            jv[jss::Account] = alice.human();
+            jv[jss::Holder] = bob.human();
+            jv[sfMPTokenIssuanceID.jsonName] = to_string(mptAlice.issuanceID());
+            jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
+            jv[sfZKProof.jsonName] = strHex(getTrivialCiphertext());
+
+            env(jv, Ter(temDISABLED));
+        }
+
+        // Test missing MPTokenIssuanceID
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            env.fund(XRP(1000), alice, bob);
+
+            json::Value jv;
+            jv[jss::TransactionType] = jss::ConfidentialMPTRecoverBalance;
+            jv[jss::Account] = alice.human();
+            jv[jss::Holder] = bob.human();
+            jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
+
+            env(jv, Ter(temMALFORMED));
+        }
+
+        // Test missing Holder
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({.flags = tfMPTCanHoldConfidentialBalance});
+
+            json::Value jv;
+            jv[jss::TransactionType] = jss::ConfidentialMPTRecoverBalance;
+            jv[jss::Account] = alice.human();
+            jv[sfMPTokenIssuanceID.jsonName] = to_string(mptAlice.issuanceID());
+            jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
+
+            env(jv, Ter(temMALFORMED));
+        }
+
+        // Test non-issuer cannot recover
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            env.fund(XRP(1000), carol);  // Fund carol's account
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .flags = tfMPTCanHoldConfidentialBalance,
+            });
+            mptAlice.authorize({.account = bob});
+
+            // Submit transaction directly with dummy data
+            json::Value jv;
+            jv[jss::TransactionType] = jss::ConfidentialMPTRecoverBalance;
+            jv[jss::Account] = carol.human();  // Not the issuer
+            jv[jss::Holder] = bob.human();
+            jv[sfMPTokenIssuanceID.jsonName] = to_string(mptAlice.issuanceID());
+            jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
+            jv[sfZKProof.jsonName] = strHex(getTrivialCiphertext());
+
+            env(jv, Ter(temMALFORMED));
+        }
+
+        // Test MPToken doesn't exist
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            env.fund(XRP(1000), bob);
+            MPTTester mptAlice(env, alice, {.holders = {carol}});
+
+            mptAlice.create({
+                .flags = tfMPTCanHoldConfidentialBalance,
+            });
+
+            // Set issuer encryption key first
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            // Authorize and convert for carol
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, carol, 100);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.convert({
+                .account = carol,
+                .amt = 100,
+                .holderPubKey = mptAlice.getPubKey(carol),
+            });
+            // Don't authorize bob, so his MPToken doesn't exist
+
+            // Submit transaction directly with dummy data
+            json::Value jv;
+            jv[jss::TransactionType] = jss::ConfidentialMPTRecoverBalance;
+            jv[jss::Account] = alice.human();
+            jv[jss::Holder] = bob.human();
+            jv[sfMPTokenIssuanceID.jsonName] = to_string(mptAlice.issuanceID());
+            jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
+            jv[sfZKProof.jsonName] = strHex(getTrivialCiphertext());
+
+            env(jv, Ter(tecOBJECT_NOT_FOUND));
+        }
+
+        // Test RecoveryKey not set
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .flags = tfMPTCanHoldConfidentialBalance,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+            mptAlice.convert({
+                .account = bob,
+                .amt = 60,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            // Try to recover without setting recovery key
+            // Submit transaction directly with dummy data
+            json::Value jv;
+            jv[jss::TransactionType] = jss::ConfidentialMPTRecoverBalance;
+            jv[jss::Account] = alice.human();
+            jv[jss::Holder] = bob.human();
+            jv[sfMPTokenIssuanceID.jsonName] = to_string(mptAlice.issuanceID());
+            jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
+            jv[sfZKProof.jsonName] = strHex(getTrivialCiphertext());
+
+            env(jv, Ter(tecNO_PERMISSION));
+        }
+
+        // Test issuer encryption key not set
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .flags = tfMPTCanHoldConfidentialBalance,
+            });
+            mptAlice.authorize({.account = bob});
+
+            // Don't convert for anyone, so issuer encryption key is not set
+
+            // Submit transaction directly with dummy data
+            json::Value jv;
+            jv[jss::TransactionType] = jss::ConfidentialMPTRecoverBalance;
+            jv[jss::Account] = alice.human();
+            jv[jss::Holder] = bob.human();
+            jv[sfMPTokenIssuanceID.jsonName] = to_string(mptAlice.issuanceID());
+            jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
+            jv[sfZKProof.jsonName] = strHex(getTrivialCiphertext());
+
+            env(jv, Ter(tecNO_PERMISSION));
+        }
+    }
+
+    void
+    testRecoverBalanceWithKeyRotation(FeatureBitset features)
+    {
+        testcase("test ConfidentialMPTRecoverBalance with key rotation");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create({
+            .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
+        });
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 200);
+
+        // Setup initial keys
+        mptAlice.generateKeyPair(alice);
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.generateKeyPair(bob);
+
+        // Verify bob's key was stored
+        auto const bobPubKey = mptAlice.getPubKey(bob);
+        BEAST_EXPECT(bobPubKey.has_value());
+
+        mptAlice.convert({
+            .account = bob,
+            .amt = 100,
+            .holderPubKey = bobPubKey,
+        });
+
+        // After convert, the amount is in the inbox (not yet in spending balance)
+        auto const inboxBalance =
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox);
+        BEAST_EXPECT(inboxBalance && *inboxBalance == 100);
+
+        // Merge inbox to spending to make the balance available
+        mptAlice.mergeInbox({.account = bob});
+
+        // Now verify the spending balance
+        auto const spendingBalance =
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending);
+        BEAST_EXPECT(spendingBalance && *spendingBalance == 100);
+
+        // Issuer rotates key (first-time registration leaves the epoch absent,
+        // so the first rotation moves it to 1).
+        auto newIssuerKey = mptAlice.generateKeyPair();
+        mptAlice.set({.account = alice, .issuerPubKey = newIssuerKey.first});
+
+        // Verify epoch incremented
+        auto const issuanceKey = keylet::mptokenIssuance(mptAlice.issuanceID());
+        auto sleIssuance = env.le(issuanceKey);
+        BEAST_EXPECT(sleIssuance && sleIssuance->getFieldU32(sfIssuerKeyEpoch) == 1);
+
+        // Set recovery key: bob authorizes recovery under the new key.
+        auto recoveryKey = mptAlice.generateKeyPair();
+        mptAlice.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = recoveryKey.first,
+            .proof = gMakeZeroBuffer(1),
+            .flags = tfHolderKeyRecovery,
+        });
+
+        // Bob's issuer mirror is stale: his MPToken has no IssuerKeyMirrorEpoch
+        // (epoch 0) while the issuance has advanced to epoch 1 after the
+        // rotation. Recovery must be rejected until the mirror is migrated.
+        mptAlice.recover({
+            .account = alice,
+            .holder = bob,
+            .recoveryPrivKey = recoveryKey.second,
+            .err = tecNO_PERMISSION,
+        });
+
+        // The rejected recovery must leave bob's MPToken untouched: the pending
+        // RecoveryKey is still present, the mirror epoch is still absent (never
+        // migrated), and the spending balance is unchanged under bob's key.
+        auto const mptokenID = keylet::mptoken(mptAlice.issuanceID(), bob.id());
+        auto const sleMPToken = env.le(mptokenID);
+        BEAST_EXPECT(sleMPToken && sleMPToken->isFieldPresent(sfRecoveryKey));
+        BEAST_EXPECT(sleMPToken && !sleMPToken->isFieldPresent(sfIssuerKeyMirrorEpoch));
+        BEAST_EXPECT(mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
     }
 
     void
@@ -8573,6 +9033,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         testClawbackProof(features);
         testClawbackWithAuditor(features);
         testClawbackInvalidProofContextBinding(features);
+
+        // ConfidentialMPTRecoverBalance
+        testRecoverBalance(features);
+        testRecoverBalanceDelegated(features);
+        testRecoverBalanceBadParams(features);
+        testRecoverBalanceWithKeyRotation(features);
 
         testDelete(features);
 
