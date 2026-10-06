@@ -1385,7 +1385,8 @@ struct PayChan_test : public beast::unit_test::Suite
                 auto const pkAsHex = sliceToHex(pk.slice());
                 BEAST_EXPECT(env.rpc("channel_authorize", "alice", chan1Str, "0")[jss::error] == "channelAmtMalformed");
                 BEAST_EXPECT(env.rpc("channel_verify", pkAsHex, chan1Str, "0", sig)[jss::error] == "channelAmtMalformed");
-
+            }
+            {
                 json::Value args{json::ValueType::Object};
                 args[jss::amount] = "0";
                 args[jss::channel_id] = chan1Str;
