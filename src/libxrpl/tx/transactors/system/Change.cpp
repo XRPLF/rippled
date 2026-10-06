@@ -10,6 +10,7 @@
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/entries/AmendmentsEntry.h>
 #include <xrpl/ledger/entries/FeeSettingsEntry.h>
+#include <xrpl/ledger/entries/NegativeUNLEntry.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -330,12 +331,11 @@ Change::applyUNLModify()
     JLOG(j_.info()) << "N-UNL: applyUNLModify, " << (disabling ? "ToDisable" : "ToReEnable")
                     << " seq=" << seq << " validator data:" << strHex(validator);
 
-    auto const k = keylet::negativeUNL();
-    SLE::pointer negUnlObject = view().peek(k);
+    NegativeUNLEntryW negUnlObject(view(), j_);
     if (!negUnlObject)
     {
-        negUnlObject = std::make_shared<SLE>(k);
-        view().insert(negUnlObject);
+        negUnlObject.newSLE();
+        negUnlObject.insert();
     }
 
     bool const found = [&] {
@@ -408,7 +408,7 @@ Change::applyUNLModify()
         negUnlObject->setFieldVL(sfValidatorToReEnable, validator);
     }
 
-    view().update(negUnlObject);
+    negUnlObject.update();
     return tesSUCCESS;
 }
 
