@@ -726,7 +726,7 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
                 }
 
                 MPTokenEntryW sleMpt(sleItem->key(), sb, j);
-                return {deleteAMMMPToken(sb, sleMpt, ammAccountID, j), SkipEntry::No};
+                return {sleMpt.removeForAMM(ammAccountID), SkipEntry::No};
             }
             if (nodeType == ltRIPPLE_STATE)
             {

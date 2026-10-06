@@ -7,7 +7,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -840,22 +839,6 @@ deleteAMMTrustLine(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     decreaseOwnerCount(view, !ammLow ? sleLow : sleHigh, sponsorSle, 1, j);
-
-    return tesSUCCESS;
-}
-
-TER
-deleteAMMMPToken(
-    ApplyView& view,
-    MPTokenEntryW& sleMpt,
-    AccountID const& ammAccountID,
-    beast::Journal j)
-{
-    if (!view.dirRemove(
-            keylet::ownerDir(ammAccountID), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-
-    sleMpt.erase();
 
     return tesSUCCESS;
 }
