@@ -62,7 +62,9 @@ struct UnsignedList
  * outside strings removed, one space after each `,` and `:`, key order
  * preserved.
  *
- * @throws std::runtime_error if the text is not a JSON object
+ * @throws std::runtime_error if the text is not a JSON object, has a block
+ *         comment without its closing `*` `/`, or has anything but
+ *         whitespace and comments after the object
  */
 std::string
 canonicalJson(std::string const& text);

@@ -87,11 +87,6 @@ public:
      * @param inputs Files the command reads besides those in the options;
      *        `--out` may not name any input, since the output replaces it.
      */
-    // A result that only goes to the output stream.
-    explicit Output(std::ostream& out) : out_(out)
-    {
-    }
-
     Output(Context const& ctx, std::vector<std::filesystem::path> const& inputs = {})
         : out_(ctx.out)
     {
@@ -349,11 +344,12 @@ cmdFinishToken(Args const& args, Context& ctx)
 int
 cmdRevokeKeys(Args const&, Context& ctx)
 {
+    Output output(ctx);
     auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     warnRevocation(keys, ctx.err);
     auto const revocation = keys.revoke();
     keys.writeToFile(ctx.options.keyFile);
-    Output(ctx.out).block("validator_key_revocation", nodePublic(keys), revocation);
+    output.block("validator_key_revocation", nodePublic(keys), revocation);
     return EXIT_SUCCESS;
 }
 
@@ -369,11 +365,12 @@ cmdStartRevokeKeys(Args const&, Context& ctx)
 int
 cmdFinishRevokeKeys(Args const& args, Context& ctx)
 {
+    Output output(ctx);
     auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     warnRevocation(keys, ctx.err);
     auto const revocation = keys.finishRevoke(decodeSignature(args[0]));
     keys.writeToFile(ctx.options.keyFile);
-    Output(ctx.out).block("validator_key_revocation", nodePublic(keys), revocation);
+    output.block("validator_key_revocation", nodePublic(keys), revocation);
     return EXIT_SUCCESS;
 }
 

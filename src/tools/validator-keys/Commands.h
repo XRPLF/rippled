@@ -27,7 +27,7 @@ struct ToolOptions
     std::optional<std::filesystem::path> tokenFile;
     // File holding a base64 manifest.
     std::optional<std::filesystem::path> manifestFile;
-    // File to write a token or a signed list to instead of stdout.
+    // File to write a token, a revocation or a signed list to instead of stdout.
     std::optional<std::filesystem::path> outFile;
     // Version of the signed list document.
     unsigned listVersion = 1;

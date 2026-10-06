@@ -105,7 +105,9 @@ main(int argc, char** argv)
         "External signing key a token delegates to (start_token).")(
         "token-file", po::value<std::string>(), "File holding a [validator_token] block.")(
         "manifest-file", po::value<std::string>(), "File holding a base64 manifest.")(
-        "out", po::value<std::string>(), "Write the token or signed list to this file.")(
+        "out",
+        po::value<std::string>(),
+        "Write the token, revocation or signed list to this file.")(
         "list-version", po::value<unsigned>(), "Signed list version: 1 (default) or 2.")(
         "append", po::value<std::string>(), "Version 2 list to add the new blob to.")(
         "validators",

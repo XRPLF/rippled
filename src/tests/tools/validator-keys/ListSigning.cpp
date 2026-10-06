@@ -115,8 +115,20 @@ TEST_F(ListSigningTest, canonical_json)
 
     EXPECT_EQ(errorOf([] { canonicalJson("[1, 2]"); }), kNotObject);
     EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": "); }), kNotObject);
-    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} // open"); }), "");
-    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1 /* open"); }), kNotObject);
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1 /* open"); }), "Unterminated comment");
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} /* open"); }), "Unterminated comment");
+
+    // Only whitespace and comments may follow the object
+    std::string const trailing = "Content after the JSON object";
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} // note"); }), "");
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} /* note */"); }), "");
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} \n"); }), "");
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} x"); }), trailing);
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} \"x"); }), trailing);
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} /"); }), trailing);
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} {\"b\": 2}"); }), trailing);
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} ]"); }), trailing);
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": [1]} 2"); }), trailing);
 }
 
 TEST_F(ListSigningTest, parse_unsigned_list)

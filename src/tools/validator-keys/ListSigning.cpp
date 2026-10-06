@@ -205,6 +205,11 @@ canonicalJson(std::string const& text)
     out.reserve(text.size());
     bool inString = false;
     bool escaped = false;
+    // Bracket depth outside strings and comments; json::Reader::parse ignores
+    // text after the root value, so once the depth returns to 0 only
+    // whitespace and comments may follow.
+    std::size_t depth = 0;
+    bool closed = false;
     for (std::size_t i = 0; i < text.size(); ++i)
     {
         char const c = text[i];
@@ -236,17 +241,16 @@ canonicalJson(std::string const& text)
         {
             i = text.find("*/", i + 2);
             if (i == std::string::npos)
-                break;
+                throw std::runtime_error("Unterminated comment");
             ++i;
             continue;
         }
+        if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
+            continue;
+        if (closed)
+            throw std::runtime_error("Content after the JSON object");
         switch (c)
         {
-            case ' ':
-            case '\t':
-            case '\n':
-            case '\r':
-                break;
             case '"':
                 inString = true;
                 out += c;
@@ -256,6 +260,17 @@ canonicalJson(std::string const& text)
                 break;
             case ':':
                 out += ": ";
+                break;
+            case '{':
+            case '[':
+                ++depth;
+                out += c;
+                break;
+            case '}':
+            case ']':
+                if (depth > 0)
+                    closed = --depth == 0;
+                out += c;
                 break;
             default:
                 out += c;

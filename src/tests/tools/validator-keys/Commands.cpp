@@ -289,8 +289,11 @@ TEST_F(CommandsTest, external_token)
         commandError("finish_revoke_keys", {signer.sign("foo")}, options_),
         "Manifest is not properly signed");
     EXPECT_FALSE(keys(options_).revoked());
-    auto const revoked = run("finish_revoke_keys", {signer.signHex(revokeBytes)}, options_);
-    EXPECT_NE(revoked.out.find("[validator_key_revocation]"), std::string::npos);
+    ToolOptions toFile = options_;
+    toFile.outFile = file("revocation.txt");
+    auto const revoked = run("finish_revoke_keys", {signer.signHex(revokeBytes)}, toFile);
+    EXPECT_NE(revoked.out.find("written to"), std::string::npos);
+    EXPECT_NE(readFile(*toFile.outFile).find("[validator_key_revocation]"), std::string::npos);
     EXPECT_TRUE(keys(options_).revoked());
     EXPECT_NE(
         run("start_revoke_keys", {}, options_).err.find("already been revoked"), std::string::npos);
@@ -328,11 +331,27 @@ TEST_F(CommandsTest, default_key_file)
 TEST_F(CommandsTest, revoke_keys)
 {
     run("create_keys", {}, options_);
-    auto const first = run("revoke_keys", {}, options_);
+
+    // An unwritable output path fails before the keys are revoked
+    ToolOptions unwritable = options_;
+    unwritable.outFile = file("missing/revocation.txt");
+    EXPECT_EQ(
+        commandError("revoke_keys", {}, unwritable),
+        "Cannot write output file: " + unwritable.outFile->string());
+    EXPECT_FALSE(keys(options_).revoked());
+
+    // The revocation goes to the output file
+    ToolOptions toFile = options_;
+    toFile.outFile = file("revocation.txt");
+    auto const first = run("revoke_keys", {}, toFile);
     EXPECT_NE(first.err.find("This will revoke"), std::string::npos);
-    EXPECT_NE(first.out.find("[validator_key_revocation]"), std::string::npos);
+    EXPECT_NE(first.out.find("written to"), std::string::npos);
+    EXPECT_NE(readFile(*toFile.outFile).find("[validator_key_revocation]"), std::string::npos);
+    EXPECT_TRUE(keys(options_).revoked());
+
     auto const again = run("revoke_keys", {}, options_);
     EXPECT_NE(again.err.find("already been revoked"), std::string::npos);
+    EXPECT_NE(again.out.find("[validator_key_revocation]"), std::string::npos);
     EXPECT_EQ(commandError("set_domain", {"validator.example.com"}, options_), kRevokedOperation);
     EXPECT_EQ(commandError("attest_domain", {}, options_), kRevokedOperation);
     EXPECT_NE(run("sign", {"data"}, options_).err.find("have been revoked"), std::string::npos);
