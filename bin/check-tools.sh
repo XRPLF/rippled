@@ -112,6 +112,7 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
     check ClangBuildAnalyzer
     check curl
     check file
+    check jq
     check less
     check make
     # net-tools netstat reports "net-tools X.Y"; macOS ships BSD netstat with no
