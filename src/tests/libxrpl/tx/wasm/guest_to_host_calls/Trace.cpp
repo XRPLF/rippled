@@ -1,6 +1,5 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/tx/wasm/HostContext.h>

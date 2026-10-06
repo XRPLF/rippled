@@ -1,5 +1,4 @@
 #include <xrpl/protocol/SField.h>
-#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

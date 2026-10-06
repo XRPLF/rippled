@@ -1,4 +1,3 @@
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 

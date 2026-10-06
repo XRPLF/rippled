@@ -1,5 +1,3 @@
-#include <xrpl/tx/wasm/WasmCommon.h>
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>

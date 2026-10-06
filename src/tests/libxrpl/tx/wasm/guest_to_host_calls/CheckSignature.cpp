@@ -1,4 +1,3 @@
-#include <xrpl/basics/Slice.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
