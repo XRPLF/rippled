@@ -205,7 +205,7 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
     // is collected on-ledger afterward, so its absence here is expected, not
     // an error (On-Chain Cosigner spec §5.3.1.2).
     if (isAccountReserveSponsorship && !ctx.tx.isFieldPresent(sfSponsorSignature) &&
-        (ctx.flags & TapProposal) == 0)
+        (ctx.flags & ApplyFlags::Proposal) == ApplyFlags::None)
     {
         JLOG(ctx.j.debug()) << "preflight: account sponsorship requires sfSponsorSignature";
         return temMALFORMED;

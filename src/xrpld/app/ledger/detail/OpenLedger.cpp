@@ -178,7 +178,7 @@ OpenLedger::applyOne(
     beast::Journal j) -> Result
 {
     if (retry)
-        flags = flags | TapRetry;
+        flags = flags | ApplyFlags::Retry;
     // If it's in anybody's proposed set, try to keep it in the ledger
     auto const result = xrpl::apply(app, view, *tx, flags, j);
     if (result.applied || result.ter == terQUEUED)

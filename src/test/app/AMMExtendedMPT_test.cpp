@@ -1941,7 +1941,7 @@ private:
             auto const flowResult = [&] {
                 STAmount const deliver(eth(51'000'000));
                 STAmount smax(btc(61'000'000));
-                PaymentSandbox sb(env.current().get(), TapNone);
+                PaymentSandbox sb(env.current().get(), ApplyFlags::None);
                 STPathSet paths;
                 auto const ipe = [](MPTTester const& iss) {
                     return STPathElement(
@@ -1979,7 +1979,7 @@ private:
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 if (flowResult.removableOffers.empty())
                     return false;
-                Sandbox sb(&view, TapNone);
+                Sandbox sb(&view, ApplyFlags::None);
                 for (auto const& o : flowResult.removableOffers)
                 {
                     if (auto const ok = sb.peek(keylet::offer(o)))
