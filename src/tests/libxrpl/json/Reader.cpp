@@ -417,11 +417,10 @@ TEST(JsonReader, a_move_assigned_reader_parses_into_its_own_target)
 
 TEST(JsonReader, a_move_carries_error_messages_across_intact)
 {
-    // A short document lives in the string's inline buffer, so the move
-    // relocates it and the error locations must be rebased. Re-parsing through
-    // the source afterwards is what makes a missed rebase observable: it
-    // refills that same buffer with newlines ahead of the recorded offset, so
-    // a stale location reports a different line.
+    // A short document fits in the string's inline buffer, which moving the
+    // string itself would relocate. Re-parsing through the source afterwards
+    // refills its buffer with newlines ahead of the recorded offset, so a
+    // location left pointing at the source's buffer reports a different line.
     auto root = json::Value{};
     auto source = json::Reader{};
     ASSERT_FALSE(source.parse(std::string{R"({"a":})"}, root));
@@ -429,6 +428,27 @@ TEST(JsonReader, a_move_carries_error_messages_across_intact)
         << source.getFormattedErrorMessages();
 
     auto moved = json::Reader{std::move(source)};
+
+    source = json::Reader{};
+    auto reuseRoot = json::Value{};
+    ASSERT_TRUE(source.parse(std::string{"\n\n\n\n[1]"}, reuseRoot))
+        << source.getFormattedErrorMessages();
+
+    EXPECT_EQ(moved.getFormattedErrorMessages().find("* Line 1, Column 6"), 0u)
+        << moved.getFormattedErrorMessages();
+}
+
+TEST(JsonReader, a_move_assignment_carries_error_messages_across_intact)
+{
+    // See a_move_carries_error_messages_across_intact.
+    auto root = json::Value{};
+    auto source = json::Reader{};
+    ASSERT_FALSE(source.parse(std::string{R"({"a":})"}, root));
+
+    auto moved = json::Reader{};
+    auto movedRoot = json::Value{};
+    ASSERT_TRUE(moved.parse(std::string{"[1]"}, movedRoot)) << moved.getFormattedErrorMessages();
+    moved = std::move(source);
 
     source = json::Reader{};
     auto reuseRoot = json::Value{};

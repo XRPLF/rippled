@@ -9,14 +9,17 @@
 #include <fast_float/parse_number.h>
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <deque>
+#include <ios>
 #include <istream>
 #include <iterator>
 #include <limits>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -200,7 +203,7 @@ public:
      * clang-format on
      */
     template <class BufferSequence>
-        requires requires(BufferSequence const& buffers) { boost::asio::buffer_size(buffers); }
+        requires boost::asio::is_const_buffer_sequence<BufferSequence>::value
     bool
     parse(BufferSequence const& bs);
 
@@ -311,18 +314,15 @@ private:
     getLocationLineAndColumn(Location location) const;
     bool
     skipCommentTokens(Token& token);
-    void
-    rebaseLocations();
 
     std::tuple<Visitor*...> visitors_;
     Errors errors_;
-    std::string document_;
+    // Held by pointer so that moving the parser never relocates the characters
+    // the Locations below (and those in errors_) may point into.
+    std::unique_ptr<std::string> document_;
     Location begin_{};
     Location end_{};
     Location current_{};
-    // Whether the Locations above point into document_ rather than a caller's
-    // buffer. Only the former move with this parser, so only they are rebased.
-    bool ownsDocument_{false};
 };
 
 template <typename... Visitor>
@@ -339,9 +339,7 @@ Parser<Visitor...>::Parser(Parser&& other) noexcept
     , begin_{other.begin_}
     , end_{other.end_}
     , current_{other.current_}
-    , ownsDocument_{other.ownsDocument_}
 {
-    rebaseLocations();
 }
 
 template <typename... Visitor>
@@ -364,81 +362,50 @@ Parser<Visitor...>::operator=(Parser&& other) noexcept
     begin_ = other.begin_;
     end_ = other.end_;
     current_ = other.current_;
-    ownsDocument_ = other.ownsDocument_;
     document_ = std::move(other.document_);
-    rebaseLocations();
 
     return *this;
-}
-
-template <typename... Visitor>
-void
-Parser<Visitor...>::rebaseLocations()
-{
-    // A caller's buffer was not relocated by the move.
-    if (!ownsDocument_)
-    {
-        return;
-    }
-
-    // begin_ still holds the pre-move base, since parse(std::string) leaves it
-    // at document_.data() and the shifts below have not run yet.
-    auto const* const oldBase = begin_;
-    auto const* const newBase = document_.data();
-
-    if (oldBase == newBase)
-    {
-        return;
-    }
-
-    // Each location is turned into an offset within the old buffer and then
-    // reapplied to the new one. Differencing the two bases directly would be
-    // pointer arithmetic across unrelated arrays.
-    auto const shift = [oldBase, newBase](Location& location) {
-        if (location != nullptr)
-        {
-            location = newBase + (location - oldBase);
-        }
-    };
-
-    shift(begin_);
-    shift(end_);
-    shift(current_);
-
-    for (auto& error : errors_)
-    {
-        shift(error.token.start);
-        shift(error.token.end);
-        shift(error.extra);
-    }
 }
 
 template <typename... Visitor>
 bool
 Parser<Visitor...>::parse(std::string document)
 {
-    document_ = std::move(document);
-    auto const* begin = document_.c_str();
-    auto const* end = begin + document_.length();
-    auto const successful = parse(begin, end);
-    // parse(begin, end) assumes a caller-owned buffer; this overload owns it.
-    ownsDocument_ = true;
-    return successful;
+    if (document_)
+    {
+        *document_ = std::move(document);
+    }
+    else
+    {
+        document_ = std::make_unique<std::string>(std::move(document));
+    }
+
+    return parse(document_->data(), document_->data() + document_->size());
 }
 
 template <typename... Visitor>
 bool
 Parser<Visitor...>::parse(std::istream& sin)
 {
-    // std::istream_iterator<char> begin(sin);
-    // std::istream_iterator<char> end;
-    // Those would allow streamed input from a file, if parse() were a
-    // template function.
-
-    // Since std::string is reference-counted, this at least does not
-    // create an extra copy.
+    // Reads at most one byte past documentSizeLimit, which is enough for the
+    // size check to reject the document without buffering the rest of the
+    // stream.
     auto doc = std::string{};
-    std::getline(sin, doc, (char)EOF);
+    auto chunk = std::array<char, 4096>{};
+
+    while (sin && doc.size() <= documentSizeLimit)
+    {
+        // Arranged so that a limit of max() cannot overflow.
+        auto const count = std::min(chunk.size() - 1, documentSizeLimit - doc.size()) + 1;
+        sin.read(chunk.data(), static_cast<std::streamsize>(count));
+        doc.append(chunk.data(), static_cast<std::size_t>(sin.gcount()));
+    }
+
+    if (!doc.empty() && sin.eof() && !sin.bad())
+    {
+        sin.clear(std::ios_base::eofbit);
+    }
+
     return parse(std::move(doc));
 }
 
@@ -450,7 +417,6 @@ Parser<Visitor...>::parse(char const* beginDoc, char const* endDoc)
     end_ = endDoc;
     current_ = begin_;
     errors_.clear();
-    ownsDocument_ = false;
 
     auto documentSize = static_cast<std::size_t>(end_ - begin_);
 
@@ -488,7 +454,7 @@ Parser<Visitor...>::parse(char const* beginDoc, char const* endDoc)
 
 template <typename... Visitor>
 template <class BufferSequence>
-    requires requires(BufferSequence const& buffers) { boost::asio::buffer_size(buffers); }
+    requires boost::asio::is_const_buffer_sequence<BufferSequence>::value
 bool
 Parser<Visitor...>::parse(BufferSequence const& bs)
 {

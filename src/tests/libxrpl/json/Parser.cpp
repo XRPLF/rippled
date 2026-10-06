@@ -7,6 +7,7 @@
 #include <array>
 #include <cstddef>
 #include <expected>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -424,6 +425,62 @@ TEST(JsonParser, enforces_document_size_limit)
     EXPECT_NE(parser.getFormattedErrorMessages().find("document size exceeds"), std::string::npos);
 }
 
+TEST(JsonParser, stream_parse_stops_reading_past_document_size_limit)
+{
+    // The limit spans more than one read chunk, and the stream holds far more
+    // than the limit; only one byte past the limit may be consumed.
+    auto input = std::istringstream{"[" + std::string(100'000, ' ') + "]"};
+
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+    parser.documentSizeLimit = 5000;
+
+    EXPECT_FALSE(parser.parse(input));
+    EXPECT_NE(parser.getFormattedErrorMessages().find("document size exceeds"), std::string::npos);
+    EXPECT_EQ(input.tellg(), std::streampos{5001});
+}
+
+TEST(JsonParser, stream_parse_accepts_a_document_at_the_size_limit)
+{
+    auto input = std::istringstream{"[1]"};
+
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+    parser.documentSizeLimit = 3;
+
+    EXPECT_TRUE(parser.parse(input)) << parser.getFormattedErrorMessages();
+    EXPECT_TRUE(input.eof());
+    EXPECT_FALSE(input.fail());
+}
+
+TEST(JsonParser, stream_parse_reads_a_document_spanning_several_chunks)
+{
+    auto document = std::string{"["};
+    for (auto i = 0; i < 10'000; ++i)
+    {
+        document += "1,";
+    }
+    document += "1]";
+    auto input = std::istringstream{document};
+
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+
+    EXPECT_TRUE(parser.parse(input)) << parser.getFormattedErrorMessages();
+    EXPECT_FALSE(input.fail());
+}
+
+TEST(JsonParser, stream_parse_fails_an_empty_stream)
+{
+    auto input = std::istringstream{};
+
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+
+    EXPECT_FALSE(parser.parse(input));
+    EXPECT_TRUE(input.fail());
+}
+
 TEST(JsonParser, enforces_key_size_limit)
 {
     auto trace = Trace{};
@@ -589,6 +646,24 @@ TEST(JsonParser, a_move_carries_error_locations_across_intact)
         << source.getFormattedErrorMessages();
 
     auto moved = json::Parser{std::move(source)};
+
+    source = json::Parser{trace};
+    ASSERT_TRUE(source.parse(std::string{"\n\n\n\n[1]"})) << source.getFormattedErrorMessages();
+
+    EXPECT_EQ(moved.getFormattedErrorMessages().find("* Line 1, Column 6"), 0u)
+        << moved.getFormattedErrorMessages();
+}
+
+TEST(JsonParser, a_move_assignment_carries_error_locations_across_intact)
+{
+    // See the equivalent JsonReader test for why the parser is reused.
+    auto trace = Trace{};
+    auto source = json::Parser{trace};
+    ASSERT_FALSE(source.parse(std::string{R"({"a":})"}));
+
+    auto moved = json::Parser{trace};
+    ASSERT_TRUE(moved.parse(std::string{"[1]"})) << moved.getFormattedErrorMessages();
+    moved = std::move(source);
 
     source = json::Parser{trace};
     ASSERT_TRUE(source.parse(std::string{"\n\n\n\n[1]"})) << source.getFormattedErrorMessages();
