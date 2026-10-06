@@ -183,6 +183,10 @@ PaymentChannelFund::doApply()
             !isTesSuccess(ret))
             return ret;
 
+        if (auto const ret = payChanLockPrecisionHelper(ctx_.view(), accountID_, amount, j_);
+            !isTesSuccess(ret))
+            return ret;
+
         // sfAmount must become exactly chanAmt + amount: an IOU sum that
         // rounds or an MPT sum that overflows would record an increase other
         // than what the source paid.

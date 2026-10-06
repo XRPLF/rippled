@@ -160,6 +160,10 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
             });
             !isTesSuccess(ret))
             return ret;
+
+        if (auto const ret = payChanLockPrecisionHelper(ctx.view, account, amount, ctx.j);
+            !isTesSuccess(ret))
+            return ret;
     }
 
     return tesSUCCESS;

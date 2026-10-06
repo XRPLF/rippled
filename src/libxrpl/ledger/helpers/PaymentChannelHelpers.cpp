@@ -6,9 +6,11 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
@@ -53,6 +55,31 @@ payChanAmountPreflightHelper<MPTIssue>(Rules const& rules, STAmount const& amoun
 
     if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} || amount <= beast::kZero)
         return temBAD_AMOUNT;
+
+    return tesSUCCESS;
+}
+
+TER
+payChanLockPrecisionHelper(
+    ReadView const& view,
+    AccountID const& account,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    if (!amount.holds<Issue>())
+        return tesSUCCESS;
+
+    // The trust line debit rounds to the mantissa, so require an exact
+    // difference rather than canAdd's relative tolerance.
+    STAmount const spendable = accountHolds(
+        view,
+        account,
+        amount.get<Issue>().currency,
+        amount.getIssuer(),
+        FreezeHandling::IgnoreFreeze,
+        j);
+    if (!isExactDifference(spendable, amount))
+        return tecPRECISION_LOSS;
 
     return tesSUCCESS;
 }
