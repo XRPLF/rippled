@@ -5294,6 +5294,35 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(issuerEscrowed(env, gw, usd) == max);
         }
 
+        // tecPRECISION_LOSS: a partial claw whose remainder is not exact. At
+        // the IOU exponent floor amount - balance and amount - claw are both
+        // exact, but the new amount 1000000000000001e-96 minus the balance
+        // 1000000000000000e-96 is 1e-96, which rounds to zero.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+            STAmount const amount{usd.issue(), std::uint64_t{2000000000000001}, -96};
+            STAmount const balance{usd.issue(), std::uint64_t{1000000000000000}, -96};
+            env.trust(amount, alice, bob);
+            env.close();
+            env(pay(gw, alice, amount));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, amount, settleDelay, alice.pk()));
+            env.close();
+            env(paychan::claim(alice, chan, balance, balance));
+            env.close();
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == balance);
+
+            env(paychan::clawback(gw, chan, balance), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == amount);
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == balance);
+        }
+
         // Clawback after a partial claim: only the unclaimed remainder is
         // taken and the destination's already-claimed balance is untouched.
         // This is also the regression test for the full-claw amount being set
