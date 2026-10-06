@@ -506,7 +506,7 @@ EscrowCreate::doApply()
             (*escrow)[sfTransferRate] = xferRate.value;
     }
 
-    escrow.insert();
+    escrow.insertIntoView();
 
     // Add escrow to sender's owner directory
     {
