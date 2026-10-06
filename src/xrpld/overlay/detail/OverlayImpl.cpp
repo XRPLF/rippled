@@ -77,6 +77,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <format>
 #include <functional>
 #include <iomanip>
 #include <memory>
@@ -1661,8 +1662,8 @@ setupOverlay(BasicConfig const& config, beast::Journal j)
             }
             catch (boost::bad_lexical_cast const&)
             {
-                Throw<std::runtime_error>(
-                    "Configured [crawl] section has invalid value: " + values.front());
+                Throw<std::runtime_error>(std::format(
+                    "Configured [crawl] section has invalid value: {}", values.front()));
             }
         }
 

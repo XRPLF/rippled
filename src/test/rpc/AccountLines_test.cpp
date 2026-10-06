@@ -3,6 +3,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/flags.h>
@@ -32,6 +33,7 @@
 #include <cstddef>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl::rpc {
@@ -518,6 +520,71 @@ public:
     }
 
     void
+    testMarkerNewObjectTypes()
+    {
+        // Regression: pagination across account_lines / account_offers /
+        // account_channels must not reject a marker whose SLE is a
+        // Credential (or any post-2023 owner-directory entry).
+        testcase("Marker on new owner-directory entry types (Credential)");
+
+        using namespace test::jtx;
+
+        // Walk the owner directory via `rpcMethod` at limit=1 and return
+        // the total number of paged calls plus whether the RPC ever
+        // returned "invalidParams" during pagination.
+        auto walkPages = [](Env& env, Account const& account, char const* rpcMethod) {
+            std::optional<std::string> marker;
+            int iterations = 0;
+            bool hitInvalidParams = false;
+            for (int guard = 0; guard < 20; ++guard)
+            {
+                json::Value params;
+                params[jss::account] = account.human();
+                params[jss::limit] = 1;
+                if (marker)
+                    params[jss::marker] = *marker;
+                auto const resp = env.rpc("json", rpcMethod, to_string(params))[jss::result];
+                ++iterations;
+                if (resp.isMember(jss::error))
+                {
+                    hitInvalidParams = resp[jss::error].asString() == "invalidParams";
+                    break;
+                }
+                if (!resp.isMember(jss::marker))
+                    break;
+                marker = resp[jss::marker].asString();
+            }
+            return std::pair{iterations, hitInvalidParams};
+        };
+
+        for (char const* rpcMethod : {"account_lines", "account_offers", "account_channels"})
+        {
+            Env env(*this);
+
+            Account const alice{"alice"};
+            Account const issuer{"issuer"};
+            env.fund(XRP(10000), alice, issuer);
+            env.close();
+
+            auto const usd = issuer["USD"];
+            env(trust(alice, usd(200)));
+
+            for (int i = 0; i < 4; ++i)
+            {
+                env(credentials::create(alice, issuer, std::string("Cred") + std::to_string(i)));
+            }
+            env.close();
+
+            auto const [iterations, hitInvalidParams] = walkPages(env, alice, rpcMethod);
+            BEAST_EXPECTS(!hitInvalidParams, rpcMethod);
+            // 1 trust line + 4 credentials — pagination walks all owner-dir
+            // entries regardless of which the RPC includes in its results.
+            BEAST_EXPECTS(
+                iterations == 5, std::string(rpcMethod) + ": " + std::to_string(iterations));
+        }
+    }
+
+    void
     testAccountLinesWalkMarkers()
     {
         testcase("Marker can point to any appropriate ledger entry type");
@@ -625,8 +692,8 @@ public:
         env(ticket::create(alice, 2));
 
         // Add another trustline for good measure
-        auto const btCbecky = becky["BTC"];
-        env(trust(alice, btCbecky(200)));
+        auto const btcBecky = becky["BTC"];
+        env(trust(alice, btcBecky(200)));
 
         env.close();
 
@@ -1325,6 +1392,7 @@ public:
         testAccountLines();
         testAccountLinesMarker();
         testAccountLineDelete();
+        testMarkerNewObjectTypes();
         testAccountLinesWalkMarkers();
         testAccountLines2();
         testAccountLineDelete2();

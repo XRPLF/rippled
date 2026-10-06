@@ -39,18 +39,10 @@ TypedField<T>::TypedField(PrivateAccessTagT pat, Args&&... args)
 
 #define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
     SField const sfName(                                   \
-        access,                                            \
-        STI_##stiSuffix,                                   \
-        fieldValue,                                        \
-        std::string_view(#sfName).substr(2).data(),        \
-        ##__VA_ARGS__);
+        access, STI_##stiSuffix, fieldValue, std::string_view(#sfName).substr(2).data(), ##__VA_ARGS__);
 #define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
     SF_##stiSuffix const sfName(                         \
-        access,                                          \
-        STI_##stiSuffix,                                 \
-        fieldValue,                                      \
-        std::string_view(#sfName).substr(2).data(),      \
-        ##__VA_ARGS__);
+        access, STI_##stiSuffix, fieldValue, std::string_view(#sfName).substr(2).data(), ##__VA_ARGS__);
 
 // SFields which, for historical reasons, do not follow naming conventions.
 SField const sfInvalid(access, -1, "");

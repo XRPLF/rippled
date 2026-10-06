@@ -27,6 +27,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -290,6 +291,30 @@ ConfidentialTransferTestBase::ConfidentialSendSetup::sendArgs(
         .balanceCommitment = balanceCommitment,
         .err = err,
     };
+}
+
+std::optional<std::pair<Buffer, Buffer>>
+ConfidentialTransferTestBase::reencryptHolderBalances(
+    test::jtx::MPTTester& mpt,
+    test::jtx::Account const& holder,
+    test::jtx::Account const& currentKey,
+    test::jtx::Account const& newKey)
+{
+    auto const spendingCt =
+        mpt.getEncryptedBalance(holder, test::jtx::MPTTester::holderEncryptedSpending);
+    auto const inboxCt =
+        mpt.getEncryptedBalance(holder, test::jtx::MPTTester::holderEncryptedInbox);
+    if (!spendingCt || !inboxCt)
+        return std::nullopt;
+
+    auto const spendingAmt = mpt.decryptAmount(currentKey, *spendingCt);
+    auto const inboxAmt = mpt.decryptAmount(currentKey, *inboxCt);
+    if (!spendingAmt || !inboxAmt)
+        return std::nullopt;
+
+    return std::pair{
+        mpt.encryptAmount(newKey, *spendingAmt, generateBlindingFactor()),
+        mpt.encryptAmount(newKey, *inboxAmt, generateBlindingFactor())};
 }
 
 Buffer const&

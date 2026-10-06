@@ -8,7 +8,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Ledger.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/ledger/entries/LedgerHashesEntry.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
@@ -170,7 +170,7 @@ NegativeUNLVote::buildScoreTable(
     validations.setSeqToKeep(seq - 1, seq + kFlagLedgerInterval);
 
     // Find FLAG_LEDGER_INTERVAL (i.e. 256) previous ledger hashes
-    auto const hashIndex = prevLedger->read(keylet::skip());
+    LedgerHashesEntryR const hashIndex(*prevLedger, j_);
     if (!hashIndex || !hashIndex->isFieldPresent(sfHashes))
     {
         JLOG(j_.debug()) << "N-UNL: ledger " << seq << " no history.";

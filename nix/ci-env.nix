@@ -21,7 +21,8 @@ let
     )
   );
 
-  toolchain = if pkgs.stdenv.isLinux then linux.toolchain else (darwin.toolchain ++ [ darwinEnv ]);
+  toolchain =
+    if pkgs.stdenv.hostPlatform.isLinux then linux.toolchain else (darwin.toolchain ++ [ darwinEnv ]);
 in
 {
   default = pkgs.buildEnv {

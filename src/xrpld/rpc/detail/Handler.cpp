@@ -17,7 +17,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
-#include <xrpl/protocol/ErrorCodes.h>
 
 #include <rpcspec/Errors.hpp>
 #include <rpcspec/Types.hpp>
@@ -102,11 +101,11 @@ handle(JsonContext& context, json::Value& object)
         }
 
         HandlerImpl handler(context);
-        return respond(
-            handler,
-            object,
-            handler.process(*input),
-            HandlerImpl::spec(context.apiVersion).check(context.params));
+        auto const output = handler.process(*input);
+        auto const warnings = output.has_value()
+            ? HandlerImpl::spec(context.apiVersion).check(context.params)
+            : ::rpc::spec::Warnings{};
+        return respond(handler, object, output, warnings);
     }
     else
     {

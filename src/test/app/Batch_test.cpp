@@ -47,7 +47,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -69,7 +68,6 @@
 #include <xrpl/tx/transactors/payment/Payment.h>
 #include <xrpl/tx/transactors/system/Batch.h>
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -121,15 +119,6 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
-    validateInnerTxn(jtx::Env& env, std::string const& batchID, TestLedgerData const& ledgerResult)
-    {
-        json::Value const jrr = env.rpc("tx", ledgerResult.txHash)[jss::result];
-        BEAST_EXPECT(jrr[sfTransactionType.jsonName] == ledgerResult.txType);
-        BEAST_EXPECT(jrr[jss::meta][sfTransactionResult.jsonName] == ledgerResult.result);
-        BEAST_EXPECT(jrr[jss::meta][sfParentBatchID.jsonName] == batchID);
-    }
-
-    void
     validateClosedLedger(jtx::Env& env, std::vector<TestLedgerData> const& ledgerResults)
     {
         auto const jrr = getLastLedger(env);
@@ -144,7 +133,14 @@ class Batch_test : public beast::unit_test::Suite
             BEAST_EXPECT(txn[sfTransactionType.jsonName] == ledgerResult.txType);
             BEAST_EXPECT(meta[sfTransactionResult.jsonName] == ledgerResult.result);
             if (ledgerResult.batchID)
-                validateInnerTxn(env, *ledgerResult.batchID, ledgerResult);
+            {
+                jtx::batch::validateInnerTxn(
+                    env,
+                    *ledgerResult.batchID,
+                    ledgerResult.txHash,
+                    ledgerResult.txType,
+                    ledgerResult.result);
+            }
         }
     }
 
@@ -3140,9 +3136,7 @@ class Batch_test : public beast::unit_test::Suite
     {
         testcase("loan");
 
-        bool const lendingBatchEnabled = !std::ranges::any_of(
-            Batch::kDisabledTxTypes,
-            [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; });
+        bool const lendingBatchEnabled = features[featureLendingProtocolV1_2];
 
         using namespace test::jtx;
 
@@ -3291,8 +3285,12 @@ class Batch_test : public beast::unit_test::Suite
                     batch::Sig(borrower));
             }
             env.close();
-            BEAST_EXPECT(env.le(brokerKeylet));
             BEAST_EXPECT(!env.le(loanKeylet));
+            auto const brokerSleBefore = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(brokerSleBefore))
+                return;
+            auto const coverAvailableBefore = brokerSleBefore->at(sfCoverAvailable);
+            auto const coverDepositAmount = asset(100).value();
             {
                 // LoanSet normally charges at least 2x base fee, but since the
                 // signature check is done by the batch, it only charges the
@@ -3311,17 +3309,63 @@ class Batch_test : public beast::unit_test::Suite
                             Fee(kNone),
                             Seq(kNone)),
                         lenderSeq + 1),
-                    batch::Inner(manage(lender, loanKeylet.key, tfLoanImpair), lenderSeq + 2),
+                    batch::Inner(
+                        loan_broker::coverDeposit(lender, brokerKeylet.key, coverDepositAmount),
+                        lenderSeq + 2),
                     batch::Sig(borrower));
             }
             env.close();
-            BEAST_EXPECT(env.le(brokerKeylet));
-            if (auto const sleLoan = env.le(loanKeylet);
-                lendingBatchEnabled ? BEAST_EXPECT(sleLoan) : !BEAST_EXPECT(!sleLoan))
+            BEAST_EXPECT(static_cast<bool>(env.le(loanKeylet)) == lendingBatchEnabled);
+            if (auto const brokerSle = env.le(brokerKeylet); BEAST_EXPECT(brokerSle))
             {
-                BEAST_EXPECT(sleLoan->isFlag(lsfLoanImpaired));
+                auto const expectedCover = lendingBatchEnabled
+                    ? coverAvailableBefore + coverDepositAmount
+                    : coverAvailableBefore;
+                BEAST_EXPECT(brokerSle->at(sfCoverAvailable) == expectedCover);
             }
         }
+    }
+
+    void
+    testLendingAmendment(FeatureBitset features)
+    {
+        testcase("lending amendment");
+
+        using namespace test::jtx;
+
+        // Before LendingProtocolV1_2 a Vault inner transaction rejects the whole batch.
+        auto const checkVaultBatch = [this](FeatureBitset amendments) {
+            bool const lendingBatchEnabled = amendments[featureLendingProtocolV1_2];
+            Env env{*this, amendments};
+
+            Account const payer{"payer"};
+            Account const lender{"lender"};
+            env.fund(XRP(100'000), payer, lender);
+            env.close();
+
+            Vault const vault{env};
+            auto [create, vaultKeylet] = vault.create({.owner = lender, .asset = xrpIssue()});
+
+            auto const payerSeq = env.seq(payer);
+            auto const lenderSeq = env.seq(lender);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            submitBatch(
+                env,
+                lendingBatchEnabled ? TER{tesSUCCESS} : TER{temINVALID_INNER_BATCH},
+                batch::outer(payer, payerSeq, batchFee, tfAllOrNothing),
+                batch::Inner(create, lenderSeq),
+                batch::Inner(
+                    vault.deposit(
+                        {.depositor = lender, .id = vaultKeylet.key, .amount = XRP(1'000)}),
+                    lenderSeq + 1),
+                batch::Sig(lender));
+            env.close();
+
+            BEAST_EXPECT(static_cast<bool>(env.le(vaultKeylet)) == lendingBatchEnabled);
+        };
+
+        checkVaultBatch(features - featureLendingProtocolV1_2);
+        checkVaultBatch(features);
     }
 
     void
@@ -5915,6 +5959,7 @@ class Batch_test : public beast::unit_test::Suite
         testCheckAllSignatures(features);
         testAccountSet(features);
         testAccountDelete(features);
+        testLendingAmendment(features);
         testLoan(features);
         testObjectCreateSequence(features);
         testObjectCreateTicket(features);

@@ -9,8 +9,9 @@
 #     never reaches Nexus
 #   - 'publish' uploads with the image's publish_pkg.py, doing a --dry-run
 #     unless 'publish: true'
-#   - 'docker' builds an Ubuntu image from the tested DEB, pushing it to Docker
-#     Hub only with 'publish: true'
+#   - 'docker' builds an Ubuntu image from the tested DEB, and one with the
+#     voidstar binary for Antithesis, pushing them to Docker Hub and to the
+#     Antithesis registry only with 'publish: true'
 #
 # Only linux/amd64 is supported; the runner is hardcoded in the jobs below.
 name: Package
@@ -37,10 +38,19 @@ on:
         description: "The password or token for that Nexus account."
         required: false
       signing_key:
-        description: "Armoured PGP private key used to sign the RPMs. Required when publishing."
+        description: "Armoured PGP private key used to sign the RPMs."
         required: false
       dockerhub_token:
-        description: "A Docker Hub organization access token for xrplf, with push access to xrplf/xrpld. Required when publishing."
+        description: "A Docker Hub organization access token for xrplf, with push access to xrplf/xrpld."
+        required: false
+      antithesis_docker_host:
+        description: "The host of the Antithesis container registry, e.g. us-central1-docker.pkg.dev."
+        required: false
+      antithesis_docker_path:
+        description: "The repository path in that registry, the image name excluded."
+        required: false
+      antithesis_docker_credentials:
+        description: "The JSON key of a service account with push access to that repository."
         required: false
 
 defaults:
@@ -247,17 +257,34 @@ jobs:
 
   docker:
     needs: [test-install-deb, test-install-rpm]
-    name: "docker${{ !inputs.publish && ' (dry run)' || '' }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [xrpld, voidstar]
+    name: "docker ${{ matrix.target }}${{ !inputs.publish && ' (dry run)' || '' }}"
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     env:
-      IMAGE: xrplf/xrpld:${{ github.ref_type == 'tag' && github.ref_name || 'develop' }}
+      CONTEXT: image-context
+      IMAGE: ${{ matrix.target == 'voidstar' && 'xrpld-voidstar' || 'xrplf/xrpld' }}:${{ github.ref_type == 'tag' && github.ref_name || 'develop' }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Determine release info
+        id: release_info
+        uses: ./.github/actions/release-info
+
+      # Docker Hub is public, so it only gets builds whose packages are public:
+      # those of a public codebase, and stable releases.
+      # The Antithesis registry is private, so it gets every build.
+      - name: Decide whether to push
+        env:
+          PUSH: ${{ inputs.publish && (matrix.target == 'voidstar' || github.event.repository.visibility == 'public' || steps.release_info.outputs.channel == 'stable') }}
+        run: echo "PUSH=${PUSH}" | tee -a "${GITHUB_ENV}"
 
       - name: Download package artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -266,13 +293,20 @@ jobs:
           merge-multiple: true
           path: ${{ env.PACKAGE_DIR }}
 
+      - name: Download voidstar binary
+        if: ${{ matrix.target == 'voidstar' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: xrpld-ubuntu-clang-debug-amd64-voidstar
+          path: ${{ env.CONTEXT }}
+
       - name: Build image
         env:
-          CONTEXT: image-context
+          TARGET: ${{ matrix.target }}
         run: |
           mkdir -p "${CONTEXT}"
           find "${PACKAGE_DIR}" -type f -name 'xrpld_[0-9]*.deb' -exec cp {} "${CONTEXT}/" \;
-          docker build --pull --file package/image/Dockerfile --tag "${IMAGE}" "${CONTEXT}"
+          docker build --pull --file package/images/xrpld/Dockerfile --target "${TARGET}" --tag "${IMAGE}" "${CONTEXT}"
 
       - name: Start the server
         run: |
@@ -290,14 +324,25 @@ jobs:
           docker logs "${container}"
           exit 1
 
-      # Docker Hub is public, so a private build never reaches it.
       - name: Log in to Docker Hub
-        if: ${{ inputs.publish && github.event.repository.visibility == 'public' }}
+        if: ${{ env.PUSH == 'true' && matrix.target == 'xrpld' }}
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           username: xrplf
           password: ${{ secrets.dockerhub_token }}
 
+      - name: Log in to the Antithesis registry
+        if: ${{ env.PUSH == 'true' && matrix.target == 'voidstar' }}
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ secrets.antithesis_docker_host }}
+          username: _json_key
+          password: ${{ secrets.antithesis_docker_credentials }}
+
       - name: Push image
-        if: ${{ inputs.publish && github.event.repository.visibility == 'public' }}
-        run: docker push "${IMAGE}"
+        if: ${{ env.PUSH == 'true' }}
+        env:
+          REGISTRY: ${{ matrix.target == 'voidstar' && format('{0}/{1}/', secrets.antithesis_docker_host, secrets.antithesis_docker_path) || '' }}
+        run: |
+          docker tag "${IMAGE}" "${REGISTRY}${IMAGE}"
+          docker push "${REGISTRY}${IMAGE}"

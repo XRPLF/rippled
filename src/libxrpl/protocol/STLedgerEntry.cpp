@@ -35,9 +35,8 @@ STLedgerEntry::STLedgerEntry(Keylet const& k) : STObject(sfLedgerEntry), key_(k.
 
     if (format == nullptr)
     {
-        Throw<std::runtime_error>(
-            "Attempt to create a SLE of unknown type " +
-            std::to_string(safeCast<std::uint16_t>(k.type)));
+        Throw<std::runtime_error>(std::format(
+            "Attempt to create a SLE of unknown type {}", safeCast<std::uint16_t>(k.type)));
     }
 
     set(format->getSOTemplate());

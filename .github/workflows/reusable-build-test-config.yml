@@ -196,6 +196,19 @@ jobs:
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_ARGS: ${{ inputs.cmake_args }}
+          # GitHub creates a merge commit for a PR
+          # https://www.kenmuse.com/blog/the-many-shas-of-a-github-pull-request/
+          #
+          # We:
+          # - explicitly provide branch name
+          # - use `github.event.pull_request.head.sha` to get the SHA of last commit in the PR branch
+          #
+          # This way it works both for PRs and pushes to branches.
+          GITHUB_BRANCH_NAME: "${{ github.head_ref || github.ref_name }}"
+          GITHUB_HEAD_SHA: "${{ github.event.pull_request.head.sha || github.sha }}"
+          #
+          # If tag is being pushed, we use that version.
+          FORCE_XRPLD_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
         run: |
           cmake \
               -G '${{ runner.os == 'Windows' && 'Visual Studio 18 2026' || 'Ninja' }}' \
