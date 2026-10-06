@@ -38,6 +38,11 @@ Version 3.5.0 is not yet released.
 
 - `subscribe`, `unsubscribe`: Added an optional `mpt_issuances` request field, an array of MPT issuance IDs (hex strings). Subscribers receive a message with `type` `mptTransaction` for each validated transaction whose metadata affects a subscribed issuance; the message has the same fields as the `transactions` stream. MPT issuance subscriptions count toward the per-connection subscription limit. An empty array, a non-array value, or an invalid ID returns `invalidParams`. ([#5671](https://github.com/XRPLF/rippled/pull/5671))
 
+### Bugfixes in 3.5.0
+
+- `channel_authorize`: The `channel_id` field now returns an `invalidParams` error if the value is not a string. [#7582](https://github.com/XRPLF/rippled/pull/7582)
+- `channel_verify`: The `channel_id` and `signature` fields now return an `invalidParams` error if the value is not a string. [#7582](https://github.com/XRPLF/rippled/pull/7582)
+
 ## XRP Ledger server version 3.4.0
 
 Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta releases.

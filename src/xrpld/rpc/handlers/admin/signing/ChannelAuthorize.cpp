@@ -62,6 +62,9 @@ doChannelAuthorize(rpc::JsonContext& context)
     PublicKey const& pk = keyPair->first;
     SecretKey const& sk = keyPair->second;
 
+    if (!params[jss::channel_id].isString())
+        return rpcError(RpcInvalidParams);
+
     UInt256 channelId;
     if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(RpcChannelMalformed);

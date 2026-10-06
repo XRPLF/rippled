@@ -526,7 +526,9 @@ canAdd(STAmount const& a, STAmount const& b)
  * sum is a multiple of the finer operand's unit in the last place, so
  * subtracting the coarser operand back from the sum returns the finer one
  * only when that error is zero. Both differences are checked because either
- * operand may be the finer.
+ * operand may be the finer. IOUAmount throws std::overflow_error when a sum
+ * or difference exceeds the largest IOU value; the exact result is then not
+ * representable, so the sum is not exact.
  */
 bool
 isExactSum(STAmount const& a, STAmount const& b)
@@ -537,8 +539,15 @@ isExactSum(STAmount const& a, STAmount const& b)
     if (a.integral())
         return canAdd(a, b);
 
-    STAmount const sum = a + b;
-    return sum - a == b && sum - b == a;
+    try
+    {
+        STAmount const sum = a + b;
+        return sum - a == b && sum - b == a;
+    }
+    catch (std::overflow_error const&)
+    {
+        return false;
+    }
 }
 
 /**

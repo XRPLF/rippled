@@ -8,6 +8,7 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
@@ -122,7 +123,7 @@ finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, beast::Journal j)
         return;
 
     XRPL_ASSERT(
-        ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::feeSettings()),
+        ledger->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger),
         "xrpl::finishLoadByIndexOrHash : valid ledger fees");
     ledger->setImmutable();
 

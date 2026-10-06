@@ -789,8 +789,9 @@ canSubtract(STAmount const& amt1, STAmount const& amt2);
  *
  * @param amt1 The first addend.
  * @param amt2 The second addend.
- * @return true if the sum is exact; false if it rounds, overflows, or the
- *     amounts are not comparable.
+ * @return true if the sum is exact; false if it rounds, exceeds the largest
+ *     amount the asset can represent, or the amounts are not comparable.
+ *     Never throws.
  */
 bool
 isExactSum(STAmount const& amt1, STAmount const& amt2);

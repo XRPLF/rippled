@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/EscrowEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -35,13 +36,12 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(featureTokenEscrow))
     {
         auto const seqProxy = SeqProxy::rawSequence(ctx.tx[sfOfferSequence]);
-        auto const k = keylet::escrow(ctx.tx[sfOwner], seqProxy);
-        auto const slep = ctx.view.read(k);
-        if (!slep)
+        EscrowEntryR const escrow(ctx.tx[sfOwner], seqProxy, ctx.view);
+        if (!escrow)
             return tecNO_TARGET;
 
-        AccountID const account = (*slep)[sfAccount];
-        STAmount const amount = (*slep)[sfAmount];
+        AccountID const account = (*escrow)[sfAccount];
+        STAmount const amount = (*escrow)[sfAmount];
 
         if (!isXRP(amount))
         {
@@ -61,9 +61,8 @@ TER
 EscrowCancel::doApply()
 {
     auto const seqProxy = SeqProxy::rawSequence(ctx_.tx[sfOfferSequence]);
-    auto const k = keylet::escrow(ctx_.tx[sfOwner], seqProxy);
-    auto const slep = ctx_.view().peek(k);
-    if (!slep)
+    EscrowEntryW escrow(ctx_.tx[sfOwner], seqProxy, ctx_.view(), j_);
+    if (!escrow)
     {
         if (ctx_.view().rules().enabled(featureTokenEscrow))
             return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -74,19 +73,19 @@ EscrowCancel::doApply()
     auto const now = ctx_.view().header().parentCloseTime;
 
     // No cancel time specified: can't execute at all.
-    if (!(*slep)[~sfCancelAfter])
+    if (!(*escrow)[~sfCancelAfter])
         return tecNO_PERMISSION;
 
     // Too soon: can't execute before the cancel time.
-    if (!after(now, (*slep)[sfCancelAfter]))
+    if (!after(now, (*escrow)[sfCancelAfter]))
         return tecNO_PERMISSION;
 
-    AccountID const account = (*slep)[sfAccount];
+    AccountID const account = (*escrow)[sfAccount];
 
     // Remove escrow from owner directory
     {
-        auto const page = (*slep)[sfOwnerNode];
-        if (!ctx_.view().dirRemove(keylet::ownerDir(account), page, k.key, true))
+        auto const page = (*escrow)[sfOwnerNode];
+        if (!ctx_.view().dirRemove(keylet::ownerDir(account), page, escrow.key(), true))
         {
             // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete Escrow from owner.";
@@ -96,9 +95,10 @@ EscrowCancel::doApply()
     }
 
     // Remove escrow from recipient's owner directory, if present.
-    if (auto const optPage = (*slep)[~sfDestinationNode]; optPage)
+    if (auto const optPage = (*escrow)[~sfDestinationNode]; optPage)
     {
-        if (!ctx_.view().dirRemove(keylet::ownerDir((*slep)[sfDestination]), *optPage, k.key, true))
+        if (!ctx_.view().dirRemove(
+                keylet::ownerDir((*escrow)[sfDestination]), *optPage, escrow.key(), true))
         {
             // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
@@ -108,13 +108,13 @@ EscrowCancel::doApply()
     }
 
     auto const sle = ctx_.view().peek(keylet::account(account));
-    STAmount const amount = slep->getFieldAmount(sfAmount);
+    STAmount const amount = escrow->getFieldAmount(sfAmount);
 
     // The return can re-create a holding the owner deleted while the escrow
     // was pending; the removed escrow must not be counted against its reserve.
     bool const recycleReserve = ctx_.view().rules().enabled(fixCleanup3_4_0);
     if (recycleReserve)
-        decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);
+        decreaseOwnerCountForObject(ctx_.view(), sle, escrow.mutableRawSle(), 1, ctx_.journal);
 
     // Transfer amount back to the owner
     if (isXRP(amount))
@@ -133,7 +133,7 @@ EscrowCancel::doApply()
                     return escrowUnlockApplyHelper<T>(
                         ctx_.getApplyViewContext(),
                         kParityRate,
-                        ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle : slep,
+                        ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle : escrow.mutableRawSle(),
                         preFeeBalance_,
                         amount,
                         issuer,
@@ -147,9 +147,9 @@ EscrowCancel::doApply()
             return ret;  // LCOV_EXCL_LINE
 
         // Remove escrow from issuers owner directory, if present.
-        if (auto const optPage = (*slep)[~sfIssuerNode]; optPage)
+        if (auto const optPage = (*escrow)[~sfIssuerNode]; optPage)
         {
-            if (!ctx_.view().dirRemove(keylet::ownerDir(issuer), *optPage, k.key, true))
+            if (!ctx_.view().dirRemove(keylet::ownerDir(issuer), *optPage, escrow.key(), true))
             {
                 // LCOV_EXCL_START
                 JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
@@ -160,10 +160,10 @@ EscrowCancel::doApply()
     }
 
     if (!recycleReserve)
-        decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);
+        decreaseOwnerCountForObject(ctx_.view(), sle, escrow.mutableRawSle(), 1, ctx_.journal);
 
     // Remove escrow from ledger
-    ctx_.view().erase(slep);
+    escrow.erase();
 
     return tesSUCCESS;
 }
