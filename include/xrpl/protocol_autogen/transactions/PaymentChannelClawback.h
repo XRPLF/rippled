@@ -18,7 +18,7 @@ class PaymentChannelClawbackBuilder;
 /**
  * @brief Transaction: PaymentChannelClawback
  *
- * Type: ttPAYCHAN_CLAWBACK (94)
+ * Type: ttPAYCHAN_CLAWBACK (96)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureTokenPaychan
  * Privileges: Privilege::NoPriv
