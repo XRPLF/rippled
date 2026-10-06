@@ -1401,6 +1401,52 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(!env.current()->exists(trustLineKey));
         }
 
+        // tesSUCCESS: the source re-creates its deleted line at the close
+        // refund with only the reserve the line itself needs
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account{"gateway"};
+            auto const usd = gw["USD"];
+            env.fund(XRP(5'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(10'000), alice, bob);
+            env.close();
+            env(pay(gw, alice, usd(10'000)));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, usd(1), 100s, alice.pk(), env.now() + 2s),
+                Ter(tesSUCCESS));
+            env.close();
+
+            env(pay(alice, gw, usd(9'999)));
+            env(trust(alice, usd(0)));
+            env.close();
+
+            auto const trustLineKey = keylet::trustLine(alice.id(), gw.id(), usd.currency);
+            BEAST_EXPECT(!env.current()->exists(trustLineKey));
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+            // After the close fee alice holds the reserve for one object, so
+            // the re-created line fits only once the channel is released
+            auto const target = env.current()->fees().accountReserve(1, 1) + baseFee;
+            env(pay(alice, gw, env.balance(alice) - baseFee - target));
+            env.close();
+            BEAST_EXPECT(env.balance(alice) == target);
+
+            env(paychan::claim(alice, chan), Txflags(tfClose), Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(env.current()->exists(trustLineKey));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(1));
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+        }
+
         // tesSUCCESS: a frozen source line does not block the close refund
         {
             Env env{*this, features};

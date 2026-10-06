@@ -62,10 +62,13 @@ closeChannel(
         }
     }
 
-    // Transfer amount back to owner, decrement owner count
     auto const sle = view.peek(keylet::account(src));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    // Release the channel's reserve first: a token refund can re-create a
+    // holding the owner deleted while the channel was open.
+    decreaseOwnerCountForObject(view, sle, slep, 1, j);
 
     XRPL_ASSERT(
         (*slep)[sfAmount] >= (*slep)[sfBalance], "xrpl::closeChannel : minimum channel amount");
@@ -126,7 +129,6 @@ closeChannel(
         }
     }
 
-    decreaseOwnerCountForObject(view, sle, slep, 1, j);
     view.update(sle);
 
     // Remove PayChan from ledger
