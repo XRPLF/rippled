@@ -26,13 +26,7 @@ if [ "$(uname -s)" != "Linux" ]; then
     exit 2
 fi
 
-# TODO: Add jq to the Nix packages and use it here instead of Python.
-folders="$(python3 -c '
-import json, sys
-for node in json.load(open(sys.argv[1]))["graph"]["nodes"].values():
-    if node["context"] == "build" and node.get("package_folder"):
-        print(node["package_folder"])
-' "$1" | sort -u)"
+folders="$(jq -r '.graph.nodes[] | select(.context == "build" and .package_folder) | .package_folder' "$1" | sort -u)"
 
 checked=0
 failed=0
