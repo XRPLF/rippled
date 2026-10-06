@@ -1408,6 +1408,30 @@ struct PayChan_test : public beast::unit_test::Suite
                 BEAST_EXPECT(rv[jss::error] == "channelMalformed");
             }
             {
+                // channel_id is not a string.
+                json::Value args{json::ValueType::Object};
+                args[jss::amount] = "2000";
+                args[jss::channel_id] = 2000;
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+
+                auto const ra =
+                    env.rpc("json", "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(ra[jss::error] == "invalidParams");
+            }
+            {
+                // channel_id is not a string.
+                json::Value args{json::ValueType::Object};
+                args[jss::public_key] = chan1PkStr;
+                args[jss::channel_id] = 2000;
+                args[jss::amount] = "1000";
+                args[jss::signature] = sig;
+
+                auto const rv =
+                    env.rpc("json", "channel_verify", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rv[jss::error] == "invalidParams");
+            }
+            {
                 // give an ill formed base 58 public key
                 auto illFormedPk = chan1PkStr.substr(0, chan1PkStr.size() - 1);
                 auto const rv = env.rpc("channel_verify", illFormedPk, chan1Str, "1000", sig);
