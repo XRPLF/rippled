@@ -4,12 +4,16 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/MethodNames.h>
 #include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 
+#include <rpcspec/Errors.hpp>
+
+#include <cstdint>
+#include <expected>
+#include <functional>
 #include <string_view>
 
 namespace xrpl::rpc {
@@ -17,21 +21,29 @@ namespace xrpl::rpc {
 class VersionHandler
 {
 public:
-    explicit VersionHandler(JsonContext& c)
-        : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().betaRpcApi)
+    struct Output
+    {
+        std::uint32_t apiVersion;
+        bool betaEnabled;
+    };
+
+    explicit VersionHandler(JsonContext& context) : context_(context)
     {
     }
 
-    static Status
-    check()
+    [[nodiscard]] std::expected<Output, ::rpc::Status>
+    process() const
     {
-        return Status::kOK;
+        return Output{
+            .apiVersion = context_.get().apiVersion,
+            .betaEnabled = context_.get().app.config().betaRpcApi,
+        };
     }
 
-    void
-    writeResult(json::Value& obj) const
+    static void
+    writeResult(json::Value& obj, Output const& output)
     {
-        setVersion(obj, apiVersion_, betaEnabled_);
+        setVersion(obj, output.apiVersion, output.betaEnabled);
     }
 
     // NOLINTBEGIN(readability-identifier-naming)
@@ -47,8 +59,7 @@ public:
     // NOLINTEND(readability-identifier-naming)
 
 private:
-    unsigned int apiVersion_;
-    bool betaEnabled_;
+    std::reference_wrapper<JsonContext> context_;
 };
 
 }  // namespace xrpl::rpc
