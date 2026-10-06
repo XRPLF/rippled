@@ -194,8 +194,13 @@ bin/check-nix-store-refs.sh ~/.conan2-nix
 ```
 
 It works on Linux too, but asserts something narrower there: the toolchain always
-writes the store into `PT_INTERP` and `RUNPATH`, and CI builds inside an image
-whose store is fixed for its lifetime, so that is fine. Only the binaries
+writes the store into `PT_INTERP` and `RUNPATH`. That is fine for the pinned
+glibc, whose path does not move, but not for the GCC runtime, which moves with
+every GCC update. So [`conan/profiles/default`](../../conan/profiles/default)
+links the executables that run during the build (build-context packages and
+`grpc_cpp_plugin`) with `-static-libstdc++ -static-libgcc -Wl,--as-needed`, and
+[`conan/profiles/sanitizers`](../../conan/profiles/sanitizers) does not
+instrument build-context packages. Only the binaries
 [`PatchNixBinary.cmake`](../../cmake/PatchNixBinary.cmake) retargets to the
 system loader have to be clean, and those are what CI checks:
 
