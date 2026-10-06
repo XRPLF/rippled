@@ -86,6 +86,20 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     if (static_cast<bool>(cb) != static_cast<bool>(fb))
         return temMALFORMED;
 
+    if (cb && ctx.rules.enabled(fixCleanup3_5_0))
+    {
+        using namespace xrpl::cryptoconditions;
+
+        std::error_code ec;
+
+        auto condition = Condition::deserialize(*cb, ec);
+        if (!condition)
+        {
+            JLOG(ctx.j.debug()) << "Malformed condition during escrow finish: " << ec.message();
+            return temMALFORMED;
+        }
+    }
+
     return tesSUCCESS;
 }
 
