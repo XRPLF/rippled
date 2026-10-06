@@ -831,7 +831,7 @@ Parser<Visitor...>::readObject(Token& tokenStart, std::size_t depth)
             break;
         }
 
-        if (tokenName.type == TokenType::ObjectEnd && name.empty())  // empty object
+        if (tokenName.type == TokenType::ObjectEnd && memberCount == 0)  // empty object
         {
             DISPATCH_VISITORS(tokenStart, onObjectEnd(memberCount));
             return true;

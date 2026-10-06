@@ -396,6 +396,40 @@ TEST(JsonParser, rejects_leading_surrogate_followed_by_non_surrogate)
     EXPECT_NE(message.find("trailing surrogate to complete"), std::string::npos) << message;
 }
 
+TEST(JsonParser, rejects_trailing_commas)
+{
+    // An empty key must not make the '}' after a trailing comma look like the
+    // end of an empty object.
+    for (auto const* document : {
+             R"({"":1,})",
+             R"({"a":1,})",
+             R"({"a":1,"":2,})",
+             R"([1,])",
+         })
+    {
+        auto trace = Trace{};
+        auto parser = json::Parser{trace};
+
+        EXPECT_FALSE(parser.parse(std::string{document})) << document;
+    }
+}
+
+TEST(JsonParser, accepts_an_empty_key)
+{
+    for (auto const* document : {
+             R"({"":1})",
+             R"({"a":1,"":2})",
+             R"({"":{}})",
+         })
+    {
+        auto trace = Trace{};
+        auto parser = json::Parser{trace};
+
+        EXPECT_TRUE(parser.parse(std::string{document}))
+            << document << ": " << parser.getFormattedErrorMessages();
+    }
+}
+
 TEST(JsonParser, enforces_depth_limit)
 {
     auto trace = Trace{};
