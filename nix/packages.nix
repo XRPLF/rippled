@@ -1,4 +1,10 @@
-{ pkgs }:
+{
+  pkgs,
+  # With the custom glibc, the clang tools (clang-tidy, ...) parse code with the
+  # Linux custom toolchain's headers, i.e. the same glibc and libstdc++ as the
+  # build. Without it, they use the nixpkgs default compiler's.
+  customGlibc ? null,
+}:
 let
   # Compiler versions used across the dev shell and the CI environment.
   gccVersion = 15;
@@ -8,7 +14,12 @@ let
   llvmPackages = pkgs."llvmPackages_${toString llvmVersion}";
 
   # Bound explicitly so it tracks llvmPackages above, not the `with pkgs` default.
-  clangTools = llvmPackages.clang-tools;
+  # isLinux first: darwin must not evaluate the custom glibc.
+  clangTools = llvmPackages.clang-tools.override (
+    pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux && customGlibc != null) {
+      inherit (import ./linux.nix { inherit pkgs customGlibc; }) clang;
+    }
+  );
 
   # In LLVM 22, run-clang-tidy.py moved from share/clang/ to bin/, so nixpkgs
   # clang-tools no longer links it. Wrap it manually.
@@ -112,6 +123,7 @@ in
       gnumake
       gnupg # needed for signing commits & codecov/codecov-action
       graphviz
+      jq
       less # needed for git diff
       mold
       nettools # provides netstat, used to debug failures in CI
