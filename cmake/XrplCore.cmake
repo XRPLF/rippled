@@ -211,9 +211,6 @@ target_link_libraries(
         xrpl.libxrpl.conditions
 )
 
-add_module(xrpl tx)
-target_link_libraries(xrpl.libxrpl.tx PUBLIC xrpl.libxrpl.ledger)
-
 add_module(xrpl consensus)
 target_link_libraries(
     xrpl.libxrpl.consensus
@@ -222,6 +219,41 @@ target_link_libraries(
         xrpl.libxrpl.json
         xrpl.libxrpl.protocol
         xrpl.libxrpl.ledger
+)
+
+# Telemetry module — OpenTelemetry distributed tracing support.
+# Sources: include/xrpl/telemetry/ (headers), src/libxrpl/telemetry/ (impl).
+# When telemetry=ON, links the Conan-provided umbrella target
+# opentelemetry-cpp::opentelemetry-cpp (individual component targets like
+# ::api, ::sdk are not available in the Conan package).
+#
+# Links xrpl.libxrpl.protocol PRIVATELY for sha512Half (digest.h) and the
+# SField table behind TxAccountSpanNames.cpp
+add_module(xrpl telemetry)
+target_link_libraries(
+    xrpl.libxrpl.telemetry
+    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.beast xrpl.libxrpl.config
+    PRIVATE xrpl.libxrpl.protocol
+)
+if(telemetry)
+    target_link_libraries(
+        xrpl.libxrpl.telemetry
+        PUBLIC opentelemetry-cpp::opentelemetry-cpp
+    )
+    # PUBLIC, so a parent project that adds this one with add_subdirectory()
+    # and links this module sees the same class layouts it was built with.
+    # CMakeLists.txt also sets the define for every target in this project.
+    # Conan consumers get it from conanfile.py instead.
+    target_compile_definitions(
+        xrpl.libxrpl.telemetry
+        PUBLIC XRPL_ENABLE_TELEMETRY
+    )
+endif()
+
+add_module(xrpl tx)
+target_link_libraries(
+    xrpl.libxrpl.tx
+    PUBLIC xrpl.libxrpl.ledger xrpl.libxrpl.telemetry
 )
 
 add_library(xrpl.libxrpl)
@@ -258,6 +290,7 @@ target_link_modules(
     resource
     server
     shamap
+    telemetry
     tx
 )
 
