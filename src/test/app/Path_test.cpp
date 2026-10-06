@@ -152,7 +152,7 @@ public:
         STAmount const& saDstAmount,
         std::optional<STAmount> const& saSendMax = std::nullopt,
         std::optional<Currency> const& saSrcCurrency = std::nullopt,
-        std::optional<uint256> const& domain = std::nullopt,
+        std::optional<UInt256> const& domain = std::nullopt,
         std::optional<AccountID> const& saSrcIssuer = std::nullopt)
     {
         using namespace jtx;
@@ -219,7 +219,7 @@ public:
         STAmount const& saDstAmount,
         std::optional<STAmount> const& saSendMax = std::nullopt,
         std::optional<Currency> const& saSrcCurrency = std::nullopt,
-        std::optional<uint256> const& domain = std::nullopt,
+        std::optional<UInt256> const& domain = std::nullopt,
         std::optional<AccountID> const& saSrcIssuer = std::nullopt)
     {
         json::Value result = findPathsRequest(
@@ -448,7 +448,7 @@ public:
         env(pay(gw, "alice", usd(70)));
         env(pay(gw, "bob", usd(50)));
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
             domainID = setupDomain(env, {"alice", "bob", gw});
 
@@ -469,7 +469,7 @@ public:
         env.fund(XRP(10000), "alice", "bob");
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
             domainID = setupDomain(env, {"alice", "bob"});
 
@@ -495,7 +495,7 @@ public:
             env.trust(Account("alice")["USD"](100), "dan");
             env.trust(Account("dan")["USD"](100), "edward");
 
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
                 domainID = setupDomain(env, {"alice", "bob", "carol", "dan", "edward"});
 
@@ -526,7 +526,7 @@ public:
             env(pay(gw, "carol", usd(100)));
             env.close();
 
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {"alice", "bob", "carol", "gateway"});
@@ -597,7 +597,7 @@ public:
         env.trust(usd(700), "bob");
         env.trust(gw2Usd(900), "bob");
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "gateway", "gateway2"});
@@ -644,7 +644,7 @@ public:
         env.trust(usd(700), "bob");
         env.trust(gw2Usd(900), "bob");
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "gateway", "gateway2"});
@@ -729,7 +729,7 @@ public:
         env(pay(gw, "alice", usd(100)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "carol", "dan", gw, gw2});
@@ -761,7 +761,7 @@ public:
         env.require(Balance("carol", Account("bob")["USD"](75)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "carol", "dan"});
@@ -856,7 +856,7 @@ public:
         env(pay(gw, "carol", aud(50)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "carol", gw});
@@ -1079,7 +1079,7 @@ public:
         env(pay(g3, m1, g3["ABC"](25000)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {a1, a2, a3, g1, g2, g3, m1});
@@ -1169,7 +1169,7 @@ public:
         env(pay(g3, m1, g3["ABC"](1200)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {a1, a2, g3, m1});
@@ -1236,7 +1236,7 @@ public:
         env(pay(g2Sw, m1, g2Sw["HKD"](5000)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
             domainID = setupDomain(env, {a1, a2, g1Bs, g2Sw, m1});
 
@@ -1331,7 +1331,7 @@ public:
         env(pay(g2, m2, g2["HKD"](5000)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {a1, a2, a3, a4, g1, g2, g3, g4, m1, m2});
@@ -1464,7 +1464,7 @@ public:
         env(pay(g2, m1, g2["HKD"](5000)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {a1, a2, a3, g1, g2, m1});
@@ -1508,7 +1508,7 @@ public:
             env(pay(gw, charlie, usd(10)));
             env.close();
 
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});
@@ -1543,7 +1543,7 @@ public:
             env(pay(gw, alice, usd(10)));
             env.close();
 
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});
@@ -1664,7 +1664,7 @@ public:
             env(pay(g2, m2, g2["HKD"](5000)));
             env.close();
 
-            std::optional<uint256> domainID =
+            std::optional<UInt256> domainID =
                 setupDomain(env, {a1, a2, a3, a4, g1, g2, g3, g4, m1, m2});
             BEAST_EXPECT(domainID);
 
@@ -1797,7 +1797,7 @@ public:
         // order book
         {
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         Domain(domainID),
                         Txflags(tfHybrid));
@@ -1806,7 +1806,7 @@ public:
                 });
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         Domain(domainID),
                         Txflags(tfHybrid));
@@ -1817,7 +1817,7 @@ public:
                 });
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         Domain(domainID),
                         Txflags(tfHybrid));
@@ -1830,7 +1830,7 @@ public:
                 });
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)));
                     env(offer(m2, XRP(10000), g2["HKD"](1000)));
                     env(offer(m2, g1["HKD"](1000), XRP(10000)),
@@ -1839,7 +1839,7 @@ public:
                 });
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)));
                     env(offer(m2, XRP(10000), g2["HKD"](1000)),
                         Domain(domainID),
@@ -1855,7 +1855,7 @@ public:
         // order book
         {
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         Domain(domainID),
                         Txflags(tfHybrid));
@@ -1865,7 +1865,7 @@ public:
                 true);
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         Domain(domainID),
                         Txflags(tfHybrid));
@@ -1877,7 +1877,7 @@ public:
                 true);
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)), Domain(domainID));
                     env(offer(m2, XRP(10000), g2["HKD"](1000)), Domain(domainID));
                     env(offer(m2, g1["HKD"](1000), XRP(10000)),
@@ -1887,7 +1887,7 @@ public:
                 true);
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)), Domain(domainID));
                     env(offer(m2, XRP(10000), g2["HKD"](1000)),
                         Domain(domainID),
@@ -2140,7 +2140,7 @@ public:
         BEAST_EXPECT(orderings == 6);
         BEAST_EXPECT(hashes.size() == orderings);
 
-        auto seen = hardened_hash_set<STPath>{};
+        auto seen = HardenedHashSet<STPath>{};
         for (auto const& p : {currencyFirst, mptFirst})
         {
             seen.emplace(p);
@@ -2173,7 +2173,7 @@ public:
             auto const rhsPath = path({rhs});
             BEAST_EXPECT(hasher(lhsPath) == hasher(rhsPath));
 
-            auto equal = hardened_hash_set<STPath>{};
+            auto equal = HardenedHashSet<STPath>{};
             equal.emplace(lhsPath);
             equal.emplace(rhsPath);
             BEAST_EXPECT(equal.size() == 1);

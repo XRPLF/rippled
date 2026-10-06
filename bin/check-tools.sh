@@ -24,9 +24,13 @@
 # `g++-15`, ...) are probed under both names: a suffixed name can break while
 # the plain one still works (see mkVersionedToolLinks in nix/packages.nix).
 #
+# Tools scoped to a single dev shell rather than to commonPackages are checked
+# only in that shell, keyed off XRPL_DEVSHELL.
+#
 # Environment variables:
 #   CI                      if set, skip the tools above when on macOS.
 #   CHECK_TOOLS_SKIP_CLONE  if set, skip the git-over-HTTPS connectivity check.
+#   XRPL_DEVSHELL           active dev shell; selects shell-specific tools.
 
 set -uo pipefail
 
@@ -108,6 +112,7 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
     check ClangBuildAnalyzer
     check curl
     check file
+    check jq
     check less
     check make
     # net-tools netstat reports "net-tools X.Y"; macOS ships BSD netstat with no
@@ -161,6 +166,14 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
     check rust-nightly rust-nightly run rustc --version
     check rustc
     check rustfmt
+fi
+
+# Lean4 is in the formal-verification shell only, not in commonPackages.
+if [ "${XRPL_DEVSHELL:-}" = "formal-verification" ]; then
+    echo
+    echo "Formal verification toolchain:"
+    check lean
+    check lake
 fi
 
 # GCC is the default compiler on Linux. macOS uses the system Apple Clang

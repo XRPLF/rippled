@@ -103,6 +103,19 @@ class LedgerRPC_test : public beast::unit_test::Suite
                 jrr[jss::ledger][jss::ledger_index] == std::to_string(env.current()->header().seq));
             BEAST_EXPECT(jrr[jss::ledger_current_index] == env.current()->header().seq);
         }
+
+        {
+            auto const jrr = env.rpc("json", "ledger", "{}")[jss::result];
+            BEAST_EXPECT(!jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr[jss::closed][jss::ledger][jss::closed] == true);
+            BEAST_EXPECT(
+                jrr[jss::closed][jss::ledger][jss::ledger_index] ==
+                std::to_string(env.closed()->header().seq));
+            BEAST_EXPECT(jrr[jss::open][jss::ledger][jss::closed] == false);
+            BEAST_EXPECT(
+                jrr[jss::open][jss::ledger][jss::ledger_index] ==
+                std::to_string(env.current()->header().seq));
+        }
     }
 
     void
@@ -637,7 +650,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
                 BEAST_EXPECT(tx[jss::Account] == alice.human());
                 BEAST_EXPECT(tx[jss::TransactionType] == jss::OfferCreate);
                 auto const txid0 = tx[jss::hash].asString();
-                uint256 tx0, tx1;
+                UInt256 tx0, tx1;
                 BEAST_EXPECT(tx0.parseHex(txid0));
                 BEAST_EXPECT(tx1.parseHex(txid1));
                 BEAST_EXPECT((tx0 ^ parentHash) < (tx1 ^ parentHash));
@@ -670,7 +683,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
             BEAST_EXPECT(txj["last_result"] == "terPRE_SEQ");
             BEAST_EXPECT(txj.isMember(jss::tx));
             BEAST_EXPECT(txj[jss::tx] == txid0);
-            uint256 tx0, tx1;
+            UInt256 tx0, tx1;
             BEAST_EXPECT(tx0.parseHex(txid0));
             BEAST_EXPECT(tx1.parseHex(txid1));
             BEAST_EXPECT((tx0 ^ parentHash) < (tx1 ^ parentHash));

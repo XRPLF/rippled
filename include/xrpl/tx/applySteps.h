@@ -207,7 +207,7 @@ public:
     /**
      * From the input - the batch identifier, if part of a batch
      */
-    std::optional<uint256 const> const parentBatchId;
+    std::optional<UInt256 const> const parentBatchId;
     /**
      * From the input - the rules
      */
@@ -274,7 +274,7 @@ public:
     /**
      * From the input - the batch identifier, if part of a batch
      */
-    std::optional<uint256 const> const parentBatchId;
+    std::optional<UInt256 const> const parentBatchId;
     /**
      * From the input - the flags
      */
@@ -348,7 +348,7 @@ PreflightResult
 preflight(
     ServiceRegistry& registry,
     Rules const& rules,
-    uint256 const& parentBatchId,
+    UInt256 const& parentBatchId,
     STTx const& tx,
     ApplyFlags flags,
     beast::Journal j);

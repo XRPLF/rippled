@@ -18,16 +18,16 @@ public:
         std::string const& path,
         std::string const& port,
         boost::asio::io_context& ios,
-        endpoint_type const& lastEndpoint,
+        EndpointType const& lastEndpoint,
         bool lastStatus,
-        callback_type cb);
+        CallbackType cb);
     ~WorkPlain() override = default;
 
 private:
     void
-    onConnect(error_code const& ec);
+    onConnect(ErrorCode const& ec);
 
-    socket_type&
+    SocketType&
     stream()
     {
         return socket_;
@@ -41,15 +41,15 @@ inline WorkPlain::WorkPlain(
     std::string const& path,
     std::string const& port,
     boost::asio::io_context& ios,
-    endpoint_type const& lastEndpoint,
+    EndpointType const& lastEndpoint,
     bool lastStatus,
-    callback_type cb)
+    CallbackType cb)
     : WorkBase(host, path, port, ios, lastEndpoint, lastStatus, cb)
 {
 }
 
 inline void
-WorkPlain::onConnect(error_code const& ec)
+WorkPlain::onConnect(ErrorCode const& ec)
 {
     if (ec)
     {

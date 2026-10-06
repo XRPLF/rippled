@@ -70,7 +70,7 @@ public:
     [[nodiscard]] AccountID const&
     owner() const;
 
-    [[nodiscard]] std::optional<uint256>
+    [[nodiscard]] std::optional<UInt256>
     key() const
     {
         return std::nullopt;
