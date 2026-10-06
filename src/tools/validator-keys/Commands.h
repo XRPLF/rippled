@@ -49,7 +49,7 @@ getVersionString();
  * The key file used when `--keyfile` is not given:
  * `<home>/.xrpld/validator-keys.json`, or the legacy
  * `<home>/.ripple/validator-keys.json` when only that one exists, the same
- * order xrpld reads `xrpld.cfg` and `rippled.cfg` in.
+ * order xrpld reads its config file under its current and legacy names.
  */
 std::filesystem::path
 defaultKeyFile(std::filesystem::path const& home);
