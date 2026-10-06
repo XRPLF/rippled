@@ -11,6 +11,7 @@
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/vault.h>
 
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
@@ -3147,6 +3148,41 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const settleDelay = 100s;
             env(paychan::create(gw, alice, mpt(1), settleDelay, pk), Ter(tecNO_PERMISSION));
             env.close();
+        }
+
+        // tecWRONG_ASSET: vault shares cannot be locked in a channel
+        if (features[featureSingleAssetVault])
+        {
+            Env env{*this, features};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+            env.fund(XRP(10'000), alice, bob, gw);
+            env.close();
+            auto const usd = gw["USD"];
+            env.trust(usd(1'000), alice);
+            env(pay(gw, alice, usd(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            env(createTx);
+            env.close();
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(200)}));
+            env.close();
+
+            auto const vaultSle = env.le(vaultKeylet);
+            BEAST_EXPECT(vaultSle);
+            if (vaultSle)
+            {
+                auto const shareID = vaultSle->at(sfShareMPTID);
+                auto const holding = env.le(keylet::mptoken(shareID, alice));
+                BEAST_EXPECT(holding && holding->at(sfMPTAmount) > 0);
+                STAmount const shares{MPTIssue{shareID}, 1};
+
+                env(paychan::create(alice, bob, shares, 100s, alice.pk()), Ter(tecWRONG_ASSET));
+                env.close();
+            }
         }
 
         // tecOBJECT_NOT_FOUND: mpt does not exist

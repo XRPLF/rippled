@@ -153,6 +153,11 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
 
     if (!isXRP(amount))
     {
+        // Vault shares (an MPT issued by a pseudo-account) cannot be locked
+        // in a channel.
+        if (amount.holds<MPTIssue>() && isPseudoAccount(ctx.view, amount.getIssuer()))
+            return tecWRONG_ASSET;
+
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowLockPreclaimHelper<T>(ctx.view, account, dest, amount, ctx.j);
