@@ -286,7 +286,7 @@ private:
     bool
     decodeString(Token& token);
     bool
-    decodeString(Token& token, std::string& decoded);
+    decodeString(Token& token, std::string& decoded, std::size_t sizeLimit, std::string_view what);
     bool
     decodeDouble(Token& token);
     bool
@@ -306,7 +306,7 @@ private:
     Char
     getNextChar();
     void
-    getLocationLineAndColumn(Location location, int64_t& line, int64_t& column) const;
+    getLocationLineAndColumn(Location location, std::int64_t& line, std::int64_t& column) const;
     std::string
     getLocationLineAndColumn(Location location) const;
     bool
@@ -878,7 +878,7 @@ Parser<Visitor...>::readObject(Token& tokenStart, std::size_t depth)
 
         name.clear();
 
-        if (!decodeString(tokenName, name))
+        if (!decodeString(tokenName, name, keySizeLimit, "key"))
         {
             return recoverFromError(TokenType::ObjectEnd);
         }
@@ -889,14 +889,6 @@ Parser<Visitor...>::readObject(Token& tokenStart, std::size_t depth)
         {
             return addErrorAndRecover(
                 "Missing ':' after object member name", colon, TokenType::ObjectEnd);
-        }
-
-        if (name.size() > keySizeLimit)
-        {
-            return addError(
-                "Syntax error: key size exceeds the maximum allowed size of " +
-                    std::to_string(keySizeLimit) + " bytes",
-                tokenName);
         }
 
         DISPATCH_VISITORS(tokenName, onKey(name));
@@ -1128,17 +1120,9 @@ bool
 Parser<Visitor...>::decodeString(Token& token)
 {
     auto decoded = std::string{};
-    if (!decodeString(token, decoded))
+    if (!decodeString(token, decoded, stringSizeLimit, "string"))
     {
         return false;
-    }
-
-    if (decoded.size() > stringSizeLimit)
-    {
-        return addError(
-            "Syntax error: string size exceeds the maximum allowed size of " +
-                std::to_string(stringSizeLimit) + " bytes",
-            token);
     }
 
     DISPATCH_VISITORS(token, onString(decoded));
@@ -1148,9 +1132,13 @@ Parser<Visitor...>::decodeString(Token& token)
 
 template <typename... Visitor>
 bool
-Parser<Visitor...>::decodeString(Token& token, std::string& decoded)
+Parser<Visitor...>::decodeString(
+    Token& token,
+    std::string& decoded,
+    std::size_t sizeLimit,
+    std::string_view what)
 {
-    decoded.reserve(token.end - token.start - 2);
+    decoded.reserve(std::min(static_cast<std::size_t>(token.end - token.start - 2), sizeLimit));
     Location current = token.start + 1;  // skip '"'
     Location end = token.end - 1;        // do not include '"'
 
@@ -1220,6 +1208,15 @@ Parser<Visitor...>::decodeString(Token& token, std::string& decoded)
         else
         {
             decoded += c;
+        }
+
+        if (decoded.size() > sizeLimit)
+        {
+            return addError(
+                "Syntax error: " + std::string(what) +
+                    " size exceeds the maximum allowed size of " + std::to_string(sizeLimit) +
+                    " bytes",
+                token);
         }
     }
 
@@ -1447,8 +1444,10 @@ Parser<Visitor...>::addErrorAndRecover(
 
 template <typename... Visitor>
 void
-Parser<Visitor...>::getLocationLineAndColumn(Location location, int64_t& line, int64_t& column)
-    const
+Parser<Visitor...>::getLocationLineAndColumn(
+    Location location,
+    std::int64_t& line,
+    std::int64_t& column) const
 {
     if (begin_ == nullptr || location == nullptr)
     {
@@ -1483,7 +1482,7 @@ Parser<Visitor...>::getLocationLineAndColumn(Location location, int64_t& line, i
     }
 
     // column & line start at 1
-    column = int64_t{location - lastLineStart} + 1;
+    column = std::int64_t{location - lastLineStart} + 1;
     ++line;
 }
 
@@ -1491,8 +1490,8 @@ template <typename... Visitor>
 std::string
 Parser<Visitor...>::getLocationLineAndColumn(Location location) const
 {
-    auto line = int64_t{};
-    auto column = int64_t{};
+    auto line = std::int64_t{};
+    auto column = std::int64_t{};
     getLocationLineAndColumn(location, line, column);
     return "Line " + std::to_string(line) + ", Column " + std::to_string(column);
 }

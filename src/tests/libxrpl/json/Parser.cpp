@@ -444,6 +444,46 @@ TEST(JsonParser, enforces_string_size_limit)
     EXPECT_NE(parser.getFormattedErrorMessages().find("string size exceeds"), std::string::npos);
 }
 
+TEST(JsonParser, string_size_limit_applies_to_decoded_size)
+{
+    // Escapes make the raw token longer than the decoded string, which must
+    // still be accepted when its decoded size is within the limit.
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+    parser.stringSizeLimit = 2;
+    parser.keySizeLimit = 2;
+
+    EXPECT_TRUE(parser.parse(std::string{R"({"\n\t":"\u00e9"})"}))
+        << parser.getFormattedErrorMessages();
+}
+
+TEST(JsonParser, string_size_limit_stops_decoding_early)
+{
+    // The bad escape is past the limit, so it is never reached.
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+    parser.stringSizeLimit = 2;
+
+    EXPECT_FALSE(parser.parse(std::string{R"(["abc\q"])"}));
+
+    auto const message = parser.getFormattedErrorMessages();
+    EXPECT_NE(message.find("string size exceeds"), std::string::npos) << message;
+    EXPECT_EQ(message.find("Bad escape sequence"), std::string::npos) << message;
+}
+
+TEST(JsonParser, key_size_limit_stops_decoding_early)
+{
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+    parser.keySizeLimit = 2;
+
+    EXPECT_FALSE(parser.parse(std::string{R"({"abc\q":1})"}));
+
+    auto const message = parser.getFormattedErrorMessages();
+    EXPECT_NE(message.find("key size exceeds"), std::string::npos) << message;
+    EXPECT_EQ(message.find("Bad escape sequence"), std::string::npos) << message;
+}
+
 TEST(JsonParser, enforces_object_member_limit)
 {
     auto trace = Trace{};
