@@ -1,4 +1,5 @@
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/main/NodeIdentity.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/rpc/RPCCall.h>
@@ -12,13 +13,17 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite_info.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/git/Git.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Vacuum.h>
+#include <xrpl/telemetry/Telemetry.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -30,12 +35,20 @@
 #include <boost/program_options/value_semantic.hpp>
 #include <boost/program_options/variables_map.hpp>
 
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpl/telemetry/CoroAwareContextStorage.h>
+
+#include <opentelemetry/context/runtime_context.h>
+#include <opentelemetry/nostd/shared_ptr.h>
+#endif  // XRPL_ENABLE_TELEMETRY
+
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <exception>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -349,6 +362,39 @@ runUnitTests(
 
 #endif  // ENABLE_TESTS
 //------------------------------------------------------------------------------
+
+namespace {
+
+/**
+ * Parse the [telemetry] section, or log why it cannot be parsed.
+ *
+ * run() calls this before any thread starts, while it still owns the logs. A
+ * bad value then stops startup like any other config error.
+ *
+ * @param config The loaded server config.
+ * @param nodeKey The node public key, the default service instance id.
+ * @param j Journal the reason is written to.
+ * @return The parsed section, or std::nullopt after logging the reason.
+ */
+std::optional<telemetry::Telemetry::Setup>
+readTelemetrySetup(Config const& config, PublicKey const& nodeKey, beast::Journal j)
+{
+    try
+    {
+        return telemetry::makeTelemetrySetup(
+            config.section(Sections::kTelemetry),
+            toBase58(TokenType::NodePublic, nodeKey),
+            build_info::getVersionString(),
+            config.networkId);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j.fatal()) << e.what();
+        return std::nullopt;
+    }
+}
+
+}  // namespace
 
 int
 run(int argc, char** argv)
@@ -804,8 +850,67 @@ run(int argc, char** argv)
         if (vm.contains("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::Severity::Trace));
 
-        auto app =
-            makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
+        // Telemetry stamps the node public key into resources it builds during
+        // construction, so the identity is decided here, where a malformed
+        // [node_seed] can still be reported and the process can exit cleanly.
+        // setup() persists it; see getNodeIdentity().
+        std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity;
+        try
+        {
+            nodeIdentity = resolveNodeIdentity(*config, vm, logs->journal("Application"));
+        }
+        catch (std::exception const& e)
+        {
+            std::cerr << "Unable to start " << systemName() << ": " << e.what() << std::endl;
+            return -1;
+        }
+
+        auto const telemetrySetup =
+            readTelemetrySetup(*config, nodeIdentity->first, logs->journal("Application"));
+        if (!telemetrySetup)
+            return -1;
+
+#ifdef XRPL_ENABLE_TELEMETRY
+        // Install the coroutine-aware OTel context storage while the process is
+        // still single-threaded. SetRuntimeContextStorage() writes a
+        // process-global shared_ptr that every log line reads through
+        // RuntimeContext::GetCurrent(), and neither side is atomic; the io
+        // threads start inside makeApplication() below.
+        if (telemetrySetup->enabled)
+        {
+            opentelemetry::context::RuntimeContext::SetRuntimeContextStorage(
+                opentelemetry::nostd::shared_ptr<opentelemetry::context::RuntimeContextStorage>(
+                    new telemetry::CoroAwareContextStorage()));
+        }
+#endif  // XRPL_ENABLE_TELEMETRY
+
+        // Application construction runs member initializers that validate
+        // config and can throw. A throw from a member-initializer list cannot
+        // be recovered inside the constructor, so catch it here. Left uncaught
+        // it reaches std::terminate, whose default handler prints a C++
+        // terminate dump and raises SIGABRT, leaving a core file where the
+        // system allows one; the catch replaces that with two operator-readable
+        // lines on stderr and a non-zero exit status.
+        //
+        // Only the construction is covered. setup() is left outside
+        // deliberately: it starts subsystems whose shutdown order is delicate,
+        // and only the normal stop sequence gets that order right.
+        std::unique_ptr<Application> app;
+        try
+        {
+            app = makeApplication(
+                std::move(config), std::move(logs), std::make_unique<TimeKeeper>(), *nodeIdentity);
+        }
+        catch (std::exception const& e)
+        {
+            std::cerr << "Unable to start " << systemName() << ": " << e.what() << std::endl;
+            std::cerr << "Fix the reported problem and start again." << std::endl;
+            return -1;
+        }
+
+        // Construction succeeded, so app holds an object: makeApplication never
+        // returns null and the catch above is the only other way out.
+        XRPL_ASSERT(app, "xrpl::run : non-null application");
 
         if (!app->setup(vm))
             return -1;

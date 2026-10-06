@@ -1,0 +1,130 @@
+#pragma once
+
+/**
+ * Utilities for trace context propagation across nodes.
+ *
+ * Provides serialization/deserialization of OTel trace context to/from
+ * Protocol Buffer TraceContext messages (P2P cross-node propagation).
+ * Wired into the P2P message flow via PropagationHelpers.h for
+ * TMTransaction, TMProposeSet, and TMValidation messages.
+ *
+ * Only compiled when XRPL_ENABLE_TELEMETRY is defined.
+ *
+ * @see PropagationHelpers.h (high-level inject helpers),
+ * TxTracing.h (transaction receive-side extraction),
+ * ConsensusReceiveTracing.h (proposal/validation receive-side).
+ */
+
+#ifdef XRPL_ENABLE_TELEMETRY
+
+#include <xrpl/proto/xrpl.pb.h>
+#include <xrpl/telemetry/TraceContextValidation.h>
+
+#include <opentelemetry/context/context.h>
+#include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/nostd/span.h>
+#include <opentelemetry/trace/context.h>
+#include <opentelemetry/trace/default_span.h>
+#include <opentelemetry/trace/span.h>
+#include <opentelemetry/trace/span_context.h>
+#include <opentelemetry/trace/span_id.h>
+#include <opentelemetry/trace/span_metadata.h>
+#include <opentelemetry/trace/trace_flags.h>
+#include <opentelemetry/trace/trace_id.h>
+
+#include <cstdint>
+
+namespace xrpl::telemetry {
+
+// The wire limits in TraceContextValidation.h must match the OTel types the
+// peer's bytes are copied into here.
+static_assert(kTraceIdSize == opentelemetry::trace::TraceId::kSize);
+static_assert(kSpanIdSize == opentelemetry::trace::SpanId::kSize);
+static_assert(kKnownTraceFlags == opentelemetry::trace::TraceFlags::kAllW3CTraceContext2Flags);
+
+/**
+ * Extract OTel context from a protobuf TraceContext message.
+ *
+ * @param proto  The protobuf TraceContext received from a peer.
+ * @return An OTel Context with the extracted parent span, or an empty
+ * context if the protobuf fields are missing or invalid.
+ */
+[[nodiscard]] inline opentelemetry::context::Context
+extractFromProtobuf(protocol::TraceContext const& proto)
+{
+    namespace trace = opentelemetry::trace;
+
+    // Reject a malformed context (bad ids or flags) from the peer before
+    // trusting it as a parent. See TraceContextValidation.h.
+    if (!isValidTraceContext(proto))
+    {
+        return opentelemetry::context::Context{};
+    }
+
+    auto const* rawTraceId = reinterpret_cast<std::uint8_t const*>(proto.trace_id().data());
+    auto const* rawSpanId = reinterpret_cast<std::uint8_t const*>(proto.span_id().data());
+    trace::TraceId const traceId(
+        opentelemetry::nostd::span<std::uint8_t const, kTraceIdSize>(rawTraceId, kTraceIdSize));
+    trace::SpanId const spanId(
+        opentelemetry::nostd::span<std::uint8_t const, kSpanIdSize>(rawSpanId, kSpanIdSize));
+    trace::TraceFlags const flags(traceFlagsByte(proto));
+
+    trace::SpanContext const spanCtx(traceId, spanId, flags, /* remote = */ true);
+
+    return opentelemetry::context::Context{}.SetValue(
+        trace::kSpanKey,
+        opentelemetry::nostd::shared_ptr<trace::Span>(new trace::DefaultSpan(spanCtx)));
+}
+
+/**
+ * Inject the current span's trace context into a protobuf TraceContext.
+ *
+ * @param ctx    The OTel context containing the span to propagate.
+ * @param proto  The protobuf TraceContext to populate.
+ */
+inline void
+injectToProtobuf(opentelemetry::context::Context const& ctx, protocol::TraceContext& proto)
+{
+    namespace trace = opentelemetry::trace;
+
+    auto const span = trace::GetSpan(ctx);
+    if (!span)
+        return;
+
+    auto const& spanCtx = span->GetContext();
+    if (!spanCtx.IsValid())
+        return;
+
+    // Serialize trace_id (16 bytes)
+    auto const& traceId = spanCtx.trace_id();
+    proto.set_trace_id(traceId.Id().data(), trace::TraceId::kSize);
+
+    // Serialize span_id (8 bytes)
+    auto const& spanId = spanCtx.span_id();
+    proto.set_span_id(spanId.Id().data(), trace::SpanId::kSize);
+
+    // Serialize flags
+    proto.set_trace_flags(spanCtx.trace_flags().flags());
+
+    /**
+     * TODO: add a `trace_state` field to the protobuf TraceContext (field
+     * 4 is reserved for it in xrpl.proto) with a size limit, then write it
+     * here and read it in extractFromProtobuf above.
+     *
+     * Two uses are intended. One is W3C tracestate vendor-specific
+     * key-value pairs, for cross-vendor propagation. The other is an
+     * authenticated token. Today a peer's trace context is
+     * unauthenticated input: the parser checks only that the ids and flags
+     * are well formed (16-byte trace_id and 8-byte span_id, neither all
+     * zero; flags fit 8 bits) and drops the context otherwise, so the ids
+     * are a hint rather than trusted provenance. A token the
+     * receiver could verify would let it decide whether to adopt a peer's
+     * context at all. That needs a shared verification key, a canonical
+     * form to sign, and a defined policy for peers that send no token.
+     * None of that exists yet, which is why the field is only reserved.
+     */
+}
+
+}  // namespace xrpl::telemetry
+
+#endif  // XRPL_ENABLE_TELEMETRY

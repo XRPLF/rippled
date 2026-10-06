@@ -55,6 +55,17 @@ class TimeoutCounter
 {
 public:
     /**
+     * Job name of the ledger-acquisition lane.
+     *
+     * Shared with InboundLedger, which passes it as its job name, so the
+     * counters that attribute deferrals and timeouts to this lane compare
+     * against the same string the lane is registered under. Two independent
+     * literals would drift apart silently: the metrics would read zero with
+     * no build error and no failing test.
+     */
+    static constexpr char kLedgerAcquireJobName[] = "InboundLedger";
+
+    /**
      * Cancel the task by marking it as failed if the task is not done.
      * @note this function does not attempt to cancel the scheduled timer or
      *       to remove the queued job if any. When the timer expires or
@@ -138,6 +149,23 @@ protected:
     std::chrono::milliseconds timerInterval_;
 
     QueueJobParameter queueJobParameter_;
+
+    /**
+     * Whether this counter belongs to ledger acquisition.
+     *
+     * Deferrals and timeouts are recorded in this base class, so they would
+     * otherwise pool every subclass together: a saturated replay lane would
+     * look exactly like a stalled ledger acquisition. The job name already
+     * identifies the subclass, so it is the cheapest discriminator available
+     * and needs no extra state.
+     *
+     * @return True for the InboundLedger lane, false for every other.
+     */
+    [[nodiscard]] bool
+    isLedgerAcquisition() const
+    {
+        return queueJobParameter_.jobName == kLedgerAcquireJobName;
+    }
 
 private:
     /**

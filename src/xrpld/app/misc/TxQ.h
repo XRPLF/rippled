@@ -16,6 +16,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/applySteps.h>
 
 #include <boost/circular_buffer.hpp>
@@ -324,6 +325,15 @@ public:
      * Add a new transaction to the open ledger, hold it in the queue,
      * or reject it.
      *
+     * @param app Application the transaction is applied for.
+     * @param view View to apply to: the open ledger, or a copy for a dry run.
+     * @param tx Transaction to apply.
+     * @param flags Apply flags, such as TapUnlimited for an admin submit.
+     * @param j Journal for this call's log lines.
+     * @param parentCtx Context of the caller's tx.process span, used as the
+     *        parent of the txq.enqueue span. Null, or an invalid context,
+     *        makes that span inherit the span active on this thread, or be a
+     *        root if there is none.
      * @return A pair with the `TER` and a `bool` indicating
      *         whether or not the transaction was applied to
      *         the open ledger. If the transaction is queued,
@@ -335,7 +345,8 @@ public:
         OpenView& view,
         std::shared_ptr<STTx const> const& tx,
         ApplyFlags flags,
-        beast::Journal j);
+        beast::Journal j,
+        telemetry::SpanContext const* parentCtx = nullptr);
 
     /**
      * Fill the new open ledger with transactions from the queue.

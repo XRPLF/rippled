@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpl/telemetry/Telemetry.h>
+#endif
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
@@ -12,6 +16,7 @@
 #include <xrpl/consensus/Validations.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
@@ -34,6 +39,7 @@
 #include <limits>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -683,6 +689,47 @@ struct Peer
     onModeChange(ConsensusMode, ConsensusMode)
     {
     }
+
+    // Telemetry hooks — no-ops in the simulator. The generic engine calls
+    // these at every phase transition / outcome resolution so the
+    // production adaptor (RCLConsensus::Adaptor) can record events on the
+    // round span; the simulator runs without telemetry.
+    void
+    onPhaseEvent(std::string_view, std::string_view)
+    {
+    }
+
+    void
+    onOutcomeEvent(std::string_view)
+    {
+    }
+
+    // The generic engine parents its phase spans under the round span via
+    // this context; the simulator runs without telemetry, so return an
+    // invalid context and no phase span is created.
+    static telemetry::SpanContext
+    roundSpanContext()
+    {
+        return {};
+    }
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    /**
+     * Provide telemetry access for the Consensus template.
+     *
+     * The test Peer adaptor uses a static disabled NullTelemetry instance
+     * so that all shouldTrace*() checks return false and no spans are
+     * created during simulation tests. It is static because the shared
+     * disabled instance does not depend on any per-peer state.
+     */
+    static telemetry::Telemetry&
+    getTelemetry()
+    {
+        static auto tel = telemetry::makeTelemetry(
+            telemetry::Telemetry::Setup{}, beast::Journal{beast::Journal::getNullSink()});
+        return *tel;
+    }
+#endif
 
     // Share a message by broadcasting to all connected peers
     template <class M>
