@@ -675,23 +675,12 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     auto const sle = std::make_shared<SLE>(keylet);
 
                     // Create Amendments vector (enabled amendments)
-                    std::vector<UInt256> enabledAmendments;
-                    enabledAmendments.push_back(
-                        UInt256::fromVoid(
-                            "42426C4D4F1009EE67080A9B7965B44656D7"
-                            "714D104A72F9B4369F97ABF044EE"));
-                    enabledAmendments.push_back(
-                        UInt256::fromVoid(
-                            "4C97EBA926031A7CF7D7B36FDE3ED66DDA54"
-                            "21192D63DE53FFB46E43B9DC8373"));
-                    enabledAmendments.push_back(
-                        UInt256::fromVoid(
-                            "03BDC0099C4E14163ADA272C1B6F6FABB448"
-                            "CC3E51F522F978041E4B57D9158C"));
-                    enabledAmendments.push_back(
-                        UInt256::fromVoid(
-                            "35291ADD2D79EB6991343BDA0912269C817D"
-                            "0F094B02226C1C14AD2858962ED4"));
+                    std::vector<uint256> enabledAmendments{
+                        UInt256{"42426C4D4F1009EE67080A9B7965B44656D7714D104A72F9B4369F97ABF044EE"},
+                        UInt256{"4C97EBA926031A7CF7D7B36FDE3ED66DDA5421192D63DE53FFB46E43B9DC8373"},
+                        UInt256{"03BDC0099C4E14163ADA272C1B6F6FABB448CC3E51F522F978041E4B57D9158C"},
+                        UInt256{
+                            "35291ADD2D79EB6991343BDA0912269C817D0F094B02226C1C14AD2858962ED4"}};
                     sle->setFieldV256(sfAmendments, STVector256(enabledAmendments));
 
                     // Create Majorities array
@@ -700,18 +689,16 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     auto majority1 = STObject::makeInnerObject(sfMajority);
                     majority1.setFieldH256(
                         sfAmendment,
-                        UInt256::fromVoid(
-                            "7BB62DC13EC72B775091E9C71BF8CF97E122"
-                            "647693B50C5E87A80DFD6FCFAC50"));
+                        UInt256(
+                            "7BB62DC13EC72B775091E9C71BF8CF97E122647693B50C5E87A80DFD6FCFAC50"));
                     majority1.setFieldU32(sfCloseTime, 779561310);
                     majorities.pushBack(std::move(majority1));
 
                     auto majority2 = STObject::makeInnerObject(sfMajority);
                     majority2.setFieldH256(
                         sfAmendment,
-                        UInt256::fromVoid(
-                            "755C971C29971C9F20C6F080F2ED96F87884"
-                            "E40AD19554A5EBECDCEC8A1F77FE"));
+                        UInt256(
+                            "755C971C29971C9F20C6F080F2ED96F87884E40AD19554A5EBECDCEC8A1F77FE"));
                     majority2.setFieldU32(sfCloseTime, 779561310);
                     majorities.pushBack(std::move(majority2));
 
@@ -1604,8 +1591,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     STArray disabledValidators;
                     auto disabledValidator = STObject::makeInnerObject(sfDisabledValidator);
                     auto pubKeyBlob = strUnHex(
-                        "ED58F6770DB5DD77E59D28CB650EC3816E2FC95021BB56E720C9A1"
-                        "2DA79C58A3AB");
+                        "ED58F6770DB5DD77E59D28CB650EC3816E2FC95021BB56E720C9A12DA79C58A3AB");
                     disabledValidator.setFieldVL(sfPublicKey, *pubKeyBlob);
                     disabledValidator.setFieldU32(sfFirstLedgerSequence, 91371264);
                     disabledValidators.pushBack(std::move(disabledValidator));
@@ -1613,10 +1599,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     sle->setFieldArray(sfDisabledValidators, disabledValidators);
                     sle->setFieldH256(
                         sfPreviousTxnID,
-                        UInt256::fromVoid(
-                            "8D47FFE664BE6C335108DF689537625855A6"
-                            "A95160CC6D351341B9"
-                            "2624D9C5E3"));
+                        UInt256{
+                            "8D47FFE664BE6C335108DF689537625855A6A95160CC6D351341B92624D9C5E3"});
                     sle->setFieldU32(sfPreviousTxnLgrSeq, 91442944);
 
                     view.rawInsert(sle);
@@ -2622,7 +2606,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     jv[jss::result].isMember(jss::node) &&
                         jv[jss::result][jss::node].isMember("Hashes") &&
                         jv[jss::result][jss::node]["Hashes"].size() == expectedCount,
-                    to_string(jv[jss::result][jss::node]["Hashes"].size()));
+                    std::to_string(jv[jss::result][jss::node]["Hashes"].size()));
             }
             else
             {
@@ -2707,7 +2691,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 // "hashes":[incorrect index hash]
                 {
                     json::Value params;
-                    auto const badKey = strHex(expectedKey.key + UInt256{1});
+                    auto const badKey = strHex(expectedKey.key.next());
                     params[jss::ledger_index] = jss::validated;
                     params[jss::hashes] = badKey;
                     auto const jv = env.rpc("json", "ledger_entry", to_string(params));

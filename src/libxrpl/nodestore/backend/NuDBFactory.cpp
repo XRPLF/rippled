@@ -38,6 +38,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <span>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -216,7 +217,7 @@ public:
             [&hash, pno, &status](void const* data, std::size_t size) {
                 nudb::detail::buffer bf;
                 auto const result = nodeobjectDecompress(data, size, bf);
-                DecodedBlob decoded(hash.data(), result.first, result.second);
+                DecodedBlob decoded(hash, result.first, result.second);
                 if (!decoded.wasOk())
                 {
                     status = Status::DataCorrupt;
@@ -240,7 +241,7 @@ public:
         nudb::error_code ec;
         nudb::detail::buffer bf;
         auto const result = nodeobjectCompress(e.getData(), e.getSize(), bf);
-        db.insert(e.getKey(), result.first, result.second, ec);
+        db.insert(e.getKey().data(), result.first, result.second, ec);
         if (ec && ec != nudb::error::key_exists)
             Throw<nudb::system_error>(ec);
     }
@@ -288,14 +289,25 @@ public:
             Throw<nudb::system_error>(ec);
         nudb::visit(
             dp,
-            [&](void const* key,
+            [&](void const* keyData,
                 std::size_t keyBytes,
                 void const* data,
                 std::size_t size,
                 nudb::error_code&) {
+                auto key = uint256::fromRaw(
+                    std::span{static_cast<unsigned char const*>(keyData), keyBytes});
+
+                if (!key) [[unlikely]]
+                {
+                    ec = make_error_code(nudb::error::invalid_key_size);
+                    return;
+                }
+
                 nudb::detail::buffer bf;
                 auto const result = nodeobjectDecompress(data, size, bf);
+
                 DecodedBlob decoded(key, result.first, result.second);
+
                 if (!decoded.wasOk())
                 {
                     ec = make_error_code(nudb::error::missing_value);

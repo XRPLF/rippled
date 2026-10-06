@@ -1,7 +1,6 @@
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 
 #include <xrpl/basics/Blob.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/nodestore/NodeObject.h>
@@ -12,8 +11,13 @@
 
 namespace xrpl::node_store {
 
-DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes) : key_(key)
+DecodedBlob::DecodedBlob(std::optional<UInt256> key, void const* value, int valueBytes)
 {
+    if (!key)
+        return;
+
+    key_ = key.value();
+
     /*  Data format:
 
         Bytes
@@ -63,7 +67,7 @@ DecodedBlob::createObject()
     {
         Blob data(objectData_, objectData_ + dataBytes_);
 
-        object = NodeObject::createObject(objectType_, std::move(data), UInt256::fromVoid(key_));
+        object = NodeObject::createObject(objectType_, std::move(data), key_);
     }
 
     return object;

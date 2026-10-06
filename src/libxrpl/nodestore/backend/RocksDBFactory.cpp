@@ -38,6 +38,7 @@
 #include <format>
 #include <functional>
 #include <memory>
+#include <span>
 #include <stdexcept>
 #include <string>
 
@@ -110,6 +111,9 @@ public:
     {
         if (!getIfExists(keyValues, Keys::kPath, name))
             Throw<std::runtime_error>("Missing path in RocksDBFactory backend");
+
+        if (keyBytes != uint256::size())
+            Throw<std::runtime_error>("Incorrect key size: expected 32 bytes");
 
         rocksdb::BlockBasedTableOptions tableOptions;
         options.env = env;
@@ -292,7 +296,7 @@ public:
 
         if (getStatus.ok())
         {
-            DecodedBlob decoded(hash.data(), string.data(), string.size());
+            DecodedBlob decoded(hash, string.data(), string.size());
 
             if (decoded.wasOk())
             {
@@ -347,7 +351,7 @@ public:
             EncodedBlob const encoded(e);
 
             wb.Put(
-                rocksdb::Slice(reinterpret_cast<char const*>(encoded.getKey()), keyBytes),
+                rocksdb::Slice(reinterpret_cast<char const*>(encoded.getKey().data()), keyBytes),
                 rocksdb::Slice(
                     reinterpret_cast<char const*>(encoded.getData()), encoded.getSize()));
         }
@@ -375,9 +379,12 @@ public:
 
         for (it->SeekToFirst(); it->Valid(); it->Next())
         {
-            if (it->key().size() == keyBytes)
+            if (it->key().size() == keyBytes && it->key().size() == uint256::size())
             {
-                DecodedBlob decoded(it->key().data(), it->value().data(), it->value().size());
+                DecodedBlob decoded(
+                    uint256::fromRaw(std::span{it->key().data(), it->key().size()}),
+                    it->value().data(),
+                    it->value().size());
 
                 if (decoded.wasOk())
                 {

@@ -121,7 +121,7 @@ class Feature_test : public beast::unit_test::Suite
         }
 
         // Test an arbitrary unknown feature
-        UInt256 const zero{0};
+        UInt256 const zero{};
         BEAST_EXPECT(featureToName(zero) == to_string(zero));
         BEAST_EXPECT(
             featureToName(zero) ==
@@ -292,7 +292,8 @@ class Feature_test : public beast::unit_test::Suite
             for (auto it = result[jss::features].begin(); it != result[jss::features].end(); ++it)
             {
                 UInt256 id;
-                (void)id.parseHex(it.key().asString().c_str());
+                if (!BEAST_EXPECT(id.parseHex(it.key().asString())))
+                    return;
                 if (!BEAST_EXPECT((*it).isMember(jss::name)))
                     return;
                 bool const expectEnabled = env.app().getAmendmentTable().isEnabled(id);
@@ -353,7 +354,8 @@ class Feature_test : public beast::unit_test::Suite
         for (auto it = jrr[jss::features].begin(); it != jrr[jss::features].end(); ++it)
         {
             UInt256 id;
-            (void)id.parseHex(it.key().asString().c_str());
+            if (!BEAST_EXPECT(id.parseHex(it.key().asString())))
+                return;
             if (!BEAST_EXPECT((*it).isMember(jss::name)))
                 return;
             bool const expectEnabled = env.app().getAmendmentTable().isEnabled(id);

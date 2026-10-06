@@ -558,8 +558,7 @@ class FeeVote_test : public beast::unit_test::Suite
         // Test invalid transaction with non-zero account - this should fail
         // validation
         auto invalidTx = STTx(ttFEE, [&](auto& obj) {
-            obj.setAccountID(sfAccount,
-                             AccountID(1));  // Should be zero (this makes it invalid)
+            obj.setAccountID(sfAccount, AccountID{1});  // Should be zero (this makes it invalid)
             obj.setFieldU32(sfLedgerSequence, ledger->seq());
             obj.setFieldAmount(sfBaseFeeDrops, XRPAmount{10});
             obj.setFieldAmount(sfReserveBaseDrops, XRPAmount{200000});

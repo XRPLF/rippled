@@ -18,7 +18,7 @@ namespace xrpl::ledger_entries {
 // builder's STObject and the wrapper's SLE.
 TEST(XChainOwnedCreateAccountClaimIDTests, BuilderSettersRoundTrip)
 {
-    UInt256 const index{1u};
+    constexpr UInt256 index{1};
 
     auto const accountValue = canonical_ACCOUNT();
     auto const xChainBridgeValue = canonical_XCHAIN_BRIDGE();
@@ -101,7 +101,7 @@ TEST(XChainOwnedCreateAccountClaimIDTests, BuilderSettersRoundTrip)
 // from that SLE, build a new wrapper, and verify all fields (and validate()).
 TEST(XChainOwnedCreateAccountClaimIDTests, BuilderFromSleRoundTrip)
 {
-    UInt256 const index{2u};
+    constexpr UInt256 index{2};
 
     auto const accountValue = canonical_ACCOUNT();
     auto const xChainBridgeValue = canonical_XCHAIN_BRIDGE();
@@ -207,7 +207,7 @@ TEST(XChainOwnedCreateAccountClaimIDTests, BuilderFromSleRoundTrip)
 // 3) Verify wrapper throws when constructed from wrong ledger entry type.
 TEST(XChainOwnedCreateAccountClaimIDTests, WrapperThrowsOnWrongEntryType)
 {
-    UInt256 const index{3u};
+    constexpr UInt256 index{3};
 
     // Build a valid ledger entry of a different type
     // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
@@ -226,7 +226,7 @@ TEST(XChainOwnedCreateAccountClaimIDTests, WrapperThrowsOnWrongEntryType)
 // 4) Verify builder throws when constructed from wrong ledger entry type.
 TEST(XChainOwnedCreateAccountClaimIDTests, BuilderThrowsOnWrongEntryType)
 {
-    UInt256 const index{4u};
+    constexpr UInt256 index{4};
 
     // Build a valid ledger entry of a different type
     TicketBuilder wrongBuilder{

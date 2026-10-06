@@ -4386,7 +4386,7 @@ class Batch_test : public beast::unit_test::Suite
 
         STTx const stx = STTx(ttAMENDMENT, [&](auto& obj) {
             obj.setAccountID(sfAccount, AccountID());
-            obj.setFieldH256(sfAmendment, UInt256(2));
+            obj.setFieldH256(sfAmendment, UInt256{2});
             obj.setFieldU32(sfLedgerSequence, env.seq(alice));
             obj.setFieldU32(sfFlags, tfInnerBatchTxn);
         });

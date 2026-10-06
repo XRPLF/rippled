@@ -159,7 +159,7 @@ autofillTx(json::Value& txJson, rpc::JsonContext& context)
     {
         auto const networkId = context.app.getNetworkIDService().getNetworkID();
         if (networkId > 1024)
-            txJson[jss::NetworkID] = to_string(networkId);
+            txJson[jss::NetworkID] = std::to_string(networkId);
     }
 
     if (!txJson.isMember(jss::Fee))
