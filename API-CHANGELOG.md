@@ -36,8 +36,6 @@ Version 3.5.0 is not yet released.
 - `channel_authorize`: The `channel_id` field now returns an `invalidParams` error if the value is not a string. [#7582](https://github.com/XRPLF/rippled/pull/7582)
 - `channel_verify`: The `channel_id` and `signature` fields now return an `invalidParams` error if the value is not a string. [#7582](https://github.com/XRPLF/rippled/pull/7582)
 
-### Bugfixes in 3.5.0
-
 - `log_level`: The `severity` and `partition` parameters now return `invalidParams` when supplied with non-string values, instead of causing an internal error. ([#7595](https://github.com/XRPLF/rippled/pull/7595))
 
 ## XRP Ledger server version 3.4.0
