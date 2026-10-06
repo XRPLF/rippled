@@ -2,20 +2,15 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/UintTypes.h>
 
 #include <cstdint>
 #include <optional>
@@ -36,30 +31,12 @@ NotTEC
 payChanAmountPreflightHelper(Rules const& rules, STAmount const& amount);
 
 template <>
-inline NotTEC
-payChanAmountPreflightHelper<Issue>(Rules const&, STAmount const& amount)
-{
-    if (amount.native() || amount <= beast::kZero)
-        return temBAD_AMOUNT;
-
-    if (badCurrency() == amount.get<Issue>().currency)
-        return temBAD_CURRENCY;
-
-    return tesSUCCESS;
-}
+NotTEC
+payChanAmountPreflightHelper<Issue>(Rules const&, STAmount const& amount);
 
 template <>
-inline NotTEC
-payChanAmountPreflightHelper<MPTIssue>(Rules const& rules, STAmount const& amount)
-{
-    if (!rules.enabled(fixCleanup3_2_0) && !rules.enabled(featureMPTokensV1))
-        return temDISABLED;
-
-    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} || amount <= beast::kZero)
-        return temBAD_AMOUNT;
-
-    return tesSUCCESS;
-}
+NotTEC
+payChanAmountPreflightHelper<MPTIssue>(Rules const& rules, STAmount const& amount);
 
 /**
  * Close a payment channel and return its remaining funds to the channel owner.

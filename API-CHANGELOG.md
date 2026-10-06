@@ -22,14 +22,6 @@ API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-
 
 This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
-## Unreleased
-
-### Additions
-
-- `channel_authorize`, `channel_verify`: `amount` now also accepts the transaction `Amount` JSON object for a token payment channel (`currency`, `issuer` and `value` for a trust line token; `mpt_issuance_id` and `value` for an MPT), and the claim authorization is serialized for that token. A string of drops is still used for an XRP channel. An object that names XRP, is negative or is malformed returns `channelAmtMalformed`. On the command line, the amount argument may be that JSON object as a single argument. For a token channel the signed message is the `PaymentChannelClaim` hash prefix, the channel ID and the amount serialized as an `Amount` field value without its field header; the XRP message is unchanged. ([#7935](https://github.com/XRPLF/rippled/pull/7935))
-- `PaymentChannelCreate`, `PaymentChannelFund`, `PaymentChannelClaim`: `Amount` (and `Balance` on `PaymentChannelClaim`) now accept a trust line or MPT value in addition to XRP, gated by the `TokenPaychan` amendment. ([#7935](https://github.com/XRPLF/rippled/pull/7935))
-- `ledger_entry`, `account_objects`: The `PayChannel` ledger entry now includes optional `TransferRate` and `IssuerNode` fields, present on a channel funded with a trust line or MPT value. ([#7935](https://github.com/XRPLF/rippled/pull/7935))
-
 ## XRP Ledger server version 3.5.0
 
 Version 3.5.0 is not yet released.
@@ -37,6 +29,10 @@ Version 3.5.0 is not yet released.
 ### Additions in 3.5.0
 
 - `subscribe`, `unsubscribe`: Added an optional `mpt_issuances` request field, an array of MPT issuance IDs (hex strings). Subscribers receive a message with `type` `mptTransaction` for each validated transaction whose metadata affects a subscribed issuance; the message has the same fields as the `transactions` stream. MPT issuance subscriptions count toward the per-connection subscription limit. An empty array, a non-array value, or an invalid ID returns `invalidParams`. ([#5671](https://github.com/XRPLF/rippled/pull/5671))
+- `ledger_entry`: Add full support for checks, NFT offers, payment channels, and signer lists. ([#6319](https://github.com/XRPLF/rippled/pull/6319))
+- `channel_authorize`, `channel_verify`: `amount` now also accepts the transaction `Amount` JSON object for a token payment channel (`currency`, `issuer` and `value` for a trust line token; `mpt_issuance_id` and `value` for an MPT), and the claim authorization is serialized for that token. A string of drops is still used for an XRP channel. An object that names XRP, is negative or is malformed returns `channelAmtMalformed`. On the command line, the amount argument may be that JSON object as a single argument. For a token channel the signed message is the `PaymentChannelClaim` hash prefix, the channel ID and the amount serialized as an `Amount` field value without its field header; the XRP message is unchanged. ([#7935](https://github.com/XRPLF/rippled/pull/7935))
+- `PaymentChannelCreate`, `PaymentChannelFund`, `PaymentChannelClaim`: `Amount` (and `Balance` on `PaymentChannelClaim`) now accept a trust line or MPT value in addition to XRP, gated by the `TokenPaychan` amendment. ([#7935](https://github.com/XRPLF/rippled/pull/7935))
+- `ledger_entry`, `account_objects`: The `PayChannel` ledger entry now includes optional `TransferRate` and `IssuerNode` fields, present on a channel funded with a trust line or MPT value. ([#7935](https://github.com/XRPLF/rippled/pull/7935))
 
 ### Bugfixes in 3.5.0
 

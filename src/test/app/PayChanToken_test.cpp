@@ -12,6 +12,7 @@
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/vault.h>
 
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
@@ -1061,6 +1062,45 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == max);
             BEAST_EXPECT(env.balance(alice, usd) == max);
         }
+
+        // tecPRECISION_LOSS: a fund whose sum is exact but whose new amount
+        // less the claimed balance is not. 1e5 + 9.9999e19 is exactly 1e20,
+        // and 1e20 - 1 needs 20 digits, so a close would refund 1e20.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            STAmount const limit{usd.issue(), 1, 21};
+            env.trust(limit, alice);
+            env.trust(limit, bob);
+            env.close();
+            env(pay(gw, alice, STAmount{usd.issue(), 1, 20}));
+            env.close();
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(100'000), settleDelay, pk));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            env(paychan::claim(alice, chan, usd(1), usd(1)));
+            env.close();
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == usd(1));
+            auto const balance = env.balance(alice, usd);
+
+            STAmount const fund{usd.issue(), 99999, 15};
+            BEAST_EXPECT(isExactSum(usd(100'000), fund));
+            env(paychan::fund(alice, chan, fund), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(100'000));
+            BEAST_EXPECT(env.balance(alice, usd) == balance);
+
+            // a fund that keeps the remainder exact is accepted
+            env(paychan::fund(alice, chan, usd(100'000)));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(200'000));
+        }
     }
 
     void
@@ -1311,6 +1351,87 @@ struct PayChanToken_test : public beast::unit_test::Suite
             // bob received the claimed amount; his limit is not changed
             BEAST_EXPECT(env.balance(bob, usd) == usd(5));
             BEAST_EXPECT(env.limit(bob, usd) == bobPreLimit);
+        }
+
+        // tecPRECISION_LOSS: a claim whose unclaimed remainder is not exact.
+        // 1e20 - 1 needs 20 digits, so a close would refund 1e20 after
+        // paying 1.
+        {
+            Env env{*this, features};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account{"gateway"};
+            auto const usd = gw["USD"];
+            env.fund(XRP(5000), alice, bob, gw);
+            env.close();
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            STAmount const limit{usd.issue(), 1, 21};
+            STAmount const amount{usd.issue(), 1, 20};
+            env.trust(limit, alice, bob);
+            env.close();
+            env(pay(gw, alice, amount));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, amount, 100s, alice.pk()));
+            env.close();
+
+            env(paychan::claim(alice, chan, usd(1), usd(1)), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == usd(0));
+            BEAST_EXPECT(env.balance(bob, usd) == usd(0));
+
+            // a claim that leaves an exact remainder is paid, and the close
+            // refunds exactly the remainder
+            env(paychan::claim(alice, chan, usd(100'000), usd(100'000)));
+            env.close();
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == usd(100'000));
+            BEAST_EXPECT(env.balance(bob, usd) == usd(100'000));
+
+            env(paychan::claim(bob, chan), Txflags(tfClose));
+            env.close();
+            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(
+                env.balance(alice, usd) ==
+                STAmount(usd.issue(), std::uint64_t{999999999999999}, 5));
+        }
+
+        // tecPRECISION_LOSS: a claim whose payout is not exact. At the IOU
+        // exponent floor the remainder 2000000000000001e-96 - r and
+        // 2000000000000001e-96 - b are both exact, but r - b = 1e-96 is
+        // below the smallest representable IOU value and rounds to zero.
+        {
+            Env env{*this, features};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account{"gateway"};
+            auto const usd = gw["USD"];
+            env.fund(XRP(5000), alice, bob, gw);
+            env.close();
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            STAmount const amount{usd.issue(), std::uint64_t{2000000000000001}, -96};
+            STAmount const first{usd.issue(), std::uint64_t{1000000000000000}, -96};
+            STAmount const second{usd.issue(), std::uint64_t{1000000000000001}, -96};
+            env.trust(amount, alice, bob);
+            env.close();
+            env(pay(gw, alice, amount));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, amount, 100s, alice.pk()));
+            env.close();
+
+            env(paychan::claim(alice, chan, first, first));
+            env.close();
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == first);
+            BEAST_EXPECT(env.balance(bob, usd) == first);
+
+            env(paychan::claim(alice, chan, second, second), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == first);
+            BEAST_EXPECT(env.balance(bob, usd) == first);
         }
     }
 
@@ -3028,6 +3149,41 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const settleDelay = 100s;
             env(paychan::create(gw, alice, mpt(1), settleDelay, pk), Ter(tecNO_PERMISSION));
             env.close();
+        }
+
+        // tecWRONG_ASSET: vault shares cannot be locked in a channel
+        if (features[featureSingleAssetVault])
+        {
+            Env env{*this, features};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+            env.fund(XRP(10'000), alice, bob, gw);
+            env.close();
+            auto const usd = gw["USD"];
+            env.trust(usd(1'000), alice);
+            env(pay(gw, alice, usd(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            env(createTx);
+            env.close();
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(200)}));
+            env.close();
+
+            auto const vaultSle = env.le(vaultKeylet);
+            BEAST_EXPECT(vaultSle);
+            if (vaultSle)
+            {
+                auto const shareID = vaultSle->at(sfShareMPTID);
+                auto const holding = env.le(keylet::mptoken(shareID, alice));
+                BEAST_EXPECT(holding && holding->at(sfMPTAmount) > 0);
+                STAmount const shares{MPTIssue{shareID}, 1};
+
+                env(paychan::create(alice, bob, shares, 100s, alice.pk()), Ter(tecWRONG_ASSET));
+                env.close();
+            }
         }
 
         // tecOBJECT_NOT_FOUND: mpt does not exist

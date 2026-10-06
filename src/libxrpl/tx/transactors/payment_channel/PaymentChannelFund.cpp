@@ -25,7 +25,6 @@
 #include <xrpl/tx/applySteps.h>
 
 #include <memory>
-#include <variant>
 
 namespace xrpl {
 
@@ -57,11 +56,9 @@ PaymentChannelFund::preflight(PreflightContext const& ctx)
         if (!ctx.rules.enabled(featureTokenPaychan))
             return temBAD_AMOUNT;
 
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return payChanAmountPreflightHelper<T>(ctx.rules, amount);
-                },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                return payChanAmountPreflightHelper<T>(ctx.rules, amount);
+            });
             !isTesSuccess(ret))
             return ret;
     }
@@ -180,11 +177,9 @@ PaymentChannelFund::doApply()
         // Funding is subject to the same issuer controls (locking opt-in,
         // authorization, freeze/lock, transferability, spendable balance)
         // as channel creation.
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return escrowLockPreclaimHelper<T>(ctx_.view(), accountID_, dst, amount, j_);
-                },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                return escrowLockPreclaimHelper<T>(ctx_.view(), accountID_, dst, amount, j_);
+            });
             !isTesSuccess(ret))
             return ret;
 
@@ -192,6 +187,11 @@ PaymentChannelFund::doApply()
         // rounds or an MPT sum that overflows would record an increase other
         // than what the source paid.
         if (!isExactSum(chanAmt, amount))
+            return tecPRECISION_LOSS;
+
+        // The unclaimed remainder sfAmount - sfBalance must stay exact so
+        // that close refunds exactly what was not paid out.
+        if (!isExactDifference(chanAmt + amount, (*slep)[sfBalance]))
             return tecPRECISION_LOSS;
     }
 
@@ -202,11 +202,9 @@ PaymentChannelFund::doApply()
     else
     {
         auto const& issuer = amount.getIssuer();
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return escrowLockApplyHelper<T>(ctx_.view(), issuer, accountID_, amount, j_);
-                },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                return escrowLockApplyHelper<T>(ctx_.view(), issuer, accountID_, amount, j_);
+            });
             !isTesSuccess(ret))
             return ret;
     }
