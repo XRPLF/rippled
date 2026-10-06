@@ -28,7 +28,6 @@
 
 #include <cstdint>
 #include <optional>
-#include <variant>
 
 namespace xrpl {
 
@@ -148,11 +147,9 @@ PaymentChannelClaim::preclaim(PreclaimContext const& ctx)
 
         if (!isXRP(chanFunds) && ctx.tx.isFieldPresent(sfBalance))
         {
-            if (auto const ret = std::visit(
-                    [&]<typename T>(T const&) {
-                        return escrowUnlockPreclaimHelper<T>(ctx.view, dest, chanFunds);
-                    },
-                    chanFunds.asset().value());
+            if (auto const ret = chanFunds.asset().visit([&]<typename T>(T const&) {
+                    return escrowUnlockPreclaimHelper<T>(ctx.view, dest, chanFunds);
+                });
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -260,21 +257,19 @@ PaymentChannelClaim::doApply()
                 : kParityRate;
             auto const& issuer = reqDelta.getIssuer();
             bool const createAsset = dst == accountID_;
-            if (auto const ret = std::visit(
-                    [&]<typename T>(T const&) {
-                        return escrowUnlockApplyHelper<T>(
-                            ctx_.getApplyViewContext(),
-                            lockedRate,
-                            sled,
-                            preFeeBalance_,
-                            reqDelta,
-                            issuer,
-                            src,
-                            dst,
-                            createAsset,
-                            j_);
-                    },
-                    reqDelta.asset().value());
+            if (auto const ret = reqDelta.asset().visit([&]<typename T>(T const&) {
+                    return escrowUnlockApplyHelper<T>(
+                        ctx_.getApplyViewContext(),
+                        lockedRate,
+                        sled,
+                        preFeeBalance_,
+                        reqDelta,
+                        issuer,
+                        src,
+                        dst,
+                        createAsset,
+                        j_);
+                });
                 !isTesSuccess(ret))
                 return ret;
         }

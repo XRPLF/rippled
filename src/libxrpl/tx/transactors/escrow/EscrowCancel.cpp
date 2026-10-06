@@ -20,8 +20,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <variant>
-
 namespace xrpl {
 
 NotTEC
@@ -45,11 +43,9 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
 
         if (!isXRP(amount))
         {
-            if (auto const ret = std::visit(
-                    [&]<typename T>(T const&) {
-                        return escrowUnlockPreclaimHelper<T>(ctx.view, account, amount, false);
-                    },
-                    amount.asset().value());
+            if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                    return escrowUnlockPreclaimHelper<T>(ctx.view, account, amount, false);
+                });
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -128,21 +124,19 @@ EscrowCancel::doApply()
 
         auto const issuer = amount.getIssuer();
         bool const createAsset = account == accountID_;
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return escrowUnlockApplyHelper<T>(
-                        ctx_.getApplyViewContext(),
-                        kParityRate,
-                        ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle : escrow.mutableRawSle(),
-                        preFeeBalance_,
-                        amount,
-                        issuer,
-                        account,  // sender and receiver are the same
-                        account,
-                        createAsset,
-                        j_);
-                },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                return escrowUnlockApplyHelper<T>(
+                    ctx_.getApplyViewContext(),
+                    kParityRate,
+                    ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle : escrow.mutableRawSle(),
+                    preFeeBalance_,
+                    amount,
+                    issuer,
+                    account,  // sender and receiver are the same
+                    account,
+                    createAsset,
+                    j_);
+            });
             !isTesSuccess(ret))
             return ret;  // LCOV_EXCL_LINE
 

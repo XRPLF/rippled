@@ -13,19 +13,49 @@
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <optional>
-#include <variant>
 
 namespace xrpl {
+
+template <>
+NotTEC
+payChanAmountPreflightHelper<Issue>(Rules const&, STAmount const& amount)
+{
+    if (amount.native() || amount <= beast::kZero)
+        return temBAD_AMOUNT;
+
+    if (badCurrency() == amount.get<Issue>().currency)
+        return temBAD_CURRENCY;
+
+    return tesSUCCESS;
+}
+
+template <>
+NotTEC
+payChanAmountPreflightHelper<MPTIssue>(Rules const& rules, STAmount const& amount)
+{
+    if (!rules.enabled(fixCleanup3_2_0) && !rules.enabled(featureMPTokensV1))
+        return temDISABLED;
+
+    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} || amount <= beast::kZero)
+        return temBAD_AMOUNT;
+
+    return tesSUCCESS;
+}
 
 TER
 closeChannel(
@@ -91,30 +121,26 @@ closeChannel(
             if (!view.rules().enabled(featureTokenPaychan))
                 return temDISABLED;
 
-            if (auto const ret = std::visit(
-                    [&]<typename T>(T const&) {
-                        return escrowUnlockPreclaimHelper<T>(view, src, reqDelta, false);
-                    },
-                    reqDelta.asset().value());
+            if (auto const ret = reqDelta.asset().visit([&]<typename T>(T const&) {
+                    return escrowUnlockPreclaimHelper<T>(view, src, reqDelta, false);
+                });
                 !isTesSuccess(ret))
                 return ret;
 
             bool const createAsset = src == txAccount;
-            if (auto const ret = std::visit(
-                    [&]<typename T>(T const&) {
-                        return escrowUnlockApplyHelper<T>(
-                            ctx,
-                            kParityRate,
-                            sle,
-                            STAmount{(*sle)[sfBalance]}.xrp(),
-                            reqDelta,
-                            issuer,
-                            src,
-                            src,
-                            createAsset,
-                            j);
-                    },
-                    reqDelta.asset().value());
+            if (auto const ret = reqDelta.asset().visit([&]<typename T>(T const&) {
+                    return escrowUnlockApplyHelper<T>(
+                        ctx,
+                        kParityRate,
+                        sle,
+                        STAmount{(*sle)[sfBalance]}.xrp(),
+                        reqDelta,
+                        issuer,
+                        src,
+                        src,
+                        createAsset,
+                        j);
+                });
                 !isTesSuccess(ret))
                 return ret;
         }

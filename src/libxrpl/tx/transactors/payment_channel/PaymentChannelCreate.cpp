@@ -30,7 +30,6 @@
 #include <xrpl/tx/applySteps.h>
 
 #include <memory>
-#include <variant>
 
 namespace xrpl {
 
@@ -81,11 +80,9 @@ PaymentChannelCreate::preflight(PreflightContext const& ctx)
         if (!ctx.rules.enabled(featureTokenPaychan))
             return temBAD_AMOUNT;
 
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return payChanAmountPreflightHelper<T>(ctx.rules, amount);
-                },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                return payChanAmountPreflightHelper<T>(ctx.rules, amount);
+            });
             !isTesSuccess(ret))
             return ret;
     }
@@ -158,11 +155,9 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
         if (amount.holds<MPTIssue>() && isPseudoAccount(ctx.view, amount.getIssuer()))
             return tecWRONG_ASSET;
 
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return escrowLockPreclaimHelper<T>(ctx.view, account, dest, amount, ctx.j);
-                },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                return escrowLockPreclaimHelper<T>(ctx.view, account, dest, amount, ctx.j);
+            });
             !isTesSuccess(ret))
             return ret;
     }
@@ -289,11 +284,9 @@ PaymentChannelCreate::doApply()
     }
     else
     {
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return escrowLockApplyHelper<T>(ctx_.view(), issuer, accountID_, amount, j_);
-                },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                return escrowLockApplyHelper<T>(ctx_.view(), issuer, accountID_, amount, j_);
+            });
             !isTesSuccess(ret))
             return ret;
     }
