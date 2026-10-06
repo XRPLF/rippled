@@ -119,6 +119,16 @@ public:
         SLE::Ref sponsorSle,
         std::uint32_t flags)
         requires Base::kIsWritable;
+
+    /**
+     * Returns true if this MPToken cannot be deleted because it still holds
+     * value: a non-zero MPTAmount, a non-zero LockedAmount (once
+     * fixCleanup3_1_3 is enabled), or any confidential balance field.
+     *
+     * @return true if this MPToken still holds value
+     */
+    [[nodiscard]] bool
+    hasObligations() const;
 };
 
 using MPTokenEntryR = MPTokenEntry<ReadView>;
