@@ -1049,6 +1049,24 @@ public:
             BEAST_EXPECT(isExactSum(amt1, amt2) == false);
         }
 
+        // IOU sum past the largest IOU value: the sum throws, so it is not
+        // exact
+        {
+            STAmount const max(usd, STAmount::kMaxValue, STAmount::kMaxOffset);
+            BEAST_EXPECT(max.mantissa() == STAmount::kMaxValue);
+            BEAST_EXPECT(max.exponent() == STAmount::kMaxOffset);
+            try
+            {
+                auto _ = max + max;
+                BEAST_EXPECT(false);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECT(e.what() == std::string("value overflow"));
+            }
+            BEAST_EXPECT(isExactSum(max, max) == false);
+        }
+
         // Exact XRP sum
         {
             STAmount const amt1(XRPAmount(500));

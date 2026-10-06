@@ -1028,6 +1028,38 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == dust);
             BEAST_EXPECT(env.balance(alice, usd) == balance);
         }
+
+        // tecPRECISION_LOSS: a fund whose sum with the channel amount exceeds
+        // the largest IOU value is rejected
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            STAmount const max{usd.issue(), STAmount::kMaxValue, STAmount::kMaxOffset};
+            env.trust(max, alice);
+            env.trust(max, bob);
+            env.close();
+            env(pay(gw, alice, max));
+            env.close();
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, max, settleDelay, pk));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == max);
+
+            env(pay(gw, alice, max));
+            env.close();
+            BEAST_EXPECT(env.balance(alice, usd) == max);
+
+            env(paychan::fund(alice, chan, max), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == max);
+            BEAST_EXPECT(env.balance(alice, usd) == max);
+        }
     }
 
     void
