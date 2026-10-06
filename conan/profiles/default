@@ -49,6 +49,18 @@ tools.build:compiler_executables={'c':'{{ cc_exe }}','cpp':'{{ cxx_exe }}'}
 user.package:cppstd_version=23
 tools.info.package_id:confs+=["user.package:cppstd_version"]
 
+{% if os == "Linux" %}
+{# Executables we run (protoc, grpc_cpp_plugin, build tools) would otherwise load libstdc++/libgcc #}
+{# from a Nix store path that might change with a Nix toolchain update. #}
+{% set static_runtime = ["-static-libstdc++", "-static-libgcc"] %}
+{% if context == "build" %}
+tools.build:exelinkflags+={{ static_runtime }}
+{% else %}
+grpc/*:tools.build:exelinkflags+={{ static_runtime }}
+{% endif %}
+tools.info.package_id:confs+=["tools.build:exelinkflags"]
+{% endif %}
+
 {% if os == "Macos" %}
 [buildenv]
 {# os.version adds -mmacosx-version-min to compiler command lines, #}
