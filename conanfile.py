@@ -49,6 +49,7 @@ class Xrpl(ConanFile):
     ]
 
     tool_requires = [
+        "grpc/1.81.1",
         "protobuf/6.33.5",
     ]
 
@@ -123,6 +124,10 @@ class Xrpl(ConanFile):
         "xxhash/*:shared": False,
     }
 
+    # default_options only reach the host context;
+    # give tool_requires (and their dependencies) the same dependency options.
+    default_build_options = {k: v for k, v in default_options.items() if "/" in k}
+
     def set_version(self):
         self.version = self.version or DEV_VERSION
 
@@ -147,18 +152,6 @@ class Xrpl(ConanFile):
         self.requires("secp256k1/0.7.1", transitive_headers=True)
         self.requires("sqlite3/3.53.0", force=True)
         self.requires("xxhash/0.8.3", transitive_headers=True)
-
-    def build_requirements(self):
-        # grpc_cpp_plugin runs during the build, so take it from the build context.
-        # default_options only reach the host context, so pass grpc's on explicitly.
-        self.tool_requires(
-            "grpc/1.81.1",
-            options={
-                key.removeprefix("grpc/*:"): value
-                for key, value in self.default_options.items()
-                if key.startswith("grpc/*:")
-            },
-        )
 
     exports_sources = (
         "bin/default-loader-path.sh",
