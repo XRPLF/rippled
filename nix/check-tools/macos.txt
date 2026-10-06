@@ -39,6 +39,9 @@ Development tooling:
   ✅ file
      file-5.48
      /nix/store/y44vpziwbzfm8020dzlqqbybyyy7lb6g-file-5.48/bin/file
+  ✅ jq
+     jq-1.8.2
+     /opt/homebrew/Cellar/jq/1.8.2/bin/jq
   ✅ less
      less 710 (PCRE2 regular expressions)
      /nix/store/3yn3dx5fwg5i0inqqzwnxq7f6lwhpjqa-less-710/bin/less
@@ -143,4 +146,4 @@ Rust toolchain:
 
 Skipping git-over-HTTPS check (CHECK_TOOLS_SKIP_CLONE is set).
 
-✅ All 45 checked tools are present and runnable.
+✅ All 46 checked tools are present and runnable.
