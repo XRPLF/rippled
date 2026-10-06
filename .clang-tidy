@@ -36,7 +36,6 @@ Checks: "-*,
   -misc-no-recursion,
   -misc-non-private-member-variables-in-classes,
   -misc-override-with-different-visibility,
-  -misc-static-assert,
   -misc-unused-parameters,
   -misc-use-anonymous-namespace,
   -misc-use-internal-linkage,
@@ -72,7 +71,6 @@ Checks: "-*,
 # ---
 # bugprone-narrowing-conversions,                      # This will break a lot of code but we should enable it in the future because it can eliminate a lot of bugs
 # misc-override-with-different-visibility,             # Will be addressed in a future PR, but for now it generates too many warnings
-# misc-static-assert,                                  # Flags every runtime assert() in clang-tidy 22.1.8: https://github.com/llvm/llvm-project/issues/213560
 # readability-inconsistent-declaration-parameter-name, # In this codebase this check will break a lot of arg names
 # readability-static-accessed-through-instance,        # this check is probably unnecessary. It makes the code less readable
 # ---
