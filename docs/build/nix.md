@@ -200,9 +200,16 @@ every GCC update. So [`conan/profiles/default`](../../conan/profiles/default)
 links build-context packages, whose executables run during the build, with
 `-static-libstdc++ -static-libgcc -Wl,--as-needed`, and
 [`conan/profiles/sanitizers`](../../conan/profiles/sanitizers) does not
-instrument them. Only the binaries
-[`PatchNixBinary.cmake`](../../cmake/PatchNixBinary.cmake) retargets to the
-system loader have to be clean, and those are what CI checks:
+instrument them. CI checks that they load nothing from the store but glibc, from
+the graph `conan install --format=json` writes:
+
+```bash
+bin/check-build-context-runtime.sh graph.json
+```
+
+Only the binaries [`PatchNixBinary.cmake`](../../cmake/PatchNixBinary.cmake)
+retargets to the system loader have to be fully clean, and those are what CI
+checks:
 
 ```bash
 bin/check-nix-store-refs.sh build/xrpld

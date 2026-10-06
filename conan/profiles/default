@@ -55,7 +55,8 @@ tools.info.package_id:confs+=["user.package:cppstd_version"]
 {# that might change with a Nix toolchain update. #}
 {# --as-needed drops the ones they link but don't use, #}
 {# such as libatomic for grpc_cpp_plugin on arm64. #}
-tools.build:exelinkflags+=["-static-libstdc++", "-static-libgcc", "-Wl,--as-needed"]
+{% set static_runtime_flags = ["-static-libstdc++", "-static-libgcc", "-Wl,--as-needed"] %}
+tools.build:exelinkflags+={{ static_runtime_flags }}
 tools.info.package_id:confs+=["tools.build:exelinkflags"]
 {% endif %}
 
@@ -67,4 +68,14 @@ tools.info.package_id:confs+=["tools.build:exelinkflags"]
 {# clang's assembler honors this env var regardless, pinning them. #}
 {# Scoped to boost/* since it is the only gap. #}
 boost/*:MACOSX_DEPLOYMENT_TARGET={{ min_macos_version }}
+{% endif %}
+
+{% if os == "Linux" and context == "build" %}
+{# b2 links itself with its own script, which ignores exelinkflags #}
+{# and only takes CXXFLAGS when use_cxx_env is set. #}
+[options]
+b2/*:use_cxx_env=True
+
+[buildenv]
+b2/*:CXXFLAGS={{ static_runtime_flags | join(" ") }}
 {% endif %}
