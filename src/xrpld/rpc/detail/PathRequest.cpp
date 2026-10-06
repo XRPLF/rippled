@@ -634,7 +634,7 @@ PathRequest::findPaths(
         path::RippleCalc::Input rcInput;
         if (convertAll_)
             rcInput.partialPaymentAllowed = true;
-        auto sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
+        auto sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), ApplyFlags::None);
         auto rc = path::RippleCalc::rippleCalculate(
             *sandbox,
             saMaxAmount,  // --> Amount to send is unlimited
@@ -655,7 +655,7 @@ PathRequest::findPaths(
             JLOG(journal_.debug()) << iIdentifier_ << " Trying with an extra path element";
 
             ps.pushBack(fullLiquidityPath);
-            sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
+            sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), ApplyFlags::None);
             rc = path::RippleCalc::rippleCalculate(
                 *sandbox,
                 saMaxAmount,  // --> Amount to send is unlimited
