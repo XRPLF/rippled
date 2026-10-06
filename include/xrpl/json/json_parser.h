@@ -55,34 +55,34 @@ namespace json {
  * };
  * clang-format on
  */
-#define DISPATCH_VISITORS(TOKEN, ...)                                                        \
-    {                                                                                        \
-        auto dispatchVisitorsOk = true;                                                      \
-        auto dispatchVisitorsError = std::string{};                                          \
-        std::apply(                                                                          \
-            [&](auto&&... dispatchVisitorsVisitor) {                                         \
-                (([&] {                                                                      \
-                     if (!dispatchVisitorsOk)                                                \
-                     {                                                                       \
-                         return;                                                             \
-                     }                                                                       \
-                     if constexpr (requires { dispatchVisitorsVisitor->__VA_ARGS__; })       \
-                     {                                                                       \
-                         auto dispatchVisitorsResult = dispatchVisitorsVisitor->__VA_ARGS__; \
-                         if (!dispatchVisitorsResult.has_value())                            \
-                         {                                                                   \
-                             dispatchVisitorsOk = false;                                     \
-                             dispatchVisitorsError = dispatchVisitorsResult.error();         \
-                         }                                                                   \
-                     }                                                                       \
-                 }()),                                                                       \
-                 ...);                                                                       \
-            },                                                                               \
-            visitors_);                                                                      \
-        if (!dispatchVisitorsOk)                                                             \
-        {                                                                                    \
-            return addError(dispatchVisitorsError, TOKEN);                                   \
-        }                                                                                    \
+#define DISPATCH_VISITORS(TOKEN, CALL)                                                \
+    {                                                                                 \
+        auto dispatchVisitorsOk = true;                                               \
+        auto dispatchVisitorsError = std::string{};                                   \
+        std::apply(                                                                   \
+            [&](auto&&... dispatchVisitorsVisitor) {                                  \
+                (([&] {                                                               \
+                     if (!dispatchVisitorsOk)                                         \
+                     {                                                                \
+                         return;                                                      \
+                     }                                                                \
+                     if constexpr (requires { dispatchVisitorsVisitor->CALL; })       \
+                     {                                                                \
+                         auto dispatchVisitorsResult = dispatchVisitorsVisitor->CALL; \
+                         if (!dispatchVisitorsResult.has_value())                     \
+                         {                                                            \
+                             dispatchVisitorsOk = false;                              \
+                             dispatchVisitorsError = dispatchVisitorsResult.error();  \
+                         }                                                            \
+                     }                                                                \
+                 }()),                                                                \
+                 ...);                                                                \
+            },                                                                        \
+            visitors_);                                                               \
+        if (!dispatchVisitorsOk)                                                      \
+        {                                                                             \
+            return addError(dispatchVisitorsError, TOKEN);                            \
+        }                                                                             \
     }
 
 template <typename... Visitor>
