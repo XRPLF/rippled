@@ -90,7 +90,7 @@ struct LedgerReplay_test : public beast::unit_test::Suite
         auto const lastClosedParent = ledgerMaster.getLedgerByHash(lastClosed->header().parentHash);
 
         auto const replayed = buildLedger(
-            LedgerReplay(lastClosedParent, lastClosed), TapNone, env.app(), env.journal);
+            LedgerReplay(lastClosedParent, lastClosed), ApplyFlags::None, env.app(), env.journal);
 
         BEAST_EXPECT(replayed->header().hash == lastClosed->header().hash);
     }
@@ -122,7 +122,7 @@ struct LedgerReplay_test : public beast::unit_test::Suite
         auto const lastClosedParent = ledgerMaster.getLedgerByHash(lastClosed->header().parentHash);
 
         auto const replayed = buildLedger(
-            LedgerReplay(lastClosedParent, lastClosed), TapNone, env.app(), env.journal);
+            LedgerReplay(lastClosedParent, lastClosed), ApplyFlags::None, env.app(), env.journal);
 
         BEAST_EXPECT(replayed->header().hash == lastClosed->header().hash);
     }

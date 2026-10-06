@@ -54,8 +54,8 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     try
     {
         STTx const stx{STObject{proposedTx}};
-        auto const inner =
-            xrpl::preflight(ctx.registry, ctx.rules, stx, TapDryRun | TapProposal, ctx.j);
+        auto const inner = xrpl::preflight(
+            ctx.registry, ctx.rules, stx, ApplyFlags::DryRun | ApplyFlags::Proposal, ctx.j);
         if (!isTesSuccess(inner.ter))
         {
             JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "

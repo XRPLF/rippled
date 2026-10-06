@@ -32,7 +32,7 @@ public:
     Account const bob{"bob"};
     Account const carol{"carol"};
 
-    EntryTestEnv() : av_(&fundAndClose(), TapNone)
+    EntryTestEnv() : av_(&fundAndClose(), ApplyFlags::None)
     {
     }
 

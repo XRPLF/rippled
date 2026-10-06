@@ -1126,8 +1126,8 @@ struct Escrow_test : public beast::unit_test::Suite
             env(jt, Ter(fixEnabled ? TER{temMALFORMED} : TER{tecCRYPTOCONDITION_ERROR}));
             // Run preflight on the same transaction again, now with the
             // HashRouter flag cached. The result must not change.
-            auto const pf =
-                preflight(env.app(), env.current()->rules(), *jt.stx, TapNone, env.journal);
+            auto const pf = preflight(
+                env.app(), env.current()->rules(), *jt.stx, ApplyFlags::None, env.journal);
             BEAST_EXPECT(pf.ter == (fixEnabled ? TER{temMALFORMED} : TER{tesSUCCESS}));
             env.close();
 
@@ -1344,8 +1344,8 @@ struct Escrow_test : public beast::unit_test::Suite
                 escrow::kFinishTime(env.now() + 1s),
                 Seq(1),
                 Fee(baseFee));
-            auto const pf =
-                preflight(env.app(), env.current()->rules(), *jtx.stx, TapNone, env.journal);
+            auto const pf = preflight(
+                env.app(), env.current()->rules(), *jtx.stx, ApplyFlags::None, env.journal);
             BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(baseFee));
@@ -1354,8 +1354,8 @@ struct Escrow_test : public beast::unit_test::Suite
 
         {
             auto const jtx = env.jt(escrow::cancel("bob", "alice", 3), Seq(1), Fee(baseFee));
-            auto const pf =
-                preflight(env.app(), env.current()->rules(), *jtx.stx, TapNone, env.journal);
+            auto const pf = preflight(
+                env.app(), env.current()->rules(), *jtx.stx, ApplyFlags::None, env.journal);
             BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(baseFee));
@@ -1364,8 +1364,8 @@ struct Escrow_test : public beast::unit_test::Suite
 
         {
             auto const jtx = env.jt(escrow::finish("bob", "alice", 3), Seq(1), Fee(baseFee));
-            auto const pf =
-                preflight(env.app(), env.current()->rules(), *jtx.stx, TapNone, env.journal);
+            auto const pf = preflight(
+                env.app(), env.current()->rules(), *jtx.stx, ApplyFlags::None, env.journal);
             BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(baseFee));
