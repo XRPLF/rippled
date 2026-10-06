@@ -3165,7 +3165,9 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         Account const auditor("auditor");
         Account const issuerKey1("issuerKey1");
         Account const issuerKey2("issuerKey2");
+        Account const issuerKey3("issuerKey3");
         Account const auditorKey1("auditorKey1");
+        Account const auditorKey2("auditorKey2");
         MPTTester mptAlice(env, alice, {.holders = {bob}});
 
         mptAlice.create({
@@ -3177,7 +3179,9 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         mptAlice.generateKeyPair(auditor);
         mptAlice.generateKeyPair(issuerKey1);
         mptAlice.generateKeyPair(issuerKey2);
+        mptAlice.generateKeyPair(issuerKey3);
         mptAlice.generateKeyPair(auditorKey1);
+        mptAlice.generateKeyPair(auditorKey2);
 
         // First-time registration of both keys is not a rotation, so no
         // initial issuer key is captured.
@@ -3205,6 +3209,16 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         // issuer key unchanged: it remains alice's epoch 0 key.
         mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(issuerKey2)});
         BEAST_EXPECT(mptAlice.checkKeyEpochs(2u, 1u));
+        BEAST_EXPECT(mptAlice.checkInitialIssuerKey(mptAlice.getPubKey(alice)));
+
+        // Rotating both keys in one transaction bumps both epochs, and the
+        // initial issuer key still remains alice's epoch 0 key.
+        mptAlice.set({
+            .account = alice,
+            .issuerPubKey = mptAlice.getPubKey(issuerKey3),
+            .auditorPubKey = mptAlice.getPubKey(auditorKey2),
+        });
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(3u, 2u));
         BEAST_EXPECT(mptAlice.checkInitialIssuerKey(mptAlice.getPubKey(alice)));
     }
 

@@ -741,9 +741,8 @@ public:
     checkInitialIssuerKey(std::optional<Buffer> const& expected) const;
 
     bool
-    checkIssuerMirrorEncryptionKey(
-        std::optional<Buffer> const& expected,
-        Account const& holder) const;
+    checkIssuerMirrorEncryptionKey(std::optional<Buffer> const& expected, Account const& holder)
+        const;
 
     [[nodiscard]] Account const&
     issuer() const
