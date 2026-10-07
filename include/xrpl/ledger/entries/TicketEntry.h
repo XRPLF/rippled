@@ -9,7 +9,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SeqProxy.h>
-#include <xrpl/protocol/TER.h>
 
 namespace xrpl {
 
@@ -39,24 +38,6 @@ public:
         : Base(keylet::ticket(ticketID), view, j)
     {
     }
-
-    /**
-     * Removes this Ticket from the ledger.
-     *
-     * Deletes the Ticket, adjusts the account root's TicketCount, and
-     * reduces the owner's reserve. @p owner must be the Ticket's owner.
-     *
-     * @throws std::logic_error if exists() is false (via the underlying
-     *         erase()/mutation calls).
-     *
-     * @param owner The account that owns this Ticket.
-     * @return tesSUCCESS on success; tefBAD_LEDGER if the owner's directory
-     *         entry, account root, or TicketCount field is missing or
-     *         inconsistent.
-     */
-    TER
-    removeFromLedger(AccountID const& owner)
-        requires Base::kIsWritable;
 };
 
 using TicketEntryR = TicketEntry<ReadView>;

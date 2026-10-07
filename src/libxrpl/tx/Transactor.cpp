@@ -814,6 +814,8 @@ Transactor::ticketDelete(
     UInt256 const& ticketIndex,
     beast::Journal j)
 {
+    // Delete the Ticket, adjust the account root ticket count, and
+    // reduce the owner count.
     TicketEntryW ticket(ticketIndex, view, j);
     if (!ticket)
     {
@@ -823,7 +825,51 @@ Transactor::ticketDelete(
         // LCOV_EXCL_STOP
     }
 
-    return ticket.removeFromLedger(account);
+    std::uint64_t const page{(*ticket)[sfOwnerNode]};
+    if (!view.dirRemove(keylet::ownerDir(account), page, ticketIndex, true))
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "Unable to delete Ticket from owner.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+
+    // Update the account root's TicketCount.  If the ticket count drops to
+    // zero remove the (optional) field.
+    auto sleAccount = view.peek(keylet::account(account));
+    if (!sleAccount)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "Could not find Ticket owner account root.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+
+    if (auto ticketCount = (*sleAccount)[~sfTicketCount])
+    {
+        if (*ticketCount == 1)
+        {
+            sleAccount->makeFieldAbsent(sfTicketCount);
+        }
+        else
+        {
+            ticketCount = *ticketCount - 1;
+        }
+    }
+    else
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "TicketCount field missing from account root.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+
+    // Update the Ticket owner's reserve.
+    decreaseOwnerCountForObject(view, sleAccount, ticket.mutableRawSle(), 1, j);
+
+    // Remove Ticket from ledger.
+    ticket.erase();
+    return tesSUCCESS;
 }
 
 // check stuff before you bother to lock the ledger
