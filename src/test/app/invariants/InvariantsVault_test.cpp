@@ -63,6 +63,9 @@ namespace xrpl::test {
 class InvariantsVault_test : public InvariantsBase
 {
     FeatureBitset const all_{test::jtx::testableAmendments()};
+    // testableAmendments() leaves featureLendingProtocolV1_2 off until the
+    // LoanManage PR; enable it explicitly for FixedPrecision rows.
+    FeatureBitset const fixedPrecision_{all_ | featureLendingProtocolV1_2};
 
     void
     testVault()  // NOLINT(readability-function-size)
@@ -1878,6 +1881,59 @@ class InvariantsVault_test : public InvariantsBase
                 return true;
             });
 
+        // FixedPrecision-only: a new vault must have AssetsDeployed == 0.
+        doInvariantCheck(
+            makeEnv(fixedPrecision_),
+            {
+                "created vault must be empty",
+                "updated zero sized vault must have no AssetsDeployed",
+                "create operation must not have updated a vault",
+            },
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfAssetsDeployed] = Number{1};
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& a1, Account const& a2, Env& env) {
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        // FixedPrecision-only: a new vault must have YieldUnrealized == 0.
+        doInvariantCheck(
+            makeEnv(fixedPrecision_),
+            {
+                "created vault must be empty",
+                "create operation must not have updated a vault",
+            },
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfYieldUnrealized] = Number{1};
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& a1, Account const& a2, Env& env) {
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
         doInvariantCheck(
             {
                 "created vault must be empty",
@@ -3270,12 +3326,212 @@ class InvariantsVault_test : public InvariantsBase
         }
     }
 
+    static void
+    addToVaultField(std::shared_ptr<SLE> const& sle, SF_NUMBER const& field, Number const& delta)
+    {
+        (*sle)[field] = Number(sle->at(field)) + delta;
+    }
+
+    // Corrupts a vault SLE. The runner updates the SLE afterwards.
+    using VaultMutation = std::function<bool(ApplyContext&, std::shared_ptr<SLE> const&)>;
+
+    struct AssetsDeployedRow
+    {
+        char const* name = nullptr;
+        std::vector<std::string> logs;
+        VaultMutation mutate;
+        TxType txType = ttVAULT_SET;
+        // Set sfVaultID on the mock tx.
+        bool withVaultId = false;
+        TER secondTer = tecINVARIANT_FAILED;
+    };
+
+    void
+    checkXrpVaultRow(AssetsDeployedRow const& row)
+    {
+        using namespace test::jtx;
+
+        testcase(row.name);
+
+        Account const a3{"A3"};
+        auto const preclose = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+            env.fund(XRP(1000), a3);
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+            env(tx);
+            for (auto const* depositor : {&a1, &a2, &a3})
+            {
+                env(vault.deposit({.depositor = *depositor, .id = keylet.key, .amount = XRP(10)}));
+            }
+            return true;
+        };
+
+        doInvariantCheck(
+            makeEnv(fixedPrecision_),
+            row.logs,
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto sle =
+                    ac.view().peek(keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq())));
+                if (!sle || !row.mutate(ac, sle))
+                {
+                    return false;
+                }
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{row.txType, [](STObject&) {}},
+            {tecINVARIANT_FAILED, row.secondTer},
+            preclose,
+            TxAccount::A2);
+    }
+
+    void
+    testVaultAssetsDeployedInvariants()
+    {
+        AssetsDeployedRow const xrpRows[] = {
+            {.name = "FixedPrecision vault: negative AssetsDeployed",
+             .logs =
+                 {"AssetsDeployed must not be negative",
+                  "vault transaction must not change AssetsDeployed"},
+             .mutate =
+                 [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                     (*sle)[sfAssetsDeployed] = Number{-1};
+                     return true;
+                 }},
+            // 1.5 drops is never representable on an XRP vault.
+            {.name = "FixedPrecision vault: AssetsDeployed not exactly representable at asset "
+                     "precision",
+             .logs =
+                 {"AssetsDeployed must be exactly representable at the vault asset's precision",
+                  "vault transaction must not change AssetsDeployed"},
+             .mutate =
+                 [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                     (*sle)[sfAssetsDeployed] = Number{15, -1};
+                     return true;
+                 }},
+        };
+        for (auto const& row : xrpRows)
+        {
+            checkXrpVaultRow(row);
+        }
+    }
+
+    // FixedPrecision only: YieldUnrealized must not be negative, and may
+    // change only for ttLOAN_SET, ttLOAN_PAY and ttLOAN_MANAGE. Both rows use
+    // a plain (no loan) FixedPrecision vault, mirroring the AssetsDeployed
+    // vault-only rows above.
+    void
+    testVaultYieldUnrealizedInvariants()
+    {
+        AssetsDeployedRow const xrpRows[] = {
+            {.name = "FixedPrecision vault: negative YieldUnrealized",
+             .logs =
+                 {"YieldUnrealized must not be negative",
+                  "vault transaction must not change yield unrealized"},
+             .mutate =
+                 [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                     (*sle)[sfYieldUnrealized] = Number{-1};
+                     return true;
+                 }},
+            {.name = "FixedPrecision vault: YieldUnrealized changed by a non-lending transaction",
+             .logs = {"vault transaction must not change yield unrealized"},
+             .mutate =
+                 [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                     addToVaultField(sle, sfYieldUnrealized, Number{1});
+                     return true;
+                 }},
+        };
+        for (auto const& row : xrpRows)
+        {
+            checkXrpVaultRow(row);
+        }
+    }
+
+    // A FixedPrecision vault's AssetsAvailable is the exact balance; its delta
+    // must equal the real pseudo-account transfer with no rounding tolerance.
+    // The stored AssetsTotal is a derived cache and is not compared per
+    // transaction. Move AssetsAvailable by one drop more than the real
+    // transfer and expect a rejection.
+    void
+    testVaultAvailableOffByOneSubUnit()
+    {
+        testcase(
+            "FixedPrecision vault: AssetsAvailable off by one sub-unit from the pseudo balance "
+            "is rejected");
+        using namespace test::jtx;
+
+        Keylet vaultKeylet = keylet::vault(uint256{});
+
+        auto preclose = [&](Account const& a1, Account const&, Env& env) -> bool {
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+            env(tx);
+            env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
+            vaultKeylet = keylet;
+            auto const sle = env.le(vaultKeylet);
+            return BEAST_EXPECT(sle) && BEAST_EXPECT(sle->isFieldPresent(sfLEVersion));
+        };
+
+        doInvariantCheck(
+            makeEnv(fixedPrecision_),
+            {"withdrawal and assets available must add up"},
+            [&vaultKeylet](Account const& a1, Account const&, ApplyContext& ac) -> bool {
+                auto sleVault = ac.view().peek(vaultKeylet);
+                if (!sleVault)
+                {
+                    return false;
+                }
+
+                // Real transfer: pseudo account loses 10 drops, depositor gains 10.
+                auto slePseudo = ac.view().peek(keylet::account(sleVault->at(sfAccount)));
+                auto sleA1 = ac.view().peek(keylet::account(a1.id()));
+                if (!slePseudo || !sleA1)
+                {
+                    return false;
+                }
+                (*slePseudo)[sfBalance] = *(*slePseudo)[sfBalance] - XRPAmount{10};
+                (*sleA1)[sfBalance] = *(*sleA1)[sfBalance] + XRPAmount{10};
+                ac.view().update(slePseudo);
+                ac.view().update(sleA1);
+
+                // Burn 10 shares (1:1 initial price) from depositor and pool.
+                auto const mptIssuanceID = sleVault->at(sfShareMPTID);
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance(mptIssuanceID));
+                auto sleA1Token = ac.view().peek(keylet::mptoken(mptIssuanceID, a1.id()));
+                if (!sleShares || !sleA1Token)
+                {
+                    return false;
+                }
+                sleShares->setFieldU64(
+                    sfOutstandingAmount, sleShares->getFieldU64(sfOutstandingAmount) - 10);
+                sleA1Token->setFieldU64(sfMPTAmount, sleA1Token->getFieldU64(sfMPTAmount) - 10);
+                ac.view().update(sleShares);
+                ac.view().update(sleA1Token);
+
+                // 11 drops: one more than the real transfer. AssetsTotal
+                // follows to keep the sync invariant quiet.
+                addToVaultField(sleVault, sfAssetsAvailable, Number{-11});
+                addToVaultField(sleVault, sfAssetsTotal, Number{-11});
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            preclose,
+            TxAccount::A1);
+    }
+
     void
     run() override
     {
         testVault();
         testVaultLossExceedsGap();
         testVaultComputeCoarsestScale();
+        testVaultAssetsDeployedInvariants();
+        testVaultYieldUnrealizedInvariants();
+        testVaultAvailableOffByOneSubUnit();
     }
 };
 
