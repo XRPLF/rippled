@@ -497,6 +497,7 @@ TEST_F(CommandsTest, domain)
         std::string::npos);
     EXPECT_NE(run("attest_domain", {}, options_).out.find("attestation=\""), std::string::npos);
     EXPECT_NE(run("show_manifest", {"base64"}, options_).out.find("(Base64)"), std::string::npos);
+    EXPECT_NE(run("show_manifest", {}, options_).out.find("(Base64)"), std::string::npos);
     EXPECT_NE(run("show_manifest", {"hex"}, options_).out.find("(Hex)"), std::string::npos);
     EXPECT_EQ(commandError("show_manifest", {"other"}, options_), "Unknown encoding 'other'");
     EXPECT_NE(run("clear_domain", {}, options_).out.find("has been cleared"), std::string::npos);

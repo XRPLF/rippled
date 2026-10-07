@@ -477,24 +477,27 @@ cmdShowManifest(Args const& args, Context& ctx)
 {
     auto const keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     auto const& m = keys.manifest();
+    // The encoding is optional; base64 is what a list's "manifest" field and
+    // --manifest-file take.
+    std::string const encoding = args.empty() ? "base64" : args[0];
     if (m.empty())
     {
         ctx.out << "The last manifest generated is unavailable. You can\n"
                    "generate a new one.\n\n";
         return EXIT_SUCCESS;
     }
-    if (args[0] == "base64")
+    if (encoding == "base64")
     {
         ctx.out << "Manifest #" << keys.sequence() << " (Base64):\n"
                 << base64Encode(m.data(), m.size()) << "\n\n";
         return EXIT_SUCCESS;
     }
-    if (args[0] == "hex")
+    if (encoding == "hex")
     {
         ctx.out << "Manifest #" << keys.sequence() << " (Hex):\n" << strHex(makeSlice(m)) << "\n\n";
         return EXIT_SUCCESS;
     }
-    throw std::runtime_error("Unknown encoding '" + args[0] + "'");
+    throw std::runtime_error("Unknown encoding '" + encoding + "'");
 }
 
 // The manifest a list is signed under when the signing key is external, and
@@ -657,7 +660,7 @@ constexpr std::array<Command, 18> kCommands{{
     {.name = "sign", .minArgs = 1, .maxArgs = 1, .updatesKeyFile = false, .run = cmdSign},
     {.name = "sign_hex", .minArgs = 1, .maxArgs = 1, .updatesKeyFile = false, .run = cmdSignHex},
     {.name = "show_manifest",
-     .minArgs = 1,
+     .minArgs = 0,
      .maxArgs = 1,
      .updatesKeyFile = false,
      .run = cmdShowManifest},
