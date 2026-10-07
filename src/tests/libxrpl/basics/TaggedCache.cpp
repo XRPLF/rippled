@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
 
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <utility>
@@ -241,6 +242,71 @@ TEST(TaggedCacheTest, tagged_cache)
         EXPECT_EQ(intrPtrCache.getCacheSize(), 0);
         EXPECT_EQ(intrPtrCache.size(), 0);
     }
+}
+
+TEST(TaggedCacheTest, sweep_thread_count_is_capped)
+{
+    using Cache = TaggedCache<LedgerIndex, std::string>;
+
+    // Without the cap, sweep() runs one worker per partition, and the
+    // partition count follows the host's core count.
+    EXPECT_EQ(Cache::kMaxSweepThreads, 8u);
+}
+
+TEST(TaggedCacheTest, sweep_evicts_from_every_partition)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Cache = TaggedCache<LedgerIndex, std::string>;
+
+    // targetSize 0 keeps whenExpire at now - targetAge_, so every entry below
+    // expires on the first tick rather than being aged proportionally.
+    Cache c("sweep-all-partitions", 0, 1s, clock, journal);
+
+    // More keys than any plausible partition count, so each partition holds
+    // several. A worker that skipped a partition would leave its keys behind.
+    std::size_t const count = 512;
+    for (std::size_t key = 0; key < count; ++key)
+        EXPECT_FALSE(c.insert(static_cast<LedgerIndex>(key), std::to_string(key)));
+
+    ASSERT_EQ(c.size(), count);
+    ASSERT_EQ(c.getCacheSize(), static_cast<int>(count));
+
+    ++clock;
+    c.sweep();
+
+    EXPECT_EQ(c.size(), 0);
+    EXPECT_EQ(c.getCacheSize(), 0);
+}
+
+TEST(TaggedCacheTest, key_only_sweep_evicts_from_every_partition)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+
+    TestStopwatch clock;
+    clock.set(0);
+
+    // The key-only cache is a separate sweepPartition overload, so it needs
+    // its own coverage.
+    using Cache = TaggedCache<LedgerIndex, int, true>;
+
+    Cache c("key-only-sweep-all-partitions", 0, 1s, clock, journal);
+
+    std::size_t const count = 512;
+    for (std::size_t key = 0; key < count; ++key)
+        EXPECT_TRUE(c.insert(static_cast<LedgerIndex>(key)));
+
+    ASSERT_EQ(c.size(), count);
+
+    ++clock;
+    c.sweep();
+
+    EXPECT_EQ(c.size(), 0);
 }
 
 }  // namespace xrpl
