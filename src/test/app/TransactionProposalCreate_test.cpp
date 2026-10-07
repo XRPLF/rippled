@@ -1333,6 +1333,181 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env.close();
     }
 
+    // A proposer may pay for the Create with one of its own Tickets. The
+    // Ticket's reserve goes as the proposal's arrives, so the proposer's owner
+    // count moves by the difference, and the two are accounted separately:
+    // the Ticket here carries no sponsor, while the proposal's reserve may be
+    // sponsored.
+    void
+    testTicketedCreate(FeatureBitset features)
+    {
+        testcase("create paid for with the proposer's own ticket");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};    // the proposer
+        Account const target{"target"};  // the account the proposals are for
+        Account const bob{"bob"};
+        Account const backer{"backer"};  // sponsors the second proposal's reserve
+        env.fund(XRP(10000), alice, target, bob, backer);
+        env.close();
+        proposal::authorizeProposer(env, target, alice);
+
+        std::uint32_t const targetTicketSeq = proposal::createTicket(env, target, 2);
+        std::uint32_t const aliceTicketSeq = proposal::createTicket(env, alice, 2);
+        std::uint32_t const aliceSeq = env.seq(alice);
+        std::uint32_t const targetOwnerCount = ownerCount(env, target);
+        BEAST_EXPECT(ownerCount(env, alice) == 2);
+
+        // Unsponsored: the proposal's reserve lands on alice less the Ticket
+        // she paid with, and her Sequence is untouched.
+        env(proposal::create(
+                alice,
+                proposal::unsignedPayload(env, pay(target, bob, XRP(1)), targetTicketSeq),
+                proposal::expiration(env, 100s)),
+            ticket::Use(aliceTicketSeq),
+            proposal::verify::create());
+        env.close();
+
+        BEAST_EXPECT(proposal::entry(env, target, targetTicketSeq));
+        BEAST_EXPECT(!env.le(keylet::ticket(alice.id(), SeqProxy::rawTicket(aliceTicketSeq))));
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        BEAST_EXPECT(ownerCount(env, alice) == 1 + proposal::kProposalOwnerCount);
+
+        // Sponsored: backer covers the proposal's reserve and only that. The
+        // Ticket alice paid with was her own, so the sponsored counts move by
+        // the proposal alone.
+        env(proposal::create(
+                alice,
+                proposal::unsignedPayload(env, pay(target, bob, XRP(2)), targetTicketSeq + 1),
+                proposal::expiration(env, 100s)),
+            ticket::Use(aliceTicketSeq + 1),
+            sponsor::As(backer, spfSponsorReserve),
+            Sig(sfSponsorSignature, backer),
+            proposal::verify::create());
+        env.close();
+
+        BEAST_EXPECT(proposal::entry(env, target, targetTicketSeq + 1));
+        BEAST_EXPECT(!env.le(keylet::ticket(alice.id(), SeqProxy::rawTicket(aliceTicketSeq + 1))));
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        BEAST_EXPECT(ownerCount(env, alice) == 2 * proposal::kProposalOwnerCount);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == proposal::kProposalOwnerCount);
+        BEAST_EXPECT(sponsoringOwnerCount(env, backer) == proposal::kProposalOwnerCount);
+
+        // The target's Tickets, the ones the proposals are keyed to, stay.
+        BEAST_EXPECT(ownerCount(env, target) == targetOwnerCount);
+    }
+
+    // No transaction sponsors a Ticket today: TicketCreate refuses a sponsor
+    // and SponsorshipTransfer refuses a Ticket. ticketDelete nonetheless
+    // releases a Ticket's reserve through the sponsor-aware path, so the
+    // invariant has to account for a sponsored Ticket, or allowing one later
+    // would turn every ticketed Create into tecINVARIANT_FAILED. Here the
+    // Ticket is stamped sponsored in the open ledger, with the counts a real
+    // sponsorship would carry, and the Create is applied on top of it.
+    void
+    testSponsoredTicketCreate(FeatureBitset features)
+    {
+        testcase("create paid for with a sponsored ticket");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Account const alice{"alice"};    // the proposer
+        Account const target{"target"};  // the account the proposal is for
+        Account const bob{"bob"};
+        Account const backer{"backer"};  // sponsors alice's Ticket, and maybe her proposal
+
+        // Funds everyone, authorizes alice, and leaves alice holding one Ticket
+        // that backer sponsors. Returns the target's and alice's ticket
+        // sequences.
+        auto setup = [&](Env& env) {
+            env.fund(XRP(10000), alice, target, bob, backer);
+            env.close();
+            proposal::authorizeProposer(env, target, alice);
+            std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
+            std::uint32_t const aliceTicketSeq = proposal::createTicket(env, alice);
+
+            // createTicket closed the ledger, so nothing closes this overlay
+            // away before the Create reads it.
+            BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const ticket =
+                    view.read(keylet::ticket(alice.id(), SeqProxy::rawTicket(aliceTicketSeq)));
+                auto const owner = view.read(keylet::account(alice.id()));
+                auto const sponsor = view.read(keylet::account(backer.id()));
+                if (!ticket || !owner || !sponsor)
+                    return false;
+
+                auto sponsoredTicket = std::make_shared<SLE>(*ticket);
+                sponsoredTicket->setAccountID(sfSponsor, backer.id());
+                view.rawReplace(sponsoredTicket);
+
+                auto sponsee = std::make_shared<SLE>(*owner);
+                sponsee->at(sfSponsoredOwnerCount) += 1;
+                view.rawReplace(sponsee);
+
+                auto sponsoring = std::make_shared<SLE>(*sponsor);
+                sponsoring->at(sfSponsoringOwnerCount) += 1;
+                view.rawReplace(sponsoring);
+                return true;
+            }));
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, backer) == 1);
+            return std::pair{targetTicketSeq, aliceTicketSeq};
+        };
+
+        // The ledger is read without closing from here on: a close rebuilds
+        // it from the transactions alone and would drop the overlay.
+
+        // The proposal's reserve is alice's own. Consuming the Ticket hands
+        // backer's increment back, so alice's sponsored count returns to zero
+        // while her owner count takes on the proposal.
+        {
+            Env env{*this, features};
+            auto const [targetTicketSeq, aliceTicketSeq] = setup(env);
+
+            env(proposal::create(
+                    alice,
+                    proposal::unsignedPayload(env, pay(target, bob, XRP(1)), targetTicketSeq),
+                    proposal::expiration(env, 100s)),
+                ticket::Use(aliceTicketSeq),
+                proposal::verify::create());
+
+            BEAST_EXPECT(proposal::entry(env, target, targetTicketSeq));
+            BEAST_EXPECT(!env.le(keylet::ticket(alice.id(), SeqProxy::rawTicket(aliceTicketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, backer) == 0);
+        }
+
+        // backer sponsors the proposal as well, so its SponsoringOwnerCount
+        // takes on the proposal's reserve less the Ticket's increment it gets
+        // back, and alice's sponsored count moves by the same difference.
+        {
+            Env env{*this, features};
+            auto const [targetTicketSeq, aliceTicketSeq] = setup(env);
+
+            env(proposal::create(
+                    alice,
+                    proposal::unsignedPayload(env, pay(target, bob, XRP(1)), targetTicketSeq),
+                    proposal::expiration(env, 100s)),
+                ticket::Use(aliceTicketSeq),
+                sponsor::As(backer, spfSponsorReserve),
+                Sig(sfSponsorSignature, backer),
+                proposal::verify::create());
+
+            BEAST_EXPECT(proposal::entry(env, target, targetTicketSeq));
+            BEAST_EXPECT(!env.le(keylet::ticket(alice.id(), SeqProxy::rawTicket(aliceTicketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == proposal::kProposalOwnerCount);
+            BEAST_EXPECT(sponsoringOwnerCount(env, backer) == proposal::kProposalOwnerCount);
+        }
+    }
+
     // The proposal's reserve can instead be sponsored: the reserve is charged
     // to the sponsor's account, and the ledger object records the sponsor, the
     // same as any other reserve-sponsorable object (TransactionProposalCreate
@@ -1696,6 +1871,8 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         testOtherTransactionTypes(all);
         testAuxiliaryCoSignatureTypes(all);
         testReserve(all);
+        testTicketedCreate(all);
+        testSponsoredTicketCreate(all);
         testSponsoredReserve(all);
         testSponsorshipTransfer(all);
         testFeeSponsored(all);

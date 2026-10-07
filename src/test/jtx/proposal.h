@@ -77,7 +77,10 @@ public:
  * @brief Check the ledger effects a TransactionProposalCreate must have,
  * whatever its outcome: on tesSUCCESS a new proposal holding what was
  * submitted, listed in the proposer's directory and paid for by its reserve;
- * otherwise nothing moved. Nothing of the target's moves either way.
+ * otherwise nothing moved. Nothing of the target's moves either way. A Ticket
+ * the proposer pays with is expected to be consumed, releasing any reserve
+ * sponsorship it carries; attach ticket::Use() before this condition so it
+ * sees the TicketSequence.
  *
  * @code
  * env(proposal::create(alice, payload, expiration), proposal::verify::create());

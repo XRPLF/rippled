@@ -19,6 +19,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -48,12 +49,14 @@ class InvariantsTransactionProposal_test : public InvariantsBase
         // Submits a real proposal, so the entry is in the closed ledger before
         // the precheck runs and the precheck can modify it.
         std::optional<Keylet> liveProposalKeylet;
+        std::optional<std::uint32_t> liveTicketSeq;
         Preclose const precloseLiveProposal =
             [&](Account const& owner, Account const& destination, Env& env) {
                 auto const ticketSeq = proposal::createTicket(env, owner);
                 auto const proposedTx =
                     proposal::unsignedPayload(env, pay(owner, destination, XRP(1)), ticketSeq);
                 liveProposalKeylet = keylet::txProposal(owner.id(), ticketSeq);
+                liveTicketSeq = ticketSeq;
                 env(proposal::create(owner, proposedTx, proposal::expiration(env, 100s)));
                 return BEAST_EXPECT(env.le(*liveProposalKeylet));
             };
@@ -62,6 +65,52 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             if (!liveProposalKeylet)
                 return nullptr;
             return ac.view().peek(*liveProposalKeylet);
+        };
+
+        // Deletes the live proposal as deleteProposal would: out of the
+        // owner's directory, with the owner's reserve released.
+        auto deleteLiveProposal = [&](Account const& owner, ApplyContext& ac) {
+            auto sle = peekLiveProposal(ac);
+            if (!sle)
+                return false;
+            auto account = ac.view().peek(keylet::account(owner.id()));
+            if (!account)
+                return false;
+            account->at(sfOwnerCount) -=
+                xrpl::proposal::proposalOwnerCount(sle->getFieldObject(sfProposedTransaction));
+            ac.view().update(account);
+            if (!ac.view().dirRemove(
+                    keylet::ownerDir(owner.id()), sle->getFieldU64(sfOwnerNode), sle->key(), false))
+                return false;
+            ac.view().erase(sle);
+            return true;
+        };
+
+        // Consumes one of the owner's Tickets as ticketDelete would.
+        auto deleteTicket = [&](Account const& owner, std::uint32_t ticketSeq, ApplyContext& ac) {
+            auto ticket =
+                ac.view().peek(keylet::ticket(owner.id(), SeqProxy::rawTicket(ticketSeq)));
+            auto account = ac.view().peek(keylet::account(owner.id()));
+            if (!ticket || !account)
+                return false;
+            if (!ac.view().dirRemove(
+                    keylet::ownerDir(owner.id()),
+                    ticket->getFieldU64(sfOwnerNode),
+                    ticket->key(),
+                    false))
+                return false;
+            if (auto const ticketCount = account->getFieldU32(sfTicketCount); ticketCount > 1)
+            {
+                account->setFieldU32(sfTicketCount, ticketCount - 1);
+            }
+            else
+            {
+                account->makeFieldAbsent(sfTicketCount);
+            }
+            account->at(sfOwnerCount) -= 1;
+            ac.view().update(account);
+            ac.view().erase(ticket);
+            return true;
         };
 
         testcase("TransactionProposal immutable payload");
@@ -172,6 +221,26 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseStagedPayloadAndBystander);
 
+        // Everything the proposal should move does, and a bystander's owner
+        // count moves too. Only a check for unexpected entries can catch that.
+        testcase("TransactionProposal reserve moved on an unrelated account");
+        doInvariantCheck(
+            {{"TransactionProposal reserve accounting is inconsistent"}},
+            [&](Account const& owner, Account const&, ApplyContext& ac) {
+                if (!insertStagedProposal(owner, ac, true))
+                    return false;
+                auto unrelated = ac.view().peek(keylet::account(bystander.id()));
+                if (!unrelated)
+                    return false;
+                unrelated->at(sfOwnerCount) += 1;
+                ac.view().update(unrelated);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttTRANSACTION_PROPOSAL_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseStagedPayloadAndBystander);
+
         // The sponsor is charged and the owner count moves, but the owner's
         // sponsored count never does.
         testcase("TransactionProposal sponsored count not raised");
@@ -255,35 +324,72 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             std::source_location::current(),
             tecNO_PERMISSION);
 
-        // No transaction type on this amendment branch deletes a proposal yet,
-        // so a deletion has to be staged by hand. Releasing the reserve, as a
-        // real deletion would, leaves the deletion itself as the only violation.
+        // A proposal leaves the ledger only through TransactionProposalCancel
+        // or together with the Ticket it is keyed to. The harness runs no
+        // transactor, so each deletion below is staged by hand, releasing the
+        // reserve as a real one would, to leave the deletion itself as the
+        // only possible violation.
         testcase("TransactionProposal deletion outside the whitelist");
         doInvariantCheck(
             {{"TransactionProposal changes do not match transaction result"}},
             [&](Account const& owner, Account const&, ApplyContext& ac) {
-                auto sle = peekLiveProposal(ac);
-                if (!sle)
-                    return false;
-                auto account = ac.view().peek(keylet::account(owner.id()));
-                if (!account)
-                    return false;
-                account->at(sfOwnerCount) -=
-                    xrpl::proposal::proposalOwnerCount(sle->getFieldObject(sfProposedTransaction));
-                ac.view().update(account);
-                if (!ac.view().dirRemove(
-                        keylet::ownerDir(owner.id()),
-                        sle->getFieldU64(sfOwnerNode),
-                        sle->key(),
-                        false))
-                    return false;
-                ac.view().erase(sle);
-                return true;
+                return deleteLiveProposal(owner, ac);
             },
             XRPAmount{},
             STTx{ttACCOUNT_SET, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseLiveProposal);
+
+        // A Cancel that did not succeed deleted nothing.
+        testcase("TransactionProposal failed cancel still deletes");
+        doInvariantCheck(
+            {{"TransactionProposal changes do not match transaction result"}},
+            [&](Account const& owner, Account const&, ApplyContext& ac) {
+                return deleteLiveProposal(owner, ac);
+            },
+            XRPAmount{},
+            STTx{ttTRANSACTION_PROPOSAL_CANCEL, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseLiveProposal,
+            TxAccount::None,
+            std::source_location::current(),
+            tecNO_PERMISSION);
+
+        // A Cancel cannot spend a reserved Ticket, so the proposal it deletes
+        // never goes with its Ticket.
+        testcase("TransactionProposal cancel consumes the reserved ticket");
+        doInvariantCheck(
+            {{"TransactionProposal changes do not match transaction result"}},
+            [&](Account const& owner, Account const&, ApplyContext& ac) {
+                return liveTicketSeq && deleteTicket(owner, *liveTicketSeq, ac) &&
+                    deleteLiveProposal(owner, ac);
+            },
+            XRPAmount{},
+            STTx{ttTRANSACTION_PROPOSAL_CANCEL, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseLiveProposal);
+
+        // The owner holds a second Ticket, one no proposal is keyed to.
+        std::optional<std::uint32_t> spareTicketSeq;
+        Preclose const precloseLiveProposalAndSpareTicket =
+            [&](Account const& owner, Account const& destination, Env& env) {
+                spareTicketSeq = proposal::createTicket(env, owner);
+                return precloseLiveProposal(owner, destination, env);
+            };
+
+        // Consuming some other Ticket of the owner's is no reason for the
+        // proposal to go.
+        testcase("TransactionProposal deleted with an unrelated ticket");
+        doInvariantCheck(
+            {{"TransactionProposal changes do not match transaction result"}},
+            [&](Account const& owner, Account const&, ApplyContext& ac) {
+                return spareTicketSeq && deleteTicket(owner, *spareTicketSeq, ac) &&
+                    deleteLiveProposal(owner, ac);
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseLiveProposalAndSpareTicket);
 
         // A SponsorshipTransfer may reassign the Sponsor and nothing else.
         testcase("TransactionProposal sponsorship transfer touches another field");
@@ -424,6 +530,41 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             {},
             [&](Account const&, Account const&, ApplyContext& ac) {
                 return liveProposalKeylet && ac.view().read(*liveProposalKeylet) != nullptr;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            passTers,
+            precloseLiveProposal);
+
+        // A Cancel deletes the proposal it names.
+        testcase("TransactionProposal cancelled");
+        doInvariantCheck(
+            {},
+            [&](Account const& owner, Account const&, ApplyContext& ac) {
+                return deleteLiveProposal(owner, ac);
+            },
+            XRPAmount{},
+            STTx{ttTRANSACTION_PROPOSAL_CANCEL, [](STObject&) {}},
+            passTers,
+            precloseLiveProposal);
+
+        // The proposed transaction executing spends the proposal's Ticket and
+        // takes the proposal with it, whatever else it does to owner counts:
+        // here another account's count moved too, as the proposed
+        // transaction's own effects may make it.
+        testcase("TransactionProposal deleted with its ticket");
+        doInvariantCheck(
+            {},
+            [&](Account const& owner, Account const& other, ApplyContext& ac) {
+                if (!liveTicketSeq || !deleteTicket(owner, *liveTicketSeq, ac) ||
+                    !deleteLiveProposal(owner, ac))
+                    return false;
+                auto account = ac.view().peek(keylet::account(other.id()));
+                if (!account)
+                    return false;
+                account->at(sfOwnerCount) += 1;
+                ac.view().update(account);
+                return true;
             },
             XRPAmount{},
             STTx{ttACCOUNT_SET, [](STObject&) {}},

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -9,6 +10,7 @@
 
 #include <cstdint>
 #include <map>
+#include <set>
 #include <vector>
 
 namespace xrpl {
@@ -22,7 +24,9 @@ class ReadView;
  *   fields and PreviousTxn bookkeeping.
  * - Proposal reserve changes match proposal creation and deletion.
  * - Only transaction types implementing proposal lifecycle operations may
- *   create, modify, or delete proposals.
+ *   create or modify proposals.
+ * - A proposal is deleted only by TransactionProposalCancel or together with
+ *   the Ticket it is keyed to.
  * - Collected signer arrays remain sorted, unique, and bounded.
  */
 class ValidTransactionProposal
@@ -41,6 +45,7 @@ class ValidTransactionProposal
     std::map<AccountID, std::int64_t> expectedOwnerCountDelta_;
     std::map<AccountID, std::int64_t> expectedSponsoredOwnerCountDelta_;
     std::map<AccountID, std::int64_t> expectedSponsoringOwnerCountDelta_;
+    std::set<uint256> deletedTickets_;
     std::uint32_t created_ = 0;
     std::uint32_t modified_ = 0;
     std::uint32_t deleted_ = 0;
