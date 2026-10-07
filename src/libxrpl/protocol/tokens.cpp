@@ -226,7 +226,7 @@ encodeBase58(void const* message, std::size_t size, void* temp, std::size_t temp
         // Apply "b58 = b58 * 256 + ch".
         for (auto iter = b58end; iter != b58begin; --iter)
         {
-            carry += 256 * (iter[-1]);
+            carry += 256 * iter[-1];
             iter[-1] = carry % 58;
             carry /= 58;
         }

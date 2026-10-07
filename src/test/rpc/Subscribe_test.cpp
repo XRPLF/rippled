@@ -996,7 +996,7 @@ public:
                               bool sizeCompare) -> bool {
             if (accountVec.empty() || txHistoryVec.empty())
                 return false;
-            if (sizeCompare && accountVec.size() != (txHistoryVec.size()))
+            if (sizeCompare && accountVec.size() != txHistoryVec.size())
                 return false;
 
             HashMap<std::string, int> txHistoryMap;

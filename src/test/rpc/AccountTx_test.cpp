@@ -168,7 +168,7 @@ class AccountTx_test : public beast::unit_test::Suite
                     {
                         auto const& payment = j[jss::result][jss::transactions][1u];
 
-                        return (payment.isMember(jss::tx_json)) &&
+                        return payment.isMember(jss::tx_json) &&
                             (payment[jss::tx_json][jss::TransactionType] == jss::Payment) &&
                             (payment[jss::tx_json][jss::DeliverMax] == "10000000010") &&
                             (!payment[jss::tx_json].isMember(jss::Amount)) &&

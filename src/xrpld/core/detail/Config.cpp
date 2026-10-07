@@ -211,7 +211,7 @@ IniFileSections::mapped_type*
 getIniFileSection(IniFileSections& secSource, std::string const& strSection)
 {
     if (auto it = secSource.find(strSection); it != secSource.end())
-        return &(it->second);
+        return &it->second;
 
     return nullptr;
 }

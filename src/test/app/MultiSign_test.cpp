@@ -1055,7 +1055,7 @@ public:
         {
             // Single-sign, but leave an empty SigningPubKey.
             JTx const tx = env.jt(noop(alice), Sig(alice));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
@@ -1065,7 +1065,7 @@ public:
         {
             // Single-sign, but invalidate the signature.
             JTx const tx = env.jt(noop(alice), Sig(alice));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             // Flip some bits in the signature.
             auto badSig = local.getFieldVL(sfTxnSignature);
             badSig[20] ^= 0xAA;
@@ -1079,7 +1079,7 @@ public:
         {
             // Single-sign, but invalidate the sequence number.
             JTx const tx = env.jt(noop(alice), Sig(alice));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             // Flip some bits in the signature.
             auto seq = local.getFieldU32(sfSequence);
             local.setFieldU32(sfSequence, seq + 1);
@@ -1092,7 +1092,7 @@ public:
         {
             // Multisign, but leave a nonempty sfSigningPubKey.
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             local[sfSigningPubKey] = alice.pk();  // Insert sfSigningPubKey
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
@@ -1102,7 +1102,7 @@ public:
         {
             // Both multi- and single-sign with an empty SigningPubKey.
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             local.sign(alice.pk(), alice.sk());
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
             auto const info = submitSTTx(local);
@@ -1113,7 +1113,7 @@ public:
         {
             // Multisign but invalidate one of the signatures.
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             // Flip some bits in the signature.
             auto& signer = local.peekFieldArray(sfSigners).back();
             auto badSig = signer.getFieldVL(sfTxnSignature);
@@ -1128,7 +1128,7 @@ public:
         {
             // Multisign with an empty signers array should fail.
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             local.peekFieldArray(sfSigners).clear();  // Empty Signers array.
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
@@ -1174,7 +1174,7 @@ public:
                     bogie_,
                     bogie_,
                     bogie_));
-            STTx const local = *(tx.stx);
+            STTx const local = *tx.stx;
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
@@ -1183,7 +1183,7 @@ public:
         {
             // The account owner may not multisign for themselves.
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(alice));
-            STTx const local = *(tx.stx);
+            STTx const local = *tx.stx;
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
@@ -1192,7 +1192,7 @@ public:
         {
             // No duplicate multisignatures allowed.
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_, bogie_));
-            STTx const local = *(tx.stx);
+            STTx const local = *tx.stx;
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
@@ -1201,7 +1201,7 @@ public:
         {
             // Multisignatures must be submitted in sorted order.
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_, demon_));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             // Unsort the Signers array.
             auto& signers = local.peekFieldArray(sfSigners);
             std::ranges::reverse(signers);

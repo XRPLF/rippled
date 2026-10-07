@@ -262,7 +262,7 @@ STObject::set(SerialIter& sit, int depth, bool requireCanonicalOrder)
         v_.emplace_back(sit, fn, depth + 1);
 
         // If the object type has a known SOTemplate then set it.
-        if (auto const obj = dynamic_cast<STObject*>(&(v_.back().get())))
+        if (auto const obj = dynamic_cast<STObject*>(&v_.back().get()))
             obj->applyTemplateFromSField(fn);  // May throw
     }
 

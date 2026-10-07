@@ -276,7 +276,7 @@ NFTokenMint::doApply()
     }();
 
     if (!tokenSeq.has_value())
-        return (tokenSeq.error());
+        return tokenSeq.error();
 
     std::uint32_t const ownerCountBefore =
         view().read(keylet::account(accountID_))->getFieldU32(sfOwnerCount);

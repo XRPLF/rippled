@@ -462,7 +462,7 @@ parseSubUnsubJson(
         }
 
         // Parse optional issuer.
-        if (((jv.isMember(jss::issuer)) &&
+        if ((jv.isMember(jss::issuer) &&
              (!jv[jss::issuer].isString() || !toIssuer(issue.account, jv[jss::issuer].asString())))
             // Don't allow illegal issuers.
             || (!issue.currency != !issue.account) || noAccount() == issue.account)

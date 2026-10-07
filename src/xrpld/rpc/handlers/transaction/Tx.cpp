@@ -111,11 +111,11 @@ doTxHelp(rpc::Context& context, TxArgs args)
 
     if (args.ledgerRange)
     {
-        v = context.app.getMasterTransaction().fetch(*(args.hash), range, ec);
+        v = context.app.getMasterTransaction().fetch(*args.hash, range, ec);
     }
     else
     {
-        v = context.app.getMasterTransaction().fetch(*(args.hash), ec);
+        v = context.app.getMasterTransaction().fetch(*args.hash, ec);
     }
 
     if (auto e = std::get_if<TxSearched>(&v))
@@ -261,7 +261,7 @@ populateJsonResponse(
         response[jss::validated] = result.validated;
 
         if (result.ctid)
-            response[jss::ctid] = *(result.ctid);
+            response[jss::ctid] = *result.ctid;
     }
     return response;
 }
