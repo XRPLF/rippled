@@ -390,6 +390,21 @@ public:
 
         {
             testcase(
+                "deposit_authorized with credentials failure: zero "
+                "credential index");
+
+            for (auto const& zero : {std::string("0"), std::string(64, '0')})
+            {
+                auto const args = depositAuthArgs(alice, becky, "validated", {zero});
+
+                auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
+                checkCredentialsResponse(
+                    jv[jss::result], alice, becky, false, {zero}, "badCredentials");
+            }
+        }
+
+        {
+            testcase(
                 "deposit_authorized with credentials not authorized: "
                 "credential not accepted");
             auto const jv = env.rpc(
