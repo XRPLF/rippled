@@ -60,7 +60,7 @@ repos:
         types_or: [c++, c]
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: e2b496dc2bd8340c2524cb9a2d2a943cde1bb6df # frozen: v23.1.1
+    rev: a9a8a861f30ed207ead7d5a3b7e8032283ba5da7 # frozen: v23.1.2
     hooks:
       - id: clang-format
         args: [--style=file]
@@ -82,7 +82,7 @@ repos:
         files: ^crates/.*\.rs$
 
   - repo: https://github.com/BlankSpruce/gersemi-pre-commit
-    rev: f1c4833f8cf23c6d952673abc73525411a5719e8 # frozen: 0.29.1
+    rev: 28010ddd6016e1a0f7bd232acb6536ef996ae897 # frozen: 0.29.2
     hooks:
       - id: gersemi
 
@@ -95,19 +95,19 @@ repos:
   # Scoped to package/: the rest of the repo's Python has pre-existing findings,
   # so widening these is its own change.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: a56c0b927e6465d37cae3e97d35d4d18ab2b96cd # frozen: v0.16.9
+    rev: f12be1ebaa5351c1fc76472de98db2c3446c8253 # frozen: v0.16.10
     hooks:
       - id: ruff-check
         args: [--fix]
         files: ^package/.*\.py$
 
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 4160603246a6b365d4a2af661c6d71b0a0f50478 # frozen: 26.5.1
+    rev: 96ae3e5802f3fe2d551e703e18f0a367d1a81ac2 # frozen: 26.10.0
     hooks:
       - id: black
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 7ff8d35ae36a7d2b968f2f90b4c723e292e594ee # frozen: v2.3.1
+    rev: 2834ec6639549dd6796205c8f011dedcd587288b # frozen: v2.4.0
     hooks:
       - id: mypy
         args: [--strict]
