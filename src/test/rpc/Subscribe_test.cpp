@@ -1464,7 +1464,9 @@ public:
                 // Check the value of NFT ID in the meta with the
                 // actual values
                 for (size_t i = 0; i < metaIDs.size(); ++i)
+                {
                     BEAST_EXPECT(metaIDs[i] == actualNftIDs[i]);
+                }
                 return true;
             }));
         };
