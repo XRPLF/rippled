@@ -477,10 +477,13 @@ LoanSet::doApply()
             JLOG(j_.warn()) << "Private LoanBroker must have a DomainID.";
             return tecNO_AUTH;
         }
-        if (auto const ter = verifyDomainAndPurgeExpired(view, borrower, *domainID, j_);
-            !isTesSuccess(ter))
+        if (auto const ter = verifyValidDomain(view, borrower, *domainID, j_); !isTesSuccess(ter))
         {
-            JLOG(j_.warn()) << "Borrower is not a member of the LoanBroker's domain.";
+            if (ter == tecNO_PERMISSION)
+            {
+                JLOG(j_.warn()) << "Borrower is not a member of the LoanBroker's domain.";
+                return tecNO_AUTH;
+            }
             return ter;
         }
     }

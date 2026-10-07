@@ -368,26 +368,6 @@ verifyValidDomain(ApplyView& view, AccountID const& account, UInt256 domainID, b
 }
 
 TER
-verifyDomainAndPurgeExpired(
-    ApplyView& view,
-    AccountID const& account,
-    uint256 domainID,
-    beast::Journal j)
-{
-    auto const slePD = view.read(keylet::permissionedDomain(domainID));
-    if (!slePD)
-        return tecOBJECT_NOT_FOUND;
-
-    if (slePD->at(sfOwner) == account)
-        return tesSUCCESS;
-
-    // Because this helper replaces a preclaim call to credentials::validDomain, which
-    // reports it as tecNO_AUTH, we need to translate the code to preserve that behaviour.
-    auto const ter = verifyValidDomain(view, account, domainID, j);
-    return ter == tecNO_PERMISSION ? tecNO_AUTH : ter;
-}
-
-TER
 checkDepositPreauth(
     STTx const& tx,
     ReadView const& view,
