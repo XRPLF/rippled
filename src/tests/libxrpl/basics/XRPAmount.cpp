@@ -308,7 +308,7 @@ Rules
 makeRules(bool withFix)
 {
     // Rules keeps a reference to its presets, so they must outlive it.
-    static std::unordered_set<uint256, beast::Uhash<>> const kWithFix{featureMPTokensV2};
+    static std::unordered_set<uint256, beast::Uhash<>> const kWithFix{fixCleanup3_5_0};
     static std::unordered_set<uint256, beast::Uhash<>> const kWithoutFix;
     return Rules{withFix ? kWithFix : kWithoutFix};
 }

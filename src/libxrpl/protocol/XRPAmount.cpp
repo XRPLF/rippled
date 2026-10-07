@@ -17,7 +17,7 @@ XRPAmount::operator+=(value_type const& rhs)
         drops_ = *result;
         return *this;
     }
-    if (isFeatureEnabled(featureMPTokensV2, /*resultIfNoRules*/ true))
+    if (isFeatureEnabled(fixCleanup3_5_0, /*resultIfNoRules*/ true))
         Throw<std::overflow_error>("XRPAmount::operator+= overflow");
     drops_ += rhs;
     return *this;
@@ -31,7 +31,7 @@ XRPAmount::operator-=(value_type const& rhs)
         drops_ = *result;
         return *this;
     }
-    if (isFeatureEnabled(featureMPTokensV2, /*resultIfNoRules*/ true))
+    if (isFeatureEnabled(fixCleanup3_5_0, /*resultIfNoRules*/ true))
         Throw<std::overflow_error>("XRPAmount::operator-= overflow");
     drops_ -= rhs;
     return *this;
@@ -45,7 +45,7 @@ XRPAmount::operator*=(value_type const& rhs)
         drops_ = *result;
         return *this;
     }
-    if (isFeatureEnabled(featureMPTokensV2, /*resultIfNoRules*/ true))
+    if (isFeatureEnabled(fixCleanup3_5_0, /*resultIfNoRules*/ true))
         Throw<std::overflow_error>("XRPAmount::operator*= overflow");
     drops_ *= rhs;
     return *this;

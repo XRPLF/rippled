@@ -384,7 +384,7 @@ operator+(STAmount const& v1, STAmount const& v2)
         return {v1.getFName(), v1.asset(), v2.mantissa(), v2.exponent(), v2.negative()};
     }
 
-    // XRPAmount and MPTAmount check for int64 overflow under featureMPTokensV2.
+    // XRPAmount and MPTAmount check for int64 overflow under fixCleanup3_5_0.
     if (v1.native())
         return {v1.getFName(), (v1.xrp() + v2.xrp()).drops()};
     if (v1.holds<MPTIssue>())

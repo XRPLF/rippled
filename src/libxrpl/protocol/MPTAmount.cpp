@@ -17,7 +17,7 @@ MPTAmount::operator+=(MPTAmount const& other)
         value_ = *result;
         return *this;
     }
-    if (isFeatureEnabled(featureMPTokensV2, /*resultIfNoRules*/ true))
+    if (isFeatureEnabled(fixCleanup3_5_0, /*resultIfNoRules*/ true))
         Throw<std::overflow_error>("MPTAmount::operator+= overflow");
     value_ += other.value();
     return *this;
@@ -31,7 +31,7 @@ MPTAmount::operator-=(MPTAmount const& other)
         value_ = *result;
         return *this;
     }
-    if (isFeatureEnabled(featureMPTokensV2, /*resultIfNoRules*/ true))
+    if (isFeatureEnabled(fixCleanup3_5_0, /*resultIfNoRules*/ true))
         Throw<std::overflow_error>("MPTAmount::operator-= overflow");
     value_ -= other.value();
     return *this;
