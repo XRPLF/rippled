@@ -619,3 +619,91 @@ fn bounds_follow_the_declared_memory_size() {
     );
     assert_eq!(status(&wat, &host), 4, "the second page is in bounds");
 }
+
+// ---------------------------------------------------------------------------
+// Two output regions (`write_mant_exp`)
+// ---------------------------------------------------------------------------
+
+/// `float_to_mant_exp` is the only call with two output regions, so none of the
+/// single-output rules above reach it.
+#[test]
+fn either_output_region_out_of_bounds_is_refused() {
+    let host =
+        FakeHost::new().answering_float_mant_exp(vec![1, 2, 3, 4, 5, 6, 7, 8], vec![9, 10, 11, 12]);
+
+    // Mantissa, then exponent, each as a `(ptr, len)` pair.
+    let cases = [
+        (
+            format!("(i32.const {PAGE}) (i32.const 8)"),
+            "(i32.const 80) (i32.const 4)".to_owned(),
+            HostError::PointerOutOfBounds,
+        ),
+        (
+            "(i32.const 64) (i32.const 8)".to_owned(),
+            format!("(i32.const {PAGE}) (i32.const 4)"),
+            HostError::PointerOutOfBounds,
+        ),
+        (
+            "(i32.const -1) (i32.const 8)".to_owned(),
+            "(i32.const 80) (i32.const 4)".to_owned(),
+            HostError::InvalidParams,
+        ),
+        (
+            "(i32.const 64) (i32.const 8)".to_owned(),
+            "(i32.const -1) (i32.const 4)".to_owned(),
+            HostError::InvalidParams,
+        ),
+        (
+            "(i32.const 64) (i32.const 8)".to_owned(),
+            "(i32.const 0) (i32.const -1)".to_owned(),
+            HostError::InvalidParams,
+        ),
+    ];
+
+    for (mantissa, exponent, expected) in cases {
+        let wat = module(
+            &[import::FLOAT_TO_MANT_EXP, ONE_PAGE],
+            &format!("(call $float_to_mant_exp (i32.const 0) (i32.const 8) {mantissa} {exponent})"),
+        );
+        assert_eq!(
+            status(&wat, &host),
+            code(expected),
+            "mantissa {mantissa} exponent {exponent}"
+        );
+    }
+}
+
+/// The mantissa's region is judged first, so a call with both wrong reports its verdict.
+#[test]
+fn the_mantissa_region_is_judged_before_the_exponents() {
+    let host =
+        FakeHost::new().answering_float_mant_exp(vec![1, 2, 3, 4, 5, 6, 7, 8], vec![9, 10, 11, 12]);
+
+    // The mantissa is unreachable and the exponent is not a pointer at all; the two
+    // answer differently, which is what makes the order observable here.
+    let wat = module(
+        &[import::FLOAT_TO_MANT_EXP, ONE_PAGE],
+        &format!(
+            "(call $float_to_mant_exp (i32.const 0) (i32.const 8) \
+             (i32.const {PAGE}) (i32.const 8) (i32.const -1) (i32.const 4))"
+        ),
+    );
+    assert_eq!(status(&wat, &host), code(HostError::PointerOutOfBounds));
+}
+
+/// The two regions are one answer, so a call that cannot place all of it places none.
+#[test]
+fn an_unreachable_exponent_region_leaves_the_mantissa_unwritten() {
+    let host =
+        FakeHost::new().answering_float_mant_exp(vec![1, 2, 3, 4, 5, 6, 7, 8], vec![9, 10, 11, 12]);
+
+    let call = format!(
+        "(call $float_to_mant_exp (i32.const 0) (i32.const 8) \
+         (i32.const 64) (i32.const 8) (i32.const {PAGE}) (i32.const 4))"
+    );
+    let wat = module(
+        &[import::FLOAT_TO_MANT_EXP, ONE_PAGE],
+        &format!("(drop {call})\n    (i32.load8_u (i32.const 64))"),
+    );
+    assert_eq!(status(&wat, &host), 0, "the mantissa region must be clean");
+}

@@ -1,0 +1,93 @@
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include <tx/wasm/fixtures/GuestToHostCallFixture.h>
+
+#include <cstdint>
+#include <expected>
+#include <string>
+#include <string_view>
+
+namespace xrpl::test {
+
+using testing::Eq;
+using testing::Return;
+
+// amendment_enabled — one region in, the answer returned directly.
+//
+// The shim reads the region twice over: as a 32-byte amendment id, and, if that is not an
+// enabled one, as the name those same bytes spell. `host_context/IsAmendmentEnabled.cpp`
+// pins that fall-through below the forward; here it is the guest's bytes that have to reach
+// both overloads.
+struct IsAmendmentEnabledGuest : GuestToHostCallTest
+{
+    static constexpr std::int32_t kIdAt = 0;
+    static constexpr std::int32_t kNameAt = 64;
+    static constexpr std::int32_t kIdLen = static_cast<std::int32_t>(uint256::size());
+
+    static constexpr std::string_view kAmendmentName = "MyAmendment";
+    static constexpr std::int32_t kNameLen = static_cast<std::int32_t>(kAmendmentName.size());
+
+    static constexpr Arg kId = Arg::region(kIdAt, kIdLen);
+    static constexpr Arg kName = Arg::region(kNameAt, kNameLen);
+
+    // The overload set means a matcher has to say which of the two it is for, even where it
+    // matches anything.
+    using IdMatcher = testing::Matcher<uint256 const&>;
+    using NameMatcher = testing::Matcher<std::string_view const&>;
+
+    Bytes const idBytes = Bytes(uint256::size(), 0x11);
+    uint256 const id = uint256::fromVoid(idBytes.data());
+    std::string_view const idAsName{reinterpret_cast<char const*>(idBytes.data()), idBytes.size()};
+
+    Bytes const nameBytes{kAmendmentName.begin(), kAmendmentName.end()};
+
+    [[nodiscard]] std::string
+    watFor(Arg amendmentArg) const
+    {
+        return hostCallWat(
+            "amendment_enabled",
+            {amendmentArg},
+            {{.at = kIdAt, .bytes = idBytes}, {.at = kNameAt, .bytes = nameBytes}});
+    }
+};
+
+TEST_F(IsAmendmentEnabledGuest, enabled_id_reaches_host_and_answers_one_without_name_lookup)
+{
+    EXPECT_CALL(host, isAmendmentEnabled(IdMatcher(Eq(id)))).WillOnce(Return(1));
+    EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(testing::_))).Times(0);
+
+    auto const wat = watFor(kId);
+    EXPECT_EQ(hostAnswer(wat), 1);
+}
+
+TEST_F(IsAmendmentEnabledGuest, disabled_id_falls_through_to_name_lookup_with_the_same_guest_bytes)
+{
+    EXPECT_CALL(host, isAmendmentEnabled(IdMatcher(Eq(id)))).WillOnce(Return(0));
+    EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(Eq(idAsName)))).WillOnce(Return(1));
+
+    auto const wat = watFor(kId);
+    EXPECT_EQ(hostAnswer(wat), 1);
+}
+
+TEST_F(IsAmendmentEnabledGuest, id_lookup_error_falls_through_to_name_lookup)
+{
+    EXPECT_CALL(host, isAmendmentEnabled(IdMatcher(Eq(id))))
+        .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
+    EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(Eq(idAsName)))).WillOnce(Return(0));
+
+    auto const wat = watFor(kId);
+    EXPECT_EQ(hostAnswer(wat), 0);
+}
+
+TEST_F(IsAmendmentEnabledGuest, name_reaches_host_verbatim)
+{
+    EXPECT_CALL(host, isAmendmentEnabled(NameMatcher(Eq(kAmendmentName)))).WillOnce(Return(1));
+
+    auto const wat = watFor(kName);
+    EXPECT_EQ(hostAnswer(wat), 1);
+}
+
+}  // namespace xrpl::test
