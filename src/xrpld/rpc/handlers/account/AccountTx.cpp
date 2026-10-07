@@ -20,12 +20,13 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/LedgerShortcut.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/resource/Fees.h>
+
+#include <rpcspec/Ledger.hpp>
 
 #include <cstdint>
 #include <expected>
@@ -81,10 +82,25 @@ parseDelegateFilter(json::Value const& delegateNode)
 
 using TxnsData = RelationalDatabase::AccountTxs;
 using TxnsDataBinary = RelationalDatabase::MetaTxsList;
-using TxnDataBinary = RelationalDatabase::txnMetaLedgerType;
-using AccountTxArgs = RelationalDatabase::AccountTxArgs;
+using TxnDataBinary = RelationalDatabase::TxnMetaLedgerType;
 using AccountTxResult = RelationalDatabase::AccountTxResult;
-using LedgerSpecifier = RelationalDatabase::LedgerSpecifier;
+
+// Moved here from RelationalDatabase, where nothing but this handler used them, so that
+// libxrpl does not depend on the spec for LedgerShortcut. Temporary: the spec's
+// account_tx Input replaces both once account_tx is migrated to the spec.
+using LedgerSpecifier =
+    std::variant<LedgerRange, ::rpc::spec::LedgerShortcut, std::uint32_t, uint256>;
+
+struct AccountTxArgs
+{
+    AccountID account;
+    std::optional<LedgerSpecifier> ledger;
+    bool binary = false;
+    bool forward = false;
+    uint32_t limit = 0;
+    std::optional<RelationalDatabase::AccountTxMarker> marker;
+    std::optional<DelegateFilter> delegate;
+};
 
 // parses args into a ledger specifier, or returns a Json object on error
 std::variant<std::optional<LedgerSpecifier>, json::Value>
@@ -148,15 +164,15 @@ parseLedgerArgs(rpc::Context& context, json::Value const& params)
 
             if (ledgerStr == "current" || ledgerStr.empty())
             {
-                ledger = LedgerShortcut::Current;
+                ledger = ::rpc::spec::LedgerShortcut::Current;
             }
             else if (ledgerStr == "closed")
             {
-                ledger = LedgerShortcut::Closed;
+                ledger = ::rpc::spec::LedgerShortcut::Closed;
             }
             else if (ledgerStr == "validated")
             {
-                ledger = LedgerShortcut::Validated;
+                ledger = ::rpc::spec::LedgerShortcut::Validated;
             }
             else
             {
@@ -352,9 +368,9 @@ populateJsonResponse(
                     if (context.apiVersion > 1)
                     {
                         jvObj[jsonTx] = txn->getJson(
-                            static_cast<JsonOptions::underlying_t>(
+                            static_cast<JsonOptions::UnderlyingT>(
                                 JsonOptions::Values::IncludeDate) |
-                                static_cast<JsonOptions::underlying_t>(
+                                static_cast<JsonOptions::UnderlyingT>(
                                     JsonOptions::Values::DisableApiPriorV2),
                             false);
                         jvObj[jss::hash] = to_string(txn->getID());

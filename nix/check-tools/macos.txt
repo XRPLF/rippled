@@ -2,145 +2,148 @@ Detected OS: macos (Darwin arm64)
 
 Core build tools:
   ✅ cmake
-     cmake version 4.1.2
-     /nix/store/gvabsb4yqb5xsqzqph54rijnn4zpihnp-cmake-4.1.2/bin/cmake
+     cmake version 4.4.3
+     /nix/store/q85csxf4s4shx89zif097h1ql4ax1rrz-cmake-4.4.3/bin/cmake
   ✅ conan
-     Conan version 2.28.1
-     /nix/store/9jiyxmkpwmn6dcqs0765s83riw3l5ail-conan-2.28.1/bin/conan
+     Conan version 2.32.0
+     /nix/store/921jqsgbilixmr3xchj95si0jl8pi13z-conan-2.32.0/bin/conan
   ✅ git
-     git version 2.54.0
-     /nix/store/a14yxcqvv9x2l9mllgpirzhvz93pgprg-git-2.54.0/bin/git
+     git version 2.55.0
+     /nix/store/gw7c7m0dwca5lg4152x9lpmxpj171bzw-git-2.55.0/bin/git
   ✅ python3
-     Python 3.13.13
-     /nix/store/ygxqin6ydzjfawywqpp5pal8wv6sf5bh-python3-3.13.13/bin/python3.13
+     Python 3.14.7
+     /nix/store/0kcws5blwbdyxqxjd1w8hjipz61xny3k-python3-3.14.7/bin/python3.14
 
 Development tooling:
   ✅ ccache
      ccache version 4.13.6
-     /nix/store/57davyvs6p6dkrl3svzwg1ph18wsy4cz-ccache-4.13.6/bin/ccache
+     /nix/store/ydr5nlzxp1djb5256y0zzqa87vz55gsk-ccache-4.13.6/bin/ccache
   ✅ clang
-     clang version 22.1.7
-     /nix/store/192glrb2cldvziyf3378mzjqbzx3ih4g-clang-wrapper-22.1.7/bin/clang
+     clang version 22.1.8
+     /nix/store/dakcxgwz4ixkk6ps50b7vn3dvblyzsnf-clang-wrapper-22.1.8/bin/clang
   ✅ clang-22
-     clang version 22.1.7
-     /nix/store/rbap7zqq7mw00fyqa02p5rj7gqjp4w5i-clang-22/bin/clang-22
+     clang version 22.1.8
+     /nix/store/w826sqb98nnym6kzackg829664iqdlxj-clang-22/bin/clang-22
   ✅ clang++
-     clang version 22.1.7
-     /nix/store/192glrb2cldvziyf3378mzjqbzx3ih4g-clang-wrapper-22.1.7/bin/clang++
+     clang version 22.1.8
+     /nix/store/dakcxgwz4ixkk6ps50b7vn3dvblyzsnf-clang-wrapper-22.1.8/bin/clang++
   ✅ clang++-22
-     clang version 22.1.7
-     /nix/store/v9haf787f7bcz0mq1sad4bpyx21pj6li-clang++-22/bin/clang++-22
+     clang version 22.1.8
+     /nix/store/wnwyw3yfqrhpxij65bl3pa1x65q2zg3m-clang++-22/bin/clang++-22
   ✅ ClangBuildAnalyzer
      ClangBuildAnalyzer 1.6.0
-     /nix/store/4l50ds9fa2mkvh7wg8qzrlbmjs12sb8l-clangbuildanalyzer-1.6.0/bin/ClangBuildAnalyzer
+     /nix/store/c7jjnw29ra78jdlzjww2m374izhy05n8-clangbuildanalyzer-1.6.0/bin/ClangBuildAnalyzer
   ✅ curl
-     curl 8.20.0 (aarch64-apple-darwin25.3.0) libcurl/8.20.0 OpenSSL/3.6.2 zlib/1.3.2 libssh2/1.11.1 nghttp2/1.69.0 mit-krb5/1.22.1
-     /nix/store/kclq0czaxvsgh4ym9ld7b6iwy50l1snk-curl-8.20.0-bin/bin/curl
+     curl 8.22.0 (aarch64-apple-darwin25.6.0) libcurl/8.22.0 OpenSSL/3.5.8 zlib/1.3.2 libssh2/1.11.1 nghttp2/1.70.0 mit-krb5/1.22.2
+     /nix/store/pq1h17abqy6q5y6k5dn9qj0fwb89flba-curl-8.22.0-bin/bin/curl
   ✅ file
-     file-5.47
-     /nix/store/dax63li7wwcbqxxkkgzc4g2rx7d4w86x-file-5.47/bin/file
+     file-5.48
+     /nix/store/y44vpziwbzfm8020dzlqqbybyyy7lb6g-file-5.48/bin/file
+  ✅ jq
+     jq-1.8.2
+     /nix/store/wm7v59a2lhj1w2k8jz53spcs1iizm9lv-jq-1.8.2-bin/bin/jq
   ✅ less
-     less 692 (PCRE2 regular expressions)
-     /nix/store/lvr16y75r1pdxpdv0aph5ak2yd0hkvqm-less-692/bin/less
+     less 710 (PCRE2 regular expressions)
+     /nix/store/3yn3dx5fwg5i0inqqzwnxq7f6lwhpjqa-less-710/bin/less
   ✅ make
      GNU Make 4.4.1
-     /nix/store/8wwiw8pwyhrkzyq28hqzxfl4z84lks81-gnumake-4.4.1/bin/make
+     /nix/store/8l4wgxmhdxfvc9g18y76bnxl1ghgcp7n-gnumake-4.4.1/bin/make
   ✅ netstat
      present
-     /nix/store/qsd1kzqb0ahrk433vmyl245gp623j19s-network_cmds-730.80.3/bin/netstat
+     /nix/store/57fqvgdav8lrmzndkwm7qrgksl01yj23-network_cmds-741.100.2/bin/netstat
   ✅ ninja
      1.13.2
-     /nix/store/bqykhrblarkj4fl0hz2mf8ngwfv6x6bz-ninja-1.13.2/bin/ninja
+     /nix/store/infm4vlx71q83bqz0k559w1gn4b0rq4i-ninja-1.13.2/bin/ninja
   ✅ perl
-     v5.42.0
-     /nix/store/js13ri9fvm0ajk1fpd3acigys2a9whdv-perl-5.42.0/bin/perl
+     v5.42.3
+     /nix/store/7rvr6qjfzk2ybzn1imjw6c6qq1n1a9cr-perl-5.42.3/bin/perl
   ✅ pkg-config
      0.29.2
-     /nix/store/lzrwr375jqhhbca116kja96xf1md83l8-pkg-config-wrapper-0.29.2/bin/pkg-config
+     /nix/store/nhgylvj98klqggy54h7gbc3b2ia4a00y-pkg-config-wrapper-0.29.2/bin/pkg-config
   ✅ vim
      VIM - Vi IMproved 9.2 (2026 Feb 14, compiled Jan 01 1980 00:00:00)
-     /nix/store/6vbkykg92w603c0sw3mkk7p7mfaawbns-vim-9.2.0389/bin/vim
+     /nix/store/akaa9kqm3b8rlkv61kvsqr2l2j70rvxb-vim-9.2.1001/bin/vim
   ✅ zip
      Zip 3.0
-     /nix/store/z6ph729vcakbvz3wh8ln1wk6mi06w487-zip-3.0/bin/zip
+     /nix/store/dvawr36npnad4xa6dxi2ss0fw44aa82r-zip-3.0/bin/zip
   ✅ clang-apply-replacements
-     clang-apply-replacements version 22.1.7
-     /nix/store/vzyyjf3cm1hbj9wcr2qcb66x6j98zpy7-clang-tools-22.1.7/bin/clang-apply-replacements
+     clang-apply-replacements version 22.1.8
+     /nix/store/5bij4zn161lagwyndmrr21vmxjg054nv-clang-tools-22.1.8/bin/clang-apply-replacements
   ✅ clang-apply-replacements-22
-     clang-apply-replacements version 22.1.7
-     /nix/store/m3ii69rca4077lf4wlk7m3jcag1fs577-clang-apply-replacements-22/bin/clang-apply-replacements-22
+     clang-apply-replacements version 22.1.8
+     /nix/store/w4bz034k4l0w719rrmbwnqcgyjbswy81-clang-apply-replacements-22/bin/clang-apply-replacements-22
   ✅ clang-format
-     clang-format version 22.1.7
-     /nix/store/vzyyjf3cm1hbj9wcr2qcb66x6j98zpy7-clang-tools-22.1.7/bin/clang-format
+     clang-format version 22.1.8
+     /nix/store/5bij4zn161lagwyndmrr21vmxjg054nv-clang-tools-22.1.8/bin/clang-format
   ✅ clang-format-22
-     clang-format version 22.1.7
-     /nix/store/4fawqy6ngqcsqd2ygyyzm93q0xy3f5gs-clang-format-22/bin/clang-format-22
+     clang-format version 22.1.8
+     /nix/store/w7z346l0r8y36b6lc5i7jzj3w0581l2y-clang-format-22/bin/clang-format-22
   ✅ clang-tidy
-     LLVM version 22.1.7
-     /nix/store/vzyyjf3cm1hbj9wcr2qcb66x6j98zpy7-clang-tools-22.1.7/bin/clang-tidy
+     LLVM version 22.1.8
+     /nix/store/5bij4zn161lagwyndmrr21vmxjg054nv-clang-tools-22.1.8/bin/clang-tidy
   ✅ clang-tidy-22
-     LLVM version 22.1.7
-     /nix/store/jqw4280saixaxxihwdba9ldm2fsm6dr3-clang-tidy-22/bin/clang-tidy-22
+     LLVM version 22.1.8
+     /nix/store/0lv25qd3ddgjm3ndn70q61jfr6krlkl7-clang-tidy-22/bin/clang-tidy-22
   ✅ dot
-     dot - graphviz version 12.2.1 (0)
-     /nix/store/ijb4fbnqa6wzlpqnhb6q9knqpf7qqn5z-graphviz-12.2.1/bin/dot
+     dot - graphviz version 15.1.1 (0)
+     /nix/store/mc99a6bpbk2waym2cnw6ifmxli4ndb4x-graphviz-15.1.1/bin/dot
   ✅ doxygen
-     1.16.1
-     /nix/store/kbryjdpq9jizjb0ws0nzbf2h2ymbdiwm-doxygen-1.16.1/bin/doxygen
+     1.17.0
+     /nix/store/kz43yaj0wg6fx6cbrcmi2442z1ramy0c-doxygen-1.17.0/bin/doxygen
   ✅ gcovr
      gcovr 8.4
-     /nix/store/wn8jiyh9p0bybs96s4163qp3k8vfmczx-python3.13-gcovr-8.4/bin/gcovr
+     /nix/store/czj1vxsizrbba280gg22cys40qxkqjgr-python3.14-gcovr-8.4/bin/gcovr
   ✅ gh
-     gh version 2.94.0 (nixpkgs)
-     /nix/store/fhnpw0hs0gjms1ha6ap02jq7rx13gkbp-gh-2.94.0/bin/gh
+     gh version 2.102.0 (2026-09-30)
+     /nix/store/s8bahl6zssvry93ihivfmk1l6c58byrr-gh-2.102.0/bin/gh
   ✅ git-cliff
-     git-cliff 2.13.1
-     /nix/store/cy0wwhgxa7yvrz97zydbq6sqmixc90fq-git-cliff-2.13.1/bin/git-cliff
+     git-cliff 2.14.2
+     /nix/store/k4m5yk0qb7hfslwsq1zjajz1d94j12bj-git-cliff-2.14.2/bin/git-cliff
   ✅ git-lfs
-     git-lfs/3.7.1 (3.7.1; darwin arm64; go 1.26.3)
-     /nix/store/k9r7zjfjplqa4d5s71cqvf2iv73jd9mc-git-lfs-3.7.1/bin/git-lfs
+     git-lfs/3.8.0 (3.8.0; darwin arm64; go 1.26.8)
+     /nix/store/wzixjr3yb40a13m2q654hm3bdjn6sal3-git-lfs-3.8.0/bin/git-lfs
   ✅ gpg
      gpg (GnuPG) 2.4.9
-     /nix/store/cgh6iwzz5jgx9z5whka4vgj210i6npc6-gnupg-2.4.9/bin/gpg
+     /nix/store/0ldfwnwx385i5kh7cyvxx4mkvgjhs5rh-gnupg-2.4.9/bin/gpg
   ✅ pre-commit
-     pre-commit 4.5.1
-     /nix/store/z3cca68620w0w10f090szgzdnmh1waf2-pre-commit-4.5.1/bin/pre-commit
+     pre-commit 4.6.2
+     /nix/store/ivh54xypg9qvd3ha9lis0i8p4nkf8n7a-pre-commit-4.6.2/bin/pre-commit
   ✅ run-clang-tidy
      usage: run-clang-tidy [-h] [-allow-enabling-alpha-checkers]
-     /nix/store/4x28x911z2f9y7adqlh3qspp4a16dig7-run-clang-tidy/bin/run-clang-tidy
+     /nix/store/3xss1mm3mh1hzcmg182na6ki1p5rnxf1-run-clang-tidy/bin/run-clang-tidy
   ✅ run-clang-tidy-22
      usage: run-clang-tidy [-h] [-allow-enabling-alpha-checkers]
-     /nix/store/x8iymrh76sk5q91ryg5pa7i32s6gfh34-run-clang-tidy-22/bin/run-clang-tidy-22
+     /nix/store/w68r9z07hcq4fwbfyq3yvc7qxm8aqfbl-run-clang-tidy-22/bin/run-clang-tidy-22
 
 Rust toolchain:
   ✅ cargo
      cargo 1.97.1 (c980f4866 2026-06-30)
-     /nix/store/bnfk1sl4s9angb0vj1cj9a5y5zvqinwy-rust-minimal-1.97.1/bin/cargo
+     /nix/store/gklji8yq8yrx1k039c10kwz60vqf2dxj-rust-minimal-1.97.1/bin/cargo
   ✅ cargo-audit
-     cargo-audit-audit 0.22.1
-     /nix/store/snwkga2f5gyf404h7mmp9wriwxb8v65f-cargo-audit-0.22.1/bin/cargo-audit
+     cargo-audit-audit 0.22.2
+     /nix/store/7jgrwj557l91940aj0ag4i924ima1cqn-cargo-audit-0.22.2/bin/cargo-audit
   ✅ cargo-llvm-cov
-     cargo-llvm-cov 0.8.5
-     /nix/store/fpiqdh91gwyxalqp409ynm0s0g086w7w-cargo-llvm-cov-0.8.5/bin/cargo-llvm-cov
+     cargo-llvm-cov 0.9.0
+     /nix/store/5q1h285z8zzkw2qxig9a0b1avcsk1cf0-cargo-llvm-cov-0.9.0/bin/cargo-llvm-cov
   ✅ cargo-nextest
-     cargo-nextest 0.9.137
-     /nix/store/ylz7m947mhkgsp6i7611id3s3gcd58nq-cargo-nextest-0.9.137/bin/cargo-nextest
+     cargo-nextest 0.9.146
+     /nix/store/69v3hx3k597hcxd2zy7yad7fg0aw5yxd-cargo-nextest-0.9.146/bin/cargo-nextest
   ✅ clippy-driver
      clippy 0.1.97 (8bab26f4f6 2026-07-14)
-     /nix/store/bnfk1sl4s9angb0vj1cj9a5y5zvqinwy-rust-minimal-1.97.1/bin/clippy-driver
+     /nix/store/gklji8yq8yrx1k039c10kwz60vqf2dxj-rust-minimal-1.97.1/bin/clippy-driver
   ✅ rust-analyzer
      rust-analyzer 1.97.1 (8bab26f4 2026-07-14)
-     /nix/store/j6apc5pmd0giy15da9p650r8zklslmvi-rust-analyzer-preview-1.97.1-aarch64-apple-darwin/bin/rust-analyzer
+     /nix/store/30rbyk8gx7v53fxqhs4pp0fvxfjycspr-rust-analyzer-preview-1.97.1-aarch64-apple-darwin/bin/rust-analyzer
   ✅ rust-nightly
-     rustc 1.99.0-nightly (87e5904f5 2026-07-20)
-     /nix/store/fqpjz4l0nsnji8b2pz57mnj0akbp6hcl-rust-nightly/bin/rust-nightly
+     rustc 1.101.0-nightly (282215592 2026-10-04)
+     /nix/store/a9552rf3pylcnkijc1z0hf1lcnv50djq-rust-nightly/bin/rust-nightly
   ✅ rustc
      rustc 1.97.1 (8bab26f4f 2026-07-14)
-     /nix/store/bnfk1sl4s9angb0vj1cj9a5y5zvqinwy-rust-minimal-1.97.1/bin/rustc
+     /nix/store/gklji8yq8yrx1k039c10kwz60vqf2dxj-rust-minimal-1.97.1/bin/rustc
   ✅ rustfmt
      rustfmt 1.9.0-stable (8bab26f4f6 2026-07-14)
-     /nix/store/5ymwgr9jqjz7zzbmj0j5vqbwcd3kp0vm-rustfmt-preview-1.97.1-aarch64-apple-darwin/bin/rustfmt
+     /nix/store/0jmdipyn8266j9kqx2xxm2qkxlrlrjfc-rustfmt-preview-1.97.1-aarch64-apple-darwin/bin/rustfmt
 
 Skipping git-over-HTTPS check (CHECK_TOOLS_SKIP_CLONE is set).
 
-✅ All 45 checked tools are present and runnable.
+✅ All 46 checked tools are present and runnable.

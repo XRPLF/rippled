@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
@@ -253,11 +254,11 @@ Batch::preflight(PreflightContext const& ctx)
     }
 
     // Validation Inner Batch Txns
-    std::unordered_set<uint256> uniqueHashes;
+    std::unordered_set<UInt256> uniqueHashes;
     std::unordered_map<AccountID, std::unordered_set<std::uint32_t>> accountSeqTicket;
     auto checkSignatureFields =
         [&parentBatchId, &j = ctx.j](
-            STObject const& sig, uint256 const& hash, char const* label = "") -> NotTEC {
+            STObject const& sig, UInt256 const& hash, char const* label = "") -> NotTEC {
         if (sig.isFieldPresent(sfTxnSignature))
         {
             JLOG(j.debug()) << "BatchTrace[" << parentBatchId << "]: "
@@ -297,11 +298,13 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         auto const txType = stx.getFieldU16(sfTransactionType);
-        if (std::ranges::any_of(
-                kDisabledTxTypes, [txType](auto const& disabled) { return txType == disabled; }))
-        {
+        // Pre-LendingProtocolV1_2: SAV and Lending transactions cannot be Batch inners.
+        // Post-LendingProtocolV1_2: they continue through the normal Batch checks.
+        bool const rejectedPreV12 = !ctx.rules.enabled(featureLendingProtocolV1_2) &&
+            std::ranges::any_of(
+                kDisabledTxTypes, [txType](auto const& disabled) { return txType == disabled; });
+        if (rejectedPreV12)
             return temINVALID_INNER_BATCH;
-        }
 
         if (!stx.isFlag(tfInnerBatchTxn))
         {
@@ -599,7 +602,7 @@ Batch::doApply()
 }
 
 void
-Batch::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+Batch::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

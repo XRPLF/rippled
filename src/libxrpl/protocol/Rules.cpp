@@ -43,8 +43,9 @@ setCurrentTransactionRules(std::optional<Rules> r)
     auto const range = [&r]() {
         // If any new conditions with new amendments are added to "enableLargeNumbers", those
         // amendments must also be added to useRulesGuards.
-        bool const enableLargeNumbers =
-            !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
+        bool const enableLargeNumbers = !r ||
+            (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol) ||
+             r->enabled(featureMPTokensV2));
         // If enableLargeNumbers is true, then useRulesGuards must also return true.
         // However, the reverse is not true. Other amendments can cause the rules guard to be used,
         // even though large numbers are _not_ used.
@@ -84,7 +85,8 @@ useRulesGuards(Rules const& rules)
     // with createGuards, and any other callers, and the first set of guards can be created directly
     // at the call site, without using optional.
     return rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol) ||
-        rules.enabled(fixCleanup3_2_0) || rules.enabled(fixCleanup3_3_0);
+        rules.enabled(fixCleanup3_2_0) || rules.enabled(fixCleanup3_3_0) ||
+        rules.enabled(featureMPTokensV2);
 }
 
 void
@@ -109,18 +111,18 @@ createGuards(
 class Rules::Impl
 {
 private:
-    std::unordered_set<uint256, HardenedHash<>> set_;
-    std::optional<uint256> digest_;
-    std::unordered_set<uint256, beast::Uhash<>> const& presets_;
+    std::unordered_set<UInt256, HardenedHash<>> set_;
+    std::optional<UInt256> digest_;
+    std::unordered_set<UInt256, beast::Uhash<>> const& presets_;
 
 public:
-    explicit Impl(std::unordered_set<uint256, beast::Uhash<>> const& presets) : presets_(presets)
+    explicit Impl(std::unordered_set<UInt256, beast::Uhash<>> const& presets) : presets_(presets)
     {
     }
 
     Impl(
-        std::unordered_set<uint256, beast::Uhash<>> const& presets,
-        std::optional<uint256> const& digest,
+        std::unordered_set<UInt256, beast::Uhash<>> const& presets,
+        std::optional<UInt256> const& digest,
         STVector256 const& amendments)
         : digest_(digest), presets_(presets)
     {
@@ -128,14 +130,14 @@ public:
         set_.insert(amendments.begin(), amendments.end());
     }
 
-    [[nodiscard]] std::unordered_set<uint256, beast::Uhash<>> const&
+    [[nodiscard]] std::unordered_set<UInt256, beast::Uhash<>> const&
     presets() const
     {
         return presets_;
     }
 
     [[nodiscard]] bool
-    enabled(uint256 const& feature) const
+    enabled(UInt256 const& feature) const
     {
         if (presets_.contains(feature))
             return true;
@@ -157,27 +159,27 @@ public:
     }
 };
 
-Rules::Rules(std::unordered_set<uint256, beast::Uhash<>> const& presets)
+Rules::Rules(std::unordered_set<UInt256, beast::Uhash<>> const& presets)
     : impl_(std::make_shared<Impl>(presets))
 {
 }
 
 Rules::Rules(
-    std::unordered_set<uint256, beast::Uhash<>> const& presets,
-    std::optional<uint256> const& digest,
+    std::unordered_set<UInt256, beast::Uhash<>> const& presets,
+    std::optional<UInt256> const& digest,
     STVector256 const& amendments)
     : impl_(std::make_shared<Impl>(presets, digest, amendments))
 {
 }
 
-std::unordered_set<uint256, beast::Uhash<>> const&
+std::unordered_set<UInt256, beast::Uhash<>> const&
 Rules::presets() const
 {
     return impl_->presets();
 }
 
 bool
-Rules::enabled(uint256 const& feature) const
+Rules::enabled(UInt256 const& feature) const
 {
     XRPL_ASSERT(impl_, "xrpl::Rules::enabled : initialized");
 
@@ -194,7 +196,7 @@ Rules::operator==(Rules const& other) const
 }
 
 bool
-isFeatureEnabled(uint256 const& feature, bool resultIfNoRules)
+isFeatureEnabled(UInt256 const& feature, bool resultIfNoRules)
 {
     auto const& rules = getCurrentTransactionRules();
     if (!rules)
@@ -203,7 +205,7 @@ isFeatureEnabled(uint256 const& feature, bool resultIfNoRules)
 }
 
 bool
-isFeatureEnabled(uint256 const& feature)
+isFeatureEnabled(UInt256 const& feature)
 {
     return isFeatureEnabled(feature, false);
 }
