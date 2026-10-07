@@ -9,7 +9,6 @@
 #include <array>
 #include <cerrno>
 #include <cstddef>
-#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <stdexcept>
@@ -49,24 +48,6 @@ bool
 noHardLinks(int error)
 {
     return std::ranges::find(kNoHardLinkErrors, error) != kNoHardLinkErrors.end();
-}
-
-// Creates @p target empty, failing with EEXIST in errno when it exists:
-// "wx" is O_CREAT with O_EXCL, without a variadic open. A claim whose
-// stream cannot be closed is removed again, so a false return leaves no file.
-bool
-claimName(fs::path const& target)
-{
-    std::FILE* const file = std::fopen(target.c_str(), "wx");
-    if (file == nullptr)
-        return false;
-    if (std::fclose(file) == 0)
-        return true;
-    int const error = errno;
-    std::error_code ec;
-    fs::remove(target, ec);
-    errno = error;
-    return false;
 }
 
 }  // namespace
@@ -132,23 +113,17 @@ OwnerOnlyFile::commit()
     fd_ = -1;
     bool exists = false;
     bool linked = false;
-    bool claimed = false;
+    bool unlinkable = false;
     if (written && existing_ == Existing::Refuse)
     {
         // link fails with EEXIST instead of replacing, so a concurrent creator is never lost.
         linked = ::link(temp_.c_str(), target_.c_str()) == 0;
-        if (!linked && noHardLinks(errno))
-        {
-            // Without hard links the name is claimed exclusively and the
-            // temporary is renamed over the claim.
-            claimed = claimName(target_);
-            written = claimed;
-        }
-        else if (!linked)
+        if (!linked)
         {
             written = false;
+            exists = errno == EEXIST;
+            unlinkable = noHardLinks(errno);
         }
-        exists = !written && errno == EEXIST;
     }
     if (written && !linked)
     {
@@ -163,17 +138,17 @@ OwnerOnlyFile::commit()
         std::error_code ec;
         fs::remove(temp_, ec);
     }
-    // A claim the rename did not cover is an empty target the next create
-    // would refuse to overwrite.
-    if (claimed && !written)
-    {
-        std::error_code ec;
-        fs::remove(target_, ec);
-    }
     if (exists)
     {
         throw std::runtime_error(
             "Refusing to overwrite existing " + what_ + ": " + target_.string());
+    }
+    // A filesystem without hard links cannot hold an owner-only file either.
+    if (unlinkable)
+    {
+        throw std::runtime_error(
+            "Cannot create " + what_ + " on a filesystem without hard links: " + target_.string() +
+            "; create it on a local filesystem and copy it");
     }
     if (!written)
         throw std::runtime_error("Cannot write " + what_ + ": " + target_.string());

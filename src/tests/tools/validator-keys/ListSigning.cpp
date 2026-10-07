@@ -565,7 +565,21 @@ TEST_F(ListSigningTest, append_requires_higher_sequence)
     broken[jss::blobs_v2][0u][jss::blob] = base64Encode(notAList);
     broken[jss::blobs_v2][0u][jss::signature] =
         strHex(sign(publisher_.signingKey, publisher_.token.validationSecret, makeSlice(notAList)));
-    EXPECT_EQ(appendError(tenth, broken), "The list to append to holds an invalid blob");
+    EXPECT_EQ(
+        appendError(tenth, broken),
+        "The list to append to holds an invalid blob: Not a JSON object");
+
+    // A signed blob with a sequence but no expiration or validators fails the
+    // checks an unsigned list gets, so its sequence never counts
+    std::string const bareSequence = R"({"sequence": 999})";
+    auto bare = v2;
+    bare[jss::blobs_v2][0u][jss::blob] = base64Encode(bareSequence);
+    bare[jss::blobs_v2][0u][jss::signature] = strHex(
+        sign(publisher_.signingKey, publisher_.token.validationSecret, makeSlice(bareSequence)));
+    EXPECT_EQ(
+        appendError(tenth, bare),
+        "The list to append to holds an invalid blob: \"expiration\" must be an integer from 1 to "
+        "2147483647");
 }
 
 TEST_F(ListSigningTest, append_reads_entry_manifests)

@@ -15,7 +15,8 @@ namespace xrpl {
  * directory entry. Without `commit` the temporary is removed, so a failed
  * command leaves the previous target as it was. The target is readable by
  * its owner only unless `kPublished` is given, for a document that is meant
- * to be served.
+ * to be served. A new target with `Existing::Refuse` needs a filesystem
+ * with hard links.
  */
 class OwnerOnlyFile
 {
@@ -65,14 +66,13 @@ public:
 
     /**
      * Replaces the target with what was written, or with `Existing::Refuse`
-     * creates it: a hard link to the temporary, which fails when the target
-     * exists, or where the filesystem has no hard links an exclusive create
-     * of the name followed by a rename of the temporary over it. A create
-     * that fails leaves no target.
+     * creates it as a hard link to the temporary, which fails when the
+     * target exists. A create that fails leaves no target.
      *
      * @throws std::runtime_error if the content could not be written or
      *         synced, the target could not be replaced, or with
-     *         `Existing::Refuse` the target exists
+     *         `Existing::Refuse` the target exists or the filesystem has no
+     *         hard links
      */
     void
     commit();

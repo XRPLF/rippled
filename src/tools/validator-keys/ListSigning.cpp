@@ -173,18 +173,20 @@ parseObject(std::string const& text)
     return jv;
 }
 
-// The sequence of a published blob's list.
-std::uint32_t
-blobSequence(std::string const& blobBytes)
+// A published blob's list, checked as an unsigned list is: the tool copies or
+// signs again only a blob it would sign itself.
+UnsignedList
+blobList(std::string const& blobBytes)
 {
-    json::Reader reader;
-    json::Value jv;
-    if (!reader.parse(blobBytes, jv) || !jv.isObject())
-        throw std::runtime_error("The list to append to holds an invalid blob");
-    auto const sequence = listInteger(jv, jss::sequence);
-    if (!sequence)
-        throw std::runtime_error("The list to append to holds an invalid blob");
-    return *sequence;
+    try
+    {
+        return checkedList(blobBytes, parseObject(blobBytes));
+    }
+    catch (std::runtime_error const& e)
+    {
+        throw std::runtime_error(
+            "The list to append to holds an invalid blob: " + std::string(e.what()));
+    }
 }
 
 }  // namespace
@@ -446,7 +448,7 @@ makeSignedList(
                     "The list to append to holds a blob whose signature does not verify");
             }
             entries.push_back({.blob = *bytes, .current = signer.current});
-            highest = std::max(highest, blobSequence(*bytes));
+            highest = std::max(highest, blobList(*bytes).sequence);
         }
         // A server ignores a blob whose sequence is not above the one it holds.
         if (list.sequence <= highest)

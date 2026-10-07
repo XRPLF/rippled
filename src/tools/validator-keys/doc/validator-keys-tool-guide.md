@@ -36,8 +36,11 @@ Without `--keyfile` the tool uses `~/.xrpld/validator-keys.json`. A key file
 left at `~/.ripple/validator-keys.json` by an earlier version is still used
 when `~/.xrpld/validator-keys.json` does not exist.
 
-Keep the key file in a secure but recoverable location, such as an encrypted
-USB flash drive. Do not modify its contents.
+Create the key file on a local filesystem: it is written readable by its
+owner only, and the tool refuses to create it on a filesystem without hard
+links, such as FAT, exFAT or an SMB share without POSIX extensions.
+Then copy it to a secure but recoverable location, such as an encrypted USB
+flash drive. Do not modify its contents.
 
 ## Validator Token
 
