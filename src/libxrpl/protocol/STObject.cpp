@@ -324,7 +324,7 @@ STObject::getFullText() const
         }
     }
 
-    ret += "}";
+    ret += '}';
     return ret;
 }
 
@@ -343,7 +343,7 @@ STObject::getText() const
 
         ret += elem->getText();
     }
-    ret += "}";
+    ret += '}';
     return ret;
 }
 
