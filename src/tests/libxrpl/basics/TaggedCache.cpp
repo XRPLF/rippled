@@ -10,9 +10,13 @@
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
 
+#include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <string>
+#include <thread>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -241,6 +245,160 @@ TEST(TaggedCacheTest, tagged_cache)
         EXPECT_EQ(intrPtrCache.getCacheSize(), 0);
         EXPECT_EQ(intrPtrCache.size(), 0);
     }
+}
+
+TEST(TaggedCacheTest, for_each_key_partition_visits_every_key_exactly_once)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Cache = TaggedCache<LedgerIndex, std::string>;
+    Cache c("partitions", 0, 1s, clock, journal);
+
+    constexpr LedgerIndex keyCount = 10'000;
+    for (LedgerIndex i = 0; i < keyCount; ++i)
+        c.insert(i, "v");
+    ASSERT_EQ(c.getTrackSize(), static_cast<int>(keyCount));
+
+    std::vector<LedgerIndex> visited;
+    std::size_t calls = 0;
+    EXPECT_TRUE(c.forEachKeyPartition([&](std::vector<LedgerIndex> const& keys) {
+        ++calls;
+        visited.insert(visited.end(), keys.begin(), keys.end());
+        return true;
+    }));
+
+    // The cache's map is built with one partition per hardware thread, and the
+    // callback runs once per partition.
+    EXPECT_EQ(calls, static_cast<std::size_t>(std::thread::hardware_concurrency()));
+
+    auto expected = c.getKeys();
+    std::ranges::sort(expected);
+    std::ranges::sort(visited);
+    ASSERT_EQ(visited.size(), keyCount);
+    EXPECT_EQ(visited, expected);
+}
+
+TEST(TaggedCacheTest, for_each_key_partition_on_empty_cache_calls_back_with_empty_batches)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Cache = TaggedCache<LedgerIndex, std::string>;
+    Cache const c("empty", 0, 1s, clock, journal);
+
+    std::size_t calls = 0;
+    std::size_t keysSeen = 0;
+    EXPECT_TRUE(c.forEachKeyPartition([&](std::vector<LedgerIndex> const& keys) {
+        ++calls;
+        keysSeen += keys.size();
+        return true;
+    }));
+
+    EXPECT_EQ(calls, static_cast<std::size_t>(std::thread::hardware_concurrency()));
+    EXPECT_EQ(keysSeen, 0u);
+}
+
+TEST(TaggedCacheTest, for_each_key_partition_releases_the_mutex_while_the_callback_runs)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Cache = TaggedCache<LedgerIndex, std::string>;
+    Cache c("unlocked", 0, 1s, clock, journal);
+    for (LedgerIndex i = 0; i < 1'000; ++i)
+        c.insert(i, "v");
+
+    // A recursive mutex lets the calling thread re-lock it, so the probe has to
+    // run on another thread: try_lock there succeeds only if this thread is not
+    // holding the mutex while the callback runs.
+    // With no partitions the callback never runs and every assertion below is
+    // vacuously true, which would hide the one thing this test exists to prove.
+    ASSERT_GT(std::thread::hardware_concurrency(), 0u);
+
+    std::size_t calls = 0;
+    std::size_t unlockedDuringCallback = 0;
+    EXPECT_TRUE(c.forEachKeyPartition([&](std::vector<LedgerIndex> const&) {
+        ++calls;
+        bool acquired = false;
+        std::thread probe([&] {
+            acquired = c.peekMutex().try_lock();
+            if (acquired)
+                c.peekMutex().unlock();
+        });
+        probe.join();
+        if (acquired)
+            ++unlockedDuringCallback;
+        return true;
+    }));
+
+    EXPECT_EQ(calls, static_cast<std::size_t>(std::thread::hardware_concurrency()));
+    EXPECT_EQ(unlockedDuringCallback, calls);
+}
+
+TEST(TaggedCacheTest, for_each_key_partition_tolerates_inserts_from_another_thread)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Cache = TaggedCache<LedgerIndex, std::string>;
+    Cache c("concurrent", 0, 1s, clock, journal);
+
+    constexpr LedgerIndex original = 5'000;
+    for (LedgerIndex i = 0; i < original; ++i)
+        c.insert(i, "v");
+
+    // While one partition's keys are being handled, another thread inserts a
+    // fresh key. The mutex is free during the callback, so the insert must
+    // complete -- a held mutex would deadlock the join -- and every original key
+    // must still be visited exactly once. Whether a late key is visited depends
+    // on which partition it lands in, so this asserts nothing about those.
+    std::vector<LedgerIndex> visited;
+    LedgerIndex next = original;
+    EXPECT_TRUE(c.forEachKeyPartition([&](std::vector<LedgerIndex> const& keys) {
+        visited.insert(visited.end(), keys.begin(), keys.end());
+        std::thread inserter([&] { c.insert(next, "late"); });
+        inserter.join();
+        ++next;
+        return true;
+    }));
+
+    std::ranges::sort(visited);
+    EXPECT_EQ(std::ranges::adjacent_find(visited), visited.end());
+    auto const originals =
+        std::ranges::count_if(visited, [](LedgerIndex k) { return k < original; });
+    EXPECT_EQ(static_cast<LedgerIndex>(originals), original);
+    EXPECT_EQ(c.getTrackSize(), static_cast<int>(next));
+}
+
+TEST(TaggedCacheTest, for_each_key_partition_stops_when_the_callback_returns_false)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Cache = TaggedCache<LedgerIndex, std::string>;
+    Cache c("early-stop", 0, 1s, clock, journal);
+    for (LedgerIndex i = 0; i < 10'000; ++i)
+        c.insert(i, "v");
+
+    // The callback refuses the first partition, so no later partition is even
+    // copied out, and the walk reports that it did not finish.
+    std::size_t calls = 0;
+    EXPECT_FALSE(c.forEachKeyPartition([&](std::vector<LedgerIndex> const&) {
+        ++calls;
+        return false;
+    }));
+    EXPECT_EQ(calls, 1u);
 }
 
 }  // namespace xrpl
