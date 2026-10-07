@@ -259,6 +259,7 @@ PathRequest::doCreate(std::shared_ptr<AssetCache> const& cache, json::Value cons
     {
         if (valid)
         {
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access) isValid() ensures it is set
             stream << iIdentifier_ << " valid: " << toBase58(*raSrcAccount_);
             stream << iIdentifier_ << " deliver: " << saDstAmount_.getFullText();
         }
