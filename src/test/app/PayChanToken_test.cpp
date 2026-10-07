@@ -5481,32 +5481,40 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env(paychan::clawback(gw, chan), Ter(tecNO_PERMISSION));
         }
 
-        // PaymentChannelClawback is not delegable (XLS-75: a new transaction
-        // type stays non-delegable until integrated and tested with
-        // delegation): DelegateSet cannot grant it, and a transaction naming
-        // a Delegate fails in preflight1 before any permission lookup.
+        // A delegate the issuer granted PaymentChannelClawback claws with the
+        // same effect as the issuer; one without the grant is refused.
         if (features[featurePermissionDelegationV1_1])
         {
             Env env{*this, features};
+            setup(env);
             auto const dan = Account("dan");
-            env.fund(XRP(10'000), alice, bob, gw, dan);
-            env(fset(gw, asfAllowTrustLineLocking));
-            env(fset(gw, asfAllowTrustLineClawback));
-            env.close();
-            env.trust(usd(100'000), alice);
-            env.close();
-            env(pay(gw, alice, usd(5'000)));
+            auto const eve = Account("eve");
+            env.fund(XRP(10'000), dan, eve);
             env.close();
             auto const seq1 = env.seq(alice);
             env(paychan::create(alice, bob, usd(4'000), settleDelay, alice.pk()));
             env.close();
             auto const chan = paychan::channel(alice, bob, seq1);
 
-            env(delegate::set(gw, dan, {"PaymentChannelClawback"}), Ter(temMALFORMED));
-            env(paychan::clawback(gw, chan), delegate::As(dan), Ter(temINVALID));
+            env(paychan::clawback(gw, chan, usd(1'000)),
+                delegate::As(eve),
+                Ter(terNO_DELEGATE_PERMISSION));
             env.close();
-            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
-            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(4'000));
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(4'000));
+
+            env(delegate::set(gw, dan, {"PaymentChannelClawback"}));
+            env.close();
+
+            env(paychan::clawback(gw, chan, usd(1'000)), delegate::As(dan));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(3'000));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(3'000));
+
+            env(paychan::clawback(gw, chan), delegate::As(dan));
+            env.close();
+            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(0));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(1'000));
         }
 
         // Clawback requires the issuer opt-in (lsfAllowTrustLineClawback).

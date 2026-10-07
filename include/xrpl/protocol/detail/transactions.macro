@@ -1179,7 +1179,7 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 95, TransactionProposalCreate,
 #   include <xrpl/tx/transactors/payment_channel/PaymentChannelClawback.h>
 #endif
 TRANSACTION(ttPAYCHAN_CLAWBACK, 96, PaymentChannelClawback,
-    ({.amendment = featureTokenPaychan}),
+    ({.delegable = Delegation::Delegable, .amendment = featureTokenPaychan}),
     ({
     {sfChannel, SoeRequired},
     {sfAmount, SoeOptional, SoeMptSupported},
