@@ -35,6 +35,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <format>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -110,7 +111,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     if (section.empty())
     {
         Throw<std::runtime_error>(
-            std::string("Missing [") + Sections::kNodeDatabase + "] entry in configuration file");
+            std::format("Missing [{}] entry in configuration file", Sections::kNodeDatabase));
     }
 
     // RocksDB only. Use sensible defaults if no values specified.
@@ -135,15 +136,14 @@ SHAMapStoreImp::SHAMapStoreImp(
         if (deleteInterval_ < minInterval)
         {
             Throw<std::runtime_error>(
-                "online_delete must be at least " + std::to_string(minInterval));
+                std::format("online_delete must be at least {}", minInterval));
         }
 
         if (config.ledgerHistory > deleteInterval_)
         {
-            Throw<std::runtime_error>(
-                "online_delete must not be less than ledger_history "
-                "(currently " +
-                std::to_string(config.ledgerHistory) + ")");
+            Throw<std::runtime_error>(std::format(
+                "online_delete must not be less than ledger_history (currently {})",
+                config.ledgerHistory));
         }
 
         // Configuration that affects the behavior of online delete
@@ -177,7 +177,7 @@ SHAMapStoreImp::SHAMapStoreImp(
         if (maxWaitingLedgers_ < minWaiting)
         {
             Throw<std::runtime_error>(
-                "max_waiting_ledgers must be at least " + std::to_string(minWaiting));
+                std::format("max_waiting_ledgers must be at least {}", minWaiting));
         }
 
         stateDb_.init(config, dbName_);

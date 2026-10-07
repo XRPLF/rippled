@@ -36,14 +36,14 @@ private:
     // translate e.g. STI_LEDGERENTRY to LedgerEntry
     translate(std::string const& inp);
 
-    uint256 defsHash_;
+    UInt256 defsHash_;
     json::Value defs_;
 
 public:
     ServerDefinitions();
 
     [[nodiscard]] bool
-    hashMatches(uint256 hash) const
+    hashMatches(UInt256 hash) const
     {
         return defsHash_ == hash;
     }
@@ -385,7 +385,7 @@ doServerDefinitions(rpc::JsonContext& context)
 {
     auto& params = context.params;
 
-    uint256 hash;
+    UInt256 hash;
     if (params.isMember(jss::hash))
     {
         if (!params[jss::hash].isString() || !hash.parseHex(params[jss::hash].asString()))
