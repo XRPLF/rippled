@@ -1,9 +1,13 @@
 #pragma once
 
+#include <xrpld/rpc/detail/JsonObjectView.hpp>
+
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
 #include <rpcspec/Errors.hpp>
+#include <rpcspec/HandlerFor.hpp>
 #include <rpcspec/Types.hpp>
 
 #include <map>
@@ -11,6 +15,22 @@
 #include <vector>
 
 namespace xrpl::rpc {
+
+template <typename InputT>
+using HandlerFor = ::rpc::spec::HandlerFor<InputT, json::Value>;
+
+inline void
+injectSpecError(json::Value& object, ::rpc::Status const& status)
+{
+    if (auto const code = std::get<ErrorCodeI>(status.code); status.message.empty())
+    {
+        injectError(code, object);
+    }
+    else
+    {
+        injectError(code, status.message, object);
+    }
+}
 
 // Warnings are grouped by code into one entry each: the code's standard message followed by
 // every per-field detail, space separated.

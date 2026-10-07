@@ -40,7 +40,7 @@ class Xrpl(ConanFile):
         "nudb/2.0.9",
         "openssl/3.6.3",
         "soci/4.0.3",
-        "xrpl-rpc-spec/0.1.19",
+        "xrpl-rpc-spec/0.1.20",
         "zlib/1.3.2",
     ]
 
@@ -49,7 +49,8 @@ class Xrpl(ConanFile):
     ]
 
     tool_requires = [
-        "protobuf/6.33.5",
+        "grpc/<host_version>",
+        "protobuf/<host_version>",
     ]
 
     default_options = {
@@ -122,6 +123,10 @@ class Xrpl(ConanFile):
         "xrpl-rpc-spec/*:server": "xrpld",
         "xxhash/*:shared": False,
     }
+
+    # default_options only reach the host context;
+    # give tool_requires (and their dependencies) the same dependency options.
+    default_build_options = {k: v for k, v in default_options.items() if "/" in k}
 
     def set_version(self):
         self.version = self.version or DEV_VERSION
