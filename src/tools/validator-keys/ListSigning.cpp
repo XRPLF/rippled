@@ -357,6 +357,11 @@ makeSignedList(
     if (version == 1 && append)
         throw std::runtime_error("A version 1 list holds one blob; use version 2 to append");
 
+    // The token's manifest must verify and belong to the list's master key.
+    auto const current = parseManifest(manifestBase64);
+    if (!current || current->masterKey != masterKey || !current->signingKey)
+        throw std::runtime_error("The token holds an invalid manifest");
+
     json::Value jv(json::ValueType::Object);
     if (append)
     {
@@ -374,10 +379,6 @@ makeSignedList(
             throw std::runtime_error(
                 "The list to append to already holds " + std::to_string(kMaxBlobs) + " blobs");
         }
-
-        auto const current = deserializeManifest(base64Decode(manifestBase64));
-        if (!current || !current->signingKey)
-            throw std::runtime_error("The token holds an invalid manifest");
 
         // The signing key a manifest in the document delegates to, and whether
         // the manifest is the token's. A server that applied a manifest

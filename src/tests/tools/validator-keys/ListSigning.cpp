@@ -748,6 +748,37 @@ TEST_F(ListSigningTest, append_refuses_manifest_of_another_master_key)
         EXPECT_EQ(appendError(doc), anotherMaster);
     }
 
+    // A token whose manifest belongs to another master key than the list's,
+    // appending and starting a new document of either version
+    std::string const invalidToken = "The token holds an invalid manifest";
+    EXPECT_EQ(
+        errorOf([&] {
+            makeSignedList(
+                other.token.manifest,
+                publisher_.manifest.masterKey,
+                later,
+                resign2(later.canonical),
+                2,
+                signed2(),
+                resign2);
+        }),
+        invalidToken);
+    for (auto const version : {1u, 2u})
+    {
+        EXPECT_EQ(
+            errorOf([&] {
+                makeSignedList(
+                    other.token.manifest,
+                    publisher_.manifest.masterKey,
+                    later,
+                    resign2(later.canonical),
+                    version,
+                    std::nullopt,
+                    {});
+            }),
+            invalidToken);
+    }
+
     // A revocation of the list's master key verifies but names no signing key
     {
         SigningKeys revoking = publisher_.keys;

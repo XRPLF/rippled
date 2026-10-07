@@ -127,7 +127,9 @@ using Resigner = std::function<std::string(std::string const& blobBytes)>;
  * blob whose `sequence` is not above the one it holds, so @p list's must be
  * above every existing blob's.
  *
- * @throws std::runtime_error if @p append is not a version 2 document for
+ * @throws std::runtime_error if @p manifestBase64 does not deserialize and
+ *         verify, names no signing key or belongs to another master key than
+ *         @p masterKey; or if @p append is not a version 2 document for
  *         @p masterKey, already holds the maximum number of blobs, holds a
  *         malformed entry, holds a manifest that does not deserialize and
  *         verify or has no signing key, holds a manifest for another master
