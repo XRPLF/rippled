@@ -822,7 +822,7 @@ TER
 Transactor::ticketDelete(
     ApplyView& view,
     AccountID const& account,
-    uint256 const& ticketIndex,
+    UInt256 const& ticketIndex,
     beast::Journal j)
 {
     // Delete the Ticket, adjust the account root ticket count, and
@@ -946,7 +946,7 @@ NotTEC
 Transactor::checkSign(
     ReadView const& view,
     ApplyFlags flags,
-    std::optional<uint256 const> const& parentBatchId,
+    std::optional<UInt256 const> const& parentBatchId,
     AccountID const& idAccount,
     STObject const& sigObject,
     beast::Journal const j,
@@ -1238,7 +1238,7 @@ Transactor::checkMultiSign(
 //------------------------------------------------------------------------------
 
 static void
-removeUnfundedOffers(ApplyView& view, std::vector<uint256> const& offers, beast::Journal viewJ)
+removeUnfundedOffers(ApplyView& view, std::vector<UInt256> const& offers, beast::Journal viewJ)
 {
     int removed = 0;
 
@@ -1257,7 +1257,7 @@ removeUnfundedOffers(ApplyView& view, std::vector<uint256> const& offers, beast:
 static void
 removeExpiredNFTokenOffers(
     ApplyView& view,
-    std::vector<uint256> const& offers,
+    std::vector<UInt256> const& offers,
     beast::Journal viewJ)
 {
     std::size_t removed = 0;
@@ -1274,7 +1274,7 @@ removeExpiredNFTokenOffers(
 }
 
 static void
-removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, beast::Journal viewJ)
+removeExpiredCredentials(ApplyView& view, std::vector<UInt256> const& creds, beast::Journal viewJ)
 {
     for (auto const& index : creds)
     {
@@ -1293,7 +1293,7 @@ removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, bea
 static void
 removeDeletedTrustLines(
     ApplyView& view,
-    std::vector<uint256> const& trustLines,
+    std::vector<UInt256> const& trustLines,
     beast::Journal viewJ)
 {
     if (trustLines.size() > kMaxDeletableAmmTrustLines)
@@ -1450,7 +1450,7 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
 // The sole purpose of this function is to provide a convenient, named
 // location to set a breakpoint, to be used when replaying transactions.
 void
-Transactor::trapTransaction(uint256 txHash) const
+Transactor::trapTransaction(UInt256 txHash) const
 {
     JLOG(j_.debug()) << "Transaction trapped: " << txHash;
 }
@@ -1488,12 +1488,12 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
     // re-applied after the context is reset.
     auto const typesToCollect = typesForResult(result);
 
-    std::map<LedgerEntryType, std::vector<uint256>> deletedObjects;
+    std::map<LedgerEntryType, std::vector<UInt256>> deletedObjects;
     if (!typesToCollect.empty())
     {
         ctx_.visit(
             [&typesToCollect, &deletedObjects](
-                uint256 const& index, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
+                UInt256 const& index, bool isDelete, SLE::ConstRef before, SLE::ConstRef after) {
                 if (isDelete)
                 {
                     XRPL_ASSERT(

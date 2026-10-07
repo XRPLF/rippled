@@ -37,7 +37,7 @@ namespace xrpl {
 LedgerDeltaAcquire::LedgerDeltaAcquire(
     Application& app,
     InboundLedgers& inboundLedgers,
-    uint256 const& ledgerHash,
+    UInt256 const& ledgerHash,
     std::uint32_t ledgerSeq,
     std::unique_ptr<PeerSet> peerSet)
     : TimeoutCounter(

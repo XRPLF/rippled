@@ -342,7 +342,7 @@ TransactionProposalCreate::doApply()
 }
 
 void
-TransactionProposalCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+TransactionProposalCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work). Object-level
     // invariants for the TransactionProposal ledger entry (unsigned canonical

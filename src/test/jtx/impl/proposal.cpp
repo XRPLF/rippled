@@ -157,10 +157,10 @@ namespace {
 
 // The keys an account's owner directory lists, each with the page it sits on.
 // The pages are read directly, so a key with nothing behind it is still seen.
-std::map<uint256, std::uint64_t>
+std::map<UInt256, std::uint64_t>
 ownerDirKeys(ReadView const& view, AccountID const& account)
 {
-    std::map<uint256, std::uint64_t> keys;
+    std::map<UInt256, std::uint64_t> keys;
 
     auto const root = keylet::ownerDir(account);
     std::uint64_t page = 0;
