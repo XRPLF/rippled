@@ -32,9 +32,9 @@ namespace xrpl {
 namespace {
 
 std::int64_t
-fieldDelta(bool isDelete, SLE::const_ref before, SLE::const_ref after, SField const& field)
+fieldDelta(bool isDelete, SLE::ConstRef before, SLE::ConstRef after, SField const& field)
 {
-    auto const value = [&field](SLE::const_ref sle) -> std::int64_t {
+    auto const value = [&field](SLE::ConstRef sle) -> std::int64_t {
         return sle ? sle->getFieldU32(field) : 0;
     };
     return (isDelete ? 0 : value(after)) - value(before);
@@ -184,7 +184,7 @@ proposalTicketKey(SLE const& proposal)
 }  // namespace
 
 void
-ValidTransactionProposal::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidTransactionProposal::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     // `after` is always present (on deletion it holds the final state), so it
     // alone determines the entry type. LedgerEntryTypesMatch owns malformed
@@ -268,7 +268,7 @@ ValidTransactionProposal::visitEntry(bool isDelete, SLE::const_ref before, SLE::
     if (!isDelete && !validSignerArrays(after->getFieldObject(sfProposedTransaction)))
         invalidSignerArrays_ = true;
 
-    auto recordReserveState = [&](SLE::const_ref sle, std::int64_t direction) {
+    auto recordReserveState = [&](SLE::ConstRef sle, std::int64_t direction) {
         auto const owner = sle->getAccountID(sfOwner);
         auto const reserve =
             proposal::proposalOwnerCount(sle->getFieldObject(sfProposedTransaction)) * direction;
