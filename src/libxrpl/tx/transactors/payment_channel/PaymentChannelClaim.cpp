@@ -222,8 +222,9 @@ PaymentChannelClaim::doApply()
         }
 
         // The payout reqBalance - sfBalance and the unclaimed remainder
-        // sfAmount - reqBalance must both be exact so that the destination
-        // and the close refund receive exactly what sfBalance records.
+        // sfAmount - reqBalance must both be exact so that the amounts
+        // unlocked by this claim and by the close equal what sfBalance and
+        // sfAmount record.
         if (!isExactDifference(chanFunds, reqBalance) ||
             !isExactDifference(reqBalance, chanBalance))
             return tecPRECISION_LOSS;
