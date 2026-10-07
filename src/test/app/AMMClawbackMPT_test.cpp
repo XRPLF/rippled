@@ -31,6 +31,15 @@
 namespace xrpl::test {
 class AMMClawbackMPT_test : public beast::unit_test::Suite
 {
+    // SingleAssetVault, LendingProtocol and MPTokensV2 enable the large
+    // Number mantissa.
+    static bool
+    largeMantissa(FeatureBitset const& features)
+    {
+        return features[featureSingleAssetVault] || features[featureLendingProtocol] ||
+            features[featureMPTokensV2];
+    }
+
     void
     testInvalidRequest(FeatureBitset features)
     {
@@ -1724,7 +1733,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
                     .asString();
             auto const lpTokenBalance =
                 amm.ammRpcInfo()[jss::amm][jss::lp_token][jss::value].asString();
-            if (features[featureSingleAssetVault] || features[featureLendingProtocol])
+            if (largeMantissa(features))
             {
                 BEAST_EXPECT(lpToken == "1.414213562374011" && lpTokenBalance == "1.4142135623741");
             }
@@ -1741,16 +1750,14 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
                 env(amm::ammClawback(gw, alice, usd, eur, std::nullopt));
                 BEAST_EXPECT(!amm.ammExists());
             }
-            else if (
-                features[fixAMMv1_3] &&
-                (features[featureSingleAssetVault] || features[featureLendingProtocol]))
+            else if (features[fixAMMv1_3] && largeMantissa(features))
             {
                 env(amm::ammClawback(gw, alice, usd, eur, std::nullopt));
                 // Without the Rounding feature and with new Number a dust pool
                 // amount remains
                 BEAST_EXPECT(amm.ammExists());
             }
-            else if (!features[featureSingleAssetVault] && !features[featureLendingProtocol])
+            else if (!largeMantissa(features))
             {
                 env(amm::ammClawback(gw, alice, usd, eur, std::nullopt), Ter(tecINTERNAL));
                 BEAST_EXPECT(amm.ammExists());
@@ -1794,7 +1801,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
                     .asString();
             auto const lpTokenBalance =
                 amm.ammRpcInfo()[jss::amm][jss::lp_token][jss::value].asString();
-            if (!features[featureSingleAssetVault] && !features[featureLendingProtocol])
+            if (!largeMantissa(features))
             {
                 BEAST_EXPECT(lpToken == "1.414213562374011" && lpTokenBalance == "1.414213562374");
             }
@@ -1811,16 +1818,14 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
                 env(amm::ammClawback(gw, alice, usd, eur, std::nullopt));
                 BEAST_EXPECT(!amm.ammExists());
             }
-            else if (
-                features[fixAMMv1_3] &&
-                (features[featureSingleAssetVault] || features[featureLendingProtocol]))
+            else if (features[fixAMMv1_3] && largeMantissa(features))
             {
                 // Without the Rounding feature and with new Number a dust pool
                 // amount remains
                 env(amm::ammClawback(gw, alice, usd, eur, std::nullopt));
                 BEAST_EXPECT(amm.ammExists());
             }
-            else if (!features[featureSingleAssetVault] && !features[featureLendingProtocol])
+            else if (!largeMantissa(features))
             {
                 env(amm::ammClawback(gw, alice, usd, eur, std::nullopt), Ter(tecINTERNAL));
                 BEAST_EXPECT(amm.ammExists());

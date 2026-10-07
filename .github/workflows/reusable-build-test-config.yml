@@ -215,6 +215,19 @@ jobs:
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_ARGS: ${{ inputs.cmake_args }}
+          # GitHub creates a merge commit for a PR
+          # https://www.kenmuse.com/blog/the-many-shas-of-a-github-pull-request/
+          #
+          # We:
+          # - explicitly provide branch name
+          # - use `github.event.pull_request.head.sha` to get the SHA of last commit in the PR branch
+          #
+          # This way it works both for PRs and pushes to branches.
+          GITHUB_BRANCH_NAME: "${{ github.head_ref || github.ref_name }}"
+          GITHUB_HEAD_SHA: "${{ github.event.pull_request.head.sha || github.sha }}"
+          #
+          # If tag is being pushed, we use that version.
+          FORCE_XRPLD_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
         run: |
           cmake \
               -G '${{ runner.os == 'Windows' && 'Visual Studio 18 2026' || 'Ninja' }}' \
@@ -276,6 +289,7 @@ jobs:
         run: |
           ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpld"
           ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpl_tests"
+          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpld_tests"
 
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}
@@ -357,7 +371,9 @@ jobs:
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
         working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
-        run: ./xrpl_tests
+        run: |
+          ./xrpl_tests
+          ./xrpld_tests
 
       - name: Run the embedded tests
         if: ${{ !inputs.build_only }}
@@ -458,7 +474,7 @@ jobs:
 
       - name: Upload coverage report
         if: ${{ github.repository_owner == 'XRPLF' && !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           disable_search: true
           disable_telem: true

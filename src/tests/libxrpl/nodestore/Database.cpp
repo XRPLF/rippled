@@ -70,7 +70,7 @@ protected:
         nodeParams_.set("type", GetParam());
         nodeParams_.set("path", nodeDb_.path());
 
-        beast::xor_shift_engine rng(kSeedValue);
+        beast::XorShiftEngine rng(kSeedValue);
         batch_ = createPredictableBatch(kNumObjects, rng());
     }
 
@@ -109,7 +109,7 @@ TEST_P(NodeStoreDatabaseTest, store_and_fetch)
 
     {
         SCOPED_TRACE("read in shuffled order");
-        beast::xor_shift_engine rng(kSeedValue);
+        beast::XorShiftEngine rng(kSeedValue);
         std::shuffle(batch_.begin(), batch_.end(), rng);
         auto const copy = fetchCopyOfBatch(*db, batch_);
         EXPECT_EQ(batch_, copy);

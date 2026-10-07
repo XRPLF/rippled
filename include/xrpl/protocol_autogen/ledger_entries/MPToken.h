@@ -269,6 +269,54 @@ public:
     }
 
     /**
+     * @brief Get sfIssuerKeyMirrorEpoch (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getIssuerKeyMirrorEpoch() const
+    {
+        if (hasIssuerKeyMirrorEpoch())
+            return this->sle_->at(sfIssuerKeyMirrorEpoch);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfIssuerKeyMirrorEpoch is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasIssuerKeyMirrorEpoch() const
+    {
+        return this->sle_->isFieldPresent(sfIssuerKeyMirrorEpoch);
+    }
+
+    /**
+     * @brief Get sfAuditorKeyMirrorEpoch (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getAuditorKeyMirrorEpoch() const
+    {
+        if (hasAuditorKeyMirrorEpoch())
+            return this->sle_->at(sfAuditorKeyMirrorEpoch);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAuditorKeyMirrorEpoch is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAuditorKeyMirrorEpoch() const
+    {
+        return this->sle_->isFieldPresent(sfAuditorKeyMirrorEpoch);
+    }
+
+    /**
      * @brief Get sfHolderEncryptionKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -290,6 +338,30 @@ public:
     hasHolderEncryptionKey() const
     {
         return this->sle_->isFieldPresent(sfHolderEncryptionKey);
+    }
+
+    /**
+     * @brief Get sfRecoveryKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getRecoveryKey() const
+    {
+        if (hasRecoveryKey())
+            return this->sle_->at(sfRecoveryKey);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfRecoveryKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasRecoveryKey() const
+    {
+        return this->sle_->isFieldPresent(sfRecoveryKey);
     }
 };
 
@@ -472,6 +544,28 @@ public:
     }
 
     /**
+     * @brief Set sfIssuerKeyMirrorEpoch (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setIssuerKeyMirrorEpoch(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfIssuerKeyMirrorEpoch] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAuditorKeyMirrorEpoch (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setAuditorKeyMirrorEpoch(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfAuditorKeyMirrorEpoch] = value;
+        return *this;
+    }
+
+    /**
      * @brief Set sfHolderEncryptionKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
@@ -483,12 +577,23 @@ public:
     }
 
     /**
+     * @brief Set sfRecoveryKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setRecoveryKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfRecoveryKey] = value;
+        return *this;
+    }
+
+    /**
      * @brief Build and return the completed MPToken wrapper.
      * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     MPToken
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return MPToken{std::make_shared<SLE>(std::move(object_), index)};
     }

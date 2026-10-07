@@ -1,6 +1,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -44,8 +45,8 @@ getAccountObjects(
     ReadView const& ledger,
     AccountID const& account,
     std::optional<std::vector<LedgerEntryType>> const& typeFilter,
-    uint256 dirIndex,
-    uint256 entryIndex,
+    UInt256 dirIndex,
+    UInt256 entryIndex,
     std::uint32_t const limit,
     std::optional<bool> const sponsoredFilter,
     json::Value& jvResult)
@@ -314,6 +315,7 @@ doAccountObjects(rpc::JsonContext& context)
             {.name = jss::permissioned_domain, .type = ltPERMISSIONED_DOMAIN},
             {.name = jss::vault, .type = ltVAULT},
             {.name = jss::sponsorship, .type = ltSPONSORSHIP},
+            {.name = jss::transaction_proposal, .type = ltTRANSACTION_PROPOSAL},
         };
 
         typeFilter.emplace();
@@ -339,7 +341,7 @@ doAccountObjects(rpc::JsonContext& context)
         if (rpcStatus)
         {
             result.clear();
-            rpcStatus.inject(result);
+            rpc::injectSpecError(result, rpcStatus);
             return result;
         }
         if (type != ltANY)
@@ -352,8 +354,8 @@ doAccountObjects(rpc::JsonContext& context)
     if (auto err = readLimitField(limit, rpc::tuning::kAccountObjects, context))
         return *err;
 
-    uint256 dirIndex;
-    uint256 entryIndex;
+    UInt256 dirIndex;
+    UInt256 entryIndex;
     if (params.isMember(jss::marker))
     {
         auto const& marker = params[jss::marker];
