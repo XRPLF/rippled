@@ -72,7 +72,7 @@ PathRequest::PathRequest(
 
 PathRequest::PathRequest(
     Application& app,
-    std::function<void(void)> completion,
+    std::function<void()> completion,
     resource::Consumer& consumer,
     int id,
     PathRequestManager& owner,
@@ -170,7 +170,7 @@ PathRequest::updateComplete()
     if (fCompletion_)
     {
         fCompletion_();
-        fCompletion_ = std::function<void(void)>();
+        fCompletion_ = std::function<void()>();
     }
 }
 
@@ -514,7 +514,7 @@ PathRequest::getPathFinder(
     PathAsset const& currency,
     STAmount const& dstAmount,
     int const level,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     auto i = currencyMap.find(currency);
     if (i != currencyMap.end())
@@ -547,7 +547,7 @@ PathRequest::findPaths(
     std::shared_ptr<AssetCache> const& cache,
     int const level,
     json::Value& jvArray,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     auto sourceAssets = sciSourceAssets_;
     if (sourceAssets.empty() && saSendMax_)
@@ -723,7 +723,7 @@ json::Value
 PathRequest::doUpdate(
     std::shared_ptr<AssetCache> const& cache,
     bool fast,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     using namespace std::chrono;
     JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal");

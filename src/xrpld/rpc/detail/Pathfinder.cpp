@@ -238,7 +238,7 @@ Pathfinder::Pathfinder(
 }
 
 bool
-Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continueCallback)
+Pathfinder::findPaths(int searchLevel, std::function<bool()> const& continueCallback)
 {
     JLOG(j_.trace()) << "findPaths start";
     if (dstAmount_ == beast::kZero)
@@ -448,7 +448,7 @@ Pathfinder::getPathLiquidity(
 }
 
 void
-Pathfinder::computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback)
+Pathfinder::computePathRanks(int maxPaths, std::function<bool()> const& continueCallback)
 {
     remainingAmount_ = convertAmount(dstAmount_, convertAll_);
 
@@ -527,7 +527,7 @@ Pathfinder::rankPaths(
     int maxPaths,
     STPathSet const& paths,
     std::vector<PathRank>& rankedPaths,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     JLOG(j_.trace()) << "rankPaths with " << paths.size() << " candidates, and " << maxPaths
                      << " maximum";
@@ -606,7 +606,7 @@ Pathfinder::getBestPaths(
     STPath& fullLiquidityPath,
     STPathSet const& extraPaths,
     AccountID const& srcIssuer,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     JLOG(j_.debug()) << "findPaths: " << completePaths_.size() << " paths and " << extraPaths.size()
                      << " extras";
@@ -751,7 +751,7 @@ Pathfinder::getPathsOut(
     LineDirection direction,
     bool isDstAsset,
     AccountID const& dstAccount,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     Asset const asset = assetFromPathAsset(pathAsset, account);
 
@@ -839,7 +839,7 @@ Pathfinder::addLinks(
     STPathSet const& currentPaths,  // The paths to build from
     STPathSet& incompletePaths,     // The set of partial paths we add to
     int addFlags,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     JLOG(j_.debug()) << "addLink< on " << currentPaths.size() << " source(s), flags=" << addFlags;
     for (auto const& path : currentPaths)
@@ -851,9 +851,7 @@ Pathfinder::addLinks(
 }
 
 STPathSet&
-Pathfinder::addPathsForType(
-    PathType const& pathType,
-    std::function<bool(void)> const& continueCallback)
+Pathfinder::addPathsForType(PathType const& pathType, std::function<bool()> const& continueCallback)
 {
     JLOG(j_.debug()) << "addPathsForType " << CollectionAndDelimiter(pathType, ", ");
     // See if the set of paths for this type already exists.
@@ -965,7 +963,7 @@ Pathfinder::addLink(
     STPath const& currentPath,   // The path to build from
     STPathSet& incompletePaths,  // The set of partial paths we add to
     int addFlags,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     auto const& pathEnd = currentPath.empty() ? source_ : currentPath.back();
     auto const& uEndPathAsset = pathEnd.getPathAsset();

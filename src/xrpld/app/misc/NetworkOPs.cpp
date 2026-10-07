@@ -645,7 +645,7 @@ public:
     bool
     unsubPeerStatus(std::uint64_t uListener) override;
     void
-    pubPeerStatus(std::function<json::Value(void)> const&) override;
+    pubPeerStatus(std::function<json::Value()> const&) override;
 
     bool
     subConsensus(InfoSub::Ref ispListener) override;
@@ -2702,7 +2702,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 }
 
 void
-NetworkOPsImp::pubPeerStatus(std::function<json::Value(void)> const& func)
+NetworkOPsImp::pubPeerStatus(std::function<json::Value()> const& func)
 {
     // Hold each locked subscriber alive until after streamLock_ is released; a
     // last-reference ~InfoSub would otherwise re-acquire this non-recursive
