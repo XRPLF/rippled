@@ -1522,6 +1522,54 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(!env.current()->exists(trustLineKey));
         }
 
+        // tecLIMIT_EXCEEDED: the close refund would take the source past its
+        // limit, which only the source's own close may do
+        {
+            Env env{*this, features};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account{"gateway"};
+            auto const usd = gw["USD"];
+            env.fund(XRP(5'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(10'000), alice, bob);
+            env.close();
+            env(pay(gw, alice, usd(1'000)));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            auto const cancelAfter = env.now() + 100s;
+            env(paychan::create(alice, bob, usd(100), 100s, alice.pk(), cancelAfter),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const sig = paychan::signClaimAuth(alice.pk(), alice.sk(), chan, usd(40));
+            env(paychan::claim(bob, chan, usd(40), usd(40), Slice(sig), alice.pk()),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // The remainder of 60 on alice's 900 exceeds her new limit of 950
+            env.trust(usd(950), alice);
+            env.close();
+
+            env(paychan::claim(bob, chan), Txflags(tfClose), Ter(tecLIMIT_EXCEEDED));
+            env.close();
+
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(100));
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == usd(40));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(900));
+
+            env.close(cancelAfter + 1s);
+
+            env(paychan::claim(alice, chan), Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(960));
+        }
+
         // tesSUCCESS: the source re-creates its deleted line at the close
         // refund with only the reserve the line itself needs
         {
