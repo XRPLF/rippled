@@ -2,6 +2,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
@@ -5231,6 +5232,539 @@ struct PayChanToken_test : public beast::unit_test::Suite
     }
 
     void
+    testIOUChannelClawback(FeatureBitset features)
+    {
+        testcase("IOU Channel Clawback");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account{"gateway"};
+        auto const usd = gw["USD"];
+        auto const settleDelay = 100s;
+
+        auto const setup = [&](Env& env) {
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+            env.trust(usd(100'000), alice);
+            env.trust(usd(100'000), bob);
+            env.close();
+            env(pay(gw, alice, usd(5'000)));
+            env.close();
+        };
+
+        // Amendment gating: without featureTokenPaychan the transaction type
+        // is disabled (rejected before any channel lookup).
+        {
+            Env env{*this, features - featureTokenPaychan};
+            env.fund(XRP(10'000), gw);
+            env.close();
+            auto const chan = paychan::channel(alice, bob, env.seq(gw));
+            env(paychan::clawback(gw, chan), Ter(temDISABLED));
+        }
+
+        // Full clawback of the unclaimed remainder deletes the channel; the
+        // issuer's trust line is untouched (value already redeemed at lock).
+        {
+            Env env{*this, features};
+            setup(env);
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(4'000));
+
+            // A non-issuer cannot claw.
+            env(paychan::clawback(alice, chan), Ter(tecNO_PERMISSION));
+
+            env(paychan::clawback(gw, chan));
+            env.close();
+            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(0));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(1'000));
+        }
+
+        // A claim can drain a channel to sfBalance == sfAmount without
+        // closing it. Clawback on that channel has nothing left to claw and
+        // succeeds as a no-op rather than hitting the internal dead-channel
+        // case.
+        {
+            Env env{*this, features};
+            setup(env);
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            auto const sig = paychan::signClaimAuth(alice.pk(), alice.sk(), chan, usd(4'000));
+            env(paychan::claim(bob, chan, usd(4'000), usd(4'000), Slice(sig), alice.pk()));
+            env.close();
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(0));
+
+            env(paychan::clawback(gw, chan));
+            env.close();
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(4'000));
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == usd(4'000));
+        }
+
+        // Partial clawback reduces the channel amount in place; a later claim
+        // clamps to what remains.
+        {
+            Env env{*this, features};
+            setup(env);
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            env(paychan::clawback(gw, chan, usd(1'000)));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(3'000));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(3'000));
+
+            // Over-claiming the reduced remainder fails.
+            auto const sig = paychan::signClaimAuth(alice.pk(), alice.sk(), chan, usd(4'000));
+            env(paychan::claim(bob, chan, usd(4'000), usd(4'000), Slice(sig), alice.pk()),
+                Ter(tecUNFUNDED_PAYMENT));
+
+            // Claiming within the remainder succeeds.
+            auto const sig2 = paychan::signClaimAuth(alice.pk(), alice.sk(), chan, usd(3'000));
+            env(paychan::claim(bob, chan, usd(3'000), usd(3'000), Slice(sig2), alice.pk()));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, usd) == usd(3'000));
+        }
+
+        // tecPRECISION_LOSS: a partial IOU claw whose difference rounds to a
+        // different nonzero decrease is rejected and the channel is unchanged.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+            env.trust(usd(100000000000000000), alice);
+            env.trust(usd(100000000000000000), bob);
+            env.close();
+            env(pay(gw, alice, usd(10000000000000000)));
+            env.close();
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(1234567890123456), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            // 1234567890123456 - 6000.25 needs 18 digits, so the difference
+            // rounds under either mantissa size
+            env(paychan::clawback(gw, chan, usd(6000.25)), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(1234567890123456));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(1234567890123456));
+
+            // an exact difference is accepted
+            env(paychan::clawback(gw, chan, usd(6000)));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(1234567890117456));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(1234567890117456));
+        }
+
+        // tecPRECISION_LOSS: a dust claw the channel amount cannot register
+        // is rejected. The difference rounds back to the old amount and adding
+        // the dust to it gives the old amount again, so only subtracting the
+        // difference from the old amount exposes the loss.
+        {
+            Env env{*this, features};
+            setup(env);
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            STAmount const dust{usd.issue(), 15, -19};
+            env(paychan::clawback(gw, chan, dust), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(4'000));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(4'000));
+        }
+
+        // tecPRECISION_LOSS: a partial claw whose difference check overflows
+        // is rejected. With the channel at the largest IOU value, the
+        // difference rounds half to even and adding the claw back rounds past
+        // that value.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+            STAmount const max{usd.issue(), STAmount::kMaxValue, STAmount::kMaxOffset};
+            env.trust(max, alice);
+            env.trust(max, bob);
+            env.close();
+            env(pay(gw, alice, max));
+            env.close();
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, max, settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            env(paychan::clawback(gw, chan, STAmount{usd.issue(), 15, 79}), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == max);
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == max);
+        }
+
+        // tecPRECISION_LOSS: a partial claw whose remainder is not exact. At
+        // the IOU exponent floor amount - balance and amount - claw are both
+        // exact, but the new amount 1000000000000001e-96 minus the balance
+        // 1000000000000000e-96 is 1e-96, which rounds to zero.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+            STAmount const amount{usd.issue(), std::uint64_t{2000000000000001}, -96};
+            STAmount const balance{usd.issue(), std::uint64_t{1000000000000000}, -96};
+            env.trust(amount, alice, bob);
+            env.close();
+            env(pay(gw, alice, amount));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, amount, settleDelay, alice.pk()));
+            env.close();
+            env(paychan::claim(alice, chan, balance, balance));
+            env.close();
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == balance);
+
+            env(paychan::clawback(gw, chan, balance), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == amount);
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == balance);
+        }
+
+        // Clawback after a partial claim: only the unclaimed remainder is
+        // taken and the destination's already-claimed balance is untouched.
+        // This is also the regression test for the full-claw amount being set
+        // to sfBalance directly (rather than chanAmt - lockedRemaining, which
+        // rounds for IOUs).
+        {
+            Env env{*this, features};
+            setup(env);
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            auto const sig = paychan::signClaimAuth(alice.pk(), alice.sk(), chan, usd(1'000));
+            env(paychan::claim(bob, chan, usd(1'000), usd(1'000), Slice(sig), alice.pk()));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, usd) == usd(1'000));
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == usd(1'000));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(3'000));
+
+            env(paychan::clawback(gw, chan));
+            env.close();
+            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(env.balance(bob, usd) == usd(1'000));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(0));
+        }
+
+        // An Amount exceeding the remainder claws only the remainder.
+        {
+            Env env{*this, features};
+            setup(env);
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            env(paychan::clawback(gw, chan, usd(10'000)));
+            env.close();
+            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(0));
+        }
+
+        // A clawback Amount naming a different asset than the channel fails.
+        {
+            Env env{*this, features};
+            setup(env);
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            auto const eur = gw["EUR"];
+            env(paychan::clawback(gw, chan, eur(100)), Ter(tecWRONG_ASSET));
+        }
+
+        // Clawback ignores the channel's timers: an expired channel is still
+        // clawable, and the source is not refunded.
+        {
+            Env env{*this, features};
+            setup(env);
+            auto const seq1 = env.seq(alice);
+            NetClock::time_point const cancelAfter = env.now() + 50s;
+            env(paychan::create(alice, bob, usd(4'000), settleDelay, alice.pk(), cancelAfter));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            env.close(env.now() + 60s);
+            env(paychan::clawback(gw, chan));
+            env.close();
+            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(0));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(1'000));
+        }
+
+        // An XRP channel can never be clawed.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env.close();
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, XRP(1'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            env(paychan::clawback(gw, chan), Ter(tecNO_PERMISSION));
+        }
+
+        // A delegate the issuer granted PaymentChannelClawback claws with the
+        // same effect as the issuer; one without the grant is refused.
+        if (features[featurePermissionDelegationV1_1])
+        {
+            Env env{*this, features};
+            setup(env);
+            auto const dan = Account("dan");
+            auto const eve = Account("eve");
+            env.fund(XRP(10'000), dan, eve);
+            env.close();
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            env(paychan::clawback(gw, chan, usd(1'000)),
+                delegate::As(eve),
+                Ter(terNO_DELEGATE_PERMISSION));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(4'000));
+
+            env(delegate::set(gw, dan, {"PaymentChannelClawback"}));
+            env.close();
+
+            env(paychan::clawback(gw, chan, usd(1'000)), delegate::As(dan));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(3'000));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(3'000));
+
+            env(paychan::clawback(gw, chan), delegate::As(dan));
+            env.close();
+            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(0));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(1'000));
+        }
+
+        // Clawback requires the issuer opt-in (lsfAllowTrustLineClawback).
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(100'000), alice);
+            env.close();
+            env(pay(gw, alice, usd(5'000)));
+            env.close();
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            env(paychan::clawback(gw, chan), Ter(tecNO_PERMISSION));
+        }
+    }
+
+    void
+    testMPTChannelClawback(FeatureBitset features)
+    {
+        testcase("MPT Channel Clawback");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const settleDelay = 100s;
+
+        // Full clawback: the three MPT accounting fields drop and the channel
+        // is deleted.
+        {
+            Env env{*this, features};
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create(
+                {.ownerCount = 1, .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanClawback});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(5'000)));
+            env.close();
+
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, mpt(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 4'000);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 4'000);
+
+            env(paychan::clawback(gw, chan));
+            env.close();
+            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
+        }
+
+        // Partial clawback decrements each field by the clawed amount.
+        {
+            Env env{*this, features};
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create(
+                {.ownerCount = 1, .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanClawback});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(5'000)));
+            env.close();
+
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, mpt(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            env(paychan::clawback(gw, chan, mpt(1'500)));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == mpt(2'500));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 2'500);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 2'500);
+
+            // A second clawback works on the reduced remainder.
+            env(paychan::clawback(gw, chan, mpt(1'000)));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == mpt(1'500));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 1'500);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 1'500);
+        }
+
+        // Clawback after a partial claim: only the unclaimed remainder is
+        // taken; the three accounting fields drop by exactly that amount and
+        // the destination's claimed balance is untouched.
+        {
+            Env env{*this, features};
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create(
+                {.ownerCount = 1, .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanClawback});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(5'000)));
+            env.close();
+
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, mpt(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            auto const sig = paychan::signClaimAuth(alice.pk(), alice.sk(), chan, mpt(1'000));
+            env(paychan::claim(bob, chan, mpt(1'000), mpt(1'000), Slice(sig), alice.pk()));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, mpt) == mpt(1'000));
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == mpt(1'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 3'000);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 3'000);
+
+            env(paychan::clawback(gw, chan));
+            env.close();
+            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(env.balance(bob, mpt) == mpt(1'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
+        }
+
+        // A clawback Amount of the wrong asset is rejected.
+        {
+            Env env{*this, features};
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create(
+                {.ownerCount = 1, .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanClawback});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(5'000)));
+            env.close();
+
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, mpt(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            auto const usd = gw["USD"];
+            env(paychan::clawback(gw, chan, usd(100)), Ter(tecWRONG_ASSET));
+        }
+
+        // Clawback waives the transfer fee: on a fee-bearing issuance the gross
+        // locked amount is seized (no fee is deducted, and there is no overflow
+        // path since divideRound is never called).
+        {
+            Env env{*this, features};
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create(
+                {.transferFee = 25'000,
+                 .ownerCount = 1,
+                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanClawback});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(5'000)));
+            env.close();
+
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, mpt(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 4'000);
+
+            // Partial claw takes exactly the requested gross amount.
+            env(paychan::clawback(gw, chan, mpt(1'000)));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == mpt(3'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 3'000);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 3'000);
+
+            // Full claw of the rest; no fee remains stranded on any field.
+            env(paychan::clawback(gw, chan));
+            env.close();
+            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
+        }
+
+        // Without tfMPTCanClawback the issuer cannot claw.
+        {
+            Env env{*this, features};
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create({.ownerCount = 1, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(5'000)));
+            env.close();
+
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, mpt(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+            env(paychan::clawback(gw, chan), Ter(tecNO_PERMISSION));
+        }
+    }
+
+    void
     testIOUAuthVerifyRPC(FeatureBitset features)
     {
         testcase("IOU Auth/Verify RPC");
@@ -5365,6 +5899,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         testIOUPrecisionLoss(features);
         testIOULockPrecision(features);
         testIOUClawbackInteraction(features);
+        testIOUChannelClawback(features);
         testIOUAuthVerifyRPC(features);
     }
 
@@ -5394,6 +5929,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         testMPTCanEscrowRequired(features);
         testMPTDestroy(features);
         testMPTClawbackInteraction(features);
+        testMPTChannelClawback(features);
         testMPTAuthVerifyRPC(features);
     }
 
