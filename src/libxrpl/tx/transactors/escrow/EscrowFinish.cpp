@@ -86,20 +86,6 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     if (static_cast<bool>(cb) != static_cast<bool>(fb))
         return temMALFORMED;
 
-    if (cb && ctx.rules.enabled(fixCleanup3_5_0))
-    {
-        using namespace xrpl::cryptoconditions;
-
-        std::error_code ec;
-
-        auto condition = Condition::deserialize(*cb, ec);
-        if (!condition)
-        {
-            JLOG(ctx.j.debug()) << "Malformed condition during escrow finish: " << ec.message();
-            return temMALFORMED;
-        }
-    }
-
     return tesSUCCESS;
 }
 
@@ -114,20 +100,40 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
         auto& router = ctx.registry.get().getHashRouter();
 
         auto const id = ctx.tx.getTransactionID();
-        auto const flags = router.getFlags(id);
+        auto flags = router.getFlags(id);
 
         // If we haven't checked the condition, check it
-        // now. Whether it passes or not isn't important
-        // in preflight.
+        // now. Other than a malformed condition, whether
+        // it passes or not isn't important in preflight.
         if (!any(flags & (kSfCfInvalid | kSfCfValid)))
         {
             if (checkCondition(*fb, *cb))
             {
                 router.setFlags(id, kSfCfValid);
+                flags = kSfCfValid;
             }
             else
             {
                 router.setFlags(id, kSfCfInvalid);
+                flags = kSfCfInvalid;
+            }
+        }
+
+        // The invalid flag also covers a bad fulfillment, so
+        // check the condition itself. This runs whether or not
+        // the flag was cached, so the result is the same on
+        // every node.
+        if (any(flags & kSfCfInvalid) && ctx.rules.enabled(fixCleanup3_5_0))
+        {
+            using namespace xrpl::cryptoconditions;
+
+            std::error_code ec;
+
+            auto condition = Condition::deserialize(*cb, ec);
+            if (!condition)
+            {
+                JLOG(ctx.j.debug()) << "Malformed condition during escrow finish: " << ec.message();
+                return temMALFORMED;
             }
         }
     }

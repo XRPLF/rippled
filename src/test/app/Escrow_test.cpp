@@ -1115,11 +1115,17 @@ struct Escrow_test : public beast::unit_test::Suite
             auto const baseFee = env.current()->fees().base;
             auto const bobBalance = env.balance("bob");
             bool const fixEnabled = features[fixCleanup3_5_0];
-            env(escrow::finish("bob", "alice", seq),
+            auto const jt = env.jt(
+                escrow::finish("bob", "alice", seq),
                 escrow::kCondition(malformed),
                 escrow::kFulfillment(escrow::kFb1),
-                Fee(150 * baseFee),
-                Ter(fixEnabled ? TER{temMALFORMED} : TER{tecCRYPTOCONDITION_ERROR}));
+                Fee(150 * baseFee));
+            env(jt, Ter(fixEnabled ? TER{temMALFORMED} : TER{tecCRYPTOCONDITION_ERROR}));
+            // Run preflight on the same transaction again, now with the
+            // HashRouter flag cached. The result must not change.
+            auto const pf =
+                preflight(env.app(), env.current()->rules(), *jt.stx, TapNone, env.journal);
+            BEAST_EXPECT(pf.ter == (fixEnabled ? TER{temMALFORMED} : TER{tesSUCCESS}));
             env.close();
 
             // Before the fix, the transaction is included and charges a fee.
