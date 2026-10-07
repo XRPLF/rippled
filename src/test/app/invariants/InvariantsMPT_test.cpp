@@ -36,6 +36,7 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <ranges>
 #include <source_location>
 #include <string>
 #include <tuple>
@@ -1099,6 +1100,62 @@ class InvariantsMPT_test : public InvariantsBase
                 });
         }
 
+        // lsfMPTLocked is exempt because tfMPTUnlock clears it legitimately.
+        // Pre-fixCleanup3_5_0: clearing another issuance flag is allowed.
+        // Post-fixCleanup3_5_0: clearing another issuance flag trips the
+        // invariant.
+        {
+            std::uint32_t allFlags = 0;
+            for (auto const flag : std::views::values(getMPTokenIssuanceFlags()))
+                allFlags |= flag;
+            allFlags &= ~lsfMPTLocked;
+
+            MPTID id{};
+            Preclose const setup = [&](Account const&, Account const&, Env& env) {
+                Account const issuer{"issuer"};
+                env.fund(XRP(10'000), issuer);
+                env.close();
+                MPTTester mptt{env, issuer, kMptInitNoFund};
+                mptt.create({.flags = allFlags});
+                id = mptt.issuanceID();
+                env.close();
+                return true;
+            };
+            STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+
+            for (auto const flag : std::views::values(getMPTokenIssuanceFlags()))
+            {
+                if (flag == lsfMPTLocked)
+                    continue;
+                Precheck const clearFlag = [&, flag](
+                                               Account const&, Account const&, ApplyContext& ac) {
+                    auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(id));
+                    if (!sleIssuance)
+                        return false;
+                    sleIssuance->setFieldU32(sfFlags, sleIssuance->getFlags() & ~flag);
+                    ac.view().update(sleIssuance);
+                    return true;
+                };
+
+                doInvariantCheck(
+                    makeEnv(all_ - fixCleanup3_5_0),
+                    {},
+                    clearFlag,
+                    XRPAmount{},
+                    tx,
+                    {tesSUCCESS, tesSUCCESS},
+                    setup);
+                doInvariantCheck(
+                    makeEnv(all_),
+                    {{"immutable MPTokenIssuance flag cleared"}},
+                    clearFlag,
+                    XRPAmount{},
+                    tx,
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    setup);
+            }
+        }
+
         // A vault pseudo-account's MPToken cannot be deleted by anything
         // other than a VaultDelete transaction. Set up a vault, then have
         // an arbitrary tx erase the pseudo's MPToken in precheck.
@@ -1166,6 +1223,12 @@ class InvariantsMPT_test : public InvariantsBase
                       0u})
                 {
                     MPTID id{};
+                    // Issuance flags cannot be cleared after creation (and
+                    // ValidMPTIssuance now rejects it), so the CanTransfer /
+                    // CanTrade rows create the issuance without the bit
+                    // instead of stripping it in precheck.
+                    std::uint32_t const createFlags =
+                        (flag == 0u || flag == lsfMPTLocked) ? kMptDexFlags : (kMptDexFlags & flag);
                     auto const isSuccess = !gates.any() || flag == 0 ||
                         (tx == ttPAYMENT && !crossCurrencyPayment && (flag == ~lsfMPTCanTrade)) ||
                         (tx == ttAMM_WITHDRAW &&
@@ -1187,14 +1250,9 @@ class InvariantsMPT_test : public InvariantsBase
                             auto issuanceSle = ac.view().peek(keylet::mptokenIssuance(id));
                             if (!issuanceSle)
                                 return false;
-                            auto const flags = issuanceSle->at(sfFlags);
                             if (flag == lsfMPTLocked)
                             {
-                                issuanceSle->at(sfFlags) = flags | lsfMPTLocked;
-                            }
-                            else if (flag != 0u)
-                            {
-                                issuanceSle->at(sfFlags) = flags & flag;
+                                issuanceSle->at(sfFlags) = issuanceSle->at(sfFlags) | lsfMPTLocked;
                             }
                             issuanceSle->at(sfOutstandingAmount) = 200;
                             ac.view().update(issuanceSle);
@@ -1215,7 +1273,11 @@ class InvariantsMPT_test : public InvariantsBase
                             Account const gw("gw");
                             env.fund(XRP(1'000), gw);
                             MPTTester const usd(
-                                {.env = env, .issuer = gw, .holders = {a1, a2}, .pay = 100});
+                                {.env = env,
+                                 .issuer = gw,
+                                 .holders = {a1, a2},
+                                 .pay = 100,
+                                 .flags = createFlags});
                             id = usd.issuanceID();
                             // Either gate enforces, so both must be off to stay
                             // advisory. Disable after setting up the MPT; the
@@ -1632,12 +1694,121 @@ class InvariantsMPT_test : public InvariantsBase
             precloseOrphan);
     }
 
+    // deletedHoldings_ in ValidMPTIssuance captures every erased MPToken
+    // per-holder, so finalize()'s fixCleanup3_5_0 balance check must reject
+    // a funded MPToken erased alongside an empty sibling regardless of the
+    // order the two are visited in.
+    void
+    testDeleteWithBalanceTwoHolders()
+    {
+        using namespace test::jtx;
+        testcase << "MPToken deleted with non-zero balance, two holders";
+
+        MPTID mptID;
+        Account const carol{"carol"};
+
+        // Single-holder setup used by the baseline and the amendment-gate
+        // cases.
+        auto const setupSingle = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
+            mpt.create({.flags = tfMPTCanTransfer});
+            mptID = mpt.issuanceID();
+            mpt.authorize({.account = a2});
+            mpt.pay(a1, a2, 100);
+            return true;
+        };
+
+        Precheck const eraseSingle = [&](Account const&, Account const& a2, ApplyContext& ac) {
+            auto sleA2 = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+            if (!sleA2)
+                return false;
+            ac.view().erase(sleA2);
+            return true;
+        };
+
+        Precheck const eraseBoth = [&](Account const&, Account const& a2, ApplyContext& ac) {
+            auto sleA2 = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+            auto sleCarol = ac.view().peek(keylet::mptoken(mptID, carol.id()));
+            if (!sleA2 || !sleCarol)
+                return false;
+            ac.view().erase(sleA2);
+            ac.view().erase(sleCarol);
+            return true;
+        };
+
+        // Cases below expecting `tecINVARIANT_FAILED` use ttACCOUNT_SET; the
+        // success case (fixCleanup3_5_0 disabled) uses ttMPTOKEN_AUTHORIZE
+        // to sidestep unrelated invariants that would otherwise mask the
+        // tesSUCCESS signal.
+
+        // Baseline: a single funded MPToken erased on its own.
+        doInvariantCheck(
+            {{"MPToken deleted with non-zero balance"}},
+            eraseSingle,
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            setupSingle);
+
+        // Two-holder erase: whichever key sorts last is visited last, so
+        // funding each holder in turn guarantees one run where the funded
+        // MPToken is visited first and an empty sibling follows it.
+        for (bool const fundCarol : {false, true})
+        {
+            auto const setupTwo = [&, fundCarol](
+                                      Account const& a1, Account const& a2, Env& env) -> bool {
+                env.fund(XRP(1'000), carol);
+                MPTTester mpt(env, a1, {.holders = {a2, carol}, .fund = false});
+                mpt.create({.flags = tfMPTCanTransfer});
+                mptID = mpt.issuanceID();
+                mpt.authorize({.account = a2});
+                mpt.authorize({.account = carol});
+                mpt.pay(a1, fundCarol ? carol : a2, 100);
+                return true;
+            };
+
+            doInvariantCheck(
+                {{"MPToken deleted with non-zero balance"}},
+                eraseBoth,
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                setupTwo);
+        }
+
+        // fixCleanup3_5_0 enabled, fixCleanup3_2_0 disabled: the two
+        // amendments are independent, so this is the only configuration in
+        // which the `|| isFeatureEnabled(fixCleanup3_5_0)` half of the
+        // deletedHoldings_ capture gate in ValidMPTIssuance::visitEntry is
+        // load-bearing.
+        doInvariantCheck(
+            makeEnv(all_ - fixCleanup3_2_0),
+            {{"MPToken deleted with non-zero balance"}},
+            eraseSingle,
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            setupSingle);
+
+        // fixCleanup3_5_0 disabled: erasing a funded MPToken must not trip
+        // the new check. This pins the fixCleanup3_5_0 gate in finalize().
+        doInvariantCheck(
+            makeEnv(all_ - fixCleanup3_5_0),
+            {},
+            eraseSingle,
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tesSUCCESS, tesSUCCESS},
+            setupSingle);
+    }
+
 public:
     void
     run() override
     {
         testConfidentialMPTTransfer();
         testMPT();
+        testDeleteWithBalanceTwoHolders();
     }
 };
 
