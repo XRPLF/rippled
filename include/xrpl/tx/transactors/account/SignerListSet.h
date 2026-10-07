@@ -4,6 +4,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/SignerListEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STTx.h>
@@ -61,6 +62,14 @@ public:
         ReadView const& view,
         beast::Journal const& j) override;
 
+    // Interface used by AccountDelete
+    static TER
+    removeFromLedger(
+        ServiceRegistry& registry,
+        ApplyView& view,
+        AccountID const& account,
+        beast::Journal j);
+
 private:
     static std::tuple<NotTEC, std::uint32_t, std::vector<SignerEntries::SignerEntry>, Operation>
     determineOperation(STTx const& tx, ApplyFlags flags, beast::Journal j);
@@ -77,6 +86,9 @@ private:
     replaceSignerList();
     TER
     destroySignerList();
+
+    void
+    writeSignersToSLE(SignerListEntryW& ledgerEntry, std::uint32_t flags) const;
 };
 
 }  // namespace xrpl
