@@ -506,7 +506,18 @@ class Feature_test : public beast::unit_test::Suite
         feature = *(jrr.begin());
         BEAST_EXPECTS(feature[jss::name] == kFeatureName, "name");
         BEAST_EXPECTS(feature[jss::vetoed].isBool() && !feature[jss::vetoed].asBool(), "vetoed");
+        auto testInvalidVetoed = [&](auto const& vetoed) {
+            json::Value params;
+            params[jss::feature] = kFeatureName;
+            params[jss::vetoed] = vetoed;
 
+            auto const result = env.rpc("json", "feature", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
+        };
+
+        testInvalidVetoed("false");
+        testInvalidVetoed(json::Value(json::ValueType::Null));
         // anything other than accept or reject is an error
         jrr = env.rpc("feature", kFeatureName, "maybe");
         BEAST_EXPECT(jrr[jss::error] == "invalidParams");

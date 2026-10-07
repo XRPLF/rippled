@@ -13,7 +13,6 @@ on:
       - "!nix/devshell.nix"
       - "!nix/check-tools/**"
       - "bin/default-loader-path.sh"
-      - "bin/install-sanitizer-libs.sh"
   pull_request:
     paths:
       - ".github/workflows/build-nix-images.yml"
