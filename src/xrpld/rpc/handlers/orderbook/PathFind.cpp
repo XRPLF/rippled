@@ -18,7 +18,7 @@ doPathFind(rpc::JsonContext& context)
     if (context.app.config().pathSearchMax == 0)
         return rpcError(RpcNotSupported);
 
-    auto lpLedger = context.ledgerMaster.getClosedLedger();
+    auto const lpLedger = context.ledgerMaster.getClosedLedger();
 
     if (!context.params.isMember(jss::subcommand) || !context.params[jss::subcommand].isString())
     {
@@ -30,7 +30,7 @@ doPathFind(rpc::JsonContext& context)
 
     context.infoSub->setApiVersion(context.apiVersion);
 
-    auto sSubCommand = context.params[jss::subcommand].asString();
+    auto const sSubCommand = context.params[jss::subcommand].asString();
 
     if (sSubCommand == "create")
     {

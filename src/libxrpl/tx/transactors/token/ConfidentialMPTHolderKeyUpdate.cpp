@@ -150,7 +150,7 @@ TER
 ConfidentialMPTHolderKeyUpdate::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
+    auto const sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
     {
         // LCOV_EXCL_START

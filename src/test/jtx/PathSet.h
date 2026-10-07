@@ -23,7 +23,7 @@ namespace xrpl::test {
  */
 inline std::size_t
 countOffers(
-    jtx::Env& env,
+    jtx::Env const& env,
     jtx::Account const& account,
     Asset const& takerPays,
     Asset const& takerGets)
@@ -39,7 +39,7 @@ countOffers(
 
 inline std::size_t
 countOffers(
-    jtx::Env& env,
+    jtx::Env const& env,
     jtx::Account const& account,
     STAmount const& takerPays,
     STAmount const& takerGets)
@@ -58,7 +58,7 @@ countOffers(
  */
 inline bool
 isOffer(
-    jtx::Env& env,
+    jtx::Env const& env,
     jtx::Account const& account,
     STAmount const& takerPays,
     STAmount const& takerGets)
@@ -70,7 +70,11 @@ isOffer(
  * An offer exists
  */
 inline bool
-isOffer(jtx::Env& env, jtx::Account const& account, Asset const& takerPays, Asset const& takerGets)
+isOffer(
+    jtx::Env const& env,
+    jtx::Account const& account,
+    Asset const& takerPays,
+    Asset const& takerGets)
 {
     return countOffers(env, account, takerPays, takerGets) > 0;
 }

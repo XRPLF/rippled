@@ -45,8 +45,8 @@ getNodeIdentity(Application& app, boost::program_options::variables_map const& c
 
     if (seed)
     {
-        auto secretKey = generateSecretKey(KeyType::Secp256k1, *seed);
-        auto publicKey = derivePublicKey(KeyType::Secp256k1, secretKey);
+        auto const secretKey = generateSecretKey(KeyType::Secp256k1, *seed);
+        auto const publicKey = derivePublicKey(KeyType::Secp256k1, secretKey);
 
         return {publicKey, secretKey};
     }

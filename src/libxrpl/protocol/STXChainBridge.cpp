@@ -62,7 +62,7 @@ STXChainBridge::STXChainBridge(SField const& name, json::Value const& v) : STBas
             "STXChainBridge can only be specified with a 'object' Json value");
     }
 
-    auto checkExtra = [](json::Value const& v) {
+    auto const checkExtra = [](json::Value const& v) {
         static auto const kBridgeJson =
             xrpl::STXChainBridge().getJson(xrpl::JsonOptions::Values::None);
         for (auto it = v.begin(); it != v.end(); ++it)

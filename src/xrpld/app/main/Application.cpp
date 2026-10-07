@@ -869,7 +869,7 @@ public:
     {
         if (config_->doImport)
         {
-            auto j = logs_->journal("NodeObject");
+            auto const j = logs_->journal("NodeObject");
             node_store::DummyScheduler dummyScheduler;
             std::unique_ptr<node_store::Database> source =
                 node_store::Manager::instance().makeDatabase(
@@ -1182,7 +1182,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             signalStop("Signal: " + to_string(signum));
     });
 
-    auto debugLog = config_->getDebugLogFile();
+    auto const debugLog = config_->getDebugLogFile();
 
     if (!debugLog.empty())
     {
@@ -1409,7 +1409,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         }
         catch (std::exception const& e)
         {
-            if (auto stream = journal_.fatal())
+            if (auto const stream = journal_.fatal())
             {
                 stream << "Unable to setup server handler";
                 if (std::strlen(e.what()) > 0)
@@ -1712,7 +1712,7 @@ ApplicationImp::startGenesisLedger()
 std::shared_ptr<Ledger>
 ApplicationImp::getLastFullLedger()
 {
-    auto j = getJournal("Ledger");
+    auto const j = getJournal("Ledger");
 
     try
     {
@@ -1736,7 +1736,7 @@ ApplicationImp::getLastFullLedger()
             return ledger;
         }
 
-        if (auto stream = j.error())
+        if (auto const stream = j.error())
         {
             stream << "Failed on ledger";
             json::Value p;
@@ -1915,7 +1915,7 @@ ApplicationImp::loadOldLedger(
                 if (!loadLedger)
                 {
                     // Try to build the ledger from the back end
-                    auto il = std::make_shared<InboundLedger>(
+                    auto const il = std::make_shared<InboundLedger>(
                         *this,
                         hash,
                         0,
@@ -1965,7 +1965,7 @@ ApplicationImp::loadOldLedger(
                 JLOG(journal_.info()) << "Loading parent ledger from node store";
 
                 // Try to build the ledger from the back end
-                auto il = std::make_shared<InboundLedger>(
+                auto const il = std::make_shared<InboundLedger>(
                     *this,
                     replayLedger->header().parentHash,
                     0,

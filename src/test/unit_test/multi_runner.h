@@ -307,7 +307,7 @@ MultiRunnerChild::runMulti(Pred pred)
     auto const numTests = suite.size();
     bool failed = false;
 
-    auto getTest = [&]() -> beast::unit_test::SuiteInfo const* {
+    auto const getTest = [&]() -> beast::unit_test::SuiteInfo const* {
         auto const curTestIndex = checkoutTestIndex();
         if (curTestIndex >= numTests)
             return nullptr;

@@ -33,7 +33,7 @@ createRoot(
     UInt256 const& key,
     std::function<void(SLE::Ref)> const& describe)
 {
-    auto newRoot = std::make_shared<SLE>(directory);
+    auto const newRoot = std::make_shared<SLE>(directory);
     newRoot->setFieldH256(sfRootIndex, directory.key);
     describe(newRoot);
 
@@ -62,7 +62,7 @@ findPreviousPage(ApplyView& view, Keylet const& directory, SLE::Ref start)
         }
     }
 
-    auto indexes = node->getFieldV256(sfIndexes);
+    auto const indexes = node->getFieldV256(sfIndexes);
     return std::make_tuple(page, node, indexes);
 }
 
@@ -88,7 +88,7 @@ insertKey(
         // legacy page we haven't yet touched. Take the time to sort it.
         std::ranges::sort(indexes);
 
-        auto pos = std::ranges::lower_bound(indexes, key);
+        auto const pos = std::ranges::lower_bound(indexes, key);
 
         if (pos != indexes.end() && key == *pos)
             Throw<std::logic_error>("dirInsert: double insertion");  // LCOV_EXCL_LINE
@@ -168,7 +168,7 @@ ApplyView::dirAdd(
     UInt256 const& key,
     std::function<void(SLE::Ref)> const& describe)
 {
-    auto root = peek(directory);
+    auto const root = peek(directory);
 
     if (!root)
     {
@@ -190,7 +190,7 @@ ApplyView::dirAdd(
 bool
 ApplyView::emptyDirDelete(Keylet const& directory)
 {
-    auto node = peek(directory);
+    auto const node = peek(directory);
 
     if (!node)
         return false;
@@ -222,7 +222,7 @@ ApplyView::emptyDirDelete(Keylet const& directory)
     // page to be empty. Remove such pages:
     if (nextPage == prevPage && nextPage != kRootPage)
     {
-        auto last = peek(keylet::page(directory, nextPage));
+        auto const last = peek(keylet::page(directory, nextPage));
 
         if (!last)
             Throw<std::logic_error>("Directory chain: fwd link broken.");  // LCOV_EXCL_LINE
@@ -255,7 +255,7 @@ ApplyView::emptyDirDelete(Keylet const& directory)
 bool
 ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, UInt256 const& key, bool keepRoot)
 {
-    auto node = peek(keylet::page(directory, page));
+    auto const node = peek(keylet::page(directory, page));
 
     if (!node)
         return false;
@@ -265,7 +265,7 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, UInt256 const&
     {
         auto entries = node->getFieldV256(sfIndexes);
 
-        auto it = std::ranges::find(entries, key);
+        auto const it = std::ranges::find(entries, key);
 
         if (entries.end() == it)
             return false;
@@ -301,7 +301,7 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, UInt256 const&
         // to be empty. Remove such pages if we stumble on them:
         if (nextPage == prevPage && nextPage != page)
         {
-            auto last = peek(keylet::page(directory, nextPage));
+            auto const last = peek(keylet::page(directory, nextPage));
             if (!last)
                 Throw<std::logic_error>("Directory chain: fwd link broken.");  // LCOV_EXCL_LINE
 
@@ -341,14 +341,14 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, UInt256 const&
     // This node isn't the root, so it can either be in the middle of the list,
     // or at the end. Unlink it first and then check if that leaves the list
     // with only a root:
-    auto prev = peek(keylet::page(directory, prevPage));
+    auto const prev = peek(keylet::page(directory, prevPage));
     if (!prev)
         Throw<std::logic_error>("Directory chain: fwd link broken.");  // LCOV_EXCL_LINE
     // Fix previous to point to its new next.
     prev->setFieldU64(sfIndexNext, nextPage);
     update(prev);
 
-    auto next = peek(keylet::page(directory, nextPage));
+    auto const next = peek(keylet::page(directory, nextPage));
     if (!next)
         Throw<std::logic_error>("Directory chain: rev link broken.");  // LCOV_EXCL_LINE
     // Fix next to point to its new previous.
@@ -371,7 +371,7 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, UInt256 const&
         update(prev);
 
         // And the root points to the last page:
-        auto root = peek(keylet::page(directory, kRootPage));
+        auto const root = peek(keylet::page(directory, kRootPage));
         if (!root)
             Throw<std::logic_error>("Directory chain: root link broken.");  // LCOV_EXCL_LINE
 

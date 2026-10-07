@@ -34,7 +34,7 @@ template <class ValidationStore>
 void
 expireValidations(ValidationStore& validations)
 {
-    auto j = journal();
+    auto const j = journal();
     validations.expire(j);
 }
 
@@ -363,7 +363,7 @@ TEST_F(AddValidationTest, older_sequence_numbers_are_rejected_until_the_set_expi
         TestHarness harness(h.oracle);
         Node n = harness.makeNode();
 
-        auto process = [&](Ledger& lgr) {
+        auto const process = [&](Ledger& lgr) {
             if (doFull)
                 return harness.add(n.validate(lgr));
             return harness.add(n.partial(lgr));
@@ -580,8 +580,8 @@ TEST(ValidationsTest, trusted_by_ledger_functions)
         std::sort(vec.begin(), vec.end());
         return vec;
     };
-    auto compare = [&]() {
-        for (auto& it : trustedValidations)
+    auto const compare = [&]() {
+        for (auto const& it : trustedValidations)
         {
             auto const& id = it.first.first;
             auto const& seq = it.first.second;
@@ -729,7 +729,7 @@ TEST(ValidationsTest, flush)
     // Send in a new validation for a, saving the new one into the expected
     // map after setting the proper prior ledger ID it replaced
     harness.clock().advance(1s);
-    auto newVal = trustedNode1.validate(ledgerAB);
+    auto const newVal = trustedNode1.validate(ledgerAB);
     EXPECT_TRUE(ValStatus::Current == harness.add(newVal));
     expected.find(trustedNode1.nodeID())->second = newVal;
 }
@@ -755,7 +755,7 @@ TEST(ValidationsTest, get_preferred_ledger)
 
     using Seq = Ledger::Seq;
 
-    auto pref = [](Ledger ledger) { return std::make_pair(ledger.seq(), ledger.id()); };
+    auto const pref = [](Ledger ledger) { return std::make_pair(ledger.seq(), ledger.id()); };
 
     // Empty (no ledgers)
     EXPECT_TRUE(harness.vals().getPreferred(ledgerA) == std::nullopt);
@@ -950,9 +950,9 @@ TEST(ValidationsTest, trust_changed)
     SCOPED_TRACE("TrustChanged");
     using namespace std::chrono;
 
-    auto checker = [&](TestValidations& vals,
-                       HashSet<PeerID> const& listed,
-                       std::vector<Validation> const& trustedVals) {
+    auto const checker = [&](TestValidations& vals,
+                             HashSet<PeerID> const& listed,
+                             std::vector<Validation> const& trustedVals) {
         Ledger::ID const testID =
             trustedVals.empty() ? kGenesisLedger.id() : trustedVals[0].ledgerID();
         Ledger::Seq const testSeq =

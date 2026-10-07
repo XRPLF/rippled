@@ -151,7 +151,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
 
     if (amount && ePrice)
     {
-        auto assets = [&]() -> std::optional<std::pair<Asset, Asset>> {
+        auto const assets = [&]() -> std::optional<std::pair<Asset, Asset>> {
             // don't check ePrice issue
             if (ctx.rules.enabled(featureMPTokensV2))
                 return std::nullopt;
@@ -260,7 +260,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     {
         // Unified deposit freeze check for both pool assets.
         // AMMDeposit is not allowed if either asset is frozen.
-        auto checkAsset = [&](Asset const& asset) -> TER {
+        auto const checkAsset = [&](Asset const& asset) -> TER {
             if (auto const ter = requireAuth(ctx.view, asset, accountID, AuthType::WeakAuth))
             {
                 JLOG(ctx.j.debug()) << "AMM Deposit: account is not authorized, " << asset;
@@ -285,7 +285,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     {
         // Check if either of the assets is frozen, AMMDeposit is not allowed
         // if either asset is frozen
-        auto checkAsset = [&](Asset const& asset) -> TER {
+        auto const checkAsset = [&](Asset const& asset) -> TER {
             // WeakAuth - don't need to check if MPT object exists as might be
             // depositing into non-MPT pool. It'll fail on send if MPT doesn't
             // exist.
@@ -313,7 +313,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             return ter;
     }
 
-    auto checkAmount = [&](std::optional<STAmount> const& amount, bool checkBalance) -> TER {
+    auto const checkAmount = [&](std::optional<STAmount> const& amount, bool checkBalance) -> TER {
         if (amount)
         {
             // This normally should not happen.
@@ -416,7 +416,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const amount2 = ctx_.tx[~sfAmount2];
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto const lpTokensDeposit = ctx_.tx[~sfLPTokenOut];
-    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
+    auto const ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const ammAccountID = (*ammSle)[sfAccount];
@@ -577,7 +577,7 @@ AMMDeposit::deposit(
 {
     // Check account has sufficient funds.
     // Return true if it does, false otherwise.
-    auto checkBalance = [&](auto const& depositAmount) -> TER {
+    auto const checkBalance = [&](auto const& depositAmount) -> TER {
         if (depositAmount <= beast::kZero)
             return temBAD_AMOUNT;
         if (isXRP(depositAmount))
@@ -1037,14 +1037,14 @@ AMMDeposit::singleDepositEPrice(
     auto const a1 = c * c;
     auto const b1 = c * c * f2 * f2 + 2 * c - d * d;
     auto const c1 = 2 * c * f2 * f2 + 1 - 2 * d * f2;
-    auto amtNoRoundCb = [&] { return f1 * amountBalance * solveQuadraticEq(a1, b1, c1); };
-    auto amtProdCb = [&] { return f1 * solveQuadraticEq(a1, b1, c1); };
+    auto const amtNoRoundCb = [&] { return f1 * amountBalance * solveQuadraticEq(a1, b1, c1); };
+    auto const amtProdCb = [&] { return f1 * solveQuadraticEq(a1, b1, c1); };
     auto const amountDeposit =
         getRoundedAsset(view.rules(), amtNoRoundCb, amountBalance, amtProdCb, IsDeposit::Yes);
     if (amountDeposit <= beast::kZero)
         return {tecAMM_FAILED, STAmount{}};
-    auto tokNoRoundCb = [&] { return amountDeposit / ePrice; };
-    auto tokProdCb = [&] { return amountDeposit / ePrice; };
+    auto const tokNoRoundCb = [&] { return amountDeposit / ePrice; };
+    auto const tokProdCb = [&] { return amountDeposit / ePrice; };
     auto const tokens =
         getRoundedLPTokens(view.rules(), tokNoRoundCb, lptAMMBalance, tokProdCb, IsDeposit::Yes);
     // factor in the adjusted tokens

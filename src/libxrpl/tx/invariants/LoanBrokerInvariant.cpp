@@ -81,7 +81,7 @@ ValidLoanBroker::goodZeroDirectory(ReadView const& view, SLE::ConstRef dir, beas
                            "OwnerCount has multiple directory pages";
         return false;
     }
-    auto indexes = dir->getFieldV256(sfIndexes);
+    auto const indexes = dir->getFieldV256(sfIndexes);
     if (indexes.size() > 1)
     {
         JLOG(j.fatal()) << "Invariant failed: Loan Broker with zero "

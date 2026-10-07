@@ -49,7 +49,7 @@ doConnect(rpc::JsonContext& context)
     }
 
     auto const ipStr = context.params[jss::ip].asString();
-    auto ip = beast::ip::Endpoint::fromString(ipStr);
+    auto const ip = beast::ip::Endpoint::fromString(ipStr);
 
     if (!isUnspecified(ip))
         context.app.getOverlay().connect(ip.atPort(iPort));

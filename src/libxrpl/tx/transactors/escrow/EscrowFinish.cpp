@@ -47,11 +47,11 @@ checkCondition(Slice f, Slice c)
 
     std::error_code ec;
 
-    auto condition = Condition::deserialize(c, ec);
+    auto const condition = Condition::deserialize(c, ec);
     if (!condition)
         return false;
 
-    auto fulfillment = Fulfillment::deserialize(f, ec);
+    auto const fulfillment = Fulfillment::deserialize(f, ec);
     if (!fulfillment)
         return false;
 

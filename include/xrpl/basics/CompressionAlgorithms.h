@@ -34,7 +34,7 @@ lz4Compress(void const* in, std::size_t inSize, BufferFactory&& bf)
     // data
     auto compressed = bf(outCapacity);
 
-    auto compressedSize = LZ4_compress_default(
+    auto const compressedSize = LZ4_compress_default(
         reinterpret_cast<char const*>(in),
         reinterpret_cast<char*>(compressed),
         inSize,

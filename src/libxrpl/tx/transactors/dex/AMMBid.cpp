@@ -87,7 +87,7 @@ AMMBid::preflight(PreflightContext const& ctx)
             std::set<AccountID> unique;
             for (auto const& obj : authAccounts)
             {
-                auto authAccount = obj[sfAccount];
+                auto const authAccount = obj[sfAccount];
                 if (authAccount == account || unique.contains(authAccount))
                 {
                     JLOG(ctx.j.debug()) << "AMM Bid: Invalid auth.account.";
@@ -205,13 +205,14 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     auto const timeSlot = ammAuctionTimeSlot(current, auctionSlot);
 
     // Account must exist and the slot not expired.
-    auto validOwner = [&](AccountID const& account) {
+    auto const validOwner = [&](AccountID const& account) {
         // Valid range is 0-19 but the tailing slot pays MinSlotPrice
         // and doesn't refund so the check is < instead of <= to optimize.
         return timeSlot && *timeSlot < kTailingSlot && sb.read(keylet::account(account));
     };
 
-    auto updateSlot = [&](std::uint32_t fee, Number const& minPrice, Number const& burn) -> TER {
+    auto const updateSlot =
+        [&](std::uint32_t fee, Number const& minPrice, Number const& burn) -> TER {
         auctionSlot.setAccountID(sfAccount, account);
         auctionSlot.setFieldU32(sfExpiration, current + kTotalTimeSlotSecs);
         if (fee != 0)
@@ -259,7 +260,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     auto const bidMin = ctx.tx[~sfBidMin];
     auto const bidMax = ctx.tx[~sfBidMax];
 
-    auto getPayPrice = [&](Number const& computedPrice) -> std::expected<Number, TER> {
+    auto const getPayPrice = [&](Number const& computedPrice) -> std::expected<Number, TER> {
         auto effectivePrice = computedPrice;
         if (ctx.view().rules().enabled(fixCleanup3_4_0) && ammTradingFee == 0)
         {

@@ -63,7 +63,7 @@ private:
         env.close();
 
         // Step 1: Create vault with IOU asset
-        auto asset = issuer["USD"];
+        auto const asset = issuer["USD"];
         env(trust(lender, asset(100000)));
         env(trust(borrower, asset(100000)));
         env(trust(victim, asset(100000)));
@@ -323,7 +323,7 @@ private:
 
         // --- RETRIEVE OBJECTS & SETUP ATTACK ---
 
-        auto borrowerBalance = [&]() { return env.balance(borrower, iou); };
+        auto const borrowerBalance = [&]() { return env.balance(borrower, iou); };
         auto const borrowerScale = static_cast<STAmount const&>(borrowerBalance()).exponent();
 
         auto const loanKeylet =
@@ -651,7 +651,7 @@ private:
             Number unit;                  // one scale-unit at the loan scale
         };
 
-        auto runScenario = [this](FeatureBitset features, Params const& p) -> Result {
+        auto const runScenario = [this](FeatureBitset features, Params const& p) -> Result {
             Env env(*this, features);
 
             Account const issuer{"issuer"};

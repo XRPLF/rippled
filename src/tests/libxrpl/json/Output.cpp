@@ -16,10 +16,10 @@ checkOutput(std::string const& valueDesc)
     std::string output;
     json::Value value;
     ASSERT_TRUE(json::Reader().parse(valueDesc, value));
-    auto out = stringOutput(output);
+    auto const out = stringOutput(output);
     outputJson(value, out);
 
-    auto expected = json::FastWriter().write(value);
+    auto const expected = json::FastWriter().write(value);
     EXPECT_EQ(output, expected);
     EXPECT_EQ(output, valueDesc);
     EXPECT_EQ(output, jsonAsString(value));

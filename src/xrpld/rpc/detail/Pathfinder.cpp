@@ -268,13 +268,13 @@ Pathfinder::findPaths(int searchLevel, std::function<bool()> const& continueCall
     }
 
     loadEvent_ = app_.getJobQueue().makeLoadEvent(JtPathFind, "FindPath");
-    auto currencyIsXRP = isXRP(srcPathAsset_);
+    auto const currencyIsXRP = isXRP(srcPathAsset_);
 
     bool const useIssuerAccount = srcIssuer_ && !currencyIsXRP && !isXRP(*srcIssuer_);
-    auto& account = useIssuerAccount ? *srcIssuer_ : srcAccount_;
-    auto issuer = currencyIsXRP ? AccountID() : account;
+    auto const& account = useIssuerAccount ? *srcIssuer_ : srcAccount_;
+    auto const issuer = currencyIsXRP ? AccountID() : account;
     source_ = STPathElement(account, srcPathAsset_, issuer);
-    auto issuerString = srcIssuer_ ? to_string(*srcIssuer_) : std::string("none");
+    auto const issuerString = srcIssuer_ ? to_string(*srcIssuer_) : std::string("none");
     JLOG(j_.trace()) << "findPaths>"
                      << " srcAccount_=" << srcAccount_ << " dstAccount_=" << dstAccount_
                      << " dstAmount_=" << dstAmount_.getFullText()
@@ -459,7 +459,7 @@ Pathfinder::computePathRanks(int maxPaths, std::function<bool()> const& continue
 
         path::RippleCalc::Input rcInput;
         rcInput.partialPaymentAllowed = true;
-        auto rc = path::RippleCalc::rippleCalculate(
+        auto const rc = path::RippleCalc::rippleCalculate(
             sandbox,
             srcAmount_,
             remainingAmount_,
@@ -665,7 +665,7 @@ Pathfinder::getBestPaths(
             usePath = true;
         }
 
-        auto& pathRank = usePath ? *pathsIterator : *extraPathsIterator;
+        auto const& pathRank = usePath ? *pathsIterator : *extraPathsIterator;
 
         auto const& path = usePath ? completePaths_[pathRank.index] : extraPaths[pathRank.index];
 
@@ -761,7 +761,7 @@ Pathfinder::getPathsOut(
     if (!inserted)
         return it->second;
 
-    auto sleAccount = ledger_->read(keylet::account(account));
+    auto const sleAccount = ledger_->read(keylet::account(account));
 
     if (!sleAccount)
         return 0;
@@ -855,7 +855,7 @@ Pathfinder::addPathsForType(PathType const& pathType, std::function<bool()> cons
 {
     JLOG(j_.debug()) << "addPathsForType " << CollectionAndDelimiter(pathType, ", ");
     // See if the set of paths for this type already exists.
-    auto it = paths_.find(pathType);
+    auto const it = paths_.find(pathType);
     if (it != paths_.end())
         return it->second;
 
@@ -880,7 +880,7 @@ Pathfinder::addPathsForType(PathType const& pathType, std::function<bool()> cons
     int const initialSize = completePaths_.size();
 
     // Add the last NodeType to the lists.
-    auto nodeType = pathType.back();
+    auto const nodeType = pathType.back();
     switch (nodeType)
     {
         case NodeType::Source:
@@ -928,7 +928,7 @@ Pathfinder::isNoRipple(
     AccountID const& toAccount,
     Currency const& currency)
 {
-    auto sleRipple = ledger_->read(keylet::trustLine(toAccount, fromAccount, currency));
+    auto const sleRipple = ledger_->read(keylet::trustLine(toAccount, fromAccount, currency));
 
     auto const flag((toAccount > fromAccount) ? lsfHighNoRipple : lsfLowNoRipple);
 
@@ -1057,7 +1057,7 @@ Pathfinder::addLink(
                                 return uEndPathAsset.get<MPTID>() == asset.getMptID();
                             }
                         }();
-                        auto checkAsset = [&]() {
+                        auto const checkAsset = [&]() {
                             if constexpr (kIsLine)
                             {
                                 return (
@@ -1200,7 +1200,7 @@ Pathfinder::addLink(
         else
         {
             bool const bDestOnly = (addFlags & kAfObLast) != 0;
-            auto books = app_.getOrderBookDB().getBooksByTakerPays(
+            auto const books = app_.getOrderBookDB().getBooksByTakerPays(
                 assetFromPathAsset(uEndPathAsset, uEndIssuer), domain_);
             JLOG(j_.trace()) << books.size() << " books found from this currency/issuer";
 
@@ -1231,7 +1231,7 @@ Pathfinder::addLink(
                         }
                         else
                         {
-                            [[maybe_unused]] auto result = incompletePaths.pushBack(newPath);
+                            [[maybe_unused]] auto const result = incompletePaths.pushBack(newPath);
                             XRPL_ASSERT(result, "xrpl::Pathfinder::addLink : unique path");
                         }
                     }

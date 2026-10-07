@@ -282,7 +282,7 @@ public:
             auto const usd = gw["USD"];
             env.fund(XRP(100000), gw);
 
-            auto makeRequest = [&env](json::StaticString const& type) {
+            auto const makeRequest = [&env](json::StaticString const& type) {
                 json::Value jvParams;
                 jvParams[jss::ledger_index] = "current";
                 jvParams[jss::type] = type;

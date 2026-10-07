@@ -148,7 +148,7 @@ class Batch_test : public beast::unit_test::Suite
     std::pair<std::vector<std::string>, std::string>
     submitBatch(jtx::Env& env, TER const& result, Args&&... args)
     {
-        auto batchTxn = env.jt(std::forward<Args>(args)...);
+        auto const batchTxn = env.jt(std::forward<Args>(args)...);
         env(batchTxn, jtx::Ter(result));
 
         auto const ids = batchTxn.stx->getBatchTransactionIDs();
@@ -192,7 +192,7 @@ class Batch_test : public beast::unit_test::Suite
         using namespace jtx;
 
         auto const& view = *env.current();
-        auto metrics = env.app().getTxQ().getMetrics(view);
+        auto const metrics = env.app().getTxQ().getMetrics(view);
         return toDrops(metrics.openLedgerFeeLevel, batchFee) + 1;
     }
 
@@ -333,7 +333,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const seq = env.seq(alice);
-            auto jt = env.jtnofill(
+            auto const jt = env.jtnofill(
                 batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
                 batch::Inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::Inner(pay(alice, bob, XRP(10)), seq + 1));
@@ -361,7 +361,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const seq = env.seq(alice);
             auto tx1 = batch::Inner(pay(alice, bob, XRP(10)), seq + 1);
             tx1[jss::Flags] = 0;
-            auto jt = env.jtnofill(
+            auto const jt = env.jtnofill(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 tx1,
                 batch::Inner(pay(alice, bob, XRP(10)), seq + 2));
@@ -374,7 +374,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto jt = env.jt(pay(alice, bob, XRP(1)));
+            auto const jt = env.jt(pay(alice, bob, XRP(1)));
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::Inner(jt.jv, seq + 1),
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 2),
@@ -407,7 +407,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto tx1 = batch::Inner(pay(alice, bob, XRP(1)), seq + 1);
             tx1[jss::SigningPubKey] = strHex(alice.pk());
-            auto jt = env.jtnofill(
+            auto const jt = env.jtnofill(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 tx1,
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 2));
@@ -430,7 +430,7 @@ class Batch_test : public beast::unit_test::Suite
 
         // temINVALID_INNER_BATCH: tfInnerBatchTxn set but no parentBatchId.
         {
-            auto jtx = env.jt(pay(alice, bob, XRP(1)), Txflags(tfInnerBatchTxn));
+            auto const jtx = env.jt(pay(alice, bob, XRP(1)), Txflags(tfInnerBatchTxn));
             PreflightContext const pfCtx(
                 env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
             auto const pf = Transactor::invokePreflight<Payment>(pfCtx);
@@ -442,7 +442,7 @@ class Batch_test : public beast::unit_test::Suite
             Env disabledEnv{*this, features - featureBatchV1_1};
             disabledEnv.fund(XRP(10000), alice, bob);
             disabledEnv.close();
-            auto jtx = disabledEnv.jt(pay(alice, bob, XRP(1)), Txflags(tfInnerBatchTxn));
+            auto const jtx = disabledEnv.jt(pay(alice, bob, XRP(1)), Txflags(tfInnerBatchTxn));
             PreflightContext const pfCtx(
                 disabledEnv.app(),
                 *jtx.stx,
@@ -456,7 +456,7 @@ class Batch_test : public beast::unit_test::Suite
         // temINVALID_INNER_BATCH: parentBatchId set but tfInnerBatchTxn not
         // set.
         {
-            auto jtx = env.jt(pay(alice, bob, XRP(1)));
+            auto const jtx = env.jt(pay(alice, bob, XRP(1)));
             PreflightContext const pfCtx(
                 env.app(), *jtx.stx, UInt256{1}, env.current()->rules(), TapBatch, env.journal);
             auto const pf = Transactor::invokePreflight<Payment>(pfCtx);
@@ -938,7 +938,7 @@ class Batch_test : public beast::unit_test::Suite
         // outer STTx builds and validates each inner at construction, so
         // building the batch (as signing does) throws. Returns true if the
         // build fails.
-        auto batchCtorFails = [&](json::StaticString const& field) -> bool {
+        auto const batchCtorFails = [&](json::StaticString const& field) -> bool {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const seq = env.seq(alice);
             auto tx1 = batch::Inner(pay(alice, bob, XRP(10)), seq + 1);
@@ -1486,7 +1486,7 @@ class Batch_test : public beast::unit_test::Suite
 
             auto const batchFee = batch::calcBatchFee(env, 0, 9);
             auto const aliceSeq = env.seq(alice);
-            auto jt = env.jtnofill(
+            auto const jt = env.jtnofill(
                 batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::Inner(pay(alice, bob, XRP(1)), aliceSeq),
                 batch::Inner(pay(alice, bob, XRP(1)), aliceSeq),
@@ -2651,7 +2651,7 @@ class Batch_test : public beast::unit_test::Suite
         // Any transaction carrying tfInnerBatchTxn is rejected in checkValidity()
         // before it reaches the tx engine, regardless of its signing fields or
         // whether the amendment is enabled.
-        auto submitAndValidate = [&](std::string caseName, Slice const& slice, int line) {
+        auto const submitAndValidate = [&](std::string caseName, Slice const& slice, int line) {
             testcase << testName << caseName;
             auto const jrr = env.rpc("submit", strHex(slice))[jss::result];
             expect(
@@ -2724,7 +2724,7 @@ class Batch_test : public beast::unit_test::Suite
         // - has no `Signers` field
         // + has `tfInnerBatchTxn` flag
         {
-            auto txn = batch::Inner(pay(alice, bob, XRP(1)), env.seq(alice));
+            auto const txn = batch::Inner(pay(alice, bob, XRP(1)), env.seq(alice));
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
@@ -2743,7 +2743,8 @@ class Batch_test : public beast::unit_test::Suite
                 obj.setFieldU32(sfLedgerSequence, seq);
                 obj.setFieldU32(sfFlags, tfInnerBatchTxn);
             });
-            auto txn = batch::Inner(amendTx.getJson(JsonOptions::Values::None), env.seq(alice));
+            auto const txn =
+                batch::Inner(amendTx.getJson(JsonOptions::Values::None), env.seq(alice));
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
@@ -4561,9 +4562,9 @@ class Batch_test : public beast::unit_test::Suite
                 nullptr,
                 beast::Severity::Error};
 
-            auto alice = Account("alice");
-            auto bob = Account("bob");
-            auto carol = Account("carol");
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const carol = Account("carol");
 
             // Fund across several ledgers so the TxQ metrics stay restricted.
             env.fund(XRP(10000), noripple(alice, bob));
@@ -4612,9 +4613,9 @@ class Batch_test : public beast::unit_test::Suite
                 nullptr,
                 beast::Severity::Error};
 
-            auto alice = Account("alice");
-            auto bob = Account("bob");
-            auto carol = Account("carol");
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const carol = Account("carol");
 
             // Fund across several ledgers so the TxQ metrics stay restricted.
             env.fund(XRP(10000), noripple(alice, bob));
@@ -4657,8 +4658,8 @@ class Batch_test : public beast::unit_test::Suite
                 nullptr,
                 beast::Severity::Error};
 
-            auto alice = Account("alice");
-            auto bob = Account("bob");
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
 
             env.fund(XRP(10000), noripple(alice, bob));
             env.close(env.now() + 5s, 10000ms);
@@ -4706,16 +4707,16 @@ class Batch_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice, bob);
         env.close();
 
-        auto submitTx = [&](std::uint32_t flags) -> UInt256 {
-            auto jt = env.jt(pay(alice, bob, XRP(1)), Txflags(flags));
+        auto const submitTx = [&](std::uint32_t flags) -> UInt256 {
+            auto const jt = env.jt(pay(alice, bob, XRP(1)), Txflags(flags));
             Serializer s;
             jt.stx->add(s);
             env.app().getOPs().submitTransaction(jt.stx);
             return jt.stx->getTransactionID();
         };
 
-        auto processTxn = [&](std::uint32_t flags) -> UInt256 {
-            auto jt = env.jt(pay(alice, bob, XRP(1)), Txflags(flags));
+        auto const processTxn = [&](std::uint32_t flags) -> UInt256 {
+            auto const jt = env.jt(pay(alice, bob, XRP(1)), Txflags(flags));
             Serializer s;
             jt.stx->add(s);
             std::string reason;
@@ -5506,7 +5507,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             auto const baseFee = env.current()->fees().base;
             auto const aliceSeq = env.seq(alice);
-            auto jtx = env.jt(pay(alice, bob, XRP(1)));
+            auto const jtx = env.jt(pay(alice, bob, XRP(1)));
 
             Serializer s;
             jtx.stx->add(s);
@@ -5527,7 +5528,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const baseFee = env.current()->fees().base;
             auto const aliceSeq = env.seq(alice);
             env(fset(bob, asfRequireDest));
-            auto jtx = env.jt(pay(alice, bob, XRP(1)), Seq(aliceSeq));
+            auto const jtx = env.jt(pay(alice, bob, XRP(1)), Seq(aliceSeq));
 
             Serializer s;
             jtx.stx->add(s);
@@ -5547,7 +5548,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             auto const baseFee = env.current()->fees().base;
             auto const aliceSeq = env.seq(alice);
-            auto jtx = env.jt(pay(alice, bob, XRP(1)), Seq(aliceSeq + 1));
+            auto const jtx = env.jt(pay(alice, bob, XRP(1)), Seq(aliceSeq + 1));
 
             Serializer s;
             jtx.stx->add(s);
@@ -5575,7 +5576,7 @@ class Batch_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice, bob, carol);
         env.close();
 
-        auto getBaseFee = [&](JTx const& jtx) -> XRPAmount {
+        auto const getBaseFee = [&](JTx const& jtx) -> XRPAmount {
             Serializer s;
             jtx.stx->add(s);
             return Batch::calculateBaseFee(*env.current(), *jtx.stx);
@@ -5586,7 +5587,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             auto const seq = env.seq(alice);
             XRPAmount const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto jtx = env.jt(
+            auto const jtx = env.jt(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::Inner(batch::outer(alice, seq, batchFee, tfAllOrNothing), seq),
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 2));
@@ -5599,7 +5600,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const seq = env.seq(alice);
             XRPAmount const batchFee = batch::calcBatchFee(env, 0, 2);
 
-            auto jtx = env.jt(
+            auto const jtx = env.jt(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 2),
@@ -5619,7 +5620,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const seq = env.seq(alice);
             XRPAmount const batchFee = batch::calcBatchFee(env, 0, 2);
 
-            auto jtx = env.jt(
+            auto const jtx = env.jt(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::Inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::Inner(pay(alice, bob, XRP(5)), seq + 2),
@@ -5633,7 +5634,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             auto const seq = env.seq(alice);
             XRPAmount const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto jtx = env.jt(
+            auto const jtx = env.jt(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
                 batch::Inner(pay(bob, alice, XRP(2)), seq + 2));
@@ -5884,7 +5885,7 @@ class Batch_test : public beast::unit_test::Suite
         constexpr HashRouterFlags kSfSiggood = HashRouterFlags::PRIVATE2;
 
         // Valid batch: alice (outer) + an inner from bob, who co-signs.
-        auto buildValidBatch = [](Env& env) {
+        auto const buildValidBatch = [](Env& env) {
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const seq = env.seq(alice);
@@ -5902,7 +5903,7 @@ class Batch_test : public beast::unit_test::Suite
             env.fund(XRP(10000), Account("alice"), Account("bob"));
             env.close();
 
-            auto jt = buildValidBatch(env);
+            auto const jt = buildValidBatch(env);
             auto const txid = jt.stx->getTransactionID();
 
             BEAST_EXPECT(!any(env.app().getHashRouter().getFlags(txid) & kSfSiggood));

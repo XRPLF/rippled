@@ -52,7 +52,7 @@ private:
         // Single Asset Vault depends on MPTokensV1, but don't test every combo
         // of that.
         using namespace jtx;
-        auto failAll = [this](FeatureBitset features) {
+        auto const failAll = [this](FeatureBitset features) {
             Env env(*this, features);
 
             Account const alice{"alice"};
@@ -104,7 +104,7 @@ private:
         Account const sponsor{"sponsor"};
         auto const iou = issuer["IOU"];
 
-        auto testWrapper = [&](auto&& test) {
+        auto const testWrapper = [&](auto&& test) {
             Env env(*this);
             env.fund(XRP(1'000), lender, issuer, borrower, sponsor);
             env(trust(lender, iou(10'000'000)));
@@ -160,7 +160,7 @@ private:
             {
                 auto jv = set(borrower, UInt256{}, debtMaximumRequest);
 
-                auto testZeroBrokerID = [&](std::string const& id, std::uint32_t flags = 0) {
+                auto const testZeroBrokerID = [&](std::string const& id, std::uint32_t flags = 0) {
                     // empty broker ID
                     jv[sfLoanBrokerID] = id;
                     env(jv,
@@ -319,7 +319,7 @@ private:
         env.close();
 
         auto const pseudoBroker = [&]() -> std::optional<Account> {
-            if (auto brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
+            if (auto const brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
                 BEAST_EXPECT(brokerSle))
             {
                 return Account{"pseudo", brokerSle->at(sfAccount)};
@@ -389,7 +389,7 @@ private:
         auto const loanSetFee = Fee(env.current()->fees().base * 2);
         STAmount const debtMaximumRequest = brokerInfo.asset(1'000).value();
 
-        auto forUnauthAuth = [&](auto&& doTx) {
+        auto const forUnauthAuth = [&](auto&& doTx) {
             for (auto const flag : {tfMPTUnauthorize, 0u})
             {
                 asset.authorize({.account = issuer, .holder = borrower, .flags = flag});
@@ -457,9 +457,9 @@ private:
         if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
-        auto broker = std::get<BrokerInfo>(*loanResult);
-        auto loanKeylet = std::get<Keylet>(*loanResult);
-        auto pseudoAcct = std::get<Account>(*loanResult);
+        auto const broker = std::get<BrokerInfo>(*loanResult);
+        auto const loanKeylet = std::get<Keylet>(*loanResult);
+        auto const pseudoAcct = std::get<Account>(*loanResult);
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 

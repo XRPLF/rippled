@@ -486,7 +486,7 @@ private:
             XRPL_ASSERT(node, "xrpl::SHAMap::NodePathStack::pushChild : non-null node input");
             XRPL_ASSERT(
                 !stack_.empty(), "xrpl::SHAMap::NodePathStack::pushChild : non-empty stack");
-            auto childID = stack_.top().second.getChildNodeID(branch);
+            auto const childID = stack_.top().second.getChildNodeID(branch);
             XRPL_ASSERT_IF(
                 node->isInner(),
                 childID.getDepth() < kLeafDepth,
@@ -495,7 +495,7 @@ private:
                 node->isLeaf(),
                 childID.isPrefixOf(leafKey(*node)),
                 "xrpl::SHAMap::NodePathStack::pushChild : leaf key below branch");
-            stack_.emplace(std::move(node), std::move(childID));
+            stack_.emplace(std::move(node), childID);
         }
 
         /**
@@ -878,7 +878,7 @@ SHAMap::ConstIterator::operator++()
 inline SHAMap::ConstIterator
 SHAMap::ConstIterator::operator++(int)
 {
-    auto tmp = *this;
+    auto const tmp = *this;
     ++(*this);
     return tmp;
 }

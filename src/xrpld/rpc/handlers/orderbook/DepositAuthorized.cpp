@@ -32,7 +32,7 @@ namespace xrpl {
 // }
 
 json::Value
-doDepositAuthorized(rpc::JsonContext& context)
+doDepositAuthorized(rpc::JsonContext const& context)
 {
     json::Value const& params = context.params;
 

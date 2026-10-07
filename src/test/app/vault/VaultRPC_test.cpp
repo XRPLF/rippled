@@ -59,7 +59,8 @@ private:
 
         // Set some fields
         {
-            auto tx1 = vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(50)});
+            auto const tx1 =
+                vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(50)});
             env(tx1);
 
             auto tx2 = vault.set({.owner = owner, .id = keylet.key});

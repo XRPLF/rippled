@@ -39,16 +39,16 @@ public:
     void
     makeRequest(EndpointType const& lastEndpoint, bool lastStatus)
     {
-        auto onFetch = [&](ErrorCode const& errorCode,
-                           EndpointType const& endpoint,
-                           xrpl::detail::ResponseType const& resp) {
+        auto const onFetch = [&](ErrorCode const& errorCode,
+                                 EndpointType const& endpoint,
+                                 xrpl::detail::ResponseType const& resp) {
             BEAST_EXPECT(!errorCode);
             lastEndpoint_ = endpoint;
             resolved_[endpoint.address().to_string()]++;
             cv_.notify_all();
         };
 
-        auto sp = std::make_shared<xrpl::detail::WorkSSL>(
+        auto const sp = std::make_shared<xrpl::detail::WorkSSL>(
             pUrl_.domain,
             pUrl_.path,
             port_,
@@ -71,9 +71,9 @@ public:
         using boost::asio::ip::tcp;
         tcp::resolver resolver(env_.app().getIOContext());
         std::string const port = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
-        auto results = resolver.resolve(pUrl_.domain, port);
+        auto const results = resolver.resolve(pUrl_.domain, port);
         auto it = results.begin();
-        auto end = results.end();
+        auto const end = results.end();
         int n = 0;
         for (; it != end; ++it)
             ++n;

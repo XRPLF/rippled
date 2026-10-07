@@ -66,7 +66,7 @@ public:
         }
         {
             // test account non-string
-            auto testInvalidAccountParam = [&](auto const& param) {
+            auto const testInvalidAccountParam = [&](auto const& param) {
                 json::Value params;
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_lines", to_string(params))[jss::result];
@@ -98,7 +98,7 @@ public:
 
         {
             // test peer non-string
-            auto testInvalidPeerParam = [&](auto const& param) {
+            auto const testInvalidPeerParam = [&](auto const& param) {
                 json::Value params;
                 params[jss::account] = alice.human();
                 params[jss::peer] = param;
@@ -190,7 +190,7 @@ public:
         BEAST_EXPECT(ledger58Info.seq == 58);
 
         // A re-usable test for historic ledgers.
-        auto testAccountLinesHistory =
+        auto const testAccountLinesHistory =
             [this, &env](Account const& account, LedgerHeader const& info, int count) {
                 // Get account_lines by ledger index.
                 json::Value paramsSeq;
@@ -532,7 +532,7 @@ public:
         // Walk the owner directory via `rpcMethod` at limit=1 and return
         // the total number of paged calls plus whether the RPC ever
         // returned "invalidParams" during pagination.
-        auto walkPages = [](Env& env, Account const& account, char const* rpcMethod) {
+        auto const walkPages = [](Env& env, Account const& account, char const* rpcMethod) {
             std::optional<std::string> marker;
             int iterations = 0;
             bool hitInvalidParams = false;
@@ -604,11 +604,11 @@ public:
         env.fund(XRP(10000), alice, becky, gw1);
         env.close();
 
-        auto payChan = [](Account const& account,
-                          Account const& to,
-                          STAmount const& amount,
-                          NetClock::duration const& settleDelay,
-                          PublicKey const& pk) {
+        auto const payChan = [](Account const& account,
+                                Account const& to,
+                                STAmount const& amount,
+                                NetClock::duration const& settleDelay,
+                                PublicKey const& pk) {
             json::Value jv;
             jv[jss::TransactionType] = jss::PaymentChannelCreate;
             jv[jss::Account] = account.human();
@@ -701,7 +701,7 @@ public:
             // Now make repeated calls to `account_lines` with a limit of 1.
             // That should iterate all of alice's relevant objects, even though
             // the list will be empty for most calls.
-            auto getNextLine =
+            auto const getNextLine =
                 [](Env& env, Account const& alice, std::optional<std::string> const marker) {
                     json::Value params(json::ValueType::Object);
                     params[jss::account] = alice.human();
@@ -718,13 +718,13 @@ public:
             static constexpr std::size_t kExpectedNfTs = 1;
             std::size_t foundLines = 0;
 
-            auto hasMarker = [](auto const& aliceLines) {
+            auto const hasMarker = [](auto const& aliceLines) {
                 return aliceLines[jss::result].isMember(jss::marker);
             };
-            auto marker = [](auto const& aliceLines) {
+            auto const marker = [](auto const& aliceLines) {
                 return aliceLines[jss::result][jss::marker].asString();
             };
-            auto checkLines = [](auto const& aliceLines) {
+            auto const checkLines = [](auto const& aliceLines) {
                 return aliceLines.isMember(jss::result) &&
                     !aliceLines[jss::result].isMember(jss::error_message) &&
                     aliceLines[jss::result].isMember(jss::lines) &&
@@ -862,7 +862,7 @@ public:
 
         {
             // test peer non-string
-            auto testInvalidPeerParam = [&](auto const& param) {
+            auto const testInvalidPeerParam = [&](auto const& param) {
                 json::Value params;
                 params[jss::account] = alice.human();
                 params[jss::peer] = param;
@@ -992,10 +992,10 @@ public:
         BEAST_EXPECT(ledger58Info.seq == 58);
 
         // A re-usable test for historic ledgers.
-        auto testAccountLinesHistory = [this, &env](
-                                           Account const& account,
-                                           LedgerHeader const& info,
-                                           int count) {
+        auto const testAccountLinesHistory = [this, &env](
+                                                 Account const& account,
+                                                 LedgerHeader const& info,
+                                                 int count) {
             // Get account_lines by ledger index.
             json::Value paramsSeq;
             paramsSeq[jss::account] = account.human();

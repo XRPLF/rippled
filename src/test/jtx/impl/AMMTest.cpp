@@ -65,7 +65,7 @@ fund(
         int i = 0;
         for (auto const& amt : amts)
         {
-            auto amount = [&]() {
+            auto const amount = [&]() {
                 if (amtsOut.size() == amts.size())
                 {
                     return amtsOut[i++];
@@ -148,7 +148,7 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
         if (!asset1.holds<MPTIssue>() && !asset2.holds<MPTIssue>())
             envFeatures = envFeatures - featureMPTokensV2;
         Env env{*this, envFeatures, arg.noLog ? std::make_unique<CaptureLogs>(&logs) : nullptr};
-        auto toFund = [&](STAmount const& a) -> STAmount {
+        auto const toFund = [&](STAmount const& a) -> STAmount {
             if (a.native())
             {
                 auto const defXRP = XRP(30000);

@@ -74,7 +74,7 @@ class AccountTx_test : public beast::unit_test::Suite
             std::initializer_list<char const*> m)
             : index(idx), txType(t)
         {
-            auto buildSet = [](auto&& init) {
+            auto const buildSet = [](auto&& init) {
                 boost::container::flat_set<std::string> r;
                 r.reserve(init.size());
                 for (auto&& s : init)
@@ -145,7 +145,7 @@ class AccountTx_test : public beast::unit_test::Suite
         // Ledger 3 has the two txs associated with funding the account
         // All other ledgers have no txs
 
-        auto hasTxs = [apiVersion](json::Value const& j) {
+        auto const hasTxs = [apiVersion](json::Value const& j) {
             switch (apiVersion)
             {
                 case 1:
@@ -190,12 +190,12 @@ class AccountTx_test : public beast::unit_test::Suite
             }
         };
 
-        auto noTxs = [](json::Value const& j) {
+        auto const noTxs = [](json::Value const& j) {
             return j.isMember(jss::result) && (j[jss::result][jss::status] == "success") &&
                 (j[jss::result][jss::transactions].size() == 0);
         };
 
-        auto isErr = [](json::Value const& j, ErrorCodeI code) {
+        auto const isErr = [](json::Value const& j, ErrorCodeI code) {
             return j.isMember(jss::result) && j[jss::result].isMember(jss::error) &&
                 j[jss::result][jss::error] == rpc::getErrorInfo(code).token;
         };
@@ -380,7 +380,7 @@ class AccountTx_test : public beast::unit_test::Suite
         }
         // test account non-string
         {
-            auto testInvalidAccountParam = [&](auto const& param) {
+            auto const testInvalidAccountParam = [&](auto const& param) {
                 json::Value params;
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_tx", to_string(params))[jss::result];
@@ -549,14 +549,15 @@ class AccountTx_test : public beast::unit_test::Suite
         // Escrow
         {
             // Create an escrow.  Requires either a CancelAfter or FinishAfter.
-            auto escrow = [](Account const& account, Account const& to, STAmount const& amount) {
-                json::Value escrow;
-                escrow[jss::TransactionType] = jss::EscrowCreate;
-                escrow[jss::Account] = account.human();
-                escrow[jss::Destination] = to.human();
-                escrow[jss::Amount] = amount.getJson(JsonOptions::Values::None);
-                return escrow;
-            };
+            auto const escrow =
+                [](Account const& account, Account const& to, STAmount const& amount) {
+                    json::Value escrow;
+                    escrow[jss::TransactionType] = jss::EscrowCreate;
+                    escrow[jss::Account] = account.human();
+                    escrow[jss::Destination] = to.human();
+                    escrow[jss::Amount] = amount.getJson(JsonOptions::Values::None);
+                    return escrow;
+                };
 
             NetClock::time_point const nextTime{env.now() + 2s};
 

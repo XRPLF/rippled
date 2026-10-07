@@ -334,7 +334,7 @@ public:
             if (iter->whenExpires <= elapsed)
             {
                 JLOG(journal_.debug()) << "Expired " << *iter;
-                auto tableIter = table_.find(*iter->key);
+                auto const tableIter = table_.find(*iter->key);
                 ++iter;
                 erase(tableIter);
             }
@@ -437,7 +437,8 @@ public:
         static_assert(
             kFeeLogAsWarn > kFeeLogAsInfo && kFeeLogAsInfo > kFeeLogAsDebug && kFeeLogAsDebug > 10);
 
-        static auto kGetStream = [](resource::Charge::value_type cost, beast::Journal& journal) {
+        static auto const kGetStream = [](resource::Charge::value_type cost,
+                                          beast::Journal& journal) {
             if (cost >= kFeeLogAsWarn)
                 return journal.warn();
             if (cost >= kFeeLogAsInfo)

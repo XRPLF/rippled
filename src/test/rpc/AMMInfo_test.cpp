@@ -302,7 +302,7 @@ public:
                     {
                         // votes
                         auto const voteSlots = amm[jss::vote_slots];
-                        auto votesCopy = votes;
+                        auto const votesCopy = votes;
                         for (std::uint8_t i = 0; i < 8; ++i)
                         {
                             if (!BEAST_EXPECT(
@@ -356,7 +356,7 @@ public:
         testAMM([&](AMM& ammAlice, Env& env) {
             env(fset(gw_, asfGlobalFreeze));
             env.close();
-            auto test = [&](bool freeze) {
+            auto const test = [&](bool freeze) {
                 auto const info = ammAlice.ammRpcInfo();
                 BEAST_EXPECT(info[jss::amm][jss::asset2_frozen].asBool() == freeze);
             };

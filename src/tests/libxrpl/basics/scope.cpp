@@ -22,13 +22,13 @@ TEST(Scope, scope_exit)
     EXPECT_EQ(i, 1);
     {
         ScopeExit x{[&i]() { i += 2; }};
-        auto x2 = std::move(x);
+        auto const x2 = std::move(x);
     }
     EXPECT_EQ(i, 3);
     {
         ScopeExit x{[&i]() { i = 4; }};
         x.release();
-        auto x2 = std::move(x);
+        auto const x2 = std::move(x);
     }
     EXPECT_EQ(i, 3);
     {
@@ -72,13 +72,13 @@ TEST(Scope, scope_fail)
     EXPECT_EQ(i, 0);
     {
         ScopeFail x{[&i]() { i = 3; }};
-        auto x2 = std::move(x);
+        auto const x2 = std::move(x);
     }
     EXPECT_EQ(i, 0);
     {
         ScopeFail x{[&i]() { i = 4; }};
         x.release();
-        auto x2 = std::move(x);
+        auto const x2 = std::move(x);
     }
     EXPECT_EQ(i, 0);
     {
@@ -122,13 +122,13 @@ TEST(Scope, scope_success)
     EXPECT_EQ(i, 1);
     {
         ScopeSuccess x{[&i]() { i += 2; }};
-        auto x2 = std::move(x);
+        auto const x2 = std::move(x);
     }
     EXPECT_EQ(i, 3);
     {
         ScopeSuccess x{[&i]() { i = 4; }};
         x.release();
-        auto x2 = std::move(x);
+        auto const x2 = std::move(x);
     }
     EXPECT_EQ(i, 3);
     {

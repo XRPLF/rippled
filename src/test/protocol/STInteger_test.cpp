@@ -93,7 +93,7 @@ struct STInteger_test : public beast::unit_test::Suite
         BEAST_EXPECT(u64.getSType() == STI_UINT64);
 
         // By default, getJson returns hex string
-        auto jsonVal = u64.getJson(JsonOptions::Values::None);
+        auto const jsonVal = u64.getJson(JsonOptions::Values::None);
         BEAST_EXPECT(jsonVal.isString());
         BEAST_EXPECT(jsonVal.asString() == "ffffffffffffffff");
 

@@ -51,7 +51,7 @@ namespace xrpl::test {
 // Helper function that returns the reserve on an account based on
 // the passed in number of owners.
 static XRPAmount
-reserve(jtx::Env& env, std::uint32_t count)
+reserve(jtx::Env const& env, std::uint32_t count)
 {
     return env.current()->fees().accountReserve(count, 1);
 }
@@ -121,7 +121,7 @@ struct DepositAuth_test : public beast::unit_test::Suite
         env.close();
 
         // None of the following payments should succeed.
-        auto failedIouPayments = [this, &env, &alice, &bob, &usd]() {
+        auto const failedIouPayments = [this, &env, &alice, &bob, &usd]() {
             env.require(Flags(bob, asfDepositAuth));
 
             // Capture bob's balances before hand to confirm they don't change.
@@ -299,10 +299,10 @@ struct DepositAuth_test : public beast::unit_test::Suite
         IOU const usD1(gw1["USD"]);
         IOU const usD2(gw2["USD"]);
 
-        auto testIssuer = [&](FeatureBitset const& features,
-                              bool noRipplePrev,
-                              bool noRippleNext,
-                              bool withDepositAuth) {
+        auto const testIssuer = [&](FeatureBitset const& features,
+                                    bool noRipplePrev,
+                                    bool noRippleNext,
+                                    bool withDepositAuth) {
             Env env(*this, features);
 
             env.fund(XRP(10000), gw1, alice, bob);
@@ -320,10 +320,10 @@ struct DepositAuth_test : public beast::unit_test::Suite
             env(pay(alice, bob, usD1(10)), Path(gw1), Ter(result));
         };
 
-        auto testNonIssuer = [&](FeatureBitset const& features,
-                                 bool noRipplePrev,
-                                 bool noRippleNext,
-                                 bool withDepositAuth) {
+        auto const testNonIssuer = [&](FeatureBitset const& features,
+                                       bool noRipplePrev,
+                                       bool noRippleNext,
+                                       bool withDepositAuth) {
             Env env(*this, features);
 
             env.fund(XRP(10000), gw1, gw2, alice);
@@ -1032,7 +1032,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
 
             {
                 // AuthorizeCredentials is empty
-                auto jv = deposit::authCredentials(bob, {});
+                auto const jv = deposit::authCredentials(bob, {});
                 env(jv, Ter(temARRAY_EMPTY));
             }
 
@@ -1052,7 +1052,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
 
             {
                 // empty credential type
-                auto jv = deposit::authCredentials(bob, {{.issuer = issuer, .credType = {}}});
+                auto const jv = deposit::authCredentials(bob, {{.issuer = issuer, .credType = {}}});
                 env(jv, Ter(temMALFORMED));
             }
 
@@ -1061,7 +1061,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                 Account const a("a"), b("b"), c("c"), d("d"), e("e"), f("f"), g("g"), h("h"),
                     i("i");
                 auto const& z = credType;
-                auto jv = deposit::authCredentials(
+                auto const jv = deposit::authCredentials(
                     bob,
                     {{.issuer = a, .credType = z},
                      {.issuer = b, .credType = z},
@@ -1078,7 +1078,8 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             {
                 // Can't create with non-existing issuer
                 Account const rick{"rick"};
-                auto jv = deposit::authCredentials(bob, {{.issuer = rick, .credType = credType}});
+                auto const jv =
+                    deposit::authCredentials(bob, {{.issuer = rick, .credType = credType}});
                 env(jv, Ter(tecNO_ISSUER));
                 env.close();
             }
@@ -1088,7 +1089,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                 Account const john{"john"};
                 env.fund(env.current()->fees().accountReserve(0, 1), john);
                 env.close();
-                auto jv =
+                auto const jv =
                     deposit::authCredentials(john, {{.issuer = issuer, .credType = credType}});
                 env(jv, Ter(tecINSUFFICIENT_RESERVE));
             }
@@ -1407,7 +1408,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                 for (auto const& o : authCred)
                 {
                     auto const& c(o[jss::Credential]);
-                    auto issuer = c[jss::Issuer].asString();
+                    auto const issuer = c[jss::Issuer].asString();
 
                     if (BEAST_EXPECT(pubKey2Acc.contains(issuer)))
                     {

@@ -68,7 +68,7 @@ LedgerReplayTask::TaskParameter::canMergeInto(TaskParameter const& existingTask)
         if (existingTask.full)
         {
             auto const& exList = existingTask.skipList;
-            if (auto i = std::ranges::find(exList, finishHash); i != exList.end())
+            if (auto const i = std::ranges::find(exList, finishHash); i != exList.end())
             {
                 return existingTask.totalLedgers >= totalLedgers + (exList.end() - i) - 1;
             }
@@ -116,7 +116,7 @@ LedgerReplayTask::init()
 
     std::weak_ptr<LedgerReplayTask> const wptr = shared_from_this();
     skipListAcquirer_->addDataCallback([wptr](bool good, UInt256 const& hash) {
-        if (auto sptr = wptr.lock(); sptr)
+        if (auto const sptr = wptr.lock(); sptr)
         {
             if (!good)
             {
@@ -189,11 +189,11 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
     {
         for (; deltaToBuild_ < deltas_.size(); ++deltaToBuild_)
         {
-            auto& delta = deltas_[deltaToBuild_];
+            auto const& delta = deltas_[deltaToBuild_];
             XRPL_ASSERT(
                 parent_->seq() + 1 == delta->ledgerSeq_,
                 "xrpl::LedgerReplayTask::tryAdvance : consecutive sequence");
-            if (auto l = delta->tryBuild(parent_); l)
+            if (auto const l = delta->tryBuild(parent_); l)
             {
                 JLOG(journal_.debug())
                     << "Task " << hash_ << " got ledger " << l->header().hash
@@ -265,7 +265,7 @@ LedgerReplayTask::addDelta(std::shared_ptr<LedgerDeltaAcquire> const& delta)
 {
     std::weak_ptr<LedgerReplayTask> const wptr = shared_from_this();
     delta->addDataCallback(parameter_.reason, [wptr](bool good, UInt256 const& hash) {
-        if (auto sptr = wptr.lock(); sptr)
+        if (auto const sptr = wptr.lock(); sptr)
         {
             if (!good)
             {

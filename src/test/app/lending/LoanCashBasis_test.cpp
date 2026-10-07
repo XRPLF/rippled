@@ -74,7 +74,7 @@ private:
         // interest rate, and returns the observed Vault.AssetsTotal /
         // LoanBroker.DebtTotal deltas plus the loan's own computed
         // interestDue and principalOutstanding.
-        auto runOrigination = [&](FeatureBitset features) {
+        auto const runOrigination = [&](FeatureBitset features) {
             Env env(*this, features);
 
             Account const lender{"lender"};
@@ -157,7 +157,7 @@ private:
 
         // AssetsMaximum guard checks interestDue headroom only under
         // instant interest recognition; DebtMaximum guard also varies by model.
-        auto runVaultGuard = [&](FeatureBitset features, Number const& slack, TER expected) {
+        auto const runVaultGuard = [&](FeatureBitset features, Number const& slack, TER expected) {
             Env env(*this, features);
 
             Account const lender{"lender"};
@@ -188,32 +188,33 @@ private:
             env.close();
         };
 
-        auto runBrokerGuard = [&](FeatureBitset features, Number const& debtMaximum, TER expected) {
-            Env env(*this, features);
+        auto const runBrokerGuard =
+            [&](FeatureBitset features, Number const& debtMaximum, TER expected) {
+                Env env(*this, features);
 
-            Account const lender{"lender"};
-            Account const borrower{"borrower"};
-            env.fund(XRP(1'000'000), lender, borrower);
-            env.close();
+                Account const lender{"lender"};
+                Account const borrower{"borrower"};
+                env.fund(XRP(1'000'000), lender, borrower);
+                env.close();
 
-            BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+                BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
-            env(loan_broker::set(lender, broker.vaultID),
-                loan_broker::kLoanBrokerId(broker.brokerID),
-                loan_broker::kDebtMaximum(debtMaximum),
-                Fee(env.current()->fees().base * 2));
-            env.close();
+                env(loan_broker::set(lender, broker.vaultID),
+                    loan_broker::kLoanBrokerId(broker.brokerID),
+                    loan_broker::kDebtMaximum(debtMaximum),
+                    Fee(env.current()->fees().base * 2));
+                env.close();
 
-            env(set(borrower, broker.brokerID, xrpAsset(principalRequest).value()),
-                kCounterparty(lender),
-                kInterestRate(interestRate),
-                kPaymentTotal(paymentTotal),
-                kPaymentInterval(paymentInterval),
-                Sig(sfCounterpartySignature, lender),
-                Fee(env.current()->fees().base * 2),
-                Ter(expected));
-            env.close();
-        };
+                env(set(borrower, broker.brokerID, xrpAsset(principalRequest).value()),
+                    kCounterparty(lender),
+                    kInterestRate(interestRate),
+                    kPaymentTotal(paymentTotal),
+                    kPaymentInterval(paymentInterval),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 2),
+                    Ter(expected));
+                env.close();
+            };
 
         Number const oneDrop = xrpAsset(1).value();
         {
@@ -292,81 +293,82 @@ private:
 
         // Sets up a fresh broker + loan, advances time, submits a single
         // payment of the given type/amount, and returns the observed deltas.
-        auto runPayment = [&](FeatureBitset features,
-                              std::uint32_t loanSetFlags,
-                              std::uint32_t payFlags,
-                              std::function<void(Env&, Tp const&)> const& advanceTime,
-                              std::function<STAmount(LoanState const&)> const& paymentAmount) {
-            Env env(*this, features);
+        auto const runPayment =
+            [&](FeatureBitset features,
+                std::uint32_t loanSetFlags,
+                std::uint32_t payFlags,
+                std::function<void(Env&, Tp const&)> const& advanceTime,
+                std::function<STAmount(LoanState const&)> const& paymentAmount) {
+                Env env(*this, features);
 
-            Account const lender{"lender"};
-            Account const borrower{"borrower"};
-            env.fund(XRP(10'000'000), lender, borrower);
-            env.close();
+                Account const lender{"lender"};
+                Account const borrower{"borrower"};
+                env.fund(XRP(10'000'000), lender, borrower);
+                env.close();
 
-            BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+                BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
-            LoanParameters const loanParams{
-                .account = borrower,
-                .counter = lender,
-                .principalRequest = principalRequest,
-                .interest = interestRate,
-                .payTotal = paymentTotal,
-                .payInterval = paymentInterval,
-                .gracePd = gracePeriod,
-                .flags = loanSetFlags,
+                LoanParameters const loanParams{
+                    .account = borrower,
+                    .counter = lender,
+                    .principalRequest = principalRequest,
+                    .interest = interestRate,
+                    .payTotal = paymentTotal,
+                    .payInterval = paymentInterval,
+                    .gracePd = gracePeriod,
+                    .flags = loanSetFlags,
+                };
+
+                auto const brokerBeforeLoan = env.le(broker.brokerKeylet());
+                BEAST_EXPECT(brokerBeforeLoan);
+                auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
+                auto const loanKeylet =
+                    keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
+
+                env(loanParams(env, broker));
+                env.close();
+
+                LoanState const state = getCurrentState(env, broker, loanKeylet);
+
+                advanceTime(env, state.startDate);
+
+                auto const vaultBefore = env.le(broker.vaultKeylet());
+                auto const brokerBefore = env.le(broker.brokerKeylet());
+                auto const loanBefore = env.le(loanKeylet);
+                BEAST_EXPECT(vaultBefore && brokerBefore && loanBefore);
+
+                Number const principalBefore = loanBefore->at(sfPrincipalOutstanding);
+                Number const totalValueBefore = loanBefore->at(sfTotalValueOutstanding);
+                Number const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
+                Number const debtTotalBefore = brokerBefore->at(sfDebtTotal);
+
+                STAmount const amount = paymentAmount(state);
+                env(pay(borrower, loanKeylet.key, amount, payFlags), Ter(tesSUCCESS));
+                env.close();
+
+                auto const vaultAfter = env.le(broker.vaultKeylet());
+                auto const brokerAfter = env.le(broker.brokerKeylet());
+                auto const loanAfter = env.le(loanKeylet);
+                BEAST_EXPECT(vaultAfter && brokerAfter && loanAfter);
+
+                Number const principalAfter = loanAfter->at(sfPrincipalOutstanding);
+                Number const totalValueAfter = loanAfter->at(sfTotalValueOutstanding);
+                Number const assetsTotalAfter = vaultAfter->at(sfAssetsTotal);
+                Number const debtTotalAfter = brokerAfter->at(sfDebtTotal);
+
+                return PaymentDeltas{
+                    .principalPaid = principalBefore - principalAfter,
+                    .assetsTotalDelta = assetsTotalAfter - assetsTotalBefore,
+                    .debtTotalDelta = debtTotalAfter - debtTotalBefore,
+                    .totalValueDelta = totalValueAfter - totalValueBefore};
             };
-
-            auto const brokerBeforeLoan = env.le(broker.brokerKeylet());
-            BEAST_EXPECT(brokerBeforeLoan);
-            auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
-            auto const loanKeylet =
-                keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
-
-            env(loanParams(env, broker));
-            env.close();
-
-            LoanState const state = getCurrentState(env, broker, loanKeylet);
-
-            advanceTime(env, state.startDate);
-
-            auto const vaultBefore = env.le(broker.vaultKeylet());
-            auto const brokerBefore = env.le(broker.brokerKeylet());
-            auto const loanBefore = env.le(loanKeylet);
-            BEAST_EXPECT(vaultBefore && brokerBefore && loanBefore);
-
-            Number const principalBefore = loanBefore->at(sfPrincipalOutstanding);
-            Number const totalValueBefore = loanBefore->at(sfTotalValueOutstanding);
-            Number const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
-            Number const debtTotalBefore = brokerBefore->at(sfDebtTotal);
-
-            STAmount const amount = paymentAmount(state);
-            env(pay(borrower, loanKeylet.key, amount, payFlags), Ter(tesSUCCESS));
-            env.close();
-
-            auto const vaultAfter = env.le(broker.vaultKeylet());
-            auto const brokerAfter = env.le(broker.brokerKeylet());
-            auto const loanAfter = env.le(loanKeylet);
-            BEAST_EXPECT(vaultAfter && brokerAfter && loanAfter);
-
-            Number const principalAfter = loanAfter->at(sfPrincipalOutstanding);
-            Number const totalValueAfter = loanAfter->at(sfTotalValueOutstanding);
-            Number const assetsTotalAfter = vaultAfter->at(sfAssetsTotal);
-            Number const debtTotalAfter = brokerAfter->at(sfDebtTotal);
-
-            return PaymentDeltas{
-                .principalPaid = principalBefore - principalAfter,
-                .assetsTotalDelta = assetsTotalAfter - assetsTotalBefore,
-                .debtTotalDelta = debtTotalAfter - debtTotalBefore,
-                .totalValueDelta = totalValueAfter - totalValueBefore};
-        };
 
         // Compares the disabled (instant-recognition) and enabled (cash-basis) runs
         // of the same payment scenario, and asserts the documented
         // relationships between them.
-        auto checkScenario = [&](std::string const& label,
-                                 PaymentDeltas const& off,
-                                 PaymentDeltas const& on) {
+        auto const checkScenario = [&](std::string const& label,
+                                       PaymentDeltas const& off,
+                                       PaymentDeltas const& on) {
             testcase("cash-basis: LoanPay " + label);
 
             // The loan's own PrincipalOutstanding field is untouched by
@@ -519,7 +521,7 @@ private:
             .managementFeeRate = TenthBips16{0},
             .coverRateLiquidation = TenthBips32{0}};
 
-        auto run =
+        auto const run =
             [&](FeatureBitset features, TER expectedOverCapSet, bool native, bool vaultPrivate) {
                 bool const fix340Enabled = features[fixCleanup3_4_0];
                 testcase(
@@ -799,7 +801,7 @@ private:
         };
 
         // ---- impair / unimpair ----
-        auto runImpairUnimpair = [&](FeatureBitset features) {
+        auto const runImpairUnimpair = [&](FeatureBitset features) {
             Env env(*this, features);
             auto const [broker, loanKeylet, lender, borrower] = setupLoan(env);
 
@@ -853,7 +855,7 @@ private:
         }
 
         // ---- impair, then default ----
-        auto runDefault = [&](FeatureBitset features) {
+        auto const runDefault = [&](FeatureBitset features) {
             Env env(*this, features);
             auto const [broker, loanKeylet, lender, borrower] = setupLoan(env);
 

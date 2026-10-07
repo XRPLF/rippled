@@ -57,9 +57,9 @@ public:
     testIsXrpldVersion()
     {
         testcase("IsXrpldVersion");
-        auto vFF = 0xFFFF'FFFF'FFFF'FFFFLLU;
+        auto const vFF = 0xFFFF'FFFF'FFFF'FFFFLLU;
         BEAST_EXPECT(!build_info::isXrpldVersion(vFF));
-        auto vXrpld = 0x183B'0000'0000'0000LLU;
+        auto const vXrpld = 0x183B'0000'0000'0000LLU;
         BEAST_EXPECT(build_info::isXrpldVersion(vXrpld));
     }
 
@@ -67,7 +67,7 @@ public:
     testIsNewerVersion()
     {
         testcase("IsNewerVersion");
-        auto vFF = 0xFFFF'FFFF'FFFF'FFFFLLU;
+        auto const vFF = 0xFFFF'FFFF'FFFF'FFFFLLU;
         BEAST_EXPECT(!build_info::isNewerVersion(vFF));
 
         // 1.5.9 is newer than a development build (0.0.0-dev), but not a release.

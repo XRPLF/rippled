@@ -344,7 +344,7 @@ LoanBrokerCoverClawback::doApply()
     auto const brokerID = *findBrokerID;
     auto const amount = tx[~sfAmount];
 
-    auto sleBroker = view().peek(keylet::loanBroker(brokerID));
+    auto const sleBroker = view().peek(keylet::loanBroker(brokerID));
     if (!sleBroker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

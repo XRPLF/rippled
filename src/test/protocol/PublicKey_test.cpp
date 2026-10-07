@@ -332,7 +332,7 @@ public:
         }
 
         // Strings with invalid Base58 characters
-        for (auto c : std::string("0IOl"))
+        for (auto const c : std::string("0IOl"))
         {
             for (std::size_t i = 0; i != good.size(); ++i)
             {
@@ -346,7 +346,7 @@ public:
         {
             auto s = good;
 
-            for (auto c : std::string("apsrJqtv7"))
+            for (auto const c : std::string("apsrJqtv7"))
             {
                 s[0] = c;
                 BEAST_EXPECT(!parseBase58<PublicKey>(TokenType::NodePublic, s));

@@ -94,13 +94,13 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         testcase("Reply Object Count");
 
         Env env(*this);
-        auto peer = makeCapturePeer<GetObjectPeer>(env);
+        auto const peer = makeCapturePeer<GetObjectPeer>(env);
 
-        auto request = createRequest(numObjects, env);
+        auto const request = createRequest(numObjects, env);
         peer->runProcessGetObjectByHash(request);
 
         // Verify that a reply was sent
-        auto sentMessage = peer->lastSent();
+        auto const sentMessage = peer->lastSent();
         BEAST_EXPECT(sentMessage != nullptr);
 
         // Parse the reply message

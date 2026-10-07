@@ -194,7 +194,7 @@ public:
                     "Port not specified for address:" + remoteAddress.toString());
             }
 
-            auto result(fixed_.emplace(
+            auto const result(fixed_.emplace(
                 std::piecewise_construct,
                 std::forward_as_tuple(remoteAddress),
                 std::make_tuple(std::ref(clock))));
@@ -439,7 +439,7 @@ public:
         // Mark fixed slot success
         if (slot->fixed() && !slot->inbound())
         {
-            auto iter(fixed_.find(slot->remoteEndpoint()));
+            auto const iter(fixed_.find(slot->remoteEndpoint()));
             if (iter == fixed_.end())
             {
                 logicError(
@@ -485,7 +485,7 @@ public:
 
         // Count how many more outbound attempts to make
         //
-        auto needed(counts_.attemptsNeeded());
+        auto const needed(counts_.attemptsNeeded());
         if (needed == 0)
             return none;
 
@@ -903,7 +903,7 @@ public:
         // Mark fixed slot failure
         if (slot->fixed() && !slot->inbound() && slot->state() != Slot::State::Active)
         {
-            auto iter(fixed_.find(slot->remoteEndpoint()));
+            auto const iter(fixed_.find(slot->remoteEndpoint()));
             if (iter == fixed_.end())
             {
                 logicError(

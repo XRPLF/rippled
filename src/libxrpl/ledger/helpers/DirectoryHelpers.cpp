@@ -71,7 +71,7 @@ forEachItem(ReadView const& view, Keylet const& root, std::function<void(SLE::Co
 
     while (true)
     {
-        auto sle = view.read(pos);
+        auto const sle = view.read(pos);
         if (!sle)
             return;
         for (auto const& key : sle->getFieldV256(sfIndexes))
@@ -104,7 +104,7 @@ forEachItemAfter(
     {
         auto const hintIndex = keylet::page(root, hint);
 
-        if (auto hintDir = view.read(hintIndex))
+        if (auto const hintDir = view.read(hintIndex))
         {
             for (auto const& key : hintDir->getFieldV256(sfIndexes))
             {

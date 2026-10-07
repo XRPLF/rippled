@@ -71,7 +71,7 @@ TEST_F(TaggedCacheTest, sweep_keeps_tracking_an_entry_a_caller_still_holds)
     {
         // Scope is load-bearing: the entry survives the sweep only while this
         // pointer is alive.
-        auto held = cache.fetch(2);
+        auto const held = cache.fetch(2);
         EXPECT_NE(held, nullptr);
 
         ++clock;
@@ -158,7 +158,7 @@ TEST_F(TaggedCacheTest, canonicalize_replace_cache_installs_the_new_object)
         EXPECT_EQ(cache.getCacheSize(), 0);
         EXPECT_EQ(cache.size(), 1);
 
-        auto replacement = std::make_shared<Value>("five_2");
+        auto const replacement = std::make_shared<Value>("five_2");
         EXPECT_TRUE(cache.canonicalizeReplaceCache(5, replacement));
         EXPECT_EQ(cache.getCacheSize(), 1);
         EXPECT_EQ(cache.size(), 1);

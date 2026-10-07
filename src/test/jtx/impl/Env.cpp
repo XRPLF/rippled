@@ -372,7 +372,7 @@ Env::trust(STAmount const& amount, Account const& account)
 Env::ParsedResult
 Env::parseResult(json::Value const& jr)
 {
-    auto error = [](ParsedResult& parsed, json::Value const& object) {
+    auto const error = [](ParsedResult& parsed, json::Value const& object) {
         // Use an error code that is not used anywhere in the transaction
         // engine to distinguish this case.
         parsed.ter = telENV_RPC_FAILED;

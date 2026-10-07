@@ -16,11 +16,11 @@ struct TER_test : public beast::unit_test::Suite
         for (auto i = -400; i < 400; ++i)
         {
             TER const t = TER::fromInt(i);
-            auto inRange = isTelLocal(t) || isTemMalformed(t) || isTefFailure(t) || isTerRetry(t) ||
-                isTesSuccess(t) || isTecClaim(t);
+            auto const inRange = isTelLocal(t) || isTemMalformed(t) || isTefFailure(t) ||
+                isTerRetry(t) || isTesSuccess(t) || isTecClaim(t);
 
             std::string token, text;
-            auto good = transResultInfo(t, token, text);
+            auto const good = transResultInfo(t, token, text);
             BEAST_EXPECT(inRange || !good);
             BEAST_EXPECT(transToken(t) == (good ? token : "-"));
             BEAST_EXPECT(transHuman(t) == (good ? text : "-"));
@@ -124,7 +124,7 @@ struct TER_test : public beast::unit_test::Suite
         testIterate<kHiIndex, kHiIndex, NotConvertible>(kTerEnums, *this);
 
         // Lambda that verifies assignability and convertibility.
-        auto isConvertible = [](auto from, auto to) {
+        auto const isConvertible = [](auto from, auto to) {
             using FromT = std::decay_t<decltype(from)>;
             using ToT = std::decay_t<decltype(to)>;
             static_assert(std::is_convertible_v<FromT, ToT>, "Convert err");
@@ -142,7 +142,7 @@ struct TER_test : public beast::unit_test::Suite
         isConvertible(notTec, notTec);
 
         // Lambda that verifies types and not assignable or convertible.
-        auto notConvertible = [](auto from, auto to) {
+        auto const notConvertible = [](auto from, auto to) {
             using ToT = std::decay_t<decltype(to)>;
             using FromT = std::decay_t<decltype(from)>;
             static_assert(!std::is_convertible_v<FromT, ToT>, "Convert err");

@@ -90,7 +90,7 @@ NegativeUNLVote::doVoting(
         // Pick one to disable and one to re-enable if any, add ttUNL_MODIFY Tx
         if (!candidates.toDisableCandidates.empty())
         {
-            auto n = choose(prevLedger->header().hash, candidates.toDisableCandidates);
+            auto const n = choose(prevLedger->header().hash, candidates.toDisableCandidates);
             XRPL_ASSERT(
                 nidToKeyMap.contains(n), "xrpl::NegativeUNLVote::doVoting : found node to disable");
             addTx(seq, nidToKeyMap.at(n), NegativeUNLModify::ToDisable, initialSet);
@@ -98,7 +98,7 @@ NegativeUNLVote::doVoting(
 
         if (!candidates.toReEnableCandidates.empty())
         {
-            auto n = choose(prevLedger->header().hash, candidates.toReEnableCandidates);
+            auto const n = choose(prevLedger->header().hash, candidates.toReEnableCandidates);
             XRPL_ASSERT(
                 nidToKeyMap.contains(n), "xrpl::NegativeUNLVote::doVoting : found node to enable");
             addTx(seq, nidToKeyMap.at(n), NegativeUNLModify::ToReEnable, initialSet);

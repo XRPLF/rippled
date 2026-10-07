@@ -212,7 +212,7 @@ deleteSponsorship(ApplyView& view, SLE::Ref sle, beast::Journal j)
 
     // The sponsor owns the Sponsorship object, so deletion releases the
     // sponsor's owner reserve.
-    auto sponsorAccSle = view.peek(keylet::account(sponsorID));
+    auto const sponsorAccSle = view.peek(keylet::account(sponsorID));
     if (!sponsorAccSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -260,7 +260,7 @@ SponsorshipSet::createSponsorship(
     bool const hasPositiveFeeAmount = feeAmountDelta.has_value() && *feeAmountDelta > beast::kZero;
 
     // Create a new Sponsorship object between the sponsor and sponsee.
-    auto newSle = std::make_shared<SLE>(sponsorshipKeylet);
+    auto const newSle = std::make_shared<SLE>(sponsorshipKeylet);
     STAmount sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
     // sfFeeAmountDelta must be positive if the sponsorship object doesn't exist. This is
     // checked in preclaim.

@@ -2051,7 +2051,7 @@ private:
                 STAmount smax(BTC(61));
                 PaymentSandbox sb(env.current().get(), TapNone);
                 STPathSet paths;
-                auto ipe = [](Issue const& iss) {
+                auto const ipe = [](Issue const& iss) {
                     return STPathElement(
                         STPathElement::TypeCurrency | STPathElement::TypeIssuer,
                         xrpAccount(),
@@ -2090,7 +2090,7 @@ private:
                 Sandbox sb(&view, TapNone);
                 for (auto const& o : flowResult.removableOffers)
                 {
-                    if (auto ok = sb.peek(keylet::offer(o)))
+                    if (auto const ok = sb.peek(keylet::offer(o)))
                         offerDelete(sb, ok, flowJournal);
                 }
                 sb.apply(view);
@@ -2985,7 +2985,7 @@ private:
         env.close();
 
         // None of the following payments should succeed.
-        auto failedIouPayments = [this, &env]() {
+        auto const failedIouPayments = [this, &env]() {
             env.require(Flags(bob_, asfDepositAuth));
 
             // Capture bob_'s balances before hand to confirm they don't
@@ -3373,7 +3373,7 @@ private:
         env.close();
 
         //    test: offer was removed by offer_create
-        auto offers = getAccountOffers(env, a4)[jss::offers];
+        auto const offers = getAccountOffers(env, a4)[jss::offers];
         if (!BEAST_EXPECT(checkArraySize(offers, 0u)))
             return;
     }

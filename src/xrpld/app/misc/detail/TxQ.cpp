@@ -74,7 +74,7 @@ getFeeLevelPaid(ReadView const& view, STTx const& tx)
         XRPAmount const mod = [&view, &tx, fee]() {
             if (fee.signum() > 0)
                 return XRPAmount{0};
-            auto def = calculateDefaultBaseFee(view, tx);
+            auto const def = calculateDefaultBaseFee(view, tx);
             return def.signum() == 0 ? XRPAmount{1} : def;
         }();
         return std::pair{fee + mod, feePaid + mod};
@@ -339,7 +339,7 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
         pfResult.emplace(preflight(app, view.rules(), pfResult->tx, flags, pfResult->j));
     }
 
-    auto pcresult = preclaim(*pfResult, app, view);
+    auto const pcresult = preclaim(*pfResult, app, view);
     // NOLINTEND(bugprone-unchecked-optional-access)
 
     return doApply(pcresult, app, view);
@@ -371,7 +371,7 @@ TxQ::TxQAccount::add(MaybeTx&& txn)
     auto const seqProx = txn.seqProxy;
     [[maybe_unused]] auto const* txnPtr = &txn;
 
-    auto result = transactions.emplace(seqProx, std::move(txn));
+    auto const result = transactions.emplace(seqProx, std::move(txn));
     XRPL_ASSERT(result.second, "xrpl::TxQ::TxQAccount::add : emplace succeeded");
     XRPL_ASSERT(&result.first->second != txnPtr, "xrpl::TxQ::TxQAccount::add : transaction moved");
 
@@ -594,7 +594,7 @@ TxQ::tryClearAccountQueueUpThruTx(
     // Attempt to apply the queued transactions.
     for (auto it = beginTxIter; it != endTxIter; ++it)
     {
-        auto txResult = it->second.apply(app, view, j);
+        auto const txResult = it->second.apply(app, view, j);
         // Succeed or fail, use up a retry, because if the overall
         // process fails, we want the attempt to count. If it all
         // succeeds, the MaybeTx will be destructed, so it'll be
@@ -937,7 +937,7 @@ TxQ::apply(
             // Is the current transaction's fee higher than
             // the queued transaction's fee + a percentage
             TxQAccount::TxMap::iterator const& existingIter = *replacedTxIter;
-            auto requiredRetryLevel =
+            auto const requiredRetryLevel =
                 increase(existingIter->second.feeLevel, setup_.retrySequencePercent);
             JLOG(j_.trace()) << "Found transaction in queue for account " << account << " with "
                              << txSeqProx << " new txn fee level is " << feeLevelPaid
@@ -1282,7 +1282,7 @@ TxQ::apply(
             return {telCAN_NOT_QUEUE_FULL, false};
         }
         auto const& endAccount = byAccount_.at(lastRIter->account);
-        auto endEffectiveFeeLevel = [&]() {
+        auto const endEffectiveFeeLevel = [&]() {
             // Compute the average of all the txs for the endAccount,
             // but only if the last tx in the queue has a lower fee
             // level than this candidate tx.
@@ -1290,14 +1290,14 @@ TxQ::apply(
                 return lastRIter->feeLevel;
 
             constexpr FeeLevel64 kMax{std::numeric_limits<std::uint64_t>::max()};
-            auto endTotal = std::accumulate(
+            auto const endTotal = std::accumulate(
                 endAccount.transactions.begin(),
                 endAccount.transactions.end(),
                 std::pair<FeeLevel64, FeeLevel64>(0, 0),
                 [&](auto const& total, auto const& txn) -> std::pair<FeeLevel64, FeeLevel64> {
                     // Check for overflow.
-                    auto next = txn.second.feeLevel / endAccount.transactions.size();
-                    auto mod = txn.second.feeLevel % endAccount.transactions.size();
+                    auto const next = txn.second.feeLevel / endAccount.transactions.size();
+                    auto const mod = txn.second.feeLevel % endAccount.transactions.size();
                     if (total.first >= kMax - next || total.second >= kMax - mod)
                         return {kMax, FeeLevel64{0}};
 
@@ -1309,7 +1309,7 @@ TxQ::apply(
         {
             // The queue is full, and this transaction is more
             // valuable, so kick out the cheapest transaction.
-            auto dropRIter = endAccount.transactions.rbegin();
+            auto const dropRIter = endAccount.transactions.rbegin();
             XRPL_ASSERT(
                 dropRIter->second.account == lastRIter->account,
                 "xrpl::TxQ::apply : cheapest transaction found");
@@ -1380,7 +1380,7 @@ TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
     feeMetrics_.update(app, view, timeLeap, setup_);
     auto const& snapshot = feeMetrics_.getSnapshot();
 
-    auto ledgerSeq = view.header().seq;
+    auto const ledgerSeq = view.header().seq;
 
     if (!timeLeap)
         maxSize_ = std::max(snapshot.txnsExpected * setup_.ledgersInQueue, setup_.queueSizeMin);
@@ -1546,7 +1546,7 @@ TxQ::accept(Application& app, OpenView& view)
                         // chance, chances are it won't recover. To avoid
                         // making things worse, drop the _last_ transaction for
                         // this account.
-                        auto dropRIter = account.transactions.rbegin();
+                        auto const dropRIter = account.transactions.rbegin();
                         XRPL_ASSERT(
                             dropRIter->second.account == candidateIter->account,
                             "xrpl::TxQ::accept : account check");
@@ -1555,7 +1555,7 @@ TxQ::accept(Application& app, OpenView& view)
                             << "Queue is nearly full, and transaction " << candidateIter->txID
                             << " failed with " << transToken(txnResult)
                             << ". Removing last item from account " << account.account;
-                        auto endIter = byFee_.iterator_to(dropRIter->second);
+                        auto const endIter = byFee_.iterator_to(dropRIter->second);
                         if (endIter != candidateIter)
                             erase(endIter);
                         ++candidateIter;
@@ -1765,7 +1765,7 @@ TxQ::removeFromByFee(
     {
         // If the transaction we're holding replaces a transaction in the
         // queue, remove the transaction that is being replaced.
-        auto deleteIter = byFee_.iterator_to((*replacedTxIter)->second);
+        auto const deleteIter = byFee_.iterator_to((*replacedTxIter)->second);
         XRPL_ASSERT(deleteIter != byFee_.end(), "xrpl::TxQ::removeFromByFee : found in byFee");
         XRPL_ASSERT(
             &(*replacedTxIter)->second == &*deleteIter,

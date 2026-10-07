@@ -835,7 +835,7 @@ Transactor::ticketDelete(
 
     // Update the account root's TicketCount.  If the ticket count drops to
     // zero remove the (optional) field.
-    auto sleAccount = view.peek(keylet::account(account));
+    auto const sleAccount = view.peek(keylet::account(account));
     if (!sleAccount)
     {
         // LCOV_EXCL_START
@@ -1437,7 +1437,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
     //        should be used, making it possible to do more useful work
     //        when transactions fail with a `tec` code.
 
-    auto typesForResult = [](TER const ter) {
+    auto const typesForResult = [](TER const ter) {
         std::unordered_set<LedgerEntryType> types;
         if ((ter == tecOVERSIZE) || (ter == tecKILLED))
         {
@@ -1594,7 +1594,7 @@ Transactor::operator()()
     // and it can't be passed in from a preclaim.
     XRPL_ASSERT(result != temUNKNOWN, "xrpl::Transactor::operator() : result is not temUNKNOWN");
 
-    if (auto stream = j_.trace())
+    if (auto const stream = j_.trace())
         stream << "preclaim result: " << transToken(result);
 
     auto fee = ctx_.tx.getFieldAmount(sfFee).xrp();

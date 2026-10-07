@@ -79,10 +79,10 @@ AMMVote::preclaim(PreclaimContext const& ctx)
 }
 
 static std::pair<TER, bool>
-applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountID, beast::Journal j)
+applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beast::Journal j)
 {
     auto const feeNew = ctx.tx[sfTradingFee];
-    auto ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    auto const ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
@@ -147,7 +147,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountID, beast::Jou
     // The account doesn't have the vote entry.
     if (!foundAccount)
     {
-        auto update = [&](std::optional<std::uint8_t> const& minPos = std::nullopt) {
+        auto const update = [&](std::optional<std::uint8_t> const& minPos = std::nullopt) {
             STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
             if (feeNew != 0)
                 newEntry.setFieldU16(sfTradingFee, feeNew);

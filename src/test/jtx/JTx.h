@@ -74,7 +74,7 @@ struct JTx
     Prop*
     get()
     {
-        for (auto& prop : props_.list)
+        for (auto const& prop : props_.list)
         {
             if (auto test = dynamic_cast<PropType<Prop>*>(prop.get()))
                 return &test->t;

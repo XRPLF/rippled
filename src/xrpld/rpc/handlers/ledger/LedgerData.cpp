@@ -73,7 +73,7 @@ doLedgerData(rpc::JsonContext& context)
         limit = jLimit.asInt();
     }
 
-    auto maxLimit = rpc::tuning::pageLength(isBinary);
+    auto const maxLimit = rpc::tuning::pageLength(isBinary);
     if ((limit < 0) || ((limit > maxLimit) && (!isUnlimited(context.role))))
         limit = maxLimit;
 
@@ -100,10 +100,10 @@ doLedgerData(rpc::JsonContext& context)
         nodes = json::Value(json::ValueType::Array);
     }
 
-    auto e = lpLedger->sles.end();
+    auto const e = lpLedger->sles.end();
     for (auto i = lpLedger->sles.upperBound(key); i != e; ++i)
     {
-        auto sle = lpLedger->read(keylet::unchecked((*i)->key()));
+        auto const sle = lpLedger->read(keylet::unchecked((*i)->key()));
         if (limit-- <= 0)
         {
             // Stop processing before the current key.
@@ -132,14 +132,14 @@ doLedgerData(rpc::JsonContext& context)
 }
 
 std::pair<org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status>
-doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context)
+doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest> const& context)
 {
     org::xrpl::rpc::v1::GetLedgerDataRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerDataResponse response;
     grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (auto status = rpc::ledgerFromRequest(ledger, context))
+    if (auto const status = rpc::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
         if (status == RpcInvalidParams)
@@ -182,7 +182,7 @@ doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
 
     for (auto i = ledger->sles.upperBound(startKey); i != e; ++i)
     {
-        auto sle = ledger->read(keylet::unchecked((*i)->key()));
+        auto const sle = ledger->read(keylet::unchecked((*i)->key()));
         if (maxLimit-- <= 0)
         {
             // Stop processing before the current key.

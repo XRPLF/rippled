@@ -174,7 +174,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 
         std::error_code ec;
 
-        auto condition = Condition::deserialize(*cb, ec);
+        auto const condition = Condition::deserialize(*cb, ec);
         if (!condition)
         {
             JLOG(ctx.j.debug()) << "Malformed condition during escrow creation: " << ec.message();

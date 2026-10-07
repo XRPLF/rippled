@@ -27,7 +27,7 @@ struct Peer
     start(csf::Scheduler& scheduler, Net& net)
     {
         using namespace std::chrono_literals;
-        auto t = scheduler.in(1s, [&] { set.insert(0); });
+        auto const t = scheduler.in(1s, [&] { set.insert(0); });
         if (id == 0)
         {
             for (auto const link : net.links(this))

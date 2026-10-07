@@ -46,7 +46,7 @@ public:
         json::Value accountAlice;
         accountAlice[jss::account] = alice.human();
 
-        for (auto setOrClear : {true, false})
+        for (auto const setOrClear : {true, false})
         {
             // Create a trust line with no-ripple flag setting
             env(trust(gw, usd(100), alice, setOrClear ? tfSetNoRipple : tfClearNoRipple));
@@ -110,7 +110,7 @@ public:
         auto const resp = env.rpc("json", "ripple_path_find", to_string(params));
         BEAST_EXPECT(resp[jss::result][jss::alternatives].size() == 1);
 
-        auto getAccountLines = [&env](Account const& acct) {
+        auto const getAccountLines = [&env](Account const& acct) {
             auto const r = jtx::getAccountLines(env, acct);
             return r[jss::lines];
         };
@@ -266,7 +266,7 @@ public:
     {
         testSetAndClear();
 
-        auto withFeatsTests = [this](FeatureBitset features) {
+        auto const withFeatsTests = [this](FeatureBitset features) {
             forAllApiVersions(
                 [&, this](unsigned testVersion) { testDefaultRipple(features, testVersion); });
             testNegativeBalance(features);

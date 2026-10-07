@@ -423,7 +423,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
     std::optional<PreclaimContext const> ctx;
     if (preflightResult.rules != view.rules())
     {
-        auto secondFlight = [&]() {
+        auto const secondFlight = [&]() {
             if (preflightResult.parentBatchId)
             {
                 return preflight(

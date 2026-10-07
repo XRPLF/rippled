@@ -83,7 +83,7 @@ trimRight(String const& s)
 {
     using std::begin;
     using std::end;
-    auto first(begin(s));
+    auto const first(begin(s));
     auto last(end(s));
     last = trimRight(first, last);
     return {first, last};

@@ -82,7 +82,7 @@ private:
         auto const loanGracePeriod = 604800;       // 7 days
 
         // Create Loan A
-        auto loanATx = env.jt(
+        auto const loanATx = env.jt(
             set(borrowerA, brokerKeylet.key, principalAmount),
             Sig(sfCounterpartySignature, lender),
             kInterestRate(TenthBips32(500)),  // 5%
@@ -96,7 +96,7 @@ private:
         auto const loanAKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
 
         // Create Loan B
-        auto loanBTx = env.jt(
+        auto const loanBTx = env.jt(
             set(borrowerB, brokerKeylet.key, principalAmount),
             Sig(sfCounterpartySignature, lender),
             kInterestRate(TenthBips32(500)),  // 5%
@@ -303,7 +303,8 @@ private:
         {
             Env env(*this);
 
-            auto getCoverBalance = [&](BrokerInfo const& brokerInfo, auto const& accountField) {
+            auto const getCoverBalance = [&](BrokerInfo const& brokerInfo,
+                                             auto const& accountField) {
                 if (auto const le = env.le(keylet::loanBroker(brokerInfo.brokerID));
                     BEAST_EXPECT(le))
                 {
@@ -404,7 +405,7 @@ private:
         using D = NetClock::duration;
 
         // Get past the grace period so the loan is defaultable.
-        if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+        if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
             env.close(Tp{D{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }
@@ -478,7 +479,7 @@ private:
 
         using Tp = NetClock::time_point;
         using D = NetClock::duration;
-        if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+        if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
             env.close(Tp{D{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }
@@ -529,7 +530,7 @@ private:
         using D = NetClock::duration;
 
         // Get past the grace period so the loan is defaultable.
-        if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+        if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
             env.close(Tp{D{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }

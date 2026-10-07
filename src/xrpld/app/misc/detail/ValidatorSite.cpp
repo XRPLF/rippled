@@ -199,7 +199,7 @@ ValidatorSite::stop()
     // work::cancel() must be called before the
     // cv wait in order to kick any asio async operations
     // that might be pending.
-    if (auto sp = work_.lock())
+    if (auto const sp = work_.lock())
         sp->cancel();
     cv_.wait(lock, [&] { return !fetching_; });
 
@@ -222,7 +222,7 @@ ValidatorSite::setTimer(
     std::scoped_lock<std::mutex> const& siteLock,
     std::scoped_lock<std::mutex> const& stateLock)
 {
-    auto next = std::ranges::min_element(
+    auto const next = std::ranges::min_element(
         sites_, [](Site const& a, Site const& b) { return a.nextRefresh < b.nextRefresh; });
 
     if (next != sites_.end())
@@ -230,7 +230,7 @@ ValidatorSite::setTimer(
         pending_ = next->nextRefresh <= ClockType::now();
         cv_.notify_all();
         timer_.expires_at(next->nextRefresh);
-        auto idx = std::distance(sites_.begin(), next);
+        auto const idx = std::distance(sites_.begin(), next);
         timer_.async_wait(
             [this, idx](boost::system::error_code const& ec) { this->onTimer(idx, ec); });
     }
@@ -245,7 +245,7 @@ ValidatorSite::makeRequest(
     fetching_ = true;
     sites_[siteIdx].activeResource = resource;
     std::shared_ptr<detail::Work> sp;
-    auto timeoutCancel = [this]() {
+    auto const timeoutCancel = [this]() {
         std::scoped_lock const lockState{stateMutex_};
         // docs indicate cancel_one() can throw, but this
         // should be reconsidered if it changes to noexcept
@@ -257,15 +257,15 @@ ValidatorSite::makeRequest(
         {
         }
     };
-    auto onFetch =
+    auto const onFetch =
         [this, siteIdx, timeoutCancel](
             ErrorCode const& err, EndpointType const& endpoint, detail::ResponseType const& resp) {
             timeoutCancel();
             onSiteFetch(err, endpoint, resp, siteIdx);
         };
 
-    auto onFetchFile = [this, siteIdx, timeoutCancel](
-                           ErrorCode const& err, std::string const& resp) {
+    auto const onFetchFile = [this, siteIdx, timeoutCancel](
+                                 ErrorCode const& err, std::string const& resp) {
         timeoutCancel();
         onTextFetch(err, resp, siteIdx);
     };
@@ -345,7 +345,7 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, ErrorCode const& ec)
     }
 
     std::scoped_lock const lockState{stateMutex_};
-    if (auto sp = work_.lock())
+    if (auto const sp = work_.lock())
         sp->cancel();
 }
 
@@ -552,7 +552,7 @@ ValidatorSite::onSiteFetch(
             sites_[siteIdx].lastRequestEndpoint = endpoint;
         JLOG(j_.debug()) << "Got completion for " << sites_[siteIdx].activeResource->uri << " "
                          << endpoint;
-        auto onError = [&](std::string const& errMsg, bool retry) {
+        auto const onError = [&](std::string const& errMsg, bool retry) {
             sites_[siteIdx].lastRefreshStatus.emplace(
                 Site::Status{
                     .refreshed = ClockType::now(),
@@ -586,7 +586,7 @@ ValidatorSite::onSiteFetch(
                     case status::permanent_redirect:
                     case status::found:
                     case status::temporary_redirect: {
-                        auto newLocation = processRedirect(res, siteIdx, lockSites);
+                        auto const newLocation = processRedirect(res, siteIdx, lockSites);
                         XRPL_ASSERT(
                             newLocation,
                             "xrpl::ValidatorSite::onSiteFetch : non-null "

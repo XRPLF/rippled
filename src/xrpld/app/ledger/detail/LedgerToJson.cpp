@@ -228,7 +228,7 @@ fillJsonTx(json::Value& json, LedgerFill const& fill)
 
     try
     {
-        auto appendAll = [&](auto const& txs) {
+        auto const appendAll = [&](auto const& txs) {
             for (auto& i : txs)
             {
                 txns.append(fillJsonTx(fill, bBinary, bExpanded, i.first, i.second));
@@ -252,8 +252,8 @@ fillJsonState(json::Value& json, LedgerFill const& fill)
 {
     auto& ledger = fill.ledger;
     auto& array = json[jss::accountState] = json::ValueType::Array;
-    auto expanded = isExpanded(fill);
-    auto binary = isBinary(fill);
+    auto const expanded = isExpanded(fill);
+    auto const binary = isBinary(fill);
 
     for (auto const& sle : ledger.sles)
     {
@@ -278,8 +278,8 @@ void
 fillJsonQueue(json::Value& json, LedgerFill const& fill)
 {
     auto& queueData = json[jss::queue_data] = json::ValueType::Array;
-    auto bBinary = isBinary(fill);
-    auto bExpanded = isExpanded(fill);
+    auto const bBinary = isBinary(fill);
+    auto const bExpanded = isExpanded(fill);
 
     for (auto const& tx : fill.txQueue)
     {
@@ -327,7 +327,7 @@ fillJson(json::Value& json, LedgerFill const& fill)
 {
     // TODO: what happens if bBinary and bExtracted are both set?
     // Is there a way to report this back?
-    auto bFull = isFull(fill);
+    auto const bFull = isFull(fill);
     if (isBinary(fill))
     {
         fillJsonBinary(json, !fill.ledger.open(), fill.ledger.header());

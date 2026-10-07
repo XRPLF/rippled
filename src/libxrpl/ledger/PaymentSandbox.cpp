@@ -48,7 +48,7 @@ DeferredCredits::creditIOU(
         amount.holds<Issue>(), "xrpl::detail::DeferredCredits::creditIOU : amount is for Issue");
 
     auto const k = makeKeyIOU(sender, receiver, amount.get<Issue>().currency);
-    auto i = creditsIOU_.find(k);
+    auto const i = creditsIOU_.find(k);
     if (i == creditsIOU_.end())
     {
         ValueIOU v;
@@ -104,7 +104,7 @@ DeferredCredits::creditMPT(
     auto const& mptID = mptIssue.getMptID();
     bool const isSenderIssuer = sender == issuer;
 
-    auto i = creditsMPT_.find(mptID);
+    auto const i = creditsMPT_.find(mptID);
     if (i == creditsMPT_.end())
     {
         IssuerValueMPT v;
@@ -155,7 +155,7 @@ DeferredCredits::issuerSelfDebitMPT(
     std::int64_t origBalance)
 {
     auto const& mptID = issue.getMptID();
-    auto i = creditsMPT_.find(mptID);
+    auto const i = creditsMPT_.find(mptID);
 
     if (i == creditsMPT_.end())
     {
@@ -174,7 +174,7 @@ void
 DeferredCredits::ownerCount(AccountID const& id, OwnerCounts const& cur, OwnerCounts const& next)
 {
     auto const v = std::max(cur, next);
-    auto r = ownerCounts_.emplace(id, v);
+    auto const r = ownerCounts_.emplace(id, v);
     if (!r.second)
     {
         auto& mapVal = r.first->second;
@@ -185,7 +185,7 @@ DeferredCredits::ownerCount(AccountID const& id, OwnerCounts const& cur, OwnerCo
 std::optional<OwnerCounts>
 DeferredCredits::ownerCount(AccountID const& id) const
 {
-    auto i = ownerCounts_.find(id);
+    auto const i = ownerCounts_.find(id);
     if (i != ownerCounts_.end())
         return i->second;
     return std::nullopt;
@@ -201,7 +201,7 @@ DeferredCredits::adjustmentsIOU(
     std::optional<AdjustmentIOU> result;
 
     KeyIOU const k = makeKeyIOU(main, other, currency);
-    auto i = creditsIOU_.find(k);
+    auto const i = creditsIOU_.find(k);
     if (i == creditsIOU_.end())
         return result;
 
@@ -220,7 +220,7 @@ DeferredCredits::adjustmentsIOU(
 auto
 DeferredCredits::adjustmentsMPT(xrpl::MPTID const& mptID) const -> std::optional<AdjustmentMPT>
 {
-    auto i = creditsMPT_.find(mptID);
+    auto const i = creditsMPT_.find(mptID);
     if (i == creditsMPT_.end())
         return std::nullopt;
     return i->second;
@@ -231,7 +231,7 @@ DeferredCredits::apply(DeferredCredits& to)
 {
     for (auto const& i : creditsIOU_)
     {
-        auto r = to.creditsIOU_.emplace(i);
+        auto const r = to.creditsIOU_.emplace(i);
         if (!r.second)
         {
             auto& toVal = r.first->second;
@@ -244,7 +244,7 @@ DeferredCredits::apply(DeferredCredits& to)
 
     for (auto const& i : creditsMPT_)
     {
-        auto r = to.creditsMPT_.emplace(i);
+        auto const r = to.creditsMPT_.emplace(i);
         if (!r.second)
         {
             auto& toVal = r.first->second;
@@ -268,7 +268,7 @@ DeferredCredits::apply(DeferredCredits& to)
 
     for (auto const& i : ownerCounts_)
     {
-        auto r = to.ownerCounts_.emplace(i);
+        auto const r = to.ownerCounts_.emplace(i);
         if (!r.second)
         {
             auto& toVal = r.first->second;

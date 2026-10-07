@@ -54,7 +54,7 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
         return;
     }
 
-    auto seq = seq_.load();
+    auto const seq = seq_.load();
 
     if (seq != 0)
     {
@@ -185,7 +185,7 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
             {
                 auto const asset1 = (*sle)[sfAsset];
                 auto const asset2 = (*sle)[sfAsset2];
-                auto addBook = [&](Asset const& in, Asset const& out) {
+                auto const addBook = [&](Asset const& in, Asset const& out) {
                     allBooks[in].insert(out);
 
                     if (isXRP(out))
@@ -253,8 +253,8 @@ OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<UInt256> 
     {
         std::scoped_lock const sl(lock_);
 
-        auto getBooks = [&](auto const& container, auto const& key) {
-            if (auto it = container.find(key); it != container.end())
+        auto const getBooks = [&](auto const& container, auto const& key) {
+            if (auto const it = container.find(key); it != container.end())
             {
                 auto const& books = it->second;
                 ret.reserve(books.size());
@@ -284,12 +284,12 @@ OrderBookDBImpl::getBookSize(Asset const& asset, std::optional<UInt256> const& d
 
     if (!domain)
     {
-        if (auto it = allBooks_.find(asset); it != allBooks_.end())
+        if (auto const it = allBooks_.find(asset); it != allBooks_.end())
             return static_cast<int>(it->second.size());
     }
     else
     {
-        if (auto it = domainBooks_.find({asset, *domain}); it != domainBooks_.end())
+        if (auto const it = domainBooks_.find({asset, *domain}); it != domainBooks_.end())
             return static_cast<int>(it->second.size());
     }
 
@@ -316,7 +316,7 @@ affectedBooks(AcceptedLedgerTx const& alTx, beast::Journal const& j)
         {
             if (node.getFieldU16(sfLedgerEntryType) == ltOFFER)
             {
-                auto extract = [&](SField const& field) {
+                auto const extract = [&](SField const& field) {
                     if (auto data = dynamic_cast<STObject const*>(node.peekAtPField(field)); data &&
                         data->isFieldPresent(sfTakerPays) && data->isFieldPresent(sfTakerGets))
                     {

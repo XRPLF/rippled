@@ -93,14 +93,14 @@ public:
     void
     check(std::vector<TxID> accepted, Predicate&& pred)
     {
-        auto acceptTxid = accepted.begin();
+        auto const acceptTxid = accepted.begin();
         auto const ae = accepted.end();
         std::sort(acceptTxid, ae);
 
         // We want to remove all tracking entries for transactions that were
         // accepted as well as those which match the predicate.
 
-        auto i = removeIfIntersectOrMatch(
+        auto const i = removeIfIntersectOrMatch(
             tracker_.begin(),
             tracker_.end(),
             accepted.begin(),

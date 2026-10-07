@@ -182,7 +182,7 @@ LedgerReplayMsgHandler::processProofPathResponse(
         return ReplayMsgStatus::Malformed;
     }
 
-    if (auto item = safeDowncast<SHAMapLeafNode*>(node.get())->peekItem())
+    if (auto const item = safeDowncast<SHAMapLeafNode*>(node.get())->peekItem())
     {
         replayer_.gotSkipList(info, item);
         return ReplayMsgStatus::Ok;
@@ -208,7 +208,7 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
     reply.set_ledgerhash(packet.ledgerhash());
 
     UInt256 const ledgerHash = UInt256::fromRaw(packet.ledgerhash());
-    auto ledger = app_.getLedgerMaster().getLedgerByHash(ledgerHash);
+    auto const ledger = app_.getLedgerMaster().getLedgerByHash(ledgerHash);
     if (!ledger || !ledger->isImmutable())
     {
         JLOG(journal_.debug()) << "getReplayDelta: Don't have ledger " << ledgerHash;
@@ -266,7 +266,7 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
     }
     info.hash = replyHash;
 
-    auto numTxns = reply.transaction_size();
+    auto const numTxns = reply.transaction_size();
     std::map<std::uint32_t, std::shared_ptr<STTx const>> orderedTxns;
     SHAMap txMap(SHAMapType::TRANSACTION, app_.getNodeFamily());
     try
@@ -290,7 +290,7 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
                 JLOG(journal_.debug()) << "ReplayDeltaResponse: malformed (tx deserialize)";
                 return ReplayMsgStatus::Malformed;
             }
-            auto tid = tx->getTransactionID();
+            auto const tid = tx->getTransactionID();
             STObject meta(metaSit, sfMetadata);
             orderedTxns.emplace(meta[sfTransactionIndex], std::move(tx));
 

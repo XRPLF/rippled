@@ -266,7 +266,7 @@ template <class Tx, class NodeId>
 void
 DisputedTx<Tx, NodeId>::unVote(NodeId const& peer)
 {
-    auto it = votes_.find(peer);
+    auto const it = votes_.find(peer);
 
     if (it != votes_.end())
     {

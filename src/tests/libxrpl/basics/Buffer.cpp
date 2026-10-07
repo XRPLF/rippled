@@ -285,7 +285,7 @@ TEST_F(BufferTest, assignment_from_slice)
 
 TEST_F(BufferTest, resize_allocates_and_clear_releases)
 {
-    auto check = [](Buffer const& original, std::size_t size) {
+    auto const check = [](Buffer const& original, std::size_t size) {
         SCOPED_TRACE(::testing::Message() << "size: " << size);
 
         Buffer b{original};

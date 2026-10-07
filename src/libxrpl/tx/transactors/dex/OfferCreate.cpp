@@ -57,7 +57,7 @@ namespace xrpl {
 TxConsequences
 OfferCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    auto calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
+    auto const calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
         auto const& amount{tx[sfTakerGets]};
         return amount.native() ? amount.xrp() : beast::kZero;
     };
@@ -174,8 +174,8 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
 
-    auto saTakerPays = ctx.tx[sfTakerPays];
-    auto saTakerGets = ctx.tx[sfTakerGets];
+    auto const saTakerPays = ctx.tx[sfTakerPays];
+    auto const saTakerGets = ctx.tx[sfTakerGets];
 
     auto const& uPaysAsset = saTakerPays.asset();
 
@@ -187,7 +187,7 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 
     std::uint32_t const uAccountSequence = sleCreator->getFieldU32(sfSequence);
 
-    auto viewJ = ctx.registry.get().getJournal("View");
+    auto const viewJ = ctx.registry.get().getJournal("View");
 
     if (auto const ter = checkGlobalFrozen(ctx.view, saTakerPays.asset()); !isTesSuccess(ter))
     {
@@ -495,9 +495,9 @@ OfferCreate::flowCross(
         // If stale offers were found remove them.
         for (auto const& toRemove : result.removableOffers)
         {
-            if (auto otr = psb.peek(keylet::offer(toRemove)))
+            if (auto const otr = psb.peek(keylet::offer(toRemove)))
                 offerDelete(psb, otr, j_);
-            if (auto otr = psbCancel.peek(keylet::offer(toRemove)))
+            if (auto const otr = psbCancel.peek(keylet::offer(toRemove)))
                 offerDelete(psbCancel, otr, j_);
         }
 
@@ -611,7 +611,7 @@ OfferCreate::applyHybrid(
     // if offer is hybrid, need to also place into open offer dir
     Book const book{saTakerPays.asset(), saTakerGets.asset(), std::nullopt};
 
-    auto dir = keylet::quality(keylet::book(book), openRate);
+    auto const dir = keylet::quality(keylet::book(book), openRate);
     bool const bookExists = sb.exists(dir);
 
     auto const bookNode = sb.dirAppend(dir, offerKey, [&](SLE::Ref sle) {
@@ -665,7 +665,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // end up on the books.
     auto uRate = getRate(saTakerGets, saTakerPays);
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
+    auto const viewJ = ctx_.registry.get().getJournal("View");
 
     TER result = tesSUCCESS;
 
@@ -756,7 +756,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         JLOG(j_.debug()) << "Attempting cross: " << to_string(takerAmount.in.asset()) << " -> "
                          << to_string(takerAmount.out.asset());
 
-        if (auto stream = j_.trace())
+        if (auto const stream = j_.trace())
         {
             stream << "   mode: " << (bPassive ? "passive " : "") << (bSell ? "sell" : "buy");
             stream << "     in: " << formatAmount(takerAmount.in);
@@ -781,7 +781,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             "xrpl::OfferCreate::applyGuts : result is tesSUCCESS or "
             "tecCLAIM");
 
-        if (auto stream = j_.trace())
+        if (auto const stream = j_.trace())
         {
             stream << "Cross result: " << transToken(result);
             stream << "     in: " << formatAmount(placeOffer.in);
@@ -840,7 +840,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {result, true};
     }
 
-    if (auto stream = j_.trace())
+    if (auto const stream = j_.trace())
     {
         stream << "Place" << (crossed ? " remaining " : " ") << "offer:";
         stream << "    Pays: " << saTakerPays.getFullText();
@@ -942,7 +942,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Hybrid domain offer - BookDirectory points to domain directory,
     // and AdditionalBooks field stores one entry that points to the open
     // directory
-    auto dir = keylet::quality(keylet::book(book), uRate);
+    auto const dir = keylet::quality(keylet::book(book), uRate);
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
     auto setBookDir = [&](SLE::Ref sle, std::optional<UInt256> const& maybeDomain) {
@@ -976,7 +976,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // LCOV_EXCL_STOP
     }
 
-    auto sleOffer = std::make_shared<SLE>(offerIndex);
+    auto const sleOffer = std::make_shared<SLE>(offerIndex);
     sleOffer->setAccountID(sfAccount, accountID_);
     sleOffer->setFieldU32(sfSequence, offerSequence.value());
     sleOffer->setFieldH256(sfBookDirectory, dir.key);

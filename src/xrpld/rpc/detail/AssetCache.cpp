@@ -48,7 +48,7 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
     std::scoped_lock const sl(lock_);
 
     auto [it, inserted] = [&]() {
-        if (auto otheriter = lines_.find(otherkey); otheriter != lines_.end())
+        if (auto const otheriter = lines_.find(otherkey); otheriter != lines_.end())
         {
             // The whole point of using the direction flag is to reduce the
             // number of trust line objects held in memory. Ensure that there is
@@ -119,7 +119,7 @@ AssetCache::getMPTs(xrpl::AccountID const& account)
 {
     std::scoped_lock const sl(lock_);
 
-    if (auto it = mpts_.find(account); it != mpts_.end())
+    if (auto const it = mpts_.find(account); it != mpts_.end())
         return it->second;
 
     std::vector<PathFindMPT> mpts;

@@ -122,7 +122,7 @@ class ProtocolMessage_test : public beast::unit_test::Suite
 
         auto const type = static_cast<std::uint16_t>(protocol::mtPING);
         auto buffer = std::vector<std::uint8_t>{};
-        auto pack = [&buffer](std::uint32_t value) {
+        auto const pack = [&buffer](std::uint32_t value) {
             buffer.push_back(static_cast<std::uint8_t>((value >> 24) & 0x0F));
             buffer.push_back(static_cast<std::uint8_t>((value >> 16) & 0xFF));
             buffer.push_back(static_cast<std::uint8_t>((value >> 8) & 0xFF));
@@ -164,7 +164,7 @@ class ProtocolMessage_test : public beast::unit_test::Suite
     {
         testcase("oversized ping rejected before dispatch");
 
-        auto runLocalTest = [&](std::size_t size, bool compressed = false) {
+        auto const runLocalTest = [&](std::size_t size, bool compressed = false) {
             auto const buffer = makePingBuffer(size, compressed);
             auto const declared = declaredPingSize(buffer);
             if (BEAST_EXPECT(declared.has_value()))
@@ -195,7 +195,7 @@ class ProtocolMessage_test : public beast::unit_test::Suite
     {
         testcase("oversized ping rejected from header alone");
 
-        auto runLocalTest = [&](std::size_t size, bool compressed = false) {
+        auto const runLocalTest = [&](std::size_t size, bool compressed = false) {
             auto const full = makePingBuffer(size, compressed);
             auto const headerSize =
                 compressed ? compression::kHeaderBytesCompressed : compression::kHeaderBytes;
@@ -228,7 +228,7 @@ class ProtocolMessage_test : public beast::unit_test::Suite
     {
         testcase("normal ping dispatched");
 
-        auto runLocalTest = [&](std::size_t size, bool compressed = false) {
+        auto const runLocalTest = [&](std::size_t size, bool compressed = false) {
             auto const buffer = makePingBuffer(size, compressed);
             auto const declared = declaredPingSize(buffer);
             if (BEAST_EXPECT(declared.has_value()))
@@ -253,7 +253,7 @@ class ProtocolMessage_test : public beast::unit_test::Suite
     {
         testcase("ping with small unknown field still dispatched");
 
-        auto runLocalTest = [&](std::size_t size, bool compressed = false) {
+        auto const runLocalTest = [&](std::size_t size, bool compressed = false) {
             auto const buffer = makePingBuffer(size, compressed);
             auto const declared = declaredPingSize(buffer);
             if (BEAST_EXPECT(declared.has_value()))

@@ -137,7 +137,7 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 auto const& btc = MPT(ammAlice[1]);
                 auto const baseFee = env.current()->fees().base;
-                auto carolBTC = env.balance(carol_, btc);
+                auto const carolBTC = env.balance(carol_, btc);
                 auto carolXRP = env.balance(carol_, XRP);
                 // Order that can't be filled
                 env(offer(carol_, btc(100), XRP(100)), Txflags(tfFillOrKill), Ter(tecKILLED));
@@ -168,8 +168,8 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 auto const& btc = MPT(ammAlice[1]);
                 auto const baseFee = env.current()->fees().base;
-                auto carolBTC = env.balance(carol_, btc);
-                auto carolXRP = env.balance(carol_, XRP);
+                auto const carolBTC = env.balance(carol_, btc);
+                auto const carolXRP = env.balance(carol_, XRP);
                 env(offer(carol_, XRP(200), btc(200)),
                     Txflags(tfImmediateOrCancel),
                     Ter(tesSUCCESS));
@@ -318,7 +318,7 @@ private:
         BEAST_EXPECT(ammBob.expectBalances(btc(300'000'000), XRP(1'000), ammBob.tokens()));
         env.require(Balance(alice_, btc(0)));
 
-        auto jrr = ledgerEntryRoot(env, alice_);
+        auto const jrr = ledgerEntryRoot(env, alice_);
         env.require(Balance(alice_, XRP(10'000) + XRP(500) - env.current()->fees().base * 2));
     }
 
@@ -418,7 +418,7 @@ private:
 
         using namespace jtx;
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env(*this);
             auto const dan = Account{"dan"};
             env.fund(XRP(60'000), alice_, bob_, carol_, gw_, dan);
@@ -1656,7 +1656,7 @@ private:
 
         // simple MPT/IOU mix offer
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
@@ -1775,7 +1775,7 @@ private:
 
         // test unfunded offers are removed when payment succeeds
         {
-            auto test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
+            auto const test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
                 Env env(*this, features);
                 env.fund(XRP(10'000), alice_, bob_, carol_, gw_);
                 env.close();
@@ -1892,7 +1892,7 @@ private:
                 STAmount smax(btc(61'000'000));
                 PaymentSandbox sb(env.current().get(), TapNone);
                 STPathSet paths;
-                auto ipe = [](MPTTester const& iss) {
+                auto const ipe = [](MPTTester const& iss) {
                     return STPathElement(
                         STPathElement::TypeMpt | STPathElement::TypeIssuer,
                         xrpAccount(),
@@ -1931,7 +1931,7 @@ private:
                 Sandbox sb(&view, TapNone);
                 for (auto const& o : flowResult.removableOffers)
                 {
-                    if (auto ok = sb.peek(keylet::offer(o)))
+                    if (auto const ok = sb.peek(keylet::offer(o)))
                     {
                         offerDelete(sb, ok, flowJournal);
                     }
@@ -1956,7 +1956,7 @@ private:
             // the forward pass. This test checks that the payment produces
             // 1'000 BTC, as expected.
 
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
@@ -2572,7 +2572,7 @@ private:
 
         // Payment path starting with XRP
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, gw_);
                 env.close();
@@ -2608,7 +2608,7 @@ private:
 
         // Payment path ending with XRP
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, gw_);
                 env.close();
@@ -2646,7 +2646,7 @@ private:
         // Payment where loop is formed in the middle of the path, not
         // on an endpoint
         {
-            auto test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
+            auto const test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
                 Env env(*this);
                 env.fund(XRP(10'000), gw_, alice_, bob_);
                 env.close();
@@ -2919,7 +2919,7 @@ private:
 
         // IOU/MPT mix, similar to the above case
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
@@ -2978,7 +2978,7 @@ private:
 
         // IOU/MPT mix, similar to the above case
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
@@ -3110,7 +3110,7 @@ private:
         env.close();
 
         // None of the following payments should succeed.
-        auto failedMptPayments = [this, &env, &btc]() {
+        auto const failedMptPayments = [this, &env, &btc]() {
             env.require(Flags(bob_, asfDepositAuth));
 
             // Capture bob's balances before hand to confirm they don't
@@ -3403,7 +3403,7 @@ private:
         env.close();
 
         //    test: offer was removed by offer_create
-        auto offers = getAccountOffers(env, a4)[jss::offers];
+        auto const offers = getAccountOffers(env, a4)[jss::offers];
         if (!BEAST_EXPECT(checkArraySize(offers, 0u)))
             return;
     }
@@ -3480,7 +3480,7 @@ private:
 
         // cannot have more than one offer with the same output issue
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
@@ -3639,7 +3639,7 @@ private:
         }
 
         {
-            auto test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
+            auto const test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
                 Env env(*this, features);
 
                 env.fund(XRP(10'000), alice_, bob_, carol_, gw_);

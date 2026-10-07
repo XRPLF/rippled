@@ -28,7 +28,7 @@ ValidPermissionedDomain::visitEntry(bool isDel, SLE::ConstRef before, SLE::Const
     if (after && after->getType() != ltPERMISSIONED_DOMAIN)
         return;
 
-    auto check = [isDel](std::vector<SleStatus>& sleStatus, SLE::ConstRef sle) {
+    auto const check = [isDel](std::vector<SleStatus>& sleStatus, SLE::ConstRef sle) {
         auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
         auto const sorted = credentials::makeSorted(credentials);
 
@@ -66,7 +66,7 @@ ValidPermissionedDomain::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    auto check = [](SleStatus const& sleStatus, beast::Journal const& j) {
+    auto const check = [](SleStatus const& sleStatus, beast::Journal const& j) {
         if (!sleStatus.credentialsSize)
         {
             JLOG(j.fatal()) << "Invariant failed: permissioned domain with "

@@ -1364,8 +1364,8 @@ class AMMClawback_test : public beast::unit_test::Suite
             }
             env.close();
 
-            auto aliceXrpBalance = env.balance(alice, XRP);
-            auto bobXrpBalance = env.balance(bob, XRP);
+            auto const aliceXrpBalance = env.balance(alice, XRP);
+            auto const bobXrpBalance = env.balance(bob, XRP);
 
             // gw clawback all alice's USD in amm. (1000 USD / 200 XRP)
             env(amm::ammClawback(gw, alice, usd, XRP, std::nullopt), Ter(tesSUCCESS));
@@ -2401,7 +2401,7 @@ class AMMClawback_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(amm.expectBalances(usd(800), XRP(100), IOUAmount{2828427124746190, -10}));
 
-        auto aliceXrpBalance = env.balance(alice, XRP);
+        auto const aliceXrpBalance = env.balance(alice, XRP);
 
         env(amm::ammClawback(gw, alice, usd, XRP, usd(400)), Ter(tesSUCCESS));
         env.close();
@@ -2436,7 +2436,7 @@ class AMMClawback_test : public beast::unit_test::Suite
         using namespace jtx;
         std::string logs;
 
-        auto setupAccounts =
+        auto const setupAccounts =
             [&](Env& env, Account const& gw, Account const& alice, Account const& bob) {
                 env.fund(XRP(100000), gw, alice, bob);
                 env.close();
@@ -2453,9 +2453,8 @@ class AMMClawback_test : public beast::unit_test::Suite
                 return usd;
             };
 
-        auto getLPTokenBalances = [&](auto& env,
-                                      auto const& amm,
-                                      auto const& account) -> std::pair<std::string, std::string> {
+        auto const getLPTokenBalances = [&](auto& env, auto const& amm, auto const& account)
+            -> std::pair<std::string, std::string> {
             auto const lpToken =
                 getAccountLines(env, account, amm.lptIssue())[jss::lines][0u][jss::balance]
                     .asString();

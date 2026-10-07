@@ -31,7 +31,8 @@ class SkipList_test : public beast::unit_test::Suite
             history.push_back(prev);
             for (auto i = 0; i < 1023; ++i)
             {
-                auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
+                auto const next =
+                    std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
                 next->updateSkipList();
                 history.push_back(next);
                 prev = next;
@@ -39,7 +40,7 @@ class SkipList_test : public beast::unit_test::Suite
         }
 
         {
-            auto l = *std::next(std::begin(history));
+            auto const l = *std::next(std::begin(history));
             BEAST_EXPECT((*std::begin(history))->header().seq < l->header().seq);
             BEAST_EXPECT(!hashOfSeq(*l, l->header().seq + 1, env.journal).has_value());
             BEAST_EXPECT(hashOfSeq(*l, l->header().seq, env.journal) == l->header().hash);

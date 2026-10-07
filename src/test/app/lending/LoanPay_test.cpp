@@ -328,26 +328,26 @@ private:
                 Number::RoundingMode::Upward);
         }();
 
-        auto test = [&](int const payFactor,
-                        int const feeFactor,
-                        TER const expectedTer = tesSUCCESS) {
-            auto const stateBefore = getCurrentState(env, broker, keylet);
-            BEAST_EXPECT(stateBefore.paymentRemaining <= 3239184);
-            BEAST_EXPECT(stateBefore.paymentRemaining > kLoanMaximumPaymentsPerTransaction);
+        auto const test =
+            [&](int const payFactor, int const feeFactor, TER const expectedTer = tesSUCCESS) {
+                auto const stateBefore = getCurrentState(env, broker, keylet);
+                BEAST_EXPECT(stateBefore.paymentRemaining <= 3239184);
+                BEAST_EXPECT(stateBefore.paymentRemaining > kLoanMaximumPaymentsPerTransaction);
 
-            Number const amount = roundedPayment * payFactor;
-            auto loanPayTx = env.json(pay(borrower, keylet.key, STAmount{broker.asset, amount}));
-            XRPAmount const payFee{baseFee * feeFactor};
-            env(loanPayTx, Ter(expectedTer), Fee(payFee));
-            env.close();
-            auto const expectedChange = isTesSuccess(expectedTer)
-                ? std::min(kLoanMaximumPaymentsPerTransaction, payFactor)
-                : 0;
+                Number const amount = roundedPayment * payFactor;
+                auto const loanPayTx =
+                    env.json(pay(borrower, keylet.key, STAmount{broker.asset, amount}));
+                XRPAmount const payFee{baseFee * feeFactor};
+                env(loanPayTx, Ter(expectedTer), Fee(payFee));
+                env.close();
+                auto const expectedChange = isTesSuccess(expectedTer)
+                    ? std::min(kLoanMaximumPaymentsPerTransaction, payFactor)
+                    : 0;
 
-            auto const stateAfter = getCurrentState(env, broker, keylet);
-            BEAST_EXPECT(
-                stateAfter.paymentRemaining == stateBefore.paymentRemaining - expectedChange);
-        };
+                auto const stateAfter = getCurrentState(env, broker, keylet);
+                BEAST_EXPECT(
+                    stateAfter.paymentRemaining == stateBefore.paymentRemaining - expectedChange);
+            };
 
         static constexpr std::int64_t kMaxFeeIncrements =
             kLoanMaximumPaymentsPerTransaction / kLoanPaymentsPerFeeIncrement;
@@ -430,7 +430,7 @@ private:
             Number periodicPayment;
         };
 
-        auto runScenario = [&](FeatureBitset features, TER expectedTer) -> Result {
+        auto const runScenario = [&](FeatureBitset features, TER expectedTer) -> Result {
             Env env(*this, features);
 
             Account const issuer{"issuer"};
@@ -553,7 +553,7 @@ private:
         auto parentCloseTime = [&]() {
             return env.current()->parentCloseTime().time_since_epoch().count();
         };
-        auto maxLoanTime = [&]() {
+        auto const maxLoanTime = [&]() {
             auto const startDate = parentCloseTime();
 
             BEAST_EXPECT(startDate >= 50);
@@ -565,7 +565,8 @@ private:
             // straight-up overflow: interval
             auto const interval = maxLoanTime() + 1;
             auto const total = 1;
-            auto createJson = env.json(baseJson, kPaymentInterval(interval), kPaymentTotal(total));
+            auto const createJson =
+                env.json(baseJson, kPaymentInterval(interval), kPaymentTotal(total));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tecKILLED));
             env.close();
@@ -575,7 +576,8 @@ private:
             // min interval is 60
             auto const interval = 60;
             auto const total = maxLoanTime() + 1;
-            auto createJson = env.json(baseJson, kPaymentInterval(interval), kPaymentTotal(total));
+            auto const createJson =
+                env.json(baseJson, kPaymentInterval(interval), kPaymentTotal(total));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tecKILLED));
             env.close();
@@ -586,7 +588,7 @@ private:
             auto const interval = maxLoanTime() + 1;
             auto const total = 1;
             auto const grace = interval;
-            auto createJson = env.json(
+            auto const createJson = env.json(
                 baseJson, kPaymentInterval(interval), kPaymentTotal(total), kGracePeriod(grace));
 
             // The grace period can't be larger than the interval.
@@ -597,7 +599,8 @@ private:
             // Overflow with multiplication of a few large intervals
             auto const interval = 1'000'000'000;
             auto const total = 10;
-            auto createJson = env.json(baseJson, kPaymentInterval(interval), kPaymentTotal(total));
+            auto const createJson =
+                env.json(baseJson, kPaymentInterval(interval), kPaymentTotal(total));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tecKILLED));
             env.close();
@@ -607,7 +610,8 @@ private:
             // min interval is 60
             auto const interval = 60;
             auto const total = 1'000'000'000;
-            auto createJson = env.json(baseJson, kPaymentInterval(interval), kPaymentTotal(total));
+            auto const createJson =
+                env.json(baseJson, kPaymentInterval(interval), kPaymentTotal(total));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tecKILLED));
             env.close();
@@ -618,7 +622,7 @@ private:
             auto const total = 60;
             auto const interval = (maxLoanTime() - total) / total;
             auto const grace = interval;
-            auto createJson = env.json(
+            auto const createJson = env.json(
                 baseJson, kPaymentInterval(interval), kPaymentTotal(total), kGracePeriod(grace));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tecKILLED));
@@ -631,7 +635,7 @@ private:
             auto const grace = 100;
             auto const interval = maxLoanTime() - grace;
             auto const total = 1;
-            auto createJson = env.json(
+            auto const createJson = env.json(
                 baseJson, kPaymentInterval(interval), kPaymentTotal(total), kGracePeriod(grace));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tesSUCCESS));
@@ -657,7 +661,7 @@ private:
             auto const grace = 5'000;
             auto const interval = kMaxTime - closeStartDate - grace;
             auto const total = 1;
-            auto createJson = env.json(
+            auto const createJson = env.json(
                 baseJson, kPaymentInterval(interval), kPaymentTotal(total), kGracePeriod(grace));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tesSUCCESS));
@@ -705,7 +709,7 @@ private:
             auto const keylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
             auto const interval = maxLoanTime / total;
-            auto createJson = env.json(
+            auto const createJson = env.json(
                 baseJson, kPaymentInterval(interval), kPaymentTotal(total), kGracePeriod(grace));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tesSUCCESS));
@@ -725,7 +729,8 @@ private:
                 XRPAmount const payFee{baseFee * ((total - 1) / kLoanPaymentsPerFeeIncrement + 1)};
                 STAmount const paymentAmount =
                     roundToScale(STAmount{broker.asset, payment}, beforeState.loanScale);
-                auto loanPayTx = env.json(pay(borrower, keylet.key, paymentAmount), Fee(payFee));
+                auto const loanPayTx =
+                    env.json(pay(borrower, keylet.key, paymentAmount), Fee(payFee));
                 env(loanPayTx, Ter(tesSUCCESS));
                 env.close();
             }
@@ -771,7 +776,7 @@ private:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        auto runTestCases = [&](FeatureBitset features, UnauthorizedPayee payee) {
+        auto const runTestCases = [&](FeatureBitset features, UnauthorizedPayee payee) {
             bool const pseudoExempt = features[fixCleanup3_4_0];
             // With the vault's line repaired by the issuer, the only remaining
             // unauthorized payee is the broker's pseudo-account.
@@ -981,13 +986,13 @@ private:
 
         // Raw AccountRoot balance, matching LoanPay::doApply's conservation
         // check (not the reserve-clamped accountHolds()/xrpLiquid() value).
-        auto rawBalance = [&](AccountID const& id) -> STAmount {
+        auto const rawBalance = [&](AccountID const& id) -> STAmount {
             auto const sle = env.le(keylet::account(id));
             if (!BEAST_EXPECT(sle))
                 return STAmount{};
             return sle->getFieldAmount(sfBalance);
         };
-        auto lenderReserve = [&] {
+        auto const lenderReserve = [&] {
             return env.current()->fees().accountReserve(ownerCount(env, lender), 1);
         };
 
@@ -1055,7 +1060,7 @@ private:
             auto const sle = view.read(loanKeylet);
             if (!sle)
                 return false;
-            auto replacement = std::make_shared<SLE>(*sle);
+            auto const replacement = std::make_shared<SLE>(*sle);
             (*replacement)[sfNextPaymentDueDate] = dueDate;
             view.rawReplace(replacement);
             return true;
@@ -1430,7 +1435,7 @@ private:
         using namespace jtx;
         using namespace loan;
 
-        auto run = [this](FeatureBitset features, TER expected) {
+        auto const run = [this](FeatureBitset features, TER expected) {
             testcase(
                 std::string(
                     "LoanPay broker-owner borrower existing line after "

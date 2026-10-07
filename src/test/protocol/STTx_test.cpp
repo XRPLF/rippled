@@ -192,7 +192,7 @@ public:
         // A transaction signed by its own account, with that signature copied
         // into an alternate signature field. sfSponsorSignature is a common
         // field; sfCounterpartySignature is only on a LoanSet.
-        auto makeCopiedSig = [&keypair, &account](SField const& sigField) {
+        auto const makeCopiedSig = [&keypair, &account](SField const& sigField) {
             bool const counterparty = sigField == sfCounterpartySignature;
             STTx tx(counterparty ? ttLOAN_SET : ttACCOUNT_SET, [&](auto& obj) {
                 obj.setAccountID(sfAccount, account);
@@ -266,7 +266,7 @@ public:
         auto const signerKp = generateKeyPair(KeyType::Secp256k1, generateSeed("multisigner"));
         auto const signerId = calcAccountID(signerKp.first);
 
-        auto makeCopiedMultiSig = [&](SField const& sigField) {
+        auto const makeCopiedMultiSig = [&](SField const& sigField) {
             bool const counterparty = sigField == sfCounterpartySignature;
             STTx const tx(counterparty ? ttLOAN_SET : ttACCOUNT_SET, [&](auto& obj) {
                 obj.setAccountID(sfAccount, account);
@@ -1409,7 +1409,7 @@ public:
                 SerialIter tenSit{tenDeep.slice()};
                 try
                 {
-                    auto stx = std::make_shared<xrpl::STTx const>(tenSit);
+                    auto const stx = std::make_shared<xrpl::STTx const>(tenSit);
                     fail("STTx construction should have thrown.");
                 }
                 catch (std::runtime_error const& ex)
@@ -1428,7 +1428,7 @@ public:
             SerialIter tooDeepSit{tooDeep.slice()};
             try
             {
-                auto stx = std::make_shared<xrpl::STTx const>(tooDeepSit);
+                auto const stx = std::make_shared<xrpl::STTx const>(tooDeepSit);
                 fail("STTx construction should have thrown.");
             }
             catch (std::runtime_error const& ex)
@@ -1472,7 +1472,7 @@ public:
                 SerialIter nineSit{nineDeep.slice()};
                 try
                 {
-                    auto stx = std::make_shared<xrpl::STTx const>(nineSit);
+                    auto const stx = std::make_shared<xrpl::STTx const>(nineSit);
                     fail("STTx construction should have thrown.");
                 }
                 catch (std::runtime_error const& ex)
@@ -1492,7 +1492,7 @@ public:
             SerialIter tooDeepSit{tooDeep.slice()};
             try
             {
-                auto stx = std::make_shared<xrpl::STTx const>(tooDeepSit);
+                auto const stx = std::make_shared<xrpl::STTx const>(tooDeepSit);
                 fail("STTx construction should have thrown.");
             }
             catch (std::runtime_error const& ex)
@@ -1519,7 +1519,7 @@ public:
             {
                 // Verify we have a valid transaction.
                 SerialIter sit{serialized.slice()};
-                auto stx = std::make_shared<xrpl::STTx const>(sit);
+                auto const stx = std::make_shared<xrpl::STTx const>(sit);
             }
 
             // Tweak the serialized data to change the ClearFlag to
@@ -1531,7 +1531,7 @@ public:
             SerialIter sit{serialized.slice()};
             try
             {
-                auto stx = std::make_shared<xrpl::STTx const>(sit);
+                auto const stx = std::make_shared<xrpl::STTx const>(sit);
                 fail("An exception should have been thrown");
             }
             catch (std::exception const& ex)
@@ -1559,7 +1559,7 @@ public:
 
             xrpl::SerialIter sit(xrpl::makeSlice(tx2.rawtransaction()));
 
-            auto stx = std::make_shared<xrpl::STTx const>(sit);
+            auto const stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
         catch (std::exception const&)
@@ -1570,7 +1570,7 @@ public:
         try
         {
             xrpl::SerialIter sit{kPayload2};
-            auto stx = std::make_shared<xrpl::STTx const>(sit);
+            auto const stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -1581,7 +1581,7 @@ public:
         try
         {
             xrpl::SerialIter sit{kPayload3};
-            auto stx = std::make_shared<xrpl::STTx const>(sit);
+            auto const stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -1592,7 +1592,7 @@ public:
         try
         {
             xrpl::SerialIter sit{kPayload4};
-            auto stx = std::make_shared<xrpl::STTx const>(sit);
+            auto const stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -1669,7 +1669,7 @@ public:
         auto const id2 = calcAccountID(kp2.first);
 
         // Lambda that returns a Payment STObject.
-        auto getPayment = [kp1, id1, id2]() {
+        auto const getPayment = [kp1, id1, id2]() {
             // Account id1 pays account id2 10,000 XRP.
             STObject payment(sfGeneric);
             payment.setFieldU16(sfTransactionType, ttPAYMENT);
@@ -1756,7 +1756,7 @@ public:
         auto const id2 = calcAccountID(kp2.first);
 
         // A raw inner transaction object of the given transaction type.
-        auto makeInner = [&](std::uint16_t txType) {
+        auto const makeInner = [&](std::uint16_t txType) {
             STObject inner(sfRawTransaction);
             inner.setFieldU16(sfTransactionType, txType);
             inner.setAccountID(sfAccount, id1);
@@ -1769,7 +1769,7 @@ public:
         };
 
         // An outer Batch STObject wrapping the given inner.
-        auto makeBatch = [&](STObject inner) {
+        auto const makeBatch = [&](STObject inner) {
             STArray rawTxns(sfRawTransactions);
             rawTxns.push_back(std::move(inner));
 
@@ -1851,7 +1851,8 @@ public:
         // the bad ones.
 
         // This lambda contains the bulk of the test code.
-        auto testMalformedSigningAccount = [this, &txn](STObject const& signer, bool expectPass) {
+        auto const testMalformedSigningAccount = [this, &txn](
+                                                     STObject const& signer, bool expectPass) {
             // Create SigningAccounts array.
             STArray signers(sfSigners, 1);
             signers.pushBack(signer);

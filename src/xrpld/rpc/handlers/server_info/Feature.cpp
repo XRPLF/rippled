@@ -83,7 +83,7 @@ doFeature(rpc::JsonContext& context)
     if (!jvReply)
         return rpcError(RpcBadFeature);
 
-    auto m = majorities.find(feature);
+    auto const m = majorities.find(feature);
     if (m != majorities.end())
         jvReply[jss::majority] = m->second.time_since_epoch().count();
 

@@ -1707,7 +1707,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 escrow::kFinishTime(env.now() + 1s),
                 Fee(baseFee * 150));
             env.close();
-            auto transferRate = escrow::rate(env, alice, seq1);
+            auto const transferRate = escrow::rate(env, alice, seq1);
             BEAST_EXPECT(transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
             // issuer changes rate higher
@@ -1749,7 +1749,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 escrow::kFinishTime(env.now() + 1s),
                 Fee(baseFee * 150));
             env.close();
-            auto transferRate = escrow::rate(env, alice, seq1);
+            auto const transferRate = escrow::rate(env, alice, seq1);
             BEAST_EXPECT(transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
             // issuer changes rate lower
@@ -1791,7 +1791,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 escrow::kCancelTime(env.now() + 3s),
                 Fee(baseFee));
             env.close();
-            auto transferRate = escrow::rate(env, alice, seq1);
+            auto const transferRate = escrow::rate(env, alice, seq1);
             BEAST_EXPECT(transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
             // issuer changes rate lower
@@ -2749,7 +2749,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const seq1 = env.seq(alice);
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 Sandbox sb(&view, TapNone);
-                auto sleNew =
+                auto const sleNew =
                     std::make_shared<SLE>(keylet::escrow(alice, SeqProxy::rawSequence(seq1)));
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
                 STAmount const amt(mpt, 10);
@@ -2977,7 +2977,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const seq1 = env.seq(alice);
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 Sandbox sb(&view, TapNone);
-                auto sleNew =
+                auto const sleNew =
                     std::make_shared<SLE>(keylet::escrow(alice, SeqProxy::rawSequence(seq1)));
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
                 STAmount const amt(mpt, 10);
@@ -3019,7 +3019,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
         env(pay(gw, carol, mpt(10'000)));
         env.close();
 
-        auto outstandingMPT = env.balance(gw, mpt);
+        auto const outstandingMPT = env.balance(gw, mpt);
 
         // Create & Finish Escrow
         auto const seq1 = env.seq(alice);

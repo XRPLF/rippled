@@ -177,7 +177,7 @@ divu10(UInt128T& u)
     // r = u - q * 10  approximately == u % 10
     auto r = static_cast<unsigned>(u - ((q << 3) + (q << 1)));
     // correction c is 1 if r >= 10 else 0
-    auto c = (r + 6) >> 4;
+    auto const c = (r + 6) >> 4;
     u = q + c;
     r -= c * 10;
     return r;
@@ -657,7 +657,7 @@ Number::Guard::doRoundDown(bool& negative, T& mantissa, int& exponent) const
 {
     // Do not pushOverflow here.
 
-    auto r = round();
+    auto const r = round();
     if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330)
     {
         // If there was any remainder, subtract 1 from the result. This is sufficient to get the
@@ -693,7 +693,7 @@ Number::Guard::doRound(rep& drops, std::string location) const
 {
     // Do not pushOverflow here.
 
-    auto r = round();
+    auto const r = round();
     if (r == Round::Up || (r == Round::Even && (drops & 1) == 1))
     {
         if (drops >= kMaxRep)
@@ -1152,11 +1152,11 @@ Number::operator*=(Number const& y)
     bool const yn = y.negative_;
     int const ys = yn ? -1 : 1;
     InternalRep const ym = y.mantissa_;
-    auto ye = y.exponent_;
+    auto const ye = y.exponent_;
 
     auto zm = UInt128T(xm) * UInt128T(ym);
     auto ze = xe + ye;
-    auto zs = xs * ys;
+    auto const zs = xs * ys;
     bool zn = (zs == -1);
     Guard g(kRange);
     if (zn)
@@ -1201,8 +1201,8 @@ Number::operator/=(Number const& y)
 
     bool const np = negative_;
     int const ns = (np ? -1 : 1);
-    auto nm = mantissa_;
-    auto ne = exponent_;
+    auto const nm = mantissa_;
+    auto const ne = exponent_;
 
     bool const dp = y.negative_;
     int const ds = (dp ? -1 : 1);
@@ -1557,7 +1557,7 @@ root(Number f, unsigned d)
     // Scale f into the range (0, 1) such that f's exponent is a multiple of d
     auto e = f.exponent_ + Number::mantissaLog() + 1;
     auto const di = static_cast<int>(d);
-    auto ex = [e = e, di = di]()  // Euclidean remainder of e/d
+    auto const ex = [e = e, di = di]()  // Euclidean remainder of e/d
     {
         int const k = (e >= 0 ? e : e - (di - 1)) / di;
         int const k2 = e - (k * di);
@@ -1662,7 +1662,7 @@ power(Number const& f, unsigned n, unsigned d)
 
     if (f == one)
         return f;
-    auto g = std::gcd(n, d);
+    auto const g = std::gcd(n, d);
     if (g == 0)
         throw std::overflow_error("Number::power nan");
     if (d == 0)

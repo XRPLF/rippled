@@ -60,7 +60,7 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
 void
 PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 {
-    auto event = app_.getJobQueue().makeLoadEvent(JtPathFind, "PathRequest::updateAll");
+    auto const event = app_.getJobQueue().makeLoadEvent(JtPathFind, "PathRequest::updateAll");
 
     std::vector<PathRequest::Wptr> requests;
     std::shared_ptr<AssetCache> cache;
@@ -103,7 +103,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
             if (request)
             {
-                auto continueCallback = [&getSubscriber, &request]() {
+                auto const continueCallback = [&getSubscriber, &request]() {
                     // This callback is used by doUpdate to determine whether to
                     // continue working. If getSubscriber returns null, that
                     // indicates that this request is no longer relevant.
@@ -151,14 +151,15 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
                 // Remove any dangling weak pointers or weak
                 // pointers that refer to this path request.
-                auto ret = std::ranges::remove_if(requests_, [&removed, &request](auto const& wl) {
-                    auto r = wl.lock();
+                auto const ret =
+                    std::ranges::remove_if(requests_, [&removed, &request](auto const& wl) {
+                        auto const r = wl.lock();
 
-                    if (r && r != request)
-                        return false;
-                    ++removed;
-                    return true;
-                });
+                        if (r && r != request)
+                            return false;
+                        ++removed;
+                        return true;
+                    });
 
                 requests_.erase(ret.begin(), ret.end());
             }
@@ -219,8 +220,8 @@ PathRequestManager::insertPathRequest(PathRequest::pointer const& req)
 
     // Insert after any older unserviced requests but before
     // any serviced requests
-    auto ret = std::ranges::find_if(requests_, [](auto const& wl) {
-        auto r = wl.lock();
+    auto const ret = std::ranges::find_if(requests_, [](auto const& wl) {
+        auto const r = wl.lock();
 
         // We come before handled requests
         return r && !r->isNew();
@@ -236,7 +237,8 @@ PathRequestManager::makePathRequest(
     std::shared_ptr<ReadView const> const& inLedger,
     json::Value const& requestJson)
 {
-    auto req = std::make_shared<PathRequest>(app_, subscriber, ++lastIdentifier_, *this, journal_);
+    auto const req =
+        std::make_shared<PathRequest>(app_, subscriber, ++lastIdentifier_, *this, journal_);
 
     auto [valid, jvRes] = req->doCreate(getAssetCache(inLedger, false), requestJson);
 
@@ -289,9 +291,9 @@ PathRequestManager::doLegacyPathRequest(
     std::shared_ptr<ReadView const> const& inLedger,
     json::Value const& request)
 {
-    auto cache = std::make_shared<AssetCache>(inLedger, app_.getJournal("AssetCache"));
+    auto const cache = std::make_shared<AssetCache>(inLedger, app_.getJournal("AssetCache"));
 
-    auto req =
+    auto const req =
         std::make_shared<PathRequest>(app_, [] {}, consumer, ++lastIdentifier_, *this, journal_);
 
     auto [valid, jvRes] = req->doCreate(cache, request);

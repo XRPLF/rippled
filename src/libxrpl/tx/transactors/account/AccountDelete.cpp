@@ -224,7 +224,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dst{ctx.tx[sfDestination]};
 
-    auto sleDst = ctx.view.read(keylet::account(dst));
+    auto const sleDst = ctx.view.read(keylet::account(dst));
 
     if (!sleDst)
         return tecNO_DST;
@@ -250,7 +250,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto sleAccount = ctx.view.read(keylet::account(account));
+    auto const sleAccount = ctx.view.read(keylet::account(account));
     XRPL_ASSERT(sleAccount, "xrpl::AccountDelete::preclaim : non-null account");
     if (!sleAccount)
         return terNO_ACCOUNT;
@@ -324,7 +324,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     {
         // Make sure any directory node types that we find are the kind
         // we can delete.
-        auto sleItem = ctx.view.read(keylet::child(dirEntry));
+        auto const sleItem = ctx.view.read(keylet::child(dirEntry));
         if (!sleItem)
         {
             // Directory node has an invalid index.  Bail out.
@@ -353,11 +353,11 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 TER
 AccountDelete::doApply()
 {
-    auto src = view().peek(keylet::account(accountID_));
+    auto const src = view().peek(keylet::account(accountID_));
     XRPL_ASSERT(src, "xrpl::AccountDelete::doApply : non-null source account");
 
     auto const dstID = ctx_.tx[sfDestination];
-    auto dst = view().peek(keylet::account(dstID));
+    auto const dst = view().peek(keylet::account(dstID));
     XRPL_ASSERT(dst, "xrpl::AccountDelete::doApply : non-null destination account");
 
     if (!src || !dst)
@@ -407,7 +407,7 @@ AccountDelete::doApply()
     if (src->isFieldPresent(sfSponsor))
     {
         auto const sponsorID = src->getAccountID(sfSponsor);
-        auto sponsorSle = view().peek(keylet::account(sponsorID));
+        auto const sponsorSle = view().peek(keylet::account(sponsorID));
 
         if (!sponsorSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE

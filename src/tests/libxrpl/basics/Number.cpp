@@ -135,7 +135,7 @@ TEST(NumberTest, limits)
         }
         EXPECT_TRUE(caught);
 
-        auto test = [](auto const& x, auto const& y, int line) {
+        auto const test = [](auto const& x, auto const& y, int line) {
             auto const result = x == y;
             std::stringstream ss;
             ss << x << " == " << y << " -> " << (result ? "true" : "false");
@@ -359,7 +359,7 @@ TEST(NumberTest, add)
         auto const cLargeCorrected = std::to_array<Case>({
             {Number{Number::kMaxRep}, Number{6, -1}, Number{Number::kMaxRep}, __LINE__},
         });
-        auto test = [](auto const& c) {
+        auto const test = [](auto const& c) {
             for (auto const& [x, y, z, line] : c)
             {
                 auto const result = x + y;
@@ -697,7 +697,7 @@ TEST(NumberTest, sub)
             // 2^63 is the same as kMaxRep+1
             {power(2, 63), Number{3, 0}, Number{Number::kMaxRep - 3}, __LINE__},
         });
-        auto test = [](auto const& c) {
+        auto const test = [](auto const& c) {
             for (auto const& [x, y, z, line] : c)
             {
                 auto const result = x - y;
@@ -745,7 +745,7 @@ TEST(NumberTest, mul)
                 EXPECT_EQ(result, z) << ss.str();
             }
         };
-        auto tests = [&](auto const& cSmall, auto const& cLarge) {
+        auto const tests = [&](auto const& cSmall, auto const& cLarge) {
             if (scale == MantissaRange::MantissaScale::Small)
             {
                 test(cSmall);
@@ -1056,7 +1056,7 @@ TEST(NumberTest, div)
             }
         };
         auto const maxMantissa = Number::maxMantissa();
-        auto tests = [&](auto const& cSmall, auto const& cLarge) {
+        auto const tests = [&](auto const& cSmall, auto const& cLarge) {
             if (scale == MantissaRange::MantissaScale::Small)
             {
                 test(cSmall);
@@ -1234,7 +1234,7 @@ TEST(NumberTest, root)
         NumberMantissaScaleGuard const sg(mantissaScale);
 
         using Case = std::tuple<Number, unsigned, Number>;
-        auto test = [](auto const& c) {
+        auto const test = [](auto const& c) {
             for (auto const& [x, y, z] : c)
             {
                 auto const result = root(x, y);
@@ -1302,7 +1302,7 @@ TEST(NumberTest, root2)
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
-        auto test = [](auto const& c) {
+        auto const test = [](auto const& c) {
             for (auto const& x : c)
             {
                 auto const expected = root(x, 2);
@@ -1631,7 +1631,7 @@ TEST(NumberTest, to_string)
 
         auto const scale = Number::getMantissaScale();
 
-        auto test = [](Number const& n, std::string const& expected, int line) {
+        auto const test = [](Number const& n, std::string const& expected, int line) {
             auto const result = to_string(n);
             std::stringstream ss;
             ss << "to_string(" << result << "). Expected: " << expected;
@@ -1808,7 +1808,7 @@ TEST(NumberTest, relationals)
         NumberMantissaScaleGuard const sg(mantissaScale);
 
         {
-            auto test = [](auto const& nums) {
+            auto const test = [](auto const& nums) {
                 EXPECT_TRUE(std::ranges::is_sorted(nums));
 
                 for (auto iter1 = nums.begin(); iter1 != nums.end(); ++iter1)
@@ -2513,7 +2513,7 @@ TEST(NumberTest, subtraction_rounding)
             auto const epsilon = pow10<BigInt>(expectedExponent);
             for (auto const& [r, sum] : sums)
             {
-                auto diff = sum.first - exact;
+                auto const diff = sum.first - exact;
                 switch (scale)
                 {
                     case MantissaRange::MantissaScale::Small:
@@ -2571,7 +2571,7 @@ TEST(NumberTest, normalization_cusp_tonearest_and_downward)
         Number const below{static_cast<std::int64_t>(kMaxRep), 0};
         Number const above{false, static_cast<std::uint64_t>(kMaxRep) + 3, 0, Number::Normalized{}};
 
-        auto construct = [](Number::RoundingMode mode) {
+        auto const construct = [](Number::RoundingMode mode) {
             NumberRoundModeGuard const roundGuard{mode};
             return Number(false, actual, 0, Number::Normalized{});
         };
@@ -2581,7 +2581,7 @@ TEST(NumberTest, normalization_cusp_tonearest_and_downward)
 
         Number const downward = construct(Number::RoundingMode::Downward);
 
-        auto message = [&] {
+        auto const message = [&] {
             std::ostringstream log;
             log << "  actual     = " << actual << "  (kMaxRep + 1)\n"
                 << "  below      = " << below << "  (kMaxRep, distance 1)\n"
@@ -2678,7 +2678,7 @@ TEST(NumberTest, number_add_directed_sign_wrong)
 
             auto const valueDown = toBigInt(down);
             auto const valueUp = toBigInt(up);
-            auto message = [&] {
+            auto const message = [&] {
                 std::ostringstream log;
                 log << "    exact    = " << fmt(exact) << "\n    downward = " << fmt(valueDown)
                     << "   (correct rounding: <= exact)"
@@ -2717,7 +2717,7 @@ TEST(NumberTest, number_add_directed_sign_wrong)
             }
             auto const valuePDown = toBigInt(pdown);
             auto const valuePUp = toBigInt(pup);
-            auto message = [&] {
+            auto const message = [&] {
                 std::ostringstream log;
                 log << "    exact    = " << fmt(pexact) << "\n    downward = " << fmt(valuePDown)
                     << "   (correct rounding: <= exact)"
@@ -2758,7 +2758,7 @@ TEST(NumberTest, number_add_directed_sign_wrong)
 
             auto const valueDown = toBigInt(down);
             auto const valueUp = toBigInt(up);
-            auto message = [&] {
+            auto const message = [&] {
                 std::ostringstream log;
                 log << "    exact    = " << fmt(exact) << "\n    downward = " << fmt(valueDown)
                     << "   (correct rounding: <= exact)"
@@ -2798,7 +2798,7 @@ TEST(NumberTest, number_add_directed_sign_wrong)
 
             auto const valueDown = toBigInt(down);
             auto const valueUp = toBigInt(up);
-            auto message = [&] {
+            auto const message = [&] {
                 std::ostringstream log;
                 log << "    exact    = " << fmt(exact) << "\n    downward = " << fmt(valueDown)
                     << "   (correct rounding: <= exact)"
@@ -2850,7 +2850,7 @@ TEST(NumberTest, number_add_to_nearest_picks_farther)
             Number const normalizedExact{static_cast<std::int64_t>(q), res.exponent()};
             BigInt const norm = toBigInt(normalizedExact);
 
-            auto message = [&](auto const& comp) {
+            auto const message = [&](auto const& comp) {
                 std::ostringstream log;
                 log << fmt(q) + " != " + fmt(comp) << "\n"
                     << "    x                = " << x << "\n    y                = " << y
@@ -2980,7 +2980,7 @@ TEST(NumberTest, number_cusp_rounding_with_fractional_parts)
 
                 Number const actual = below + operand;
 
-                auto message = [&] {
+                auto const message = [&] {
                     std::stringstream ss;
                     ss << header() << "kMaxRep + " << operand << " rounded " << to_string(mode)
                        << " to " << actual << ". Expected: " << expectedValue;
@@ -3038,7 +3038,7 @@ TEST(NumberTest, number_cusp_rounding_with_fractional_parts)
 
                 Number const actual = above - operand;
 
-                auto message = [&] {
+                auto const message = [&] {
                     std::stringstream ss;
                     ss << header() << "kMaxRepUp - " << operand << " rounded " << to_string(mode)
                        << " to " << actual << ". Expected: " << expectedValue;

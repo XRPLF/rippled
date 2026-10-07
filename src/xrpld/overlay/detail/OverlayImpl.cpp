@@ -216,7 +216,7 @@ OverlayImpl::onHandoff(
     EndpointType remoteEndpoint)
 {
     auto const id = nextId_++;
-    auto peerJournal = app_.getJournal("Peer");
+    auto const peerJournal = app_.getJournal("Peer");
     beast::WrappedSink sink(peerJournal.sink(), makePrefix(id));
     beast::Journal const journal(sink);
 
@@ -294,7 +294,7 @@ OverlayImpl::onHandoff(
 
     try
     {
-        auto publicKey = verifyHandshake(
+        auto const publicKey = verifyHandshake(
             request,
             *sharedValue,
             setup_.networkID,
@@ -817,7 +817,7 @@ OverlayImpl::getOverlayInfo() const
         }
 
         {
-            auto version{sp->getVersion()};
+            auto const version{sp->getVersion()};
             if (!version.empty())
             {
                 // Could move here if json::value supported moving from strings
@@ -962,7 +962,7 @@ OverlayImpl::processValidatorList(HttpRequestType const& req, Handoff& handoff)
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
 
-    auto fail = [&msg, &handoff](auto status) {
+    auto const fail = [&msg, &handoff](auto status) {
         msg.result(status);
         msg.insert("Content-Length", "0");
 
@@ -975,9 +975,9 @@ OverlayImpl::processValidatorList(HttpRequestType const& req, Handoff& handoff)
 
     std::string_view key = req.target().substr(kPrefix.size());
 
-    if (auto slash = key.find('/'); slash != std::string_view::npos)
+    if (auto const slash = key.find('/'); slash != std::string_view::npos)
     {
-        auto verString = key.substr(0, slash);
+        auto const verString = key.substr(0, slash);
         if (!boost::conversion::try_lexical_convert(verString, version))
             return fail(boost::beast::http::status::bad_request);
         key = key.substr(slash + 1);
@@ -1029,11 +1029,12 @@ OverlayImpl::processHealth(HttpRequestType const& req, Handoff& handoff)
         amendmentBlocked = true;
     int const numberPeers = info[jss::peers].asInt();
     std::string const serverState = info[jss::server_state].asString();
-    auto loadFactor = info[jss::load_factor_server].asDouble() / info[jss::load_base].asDouble();
+    auto const loadFactor =
+        info[jss::load_factor_server].asDouble() / info[jss::load_base].asDouble();
 
     enum class HealthState { Healthy, Warning, Critical };
     auto health = HealthState::Healthy;
-    auto setHealth = [&health](HealthState state) { health = std::max(health, state); };
+    auto const setHealth = [&health](HealthState state) { health = std::max(health, state); };
 
     msg.body()[jss::info] = json::ValueType::Object;
     if (lastValidatedLedgerAge >= 7 || lastValidatedLedgerAge < 0)
@@ -1333,7 +1334,7 @@ OverlayImpl::relay(
     bool relay = tx.has_value();
     if (relay)
     {
-        auto& txn = tx->get();
+        auto const& txn = tx->get();
         SerialIter sit(makeSlice(txn.rawtransaction()));
         try
         {
@@ -1367,7 +1368,7 @@ OverlayImpl::relay(
         return;
     }
 
-    auto& txn = tx->get();
+    auto const& txn = tx->get();
     auto const sm = std::make_shared<Message>(txn, protocol::mtTRANSACTION);
     peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
     auto const minRelay = app_.config().txReduceRelayMinPeers + disabled;
@@ -1509,7 +1510,7 @@ makeSquelchMessage(PublicKey const& validator, bool squelch, uint32_t squelchDur
 void
 OverlayImpl::unsquelch(PublicKey const& validator, Peer::ID id) const
 {
-    if (auto peer = findPeerByShortID(id); peer)
+    if (auto const peer = findPeerByShortID(id); peer)
     {
         // optimize - multiple message with different
         // validator might be sent to the same peer
@@ -1520,7 +1521,7 @@ OverlayImpl::unsquelch(PublicKey const& validator, Peer::ID id) const
 void
 OverlayImpl::squelch(PublicKey const& validator, Peer::ID id, uint32_t squelchDuration) const
 {
-    if (auto peer = findPeerByShortID(id); peer)
+    if (auto const peer = findPeerByShortID(id); peer)
     {
         peer->send(makeSquelchMessage(validator, true, squelchDuration));
     }
@@ -1548,7 +1549,7 @@ OverlayImpl::updateSlotAndSquelch(
         return;
     }
 
-    for (auto id : peers)
+    for (auto const id : peers)
     {
         slots_.updateSlotAndSquelch(key, validator, id, type, [&]() {
             reportInboundTraffic(TrafficCount::Category::SquelchIgnored, 0);

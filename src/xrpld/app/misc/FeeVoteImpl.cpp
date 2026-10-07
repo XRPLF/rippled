@@ -127,7 +127,7 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
     // not send a value.
     if (rules.enabled(featureXRPFees))
     {
-        auto vote =
+        auto const vote =
             [&v, this](auto const current, XRPAmount target, char const* name, auto const& sfield) {
                 if (current != target)
                 {
@@ -143,14 +143,14 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
     }
     else
     {
-        auto to32 = [](XRPAmount target) { return target.dropsAs<std::uint32_t>(); };
-        auto to64 = [](XRPAmount target) { return target.dropsAs<std::uint64_t>(); };
-        auto vote = [&v, this](
-                        auto const current,
-                        XRPAmount target,
-                        auto const& convertCallback,
-                        char const* name,
-                        auto const& sfield) {
+        auto const to32 = [](XRPAmount target) { return target.dropsAs<std::uint32_t>(); };
+        auto const to64 = [](XRPAmount target) { return target.dropsAs<std::uint64_t>(); };
+        auto const vote = [&v, this](
+                              auto const current,
+                              XRPAmount target,
+                              auto const& convertCallback,
+                              char const* name,
+                              auto const& sfield) {
             if (current != target)
             {
                 JLOG(journal_.info()) << "Voting for " << name << " of " << target;
@@ -191,9 +191,9 @@ FeeVoteImpl::doVoting(
     auto const& rules = lastClosedLedger->rules();
     if (rules.enabled(featureXRPFees))
     {
-        auto doVote = [](std::shared_ptr<STValidation> const& val,
-                         detail::VotableValue& value,
-                         SF_AMOUNT const& xrpField) {
+        auto const doVote = [](std::shared_ptr<STValidation> const& val,
+                               detail::VotableValue& value,
+                               SF_AMOUNT const& xrpField) {
             if (auto const field = ~val->at(~xrpField); field && field->native())
             {
                 auto const vote = field->xrp();
@@ -223,9 +223,9 @@ FeeVoteImpl::doVoting(
     }
     else
     {
-        auto doVote = [](std::shared_ptr<STValidation> const& val,
-                         detail::VotableValue& value,
-                         auto const& valueField) {
+        auto const doVote = [](std::shared_ptr<STValidation> const& val,
+                               detail::VotableValue& value,
+                               auto const& valueField) {
             if (auto const field = val->at(~valueField))
             {
                 using XRPType = XRPAmount::value_type;

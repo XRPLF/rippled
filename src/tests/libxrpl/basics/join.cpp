@@ -19,7 +19,7 @@ struct JoinTest : public ::testing::Test
 
 TEST_F(JoinTest, join)
 {
-    auto test = [](auto collectionAndDelimiter, std::string expected) {
+    auto const test = [](auto collectionAndDelimiter, std::string expected) {
         std::stringstream ss;
         // Put something else in the buffer before and after to ensure that
         // the << operator returns the stream correctly.
