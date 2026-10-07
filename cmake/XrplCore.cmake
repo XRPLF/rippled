@@ -330,6 +330,7 @@ if(xrpld)
         # antithesis_instrumentation.h, which is not exported as INTERFACE
         target_include_directories(
             xrpld
+            SYSTEM
             PRIVATE ${CMAKE_SOURCE_DIR}/external/antithesis-sdk
         )
     endif()
