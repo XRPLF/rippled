@@ -56,11 +56,11 @@
 
 namespace xrpl {
 
-// The entry classes have no consumers yet, and an un-instantiated class
-// template is barely type-checked. Instantiate every one explicitly so the
-// compiler actually checks them. Keep this block even once real call sites
-// exist: it is what catches a new ledger entry type being added without its
-// wrapper class, or the wrapper class existing but never actually being used.
+// An un-instantiated class template is barely type-checked. Name every entry
+// class in a static_assert below so its class definition is instantiated and
+// type-checked; the per-type suites check the member bodies. Keep this block
+// even once real call sites exist: it is what catches a new ledger entry type
+// being added without its wrapper class.
 //
 // Driving this off ledger_entries.macro keeps it exhaustive by construction:
 // adding a ledger entry type without adding its entry class stops compiling
