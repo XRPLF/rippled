@@ -22,6 +22,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <set>
@@ -200,8 +201,9 @@ DepositPreauth::doApply()
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorize))
     {
-        DepositPreauthEntryW entryPreauth(accountID_, ctx_.tx[sfUnauthorize], view(), j_);
-        return entryPreauth.removeFromLedger(accountID_);
+        auto const preauth = keylet::depositPreauth(accountID_, ctx_.tx[sfUnauthorize]);
+
+        return DepositPreauth::removeFromLedger(view(), preauth.key, j_);
     }
     else if (ctx_.tx.isFieldPresent(sfAuthorizeCredentials))
     {
@@ -233,6 +235,8 @@ DepositPreauth::doApply()
 
         DepositPreauthEntryW entryPreauth(accountID_, sortedTX, view(), j_);
         entryPreauth.newSLE();
+        if (!entryPreauth)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
 
         entryPreauth->setAccountID(sfAccount, accountID_);
         entryPreauth->peekFieldArray(sfAuthorizeCredentials) = std::move(sortedLE);
@@ -256,13 +260,43 @@ DepositPreauth::doApply()
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorizeCredentials))
     {
-        DepositPreauthEntryW entryPreauth(
-            accountID_,
-            credentials::makeSorted(ctx_.tx.getFieldArray(sfUnauthorizeCredentials)),
-            view(),
-            j_);
-        return entryPreauth.removeFromLedger(accountID_);
+        auto const preauthKey = keylet::depositPreauth(
+            accountID_, credentials::makeSorted(ctx_.tx.getFieldArray(sfUnauthorizeCredentials)));
+        return DepositPreauth::removeFromLedger(view(), preauthKey.key, j_);
     }
+
+    return tesSUCCESS;
+}
+
+TER
+DepositPreauth::removeFromLedger(ApplyView& view, UInt256 const& preauthIndex, beast::Journal j)
+{
+    // Existence already checked in preclaim and AccountDelete
+    DepositPreauthEntryW slePreauth(preauthIndex, view, j);
+    if (!slePreauth)
+    {
+        JLOG(j.warn()) << "Selected DepositPreauth does not exist.";
+        return tecNO_ENTRY;
+    }
+
+    AccountID const account{(*slePreauth)[sfAccount]};
+    std::uint64_t const page{(*slePreauth)[sfOwnerNode]};
+    if (!view.dirRemove(keylet::ownerDir(account), page, preauthIndex, false))
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "Unable to delete DepositPreauth from owner.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+
+    // If we succeeded, update the DepositPreauth owner's reserve.
+    auto const sleOwner = view.peek(keylet::account(account));
+    if (!sleOwner)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    decreaseOwnerCountForObject(view, sleOwner, slePreauth.mutableRawSle(), 1, j);
+    // Remove DepositPreauth from ledger.
+    slePreauth.erase();
 
     return tesSUCCESS;
 }

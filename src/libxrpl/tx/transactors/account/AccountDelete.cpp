@@ -30,6 +30,7 @@
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
+#include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
 #include <cstdint>
 #include <utility>
@@ -114,13 +115,12 @@ TER
 removeDepositPreauthFromLedger(
     ServiceRegistry&,
     ApplyView& view,
-    AccountID const& account,
+    AccountID const&,
     UInt256 const& delIndex,
     SLE::Ref,
     beast::Journal j)
 {
-    return DepositPreauthEntryW(Keylet(ltDEPOSIT_PREAUTH, delIndex), view, j)
-        .removeFromLedger(account);
+    return DepositPreauth::removeFromLedger(view, delIndex, j);
 }
 
 TER
