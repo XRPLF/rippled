@@ -457,16 +457,14 @@ TEST_F(VaultBalance, loss_at_assets_deployed_boundary_allowed)
     EXPECT_EQ(vault->at(sfLossUnrealized), Number{500});
 }
 
-TEST_F(VaultBalance, yield_unrealized_clamps_to_zero)
+TEST_F(VaultBalance, negative_yield_unrealized_rejected)
 {
     auto vault = standardVault();
     vault->at(sfYieldUnrealized) = Number{5};
+    auto const before = BalanceSnapshot::of(vault);
 
-    ASSERT_EQ(adjustVaultBalances(vault, {.yield = Number{-20}}, kNullJournal), tesSUCCESS);
-    EXPECT_EQ(vault->at(sfYieldUnrealized), Number{0});
-    // The clamp does not reject the rest: cash and assetsDeployed still applied.
-    EXPECT_EQ(vault->at(sfAssetsAvailable), Number{100});
-    EXPECT_EQ(vault->at(sfAssetsDeployed), Number{500});
+    EXPECT_EQ(adjustVaultBalances(vault, {.yield = Number{-20}}, kNullJournal), tefBAD_LEDGER);
+    EXPECT_EQ(BalanceSnapshot::of(vault), before);
 }
 
 TEST_F(VaultBalance, assets_total_equals_floor16_of_available_plus_assets_deployed)

@@ -181,5 +181,58 @@ TEST(VaultGrid, optional_inflow_includes_yield_unrealized)
     EXPECT_EQ(checkOptionalVaultInflow(vault, amount), tecLIMIT_EXCEEDED);
 }
 
+// AssetsAvailable + raw needs 20 digits. Under the ToNearest ambient mode the
+// sum would round up to the next 10^-6 before the Downward floor, crediting
+// 0.000001 for a raw 0.0000009996.
+TEST(VaultGrid, credit_floors_sum_in_requested_mode)
+{
+    test::Account const issuer{"issuer"};
+    Issue const iou{toCurrency("USD"), issuer.id()};
+    auto const vault = makeVault(
+        iou,
+        Number{0},
+        VaultVersion::FixedPrecision,
+        6,
+        Number{0},
+        Number{1'234'567'890'123'456LL, -6});
+    Number const raw{9'996, -10};
+
+    NumberRoundModeGuard const ambient(Number::RoundingMode::ToNearest);
+    STAmount const credit =
+        creditToPosteriorAvailableScale(vault, raw, Number::RoundingMode::Downward);
+    EXPECT_EQ(credit, STAmount(iou, 0));
+    EXPECT_LE(Number(credit), raw);
+}
+
+TEST(VaultGrid, is_on_vault_base_grid)
+{
+    test::Account const issuer{"issuer"};
+    Issue const iou{toCurrency("USD"), issuer.id()};
+    int const baseScale = vaultBaseScale(iou, 6);
+
+    struct Row
+    {
+        Number value;
+        bool expected;
+    };
+    Row const rows[] = {
+        {Number{0}, true},
+        {Number{1}, true},
+        {Number{1, -6}, true},
+        {Number{1, 20}, true},
+        {Number{1'234'567'890'123'456LL, -6}, true},
+        // A digit below baseScale.
+        {Number{1, -7}, false},
+        {Number{15, -7}, false},
+        // A 17th significant digit, on the base grid but not an STAmount.
+        {Number{12'345'678'901'234'567LL, 0}, false},
+    };
+    for (auto const& row : rows)
+        EXPECT_EQ(isOnVaultBaseGrid(iou, row.value, baseScale), row.expected) << row.value;
+
+    EXPECT_EQ(vaultBaseScale(xrpIssue(), 6), 0);
+    EXPECT_TRUE(isOnVaultBaseGrid(xrpIssue(), Number{7}, 0));
+}
+
 }  // namespace
 }  // namespace xrpl

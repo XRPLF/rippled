@@ -189,12 +189,13 @@ creditToPosteriorScale(
     // creditToPosteriorAvailableScale's doc: a delta floored on its own grid
     // can still leave a 17-digit sum once the reference has crossed a power
     // of ten.
-    Number const flooredSum = roundToAsset(asset, reference + raw, atScale, roundingMode);
-    // flooredSum - reference can carry 17 significant digits (the sum is on
-    // the posterior grid, the reference on the finer one); build the
-    // STAmount under roundingMode, not the caller's ambient mode, so the
-    // credit this returns never exceeds raw.
+    //
+    // Both reference + raw and flooredSum - reference can carry more digits
+    // than Number holds (the sum is on the posterior grid, the reference on
+    // the finer one). Compute both under roundingMode, not the caller's
+    // ambient mode, so the credit this returns never exceeds raw.
     NumberRoundModeGuard const rg(roundingMode);
+    Number const flooredSum = roundToAsset(asset, reference + raw, atScale, roundingMode);
     return STAmount{asset, flooredSum - reference};
 }
 
@@ -256,16 +257,21 @@ adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Jou
     STAmount const availableAfter{asset, Number(vault->at(sfAssetsAvailable)) + Number(cash)};
     Number const assetsDeployedAfter = Number(vault->at(sfAssetsDeployed)) + change.deployed;
     Number const lossUnrealizedAfter = Number(vault->at(sfLossUnrealized)) + change.loss;
-    Number yieldUnrealizedAfter = Number(vault->at(sfYieldUnrealized)) + change.yield;
+    // LoanSet, LoanPay and default each move YieldUnrealized by the change in
+    // the Loan's own TotalValueOutstanding - PrincipalOutstanding -
+    // ManagementFeeOutstanding, so it always equals that sum over the
+    // Vault's Loans and cannot go negative.
+    Number const yieldUnrealizedAfter = Number(vault->at(sfYieldUnrealized)) + change.yield;
 
     if (availableAfter < beast::kZero || assetsDeployedAfter < beast::kZero ||
-        lossUnrealizedAfter < beast::kZero)
+        lossUnrealizedAfter < beast::kZero || yieldUnrealizedAfter < beast::kZero)
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "adjustVaultBalances: a balance would become negative."
                         << " AssetsAvailable: " << Number(availableAfter)
                         << ", AssetsDeployed: " << assetsDeployedAfter
-                        << ", LossUnrealized: " << lossUnrealizedAfter;
+                        << ", LossUnrealized: " << lossUnrealizedAfter
+                        << ", YieldUnrealized: " << yieldUnrealizedAfter;
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
@@ -274,13 +280,6 @@ adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Jou
     // still owes. Reachable only through LoanManage's impair.
     if (lossUnrealizedAfter > assetsDeployedAfter)
         return tecLIMIT_EXCEEDED;
-
-    if (yieldUnrealizedAfter < beast::kZero)
-    {
-        JLOG(j.warn()) << "adjustVaultBalances: YieldUnrealized would become negative: "
-                       << yieldUnrealizedAfter << "; clamping to zero.";
-        yieldUnrealizedAfter = kNumZero;
-    }
 
     // Every caller derives principal from a Loan's own PrincipalOutstanding so the new total must
     // stay representable at the asset's own 16-digit precision too.
