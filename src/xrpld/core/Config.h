@@ -412,4 +412,20 @@ setupFeeVote(Section const& section);
 DatabaseCon::Setup
 setupDatabaseCon(Config const& c, std::optional<beast::Journal> j = std::nullopt);
 
+namespace detail {
+
+/**
+ * A /proc/self/mountinfo path field with its octal escapes decoded.
+ *
+ * The kernel writes space, tab, newline and backslash in the root and
+ * mount point fields as `\040`, `\011`, `\012` and `\134`.
+ *
+ * @param escaped The field as read from the file.
+ * @return The path as the kernel names it.
+ */
+[[nodiscard]] std::string
+decodeMountinfoPath(std::string_view escaped);
+
+}  // namespace detail
+
 }  // namespace xrpl

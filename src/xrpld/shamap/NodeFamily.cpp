@@ -47,10 +47,12 @@ NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
                   ? app.config().getValueFor(SizedItem::TreeCacheSize)
                   : 0))
 {
+    // Bytes, not whole GB: a cgroup limit under 1 GiB is a nonzero budget
+    // with the cap on, and must not read as the disabled value.
     auto const budget = app.config().cacheMemoryBudget();
     JLOG(j_.info()) << "TreeNodeCache sizing: target="
                     << app.config().getValueFor(SizedItem::TreeCacheSize) << " entries, budget "
-                    << (budget >> 30) << " GB" << (budget == 0 ? " (enforcement disabled)" : "");
+                    << budget << " bytes" << (budget == 0 ? " (enforcement disabled)" : "");
 }
 
 void
