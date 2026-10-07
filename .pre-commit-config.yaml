@@ -85,6 +85,7 @@ repos:
     rev: 28010ddd6016e1a0f7bd232acb6536ef996ae897 # frozen: 0.29.2
     hooks:
       - id: gersemi
+        args: [-i, --warnings-as-errors]
 
   - repo: https://github.com/rbubley/mirrors-prettier
     rev: ef4a397f916211b4a39ccf9d3d9cbb6562157251 # frozen: v3.9.9
