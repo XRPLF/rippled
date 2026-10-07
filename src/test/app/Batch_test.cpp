@@ -68,6 +68,7 @@
 #include <xrpl/tx/transactors/payment/Payment.h>
 #include <xrpl/tx/transactors/system/Batch.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -97,12 +98,40 @@ class Batch_test : public beast::unit_test::Suite
         std::string txHash;
     };
 
+    static bool
+    isBatchResult(json::Value const& txn)
+    {
+        return txn[sfTransactionType.jsonName] == "BatchResult";
+    }
+
+    static std::uint32_t
+    txIndex(json::Value const& txn)
+    {
+        return txn[jss::metaData][sfTransactionIndex.jsonName].asUInt();
+    }
+
+    // Index counts only the ledger's non-BatchResult transactions, as in a ledger without BatchV2.
     static json::Value
     getTxByIndex(json::Value const& jrr, int const index)
     {
+        std::vector<json::Value> txns;
         for (auto const& txn : jrr[jss::result][jss::ledger][jss::transactions])
         {
-            if (txn[jss::metaData][sfTransactionIndex.jsonName] == index)
+            if (!isBatchResult(txn))
+                txns.push_back(txn);
+        }
+        std::ranges::sort(txns, {}, &txIndex);
+        if (index < 0 || std::cmp_greater_equal(index, txns.size()))
+            return {};
+        return txns[index];
+    }
+
+    static json::Value
+    getBatchResult(json::Value const& jrr, std::string const& batchID)
+    {
+        for (auto const& txn : jrr[jss::result][jss::ledger][jss::transactions])
+        {
+            if (isBatchResult(txn) && txn[sfParentBatchID.jsonName] == batchID)
                 return txn;
         }
         return {};
@@ -123,7 +152,39 @@ class Batch_test : public beast::unit_test::Suite
     {
         auto const jrr = getLastLedger(env);
         auto const transactions = jrr[jss::result][jss::ledger][jss::transactions];
-        BEAST_EXPECT(transactions.size() == ledgerResults.size());
+        auto const records = std::ranges::count_if(transactions, isBatchResult);
+        BEAST_EXPECT(transactions.size() - records == ledgerResults.size());
+
+        // Each applied Batch has one BatchResult under BatchV2, right after its last leaf.
+        bool const recordsEnabled = env.closed()->rules().enabled(featureBatchV2);
+        std::size_t outers = 0;
+        for (TestLedgerData const& ledgerResult : ledgerResults)
+        {
+            if (ledgerResult.txType != "Batch" || ledgerResult.result != "tesSUCCESS")
+                continue;
+            ++outers;
+            auto const record = getBatchResult(jrr, ledgerResult.txHash);
+            if (!recordsEnabled)
+            {
+                BEAST_EXPECT(record.isNull());
+                continue;
+            }
+            if (!BEAST_EXPECT(record.isObject()))
+                continue;
+            std::uint32_t last = 0;
+            for (auto const& txn : transactions)
+            {
+                if (txn[jss::hash] == ledgerResult.txHash ||
+                    txn[jss::metaData][sfParentBatchID.jsonName] == ledgerResult.txHash)
+                    last = std::max(last, txIndex(txn));
+            }
+            BEAST_EXPECT(txIndex(record) == last + 1);
+            BEAST_EXPECT(record[jss::metaData][sfTransactionResult.jsonName] == "tesSUCCESS");
+            BEAST_EXPECT(record[jss::metaData][sfAffectedNodes.jsonName].size() == 0);
+            BEAST_EXPECT(record[sfAccount.jsonName] == toBase58(AccountID()));
+        }
+        BEAST_EXPECT(std::cmp_equal(records, recordsEnabled ? outers : 0));
+
         for (TestLedgerData const& ledgerResult : ledgerResults)
         {
             auto const txn = getTxByIndex(jrr, ledgerResult.index);
@@ -5941,6 +6002,207 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
+    testBatchResult(FeatureBitset features)
+    {
+        testcase("batch result");
+
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        bool const enabled = features[featureBatchV2];
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+
+        // The closed ledger's BatchResult for batchID lists exactly these inners and results.
+        auto const expectRecord = [&](std::string const& batchID,
+                                      std::vector<std::pair<std::string, TER>> const& expected) {
+            auto const record = getBatchResult(getLastLedger(env), batchID);
+            if (!enabled)
+            {
+                BEAST_EXPECT(record.isNull());
+                return;
+            }
+            if (!BEAST_EXPECT(record.isObject()))
+                return;
+            auto const& entries = record[sfBatchResults.jsonName];
+            if (!BEAST_EXPECT(entries.size() == expected.size()))
+                return;
+            for (std::size_t i = 0; i < expected.size(); ++i)
+            {
+                auto const& entry = entries[i][sfBatchResult.jsonName];
+                BEAST_EXPECT(entry[sfTransactionHash.jsonName] == expected[i].first);
+                BEAST_EXPECT(
+                    entry[sfEngineResultCode.jsonName].asInt() == TERtoInt(expected[i].second));
+            }
+        };
+
+        // tfAllOrNothing rolled back: both inners recorded, neither in the ledger.
+        {
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
+                // tefNO_AUTH_REQUIRED: trustline auth is not required
+                batch::Inner(trust(alice, usd(1000), tfSetfAuth), seq + 2));
+            env.close();
+
+            validateClosedLedger(
+                env,
+                {{.index = 0,
+                  .txType = "Batch",
+                  .result = "tesSUCCESS",
+                  .txHash = batchID,
+                  .batchID = std::nullopt}});
+            expectRecord(batchID, {{txIDs[0], tesSUCCESS}, {txIDs[1], tefNO_AUTH_REQUIRED}});
+
+            // The record is retrievable by hash like any ledger transaction.
+            if (enabled)
+            {
+                auto const record = getBatchResult(getLastLedger(env), batchID);
+                auto const jrr = env.rpc("tx", record[jss::hash].asString());
+                BEAST_EXPECT(jrr[jss::result][sfTransactionType.jsonName] == "BatchResult");
+                BEAST_EXPECT(jrr[jss::result][sfParentBatchID.jsonName] == batchID);
+            }
+        }
+
+        // tfIndependent, all succeed: the record follows both inners.
+        {
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, seq, batchFee, tfIndependent),
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::Inner(pay(alice, bob, XRP(2)), seq + 2));
+            env.close();
+
+            validateClosedLedger(
+                env,
+                {{.index = 0,
+                  .txType = "Batch",
+                  .result = "tesSUCCESS",
+                  .txHash = batchID,
+                  .batchID = std::nullopt},
+                 {.index = 1,
+                  .txType = "Payment",
+                  .result = "tesSUCCESS",
+                  .txHash = txIDs[0],
+                  .batchID = batchID},
+                 {.index = 2,
+                  .txType = "Payment",
+                  .result = "tesSUCCESS",
+                  .txHash = txIDs[1],
+                  .batchID = batchID}});
+            expectRecord(batchID, {{txIDs[0], tesSUCCESS}, {txIDs[1], tesSUCCESS}});
+        }
+
+        // tfIndependent with a tec inner: the tec is recorded and its leaf is in the ledger.
+        {
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, seq, batchFee, tfIndependent),
+                // tecUNFUNDED_PAYMENT: alice does not have enough XRP
+                batch::Inner(pay(alice, bob, XRP(9999)), seq + 1),
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 2));
+            env.close();
+
+            validateClosedLedger(
+                env,
+                {{.index = 0,
+                  .txType = "Batch",
+                  .result = "tesSUCCESS",
+                  .txHash = batchID,
+                  .batchID = std::nullopt},
+                 {.index = 1,
+                  .txType = "Payment",
+                  .result = "tecUNFUNDED_PAYMENT",
+                  .txHash = txIDs[0],
+                  .batchID = batchID},
+                 {.index = 2,
+                  .txType = "Payment",
+                  .result = "tesSUCCESS",
+                  .txHash = txIDs[1],
+                  .batchID = batchID}});
+            expectRecord(batchID, {{txIDs[0], tecUNFUNDED_PAYMENT}, {txIDs[1], tesSUCCESS}});
+        }
+
+        // tfUntilFailure stops at the failing second inner; the third is never attempted.
+        {
+            auto const batchFee = batch::calcBatchFee(env, 0, 3);
+            auto const seq = env.seq(alice);
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, seq, batchFee, tfUntilFailure),
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
+                // tefNO_AUTH_REQUIRED: trustline auth is not required
+                batch::Inner(trust(alice, usd(1000), tfSetfAuth), seq + 2),
+                batch::Inner(pay(alice, bob, XRP(2)), seq + 3));
+            env.close();
+
+            validateClosedLedger(
+                env,
+                {{.index = 0,
+                  .txType = "Batch",
+                  .result = "tesSUCCESS",
+                  .txHash = batchID,
+                  .batchID = std::nullopt},
+                 {.index = 1,
+                  .txType = "Payment",
+                  .result = "tesSUCCESS",
+                  .txHash = txIDs[0],
+                  .batchID = batchID}});
+            expectRecord(batchID, {{txIDs[0], tesSUCCESS}, {txIDs[1], tefNO_AUTH_REQUIRED}});
+        }
+
+        // tfOnlyOne stops at the first success; the third is never attempted.
+        {
+            auto const batchFee = batch::calcBatchFee(env, 0, 3);
+            auto const seq = env.seq(alice);
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, seq, batchFee, tfOnlyOne),
+                // tecUNFUNDED_PAYMENT: alice does not have enough XRP
+                batch::Inner(pay(alice, bob, XRP(9999)), seq + 1),
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 2),
+                batch::Inner(pay(alice, bob, XRP(2)), seq + 3));
+            env.close();
+
+            validateClosedLedger(
+                env,
+                {{.index = 0,
+                  .txType = "Batch",
+                  .result = "tesSUCCESS",
+                  .txHash = batchID,
+                  .batchID = std::nullopt},
+                 {.index = 1,
+                  .txType = "Payment",
+                  .result = "tecUNFUNDED_PAYMENT",
+                  .txHash = txIDs[0],
+                  .batchID = batchID},
+                 {.index = 2,
+                  .txType = "Payment",
+                  .result = "tesSUCCESS",
+                  .txHash = txIDs[1],
+                  .batchID = batchID}});
+            expectRecord(batchID, {{txIDs[0], tecUNFUNDED_PAYMENT}, {txIDs[1], tesSUCCESS}});
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnable(features);
@@ -5980,6 +6242,7 @@ class Batch_test : public beast::unit_test::Suite
         testOuterBinding(features);
         testUnsortedBatchSigners(features);
         testBatchSigCache(features);
+        testBatchResult(features);
     }
 
 public:
@@ -5990,6 +6253,7 @@ public:
 
         auto const sa = testableAmendments();
         testWithFeats(sa);
+        testWithFeats(sa - featureBatchV2);
     }
 };
 

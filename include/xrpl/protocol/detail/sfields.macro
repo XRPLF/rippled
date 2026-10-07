@@ -245,6 +245,7 @@ TYPED_SFIELD(sfManagementFeeOutstanding, NUMBER,     17, SField::kSmdNeedsAsset 
 TYPED_SFIELD(sfLoanScale,                INT32,      1)
 TYPED_SFIELD(sfRemainingOwnerCountDelta, INT32,      2)
 TYPED_SFIELD(sfVMReturnCode,             INT32,      3)
+TYPED_SFIELD(sfEngineResultCode,         INT32,      4)
 
 // currency amount (common)
 TYPED_SFIELD(sfAmount,                   AMOUNT,     1)
@@ -425,6 +426,7 @@ UNTYPED_SFIELD(sfBook,                   OBJECT,    36)
 UNTYPED_SFIELD(sfCounterpartySignature,  OBJECT,    37, SField::kSmdDefault, SField::kNotSigning)
 UNTYPED_SFIELD(sfSponsorSignature,       OBJECT,    38, SField::kSmdDefault, SField::kNotSigning)
 UNTYPED_SFIELD(sfProposedTransaction,    OBJECT,    39)
+UNTYPED_SFIELD(sfBatchResult,            OBJECT,    40)
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array
@@ -457,3 +459,4 @@ UNTYPED_SFIELD(sfAcceptedCredentials,    ARRAY,     28)
 UNTYPED_SFIELD(sfPermissions,            ARRAY,     29)
 UNTYPED_SFIELD(sfRawTransactions,        ARRAY,     30)
 UNTYPED_SFIELD(sfBatchSigners,           ARRAY,     31, SField::kSmdDefault, SField::kNotSigning)
+UNTYPED_SFIELD(sfBatchResults,           ARRAY,     32)

@@ -146,6 +146,10 @@ InnerObjectFormats::InnerObjectFormats()
          {sfTxnSignature, SoeOptional},
          {sfSigners, SoeOptional}});
 
+    add(sfBatchResult.jsonName,
+        sfBatchResult.getCode(),
+        {{sfTransactionHash, SoeRequired}, {sfEngineResultCode, SoeRequired}});
+
     add(sfBook.jsonName,
         sfBook.getCode(),
         {

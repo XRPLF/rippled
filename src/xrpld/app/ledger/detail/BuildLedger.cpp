@@ -19,6 +19,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/apply.h>
 
 #include <cstddef>
@@ -242,6 +243,9 @@ buildLedger(
                 // are not re-applied a second time outside of the batch during
                 // replay.
                 if (tx.second->isFlag(tfInnerBatchTxn))
+                    continue;
+                // Replaying the outer Batch regenerates its BatchResult record.
+                if (tx.second->getTxnType() == ttBATCH_RESULT)
                     continue;
                 applyTransaction(app, accum, *tx.second, false, applyFlags, j);
             }

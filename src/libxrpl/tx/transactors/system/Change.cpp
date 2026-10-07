@@ -42,6 +42,13 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
             preflight0(ctx, ctx.rules.enabled(featureLendingProtocol) ? tfEnableAmendmentMask : 0))
         return ret;
 
+    // The ledger build inserts BatchResult directly; it is never applied as a transaction.
+    if (ctx.tx.getTxnType() == ttBATCH_RESULT)
+    {
+        JLOG(ctx.j.warn()) << "Change: BatchResult cannot be applied";
+        return temINVALID;
+    }
+
     auto account = ctx.tx.getAccountID(sfAccount);
     if (account != beast::kZero)
     {

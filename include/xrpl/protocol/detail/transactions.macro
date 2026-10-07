@@ -1221,3 +1221,16 @@ TRANSACTION(ttUNL_MODIFY, 102, UNLModify,
     {sfLedgerSequence, SoeRequired},
     {sfUNLModifyValidator, SoeRequired},
 }))
+
+/** This system-generated transaction type records the outcome of every inner
+    transaction a Batch attempted. The ledger build inserts it after the Batch's
+    inner transactions; it is never submitted or proposed.
+ */
+TRANSACTION(ttBATCH_RESULT, 103, BatchResult,
+    ({
+        .amendment = featureBatchV2,
+    }),
+    ({
+    {sfParentBatchID, SoeRequired},
+    {sfBatchResults, SoeRequired},
+}))

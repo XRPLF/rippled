@@ -59,5 +59,6 @@ private:
 using EnableAmendment = Change;
 using SetFee = Change;
 using UNLModify = Change;
+using BatchResult = Change;
 
 }  // namespace xrpl
