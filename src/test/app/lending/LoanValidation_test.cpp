@@ -107,7 +107,7 @@ private:
         auto const iou = issuer["IOU"];
 
         auto testWrapper = [&](auto&& test) {
-            Env env(*this);
+            Env env(*this, all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
             env.fund(XRP(1'000), lender, issuer, borrower, sponsor);
             env(trust(lender, iou(10'000'000)));
             env(pay(issuer, lender, iou(5'000'000)));
@@ -321,7 +321,7 @@ private:
         auto const runCase = [&, this](char const* label, auto const& fieldSetter) {
             testcase << "LoanSet doApply precision-loss: " << label;
 
-            Env env(*this);
+            Env env(*this, all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
             PrettyAsset const iouAsset = createFundedRippleIouAsset(env, issuer, lender, borrower);
             BrokerInfo const brokerInfo{createVaultAndBroker(
                 env,
@@ -397,7 +397,7 @@ private:
         // Preflight and preclaim guards of LoanAccept. Two-step-specific
         // failures are covered in LoanTwoStep_test.cpp.
         Account const alice{"alice"};
-        Env env(*this);
+        Env env(*this, all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
         env.fund(XRP(1'000), alice);
         env.close();
 
@@ -510,9 +510,7 @@ private:
         {
             bool const twoStep = flow == LoanFlow::TwoStep;
 
-            Env env(*this);
-            if (twoStep && !env.enabled(featureLendingProtocolV1_2))
-                continue;
+            Env env(*this, all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
 
             env.fund(XRP(100'000), issuer, lender, borrower);
             env.close();

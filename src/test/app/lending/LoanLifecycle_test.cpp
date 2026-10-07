@@ -305,15 +305,14 @@ private:
         Account const borrower = issuer;
         Account const lender("lender");
 
-        // Exercise both creation flows where supported. In the two-step flow
+        // Exercise both creation flows. In the two-step flow
         // the broker owner (lender) proposes the loan naming the issuer as the
         // borrower, who then accepts it.
         for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
         {
             bool const twoStep = flow == LoanFlow::TwoStep;
 
-            Env env(*this);
-            BEAST_EXPECT(env.enabled(featureLendingProtocolV1_2));
+            Env env(*this, all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
 
             env.fund(XRP(1'000), issuer, lender);
 
@@ -791,9 +790,14 @@ public:
     {
         runAmendmentIndependent();
         for (auto const& features : jtx::amendmentCombinations(
-                 {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2, featureLendingProtocolV1_2},
-                 all_))
+                 {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
             runAmendmentSensitive(features);
+        // all_ excludes LendingProtocolV1_1 and V1_2, and amendmentCombinations
+        // only ever subtracts features from its seed, so the loop above never
+        // enables either. Run them explicitly. V1_2 requires V1_1 (see
+        // features.macro), so it is never enabled on its own.
+        runAmendmentSensitive(all_ | featureLendingProtocolV1_1);
+        runAmendmentSensitive(all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
     }
 };
 

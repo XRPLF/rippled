@@ -640,8 +640,7 @@ private:
                                   std::function<void(Env&, BrokerInfo const&, MPTTester&)> mptTest,
                                   std::function<void(Env&, BrokerInfo const&)> iouTest,
                                   CaseArgs args = {}) {
-            Env env(*this);
-            BEAST_EXPECT(env.enabled(featureLendingProtocolV1_2));
+            Env env(*this, all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
             env.fund(XRP(args.initialXRP), issuer, lender, borrower);
             env.close();
             if (args.requireAuth)
