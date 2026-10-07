@@ -301,7 +301,6 @@ public:
         using namespace std::chrono_literals;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
                     cfg->fees.referenceFee = 10;
-                    cfg->nodeSize = 0;
                     return cfg;
                 })};
         Account const gw{"gateway"};
