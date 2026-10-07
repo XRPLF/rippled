@@ -19,13 +19,13 @@ namespace xrpl {
 class SHAMapNodeID : public CountedObject<SHAMapNodeID>
 {
 private:
-    uint256 id_;
+    UInt256 id_;
     unsigned int depth_ = 0;
 
 public:
     SHAMapNodeID() = default;
     SHAMapNodeID(SHAMapNodeID const& other) = default;
-    SHAMapNodeID(unsigned int depth, uint256 const& hash);
+    SHAMapNodeID(unsigned int depth, UInt256 const& hash);
 
     SHAMapNodeID&
     operator=(SHAMapNodeID const& other) = default;
@@ -46,14 +46,28 @@ public:
         return depth_;
     }
 
-    [[nodiscard]] uint256 const&
+    [[nodiscard]] UInt256 const&
     getNodeID() const
     {
         return id_;
     }
 
     [[nodiscard]] SHAMapNodeID
-    getChildNodeID(unsigned int m) const;
+    getChildNodeID(unsigned int branch) const;
+
+    /**
+     * Test whether this node ID lies on the path to the given leaf key
+     *
+     * A node at depth d identifies the tree path spelled by the first d
+     * nibbles of its key, so any leaf beneath it must agree on that prefix.
+     * A node ID that fails this test names a different subtree than the one
+     * it was built for.
+     *
+     * @param key  the key of a leaf below this node
+     * @return whether this node ID is a prefix of the leaf key
+     */
+    [[nodiscard]] bool
+    isPrefixOf(UInt256 const& key) const;
 
     /**
      * Create a SHAMapNodeID of a node with the depth of the node and
@@ -64,7 +78,7 @@ public:
      * @return SHAMapNodeID of the node
      */
     static SHAMapNodeID
-    createID(int depth, uint256 const& key);
+    createID(unsigned int depth, UInt256 const& key);
 
     /**
      * Comparison operators
@@ -133,6 +147,6 @@ deserializeSHAMapNodeID(std::string_view s)
  * Returns the branch that would contain the given hash
  */
 [[nodiscard]] unsigned int
-selectBranch(SHAMapNodeID const& id, uint256 const& hash);
+selectBranch(SHAMapNodeID const& id, UInt256 const& hash);
 
 }  // namespace xrpl

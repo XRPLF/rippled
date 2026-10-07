@@ -79,14 +79,14 @@ class ValidatorKeys;
 class CanonicalTXSet;
 
 static bool
-isStatusRequest(http_request_type const& request)
+isStatusRequest(HttpRequestType const& request)
 {
     return request.version() >= 11 && request.target() == "/" && request.body().size() == 0 &&
         request.method() == boost::beast::http::verb::get;
 }
 
 static Handoff
-statusRequestResponse(http_request_type const& request, boost::beast::http::status status)
+statusRequestResponse(HttpRequestType const& request, boost::beast::http::status status)
 {
     using namespace boost::beast::http;
     Handoff handoff;
@@ -210,8 +210,8 @@ ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoin
 Handoff
 ServerHandler::onHandoff(
     Session& session,
-    std::unique_ptr<stream_type>&& bundle,
-    http_request_type&& request,
+    std::unique_ptr<StreamType>&& bundle,
+    HttpRequestType&& request,
     boost::asio::ip::tcp::endpoint const& remoteAddress)
 {
     using namespace boost::beast;
@@ -264,7 +264,7 @@ ServerHandler::onHandoff(
 static inline json::Output
 makeOutput(Session& session)
 {
-    return [&](boost::beast::string_view const& b) { session.write(b.data(), b.size()); };
+    return [&](std::string_view b) { session.write(b.data(), b.size()); };
 }
 
 static std::map<std::string, std::string>
@@ -533,8 +533,6 @@ ServerHandler::processSession(
     }
     else
     {
-        if (jr[jss::result].isMember("forwarded") && jr[jss::result]["forwarded"])
-            jr = jr[jss::result];
         jr[jss::status] = jss::success;
     }
 
@@ -564,11 +562,11 @@ ServerHandler::processSession(
         makeOutput(*session),
         coro,
         forwardedFor(session->request()),
-        [&] {
+        [&] -> std::string_view {
             auto const iter = session->request().find("X-User");
             if (iter != session->request().end())
                 return iter->value();
-            return boost::beast::string_view{};
+            return {};
         }());
 
     if (beast::rfc2616::isKeepAlive(session->request()))
@@ -1024,7 +1022,7 @@ ServerHandler::processRequest(
     is reported, meaning the server can accept more connections.
 */
 Handoff
-ServerHandler::statusResponse(http_request_type const& request) const
+ServerHandler::statusResponse(HttpRequestType const& request) const
 {
     using namespace boost::beast::http;
     Handoff handoff;

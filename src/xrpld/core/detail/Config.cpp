@@ -21,7 +21,6 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
-#include <boost/format/free_funcs.hpp>
 #include <boost/multiprecision/detail/endian.hpp>
 #include <boost/predef.h>
 #include <boost/regex.hpp>  // IWYU pragma: keep
@@ -34,6 +33,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
+#include <format>
 #include <iostream>
 #include <iterator>
 #include <limits>
@@ -246,11 +246,6 @@ getSingleSection(
 //
 //------------------------------------------------------------------------------
 
-char const* const Config::kConfigFileName = "xrpld.cfg";
-char const* const Config::kConfigLegacyName = "rippled.cfg";
-char const* const Config::kDatabaseDirName = "db";
-char const* const Config::kValidatorsFileName = "validators.txt";
-
 [[nodiscard]] static std::string
 getEnvVar(char const* name)
 {
@@ -400,7 +395,7 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
         std::filesystem::create_directories(dataDir, ec);
 
         if (ec)
-            Throw<std::runtime_error>(boost::str(boost::format("Can not create %s") % dataDir));
+            Throw<std::runtime_error>(std::format("Can not create {}", dataDir.string()));
 
         legacy(Sections::kDatabasePath, std::filesystem::absolute(dataDir).string());
     }
@@ -549,9 +544,10 @@ Config::loadFromString(std::string const& fileContents)
             peersInMaxOpt = beast::lexicalCastThrow<std::size_t>(strTemp);
             if (*peersInMaxOpt > 1000)
             {
-                Throw<std::runtime_error>(
-                    std::string("Invalid value specified in [") + Sections::kPeersInMax +
-                    "] section; the value must be less or equal than 1000");
+                Throw<std::runtime_error>(std::format(
+                    "Invalid value specified in [{}] section; the value must be less or equal than "
+                    "1000",
+                    Sections::kPeersInMax));
             }
         }
 
@@ -561,18 +557,19 @@ Config::loadFromString(std::string const& fileContents)
             peersOutMaxOpt = beast::lexicalCastThrow<std::size_t>(strTemp);
             if (*peersOutMaxOpt < 10 || *peersOutMaxOpt > 1000)
             {
-                Throw<std::runtime_error>(
-                    std::string("Invalid value specified in [") + Sections::kPeersOutMax +
-                    "] section; the value must be in range 10-1000");
+                Throw<std::runtime_error>(std::format(
+                    "Invalid value specified in [{}] section; the value must be in range 10-1000",
+                    Sections::kPeersOutMax));
             }
         }
 
         // if one section is configured then the other must be configured too
         if ((peersInMaxOpt && !peersOutMaxOpt) || (peersOutMaxOpt && !peersInMaxOpt))
         {
-            Throw<std::runtime_error>(
-                std::string("Both sections [") + Sections::kPeersInMax + "]" + " and [" +
-                Sections::kPeersOutMax + "] must be configured");
+            Throw<std::runtime_error>(std::format(
+                "Both sections [{}] and [{}] must be configured",
+                Sections::kPeersInMax,
+                Sections::kPeersOutMax));
         }
 
         if (peersInMaxOpt && peersOutMaxOpt)
@@ -638,9 +635,8 @@ Config::loadFromString(std::string const& fileContents)
         }
         else
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid value specified in [") + Sections::kRelayValidations +
-                "] section");
+            Throw<std::runtime_error>(std::format(
+                "Invalid value specified in [{}] section", Sections::kRelayValidations));
         }
     }
 
@@ -661,16 +657,16 @@ Config::loadFromString(std::string const& fileContents)
         else
         {
             Throw<std::runtime_error>(
-                std::string("Invalid value specified in [") + Sections::kRelayProposals +
-                "] section");
+                std::format("Invalid value specified in [{}] section", Sections::kRelayProposals));
         }
     }
 
     if (exists(Sections::kValidationSeed) && exists(Sections::kValidatorToken))
     {
-        Throw<std::runtime_error>(
-            std::string("Cannot have both [") + Sections::kValidationSeed + "] and [" +
-            Sections::kValidatorToken + "] config sections");
+        Throw<std::runtime_error>(std::format(
+            "Cannot have both [{}] and [{}] config sections",
+            Sections::kValidationSeed,
+            Sections::kValidatorToken));
     }
 
     if (getSingleSection(secConfig, Sections::kNetworkQuorum, strTemp, j_))
@@ -743,9 +739,8 @@ Config::loadFromString(std::string const& fileContents)
 
         if (sweepInterval < 10 || sweepInterval > 600)
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid ") + Sections::kSweepInterval +
-                ": must be between 10 and 600 inclusive");
+            Throw<std::runtime_error>(std::format(
+                "Invalid {}: must be between 10 and 600 inclusive", Sections::kSweepInterval));
         }
     }
 
@@ -755,9 +750,8 @@ Config::loadFromString(std::string const& fileContents)
 
         if (workers < 1 || workers > 1024)
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid ") + Sections::kWorkers +
-                ": must be between 1 and 1024 inclusive.");
+            Throw<std::runtime_error>(std::format(
+                "Invalid {}: must be between 1 and 1024 inclusive.", Sections::kWorkers));
         }
     }
 
@@ -767,9 +761,8 @@ Config::loadFromString(std::string const& fileContents)
 
         if (ioWorkers < 1 || ioWorkers > 1024)
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid ") + Sections::kIoWorkers +
-                ": must be between 1 and 1024 inclusive.");
+            Throw<std::runtime_error>(std::format(
+                "Invalid {}: must be between 1 and 1024 inclusive.", Sections::kIoWorkers));
         }
     }
 
@@ -779,9 +772,8 @@ Config::loadFromString(std::string const& fileContents)
 
         if (prefetchWorkers < 1 || prefetchWorkers > 1024)
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid ") + Sections::kPrefetchWorkers +
-                ": must be between 1 and 1024 inclusive.");
+            Throw<std::runtime_error>(std::format(
+                "Invalid {}: must be between 1 and 1024 inclusive.", Sections::kPrefetchWorkers));
         }
     }
 
@@ -805,12 +797,10 @@ Config::loadFromString(std::string const& fileContents)
         //  sec.value_or("vp_base_squelch_enable", true);                     //
         if (sec.exists(Keys::kVpBaseSquelchEnable) && sec.exists(Keys::kVpEnable))
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid ") + Sections::kReduceRelay +
-                " cannot specify both vp_base_squelch_enable and vp_enable "
-                "options. "
-                "vp_enable was deprecated and replaced by "
-                "vp_base_squelch_enable");
+            Throw<std::runtime_error>(std::format(
+                "Invalid {} cannot specify both vp_base_squelch_enable and vp_enable options. "
+                "vp_enable was deprecated and replaced by vp_base_squelch_enable",
+                Sections::kReduceRelay));
         }
 
         if (sec.exists(Keys::kVpBaseSquelchEnable))
@@ -838,10 +828,9 @@ Config::loadFromString(std::string const& fileContents)
         vpReduceRelaySquelchMaxSelectedPeers = sec.valueOr(Keys::kVpBaseSquelchMaxSelectedPeers, 5);
         if (vpReduceRelaySquelchMaxSelectedPeers < 3)
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid ") + Sections::kReduceRelay +
-                " vp_base_squelch_max_selected_peers must be "
-                "greater than or equal to 3");
+            Throw<std::runtime_error>(std::format(
+                "Invalid {} vp_base_squelch_max_selected_peers must be greater than or equal to 3",
+                Sections::kReduceRelay));
         }
         /**
          * //////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
@@ -853,11 +842,10 @@ Config::loadFromString(std::string const& fileContents)
         txRelayPercentage = sec.valueOr(Keys::kTxRelayPercentage, 25);
         if (txRelayPercentage < 10 || txRelayPercentage > 100 || txReduceRelayMinPeers < 10)
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid ") + Sections::kReduceRelay +
-                ", tx_min_peers must be greater than or equal to 10"
-                ", tx_relay_percentage must be greater than or equal to 10 "
-                "and less than or equal to 100");
+            Throw<std::runtime_error>(std::format(
+                "Invalid {}, tx_min_peers must be greater than or equal to 10, tx_relay_percentage "
+                "must be greater than or equal to 10 and less than or equal to 100",
+                Sections::kReduceRelay));
         }
     }
 
@@ -871,9 +859,9 @@ Config::loadFromString(std::string const& fileContents)
     {
         if (!isProperlyFormedTomlDomain(strTemp))
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid ") + Sections::kServerDomain +
-                ": the domain name does not appear to meet the requirements.");
+            Throw<std::runtime_error>(std::format(
+                "Invalid {}: the domain name does not appear to meet the requirements.",
+                Sections::kServerDomain));
         }
 
         serverDomain = strTemp;
@@ -892,16 +880,18 @@ Config::loadFromString(std::string const& fileContents)
         }
         catch (...)
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid value 'max_unknown_time' in ") + Sections::kOverlay +
-                ": must be of the form '<number>' representing seconds.");
+            Throw<std::runtime_error>(std::format(
+                "Invalid value 'max_unknown_time' in {}: must be of the form '<number>' "
+                "representing seconds.",
+                Sections::kOverlay));
         }
 
         if (maxUnknownTime < seconds{300} || maxUnknownTime > seconds{1800})
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid value 'max_unknown_time' in ") + Sections::kOverlay +
-                ": the time must be between 300 and 1800 seconds, inclusive.");
+            Throw<std::runtime_error>(std::format(
+                "Invalid value 'max_unknown_time' in {}: the time must be between 300 and 1800 "
+                "seconds, inclusive.",
+                Sections::kOverlay));
         }
 
         try
@@ -911,16 +901,18 @@ Config::loadFromString(std::string const& fileContents)
         }
         catch (...)
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid value 'max_diverged_time' in ") + Sections::kOverlay +
-                ": must be of the form '<number>' representing seconds.");
+            Throw<std::runtime_error>(std::format(
+                "Invalid value 'max_diverged_time' in {}: must be of the form '<number>' "
+                "representing seconds.",
+                Sections::kOverlay));
         }
 
         if (maxDivergedTime < seconds{60} || maxDivergedTime > seconds{900})
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid value 'max_diverged_time' in ") + Sections::kOverlay +
-                ": the time must be between 60 and 900 seconds, inclusive.");
+            Throw<std::runtime_error>(std::format(
+                "Invalid value 'max_diverged_time' in {}: the time must be between 60 and 900 "
+                "seconds, inclusive.",
+                Sections::kOverlay));
         }
 
         // Both manifest counts parse and validate identically, so read them
@@ -936,17 +928,21 @@ Config::loadFromString(std::string const& fileContents)
             }
             catch (...)
             {
-                Throw<std::runtime_error>(
-                    std::string("Invalid value '") + key + "' in " + Sections::kOverlay +
-                    ": must be of the form '<number>' representing a count of manifests.");
+                Throw<std::runtime_error>(std::format(
+                    "Invalid value '{}' in {}: must be of the form '<number>' representing a count "
+                    "of manifests.",
+                    key,
+                    Sections::kOverlay));
             }
 
             if (count && (*count < kMinManifestCount || *count > kMaxManifestCount))
             {
-                Throw<std::runtime_error>(
-                    std::string("Invalid value '") + key + "' in " + Sections::kOverlay +
-                    ": the count must be between " + std::to_string(kMinManifestCount) + " and " +
-                    std::to_string(kMaxManifestCount) + ", inclusive.");
+                Throw<std::runtime_error>(std::format(
+                    "Invalid value '{}' in {}: the count must be between {} and {}, inclusive.",
+                    key,
+                    Sections::kOverlay,
+                    kMinManifestCount,
+                    kMaxManifestCount));
             }
 
             return count;
@@ -963,9 +959,9 @@ Config::loadFromString(std::string const& fileContents)
         boost::smatch match;
         if (!boost::regex_match(strTemp, match, re))
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid ") + Sections::kAmendmentMajorityTime +
-                ", must be: [0-9]+ [minutes|hours|days|weeks]");
+            Throw<std::runtime_error>(std::format(
+                "Invalid {}, must be: [0-9]+ [minutes|hours|days|weeks]",
+                Sections::kAmendmentMajorityTime));
         }
 
         auto const duration = beast::lexicalCastThrow<std::uint32_t>(match[1].str());
@@ -980,19 +976,19 @@ Config::loadFromString(std::string const& fileContents)
         }
         else if (boost::iequals(match[2], "days"))
         {
-            amendmentMajorityTime = days(duration);
+            amendmentMajorityTime = Days(duration);
         }
         else if (boost::iequals(match[2], "weeks"))
         {
-            amendmentMajorityTime = weeks(duration);
+            amendmentMajorityTime = Weeks(duration);
         }
 
         if (amendmentMajorityTime < minutes(15))
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid ") + Sections::kAmendmentMajorityTime +
-                ", the minimum amount of time an amendment must hold a "
-                "majority is 15 minutes");
+            Throw<std::runtime_error>(std::format(
+                "Invalid {}, the minimum amount of time an amendment must hold a majority is 15 "
+                "minutes",
+                Sections::kAmendmentMajorityTime));
         }
     }
 
@@ -1019,7 +1015,7 @@ Config::loadFromString(std::string const& fileContents)
             if (validatorsFile.empty())
             {
                 Throw<std::runtime_error>(
-                    std::string("Invalid path specified in [") + Sections::kValidatorsFile + "]");
+                    std::format("Invalid path specified in [{}]", Sections::kValidatorsFile));
             }
 
             if (!validatorsFile.is_absolute() && !configDir.empty())
@@ -1027,19 +1023,19 @@ Config::loadFromString(std::string const& fileContents)
 
             if (!std::filesystem::exists(validatorsFile))
             {
-                Throw<std::runtime_error>(
-                    std::string("The file specified in [") + Sections::kValidatorsFile +
-                    "] "
-                    "does not exist: " +
-                    validatorsFile.string());
+                Throw<std::runtime_error>(std::format(
+                    "The file specified in [{}] does not exist: {}",
+                    Sections::kValidatorsFile,
+                    validatorsFile.string()));
             }
             else if (
                 !std::filesystem::is_regular_file(validatorsFile) &&
                 !std::filesystem::is_symlink(validatorsFile))
             {
-                Throw<std::runtime_error>(
-                    std::string("Invalid file specified in [") + Sections::kValidatorsFile +
-                    "]: " + validatorsFile.string());
+                Throw<std::runtime_error>(std::format(
+                    "Invalid file specified in [{}]: {}",
+                    Sections::kValidatorsFile,
+                    validatorsFile.string()));
             }
         }
         else if (!configDir.empty())
@@ -1065,9 +1061,11 @@ Config::loadFromString(std::string const& fileContents)
             auto const data = getFileContents(ec, validatorsFile);
             if (ec)
             {
-                Throw<std::runtime_error>(
-                    "Failed to read '" + validatorsFile.string() + "'." +
-                    std::to_string(ec.value()) + ": " + ec.message());
+                Throw<std::runtime_error>(std::format(
+                    "Failed to read '{}': {} (error {})",
+                    validatorsFile.string(),
+                    ec.message(),
+                    ec.value()));
             }
 
             auto iniFile = parseIniFile(data, true);
@@ -1099,20 +1097,13 @@ Config::loadFromString(std::string const& fileContents)
 
             if ((entries == nullptr) && (valKeyEntries == nullptr) && (valListKeys == nullptr))
             {
-                Throw<std::runtime_error>(
-                    std::string("The file specified in [") + Sections::kValidatorsFile +
-                    "] "
-                    "does not contain a [" +
-                    Sections::kValidators +
-                    "], "
-                    "[" +
-                    Sections::kValidatorKeys +
-                    "] or "
-                    "[" +
-                    Sections::kValidatorListKeys +
-                    "]"
-                    " section: " +
-                    validatorsFile.string());
+                Throw<std::runtime_error>(std::format(
+                    "The file specified in [{}] does not contain a [{}], [{}] or [{}] section: {}",
+                    Sections::kValidatorsFile,
+                    Sections::kValidators,
+                    Sections::kValidatorKeys,
+                    Sections::kValidatorListKeys,
+                    validatorsFile.string()));
             }
         }
 
@@ -1132,21 +1123,16 @@ Config::loadFromString(std::string const& fileContents)
                 }
                 if (listThreshold > section(Sections::kValidatorListKeys).values().size())
                 {
-                    Throw<std::runtime_error>(
-                        std::string(
-                            "Value in config section "
-                            "[") +
-                        Sections::kValidatorListThreshold +
-                        "] exceeds the number of configured list keys");
+                    Throw<std::runtime_error>(std::format(
+                        "Value in config section [{}] exceeds the number of configured list keys",
+                        Sections::kValidatorListThreshold));
                 }
                 return listThreshold;
             }
 
-            Throw<std::runtime_error>(
-                std::string(
-                    "Config section "
-                    "[") +
-                Sections::kValidatorListThreshold + "] should contain single value only");
+            Throw<std::runtime_error>(std::format(
+                "Config section [{}] should contain single value only",
+                Sections::kValidatorListThreshold));
         }();
 
         // Consolidate [validator_keys] and [validators]
@@ -1156,7 +1142,7 @@ Config::loadFromString(std::string const& fileContents)
             section(Sections::kValidatorListKeys).lines().empty())
         {
             Throw<std::runtime_error>(
-                "[" + std::string(Sections::kValidatorListKeys) + "] config section is missing");
+                std::format("[{}] config section is missing", Sections::kValidatorListKeys));
         }
     }
 
@@ -1170,7 +1156,7 @@ Config::loadFromString(std::string const& fileContents)
             }
             else
             {
-                Throw<std::runtime_error>("Unknown feature: " + s + "  in config file.");
+                Throw<std::runtime_error>(std::format("Unknown feature: {}  in config file.", s));
             }
         }
     }
@@ -1295,7 +1281,8 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
             }
             else if (!boost::iequals(safetyLevel, "high"))
             {
-                Throw<std::runtime_error>("Invalid safety_level value: " + safetyLevel);
+                Throw<std::runtime_error>(
+                    std::format("Invalid safety_level value: {}", safetyLevel));
             }
         }
 
@@ -1315,12 +1302,12 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
                 boost::iequals(journalMode, "truncate") || boost::iequals(journalMode, "persist") ||
                 boost::iequals(journalMode, "wal"))
             {
-                result->emplace_back(
-                    boost::str(boost::format(kCommonDbPragmaJournal) % journalMode));
+                result->emplace_back(commonDbPragmaJournal(journalMode));
             }
             else
             {
-                Throw<std::runtime_error>("Invalid journal_mode value: " + journalMode);
+                Throw<std::runtime_error>(
+                    std::format("Invalid journal_mode value: {}", journalMode));
             }
         }
 
@@ -1337,11 +1324,12 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
             if (higherRisk || boost::iequals(synchronous, "normal") ||
                 boost::iequals(synchronous, "full") || boost::iequals(synchronous, "extra"))
             {
-                result->emplace_back(boost::str(boost::format(kCommonDbPragmaSync) % synchronous));
+                result->emplace_back(commonDbPragmaSync(synchronous));
             }
             else
             {
-                Throw<std::runtime_error>("Invalid synchronous value: " + synchronous);
+                Throw<std::runtime_error>(
+                    std::format("Invalid synchronous value: {}", synchronous));
             }
         }
 
@@ -1358,11 +1346,11 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
             if (higherRisk || boost::iequals(tempStore, "default") ||
                 boost::iequals(tempStore, "file"))
             {
-                result->emplace_back(boost::str(boost::format(kCommonDbPragmaTemp) % tempStore));
+                result->emplace_back(commonDbPragmaTemp(tempStore));
             }
             else
             {
-                Throw<std::runtime_error>("Invalid temp_store value: " + tempStore);
+                Throw<std::runtime_error>(std::format("Invalid temp_store value: {}", tempStore));
             }
         }
 

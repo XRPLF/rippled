@@ -21,7 +21,7 @@ class VaultClawbackBuilder;
  * Type: ttVAULT_CLAWBACK (70)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: MayDeleteMpt | MustModifyVault
+ * Privileges: Privilege::MayDeleteMpt | Privilege::MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultClawbackBuilder to construct new transactions.

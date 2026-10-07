@@ -317,6 +317,22 @@ class AccountTx_test : public beast::unit_test::Suite
             BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), RpcLgrNotFound));
         }
 
+        {
+            json::Value p{jParams};
+
+            p[jss::ledger_index] = "validated";
+            BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+
+            p[jss::ledger_index] = "closed";
+            BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+
+            p[jss::ledger_index] = "current";
+            BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), RpcLgrNotValidated));
+
+            p[jss::ledger_index] = "";
+            BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), RpcLgrNotValidated));
+        }
+
         // Ledger Hash
         {
             json::Value p{jParams};

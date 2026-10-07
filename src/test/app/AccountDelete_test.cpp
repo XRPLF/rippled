@@ -29,6 +29,8 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -67,7 +69,8 @@ private:
         // We can't use env.meta() here, because meta() doesn't include
         // delivered_amount.
         env.close();
-        json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
+        json::Value const txResult = env.rpc("tx", txHash)[jss::result];
+        json::Value const meta = txResult[jss::meta];
 
         // Expect there to be a DeliveredAmount field.
         if (!BEAST_EXPECT(meta.isMember(sfDeliveredAmount.jsonName)))
@@ -78,6 +81,21 @@ private:
         json::Value const jsonExpect{amount.getJson(JsonOptions::Values::None)};
         BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == jsonExpect);
         BEAST_EXPECT(meta[jss::delivered_amount] == jsonExpect);
+
+        // The `ledger` RPC (with expanded transactions) should also report
+        // delivered_amount for this transaction, matching the `tx` RPC.
+        json::Value ledgerParams;
+        ledgerParams[jss::ledger_index] = txResult[jss::ledger_index].asUInt();
+        ledgerParams[jss::transactions] = true;
+        ledgerParams[jss::expand] = true;
+
+        auto const ledgerResult = env.rpc("json", "ledger", to_string(ledgerParams));
+        auto const& ledgerTx = ledgerResult[jss::result][jss::ledger][jss::transactions][0u];
+        BEAST_EXPECT(ledgerTx[jss::hash].asString() == txHash);
+
+        json::Value const& ledgerMeta = ledgerTx[jss::metaData];
+        BEAST_EXPECT(ledgerMeta[sfDeliveredAmount.jsonName] == jsonExpect);
+        BEAST_EXPECT(ledgerMeta[jss::delivered_amount] == jsonExpect);
     }
 
     // Helper function to create a payment channel.
@@ -271,7 +289,7 @@ public:
             env(offer(alice, gw["USD"](1), XRP(1)));
             env.close();
         }
-        env.require(offers(alice, 45));
+        env.require(Offers(alice, 45));
 
         // Close enough ledgers to be able to delete alice's account.
         incLgrSeqForAccDel(env, alice);
@@ -319,8 +337,8 @@ public:
             env(offer(becky, gw["USD"](1), XRP(1)));
             env.close();
         }
-        env.require(offers(alice, 200));
-        env.require(offers(becky, 200));
+        env.require(Offers(alice, 200));
+        env.require(Offers(becky, 200));
 
         // Close enough ledgers to be able to delete alice's and becky's
         // accounts.
@@ -330,7 +348,7 @@ public:
         // alice writes a check to becky.  Until that check is cashed or
         // canceled it will prevent alice's and becky's accounts from being
         // deleted.
-        uint256 const checkId = keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
+        UInt256 const checkId = keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
         env(check::create(alice, becky, XRP(1)));
         env.close();
 
@@ -525,10 +543,10 @@ public:
         env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tefTOO_BIG));
 
         // Cancel one of alice's offers.  Then the account delete can succeed.
-        env.require(offers(alice, kOfferCount));
+        env.require(Offers(alice, kOfferCount));
         env(offerCancel(alice, offerSeq0));
         env.close();
-        env.require(offers(alice, kOfferCount - 1));
+        env.require(Offers(alice, kOfferCount - 1));
 
         // alice successfully deletes her account.
         auto const alicePreDelBal{env.balance(alice)};

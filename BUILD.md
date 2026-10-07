@@ -41,15 +41,19 @@ branch.
 git checkout develop
 ```
 
-For a release candidate, choose the relevant release branch, e.g.
-`release/3.2.x`.
+For a release or release candidate, check out its [tag](https://github.com/XRPLF/rippled/releases), e.g.:
 
 ```bash
-git checkout release/3.2.x
+git checkout 3.4.0
 ```
 
-For a stable release, choose one of the [tagged
-releases](https://github.com/XRPLF/rippled/releases).
+See [RELEASING.md](./RELEASING.md) for how branches and releases are organized.
+
+A build reports `0.0.0-dev` with its short commit hash as build metadata, e.g.
+`0.0.0-dev+0123abc`. Only builds of a release, from a tag in CI or a versioned
+Conan reference, report a release version. To use another version, set the
+`FORCE_XRPLD_VERSION` environment variable when running CMake, e.g.
+`FORCE_XRPLD_VERSION=3.4.0`.
 
 ### Set Up Conan
 
@@ -304,6 +308,7 @@ See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 | ---------------- | ------------- | ----------------------------------------------------------------------------- |
 | `assert`         | OFF           | Force enabling assertions.                                                    |
 | `coverage`       | OFF           | Prepare the coverage report.                                                  |
+| `rust`           | OFF           | Build the Rust crates and the C++ code that depends on them.                  |
 | `tests`          | OFF           | Build tests.                                                                  |
 | `unity`          | OFF           | Configure a unity build.                                                      |
 | `verify_headers` | ON            | Make the `verify-headers` target available to compile each header on its own. |
@@ -315,6 +320,30 @@ See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 memory) since they concatenate sources into fewer translation units. Non-unity
 builds may be faster for incremental builds, and can be helpful for detecting
 `#include` omissions.
+
+### Rust crates
+
+The Rust crates in `crates/` are only part of the build when `rust` is ON. With
+`-Drust=OFF` (the default) the `crates` directory is not added to the build, no
+cxxbridge bindings are generated, and the C++ tests that exercise the Rust
+interop are not compiled — so no Rust toolchain is needed. CI builds always pass
+`-Drust=ON`.
+
+With `-Drust=ON` you need one extra dependency: a Rust toolchain (`cargo`,
+`rustc`) matching the channel pinned in
+[`rust-toolchain.toml`](./rust-toolchain.toml), which compiles the crates and
+generates the cxxbridge bindings. It is provided by the
+[Nix development shell](./docs/build/nix.md), so `-Drust=ON` works there without
+any extra setup; otherwise install it as described in
+[Rust](./docs/build/environment.md#rust).
+
+The crates also have their own Rust unit tests. Those are run with `cargo` and
+need only the Rust toolchain, independently of CMake and of the `rust` option
+(CI runs them with `cargo nextest`):
+
+```bash
+cargo test --manifest-path crates/Cargo.toml --workspace
+```
 
 ### Verifying headers
 

@@ -10,8 +10,6 @@
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/server/Port.h>
 
-#include <boost/format.hpp>  // IWYU pragma: keep
-#include <boost/format/free_funcs.hpp>
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
 
 #include <array>
@@ -20,6 +18,7 @@
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <optional>
 #include <ostream>
@@ -36,7 +35,7 @@ namespace detail {
 std::string
 configContents(std::string const& dbPath, std::string const& validatorsFile)
 {
-    static boost::format kConfigContentsTemplate(R"xrpldConfig(
+    static constexpr char const* kConfigContentsTemplate = R"xrpldConfig(
 [server]
 port_rpc
 port_peer
@@ -83,9 +82,9 @@ cache_mb=256
 file_size_mb=8
 file_size_mult=2
 
-%1%
+{}
 
-%2%
+{}
 
 # This needs to be an absolute directory reference, not a relative one.
 # Modify this value as required.
@@ -106,7 +105,7 @@ r.ripple.com 51235
 # Turn down default logging to save disk space in the long run.
 # Valid values here are trace, debug, info, warning, error, and fatal
 [rpc_startup]
-{ "command": "log_level", "severity": "warning" }
+{{ "command": "log_level", "severity": "warning" }}
 
 # Defaults to 1 ("yes") so that certificates will be validated. To allow the use
 # of self-signed certificates for development or internal use, set to 0 ("no").
@@ -115,13 +114,90 @@ r.ripple.com 51235
 
 [sqdb]
 backend=sqlite
-)xrpldConfig");
+)xrpldConfig";
 
     std::string dbPathSection = dbPath.empty() ? "" : "[database_path]\n" + dbPath;
     std::string valFileSection =
         validatorsFile.empty() ? "" : "[validators_file]\n" + validatorsFile;
-    return boost::str(kConfigContentsTemplate % dbPathSection % valFileSection);
+    return std::format(kConfigContentsTemplate, dbPathSection, valFileSection);
 }
+
+// setenv and unsetenv are POSIX only, and MSVC does not have them.
+#ifndef _MSC_VER
+
+/**
+ * Read an environment variable into a value the caller owns.
+ *
+ * The value is copied, because POSIX allows a later `setenv` to release the
+ * string `getenv` returned.
+ *
+ * @param name Name of the environment variable to read.
+ * @return The value, or std::nullopt when the variable is not set.
+ */
+[[nodiscard]] std::optional<std::string>
+envVar(char const* name)
+{
+    if (char const* const value = std::getenv(name); value != nullptr)
+        return std::string{value};
+
+    return std::nullopt;
+}
+
+/**
+ * Set an environment variable and restore its previous value when done.
+ */
+class EnvVarGuard
+{
+private:
+    std::string const name_;
+    std::optional<std::string> const saved_;
+
+    /**
+     * Give an environment variable a value, or remove it.
+     *
+     * @param name Name of the environment variable to write.
+     * @param value Value to set, or std::nullopt to remove the variable.
+     */
+    static void
+    apply(char const* name, std::optional<std::string> const& value) noexcept
+    {
+        if (value)
+        {
+            setenv(name, value->c_str(), 1);
+        }
+        else
+        {
+            unsetenv(name);
+        }
+    }
+
+public:
+    /**
+     * Save the variable's current value, then write the given one.
+     *
+     * @param name Name of the environment variable to set.
+     * @param value Value to set, or std::nullopt to remove the variable.
+     */
+    [[nodiscard]] EnvVarGuard(char const* name, std::optional<std::string> const& value)
+        : name_(name), saved_(envVar(name))
+    {
+        apply(name_.c_str(), value);
+    }
+
+    EnvVarGuard(EnvVarGuard const&) = delete;
+    EnvVarGuard&
+    operator=(EnvVarGuard const&) = delete;
+
+    /**
+     * Restore the value the variable held before construction.
+     */
+    ~EnvVarGuard()
+    {
+        apply(name_.c_str(), saved_);
+    }
+};
+
+#endif  // _MSC_VER
 
 /**
  * Write an xrpld config file and remove when done.
@@ -129,7 +205,7 @@ backend=sqlite
 class FileCfgGuard : public xrpl::detail::FileDirGuard
 {
 private:
-    path dataDir_;
+    Path dataDir_;
 
     bool rmDataDir_{false};
 
@@ -138,10 +214,10 @@ private:
 public:
     FileCfgGuard(
         beast::unit_test::Suite& test,
-        path subDir,
-        path const& dbPath,
-        path const& configFile,
-        path const& validatorsFile,
+        Path subDir,
+        Path const& dbPath,
+        Path const& configFile,
+        Path const& validatorsFile,
         bool useCounter = true,
         std::string confContents = "")
         : FileDirGuard(
@@ -154,7 +230,7 @@ public:
         , dataDir_(dbPath)
     {
         if (dbPath.empty())
-            dataDir_ = subdir() / path(Config::kDatabaseDirName);
+            dataDir_ = subdir() / Path(Config::kDatabaseDirName);
 
         rmDataDir_ = !exists(dataDir_);
         config_.setup(
@@ -242,13 +318,13 @@ class ValidatorsTxtGuard : public detail::FileDirGuard
 public:
     ValidatorsTxtGuard(
         beast::unit_test::Suite& test,
-        path subDir,
-        path const& validatorsFileName,
+        Path subDir,
+        Path const& validatorsFileName,
         bool useCounter = true)
         : FileDirGuard(
               test,
               std::move(subDir),
-              path(validatorsFileName.empty() ? Config::kValidatorsFileName : validatorsFileName),
+              Path(validatorsFileName.empty() ? Config::kValidatorsFileName : validatorsFileName),
               valFileContents(),
               useCounter)
     {
@@ -273,7 +349,7 @@ public:
 class Config_test final : public TestSuite
 {
 private:
-    using path = std::filesystem::path;
+    using Path = std::filesystem::path;
 
 public:
     void
@@ -321,7 +397,7 @@ port_wss_admin
             // Use a temporary directory for testing.
             TempDir const td;
             current_path(td.path());
-            path const f = td.file(std::string{configFile});
+            Path const f = td.file(std::string{configFile});
             std::ofstream o(f.string());
             o << detail::configContents("", "");
             o.close();
@@ -336,7 +412,11 @@ port_wss_admin
         }
 
         // Config file in HOME or XDG_CONFIG_HOME directory.
-#if BOOST_OS_LINUX || BOOST_OS_MACOS
+#ifndef _MSC_VER
+        // Save the values the guards below must put back.
+        auto const home = detail::envVar("HOME");
+        auto const xdgConfigHome = detail::envVar("XDG_CONFIG_HOME");
+
         for (auto const& configFile : configFiles)
         {
             // Point the current working directory to a temporary directory, so
@@ -349,16 +429,14 @@ port_wss_admin
             {
                 TempDir const tc;
 
-                // Set the HOME and XDG_CONFIG_HOME environment variables. The
-                // HOME variable is not used when XDG_CONFIG_HOME is set, but
-                // must be set.
-                char const* h = getenv("HOME");
-                setenv("HOME", tc.path().c_str(), 1);
-                char const* x = getenv("XDG_CONFIG_HOME");
-                setenv("XDG_CONFIG_HOME", tc.path().c_str(), 1);
+                // The HOME variable is not used when XDG_CONFIG_HOME is set,
+                // but must be set. Both guards are declared after tc, so they
+                // restore before it is removed.
+                detail::EnvVarGuard const homeGuard("HOME", tc.path());
+                detail::EnvVarGuard const xdgGuard("XDG_CONFIG_HOME", tc.path());
 
                 // Create the config file in '${XDG_CONFIG_HOME}/[systemName]'.
-                path p = tc.file(systemName());
+                Path p = tc.file(systemName());
                 create_directory(p);
                 p = tc.file(systemName() + "/" + std::string{configFile});
                 std::ofstream o(p.string());
@@ -372,26 +450,25 @@ port_wss_admin
                 BEAST_EXPECT(
                     c.section(Sections::kDebugLogfile).values()[0] ==
                     "/Users/dummy/xrpld/config/log/debug.log");
-
-                // Restore the environment variables.
-                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
-                (x != nullptr) ? setenv("XDG_CONFIG_HOME", x, 1) : unsetenv("XDG_CONFIG_HOME");
             }
+
+            // Both guards are gone: both variables must hold their old values.
+            BEAST_EXPECT(detail::envVar("HOME") == home);
+            BEAST_EXPECT(detail::envVar("XDG_CONFIG_HOME") == xdgConfigHome);
 
             // The XDG config directory is not set: the config file must be in a
             // subdirectory named .config followed by the system name.
             {
                 TempDir const tc;
 
-                // Set only the HOME environment variable.
-                char const* h = getenv("HOME");
-                setenv("HOME", tc.path().c_str(), 1);
-                char const* x = getenv("XDG_CONFIG_HOME");
-                unsetenv("XDG_CONFIG_HOME");
+                // Both guards are declared after tc, so they restore before it
+                // is removed.
+                detail::EnvVarGuard const homeGuard("HOME", tc.path());
+                detail::EnvVarGuard const xdgGuard("XDG_CONFIG_HOME", std::nullopt);
 
                 // Create the config file in '${HOME}/.config/[systemName]'.
                 std::string s = ".config";
-                path p = tc.file(s);
+                Path p = tc.file(s);
                 create_directory(p);
                 s += "/" + systemName();
                 p = tc.file(s);
@@ -408,14 +485,13 @@ port_wss_admin
                 BEAST_EXPECT(
                     c.section(Sections::kDebugLogfile).values()[0] ==
                     "/Users/dummy/xrpld/config/log/debug.log");
-
-                // Restore the environment variables.
-                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
-                if (x != nullptr)
-                    setenv("XDG_CONFIG_HOME", x, 1);
             }
+
+            // Both guards are gone: both variables must hold their old values.
+            BEAST_EXPECT(detail::envVar("HOME") == home);
+            BEAST_EXPECT(detail::envVar("XDG_CONFIG_HOME") == xdgConfigHome);
         }
-#endif
+#endif  // _MSC_VER
 
         // Restore the current working directory.
         current_path(cwd);
@@ -427,21 +503,21 @@ port_wss_admin
 
         using namespace std::filesystem;
         {
-            boost::format cc("[database_path]\n%1%\n");
+            constexpr char const* cc = "[database_path]\n{}\n";
 
             auto const cwd = current_path();
-            path const dataDirRel("test_data_dir");
-            path const dataDirAbs(cwd / dataDirRel);
+            Path const dataDirRel("test_data_dir");
+            Path const dataDirAbs(cwd / dataDirRel);
             {
                 // Dummy test - do we get back what we put in
                 Config c;
-                c.loadFromString(boost::str(cc % dataDirAbs.string()));
+                c.loadFromString(std::format(cc, dataDirAbs.string()));
                 BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == dataDirAbs.string());
             }
             {
                 // Rel paths should convert to abs paths
                 Config c;
-                c.loadFromString(boost::str(cc % dataDirRel.string()));
+                c.loadFromString(std::format(cc, dataDirRel.string()));
                 BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == dataDirAbs.string());
             }
             {
@@ -457,8 +533,8 @@ port_wss_admin
             // read from file absolute path
             auto const cwd = current_path();
             detail::DirGuard const g0(*this, "test_db");
-            path const dataDirRel("test_data_dir");
-            path const dataDirAbs(cwd / g0.subdir() / dataDirRel);
+            Path const dataDirRel("test_data_dir");
+            Path const dataDirAbs(cwd / g0.subdir() / dataDirRel);
             detail::FileCfgGuard const g(
                 *this, g0.subdir(), dataDirAbs, Config::kConfigFileName, "", false);
             auto const& c(g.config());
@@ -471,7 +547,7 @@ port_wss_admin
             std::string const dbPath("my_db");
             detail::FileCfgGuard const g(*this, "test_db", dbPath, Config::kConfigFileName, "");
             auto const& c(g.config());
-            std::string const nativeDbPath = absolute(path(dbPath)).string();
+            std::string const nativeDbPath = absolute(Path(dbPath)).string();
             BEAST_EXPECT(g.dataDirExists());
             BEAST_EXPECT(g.configFileExists());
             BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == nativeDbPath);
@@ -481,7 +557,7 @@ port_wss_admin
             detail::FileCfgGuard const g(*this, "test_db", "", Config::kConfigFileName, "");
             auto const& c(g.config());
             std::string const nativeDbPath =
-                absolute(g.subdir() / path(Config::kDatabaseDirName)).string();
+                absolute(g.subdir() / Path(Config::kDatabaseDirName)).string();
             BEAST_EXPECT(g.dataDirExists());
             BEAST_EXPECT(g.configFileExists());
             BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == nativeDbPath);
@@ -508,20 +584,20 @@ port_wss_admin
 
         {
             Config c;
-            static boost::format kConfigTemplate(R"xrpldConfig(
+            static constexpr char const* kConfigTemplate = R"xrpldConfig(
 [validation_seed]
-%1%
+{}
 
 [validator_token]
-%2%
-)xrpldConfig");
+{}
+)xrpldConfig";
             std::string error;
             auto const expectedError =
                 "Cannot have both [validation_seed] "
                 "and [validator_token] config sections";
             try
             {
-                c.loadFromString(boost::str(kConfigTemplate % validationSeed % token));
+                c.loadFromString(std::format(kConfigTemplate, validationSeed, token));
             }
             catch (std::runtime_error const& e)
             {
@@ -604,7 +680,7 @@ main
         using namespace std::filesystem;
         {
             // load should throw for missing specified validators file
-            boost::format cc("[validators_file]\n%1%\n");
+            constexpr char const* cc = "[validators_file]\n{}\n";
             std::string error;
             std::string const missingPath = "/no/way/this/path/exists";
             auto const expectedError =
@@ -612,7 +688,7 @@ main
             try
             {
                 Config c;
-                c.loadFromString(boost::str(cc % missingPath));
+                c.loadFromString(std::format(cc, missingPath));
             }
             catch (std::runtime_error const& e)
             {
@@ -623,15 +699,15 @@ main
         {
             // load should throw for invalid [validators_file]
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
-            path const invalidFile = current_path() / vtg.subdir();
-            boost::format cc("[validators_file]\n%1%\n");
+            Path const invalidFile = current_path() / vtg.subdir();
+            constexpr char const* cc = "[validators_file]\n{}\n";
             std::string error;
             auto const expectedError =
                 "Invalid file specified in [validators_file]: " + invalidFile.string();
             try
             {
                 Config c;
-                c.loadFromString(boost::str(cc % invalidFile.string()));
+                c.loadFromString(std::format(cc, invalidFile.string()));
             }
             catch (std::runtime_error const& e)
             {
@@ -829,8 +905,8 @@ trust-these-validators.gov
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
             Config c;
-            boost::format cc("[validators_file]\n%1%\n");
-            c.loadFromString(boost::str(cc % vtg.validatorsFile()));
+            constexpr char const* cc = "[validators_file]\n{}\n";
+            c.loadFromString(std::format(cc, vtg.validatorsFile()));
             BEAST_EXPECT(c.legacy(Sections::kValidatorsFile) == vtg.validatorsFile());
             BEAST_EXPECT(c.section(Sections::kValidators).values().size() == 8);
             BEAST_EXPECT(c.section(Sections::kValidatorListSites).values().size() == 2);
@@ -909,9 +985,9 @@ trust-these-validators.gov
 
         {
             // load validators from both config and validators file
-            boost::format cc(R"xrpldConfig(
+            constexpr char const* cc = R"xrpldConfig(
 [validators_file]
-%1%
+{}
 
 [validators]
 n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7
@@ -930,11 +1006,11 @@ trust-these-validators.gov
 
 [validator_list_keys]
 021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
-)xrpldConfig");
+)xrpldConfig";
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
             Config c;
-            c.loadFromString(boost::str(cc % vtg.validatorsFile()));
+            c.loadFromString(std::format(cc, vtg.validatorsFile()));
             BEAST_EXPECT(c.legacy(Sections::kValidatorsFile) == vtg.validatorsFile());
             BEAST_EXPECT(c.section(Sections::kValidators).values().size() == 15);
             BEAST_EXPECT(c.section(Sections::kValidatorListSites).values().size() == 4);
@@ -945,13 +1021,13 @@ trust-these-validators.gov
         {
             // load should throw if [validator_list_threshold] is present both
             // in xrpld.cfg and validators file
-            boost::format cc(R"xrpldConfig(
+            constexpr char const* cc = R"xrpldConfig(
 [validators_file]
-%1%
+{}
 
 [validator_list_threshold]
 1
-)xrpldConfig");
+)xrpldConfig";
             std::string error;
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
@@ -961,7 +1037,7 @@ trust-these-validators.gov
             try
             {
                 Config c;
-                c.loadFromString(boost::str(cc % vtg.validatorsFile()));
+                c.loadFromString(std::format(cc, vtg.validatorsFile()));
                 fail();
             }
             catch (std::runtime_error const& e)
@@ -975,7 +1051,7 @@ trust-these-validators.gov
             // [validator_list_keys] are missing from xrpld.cfg and
             // validators file
             Config const c;
-            boost::format cc("[validators_file]\n%1%\n");
+            constexpr char const* cc = "[validators_file]\n{}\n";
             std::string error;
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
@@ -988,7 +1064,7 @@ trust-these-validators.gov
             try
             {
                 Config c2;
-                c2.loadFromString(boost::str(cc % vtg.validatorsFile()));
+                c2.loadFromString(std::format(cc, vtg.validatorsFile()));
             }
             catch (std::runtime_error const& e)
             {

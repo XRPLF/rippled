@@ -22,12 +22,12 @@ class ZeroCopyInputStream : public ::google::protobuf::io::ZeroCopyInputStream
 {
 private:
     using iterator = Buffers::const_iterator;
-    using const_buffer = boost::asio::const_buffer;
+    using ConstBuffer = boost::asio::const_buffer;
 
     std::int64_t count_ = 0;
     iterator last_;
-    iterator first_;    // Where pos_ comes from
-    const_buffer pos_;  // What Next() will return
+    iterator first_;   // Where pos_ comes from
+    ConstBuffer pos_;  // What Next() will return
 
 public:
     explicit ZeroCopyInputStream(Buffers const& buffers);
@@ -54,7 +54,7 @@ template <class Buffers>
 ZeroCopyInputStream<Buffers>::ZeroCopyInputStream(Buffers const& buffers)
     : last_(buffers.end())
     , first_(buffers.begin())
-    , pos_((first_ != last_) ? *first_ : const_buffer(nullptr, 0))
+    , pos_((first_ != last_) ? *first_ : ConstBuffer(nullptr, 0))
 {
 }
 
@@ -67,7 +67,7 @@ ZeroCopyInputStream<Buffers>::Next(void const** data, int* size)
     if (first_ == last_)
         return false;
     count_ += *size;
-    pos_ = (++first_ != last_) ? *first_ : const_buffer(nullptr, 0);
+    pos_ = (++first_ != last_) ? *first_ : ConstBuffer(nullptr, 0);
     return true;
 }
 
@@ -115,15 +115,15 @@ template <class Streambuf>
 class ZeroCopyOutputStream : public ::google::protobuf::io::ZeroCopyOutputStream
 {
 private:
-    using buffers_type = Streambuf::mutable_buffers_type;
-    using iterator = buffers_type::const_iterator;
-    using mutable_buffer = boost::asio::mutable_buffer;
+    using BuffersType = Streambuf::mutable_buffers_type;
+    using iterator = BuffersType::const_iterator;
+    using MutableBuffer = boost::asio::mutable_buffer;
 
     Streambuf& streambuf_;
     std::size_t blockSize_;
     std::int64_t count_ = 0;
     std::size_t commit_ = 0;
-    buffers_type buffers_;
+    BuffersType buffers_;
     iterator pos_;
 
 public:

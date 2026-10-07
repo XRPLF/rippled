@@ -10,14 +10,15 @@ This document explains how to set one up.
 support it — see [compiler support for C++23][cpp23-support].
 The versions currently tested in CI are:
 
-| Compiler    | Version            |
-| ----------- | ------------------ |
-| GCC         | 15.2               |
-| Clang       | 22                 |
-| Apple Clang | 21                 |
-| MSVC        | Visual Studio 2026 |
+| Compiler    | Version                         |
+| ----------- | ------------------------------- |
+| GCC         | `gccVersion` in [packages.nix]  |
+| Clang       | `llvmVersion` in [packages.nix] |
+| Apple Clang | 21                              |
+| MSVC        | Visual Studio 2026              |
 
-LLVM tools (`clang-tidy` and `clang-format`) are also pinned to version 22.
+LLVM tools (`clang-tidy` and `clang-format`)
+come from the same LLVM release as Clang.
 
 ### Older compilers
 
@@ -45,6 +46,9 @@ Besides a compiler, building `xrpld` requires:
 
 On Linux and macOS, the [Nix development shell](./nix.md) provides all of them
 (see below). On Windows they have to be installed manually.
+
+Building with `-Drust=ON` additionally requires a Rust toolchain, see
+[Rust](#rust). A default build does not, so it is not in the table above.
 
 Once they are in place, verify that everything is installed and runnable with:
 
@@ -121,6 +125,25 @@ manually:
 - [Git for Windows](https://git-scm.com/download/win)
 - Python, Conan, and CMake, at the versions listed in
   [Required tools](#required-tools).
+- a [Rust toolchain](https://rustup.rs) — only needed to build with
+  `-Drust=ON`, see [Rust](#rust)
+
+## Rust
+
+The repository contains a Rust workspace in [`crates/`](../../crates), whose
+crates are exposed to C++ through [cxx](https://cxx.rs) bindings. It is **not**
+part of a default build: the CMake `rust` option is OFF by default, and with it
+off no Rust toolchain is needed. It is only required when configuring with
+`-Drust=ON` (which is what CI does), see [Options](../../BUILD.md#options).
+
+The toolchain (`cargo`, `rustc`) is pinned to the channel in
+[`rust-toolchain.toml`](../../rust-toolchain.toml) at the repository root. If
+you install Rust with [rustup](https://rustup.rs), that file is picked up
+automatically, and `cargo`/`rustc` in the repository will use the pinned
+version.
+
+Everything else the Rust build needs on the CMake side comes from Conan along
+with the rest of the dependencies, so there is nothing further to install.
 
 ## Clang-tidy
 
@@ -134,3 +157,4 @@ version out of the box — run it via `run-clang-tidy`. No separate installation
 is needed.
 
 [cpp23-support]: https://en.cppreference.com/w/cpp/compiler_support/23
+[packages.nix]: ../../nix/packages.nix

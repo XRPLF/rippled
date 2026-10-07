@@ -23,7 +23,7 @@ namespace xrpl {
  *              fails; tefINTERNAL if the source account SLE cannot be found.
  */
 TER
-closeChannel(SLE::ref slep, ApplyView& view, uint256 const& key, beast::Journal j);
+closeChannel(SLE::Ref slep, ApplyView& view, UInt256 const& key, beast::Journal j);
 
 /**
  * Add two uint32_t values with saturation at UINT32_MAX.

@@ -55,7 +55,7 @@ namespace xrpl::test {
 using namespace xrpl::test;
 using namespace xrpl::test::jtx;
 
-static uint256
+static UInt256
 ledgerHash(LedgerHeader const& info)
 {
     return xrpl::sha512Half(
@@ -218,7 +218,7 @@ public:
         auto getLedger = std::make_shared<protocol::TMGetLedger>();
         getLedger->set_itype(protocol::liTS_CANDIDATE);
         getLedger->set_ltype(protocol::TMLedgerType::ltACCEPTED);
-        uint256 const hash(xrpl::sha512Half(123456789));
+        UInt256 const hash(xrpl::sha512Half(123456789));
         getLedger->set_ledgerhash(hash.begin(), hash.size());
         getLedger->set_ledgerseq(123456789);
         xrpl::SHAMapNodeID const sha(64, hash);
@@ -233,14 +233,14 @@ public:
     buildLedgerData(uint32_t n, Logs& logs)
     {
         auto ledgerData = std::make_shared<protocol::TMLedgerData>();
-        uint256 const hash(xrpl::sha512Half(12356789));
+        UInt256 const hash(xrpl::sha512Half(12356789));
         ledgerData->set_ledgerhash(hash.data(), hash.size());
         ledgerData->set_ledgerseq(123456789);
         ledgerData->set_type(protocol::TMLedgerInfoType::liAS_NODE);
         ledgerData->set_requestcookie(123456789);
         ledgerData->set_error(protocol::TMReplyError::reNO_LEDGER);
         ledgerData->mutable_nodes()->Reserve(n);
-        uint256 parentHash(0);
+        UInt256 parentHash(0);
 
         NetClock::duration const resolution{10};
         NetClock::time_point ct{resolution};
@@ -275,12 +275,12 @@ public:
         getObject->set_type(
             protocol::TMGetObjectByHash_ObjectType::TMGetObjectByHash_ObjectType_otTRANSACTION);
         getObject->set_query(true);
-        uint256 hash(xrpl::sha512Half(123456789));
+        UInt256 hash(xrpl::sha512Half(123456789));
         getObject->set_ledgerhash(hash.data(), hash.size());
         getObject->set_fat(true);
         for (int i = 0; i < 100; i++)
         {
-            uint256 hash(xrpl::sha512Half(i));
+            UInt256 hash(xrpl::sha512Half(i));
             auto object = getObject->add_objects();
             object->set_hash(hash.data(), hash.size());
             xrpl::SHAMapNodeID const sha(64, hash);
@@ -290,33 +290,6 @@ public:
             object->set_ledgerseq(i);
         }
         return getObject;
-    }
-
-    static std::shared_ptr<protocol::TMValidatorList>
-    buildValidatorList()
-    {
-        auto list = std::make_shared<protocol::TMValidatorList>();
-
-        auto master = randomKeyPair(KeyType::Ed25519);
-        auto signing = randomKeyPair(KeyType::Ed25519);
-        STObject st(sfGeneric);
-        st[sfSequence] = 0;
-        st[sfPublicKey] = std::get<0>(master);
-        st[sfSigningPubKey] = std::get<0>(signing);
-        st[sfDomain] = makeSlice(std::string("example.com"));
-        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(master), sfMasterSignature);
-        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
-        Serializer s;
-        st.add(s);
-        list->set_manifest(s.data(), s.size());
-        list->set_version(3);
-        STObject const signature(sfSignature);
-        xrpl::sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
-        Serializer s1;
-        st.add(s1);
-        list->set_signature(s1.data(), s1.size());
-        list->set_blob(strHex(s.slice()));
-        return list;
     }
 
     static std::shared_ptr<protocol::TMValidatorListCollection>
@@ -359,7 +332,6 @@ public:
         protocol::TMGetLedger const getLedger;
         protocol::TMLedgerData const ledgerData;
         protocol::TMGetObjectByHash const getObject;
-        protocol::TMValidatorList const validatorList;
         protocol::TMValidatorListCollection const validatorListCollection;
 
         // 4.5KB
@@ -386,8 +358,6 @@ public:
         doTest(buildLedgerData(500000, *logs), protocol::mtLEDGER_DATA, 100, "TMLedgerData500000");
         // 7.7KB
         doTest(buildGetObjectByHash(), protocol::mtGET_OBJECTS, 4, "TMGetObjectByHash");
-        // 895B
-        doTest(buildValidatorList(), protocol::mtVALIDATOR_LIST, 4, "TMValidatorList");
         doTest(
             buildValidatorListCollection(),
             protocol::mtVALIDATOR_LIST_COLLECTION,
@@ -422,7 +392,7 @@ public:
                 false,
                 env->app().config().txReduceRelayEnable,
                 env->app().config().vpReduceRelayBaseSquelchEnable);
-            http_request_type httpRequest;
+            HttpRequestType httpRequest;
             httpRequest.version(request.version());
             httpRequest.base() = request.base();
             // feature enabled on the peer's connection only if both sides are
@@ -437,7 +407,7 @@ public:
             env.reset();
             env = getEnv(inboundEnable);
             auto httpResp = xrpl::makeResponse(
-                true, httpRequest, addr, addr, uint256{1}, 1, {1, 0}, env->app());
+                true, httpRequest, addr, addr, UInt256{1}, 1, {1, 0}, env->app());
             // outbound is enabled if the response's header has the feature
             // enabled and the peer's configuration is enabled
             auto const outboundEnabled =
