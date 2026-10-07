@@ -1028,8 +1028,7 @@ Config::loadFromString(std::string const& fileContents)
                     Sections::kValidatorsFile,
                     validatorsFile.string()));
             }
-            else if (
-                !std::filesystem::is_regular_file(validatorsFile) &&
+            if (!std::filesystem::is_regular_file(validatorsFile) &&
                 !std::filesystem::is_symlink(validatorsFile))
             {
                 Throw<std::runtime_error>(std::format(

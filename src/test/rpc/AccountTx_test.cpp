@@ -183,10 +183,7 @@ class AccountTx_test : public beast::unit_test::Suite
                              "580A5AFDD727E33") &&
                             (payment[jss::close_time_iso] == "2000-01-01T00:00:10Z");
                     }
-                    else
-                    {
-                        return false;
-                    }
+                    return false;
 
                 default:
                     return false;
