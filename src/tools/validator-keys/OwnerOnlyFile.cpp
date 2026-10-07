@@ -23,9 +23,11 @@ namespace fs = std::filesystem;
 
 namespace {
 
-// Syncs the directory holding @p file, so the entry a rename or link made
-// survives a crash. opendir gives the descriptor without a variadic open.
-bool
+// Syncs the directory holding @p file so the entry a rename or link made
+// reaches the disk sooner. Best effort: the file's data is already synced,
+// the entry is in place, and some filesystems refuse fsync on a directory.
+// opendir gives the descriptor without a variadic open.
+void
 syncDirectory(fs::path const& file)
 {
     auto dir = file.parent_path();
@@ -33,10 +35,9 @@ syncDirectory(fs::path const& file)
         dir = ".";
     DIR* const d = ::opendir(dir.c_str());
     if (d == nullptr)
-        return false;
-    bool const synced = ::fsync(::dirfd(d)) == 0;
+        return;
+    ::fsync(::dirfd(d));
     ::closedir(d);
-    return synced;
 }
 
 // A filesystem without hard links (FAT, exFAT, SMB and some FUSE mounts)
@@ -176,8 +177,7 @@ OwnerOnlyFile::commit()
     }
     if (!written)
         throw std::runtime_error("Cannot write " + what_ + ": " + target_.string());
-    if (!syncDirectory(target_))
-        throw std::runtime_error("Cannot sync " + what_ + ": " + target_.string());
+    syncDirectory(target_);
     committed_ = true;
 }
 

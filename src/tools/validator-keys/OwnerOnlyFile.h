@@ -11,10 +11,11 @@ namespace xrpl {
  * The content goes to a temporary created beside the target under a name
  * the system chooses, exclusively and restricted to the owner from its
  * first byte, and the target is replaced in one step by `commit`, which
- * also syncs the content and the directory entry to disk. Without `commit`
- * the temporary is removed, so a failed command leaves the previous target
- * as it was. The target is readable by its owner only unless `kPublished`
- * is given, for a document that is meant to be served.
+ * also syncs the content to disk and, where the filesystem allows, the
+ * directory entry. Without `commit` the temporary is removed, so a failed
+ * command leaves the previous target as it was. The target is readable by
+ * its owner only unless `kPublished` is given, for a document that is meant
+ * to be served.
  */
 class OwnerOnlyFile
 {

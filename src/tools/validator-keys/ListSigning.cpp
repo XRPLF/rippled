@@ -267,7 +267,8 @@ canonicalJson(std::string const& text)
         if (c == '/' && i + 1 < text.size() && text[i + 1] == '/')
         {
             separated = true;
-            i = text.find('\n', i);
+            // json::Reader ends a line comment at CR or LF.
+            i = text.find_first_of("\r\n", i);
             if (i == std::string::npos)
                 break;
             continue;

@@ -131,6 +131,9 @@ TEST_F(ListSigningTest, canonical_json)
     // Only whitespace and comments may follow the object
     std::string const trailing = "Content after the JSON object";
     EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} // note"); }), "");
+    // A line comment ends at CR as well as LF
+    EXPECT_EQ(canonicalJson("{\"a\": 1 // note\r}"), "{\"a\": 1}");
+    EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} // note\rx"); }), trailing);
     EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} /* note */"); }), "");
     EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} \n"); }), "");
     EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} x"); }), trailing);
