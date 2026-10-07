@@ -295,16 +295,16 @@ doTxJson(rpc::JsonContext& context)
         if (!ctid)
             return rpcError(RpcInvalidParams);
 
-        auto const [lgr_seq, txn_idx, net_id] = *ctid;
-        if (net_id != context.app.getNetworkIDService().getNetworkID())
+        auto const [lgrSeq, txnIdx, netId] = *ctid;
+        if (netId != context.app.getNetworkIDService().getNetworkID())
         {
             std::stringstream out;
             out << "Wrong network. You should submit this request to a node "
                    "running on NetworkID: "
-                << net_id;
+                << netId;
             return rpc::makeError(RpcWrongNetwork, out.str());
         }
-        args.ctid = {lgr_seq, txn_idx};
+        args.ctid = {lgrSeq, txnIdx};
     }
     else
     {
