@@ -240,8 +240,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
     {
         // The backend cannot reload objects. A DatabaseNodeImp object
         // cache would make tryDB treat a recently store()'d header as a
-        // local hit and primeInboundLedgerForUse would mark it fully
-        // wired without a real acquire.
+        // local hit and skip the network acquire.
         nscfg.set(Keys::kCacheSize, "0");
         nscfg.set(Keys::kCacheAge, "0");
     }

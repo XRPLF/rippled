@@ -11,7 +11,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/LedgerTiming.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/ledger/entries/NegativeUNLEntry.h>
 #include <xrpl/nodestore/NodeObject.h>
@@ -344,9 +343,8 @@ Ledger::fullWireForUse(beast::Journal journal, char const* context) const
     // Do not walk the full state tree. Iterating every leaf was a prototype
     // way to force-link via descend; on mainnet that is 70M+ leaves and
     // longer than a consensus round. Linkage is kept by merging child
-    // pointers at SHAMap::canonicalize. Inbound ledgers are primed with a
-    // delta walk or sync pinning. A header-only load cannot be rebuilt
-    // from the null store.
+    // pointers at SHAMap::canonicalize while the map is built. A header-only
+    // load cannot be rebuilt from the null store.
     JLOG(journal.warn()) << context << ": ledger " << header_.seq
                          << " is not fully wired; refusing a full state walk";
     return false;
@@ -925,49 +923,6 @@ Ledger::invariants() const
 {
     stateMap_.invariants();
     txMap_.invariants();
-}
-
-std::optional<std::uint32_t>
-sameChainDistance(
-    std::shared_ptr<Ledger const> const& target,
-    std::shared_ptr<Ledger const> const& candidate,
-    beast::Journal journal)
-{
-    if (!target || !candidate || !candidate->isFullyWired())
-        return std::nullopt;
-    if (candidate->header().hash == target->header().hash)
-        return std::nullopt;
-
-    bool sameChain = false;
-    try
-    {
-        if (candidate->header().seq < target->header().seq)
-        {
-            if (auto const hash = hashOfSeq(*target, candidate->header().seq, journal);
-                hash && *hash == candidate->header().hash)
-            {
-                sameChain = true;
-            }
-        }
-        else if (candidate->header().seq > target->header().seq)
-        {
-            if (auto const hash = hashOfSeq(*candidate, target->header().seq, journal);
-                hash && *hash == target->header().hash)
-            {
-                sameChain = true;
-            }
-        }
-    }
-    catch (std::exception const&)
-    {
-        sameChain = false;
-    }
-
-    if (!sameChain)
-        return std::nullopt;
-    return candidate->header().seq < target->header().seq
-        ? target->header().seq - candidate->header().seq
-        : candidate->header().seq - target->header().seq;
 }
 
 }  // namespace xrpl

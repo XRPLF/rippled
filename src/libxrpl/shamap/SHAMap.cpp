@@ -1170,6 +1170,27 @@ SHAMap::canonicalInnerBranchesHarvested()
     return gCanonicalInnerBranchesHarvested.load(std::memory_order_relaxed);
 }
 
+SHAMapTreeNodePtr
+SHAMap::getLinkedNode(SHAMapNodeID const& id) const
+{
+    auto node = root_;
+    SHAMapNodeID current;
+    while (node && current.getDepth() < id.getDepth())
+    {
+        if (!node->isInner())
+            return {};
+
+        auto* inner = safeDowncast<SHAMapInnerNode*>(node.get());
+        auto const branch = selectBranch(current, id.getNodeID());
+        if (inner->isEmptyBranch(branch))
+            return {};
+
+        node = inner->getChild(branch);
+        current = current.getChildNodeID(branch);
+    }
+    return node;
+}
+
 void
 SHAMap::invariants() const
 {

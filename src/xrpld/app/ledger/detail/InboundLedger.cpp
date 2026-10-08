@@ -43,7 +43,6 @@
 #include <xrpl.pb.h>
 
 #include <algorithm>
-#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -64,85 +63,6 @@ namespace xrpl {
 using namespace std::chrono_literals;
 
 namespace {
-
-std::shared_ptr<Ledger const>
-findBestFullyWiredBase(
-    Application& app,
-    std::shared_ptr<Ledger> const& targetLedger,
-    beast::Journal journal)
-{
-    if (!app.getSHAMapStore().isNullBackend())
-        return {};
-
-    std::array<std::shared_ptr<Ledger const>, 2> const candidates{
-        app.getInboundLedgers().getClosestFullyWiredLedger(targetLedger),
-        app.getLedgerMaster().getClosestFullyWiredLedger(targetLedger)};
-    return closestFullyWiredLedger(targetLedger, candidates, journal);
-}
-
-bool
-primeInboundLedgerForUse(
-    std::shared_ptr<Ledger> const& ledger,
-    std::shared_ptr<Ledger const> const& baseLedger,
-    beast::Journal journal,
-    char const* context)
-{
-    if (!ledger->stateMap().family().isNullBackend())
-        return true;
-    if (ledger->isFullyWired())
-        return true;
-    if (!baseLedger || !baseLedger->isFullyWired())
-    {
-        // No base ledger available for a delta walk. The full state tree
-        // walk (materializeSHAMapLeaves on 70M+ leaves) is too expensive — on
-        // x86 it takes longer than a consensus round, preventing the node
-        // from ever catching up.
-        //
-        // In null-backend mode the node store never returns objects, so
-        // every state node on this inbound map arrived through
-        // descendAsync/addKnownNode → canonicalizeChild and is already
-        // pinned. Just wire the (tiny) tx map.
-        try
-        {
-            auto const txLeaves = materializeSHAMapLeaves(ledger->txMap());
-            ledger->setFullyWired();
-            JLOG(journal.info()) << context << ": wired ledger " << ledger->header().seq
-                                 << " (sync-pinned state, " << txLeaves << " tx leaves)";
-            return true;
-        }
-        catch (std::exception const& e)
-        {
-            JLOG(journal.warn()) << context << ": incomplete ledger " << ledger->header().seq
-                                 << ": " << e.what();
-            return false;
-        }
-    }
-    try
-    {
-        std::size_t stateNodes = 0;
-        // By the time an inbound ledger is marked complete, sync has already
-        // descended the current tree; this delta walk avoids rewalking
-        // unchanged state subtrees that are known-good via a fully wired
-        // same-chain base ledger.
-        ledger->stateMap().visitDifferences(
-            &baseLedger->stateMap(), [&stateNodes](SHAMapTreeNode const&) {
-                ++stateNodes;
-                return true;
-            });
-        auto const txLeaves = materializeSHAMapLeaves(ledger->txMap());
-        ledger->setFullyWired();
-        JLOG(journal.info()) << context << ": fully wired ledger " << ledger->header().seq << " ("
-                             << stateNodes << " changed state nodes vs base ledger "
-                             << baseLedger->header().seq << ", " << txLeaves << " tx leaves)";
-        return true;
-    }
-    catch (std::exception const& e)
-    {
-        JLOG(journal.warn()) << context << ": incomplete ledger " << ledger->header().seq << ": "
-                             << e.what();
-        return false;
-    }
-}
 
 std::uint32_t
 inboundLedgerJobLimit(Application& app)
@@ -215,28 +135,11 @@ InboundLedger::init(ScopedLockType& collectionLock)
         "xrpl::InboundLedger::init : valid ledger fees");
     ledger_->setImmutable();
 
-    auto const baseLedger = findBestFullyWiredBase(app_, ledger_, journal_);
-    if (!primeInboundLedgerForUse(ledger_, baseLedger, journal_, "InboundLedger::init"))
-    {
-        // tryDB already set have* from a header/cache hit. Leave those
-        // flags set and trigger() requests nothing, then the acquire
-        // burns six timeouts. Drop the local ledger so the network
-        // path re-fetches.
-        complete_ = false;
-        haveHeader_ = false;
-        haveTransactions_ = false;
-        haveState_ = false;
-        ledger_.reset();
-        addPeers();
-        queueJob(sl);
-        return;
-    }
-
     if (reason_ == Reason::HISTORY)
     {
-        // Already in the local store — keep it as a delta-walk base, but
-        // do not count it as a network historical fetch.
-        app_.getInboundLedgers().onLedgerFetched(shared_from_this(), false);
+        // Already in the local store. Do not count it as a network
+        // historical fetch.
+        app_.getInboundLedgers().onLedgerFetched(false);
         return;
     }
 
@@ -552,31 +455,18 @@ InboundLedger::done()
 
     if (complete_ && !failed_ && ledger_)
     {
-        auto const baseLedger = findBestFullyWiredBase(app_, ledger_, journal_);
-        if (!primeInboundLedgerForUse(ledger_, baseLedger, journal_, "InboundLedger::done"))
+        XRPL_ASSERT(
+            ledger_->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger_),
+            "xrpl::InboundLedger::done : valid ledger fees");
+        ledger_->setImmutable();
+        switch (reason_)
         {
-            // Incomplete data is retryable. Mark failed so acquire() can
-            // replace this object, but do not logFailure (5 minute poison).
-            complete_ = false;
-            failed_ = true;
-            retryableFailure_ = true;
-        }
-
-        if (complete_ && !failed_)
-        {
-            XRPL_ASSERT(
-                ledger_->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger_),
-                "xrpl::InboundLedger::done : valid ledger fees");
-            ledger_->setImmutable();
-            switch (reason_)
-            {
-                case Reason::HISTORY:
-                    app_.getInboundLedgers().onLedgerFetched(shared_from_this(), true);
-                    break;
-                default:
-                    app_.getLedgerMaster().storeLedger(ledger_);
-                    break;
-            }
+            case Reason::HISTORY:
+                app_.getInboundLedgers().onLedgerFetched(true);
+                break;
+            default:
+                app_.getLedgerMaster().storeLedger(ledger_);
+                break;
         }
     }
 
@@ -587,7 +477,7 @@ InboundLedger::done()
             self->app_.getLedgerMaster().checkAccept(self->getLedger());
             self->app_.getLedgerMaster().tryAdvance();
         }
-        else if (self->failed_ && !self->retryableFailure_)
+        else if (self->failed_)
         {
             self->app_.getInboundLedgers().logFailure(self->hash_, self->seq_);
         }

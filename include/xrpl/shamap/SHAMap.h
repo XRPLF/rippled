@@ -287,6 +287,15 @@ public:
     void
     visitLeaves(std::function<void(boost::intrusive_ptr<SHAMapItem const> const&)> const&) const;
 
+    /**
+     * Return the node already linked at `id`.
+     *
+     * Walks child pointers only. Does not load from the node store, so a
+     * missing pointer yields an empty result instead of a fetch.
+     */
+    SHAMapTreeNodePtr
+    getLinkedNode(SHAMapNodeID const& id) const;
+
     // comparison/sync functions
 
     /**

@@ -45,6 +45,7 @@
 #include <xrpl/peerfinder/Slot.h>
 #include <xrpl/peerfinder/Types.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
@@ -118,6 +119,52 @@ constexpr std::chrono::milliseconds kPeerHighLatency{300};
  * How often we PING the peer to check for latency and sendq probe
  */
 constexpr std::chrono::seconds kPeerTimerInterval{60};
+
+/**
+ * Null node store only: find a requested tree node by walking child links
+ * of resident ledgers.
+ *
+ * Seq and hash come from the peer. The lookup uses resident ledgers only,
+ * so it cannot load from SQL or the node store or edit the complete-ledger
+ * set. A missing node id skips the walk; searching every resident tree by
+ * hash alone would be a full state walk.
+ */
+SHAMapTreeNodePtr
+fetchLinkedTreeNode(
+    Application& app,
+    UInt256 const& hash,
+    std::uint32_t seq,
+    std::optional<SHAMapNodeID> const& nodeId)
+{
+    if (!nodeId || !app.getNodeFamily().isNullBackend())
+        return {};
+
+    auto const findInMap = [&](SHAMap const& map) -> SHAMapTreeNodePtr {
+        auto const node = map.getLinkedNode(*nodeId);
+        if (node && node->getHash().asUInt256() == hash)
+            return node;
+        return {};
+    };
+
+    auto const findInLedger =
+        [&](std::shared_ptr<Ledger const> const& ledger) -> SHAMapTreeNodePtr {
+        if (!ledger)
+            return {};
+        if (auto const node = findInMap(ledger->stateMap()))
+            return node;
+        return findInMap(ledger->txMap());
+    };
+
+    if (seq != 0)
+    {
+        if (auto const node = findInLedger(app.getLedgerMaster().getResidentLedgerBySeq(seq)))
+            return node;
+    }
+
+    if (auto const node = findInLedger(app.getLedgerMaster().getClosedLedger()))
+        return node;
+    return findInLedger(app.getLedgerMaster().getValidatedLedger());
+}
 
 }  // namespace
 
@@ -2762,18 +2809,58 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
         // VFALCO TODO Move this someplace more sensible so we don't
         //             need to inject the NodeStore interfaces.
         std::uint32_t const seq{obj.has_ledgerseq() ? obj.ledgerseq() : 0};
-        auto const nodeObject = app_.getNodeStore().fetchNodeObject(hash, seq);
-        if (!nodeObject)
-            continue;
 
-        protocol::TMIndexedObject& newObj = *reply.add_objects();
-        newObj.set_hash(hash.begin(), hash.size());
-        auto const& data = nodeObject->getData();
-        newObj.set_data(data.data(), data.size());
-        if (obj.has_nodeid())
-            newObj.set_index(obj.nodeid());
-        if (obj.has_ledgerseq())
-            newObj.set_ledgerseq(obj.ledgerseq());
+        // Disk hits come from the node store and must stay first. Null
+        // mode stores nothing there: SHAMap nodes live in the tree-node
+        // cache (and, after eviction, on resident child links), and ledger
+        // headers live only on resident ledgers.
+        auto fill = [&](void const* data, std::size_t size) {
+            protocol::TMIndexedObject& newObj = *reply.add_objects();
+            newObj.set_hash(hash.begin(), hash.size());
+            newObj.set_data(data, size);
+            if (obj.has_nodeid())
+                newObj.set_index(obj.nodeid());
+            if (obj.has_ledgerseq())
+                newObj.set_ledgerseq(obj.ledgerseq());
+        };
+
+        if (auto const nodeObject = app_.getNodeStore().fetchNodeObject(hash, seq))
+        {
+            auto const& data = nodeObject->getData();
+            fill(data.data(), data.size());
+            continue;
+        }
+
+        Serializer s;
+        if (auto const treeNode = app_.getNodeFamily().getTreeNodeCache()->fetch(hash))
+        {
+            treeNode->serializeWithPrefix(s);
+            fill(s.getDataPtr(), s.getLength());
+            continue;
+        }
+
+        if (auto const treeNode = fetchLinkedTreeNode(
+                app_,
+                hash,
+                seq,
+                obj.has_nodeid() ? deserializeSHAMapNodeID(obj.nodeid()) : std::nullopt))
+        {
+            treeNode->serializeWithPrefix(s);
+            fill(s.getDataPtr(), s.getLength());
+            continue;
+        }
+
+        if (packet.type() == protocol::TMGetObjectByHash::otLEDGER &&
+            app_.getNodeFamily().isNullBackend())
+        {
+            if (auto const ledger = app_.getLedgerMaster().getResidentLedgerByHash(hash))
+            {
+                s.reserve(sizeof(LedgerHeader) + 4);
+                s.add32(HashPrefix::LedgerMaster);
+                addRaw(ledger->header(), s);
+                fill(s.getDataPtr(), s.getLength());
+            }
+        }
     }
 
     // Apply work-proportional charge. `charge()` posts the disconnect

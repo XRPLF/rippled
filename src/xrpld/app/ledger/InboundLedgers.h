@@ -77,12 +77,12 @@ public:
 
     /**
      * Called when a complete history ledger is obtained.
+     *
+     * @param countFetch false when the ledger was already in the local
+     * store, so a cache hit is not counted as a network fetch.
      */
     virtual void
-    onLedgerFetched(std::shared_ptr<InboundLedger> const& inbound, bool countFetch) = 0;
-
-    virtual std::shared_ptr<Ledger const>
-    getClosestFullyWiredLedger(std::shared_ptr<Ledger const> const& targetLedger) = 0;
+    onLedgerFetched(bool countFetch) = 0;
 
     virtual void
     gotFetchPack() = 0;

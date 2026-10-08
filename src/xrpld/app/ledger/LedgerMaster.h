@@ -271,8 +271,22 @@ public:
     bool
     storeLedger(std::shared_ptr<Ledger const> ledger);
 
+    /**
+     * Return a ledger that is already resident in memory.
+     *
+     * Looks in the history cache, the closed, validated, and published
+     * ledgers, and the null-mode retained window. Unlike getLedgerByHash
+     * this never loads from SQL or the node store and never edits the
+     * complete-ledger set, so a peer-supplied hash is safe.
+     */
     std::shared_ptr<Ledger const>
-    getClosestFullyWiredLedger(std::shared_ptr<Ledger const> const& targetLedger);
+    getResidentLedgerByHash(UInt256 const& hash);
+
+    /**
+     * Sequence-number form of getResidentLedgerByHash.
+     */
+    std::shared_ptr<Ledger const>
+    getResidentLedgerBySeq(std::uint32_t seq);
 
     /**
      * A new ledger has been accepted as part of the trusted chain: mark it

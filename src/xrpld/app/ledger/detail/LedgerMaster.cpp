@@ -889,9 +889,9 @@ LedgerMaster::setFullLedger(
     if (app_.getSHAMapStore().isNullBackend() && retainWindowSize_ > 0)
     {
         // Pin only. Do not walk the state tree here: that walk is too
-        // expensive to hold mutex_ (or to run at all on mainnet). Inbound
-        // ledgers are primed via primeInboundLedgerForUse; genesis is
-        // already fully wired.
+        // expensive to hold mutex_ (or to run at all on mainnet). Child
+        // links are merged at SHAMap::canonicalize while the map is built.
+        // Genesis is already fully wired.
         std::scoped_lock const ml(mutex_);
         retainedLedgers_[ledger->header().seq] = ledger;
         while (retainedLedgers_.size() > retainWindowSize_)
@@ -903,9 +903,9 @@ LedgerMaster::setFullLedger(
 
     // Trusted-chain accept. Do not inherit this flag in the child
     // constructor: mutations happen after that snapshot. Local consensus
-    // ledgers are resident; inbound ledgers are primed in
-    // InboundLedger::done before they reach setFullLedger. standalone
-    // switchLCL passes isCurrent=false, so do not gate on isCurrent.
+    // ledgers are resident. A completed inbound ledger reaches here only
+    // after SHAMapSync has linked its nodes. standalone switchLCL passes
+    // isCurrent=false, so do not gate on isCurrent.
     ledger->setFullyWired();
 
     {
@@ -1881,26 +1881,51 @@ LedgerMaster::getLedgerByHash(UInt256 const& hash)
 }
 
 std::shared_ptr<Ledger const>
-LedgerMaster::getClosestFullyWiredLedger(std::shared_ptr<Ledger const> const& targetLedger)
+LedgerMaster::getResidentLedgerByHash(UInt256 const& hash)
 {
-    if (!targetLedger)
-        return {};
+    if (auto const cached = ledgerHistory_.getCachedLedgerByHash(hash))
+        return cached;
 
-    std::vector<std::shared_ptr<Ledger const>> candidates;
+    if (auto const closed = closedLedger_.get(); closed && closed->header().hash == hash)
+        return closed;
+
+    if (auto const valid = validLedger_.get(); valid && valid->header().hash == hash)
+        return valid;
+
+    std::scoped_lock const lock(mutex_);
+    if (pubLedger_ && pubLedger_->header().hash == hash)
+        return pubLedger_;
+
+    for (auto it = retainedLedgers_.rbegin(); it != retainedLedgers_.rend(); ++it)
     {
-        std::scoped_lock const lock(mutex_);
-        candidates.reserve(retainedLedgers_.size() + 3);
-        for (auto const& entry : retainedLedgers_)
-            candidates.push_back(entry.second);
-        if (auto const closed = closedLedger_.get())
-            candidates.push_back(closed);
-        if (auto const valid = validLedger_.get())
-            candidates.push_back(valid);
-        if (pubLedger_)
-            candidates.push_back(pubLedger_);
+        if (it->second && it->second->header().hash == hash)
+            return it->second;
+    }
+    return {};
+}
+
+std::shared_ptr<Ledger const>
+LedgerMaster::getResidentLedgerBySeq(std::uint32_t seq)
+{
+    if (auto const closed = closedLedger_.get(); closed && closed->header().seq == seq)
+        return closed;
+
+    if (auto const valid = validLedger_.get(); valid && valid->header().seq == seq)
+        return valid;
+
+    if (auto const hash = ledgerHistory_.getLedgerHash(seq); hash.isNonZero())
+    {
+        if (auto const cached = ledgerHistory_.getCachedLedgerByHash(hash))
+            return cached;
     }
 
-    return closestFullyWiredLedger(targetLedger, candidates, journal_);
+    std::scoped_lock const lock(mutex_);
+    if (pubLedger_ && pubLedger_->header().seq == seq)
+        return pubLedger_;
+
+    if (auto const it = retainedLedgers_.find(seq); it != retainedLedgers_.end())
+        return it->second;
+    return {};
 }
 
 void
