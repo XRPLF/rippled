@@ -1216,6 +1216,7 @@ private:
                 env.app().getHashRouter());
             BEAST_EXPECT(changes.added == asNodeIDs({masterPublic}));
             BEAST_EXPECT(changes.removed.empty());
+            BEAST_EXPECT(changes.signingKeysChanged);
             BEAST_EXPECT(trustedKeysOuter->quorum() == std::ceil((maxKeys + 1) * 0.8f));
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->trusted(masterPublic));
@@ -1235,6 +1236,19 @@ private:
             BEAST_EXPECT(trustedKeysOuter->listed(signingPublic1));
             BEAST_EXPECT(trustedKeysOuter->trusted(signingPublic1));
 
+            // The quorum keys follow the manifest without a trust change
+            changes = trustedKeysOuter->updateTrusted(
+                activeValidatorsOuter,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().getOverlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(changes.added.empty());
+            BEAST_EXPECT(changes.removed.empty());
+            BEAST_EXPECT(changes.signingKeysChanged);
+            BEAST_EXPECT(trustedKeysOuter->getQuorumKeys().second.contains(signingPublic1));
+            BEAST_EXPECT(!trustedKeysOuter->getQuorumKeys().second.contains(masterPublic));
+
             // Should only trust the ephemeral signing key
             // from the newest applied manifest
             auto const signingKeys2 = randomKeyPair(KeyType::Secp256k1);
@@ -1251,6 +1265,28 @@ private:
             BEAST_EXPECT(trustedKeysOuter->trusted(signingPublic2));
             BEAST_EXPECT(!trustedKeysOuter->listed(signingPublic1));
             BEAST_EXPECT(!trustedKeysOuter->trusted(signingPublic1));
+
+            // A rotated signing key replaces the old one in the quorum keys
+            changes = trustedKeysOuter->updateTrusted(
+                activeValidatorsOuter,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().getOverlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(changes.added.empty());
+            BEAST_EXPECT(changes.removed.empty());
+            BEAST_EXPECT(changes.signingKeysChanged);
+            BEAST_EXPECT(trustedKeysOuter->getQuorumKeys().second.contains(signingPublic2));
+            BEAST_EXPECT(!trustedKeysOuter->getQuorumKeys().second.contains(signingPublic1));
+
+            // Nothing changed since the last round
+            changes = trustedKeysOuter->updateTrusted(
+                activeValidatorsOuter,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().getOverlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(!changes.signingKeysChanged);
 
             // Should not trust keys from revoked master public key
             auto const signingKeysMax = randomKeyPair(KeyType::Secp256k1);
@@ -1281,6 +1317,9 @@ private:
             BEAST_EXPECT(changes.removed == asNodeIDs({masterPublic}));
             BEAST_EXPECT(changes.added.empty());
             BEAST_EXPECT(trustedKeysOuter->quorum() == std::ceil(maxKeys * 0.8f));
+            BEAST_EXPECT(changes.signingKeysChanged);
+            BEAST_EXPECT(!trustedKeysOuter->getQuorumKeys().second.contains(signingPublic2));
+            BEAST_EXPECT(!trustedKeysOuter->getQuorumKeys().second.contains(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(!trustedKeysOuter->trusted(masterPublic));
             BEAST_EXPECT(!trustedKeysOuter->listed(signingPublicMax));

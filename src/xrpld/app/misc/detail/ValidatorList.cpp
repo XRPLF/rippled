@@ -1916,21 +1916,16 @@ ValidatorList::updateTrusted(
             trustChanges.added.insert(calcNodeID(val.first));
     }
 
-    // If there were any changes, we need to update the ephemeral signing
-    // keys:
-    if (!trustChanges.added.empty() || !trustChanges.removed.empty())
+    // Rebuilt every round: a trusted validator can rotate its signing key
+    // without any change to the trusted master keys.
+    HashSet<PublicKey> signingKeys;
+    signingKeys.reserve(trustedMasterKeys_.size());
+    for (auto const& k : trustedMasterKeys_)
+        signingKeys.insert(validatorManifests_.getSigningKey(k).value_or(k));
+    if (signingKeys != trustedSigningKeys_)
     {
-        trustedSigningKeys_.clear();
-
-        // trustedMasterKeys_ contain non-revoked manifests only. Hence the
-        // manifests must contain a valid signingKey
-        for (auto const& k : trustedMasterKeys_)
-        {
-            std::optional<PublicKey> const signingKey = validatorManifests_.getSigningKey(k);
-            XRPL_ASSERT(signingKey, "xrpl::ValidatorList::updateTrusted : found signing key");
-            trustedSigningKeys_.insert(
-                *signingKey);  // NOLINT(bugprone-unchecked-optional-access) assert above
-        }
+        trustedSigningKeys_ = std::move(signingKeys);
+        trustChanges.signingKeysChanged = true;
     }
 
     JLOG(j_.debug()) << trustedMasterKeys_.size() << "  of " << keyListings_.size()

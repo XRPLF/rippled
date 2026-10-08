@@ -1,4 +1,5 @@
 #include <test/jtx/Env.h>
+#include <test/jtx/TrustedPublisherServer.h>
 #include <test/jtx/envconfig.h>
 #include <test/unit_test/SuiteJournal.h>
 
@@ -6,6 +7,7 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base64.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
@@ -21,10 +23,13 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
+#include <xrpl/server/Manifest.h>
 
 #include <algorithm>
 #include <cassert>
@@ -1159,6 +1164,70 @@ public:
         }
     }
 
+    // A trusted validator that rotates its signing key keeps its amendment
+    // vote without a restart or a change to the trusted set.
+    void
+    testSigningKeyRotation(FeatureBitset const& feat)
+    {
+        testcase("signingKeyRotation");
+
+        auto const amendment = fixCleanup3_5_0;
+        auto const masterKeys = randomKeyPair(KeyType::Ed25519);
+        auto cfg = test::jtx::envconfig();
+        cfg->section(Sections::kValidators)
+            .append(toBase58(TokenType::NodePublic, masterKeys.first));
+        test::jtx::Env env{*this, std::move(cfg), feat - amendment};
+
+        auto rotate = [&](std::pair<PublicKey, SecretKey> const& signingKeys, int seq) {
+            auto m = deserializeManifest(base64Decode(
+                test::TrustedPublisherServer::makeManifestString(
+                    masterKeys.first,
+                    masterKeys.second,
+                    signingKeys.first,
+                    signingKeys.second,
+                    seq)));
+            if (!BEAST_EXPECT(m))
+                return;
+            BEAST_EXPECT(
+                env.app().getValidatorManifests().applyManifest(
+                    std::move(*m), ManifestRateLimitCapPolicy::Uncapped) ==
+                ManifestDisposition::Accepted);
+            env.close();
+        };
+
+        auto const signingKeys1 = randomKeyPair(KeyType::Secp256k1);
+        rotate(signingKeys1, 1);
+        auto const signingKeys2 = randomKeyPair(KeyType::Secp256k1);
+        rotate(signingKeys2, 2);
+
+        auto& table = env.app().getAmendmentTable();
+        auto vote = [&](std::pair<PublicKey, SecretKey> const& signingKeys) {
+            auto const validation = std::make_shared<STValidation>(
+                NetClock::time_point{},
+                signingKeys.first,
+                signingKeys.second,
+                calcNodeID(masterKeys.first),
+                [&amendment](STValidation& v) {
+                    v.setFieldV256(
+                        sfAmendments, STVector256(sfAmendments, std::vector<UInt256>{amendment}));
+                    v.setFieldU32(sfLedgerSequence, 6180339);
+                });
+            table.doVoting(
+                env.current()->rules(), hourTime(std::chrono::hours(1)), {}, {}, {validation});
+            return table.getJson(amendment, true)[to_string(amendment)];
+        };
+
+        // The superseded key no longer counts
+        auto json = vote(signingKeys1);
+        BEAST_EXPECT(json[jss::validations].asInt() == 0);
+        BEAST_EXPECT(json[jss::count].asInt() == 0);
+
+        // The current key counts
+        json = vote(signingKeys2);
+        BEAST_EXPECT(json[jss::validations].asInt() == 1);
+        BEAST_EXPECT(json[jss::count].asInt() == 1);
+    }
+
     void
     testHasUnsupported()
     {
@@ -1207,6 +1276,7 @@ public:
         testLostMajority(feat);
         testChangedUNL(feat);
         testValidatorFlapping(feat);
+        testSigningKeyRotation(feat);
     }
 
     void

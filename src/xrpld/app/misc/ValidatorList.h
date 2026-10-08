@@ -122,6 +122,12 @@ struct TrustChanges
 
     HashSet<NodeID> added;
     HashSet<NodeID> removed;
+
+    /**
+     * The trusted signing keys changed, including a key rotation by a
+     * validator that stayed trusted.
+     */
+    bool signingKeysChanged = false;
 };
 
 /**
