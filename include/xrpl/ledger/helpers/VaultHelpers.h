@@ -25,8 +25,8 @@ class STTx;
  *
  * FixedPrecision Vaults return AssetsAvailable plus AssetsDeployed, with no
  * rounding to the asset's 16-digit precision: the sum is exact at Number's
- * active 19-digit mantissa width (guaranteed once fixCleanup3_2_0 is
- * enabled, which FixedPrecision requires), rounds Downward regardless of the
+ * active 19-digit mantissa width (the large mantissa range, enabled by
+ * featureSingleAssetVault or featureLendingProtocol), rounds Downward regardless of the
  * caller's ambient mode beyond that, and is not rounded to match the cached
  * sfAssetsTotal field. Legacy and CashBasis Vaults return the stored
  * AssetsTotal.

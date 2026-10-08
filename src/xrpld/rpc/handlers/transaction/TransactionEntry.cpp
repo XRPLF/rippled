@@ -1,3 +1,5 @@
+#include <xrpld/rpc/handlers/transaction/TransactionEntry.h>
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/rpc/Context.h>
@@ -9,93 +11,95 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/jss.h>
 
-#include <memory>
+#include <rpcspec/Errors.hpp>
+#include <rpcspec/handlers/transaction_entry/Types.hpp>
 
-namespace xrpl {
+#include <expected>
+#include <string>
+#include <tuple>
 
-// {
-//   ledger_hash : <ledger>,
-//   ledger_index : <ledger_index>
-// }
-//
-// XXX In this case, not specify either ledger does not mean ledger current. It
-// means any ledger.
-json::Value
-doTransactionEntry(rpc::JsonContext& context)
+namespace xrpl::rpc {
+
+TransactionEntryHandler::TransactionEntryHandler(JsonContext& context) : context_(context)
 {
-    std::shared_ptr<ReadView const> lpLedger;
-    json::Value jvResult = rpc::lookupLedger(lpLedger, context);
+}
 
-    if (!lpLedger)
-        return jvResult;
+// With no ledger specified, this uses the current ledger, as every other method
+// does. An open ledger is refused with notYetImplemented, so a request with no
+// ledger fails the same way as one that asks for "current".
+std::expected<TransactionEntryHandler::Output, ::rpc::Status>
+TransactionEntryHandler::process(Input const& input) const
+{
+    Output output;
+    if (auto const status = getLedger(output.ledger, input.ledger, context_.get()))
+        return std::unexpected{status};
 
-    if (!context.params.isMember(jss::tx_hash))
+    if (!input.txHash &&
+        input.txHash.error() == ::rpc::spec::handlers::transaction_entry::TxHashError::Missing)
     {
-        jvResult[jss::error] = "fieldNotFoundTransaction";
+        output.error = "fieldNotFoundTransaction";
     }
-    else if (jvResult.get(jss::ledger_hash, json::ValueType::Null).isNull())
+    else if (output.ledger->open())
     {
         // We don't work on ledger current.
-
-        // XXX We don't support any transaction yet.
-        jvResult[jss::error] = "notYetImplemented";
+        output.error = "notYetImplemented";
+    }
+    else if (!input.txHash)
+    {
+        output.error = "malformedRequest";
     }
     else
     {
-        UInt256 uTransID;
-        // XXX Relying on trusted WSS client. Would be better to have a strict
-        // routine, returning success or failure.
-        if (!uTransID.parseHex(context.params[jss::tx_hash].asString()))
-        {
-            jvResult[jss::error] = "malformedRequest";
-            return jvResult;
-        }
-
-        auto [sttx, stobj] = lpLedger->txRead(uTransID);
-        if (!sttx)
-        {
-            jvResult[jss::error] = "transactionNotFound";
-        }
-        else
-        {
-            if (context.apiVersion > 1)
-            {
-                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::Values::DisableApiPriorV2);
-                jvResult[jss::hash] = to_string(sttx->getTransactionID());
-
-                if (!lpLedger->open())
-                {
-                    jvResult[jss::ledger_hash] =
-                        to_string(context.ledgerMaster.getHashBySeq(lpLedger->seq()));
-                }
-
-                bool const validated = context.ledgerMaster.isValidated(*lpLedger);
-
-                jvResult[jss::validated] = validated;
-                if (validated)
-                {
-                    jvResult[jss::ledger_index] = lpLedger->seq();
-                    if (auto closeTime = context.ledgerMaster.getCloseTimeBySeq(lpLedger->seq()))
-                        jvResult[jss::close_time_iso] = toStringIso(*closeTime);
-                }
-            }
-            else
-            {
-                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::Values::None);
-            }
-
-            rpc::insertDeliverMax(jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
-
-            auto const jsonMeta = (context.apiVersion > 1 ? jss::meta : jss::metadata);
-            if (stobj)
-                jvResult[jsonMeta] = stobj->getJson(JsonOptions::Values::None);
-            // 'accounts'
-            // 'engine_...'
-            // 'ledger_...'
-        }
+        std::tie(output.tx, output.meta) = output.ledger->txRead(*input.txHash);
+        if (!output.tx)
+            output.error = "transactionNotFound";
     }
 
-    return jvResult;
+    return output;
 }
 
-}  // namespace xrpl
+void
+TransactionEntryHandler::writeResult(json::Value& value, Output const& output) const
+{
+    auto const& context = context_.get();
+    auto const& ledger = *output.ledger;
+
+    injectLedgerFields(ledger, context, value);
+
+    if (output.error)
+    {
+        value[jss::error] = std::string{*output.error};
+        return;
+    }
+
+    if (context.apiVersion > 1)
+    {
+        value[jss::tx_json] = output.tx->getJson(JsonOptions::Values::DisableApiPriorV2);
+        value[jss::hash] = to_string(output.tx->getTransactionID());
+
+        if (!ledger.open())
+            value[jss::ledger_hash] = to_string(context.ledgerMaster.getHashBySeq(ledger.seq()));
+
+        bool const validated = context.ledgerMaster.isValidated(ledger);
+
+        value[jss::validated] = validated;
+        if (validated)
+        {
+            value[jss::ledger_index] = ledger.seq();
+            if (auto closeTime = context.ledgerMaster.getCloseTimeBySeq(ledger.seq()))
+                value[jss::close_time_iso] = toStringIso(*closeTime);
+        }
+    }
+    else
+    {
+        value[jss::tx_json] = output.tx->getJson(JsonOptions::Values::None);
+    }
+
+    insertDeliverMax(value[jss::tx_json], output.tx->getTxnType(), context.apiVersion);
+
+    auto const jsonMeta = (context.apiVersion > 1 ? jss::meta : jss::metadata);
+    if (output.meta)
+        value[jsonMeta] = output.meta->getJson(JsonOptions::Values::None);
+}
+
+}  // namespace xrpl::rpc
