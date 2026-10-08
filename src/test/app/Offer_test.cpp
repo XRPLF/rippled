@@ -4086,7 +4086,7 @@ public:
         TestData const tests[]{
             //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
             {.self=0, .leg0=0, .leg1=1, .btcStart=btc(5), .actors={{.acct="gay", .offers=1, .xrp=drops(3950000'000000 - (4 * baseFee)), .btc=btc(5), .usd=usd(2500)}, {.acct="gar", .offers=1, .xrp=drops(4050000'000000 - (3 * baseFee)), .btc=btc(0), .usd=usd(1375)}}}, // no BTC xfer fee
-            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(5), .actors={{.acct="hye", .offers=2, .xrp=drops(4000000'000000 - (5 * baseFee)), .btc=btc(5), .usd=usd(2000)}                                                     }}  // no xfer fee
+            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(5), .actors={{.acct="hye", .offers=2, .xrp=drops(4000000'000000 - (5 * baseFee)), .btc=btc(5), .usd=usd(2000)}                                                     }},  // no xfer fee
         };
         // clang-format on
 

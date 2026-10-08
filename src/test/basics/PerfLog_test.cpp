@@ -56,7 +56,8 @@ class PerfLog_test : public beast::unit_test::Suite
         NullTerminatedView{"method_b"},
         NullTerminatedView{"method_c"},
         NullTerminatedView{"method_d"},
-        NullTerminatedView{"method_e"}};
+        NullTerminatedView{"method_e"},
+    };
 
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
@@ -129,7 +130,9 @@ class PerfLog_test : public beast::unit_test::Suite
         perfLog(WithFile withFile)
         {
             perf::PerfLog::Setup const setup{
-                .perfLog = withFile == WithFile::No ? "" : logFile(), .logInterval = logInterval()};
+                .perfLog = withFile == WithFile::No ? "" : logFile(),
+                .logInterval = logInterval(),
+            };
             return perf::makePerfLog(setup, app, kMethodNames, j, [this]() {
                 signalStop();
                 return;

@@ -295,7 +295,9 @@ loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
                 if (key && key->size() == 32)
                 {
                     return ValidatorToken{
-                        .manifest = m.asString(), .validationSecret = makeSlice(*key)};
+                        .manifest = m.asString(),
+                        .validationSecret = makeSlice(*key),
+                    };
                 }
             }
         }

@@ -972,12 +972,16 @@ doLedgerEntry(rpc::JsonContext& context)
 #pragma pop_macro("LEDGER_ENTRY")
         {.fieldName = jss::index, .parseFunction = parseIndex, .expectedType = ltANY},
         // aliases
-        {.fieldName = jss::account_root,
-         .parseFunction = parseAccountRoot,
-         .expectedType = ltACCOUNT_ROOT},
-        {.fieldName = jss::ripple_state,
-         .parseFunction = parseRippleState,
-         .expectedType = ltRIPPLE_STATE},
+        {
+            .fieldName = jss::account_root,
+            .parseFunction = parseAccountRoot,
+            .expectedType = ltACCOUNT_ROOT,
+        },
+        {
+            .fieldName = jss::ripple_state,
+            .parseFunction = parseRippleState,
+            .expectedType = ltRIPPLE_STATE,
+        },
     });
 
     auto const hasMoreThanOneMember = [&]() {

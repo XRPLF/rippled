@@ -964,7 +964,8 @@ private:
             .serviceFee = serviceFeeValue,
             .interest = TenthBips32{percentageToTenthBips(12)},
             .payTotal = 12,
-            .payInterval = 3600};
+            .payInterval = 3600,
+        };
 
         auto const loanOpt =
             createLoan(env, AssetType::XRP, brokerParams, loanParams, issuer, lender, borrower);

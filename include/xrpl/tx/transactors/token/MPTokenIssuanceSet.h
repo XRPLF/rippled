@@ -36,25 +36,42 @@ public:
     };
 
     static constexpr std::array<FlagMapping, 7> flagMapping = {
-        {{.setFlag = tfMPTSetCanLock, .immutableFlag = lsifMPTCanLock, .ledgerFlag = lsfMPTCanLock},
-         {.setFlag = tfMPTSetRequireAuth,
-          .immutableFlag = lsifMPTRequireAuth,
-          .ledgerFlag = lsfMPTRequireAuth},
-         {.setFlag = tfMPTSetCanEscrow,
-          .immutableFlag = lsifMPTCanEscrow,
-          .ledgerFlag = lsfMPTCanEscrow},
-         {.setFlag = tfMPTSetCanTrade,
-          .immutableFlag = lsifMPTCanTrade,
-          .ledgerFlag = lsfMPTCanTrade},
-         {.setFlag = tfMPTSetCanTransfer,
-          .immutableFlag = lsifMPTCanTransfer,
-          .ledgerFlag = lsfMPTCanTransfer},
-         {.setFlag = tfMPTSetCanClawback,
-          .immutableFlag = lsifMPTCanClawback,
-          .ledgerFlag = lsfMPTCanClawback},
-         {.setFlag = tfMPTSetCanHoldConfidentialBalance,
-          .immutableFlag = lsifMPTCanHoldConfidentialBalance,
-          .ledgerFlag = lsfMPTCanHoldConfidentialBalance}}};
+        {
+            {.setFlag = tfMPTSetCanLock,
+             .immutableFlag = lsifMPTCanLock,
+             .ledgerFlag = lsfMPTCanLock},
+            {
+                .setFlag = tfMPTSetRequireAuth,
+                .immutableFlag = lsifMPTRequireAuth,
+                .ledgerFlag = lsfMPTRequireAuth,
+            },
+            {
+                .setFlag = tfMPTSetCanEscrow,
+                .immutableFlag = lsifMPTCanEscrow,
+                .ledgerFlag = lsfMPTCanEscrow,
+            },
+            {
+                .setFlag = tfMPTSetCanTrade,
+                .immutableFlag = lsifMPTCanTrade,
+                .ledgerFlag = lsfMPTCanTrade,
+            },
+            {
+                .setFlag = tfMPTSetCanTransfer,
+                .immutableFlag = lsifMPTCanTransfer,
+                .ledgerFlag = lsfMPTCanTransfer,
+            },
+            {
+                .setFlag = tfMPTSetCanClawback,
+                .immutableFlag = lsifMPTCanClawback,
+                .ledgerFlag = lsfMPTCanClawback,
+            },
+            {
+                .setFlag = tfMPTSetCanHoldConfidentialBalance,
+                .immutableFlag = lsifMPTCanHoldConfidentialBalance,
+                .ledgerFlag = lsfMPTCanHoldConfidentialBalance,
+            },
+        },
+    };
 
     static bool
     checkExtraFeatures(PreflightContext const& ctx);

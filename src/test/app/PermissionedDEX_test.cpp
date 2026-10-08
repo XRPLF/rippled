@@ -710,7 +710,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
 
             auto const badCredType = "badCred";
             pdomain::Credentials const credentials{
-                {.issuer = badDomainOwner, .credType = badCredType}};
+                {.issuer = badDomainOwner, .credType = badCredType},
+            };
             env(pdomain::setTx(badDomainOwner, credentials));
 
             auto objects = pdomain::getObjects(badDomainOwner, env);
@@ -1347,7 +1348,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
 
             auto const badCredType = "badCred";
             pdomain::Credentials const credentials{
-                {.issuer = badDomainOwner, .credType = badCredType}};
+                {.issuer = badDomainOwner, .credType = badCredType},
+            };
             env(pdomain::setTx(badDomainOwner, credentials));
 
             auto objects = pdomain::getObjects(badDomainOwner, env);

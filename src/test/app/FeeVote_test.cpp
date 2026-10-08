@@ -250,10 +250,11 @@ class FeeVote_test : public beast::unit_test::Suite
             auto const big64 = std::to_string(
                 static_cast<std::uint64_t>(std::numeric_limits<XRPAmount::value_type>::max()) + 1);
             Section config;
-            config.append(
-                {"reference_fee = " + big64,
-                 "account_reserve = " + big64,
-                 "owner_reserve = " + big64});
+            config.append({
+                "reference_fee = " + big64,
+                "account_reserve = " + big64,
+                "owner_reserve = " + big64,
+            });
             // Illegal values are ignored, and the defaults left unchanged
             auto setup = setupFeeVote(config);
             BEAST_EXPECT(setup.referenceFee == defaultSetup.referenceFee);
@@ -286,7 +287,8 @@ class FeeVote_test : public beast::unit_test::Suite
                 .baseFee = 10,
                 .reserveBase = 200000,
                 .reserveIncrement = 50000,
-                .referenceFeeUnits = 10};
+                .referenceFeeUnits = 10,
+            };
             auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields);
 
             OpenView accum(ledger.get());
@@ -313,7 +315,8 @@ class FeeVote_test : public beast::unit_test::Suite
             FeeSettingsFields const fields{
                 .baseFeeDrops = XRPAmount{10},
                 .reserveBaseDrops = XRPAmount{200000},
-                .reserveIncrementDrops = XRPAmount{50000}};
+                .reserveIncrementDrops = XRPAmount{50000},
+            };
             // Test successful fee transaction with new fields
             auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields);
 
@@ -395,9 +398,11 @@ class FeeVote_test : public beast::unit_test::Suite
         auto feeTx = createFeeTx(
             ledger->rules(),
             ledger->seq(),
-            {.baseFeeDrops = XRPAmount{10},
-             .reserveBaseDrops = XRPAmount{200000},
-             .reserveIncrementDrops = XRPAmount{50000}});
+            {
+                .baseFeeDrops = XRPAmount{10},
+                .reserveBaseDrops = XRPAmount{200000},
+                .reserveIncrementDrops = XRPAmount{50000},
+            });
 
         // Verify pseudo-transaction properties
         BEAST_EXPECT(feeTx.getAccountID(sfAccount) == AccountID());
@@ -433,7 +438,8 @@ class FeeVote_test : public beast::unit_test::Suite
         FeeSettingsFields const fields1{
             .baseFeeDrops = XRPAmount{10},
             .reserveBaseDrops = XRPAmount{200000},
-            .reserveIncrementDrops = XRPAmount{50000}};
+            .reserveIncrementDrops = XRPAmount{50000},
+        };
         auto feeTx1 = createFeeTx(ledger->rules(), ledger->seq(), fields1);
 
         {
@@ -450,7 +456,8 @@ class FeeVote_test : public beast::unit_test::Suite
         FeeSettingsFields const fields2{
             .baseFeeDrops = XRPAmount{20},
             .reserveBaseDrops = XRPAmount{300000},
-            .reserveIncrementDrops = XRPAmount{75000}};
+            .reserveIncrementDrops = XRPAmount{75000},
+        };
         auto feeTx2 = createFeeTx(ledger->rules(), ledger->seq(), fields2);
 
         {
@@ -482,9 +489,11 @@ class FeeVote_test : public beast::unit_test::Suite
         auto feeTx = createFeeTx(
             ledger->rules(),
             ledger->seq() + 5,  // Wrong sequence (should be ledger->seq())
-            {.baseFeeDrops = XRPAmount{10},
-             .reserveBaseDrops = XRPAmount{200000},
-             .reserveIncrementDrops = XRPAmount{50000}});
+            {
+                .baseFeeDrops = XRPAmount{10},
+                .reserveBaseDrops = XRPAmount{200000},
+                .reserveIncrementDrops = XRPAmount{50000},
+            });
 
         OpenView accum(ledger.get());
 
@@ -512,7 +521,8 @@ class FeeVote_test : public beast::unit_test::Suite
         FeeSettingsFields const fields1{
             .baseFeeDrops = XRPAmount{10},
             .reserveBaseDrops = XRPAmount{200000},
-            .reserveIncrementDrops = XRPAmount{50000}};
+            .reserveIncrementDrops = XRPAmount{50000},
+        };
         auto feeTx1 = createFeeTx(ledger->rules(), ledger->seq(), fields1);
 
         {
@@ -527,7 +537,9 @@ class FeeVote_test : public beast::unit_test::Suite
 
         // Apply partial update (only some fields)
         FeeSettingsFields const fields2{
-            .baseFeeDrops = XRPAmount{20}, .reserveBaseDrops = XRPAmount{200000}};
+            .baseFeeDrops = XRPAmount{20},
+            .reserveBaseDrops = XRPAmount{200000},
+        };
         auto feeTx2 = createFeeTx(ledger->rules(), ledger->seq(), fields2);
 
         {

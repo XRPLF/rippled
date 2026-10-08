@@ -884,8 +884,10 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             // Bob setup DepositPreauth object, duplicates is not allowed
             env(deposit::authCredentials(
                     bob,
-                    {{.issuer = issuer, .credType = credType},
-                     {.issuer = issuer, .credType = credType}}),
+                    {
+                        {.issuer = issuer, .credType = credType},
+                        {.issuer = issuer, .credType = credType},
+                    }),
                 Ter(temMALFORMED));
 
             // Bob setup DepositPreauth object
@@ -1063,15 +1065,17 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                 auto const& z = credType;
                 auto jv = deposit::authCredentials(
                     bob,
-                    {{.issuer = a, .credType = z},
-                     {.issuer = b, .credType = z},
-                     {.issuer = c, .credType = z},
-                     {.issuer = d, .credType = z},
-                     {.issuer = e, .credType = z},
-                     {.issuer = f, .credType = z},
-                     {.issuer = g, .credType = z},
-                     {.issuer = h, .credType = z},
-                     {.issuer = i, .credType = z}});
+                    {
+                        {.issuer = a, .credType = z},
+                        {.issuer = b, .credType = z},
+                        {.issuer = c, .credType = z},
+                        {.issuer = d, .credType = z},
+                        {.issuer = e, .credType = z},
+                        {.issuer = f, .credType = z},
+                        {.issuer = g, .credType = z},
+                        {.issuer = h, .credType = z},
+                        {.issuer = i, .credType = z},
+                    });
                 env(jv, Ter(temARRAY_TOO_LARGE));
             }
 
@@ -1204,8 +1208,10 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             // Bob setup DepositPreauth object
             env(deposit::authCredentials(
                 bob,
-                {{.issuer = issuer, .credType = credType},
-                 {.issuer = issuer, .credType = credType2}}));
+                {
+                    {.issuer = issuer, .credType = credType},
+                    {.issuer = issuer, .credType = credType2},
+                }));
             env.close();
 
             {
@@ -1379,7 +1385,8 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             {.issuer = "e", .credType = "e"},
             {.issuer = "f", .credType = "f"},
             {.issuer = "g", .credType = "g"},
-            {.issuer = "h", .credType = "h"}};
+            {.issuer = "h", .credType = "h"},
+        };
 
         for (auto const& c : credentials)
             env.fund(XRP(5000), c.issuer);

@@ -110,7 +110,8 @@ private:
             env(trust(lender, iou(10'000'000)));
             env(pay(issuer, lender, iou(5'000'000)));
             BrokerInfo const brokerInfo{
-                createVaultAndBroker(env, issuer["IOU"], lender, {.vaultKind = vaultKind})};
+                createVaultAndBroker(env, issuer["IOU"], lender, {.vaultKind = vaultKind}),
+            };
 
             auto const loanSetFee = Fee(env.current()->fees().base * 2);
             Number const debtMaximumRequest = brokerInfo.asset(1'000).value();
@@ -435,7 +436,8 @@ private:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,

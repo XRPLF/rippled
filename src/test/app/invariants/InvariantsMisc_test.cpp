@@ -504,8 +504,10 @@ class InvariantsMisc_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {{"incorrect account XRP balance"},
-             {"XRP net change of -1000000001 doesn't match fee 0"}},
+            {
+                {"incorrect account XRP balance"},
+                {"XRP net change of -1000000001 doesn't match fee 0"},
+            },
             [this](Account const& a1, Account const&, ApplyContext& ac) {
                 // balance is negative
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
@@ -531,14 +533,18 @@ class InvariantsMisc_test : public InvariantsBase
             XRPAmount{-1});
 
         doInvariantCheck(
-            {{"fee paid exceeds system limit: "s + to_string(kInitialXrp)},
-             {"XRP net change of 0 doesn't match fee "s + to_string(kInitialXrp)}},
+            {
+                {"fee paid exceeds system limit: "s + to_string(kInitialXrp)},
+                {"XRP net change of 0 doesn't match fee "s + to_string(kInitialXrp)},
+            },
             [](Account const&, Account const&, ApplyContext&) { return true; },
             XRPAmount{kInitialXrp});
 
         doInvariantCheck(
-            {{"fee paid is 20 exceeds fee specified in transaction."},
-             {"XRP net change of 0 doesn't match fee 20"}},
+            {
+                {"fee paid is 20 exceeds fee specified in transaction."},
+                {"XRP net change of 0 doesn't match fee 20"},
+            },
             [](Account const&, Account const&, ApplyContext&) { return true; },
             XRPAmount{20},
             STTx{ttACCOUNT_SET, [](STObject& tx) { tx.setFieldAmount(sfFee, XRPAmount{10}); }});
@@ -796,15 +802,21 @@ class InvariantsMisc_test : public InvariantsBase
                 std::string expected;
             };
             auto const cases = std::to_array<Case>({
-                {.before = lsfLoanOverpayment,
-                 .after = 0,
-                 .expected = "lsfLoanOverpayment flag toggled on immutable ledger entry"},
-                {.before = 0,
-                 .after = lsfLoanOverpayment,
-                 .expected = "lsfLoanOverpayment flag toggled on immutable ledger entry"},
-                {.before = lsfLoanDefault,
-                 .after = 0,
-                 .expected = "lsfLoanDefault flag cleared on immutable ledger entry"},
+                {
+                    .before = lsfLoanOverpayment,
+                    .after = 0,
+                    .expected = "lsfLoanOverpayment flag toggled on immutable ledger entry",
+                },
+                {
+                    .before = 0,
+                    .after = lsfLoanOverpayment,
+                    .expected = "lsfLoanOverpayment flag toggled on immutable ledger entry",
+                },
+                {
+                    .before = lsfLoanDefault,
+                    .after = 0,
+                    .expected = "lsfLoanDefault flag cleared on immutable ledger entry",
+                },
             });
 
             for (auto const& c : cases)
@@ -925,31 +937,41 @@ class InvariantsMisc_test : public InvariantsBase
             // perturb one component so that interest due is -1, which is within
             // the tolerance, and the last overshoots it at -2.
             auto const cases = std::to_array<Case>({
-                {.totalValue = Number(100),
-                 .principal = Number(100),
-                 .managementFee = Number(0),
-                 .expectFireIntegral = false,
-                 .expectFireTolerant = false},
-                {.totalValue = Number(99),
-                 .principal = Number(100),
-                 .managementFee = Number(0),
-                 .expectFireIntegral = true,
-                 .expectFireTolerant = false},
-                {.totalValue = Number(100),
-                 .principal = Number(101),
-                 .managementFee = Number(0),
-                 .expectFireIntegral = true,
-                 .expectFireTolerant = false},
-                {.totalValue = Number(100),
-                 .principal = Number(100),
-                 .managementFee = Number(1),
-                 .expectFireIntegral = true,
-                 .expectFireTolerant = false},
-                {.totalValue = Number(98),
-                 .principal = Number(100),
-                 .managementFee = Number(0),
-                 .expectFireIntegral = true,
-                 .expectFireTolerant = true},
+                {
+                    .totalValue = Number(100),
+                    .principal = Number(100),
+                    .managementFee = Number(0),
+                    .expectFireIntegral = false,
+                    .expectFireTolerant = false,
+                },
+                {
+                    .totalValue = Number(99),
+                    .principal = Number(100),
+                    .managementFee = Number(0),
+                    .expectFireIntegral = true,
+                    .expectFireTolerant = false,
+                },
+                {
+                    .totalValue = Number(100),
+                    .principal = Number(101),
+                    .managementFee = Number(0),
+                    .expectFireIntegral = true,
+                    .expectFireTolerant = false,
+                },
+                {
+                    .totalValue = Number(100),
+                    .principal = Number(100),
+                    .managementFee = Number(1),
+                    .expectFireIntegral = true,
+                    .expectFireTolerant = false,
+                },
+                {
+                    .totalValue = Number(98),
+                    .principal = Number(100),
+                    .managementFee = Number(0),
+                    .expectFireIntegral = true,
+                    .expectFireTolerant = true,
+                },
             });
 
             for (bool const integralAsset : {true, false})
@@ -1040,12 +1062,13 @@ class InvariantsMisc_test : public InvariantsBase
             auto const sub = env.now().time_since_epoch().count() + 60;
             auto const red = sub + kMinInvestmentPeriod + 1'000'000;
             Vault const vault{env};
-            auto [tx, keylet] = vault.create(
-                {.owner = a,
-                 .asset = xrpIssue(),
-                 .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
-                 .subscriptionDate = sub,
-                 .redemptionDate = red});
+            auto [tx, keylet] = vault.create({
+                .owner = a,
+                .asset = xrpIssue(),
+                .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+                .subscriptionDate = sub,
+                .redemptionDate = red,
+            });
             env(tx);
             closedEndedVaultKeylet = keylet;
             return BEAST_EXPECT(env.le(closedEndedVaultKeylet));
@@ -1177,7 +1200,7 @@ class InvariantsMisc_test : public InvariantsBase
         doInvariantCheck(
             makeEnv(features),
             fixEnabled ? std::vector<std::string>{{"a trust line with deep freeze flag without "
-                                                   "normal freeze was created"}}
+                                                   "normal freeze was created",},}
                        : std::vector<std::string>{},
             [&insertOrderedTrustLinePair](Account const& a1, Account const& a2, ApplyContext& ac) {
                 Account const a3{"A3"};

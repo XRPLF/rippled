@@ -1527,7 +1527,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // Set flagOnlyXRP and offers using IOUs are rejected.
         {
             UInt256 const nftOnlyXrpID{
-                token::getNextID(env, alice, 0u, tfOnlyXRP | tfTransferable)};
+                token::getNextID(env, alice, 0u, tfOnlyXRP | tfTransferable),
+            };
             env(token::mint(alice, 0u), Txflags(tfOnlyXRP | tfTransferable));
             env.close();
 
@@ -1604,7 +1605,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             for (std::uint32_t const xferFee : {0, 1})
             {
                 UInt256 const nftNoAutoTrustID{
-                    token::getNextID(env, alice, 0u, tfTransferable, xferFee)};
+                    token::getNextID(env, alice, 0u, tfTransferable, xferFee),
+                };
                 env(token::mint(alice, 0u), token::XferFee(xferFee), Txflags(tfTransferable));
                 env.close();
 
@@ -1644,7 +1646,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                 std::uint16_t const transferFee = 10000;  // 10%
 
                 UInt256 const nftAutoTrustID{
-                    token::getNextID(env, alice, 0u, tfTransferable | tfTrustLine, transferFee)};
+                    token::getNextID(env, alice, 0u, tfTransferable | tfTrustLine, transferFee),
+                };
 
                 // If the fixRemoveNFTokenAutoTrustLine amendment is active
                 // then this transaction fails.
@@ -1700,7 +1703,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             {
                 std::uint16_t const transferFee = 5000;  // 5%
                 UInt256 const nftNoAutoTrustID{
-                    token::getNextID(env, alice, 0u, tfTransferable, transferFee)};
+                    token::getNextID(env, alice, 0u, tfTransferable, transferFee),
+                };
                 env(token::mint(alice, 0u), token::XferFee(transferFee), Txflags(tfTransferable));
                 env.close();
 
@@ -6357,13 +6361,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         auto verifyMetaInAllResponses = [&](auto verifyMeta) {
             // Get the hash for the most recent transaction.
             std::string const txHash{
-                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString(),
+            };
 
             env.close();
 
-            for (unsigned const apiVersion :
-                 {unsigned{rpc::kApiMinimumSupportedVersion},
-                  unsigned{rpc::kApiMaximumSupportedVersion}})
+            for (unsigned const apiVersion : {
+                     unsigned{rpc::kApiMinimumSupportedVersion},
+                     unsigned{rpc::kApiMaximumSupportedVersion},
+                 })
             {
                 // Test 1: Check tx RPC response
                 json::Value const txResult = env.rpc(apiVersion, "tx", txHash)[jss::result];
@@ -6908,9 +6914,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // In both cases we remove the fixRemoveNFTokenAutoTrustLine amendment.
         // Otherwise we can't create NFTokens with tfTrustLine enabled.
         FeatureBitset const localFeatures = features - fixRemoveNFTokenAutoTrustLine;
-        for (FeatureBitset feats :
-             {localFeatures - fixEnforceNFTokenTrustline,
-              localFeatures | fixEnforceNFTokenTrustline})
+        for (FeatureBitset feats : {
+                 localFeatures - fixEnforceNFTokenTrustline,
+                 localFeatures | fixEnforceNFTokenTrustline,
+             })
         {
             Env env{*this, feats};
             env.fund(XRP(1000), issuer, becky, cheri, gw);
@@ -6926,14 +6933,16 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             // issuer creates two NFTs: one with and one without AutoTrustLine.
             std::uint16_t const xferFee = 5000;  // 5%
             UInt256 const nftAutoTrustID{
-                token::getNextID(env, issuer, 0u, tfTransferable | tfTrustLine, xferFee)};
+                token::getNextID(env, issuer, 0u, tfTransferable | tfTrustLine, xferFee),
+            };
             env(token::mint(issuer, 0u),
                 token::XferFee(xferFee),
                 Txflags(tfTransferable | tfTrustLine));
             env.close();
 
             UInt256 const nftNoAutoTrustID{
-                token::getNextID(env, issuer, 0u, tfTransferable, xferFee)};
+                token::getNextID(env, issuer, 0u, tfTransferable, xferFee),
+            };
             env(token::mint(issuer, 0u), token::XferFee(xferFee), Txflags(tfTransferable));
             env.close();
 
@@ -7086,7 +7095,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // issuer creates two NFTs: one with and one without AutoTrustLine.
         std::uint16_t const xferFee = 5000;  // 5%
         UInt256 const nftAutoTrustID{
-            token::getNextID(env, issuer, 0u, tfTransferable | tfTrustLine, xferFee)};
+            token::getNextID(env, issuer, 0u, tfTransferable | tfTrustLine, xferFee),
+        };
         env(token::mint(issuer, 0u),
             token::XferFee(xferFee),
             Txflags(tfTransferable | tfTrustLine));

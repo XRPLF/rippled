@@ -290,7 +290,8 @@ doAccountTxHelp(rpc::Context& context, AccountTxArgs const& args)
         .marker = result.marker,
         .limit = args.limit,
         .bAdmin = isUnlimited(context.role),
-        .delegate = args.delegate};
+        .delegate = args.delegate,
+    };
 
     auto& db = context.app.getRelationalDatabase();
 
@@ -521,7 +522,9 @@ doAccountTx(rpc::JsonContext& context)
             return response;
         }
         args.marker = {
-            .ledgerSeq = token[jss::ledger].asUInt(), .txnSeq = token[jss::seq].asUInt()};
+            .ledgerSeq = token[jss::ledger].asUInt(),
+            .txnSeq = token[jss::seq].asUInt(),
+        };
     }
 
     if (params.isMember(jss::delegate))

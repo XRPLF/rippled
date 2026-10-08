@@ -527,13 +527,16 @@ public:
         };
 
         static constexpr std::array<std::pair<std::string_view, std::uint32_t>, 7> kAsFlags{
-            {{"defaultRipple", asfDefaultRipple},
-             {"depositAuth", asfDepositAuth},
-             {"disallowIncomingXRP", asfDisallowXRP},
-             {"globalFreeze", asfGlobalFreeze},
-             {"noFreeze", asfNoFreeze},
-             {"requireAuthorization", asfRequireAuth},
-             {"requireDestinationTag", asfRequireDest}}};
+            {
+                {"defaultRipple", asfDefaultRipple},
+                {"depositAuth", asfDepositAuth},
+                {"disallowIncomingXRP", asfDisallowXRP},
+                {"globalFreeze", asfGlobalFreeze},
+                {"noFreeze", asfNoFreeze},
+                {"requireAuthorization", asfRequireAuth},
+                {"requireDestinationTag", asfRequireDest},
+            },
+        };
 
         for (auto& asf : kAsFlags)
         {
@@ -556,10 +559,13 @@ public:
 
         static constexpr std::array<std::pair<std::string_view, std::uint32_t>, 4>
             kDisallowIncomingFlags{
-                {{"disallowIncomingCheck", asfDisallowIncomingCheck},
-                 {"disallowIncomingNFTokenOffer", asfDisallowIncomingNFTokenOffer},
-                 {"disallowIncomingPayChan", asfDisallowIncomingPayChan},
-                 {"disallowIncomingTrustline", asfDisallowIncomingTrustline}}};
+                {
+                    {"disallowIncomingCheck", asfDisallowIncomingCheck},
+                    {"disallowIncomingNFTokenOffer", asfDisallowIncomingNFTokenOffer},
+                    {"disallowIncomingPayChan", asfDisallowIncomingPayChan},
+                    {"disallowIncomingTrustline", asfDisallowIncomingTrustline},
+                },
+        };
 
         for (auto& asf : kDisallowIncomingFlags)
         {

@@ -628,8 +628,7 @@ TrustSet::doApply()
                     sle,
                     preFeeBalance_,
                     sponsorSle,
-                    {},
-                    j_,
+                    {} j_,
                     tecINSUF_RESERVE_LINE);
                 !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
             {

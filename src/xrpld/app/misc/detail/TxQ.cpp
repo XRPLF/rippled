@@ -1008,7 +1008,8 @@ TxQ::apply(
             // If the transaction is queueable, create the multiTxn
             // object to hold the info we need to adjust for prior txns.
             TER const ter{
-                canBeHeld(*tx, flags, view, sleAccount, accountIter, replacedTxIter, lock)};
+                canBeHeld(*tx, flags, view, sleAccount, accountIter, replacedTxIter, lock),
+            };
             if (!isTesSuccess(ter))
                 return {ter, false};
 
@@ -1828,7 +1829,8 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> co
         .fee = mulDiv(fee, baseFee, kBaseLevel)
                    .value_or(XRPAmount(std::numeric_limits<std::int64_t>::max())),
         .accountSeq = accountSeq,
-        .availableSeq = availableSeq};
+        .availableSeq = availableSeq,
+    };
 }
 
 std::vector<TxQ::TxDetails>

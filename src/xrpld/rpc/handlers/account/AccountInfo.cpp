@@ -119,21 +119,22 @@ doAccountInfo(rpc::JsonContext& context)
 
     // Flags that are always reported.
     static constexpr auto kAccountRootFlags =
-        std::to_array<std::pair<std::string_view, LedgerSpecificFlags>>(
-            {{"allowTrustLineClawback", lsfAllowTrustLineClawback},
-             {"defaultRipple", lsfDefaultRipple},
-             {"depositAuth", lsfDepositAuth},
-             {"disableMasterKey", lsfDisableMaster},
-             {"disallowIncomingCheck", lsfDisallowIncomingCheck},
-             {"disallowIncomingNFTokenOffer", lsfDisallowIncomingNFTokenOffer},
-             {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
-             {"disallowIncomingTrustline", lsfDisallowIncomingTrustline},
-             {"disallowIncomingXRP", lsfDisallowXRP},
-             {"globalFreeze", lsfGlobalFreeze},
-             {"noFreeze", lsfNoFreeze},
-             {"passwordSpent", lsfPasswordSpent},
-             {"requireAuthorization", lsfRequireAuth},
-             {"requireDestinationTag", lsfRequireDestTag}});
+        std::to_array<std::pair<std::string_view, LedgerSpecificFlags>>({
+            {"allowTrustLineClawback", lsfAllowTrustLineClawback},
+            {"defaultRipple", lsfDefaultRipple},
+            {"depositAuth", lsfDepositAuth},
+            {"disableMasterKey", lsfDisableMaster},
+            {"disallowIncomingCheck", lsfDisallowIncomingCheck},
+            {"disallowIncomingNFTokenOffer", lsfDisallowIncomingNFTokenOffer},
+            {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
+            {"disallowIncomingTrustline", lsfDisallowIncomingTrustline},
+            {"disallowIncomingXRP", lsfDisallowXRP},
+            {"globalFreeze", lsfGlobalFreeze},
+            {"noFreeze", lsfNoFreeze},
+            {"passwordSpent", lsfPasswordSpent},
+            {"requireAuthorization", lsfRequireAuth},
+            {"requireDestinationTag", lsfRequireDestTag},
+        });
 
     // Flags that are only reported when their amendment is enabled. This can't be `constexpr`,
     // since the amendment IDs are computed at runtime.

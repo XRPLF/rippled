@@ -729,11 +729,15 @@ ValidatorList::buildBlobInfos(
     blobInfos[current.sequence] = {
         .blob = current.rawBlob,
         .signature = current.rawSignature,
-        .manifest = current.rawManifest};
+        .manifest = current.rawManifest,
+    };
     for (auto const& [sequence, vl] : remaining)
     {
         blobInfos[sequence] = {
-            .blob = vl.rawBlob, .signature = vl.rawSignature, .manifest = vl.rawManifest};
+            .blob = vl.rawBlob,
+            .signature = vl.rawSignature,
+            .manifest = vl.rawManifest,
+        };
     }
 }
 

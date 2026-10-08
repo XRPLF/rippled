@@ -168,7 +168,11 @@ doAMMInfo(rpc::JsonContext& context)
         }
 
         return ValuesFromContextParams{
-            .accountID = accountID, .asset1 = *asset1, .asset2 = *asset2, .amm = amm};
+            .accountID = accountID,
+            .asset1 = *asset1,
+            .asset2 = *asset2,
+            .amm = amm,
+        };
     };
 
     auto const r = getValuesFromContextParams();

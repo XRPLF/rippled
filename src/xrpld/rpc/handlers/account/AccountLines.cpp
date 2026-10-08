@@ -146,7 +146,8 @@ doAccountLines(rpc::JsonContext& context)
         .accountID = accountID,
         .raPeerAccount = raPeerAccount,
         .ignoreDefault = ignoreDefault,
-        .foundCount = 0};
+        .foundCount = 0,
+    };
     UInt256 startAfter = beast::kZero;
     std::uint64_t startHint = 0;
 

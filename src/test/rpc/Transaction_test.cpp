@@ -779,13 +779,15 @@ class Transaction_test : public beast::unit_test::Suite
             expected.removeMember(jss::Amount);
         }
 
-        json::Value const result = {[&env, txn, apiVersion]() {
-            json::Value params{json::ValueType::Object};
-            params[jss::transaction] = to_string(txn->getTransactionID());
-            params[jss::binary] = false;
-            params[jss::api_version] = apiVersion;
-            return env.client().invoke("tx", params);
-        }()};
+        json::Value const result = {
+            [&env, txn, apiVersion]() {
+                json::Value params{json::ValueType::Object};
+                params[jss::transaction] = to_string(txn->getTransactionID());
+                params[jss::binary] = false;
+                params[jss::api_version] = apiVersion;
+                return env.client().invoke("tx", params);
+            }(),
+        };
 
         BEAST_EXPECT(result[jss::result][jss::status] == jss::success);
         if (apiVersion > 1)

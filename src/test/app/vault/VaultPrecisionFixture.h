@@ -164,7 +164,8 @@ protected:
             .coverRateMin = percentageToTenthBips(1),
             .coverDeposit = 10'000,
             .managementFeeRate = TenthBips16{100},
-            .coverRateLiquidation = xrpl::lending::kMaxCoverRate};
+            .coverRateLiquidation = xrpl::lending::kMaxCoverRate,
+        };
 
         // Build the vault + broker manually (rather than calling
         // createVaultAndBroker) so we can seed only the lender/depositor
@@ -176,10 +177,11 @@ protected:
         env.close();
         f.vaultKeylet = vaultKeylet;
 
-        env(vault.deposit(
-            {.depositor = f.lender,
-             .id = vaultKeylet.key,
-             .amount = asset(brokerParams.vaultDeposit)}));
+        env(vault.deposit({
+            .depositor = f.lender,
+            .id = vaultKeylet.key,
+            .amount = asset(brokerParams.vaultDeposit),
+        }));
         env.close();
 
         auto const brokerKeylet =

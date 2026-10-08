@@ -236,7 +236,7 @@ enum class AttestationMatch {
     // all of the fields match, except the dst field
     MatchExceptDst,
     // all of the fields match
-    Match
+    Match,
 };
 
 struct XChainClaimAttestation

@@ -172,13 +172,15 @@ class TransactionEntry_test : public beast::unit_test::Suite
                            std::string const expectedLedgerHash = "",
                            std::string const closeTimeIso = "") {
             // first request using ledger_index to lookup
-            json::Value const resIndex{[&env, index, &txhash, apiVersion]() {
-                json::Value params{json::ValueType::Object};
-                params[jss::ledger_index] = index;
-                params[jss::tx_hash] = txhash;
-                params[jss::api_version] = apiVersion;
-                return env.client().invoke("transaction_entry", params)[jss::result];
-            }()};
+            json::Value const resIndex{
+                [&env, index, &txhash, apiVersion]() {
+                    json::Value params{json::ValueType::Object};
+                    params[jss::ledger_index] = index;
+                    params[jss::tx_hash] = txhash;
+                    params[jss::api_version] = apiVersion;
+                    return env.client().invoke("transaction_entry", params)[jss::result];
+                }(),
+            };
 
             if (!BEAST_EXPECT(resIndex.isMember(jss::tx_json)))
                 return;
@@ -239,12 +241,15 @@ class TransactionEntry_test : public beast::unit_test::Suite
 
             // Use the command line form with the index.
             json::Value const clIndex{
-                env.rpc(apiVersion, "transaction_entry", txhash, std::to_string(index))};
+                env.rpc(apiVersion, "transaction_entry", txhash, std::to_string(index)),
+            };
             BEAST_EXPECT(clIndex["result"] == resIndex);
 
             // Use the command line form with the ledger_hash.
-            json::Value const clHash{env.rpc(
-                apiVersion, "transaction_entry", txhash, resIndex[jss::ledger_hash].asString())};
+            json::Value const clHash{
+                env.rpc(
+                    apiVersion, "transaction_entry", txhash, resIndex[jss::ledger_hash].asString()),
+            };
             BEAST_EXPECT(clHash["result"] == resIndex);
         };
 

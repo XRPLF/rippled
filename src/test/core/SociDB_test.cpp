@@ -97,11 +97,12 @@ public:
         testcase("sqliteFileNames");
         BasicConfig c;
         setupSQLiteConfig(c, getDatabasePath());
-        std::vector<std::pair<std::string, std::string>> const d(
-            {{"peerfinder", ".sqlite"},
-             {"state", ".db"},
-             {"random", ".db"},
-             {"validators", ".sqlite"}});
+        std::vector<std::pair<std::string, std::string>> const d({
+            {"peerfinder", ".sqlite"},
+            {"state", ".db"},
+            {"random", ".db"},
+            {"validators", ".sqlite"},
+        });
 
         for (auto const& i : d)
         {
@@ -254,7 +255,8 @@ public:
                 LedgerHash      CHARACTER(64) PRIMARY KEY,  \
                 LedgerSeq       BIGINT UNSIGNED             \
             );",
-                "CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);"};
+                "CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);",
+            };
             for (auto const c : dbInit)
                 s << c;
             char lh[65];

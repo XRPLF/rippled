@@ -192,12 +192,16 @@ getSeedFromRPC(json::Value const& params, json::Value& error)
     static SeedMatchT const kSeedTypes[]{
         {jss::passphrase.cStr(), [](std::string const& s) { return parseGenericSeed(s); }},
         {jss::seed.cStr(), [](std::string const& s) { return parseBase58<Seed>(s); }},
-        {jss::seed_hex.cStr(), [](std::string const& s) {
-             UInt128 i;
-             if (i.parseHex(s))
-                 return std::optional<Seed>(Slice(i.data(), i.size()));
-             return std::optional<Seed>{};
-         }}};
+        {
+            jss::seed_hex.cStr(),
+            [](std::string const& s) {
+                UInt128 i;
+                if (i.parseHex(s))
+                    return std::optional<Seed>(Slice(i.data(), i.size()));
+                return std::optional<Seed>{};
+            },
+        },
+    };
 
     // Identify which seed type is in use.
     SeedMatchT const* seedType = nullptr;
@@ -245,7 +249,11 @@ keypairForSignature(json::Value const& params, json::Value& error, unsigned int 
 
     // All of the secret types we allow, but only one at a time.
     static char const* const kSecretTypes[]{
-        jss::passphrase.cStr(), jss::secret.cStr(), jss::seed.cStr(), jss::seed_hex.cStr()};
+        jss::passphrase.cStr(),
+        jss::secret.cStr(),
+        jss::seed.cStr(),
+        jss::seed_hex.cStr(),
+    };
 
     // Identify which secret type is in use.
     char const* secretType = nullptr;

@@ -258,18 +258,21 @@ findPathsRequest(
     resource::Consumer c;
 
     rpc::JsonContext context{
-        {.j = env.journal,
-         .app = app,
-         .loadType = loadType,
-         .netOps = app.getOPs(),
-         .ledgerMaster = app.getLedgerMaster(),
-         .consumer = c,
-         .role = Role::USER,
-         .coro = {},
-         .infoSub = {},
-         .apiVersion = rpc::kApiVersionIfUnspecified},
+        {
+            .j = env.journal,
+            .app = app,
+            .loadType = loadType,
+            .netOps = app.getOPs(),
+            .ledgerMaster = app.getLedgerMaster(),
+            .consumer = c,
+            .role = Role::USER,
+            .coro = {},
+            .infoSub = {},
+            .apiVersion = rpc::kApiVersionIfUnspecified,
+        },
         {},
-        {}};
+        {},
+    };
 
     json::Value params = json::ValueType::Object;
     params[jss::command] = "ripple_path_find";
@@ -670,20 +673,22 @@ issueHelperMPT(IssuerArgs const& args)
     using namespace jtx;
     if (args.limit)
     {
-        MPT const mpt = MPTTester(
-            {.env = args.env,
-             .issuer = args.issuer,
-             .holders = args.holders,
-             .transferFee = args.transferFee,
-             .maxAmt = args.limit});
+        MPT const mpt = MPTTester({
+            .env = args.env,
+            .issuer = args.issuer,
+            .holders = args.holders,
+            .transferFee = args.transferFee,
+            .maxAmt = args.limit,
+        });
         return mpt;
     }
 
-    MPT const mpt = MPTTester(
-        {.env = args.env,
-         .issuer = args.issuer,
-         .holders = args.holders,
-         .transferFee = args.transferFee});
+    MPT const mpt = MPTTester({
+        .env = args.env,
+        .issuer = args.issuer,
+        .holders = args.holders,
+        .transferFee = args.transferFee,
+    });
     return mpt;
 }
 

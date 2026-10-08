@@ -220,7 +220,7 @@ LoanSet::getValueFields()
         ~sfLoanOriginationFee,
         ~sfLoanServiceFee,
         ~sfLatePaymentFee,
-        ~sfClosePaymentFee
+        ~sfClosePaymentFee,
         // Overpayment fee is really a rate. Don't check it here.
     };
 

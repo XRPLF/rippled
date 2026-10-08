@@ -108,7 +108,12 @@ class Delegate_test : public beast::unit_test::Suite
         env.close();
 
         auto const permissions = std::vector<std::string>{
-            "Payment", "EscrowCreate", "EscrowFinish", "TrustlineAuthorize", "CheckCreate"};
+            "Payment",
+            "EscrowCreate",
+            "EscrowFinish",
+            "TrustlineAuthorize",
+            "CheckCreate",
+        };
         env(delegate::set(gw, alice, permissions));
         env.close();
 
@@ -182,17 +187,19 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(
                     gw,
                     alice,
-                    {"Payment",
-                     "EscrowCreate",
-                     "EscrowFinish",
-                     "EscrowCancel",
-                     "CheckCreate",
-                     "CheckCash",
-                     "CheckCancel",
-                     "DepositPreauth",
-                     "TrustSet",
-                     "NFTokenMint",
-                     "NFTokenBurn"}),
+                    {
+                        "Payment",
+                        "EscrowCreate",
+                        "EscrowFinish",
+                        "EscrowCancel",
+                        "CheckCreate",
+                        "CheckCash",
+                        "CheckCancel",
+                        "DepositPreauth",
+                        "TrustSet",
+                        "NFTokenMint",
+                        "NFTokenBurn",
+                    }),
                 Ter(temARRAY_TOO_LARGE));
         }
 
@@ -224,12 +231,14 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(
                     gw,
                     alice,
-                    {"Payment",
-                     "EscrowCreate",
-                     "EscrowFinish",
-                     "TrustlineAuthorize",
-                     "CheckCreate",
-                     "TrustlineAuthorize"}),
+                    {
+                        "Payment",
+                        "EscrowCreate",
+                        "EscrowFinish",
+                        "TrustlineAuthorize",
+                        "CheckCreate",
+                        "TrustlineAuthorize",
+                    }),
                 Ter(temMALFORMED));
         }
 
@@ -1939,10 +1948,12 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(
                 alice,
                 bob,
-                {"AccountDomainSet",
-                 "AccountEmailHashSet",
-                 "AccountMessageKeySet",
-                 "AccountTransferRateSet"}));
+                {
+                    "AccountDomainSet",
+                    "AccountEmailHashSet",
+                    "AccountMessageKeySet",
+                    "AccountTransferRateSet",
+                }));
             env.close();
             auto jtRate = rate(alice, 2.0);
             jtRate[sfDelegate] = bob.human();
@@ -1957,11 +1968,13 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(
                 alice,
                 bob,
-                {"AccountDomainSet",
-                 "AccountEmailHashSet",
-                 "AccountMessageKeySet",
-                 "AccountTransferRateSet",
-                 "AccountTickSizeSet"}));
+                {
+                    "AccountDomainSet",
+                    "AccountEmailHashSet",
+                    "AccountMessageKeySet",
+                    "AccountTransferRateSet",
+                    "AccountTickSizeSet",
+                }));
             env.close();
             env(jt);
             BEAST_EXPECT((*env.le(alice))[sfTickSize] == 8);
@@ -2184,30 +2197,33 @@ class Delegate_test : public beast::unit_test::Suite
             env.close();
 
             // delegate ledger object is not created yet
-            mpt.set(
-                {.account = alice,
-                 .flags = tfMPTLock,
-                 .delegate = bob,
-                 .err = terNO_DELEGATE_PERMISSION});
+            mpt.set({
+                .account = alice,
+                .flags = tfMPTLock,
+                .delegate = bob,
+                .err = terNO_DELEGATE_PERMISSION,
+            });
 
             // alice gives granular permission to bob of MPTokenIssuanceUnlock
             env(delegate::set(alice, bob, {"MPTokenIssuanceUnlock"}));
             env.close();
             // bob does not have lock permission
-            mpt.set(
-                {.account = alice,
-                 .flags = tfMPTLock,
-                 .delegate = bob,
-                 .err = terNO_DELEGATE_PERMISSION});
+            mpt.set({
+                .account = alice,
+                .flags = tfMPTLock,
+                .delegate = bob,
+                .err = terNO_DELEGATE_PERMISSION,
+            });
             // bob now has lock permission, but does not have unlock permission
             env(delegate::set(alice, bob, {"MPTokenIssuanceLock"}));
             env.close();
             mpt.set({.account = alice, .flags = tfMPTLock, .delegate = bob});
-            mpt.set(
-                {.account = alice,
-                 .flags = tfMPTUnlock,
-                 .delegate = bob,
-                 .err = terNO_DELEGATE_PERMISSION});
+            mpt.set({
+                .account = alice,
+                .flags = tfMPTUnlock,
+                .delegate = bob,
+                .err = terNO_DELEGATE_PERMISSION,
+            });
 
             // now bob can lock and unlock
             env(delegate::set(alice, bob, {"MPTokenIssuanceLock", "MPTokenIssuanceUnlock"}));
@@ -2235,22 +2251,24 @@ class Delegate_test : public beast::unit_test::Suite
             env.close();
             mpt.set({.account = alice, .flags = tfMPTLock, .delegate = bob});
             // bob does not have unlock permission
-            mpt.set(
-                {.account = alice,
-                 .flags = tfMPTUnlock,
-                 .delegate = bob,
-                 .err = terNO_DELEGATE_PERMISSION});
+            mpt.set({
+                .account = alice,
+                .flags = tfMPTUnlock,
+                .delegate = bob,
+                .err = terNO_DELEGATE_PERMISSION,
+            });
 
             // alice gives bob some unrelated permission with
             // MPTokenIssuanceLock
             env(delegate::set(alice, bob, {"NFTokenMint", "MPTokenIssuanceLock", "NFTokenBurn"}));
             env.close();
             // bob can not unlock
-            mpt.set(
-                {.account = alice,
-                 .flags = tfMPTUnlock,
-                 .delegate = bob,
-                 .err = terNO_DELEGATE_PERMISSION});
+            mpt.set({
+                .account = alice,
+                .flags = tfMPTUnlock,
+                .delegate = bob,
+                .err = terNO_DELEGATE_PERMISSION,
+            });
 
             // alice add MPTokenIssuanceSet to permissions
             env(delegate::set(
@@ -2301,11 +2319,12 @@ class Delegate_test : public beast::unit_test::Suite
             // tfMPTSetCanLock is a valid MPTokenIssuanceSet flag but is not
             // covered by the MPTokenIssuanceLock granular permission, so a
             // delegate holding only that permission cannot set it.
-            mpt.set(
-                {.account = alice,
-                 .flags = tfMPTSetCanLock,
-                 .delegate = bob,
-                 .err = terNO_DELEGATE_PERMISSION});
+            mpt.set({
+                .account = alice,
+                .flags = tfMPTSetCanLock,
+                .delegate = bob,
+                .err = terNO_DELEGATE_PERMISSION,
+            });
 
             // Notice: flags not defined in permissions.macro are not permitted for delegation.
             // Since preflight will check invalid flag for the tx, it is not reachable.

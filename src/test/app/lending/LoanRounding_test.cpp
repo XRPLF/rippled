@@ -76,7 +76,8 @@ private:
             .vaultDeposit = 10000,
             .debtMax = Number{0},
             .coverRateMin = TenthBips32{1000},
-            .coverRateLiquidation = TenthBips32{2500}};
+            .coverRateLiquidation = TenthBips32{2500},
+        };
 
         auto broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
@@ -457,7 +458,8 @@ private:
             .coverRateMin = TenthBips32{0},
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         BrokerInfo const broker = createVaultAndBroker(env, asset, lender, params);
 
         auto const loanKeylet = nextLoanKeylet(env, broker);
@@ -665,10 +667,12 @@ private:
                 env,
                 iouAsset,
                 lender,
-                {.vaultDeposit = 900'000,
-                 .debtMax = 0,
-                 .managementFeeRate = p.managementFeeRate,
-                 .vaultScale = p.vaultScale});
+                {
+                    .vaultDeposit = 900'000,
+                    .debtMax = 0,
+                    .managementFeeRate = p.managementFeeRate,
+                    .vaultScale = p.vaultScale,
+                });
 
             auto const brokerSle = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerSle);
@@ -740,7 +744,8 @@ private:
                 .managementFeeChange =
                     (loanSle ? Number{loanSle->at(sfManagementFeeOutstanding)} : Number{0}) -
                     managementFeeBefore,
-                .unit = Number{1, s.loanScale}};
+                .unit = Number{1, s.loanScale},
+            };
         };
 
         // Scenario 1: the original near-zero-rate principal reproduction
@@ -755,7 +760,8 @@ private:
             .overpayment = Number{49999998, -9},
             .overpaymentInterestRate = TenthBips32{1000},
             .overpaymentFeeRate = TenthBips32{1000},
-            .vaultScale = 1};
+            .vaultScale = 1,
+        };
 
         // With fixCleanup3_2_0 the stored principal lands exactly on the
         // ground-truth grid point: it is reduced by exactly the overpayment's
@@ -793,7 +799,8 @@ private:
             .overpayment = Number{214367363, -10},
             .overpaymentInterestRate = TenthBips32{0},
             .overpaymentFeeRate = TenthBips32{0},
-            .vaultScale = std::nullopt};
+            .vaultScale = std::nullopt,
+        };
 
         Result const feeFixed = runScenario(all_, feeCase);
         Result const feeLegacy = runScenario(all_ - fixCleanup3_2_0, feeCase);
@@ -853,10 +860,12 @@ private:
             env,
             iouAsset,
             lender,
-            {.vaultDeposit = 100'000,
-             .debtMax = 5000,
-             .managementFeeRate = TenthBips16{1000},
-             .vaultScale = 1});
+            {
+                .vaultDeposit = 100'000,
+                .debtMax = 5000,
+                .managementFeeRate = TenthBips16{1000},
+                .vaultScale = 1,
+            });
 
         auto const sleBroker = env.le(broker.brokerKeylet());
         if (!BEAST_EXPECT(sleBroker))
@@ -923,10 +932,11 @@ private:
             {.vaultDeposit = 1'000'000, .debtMax = 3'000'000, .coverDeposit = 1'000'000});
 
         Vault const v{env};
-        env(v.deposit(
-            {.depositor = depositorB,
-             .id = broker.vaultKeylet().key,
-             .amount = xrpAsset(3'000'000)}));
+        env(v.deposit({
+            .depositor = depositorB,
+            .id = broker.vaultKeylet().key,
+            .amount = xrpAsset(3'000'000),
+        }));
         env.close();
 
         auto const brokerSle = env.le(broker.brokerKeylet());
@@ -988,15 +998,18 @@ private:
                 env,
                 iouAsset,
                 iouLender,
-                {.vaultDeposit = 3'999'999,
-                 .debtMax = 4'000'000,
-                 .coverDeposit = 4'000'000,
-                 .managementFeeRate = TenthBips16{0}});
+                {
+                    .vaultDeposit = 3'999'999,
+                    .debtMax = 4'000'000,
+                    .coverDeposit = 4'000'000,
+                    .managementFeeRate = TenthBips16{0},
+                });
 
-            env(v.deposit(
-                {.depositor = iouDepositorB,
-                 .id = iouBroker.vaultKeylet().key,
-                 .amount = iouAsset(1)}));
+            env(v.deposit({
+                .depositor = iouDepositorB,
+                .id = iouBroker.vaultKeylet().key,
+                .amount = iouAsset(1),
+            }));
             env.close();
 
             auto const iouBrokerSle = env.le(iouBroker.brokerKeylet());
@@ -1040,10 +1053,11 @@ private:
             if (!BEAST_EXPECT(iouIssuanceBefore))
                 return;
             auto const iouSharesOutstandingBefore = iouIssuanceBefore->at(sfOutstandingAmount);
-            env(v.withdraw(
-                    {.depositor = iouLender,
-                     .id = iouBroker.vaultKeylet().key,
-                     .amount = oneIouShare}),
+            env(v.withdraw({
+                    .depositor = iouLender,
+                    .id = iouBroker.vaultKeylet().key,
+                    .amount = oneIouShare,
+                }),
                 fixed ? Ter(tesSUCCESS) : Ter(tecINVARIANT_FAILED));
             env.close();
 
@@ -1106,10 +1120,12 @@ private:
             env,
             iouAsset,
             lender,
-            {.vaultDeposit = 10'000'000,
-             .debtMax = 10'000'000,
-             .coverDeposit = 1'000'000,
-             .vaultScale = 10});
+            {
+                .vaultDeposit = 10'000'000,
+                .debtMax = 10'000'000,
+                .coverDeposit = 1'000'000,
+                .vaultScale = 10,
+            });
 
         // Draw all but 100 units: AssetsAvailable drops to 100 while
         // AssetsTotal stays at 1e7 (the loan is still an asset of the vault).
@@ -1177,7 +1193,8 @@ private:
             .coverRateMin = TenthBips32{0},
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
 
         BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender, brokerParams)};
 

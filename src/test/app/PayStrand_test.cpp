@@ -108,7 +108,7 @@ class ElementComboIter
             PrevCur,
             PrevIss,
             Boundary,
-            Last
+            Last,
         };
 
     std::uint16_t state_ = 0;
@@ -682,8 +682,10 @@ struct PayStrand_test : public beast::unit_test::Suite
                 env,
                 xrpIssue(),
                 usd,
-                STPath({STPathElement{
-                    STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()}}),
+                STPath({
+                    STPathElement{
+                        STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()},
+                }),
                 tesSUCCESS,
                 D{.src = alice, .dst = gw, .currency = usdC},
                 B{usd, XRP, std::nullopt},

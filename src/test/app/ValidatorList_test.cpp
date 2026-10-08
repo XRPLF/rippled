@@ -127,8 +127,9 @@ private:
         return {
             .masterPublic = masterPublic,
             .signingPublic = signingKeys.first,
-            .manifest = base64Encode(makeManifestString(
-                masterPublic, secret, signingKeys.first, signingKeys.second, 1))};
+            .manifest = base64Encode(
+                makeManifestString(masterPublic, secret, signingKeys.first, signingKeys.second, 1)),
+        };
     }
 
     static std::string
@@ -251,15 +252,16 @@ private:
             configList.push_back(randomNode());
 
         // Correct configuration
-        std::vector<std::string> cfgKeys(
-            {format(configList[0]),
-             format(configList[1], " Comment"),
-             format(configList[2], " Multi Word Comment"),
-             format(configList[3], "    Leading Whitespace"),
-             format(configList[4], " Trailing Whitespace    "),
-             format(configList[5], "    Leading & Trailing Whitespace    "),
-             format(configList[6], "    Leading, Trailing & Internal    Whitespace    "),
-             format(configList[7], "    ")});
+        std::vector<std::string> cfgKeys({
+            format(configList[0]),
+            format(configList[1], " Comment"),
+            format(configList[2], " Multi Word Comment"),
+            format(configList[3], "    Leading Whitespace"),
+            format(configList[4], " Trailing Whitespace    "),
+            format(configList[5], "    Leading & Trailing Whitespace    "),
+            format(configList[6], "    Leading, Trailing & Internal    Whitespace    "),
+            format(configList[7], "    "),
+        });
 
         {
             ManifestCache manifests;
@@ -475,7 +477,10 @@ private:
             auto legitKey2 = randomMasterKey();
 
             std::vector<std::string> const cfgPublishers = {
-                strHex(pubRevokedPublic), strHex(legitKey1), strHex(legitKey2)};
+                strHex(pubRevokedPublic),
+                strHex(legitKey1),
+                strHex(legitKey2),
+            };
             BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
 
             BEAST_EXPECT(!trustedKeys->trustedPublisher(pubRevokedPublic));
@@ -516,7 +521,9 @@ private:
             auto legitKey = randomMasterKey();
 
             std::vector<std::string> const cfgPublishers = {
-                strHex(pubRevokedPublic), strHex(legitKey)};
+                strHex(pubRevokedPublic),
+                strHex(legitKey),
+            };
             BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers, std::size_t(2)));
 
             BEAST_EXPECT(!trustedKeys->trustedPublisher(pubRevokedPublic));
@@ -645,8 +652,10 @@ private:
             trustedKeys->applyLists(
                 manifest1,
                 version,
-                {{.blob = expiredblob, .signature = expiredSig, .manifest = {}},
-                 {.blob = blob2, .signature = sig2, .manifest = {}}},
+                {
+                    {.blob = expiredblob, .signature = expiredSig, .manifest = {}},
+                    {.blob = blob2, .signature = sig2, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Expired,
@@ -682,8 +691,10 @@ private:
             trustedKeys->applyLists(
                 manifest1,
                 version2,
-                {{.blob = blob7, .signature = sig7, .manifest = {}},
-                 {.blob = blob8, .signature = sig8, .manifest = {}}},
+                {
+                    {.blob = blob7, .signature = sig7, .manifest = {}},
+                    {.blob = blob8, .signature = sig8, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Pending,
@@ -718,8 +729,10 @@ private:
             trustedKeys->applyLists(
                 manifest1,
                 version,
-                {{.blob = blob6a, .signature = sig6a, .manifest = {}},
-                 {.blob = blob6, .signature = sig6, .manifest = {}}},
+                {
+                    {.blob = blob6a, .signature = sig6a, .manifest = {}},
+                    {.blob = blob6, .signature = sig6, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Pending,
@@ -734,8 +747,10 @@ private:
             trustedKeys->applyLists(
                 manifest1,
                 version,
-                {{.blob = blob7, .signature = sig7, .manifest = {}},
-                 {.blob = blob6, .signature = sig6, .manifest = {}}},
+                {
+                    {.blob = blob7, .signature = sig7, .manifest = {}},
+                    {.blob = blob6, .signature = sig6, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::KnownSequence,
@@ -750,8 +765,10 @@ private:
             trustedKeys->applyLists(
                 "",
                 version,
-                {{.blob = blob7, .signature = sig7, .manifest = {}},
-                 {.blob = blob6, .signature = sig6, .manifest = {}}},
+                {
+                    {.blob = blob7, .signature = sig7, .manifest = {}},
+                    {.blob = blob6, .signature = sig6, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Invalid,
@@ -761,8 +778,10 @@ private:
             trustedKeys->applyLists(
                 base64Encode("not a manifest"),
                 version,
-                {{.blob = blob7, .signature = sig7, .manifest = {}},
-                 {.blob = blob6, .signature = sig6, .manifest = {}}},
+                {
+                    {.blob = blob7, .signature = sig7, .manifest = {}},
+                    {.blob = blob6, .signature = sig6, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Invalid,
@@ -824,8 +843,10 @@ private:
             trustedKeys->applyLists(
                 manifest1,
                 version,
-                {{.blob = blob2, .signature = sig2, .manifest = {}},
-                 {.blob = blob3, .signature = sig3, .manifest = {}}},
+                {
+                    {.blob = blob2, .signature = sig2, .manifest = {}},
+                    {.blob = blob3, .signature = sig3, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Stale,
@@ -845,9 +866,11 @@ private:
             trustedKeys->applyLists(
                 manifest2,
                 version,
-                {{.blob = blob2, .signature = sig2, .manifest = manifest1},
-                 {.blob = blob3, .signature = sig3, .manifest = manifest1},
-                 {.blob = blob4, .signature = sig4, .manifest = {}}},
+                {
+                    {.blob = blob2, .signature = sig2, .manifest = manifest1},
+                    {.blob = blob3, .signature = sig3, .manifest = manifest1},
+                    {.blob = blob4, .signature = sig4, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Stale,
@@ -887,8 +910,10 @@ private:
             trustedKeys->applyLists(
                 manifest1,
                 version,
-                {{.blob = blob7, .signature = sig7, .manifest = {}},
-                 {.blob = blob8, .signature = sig8, .manifest = {}}},
+                {
+                    {.blob = blob7, .signature = sig7, .manifest = {}},
+                    {.blob = blob8, .signature = sig8, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Invalid,
@@ -942,8 +967,10 @@ private:
             trustedKeys->applyLists(
                 manifest2,
                 version,
-                {{.blob = blob8, .signature = sig8, .manifest = manifest1},
-                 {.blob = blob8, .signature = sig82, .manifest = {}}},
+                {
+                    {.blob = blob8, .signature = sig8, .manifest = manifest1},
+                    {.blob = blob8, .signature = sig82, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Invalid,
@@ -1968,10 +1995,13 @@ private:
                     .publisherPublic = publisherPublic,
                     .manifest = manifest,
                     .blobs =
-                        {{.blob = blob1, .signature = sig1, .manifest = {}},
-                         {.blob = blob2, .signature = sig2, .manifest = {}}},
+                        {
+                            {.blob = blob1, .signature = sig1, .manifest = {}},
+                            {.blob = blob2, .signature = sig2, .manifest = {}},
+                        },
                     .version = version,
-                    .expirations = {expiration1, expiration2}};
+                    .expirations = {expiration1, expiration2},
+                };
             };
 
             // Configure two publishers and prepare 2 lists

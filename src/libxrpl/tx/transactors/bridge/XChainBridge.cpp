@@ -519,7 +519,7 @@ enum class OnTransferFail {
     /**
      * Keep the claim if the transfer fails
      */
-    KeepClaim
+    KeepClaim,
 };
 
 struct FinalizeClaimHelperResult
@@ -912,7 +912,10 @@ applyClaimAttestations(
         psb.update(sleClaimID);
 
         return ScopeResult{
-            newAttResult, (*sleClaimID)[sfSignatureReward], (*sleClaimID)[sfAccount]};
+            newAttResult,
+            (*sleClaimID)[sfSignatureReward],
+            (*sleClaimID)[sfAccount],
+        };
     }();
 
     if (!scopeResult.has_value())
@@ -1059,7 +1062,8 @@ applyCreateAccountAttestations(
             if (sleClaimID)
             {
                 return XChainCreateAccountAttestations{
-                    sleClaimID->getFieldArray(sfXChainCreateAccountAttestations)};
+                    sleClaimID->getFieldArray(sfXChainCreateAccountAttestations),
+                };
             }
             return XChainCreateAccountAttestations{};
         }();
@@ -1933,7 +1937,8 @@ XChainCommit::doApply()
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
         .account = accountID_,
         .preFeeBalance = preFeeBalance_,
-        .postFeeBalance = (*sleAccount)[sfBalance]};
+        .postFeeBalance = (*sleAccount)[sfBalance],
+    };
 
     auto const thTer = transferHelper(
         psb,
@@ -2209,7 +2214,8 @@ XChainCreateAccountCommit::doApply()
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
         .account = accountID_,
         .preFeeBalance = preFeeBalance_,
-        .postFeeBalance = (*sle)[sfBalance]};
+        .postFeeBalance = (*sle)[sfBalance],
+    };
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,

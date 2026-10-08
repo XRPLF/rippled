@@ -393,8 +393,7 @@ SponsorshipSet::doApply()
                 sponsorAccSle,
                 (*sponsorAccSle)[sfBalance]->xrp(),
                 *reserveSponsorAccSle,
-                {},
-                ctx_.journal,
+                {} ctx_.journal,
                 tecUNFUNDED);
             !isTesSuccess(ret))
         {

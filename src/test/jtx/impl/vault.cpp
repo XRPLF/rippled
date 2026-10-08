@@ -49,13 +49,14 @@ Vault::createClosedEnded(CreateClosedEndedArgs const& args) const
 {
     auto const sub = env.now() + args.subscriptionOffset;
     auto const red = sub + args.investmentWindow;
-    auto [jv, keylet] = create(
-        {.owner = args.owner,
-         .asset = args.asset,
-         .flags = args.flags,
-         .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
-         .subscriptionDate = static_cast<std::uint32_t>(sub.time_since_epoch().count()),
-         .redemptionDate = static_cast<std::uint32_t>(red.time_since_epoch().count())});
+    auto [jv, keylet] = create({
+        .owner = args.owner,
+        .asset = args.asset,
+        .flags = args.flags,
+        .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+        .subscriptionDate = static_cast<std::uint32_t>(sub.time_since_epoch().count()),
+        .redemptionDate = static_cast<std::uint32_t>(red.time_since_epoch().count()),
+    });
     return {jv, keylet, sub};
 }
 

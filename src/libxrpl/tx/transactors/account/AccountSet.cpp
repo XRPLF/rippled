@@ -243,18 +243,20 @@ AccountSet::doApply()
     bool const bSetDisallowXRP{tx.isFlag(tfDisallowXRP) || (uSetFlag == asfDisallowXRP)};
     bool const bClearDisallowXRP{tx.isFlag(tfAllowXRP) || (uClearFlag == asfDisallowXRP)};
 
-    bool const sigWithMaster{[&tx, &acct = accountID_]() {
-        auto const spk = tx.getSigningPubKey();
+    bool const sigWithMaster{
+        [&tx, &acct = accountID_]() {
+            auto const spk = tx.getSigningPubKey();
 
-        if (publicKeyType(makeSlice(spk)))
-        {
-            PublicKey const signingPubKey(makeSlice(spk));
+            if (publicKeyType(makeSlice(spk)))
+            {
+                PublicKey const signingPubKey(makeSlice(spk));
 
-            if (calcAccountID(signingPubKey) == acct)
-                return true;
-        }
-        return false;
-    }()};
+                if (calcAccountID(signingPubKey) == acct)
+                    return true;
+            }
+            return false;
+        }(),
+    };
 
     //
     // RequireAuth

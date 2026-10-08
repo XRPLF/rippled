@@ -1584,7 +1584,8 @@ public:
 
         FeatureBitset const all{
             jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
-            featurePermissionedDEX};
+                featurePermissionedDEX,
+        };
 
         Env env(*this, all);
         PermissionedDEX const permDex(env);
@@ -1709,7 +1710,8 @@ public:
 
         FeatureBitset const all{
             jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
-            featurePermissionedDEX};
+                featurePermissionedDEX,
+        };
 
         Env env(*this, all);
         PermissionedDEX const permDex(env);

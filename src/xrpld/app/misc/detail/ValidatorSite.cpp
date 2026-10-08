@@ -442,7 +442,8 @@ ValidatorSite::parseJsonResponse(
         Site::Status{
             .refreshed = ClockType::now(),
             .disposition = applyResult.bestDisposition(),
-            .message = ""});
+            .message = "",
+        });
 
     for (auto const& [disp, count] : applyResult.dispositions)
     {
@@ -557,7 +558,8 @@ ValidatorSite::onSiteFetch(
                 Site::Status{
                     .refreshed = ClockType::now(),
                     .disposition = ListDisposition::Invalid,
-                    .message = errMsg});
+                    .message = errMsg,
+                });
             if (retry)
                 sites_[siteIdx].nextRefresh = ClockType::now() + kErrorRetryInterval;
 
@@ -653,7 +655,8 @@ ValidatorSite::onTextFetch(
                 Site::Status{
                     .refreshed = ClockType::now(),
                     .disposition = ListDisposition::Invalid,
-                    .message = ex.what()});
+                    .message = ex.what(),
+                });
         }
         sites_[siteIdx].activeResource.reset();
     }

@@ -1837,7 +1837,8 @@ Consensus<Adaptor>::createDisputes(TxSetT const& o, std::unique_ptr<std::strings
             tx,
             result_->txns.exists(txID),
             std::max(prevProposers_, currPeerPositions_.size()),
-            j_};
+            j_,
+        };
 
         // Update all of the available peer's votes on the disputed transaction
         for (auto const& [nodeId, peerPos] : currPeerPositions_)

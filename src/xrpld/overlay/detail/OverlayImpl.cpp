@@ -1272,10 +1272,11 @@ OverlayImpl::getManifestsMessage()
         app_.getValidatorManifests().forEachManifest(
             [&cached](std::size_t s) { cached.reserve(s); },
             [&cached](Manifest const& manifest) {
-                cached.push_back(
-                    {.masterKey = manifest.masterKey,
-                     .serialized = manifest.serialized,
-                     .hash = manifest.hash()});
+                cached.push_back({
+                    .masterKey = manifest.masterKey,
+                    .serialized = manifest.serialized,
+                    .hash = manifest.hash(),
+                });
             });
 
         // Phase 2: no cache lock held, so trust checks are safe. Include every

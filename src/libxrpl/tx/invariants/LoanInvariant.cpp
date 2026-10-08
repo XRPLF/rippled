@@ -125,13 +125,14 @@ ValidLoan::finalize(
             return false;
         }
         // Must not be negative - STNumber
-        for (auto const field :
-             {&sfLoanServiceFee,
-              &sfLatePaymentFee,
-              &sfClosePaymentFee,
-              &sfPrincipalOutstanding,
-              &sfTotalValueOutstanding,
-              &sfManagementFeeOutstanding})
+        for (auto const field : {
+                 &sfLoanServiceFee,
+                 &sfLatePaymentFee,
+                 &sfClosePaymentFee,
+                 &sfPrincipalOutstanding,
+                 &sfTotalValueOutstanding,
+                 &sfManagementFeeOutstanding,
+             })
         {
             if (after->at(*field) < 0)
             {

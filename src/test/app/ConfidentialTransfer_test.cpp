@@ -997,9 +997,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Account const alice("alice");
             MPTTester mptAlice(env, alice, {.holders = {}});
 
-            mptAlice.create(
-                {.ownerCount = 1,
-                 .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance});
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
+            });
 
             mptAlice.set({
                 .account = alice,
@@ -1474,10 +1475,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.generateKeyPair(bob);
             mptAlice.generateKeyPair(auditor);
 
-            mptAlice.set(
-                {.account = alice,
-                 .issuerPubKey = mptAlice.getPubKey(alice),
-                 .auditorPubKey = mptAlice.getPubKey(auditor)});
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+                .auditorPubKey = mptAlice.getPubKey(auditor),
+            });
 
             // no auditor encrypted amt provided
             mptAlice.convert({
@@ -1550,10 +1552,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.generateKeyPair(bob);
             mptAlice.generateKeyPair(auditor);
 
-            mptAlice.set(
-                {.account = alice,
-                 .issuerPubKey = mptAlice.getPubKey(alice),
-                 .auditorPubKey = mptAlice.getPubKey(auditor)});
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+                .auditorPubKey = mptAlice.getPubKey(auditor),
+            });
 
             mptAlice.convert({
                 .account = bob,
@@ -2032,8 +2035,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{.account = bob, .payAmount = 100, .convertAmount = 60},
-             {.account = carol, .payAmount = 50, .convertAmount = 20}}};
+            {
+                {.account = bob, .payAmount = 100, .convertAmount = 60},
+                {.account = carol, .payAmount = 50, .convertAmount = 20},
+            }};
         auto& mptAlice = confEnv.mpt;
 
         // bob sends 10 to carol
@@ -2075,8 +2080,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{.account = bob, .payAmount = 100, .convertAmount = 60},
-             {.account = carol, .payAmount = 50, .convertAmount = 20}},
+            {
+                {.account = bob, .payAmount = 100, .convertAmount = 60},
+                {.account = carol, .payAmount = 50, .convertAmount = 20},
+            },
             tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             auditor};
         auto& mptAlice = confEnv.mpt;
@@ -2353,10 +2360,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.generateKeyPair(carol);
             mptAlice.generateKeyPair(auditor);
 
-            mptAlice.set(
-                {.account = alice,
-                 .issuerPubKey = mptAlice.getPubKey(alice),
-                 .auditorPubKey = mptAlice.getPubKey(auditor)});
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+                .auditorPubKey = mptAlice.getPubKey(auditor),
+            });
             mptAlice.pay(alice, bob, 100);
             mptAlice.pay(alice, carol, 50);
 
@@ -2737,8 +2745,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 60},
-                 {.account = carol, .payAmount = 50, .convertAmount = 20}},
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 60},
+                    {.account = carol, .payAmount = 50, .convertAmount = 20},
+                },
                 tfMPTCanLock | tfMPTCanHoldConfidentialBalance};
             auto& mptAlice = confEnv.mpt;
 
@@ -2761,8 +2771,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 60},
-                 {.account = carol, .payAmount = 50, .convertAmount = 20}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 60},
+                    {.account = carol, .payAmount = 50, .convertAmount = 20},
+                }};
             auto& mptAlice = confEnv.mpt;
 
             BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
@@ -2794,8 +2806,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 60},
-                 {.account = carol, .payAmount = 50, .convertAmount = 20}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 60},
+                    {.account = carol, .payAmount = 50, .convertAmount = 20},
+                }};
             auto& mptAlice = confEnv.mpt;
 
             mptAlice.send({
@@ -2850,10 +2864,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.generateKeyPair(carol);
             mptAlice.generateKeyPair(auditor);
 
-            mptAlice.set(
-                {.account = alice,
-                 .issuerPubKey = mptAlice.getPubKey(alice),
-                 .auditorPubKey = mptAlice.getPubKey(auditor)});
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+                .auditorPubKey = mptAlice.getPubKey(auditor),
+            });
             mptAlice.pay(alice, bob, 100);
             mptAlice.pay(alice, carol, 50);
 
@@ -2893,8 +2908,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{.account = bob, .payAmount = 1000, .convertAmount = 60},
-             {.account = carol, .payAmount = 1000, .convertAmount = 50}}};
+            {
+                {.account = bob, .payAmount = 1000, .convertAmount = 60},
+                {.account = carol, .payAmount = 1000, .convertAmount = 50},
+            }};
         auto& mptAlice = confEnv.mpt;
 
         {
@@ -2942,8 +2959,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             ConfidentialEnv zeroEnv{
                 env2,
                 alice2,
-                {{.account = bob2, .payAmount = 100, .convertAmount = 0},
-                 {.account = carol2, .payAmount = 50, .convertAmount = 0}}};
+                {
+                    {.account = bob2, .payAmount = 100, .convertAmount = 0},
+                    {.account = carol2, .payAmount = 50, .convertAmount = 0},
+                }};
             auto& mptAlice2 = zeroEnv.mpt;
 
             // Trying to send any amount with 0 spending balance must fail:
@@ -4113,10 +4132,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         mptAlice.generateKeyPair(carol);
         mptAlice.generateKeyPair(dave);
         mptAlice.generateKeyPair(auditor);
-        mptAlice.set(
-            {.account = alice,
-             .issuerPubKey = mptAlice.getPubKey(alice),
-             .auditorPubKey = mptAlice.getPubKey(auditor)});
+        mptAlice.set({
+            .account = alice,
+            .issuerPubKey = mptAlice.getPubKey(alice),
+            .auditorPubKey = mptAlice.getPubKey(auditor),
+        });
 
         // setup bob.
         // after setup, bob's spending balance is 60, inbox balance is 0.
@@ -5005,10 +5025,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.generateKeyPair(alice);
             mptAlice.generateKeyPair(bob);
             mptAlice.generateKeyPair(auditor);
-            mptAlice.set(
-                {.account = alice,
-                 .issuerPubKey = mptAlice.getPubKey(alice),
-                 .auditorPubKey = mptAlice.getPubKey(auditor)});
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+                .auditorPubKey = mptAlice.getPubKey(auditor),
+            });
 
             mptAlice.convert({
                 .account = bob,
@@ -5476,8 +5497,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         ConfidentialEnv confEnv{
             env,
             issuer,
-            {{.account = alice, .payAmount = 1000, .convertAmount = aliceBalance},
-             {.account = bob, .payAmount = 1000, .convertAmount = 30}}};
+            {
+                {.account = alice, .payAmount = 1000, .convertAmount = aliceBalance},
+                {.account = bob, .payAmount = 1000, .convertAmount = 30},
+            }};
         auto& mptIssuer = confEnv.mpt;
 
         std::pair<int, TER> errors = aliceAmount > aliceBalance
@@ -5716,9 +5739,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             alice,
             {
                 {.account = bob, .payAmount = 1000, .convertAmount = bobBalance},
-                {.account = carol,
-                 .payAmount = 1000,
-                 .convertAmount = std::max(convertAmount, bobBalance + 1)},
+                {
+                    .account = carol,
+                    .payAmount = 1000,
+                    .convertAmount = std::max(convertAmount, bobBalance + 1),
+                },
             }};
         auto& mptAlice = confEnv.mpt;
 
@@ -6377,8 +6402,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{.account = bob, .payAmount = 100, .convertAmount = 100},
-             {.account = carol, .payAmount = 50, .convertAmount = 50}}};
+            {
+                {.account = bob, .payAmount = 100, .convertAmount = 100},
+                {.account = carol, .payAmount = 50, .convertAmount = 50},
+            }};
         auto& mptAlice = confEnv.mpt;
 
         // Bob sends 10 to carol.  The send amount (10) and Bob's remaining balance
@@ -6526,8 +6553,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 60},
-                 {.account = carol, .payAmount = 50, .convertAmount = 30}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 60},
+                    {.account = carol, .payAmount = 50, .convertAmount = 30},
+                }};
             auto& mptAlice = confEnv.mpt;
 
             // sender's encrypted amount has an invalid coordinate
@@ -6606,8 +6635,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 60},
-                 {.account = carol, .payAmount = 50, .convertAmount = 30}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 60},
+                    {.account = carol, .payAmount = 50, .convertAmount = 30},
+                }};
             auto& mptAlice = confEnv.mpt;
 
             Buffer badProof(kEcSendProofLength);
@@ -6633,8 +6664,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 60},
-                 {.account = carol, .payAmount = 50, .convertAmount = 30}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 60},
+                    {.account = carol, .payAmount = 50, .convertAmount = 30},
+                }};
             auto& mptAlice = confEnv.mpt;
 
             // getTrivialCiphertext() has both C1 and C2 as valid (but trivial)
@@ -6728,8 +6761,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{.account = bob, .payAmount = 100, .convertAmount = 60},
-             {.account = carol, .payAmount = 50, .convertAmount = 30}}};
+            {
+                {.account = bob, .payAmount = 100, .convertAmount = 60},
+                {.account = carol, .payAmount = 50, .convertAmount = 30},
+            }};
         auto& mptAlice = confEnv.mpt;
 
         // The x-coordinate of the NIST P-256 generator point — a real,
@@ -6913,8 +6948,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{.account = bob, .payAmount = 100, .convertAmount = 100},
-             {.account = carol, .payAmount = 50, .convertAmount = 50}}};
+            {
+                {.account = bob, .payAmount = 100, .convertAmount = 100},
+                {.account = carol, .payAmount = 50, .convertAmount = 50},
+            }};
         auto& mptAlice = confEnv.mpt;
 
         auto const bobSpendingBefore =
@@ -6973,8 +7010,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{.account = bob, .payAmount = 100, .convertAmount = 50},
-             {.account = carol, .payAmount = 50, .convertAmount = 50}},
+            {
+                {.account = bob, .payAmount = 100, .convertAmount = 50},
+                {.account = carol, .payAmount = 50, .convertAmount = 50},
+            },
             tfMPTCanLock | tfMPTCanHoldConfidentialBalance | tfMPTCanTransfer,
             auditor};
         auto& mptAlice = confEnv.mpt;
@@ -7106,18 +7145,20 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             };
 
             checkFee(bob, [&]() {
-                mptAlice.convert(
-                    {.account = bob,
-                     .amt = 50,
-                     .holderPubKey = mptAlice.getPubKey(bob),
-                     .fee = expectedFee});
+                mptAlice.convert({
+                    .account = bob,
+                    .amt = 50,
+                    .holderPubKey = mptAlice.getPubKey(bob),
+                    .fee = expectedFee,
+                });
             });
             checkFee(carol, [&]() {
-                mptAlice.convert(
-                    {.account = carol,
-                     .amt = 10,
-                     .holderPubKey = mptAlice.getPubKey(carol),
-                     .fee = expectedFee});
+                mptAlice.convert({
+                    .account = carol,
+                    .amt = 10,
+                    .holderPubKey = mptAlice.getPubKey(carol),
+                    .fee = expectedFee,
+                });
             });
             checkFee(bob, [&]() { mptAlice.mergeInbox({.account = bob, .fee = expectedFee}); });
             checkFee(carol, [&]() { mptAlice.mergeInbox({.account = carol, .fee = expectedFee}); });
@@ -7137,11 +7178,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.generateKeyPair(newIssuerKey);
             mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(newIssuerKey)});
             checkFee(alice, [&]() {
-                mptAlice.mirrorUpdate(
-                    {.account = alice,
-                     .holder = bob,
-                     .issuerEncryptedAmount = getTrivialCiphertext(),
-                     .fee = expectedFee});
+                mptAlice.mirrorUpdate({
+                    .account = alice,
+                    .holder = bob,
+                    .issuerEncryptedAmount = getTrivialCiphertext(),
+                    .fee = expectedFee,
+                });
             });
         }
 
@@ -7154,32 +7196,36 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             auto const baseFee = env.current()->fees().base;
             auto const expectedFee = baseFee * (kConfidentialFeeMultiplier + 1);
 
-            mptAlice.convert(
-                {.account = bob,
-                 .amt = 1,
-                 .holderPubKey = mptAlice.getPubKey(bob),
-                 .fee = expectedFee - 1,
-                 .err = telINSUF_FEE_P});
+            mptAlice.convert({
+                .account = bob,
+                .amt = 1,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .fee = expectedFee - 1,
+                .err = telINSUF_FEE_P,
+            });
             mptAlice.mergeInbox({.account = bob, .fee = baseFee, .err = telINSUF_FEE_P});
-            mptAlice.send(
-                {.account = bob,
-                 .dest = carol,
-                 .amt = 1,
-                 .fee = baseFee * kConfidentialFeeMultiplier,
-                 .err = telINSUF_FEE_P});
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 1,
+                .fee = baseFee * kConfidentialFeeMultiplier,
+                .err = telINSUF_FEE_P,
+            });
             mptAlice.convertBack({.account = bob, .amt = 1, .fee = baseFee, .err = telINSUF_FEE_P});
-            mptAlice.confidentialClaw(
-                {.account = alice,
-                 .holder = carol,
-                 .amt = 1,
-                 .fee = baseFee,
-                 .err = telINSUF_FEE_P});
-            mptAlice.mirrorUpdate(
-                {.account = alice,
-                 .holder = bob,
-                 .issuerEncryptedAmount = getTrivialCiphertext(),
-                 .fee = baseFee,
-                 .err = telINSUF_FEE_P});
+            mptAlice.confidentialClaw({
+                .account = alice,
+                .holder = carol,
+                .amt = 1,
+                .fee = baseFee,
+                .err = telINSUF_FEE_P,
+            });
+            mptAlice.mirrorUpdate({
+                .account = alice,
+                .holder = bob,
+                .issuerEncryptedAmount = getTrivialCiphertext(),
+                .fee = baseFee,
+                .err = telINSUF_FEE_P,
+            });
         }
 
         // test excessive fee for confidential transactions
@@ -7192,11 +7238,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             auto const baseFee = env.current()->fees().base;
             auto const highFee = baseFee * (kConfidentialFeeMultiplier + 1) * 2;
             auto const bobBefore = env.balance(bob);
-            mptAlice.convert(
-                {.account = bob,
-                 .amt = 1,
-                 .holderPubKey = mptAlice.getPubKey(bob),
-                 .fee = highFee});
+            mptAlice.convert({
+                .account = bob,
+                .amt = 1,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .fee = highFee,
+            });
             BEAST_EXPECT(env.balance(bob) == bobBefore - highFee);
         }
     }
@@ -7316,17 +7363,18 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             forgedProof.data()[i] ^= 0xFF;
 
         // Submit — rejected due to commitment mismatch.
-        mptAlice.send(
-            {.account = bob,
-             .dest = carol,
-             .amt = badAmount,
-             .proof = strHex(forgedProof),
-             .senderEncryptedAmt = senderAmt,
-             .destEncryptedAmt = destAmt,
-             .issuerEncryptedAmt = issuerAmt,
-             .amountCommitment = amountCommitment,
-             .balanceCommitment = balanceCommitment,
-             .err = tecBAD_PROOF});
+        mptAlice.send({
+            .account = bob,
+            .dest = carol,
+            .amt = badAmount,
+            .proof = strHex(forgedProof),
+            .senderEncryptedAmt = senderAmt,
+            .destEncryptedAmt = destAmt,
+            .issuerEncryptedAmt = issuerAmt,
+            .amountCommitment = amountCommitment,
+            .balanceCommitment = balanceCommitment,
+            .err = tecBAD_PROOF,
+        });
 
         // Supply invariant: Bob's balance unchanged.
         auto const postSpending = requireOptional(
@@ -7352,8 +7400,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{.account = bob, .payAmount = 1000, .convertAmount = 10},
-             {.account = carol, .payAmount = 1000, .convertAmount = 50}}};
+            {
+                {.account = bob, .payAmount = 1000, .convertAmount = 10},
+                {.account = carol, .payAmount = 1000, .convertAmount = 50},
+            }};
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const sendAmount = 10;
@@ -7568,9 +7618,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{.account = bob},
-             {.account = carol, .payAmount = 1000, .convertAmount = 50},
-             {.account = dan, .payAmount = 1000, .convertAmount = 50}}};
+            {
+                {.account = bob},
+                {.account = carol, .payAmount = 1000, .convertAmount = 50},
+                {.account = dan, .payAmount = 1000, .convertAmount = 50},
+            }};
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const sendAmount = 10;
@@ -7688,7 +7740,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  //
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE,  //
                 0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B,  //
-                0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41   //
+                0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41,  //
             };
 
             std::memcpy(forgedProof.data() + 32, kCurveOrder, 32);
@@ -7708,7 +7760,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  //
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE,  //
                 0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B,  //
-                0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x42   //
+                0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x42,  //
             };
 
             std::memcpy(forgedProof.data() + 32, kOverflowScalar, 32);
@@ -8059,8 +8111,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{.account = bob, .payAmount = 1000, .convertAmount = 200},
-             {.account = carol, .payAmount = 1000, .convertAmount = 100}},
+            {
+                {.account = bob, .payAmount = 1000, .convertAmount = 200},
+                {.account = carol, .payAmount = 1000, .convertAmount = 100},
+            },
             tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance};
         auto& mptAlice = confEnv.mpt;
 
@@ -8332,12 +8386,13 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 tc.data() + kEcCiphertextComponentLength,
                 kEcCiphertextComponentLength);
 
-            mptAlice.send(
-                {.account = bob,
-                 .dest = carol,
-                 .amt = sendAmount,
-                 .senderEncryptedAmt = zeroCiphertext,
-                 .err = temBAD_CIPHERTEXT});
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = sendAmount,
+                .senderEncryptedAmt = zeroCiphertext,
+                .err = temBAD_CIPHERTEXT,
+            });
         }
 
         // -----------------------------------------------------------------

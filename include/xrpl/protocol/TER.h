@@ -51,7 +51,7 @@ enum TELcodes : TERUnderlyingType {
     telWRONG_NETWORK,
     telREQUIRES_NETWORK_ID,
     telNETWORK_ID_MAKES_TX_NON_CANONICAL,
-    telENV_RPC_FAILED
+    telENV_RPC_FAILED,
 };
 
 //------------------------------------------------------------------------------
@@ -247,7 +247,7 @@ enum TEScodes : TERUnderlyingType {
     // Implications:
     // - Applied
     // - Forwarded
-    tesSUCCESS = 0
+    tesSUCCESS = 0,
 };
 
 //------------------------------------------------------------------------------

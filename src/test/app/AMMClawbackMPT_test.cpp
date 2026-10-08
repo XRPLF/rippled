@@ -58,12 +58,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .pay = 40'000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .pay = 40'000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             auto const usd = gw["USD"];
             env.trust(usd(10000), alice);
@@ -172,12 +173,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env.close();
 
             // todo: check tfMPTCanTransfer in xrpl.org
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw2,
-                 .holders = {alice},
-                 .pay = 40'000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw2,
+                .holders = {alice},
+                .pay = 40'000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM const amm(env, alice, btc(100), usd(100));
             env.close();
@@ -202,12 +204,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env.fund(XRP(10000), gw, alice);
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .pay = 40'000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .pay = 40'000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM const amm(env, alice, btc(100), XRP(100));
             env.close();
@@ -230,12 +233,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         env(fset(gw, asfAllowTrustLineClawback));
         env.close();
 
-        MPT const btc = MPTTester(
-            {.env = env,
-             .issuer = gw,
-             .holders = {alice},
-             .pay = 10'000,
-             .flags = tfMPTCanClawback | kMptDexFlags});
+        MPT const btc = MPTTester({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice},
+            .pay = 10'000,
+            .flags = tfMPTCanClawback | kMptDexFlags,
+        });
 
         AMM const amm(env, alice, XRP(1'000), btc(1'000));
 
@@ -277,12 +281,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(pay(gw, alice, usd(50000)));
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw2,
-                 .holders = {alice},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw2,
+                .holders = {alice},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM const amm(env, alice, btc(1000000000), usd(2000));
             env.close();
@@ -339,12 +344,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM amm(env, alice, btc(1000000000), XRP(2000));
             env.close();
@@ -436,19 +442,21 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(fset(gw2, asfAllowTrustLineClawback));
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
-            MPT const eth = MPTTester(
-                {.env = env,
-                 .issuer = gw2,
-                 .holders = {alice, bob},
-                 .pay = 30'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const eth = MPTTester({
+                .env = env,
+                .issuer = gw2,
+                .holders = {alice, bob},
+                .pay = 30'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM amm(env, alice, btc(2'000'000000), eth(3'000'000000));
             env.close();
@@ -534,12 +542,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         // The clawed asset (amountRounded) rounds to zero while its XRP
         // counterpart is always large.
         {
-            MPTTester const mptBtc(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 1'000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPTTester const mptBtc({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 1'000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
             MPT const btc = mptBtc;
 
             AMM amm(env, alice, btc(3), XRP(333'000));
@@ -597,20 +606,22 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env.fund(XRP(10'000'000), carol, dan);
             env.close();
 
-            MPTTester const mptBtc(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {carol, dan},
-                 .pay = 100'000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPTTester const mptBtc({
+                .env = env,
+                .issuer = gw,
+                .holders = {carol, dan},
+                .pay = 100'000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
             MPT const btc = mptBtc;
 
-            MPTTester const mptEth(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {carol, dan},
-                 .pay = 1'000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPTTester const mptEth({
+                .env = env,
+                .issuer = gw,
+                .holders = {carol, dan},
+                .pay = 1'000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
             MPT const eth = mptEth;
 
             // btc pool dwarfs the eth pool, so a ~1/12th claw withdraws a
@@ -684,12 +695,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(pay(gw, bob, usd(60000)));
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw2,
-                 .holders = {alice, bob},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw2,
+                .holders = {alice, bob},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM amm(env, alice, btc(2000000000), usd(2000));
             env.close();
@@ -737,12 +749,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM amm(env, alice, btc(5000), XRP(10'000));
             env.close();
@@ -794,19 +807,21 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(fset(gw2, asfAllowTrustLineClawback));
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
-            MPT const eth = MPTTester(
-                {.env = env,
-                 .issuer = gw2,
-                 .holders = {alice, bob},
-                 .pay = 30'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const eth = MPTTester({
+                .env = env,
+                .issuer = gw2,
+                .holders = {alice, bob},
+                .pay = 30'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM amm(env, alice, btc(20'000), eth(50'000));
             env.close();
@@ -870,12 +885,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(pay(gw, bob, usd(40000)));
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM amm(env, alice, btc(1'000'000000), usd(2000));
             env.close();
@@ -959,19 +975,21 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
-            MPT const eth = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 30'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const eth = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 30'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM amm(env, alice, btc(2'000'000000), eth(3'000'000000));
             env.close();
@@ -1062,12 +1080,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(pay(gw, bob, usd(60000)));
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM amm(env, alice, btc(2'000'000000), usd(8'000));
             env.close();
@@ -1116,19 +1135,21 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
-            MPT const eth = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 30'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const eth = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 30'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM amm(env, alice, btc(20'000), eth(10'000));
             env.close();
@@ -1195,12 +1216,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env.trust(usd(100000), alice);
             env(pay(gw, alice, usd(5000)));
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw2,
-                 .holders = {alice, gw},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw2,
+                .holders = {alice, gw},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM amm(env, gw, usd(1000), btc(2000));
             env.close();
@@ -1281,19 +1303,21 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(fset(gw2, asfAllowTrustLineClawback));
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {gw2, alice},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {gw2, alice},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
-            MPT const eth = MPTTester(
-                {.env = env,
-                 .issuer = gw2,
-                 .holders = {gw, alice},
-                 .pay = 30'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const eth = MPTTester({
+                .env = env,
+                .issuer = gw2,
+                .holders = {gw, alice},
+                .pay = 30'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM amm(env, gw, btc(10'000), eth(50'000));
             env.close();
@@ -1364,12 +1388,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env.trust(usd(1'000'000), alice);
             env(pay(gw, alice, usd(500'000)));
 
-            MPTTester btc(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .pay = 30'000,
-                 .flags = tfMPTCanClawback | tfMPTCanLock | kMptDexFlags});
+            MPTTester btc({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .pay = 30'000,
+                .flags = tfMPTCanClawback | tfMPTCanLock | kMptDexFlags,
+            });
             AMM const ammAlice(env, alice, usd(10'000), btc(10'000));
             BEAST_EXPECT(ammAlice.expectBalances(usd(10'000), btc(10'000), IOUAmount(10'000)));
             env.close();
@@ -1435,12 +1460,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env.trust(usd(1'000'000), alice);
             env(pay(gw, alice, usd(500'000)));
 
-            MPTTester btc(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .pay = 30'000,
-                 .flags = tfMPTCanClawback | tfMPTCanLock | kMptDexFlags});
+            MPTTester btc({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .pay = 30'000,
+                .flags = tfMPTCanClawback | tfMPTCanLock | kMptDexFlags,
+            });
             AMM const ammAlice(env, alice, usd(10'000), btc(10'000));
             BEAST_EXPECT(ammAlice.expectBalances(usd(10'000), btc(10'000), IOUAmount(10'000)));
             env.close();
@@ -1500,13 +1526,14 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env.fund(XRP(1'000'000), gw, alice);
             env.close();
 
-            MPTTester token(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .pay = 1'000,
-                 .flags = tfMPTCanClawback | tfMPTRequireAuth | kMptDexFlags,
-                 .authHolder = true});
+            MPTTester token({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .pay = 1'000,
+                .flags = tfMPTCanClawback | tfMPTRequireAuth | kMptDexFlags,
+                .authHolder = true,
+            });
 
             AMM ammAlice(env, alice, token(1'000), XRP(1'000));
             env.close();
@@ -1555,12 +1582,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env.fund(XRP(1000000000), gw, alice);
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             // gw creates AMM pool of BTC/XRP.
             AMM amm(env, gw, XRP(100), btc(400), Ter(tesSUCCESS));
@@ -1600,12 +1628,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(pay(gw, alice, usd(1000)));
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             // gw creates AMM pool of BTC/USD.
             AMM amm(env, gw, usd(100), btc(400), Ter(tesSUCCESS));
@@ -1647,19 +1676,21 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env.fund(XRP(1000000000), gw, alice);
             env.close();
 
-            MPT const usd = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const usd = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             // gw creates AMM pool of BTC/USD.
             AMM amm(env, gw, usd(100), btc(400), Ter(tesSUCCESS));
@@ -1715,12 +1746,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(pay(gw, bob, usd(40000)));
             env.close();
 
-            MPT const eur = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const eur = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM amm(env, alice, usd(2), eur(1));
             amm.deposit(alice, IOUAmount{1'576123487565916, -15});
@@ -1776,19 +1808,21 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env.fund(XRP(100000), gw, alice, bob);
             env.close();
 
-            MPT const usd = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const usd = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
-            MPT const eur = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 40'000'000000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const eur = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 40'000'000000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM amm(env, alice, usd(2), eur(1));
             amm.deposit(alice, IOUAmount{1'576123487565916, -15});
@@ -1891,12 +1925,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(pay(gw, alice, usd(1000)));
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .pay = 40'000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .pay = 40'000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             // Asset USD is not clawable without asfAllowTrustLineClawback.
             AMM const amm(env, alice, usd(200), btc(100));
@@ -1931,12 +1966,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(pay(gw, alice, usd(1000)));
             env.close();
 
-            MPT const btc = MPTTester(
-                {.env = env,
-                 .issuer = gw2,
-                 .holders = {alice},
-                 .pay = 40'000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc = MPTTester({
+                .env = env,
+                .issuer = gw2,
+                .holders = {alice},
+                .pay = 40'000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM const amm(env, alice, usd(200), btc(100));
 
@@ -1952,18 +1988,20 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
                 Account const gw("gateway"), alice("alice"), bob("bob");
                 env.fund(XRP(30'000), alice, bob, gw);
                 env.close();
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw,
-                     .holders = {alice},
-                     .limit = 1'000'000});
-                auto const btc = issue2(
-                    {.env = env,
-                     .token = "BTC",
-                     .issuer = bob,
-                     .holders = {alice},
-                     .limit = 1'000'000});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw,
+                    .holders = {alice},
+                    .limit = 1'000'000,
+                });
+                auto const btc = issue2({
+                    .env = env,
+                    .token = "BTC",
+                    .issuer = bob,
+                    .holders = {alice},
+                    .limit = 1'000'000,
+                });
                 env(pay(gw, alice, usd(50000)));
                 env(pay(bob, alice, btc(50000)));
                 env.close();
@@ -1982,18 +2020,20 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
                 Account const gw("gateway"), alice("alice"), bob("bob");
                 env.fund(XRP(30'000), alice, bob, gw);
                 env.close();
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw,
-                     .holders = {alice},
-                     .limit = 1'000'000});
-                auto const btc = issue2(
-                    {.env = env,
-                     .token = "BTC",
-                     .issuer = bob,
-                     .holders = {alice},
-                     .limit = 1'000'000});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw,
+                    .holders = {alice},
+                    .limit = 1'000'000,
+                });
+                auto const btc = issue2({
+                    .env = env,
+                    .token = "BTC",
+                    .issuer = bob,
+                    .holders = {alice},
+                    .limit = 1'000'000,
+                });
                 env(pay(gw, alice, usd(50000)));
                 env(pay(bob, alice, btc(50000)));
                 env.close();
@@ -2029,19 +2069,21 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env.fund(XRP(100'000), gw, alice);
             env.close();
 
-            MPTTester btc(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .pay = 10'000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPTTester btc({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .pay = 10'000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
-            MPTTester eth(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .pay = 10'000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPTTester eth({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .pay = 10'000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             // Alice deposits everything into the MPT/MPT pool; her MPT
             // balances drop to zero.
@@ -2086,19 +2128,21 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env.fund(XRP(100'000), gw, alice);
             env.close();
 
-            MPTTester btc(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .pay = 10'000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPTTester btc({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .pay = 10'000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
-            MPTTester eth(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .pay = 10'000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPTTester eth({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .pay = 10'000,
+                .flags = tfMPTCanClawback | kMptDexFlags,
+            });
 
             AMM const amm(env, alice, btc(10'000), eth(10'000));
             env.close();
@@ -2145,21 +2189,23 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         env.fund(XRP(100'000), gw, gw2, alice);
         env.close();
 
-        MPTTester btc(
-            {.env = env,
-             .issuer = gw,
-             .holders = {alice},
-             .pay = 10'000,
-             .flags = tfMPTCanClawback | tfMPTRequireAuth | kMptDexFlags,
-             .authHolder = true});
+        MPTTester btc({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice},
+            .pay = 10'000,
+            .flags = tfMPTCanClawback | tfMPTRequireAuth | kMptDexFlags,
+            .authHolder = true,
+        });
 
-        MPTTester eth(
-            {.env = env,
-             .issuer = gw2,
-             .holders = {alice},
-             .pay = 10'000,
-             .flags = tfMPTCanClawback | tfMPTRequireAuth | kMptDexFlags,
-             .authHolder = true});
+        MPTTester eth({
+            .env = env,
+            .issuer = gw2,
+            .holders = {alice},
+            .pay = 10'000,
+            .flags = tfMPTCanClawback | tfMPTRequireAuth | kMptDexFlags,
+            .authHolder = true,
+        });
 
         // Alice deposits everything into the pool; her MPT balances drop to 0.
         AMM const amm(env, alice, btc(10'000), eth(10'000));
@@ -2234,12 +2280,13 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
 
         // The paired MPT: transferable so an AMM can hold it, and no
         // RequireAuth so createMPToken()'s WeakAuth check passes.
-        MPT const btc = MPTTester(
-            {.env = env,
-             .issuer = gw2,
-             .holders = {carol},
-             .pay = 1'000'000,
-             .flags = kMptDexFlags});
+        MPT const btc = MPTTester({
+            .env = env,
+            .issuer = gw2,
+            .holders = {carol},
+            .pay = 1'000'000,
+            .flags = kMptDexFlags,
+        });
 
         env.trust(usd(1'000'000), carol);
         env(pay(gw, carol, usd(100'000)));

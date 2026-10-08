@@ -210,7 +210,12 @@ registerWorkload(BackendConfig const& bc, Workload const& w)
         {
             w.iterate(
                 IterateContext{
-                    .rs = *rs, .db = db, .seq = seq, .index = index, .poolSize = poolSize});
+                    .rs = *rs,
+                    .db = db,
+                    .seq = seq,
+                    .index = index,
+                    .poolSize = poolSize,
+                });
             ++index;
         }
         benchmark::ClobberMemory();

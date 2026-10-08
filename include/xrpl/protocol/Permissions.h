@@ -36,7 +36,7 @@ enum GranularPermissionType : std::uint32_t {
 #include <xrpl/protocol/detail/permissions.macro>
 
 #undef GRANULAR_PERMISSION
-#pragma pop_macro("GRANULAR_PERMISSION")
+#pragma pop_macro("GRANULAR_PERMISSION"),
 };
 
 class Permission

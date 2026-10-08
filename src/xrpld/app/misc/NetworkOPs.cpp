@@ -272,7 +272,8 @@ class NetworkOPsImp final : public NetworkOPs
                 .counters = counters_,
                 .mode = mode_,
                 .start = start_,
-                .initialSyncUs = initialSyncUs_};
+                .initialSyncUs = initialSyncUs_,
+            };
         }
     };
 
@@ -1007,7 +1008,7 @@ private:
         SPeerStatus,      // Peer status changes.
         SConsensusPhase,  // Consensus phase
         SBookChanges,     // Per-ledger order book changes
-        SLastEntry        // Any new entry must be ADDED ABOVE this one
+        SLastEntry,       // Any new entry must be ADDED ABOVE this one
     };
 
     /**
@@ -1084,16 +1085,20 @@ private:
 //------------------------------------------------------------------------------
 
 static std::array<char const*, 5> const kStateNames{
-    {"disconnected", "connected", "syncing", "tracking", "full"}};
+    {"disconnected", "connected", "syncing", "tracking", "full"},
+};
 
 std::array<char const*, 5> const NetworkOPsImp::kStates = kStateNames;
 
 std::array<json::StaticString const, 5> const NetworkOPsImp::StateAccounting::kStates = {
-    {json::StaticString(kStateNames[0]),
-     json::StaticString(kStateNames[1]),
-     json::StaticString(kStateNames[2]),
-     json::StaticString(kStateNames[3]),
-     json::StaticString(kStateNames[4])}};
+    {
+        json::StaticString(kStateNames[0]),
+        json::StaticString(kStateNames[1]),
+        json::StaticString(kStateNames[2]),
+        json::StaticString(kStateNames[3]),
+        json::StaticString(kStateNames[4]),
+    },
+};
 
 static auto const kGenesisAccountId =
     calcAccountID(generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
@@ -3192,7 +3197,14 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     // This array must be sorted in increasing order.
     static constexpr std::array<std::string_view, 7> kProtocols{
-        "http", "https", "peer", "ws", "ws2", "wss", "wss2"};
+        "http",
+        "https",
+        "peer",
+        "ws",
+        "ws2",
+        "wss",
+        "wss2",
+    };
     static_assert(std::ranges::is_sorted(kProtocols));
     {
         json::Value ports{json::ValueType::Array};
@@ -4351,7 +4363,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 .marker = marker,
                 .limit = 0,
                 .bAdmin = true,
-                .delegate = std::nullopt};
+                .delegate = std::nullopt,
+            };
             return db.newestAccountTxPage(options);
         };
 
@@ -4551,7 +4564,9 @@ NetworkOPsImp::subAccountHistory(InfoSub::Ref isrListener, AccountID const& acco
 
     std::scoped_lock const sl(accountLock_);
     SubAccountHistoryInfoWeak ahi{
-        .sinkWptr = isrListener, .index = std::make_shared<SubAccountHistoryIndex>(accountId)};
+        .sinkWptr = isrListener,
+        .index = std::make_shared<SubAccountHistoryIndex>(accountId),
+    };
     auto simIterator = subAccountHistory_.find(accountId);
     if (simIterator == subAccountHistory_.end())
     {

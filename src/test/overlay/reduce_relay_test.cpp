@@ -835,7 +835,9 @@ protected:
     random(bool log)
     {
         std::unordered_map<EventType, Event> events{
-            {EventType::LinkDown, {}}, {EventType::PeerDisconnected, {}}};
+            {EventType::LinkDown, {}},
+            {EventType::PeerDisconnected, {}},
+        };
         time_point<ManualClock> lastCheck = ManualClock::now();
 
         network_.reset();
