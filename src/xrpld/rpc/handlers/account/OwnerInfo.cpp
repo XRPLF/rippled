@@ -10,29 +10,33 @@
 
 #include <optional>
 #include <string>
+
 namespace xrpl {
 // {
-//   'ident' : <indent>,
+//   'ident' : <ident>,
 // }
 json::Value
-doOwnerInfo(rpc::JsonContext& context)
+doOwnerInfo(RPC::JsonContext& context)
 {
     if (!context.params.isMember(jss::account) && !context.params.isMember(jss::ident))
     {
-        return rpc::missingFieldError(jss::account);
+        return RPC::missingFieldError(jss::account);
     }
-    if (context.params.isMember(jss::account) && !context.params[jss::account].isString())
+    std::string strIdent;
+    if (context.params.isMember(jss::account))
     {
-        return RPC::invalidFieldError(jss::account);
-    }
+        if (!context.params[jss::account].isString())
+            return RPC::invalidFieldError(jss::account);
 
-    if (context.params.isMember(jss::ident) && !context.params[jss::ident].isString())
-    {
-        return RPC::invalidFieldError(jss::ident);
+        strIdent = context.params[jss::account].asString();
     }
-    std::string const strIdent = context.params.isMember(jss::account)
-        ? context.params[jss::account].asString()
-        : context.params[jss::ident].asString();
+    else
+    {
+        if (!context.params[jss::ident].isString())
+            return RPC::invalidFieldError(jss::ident);
+
+        strIdent = context.params[jss::ident].asString();
+    }
     json::Value ret;
 
     // Get info on account.
