@@ -436,10 +436,11 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
         .condition = Condition::NoCondition,
     },
     {
-        .name = "shed",
+        .name = method::kShed,
         .valueMethod = Method::of<&byRef<&doShed>>(),
         .role = Role::ADMIN,
         .condition = Condition::NoCondition,
+        .hasCommandLineForm = false,
     },
     {
         .name = method::kSign,

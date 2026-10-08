@@ -71,6 +71,7 @@ inline constexpr std::string_view kRipplePathFind{"ripple_path_find"};
 inline constexpr std::string_view kServerDefinitions{"server_definitions"};
 inline constexpr std::string_view kServerInfo{"server_info"};
 inline constexpr std::string_view kServerState{"server_state"};
+inline constexpr std::string_view kShed{"shed"};
 inline constexpr std::string_view kSign{"sign"};
 inline constexpr std::string_view kSignFor{"sign_for"};
 inline constexpr std::string_view kSimulate{"simulate"};
