@@ -8,6 +8,7 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
@@ -128,7 +129,7 @@ finishLoadByIndexOrHash(std::shared_ptr<Ledger>& ledger, beast::Journal j)
     }
 
     XRPL_ASSERT(
-        ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::feeSettings()),
+        ledger->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger),
         "xrpl::finishLoadByIndexOrHash : valid ledger fees");
     ledger->setImmutable();
 
@@ -137,7 +138,7 @@ finishLoadByIndexOrHash(std::shared_ptr<Ledger>& ledger, beast::Journal j)
     ledger->setFull();
 }
 
-std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
+std::tuple<std::shared_ptr<Ledger>, std::uint32_t, UInt256>
 getLatestLedger(Rules const& rules, Fees const& fees, ServiceRegistry& registry)
 {
     std::optional<LedgerHeader> const info = registry.getRelationalDatabase().getNewestLedgerInfo();
@@ -171,7 +172,7 @@ loadByIndex(
 
 std::shared_ptr<Ledger>
 loadByHash(
-    uint256 const& ledgerHash,
+    UInt256 const& ledgerHash,
     Rules const& rules,
     Fees const& fees,
     ServiceRegistry& registry,

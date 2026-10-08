@@ -33,7 +33,7 @@ namespace xrpl {
 
 // FIXME: Need to clean up ledgers by index at some point
 
-LedgerHistory::LedgerHistory(beast::insight::Collector::ptr const& collector, Application& app)
+LedgerHistory::LedgerHistory(beast::insight::Collector::Ptr const& collector, Application& app)
     : app_(app)
     , collector_(collector)
     , mismatchCounter_(collector->makeCounter("ledger.history", "mismatch"))
@@ -89,7 +89,7 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 
         if (it != ledgersByIndex_.end())
         {
-            uint256 const hash = it->second;
+            UInt256 const hash = it->second;
             sl.unlock();
             return getLedgerByHash(hash);
         }
@@ -161,7 +161,7 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 }
 
 static void
-logOne(ReadView const& ledger, uint256 const& tx, char const* msg, beast::Journal& j)
+logOne(ReadView const& ledger, UInt256 const& tx, char const* msg, beast::Journal& j)
 {
     auto metaData = ledger.txRead(tx).second;
 
@@ -182,10 +182,10 @@ static void
 logMetadataDifference(
     ReadView const& builtLedger,
     ReadView const& validLedger,
-    uint256 const& tx,
+    UInt256 const& tx,
     beast::Journal j)
 {
-    auto getMeta = [](ReadView const& ledger, uint256 const& txID) {
+    auto getMeta = [](ReadView const& ledger, UInt256 const& txID) {
         std::optional<TxMeta> ret;
         if (auto meta = ledger.txRead(txID).second)
             ret.emplace(txID, ledger.seq(), *meta);
@@ -319,8 +319,8 @@ void
 LedgerHistory::handleMismatch(
     LedgerHash const& built,
     LedgerHash const& valid,
-    std::optional<uint256> const& builtConsensusHash,
-    std::optional<uint256> const& validatedConsensusHash,
+    std::optional<UInt256> const& builtConsensusHash,
+    std::optional<UInt256> const& validatedConsensusHash,
     json::Value const& consensus)
 {
     XRPL_ASSERT(built != valid, "xrpl::LedgerHistory::handleMismatch : unequal hashes");
@@ -432,7 +432,7 @@ LedgerHistory::handleMismatch(
 void
 LedgerHistory::builtLedger(
     std::shared_ptr<Ledger const> const& ledger,
-    uint256 const& consensusHash,
+    UInt256 const& consensusHash,
     json::Value consensus)
 {
     LedgerIndex const index = ledger->header().seq;
@@ -472,7 +472,7 @@ LedgerHistory::builtLedger(
 void
 LedgerHistory::validatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
-    std::optional<uint256> const& consensusHash)
+    std::optional<UInt256> const& consensusHash)
 {
     LedgerIndex const index = ledger->header().seq;
     LedgerHash const hash = ledger->header().hash;

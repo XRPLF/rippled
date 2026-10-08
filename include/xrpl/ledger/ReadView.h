@@ -40,9 +40,9 @@ namespace xrpl {
 class ReadView
 {
 public:
-    using tx_type = std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>;
+    using TxType = std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>;
 
-    using key_type = uint256;
+    using key_type = UInt256;
 
     using mapped_type = SLE::const_pointer;
 
@@ -57,7 +57,7 @@ public:
         upperBound(key_type const& key) const;
     };
 
-    struct TxsType : detail::ReadViewFwdRange<tx_type>
+    struct TxsType : detail::ReadViewFwdRange<TxType>
     {
         explicit TxsType(ReadView const& view);
         [[nodiscard]] bool
@@ -214,23 +214,23 @@ public:
     }
 
     // used by the implementation
-    [[nodiscard]] virtual std::unique_ptr<SlesType::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<SlesType::IterBase>
     slesBegin() const = 0;
 
     // used by the implementation
-    [[nodiscard]] virtual std::unique_ptr<SlesType::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<SlesType::IterBase>
     slesEnd() const = 0;
 
     // used by the implementation
-    [[nodiscard]] virtual std::unique_ptr<SlesType::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<SlesType::IterBase>
     slesUpperBound(key_type const& key) const = 0;
 
     // used by the implementation
-    [[nodiscard]] virtual std::unique_ptr<TxsType::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<TxsType::IterBase>
     txsBegin() const = 0;
 
     // used by the implementation
-    [[nodiscard]] virtual std::unique_ptr<TxsType::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<TxsType::IterBase>
     txsEnd() const = 0;
 
     /**
@@ -251,7 +251,7 @@ public:
      * @return A pair of nullptr if the
      *         key is not found in the tx map.
      */
-    [[nodiscard]] virtual tx_type
+    [[nodiscard]] virtual TxType
     txRead(key_type const& key) const = 0;
 
     //
@@ -278,7 +278,7 @@ public:
 class DigestAwareReadView : public ReadView
 {
 public:
-    using digest_type = uint256;
+    using DigestType = UInt256;
 
     DigestAwareReadView() = default;
     DigestAwareReadView(DigestAwareReadView const&) = default;
@@ -288,7 +288,7 @@ public:
      *
      * @return std::nullopt if the item does not exist.
      */
-    [[nodiscard]] virtual std::optional<digest_type>
+    [[nodiscard]] virtual std::optional<DigestType>
     digest(key_type const& key) const = 0;
 };
 
@@ -300,7 +300,7 @@ makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current);
 Rules
 makeRulesGivenLedger(
     DigestAwareReadView const& ledger,
-    std::unordered_set<uint256, beast::Uhash<>> const& presets);
+    std::unordered_set<UInt256, beast::Uhash<>> const& presets);
 
 }  // namespace xrpl
 

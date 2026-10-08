@@ -101,7 +101,7 @@ SHAMap::SHAMap(SHAMapType t, Family& f)
 // from the parameters that this is the constructor to use when the hash is
 // known. The fact that the parameter is unused is an implementation detail that
 // should not change the interface.
-SHAMap::SHAMap(SHAMapType t, uint256 const& hash, Family& f)
+SHAMap::SHAMap(SHAMapType t, UInt256 const& hash, Family& f)
     : f_(f), journal_(f.journal()), state_(SHAMapState::Synching), type_(t)
 {
     root_ = intr_ptr::makeShared<SHAMapInnerNode>(cowid_);
@@ -131,7 +131,7 @@ SHAMap::snapShot(bool isMutable) const
 }
 
 void
-SHAMap::dirtyUp(NodePathStack& stack, uint256 const& target, SHAMapTreeNodePtr child)
+SHAMap::dirtyUp(NodePathStack& stack, UInt256 const& target, SHAMapTreeNodePtr child)
 {
     // walk the tree up from through the inner nodes to the root_
     // update hashes and links
@@ -160,7 +160,7 @@ SHAMap::dirtyUp(NodePathStack& stack, uint256 const& target, SHAMapTreeNodePtr c
 }
 
 SHAMapLeafNode*
-SHAMap::walkTowardsKey(uint256 const& id, NodePathStack* stack) const
+SHAMap::walkTowardsKey(UInt256 const& id, NodePathStack* stack) const
 {
     XRPL_ASSERT(
         stack == nullptr || stack->empty(), "xrpl::SHAMap::walkTowardsKey : empty stack input");
@@ -192,7 +192,7 @@ SHAMap::walkTowardsKey(uint256 const& id, NodePathStack* stack) const
 }
 
 SHAMapLeafNode*
-SHAMap::findKey(uint256 const& id) const
+SHAMap::findKey(UInt256 const& id) const
 {
     SHAMapLeafNode* leaf = walkTowardsKey(id);  // NOLINT(misc-const-correctness)
     if ((leaf != nullptr) && leaf->peekItem()->key() != id)
@@ -413,7 +413,7 @@ SHAMap::descendAsync(
     unsigned int branch,
     SHAMapSyncFilter const* filter,
     bool& pending,
-    descendCallback&& callback) const
+    DescendCallback&& callback) const
 {
     pending = false;
 
@@ -557,7 +557,7 @@ SHAMap::peekFirstItem(NodePathStack& stack) const
 }
 
 SHAMapLeafNode const*
-SHAMap::peekNextItem(uint256 const& id, NodePathStack& stack) const
+SHAMap::peekNextItem(UInt256 const& id, NodePathStack& stack) const
 {
     XRPL_ASSERT(!stack.empty(), "xrpl::SHAMap::peekNextItem : non-empty stack input");
     XRPL_ASSERT(stack.top().first->isLeaf(), "xrpl::SHAMap::peekNextItem : stack starts with leaf");
@@ -586,7 +586,7 @@ SHAMap::peekNextItem(uint256 const& id, NodePathStack& stack) const
 }
 
 boost::intrusive_ptr<SHAMapItem const> const&
-SHAMap::peekItem(uint256 const& id) const
+SHAMap::peekItem(UInt256 const& id) const
 {
     SHAMapLeafNode const* leaf = findKey(id);
 
@@ -597,7 +597,7 @@ SHAMap::peekItem(uint256 const& id) const
 }
 
 boost::intrusive_ptr<SHAMapItem const> const&
-SHAMap::peekItem(uint256 const& id, SHAMapHash& hash) const
+SHAMap::peekItem(UInt256 const& id, SHAMapHash& hash) const
 {
     SHAMapLeafNode const* leaf = findKey(id);
 
@@ -609,7 +609,7 @@ SHAMap::peekItem(uint256 const& id, SHAMapHash& hash) const
 }
 
 SHAMap::ConstIterator
-SHAMap::boundHelper(uint256 const& id, BelowDirection direction) const
+SHAMap::boundHelper(UInt256 const& id, BelowDirection direction) const
 {
     auto const searchingForward = direction == BelowDirection::First;
 
@@ -650,25 +650,25 @@ SHAMap::boundHelper(uint256 const& id, BelowDirection direction) const
 }
 
 SHAMap::ConstIterator
-SHAMap::upperBound(uint256 const& id) const
+SHAMap::upperBound(UInt256 const& id) const
 {
     return boundHelper(id, BelowDirection::First);
 }
 
 SHAMap::ConstIterator
-SHAMap::lowerBound(uint256 const& id) const
+SHAMap::lowerBound(UInt256 const& id) const
 {
     return boundHelper(id, BelowDirection::Last);
 }
 
 bool
-SHAMap::hasItem(uint256 const& id) const
+SHAMap::hasItem(UInt256 const& id) const
 {
     return (findKey(id) != nullptr);
 }
 
 bool
-SHAMap::delItem(uint256 const& id)
+SHAMap::delItem(UInt256 const& id)
 {
     // delete the item with this ID
     XRPL_ASSERT(state_ != SHAMapState::Immutable, "xrpl::SHAMap::delItem : not immutable");
@@ -757,7 +757,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
     XRPL_ASSERT(type != SHAMapNodeType::TnInner, "xrpl::SHAMap::addGiveItem : valid type input");
 
     // add the specified item, does not update
-    uint256 const tag = item->key();
+    UInt256 const tag = item->key();
 
     NodePathStack stack;
     walkTowardsKey(tag, &stack);
@@ -842,7 +842,7 @@ bool
 SHAMap::updateGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item)
 {
     // can't change the tag but can change the hash
-    uint256 const tag = item->key();
+    UInt256 const tag = item->key();
 
     XRPL_ASSERT(state_ != SHAMapState::Immutable, "xrpl::SHAMap::updateGiveItem : not immutable");
 

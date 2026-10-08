@@ -276,7 +276,7 @@ SQLiteDatabase::getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex)
 }
 
 std::optional<LedgerHeader>
-SQLiteDatabase::getLedgerInfoByHash(uint256 const& ledgerHash)
+SQLiteDatabase::getLedgerInfoByHash(UInt256 const& ledgerHash)
 {
     if (existsLedger())
     {
@@ -290,7 +290,7 @@ SQLiteDatabase::getLedgerInfoByHash(uint256 const& ledgerHash)
     return {};
 }
 
-uint256
+UInt256
 SQLiteDatabase::getHashByIndex(LedgerIndex ledgerIndex)
 {
     if (existsLedger())
@@ -302,7 +302,7 @@ SQLiteDatabase::getHashByIndex(LedgerIndex ledgerIndex)
             return res;
     }
 
-    return uint256();
+    return UInt256();
 }
 
 std::optional<LedgerHashPair>
@@ -541,7 +541,7 @@ SQLiteDatabase::newestAccountTxPageB(AccountTxPageOptions const& options)
 
 std::variant<RelationalDatabase::AccountTx, TxSearched>
 SQLiteDatabase::getTransaction(
-    uint256 const& id,
+    UInt256 const& id,
     std::optional<ClosedInterval<std::uint32_t>> const& range,
     ErrorCodeI& ec)
 {

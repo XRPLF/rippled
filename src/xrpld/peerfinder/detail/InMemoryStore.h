@@ -17,7 +17,7 @@ private:
 
 public:
     std::size_t
-    load(load_callback const& cb) override
+    load(LoadCallback const& cb) override
     {
         for (auto const& entry : entries_)
             cb(entry.endpoint, entry.valence);

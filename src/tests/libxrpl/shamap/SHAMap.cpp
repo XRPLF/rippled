@@ -25,6 +25,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -103,7 +104,7 @@ struct SHAMapBackingMode
 constexpr SHAMapBackingMode kBackedMode{.backed = true, .testName = "backed"};
 constexpr SHAMapBackingMode kUnbackedMode{.backed = false, .testName = "unbacked"};
 
-std::string
+[[nodiscard]] std::string
 shamapBackingModeName(::testing::TestParamInfo<SHAMapBackingMode> const& info)
 {
     return std::string{info.param.testName};
@@ -114,35 +115,58 @@ class SHAMapTest : public ::testing::TestWithParam<SHAMapBackingMode>
 protected:
     beast::Journal const j_{TestSink::instance()};
 
-    static Buffer
+    [[nodiscard]] static Buffer
     intToVuc(std::uint8_t v)
     {
         Buffer vuc{32};
         vuc.fill(v);
         return vuc;
     }
-};
-
-TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
-{
-    auto const testMode = GetParam();
-    tests::TestNodeFamily f{j_};
 
     // kH3 and kH4 differ only in the leaf, same terminal node (level 19)
-    constexpr uint256 kH1("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
-    constexpr uint256 kH2("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
-    constexpr uint256 kH3("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
-    constexpr uint256 kH4("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
+    static constexpr UInt256 kH1{
+        "092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7"};
+    static constexpr UInt256 kH2{
+        "436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe"};
+    static constexpr UInt256 kH3{
+        "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"};
+    static constexpr UInt256 kH4{
+        "b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8"};
 
+    // SHAMap is neither copyable nor movable, so the map is configured in
+    // place rather than returned.
+    static void
+    applyBackingMode(SHAMap& map)
+    {
+        map.invariants();
+        if (!GetParam().backed)
+            map.setUnbacked();
+    }
+
+    // Leaves the map holding kH1, kH3 and kH4, reached by deleting kH2 (which
+    // collapses an inner node) before kH3 is added.
+    static void
+    addThenDeleteAndReAdd(SHAMap& map)
+    {
+        map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(kH2, intToVuc(2)));
+        map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(kH1, intToVuc(1)));
+        map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(kH4, intToVuc(4)));
+        map.invariants();
+        map.delItem(kH2);
+        map.invariants();
+        map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(kH3, intToVuc(3)));
+        map.invariants();
+    }
+};
+
+TEST_P(SHAMapTest, add_and_traverse_in_key_order)
+{
+    tests::TestNodeFamily f{j_};
     SHAMap sMap{SHAMapType::FREE, f};
-    sMap.invariants();
-    if (!testMode.backed)
-        sMap.setUnbacked();
+    applyBackingMode(sMap);
 
     auto i1 = makeShamapitem(kH1, intToVuc(1));
     auto i2 = makeShamapitem(kH2, intToVuc(2));
-    auto i3 = makeShamapitem(kH3, intToVuc(3));
-    auto i4 = makeShamapitem(kH4, intToVuc(4));
 
     EXPECT_TRUE(sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i2))) << "no add";
     sMap.invariants();
@@ -156,14 +180,22 @@ TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
     EXPECT_FALSE(i == e || (*i != *i2)) << "bad traverse";
     ++i;
     EXPECT_EQ(i, e) << "bad traverse";
-    sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i4));
-    sMap.invariants();
-    sMap.delItem(i2->key());
-    sMap.invariants();
-    sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i3));
-    sMap.invariants();
-    i = sMap.begin();
-    e = sMap.end();
+}
+
+TEST_P(SHAMapTest, traverse_after_add_and_delete)
+{
+    tests::TestNodeFamily f{j_};
+    SHAMap sMap{SHAMapType::FREE, f};
+    applyBackingMode(sMap);
+
+    auto i1 = makeShamapitem(kH1, intToVuc(1));
+    auto i3 = makeShamapitem(kH3, intToVuc(3));
+    auto i4 = makeShamapitem(kH4, intToVuc(4));
+
+    addThenDeleteAndReAdd(sMap);
+
+    auto i = sMap.begin();
+    auto e = sMap.end();
     EXPECT_FALSE(i == e || (*i != *i1)) << "bad traverse";
     ++i;
     EXPECT_FALSE(i == e || (*i != *i3)) << "bad traverse";
@@ -171,6 +203,14 @@ TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
     EXPECT_FALSE(i == e || (*i != *i4)) << "bad traverse";
     ++i;
     EXPECT_EQ(i, e) << "bad traverse";
+}
+
+TEST_P(SHAMapTest, a_snapshot_is_unaffected_by_later_edits)
+{
+    tests::TestNodeFamily f{j_};
+    SHAMap sMap{SHAMapType::FREE, f};
+    applyBackingMode(sMap);
+    addThenDeleteAndReAdd(sMap);
 
     SHAMapHash const mapHash = sMap.getHash();
     std::shared_ptr<SHAMap> const map2 = sMap.snapShot(false);
@@ -195,77 +235,82 @@ TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
     EXPECT_EQ(delta.begin()->second.second->key(), kH1);
 
     sMap.dump();
+}
+
+TEST_P(SHAMapTest, the_hash_after_each_add_is_undone_by_the_matching_delete)
+{
+    constexpr std::array kKeys{
+        UInt256{"b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+    };
+
+    constexpr std::array kHashes{
+        UInt256{"B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C64B6281F7F"},
+        UInt256{"FBC195A9592A54AB44010274163CB6BA95F497EC5BA0A8831845467FB2ECE266"},
+        UInt256{"4E7D2684B65DFD48937FFB775E20175C43AF0C94066F7D5679F51AE756795B75"},
+        UInt256{"7A2F312EB203695FFD164E038E281839EEF06A1B99BFC263F3CECC6C74F93E07"},
+        UInt256{"395A6691A372387A703FB0F2C6D2C405DAF307D0817F8F0E207596462B0E3A3E"},
+        UInt256{"D044C0A696DE3169CC70AE216A1564D69DE96582865796142CE7D98A84D9DDE4"},
+        UInt256{"76DCC77C4027309B5A91AD164083264D70B77B5E43E08AEDA5EBF94361143615"},
+        UInt256{"DF4220E93ADC6F5569063A01B4DC79F8DB9553B6A3222ADE23DEA02BBE7230E5"},
+    };
+
+    tests::TestNodeFamily f{j_};
+    SHAMap map{SHAMapType::FREE, f};
+    applyBackingMode(map);
+
+    EXPECT_EQ(map.getHash(), beast::kZero);
+    for (std::size_t k = 0; k < kKeys.size(); ++k)
     {
-        constexpr std::array kKeys{
-            uint256{"b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            uint256{"b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            uint256{"b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            uint256{"b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            uint256{"b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            uint256{"b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            uint256{"f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            uint256{"292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        };
-
-        constexpr std::array kHashes{
-            uint256{"B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C64B6281F7F"},
-            uint256{"FBC195A9592A54AB44010274163CB6BA95F497EC5BA0A8831845467FB2ECE266"},
-            uint256{"4E7D2684B65DFD48937FFB775E20175C43AF0C94066F7D5679F51AE756795B75"},
-            uint256{"7A2F312EB203695FFD164E038E281839EEF06A1B99BFC263F3CECC6C74F93E07"},
-            uint256{"395A6691A372387A703FB0F2C6D2C405DAF307D0817F8F0E207596462B0E3A3E"},
-            uint256{"D044C0A696DE3169CC70AE216A1564D69DE96582865796142CE7D98A84D9DDE4"},
-            uint256{"76DCC77C4027309B5A91AD164083264D70B77B5E43E08AEDA5EBF94361143615"},
-            uint256{"DF4220E93ADC6F5569063A01B4DC79F8DB9553B6A3222ADE23DEA02BBE7230E5"},
-        };
-
-        SHAMap map{SHAMapType::FREE, f};
-        if (!testMode.backed)
-            map.setUnbacked();
-
-        EXPECT_EQ(map.getHash(), beast::kZero);
-        for (std::size_t k = 0; k < kKeys.size(); ++k)
-        {
-            EXPECT_TRUE(map.addItem(
-                SHAMapNodeType::TnTransactionNm,
-                makeShamapitem(kKeys[k], intToVuc(static_cast<std::uint8_t>(k)))));
-            EXPECT_EQ(map.getHash().asUInt256(), kHashes[k]);
-            map.invariants();
-        }
-        for (std::size_t k = kKeys.size(); k-- > 0;)
-        {
-            EXPECT_EQ(map.getHash().asUInt256(), kHashes[k]);
-            EXPECT_TRUE(map.delItem(kKeys[k]));
-            map.invariants();
-        }
-        EXPECT_EQ(map.getHash(), beast::kZero);
+        EXPECT_TRUE(map.addItem(
+            SHAMapNodeType::TnTransactionNm,
+            makeShamapitem(kKeys[k], intToVuc(static_cast<std::uint8_t>(k)))));
+        EXPECT_EQ(map.getHash().asUInt256(), kHashes[k]);
+        map.invariants();
     }
 
+    // Removing the items in reverse must walk back through the same hashes.
+    for (std::size_t k = kKeys.size(); k-- > 0;)
     {
-        constexpr std::array kKeys{
-            uint256{"f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            uint256{"b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            uint256{"b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            uint256{"b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            uint256{"b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            uint256{"b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            uint256{"b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-            uint256{"292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
-        };
-
-        tests::TestNodeFamily tf{j_};
-        SHAMap map{SHAMapType::FREE, tf};
-        if (!testMode.backed)
-            map.setUnbacked();
-        for (auto const& k : kKeys)
-        {
-            map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(k, intToVuc(0)));
-            map.invariants();
-        }
-
-        auto keyIndex = kKeys.size();
-        for (auto const& k : map)
-            EXPECT_EQ(k.key(), kKeys[--keyIndex]);
+        EXPECT_EQ(map.getHash().asUInt256(), kHashes[k]);
+        EXPECT_TRUE(map.delItem(kKeys[k]));
+        map.invariants();
     }
+    EXPECT_EQ(map.getHash(), beast::kZero);
+}
+
+TEST_P(SHAMapTest, iteration_yields_keys_in_ascending_order)
+{
+    // Listed in descending order, so iteration must reverse them.
+    constexpr std::array kKeys{
+        UInt256{"f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+        UInt256{"292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8"},
+    };
+
+    tests::TestNodeFamily tf{j_};
+    SHAMap map{SHAMapType::FREE, tf};
+    applyBackingMode(map);
+    for (auto const& k : kKeys)
+    {
+        map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(k, intToVuc(0)));
+        map.invariants();
+    }
+
+    auto keyIndex = kKeys.size();
+    for (auto const& k : map)
+        EXPECT_EQ(k.key(), kKeys[--keyIndex]);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -284,14 +329,14 @@ protected:
 
     // Keys that share a long prefix and then fan out across distinct branches, so the deeper inner
     // nodes have several children and traversal must descend many levels.
-    static std::vector<uint256>
+    [[nodiscard]] static std::vector<UInt256>
     deepFanOutKeys()
     {
-        std::vector<uint256> keys;
+        std::vector<UInt256> keys;
         for (unsigned int branch = 0; branch < SHAMap::kBranchFactor; ++branch)
         {
             // Vary the 6th nibble, keeping the first five identical.
-            auto text = std::string("abcde") + "0123456789abcdef"[branch];
+            auto text = std::format("abcde{}", "0123456789abcdef"[branch]);
             text.append(64 - text.size(), '7');
             keys.emplace_back(std::string_view{text});
         }
@@ -302,20 +347,20 @@ protected:
     // chain of single-child inner nodes down to depth 63 with the leaves as siblings at depth 64.
     // This exercises kLeafDepth directly, unlike deepFanOutKeys() above, whose fan-out at the 6th
     // nibble keeps the tree only about 6 levels deep.
-    static std::vector<uint256>
+    [[nodiscard]] static std::vector<UInt256>
     deepFanOutKeysAtLeafDepth()
     {
-        std::vector<uint256> keys;
+        std::vector<UInt256> keys;
         for (unsigned int branch = 0; branch < SHAMap::kBranchFactor; ++branch)
         {
-            auto text = std::string(63, 'a') + "0123456789abcdef"[branch];
+            auto const text = std::format("{}{}", std::string(63, 'a'), "0123456789abcdef"[branch]);
             keys.emplace_back(std::string_view{text});
         }
         return keys;
     }
 
     static void
-    fillMap(SHAMap& map, std::vector<uint256> const& keys)
+    fillMap(SHAMap& map, std::vector<UInt256> const& keys)
     {
         map.setUnbacked();
         for (auto const& k : keys)
@@ -337,7 +382,7 @@ TEST_F(SHAMapTraversal, forward_iteration_visits_every_key_in_order)
     fillMap(map, keys);
 
     std::ranges::sort(keys);
-    std::vector<uint256> visited;
+    std::vector<UInt256> visited;
     for (auto const& item : map)
         visited.push_back(item.key());
 
@@ -393,7 +438,7 @@ TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys)
     // Probe keys that are not in the map, so the traversal starts mid-tree rather than at a leaf.
     for (unsigned char const c : {0x00, 0x40, 0x80, 0xc0, 0xff})
     {
-        uint256 probe;
+        UInt256 probe;
         std::fill_n(probe.begin(), probe.size(), c);
 
         auto const expectedUpper = std::ranges::upper_bound(keys, probe);
@@ -427,9 +472,9 @@ TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys)
     // the first key, and 'f' padded with 'f' lands above the last.
     for (char const nibble : {'0', 'f'})
     {
-        auto text = std::string("abcde") + nibble;
+        auto text = std::format("abcde{}", nibble);
         text.append(64 - text.size(), nibble);
-        uint256 const probe{std::string_view{text}};
+        UInt256 const probe{std::string_view{text}};
 
         auto const expectedUpper = std::ranges::upper_bound(keys, probe);
         auto const upper = map.upperBound(probe);
@@ -466,10 +511,10 @@ TEST_F(SHAMapTraversal, bounds_on_empty_map_return_end)
     // The root is a childless inner node, so boundHelper's inner-node branch scans every branch on
     // the requested side of the one id selects, finds them all empty, and falls through to end()
     // rather than dereference a child.
-    EXPECT_EQ(map.upperBound(uint256{}), map.end());
-    EXPECT_EQ(map.lowerBound(uint256{}), map.end());
+    EXPECT_EQ(map.upperBound(UInt256{}), map.end());
+    EXPECT_EQ(map.lowerBound(UInt256{}), map.end());
 
-    uint256 probe;
+    UInt256 probe;
     std::fill_n(probe.begin(), probe.size(), std::uint8_t{0xff});
     EXPECT_EQ(map.upperBound(probe), map.end());
     EXPECT_EQ(map.lowerBound(probe), map.end());
@@ -485,9 +530,9 @@ TEST_F(SHAMapTraversal, bounds_on_single_item_map_use_the_leaf_below_the_root)
 
     // fillMap adds items in-process, so root_ stays an inner node with the single leaf below it.
     // The stack holds both, so boundHelper examines the leaf first.
-    uint256 below = key;
+    UInt256 below = key;
     --below;
-    uint256 above = key;
+    UInt256 above = key;
     ++above;
 
     auto const upper = map.upperBound(below);
@@ -521,11 +566,11 @@ TEST_F(SHAMapTraversal, iteration_survives_deletions)
         map.invariants();
     }
 
-    std::vector<uint256> expected;
+    std::vector<UInt256> expected;
     for (std::size_t k = 1; k < keys.size(); k += 2)
         expected.push_back(keys[k]);
 
-    std::vector<uint256> visited;
+    std::vector<UInt256> visited;
     for (auto const& item : map)
         visited.push_back(item.key());
     EXPECT_EQ(visited, expected);
@@ -545,7 +590,7 @@ TEST_F(SHAMapTraversal, iteration_survives_a_collapsed_inner_node)
 
     // One key in a separate subtree, diverging from the fan-out group at the very first nibble, so
     // it survives untouched while the fan-out group below is collapsed.
-    auto const sentinel = uint256{std::string_view{std::string(64, '0')}};
+    auto const sentinel = UInt256{std::string_view{std::string(64, '0')}};
 
     auto fanOutKeys = deepFanOutKeysAtLeafDepth();
     fillMap(map, fanOutKeys);
@@ -570,8 +615,8 @@ TEST_F(SHAMapTraversal, iteration_survives_a_collapsed_inner_node)
         map.invariants();
     }
 
-    std::vector<uint256> const expected{sentinel, fanOutKeys.back()};
-    std::vector<uint256> visited;
+    std::vector<UInt256> const expected{sentinel, fanOutKeys.back()};
+    std::vector<UInt256> visited;
     for (auto const& item : map)
         visited.push_back(item.key());
     EXPECT_EQ(visited, expected);
@@ -596,7 +641,7 @@ TEST_F(SHAMapTraversal, forward_iteration_visits_every_key_in_order_at_leaf_dept
     fillMap(map, keys);
 
     std::ranges::sort(keys);
-    std::vector<uint256> visited;
+    std::vector<UInt256> visited;
     for (auto const& item : map)
         visited.push_back(item.key());
 
@@ -659,9 +704,9 @@ TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys_at_leaf_dept
         // over the whole key block -- driving belowHelper's First and Last descents respectively.
         for (char const nibble : {'9', 'b'})
         {
-            auto text = std::string(divergeAt, 'a') + nibble;
+            auto text = std::format("{}{}", std::string(divergeAt, 'a'), nibble);
             text.append(64 - text.size(), '0');
-            uint256 const probe{std::string_view{text}};
+            UInt256 const probe{std::string_view{text}};
 
             auto const expectedUpper = std::ranges::upper_bound(keys, probe);
             auto const upper = map.upperBound(probe);
@@ -709,11 +754,11 @@ TEST_F(SHAMapTraversal, iteration_survives_deletions_at_leaf_depth)
         map.invariants();
     }
 
-    std::vector<uint256> expected;
+    std::vector<UInt256> expected;
     for (std::size_t k = 1; k < keys.size(); k += 2)
         expected.push_back(keys[k]);
 
-    std::vector<uint256> visited;
+    std::vector<UInt256> visited;
     for (auto const& item : map)
         visited.push_back(item.key());
     EXPECT_EQ(visited, expected);
@@ -738,8 +783,8 @@ TEST_F(SHAMapPathProof, verify_proof_path)
     SHAMap map{SHAMapType::FREE, tf};
     map.setUnbacked();
 
-    uint256 key;
-    uint256 rootHash;
+    UInt256 key;
+    UInt256 rootHash;
     std::vector<Blob> goodPath;
 
     static constexpr unsigned char kFirstKey = 1;
@@ -748,7 +793,7 @@ TEST_F(SHAMapPathProof, verify_proof_path)
 
     for (unsigned char c = kFirstKey; c < kKeyCount; ++c)
     {
-        uint256 k(c);
+        UInt256 k(c);
         map.addItem(SHAMapNodeType::TnAccountState, makeShamapitem(k, Slice{k.data(), k.size()}));
         map.invariants();
 
@@ -768,7 +813,7 @@ TEST_F(SHAMapPathProof, verify_proof_path)
             proofPath.insert(proofPath.begin(), proofPath.front());
             EXPECT_FALSE(map.verifyProofPath(root, k, proofPath));
             // wrong key
-            uint256 const wrongKey(c + 1);
+            UInt256 const wrongKey(c + 1);
             EXPECT_FALSE(map.getProofPath(wrongKey));
         }
         if (c == kLastKey)
@@ -813,8 +858,8 @@ TEST_F(SHAMapPathProof, legitimate_deep_path_is_sixty_five_elements)
     SHAMap map{SHAMapType::FREE, f};
     map.setUnbacked();
 
-    auto const kA = uint256{std::string_view{std::string(63, 'a') + "1"}};
-    auto const kB = uint256{std::string_view{std::string(63, 'a') + "2"}};
+    auto const kA = UInt256{std::string_view{std::format("{}1", std::string(63, 'a'))}};
+    auto const kB = UInt256{std::string_view{std::format("{}2", std::string(63, 'a'))}};
 
     for (auto const& k : {kA, kB})
     {
@@ -844,12 +889,12 @@ TEST_F(SHAMapPathProof, legitimate_deep_path_is_sixty_five_elements)
 TEST_F(SHAMapPathProof, all_inner_path_at_leaf_depth_is_rejected)
 {
     // An arbitrary well-formed key; the test does not care about its specific value.
-    constexpr uint256 kTestKey("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+    constexpr UInt256 kTestKey("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
 
     // Build upwards from the deepest node so each parent's selected branch carries its child's hash
     // and the hash chain validates at every level.
     std::vector<Blob> path;
-    SHAMapHash childHash{uint256{1}};
+    SHAMapHash childHash{UInt256{1}};
 
     for (auto depth = SHAMap::kLeafDepth + 1u; depth-- > 0;)
     {
@@ -858,7 +903,7 @@ TEST_F(SHAMapPathProof, all_inner_path_at_leaf_depth_is_rejected)
 
         Serializer s;
         for (auto i = 0u; i < SHAMap::kBranchFactor; ++i)
-            s.addBitString(i == branch ? childHash.asUInt256() : uint256{});
+            s.addBitString(i == branch ? childHash.asUInt256() : UInt256{});
         s.add8(kWireTypeInner);
         path.push_back(s.getData());
 
@@ -883,8 +928,8 @@ TEST_F(SHAMapPathProof, all_inner_path_at_leaf_depth_is_rejected)
  * @return the path (deepest element first) and the forged root hash, or an empty path if the leaf
  *         blob does not parse.
  */
-static std::pair<std::vector<Blob>, uint256>
-forgeRootOverLeaf(Blob const& leafBlob, uint256 const& key)
+[[nodiscard]] static std::pair<std::vector<Blob>, UInt256>
+forgeRootOverLeaf(Blob const& leafBlob, UInt256 const& key)
 {
     auto leaf = SHAMapTreeNode::makeFromWire(makeSlice(leafBlob));
     if (!leaf || !leaf->isLeaf())
@@ -894,7 +939,7 @@ forgeRootOverLeaf(Blob const& leafBlob, uint256 const& key)
     auto const branch = selectBranch(SHAMapNodeID::createID(0, key), key);
     Serializer s;
     for (auto i = 0u; i < SHAMap::kBranchFactor; ++i)
-        s.addBitString(i == branch ? leaf->getHash().asUInt256() : uint256{});
+        s.addBitString(i == branch ? leaf->getHash().asUInt256() : UInt256{});
     s.add8(kWireTypeInner);
 
     auto root = SHAMapTreeNode::makeFromWire(makeSlice(s.peekData()));
@@ -915,8 +960,8 @@ TEST_F(SHAMapPathProof, substituted_leaf_for_other_key_is_rejected)
     map.setUnbacked();
 
     // Two arbitrary keys differing in their first nibble, so each leaf hangs off the root directly.
-    constexpr uint256 kKey("1c8cec8e5e9b0e5e0e0f5b3e2c9f7a1d6b4e8c2a0d7f3b9e5c1a8d4f2b6e0c93");
-    constexpr uint256 kOtherKey("e3f1a7d5b9c2e8f406a1d3b5c7e9f2a4d6b8c0e2f4a6d8b0c2e4f6a8d0b2c4e6");
+    constexpr UInt256 kKey("1c8cec8e5e9b0e5e0e0f5b3e2c9f7a1d6b4e8c2a0d7f3b9e5c1a8d4f2b6e0c93");
+    constexpr UInt256 kOtherKey("e3f1a7d5b9c2e8f406a1d3b5c7e9f2a4d6b8c0e2f4a6d8b0c2e4f6a8d0b2c4e6");
 
     for (auto const& k : {kKey, kOtherKey})
     {
