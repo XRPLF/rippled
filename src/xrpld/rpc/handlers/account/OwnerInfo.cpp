@@ -61,7 +61,7 @@ doOwnerInfo(rpc::JsonContext& context)
         if (!ledger)
             return result;
 
-        ret[jss::accepted] = context.netOps.getOwnerInfo(*ledger, *accountID);
+        ret[jss::accepted] = context.netOps.getOwnerInfo(ledger, *accountID);
     }
     else
     {
