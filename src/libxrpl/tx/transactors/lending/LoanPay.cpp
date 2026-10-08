@@ -242,6 +242,12 @@ LoanPay::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
+    if (isLoanPending(loanSle))
+    {
+        JLOG(ctx.j.warn()) << "Loan is pending acceptance. A pending loan can not be paid.";
+        return tecNO_PERMISSION;
+    }
+
     if (loanSle->at(sfBorrower) != account)
     {
         JLOG(ctx.j.warn()) << "Loan does not belong to the account.";

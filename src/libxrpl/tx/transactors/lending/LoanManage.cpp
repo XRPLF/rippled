@@ -77,6 +77,13 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Loan does not exist.";
         return tecNO_ENTRY;
     }
+
+    if (isLoanPending(loanSle))
+    {
+        JLOG(ctx.j.warn()) << "Loan is pending acceptance. A pending loan can not be managed.";
+        return tecNO_PERMISSION;
+    }
+
     // Impairment only allows certain transitions.
     // 1. Once it's in default, it can't be changed.
     // 2. It can get worse: unimpaired -> impaired -> default
@@ -435,11 +442,16 @@ LoanManage::impairLoan(
         // scale.
         auto const vaultScale = getVaultScale(vaultSle);
         adjustImpreciseNumber(vaultLossUnrealizedProxy, lossUnrealized, vaultAsset, vaultScale);
-        if (vaultLossUnrealizedProxy >
-            vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable))
+        // The loss is bounded by the assets lent out by active loans.
+        Number const lentOut = getVaultAssetsLentOut(
+            view.rules(),
+            vaultSle->at(sfAssetsTotal),
+            vaultSle->at(sfAssetsAvailable),
+            vaultSle->at(sfAssetsReserved));
+        if (vaultLossUnrealizedProxy > lentOut)
         {
-            // Having a loss greater than the vault's unavailable assets
-            // will leave the vault in an invalid / inconsistent state.
+            // Having a loss greater than the assets lent out will leave the
+            // vault in an invalid / inconsistent state.
             JLOG(j.warn()) << "Vault unrealized loss is too large, and will corrupt the vault.";
             return tecLIMIT_EXCEEDED;
         }

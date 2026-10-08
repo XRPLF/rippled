@@ -14,6 +14,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -256,16 +257,19 @@ adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Jou
     STAmount const availableAfter{asset, Number(vault->at(sfAssetsAvailable)) + Number(cash)};
     Number const assetsDeployedAfter = Number(vault->at(sfAssetsDeployed)) + change.deployed;
     Number const lossUnrealizedAfter = Number(vault->at(sfLossUnrealized)) + change.loss;
+    Number const assetsReservedAfter = Number(vault->at(sfAssetsReserved)) + change.reserved;
+
     Number yieldUnrealizedAfter = Number(vault->at(sfYieldUnrealized)) + change.yield;
 
     if (availableAfter < beast::kZero || assetsDeployedAfter < beast::kZero ||
-        lossUnrealizedAfter < beast::kZero)
+        lossUnrealizedAfter < beast::kZero || assetsReservedAfter < beast::kZero)
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "adjustVaultBalances: a balance would become negative."
                         << " AssetsAvailable: " << Number(availableAfter)
                         << ", AssetsDeployed: " << assetsDeployedAfter
-                        << ", LossUnrealized: " << lossUnrealizedAfter;
+                        << ", LossUnrealized: " << lossUnrealizedAfter
+                        << ", AssetsReserved: " << assetsReservedAfter;
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
@@ -293,11 +297,15 @@ adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Jou
     XRPL_ASSERT(
         (STAmount{asset, yieldUnrealizedAfter} == yieldUnrealizedAfter),
         "xrpl::adjustVaultBalances : YieldUnrealized is a 16-digit STAmount value");
+    XRPL_ASSERT(
+        (STAmount{asset, assetsReservedAfter} == assetsReservedAfter),
+        "xrpl::adjustVaultBalances : AssetsReserved is a 16-digit STAmount value");
 
     vault->at(sfAssetsAvailable) = availableAfter;
     vault->at(sfAssetsDeployed) = assetsDeployedAfter;
     vault->at(sfLossUnrealized) = lossUnrealizedAfter;
     vault->at(sfYieldUnrealized) = yieldUnrealizedAfter;
+    vault->at(sfAssetsReserved) = assetsReservedAfter;
     syncAssetsTotal(vault);
 
     return tesSUCCESS;
@@ -427,6 +435,19 @@ vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount)
         "xrpl::vaultOpenZoneCapacity : FixedPrecision Vault");
     NumberRoundModeGuard const rg(Number::RoundingMode::TowardsZero);
     return getAssetsTotal(vault) + vault->at(sfYieldUnrealized) + roundedAmount;
+}
+
+[[nodiscard]] Number
+getVaultAssetsLentOut(
+    Rules const& rules,
+    Number const& assetsTotal,
+    Number const& assetsAvailable,
+    Number const& assetsReserved)
+{
+    Number lentOut = assetsTotal - assetsAvailable;
+    if (rules.enabled(featureLendingProtocolV1_2))
+        lentOut -= assetsReserved;
+    return lentOut;
 }
 
 [[nodiscard]] std::optional<STAmount>

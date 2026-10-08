@@ -1,10 +1,12 @@
 #include <test/app/vault/VaultTestBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/vault.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
@@ -16,14 +18,18 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -105,6 +111,7 @@ private:
             BEAST_EXPECT(kCheckString(vault, sfAssetsAvailable, "50"));
             BEAST_EXPECT(kCheckString(vault, sfAssetsMaximum, "1000"));
             BEAST_EXPECT(kCheckString(vault, sfAssetsTotal, "50"));
+            BEAST_EXPECT(!vault.isMember(sfAssetsReserved.getJsonName()));
             BEAST_EXPECT(!vault.isMember(sfLossUnrealized.getJsonName()));
 
             auto const strShareID = strHex(sle->at(sfShareMPTID));
@@ -522,6 +529,58 @@ private:
         }
     }
 
+    // RPC coverage: vault_info exposes AssetsReserved when non-zero. The field
+    // is a SoeDefault Number that is elided from the JSON when zero (asserted
+    // in testRPC's `check(...)`). A pending two-step LoanSet moves the
+    // requested principal into AssetsReserved, so the state is driven through
+    // transactions only; the response must report it as a string matching the
+    // ledger.
+    void
+    testRPCAssetsReserved()
+    {
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+
+        testcase("RPC vault_info reflects AssetsReserved when non-zero");
+        Env env{*this, testableAmendments()};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(100'000), lender, borrower);
+        env.close();
+
+        // A LoanBroker requires a closed-ended vault, and LoanSet requires the
+        // vault to be in its Investment phase.
+        Asset const asset = xrpIssue();
+        auto const setup =
+            makeClosedEndedVault(env, lender, asset, 60, 10u * 365u * 24u * 60u * 60u);
+        env(setup.vault.deposit(
+            {.depositor = lender, .id = setup.keylet.key, .amount = XRP(1000)}));
+        env.close(Tp{D{setup.sub + 1}});
+
+        auto const brokerKeylet =
+            keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
+        env(loan_broker::set(lender, setup.keylet.key));
+        env.close();
+
+        // Propose, but do not accept, a loan. The principal moves from
+        // AssetsAvailable into AssetsReserved until the borrower accepts.
+        Number const reserved = XRP(25).number();
+        std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
+        env(loan::set(lender, brokerKeylet.key, reserved),
+            loan::kBorrower(borrower),
+            loan::kStartDate(startDate));
+        env.close();
+
+        if (auto const sle = env.le(setup.keylet); BEAST_EXPECT(sle))
+            BEAST_EXPECT(sle->at(sfAssetsReserved) == reserved);
+
+        json::Value jv = env.rpc("vault_info", strHex(setup.keylet.key));
+        BEAST_EXPECT(!jv[jss::result].isMember(jss::error));
+        auto const& vaultJv = jv[jss::result][jss::vault];
+        BEAST_EXPECT(vaultJv.isMember(sfAssetsReserved.getJsonName()));
+        BEAST_EXPECT(vaultJv[sfAssetsReserved.getJsonName()].asString() == to_string(reserved));
+    }
+
     // RPC coverage: closed-ended vaults must return VaultKind, SubscriptionDate and RedemptionDate
     // in both vault_info and ledger_entry responses. Open-ended vaults must not.
     void
@@ -611,6 +670,7 @@ public:
     run() override
     {
         testRPC();
+        testRPCAssetsReserved();
         testRPCClosedEnded();
     }
 };

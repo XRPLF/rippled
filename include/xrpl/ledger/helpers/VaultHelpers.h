@@ -62,6 +62,11 @@ struct VaultBalanceChange
      * Signed change to impaired principal (LossUnrealized), exact.
      */
     Number loss = 0;
+
+    /**
+     * Signed change to AssetsReserved, exact.
+     */
+    Number reserved = 0;
 };
 
 /**
@@ -229,6 +234,22 @@ checkOptionalVaultInflow(SLE::ConstRef vault, STAmount const& amount);
  */
 [[nodiscard]] Number
 vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount);
+
+/**
+ * Assets lent out by the Vault's active loans: AssetsTotal - AssetsAvailable,
+ * less AssetsReserved once featureLendingProtocolV1_2 is enabled.
+ *
+ * @param rules           The ledger rules, to test featureLendingProtocolV1_2.
+ * @param assetsTotal     The Vault's AssetsTotal.
+ * @param assetsAvailable The Vault's AssetsAvailable.
+ * @param assetsReserved  The Vault's AssetsReserved.
+ */
+[[nodiscard]] Number
+getVaultAssetsLentOut(
+    Rules const& rules,
+    Number const& assetsTotal,
+    Number const& assetsAvailable,
+    Number const& assetsReserved);
 
 /**
  * From the perspective of a vault, return the number of shares to give

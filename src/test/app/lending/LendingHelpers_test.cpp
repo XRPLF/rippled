@@ -8,10 +8,16 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/vault.h>
+#include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -20,11 +26,16 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 
 #include <cstdint>
 #include <memory>
@@ -1925,6 +1936,87 @@ public:
              Number{15, -7}));
     }
 
+    // disburseLoan is asked to pay out a loan, but the vault
+    // pseudo-account does not hold enough of the asset to cover the
+    // transfer, so the inner accountSendMulti call fails. This exercises
+    // the final `return ter;` in disburseLoan. Normal transaction flow
+    // cannot reach it: LoanSet::preclaim checks that
+    // Vault.AssetsAvailable >= principalRequested, and the ValidVault
+    // invariant keeps AssetsAvailable in step with the pseudo-account's
+    // real XRP balance.
+    void
+    testDisburseLoanTransferFailure()
+    {
+        testcase("disburseLoan: accountSendMulti failure surfaces the tec");
+
+        using namespace jtx;
+
+        Env env{*this};
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        // Standard XRP vault owned by the lender, with a deposit that
+        // funds the pseudo-account so the drain below is meaningful.
+        PrettyAsset const asset{xrpIssue(), 1};
+        Vault const vault{env};
+        auto const [createTx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        env(createTx);
+        env.close();
+        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = asset(100'000)}));
+        env.close();
+
+        auto const vaultSle0 = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultSle0))
+            return;
+        AccountID const vaultPseudo = vaultSle0->at(sfAccount);
+        Asset const vaultAsset = vaultSle0->at(sfAsset);
+
+        // Dummy STTx: disburseLoan does not inspect tx fields, but
+        // ApplyContext requires an STTx. Use a Payment (arbitrary type)
+        // signed by the lender so the account field is well-formed.
+        STTx const tx{ttPAYMENT, [&](STObject& obj) { obj.setAccountID(sfAccount, lender.id()); }};
+
+        // Clone the current ledger into a writable ApplyContext.
+        OpenView ov{*env.current()};
+        test::StreamSink sink{beast::Severity::Warning};
+        beast::Journal const jlog{sink};
+        ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+
+        auto borrowerSle = ac.view().peek(keylet::account(borrower.id()));
+        auto brokerOwnerSle = ac.view().peek(keylet::account(lender.id()));
+        auto pseudoSle = ac.view().peek(keylet::account(vaultPseudo));
+        if (!BEAST_EXPECT(borrowerSle && brokerOwnerSle && pseudoSle))
+            return;
+
+        // Drain the vault pseudo-account so accountSendMultiIOU's native
+        // branch (sfBalance < takeFromSender) returns tecFAILED_PROCESSING.
+        pseudoSle->setFieldAmount(sfBalance, STAmount(XRPAmount(0)));
+        ac.view().update(pseudoSle);
+
+        // originationFee > 0 also exercises the second addEmptyHolding leg
+        // (broker owner side). Both are no-ops for native XRP.
+        Number const originationFee{5'000};
+        Number const toBorrower{95'000};
+
+        auto viewContext = ac.getApplyViewContext();
+        TER const result = disburseLoan(
+            viewContext,
+            borrowerSle,
+            brokerOwnerSle,
+            vaultPseudo,
+            vaultAsset,
+            toBorrower,
+            originationFee,
+            borrower.id(),
+            lender.id(),
+            jlog);
+
+        BEAST_EXPECT(result == TER{tecFAILED_PROCESSING});
+    }
+
     // Targeted unit test for getLoanDefaultFreezeExemptAccounts(): builds a real
     // (XRP, so no trust lines needed) Vault/LoanBroker/Loan chain, then calls
     // the function directly against hand-picked, unsubmitted transactions
@@ -2055,6 +2147,7 @@ public:
         testLoanVaultExposureDispatcher();
         testLoanPaymentDeltasDispatcher();
 
+        testDisburseLoanTransferFailure();
         testLoanDefaultFreezeExemptAccounts();
     }
 };

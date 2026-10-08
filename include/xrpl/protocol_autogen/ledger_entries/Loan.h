@@ -68,14 +68,27 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (SoeRequired)
-     * @return The field value.
+     * @brief Get sfOwnerNode (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
     getOwnerNode() const
     {
-        return this->sle_->at(sfOwnerNode);
+        if (hasOwnerNode())
+            return this->sle_->at(sfOwnerNode);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfOwnerNode is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasOwnerNode() const
+    {
+        return this->sle_->isFieldPresent(sfOwnerNode);
     }
 
     /**
@@ -578,7 +591,6 @@ public:
      * @brief Construct a new LoanBuilder with required fields.
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
-     * @param ownerNode The sfOwnerNode field value.
      * @param loanBrokerNode The sfLoanBrokerNode field value.
      * @param loanBrokerID The sfLoanBrokerID field value.
      * @param loanSequence The sfLoanSequence field value.
@@ -587,12 +599,11 @@ public:
      * @param paymentInterval The sfPaymentInterval field value.
      * @param periodicPayment The sfPeriodicPayment field value.
      */
-    LoanBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& loanBrokerNode,std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID,std::decay_t<typename SF_UINT32::type::value_type> const& loanSequence,std::decay_t<typename SF_ACCOUNT::type::value_type> const& borrower,std::decay_t<typename SF_UINT32::type::value_type> const& startDate,std::decay_t<typename SF_UINT32::type::value_type> const& paymentInterval,std::decay_t<typename SF_NUMBER::type::value_type> const& periodicPayment)
+    LoanBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_UINT64::type::value_type> const& loanBrokerNode,std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID,std::decay_t<typename SF_UINT32::type::value_type> const& loanSequence,std::decay_t<typename SF_ACCOUNT::type::value_type> const& borrower,std::decay_t<typename SF_UINT32::type::value_type> const& startDate,std::decay_t<typename SF_UINT32::type::value_type> const& paymentInterval,std::decay_t<typename SF_NUMBER::type::value_type> const& periodicPayment)
         : LedgerEntryBuilderBase<LoanBuilder>(ltLOAN)
     {
         setPreviousTxnID(previousTxnID);
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
-        setOwnerNode(ownerNode);
         setLoanBrokerNode(loanBrokerNode);
         setLoanBrokerID(loanBrokerID);
         setLoanSequence(loanSequence);
@@ -643,7 +654,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (SoeRequired)
+     * @brief Set sfOwnerNode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&

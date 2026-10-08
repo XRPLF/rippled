@@ -242,6 +242,7 @@ TYPED_SFIELD(sfPeriodicPayment,          NUMBER,     16)
 TYPED_SFIELD(sfManagementFeeOutstanding, NUMBER,     17, SField::kSmdNeedsAsset | SField::kSmdDefault)
 TYPED_SFIELD(sfYieldUnrealized,          NUMBER,     18, SField::kSmdNeedsAsset | SField::kSmdDefault)
 TYPED_SFIELD(sfAssetsDeployed,           NUMBER,     19, SField::kSmdNeedsAsset | SField::kSmdDefault)
+TYPED_SFIELD(sfAssetsReserved,           NUMBER,     20, SField::kSmdNeedsAsset | SField::kSmdDefault)
 
 // 32-bit signed (common)
 TYPED_SFIELD(sfLoanScale,                INT32,      1)
