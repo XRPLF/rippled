@@ -717,15 +717,15 @@ private:
                 BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
         }
 
-        // LoanManage on a pending loan is rejected with tecNO_PERMISSION even
-        // after NextPaymentDueDate + GracePeriod has passed.
-        for (auto const assetType : {AssetType::XRP, AssetType::IOU, AssetType::MPT})
         {
-            testcase << "Two-step: pending loan rejects LoanManage after due date ("
-                     << assetTypeName(assetType) << ")";
+            testcase("Two-step: pending loan rejects LoanManage after due date");
 
+            // LoanManage on a pending loan is rejected with tecNO_PERMISSION
+            // even after NextPaymentDueDate + GracePeriod has passed. The
+            // pending gate fires before the transactor reads the asset, so a
+            // single asset type is enough here.
             Env env(*this, features);
-            auto const broker = makeTwoStepBroker(env, assetType);
+            auto const broker = makeTwoStepBroker(env, AssetType::XRP);
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
             std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();

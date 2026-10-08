@@ -22,6 +22,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
@@ -854,6 +855,65 @@ private:
         }
     }
 
+    // Which account has its IOU trust line frozen or its MPToken locked in
+    // the freeze scenarios of testTwoStepFreeze.
+    enum class FreezeTarget { VaultPseudo, BrokerPseudo, Borrower, BrokerOwner };
+
+    struct FreezeCase
+    {
+        char const* label;
+        FreezeTarget target;
+        std::uint32_t trustFlags;  // TrustSet flags used for the IOU case
+    };
+
+    // Map a FreezeTarget to the account it refers to in this environment.
+    jtx::Account
+    resolveFreezeTarget(jtx::Env& env, BrokerInfo const& broker, FreezeTarget target) const
+    {
+        using namespace jtx;
+        switch (target)
+        {
+            case FreezeTarget::VaultPseudo: {
+                auto const v = env.le(broker.vaultKeylet());
+                return Account("vault pseudo-account", v->at(sfAccount));
+            }
+            case FreezeTarget::BrokerPseudo: {
+                auto const b = env.le(broker.brokerKeylet());
+                return Account("broker pseudo-account", b->at(sfAccount));
+            }
+            case FreezeTarget::Borrower:
+                return borrower_;
+            case FreezeTarget::BrokerOwner:
+                return lender_;
+        }
+        UNREACHABLE("LoanTwoStep_test::resolveFreezeTarget : unknown target");
+        return borrower_;
+    }
+
+    // Freeze `target`'s trust line (IOU, using `trustFlags`) or lock its
+    // MPToken (MPT), close the ledger, and return the error code a
+    // transaction touching that holding is expected to fail with.
+    TER
+    freezeHolding(
+        jtx::Env& env,
+        BrokerInfo const& broker,
+        jtx::Account const& target,
+        AssetType assetType,
+        std::uint32_t trustFlags)
+    {
+        using namespace jtx;
+        if (assetType == AssetType::IOU)
+        {
+            env(trust(issuer_, target[iouCurrency_](0), trustFlags));
+            env.close();
+            return TER{tecFROZEN};
+        }
+        MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
+        mptt.set({.account = issuer_, .holder = target, .flags = tfMPTLock});
+        env.close();
+        return TER{tecLOCKED};
+    }
+
     // Freeze / deep-freeze / MPT lock / authorization scenarios across both
     // sides of the two-step flow (LoanSet at proposal time, LoanAccept at
     // acceptance time), plus the "cannot add holding" and reserve-drained
@@ -865,157 +925,76 @@ private:
         using namespace jtx::loan;
         using namespace std::chrono_literals;
 
-        // If the vault pseudo-account's trust line is frozen (IOU) or its
-        // MPToken is locked (MPT) before LoanSet, the proposal is rejected
-        // with tecFROZEN / tecLOCKED and no pending Loan is created.
-        for (auto const assetType : {AssetType::IOU, AssetType::MPT})
+        // Whether the freeze happens before LoanSet or between LoanSet and
+        // LoanAccept.
+        enum class FreezeStage { BeforeSet, BeforeAccept };
+
+        static constexpr FreezeCase freezeCases[] = {
+            {.label = "frozen vault pseudo-account",
+             .target = FreezeTarget::VaultPseudo,
+             .trustFlags = tfSetFreeze},
+            {.label = "deep frozen broker pseudo-account",
+             .target = FreezeTarget::BrokerPseudo,
+             .trustFlags = tfSetFreeze | tfSetDeepFreeze},
+            {.label = "frozen borrower",
+             .target = FreezeTarget::Borrower,
+             .trustFlags = tfSetFreeze},
+            {.label = "deep frozen broker owner",
+             .target = FreezeTarget::BrokerOwner,
+             .trustFlags = tfSetFreeze | tfSetDeepFreeze},
+        };
+
+        // Freeze (IOU) or lock (MPT) one of the accounts involved in the
+        // loan, either before LoanSet or between LoanSet and LoanAccept. In
+        // the first case the proposal is rejected with tecFROZEN / tecLOCKED
+        // and no pending Loan is created; in the second the acceptance is
+        // rejected with the same code and the loan stays pending.
+        for (auto const stage : {FreezeStage::BeforeSet, FreezeStage::BeforeAccept})
         {
-            testcase << "Two-step: LoanSet with frozen vault pseudo-account ("
-                     << assetTypeName(assetType) << ")";
-
-            Env env(*this, features_);
-            auto const broker = makeBroker(env, assetType);
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-
-            auto const vaultPseudo = [&]() {
-                auto const v = env.le(broker.vaultKeylet());
-                return Account("vault pseudo-account", v->at(sfAccount));
-            }();
-
-            TER expected = tesSUCCESS;
-            if (assetType == AssetType::IOU)
+            for (auto const& fc : freezeCases)
             {
-                env(trust(issuer_, vaultPseudo[iouCurrency_](0), tfSetFreeze));
-                env.close();
-                expected = TER{tecFROZEN};
+                for (auto const assetType : {AssetType::IOU, AssetType::MPT})
+                {
+                    testcase << "Two-step: "
+                             << (stage == FreezeStage::BeforeSet ? "LoanSet" : "LoanAccept")
+                             << " with " << fc.label << " (" << assetTypeName(assetType) << ")";
+
+                    Env env(*this, features_);
+                    auto const broker = makeBroker(env, assetType);
+                    auto const loanKeylet = nextLoanKeylet(env, broker);
+                    if (stage == FreezeStage::BeforeAccept)
+                    {
+                        propose(
+                            env,
+                            broker,
+                            lender_,
+                            borrower_,
+                            (env.now() + 1h).time_since_epoch().count());
+                        env.close();
+                    }
+
+                    auto const target = resolveFreezeTarget(env, broker, fc.target);
+                    TER const expected =
+                        freezeHolding(env, broker, target, assetType, fc.trustFlags);
+
+                    if (stage == FreezeStage::BeforeSet)
+                    {
+                        propose(
+                            env,
+                            broker,
+                            lender_,
+                            borrower_,
+                            (env.now() + 1h).time_since_epoch().count(),
+                            Ter(expected));
+                        BEAST_EXPECT(!env.le(loanKeylet));
+                    }
+                    else
+                    {
+                        env(accept(borrower_, loanKeylet.key), Ter(expected));
+                        expectStillPending(env, loanKeylet);
+                    }
+                }
             }
-            else
-            {
-                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer_, .holder = vaultPseudo, .flags = tfMPTLock});
-                env.close();
-                expected = TER{tecLOCKED};
-            }
-
-            propose(
-                env,
-                broker,
-                lender_,
-                borrower_,
-                (env.now() + 1h).time_since_epoch().count(),
-                Ter(expected));
-            BEAST_EXPECT(!env.le(loanKeylet));
-        }
-
-        // Same as above, with the LoanBroker pseudo-account deep frozen /
-        // locked.
-        for (auto const assetType : {AssetType::IOU, AssetType::MPT})
-        {
-            testcase << "Two-step: LoanSet with deep frozen broker pseudo-account ("
-                     << assetTypeName(assetType) << ")";
-
-            Env env(*this, features_);
-            auto const broker = makeBroker(env, assetType);
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-
-            auto const brokerPseudo = [&]() {
-                auto const b = env.le(broker.brokerKeylet());
-                return Account("broker pseudo-account", b->at(sfAccount));
-            }();
-
-            TER expected = tesSUCCESS;
-            if (assetType == AssetType::IOU)
-            {
-                env(trust(issuer_, brokerPseudo[iouCurrency_](0), tfSetFreeze | tfSetDeepFreeze));
-                env.close();
-                expected = TER{tecFROZEN};
-            }
-            else
-            {
-                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer_, .holder = brokerPseudo, .flags = tfMPTLock});
-                env.close();
-                expected = TER{tecLOCKED};
-            }
-
-            propose(
-                env,
-                broker,
-                lender_,
-                borrower_,
-                (env.now() + 1h).time_since_epoch().count(),
-                Ter(expected));
-            BEAST_EXPECT(!env.le(loanKeylet));
-        }
-
-        // Same as above, with the Borrower frozen / locked.
-        for (auto const assetType : {AssetType::IOU, AssetType::MPT})
-        {
-            testcase << "Two-step: LoanSet with frozen borrower (" << assetTypeName(assetType)
-                     << ")";
-
-            Env env(*this, features_);
-            auto const broker = makeBroker(env, assetType);
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-
-            TER expected = tesSUCCESS;
-            if (assetType == AssetType::IOU)
-            {
-                env(trust(issuer_, borrower_[iouCurrency_](0), tfSetFreeze));
-                env.close();
-                expected = TER{tecFROZEN};
-            }
-            else
-            {
-                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer_, .holder = borrower_, .flags = tfMPTLock});
-                env.close();
-                expected = TER{tecLOCKED};
-            }
-
-            propose(
-                env,
-                broker,
-                lender_,
-                borrower_,
-                (env.now() + 1h).time_since_epoch().count(),
-                Ter(expected));
-            BEAST_EXPECT(!env.le(loanKeylet));
-        }
-
-        // Same as above, with the LoanBroker owner deep frozen / locked.
-        for (auto const assetType : {AssetType::IOU, AssetType::MPT})
-        {
-            testcase << "Two-step: LoanSet with deep frozen broker owner ("
-                     << assetTypeName(assetType) << ")";
-
-            Env env(*this, features_);
-            auto const broker = makeBroker(env, assetType);
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-
-            TER expected = tesSUCCESS;
-            if (assetType == AssetType::IOU)
-            {
-                env(trust(issuer_, lender_[iouCurrency_](0), tfSetFreeze | tfSetDeepFreeze));
-                env.close();
-                expected = TER{tecFROZEN};
-            }
-            else
-            {
-                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer_, .holder = lender_, .flags = tfMPTLock});
-                env.close();
-                expected = TER{tecLOCKED};
-            }
-
-            propose(
-                env,
-                broker,
-                lender_,
-                borrower_,
-                (env.now() + 1h).time_since_epoch().count(),
-                Ter(expected));
-            BEAST_EXPECT(!env.le(loanKeylet));
         }
 
         {
@@ -1037,148 +1016,6 @@ private:
             env.close();
 
             env(accept(borrower_, loanKeylet.key), Ter(tecINSUFFICIENT_RESERVE));
-            expectStillPending(env, loanKeylet);
-        }
-
-        // If the vault pseudo-account's trust line is frozen (IOU) or its
-        // MPToken is locked (MPT) between proposal and LoanAccept, the
-        // acceptance is rejected with tecFROZEN / tecLOCKED and the loan
-        // stays pending.
-        for (auto const assetType : {AssetType::IOU, AssetType::MPT})
-        {
-            testcase << "Two-step: LoanAccept with frozen vault pseudo-account ("
-                     << assetTypeName(assetType) << ")";
-
-            Env env(*this, features_);
-            auto const broker = makeBroker(env, assetType);
-
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
-
-            auto const vaultPseudo = [&]() {
-                auto const v = env.le(broker.vaultKeylet());
-                return Account("vault pseudo-account", v->at(sfAccount));
-            }();
-
-            TER expected = tesSUCCESS;
-            if (assetType == AssetType::IOU)
-            {
-                env(trust(issuer_, vaultPseudo[iouCurrency_](0), tfSetFreeze));
-                env.close();
-                expected = TER{tecFROZEN};
-            }
-            else
-            {
-                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer_, .holder = vaultPseudo, .flags = tfMPTLock});
-                env.close();
-                expected = TER{tecLOCKED};
-            }
-
-            env(accept(borrower_, loanKeylet.key), Ter(expected));
-            expectStillPending(env, loanKeylet);
-        }
-
-        // Same as above, with the LoanBroker pseudo-account deep frozen /
-        // locked.
-        for (auto const assetType : {AssetType::IOU, AssetType::MPT})
-        {
-            testcase << "Two-step: LoanAccept with deep frozen broker pseudo-account ("
-                     << assetTypeName(assetType) << ")";
-
-            Env env(*this, features_);
-            auto const broker = makeBroker(env, assetType);
-
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
-
-            auto const brokerPseudo = [&]() {
-                auto const b = env.le(broker.brokerKeylet());
-                return Account("broker pseudo-account", b->at(sfAccount));
-            }();
-
-            TER expected = tesSUCCESS;
-            if (assetType == AssetType::IOU)
-            {
-                env(trust(issuer_, brokerPseudo[iouCurrency_](0), tfSetFreeze | tfSetDeepFreeze));
-                env.close();
-                expected = TER{tecFROZEN};
-            }
-            else
-            {
-                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer_, .holder = brokerPseudo, .flags = tfMPTLock});
-                env.close();
-                expected = TER{tecLOCKED};
-            }
-
-            env(accept(borrower_, loanKeylet.key), Ter(expected));
-            expectStillPending(env, loanKeylet);
-        }
-
-        // Same as above, with the Borrower frozen / locked.
-        for (auto const assetType : {AssetType::IOU, AssetType::MPT})
-        {
-            testcase << "Two-step: LoanAccept with frozen borrower (" << assetTypeName(assetType)
-                     << ")";
-
-            Env env(*this, features_);
-            auto const broker = makeBroker(env, assetType);
-
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
-
-            TER expected = tesSUCCESS;
-            if (assetType == AssetType::IOU)
-            {
-                env(trust(issuer_, borrower_[iouCurrency_](0), tfSetFreeze));
-                env.close();
-                expected = TER{tecFROZEN};
-            }
-            else
-            {
-                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer_, .holder = borrower_, .flags = tfMPTLock});
-                env.close();
-                expected = TER{tecLOCKED};
-            }
-
-            env(accept(borrower_, loanKeylet.key), Ter(expected));
-            expectStillPending(env, loanKeylet);
-        }
-
-        // Same as above, with the LoanBroker owner deep frozen / locked.
-        for (auto const assetType : {AssetType::IOU, AssetType::MPT})
-        {
-            testcase << "Two-step: LoanAccept with deep frozen broker owner ("
-                     << assetTypeName(assetType) << ")";
-
-            Env env(*this, features_);
-            auto const broker = makeBroker(env, assetType);
-
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
-
-            TER expected = tesSUCCESS;
-            if (assetType == AssetType::IOU)
-            {
-                env(trust(issuer_, lender_[iouCurrency_](0), tfSetFreeze | tfSetDeepFreeze));
-                env.close();
-                expected = TER{tecFROZEN};
-            }
-            else
-            {
-                MPTTester mptt{env, issuer_, broker.asset.raw().get<MPTIssue>().getMptID()};
-                mptt.set({.account = issuer_, .holder = lender_, .flags = tfMPTLock});
-                env.close();
-                expected = TER{tecLOCKED};
-            }
-
-            env(accept(borrower_, loanKeylet.key), Ter(expected));
             expectStillPending(env, loanKeylet);
         }
 
@@ -1261,10 +1098,27 @@ private:
             BEAST_EXPECT(LoanAccept::preclaim(pctx) == TER{terNO_RIPPLE});
         }
 
+        // Which account loses its authorisation after the proposal. The
+        // broker owner (lender_) is funded with noripple, so its trust line
+        // only deletes once it carries NoRipple to match the account's
+        // default state. The borrower has default ripple on and needs no
+        // flag.
+        struct AuthCase
         {
-            testcase("Two-step: LoanAccept with unauthorized borrower (MPT)");
+            char const* label;
+            Account const& holder;
+            std::uint32_t deleteFlags;
+        };
+        AuthCase const authCases[] = {
+            {.label = "borrower", .holder = borrower_, .deleteFlags = 0},
+            {.label = "broker owner", .holder = lender_, .deleteFlags = tfSetNoRipple},
+        };
 
-            // If the issuer revokes the borrower's MPToken authorization
+        for (auto const& authCase : authCases)
+        {
+            testcase << "Two-step: LoanAccept with unauthorised " << authCase.label << " (MPT)";
+
+            // If the issuer revokes the holder's MPToken authorisation
             // between the LoanSet proposal and LoanAccept, LoanAccept fails
             // with tecNO_AUTH and the loan stays pending.
             Env env(*this, features_);
@@ -1288,78 +1142,46 @@ private:
             propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
-            // Issuer revokes the borrower's MPToken authorization.
-            asset.authorize({.account = issuer_, .holder = borrower_, .flags = tfMPTUnauthorize});
+            asset.authorize(
+                {.account = issuer_, .holder = authCase.holder, .flags = tfMPTUnauthorize});
             env.close();
 
             env(accept(borrower_, loanKeylet.key), Ter(tecNO_AUTH));
             expectStillPending(env, loanKeylet);
         }
 
+        for (auto const& authCase : authCases)
         {
-            testcase("Two-step: LoanAccept with unauthorized broker owner (MPT)");
+            testcase << "Two-step: LoanAccept with unauthorised " << authCase.label << " (IOU)";
 
-            // If the issuer revokes the broker owner's MPToken authorization
-            // between the LoanSet proposal and LoanAccept, LoanAccept fails
-            // with tecNO_AUTH and the loan stays pending.
-            Env env(*this, features_);
-
-            env.fund(XRP(1'000'000), issuer_, noripple(lender_), borrower_);
-            env.close();
-
-            MPTTester asset(
-                {.env = env,
-                 .issuer = issuer_,
-                 .holders = {lender_, borrower_},
-                 .flags = kMptDexFlags | tfMPTRequireAuth | tfMPTCanClawback | tfMPTCanLock,
-                 .authHolder = true});
-
-            env(pay(issuer_, lender_, asset(2'000'000)));
-            env.close();
-
-            auto const broker = createVaultAndBroker(env, asset, lender_);
-
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
-
-            // Issuer revokes the broker owner's MPToken authorization.
-            asset.authorize({.account = issuer_, .holder = lender_, .flags = tfMPTUnauthorize});
-            env.close();
-
-            env(accept(borrower_, loanKeylet.key), Ter(tecNO_AUTH));
-            expectStillPending(env, loanKeylet);
-        }
-
-        {
-            testcase("Two-step: LoanAccept with unauthorised borrower (IOU)");
-
-            // The issuer has asfRequireAuth. After the proposal the borrower
+            // The issuer has asfRequireAuth. After the proposal the holder
             // deletes its authorised trust line: LoanAccept fails with
-            // tecNO_LINE. The borrower recreates the line, still
-            // unauthorised: LoanAccept fails with tecNO_AUTH. Once the issuer
-            // authorises the new line, LoanAccept succeeds. The loan stays
-            // pending across both rejections.
+            // tecNO_LINE. The holder recreates the line, still unauthorised:
+            // LoanAccept fails with tecNO_AUTH. Once the issuer authorises
+            // the new line, LoanAccept succeeds. The loan stays pending
+            // across both rejections and the other party's line is untouched.
             Env env(*this, features_);
             auto const broker = makeRequireAuthIouBroker(env);
             Issue const iou = broker.asset.raw().get<Issue>();
+            Account const& other = authCase.holder == borrower_ ? lender_ : borrower_;
 
             auto const loanKeylet = nextLoanKeylet(env, broker);
             propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
-            // Zeroing the limit deletes the borrower's line.
-            auto const borrowerLine = keylet::trustLine(borrower_, iou);
-            env(trust(borrower_, broker.asset(0)));
+            // Zeroing the limit deletes the holder's line.
+            auto const holderLine = keylet::trustLine(authCase.holder, iou);
+            env(trust(authCase.holder, broker.asset(0), authCase.deleteFlags));
             env.close();
-            BEAST_EXPECT(!env.le(borrowerLine));
+            BEAST_EXPECT(!env.le(holderLine));
+            BEAST_EXPECT(env.le(keylet::trustLine(other, iou)));
 
             env(accept(borrower_, loanKeylet.key), Ter(tecNO_LINE));
             expectStillPending(env, loanKeylet);
 
-            env(trust(borrower_, broker.asset(1'000'000)));
+            env(trust(authCase.holder, broker.asset(1'000'000)));
             env.close();
-            BEAST_EXPECT(env.le(borrowerLine));
+            BEAST_EXPECT(env.le(holderLine));
             env(accept(borrower_, loanKeylet.key), Ter(tecNO_AUTH));
             expectStillPending(env, loanKeylet);
             // Close before the issuer authorises the line. Otherwise the
@@ -1368,57 +1190,13 @@ private:
             // succeed on replay.
             env.close();
 
-            env(trust(issuer_, broker.asset(0), borrower_, tfSetfAuth));
+            env(trust(issuer_, broker.asset(0), authCase.holder, tfSetfAuth));
             env.close();
             env(accept(borrower_, loanKeylet.key));
             env.close();
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
                 BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
             BEAST_EXPECT(env.balance(borrower_, broker.asset).value() == broker.asset(200).value());
-        }
-
-        {
-            testcase("Two-step: LoanAccept with unauthorised broker owner (IOU)");
-
-            // Same as the borrower case, on the broker owner's line. The
-            // borrower keeps its authorised line throughout. LoanAccept fails
-            // with tecNO_LINE while the owner has no line, with tecNO_AUTH on
-            // an unauthorised replacement, and succeeds once the issuer
-            // authorises it.
-            Env env(*this, features_);
-            auto const broker = makeRequireAuthIouBroker(env);
-            Issue const iou = broker.asset.raw().get<Issue>();
-
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
-
-            auto const lenderLine = keylet::trustLine(lender_, iou);
-            env(trust(lender_, broker.asset(0), tfSetNoRipple));
-            env.close();
-            BEAST_EXPECT(!env.le(lenderLine));
-            BEAST_EXPECT(env.le(keylet::trustLine(borrower_, iou)));
-
-            env(accept(borrower_, loanKeylet.key), Ter(tecNO_LINE));
-            expectStillPending(env, loanKeylet);
-
-            env(trust(lender_, broker.asset(1'000'000)));
-            env.close();
-            BEAST_EXPECT(env.le(lenderLine));
-            env(accept(borrower_, loanKeylet.key), Ter(tecNO_AUTH));
-            expectStillPending(env, loanKeylet);
-            // Close before the issuer authorises the line. Otherwise the
-            // rejected LoanAccept and the TrustSet share an open ledger and
-            // are reordered canonically at close, letting the LoanAccept
-            // succeed on replay.
-            env.close();
-
-            env(trust(issuer_, broker.asset(0), lender_, tfSetfAuth));
-            env.close();
-            env(accept(borrower_, loanKeylet.key));
-            env.close();
-            if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
-                BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
         }
 
         {
