@@ -1738,7 +1738,7 @@ protected:
         }
     }
 
-    static std::string
+    static std::string_view
     getCurrencyLabel(Asset const& asset)
     {
         if (asset.native())

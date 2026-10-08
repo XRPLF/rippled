@@ -46,6 +46,7 @@ protocolMessageType(protocol::TMProofPathRequest const&)
  * Returns the name of a protocol message given its type.
  */
 template <class = void>
+// NOLINTNEXTLINE(modernize-use-string-view) callers need std::string
 std::string
 protocolMessageName(int type)
 {

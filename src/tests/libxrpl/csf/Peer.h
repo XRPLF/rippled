@@ -80,7 +80,7 @@ struct Peer
             return proposal_.getJson();
         }
 
-        static std::string
+        static std::string_view
         render()
         {
             return "";

@@ -183,6 +183,7 @@ Logs::write(
     //    out_.write_console(s);
 }
 
+// NOLINTNEXTLINE(modernize-use-string-view) callers need std::string
 std::string
 Logs::rotate()
 {

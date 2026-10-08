@@ -50,7 +50,6 @@ Checks: "-*,
   -modernize-avoid-c-style-cast,
   -modernize-return-braced-init-list,
   -modernize-use-integer-sign-comparison,
-  -modernize-use-string-view,
   -modernize-use-trailing-return-type,
 
   performance-*,
