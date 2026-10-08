@@ -2,8 +2,10 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -26,6 +28,291 @@
 #include <xrpl/protocol/UintTypes.h>
 
 namespace xrpl {
+
+/**
+ * Validate that @p account may lock @p amount of a token for later delivery
+ * to @p dest.
+ *
+ * The lock-side counterpart of escrowUnlockPreclaimHelper: every issuer
+ * control (locking opt-in, authorization, freeze/lock, transferability,
+ * spendable balance) that gates locking token value lives here, so any
+ * transactor that locks funds applies the same rules. The signature is
+ * view-based rather than PreclaimContext-based so it can also run from
+ * doApply.
+ */
+template <ValidIssueType T>
+TER
+escrowLockPreclaimHelper(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& dest,
+    STAmount const& amount,
+    beast::Journal j);
+
+template <>
+inline TER
+escrowLockPreclaimHelper<Issue>(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& dest,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    auto const& issue = amount.get<Issue>();
+    auto const& issuer = amount.getIssuer();
+    // If the issuer is the same as the account, return tecNO_PERMISSION
+    if (issuer == account)
+        return tecNO_PERMISSION;
+
+    // If the lsfAllowTrustLineLocking is not enabled, return tecNO_PERMISSION
+    auto const sleIssuer = view.read(keylet::account(issuer));
+    if (!sleIssuer)
+        return tecNO_ISSUER;
+    if (!sleIssuer->isFlag(lsfAllowTrustLineLocking))
+        return tecNO_PERMISSION;
+
+    // If the account does not have a trustline to the issuer, return tecNO_LINE
+    auto const sleRippleState = view.read(keylet::trustLine(account, issuer, issue.currency));
+    if (!sleRippleState)
+        return tecNO_LINE;
+
+    STAmount const balance = (*sleRippleState)[sfBalance];
+
+    // If balance is positive, issuer must have higher address than account
+    if (balance > beast::kZero && issuer < account)
+        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+
+    // If balance is negative, issuer must have lower address than account
+    if (balance < beast::kZero && issuer > account)
+        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+
+    // If the issuer has requireAuth set, check if the account is authorized
+    if (auto const ter = requireAuth(view, issue, account); !isTesSuccess(ter))
+        return ter;
+
+    // If the issuer has requireAuth set, check if the destination is authorized
+    if (auto const ter = requireAuth(view, issue, dest); !isTesSuccess(ter))
+        return ter;
+
+    // If the issuer has frozen the account, return tecFROZEN
+    if (isFrozen(view, account, issue))
+        return tecFROZEN;
+
+    // If the issuer has frozen the destination, return tecFROZEN
+    if (isFrozen(view, dest, issue))
+        return tecFROZEN;
+
+    STAmount const spendableAmount =
+        accountHolds(view, account, issue.currency, issuer, FreezeHandling::IgnoreFreeze, j);
+
+    // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
+    if (spendableAmount <= beast::kZero)
+        return tecINSUFFICIENT_FUNDS;
+
+    // If the spendable amount is less than the amount, return
+    // tecINSUFFICIENT_FUNDS
+    if (spendableAmount < amount)
+        return tecINSUFFICIENT_FUNDS;
+
+    // If the amount is not addable to the balance, return tecPRECISION_LOSS
+    if (!canAdd(spendableAmount, amount))
+        return tecPRECISION_LOSS;
+
+    return tesSUCCESS;
+}
+
+template <>
+inline TER
+escrowLockPreclaimHelper<MPTIssue>(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& dest,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    AccountID const issuer = amount.getIssuer();
+    // If the issuer is the same as the account, return tecNO_PERMISSION
+    if (issuer == account)
+        return tecNO_PERMISSION;
+
+    // If the mpt does not exist, return tecOBJECT_NOT_FOUND
+    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
+    auto const sleIssuance = view.read(issuanceKey);
+    if (!sleIssuance)
+        return tecOBJECT_NOT_FOUND;
+
+    // If the lsfMPTCanEscrow is not enabled, return tecNO_PERMISSION
+    if (!sleIssuance->isFlag(lsfMPTCanEscrow))
+        return tecNO_PERMISSION;
+
+    // If the issuer is not the same as the issuer of the mpt, return
+    // tecNO_PERMISSION
+    if (sleIssuance->getAccountID(sfIssuer) != issuer)
+        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+
+    // If the account does not have the mpt, return tecOBJECT_NOT_FOUND
+    if (!view.exists(keylet::mptoken(issuanceKey.key, account)))
+        return tecOBJECT_NOT_FOUND;
+
+    // If the issuer has requireAuth set, check if the account is
+    // authorized
+    auto const& mptIssue = amount.get<MPTIssue>();
+    if (auto const ter = requireAuth(view, mptIssue, account, AuthType::WeakAuth);
+        !isTesSuccess(ter))
+        return ter;
+
+    // If the issuer has requireAuth set, check if the destination is
+    // authorized
+    if (auto const ter = requireAuth(view, mptIssue, dest, AuthType::WeakAuth); !isTesSuccess(ter))
+        return ter;
+
+    // If the issuer has frozen the account, return tecLOCKED
+    if (isFrozen(view, account, *sleIssuance))
+        return tecLOCKED;
+
+    // If the issuer has frozen the destination, return tecLOCKED
+    if (isFrozen(view, dest, *sleIssuance))
+        return tecLOCKED;
+
+    // If the mpt cannot be transferred, return tecNO_AUTH
+    if (auto const ter = canTransfer(view, mptIssue, account, dest); !isTesSuccess(ter))
+        return ter;
+
+    STAmount const spendableAmount = accountHolds(
+        view,
+        account,
+        amount.get<MPTIssue>(),
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        j);
+
+    // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
+    if (spendableAmount <= beast::kZero)
+        return tecINSUFFICIENT_FUNDS;
+
+    // If the spendable amount is less than the amount, return
+    // tecINSUFFICIENT_FUNDS
+    if (spendableAmount < amount)
+        return tecINSUFFICIENT_FUNDS;
+
+    return tesSUCCESS;
+}
+
+template <ValidIssueType T>
+TER
+escrowLockApplyHelper(
+    ApplyView& view,
+    AccountID const& issuer,
+    AccountID const& sender,
+    STAmount const& amount,
+    beast::Journal journal);
+
+template <>
+inline TER
+escrowLockApplyHelper<Issue>(
+    ApplyView& view,
+    AccountID const& issuer,
+    AccountID const& sender,
+    STAmount const& amount,
+    beast::Journal journal)
+{
+    // Defensive: Issuer cannot create an escrow
+    if (issuer == sender)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const ter =
+        directSendNoFee(view, sender, issuer, amount, !amount.holds<MPTIssue>(), journal);
+    if (!isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
+    return tesSUCCESS;
+}
+
+template <>
+inline TER
+escrowLockApplyHelper<MPTIssue>(
+    ApplyView& view,
+    AccountID const& issuer,
+    AccountID const& sender,
+    STAmount const& amount,
+    beast::Journal journal)
+{
+    // Defensive: Issuer cannot create an escrow
+    if (issuer == sender)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const ter = lockEscrowMPT(view, sender, amount, journal);
+    if (!isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
+    return tesSUCCESS;
+}
+
+template <ValidIssueType T>
+TER
+escrowUnlockPreclaimHelper(
+    ReadView const& view,
+    AccountID const& account,
+    STAmount const& amount,
+    bool checkFreeze = true);
+
+template <>
+inline TER
+escrowUnlockPreclaimHelper<Issue>(
+    ReadView const& view,
+    AccountID const& account,
+    STAmount const& amount,
+    bool checkFreeze)
+{
+    AccountID const& issuer = amount.getIssuer();
+    // If the issuer is the same as the account, return tesSUCCESS
+    if (issuer == account)
+        return tesSUCCESS;
+
+    // If the issuer has requireAuth set, check if the destination is authorized
+    if (auto const ter = requireAuth(view, amount.get<Issue>(), account); !isTesSuccess(ter))
+        return ter;
+
+    // If the issuer has deep frozen the destination, return tecFROZEN
+    if (checkFreeze &&
+        isDeepFrozen(view, account, amount.get<Issue>().currency, amount.getIssuer()))
+        return tecFROZEN;
+
+    return tesSUCCESS;
+}
+
+template <>
+inline TER
+escrowUnlockPreclaimHelper<MPTIssue>(
+    ReadView const& view,
+    AccountID const& account,
+    STAmount const& amount,
+    bool checkFreeze)
+{
+    AccountID const& issuer = amount.getIssuer();
+    // If the issuer is the same as the account, return tesSUCCESS
+    if (issuer == account)
+        return tesSUCCESS;
+
+    // If the mpt does not exist, return tecOBJECT_NOT_FOUND
+    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
+    auto const sleIssuance = view.read(issuanceKey);
+    if (!sleIssuance)
+        return tecOBJECT_NOT_FOUND;
+
+    // If the issuer has requireAuth set, check if the account is
+    // authorized
+    auto const& mptIssue = amount.get<MPTIssue>();
+    if (auto const ter = requireAuth(view, mptIssue, account, AuthType::WeakAuth);
+        !isTesSuccess(ter))
+        return ter;
+
+    // If the issuer has frozen the account, return tecLOCKED
+    if (checkFreeze && isFrozen(view, account, *sleIssuance))
+        return tecLOCKED;
+
+    return tesSUCCESS;
+}
+
+//------------------------------------------------------------------------------
 
 template <ValidIssueType T>
 TER
@@ -55,9 +342,6 @@ escrowUnlockApplyHelper<Issue>(
     bool createAsset,
     beast::Journal journal)
 {
-    auto const& issue = amount.get<Issue>();
-    Keylet const trustLineKey = keylet::trustLine(receiver, issue);
-    bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
 
@@ -66,6 +350,10 @@ escrowUnlockApplyHelper<Issue>(
 
     if (receiverIssuer)
         return tesSUCCESS;
+
+    auto const& issue = amount.get<Issue>();
+    Keylet const trustLineKey = keylet::trustLine(receiver, issue);
+    bool const recvLow = issuer > receiver;
 
     if (!ctx.view.exists(trustLineKey) && createAsset)
     {

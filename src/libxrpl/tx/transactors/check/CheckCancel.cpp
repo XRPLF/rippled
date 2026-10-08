@@ -3,7 +3,9 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/CheckEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -30,7 +32,7 @@ CheckCancel::preflight(PreflightContext const& ctx)
 TER
 CheckCancel::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
+    CheckEntryR const sleCheck(ctx.tx[sfCheckID], ctx.view);
     if (!sleCheck)
     {
         JLOG(ctx.j.warn()) << "Check does not exist.";
@@ -59,7 +61,7 @@ CheckCancel::preclaim(PreclaimContext const& ctx)
 TER
 CheckCancel::doApply()
 {
-    auto const sleCheck = view().peek(keylet::check(ctx_.tx[sfCheckID]));
+    CheckEntryW sleCheck(ctx_.tx[sfCheckID], view(), j_);
     if (!sleCheck)
     {
         // Error should have been caught in preclaim.
@@ -96,10 +98,10 @@ CheckCancel::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    decreaseOwnerCountForObject(view(), srcId, sleCheck, 1, viewJ);
+    decreaseOwnerCountForObject(view(), srcId, sleCheck.mutableRawSle(), 1, viewJ);
 
     // Remove check from ledger.
-    view().erase(sleCheck);
+    sleCheck.erase();
     return tesSUCCESS;
 }
 
