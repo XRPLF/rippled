@@ -1547,12 +1547,10 @@ NetworkOPsImp::doTransactionAsync(
     transactions_.emplace_back(transaction, bUnlimited, false, failType);
     transaction->setApplying();
 
-    if (dispatchState_ == DispatchState::None)
+    if ((dispatchState_ == DispatchState::None) &&
+        jobQueue_.addJob(JtBatch, "TxBatchAsync", [this]() { transactionBatch(); }))
     {
-        if (jobQueue_.addJob(JtBatch, "TxBatchAsync", [this]() { transactionBatch(); }))
-        {
-            dispatchState_ = DispatchState::Scheduled;
-        }
+        dispatchState_ = DispatchState::Scheduled;
     }
 }
 
@@ -1591,13 +1589,12 @@ NetworkOPsImp::doTransactionSyncBatch(
         {
             apply(lock);
 
-            if (!transactions_.empty())
+            if ((!transactions_.empty()) &&
+                jobQueue_.addJob(JtBatch, "TxBatchSync", [this]() { transactionBatch(); }))
+
+            // More transactions need to be applied, but by another job.
             {
-                // More transactions need to be applied, but by another job.
-                if (jobQueue_.addJob(JtBatch, "TxBatchSync", [this]() { transactionBatch(); }))
-                {
-                    dispatchState_ = DispatchState::Scheduled;
-                }
+                dispatchState_ = DispatchState::Scheduled;
             }
         }
     } while (retryCallback(lock));
@@ -2744,10 +2741,13 @@ NetworkOPsImp::setMode(OperatingMode om)
         if (registry_.get().getLedgerMaster().getValidatedLedgerAge() < 1min)
             om = OperatingMode::SYNCING;
     }
-    else if (om == OperatingMode::SYNCING)
+    else if (
+        (om == OperatingMode::SYNCING) &&
+        (registry_.get().getLedgerMaster().getValidatedLedgerAge() >= 1min))
     {
-        if (registry_.get().getLedgerMaster().getValidatedLedgerAge() >= 1min)
+        {
             om = OperatingMode::CONNECTED;
+        }
     }
 
     if ((om > OperatingMode::CONNECTED) && isBlocked())
@@ -4298,13 +4298,11 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 if (node.isFieldPresent(sfNewFields))
                 {
                     if (auto inner = dynamic_cast<STObject const*>(node.peekAtPField(sfNewFields));
-                        inner)
+                        inner &&
+                        (inner->isFieldPresent(sfAccount) &&
+                         inner->getAccountID(sfAccount) == accountId))
                     {
-                        if (inner->isFieldPresent(sfAccount) &&
-                            inner->getAccountID(sfAccount) == accountId)
-                        {
-                            return true;
-                        }
+                        return true;
                     }
                 }
                 return false;

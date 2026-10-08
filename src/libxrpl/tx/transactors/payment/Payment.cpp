@@ -416,23 +416,22 @@ Payment::preclaim(PreclaimContext const& ctx)
             if (ctx.parentBatchId && ctx.view.rules().enabled(featureBatchV1_1))
                 return tefNO_DST_PARTIAL;
         }
-        if (dstAmount < STAmount(ctx.view.fees().reserve))
-        {
-            // accountReserve is the minimum amount that an account can have.
-            // Reserve is not scaled by load.
-            if (!ctx.tx.isFlag(tfSponsorCreatedAccount))
-            {
-                // The minimum amount when creating a Sponsored Account is 1 drop.
-                // Since the reserve is covered by the sponsor, you don't need to hold the
-                // 1-increment reserve yourself.
-                JLOG(ctx.j.trace()) << "Delay transaction: Destination account does not exist. "
-                                    << "Insufficient payment to create account.";
+        if ((dstAmount < STAmount(ctx.view.fees().reserve)) &&
+            (!ctx.tx.isFlag(tfSponsorCreatedAccount)))
 
-                // TODO: de-dupe
-                // Another transaction could create the account and then this
-                // transaction would succeed.
-                return tecNO_DST_INSUF_XRP;
-            }
+        // accountReserve is the minimum amount that an account can have.
+        // Reserve is not scaled by load.
+        {
+            // The minimum amount when creating a Sponsored Account is 1 drop.
+            // Since the reserve is covered by the sponsor, you don't need to hold the
+            // 1-increment reserve yourself.
+            JLOG(ctx.j.trace()) << "Delay transaction: Destination account does not exist. "
+                                << "Insufficient payment to create account.";
+
+            // TODO: de-dupe
+            // Another transaction could create the account and then this
+            // transaction would succeed.
+            return tecNO_DST_INSUF_XRP;
         }
     }
     else if (ctx.tx.isFlag(tfSponsorCreatedAccount))

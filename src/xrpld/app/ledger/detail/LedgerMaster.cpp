@@ -943,11 +943,11 @@ LedgerMaster::checkAccept(UInt256 const& hash, std::uint32_t seq)
 
     if (!ledger)
     {
-        if ((seq != 0) && (getValidLedgerIndex() == 0))
+        if (((seq != 0) && (getValidLedgerIndex() == 0)) &&
+            (valCount >= app_.getValidators().quorum()))
         {
             // Set peers converged early if we can
-            if (valCount >= app_.getValidators().quorum())
-                app_.getOverlay().checkTracking(seq);
+            app_.getOverlay().checkTracking(seq);
         }
 
         // FIXME: We may not want to fetch a ledger with just one

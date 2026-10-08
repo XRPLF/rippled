@@ -346,16 +346,15 @@ verifyHandshake(
         if (ec)
             throw std::runtime_error("Invalid Remote-IP");
 
-        if (beast::ip::isPublic(remote) && !beast::ip::isUnspecified(publicIp))
+        if ((beast::ip::isPublic(remote) && !beast::ip::isUnspecified(publicIp)) &&
+            (remoteIp != publicIp))
+
+        // We know our public IP and peer reports our connection came
+        // from some other IP.
         {
-            // We know our public IP and peer reports our connection came
-            // from some other IP.
-            if (remoteIp != publicIp)
-            {
-                throw std::runtime_error(
-                    "Incorrect Remote-IP: " + publicIp.to_string() + " instead of " +
-                    remoteIp.to_string());
-            }
+            throw std::runtime_error(
+                "Incorrect Remote-IP: " + publicIp.to_string() + " instead of " +
+                remoteIp.to_string());
         }
     }
 

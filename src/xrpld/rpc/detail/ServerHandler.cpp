@@ -974,17 +974,17 @@ ServerHandler::processRequest(
     int const httpStatus = [&reply]() {
         // This feature is enabled with ripplerpc version 3.0 and above.
         // Before ripplerpc version 3.0 always return 200.
-        if (reply.isMember(jss::ripplerpc) && reply[jss::ripplerpc].isString() &&
-            reply[jss::ripplerpc].asString() >= "3.0")
+        if ((reply.isMember(jss::ripplerpc) && reply[jss::ripplerpc].isString() &&
+             reply[jss::ripplerpc].asString() >= "3.0") &&
+            (reply.isMember(jss::error) && reply[jss::error].isMember(jss::error_code) &&
+             reply[jss::error][jss::error_code].isInt()))
+
+        // If there's an error_code, use that to determine the HTTP Status.
         {
-            // If there's an error_code, use that to determine the HTTP Status.
-            if (reply.isMember(jss::error) && reply[jss::error].isMember(jss::error_code) &&
-                reply[jss::error][jss::error_code].isInt())
-            {
-                int const errCode = reply[jss::error][jss::error_code].asInt();
-                return rpc::errorCodeHttpStatus(static_cast<ErrorCodeI>(errCode));
-            }
+            int const errCode = reply[jss::error][jss::error_code].asInt();
+            return rpc::errorCodeHttpStatus(static_cast<ErrorCodeI>(errCode));
         }
+
         // Return OK.
         return 200;
     }();

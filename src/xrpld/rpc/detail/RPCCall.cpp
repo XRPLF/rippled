@@ -649,17 +649,16 @@ private:
             return std::all_of(
                 jv.begin(), jv.end(), [this](auto const& j) { return isValidJson2(j); });
         }
-        if (jv.isObject())
+        if (jv.isObject() &&
+            (jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0" &&
+             jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0" && jv.isMember(jss::id) &&
+             jv.isMember(jss::method)))
         {
-            if (jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0" &&
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0" &&
-                jv.isMember(jss::id) && jv.isMember(jss::method))
-            {
-                return !jv.isMember(jss::params) ||
-                    (jv[jss::params].isNull() || jv[jss::params].isArray() ||
-                     jv[jss::params].isObject());
-            }
+            return !jv.isMember(jss::params) ||
+                (jv[jss::params].isNull() || jv[jss::params].isArray() ||
+                 jv[jss::params].isObject());
         }
+
         return false;
     }
 
@@ -1171,11 +1170,9 @@ private:
     {
         json::Value jvRequest{json::ValueType::Object};
 
-        if (jvParams.size() == 2 || jvParams.size() == 4)
-        {
-            if (jvParams[1u].asString() == jss::binary)
-                jvRequest[jss::binary] = true;
-        }
+        if ((jvParams.size() == 2 || jvParams.size() == 4) &&
+            (jvParams[1u].asString() == jss::binary))
+            jvRequest[jss::binary] = true;
 
         if (jvParams.size() >= 3)
         {

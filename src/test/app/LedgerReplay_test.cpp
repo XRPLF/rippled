@@ -704,21 +704,18 @@ public:
         TaskStatus skiplistExpect,
         std::vector<TaskStatus> const& deltaExpects)
     {
-        if (taskStatus(task) == taskExpect)
+        if ((taskStatus(task) == taskExpect) &&
+            (taskStatus(task->skipListAcquirer_) == skiplistExpect) &&
+            (task->deltas_.size() == deltaExpects.size()))
         {
-            if (taskStatus(task->skipListAcquirer_) == skiplistExpect)
+            for (int i = 0; i < deltaExpects.size(); ++i)
             {
-                if (task->deltas_.size() == deltaExpects.size())
-                {
-                    for (int i = 0; i < deltaExpects.size(); ++i)
-                    {
-                        if (taskStatus(task->deltas_[i]) != deltaExpects[i])
-                            return false;
-                    }
-                    return true;
-                }
+                if (taskStatus(task->deltas_[i]) != deltaExpects[i])
+                    return false;
             }
+            return true;
         }
+
         return false;
     }
 

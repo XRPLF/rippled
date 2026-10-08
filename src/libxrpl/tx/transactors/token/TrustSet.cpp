@@ -76,14 +76,13 @@ TrustSet::preflight(PreflightContext const& ctx)
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
-    if (!ctx.rules.enabled(featureDeepFreeze))
+    if ((!ctx.rules.enabled(featureDeepFreeze)) &&
+        ((tx.getFlags() & (tfSetDeepFreeze | tfClearDeepFreeze)) != 0u))
+
+    // Even though the deep freeze flags are included in the
+    // `tfTrustSetMask`, they are not valid if the amendment is not enabled.
     {
-        // Even though the deep freeze flags are included in the
-        // `tfTrustSetMask`, they are not valid if the amendment is not enabled.
-        if ((tx.getFlags() & (tfSetDeepFreeze | tfClearDeepFreeze)) != 0u)
-        {
-            return temINVALID_FLAG;
-        }
+        return temINVALID_FLAG;
     }
 
     STAmount const saLimitAmount(tx.getFieldAmount(sfLimitAmount));

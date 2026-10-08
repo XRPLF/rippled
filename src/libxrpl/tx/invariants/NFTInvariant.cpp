@@ -251,14 +251,11 @@ NFTokenCountTracking::finalize(
 
     if (tx.getTxnType() == ttNFTOKEN_BURN)
     {
-        if (isTesSuccess(result))
+        if (isTesSuccess(result) && (beforeBurnedTotal_ >= afterBurnedTotal_))
         {
-            if (beforeBurnedTotal_ >= afterBurnedTotal_)
-            {
-                JLOG(j.fatal()) << "Invariant failed: successful burning didn't increase "
-                                   "the number of burned tokens.";
-                return false;
-            }
+            JLOG(j.fatal()) << "Invariant failed: successful burning didn't increase "
+                               "the number of burned tokens.";
+            return false;
         }
 
         if (!isTesSuccess(result) && beforeBurnedTotal_ != afterBurnedTotal_)

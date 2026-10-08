@@ -143,15 +143,18 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
         if (ctx.view.exists(keylet::depositPreauth(account, sorted)))
             return tecDUPLICATE;
     }
-    else if (ctx.tx.isFieldPresent(sfUnauthorizeCredentials))
+    else if (
+        ctx.tx.isFieldPresent(sfUnauthorizeCredentials) &&
+        (!ctx.view.exists(
+            keylet::depositPreauth(
+                account, credentials::makeSorted(ctx.tx.getFieldArray(sfUnauthorizeCredentials))))))
     {
-        // Verify that the Preauth entry is in the ledger.
-        if (!ctx.view.exists(
-                keylet::depositPreauth(
-                    account,
-                    credentials::makeSorted(ctx.tx.getFieldArray(sfUnauthorizeCredentials)))))
+        {
+            // Verify that the Preauth entry is in the ledger.
             return tecNO_ENTRY;
+        }
     }
+
     return tesSUCCESS;
 }
 

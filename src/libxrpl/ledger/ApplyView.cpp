@@ -383,11 +383,9 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, UInt256 const&
 
     // If we're not keeping the root, then check to see if
     // it's left empty. If so, delete it as well.
-    if (!keepRoot && nextPage == kRootPage && prevPage == kRootPage)
-    {
-        if (prev->getFieldV256(sfIndexes).empty())
-            erase(prev);
-    }
+    if ((!keepRoot && nextPage == kRootPage && prevPage == kRootPage) &&
+        prev->getFieldV256(sfIndexes).empty())
+        erase(prev);
 
     return true;
 }

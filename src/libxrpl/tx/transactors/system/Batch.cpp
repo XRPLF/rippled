@@ -227,14 +227,11 @@ Batch::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    if (ctx.tx.isFieldPresent(sfSponsorFlags))
+    if (ctx.tx.isFieldPresent(sfSponsorFlags) && isReserveSponsored(ctx.tx))
     {
-        if (isReserveSponsored(ctx.tx))
-        {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
-                                << "spfSponsorReserve is not allowed on outer Batch.";
-            return temINVALID_FLAG;
-        }
+        JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
+                            << "spfSponsorReserve is not allowed on outer Batch.";
+        return temINVALID_FLAG;
     }
 
     auto const& rawTxns = ctx.tx.getFieldArray(sfRawTransactions);
@@ -397,15 +394,13 @@ Batch::preflight(PreflightContext const& ctx)
         // Duplicate sequence and ticket checks
         if ((flags & (tfAllOrNothing | tfUntilFailure)) != 0u)
         {
-            if (auto const seq = stx.getFieldU32(sfSequence); seq != 0)
+            if (auto const seq = stx.getFieldU32(sfSequence);
+                (seq != 0) && (!accountSeqTicket[innerAccount].insert(seq).second))
             {
-                if (!accountSeqTicket[innerAccount].insert(seq).second)
-                {
-                    JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                        << "duplicate sequence found: "
-                                        << "txID: " << hash;
-                    return temREDUNDANT;
-                }
+                JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                                    << "duplicate sequence found: "
+                                    << "txID: " << hash;
+                return temREDUNDANT;
             }
 
             if (stx.isFieldPresent(sfTicketSequence))

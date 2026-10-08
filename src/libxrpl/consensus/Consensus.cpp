@@ -185,16 +185,15 @@ checkConsensus(
         return ConsensusState::No;
     }
 
-    if (currentProposers < (prevProposers * 3 / 4))
+    if ((currentProposers < (prevProposers * 3 / 4)) &&
+        (currentAgreeTime < (previousAgreeTime + parms.ledgerMinConsensus)))
+
+    // Less than 3/4 of the last ledger's proposers are present; don't
+    // rush: we may need more time.
     {
-        // Less than 3/4 of the last ledger's proposers are present; don't
-        // rush: we may need more time.
-        if (currentAgreeTime < (previousAgreeTime + parms.ledgerMinConsensus))
-        {
-            JLOG(j.trace()) << "too fast, not enough proposers";
-            CLOG(clog) << "Too fast, not enough proposers. Not reached. ";
-            return ConsensusState::No;
-        }
+        JLOG(j.trace()) << "too fast, not enough proposers";
+        CLOG(clog) << "Too fast, not enough proposers. Not reached. ";
+        return ConsensusState::No;
     }
 
     // Have we, together with the nodes on our UNL list, reached the threshold

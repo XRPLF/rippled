@@ -359,13 +359,11 @@ Change::applyUNLModify()
         }
 
         // cannot be the same as toReEnable
-        if (negUnlObject->isFieldPresent(sfValidatorToReEnable))
+        if (negUnlObject->isFieldPresent(sfValidatorToReEnable) &&
+            (negUnlObject->getFieldVL(sfValidatorToReEnable) == validator))
         {
-            if (negUnlObject->getFieldVL(sfValidatorToReEnable) == validator)
-            {
-                JLOG(j_.warn()) << "N-UNL: applyUNLModify, ToDisable is same as ToReEnable";
-                return tefFAILURE;
-            }
+            JLOG(j_.warn()) << "N-UNL: applyUNLModify, ToDisable is same as ToReEnable";
+            return tefFAILURE;
         }
 
         // cannot be in negative UNL already
@@ -387,13 +385,11 @@ Change::applyUNLModify()
         }
 
         // cannot be the same as toDisable
-        if (negUnlObject->isFieldPresent(sfValidatorToDisable))
+        if (negUnlObject->isFieldPresent(sfValidatorToDisable) &&
+            (negUnlObject->getFieldVL(sfValidatorToDisable) == validator))
         {
-            if (negUnlObject->getFieldVL(sfValidatorToDisable) == validator)
-            {
-                JLOG(j_.warn()) << "N-UNL: applyUNLModify, ToReEnable is same as ToDisable";
-                return tefFAILURE;
-            }
+            JLOG(j_.warn()) << "N-UNL: applyUNLModify, ToReEnable is same as ToDisable";
+            return tefFAILURE;
         }
 
         // must be in negative UNL

@@ -2940,11 +2940,9 @@ TEST(NumberTest, number_cusp_rounding_with_fractional_parts)
                     }
                     if (scale == MantissaRange::MantissaScale::Large320)
                     {
-                        if (mode == Number::RoundingMode::ToNearest)
-                        {
-                            if (operand < zeroPointFive)
-                                return below;
-                        }
+                        if ((mode == Number::RoundingMode::ToNearest) && (operand < zeroPointFive))
+                            return below;
+
                         if (mode == Number::RoundingMode::TowardsZero ||
                             mode == Number::RoundingMode::Downward)
                         {
@@ -3009,16 +3007,13 @@ TEST(NumberTest, number_cusp_rounding_with_fractional_parts)
                     if (scale == MantissaRange::MantissaScale::LargeLegacy ||
                         scale == MantissaRange::MantissaScale::Large320)
                     {
-                        if (mode == Number::RoundingMode::ToNearest)
-                        {
-                            if (operand >= twoPointSix)
-                                return below;
-                        }
-                        if (mode == Number::RoundingMode::TowardsZero)
-                        {
-                            if (operand >= onePointFour)
-                                return below - 7;
-                        }
+                        if ((mode == Number::RoundingMode::ToNearest) && (operand >= twoPointSix))
+                            return below;
+
+                        if ((mode == Number::RoundingMode::TowardsZero) &&
+                            (operand >= onePointFour))
+                            return below - 7;
+
                         if (mode == Number::RoundingMode::Downward)
                         {
                             if (operand <= onePointSix)

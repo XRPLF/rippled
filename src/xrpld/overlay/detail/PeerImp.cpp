@@ -1516,13 +1516,11 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
     }
 
     // Verify query depth
-    if (m->has_querydepth())
+    if (m->has_querydepth() &&
+        (m->querydepth() > tuning::kMaxQueryDepth || itype == protocol::liBASE))
     {
-        if (m->querydepth() > tuning::kMaxQueryDepth || itype == protocol::liBASE)
-        {
-            badData("Invalid query depth");
-            return;
-        }
+        badData("Invalid query depth");
+        return;
     }
 
     // Queue a job to process the request.
@@ -2615,15 +2613,13 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
             return;
         }
 
-        if (packet.has_ledgerhash())
+        if (packet.has_ledgerhash() && (!stringIsUInt256Sized(packet.ledgerhash())))
         {
-            if (!stringIsUInt256Sized(packet.ledgerhash()))
-            {
-                JLOG(pJournal_.debug()) << "GetObj: malformed ledgerhash from peer " << id_;
-                fee_.update(resource::kFeeMalformedRequest, "get object ledger hash");
-                return;
-            }
+            JLOG(pJournal_.debug()) << "GetObj: malformed ledgerhash from peer " << id_;
+            fee_.update(resource::kFeeMalformedRequest, "get object ledger hash");
+            return;
         }
+
         // Reject oversized requests before touching the NodeStore.
         // The legitimate upper bound (InboundLedger::getNeededHashes())
         // is 8 hashes; anything beyond kHardMaxReplyNodes is non-conforming.
@@ -2686,25 +2682,22 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 
             if (obj.has_hash() && stringIsUInt256Sized(obj.hash()))
             {
-                if (obj.has_ledgerseq())
+                if (obj.has_ledgerseq() && (obj.ledgerseq() != pLSeq))
                 {
-                    if (obj.ledgerseq() != pLSeq)
+                    if (pLDo && (pLSeq != 0))
                     {
-                        if (pLDo && (pLSeq != 0))
-                        {
-                            JLOG(pJournal_.debug()) << "GetObj: Full fetch pack for " << pLSeq;
-                        }
-                        pLSeq = obj.ledgerseq();
-                        pLDo = !app_.getLedgerMaster().haveLedger(pLSeq);
+                        JLOG(pJournal_.debug()) << "GetObj: Full fetch pack for " << pLSeq;
+                    }
+                    pLSeq = obj.ledgerseq();
+                    pLDo = !app_.getLedgerMaster().haveLedger(pLSeq);
 
-                        if (!pLDo)
-                        {
-                            JLOG(pJournal_.debug()) << "GetObj: Late fetch pack for " << pLSeq;
-                        }
-                        else
-                        {
-                            progress = true;
-                        }
+                    if (!pLDo)
+                    {
+                        JLOG(pJournal_.debug()) << "GetObj: Late fetch pack for " << pLSeq;
+                    }
+                    else
+                    {
+                        progress = true;
                     }
                 }
 

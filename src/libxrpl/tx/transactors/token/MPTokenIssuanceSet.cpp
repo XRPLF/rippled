@@ -79,13 +79,12 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (holderID && accountID == holderID)
         return temMALFORMED;
 
-    if (ctx.rules.enabled(featureSingleAssetVault) || ctx.rules.enabled(featureDynamicMPT) ||
-        ctx.rules.enabled(featureConfidentialTransfer))
+    if ((ctx.rules.enabled(featureSingleAssetVault) || ctx.rules.enabled(featureDynamicMPT) ||
+         ctx.rules.enabled(featureConfidentialTransfer)) &&
+        (txFlags == 0 && !hasDomain && !hasIssuerElGamalKey && !hasAuditorElGamalKey && !isMutate))
     {
         // Is this transaction actually changing anything ?
-        if (txFlags == 0 && !hasDomain && !hasIssuerElGamalKey && !hasAuditorElGamalKey &&
-            !isMutate)
-            return temMALFORMED;
+        return temMALFORMED;
     }
 
     if (ctx.rules.enabled(featureDynamicMPT))
@@ -196,13 +195,12 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     auto isImmutable = [&](std::uint32_t flag) -> bool { return currentImmutableFlags & flag; };
 
     auto const enableFlags = ctx.tx.getFlags() & tfMPTokenIssuanceSetEnableFlagMask;
-    if (enableFlags != 0u)
+    if ((enableFlags != 0u) && std::ranges::any_of(flagMapping, [&](auto const& f) {
+            return isImmutable(f.immutableFlag) && ctx.tx.isFlag(f.setFlag);
+        }))
     {
         // If any of the flags to be set is immutable, return tecNO_PERMISSION.
-        if (std::ranges::any_of(flagMapping, [&](auto const& f) {
-                return isImmutable(f.immutableFlag) && ctx.tx.isFlag(f.setFlag);
-            }))
-            return tecNO_PERMISSION;
+        return tecNO_PERMISSION;
     }
 
     if (isImmutable(lsifMPTMetadata) && ctx.tx.isFieldPresent(sfMPTokenMetadata))
