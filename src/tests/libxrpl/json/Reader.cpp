@@ -22,7 +22,7 @@ TEST(JsonReader, rejects_duplicate_keys)
     auto root = json::Value{};
     auto reader = json::Reader{};
 
-    EXPECT_FALSE(reader.parse(std::string{R"({"a":1,"a":2})"}, root));
+    EXPECT_FALSE(reader.parse(std::string{R"JSON({"a":1,"a":2})JSON"}, root));
     EXPECT_NE(reader.getFormattedErrorMessages().find("appears twice"), std::string::npos)
         << reader.getFormattedErrorMessages();
 }
@@ -32,7 +32,7 @@ TEST(JsonReader, rejects_duplicate_keys_in_a_nested_object)
     auto root = json::Value{};
     auto reader = json::Reader{};
 
-    EXPECT_FALSE(reader.parse(std::string{R"({"outer":{"a":1,"a":2}})"}, root));
+    EXPECT_FALSE(reader.parse(std::string{R"JSON({"outer":{"a":1,"a":2}})JSON"}, root));
 }
 
 TEST(JsonReader, allows_the_same_key_in_sibling_objects)
@@ -40,7 +40,7 @@ TEST(JsonReader, allows_the_same_key_in_sibling_objects)
     auto root = json::Value{};
     auto reader = json::Reader{};
 
-    ASSERT_TRUE(reader.parse(std::string{R"({"x":{"a":1},"y":{"a":2}})"}, root))
+    ASSERT_TRUE(reader.parse(std::string{R"JSON({"x":{"a":1},"y":{"a":2}})JSON"}, root))
         << reader.getFormattedErrorMessages();
 
     EXPECT_EQ(root["x"]["a"].asInt(), 1);
@@ -49,7 +49,13 @@ TEST(JsonReader, allows_the_same_key_in_sibling_objects)
 
 TEST(JsonReader, requires_an_object_array_or_null_document)
 {
-    for (auto const* scalar : {R"("a string")", "42", "2.5", "true", "false"})
+    for (auto const* scalar : {
+             R"JSON("a string")JSON",
+             R"JSON(42)JSON",
+             R"JSON(2.5)JSON",
+             R"JSON(true)JSON",
+             R"JSON(false)JSON",
+         })
     {
         auto root = json::Value{};
         auto reader = json::Reader{};
@@ -66,7 +72,13 @@ TEST(JsonReader, reports_a_rejected_bare_scalar_at_the_start_of_the_document)
 {
     // The rejection comes from onDocumentEnd, by which point the parser has
     // consumed the value, so it must not be pinned to the end-of-input token.
-    for (auto const* scalar : {"42", R"("a string")", "true", "  42", "\n\n  42"})
+    for (auto const* scalar : {
+             R"JSON(42)JSON",
+             R"JSON("a string")JSON",
+             R"JSON(true)JSON",
+             R"JSON(  42)JSON",
+             "\n\n  42",
+         })
     {
         auto root = json::Value{};
         auto reader = json::Reader{};
@@ -76,7 +88,13 @@ TEST(JsonReader, reports_a_rejected_bare_scalar_at_the_start_of_the_document)
             << scalar << ": " << reader.getFormattedErrorMessages();
     }
 
-    for (auto const* document : {"{}", "[]", "null", R"({"a":1})", "[1,2]"})
+    for (auto const* document : {
+             R"JSON({})JSON",
+             R"JSON([])JSON",
+             R"JSON(null)JSON",
+             R"JSON({"a":1})JSON",
+             R"JSON([1,2])JSON",
+         })
     {
         auto root = json::Value{};
         auto reader = json::Reader{};
@@ -91,7 +109,7 @@ TEST(JsonReader, builds_the_expected_tree)
     auto root = json::Value{};
     auto reader = json::Reader{};
 
-    ASSERT_TRUE(reader.parse(std::string{R"({"b":[1,2.5,true,null],"a":"x"})"}, root))
+    ASSERT_TRUE(reader.parse(std::string{R"JSON({"b":[1,2.5,true,null],"a":"x"})JSON"}, root))
         << reader.getFormattedErrorMessages();
 
     ASSERT_TRUE(root.isObject());
@@ -110,7 +128,7 @@ TEST(JsonReader, members_come_back_sorted_regardless_of_document_order)
     auto root = json::Value{};
     auto reader = json::Reader{};
 
-    ASSERT_TRUE(reader.parse(std::string{R"({"z":1,"m":2,"a":3})"}, root))
+    ASSERT_TRUE(reader.parse(std::string{R"JSON({"z":1,"m":2,"a":3})JSON"}, root))
         << reader.getFormattedErrorMessages();
 
     EXPECT_EQ(root.getMemberNames(), (std::vector<std::string>{"a", "m", "z"}));
@@ -122,7 +140,7 @@ TEST(JsonReader, is_reusable_across_parses)
 
     {
         auto root = json::Value{};
-        ASSERT_TRUE(reader.parse(std::string{R"({"a":1})"}, root))
+        ASSERT_TRUE(reader.parse(std::string{R"JSON({"a":1})JSON"}, root))
             << reader.getFormattedErrorMessages();
         EXPECT_EQ(root["a"].asInt(), 1);
     }
@@ -130,13 +148,13 @@ TEST(JsonReader, is_reusable_across_parses)
     {
         // A failure must not leak errors into the next parse.
         auto root = json::Value{};
-        EXPECT_FALSE(reader.parse(std::string{R"({"a":})"}, root));
+        EXPECT_FALSE(reader.parse(std::string{R"JSON({"a":})JSON"}, root));
         EXPECT_FALSE(reader.getFormattedErrorMessages().empty());
     }
 
     {
         auto root = json::Value{};
-        ASSERT_TRUE(reader.parse(std::string{R"({"b":[2]})"}, root))
+        ASSERT_TRUE(reader.parse(std::string{R"JSON({"b":[2]})JSON"}, root))
             << reader.getFormattedErrorMessages();
         EXPECT_EQ(root["b"][0u].asInt(), 2);
         EXPECT_FALSE(root.isMember("a"));
@@ -146,7 +164,7 @@ TEST(JsonReader, is_reusable_across_parses)
 
 TEST(JsonReader, parses_from_a_character_range)
 {
-    auto const document = std::string{R"({"a":1})"};
+    auto const document = std::string{R"JSON({"a":1})JSON"};
 
     auto root = json::Value{};
     auto reader = json::Reader{};
@@ -158,7 +176,7 @@ TEST(JsonReader, parses_from_a_character_range)
 
 TEST(JsonReader, parses_from_a_stream)
 {
-    auto input = std::istringstream{R"({"a":1})"};
+    auto input = std::istringstream{R"JSON({"a":1})JSON"};
 
     auto root = json::Value{};
     auto reader = json::Reader{};
@@ -171,12 +189,13 @@ TEST(JsonReader, parses_a_buffer_sequence_from_a_temporary_reader)
 {
     // ServerHandler parses request bodies this way: a temporary Reader over a
     // multi-fragment buffer sequence.
-    auto const head = std::string{R"({"a":)"};
-    auto const tail = std::string{R"(1})"};
+    auto const head = std::string{R"JSON({"a":)JSON"};
+    auto const tail = std::string{R"JSON(1})JSON"};
 
     auto const buffers = std::vector<boost::asio::const_buffer>{
         boost::asio::const_buffer{head.data(), head.size()},
-        boost::asio::const_buffer{tail.data(), tail.size()}};
+        boost::asio::const_buffer{tail.data(), tail.size()},
+    };
 
     auto root = json::Value{};
     ASSERT_TRUE(json::Reader{}.parse(root, buffers));
@@ -187,11 +206,11 @@ TEST(JsonReader, parses_a_buffer_sequence_from_a_temporary_reader)
 TEST(JsonReader, stream_extraction_throws_on_bad_input)
 {
     auto root = json::Value{};
-    auto good = std::istringstream{R"({"a":1})"};
+    auto good = std::istringstream{R"JSON({"a":1})JSON"};
     EXPECT_NO_THROW(good >> root);
     EXPECT_EQ(root["a"].asInt(), 1);
 
-    auto bad = std::istringstream{R"({"a":)"};
+    auto bad = std::istringstream{R"JSON({"a":)JSON"};
     auto other = json::Value{};
     EXPECT_ANY_THROW(bad >> other);
 }
@@ -208,11 +227,11 @@ nestedObject(unsigned depth)
     auto s = std::string{"{"};
     for (unsigned i = 0; i < depth; ++i)
     {
-        s += R"("o":{)";
+        s += R"JSON("o":{)JSON";
     }
     for (unsigned i = 0; i < depth; ++i)
     {
-        s += "}";
+        s += '}';
     }
     return s + "}";
 }
@@ -242,11 +261,11 @@ TEST(JsonReader, accepts_comments)
 {
     // The reader deliberately accepts a superset of strict JSON.
     for (auto const* document : {
-             R"({/*c*/"a":1})",
-             R"({"a":/*c*/1})",
-             R"({"a":1/*c*/})",
-             R"({"a":1} /* trailing */)",
-             R"({"a":1} // trailing)",
+             R"JSON({/*c*/"a":1})JSON",
+             R"JSON({"a":/*c*/1})JSON",
+             R"JSON({"a":1/*c*/})JSON",
+             R"JSON({"a":1} /* trailing */)JSON",
+             R"JSON({"a":1} // trailing)JSON",
          })
     {
         auto root = json::Value{};
@@ -259,7 +278,7 @@ TEST(JsonReader, accepts_comments)
     {
         auto root = json::Value{};
         auto reader = json::Reader{};
-        ASSERT_TRUE(reader.parse(std::string{R"({"a":1,/*c*/"b":2})"}, root))
+        ASSERT_TRUE(reader.parse(std::string{R"JSON({"a":1,/*c*/"b":2})JSON"}, root))
             << reader.getFormattedErrorMessages();
         EXPECT_EQ(root["b"].asInt(), 2);
     }
@@ -279,11 +298,11 @@ TEST(JsonReader, rejects_comments_in_the_two_places_it_never_allowed_them)
     // and the first element of an array are read without skipping them.
     auto betweenKeyAndColon = json::Value{};
     auto first = json::Reader{};
-    EXPECT_FALSE(first.parse(std::string{R"({"a"/*c*/:1})"}, betweenKeyAndColon));
+    EXPECT_FALSE(first.parse(std::string{R"JSON({"a"/*c*/:1})JSON"}, betweenKeyAndColon));
 
     auto commentOnlyArray = json::Value{};
     auto second = json::Reader{};
-    EXPECT_FALSE(second.parse(std::string{"[/*c*/]"}, commentOnlyArray));
+    EXPECT_FALSE(second.parse(std::string{R"JSON([/*c*/])JSON"}, commentOnlyArray));
 }
 
 TEST(JsonReader, accepts_trailing_content_after_the_document)
@@ -292,7 +311,7 @@ TEST(JsonReader, accepts_trailing_content_after_the_document)
     {
         auto root = json::Value{};
         auto reader = json::Reader{};
-        ASSERT_TRUE(reader.parse(std::string{"[1,2,3] garbage"}, root))
+        ASSERT_TRUE(reader.parse(std::string{R"JSON([1,2,3] garbage)JSON"}, root))
             << reader.getFormattedErrorMessages();
         EXPECT_EQ(root.size(), 3u);
     }
@@ -300,7 +319,7 @@ TEST(JsonReader, accepts_trailing_content_after_the_document)
     {
         auto root = json::Value{};
         auto reader = json::Reader{};
-        ASSERT_TRUE(reader.parse(std::string{R"({"a":1} {"b":2})"}, root))
+        ASSERT_TRUE(reader.parse(std::string{R"JSON({"a":1} {"b":2})JSON"}, root))
             << reader.getFormattedErrorMessages();
         EXPECT_EQ(root["a"].asInt(), 1);
         EXPECT_FALSE(root.isMember("b"));
@@ -312,7 +331,7 @@ TEST(JsonReader, decodes_string_escapes)
     auto root = json::Value{};
     auto reader = json::Reader{};
 
-    ASSERT_TRUE(reader.parse(std::string{R"({"v":"a\nb\tc\"d\\e\/f\bg\fh"})"}, root))
+    ASSERT_TRUE(reader.parse(std::string{R"JSON({"v":"a\nb\tc\"d\\e\/f\bg\fh"})JSON"}, root))
         << reader.getFormattedErrorMessages();
 
     EXPECT_EQ(root["v"].asString(), "a\nb\tc\"d\\e/f\bg\fh");
@@ -323,7 +342,7 @@ TEST(JsonReader, decodes_unicode_escapes)
     {
         auto root = json::Value{};
         auto reader = json::Reader{};
-        ASSERT_TRUE(reader.parse(std::string{R"({"v":"\u0041\u00e9\u20AC"})"}, root))
+        ASSERT_TRUE(reader.parse(std::string{R"JSON({"v":"\u0041\u00e9\u20AC"})JSON"}, root))
             << reader.getFormattedErrorMessages();
         // U+0041 is 1 byte, U+00E9 is 2, U+20AC is 3.
         EXPECT_EQ(root["v"].asString(), "A\xC3\xA9\xE2\x82\xAC");
@@ -333,7 +352,7 @@ TEST(JsonReader, decodes_unicode_escapes)
         // A surrogate pair combines into one 4-byte code point.
         auto root = json::Value{};
         auto reader = json::Reader{};
-        ASSERT_TRUE(reader.parse(std::string{R"({"v":"\uD83D\uDE00"})"}, root))
+        ASSERT_TRUE(reader.parse(std::string{R"JSON({"v":"\uD83D\uDE00"})JSON"}, root))
             << reader.getFormattedErrorMessages();
         EXPECT_EQ(root["v"].asString(), "\xF0\x9F\x98\x80");
     }
@@ -342,13 +361,13 @@ TEST(JsonReader, decodes_unicode_escapes)
 TEST(JsonReader, rejects_malformed_escapes)
 {
     for (auto const* document : {
-             R"({"v":"\x"})",              // not an escape character
-             R"({"v":"\u00"})",            // too few hex digits
-             R"({"v":"\uZZZZ"})",          // not hexadecimal
-             R"({"v":"\uDC00"})",          // unpaired trailing surrogate
-             R"({"v":"\uD800\u0041zz"})",  // leading surrogate, then a non-surrogate
-             R"({"v":"\uD800\uD800zz"})",  // two leading surrogates
-             R"({"v":"\uD800"})",          // leading surrogate, truncated
+             R"JSON({"v":"\x"})JSON",              // not an escape character
+             R"JSON({"v":"\u00"})JSON",            // too few hex digits
+             R"JSON({"v":"\uZZZZ"})JSON",          // not hexadecimal
+             R"JSON({"v":"\uDC00"})JSON",          // unpaired trailing surrogate
+             R"JSON({"v":"\uD800\u0041zz"})JSON",  // leading surrogate, then a non-surrogate
+             R"JSON({"v":"\uD800\uD800zz"})JSON",  // two leading surrogates
+             R"JSON({"v":"\uD800"})JSON",          // leading surrogate, truncated
          })
     {
         auto root = json::Value{};
@@ -362,7 +381,7 @@ TEST(JsonReader, parses_empty_containers)
     auto root = json::Value{};
     auto reader = json::Reader{};
 
-    ASSERT_TRUE(reader.parse(std::string{R"({"a":{},"b":[]})"}, root))
+    ASSERT_TRUE(reader.parse(std::string{R"JSON({"a":{},"b":[]})JSON"}, root))
         << reader.getFormattedErrorMessages();
 
     EXPECT_TRUE(root["a"].isObject());
@@ -383,13 +402,13 @@ TEST(JsonReader, a_move_constructed_reader_parses_into_its_own_target)
 {
     auto sourceRoot = json::Value{};
     auto source = json::Reader{};
-    ASSERT_TRUE(source.parse(std::string{R"({"from":"source"})"}, sourceRoot))
+    ASSERT_TRUE(source.parse(std::string{R"JSON({"from":"source"})JSON"}, sourceRoot))
         << source.getFormattedErrorMessages();
 
     auto moved = json::Reader{std::move(source)};
 
     auto movedRoot = json::Value{};
-    ASSERT_TRUE(moved.parse(std::string{R"({"from":"moved"})"}, movedRoot))
+    ASSERT_TRUE(moved.parse(std::string{R"JSON({"from":"moved"})JSON"}, movedRoot))
         << moved.getFormattedErrorMessages();
 
     EXPECT_EQ(movedRoot["from"].asString(), "moved");
@@ -401,14 +420,14 @@ TEST(JsonReader, a_move_assigned_reader_parses_into_its_own_target)
 {
     auto sourceRoot = json::Value{};
     auto source = json::Reader{};
-    ASSERT_TRUE(source.parse(std::string{R"({"from":"source"})"}, sourceRoot))
+    ASSERT_TRUE(source.parse(std::string{R"JSON({"from":"source"})JSON"}, sourceRoot))
         << source.getFormattedErrorMessages();
 
     auto moved = json::Reader{};
     moved = std::move(source);
 
     auto movedRoot = json::Value{};
-    ASSERT_TRUE(moved.parse(std::string{R"({"from":"moved"})"}, movedRoot))
+    ASSERT_TRUE(moved.parse(std::string{R"JSON({"from":"moved"})JSON"}, movedRoot))
         << moved.getFormattedErrorMessages();
 
     EXPECT_EQ(movedRoot["from"].asString(), "moved");
@@ -423,11 +442,11 @@ TEST(JsonReader, a_move_carries_error_messages_across_intact)
     // location left pointing at the source's buffer reports a different line.
     auto root = json::Value{};
     auto source = json::Reader{};
-    ASSERT_FALSE(source.parse(std::string{R"({"a":})"}, root));
+    ASSERT_FALSE(source.parse(std::string{R"JSON({"a":})JSON"}, root));
     ASSERT_EQ(source.getFormattedErrorMessages().find("* Line 1, Column 6"), 0u)
         << source.getFormattedErrorMessages();
 
-    auto moved = json::Reader{std::move(source)};
+    auto const moved = json::Reader{std::move(source)};
 
     source = json::Reader{};
     auto reuseRoot = json::Value{};
@@ -443,11 +462,12 @@ TEST(JsonReader, a_move_assignment_carries_error_messages_across_intact)
     // See a_move_carries_error_messages_across_intact.
     auto root = json::Value{};
     auto source = json::Reader{};
-    ASSERT_FALSE(source.parse(std::string{R"({"a":})"}, root));
+    ASSERT_FALSE(source.parse(std::string{R"JSON({"a":})JSON"}, root));
 
     auto moved = json::Reader{};
     auto movedRoot = json::Value{};
-    ASSERT_TRUE(moved.parse(std::string{"[1]"}, movedRoot)) << moved.getFormattedErrorMessages();
+    ASSERT_TRUE(moved.parse(std::string{R"JSON([1])JSON"}, movedRoot))
+        << moved.getFormattedErrorMessages();
     moved = std::move(source);
 
     source = json::Reader{};
@@ -462,7 +482,7 @@ TEST(JsonReader, a_move_assignment_carries_error_messages_across_intact)
 TEST(JsonReader, a_move_preserves_error_locations_into_a_caller_owned_buffer)
 {
     // Locations into a caller-owned buffer must be left alone.
-    auto const document = std::string{R"({"a":})"};
+    auto const document = std::string{R"JSON({"a":})JSON"};
 
     auto root = json::Value{};
     auto source = json::Reader{};
@@ -481,7 +501,7 @@ TEST(JsonReader, survives_relocation_inside_a_vector)
     readers.emplace_back();
 
     auto first = json::Value{};
-    ASSERT_FALSE(readers.front().parse(std::string{R"({"a":})"}, first));
+    ASSERT_FALSE(readers.front().parse(std::string{R"JSON({"a":})JSON"}, first));
 
     while (readers.size() < 8)
     {
@@ -492,7 +512,7 @@ TEST(JsonReader, survives_relocation_inside_a_vector)
         << readers.front().getFormattedErrorMessages();
 
     auto root = json::Value{};
-    ASSERT_TRUE(readers.back().parse(std::string{R"({"a":1})"}, root))
+    ASSERT_TRUE(readers.back().parse(std::string{R"JSON({"a":1})JSON"}, root))
         << readers.back().getFormattedErrorMessages();
     EXPECT_EQ(root["a"].asInt(), 1);
 }
