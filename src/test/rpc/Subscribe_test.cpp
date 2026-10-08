@@ -2223,7 +2223,7 @@ public:
                 jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
                 to_string(mptAlice.issuanceID()) &&
                 jv[jss::transaction][jss::TransactionType] == "MPTokenAuthorize" &&
-                jv[jss::type] == "mptTransaction";
+                jv[jss::type] == "transaction";
         }));
 
         // dan create MPToken
@@ -2236,7 +2236,7 @@ public:
                 to_string(mptCarol.issuanceID()) &&
                 jv[jss::transaction][jss::Sequence] == 5 &&
                 jv[jss::transaction][jss::TransactionType] == "MPTokenAuthorize" &&
-                jv[jss::type] == "mptTransaction";
+                jv[jss::type] == "transaction";
         }));
 
         // subscribe stream sees alice's MPT
@@ -2253,7 +2253,7 @@ public:
                 jv[jss::transaction][jss::Destination] == bob.human() &&
                 jv[jss::transaction][jss::Flags] == tfFullyCanonicalSig &&
                 jv[jss::transaction][jss::TransactionType] == "Payment" &&
-                jv[jss::type] == "mptTransaction";
+                jv[jss::type] == "transaction";
         }));
 
         // subscribe stream sees carol's MPT
@@ -2271,7 +2271,7 @@ public:
                 jv[jss::transaction][jss::Flags] == tfFullyCanonicalSig &&
                 jv[jss::transaction][jss::Sequence] == 6 &&
                 jv[jss::transaction][jss::TransactionType] == "Payment" &&
-                jv[jss::type] == "mptTransaction";
+                jv[jss::type] == "transaction";
         }));
 
         // subscribe stream sees alice's MPT lock
@@ -2283,7 +2283,7 @@ public:
                 jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
                 to_string(mptAlice.issuanceID()) &&
                 jv[jss::transaction][jss::TransactionType] == "MPTokenIssuanceSet" &&
-                jv[jss::type] == "mptTransaction";
+                jv[jss::type] == "transaction";
         }));
 
         // subscribe stream sees alice's MPT unlock
@@ -2295,7 +2295,7 @@ public:
                 jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
                 to_string(mptAlice.issuanceID()) &&
                 jv[jss::transaction][jss::TransactionType] == "MPTokenIssuanceSet" &&
-                jv[jss::type] == "mptTransaction";
+                jv[jss::type] == "transaction";
         }));
 
         // unsub alice's MPT from the stream
@@ -2332,7 +2332,7 @@ public:
                 jv[jss::transaction][jss::Destination] == carol.human() &&
                 jv[jss::transaction][jss::Flags] == tfFullyCanonicalSig &&
                 jv[jss::transaction][jss::TransactionType] == "Payment" &&
-                jv[jss::type] == "mptTransaction";
+                jv[jss::type] == "transaction";
         }));
     }
 
@@ -2386,7 +2386,7 @@ public:
                     jv[jss::transaction][jss::Account] == alice.human() &&
                     jv[jss::transaction][sfMPTokenIssuanceID.jsonName] == to_string(mptID) &&
                     jv[jss::transaction][jss::TransactionType] == "MPTokenIssuanceDestroy" &&
-                    jv[jss::type] == "mptTransaction";
+                    jv[jss::type] == "transaction";
             }));
         }
 
@@ -2428,7 +2428,7 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 return jv[jss::engine_result] == "tesSUCCESS" &&
                     jv[jss::transaction][jss::TransactionType] == type &&
-                    jv[jss::type] == "mptTransaction";
+                    jv[jss::type] == "transaction";
             }));
         };
 
