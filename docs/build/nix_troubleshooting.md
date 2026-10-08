@@ -178,11 +178,11 @@ A binary stops starting after a `nix flake update`, or after
 dyld[57271]: Library not loaded: /nix/store/…-libresolv-93/lib/libresolv.9.dylib
 ```
 
-[`bin/check-nix-store-refs.sh`](../../bin/check-nix-store-refs.sh) finds the same
-thing without having to run anything, and names the file:
+[`bin/nix/check-nix-store-refs.sh`](../../bin/nix/check-nix-store-refs.sh) finds the
+same thing without having to run anything, and names the file:
 
 ```
-$ bin/check-nix-store-refs.sh ~/.conan2-nix
+$ bin/nix/check-nix-store-refs.sh ~/.conan2-nix
 ::error file=/Users/you/.conan2-nix/p/b/c-area24ded30c388c/p/bin/adig::references the Nix store at run time
 /Users/you/.conan2-nix/p/b/c-area24ded30c388c/p/bin/adig
     /nix/store/p4lp3xq4imd1qzqh08x8vcq2zfhi7rca-libresolv-93/lib/libresolv.9.dylib

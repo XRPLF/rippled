@@ -10,7 +10,7 @@
 # alone; the scripts in a Conan cache are all git hook samples and autotools
 # scratch, 36 false positives to 0 real.
 #
-# Usage: bin/check-nix-store-refs.sh <path>
+# Usage: bin/nix/check-nix-store-refs.sh <path>
 
 set -euo pipefail
 
