@@ -77,7 +77,9 @@ TEST(JsonReader, reports_a_rejected_bare_scalar_at_the_start_of_the_document)
              R"JSON("a string")JSON",
              R"JSON(true)JSON",
              R"JSON(  42)JSON",
-             "\n\n  42",
+             R"JSON(
+
+  42)JSON",
          })
     {
         auto root = json::Value{};
@@ -286,7 +288,10 @@ TEST(JsonReader, accepts_comments)
     {
         auto root = json::Value{};
         auto reader = json::Reader{};
-        ASSERT_TRUE(reader.parse(std::string{"[1,//x\n2]"}, root))
+        ASSERT_TRUE(reader.parse(
+            std::string{R"JSON([1,//x
+2])JSON"},
+            root))
             << reader.getFormattedErrorMessages();
         EXPECT_EQ(root.size(), 2u);
     }
@@ -450,7 +455,13 @@ TEST(JsonReader, a_move_carries_error_messages_across_intact)
 
     source = json::Reader{};
     auto reuseRoot = json::Value{};
-    ASSERT_TRUE(source.parse(std::string{"\n\n\n\n[1]"}, reuseRoot))
+    ASSERT_TRUE(source.parse(
+        std::string{R"JSON(
+
+
+
+[1])JSON"},
+        reuseRoot))
         << source.getFormattedErrorMessages();
 
     EXPECT_EQ(moved.getFormattedErrorMessages().find("* Line 1, Column 6"), 0u)
@@ -472,7 +483,13 @@ TEST(JsonReader, a_move_assignment_carries_error_messages_across_intact)
 
     source = json::Reader{};
     auto reuseRoot = json::Value{};
-    ASSERT_TRUE(source.parse(std::string{"\n\n\n\n[1]"}, reuseRoot))
+    ASSERT_TRUE(source.parse(
+        std::string{R"JSON(
+
+
+
+[1])JSON"},
+        reuseRoot))
         << source.getFormattedErrorMessages();
 
     EXPECT_EQ(moved.getFormattedErrorMessages().find("* Line 1, Column 6"), 0u)

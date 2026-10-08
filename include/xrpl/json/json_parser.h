@@ -15,9 +15,9 @@
 #include <cstdint>
 #include <cstdio>
 #include <deque>
+#include <format>
 #include <ios>
 #include <istream>
-#include <iterator>
 #include <limits>
 #include <memory>
 #include <string>
@@ -28,16 +28,20 @@
 
 namespace json {
 
+// clang-format off
 /**
- * clang-format off
- * The Visitor is a "concept" that employs duck typing for the interface.
- * This allows the user to create a visitor with only the methods they need
- * along with bypassing introducing a vtable. The following is
- * the complete declaration of what a visitor can implement that the
- * Parser will expect on its interface.  The author can add any
+ * A Visitor is any type; the Parser calls each of the hooks below only if
+ * the visitor declares it (checked at compile time, no vtable). This allows
+ * the user to create a visitor with only the hooks they need. The following
+ * is the complete set of hooks the Parser recognizes. The author can add any
  * additional methods or members to the visitor that they wish.
  *
- * struct VisitorConcept
+ * Because each hook is optional, a hook that is misspelled or whose
+ * signature cannot accept the Parser's arguments is silently ignored rather
+ * than rejected at compile time.
+ *
+ * @code
+ * struct FullVisitor
  * {
  *     using ReturnType = std::expected<void, std::string>;
  *
@@ -56,8 +60,9 @@ namespace json {
  *     ReturnType onArrayBegin();
  *     ReturnType onArrayEnd(std::size_t elementCount);
  * };
- * clang-format on
+ * @endcode
  */
+// clang-format on
 #define DISPATCH_VISITORS(TOKEN, CALL)                                                \
     {                                                                                 \
         auto dispatchVisitorsOk = true;                                               \
@@ -95,14 +100,14 @@ public:
     using Char = char;
     using Location = Char const*;
 
+    // clang-format off
     /**
-     * clang-format off
      * @brief Construct a Parser reporting to @a visitors.
      * @param visitors Retained by reference; each must outlive the Parser.
      *     Anything a visitor accumulates is therefore read back from the
      *     caller's own object once parsing completes.
-     * clang-format on
      */
+    // clang-format on
     explicit Parser(Visitor&... visitors) : visitors_{&visitors...}
     {
     }
@@ -115,9 +120,14 @@ public:
     operator=(Parser&& other) noexcept;
 
     /**
+     * @brief The default for depthLimit.
+     */
+    static constexpr std::size_t kDefaultDepthLimit = 25;
+
+    /**
      * @brief The maximum depth of the JSON document.
      */
-    std::size_t depthLimit{25};
+    std::size_t depthLimit{kDefaultDepthLimit};
     /**
      * @brief The maximum size of the JSON document.
      */
@@ -157,8 +167,8 @@ public:
         visitors_ = {&visitors...};
     }
 
+    // clang-format off
     /**
-     * clang-format off
      * @brief Report a <a HREF="http://www.json.org">JSON</a> document to the
      *     visitors as a stream of events. No Value is built; a caller wanting a
      *     tree should use json::Reader.
@@ -166,13 +176,13 @@ public:
      *     the lifetime of the parse, so error locations point into it.
      * @return @c true if the document was parsed and every visitor accepted
      *     every event, @c false otherwise. See getFormattedErrorMessages().
-     * clang-format on
      */
+    // clang-format on
     bool
     parse(std::string document);
 
+    // clang-format off
     /**
-     * clang-format off
      * @brief Report the document in [@a beginDoc, @a endDoc) to the visitors as
      *     a stream of events.
      * @param beginDoc Start of a UTF-8 encoded document owned by the caller,
@@ -181,60 +191,63 @@ public:
      * @param endDoc One past the end of that document.
      * @return @c true if the document was parsed and every visitor accepted
      *     every event, @c false otherwise. See getFormattedErrorMessages().
-     * clang-format on
      */
+    // clang-format on
     bool
     parse(char const* beginDoc, char const* endDoc);
 
+    // clang-format off
     /**
-     * clang-format off
      * @brief Read @a is to end of stream and parse it.
      * @see parse(std::string).
-     * clang-format on
      */
+    // clang-format on
     bool
     parse(std::istream& is);
 
+    // clang-format off
     /**
-     * clang-format off
      * @brief Flatten a buffer sequence into one document and parse it.
      * @param bs UTF-8 encoded buffer sequence.
      * @see parse(std::string).
-     * clang-format on
      */
+    // clang-format on
     template <class BufferSequence>
         requires boost::asio::is_const_buffer_sequence<BufferSequence>::value
     bool
     parse(BufferSequence const& bs);
 
+    // clang-format off
     /**
-     * clang-format off
      * @brief Returns a user friendly string that list errors in the parsed document.
      * @return Formatted error message with the list of errors with
      *     their location in the parsed document. An empty string is returned if no
      *     error occurred during parsing.
-     * clang-format on
      */
+    // clang-format on
     [[nodiscard]] std::string
     getFormattedErrorMessages() const;
 
 private:
+    // The number of hex digits in a \uXXXX escape.
+    static constexpr std::ptrdiff_t kUnicodeEscapeDigits = 4;
+
     enum class TokenType {
         EndOfStream = 0,
-        ObjectBegin,
-        ObjectEnd,
-        ArrayBegin,
-        ArrayEnd,
-        String,
-        Integer,
-        Double,
-        True,
-        False,
-        Null,
-        ArraySeparator,
-        MemberSeparator,
-        Comment,
-        Error
+        ObjectBegin = 1,
+        ObjectEnd = 2,
+        ArrayBegin = 3,
+        ArrayEnd = 4,
+        String = 5,
+        Integer = 6,
+        Double = 7,
+        True = 8,
+        False = 9,
+        Null = 10,
+        ArraySeparator = 11,
+        MemberSeparator = 12,
+        Comment = 13,
+        Error = 14,
     };
 
     class Token
@@ -267,7 +280,7 @@ private:
     void
     skipSpaces();
     bool
-    match(Location pattern, std::int64_t patternLength);
+    match(std::string_view pattern);
     bool
     readComment();
     bool
@@ -387,11 +400,14 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::parse(std::istream& sin)
 {
+    // Bytes read from the stream per read() call.
+    static constexpr std::size_t kReadChunkSize = 4096;
+
     // Reads at most one byte past documentSizeLimit, which is enough for the
     // size check to reject the document without buffering the rest of the
     // stream.
     auto doc = std::string{};
-    auto chunk = std::array<char, 4096>{};
+    auto chunk = std::array<char, kReadChunkSize>{};
 
     while (sin && doc.size() <= documentSizeLimit)
     {
@@ -427,8 +443,9 @@ Parser<Visitor...>::parse(char const* beginDoc, char const* endDoc)
     if (documentSize > documentSizeLimit)
     {
         return addError(
-            "Syntax error: document size exceeds the maximum allowed size of " +
-                std::to_string(documentSizeLimit) + " bytes",
+            std::format(
+                "Syntax error: document size exceeds the maximum allowed size of {} bytes",
+                documentSizeLimit),
             token);
     }
 
@@ -459,14 +476,15 @@ bool
 Parser<Visitor...>::parse(BufferSequence const& bs)
 {
     using namespace boost::asio;
-    auto size = buffer_size(bs);
+    auto const size = buffer_size(bs);
     if (size > documentSizeLimit)
     {
         errors_.clear();
-        auto token = Token{};
+        auto const token = Token{};
         return addError(
-            "Syntax error: document size exceeds the maximum allowed size of " +
-                std::to_string(documentSizeLimit) + " bytes",
+            std::format(
+                "Syntax error: document size exceeds the maximum allowed size of {} bytes",
+                documentSizeLimit),
             token);
     }
     auto s = std::string{};
@@ -482,35 +500,60 @@ template <typename... Visitor>
 std::string
 Parser<Visitor...>::codePointToUTF8(std::uint32_t cp)
 {
+    // The largest code point each sequence length can carry, the lead byte
+    // marker and payload mask for each length, and the marker and payload of a
+    // continuation byte.
+    static constexpr std::uint32_t kMaxOneByteCodePoint = 0x7F;
+    static constexpr std::uint32_t kMaxTwoByteCodePoint = 0x7FF;
+    static constexpr std::uint32_t kMaxThreeByteCodePoint = 0xFFFF;
+    static constexpr std::uint32_t kMaxCodePoint = 0x10FFFF;
+    static constexpr std::uint32_t kTwoByteLead = 0xC0;
+    static constexpr std::uint32_t kTwoByteLeadMask = 0x1F;
+    static constexpr std::uint32_t kThreeByteLead = 0xE0;
+    static constexpr std::uint32_t kThreeByteLeadMask = 0x0F;
+    static constexpr std::uint32_t kFourByteLead = 0xF0;
+    static constexpr std::uint32_t kFourByteLeadMask = 0x07;
+    static constexpr std::uint32_t kContinuationByte = 0x80;
+    static constexpr std::uint32_t kContinuationMask = 0x3F;
+    static constexpr std::uint32_t kContinuationBits = 6;
+
     auto result = std::string{};
 
     // based on description from http://en.wikipedia.org/wiki/UTF-8
 
-    if (cp <= 0x7f)
+    // The payload of the continuation byte carrying bits [shift, shift + 6).
+    auto const continuation = [cp](std::uint32_t shift) {
+        return static_cast<char>(kContinuationByte | (kContinuationMask & (cp >> shift)));
+    };
+
+    if (cp <= kMaxOneByteCodePoint)
     {
         result.resize(1);
         result[0] = static_cast<char>(cp);
     }
-    else if (cp <= 0x7FF)
+    else if (cp <= kMaxTwoByteCodePoint)
     {
         result.resize(2);
-        result[1] = static_cast<char>(0x80 | (0x3f & cp));
-        result[0] = static_cast<char>(0xC0 | (0x1f & (cp >> 6)));
+        result[1] = continuation(0);
+        result[0] =
+            static_cast<char>(kTwoByteLead | (kTwoByteLeadMask & (cp >> kContinuationBits)));
     }
-    else if (cp <= 0xFFFF)
+    else if (cp <= kMaxThreeByteCodePoint)
     {
         result.resize(3);
-        result[2] = static_cast<char>(0x80 | (0x3f & cp));
-        result[1] = 0x80 | static_cast<char>((0x3f & (cp >> 6)));
-        result[0] = 0xE0 | static_cast<char>((0xf & (cp >> 12)));
+        result[2] = continuation(0);
+        result[1] = continuation(kContinuationBits);
+        result[0] = static_cast<char>(
+            kThreeByteLead | (kThreeByteLeadMask & (cp >> (2 * kContinuationBits))));
     }
-    else if (cp <= 0x10FFFF)
+    else if (cp <= kMaxCodePoint)
     {
         result.resize(4);
-        result[3] = static_cast<char>(0x80 | (0x3f & cp));
-        result[2] = static_cast<char>(0x80 | (0x3f & (cp >> 6)));
-        result[1] = static_cast<char>(0x80 | (0x3f & (cp >> 12)));
-        result[0] = static_cast<char>(0xF0 | (0x7 & (cp >> 18)));
+        result[3] = continuation(0);
+        result[2] = continuation(kContinuationBits);
+        result[1] = continuation(2 * kContinuationBits);
+        result[0] = static_cast<char>(
+            kFourByteLead | (kFourByteLeadMask & (cp >> (3 * kContinuationBits))));
     }
 
     return result;
@@ -640,9 +683,7 @@ Parser<Visitor...>::readNumber()
         {
             if (std::isdigit(static_cast<unsigned char>(*current_)) == 0)
             {
-                auto ret = std::ranges::find(kExtendedTokens, *current_);
-
-                if (ret == std::end(kExtendedTokens))
+                if (!std::ranges::contains(kExtendedTokens, *current_))
                 {
                     break;
                 }
@@ -659,21 +700,18 @@ Parser<Visitor...>::readNumber()
 
 template <typename... Visitor>
 bool
-Parser<Visitor...>::match(Location pattern, std::int64_t patternLength)
+Parser<Visitor...>::match(std::string_view pattern)
 {
+    auto const patternLength = static_cast<std::ptrdiff_t>(pattern.size());
+
     if (end_ - current_ < patternLength)
     {
         return false;
     }
 
-    auto index = patternLength;
-
-    while ((index--) != 0)
+    if (std::string_view(current_, pattern.size()) != pattern)
     {
-        if (current_[index] != pattern[index])
-        {
-            return false;
-        }
+        return false;
     }
 
     current_ += patternLength;
@@ -744,19 +782,19 @@ Parser<Visitor...>::readToken(Token& token)
 
         case 't': {
             token.type = TokenType::True;
-            ok = match("rue", 3);
+            ok = match("rue");
         }
         break;
 
         case 'f': {
             token.type = TokenType::False;
-            ok = match("alse", 4);  // cspell:disable-line
+            ok = match("alse");  // cspell:disable-line
         }
         break;
 
         case 'n': {
             token.type = TokenType::Null;
-            ok = match("ull", 3);
+            ok = match("ull");
         }
         break;
 
@@ -842,6 +880,19 @@ Parser<Visitor...>::readObject(Token& tokenStart, std::size_t depth)
             break;
         }
 
+        // Checked before the member is decoded or dispatched, so an object at
+        // its limit costs no more work and visitors never see a member that
+        // cannot be accepted.
+        if (memberCount >= objectMembersLimit)
+        {
+            return addError(
+                std::format(
+                    "Syntax error: object member count exceeds the maximum allowed size of {} "
+                    "members",
+                    objectMembersLimit),
+                tokenName);
+        }
+
         name.clear();
 
         if (!decodeString(tokenName, name, keySizeLimit, "key"))
@@ -866,13 +917,7 @@ Parser<Visitor...>::readObject(Token& tokenStart, std::size_t depth)
             return recoverFromError(TokenType::ObjectEnd);
         }
 
-        if (++memberCount > objectMembersLimit)
-        {
-            return addError(
-                "Syntax error: object member count exceeds the maximum allowed size of " +
-                    std::to_string(objectMembersLimit) + " members",
-                tokenName);
-        }
+        ++memberCount;
 
         auto comma = Token{};
 
@@ -926,6 +971,18 @@ Parser<Visitor...>::readArray(Token& tokenStart, std::size_t depth)
 
     while (true)
     {
+        // Checked before the element is parsed, for the same reason as the
+        // object member limit in readObject.
+        if (elementCount >= arrayElementsLimit)
+        {
+            return addError(
+                std::format(
+                    "Syntax error: array element count exceeds the maximum allowed size of {} "
+                    "elements",
+                    arrayElementsLimit),
+                tokenStart);
+        }
+
         bool ok = readValue(depth + 1);
 
         if (!ok)  // error already set
@@ -933,13 +990,7 @@ Parser<Visitor...>::readArray(Token& tokenStart, std::size_t depth)
             return recoverFromError(TokenType::ArrayEnd);
         }
 
-        if (++elementCount > arrayElementsLimit)
-        {
-            return addError(
-                "Syntax error: array element count exceeds the maximum allowed size of " +
-                    std::to_string(arrayElementsLimit) + " elements",
-                tokenStart);
-        }
+        ++elementCount;
 
         auto token = Token{};
 
@@ -974,6 +1025,8 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::decodeNumber(Token& token)
 {
+    static constexpr std::int64_t kDecimalBase = 10;
+
     Location current = token.start;
     bool const isNegative = *current == '-';
 
@@ -985,7 +1038,8 @@ Parser<Visitor...>::decodeNumber(Token& token)
     if (current == token.end)
     {
         return addError(
-            "'" + std::string(token.start, token.end) + "' is not a valid number.", token);
+            std::format("'{}' is not a valid number.", std::string_view(token.start, token.end)),
+            token);
     }
 
     // The existing Json integers are 32-bit so using a 64-bit value here avoids
@@ -1003,17 +1057,20 @@ Parser<Visitor...>::decodeNumber(Token& token)
         if (c < '0' || c > '9')
         {
             return addError(
-                "'" + std::string(token.start, token.end) + "' is not a number.", token);
+                std::format("'{}' is not a number.", std::string_view(token.start, token.end)),
+                token);
         }
 
-        value = (value * 10) + (c - '0');
+        value = (value * kDecimalBase) + (c - '0');
     }
 
     // More tokens left -> input is larger than largest possible return value
     if (current != token.end)
     {
         return addError(
-            "'" + std::string(token.start, token.end) + "' exceeds the allowable range.", token);
+            std::format(
+                "'{}' exceeds the allowable range.", std::string_view(token.start, token.end)),
+            token);
     }
 
     if (isNegative)
@@ -1023,7 +1080,8 @@ Parser<Visitor...>::decodeNumber(Token& token)
         if (value < Value::kMinInt || value > Value::kMaxInt)
         {
             return addError(
-                "'" + std::string(token.start, token.end) + "' exceeds the allowable range.",
+                std::format(
+                    "'{}' exceeds the allowable range.", std::string_view(token.start, token.end)),
                 token);
         }
 
@@ -1034,7 +1092,8 @@ Parser<Visitor...>::decodeNumber(Token& token)
         if (value > Value::kMaxUInt)
         {
             return addError(
-                "'" + std::string(token.start, token.end) + "' exceeds the allowable range.",
+                std::format(
+                    "'{}' exceeds the allowable range.", std::string_view(token.start, token.end)),
                 token);
         }
 
@@ -1073,7 +1132,8 @@ Parser<Visitor...>::decodeDouble(Token& token)
     //     but from_chars() will stop at the first character it cannot parse.
     if (ec != std::errc{} || ptr != token.end)
     {
-        return addError("'" + std::string(token.start, token.end) + "' is not a number.", token);
+        return addError(
+            std::format("'{}' is not a number.", std::string_view(token.start, token.end)), token);
     }
 
     DISPATCH_VISITORS(token, onDouble(value));
@@ -1179,9 +1239,10 @@ Parser<Visitor...>::decodeString(
         if (decoded.size() > sizeLimit)
         {
             return addError(
-                "Syntax error: " + std::string(what) +
-                    " size exceeds the maximum allowed size of " + std::to_string(sizeLimit) +
-                    " bytes",
+                std::format(
+                    "Syntax error: {} size exceeds the maximum allowed size of {} bytes",
+                    what,
+                    sizeLimit),
                 token);
         }
     }
@@ -1258,6 +1319,18 @@ Parser<Visitor...>::decodeUnicodeCodePoint(
     Location end,
     std::uint32_t& unicode)
 {
+    static constexpr std::uint32_t kLeadingSurrogateMin = 0xD800;
+    static constexpr std::uint32_t kLeadingSurrogateMax = 0xDBFF;
+    static constexpr std::uint32_t kTrailingSurrogateMin = 0xDC00;
+    static constexpr std::uint32_t kTrailingSurrogateMax = 0xDFFF;
+    static constexpr std::uint32_t kSurrogateMask = 0x3FF;
+    static constexpr std::uint32_t kSurrogateBits = 10;
+    static constexpr std::uint32_t kSupplementaryPlaneBase = 0x10000;
+    // A second escape: the "\u" prefix followed by the hex digits.
+    static constexpr std::ptrdiff_t kUnicodeEscapePrefixLength = 2;
+    static constexpr std::ptrdiff_t kUnicodeEscapeLength =
+        kUnicodeEscapePrefixLength + kUnicodeEscapeDigits;
+
     if (!decodeUnicodeEscapeSequence(token, current, end, unicode))
     {
         return false;
@@ -1265,15 +1338,15 @@ Parser<Visitor...>::decodeUnicodeCodePoint(
 
     // A trailing surrogate has no leading surrogate to pair with, and encoding
     // it verbatim would emit invalid UTF-8.
-    if (unicode >= 0xDC00 && unicode <= 0xDFFF)
+    if (unicode >= kTrailingSurrogateMin && unicode <= kTrailingSurrogateMax)
     {
         return addError("unpaired trailing surrogate in unicode escape sequence.", token, current);
     }
 
-    if (unicode >= 0xD800 && unicode <= 0xDBFF)
+    if (unicode >= kLeadingSurrogateMin && unicode <= kLeadingSurrogateMax)
     {
         // surrogate pairs
-        if (end - current < 6)
+        if (end - current < kUnicodeEscapeLength)
         {
             return addError(
                 "additional six characters expected to parse unicode surrogate "
@@ -1292,7 +1365,7 @@ Parser<Visitor...>::decodeUnicodeCodePoint(
                 current);
         }
 
-        current += 2;  // skip two characters checked above
+        current += kUnicodeEscapePrefixLength;  // skip the "\u" checked above
 
         if (!decodeUnicodeEscapeSequence(token, current, end, surrogatePair))
         {
@@ -1301,7 +1374,7 @@ Parser<Visitor...>::decodeUnicodeCodePoint(
 
         // Only a trailing surrogate completes the pair; anything else would
         // silently compute the wrong code point.
-        if (surrogatePair < 0xDC00 || surrogatePair > 0xDFFF)
+        if (surrogatePair < kTrailingSurrogateMin || surrogatePair > kTrailingSurrogateMax)
         {
             return addError(
                 "expecting a trailing surrogate to complete the unicode surrogate pair",
@@ -1309,7 +1382,8 @@ Parser<Visitor...>::decodeUnicodeCodePoint(
                 current);
         }
 
-        unicode = 0x10000 + ((unicode & 0x3FF) << 10) + (surrogatePair & 0x3FF);
+        unicode = kSupplementaryPlaneBase + ((unicode & kSurrogateMask) << kSurrogateBits) +
+            (surrogatePair & kSurrogateMask);
     }
 
     return true;
@@ -1323,7 +1397,11 @@ Parser<Visitor...>::decodeUnicodeEscapeSequence(
     Location end,
     std::uint32_t& unicode)
 {
-    if (end - current < 4)
+    static constexpr std::uint32_t kHexBase = 16;
+    // The value of the hex digit 'a' / 'A'.
+    static constexpr std::uint32_t kHexLetterOffset = 10;
+
+    if (end - current < kUnicodeEscapeDigits)
     {
         return addError(
             "Bad unicode escape sequence in string: four digits expected.", token, current);
@@ -1331,10 +1409,10 @@ Parser<Visitor...>::decodeUnicodeEscapeSequence(
 
     unicode = 0;
 
-    for (std::uint8_t index = 0; index < 4; ++index)
+    for (std::ptrdiff_t index = 0; index < kUnicodeEscapeDigits; ++index)
     {
         auto const c = *current++;
-        unicode *= 16;
+        unicode *= kHexBase;
 
         if (c >= '0' && c <= '9')
         {
@@ -1342,11 +1420,11 @@ Parser<Visitor...>::decodeUnicodeEscapeSequence(
         }
         else if (c >= 'a' && c <= 'f')
         {
-            unicode += c - 'a' + 10;
+            unicode += c - 'a' + kHexLetterOffset;
         }
         else if (c >= 'A' && c <= 'F')
         {
-            unicode += c - 'A' + 10;
+            unicode += c - 'A' + kHexLetterOffset;
         }
         else
         {
@@ -1459,7 +1537,7 @@ Parser<Visitor...>::getLocationLineAndColumn(Location location) const
     auto line = std::int64_t{};
     auto column = std::int64_t{};
     getLocationLineAndColumn(location, line, column);
-    return "Line " + std::to_string(line) + ", Column " + std::to_string(column);
+    return std::format("Line {}, Column {}", line, column);
 }
 
 template <typename... Visitor>
@@ -1470,12 +1548,13 @@ Parser<Visitor...>::getFormattedErrorMessages() const
 
     for (auto const& error : errors_)
     {
-        formattedMessage += "* " + getLocationLineAndColumn(error.token.start) + "\n";
-        formattedMessage += "  " + error.message + "\n";
+        formattedMessage +=
+            std::format("* {}\n  {}\n", getLocationLineAndColumn(error.token.start), error.message);
 
         if (error.extra != nullptr)
         {
-            formattedMessage += "See " + getLocationLineAndColumn(error.extra) + " for detail.\n";
+            formattedMessage +=
+                std::format("See {} for detail.\n", getLocationLineAndColumn(error.extra));
         }
     }
 

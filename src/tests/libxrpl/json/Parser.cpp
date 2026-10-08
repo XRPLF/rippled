@@ -167,6 +167,23 @@ struct CountKeys
     }
 };
 
+/**
+ * Keeps every double exactly, where Trace rounds them for display.
+ */
+struct Doubles
+{
+    using ReturnType = std::expected<void, std::string>;
+
+    std::vector<double> values;
+
+    ReturnType
+    onDouble(double value)
+    {
+        values.push_back(value);
+        return {};
+    }
+};
+
 }  // namespace
 
 TEST(JsonParser, reports_events_in_document_order)
@@ -598,12 +615,74 @@ TEST(JsonParser, enforces_array_element_limit)
         parser.getFormattedErrorMessages().find("array element count exceeds"), std::string::npos);
 }
 
+TEST(JsonParser, object_member_limit_rejects_before_the_extra_member_is_parsed)
+{
+    // The member past the limit is neither decoded nor dispatched, however
+    // large its value.
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+    parser.objectMembersLimit = 1;
+
+    EXPECT_FALSE(parser.parse(std::string{R"JSON({"a":1,"b":{"c":[1,2]}})JSON"}));
+    EXPECT_NE(
+        parser.getFormattedErrorMessages().find("object member count exceeds"), std::string::npos);
+    EXPECT_EQ(trace.events, (std::vector<std::string>{"doc{", "obj{", "key(a)", "int(1)"}));
+}
+
+TEST(JsonParser, array_element_limit_rejects_before_the_extra_element_is_parsed)
+{
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+    parser.arrayElementsLimit = 2;
+
+    EXPECT_FALSE(parser.parse(std::string{R"JSON([1,2,{"a":[3]}])JSON"}));
+    EXPECT_NE(
+        parser.getFormattedErrorMessages().find("array element count exceeds"), std::string::npos);
+    EXPECT_EQ(trace.events, (std::vector<std::string>{"doc{", "arr[", "int(1)", "int(2)"}));
+}
+
+TEST(JsonParser, containers_exactly_at_their_limit_are_accepted)
+{
+    for (auto const& [document, limit] : {
+             std::pair{R"JSON({})JSON", 0u},
+             std::pair{R"JSON([])JSON", 0u},
+             std::pair{R"JSON({"a":1,"b":2})JSON", 2u},
+             std::pair{R"JSON([1,2])JSON", 2u},
+         })
+    {
+        auto trace = Trace{};
+        auto parser = json::Parser{trace};
+        parser.objectMembersLimit = limit;
+        parser.arrayElementsLimit = limit;
+
+        EXPECT_TRUE(parser.parse(std::string{document}))
+            << document << ": " << parser.getFormattedErrorMessages();
+    }
+}
+
+TEST(JsonParser, a_zero_limit_rejects_any_member_or_element)
+{
+    for (auto const* document : {R"JSON({"a":1})JSON", R"JSON([1])JSON"})
+    {
+        auto trace = Trace{};
+        auto parser = json::Parser{trace};
+        parser.objectMembersLimit = 0;
+        parser.arrayElementsLimit = 0;
+
+        EXPECT_FALSE(parser.parse(std::string{document})) << document;
+        EXPECT_NE(parser.getFormattedErrorMessages().find("count exceeds"), std::string::npos)
+            << document << ": " << parser.getFormattedErrorMessages();
+    }
+}
+
 TEST(JsonParser, error_messages_carry_a_location)
 {
     auto trace = Trace{};
     auto parser = json::Parser{trace};
 
-    EXPECT_FALSE(parser.parse(std::string{"{\n  \"a\" 1\n}"}));
+    EXPECT_FALSE(parser.parse(std::string{R"JSON({
+  "a" 1
+})JSON"}));
 
     auto const message = parser.getFormattedErrorMessages();
     EXPECT_NE(message.find("Line 2"), std::string::npos) << message;
@@ -683,7 +762,12 @@ TEST(JsonParser, a_move_carries_error_locations_across_intact)
     auto const moved = json::Parser{std::move(source)};
 
     source = json::Parser{trace};
-    ASSERT_TRUE(source.parse(std::string{"\n\n\n\n[1]"})) << source.getFormattedErrorMessages();
+    ASSERT_TRUE(source.parse(std::string{R"JSON(
+
+
+
+[1])JSON"}))
+        << source.getFormattedErrorMessages();
 
     EXPECT_EQ(moved.getFormattedErrorMessages().find("* Line 1, Column 6"), 0u)
         << moved.getFormattedErrorMessages();
@@ -697,11 +781,16 @@ TEST(JsonParser, a_move_assignment_carries_error_locations_across_intact)
     ASSERT_FALSE(source.parse(std::string{R"JSON({"a":})JSON"}));
 
     auto moved = json::Parser{trace};
-    ASSERT_TRUE(moved.parse(std::string{"[1]"})) << moved.getFormattedErrorMessages();
+    ASSERT_TRUE(moved.parse(std::string{R"JSON([1])JSON"})) << moved.getFormattedErrorMessages();
     moved = std::move(source);
 
     source = json::Parser{trace};
-    ASSERT_TRUE(source.parse(std::string{"\n\n\n\n[1]"})) << source.getFormattedErrorMessages();
+    ASSERT_TRUE(source.parse(std::string{R"JSON(
+
+
+
+[1])JSON"}))
+        << source.getFormattedErrorMessages();
 
     EXPECT_EQ(moved.getFormattedErrorMessages().find("* Line 1, Column 6"), 0u)
         << moved.getFormattedErrorMessages();
@@ -782,6 +871,78 @@ TEST(JsonParser, a_well_formed_comment_still_reaches_the_visitor)
     EXPECT_EQ(std::ranges::count(trace.events, "cmt(//trailing)"), 1);
 }
 
+TEST(JsonParser, doc_style_comments_reach_the_visitor_verbatim)
+{
+    // The visitor receives the comment exactly as written, delimiters
+    // included. A line comment also keeps the character that ended it, so a
+    // CRLF line ending leaves the '\r' in the comment and the '\n' outside it.
+    for (auto const& [document, comment] : {
+             std::pair{
+                 std::string{R"JSON([1 /// doc
+, 2])JSON"},
+                 std::string{"/// doc\n"}},
+             std::pair{std::string{"[1 // a\r\n, 2]"}, std::string{"// a\r"}},
+             std::pair{
+                 std::string{R"JSON([1 //
+, 2])JSON"},
+                 std::string{"//\n"}},
+             std::pair{std::string{R"JSON([1 /** doc */, 2])JSON"}, std::string{"/** doc */"}},
+             std::pair{std::string{R"JSON([1 /**/, 2])JSON"}, std::string{"/**/"}},
+             std::pair{std::string{R"JSON([1 /***/, 2])JSON"}, std::string{"/***/"}},
+             std::pair{std::string{R"JSON([1 /* a **/, 2])JSON"}, std::string{"/* a **/"}},
+             std::pair{std::string{R"JSON([1 /*/ */, 2])JSON"}, std::string{"/*/ */"}},
+             std::pair{
+                 std::string{R"JSON([1 // a */
+, 2])JSON"},
+                 std::string{"// a */\n"}},
+             std::pair{std::string{R"JSON([1 /* // a */, 2])JSON"}, std::string{"/* // a */"}},
+         })
+    {
+        auto trace = Trace{};
+        auto parser = json::Parser{trace};
+
+        ASSERT_TRUE(parser.parse(document))
+            << document << ": " << parser.getFormattedErrorMessages();
+        EXPECT_EQ(
+            trace.events,
+            (std::vector<std::string>{
+                "doc{",
+                "arr[",
+                "int(1)",
+                "cmt(" + comment + ")",
+                "int(2)",
+                "arr]2",
+                "doc}" + std::to_string(document.size())}))
+            << document;
+    }
+}
+
+TEST(JsonParser, block_comments_do_not_nest)
+{
+    // The first "*/" closes the comment, leaving the second one as stray text.
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+
+    EXPECT_FALSE(parser.parse(std::string{R"JSON([1 /* a /* b */ c */, 2])JSON"}));
+    EXPECT_EQ(std::ranges::count(trace.events, "cmt(/* a /* b */)"), 1);
+}
+
+TEST(JsonParser, a_block_comment_needs_its_own_closing_star)
+{
+    // The '*' that opens the comment cannot also close it.
+    for (auto const* document : {R"JSON([1 /*/, 2])JSON", R"JSON([1 /*/)JSON"})
+    {
+        auto trace = Trace{};
+        auto parser = json::Parser{trace};
+
+        EXPECT_FALSE(parser.parse(std::string{document})) << document;
+
+        auto const comments = std::ranges::count_if(
+            trace.events, [](std::string const& event) { return event.starts_with("cmt("); });
+        EXPECT_EQ(comments, 0) << document;
+    }
+}
+
 TEST(JsonParser, formats_errors_for_an_empty_range)
 {
     // A caller can express an empty document either way: an empty
@@ -798,6 +959,190 @@ TEST(JsonParser, formats_errors_for_an_empty_range)
         EXPECT_EQ(parser.getFormattedErrorMessages().find("* Line 1, Column 1"), 0u)
             << parser.getFormattedErrorMessages();
     }
+}
+
+TEST(JsonParser, ignores_text_after_the_root_value)
+{
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+
+    ASSERT_TRUE(parser.parse(std::string{R"JSON([1,2,3] garbage)JSON"}))
+        << parser.getFormattedErrorMessages();
+
+    EXPECT_EQ(
+        trace.events,
+        (std::vector<std::string>{
+            "doc{", "arr[", "int(1)", "int(2)", "int(3)", "arr]3", "doc}15"}));
+}
+
+TEST(JsonParser, accepts_integers_with_leading_zeros)
+{
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+
+    ASSERT_TRUE(parser.parse(std::string{R"JSON([01,-01,007])JSON"}))
+        << parser.getFormattedErrorMessages();
+
+    EXPECT_EQ(
+        trace.events,
+        (std::vector<std::string>{
+            "doc{", "arr[", "int(1)", "int(-1)", "int(7)", "arr]3", "doc}12"}));
+}
+
+TEST(JsonParser, accepts_raw_control_characters_in_strings)
+{
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+
+    ASSERT_TRUE(parser.parse(std::string{"[\"a\tb\nc\x01\"]"}))
+        << parser.getFormattedErrorMessages();
+
+    ASSERT_EQ(trace.events.size(), 5u);
+    EXPECT_EQ(trace.events[2], "str(a\tb\nc\x01)");
+}
+
+TEST(JsonParser, passes_invalid_utf8_through_unchanged)
+{
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+
+    // A lone continuation byte, a truncated two byte sequence, and a byte that
+    // can never appear in UTF-8.
+    ASSERT_TRUE(parser.parse(std::string{"[\"\x80\xC3\xFF\"]"}))
+        << parser.getFormattedErrorMessages();
+
+    ASSERT_EQ(trace.events.size(), 5u);
+    EXPECT_EQ(trace.events[2], "str(\x80\xC3\xFF)");
+}
+
+TEST(JsonParser, negative_zero_is_an_integer)
+{
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+
+    ASSERT_TRUE(parser.parse(std::string{R"JSON([-0])JSON"})) << parser.getFormattedErrorMessages();
+
+    EXPECT_EQ(trace.events, (std::vector<std::string>{"doc{", "arr[", "int(0)", "arr]1", "doc}4"}));
+}
+
+TEST(JsonParser, integer_outside_int_range_is_an_error_quoting_the_token)
+{
+    // Covers both ends of the 32-bit range and a value too large even for
+    // 64 bits, which a parser built on 64-bit integers would turn into a double.
+    for (auto const* number :
+         {R"JSON(-2147483649)JSON", R"JSON(4294967296)JSON", R"JSON(18446744073709551616)JSON"})
+    {
+        auto trace = Trace{};
+        auto parser = json::Parser{trace};
+
+        EXPECT_FALSE(parser.parse("[" + std::string{number} + "]")) << number;
+
+        auto const message = parser.getFormattedErrorMessages();
+        EXPECT_NE(
+            message.find("'" + std::string{number} + "' exceeds the allowable range."),
+            std::string::npos)
+            << message;
+    }
+}
+
+TEST(JsonParser, doubles_are_correctly_rounded)
+{
+    // Each literal sits on or next to a rounding boundary, where a fast but
+    // inexact conversion picks the wrong neighbour.
+    auto doubles = Doubles{};
+    auto parser = json::Parser{doubles};
+
+    ASSERT_TRUE(parser.parse(
+        std::string{
+            R"JSON([0.1, 9007199254740993.0, 2.2250738585072011e-308, 1.7976931348623157e308])JSON"}))
+        << parser.getFormattedErrorMessages();
+
+    EXPECT_EQ(
+        doubles.values,
+        (std::vector<double>{
+            0.1, 9007199254740992.0, 2.2250738585072011e-308, 1.7976931348623157e308}));
+}
+
+TEST(JsonParser, malformed_number_error_quotes_the_token)
+{
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+
+    EXPECT_FALSE(parser.parse(std::string{R"JSON([1-2])JSON"}));
+
+    auto const message = parser.getFormattedErrorMessages();
+    EXPECT_NE(message.find("'1-2' is not a number."), std::string::npos) << message;
+}
+
+TEST(JsonParser, default_depth_limit_is_25)
+{
+    EXPECT_EQ(json::Parser<Trace>::kDefaultDepthLimit, 25u);
+
+    auto trace = Trace{};
+    auto const parser = json::Parser{trace};
+    EXPECT_EQ(parser.depthLimit, 25u);
+}
+
+TEST(JsonParser, depth_counts_values_not_just_containers)
+{
+    // The root value is depth 0 and every value inside a container is one
+    // deeper, so a scalar in the innermost container counts as a level while
+    // an empty innermost container adds none. With the default limit of 25:
+    // 25 arrays around a scalar pass and 26 fail, but 26 empty arrays pass and
+    // 27 fail.
+    auto const nested = [](std::size_t count, std::string_view inner) {
+        return std::string(count, '[') + std::string{inner} + std::string(count, ']');
+    };
+
+    for (auto const& [document, accepted] : {
+             std::pair{nested(25, "1"), true},
+             std::pair{nested(26, "1"), false},
+             std::pair{nested(26, ""), true},
+             std::pair{nested(27, ""), false},
+         })
+    {
+        auto trace = Trace{};
+        auto parser = json::Parser{trace};
+
+        EXPECT_EQ(parser.parse(document), accepted)
+            << document << ": " << parser.getFormattedErrorMessages();
+
+        if (!accepted)
+        {
+            EXPECT_NE(
+                parser.getFormattedErrorMessages().find("maximum nesting depth exceeded"),
+                std::string::npos)
+                << document;
+        }
+    }
+}
+
+TEST(JsonParser, formatted_error_has_line_column_and_message)
+{
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+
+    EXPECT_FALSE(parser.parse(std::string{R"JSON({"a":})JSON"}));
+
+    EXPECT_EQ(
+        parser.getFormattedErrorMessages(),
+        "* Line 1, Column 6\n"
+        "  Syntax error: value, object or array expected.\n");
+}
+
+TEST(JsonParser, formatted_error_can_point_at_a_second_location)
+{
+    // Unicode escape errors locate both the string and the offending escape.
+    auto trace = Trace{};
+    auto parser = json::Parser{trace};
+
+    EXPECT_FALSE(parser.parse(std::string{R"JSON(["ab\uDC00"])JSON"}));
+
+    EXPECT_EQ(
+        parser.getFormattedErrorMessages(),
+        "* Line 1, Column 2\n"
+        "  unpaired trailing surrogate in unicode escape sequence.\n"
+        "See Line 1, Column 11 for detail.\n");
 }
 
 }  // namespace xrpl
