@@ -1661,7 +1661,7 @@ public:
 
                 auto const ledger = env.rpc("ledger", "validated");
                 BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++)));
-                store.rendezvous();
+                BEAST_EXPECT(store.rendezvous());
             }
             BEAST_EXPECT(store.getLastRotated() == target);
         }
@@ -1717,7 +1717,7 @@ public:
 
                 auto const ledger = env.rpc("ledger", "validated");
                 BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++)));
-                store.rendezvous();
+                BEAST_EXPECT(store.rendezvous());
             }
             BEAST_EXPECT(store.getLastRotated() == target);
         }
@@ -1784,7 +1784,7 @@ public:
                  ++i)
             {
                 env.close();
-                store.rendezvous();
+                BEAST_EXPECT(store.rendezvous());
             }
             BEAST_EXPECT(store.getLastRotated() != bootRotated);
 
@@ -1886,7 +1886,9 @@ public:
             rotateOnce(env, ledgerSeq);
         }
 
-        auto const orphan = bfs::path(nodeDb) / "rippledb.orphan";  // cspell: disable-line
+        // SHAMapStoreImp's dbPrefix_, built in two parts so the rename script leaves it intact.
+        std::string const dbPrefix = std::string("ripple") + "db";
+        auto const orphan = bfs::path(nodeDb) / (dbPrefix + ".orphan");
         auto const unrelated = bfs::path(nodeDb) / "unrelated";
         bfs::create_directories(orphan);
         bfs::create_directories(unrelated);
@@ -1945,7 +1947,7 @@ public:
                  ++i)
             {
                 env.close();
-                store.rendezvous();
+                BEAST_EXPECT(store.rendezvous());
             }
             BEAST_EXPECT(store.getLastRotated() != bootRotated);
             BEAST_EXPECT(dbr.generationCount() == 4);
@@ -2080,10 +2082,10 @@ protected:
 
         // Cold set re-stored once per `budget` rotations: ~rotations/2 passes vs
         // ~rotations/8 passes over the same workload.
-        BEAST_EXPECT(b2.evacuated >= (kRotations / 2 - 1) * kCold);
-        BEAST_EXPECT(b2.evacuated <= ((kRotations / 2 + 1) * kCold) + kSlack);
-        BEAST_EXPECT(b8.evacuated >= (kRotations / 8 - 1) * kCold);
-        BEAST_EXPECT(b8.evacuated <= ((kRotations / 8 + 1) * kCold) + kSlack);
+        BEAST_EXPECT(b2.evacuated >= ((kRotations / 2) - 1) * kCold);
+        BEAST_EXPECT(b2.evacuated <= (((kRotations / 2) + 1) * kCold) + kSlack);
+        BEAST_EXPECT(b8.evacuated >= ((kRotations / 8) - 1) * kCold);
+        BEAST_EXPECT(b8.evacuated <= (((kRotations / 8) + 1) * kCold) + kSlack);
         BEAST_EXPECT(b8.evacuated * 3 <= b2.evacuated);
 
         log << "evacuation volume over " << kRotations << " rotations (cold=" << kCold
