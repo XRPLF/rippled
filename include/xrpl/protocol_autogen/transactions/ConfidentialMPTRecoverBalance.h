@@ -18,7 +18,7 @@ class ConfidentialMPTRecoverBalanceBuilder;
 /**
  * @brief Transaction: ConfidentialMPTRecoverBalance
  *
- * Type: ttCONFIDENTIAL_MPT_RECOVER_BALANCE (96)
+ * Type: ttCONFIDENTIAL_MPT_RECOVER_BALANCE (94)
  * Delegable: Delegation::Delegable
  * Amendment: featureConfidentialMPTKeyRotation
  * Privileges: Privilege::NoPriv

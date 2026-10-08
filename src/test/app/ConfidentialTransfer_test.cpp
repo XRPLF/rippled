@@ -3105,7 +3105,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         });
 
         // Alice performs recovery
-        mptAlice.recover({
+        mptAlice.recoverBalance({
             .account = alice,
             .holder = bob,
             .recoveryPrivKey = recoveryKey.second,  // recovery private key
@@ -3183,7 +3183,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // deducted for terNO_DELEGATE_PERMISSION.
         {
             auto const dgtBalance = env.balance(dgt);
-            mptAlice.recover({
+            mptAlice.recoverBalance({
                 .account = alice,
                 .holder = bob,
                 .recoveryPrivKey = recoveryKey.second,
@@ -3201,7 +3201,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // Success: the delegate recovers on behalf of the issuer and pays the fee.
         {
             auto const dgtBalance = env.balance(dgt);
-            mptAlice.recover({
+            mptAlice.recoverBalance({
                 .account = alice,
                 .holder = bob,
                 .recoveryPrivKey = recoveryKey.second,
@@ -3507,7 +3507,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // Bob's issuer mirror is stale: his MPToken has no IssuerKeyMirrorEpoch
         // (epoch 0) while the issuance has advanced to epoch 1 after the
         // rotation. Recovery must be rejected until the mirror is migrated.
-        mptAlice.recover({
+        mptAlice.recoverBalance({
             .account = alice,
             .holder = bob,
             .recoveryPrivKey = recoveryKey.second,

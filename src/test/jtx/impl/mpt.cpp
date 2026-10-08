@@ -1793,111 +1793,6 @@ computeNextSendChainState(
 }
 
 void
-MPTTester::recover(MPTConfidentialRecover const& arg, std::source_location const& loc)
-{
-    json::Value jv;
-    auto const account = arg.account ? *arg.account : issuer_;
-    jv[sfAccount] = account.human();
-
-    if (arg.holder)
-    {
-        jv[sfHolder] = arg.holder->human();
-    }
-    else
-    {
-        Throw<std::runtime_error>("Holder not specified");
-    }
-
-    jv[jss::TransactionType] = jss::ConfidentialMPTRecoverBalance;
-    if (arg.id)
-    {
-        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
-    }
-    else if (id_)
-    {
-        jv[sfMPTokenIssuanceID] = to_string(*id_);
-    }
-    else
-    {
-        Throw<std::runtime_error>("MPT has not been created");
-    }
-
-    // Get the holder's issuer mirror (encrypted balance)
-    auto const& issuance = arg.id ? *arg.id : issuanceID();
-    auto const sleHolder =
-        env_.le(keylet::mptoken(issuance, requireValue(arg.holder, "holder").id()));
-    if (!sleHolder)
-        Throw<std::runtime_error>("Holder MPToken not found");
-
-    auto const issuerEncryptedBalanceBlob = sleHolder->getFieldVL(sfIssuerEncryptedBalance);
-    Buffer const issuerEncryptedBalance(
-        issuerEncryptedBalanceBlob.data(), issuerEncryptedBalanceBlob.size());
-
-    // Get issuer's private key to decrypt the mirror
-    auto const issuerPrivKey = getPrivKey(account);
-    if (!issuerPrivKey || issuerPrivKey->size() != kEcPrivKeyLength)
-        Throw<std::runtime_error>("Failed to get issuer private key");
-
-    // Decrypt the balance using issuer's key
-    auto const decryptedBalance = decryptAmount(*issuerPrivKey, issuerEncryptedBalance);
-    if (!decryptedBalance)
-        Throw<std::runtime_error>("Failed to decrypt holder's balance");
-
-    // Get recovery public key (or use provided recovery key)
-    Buffer recoveryPubKey;
-    if (arg.recoveryPrivKey)
-    {
-        if (arg.recoveryPrivKey->size() != kEcPrivKeyLength)
-            Throw<std::runtime_error>("Invalid recovery private key length");
-
-        // Derive public key from private key
-        secp256k1_pubkey pubKey;
-        if (secp256k1_ec_pubkey_create(secp256k1Context(), &pubKey, arg.recoveryPrivKey->data()) ==
-            0)
-        {
-            Throw<std::runtime_error>("Failed to derive recovery public key from private key");
-        }
-
-        // Serialize public key
-        unsigned char compressedPubKey[kEcPubKeyLength];
-        size_t outLen = kEcPubKeyLength;
-        if (secp256k1_ec_pubkey_serialize(
-                secp256k1Context(), compressedPubKey, &outLen, &pubKey, SECP256K1_EC_COMPRESSED) !=
-                1 ||
-            outLen != kEcPubKeyLength)
-        {
-            Throw<std::runtime_error>("Failed to serialize recovery public key");
-        }
-        recoveryPubKey = Buffer{compressedPubKey, kEcPubKeyLength};
-    }
-    else
-    {
-        Throw<std::runtime_error>("Recovery private key not specified");
-    }
-
-    // Re-encrypt the balance under recovery key
-    auto const blindingFactor = generateBlindingFactor();
-    auto const newCiphertext =
-        encryptAmountWithPubKey(recoveryPubKey, *decryptedBalance, blindingFactor);
-
-    jv[sfConfidentialBalanceSpending] = strHex(newCiphertext);
-
-    // TODO: Generate Chaum-Pedersen equality proof
-    // For now, use a placeholder proof
-    if (arg.proof)
-    {
-        jv[sfZKProof] = *arg.proof;
-    }
-    else
-    {
-        // Placeholder: use zero buffer for proof (crypto function not yet available)
-        jv[sfZKProof] = strHex(gMakeZeroBuffer(kEcEqualityProofLength));
-    }
-
-    submit(arg, {jv, loc});
-}
-
-void
 MPTTester::confidentialClaw(MPTConfidentialClawback const& arg, std::source_location const& loc)
 {
     json::Value jv;
@@ -2166,7 +2061,7 @@ MPTTester::getDecryptedBalance(
         return 0;
 
     return decryptAmount(privKey, *encryptedAmt);
-};
+}
 
 json::Value
 MPTTester::mergeInboxJV(MPTMergeInbox const& arg) const
@@ -2482,6 +2377,95 @@ MPTTester::holderKeyUpdate(MPTHolderKeyUpdate const& arg, std::source_location c
         jv[sfConfidentialBalanceInbox.jsonName] = strHex(*arg.inboxCiphertext);
     if (arg.proof)
         jv[sfZKProof.jsonName] = strHex(*arg.proof);
+
+    submit(arg, {jv, loc});
+}
+
+void
+MPTTester::recoverBalance(MPTConfidentialRecover const& arg, std::source_location const& loc)
+{
+    json::Value jv;
+
+    auto const account = arg.account ? *arg.account : issuer_;
+    jv[sfAccount] = account.human();
+
+    Account const& holder = requireValue(arg.holder, "holder");
+    jv[sfHolder] = holder.human();
+
+    jv[jss::TransactionType] = jss::ConfidentialMPTRecoverBalance;
+    setIssuanceIdField(jv, arg.id);
+
+    // Get the holder's issuer mirror (encrypted balance)
+    auto const& issuance = arg.id ? *arg.id : issuanceID();
+    auto const sleHolder =
+        env_.le(keylet::mptoken(issuance, requireValue(arg.holder, "holder").id()));
+    if (!sleHolder)
+        Throw<std::runtime_error>("Holder MPToken not found");
+
+    if (!sleHolder->isFieldPresent(sfIssuerEncryptedBalance))
+        Throw<std::runtime_error>("sfIssuerEncryptedBalance not present");
+
+    auto const issuerEncryptedBalanceBlob = sleHolder->getFieldVL(sfIssuerEncryptedBalance);
+    Buffer const issuerEncryptedBalance(
+        issuerEncryptedBalanceBlob.data(), issuerEncryptedBalanceBlob.size());
+
+    // Get issuer's private key to decrypt the mirror
+    auto const issuerPrivKey = getPrivKey(account);
+    if (!issuerPrivKey || issuerPrivKey->size() != kEcPrivKeyLength)
+        Throw<std::runtime_error>("Failed to get issuer private key");
+
+    // Decrypt the balance using issuer's key
+    auto const decryptedBalance = decryptAmount(*issuerPrivKey, issuerEncryptedBalance);
+    if (!decryptedBalance)
+        Throw<std::runtime_error>("Failed to decrypt holder's balance");
+
+    // Get recovery public key (or use provided recovery key)
+    Buffer recoveryPubKey;
+    if (arg.recoveryPrivKey)
+    {
+        if (arg.recoveryPrivKey->size() != kEcPrivKeyLength)
+            Throw<std::runtime_error>("Invalid recovery private key length");
+
+        // Derive public key from private key
+        secp256k1_pubkey pubKey;
+        if (secp256k1_ec_pubkey_create(secp256k1Context(), &pubKey, arg.recoveryPrivKey->data()) ==
+            0)
+        {
+            Throw<std::runtime_error>("Failed to derive recovery public key from private key");
+        }
+
+        // Serialize public key
+        unsigned char compressedPubKey[kEcPubKeyLength];
+        size_t outLen = kEcPubKeyLength;
+        if (secp256k1_ec_pubkey_serialize(
+                secp256k1Context(), compressedPubKey, &outLen, &pubKey, SECP256K1_EC_COMPRESSED) !=
+                1 ||
+            outLen != kEcPubKeyLength)
+        {
+            Throw<std::runtime_error>("Failed to serialize recovery public key");
+        }
+        recoveryPubKey = Buffer{compressedPubKey, kEcPubKeyLength};
+    }
+    else
+    {
+        Throw<std::runtime_error>("Recovery private key not specified");
+    }
+
+    // Re-encrypt the balance under recovery key
+    auto const blindingFactor = generateBlindingFactor();
+    auto const newCiphertext =
+        encryptAmountWithPubKey(recoveryPubKey, *decryptedBalance, blindingFactor);
+
+    jv[sfConfidentialBalanceSpending] = strHex(newCiphertext);
+
+    if (arg.proof)
+    {
+        jv[sfZKProof] = *arg.proof;
+    }
+    else
+    {
+        jv[sfZKProof] = strHex(gMakeZeroBuffer(kEcEqualityProofLength));
+    }
 
     submit(arg, {jv, loc});
 }

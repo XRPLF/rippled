@@ -702,7 +702,7 @@ public:
         std::source_location const& loc = std::source_location::current());
 
     void
-    recover(
+    recoverBalance(
         MPTConfidentialRecover const& arg = MPTConfidentialRecover{},
         std::source_location const& loc = std::source_location::current());
 

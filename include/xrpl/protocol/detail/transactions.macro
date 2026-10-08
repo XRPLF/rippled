@@ -668,8 +668,6 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
     {sfImmutableFlags, SoeOptional},
     {sfIssuerEncryptionKey, SoeOptional},
     {sfAuditorEncryptionKey, SoeOptional},
-    {sfHolderEncryptionKey, SoeOptional},
-    {sfRecoveryKey, SoeOptional},
 }))
 
 /** This transaction type authorizes a MPToken instance */
@@ -1165,6 +1163,19 @@ TRANSACTION(ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, 93, ConfidentialMPTHolderKeyUp
     {sfZKProof, SoeOptional},
 }))
 
+/** This transaction type completes holder key recovery. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTRecoverBalance.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_RECOVER_BALANCE, 94, ConfidentialMPTRecoverBalance,
+    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialMPTKeyRotation}),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfHolder, SoeRequired},
+    {sfConfidentialBalanceSpending, SoeRequired},
+    {sfZKProof, SoeRequired},
+}))
+
 /** This transaction posts an unsigned transaction on-ledger as a
     TransactionProposal, pending multi-signature collection. */
 #if TRANSACTION_INCLUDE
@@ -1175,19 +1186,6 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 95, TransactionProposalCreate,
     ({
     {sfProposedTransaction, SoeRequired},
     {sfExpiration, SoeRequired},
-}))
-
-/** This transaction type completes holder key recovery. */
-#if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/token/ConfidentialMPTRecoverBalance.h>
-#endif
-TRANSACTION(ttCONFIDENTIAL_MPT_RECOVER_BALANCE, 96, ConfidentialMPTRecoverBalance,
-    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialMPTKeyRotation}),
-    ({
-    {sfMPTokenIssuanceID, SoeRequired},
-    {sfHolder, SoeRequired},
-    {sfConfidentialBalanceSpending, SoeRequired},
-    {sfZKProof, SoeRequired},
 }))
 
 /** This system-generated transaction type is used to update the status of the various amendments.

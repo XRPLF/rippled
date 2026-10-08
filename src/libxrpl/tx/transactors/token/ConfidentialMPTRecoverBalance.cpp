@@ -43,12 +43,12 @@ ConfidentialMPTRecoverBalance::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfConfidentialBalanceSpending].length() != kEcGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
 
+    if (ctx.tx[sfZKProof].length() != kEcEqualityProofLength)
+        return temMALFORMED;
+
     // Verify it's a valid elliptic curve point
     if (!isValidCiphertext(ctx.tx[sfConfidentialBalanceSpending]))
         return temBAD_CIPHERTEXT;
-
-    if (ctx.tx[sfZKProof].length() != kEcEqualityProofLength)
-        return temMALFORMED;
 
     return tesSUCCESS;
 }
@@ -77,11 +77,12 @@ ConfidentialMPTRecoverBalance::preclaim(PreclaimContext const& ctx)
     auto const mptIssuanceID = ctx.tx[sfMPTokenIssuanceID];
     auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
+        return tecOBJECT_NOT_FOUND;
 
     // Sanity check: account must be the issuer
     if (sleIssuance->getAccountID(sfIssuer) != account)
-    {  // LCOV_EXCL_START
+    {
+        // LCOV_EXCL_START
         UNREACHABLE("xrpl::ConfidentialMPTRecoverBalance::preclaim : account is not issuer");
         return tefINTERNAL;
         // LCOV_EXCL_STOP

@@ -14,18 +14,18 @@ namespace xrpl {
 /**
  * @brief Completes holder key recovery for Confidential MPT.
  *
- * This transaction is submitted by the issuer to complete a holder key
- * recovery previously authorized via ConfidentialMPTHolderKeyUpdate (Recovery mode).
- *
- * The issuer reveals the holder's balance by decrypting sfIssuerEncryptedBalance
- * with their ElGamal private key (the mirror reflects the holder's total confidential
- * balance), then re-encrypts that balance under the holder's MPToken object's
- * sfRecoveryKey and sets it as the new sfConfidentialBalanceSpending.
- * sfConfidentialBalanceInbox is set to an encrypted zero.
+ * The issuer decrypts the holder's issuer mirror (sfIssuerEncryptedBalance), which holds the
+ * holder's total confidential balance, and re-encrypts that amount under the holder's
+ * sfRecoveryKey. On success, the ciphertext becomes the new sfConfidentialBalanceSpending,
+ * sfRecoveryKey replaces sfHolderEncryptionKey and is then removed, sfConfidentialBalanceInbox is
+ * reset to the canonical encrypted zero under the new key, and sfConfidentialBalanceVersion is
+ * incremented.
  *
  * @par Cryptographic Operations:
- * - **Chaum-Pedersen Equality Proof**: Verifies that the new spending ciphertext
- *   encrypts the same value as the on-ledger sfIssuerEncryptedBalance.
+ * - **Equality Proof Verification**: Verifies that the new spending
+ *   ciphertext, encrypted under sfRecoveryKey, encrypts the same amount as
+ *   the holder's issuer mirror (sfIssuerEncryptedBalance), and that the
+ *   issuer knows the private key for its registered sfIssuerEncryptionKey.
  *
  * @see ConfidentialMPTHolderKeyUpdate
  */
