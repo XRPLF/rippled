@@ -336,7 +336,7 @@ MPTokenIssuanceSet::doApply()
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    std::uint32_t const flagsIn = sle->getFieldU32(sfFlags);
+    std::uint32_t const flagsIn = (*sle)[sfFlags];
     std::uint32_t flagsOut = flagsIn;
 
     if (ctx_.tx.isFlag(tfMPTLock))
@@ -351,17 +351,14 @@ MPTokenIssuanceSet::doApply()
     if (auto const enableFlags = (ctx_.tx.getFlags() & tfMPTokenIssuanceSetEnableFlagMask);
         enableFlags != 0u)
     {
-        for (auto const& f : flagMapping)
-        {
+        std::ranges::for_each(flagMapping, [&, this](auto const& f) {
             if (ctx_.tx.isFlag(f.setFlag))
-            {
                 flagsOut |= f.ledgerFlag;
-            }
-        }
+        });
     }
 
     if (flagsIn != flagsOut)
-        sle->setFieldU32(sfFlags, flagsOut);
+        (*sle)[sfFlags] = flagsOut;
 
     if (auto const immutableFlags = ctx_.tx[~sfImmutableFlags])
     {
@@ -388,26 +385,30 @@ MPTokenIssuanceSet::doApply()
         // TransferFee uses soeDEFAULT style:
         // - If the field is absent, it is interpreted as 0.
         // - If the field is present, it must be non-zero.
-        // Therefore, when TransferFee is 0, the field should be removed.
-        if (transferFee == 0)
-        {
-            sle->makeFieldAbsent(sfTransferFee);
-        }
-        else
-        {
-            sle->setFieldU16(sfTransferFee, *transferFee);
-        }
+        // operator[] deals with it.
+        XRPL_ASSERT(
+            sle->getType() == ltMPTOKEN_ISSUANCE,
+            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+        if (sle->getType() != ltMPTOKEN_ISSUANCE)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        (*sle)[sfTransferFee] = *transferFee;
     }
 
     if (auto const metadata = ctx_.tx[~sfMPTokenMetadata])
     {
+        XRPL_ASSERT(
+            sle->getType() == ltMPTOKEN_ISSUANCE,
+            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+        if (sle->getType() != ltMPTOKEN_ISSUANCE)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
         if (metadata->empty())
         {
             sle->makeFieldAbsent(sfMPTokenMetadata);
         }
         else
         {
-            sle->setFieldVL(sfMPTokenMetadata, *metadata);
+            (*sle)[sfMPTokenMetadata] = *metadata;
         }
     }
 
@@ -417,15 +418,16 @@ MPTokenIssuanceSet::doApply()
         XRPL_ASSERT(
             sle->getType() == ltMPTOKEN_ISSUANCE,
             "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+        if (sle->getType() != ltMPTOKEN_ISSUANCE)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (*domainID != beast::kZero)
         {
-            sle->setFieldH256(sfDomainID, *domainID);
+            (*sle)[sfDomainID] = *domainID;
         }
         else
         {
-            if (sle->isFieldPresent(sfDomainID))
-                sle->makeFieldAbsent(sfDomainID);
+            sle->makeFieldAbsent(sfDomainID);
         }
     }
 
@@ -434,8 +436,9 @@ MPTokenIssuanceSet::doApply()
     // registration leaves the epoch absent (epoch 0), matching issuances
     // whose keys were registered before the ConfidentialMPTKeyRotation
     // amendment.
-    bool const canRotateKey = view().rules().enabled(featureConfidentialMPTKeyRotation);
+
     auto const setEncryptionKey = [&](SF_VL const& keyField, SF_UINT32 const& epochField) -> TER {
+        bool const canRotateKey = view().rules().enabled(featureConfidentialMPTKeyRotation);
         auto const pubKey = ctx_.tx[~keyField];
         if (!pubKey)
             return tesSUCCESS;
@@ -453,24 +456,19 @@ MPTokenIssuanceSet::doApply()
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // NOTE: presence must be checked before the key is overwritten below.
-        bool const isRotation = sle->isFieldPresent(keyField);
-
-        // Proofs over sfIssuerEncryptedBalance must be verified against the issuer key
-        // that encrypted the mirror balance.
-        //
-        // - Mirrors migrated after an issuer key rotation store their new key in
-        //   MPToken's sfIssuerMirrorEncryptionKey.
-        // - Mirrors that were never migrated carry no record and remain under the original key.
-        //
-        // Save the original key here in MPTokenIssuance object during the first key rotation
-        bool const isIEK = &keyField == &sfIssuerEncryptionKey;
-        if (isRotation && isIEK && !sle->isFieldPresent(epochField))
-            sle->at(sfInitialIssuerEncryptionKey) = sle->at(keyField);
-
-        sle->setFieldVL(keyField, *pubKey);
-
-        if (isRotation)
+        if (sle->isFieldPresent(keyField))
         {
+            // Proofs over sfIssuerEncryptedBalance must be verified against the issuer key
+            // that encrypted the mirror balance.
+            //
+            // - Mirrors migrated after an issuer key rotation store their new key in
+            //   MPToken's sfIssuerMirrorEncryptionKey.
+            // - Mirrors that were never migrated carry no record and remain under the original key.
+            //
+            // Save the original key here in MPTokenIssuance object during the first key rotation
+            if (keyField == sfIssuerEncryptionKey && !sle->isFieldPresent(epochField))
+                (*sle)[sfInitialIssuerEncryptionKey] = (*sle)[keyField];
+
             // Preclaim rejects overwriting an existing key unless the amendment is
             // enabled.
             if (!canRotateKey)
@@ -482,7 +480,6 @@ MPTokenIssuanceSet::doApply()
             }
 
             auto const epoch = (*sle)[~epochField].valueOr(0);
-
             // Preclaim rejects a rotation that would wrap the epoch. So this should never happen.
             if (epoch >= kMaxKeyEpoch)
             {
@@ -494,7 +491,7 @@ MPTokenIssuanceSet::doApply()
 
             (*sle)[epochField] = epoch + 1;
         }
-
+        (*sle)[keyField] = *pubKey;
         return tesSUCCESS;
     };
 

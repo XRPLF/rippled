@@ -348,7 +348,8 @@ isAuditorMirrorCurrent(SLE const& issuance, SLE const& mptoken);
 areMirrorsCurrent(SLE const& issuance, SLE const& mptoken);
 
 /**
- * @brief Set the holder's issuer mirror epoch to match the issuance's current issuer key epoch.
+ * @brief Set the holder's issuer mirror epoch, and the issuer mirror key, to match the issuance's
+ * current key.
  *
  * Call this after writing the issuer mirror ciphertext under the issuance's
  * currently registered issuer key, so that the mirror reads as current afterwards.
@@ -374,7 +375,8 @@ void
 setAuditorMirrorCurrent(SLE const& issuance, SLE& mptoken);
 
 /**
- * @brief Set the holder's MPToken mirror epochs to match the issuance's current key epochs.
+ * @brief Set the holder's MPToken mirror epochs, and the issuer mirror key, to match the issuance's
+ * current keys.
  *
  * Call this after writing mirror ciphertexts under the issuance's currently
  * registered keys, so that the mirrors read as current afterwards. Also records
@@ -384,7 +386,7 @@ setAuditorMirrorCurrent(SLE const& issuance, SLE& mptoken);
  * @param mptoken  The holder's MPToken ledger entry to update.
  */
 void
-setMirrorEpochs(SLE const& issuance, SLE& mptoken);
+setMirrorsCurrent(SLE const& issuance, SLE& mptoken);
 
 /**
  * @brief Verifies revealed amount encryptions for all recipients.

@@ -446,7 +446,7 @@ setIssuerMirrorCurrent(SLE const& issuance, SLE& mptoken)
     // Unlike the auditor mirror, the issuer mirror is not optional: every
     // confidential MPToken carries one, so there is no existence check here.
     //
-    // Record the key and epoch under which the mirror is now encrypted.  Both fields remain absent
+    // Record the key and epoch under which the mirror is now encrypted. Both fields remain absent
     // at epoch 0: such mirrors use the original issuer key. The original key is stored in
     // sfInitialIssuerEncryptionKey after the first rotation.
     if (auto const epoch = issuance[~sfIssuerKeyEpoch].value_or(0); epoch != 0)
@@ -473,7 +473,7 @@ setAuditorMirrorCurrent(SLE const& issuance, SLE& mptoken)
 }
 
 void
-setMirrorEpochs(SLE const& issuance, SLE& mptoken)
+setMirrorsCurrent(SLE const& issuance, SLE& mptoken)
 {
     setIssuerMirrorCurrent(issuance, mptoken);
     setAuditorMirrorCurrent(issuance, mptoken);
