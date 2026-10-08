@@ -46,7 +46,7 @@ LedgerReplayer::~LedgerReplayer()
 void
 LedgerReplayer::replay(
     InboundLedger::Reason r,
-    uint256 const& finishLedgerHash,
+    UInt256 const& finishLedgerHash,
     std::uint32_t totalNumLedgers)
 {
     XRPL_ASSERT(

@@ -39,7 +39,7 @@ namespace {
  * @return true if the request must be rejected to stay within the cap.
  */
 [[nodiscard]] bool
-wouldExceedSubscriptionCap(InfoSub::ref ispSub, std::size_t additional, std::size_t cap)
+wouldExceedSubscriptionCap(InfoSub::Ref ispSub, std::size_t additional, std::size_t cap)
 {
     return exceedsSubscriptionCap(ispSub->totalSubscriptionCount(), additional, cap);
 }
@@ -194,20 +194,20 @@ doSubscribe(rpc::JsonContext& context)
     // Parse the proposed (real-time) and normal account sets first, then check
     // the cap against their COMBINED net-new total before subscribing either.
     // This keeps the account pair all-or-nothing: it never subscribes one set
-    // and then rejects on the other. Other fields (streams and account_history)
-    // are still checked and subscribed independently, as they always have been,
-    // so a later field can be rejected after an earlier one subscribed. The cap
-    // counts only NET-NEW accounts (those not already tracked on this
-    // connection), so re-subscribing accounts already held is never wrongly
-    // rejected.
+    // and then rejects on the other. Other fields (streams, account_history and
+    // mpt_issuances) are still checked and subscribed independently, as they
+    // always have been, so a later field can be rejected after an earlier one
+    // subscribed. The cap counts only NET-NEW accounts (those not already
+    // tracked on this connection), so re-subscribing accounts already held is
+    // never wrongly rejected.
     auto accountsProposed = context.params.isMember(jss::accounts_proposed)
         ? jss::accounts_proposed
         : jss::rt_accounts;  // DEPRECATED
     bool const hasProposed = context.params.isMember(accountsProposed);
     bool const hasAccounts = context.params.isMember(jss::accounts);
 
-    hash_set<AccountID> proposedIds;
-    hash_set<AccountID> accountIds;
+    HashSet<AccountID> proposedIds;
+    HashSet<AccountID> accountIds;
 
     if (hasProposed)
     {
@@ -322,7 +322,7 @@ doSubscribe(rpc::JsonContext& context)
 
             if (j.isMember(jss::domain))
             {
-                uint256 domain;
+                UInt256 domain;
                 if (!j[jss::domain].isString() || !domain.parseHex(j[jss::domain].asString()))
                 {
                     return rpcError(RpcDomainMalformed);
@@ -392,6 +392,25 @@ doSubscribe(rpc::JsonContext& context)
                 }
             }
         }
+    }
+
+    if (context.params.isMember(jss::mpt_issuances))
+    {
+        if (!context.params[jss::mpt_issuances].isArray())
+            return rpcError(RpcInvalidParams);
+
+        auto ids = rpc::parseMPTIssuanceIDs(context.params[jss::mpt_issuances]);
+        if (ids.empty())
+            return rpcError(RpcInvalidParams);
+
+        // MPT issuance subscriptions are tracked per connection (and counted by
+        // totalSubscriptionCount), so they are capped like the account branches:
+        // an atomic check-and-reserve of the net-new issuances, all-or-nothing.
+        if (!ispSub->tryReserveMPTSubscriptions(ids, subscriptionCap))
+            return rpc::makeParamError("Too many subscriptions for this connection.");
+
+        context.netOps.subMPT(ispSub, ids);
+        JLOG(context.j.debug()) << "doSubscribe: mpts: " << ids.size();
     }
 
     return jvResult;

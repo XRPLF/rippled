@@ -5,14 +5,13 @@ on:
     branches:
       - develop
     paths:
-      - ".github/workflows/build-packaging-images.yml"
       - "bin/install-packaging-tools.sh"
-      - "package/docker/**"
+      - "package/images/packaging/**"
   pull_request:
     paths:
       - ".github/workflows/build-packaging-images.yml"
       - "bin/install-packaging-tools.sh"
-      - "package/docker/**"
+      - "package/images/packaging/**"
   workflow_dispatch:
 
 concurrency:
@@ -41,9 +40,9 @@ jobs:
           # AlmaLinux rather than UBI, which does not ship rpm-sign.
           - name: rhel
             base_image: almalinux:10
-    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@034e87065fcd0100214cf0672923bd38d193cf78
+    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@696384b292577293292daed06af0306d1b83bd7d
     with:
       image_name: xrpld/packaging-${{ matrix.distro.name }}
-      dockerfile: package/docker/Dockerfile
+      dockerfile: package/images/packaging/Dockerfile
       base_image: ${{ matrix.distro.base_image }}
       push: ${{ github.event_name == 'push' }}
