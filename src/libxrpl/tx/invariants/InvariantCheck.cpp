@@ -1134,10 +1134,8 @@ NoModifiedUnmodifiableFields::finalize(
         }
         return changed;
     };
-    for (auto const& slePair : changedEntries_)
+    for (auto const& [before, after] : changedEntries_)
     {
-        auto const& before = slePair.first;
-        auto const& after = slePair.second;
         auto const type = after->getType();
         // featureLendingProtocol gates enforcement, not detection: changes are
         // always logged, but the transaction is only failed once the amendment

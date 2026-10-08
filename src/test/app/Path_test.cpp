@@ -406,9 +406,7 @@ public:
         env.close();
         env.trust(Account("alice")["USD"](700), "bob");
 
-        STPathSet st;
-        STAmount sa;
-        std::tie(st, sa, std::ignore) = findPaths(env, "alice", "bob", Account("bob")["USD"](5));
+        auto [st, sa, da] = findPaths(env, "alice", "bob", Account("bob")["USD"](5));
         BEAST_EXPECT(st.empty());
         BEAST_EXPECT(equal(sa, Account("alice")["USD"](5)));
     }
@@ -452,9 +450,7 @@ public:
         if (domainEnabled)
             domainID = setupDomain(env, {"alice", "bob", gw});
 
-        STPathSet st;
-        STAmount sa;
-        std::tie(st, sa, std::ignore) = findPaths(
+        auto [st, sa, da] = findPaths(
             env, "alice", "bob", Account("bob")["USD"](5), std::nullopt, std::nullopt, domainID);
         BEAST_EXPECT(same(st, stpath("gateway")));
         BEAST_EXPECT(equal(sa, Account("alice")["USD"](5)));
@@ -735,9 +731,7 @@ public:
             domainID = setupDomain(env, {"alice", "bob", "carol", "dan", gw, gw2});
         }
 
-        STPathSet st;
-        STAmount sa;
-        std::tie(st, sa, std::ignore) = findPaths(
+        auto [st, sa, da] = findPaths(
             env, "alice", "bob", Account("bob")["USD"](5), std::nullopt, std::nullopt, domainID);
         BEAST_EXPECT(
             same(st, stpath("gateway"), stpath("gateway2"), stpath("dan"), stpath("carol")));
@@ -892,10 +886,7 @@ public:
         env.trust(Account("alice")["USD"](1000), "bob");
         env.trust(Account("bob")["USD"](1000), "carol");
 
-        STPathSet st;
-        STAmount sa;
-        std::tie(st, sa, std::ignore) =
-            findPaths(env, "alice", "carol", Account("carol")["USD"](5));
+        auto [st, sa, da] = findPaths(env, "alice", "carol", Account("carol")["USD"](5));
         BEAST_EXPECT(same(st, stpath("bob")));
         BEAST_EXPECT(equal(sa, Account("alice")["USD"](5)));
     }

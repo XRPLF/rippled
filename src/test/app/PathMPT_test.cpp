@@ -214,9 +214,7 @@ public:
 
         MPT const usd = MPTTester({.env = env, .issuer = "alice", .holders = {"bob"}});
 
-        STPathSet st;
-        STAmount sa;
-        std::tie(st, sa, std::ignore) = findPaths(env, "alice", "bob", usd(5));
+        auto [st, sa, da] = findPaths(env, "alice", "bob", usd(5));
         BEAST_EXPECT(st.empty());
         BEAST_EXPECT(equal(sa, usd(5)));
     }

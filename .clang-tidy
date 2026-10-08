@@ -51,7 +51,6 @@ Checks: "-*,
   -modernize-return-braced-init-list,
   -modernize-use-integer-sign-comparison,
   -modernize-use-string-view,
-  -modernize-use-structured-binding,
   -modernize-use-trailing-return-type,
 
   performance-*,
