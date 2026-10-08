@@ -1080,7 +1080,6 @@ class InvariantsVault_test : public InvariantsBase
                 ttLOAN_SET,
                 [](STObject& tx) {
                     tx.at(sfPrincipalRequested) = Number(200);
-                    tx.makeFieldPresent(sfCounterpartySignature);
                 }},
             {tesSUCCESS, tesSUCCESS},
             precloseXrp);
@@ -1735,35 +1734,8 @@ class InvariantsVault_test : public InvariantsBase
                 [](SLE::pointer const& sle) { sle->setFieldU32(sfPaymentRemaining, 1); },
                 "LoanAccept modified a Loan that was not pending");
 
-            // ttLOAN_ACCEPT: removing the OwnerNode while accepting fails.
-            testLoanUpdate(
-                acceptTx,
-                lsfLoanPending,
-                0,
-                [](SLE::pointer const& sle) {
-                    sle->clearFlag(lsfLoanPending);
-                    sle->makeFieldAbsent(sfOwnerNode);
-                },
-                "Loan OwnerNode removed or changed");
-
-            // ttLOAN_ACCEPT: changing the OwnerNode while accepting fails.
-            testLoanUpdate(
-                acceptTx,
-                lsfLoanPending,
-                0,
-                [](SLE::pointer const& sle) {
-                    sle->clearFlag(lsfLoanPending);
-                    sle->setFieldU64(sfOwnerNode, 1);
-                },
-                "Loan OwnerNode removed or changed");
-
-            // Only LoanAccept may add the OwnerNode to an existing loan.
-            testLoanUpdate(
-                STTx{ttACCOUNT_SET, [](STObject&) {}},
-                0,
-                std::nullopt,
-                [](SLE::pointer const& sle) { sle->setFieldU64(sfOwnerNode, 0); },
-                "Loan OwnerNode added by an unauthorized transaction");
+            // OwnerNode add/remove/change on an existing loan is covered by
+            // NoModifiedUnmodifiableFields; see InvariantsMisc_test.
 
             // ttLOAN_ACCEPT: the legitimate transition passes: clear the
             // pending flag and link the loan into the borrower's directory.
@@ -1809,14 +1781,15 @@ class InvariantsVault_test : public InvariantsBase
                 "Loan Pending flag changed by an unauthorized transaction");
 
             // The pending flag may never be set on an existing loan (it is only
-            // set at creation by LoanSet), not even by LoanAccept, which may
-            // only process a loan that was already pending.
+            // set at creation by LoanSet). Any transaction setting it is a
+            // violation. LoanAccept setting it is already rejected by the first
+            // case above, because the loan was not pending to begin with.
             testLoanUpdate(
-                acceptTx,
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
                 0,
                 0,
                 [](SLE::pointer const& sle) { sle->setFlag(lsfLoanPending); },
-                "LoanAccept modified a Loan that was not pending");
+                "Loan Pending flag changed by an unauthorized transaction");
 
             // A pending loan may only be modified by LoanAccept: any other
             // loan transaction touching it is a violation, even if the
@@ -2113,14 +2086,14 @@ class InvariantsVault_test : public InvariantsBase
                 };
             };
 
-            // The Loan must record the StartDate the transaction named. Both
-            // dates are kept small so the closed-ended RedemptionDate check,
-            // which runs first, does not fire. The record check also runs
-            // before the pending-StartDate-in-the-future check.
+            // The Loan must record the StartDate the transaction named. The
+            // loan is created active so the pending-StartDate-in-the-future
+            // check does not apply, and both dates are kept small so the
+            // closed-ended RedemptionDate check does not fire.
             doInvariantCheck(
                 Env{*this, all_},
                 {"LoanSet did not record the transaction StartDate"},
-                createLoan(true, 2u, borrower.id()),
+                createLoan(false, 2u, borrower.id()),
                 XRPAmount{},
                 STTx{
                     ttLOAN_SET,

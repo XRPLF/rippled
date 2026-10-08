@@ -133,23 +133,11 @@ ValidLoan::finalize(
         {
             // The lsfLoanPending flag may only be cleared (finalising the
             // loan), and only by LoanAccept. It must never be set on an
-            // existing loan.
+            // existing loan. Changes to the OwnerNode are policed by
+            // NoModifiedUnmodifiableFields instead: only LoanAccept may add
+            // it, and nothing may remove or change it.
             bool const wasPending = before->isFlag(lsfLoanPending);
             bool const isPending = after->isFlag(lsfLoanPending);
-
-            // The OwnerNode may only be added to an existing loan, and only by
-            // LoanAccept (which links the loan into the borrower's directory
-            // once accepted). It must never be removed or changed.
-            bool const beforeHasNode = before->isFieldPresent(sfOwnerNode);
-            bool const afterHasNode = after->isFieldPresent(sfOwnerNode);
-            if (beforeHasNode &&
-                (!afterHasNode ||
-                 before->getFieldU64(sfOwnerNode) != after->getFieldU64(sfOwnerNode)))
-            {
-                JLOG(j.fatal()) << "Invariant failed: Loan OwnerNode removed "
-                                   "or changed";
-                return false;
-            }
 
             // LoanAccept may only finalise a pending loan, and only while its
             // StartDate is still in the future.
@@ -193,12 +181,6 @@ ValidLoan::finalize(
                 {
                     JLOG(j.fatal()) << "Invariant failed: pending Loan modified by a "
                                        "transaction other than LoanAccept";
-                    return false;
-                }
-                if (!beforeHasNode && afterHasNode)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: Loan OwnerNode added "
-                                       "by an unauthorized transaction";
                     return false;
                 }
             }

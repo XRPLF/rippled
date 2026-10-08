@@ -48,7 +48,8 @@ namespace xrpl {
  *
  * 6. Under `featureLendingProtocolV1_2` (the two-step "pending loan" flow):
  *    a. A loan's `OwnerNode` may only be added to an existing loan, and only
- *       by `LoanAccept`. It must never be removed or changed.
+ *       by `LoanAccept`. It must never be removed or changed. This is
+ *       enforced by `NoModifiedUnmodifiableFields`, not here.
  *    b. A loan's `lsfLoanPending` flag may only be cleared (never set) on an
  *       existing loan, and only by `LoanAccept`.
  *       More broadly, a pending loan may only be modified by `LoanAccept`
