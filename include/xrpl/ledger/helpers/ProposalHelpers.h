@@ -131,13 +131,21 @@ deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal 
  * Whether tx carries the same payload as a proposal's stored
  * ProposedTransaction (On-Chain Cosigner spec §4.2.1).
  *
- * The payload is every field fixed at creation — everything except the
- * signature containers the proposal lets evolve (TxnSignature, Signers,
- * BatchSigners, CounterpartySignature, SponsorSignature) and SigningPubKey,
- * which is stored empty and filled only if the target signs with its own
- * key. So the completed transaction matches no matter which mix of collected
- * or off-ledger signatures it carries. Any change to a non-signature
- * field results in a false-return value.
+ * The payload is the signing payload: the fields the collected signatures
+ * commit to. Compared is every field except those flagged kNotSigning
+ * (TxnSignature, Signers, BatchSigners, CounterpartySignature,
+ * SponsorSignature, Signature, MasterSignature) and SigningPubKey, which is
+ * stored empty and filled only if the target signs with its own key. So the
+ * completed transaction matches no matter which mix of collected or
+ * off-ledger signatures it carries, and any change to a non-signature field
+ * results in a false-return value.
+ *
+ * Signature (PaymentChannelClaim and the XChain attestation transactions)
+ * is deliberately not compared: it is outside the account's own TxnSignature
+ * even for an ordinary submission, so a proposal cannot bind it more tightly
+ * than the signatures it collects do, and those transactors still validate a
+ * substituted value exactly as they would for an ordinary submission.
+ * MasterSignature appears in no transaction format.
  *
  * @param proposedTx The proposal's ProposedTransaction field.
  * @param tx The transaction to compare, typically an STTx.
