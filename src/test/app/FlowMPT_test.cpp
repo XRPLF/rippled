@@ -1084,6 +1084,92 @@ struct FlowMPT_test : public beast::unit_test::Suite
     }
 
     void
+    testBookStepInputAboveMaximumAmountWithFee(FeatureBitset features)
+    {
+        // BookStep limits an MPT input to MaximumAmount (see maxIn_) and
+        // grosses up the transfer fee on no more than the cap. Grossing up
+        // the bid's whole TakerPays can overflow even though a fill at the
+        // cap fits, and the overflow used to remove the bid. OfferCreate
+        // doesn't place a bid whose grossed-up TakerPays overflows, but one
+        // can rest at a lower fee before the issuer raises it.
+        //
+        // mallory bids for 9e18 x, above x's 8e18 cap, while x has no fee.
+        // gwX then raises the fee. alice pays x directly, so the step redeems
+        // and the fee applies.
+        testcase("BookStep input above MaximumAmount with transfer fee");
+
+        using namespace jtx;
+
+        Account const gwX("gwX");
+        Account const gwY("gwY");
+        Account const alice("alice");
+        Account const mallory("mallory");
+        Account const dave("dave");
+
+        std::int64_t constexpr cap = 8'000'000'000'000'000'000LL;
+        std::int64_t constexpr bid = 9'000'000'000'000'000'000LL;
+        std::int64_t constexpr deliver = 1'000;
+
+        auto test = [&](std::uint16_t fee, bool fills) {
+            Env env(*this, features);
+            env.fund(XRP(100'000), gwX, gwY, alice, mallory, dave);
+            env.close();
+
+            MPTTester x(
+                {.env = env, .issuer = gwX, .holders = {alice, mallory, dave}, .maxAmt = cap});
+            MPT const y = MPTTester({.env = env, .issuer = gwY, .holders = {mallory, dave}});
+            std::int64_t const gross = deliver + ((deliver * fee) / 100'000);
+            env(pay(gwX, alice, x(gross)));
+            env(pay(gwY, mallory, y(bid)));
+            env.close();
+
+            auto const bidSeq = env.seq(mallory);
+            env(offer(mallory, x(bid), y(bid)));
+            env.close();
+            auto const bidKeylet = keylet::offer(mallory.id(), SeqProxy::rawSequence(bidSeq));
+            BEAST_EXPECT(env.le(bidKeylet) != nullptr);
+
+            x.set({.account = gwX, .transferFee = fee});
+            env.close();
+
+            env(pay(alice, dave, y(deliver)),
+                Path(~y),
+                Sendmax(x(gross)),
+                Txflags(tfNoRippleDirect),
+                Ter(fills ? TER(tesSUCCESS) : TER(tecPATH_PARTIAL)));
+            env.close();
+
+            auto const sle = env.le(bidKeylet);
+            if (fills)
+            {
+                BEAST_EXPECT(env.balance(dave, y) == y(deliver));
+                BEAST_EXPECT(env.balance(mallory, x) == x(deliver));
+                BEAST_EXPECT(env.balance(alice, x) == x(0));
+                // The remainder is still funded and stays on the book.
+                if (BEAST_EXPECT(sle))
+                {
+                    BEAST_EXPECT((*sle)[sfTakerPays] == x(bid - deliver));
+                    BEAST_EXPECT((*sle)[sfTakerGets] == y(bid - deliver));
+                }
+            }
+            else
+            {
+                // Even the cap overflows once grossed up, so BookStep removes
+                // the bid and nothing is delivered. The failed payment
+                // discards its changes, so the bid is still on the ledger.
+                BEAST_EXPECT(env.balance(dave, y) == y(0));
+                BEAST_EXPECT(env.balance(alice, x) == x(gross));
+                BEAST_EXPECT(sle);
+            }
+        };
+
+        // 9e18 * 1.1 overflows but 8e18 * 1.1 fits: the bid fills partially.
+        test(10'000, true);
+        // 8e18 * 1.5 overflows too, so the bid is removed as before.
+        test(kMaxTransferFee, false);
+    }
+
+    void
     testBookStepMissingIssuance(FeatureBitset features)
     {
         // A path through a book whose MPT issuance doesn't exist. BookStep's
@@ -2882,6 +2968,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
         testMPTEndpointTransferRateOverflow(features);
         testMPTEndpointRipplingInputOverflow(features);
         testBookStepInputAboveMaximumAmount(features);
+        testBookStepInputAboveMaximumAmountWithFee(features);
         testBookStepMissingIssuance(features);
         testSelfPayment1(features);
         testSelfPayment2(features);

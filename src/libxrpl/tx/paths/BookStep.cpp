@@ -641,6 +641,38 @@ BookStep<TIn, TOut, TDerived>::offersUsed() const
     return offersUsed_;
 }
 
+// Limit the offer to the given input (net of the taker's transfer fee), and
+// the step output and owner's charge with it. The caller sets stpAmt.in.
+template <class TIn, class TOut, class Offer>
+static void
+limitOfferIn(
+    Offer const& offer,
+    TAmounts<TIn, TOut>& ofrAmt,
+    TAmounts<TIn, TOut>& stpAmt,
+    TOut& ownerGives,
+    std::uint32_t transferRateOut,
+    TIn const& inLmt)
+{
+    // It turns out we can prevent order book blocking by (strictly)
+    // rounding down the ceil_in() result.  By rounding down we guarantee
+    // that the quality of an offer left in the ledger is as good or
+    // better than the quality of the containing order book page.
+    //
+    // This adjustment changes transaction outcomes, so it must be made
+    // under an amendment.
+    ofrAmt = offer.limitIn(ofrAmt, inLmt, /* roundUp */ false);
+    stpAmt.out = ofrAmt.out;
+    // Round up for MPT output so the offer owner pays the full
+    // ceil(amount × rate) fee, matching direct Payment semantics.  IOU uses
+    // floating-point arithmetic so the floor/ceil distinction is sub-epsilon
+    // there; preserve the historical false to avoid changing IOU behavior.
+    ownerGives = mulRatio(
+        ofrAmt.out,
+        transferRateOut,
+        QUALITY_ONE,
+        /*roundUp*/ std::is_same_v<TOut, MPTAmount>);
+}
+
 // Adjust the offer amount and step amount subject to the given input limit
 template <class TIn, class TOut, class Offer>
 static void
@@ -657,24 +689,7 @@ limitStepIn(
     {
         stpAmt.in = limit;
         auto const inLmt = mulRatio(stpAmt.in, QUALITY_ONE, transferRateIn, /*roundUp*/ false);
-        // It turns out we can prevent order book blocking by (strictly)
-        // rounding down the ceil_in() result.  By rounding down we guarantee
-        // that the quality of an offer left in the ledger is as good or
-        // better than the quality of the containing order book page.
-        //
-        // This adjustment changes transaction outcomes, so it must be made
-        // under an amendment.
-        ofrAmt = offer.limitIn(ofrAmt, inLmt, /* roundUp */ false);
-        stpAmt.out = ofrAmt.out;
-        // Round up for MPT output so the offer owner pays the full
-        // ceil(amount × rate) fee, matching direct Payment semantics.  IOU uses
-        // floating-point arithmetic so the floor/ceil distinction is sub-epsilon
-        // there; preserve the historical false to avoid changing IOU behavior.
-        ownerGives = mulRatio(
-            ofrAmt.out,
-            transferRateOut,
-            QUALITY_ONE,
-            /*roundUp*/ std::is_same_v<TOut, MPTAmount>);
+        limitOfferIn(offer, ofrAmt, stpAmt, ownerGives, transferRateOut, inLmt);
     }
 }
 
@@ -796,13 +811,18 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         auto ofrAmt = offer.amount();
         TAmounts stpAmt{ofrAmt.in, ofrAmt.out};
         auto ownerGives = ofrAmt.out;
+        // A bid above MaximumAmount is limited to it below (see maxIn_). Gross
+        // up no more than the cap: the whole bid may not fit once grossed up
+        // even though a fill at the cap does.
+        bool const capInMPT = prevStep_ && maxIn_ && offer.owner() != assetIn.getIssuer();
+        auto const amtIn = [&](TIn const& in) { return capInMPT && *maxIn_ < in ? *maxIn_ : in; };
         try
         {
             // All arithmetic in this block runs before the offer is consumed.
             // A crafted MPTokensV2 offer can overflow while transfer rates or
             // crossing limits are applied; remove that unusable offer instead
             // of letting it persist as a tecINTERNAL source.
-            stpAmt.in = mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
+            stpAmt.in = mulRatio(amtIn(ofrAmt.in), ofrInRate, QUALITY_ONE, /*roundUp*/ true);
 
             // owner pays the transfer fee.
             ownerGives = mulRatio(
@@ -827,7 +847,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 // transaction outcomes, so it must be made under an amendment.
                 ofrAmt = offer.limitOut(ofrAmt, stpAmt.out, /*roundUp*/ false);
 
-                stpAmt.in = mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
+                stpAmt.in = mulRatio(amtIn(ofrAmt.in), ofrInRate, QUALITY_ONE, /*roundUp*/ true);
 
                 // Fee clip can floor in or out to 0. OfferStream is
                 // fee-blind, so it misses both: out==0 blocks the book;
@@ -889,14 +909,20 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 {
                     // Limit to MaximumAmount (see maxIn_). The remainder is
                     // still funded, so the callback keeps the offer instead of
-                    // consuming it. The grossed-up cap can't overflow since
-                    // ofrAmt.in > maxIn_ did not.
+                    // consuming it. stpAmt.in is already the grossed-up cap.
                     inLimited = true;
-                    limitIn = mulRatio(*maxIn_, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
+                    limitOfferIn(offer, ofrAmt, stpAmt, ownerGives, ofrOutRate, *maxIn_);
                 }
             }
             if (limitIn)
                 limitStepIn(offer, ofrAmt, stpAmt, ownerGives, ofrInRate, ofrOutRate, *limitIn);
+
+            // amtIn() grossed up no more than the cap, so the offer must have
+            // been limited to it above or the taker pays for less than is
+            // consumed.
+            XRPL_ASSERT(
+                !capInMPT || ofrAmt.in <= *maxIn_,
+                "xrpl::BookStep::forEachOffer : capped offer input is limited");
 
             offerAttempted = true;
             return callback(offer, ofrAmt, stpAmt, ownerGives, ofrInRate, ofrOutRate, inLimited);
