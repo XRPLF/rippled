@@ -58,10 +58,11 @@ TEST(VaultGrid, pre_v12_behavior_is_preserved)
     int const expectedPosterior = detail::getPosteriorVaultScale(legacy, onGrid);
     STAmount const expectedPosteriorRound = roundToPosteriorVaultScale(legacy, dust, downward);
 
-    for (auto const version :
-         {std::optional<VaultVersion>{},
-          std::optional{VaultVersion::Legacy},
-          std::optional{VaultVersion::CashBasis}})
+    for (auto const version : {
+             std::optional<VaultVersion>{},
+             std::optional{VaultVersion::Legacy},
+             std::optional{VaultVersion::CashBasis},
+         })
     {
         auto const vault = makeVault(iou, assetsTotal, version);
         EXPECT_EQ(getVaultScale(vault), expectedLive);
@@ -80,10 +81,11 @@ TEST(VaultGrid, pre_v12_credit_clamp_floors_posterior_total)
     STAmount const delta{iou, Number{5}};
     STAmount const expected{iou, Number{4'999'999'999'999'991LL, -15}};
 
-    for (auto const version :
-         {std::optional<VaultVersion>{},
-          std::optional{VaultVersion::Legacy},
-          std::optional{VaultVersion::CashBasis}})
+    for (auto const version : {
+             std::optional<VaultVersion>{},
+             std::optional{VaultVersion::Legacy},
+             std::optional{VaultVersion::CashBasis},
+         })
     {
         auto const result = clampToAssetsTotalScale(makeVault(iou, assetsTotal, version), delta);
         ASSERT_TRUE(result.has_value());
@@ -146,22 +148,22 @@ TEST(VaultGrid, optional_inflow_capacity_boundaries)
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
 
-    auto fixedIou = makeVault(iou, Number{9, 5}, VaultVersion::FixedPrecision, 10);
+    auto const fixedIou = makeVault(iou, Number{9, 5}, VaultVersion::FixedPrecision, 10);
     STAmount const iouDust{iou, Number{1, -10}};
     EXPECT_EQ(getVaultOpenLimit(fixedIou), (Number{9, 5}));
     EXPECT_EQ(checkOptionalVaultInflow(fixedIou, STAmount{iou}), tesSUCCESS);
     EXPECT_EQ(checkOptionalVaultInflow(fixedIou, iouDust), tecLIMIT_EXCEEDED);
 
-    auto fixedXrp = makeVault(xrpIssue(), Number{9, 15}, VaultVersion::FixedPrecision, 0);
+    auto const fixedXrp = makeVault(xrpIssue(), Number{9, 15}, VaultVersion::FixedPrecision, 0);
     STAmount const xrpUnit{xrpIssue(), 1};
     EXPECT_EQ(getVaultOpenLimit(fixedXrp), (Number{9, 15}));
     EXPECT_EQ(checkOptionalVaultInflow(fixedXrp, STAmount{xrpIssue()}), tesSUCCESS);
     EXPECT_EQ(checkOptionalVaultInflow(fixedXrp, xrpUnit), tecLIMIT_EXCEEDED);
 
-    auto legacy = makeVault(iou, Number{10, 5}, VaultVersion::Legacy, 10);
+    auto const legacy = makeVault(iou, Number{10, 5}, VaultVersion::Legacy, 10);
     EXPECT_EQ(checkOptionalVaultInflow(legacy, iouDust), tesSUCCESS);
 
-    auto coarsening =
+    auto const coarsening =
         makeVault(iou, Number{9'999'999'999'999'999, -6}, VaultVersion::FixedPrecision, 6);
     STAmount const coarseningDelta{iou, Number{21, -6}};
     EXPECT_EQ(checkOptionalVaultInflow(coarsening, coarseningDelta), tecLIMIT_EXCEEDED);
@@ -171,7 +173,7 @@ TEST(VaultGrid, optional_inflow_includes_yield_unrealized)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
-    auto vault = makeVault(iou, Number{8'999'999'999}, VaultVersion::FixedPrecision, 6);
+    auto const vault = makeVault(iou, Number{8'999'999'999}, VaultVersion::FixedPrecision, 6);
     STAmount const amount{iou, Number{1}};
 
     EXPECT_EQ(checkOptionalVaultInflow(vault, amount), tesSUCCESS);
@@ -179,6 +181,59 @@ TEST(VaultGrid, optional_inflow_includes_yield_unrealized)
     vault->at(sfYieldUnrealized) = Number{1};
     associateAsset(*vault, iou);
     EXPECT_EQ(checkOptionalVaultInflow(vault, amount), tecLIMIT_EXCEEDED);
+}
+
+// AssetsAvailable + raw needs 20 digits. Under the ToNearest ambient mode the
+// sum would round up to the next 10^-6 before the Downward floor, crediting
+// 0.000001 for a raw 0.0000009996.
+TEST(VaultGrid, credit_floors_sum_in_requested_mode)
+{
+    test::Account const issuer{"issuer"};
+    Issue const iou{toCurrency("USD"), issuer.id()};
+    auto const vault = makeVault(
+        iou,
+        Number{0},
+        VaultVersion::FixedPrecision,
+        6,
+        Number{0},
+        Number{1'234'567'890'123'456LL, -6});
+    Number const raw{9'996, -10};
+
+    NumberRoundModeGuard const ambient(Number::RoundingMode::ToNearest);
+    STAmount const credit =
+        creditToPosteriorAvailableScale(vault, raw, Number::RoundingMode::Downward);
+    EXPECT_EQ(credit, STAmount(iou, 0));
+    EXPECT_LE(Number(credit), raw);
+}
+
+TEST(VaultGrid, is_on_vault_base_grid)
+{
+    test::Account const issuer{"issuer"};
+    Issue const iou{toCurrency("USD"), issuer.id()};
+    int const baseScale = vaultBaseScale(iou, 6);
+
+    struct Row
+    {
+        Number value;
+        bool expected{};
+    };
+    Row const rows[] = {
+        {.value = Number{0}, .expected = true},
+        {.value = Number{1}, .expected = true},
+        {.value = Number{1, -6}, .expected = true},
+        {.value = Number{1, 20}, .expected = true},
+        {.value = Number{1'234'567'890'123'456LL, -6}, .expected = true},
+        // A digit below baseScale.
+        {.value = Number{1, -7}, .expected = false},
+        {.value = Number{15, -7}, .expected = false},
+        // A 17th significant digit, on the base grid but not an STAmount.
+        {.value = Number{12'345'678'901'234'567LL, 0}, .expected = false},
+    };
+    for (auto const& row : rows)
+        EXPECT_EQ(isOnVaultBaseGrid(iou, row.value, baseScale), row.expected) << row.value;
+
+    EXPECT_EQ(vaultBaseScale(xrpIssue(), 6), 0);
+    EXPECT_TRUE(isOnVaultBaseGrid(xrpIssue(), Number{7}, 0));
 }
 
 }  // namespace

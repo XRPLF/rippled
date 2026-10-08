@@ -421,8 +421,6 @@ VaultClawback::doApply()
     Asset const vaultAsset = vault->at(sfAsset);
     STAmount const amount = clawbackAmount(vault, tx[~sfAmount], accountID_);
 
-    Number const assetsTotal = getAssetsTotal(vault);
-
     AccountID const holder = tx[sfHolder];
     STAmount sharesDestroyed = {share};
     STAmount assetsRecovered = {vault->at(sfAsset)};
@@ -453,52 +451,15 @@ VaultClawback::doApply()
     // Number arithmetic can throw overflow_error when Scale and totals are large.
     if (view().rules().enabled(fixCleanup3_4_0))
     {
-        try
-        {
-            // A non-zero recovery can be too small to change the stored balance at
-            // STAmount's precision. Shares would still be burned, reject it instead.
-            // FixedPrecision measures this against AssetsAvailable, the balance the
-            // cash actually leaves, not the derived AssetsTotal cache.
-            Number const dustReference = vaultDebitDustReference(vault, assetsTotal);
-            if (debitIsNonZeroDust(vaultAsset, dustReference, assetsRecovered))
-            {
-                // LCOV_EXCL_START
-                JLOG(j_.debug())
-                    << "VaultClawback: clawback amount too small to change stored vault"
-                       " balance";
-                return tecPRECISION_LOSS;
-                // LCOV_EXCL_STOP
-            }
-        }
-        // LCOV_EXCL_START
-        catch (std::overflow_error const&)
-        {
-            // It's easy to hit this exception from Number with large enough Scale
-            // so we avoid spamming the log and only use debug here.
-            JLOG(j_.debug())  //
-                << "VaultClawback: overflow error with"
-                << " scale=" << (int)vault->at(sfScale).value()  //
-                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
-                << ", amount=" << amount.value();
-            // Overflow means this transaction cannot apply, but ledger state is still
-            // consistent. Return tecPATH_DRY rather than a hard internal error.
-            return tecPATH_DRY;
-        }
-        // LCOV_EXCL_STOP
-    }
-
-    if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
-    {
-        if (auto const ter = adjustVaultBalances(vault, {.cash = -assetsRecovered}, j_);
+        // A non-zero recovery can be too small to change the stored balance at
+        // STAmount's precision. Shares would still be burned, reject it instead.
+        if (auto const ter = checkDebitNotDust(vault, assetsRecovered, j_, "VaultClawback");
             !isTesSuccess(ter))
             return ter;
     }
-    else
-    {
-        vault->at(sfAssetsTotal) -= assetsRecovered;
-        vault->at(sfAssetsAvailable) -= assetsRecovered;
-    }
+
+    if (auto const ter = adjustVaultCash(vault, -assetsRecovered, j_); !isTesSuccess(ter))
+        return ter;
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);

@@ -292,6 +292,14 @@ if(xrpld)
     )
     target_sources(xrpld PRIVATE ${sources})
 
+    rpcspec_generate_instantiations(
+        OUT_VAR rpcspec_instantiations
+        VALUE_TYPE "::json::Value"
+        VIEW_HEADER "xrpld/rpc/detail/JsonObjectView.hpp"
+        HANDLERS book_changes ledger transaction_entry
+    )
+    target_sources(xrpld PRIVATE ${rpcspec_instantiations})
+
     if(tests)
         file(
             GLOB_RECURSE sources
@@ -322,6 +330,7 @@ if(xrpld)
         # antithesis_instrumentation.h, which is not exported as INTERFACE
         target_include_directories(
             xrpld
+            SYSTEM
             PRIVATE ${CMAKE_SOURCE_DIR}/external/antithesis-sdk
         )
     endif()
