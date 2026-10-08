@@ -44,7 +44,8 @@ struct BalanceSnapshot
             .assetsDeployed = vault->at(sfAssetsDeployed),
             .loss = vault->at(sfLossUnrealized),
             .yield = vault->at(sfYieldUnrealized),
-            .total = vault->at(sfAssetsTotal)};
+            .total = vault->at(sfAssetsTotal),
+        };
     }
 
     bool
@@ -107,7 +108,7 @@ protected:
     static void
     checkIntegralControl(Asset const& asset)
     {
-        auto vault =
+        auto const vault =
             makeVault(asset, Number{0}, VaultVersion::FixedPrecision, 0, Number{500}, Number{100});
 
         ASSERT_EQ(
@@ -137,10 +138,12 @@ TEST_F(VaultBalance, get_assets_total_stored_for_non_fixed_precision)
     };
     std::vector<Row> const rows{
         {.name = "Legacy", .version = VaultVersion::Legacy, .stored = 1'234'567, .available = 999},
-        {.name = "CashBasis",
-         .version = VaultVersion::CashBasis,
-         .stored = 9'876'543,
-         .available = 100},
+        {
+            .name = "CashBasis",
+            .version = VaultVersion::CashBasis,
+            .stored = 9'876'543,
+            .available = 100,
+        },
     };
 
     for (auto const& row : rows)
@@ -164,21 +167,25 @@ TEST_F(VaultBalance, get_assets_total_fixed_precision_derived_sum)
         bool cacheExact = false;
     };
     std::vector<Row> const rows{
-        {.name = "ExactSum",
-         .assetsDeployed = Number{250'000},
-         .available = Number{1'000'000},
-         .cacheExact = true},
+        {
+            .name = "ExactSum",
+            .assetsDeployed = Number{250'000},
+            .available = Number{1'000'000},
+            .cacheExact = true,
+        },
         // available is already 16 significant digits; assetsDeployed pushes the exact
         // sum to 17, past what a 16-digit STAmount represents exactly.
-        {.name = "ExactPastSixteenDigits",
-         .assetsDeployed = Number{8, -6},
-         .available = Number{9'999'999'999'999'999, -6}},
+        {
+            .name = "ExactPastSixteenDigits",
+            .assetsDeployed = Number{8, -6},
+            .available = Number{9'999'999'999'999'999, -6},
+        },
     };
 
     for (auto const& row : rows)
     {
         SCOPED_TRACE(row.name);
-        auto vault = iouVault(row.assetsDeployed, row.available);
+        auto const vault = iouVault(row.assetsDeployed, row.available);
         Number const exact = row.available + row.assetsDeployed;
 
         // Exact sum: no rounding, no conversion to a 16-digit STAmount.
@@ -205,7 +212,7 @@ TEST_F(VaultBalance, get_assets_total_ignores_stale_cache)
 {
     Number const available{4'000'000};
     Number const assetsDeployed{1'000'000};
-    auto vault = iouVault(assetsDeployed, available, Number{99});
+    auto const vault = iouVault(assetsDeployed, available, Number{99});
     EXPECT_EQ(getAssetsTotal(vault), available + assetsDeployed);
     EXPECT_NE(vault->at(sfAssetsTotal), getAssetsTotal(vault));
 }
@@ -216,7 +223,7 @@ TEST_F(VaultBalance, get_assets_total_never_below_available)
 {
     Number const available{9'999'999'999'999'999, -6};
     Number const assetsDeployed{5'000'000'000, -6};
-    auto vault = iouVault(assetsDeployed, available);
+    auto const vault = iouVault(assetsDeployed, available);
     EXPECT_GT(getVaultScale(vault), getVaultBaseScale(vault));
     EXPECT_GE(getAssetsTotal(vault), available);
 
@@ -253,14 +260,14 @@ TEST_F(VaultBalance, scale_and_open_include_assets_deployed)
     // Available alone stays at base scale; Available + AssetsDeployed coarsens.
     Number const available{1'000'000'000};
     Number const assetsDeployed{9'000'000'000};
-    auto vault = iouVault(assetsDeployed, available, available);
+    auto const vault = iouVault(assetsDeployed, available, available);
 
     EXPECT_EQ(getAssetsTotal(vault), available + assetsDeployed);
     EXPECT_GT(getVaultScale(vault), getVaultBaseScale(vault));
 
     // Open capacity uses the derived total, so assetsDeployed counts against the
     // ceiling: with assetsDeployed filling most of Open, the inflow is rejected.
-    auto nearOpen = iouVault(Number{1, 9}, Number{8, 9});
+    auto const nearOpen = iouVault(Number{1, 9}, Number{8, 9});
     EXPECT_EQ(checkOptionalVaultInflow(nearOpen, iouAmount(Number{1})), tecLIMIT_EXCEEDED);
 }
 
@@ -271,7 +278,7 @@ TEST_F(VaultBalance, scale_and_open_include_assets_deployed)
 TEST_F(VaultBalance, fixed_precision_adjust_balances)
 {
     Number const assetsDeployed{300};
-    auto vault = iouVault(assetsDeployed, Number{100}, Number{99});
+    auto const vault = iouVault(assetsDeployed, Number{100}, Number{99});
 
     ASSERT_EQ(
         adjustVaultBalances(vault, {.cash = iouAmount(Number{50})}, kNullJournal), tesSUCCESS);
@@ -303,7 +310,7 @@ TEST_F(VaultBalance, fixed_precision_adjust_balances)
 TEST_F(VaultBalance, fixed_precision_add_above_coarsening_syncs)
 {
     Number const assetsDeployed{5, -6};
-    auto vault = iouVault(assetsDeployed, Number{9'999'999'999'999'990, -6});
+    auto const vault = iouVault(assetsDeployed, Number{9'999'999'999'999'990, -6});
 
     ASSERT_EQ(
         adjustVaultBalances(vault, {.cash = iouAmount(Number{10, -6})}, kNullJournal), tesSUCCESS);
@@ -324,17 +331,23 @@ TEST_F(VaultBalance, trust_line_arithmetic_mirror)
     };
     std::vector<Row> const rows{
         {.name = "Plain", .balance = Number{1'000'000}, .delta = Number{500'000}},
-        {.name = "CreditCrossesPowerOfTenUp",
-         .balance = Number{9'999'999'999'999'999, -9},
-         .delta = Number{2, -9}},
-        {.name = "DebitCrossesPowerOfTenDown",
-         .balance = Number{1'000'000'000'000'000, -9},
-         .delta = Number{-1, -9}},
+        {
+            .name = "CreditCrossesPowerOfTenUp",
+            .balance = Number{9'999'999'999'999'999, -9},
+            .delta = Number{2, -9},
+        },
+        {
+            .name = "DebitCrossesPowerOfTenDown",
+            .balance = Number{1'000'000'000'000'000, -9},
+            .delta = Number{-1, -9},
+        },
         {.name = "DebitPartial", .balance = Number{5'000'000}, .delta = Number{-3'000'000}},
         {.name = "DebitToZero", .balance = Number{2'000'000}, .delta = Number{-2'000'000}},
-        {.name = "CreditFinerThanBalanceGrid",
-         .balance = Number{1'873'013'129'122'272LL, -9},
-         .delta = Number{7, -10}},
+        {
+            .name = "CreditFinerThanBalanceGrid",
+            .balance = Number{1'873'013'129'122'272LL, -9},
+            .delta = Number{7, -10},
+        },
     };
 
     for (auto const& row : rows)
@@ -344,7 +357,7 @@ TEST_F(VaultBalance, trust_line_arithmetic_mirror)
         STAmount const delta{iou_, row.delta};
         STAmount const expected{iou_, Number(balance) + Number(delta)};
 
-        auto vault = iouVault(Number{0}, row.balance, Number{0}, 9);
+        auto const vault = iouVault(Number{0}, row.balance, Number{0}, 9);
         ASSERT_EQ(adjustVaultBalances(vault, {.cash = delta}, kNullJournal), tesSUCCESS);
         EXPECT_EQ(Number(vault->at(sfAssetsAvailable)), Number(expected));
     }
@@ -370,21 +383,23 @@ TEST_F(VaultBalance, fields_move)
         {.name = "AssetsDeployedAlone", .deployed = -200, .expectedAssetsDeployed = 300},
         {.name = "YieldAlone", .yield = 40, .expectedYield = 40},
         {.name = "LossAlone", .loss = 150, .expectedLoss = 150},
-        {.name = "AllTogether",
-         .cash = 40,
-         .deployed = -100,
-         .yield = 10,
-         .loss = 50,
-         .expectedAvailable = 140,
-         .expectedAssetsDeployed = 400,
-         .expectedYield = 10,
-         .expectedLoss = 50},
+        {
+            .name = "AllTogether",
+            .cash = 40,
+            .deployed = -100,
+            .yield = 10,
+            .loss = 50,
+            .expectedAvailable = 140,
+            .expectedAssetsDeployed = 400,
+            .expectedYield = 10,
+            .expectedLoss = 50,
+        },
     };
 
     for (auto const& row : rows)
     {
         SCOPED_TRACE(row.name);
-        auto vault = standardVault();
+        auto const vault = standardVault();
         ASSERT_EQ(
             adjustVaultBalances(
                 vault,
@@ -418,16 +433,20 @@ TEST_F(VaultBalance, invalid_change_fails_atomically)
         {.name = "AssetsAvailableNegative", .cash = -200, .expected = tefBAD_LEDGER},
         {.name = "AssetsDeployedNegative", .deployed = -600, .expected = tefBAD_LEDGER},
         // The +50 credit is valid on its own; the deployed change is not.
-        {.name = "AssetsDeployedNegativeWithValidCash",
-         .cash = 50,
-         .deployed = -600,
-         .expected = tefBAD_LEDGER},
+        {
+            .name = "AssetsDeployedNegativeWithValidCash",
+            .cash = 50,
+            .deployed = -600,
+            .expected = tefBAD_LEDGER,
+        },
         // The -50 debit is valid on its own (available stays at 50); the
         // loss exceeds AssetsDeployed.
-        {.name = "LossExceedsAssetsDeployedWithValidCash",
-         .cash = -50,
-         .loss = 600,
-         .expected = tecLIMIT_EXCEEDED},
+        {
+            .name = "LossExceedsAssetsDeployedWithValidCash",
+            .cash = -50,
+            .loss = 600,
+            .expected = tecLIMIT_EXCEEDED,
+        },
         {.name = "LossUnrealizedNegative", .loss = -1, .expected = tefBAD_LEDGER},
         {.name = "LossExceedsAssetsDeployed", .loss = 600, .expected = tecLIMIT_EXCEEDED},
     };
@@ -435,7 +454,7 @@ TEST_F(VaultBalance, invalid_change_fails_atomically)
     for (auto const& row : rows)
     {
         SCOPED_TRACE(row.name);
-        auto vault = standardVault();
+        auto const vault = standardVault();
         BalanceSnapshot const before = BalanceSnapshot::of(vault);
 
         EXPECT_EQ(
@@ -452,14 +471,14 @@ TEST_F(VaultBalance, invalid_change_fails_atomically)
 
 TEST_F(VaultBalance, loss_at_assets_deployed_boundary_allowed)
 {
-    auto vault = standardVault();
+    auto const vault = standardVault();
     EXPECT_EQ(adjustVaultBalances(vault, {.loss = Number{500}}, kNullJournal), tesSUCCESS);
     EXPECT_EQ(vault->at(sfLossUnrealized), Number{500});
 }
 
 TEST_F(VaultBalance, negative_yield_unrealized_rejected)
 {
-    auto vault = standardVault();
+    auto const vault = standardVault();
     vault->at(sfYieldUnrealized) = Number{5};
     auto const before = BalanceSnapshot::of(vault);
 

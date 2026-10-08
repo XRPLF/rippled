@@ -104,7 +104,8 @@ private:
             Number::RoundingMode::ToNearest,
             Number::RoundingMode::Downward,
             Number::RoundingMode::Upward,
-            Number::RoundingMode::TowardsZero};
+            Number::RoundingMode::TowardsZero,
+        };
 
         for (auto const& c : cases)
         {
@@ -174,7 +175,9 @@ private:
                 // c.expected is guaranteed set here: the !c.expected case
                 // above always continues to the next loop iteration.
                 STAmount const expected{
-                    asset, *c.expected};  // NOLINT(bugprone-unchecked-optional-access)
+                    asset,
+                    *c.expected,
+                };  // NOLINT(bugprone-unchecked-optional-access)
                 if (!BEAST_EXPECTS(
                         result.has_value(),
                         std::string(c.name) + ": expected success (" + expected.getText() +
