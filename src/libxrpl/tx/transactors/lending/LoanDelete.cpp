@@ -108,7 +108,7 @@ LoanDelete::doApply()
     view.erase(loanSle);
 
     // Decrement the LoanBroker's owner count.
-    adjustLoanBrokerOwnerCount(view, brokerSle, -1, j_);
+    brokerSle.adjustOwnerCount(-1);
 
     // If there are no loans left, then any remaining debt must be forgiven,
     // because there is no other way to pay it back.
