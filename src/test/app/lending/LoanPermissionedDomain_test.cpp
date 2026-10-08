@@ -356,12 +356,12 @@ class LoanPermissionedDomain_test : public LoanTestBase
     void
     testPrivateBrokerDomainOwner()
     {
-        testcase("Private broker treats the domain owner as a member");
+        testcase("Private broker does not treat the domain owner as a member");
         using namespace jtx;
 
         Account const issuer{"issuer"};
         Account const alice{"alice"};  // Broker owner
-        Account const bob{"bob"};      // Domain owner, holds no credentials
+        Account const bob{"bob"};      // Domain owner
         Account const carol{"carol"};  // Neither owner nor member
         Account const credIssuer{"credIssuer"};
 
@@ -372,7 +372,7 @@ class LoanPermissionedDomain_test : public LoanTestBase
         env.fund(XRP(1'000'000), credIssuer);
         env.close();
 
-        // Bob owns the domain. Nobody holds a credential in it.
+        // Bob owns the domain but holds no credential in it yet
         auto const domainId = createDomain(env, bob, credIssuer, credType_);
         BEAST_EXPECT(!env.le(credentials::keylet(bob, credIssuer, credType_)));
 
@@ -381,7 +381,33 @@ class LoanPermissionedDomain_test : public LoanTestBase
             env, asset, alice, {.flags = tfLoanBrokerPrivate, .domainID = domainId});
 
         {
-            testcase("The domain owner can borrow without holding a credential");
+            testcase("Owning the domain does not make the owner a member");
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            env(makeLoanSet(env, bob, broker, alice), Ter(tecNO_AUTH));
+            env.close();
+
+            BEAST_EXPECT(!env.le(loanKeylet));
+        }
+
+        {
+            testcase("The domain owner is not a member as the counterparty either");
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            env(makeLoanSet(env, alice, broker, bob), Ter(tecNO_AUTH));
+            env.close();
+
+            BEAST_EXPECT(!env.le(loanKeylet));
+        }
+
+        {
+            testcase("Anyone else without a credential is rejected the same way");
+            env(makeLoanSet(env, carol, broker, alice), Ter(tecNO_AUTH));
+        }
+
+        // The domain owner can join the domain like anyone else
+        issueCredential(env, bob, credIssuer);
+
+        {
+            testcase("The domain owner can borrow once they hold a credential");
             auto const loanKeylet = nextLoanKeylet(env, broker);
             env(makeLoanSet(env, bob, broker, alice));
             env.close();
@@ -390,12 +416,7 @@ class LoanPermissionedDomain_test : public LoanTestBase
         }
 
         {
-            testcase("Anyone else without a credential is still rejected");
-            env(makeLoanSet(env, carol, broker, alice), Ter(tecNO_AUTH));
-        }
-
-        {
-            testcase("The exemption applies to the borrower, not the submitter.");
+            testcase("The credentialed domain owner can also borrow as the counterparty");
             auto const loanKeylet = nextLoanKeylet(env, broker);
             env(makeLoanSet(env, alice, broker, bob));
             env.close();
@@ -412,23 +433,35 @@ class LoanPermissionedDomain_test : public LoanTestBase
             // Being the domain owner does not let alice lend to a non-member
             env(makeLoanSet(env, alice, aliceBroker, carol), Ter(tecNO_AUTH));
 
-            // Alice can take a self-loan from her own private broker without
-            // holding a credential, because she owns the domain
-            auto const loanKeylet = nextLoanKeylet(env, aliceBroker);
-            env(makeLoanSet(env, alice, aliceBroker, alice));
-            env.close();
+            // Nor does it let alice take a self-loan without a credential
+            {
+                auto const loanKeylet = nextLoanKeylet(env, aliceBroker);
+                env(makeLoanSet(env, alice, aliceBroker, alice), Ter(tecNO_AUTH));
+                env.close();
 
-            BEAST_EXPECT(env.le(loanKeylet));
+                BEAST_EXPECT(!env.le(loanKeylet));
+            }
+
+            // Once alice holds a credential in her own domain, the self-loan
+            // goes through
+            issueCredential(env, alice, credIssuer);
+            {
+                auto const loanKeylet = nextLoanKeylet(env, aliceBroker);
+                env(makeLoanSet(env, alice, aliceBroker, alice));
+                env.close();
+
+                BEAST_EXPECT(env.le(loanKeylet));
+            }
         }
 
         {
-            testcase(
-                "Once the domain is deleted, the former owner gets the same error as everyone "
-                "else");
+            testcase("Once the domain is deleted, the former owner gets tecOBJECT_NOT_FOUND");
             env(pdomain::deleteTx(bob, domainId));
             env.close();
             BEAST_EXPECT(!env.le(keylet::permissionedDomain(domainId)));
 
+            // Bob still holds a credential, but the broker's domain is gone
+            BEAST_EXPECT(env.le(credentials::keylet(bob, credIssuer, credType_)));
             env(makeLoanSet(env, bob, broker, alice), Ter(tecOBJECT_NOT_FOUND));
         }
     }
