@@ -139,9 +139,9 @@ public:
         decltype(recordedVotes_) newRecordedVotes;
         newRecordedVotes.reserve(allTrusted.size());
 
-        // Make sure every PublicKey in allTrusted is represented in
+        // Make sure every NodeID in allTrusted is represented in
         // recordedVotes_.  Also make sure recordedVotes_ contains
-        // no additional PublicKeys.
+        // no additional NodeIDs.
         for (auto& trusted : allTrusted)
         {
             if (recordedVotes_.contains(trusted))

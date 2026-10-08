@@ -1230,10 +1230,10 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
     auto const& parms = adaptor_.parms();
     std::uint32_t const ahead(
         previousLedger_.seq() - std::min(adaptor_.getValidLedgerIndex(), previousLedger_.seq()));
-    auto [quorum, trustedKeys] = adaptor_.getQuorumKeys();
-    std::size_t const totalValidators = trustedKeys.size();
-    std::size_t const laggards = adaptor_.laggards(previousLedger_.seq(), trustedKeys);
-    std::size_t const offline = trustedKeys.size();
+    auto [quorum, trustedNodes] = adaptor_.getQuorumKeys();
+    std::size_t const totalValidators = trustedNodes.size();
+    std::size_t const laggards = adaptor_.laggards(previousLedger_.seq(), trustedNodes);
+    std::size_t const offline = trustedNodes.size();
 
     std::stringstream vars;
     vars << " consensuslog (working seq: " << previousLedger_.seq() << ", "
