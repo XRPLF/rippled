@@ -901,10 +901,12 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // A taker redeeming an MPT into this offer pays the transfer fee, and
-    // BookStep grosses up TakerPays by the rate for the whole offer before
-    // anything else. If that doesn't fit in an MPT amount, no taker can take
-    // the offer and BookStep would remove it on the first attempt. Checked on
-    // the remainder: it may fit even if the original amount didn't.
+    // BookStep grosses up TakerPays by the rate before anything else. If that
+    // doesn't fit in an MPT amount, every fee-paying taker overflows and
+    // BookStep removes the offer on the first attempt (the issuer pays no fee,
+    // but its send is bounded by what it can still issue). Conservative for a
+    // bid above MaximumAmount, which BookStep grosses up only to the cap.
+    // Checked on the remainder: it may fit even if the original amount didn't.
     bool cannotRest = false;
     if (mptV2 && saTakerPays.holds<MPTIssue>())
     {
