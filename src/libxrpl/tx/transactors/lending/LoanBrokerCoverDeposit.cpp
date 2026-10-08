@@ -122,8 +122,8 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
             Number::RoundingMode::Downward);
     }();
 
-    // FixedPrecision vaults require fixCleanup3_2_0, so this always covers the
-    // FixedPrecision zero-credit case too.
+    // fixCleanup3_2_0 is enabled on the network, so this also covers the
+    // FixedPrecision zero-credit case.
     if (fix320Enabled && roundedAmount <= beast::kZero)
     {
         JLOG(ctx.j.warn()) << "LoanBrokerCoverDeposit: deposit amount: " << amount

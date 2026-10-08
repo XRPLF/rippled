@@ -366,17 +366,8 @@ VaultDeposit::doApply()
         sharesCreated.asset() != assetsDeposited.asset(),
         "xrpl::VaultDeposit::doApply : assets are not shares");
 
-    if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
-    {
-        if (auto const ter = adjustVaultBalances(vault, {.cash = assetsDeposited}, j_);
-            !isTesSuccess(ter))
-            return ter;
-    }
-    else
-    {
-        vault->at(sfAssetsTotal) += assetsDeposited;
-        vault->at(sfAssetsAvailable) += assetsDeposited;
-    }
+    if (auto const ter = adjustVaultCash(vault, assetsDeposited, j_); !isTesSuccess(ter))
+        return ter;
     view().update(vault);
 
     // A deposit must not push the vault over its limit.

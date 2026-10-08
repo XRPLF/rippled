@@ -72,6 +72,7 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
@@ -1700,7 +1701,7 @@ ApplicationImp::startGenesisLedger()
     auto const next = std::make_shared<Ledger>(*genesis, getTimeKeeper().closeTime());
     next->updateSkipList();
     XRPL_ASSERT(
-        next->header().seq < kXrpLedgerEarliestFees || next->read(keylet::feeSettings()),
+        next->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*next),
         "xrpl::ApplicationImp::startGenesisLedger : valid ledger fees");
     next->setImmutable();
     openLedger_.emplace(next, cachedSLEs_, logs_->journal("OpenLedger"));
@@ -1722,7 +1723,7 @@ ApplicationImp::getLastFullLedger()
             return ledger;
 
         XRPL_ASSERT(
-            ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::feeSettings()),
+            ledger->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger),
             "xrpl::ApplicationImp::getLastFullLedger : valid ledger fees");
         ledger->setImmutable();
 
@@ -1873,8 +1874,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
         loadLedger->stateMap().flushDirty(NodeObjectType::AccountNode);
 
         XRPL_ASSERT(
-            loadLedger->header().seq < kXrpLedgerEarliestFees ||
-                loadLedger->read(keylet::feeSettings()),
+            loadLedger->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*loadLedger),
             "xrpl::ApplicationImp::loadLedgerFromFile : valid ledger fees");
         loadLedger->setAccepted(closeTime, closeTimeResolution, !closeTimeEstimated);
 
