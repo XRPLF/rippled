@@ -70,7 +70,6 @@ Checks: "-*,
   -readability-qualified-auto,
   -readability-redundant-access-specifiers,
   -readability-redundant-lambda-parameter-list,
-  -readability-redundant-qualified-alias,
   -readability-static-accessed-through-instance,
   -readability-trailing-comma,
   -readability-uppercase-literal-suffix
