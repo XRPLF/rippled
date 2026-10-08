@@ -320,7 +320,7 @@ ConfidentialTransferTestBase::reencryptHolderBalances(
 Buffer const&
 ConfidentialTransferTestBase::getBadCiphertext()
 {
-    static Buffer const kBadCiphertext = []() {
+    static Buffer const kBadCiphertext = [] {
         Buffer buf(kEcGamalEncryptedTotalLength);
         std::memset(buf.data(), 0xFF, kEcGamalEncryptedTotalLength);
 
@@ -335,7 +335,7 @@ ConfidentialTransferTestBase::getBadCiphertext()
 Buffer const&
 ConfidentialTransferTestBase::getTrivialCiphertext()
 {
-    static Buffer const kTrivialCiphertext = []() {
+    static Buffer const kTrivialCiphertext = [] {
         Buffer buf(kEcGamalEncryptedTotalLength);
         std::memset(buf.data(), 0, kEcGamalEncryptedTotalLength);
 
@@ -354,7 +354,7 @@ ConfidentialTransferTestBase::getTrivialCiphertext()
 Buffer const&
 ConfidentialTransferTestBase::getTrivialCommitment()
 {
-    static Buffer const kTrivialCommitment = []() {
+    static Buffer const kTrivialCommitment = [] {
         Buffer buf(kEcPedersenCommitmentLength);
         std::memset(buf.data(), 0, kEcPedersenCommitmentLength);
 

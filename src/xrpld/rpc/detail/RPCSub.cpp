@@ -97,7 +97,7 @@ public:
             JLOG(j_.info()) << "rpc_call::fromNetwork start";
 
             sending_ =
-                jobQueue_.addJob(JtClientSubscribe, "RPCSubSendThr", [this]() { sendThread(); });
+                jobQueue_.addJob(JtClientSubscribe, "RPCSubSendThr", [this] { sendThread(); });
         }
     }
 

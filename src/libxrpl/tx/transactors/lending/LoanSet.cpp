@@ -84,7 +84,7 @@ LoanSet::preflight(PreflightContext const& ctx)
     }
 
     // These extra hoops are because STObjects cannot be Proxy'd from STObject.
-    auto const counterPartySig = [&tx]() -> std::optional<STObject const> {
+    auto const counterPartySig = [&tx] -> std::optional<STObject const> {
         if (tx.isFieldPresent(sfCounterpartySignature))
             return tx.getFieldObject(sfCounterpartySignature);
         return std::nullopt;
@@ -166,7 +166,7 @@ LoanSet::checkSign(PreclaimContext const& ctx)
     // Counter signer is optional. If it's not specified, it's assumed to be
     // `LoanBroker.Owner`. Note that we have not checked whether the
     // loanbroker exists at this point.
-    auto const counterSigner = [&]() -> std::optional<AccountID> {
+    auto const counterSigner = [&] -> std::optional<AccountID> {
         if (auto const c = ctx.tx.at(~sfCounterparty))
             return c;
 
@@ -201,7 +201,7 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
     // for the transaction. Note that unlike the base class, the single signer
     // is counted if present. It will only be absent in a batch inner
     // transaction.
-    std::size_t const signerCount = [&counterSig]() -> int {
+    std::size_t const signerCount = [&counterSig] -> int {
         // Compute defensively.
         // Assure that "tx" cannot be accessed and cause confusion or miscalculations.
         if (counterSig.isFieldPresent(sfSigners))
@@ -583,7 +583,7 @@ LoanSet::doApply()
     }
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     {
-        auto const minCover = [&]() {
+        auto const minCover = [&] {
             if (ctx_.view().rules().enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(newDebtTotal, coverRateMinimum, vaultSle);

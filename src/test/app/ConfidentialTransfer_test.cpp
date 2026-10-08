@@ -7105,29 +7105,28 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 BEAST_EXPECT(before - after == expectedFee);
             };
 
-            checkFee(bob, [&]() {
+            checkFee(bob, [&] {
                 mptAlice.convert(
                     {.account = bob,
                      .amt = 50,
                      .holderPubKey = mptAlice.getPubKey(bob),
                      .fee = expectedFee});
             });
-            checkFee(carol, [&]() {
+            checkFee(carol, [&] {
                 mptAlice.convert(
                     {.account = carol,
                      .amt = 10,
                      .holderPubKey = mptAlice.getPubKey(carol),
                      .fee = expectedFee});
             });
-            checkFee(bob, [&]() { mptAlice.mergeInbox({.account = bob, .fee = expectedFee}); });
-            checkFee(carol, [&]() { mptAlice.mergeInbox({.account = carol, .fee = expectedFee}); });
-            checkFee(bob, [&]() {
+            checkFee(bob, [&] { mptAlice.mergeInbox({.account = bob, .fee = expectedFee}); });
+            checkFee(carol, [&] { mptAlice.mergeInbox({.account = carol, .fee = expectedFee}); });
+            checkFee(bob, [&] {
                 mptAlice.send({.account = bob, .dest = carol, .amt = 5, .fee = expectedFee});
             });
-            checkFee(bob, [&]() {
-                mptAlice.convertBack({.account = bob, .amt = 5, .fee = expectedFee});
-            });
-            checkFee(alice, [&]() {
+            checkFee(
+                bob, [&] { mptAlice.convertBack({.account = bob, .amt = 5, .fee = expectedFee}); });
+            checkFee(alice, [&] {
                 mptAlice.confidentialClaw(
                     {.account = alice, .holder = carol, .amt = 15, .fee = expectedFee});
             });
@@ -7136,7 +7135,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Account const newIssuerKey("newIssuerKey");
             mptAlice.generateKeyPair(newIssuerKey);
             mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(newIssuerKey)});
-            checkFee(alice, [&]() {
+            checkFee(alice, [&] {
                 mptAlice.mirrorUpdate(
                     {.account = alice,
                      .holder = bob,
