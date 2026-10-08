@@ -1076,11 +1076,7 @@ class InvariantsVault_test : public InvariantsBase
                         }});
             },
             XRPAmount{},
-            STTx{
-                ttLOAN_SET,
-                [](STObject& tx) {
-                    tx.at(sfPrincipalRequested) = Number(200);
-                }},
+            STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
             {tesSUCCESS, tesSUCCESS},
             precloseXrp);
 
