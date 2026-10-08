@@ -26,6 +26,7 @@
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
@@ -472,12 +473,12 @@ public:
     {
         std::vector<std::pair<PublicKey, SecretKey>> ret;
         ret.reserve(num);
-        HashSet<PublicKey> trustedValidators;
+        HashSet<NodeID> trustedValidators;
         trustedValidators.reserve(num);
         for (int i = 0; i < num; ++i)
         {
             auto const& back = ret.emplace_back(randomKeyPair(KeyType::Secp256k1));
-            trustedValidators.insert(back.first);
+            trustedValidators.insert(calcNodeID(back.first));
         }
         table->trustChanged(trustedValidators);
         return ret;
@@ -980,10 +981,10 @@ public:
         auto callTrustChanged = [](std::vector<std::pair<PublicKey, SecretKey>> const& validators,
                                    std::unique_ptr<AmendmentTable> const& table) {
             // We need a HashSet to pass to trustChanged.
-            HashSet<PublicKey> trustedValidators;
+            HashSet<NodeID> trustedValidators;
             trustedValidators.reserve(validators.size());
             std::ranges::for_each(validators, [&trustedValidators](auto const& val) {
-                trustedValidators.insert(val.first);
+                trustedValidators.insert(calcNodeID(val.first));
             });
 
             // Tell the AmendmentTable that the UNL changed.
@@ -1177,6 +1178,7 @@ public:
         cfg->section(Sections::kValidators)
             .append(toBase58(TokenType::NodePublic, masterKeys.first));
         test::jtx::Env env{*this, std::move(cfg), feat - amendment};
+        auto& table = env.app().getAmendmentTable();
 
         auto rotate = [&](std::pair<PublicKey, SecretKey> const& signingKeys, int seq) {
             auto m = deserializeManifest(base64Decode(
@@ -1195,37 +1197,48 @@ public:
             env.close();
         };
 
-        auto const signingKeys1 = randomKeyPair(KeyType::Secp256k1);
-        rotate(signingKeys1, 1);
-        auto const signingKeys2 = randomKeyPair(KeyType::Secp256k1);
-        rotate(signingKeys2, 2);
+        // Tally the given validations at the given hour and report the amendment's votes
+        auto tally = [&](std::chrono::hours hour,
+                         std::vector<std::shared_ptr<STValidation>> const& validations) {
+            table.doVoting(env.current()->rules(), hourTime(hour), {}, {}, validations);
+            return table.getJson(amendment, true)[to_string(amendment)];
+        };
 
-        auto& table = env.app().getAmendmentTable();
-        auto vote = [&](std::pair<PublicKey, SecretKey> const& signingKeys) {
-            auto const validation = std::make_shared<STValidation>(
+        // A validation signed by signingKeys, carrying the master key's NodeID
+        auto validation = [&](std::pair<PublicKey, SecretKey> const& signingKeys, bool yes) {
+            return std::make_shared<STValidation>(
                 NetClock::time_point{},
                 signingKeys.first,
                 signingKeys.second,
                 calcNodeID(masterKeys.first),
-                [&amendment](STValidation& v) {
-                    v.setFieldV256(
-                        sfAmendments, STVector256(sfAmendments, std::vector<UInt256>{amendment}));
+                [&amendment, yes](STValidation& v) {
+                    if (yes)
+                    {
+                        v.setFieldV256(
+                            sfAmendments,
+                            STVector256(sfAmendments, std::vector<UInt256>{amendment}));
+                    }
                     v.setFieldU32(sfLedgerSequence, 6180339);
                 });
-            table.doVoting(
-                env.current()->rules(), hourTime(std::chrono::hours(1)), {}, {}, {validation});
-            return table.getJson(amendment, true)[to_string(amendment)];
         };
 
-        // The superseded key no longer counts
-        auto json = vote(signingKeys1);
-        BEAST_EXPECT(json[jss::validations].asInt() == 0);
-        BEAST_EXPECT(json[jss::count].asInt() == 0);
-
-        // The current key counts
-        json = vote(signingKeys2);
+        auto const signingKeys1 = randomKeyPair(KeyType::Secp256k1);
+        rotate(signingKeys1, 1);
+        auto json = tally(std::chrono::hours(1), {validation(signingKeys1, true)});
         BEAST_EXPECT(json[jss::validations].asInt() == 1);
         BEAST_EXPECT(json[jss::count].asInt() == 1);
+
+        // The recorded vote carries across a rotation
+        auto const signingKeys2 = randomKeyPair(KeyType::Secp256k1);
+        rotate(signingKeys2, 2);
+        json = tally(std::chrono::hours(2), {});
+        BEAST_EXPECT(json[jss::validations].asInt() == 1);
+        BEAST_EXPECT(json[jss::count].asInt() == 1);
+
+        // The new key's vote is recorded after the old vote would have expired
+        json = tally(std::chrono::hours(30), {validation(signingKeys2, false)});
+        BEAST_EXPECT(json[jss::validations].asInt() == 1);
+        BEAST_EXPECT(json[jss::count].asInt() == 0);
     }
 
     void

@@ -12,13 +12,13 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
@@ -127,7 +127,7 @@ public:
 
     // Called when the set of trusted validators changes.
     virtual void
-    trustChanged(HashSet<PublicKey> const& allTrusted) = 0;
+    trustChanged(HashSet<NodeID> const& allTrusted) = 0;
 
     // Called by the consensus code when we need to
     // inject pseudo-transactions

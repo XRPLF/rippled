@@ -2274,11 +2274,9 @@ NetworkOPsImp::beginConsensus(
         registry_.get().getHashRouter());
 
     if (!changes.added.empty() || !changes.removed.empty())
-        registry_.get().getValidations().trustChanged(changes.added, changes.removed);
-
-    // Update the AmendmentTable so it tracks the current signing keys.
-    if (changes.signingKeysChanged)
     {
+        registry_.get().getValidations().trustChanged(changes.added, changes.removed);
+        // Update the AmendmentTable so it tracks the current validators.
         registry_.get().getAmendmentTable().trustChanged(
             registry_.get().getValidators().getQuorumKeys().second);
     }
