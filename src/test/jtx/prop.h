@@ -1,12 +1,16 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/basic_prop.h>
 
 #include <memory>
 
 namespace xrpl::test::jtx {
 
-/** Set a property on a JTx. */
+/**
+ * Set a property on a JTx.
+ */
 template <class T>
 struct Prop
 {

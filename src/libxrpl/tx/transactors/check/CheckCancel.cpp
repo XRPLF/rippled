@@ -1,10 +1,14 @@
 #include <xrpl/tx/transactors/check/CheckCancel.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/CheckEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -19,13 +23,16 @@ namespace xrpl {
 NotTEC
 CheckCancel::preflight(PreflightContext const& ctx)
 {
+    if (ctx.rules.enabled(fixCleanup3_3_0) && ctx.tx[sfCheckID] == beast::kZero)
+        return temMALFORMED;
+
     return tesSUCCESS;
 }
 
 TER
 CheckCancel::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
+    CheckEntryR const sleCheck(ctx.tx[sfCheckID], ctx.view);
     if (!sleCheck)
     {
         JLOG(ctx.j.warn()) << "Check does not exist.";
@@ -54,7 +61,7 @@ CheckCancel::preclaim(PreclaimContext const& ctx)
 TER
 CheckCancel::doApply()
 {
-    auto const sleCheck = view().peek(keylet::check(ctx_.tx[sfCheckID]));
+    CheckEntryW sleCheck(ctx_.tx[sfCheckID], view(), j_);
     if (!sleCheck)
     {
         // Error should have been caught in preclaim.
@@ -91,16 +98,15 @@ CheckCancel::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    auto const sleSrc = view().peek(keylet::account(srcId));
-    adjustOwnerCount(view(), sleSrc, -1, viewJ);
+    decreaseOwnerCountForObject(view(), srcId, sleCheck.mutableRawSle(), 1, viewJ);
 
     // Remove check from ledger.
-    view().erase(sleCheck);
+    sleCheck.erase();
     return tesSUCCESS;
 }
 
 void
-CheckCancel::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+CheckCancel::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

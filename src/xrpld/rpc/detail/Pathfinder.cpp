@@ -3,7 +3,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/PathfinderUtils.h>
-#include <xrpld/rpc/detail/RippleLineCache.h>
 #include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/basics/Log.h>
@@ -217,7 +216,7 @@ Pathfinder::Pathfinder(
     std::optional<AccountID> const& uSrcIssuer,
     STAmount const& saDstAmount,
     std::optional<STAmount> const& srcAmount,
-    std::optional<uint256> const& domain,
+    std::optional<UInt256> const& domain,
     Application& app)
     : srcAccount_(uSrcAccount)
     , dstAccount_(uDstAccount)
@@ -225,7 +224,7 @@ Pathfinder::Pathfinder(
     , dstAmount_(saDstAmount)
     , srcPathAsset_(uSrcPathAsset)
     , srcIssuer_(uSrcIssuer)
-    , srcAmount_(amountFromPathAsset(uSrcPathAsset, uSrcIssuer, uSrcAccount))
+    , srcAmount_(srcAmount.value_or(amountFromPathAsset(uSrcPathAsset, uSrcIssuer, uSrcAccount)))
     , convertAll_(convertAllCheck(dstAmount_))
     , domain_(domain)
     , ledger_(cache->getLedger())
@@ -647,21 +646,17 @@ Pathfinder::getBestPaths(
         {
             usePath = true;
         }
-        else if (extraPathsIterator->quality < pathsIterator->quality)
+        else if (extraPathsIterator->quality != pathsIterator->quality)
         {
-            useExtraPath = true;
+            // Prefer the lower (better) quality value
+            useExtraPath = extraPathsIterator->quality < pathsIterator->quality;
+            usePath = !useExtraPath;
         }
-        else if (extraPathsIterator->quality > pathsIterator->quality)
+        else if (extraPathsIterator->liquidity != pathsIterator->liquidity)
         {
-            usePath = true;
-        }
-        else if (extraPathsIterator->liquidity > pathsIterator->liquidity)
-        {
-            useExtraPath = true;
-        }
-        else if (extraPathsIterator->liquidity < pathsIterator->liquidity)
-        {
-            usePath = true;
+            // Equal quality: prefer the higher liquidity
+            useExtraPath = extraPathsIterator->liquidity > pathsIterator->liquidity;
+            usePath = !useExtraPath;
         }
         else
         {
@@ -796,31 +791,22 @@ Pathfinder::getPathsOut(
                     for (auto const& rspEntry : *lines)
                     {
                         if (pathAsset.get<Currency>() != rspEntry.getLimit().get<Issue>().currency)
-                        {
-                        }
-                        else if (
-                            rspEntry.getBalance() <= beast::kZero &&
+                            continue;
+                        if (rspEntry.getBalance() <= beast::kZero &&
                             (!rspEntry.getLimitPeer() ||
                              -rspEntry.getBalance() >= rspEntry.getLimitPeer() ||
                              (bAuthRequired && !rspEntry.getAuth())))
-                        {
-                        }
-                        else if (isDstAsset && dstAccount == rspEntry.getAccountIDPeer())
+                            continue;
+                        if (isDstAsset && dstAccount == rspEntry.getAccountIDPeer())
                         {
                             count += 10000;  // count a path to the destination extra
+                            continue;
                         }
-                        else if (rspEntry.getNoRipplePeer())
-                        {
-                            // This probably isn't a useful path out
-                        }
-                        else if (rspEntry.getFreezePeer())
-                        {
-                            // Not a useful path out
-                        }
-                        else
-                        {
-                            ++count;
-                        }
+                        if (rspEntry.getNoRipplePeer())
+                            continue;  // This probably isn't a useful path out
+                        if (rspEntry.getFreezePeer())
+                            continue;  // Not a useful path out
+                        ++count;
                     }
                 }
             },
@@ -829,26 +815,17 @@ Pathfinder::getPathsOut(
                 {
                     for (auto const& mpt : *mpts)
                     {
-                        if (pathAsset.get<MPTID>() != mpt.getMptID())
-                        {
-                        }
-                        else if (mpt.isZeroBalance() || mpt.isMaxedOut())
-                        {
-                        }
-                        else if (bAuthRequired)
-                        {
-                        }
-                        else if (isDstAsset && dstAccount == getMPTIssuer(mpt))
+                        if (pathAsset.get<MPTID>() != mpt.getMptID() || !mpt.canSend(account) ||
+                            bAuthRequired)
+                            continue;
+                        if (isDstAsset && dstAccount == getMPTIssuer(mpt))
                         {
                             count += 10000;
+                            continue;
                         }
-                        else if (isIndividualFrozen(*ledger_, account, MPTIssue{mpt.getMptID()}))
-                        {
-                        }
-                        else
-                        {
-                            ++count;
-                        }
+                        if (isIndividualFrozen(*ledger_, account, MPTIssue{mpt.getMptID()}))
+                            continue;
+                        ++count;
                     }
                 }
             });
@@ -885,10 +862,11 @@ Pathfinder::addPathsForType(
         return it->second;
 
     // Otherwise, if the type has no nodes, return the empty path.
-    if (pathType.empty())
-        return paths_[pathType];
-    if (continueCallback && !continueCallback())
-        return paths_[{}];
+    if (pathType.empty() || (continueCallback && !continueCallback()))
+    {
+        static auto const kEmptyPath = PathType{};
+        return paths_.try_emplace(kEmptyPath, STPathSet::DeduplicationTag{}).first->second;
+    }
 
     // Otherwise, get the paths for the parent PathType by calling
     // addPathsForType recursively.
@@ -896,7 +874,7 @@ Pathfinder::addPathsForType(
     parentPathType.pop_back();
 
     STPathSet const& parentPaths = addPathsForType(parentPathType, continueCallback);
-    STPathSet& pathsOut = paths_[pathType];
+    STPathSet& pathsOut = paths_.try_emplace(pathType, STPathSet::DeduplicationTag{}).first->second;
 
     JLOG(j_.debug()) << "getPaths< adding onto '" << pathTypeToString(parentPathType)
                      << "' to get '" << pathTypeToString(pathType) << "'";
@@ -952,7 +930,7 @@ Pathfinder::isNoRipple(
     AccountID const& toAccount,
     Currency const& currency)
 {
-    auto sleRipple = ledger_->read(keylet::line(toAccount, fromAccount, currency));
+    auto sleRipple = ledger_->read(keylet::trustLine(toAccount, fromAccount, currency));
 
     auto const flag((toAccount > fromAccount) ? lsfHighNoRipple : lsfLowNoRipple);
 
@@ -980,19 +958,6 @@ Pathfinder::isNoRippleOut(STPath const& currentPath)
         (currentPath.size() == 1) ? srcAccount_ : (currentPath.end() - 2)->getAccountID();
     auto const& toAccount = endElement.getAccountID();
     return endElement.hasCurrency() && isNoRipple(fromAccount, toAccount, endElement.getCurrency());
-}
-
-void
-addUniquePath(STPathSet& pathSet, STPath const& path)
-{
-    // TODO(tom): building an STPathSet this way is quadratic in the size
-    // of the STPathSet!
-    for (auto const& p : pathSet)
-    {
-        if (p == path)
-            return;
-    }
-    pathSet.pushBack(path);
 }
 
 void
@@ -1026,7 +991,7 @@ Pathfinder::addLink(
             {  // non-default path to XRP destination
                 JLOG(j_.trace()) << "complete path found ax: "
                                  << currentPath.getJson(JsonOptions::Values::None);
-                addUniquePath(completePaths_, currentPath);
+                completePaths_.pushBack(currentPath);
             }
         }
         else
@@ -1106,7 +1071,10 @@ Pathfinder::addLink(
                             }
                             if constexpr (kIsMpt)
                             {
-                                return asset.isZeroBalance() || asset.isMaxedOut() ||
+                                // `asset` came from uEndAccount's cached MPTs.
+                                // `acct` is the next issuer hop, not the
+                                // account whose balance is being tested.
+                                return !asset.canSend(uEndAccount) ||
                                     requireAuth(*ledger_, MPTIssue{asset}, acct);
                             }
                         };
@@ -1118,8 +1086,9 @@ Pathfinder::addLink(
                             if (checkAsset())
                             {
                                 // Can't leave on this path
+                                continue;
                             }
-                            else if (bToDestination)
+                            if (bToDestination)
                             {
                                 // destination is always worth trying
                                 if (uEndPathAsset == dstAmount_.asset())
@@ -1130,7 +1099,7 @@ Pathfinder::addLink(
                                         JLOG(j_.trace())
                                             << "complete path found ae: "
                                             << currentPath.getJson(JsonOptions::Values::None);
-                                        addUniquePath(completePaths_, currentPath);
+                                        completePaths_.pushBack(currentPath);
                                     }
                                 }
                                 else if (!bDestOnly)
@@ -1180,11 +1149,10 @@ Pathfinder::addLink(
                 {
                     std::ranges::sort(
                         candidates,
-                        std::bind(
-                            compareAccountCandidate,
-                            ledger_->seq(),
-                            std::placeholders::_1,
-                            std::placeholders::_2));
+                        [seq = ledger_->seq()](
+                            AccountCandidate const& first, AccountCandidate const& second) {
+                            return compareAccountCandidate(seq, first, second);
+                        });
 
                     int count = candidates.size();
                     // allow more paths from source
@@ -1261,11 +1229,12 @@ Pathfinder::addLink(
                             // complete
                             JLOG(j_.trace()) << "complete path found bx: "
                                              << currentPath.getJson(JsonOptions::Values::None);
-                            addUniquePath(completePaths_, newPath);
+                            completePaths_.pushBack(newPath);
                         }
                         else
                         {
-                            incompletePaths.pushBack(newPath);
+                            [[maybe_unused]] auto result = incompletePaths.pushBack(newPath);
+                            XRPL_ASSERT(result, "xrpl::Pathfinder::addLink : unique path");
                         }
                     }
                     else if (!currentPath.hasSeen(
@@ -1307,7 +1276,7 @@ Pathfinder::addLink(
                            // complete
                             JLOG(j_.trace()) << "complete path found ba: "
                                              << currentPath.getJson(JsonOptions::Values::None);
-                            addUniquePath(completePaths_, newPath);
+                            completePaths_.pushBack(newPath);
                         }
                         else
                         {

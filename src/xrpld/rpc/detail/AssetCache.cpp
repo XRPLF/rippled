@@ -124,7 +124,7 @@ AssetCache::getMPTs(xrpl::AccountID const& account)
 
     std::vector<PathFindMPT> mpts;
     // Get issued/authorized tokens
-    forEachItem(*ledger_, account, [&](SLE::const_ref sle) {
+    forEachItem(*ledger_, account, [&](SLE::ConstRef sle) {
         if (sle->getType() == ltMPTOKEN_ISSUANCE)
         {
             auto const mptID = makeMptID(sle->getFieldU32(sfSequence), account);
@@ -136,7 +136,7 @@ AssetCache::getMPTs(xrpl::AccountID const& account)
             auto const mptID = sle->getFieldH192(sfMPTokenIssuanceID);
             bool const zeroBalance = sle->at(sfMPTAmount) == 0;
             bool const maxedOut = [&] {
-                if (auto const sleIssuance = ledger_->read(keylet::mptIssuance(mptID)))
+                if (auto const sleIssuance = ledger_->read(keylet::mptokenIssuance(mptID)))
                 {
                     return sleIssuance->at(sfOutstandingAmount) == maxMPTAmount(*sleIssuance);
                 }

@@ -5,16 +5,16 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/consensus/Validations.h>
 #include <xrpld/core/TimeKeeper.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/consensus/Validations.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/ledger/entries/LedgerHashesEntry.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/SField.h>
@@ -36,7 +36,7 @@ RCLValidatedLedger::RCLValidatedLedger(
     beast::Journal j)
     : ledgerID_{ledger->header().hash}, ledgerSeq_{ledger->seq()}, j_{j}
 {
-    auto const hashIndex = ledger->read(keylet::skip());
+    LedgerHashesEntryR const hashIndex(*ledger, j_);
     if (hashIndex)
     {
         XRPL_ASSERT(
@@ -46,8 +46,10 @@ RCLValidatedLedger::RCLValidatedLedger(
         ancestors_ = hashIndex->getFieldV256(sfHashes).value();
     }
     else
+    {
         JLOG(j_.warn()) << "Ledger " << ledgerSeq_ << ":" << ledgerID_
                         << " missing recent ancestor hashes";
+    }
 }
 
 auto

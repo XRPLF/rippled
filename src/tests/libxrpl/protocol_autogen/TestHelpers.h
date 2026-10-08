@@ -9,6 +9,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STInteger.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
@@ -130,7 +131,7 @@ using Vector256Value = std::decay_t<typename SF_VECTOR256::type::value_type>;
 inline Vector256Value
 canonical_VECTOR256()
 {
-    return Vector256Value{uint256{1}};
+    return Vector256Value{UInt256{1}};
 }
 
 using BlobValue = std::decay_t<typename SF_VL::type::value_type>;

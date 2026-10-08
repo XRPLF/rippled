@@ -21,7 +21,7 @@ class LoanManageBuilder;
  * Type: ttLOAN_MANAGE (82)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: MayModifyVault
+ * Privileges: Privilege::MayModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanManageBuilder to construct new transactions.
@@ -99,7 +99,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfLoanID (SoeRequired)

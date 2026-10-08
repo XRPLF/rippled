@@ -3,16 +3,20 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Feature.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxFlags.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/TxSettings.h>
 
 #include <algorithm>
 #include <cstdint>
+#include <format>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -38,16 +42,24 @@ Permission::GranularPermissionEntry::GranularPermissionEntry(
 Permission::Permission()
 {
     {
+#pragma push_macro("UNWRAP")
+#undef UNWRAP
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegable, amendment, ...) \
-    txDelegationMap_[static_cast<TxType>(value)] = {amendment, delegable};
+#define UNWRAP(...) __VA_ARGS__
+#define TRANSACTION(tag, value, name, settings, ...)                               \
+    {                                                                              \
+        TxSettings const s = UNWRAP settings;                                      \
+        txDelegationMap_[static_cast<TxType>(value)] = {s.amendment, s.delegable}; \
+    }
 
 #include <xrpl/protocol/detail/transactions.macro>
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
+#undef UNWRAP
+#pragma pop_macro("UNWRAP")
     }
 
     granularPermissionsByName_ = {
@@ -94,8 +106,8 @@ Permission::Permission()
         if (type <= UINT16_MAX)
         {
             // LCOV_EXCL_START
-            Throw<std::logic_error>(
-                "Granular permission value must exceed the maximum uint16_t value: " + name);
+            Throw<std::logic_error>(std::format(
+                "Granular permission value must exceed the maximum uint16_t value: {}", name));
             // LCOV_EXCL_STOP
         }
     }
@@ -152,9 +164,11 @@ Permission::getPermissionName(std::uint32_t value) const
         return granular;
 
     // not a granular permission, check if it maps to a transaction type
-    auto const txType = permissionToTxType(value);
-    if (auto const* item = TxFormats::getInstance().findByType(txType); item != nullptr)
-        return item->getName();
+    if (auto const txType = permissionToTxType(value))
+    {
+        if (auto const* item = TxFormats::getInstance().findByType(*txType); item != nullptr)
+            return item->getName();
+    }
 
     return std::nullopt;
 }
@@ -195,7 +209,7 @@ Permission::hasGranularPermissions(TxType txType) const
     return granularTxTypes_.contains(txType);
 }
 
-std::optional<std::reference_wrapper<uint256 const>>
+std::optional<std::reference_wrapper<UInt256 const>>
 Permission::getTxFeature(TxType txType) const
 {
     auto const it = txDelegationMap_.find(txType);
@@ -203,7 +217,7 @@ Permission::getTxFeature(TxType txType) const
         it != txDelegationMap_.end(),
         "xrpl::Permission::getTxFeature : tx exists in txDelegationMap_");
 
-    if (it->second.amendment == uint256{})
+    if (it->second.amendment == UInt256{})
         return std::nullopt;
 
     return std::optional{std::cref(it->second.amendment)};
@@ -216,7 +230,7 @@ Permission::isDelegable(std::uint32_t permissionValue, Rules const& rules) const
         return false;  // LCOV_EXCL_LINE
 
     auto const amendmentEnabled = [&rules](TxDelegationEntry const& entry) {
-        return entry.amendment == uint256{} || rules.enabled(entry.amendment);
+        return entry.amendment == UInt256{} || rules.enabled(entry.amendment);
     };
 
     // Granular permissions may authorize a limited subset of a tx type even
@@ -231,11 +245,14 @@ Permission::isDelegable(std::uint32_t permissionValue, Rules const& rules) const
     }
 
     auto const txType = permissionToTxType(permissionValue);
-    auto const txIt = txDelegationMap_.find(txType);
+    if (!txType)
+        return false;
+
+    auto const txIt = txDelegationMap_.find(*txType);
 
     // Tx-level permissions require the transaction type itself to be delegable, and
     // the corresponding amendment enabled.
-    return txIt != txDelegationMap_.end() && txIt->second.delegable != NotDelegable &&
+    return txIt != txDelegationMap_.end() && txIt->second.delegable != Delegation::NotDelegable &&
         amendmentEnabled(txIt->second);
 }
 
@@ -245,10 +262,14 @@ Permission::txToPermissionType(TxType const type)
     return static_cast<uint32_t>(type) + 1;
 }
 
-TxType
+std::optional<TxType>
 Permission::permissionToTxType(uint32_t value)
 {
-    XRPL_ASSERT(value > 0, "xrpl::Permission::permissionToTxType : value is greater than 0");
+    // Values outside this range [1, 65536] would silently truncate when cast to
+    // uint16_t, for example, 65537 would become 1, mapping to the Payment transaction.
+    if (value == 0 || value > std::numeric_limits<std::uint16_t>::max() + 1u)
+        return std::nullopt;
+
     return static_cast<TxType>(value - 1);
 }
 

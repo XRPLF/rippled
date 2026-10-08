@@ -5,11 +5,12 @@
 #include <boost/core/detail/string_view.hpp>
 
 #include <algorithm>
-#include <cerrno>
+#include <cctype>
 #include <charconv>
-#include <cstdlib>
 #include <iterator>
 #include <string>
+#include <string_view>
+#include <system_error>
 #include <type_traits>
 #include <typeinfo>
 
@@ -28,16 +29,18 @@ struct LexicalCast<std::string, In>
     explicit LexicalCast() = default;
 
     template <class Arithmetic = In>
-    std::enable_if_t<std::is_arithmetic_v<Arithmetic>, bool>
+    bool
     operator()(std::string& out, Arithmetic in)
+        requires(std::is_arithmetic_v<Arithmetic>)
     {
         out = std::to_string(in);
         return true;
     }
 
     template <class Enumeration = In>
-    std::enable_if_t<std::is_enum_v<Enumeration>, bool>
+    bool
     operator()(std::string& out, Enumeration in)
+        requires(std::is_enum_v<Enumeration>)
     {
         out = std::to_string(static_cast<std::underlying_type_t<Enumeration>>(in));
         return true;
@@ -55,8 +58,9 @@ struct LexicalCast<Out, std::string_view>
         "beast::LexicalCast can only be used with integral types");
 
     template <class Integral = Out>
-    std::enable_if_t<std::is_integral_v<Integral> && !std::is_same_v<Integral, bool>, bool>
+    constexpr bool
     operator()(Integral& out, std::string_view in) const
+        requires(std::is_integral_v<Integral> && !std::is_same_v<Integral, bool>)
     {
         auto first = in.data();
         auto last = in.data() + in.size();
@@ -106,7 +110,7 @@ struct LexicalCast<Out, boost::core::basic_string_view<char>>
 {
     explicit LexicalCast() = default;
 
-    bool
+    constexpr bool
     operator()(Out& out, boost::core::basic_string_view<char> in) const
     {
         return LexicalCast<Out, std::string_view>()(out, in);
@@ -119,7 +123,7 @@ struct LexicalCast<Out, std::string>
 {
     explicit LexicalCast() = default;
 
-    bool
+    constexpr bool
     operator()(Out& out, std::string in) const
     {
         return LexicalCast<Out, std::string_view>()(out, in);
@@ -132,7 +136,7 @@ struct LexicalCast<Out, char const*>
 {
     explicit LexicalCast() = default;
 
-    bool
+    constexpr bool
     operator()(Out& out, char const* in) const
     {
         XRPL_ASSERT(in, "beast::detail::LexicalCast(char const*) : non-null input");
@@ -147,7 +151,7 @@ struct LexicalCast<Out, char*>
 {
     explicit LexicalCast() = default;
 
-    bool
+    constexpr bool
     operator()(Out& out, char* in) const
     {
         XRPL_ASSERT(in, "beast::detail::LexicalCast(char*) : non-null input");
@@ -159,32 +163,35 @@ struct LexicalCast<Out, char*>
 
 //------------------------------------------------------------------------------
 
-/** Thrown when a conversion is not possible with LexicalCast.
-    Only used in the throw variants of lexicalCast.
-*/
+/**
+ * Thrown when a conversion is not possible with LexicalCast.
+ * Only used in the throw variants of lexicalCast.
+ */
 struct BadLexicalCast : public std::bad_cast
 {
     explicit BadLexicalCast() = default;
 };
 
-/** Intelligently convert from one type to another.
-    @return `false` if there was a parsing or range error
-*/
+/**
+ * Intelligently convert from one type to another.
+ * @return `false` if there was a parsing or range error
+ */
 template <class Out, class In>
-bool
+constexpr bool
 lexicalCastChecked(Out& out, In in)
 {
     return detail::LexicalCast<Out, In>()(out, in);
 }
 
-/** Convert from one type to another, throw on error
-
-    An exception of type BadLexicalCast is thrown if the conversion fails.
-
-    @return The new type.
-*/
+/**
+ * Convert from one type to another, throw on error
+ *
+ * An exception of type BadLexicalCast is thrown if the conversion fails.
+ *
+ * @return The new type.
+ */
 template <class Out, class In>
-Out
+constexpr Out
 lexicalCastThrow(In in)
 {
     if (Out out; lexicalCastChecked(out, in))
@@ -193,13 +200,14 @@ lexicalCastThrow(In in)
     throw BadLexicalCast();
 }
 
-/** Convert from one type to another.
-
-    @param defaultValue The value returned if parsing fails
-    @return The new type.
-*/
+/**
+ * Convert from one type to another.
+ *
+ * @param defaultValue The value returned if parsing fails
+ * @return The new type.
+ */
 template <class Out, class In>
-Out
+constexpr Out
 lexicalCast(In in, Out defaultValue = Out())
 {
     if (Out out; lexicalCastChecked(out, in))

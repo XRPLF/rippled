@@ -6,7 +6,10 @@
 
 #include <boost/dynamic_bitset.hpp>
 
+#include <cstddef>
+#include <cstdint>
 #include <limits>
+#include <system_error>
 
 // A collection of functions to decode binary blobs
 // encoded with X.690 Distinguished Encoding Rules.

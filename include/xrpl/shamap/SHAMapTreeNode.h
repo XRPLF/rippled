@@ -3,8 +3,8 @@
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/IntrusiveRefCounts.h>
 #include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 
 #include <cstddef>
@@ -39,18 +39,20 @@ class SHAMapTreeNode : public IntrusiveRefCounts
 protected:
     SHAMapHash hash_;
 
-    /** Determines the owning SHAMap, if any. Used for copy-on-write semantics.
-
-        If this value is 0, the node is not dirty and does not need to be
-        flushed. It is eligible for sharing and may be included multiple
-        SHAMap instances.
+    /**
+     * Determines the owning SHAMap, if any. Used for copy-on-write semantics.
+     *
+     * If this value is 0, the node is not dirty and does not need to be
+     * flushed. It is eligible for sharing and may be included multiple
+     * SHAMap instances.
      */
     std::uint32_t cowid_;
 
-    /** Construct a node
-
-        @param cowid The identifier of a SHAMap. For more, see #cowid_
-        @param hash The hash associated with this node, if any.
+    /**
+     * Construct a node
+     *
+     * @param cowid The identifier of a SHAMap. For more, see #cowid_
+     * @param hash The hash associated with this node, if any.
      */
     /** @{ */
     explicit SHAMapTreeNode(std::uint32_t cowid) noexcept : cowid_(cowid)
@@ -74,28 +76,30 @@ public:
     virtual void
     partialDestructor() {};
 
-    /** \defgroup SHAMap Copy-on-Write Support
-
-        By nature, a node may appear in multiple SHAMap instances. Rather
-       than actually duplicating these nodes, SHAMap opts to be memory
-       efficient and uses copy-on-write semantics for nodes.
-
-        Only nodes that are not modified and don't need to be flushed back
-       can be shared. Once a node needs to be changed, it must first be
-       copied and the copy must marked as not shareable.
-
-        Note that just because a node may not be *owned* by a given SHAMap
-        instance does not mean that the node is NOT a part of any SHAMap. It
-        only means that the node is not owned exclusively by any one SHAMap.
-
-        For more on copy-on-write, check out:
-            https://en.wikipedia.org/wiki/Copy-on-write
+    /**
+     * @defgroup SHAMap Copy-on-Write Support
+     *
+     *  By nature, a node may appear in multiple SHAMap instances. Rather
+     * than actually duplicating these nodes, SHAMap opts to be memory
+     * efficient and uses copy-on-write semantics for nodes.
+     *
+     *  Only nodes that are not modified and don't need to be flushed back
+     * can be shared. Once a node needs to be changed, it must first be
+     * copied and the copy must marked as not shareable.
+     *
+     *  Note that just because a node may not be *owned* by a given SHAMap
+     *  instance does not mean that the node is NOT a part of any SHAMap. It
+     *  only means that the node is not owned exclusively by any one SHAMap.
+     *
+     *  For more on copy-on-write, check out:
+     *      https://en.wikipedia.org/wiki/Copy-on-write
      */
     /** @{ */
-    /** Returns the SHAMap that owns this node.
-
-        @return the ID of the SHAMap that owns this node, or 0 if the
-       node is not owned by any SHAMap and is a candidate for sharing.
+    /**
+     * Returns the SHAMap that owns this node.
+     *
+     * @return the ID of the SHAMap that owns this node, or 0 if the
+     * node is not owned by any SHAMap and is a candidate for sharing.
      */
     std::uint32_t
     cowid() const
@@ -103,10 +107,11 @@ public:
         return cowid_;
     }
 
-    /** If this node is shared with another map, mark it as no longer shared.
-
-        Only nodes that are not modified and do not need to be flushed back
-        should be marked as unshared.
+    /**
+     * If this node is shared with another map, mark it as no longer shared.
+     *
+     * Only nodes that are not modified and do not need to be flushed back
+     * should be marked as unshared.
      */
     void
     unshare()
@@ -114,39 +119,55 @@ public:
         cowid_ = 0;
     }
 
-    /** Make a copy of this node, setting the owner. */
+    /**
+     * Make a copy of this node, setting the owner.
+     */
     virtual SHAMapTreeNodePtr
     clone(std::uint32_t cowid) const = 0;
     /** @} */
 
-    /** Recalculate the hash of this node. */
+    /**
+     * Recalculate the hash of this node.
+     */
     virtual void
     updateHash() = 0;
 
-    /** Return the hash of this node. */
+    /**
+     * Return the hash of this node.
+     */
     SHAMapHash const&
     getHash() const
     {
         return hash_;
     }
 
-    /** Determines the type of node. */
+    /**
+     * Determines the type of node.
+     */
     virtual SHAMapNodeType
     getType() const = 0;
 
-    /** Determines if this is a leaf node. */
+    /**
+     * Determines if this is a leaf node.
+     */
     virtual bool
     isLeaf() const = 0;
 
-    /** Determines if this is an inner node. */
+    /**
+     * Determines if this is an inner node.
+     */
     virtual bool
     isInner() const = 0;
 
-    /** Serialize the node in a format appropriate for sending over the wire */
+    /**
+     * Serialize the node in a format appropriate for sending over the wire
+     */
     virtual void
     serializeForWire(Serializer&) const = 0;
 
-    /** Serialize the node in a format appropriate for hashing */
+    /**
+     * Serialize the node in a format appropriate for hashing
+     */
     virtual void
     serializeWithPrefix(Serializer&) const = 0;
 

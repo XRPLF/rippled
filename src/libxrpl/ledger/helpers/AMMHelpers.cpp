@@ -11,6 +11,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -555,7 +556,7 @@ ammLPHolds(
     auto const currency = ammLPTCurrency(asset1, asset2);
     STAmount amount;
 
-    auto const sle = view.read(keylet::line(lpAccount, ammAccount, currency));
+    auto const sle = view.read(keylet::trustLine(lpAccount, ammAccount, currency));
     if (!sle)
     {
         amount.clear(Issue{currency, ammAccount});
@@ -602,9 +603,7 @@ std::uint16_t
 getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 {
     using namespace std::chrono;
-    XRPL_ASSERT(
-        !view.rules().enabled(fixInnerObjTemplate) || ammSle.isFieldPresent(sfAuctionSlot),
-        "xrpl::getTradingFee : auction present");
+    XRPL_ASSERT(ammSle.isFieldPresent(sfAuctionSlot), "xrpl::getTradingFee : auction present");
     if (ammSle.isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot = safeDowncast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
@@ -635,7 +634,7 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
     return asset.visit(
         [&](MPTIssue const& issue) {
             if (auto const sle = view.read(keylet::mptoken(issue, ammAccountID));
-                sle && !isFrozen(view, ammAccountID, issue))
+                sle && !isFrozen(view, ammAccountID, *sle))
                 return STAmount{issue, (*sle)[sfMPTAmount]};
             return STAmount{asset};
         },
@@ -647,7 +646,7 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
             }
             else if (
                 auto const sle =
-                    view.read(keylet::line(ammAccountID, issue.account, issue.currency));
+                    view.read(keylet::trustLine(ammAccountID, issue.account, issue.currency));
                 sle && !isFrozen(view, ammAccountID, issue.currency, issue.account))
             {
                 STAmount amount = (*sle)[sfBalance];
@@ -671,7 +670,7 @@ deleteAMMTrustLines(
         sb,
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
-            uint256 const&,
+            UInt256 const&,
             SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM and MPToken
             if (nodeType == ltAMM || nodeType == ltMPTOKEN)
@@ -707,7 +706,7 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
         sb,
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
-            uint256 const&,
+            UInt256 const&,
             SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM
             if (nodeType == ltAMM)
@@ -822,7 +821,7 @@ initializeFeeAuctionVote(
     // AMM creator gets the auction slot for free.
     // AuctionSlot is created on AMMCreate and updated on AMMDeposit
     // when AMM is in an empty state
-    if (rules.enabled(fixInnerObjTemplate) && !ammSle->isFieldPresent(sfAuctionSlot))
+    if (!ammSle->isFieldPresent(sfAuctionSlot))
     {
         STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot);
         ammSle->set(std::move(auctionSlot));

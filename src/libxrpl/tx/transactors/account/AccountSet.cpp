@@ -194,30 +194,27 @@ AccountSet::preclaim(PreclaimContext const& ctx)
     //
     // Clawback
     //
-    if (ctx.view.rules().enabled(featureClawback))
+    if (uSetFlag == asfAllowTrustLineClawback)
     {
-        if (uSetFlag == asfAllowTrustLineClawback)
+        if (sle->isFlag(lsfNoFreeze))
         {
-            if (sle->isFlag(lsfNoFreeze))
-            {
-                JLOG(ctx.j.trace()) << "Can't set Clawback if NoFreeze is set";
-                return tecNO_PERMISSION;
-            }
-
-            if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
-            {
-                JLOG(ctx.j.trace()) << "Owner directory not empty.";
-                return tecOWNERS;
-            }
+            JLOG(ctx.j.trace()) << "Can't set Clawback if NoFreeze is set";
+            return tecNO_PERMISSION;
         }
-        else if (uSetFlag == asfNoFreeze)
+
+        if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
         {
-            // Cannot set NoFreeze if clawback is enabled
-            if (sle->isFlag(lsfAllowTrustLineClawback))
-            {
-                JLOG(ctx.j.trace()) << "Can't set NoFreeze if clawback is enabled";
-                return tecNO_PERMISSION;
-            }
+            JLOG(ctx.j.trace()) << "Owner directory not empty.";
+            return tecOWNERS;
+        }
+    }
+    else if (uSetFlag == asfNoFreeze)
+    {
+        // Cannot set NoFreeze if clawback is enabled
+        if (sle->isFlag(lsfAllowTrustLineClawback))
+        {
+            JLOG(ctx.j.trace()) << "Can't set NoFreeze if clawback is enabled";
+            return tecNO_PERMISSION;
         }
     }
 
@@ -315,7 +312,7 @@ AccountSet::doApply()
             return tecNEED_MASTER_KEY;
         }
 
-        if ((!sle->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signers(accountID_))))
+        if ((!sle->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signerList(accountID_))))
         {
             // Account has no regular key or multi-signer signer list.
             return tecNO_ALTERNATIVE_KEY;
@@ -411,7 +408,7 @@ AccountSet::doApply()
     //
     if (tx.isFieldPresent(sfEmailHash))
     {
-        uint128 const uHash = tx.getFieldH128(sfEmailHash);
+        UInt128 const uHash = tx.getFieldH128(sfEmailHash);
 
         if (!uHash)
         {
@@ -430,7 +427,7 @@ AccountSet::doApply()
     //
     if (tx.isFieldPresent(sfWalletLocator))
     {
-        uint256 const uHash = tx.getFieldH256(sfWalletLocator);
+        UInt256 const uHash = tx.getFieldH256(sfWalletLocator);
 
         if (!uHash)
         {
@@ -576,7 +573,7 @@ AccountSet::doApply()
     }
 
     // Set flag for clawback
-    if (ctx_.view().rules().enabled(featureClawback) && uSetFlag == asfAllowTrustLineClawback)
+    if (uSetFlag == asfAllowTrustLineClawback)
     {
         JLOG(j_.trace()) << "set allow clawback";
         uFlagsOut |= lsfAllowTrustLineClawback;
@@ -591,7 +588,7 @@ AccountSet::doApply()
 }
 
 void
-AccountSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AccountSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

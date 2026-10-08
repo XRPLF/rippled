@@ -132,7 +132,7 @@ ValueConstIterator::ValueConstIterator(Value::ObjectValues::iterator const& curr
 }
 
 ValueConstIterator&
-ValueConstIterator::operator=(ValueIteratorBase const& other)
+ValueConstIterator::operator=(SelfType const& other)
 {
     copy(other);
     return *this;

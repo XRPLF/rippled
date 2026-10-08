@@ -34,11 +34,41 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <string_view>
 
 namespace xrpl {
+
+namespace base64 {
+
+/**
+ * Returns the maximum number of characters needed to base64-encode @p nBytes bytes.
+ *
+ * @param nBytes Number of input bytes.
+ * @return Size of the encoded string, including padding.
+ */
+constexpr std::size_t
+encodedSize(std::size_t const nBytes)
+{
+    return 4 * ((nBytes + 2) / 3);
+}
+
+/**
+ * Returns the maximum number of bytes a base64 string of @p numChars characters
+ * decodes to.
+ *
+ * @param numChars Number of base64 characters.
+ * @return Upper bound on the number of decoded bytes.
+ */
+constexpr std::size_t
+decodedSize(std::size_t const numChars)
+{
+    return ((numChars / 4) * 3) + 2;
+}
+
+}  // namespace base64
 
 std::string
 base64Encode(std::uint8_t const* data, std::size_t len);

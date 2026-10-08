@@ -3,6 +3,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -130,7 +131,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-uint256
+UInt256
 NFTokenMint::createNFTokenID(
     std::uint16_t flags,
     std::uint16_t fee,
@@ -175,7 +176,7 @@ NFTokenMint::createNFTokenID(
         std::distance(buf.data(), ptr) == buf.size(),
         "xrpl::NFTokenMint::createNFTokenID : data size matches the buffer");
 
-    return uint256::fromVoid(buf.data());
+    return UInt256::fromVoid(buf.data());
 }
 
 TER
@@ -331,19 +332,21 @@ NFTokenMint::doApply()
     // allows NFTs to be added to the page (and burn fees) without
     // requiring the reserve to be met each time.  The reserve is
     // only managed when a new NFT page or sell offer is added.
-    if (auto const ownerCountAfter =
-            view().read(keylet::account(accountID_))->getFieldU32(sfOwnerCount);
+    auto const sleAccount = view().read(keylet::account(accountID_));
+    if (!sleAccount)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    if (auto const ownerCountAfter = sleAccount->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
     {
-        if (auto const reserve = view().fees().accountReserve(ownerCountAfter);
-            preFeeBalance_ < reserve)
+        if (preFeeBalance_ < accountReserve(view(), sleAccount, j_))
             return tecINSUFFICIENT_RESERVE;
     }
     return tesSUCCESS;
 }
 
 void
-NFTokenMint::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+NFTokenMint::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

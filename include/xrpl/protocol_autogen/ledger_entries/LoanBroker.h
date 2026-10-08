@@ -387,7 +387,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfPreviousTxnID (SoeRequired)
@@ -582,7 +584,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     LoanBroker
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return LoanBroker{std::make_shared<SLE>(std::move(object_), index)};
     }

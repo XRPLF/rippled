@@ -50,4 +50,12 @@ runs:
             --conf:all tools.build:jobs=${BUILD_NPROC} \
             --conf:all tools.build:verbosity="${LOG_VERBOSITY}" \
             --conf:all tools.compilation:verbosity="${LOG_VERBOSITY}" \
-            .
+            --format=json \
+            . >"${RUNNER_TEMP}/conan-graph.json"
+
+    # Tools that run during the build may only load glibc from the Nix store,
+    # as their package ID survives a GCC runtime update.
+    - name: Check build-context packages for Nix store dependencies (Linux)
+      if: ${{ runner.os == 'Linux' }}
+      shell: bash
+      run: ./bin/check-build-context-runtime.sh "${RUNNER_TEMP}/conan-graph.json"

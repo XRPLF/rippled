@@ -177,7 +177,9 @@ ${field['typeData']['setter_type']} ${field['paramName']}${',' if i < len(requir
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 % for field in fields:
 
     /**
@@ -207,7 +209,7 @@ ${field['typeData']['setter_type']} ${field['paramName']}${',' if i < len(requir
      * @return The constructed ledger entry wrapper.
      */
     ${name}
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return ${name}{std::make_shared<SLE>(std::move(object_), index)};
     }

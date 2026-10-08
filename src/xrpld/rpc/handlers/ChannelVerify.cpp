@@ -13,6 +13,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/resource/Fees.h>
 
 #include <cstdint>
 #include <optional>
@@ -27,14 +28,16 @@ namespace xrpl {
 //   signature: signature to verify
 // }
 json::Value
-doChannelVerify(RPC::JsonContext& context)
+doChannelVerify(rpc::JsonContext& context)
 {
     auto const& params(context.params);
     for (auto const& p : {jss::public_key, jss::channel_id, jss::amount, jss::signature})
     {
         if (!params.isMember(p))
-            return RPC::missingFieldError(p);
+            return rpc::missingFieldError(p);
     }
+
+    context.loadType = resource::kFeeHeavyBurdenRpc;
 
     std::optional<PublicKey> pk;
     {
@@ -53,7 +56,9 @@ doChannelVerify(RPC::JsonContext& context)
         }
     }
 
-    uint256 channelId;
+    if (!params[jss::channel_id].isString())
+        return rpcError(RpcInvalidParams);
+    UInt256 channelId;
     if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(RpcChannelMalformed);
 
@@ -64,6 +69,9 @@ doChannelVerify(RPC::JsonContext& context)
         return rpcError(RpcChannelAmtMalformed);
 
     std::uint64_t const drops = *optDrops;
+
+    if (!params[jss::signature].isString())
+        return rpcError(RpcInvalidParams);
 
     auto sig = strUnHex(params[jss::signature].asString());
     if (!sig || sig->empty())

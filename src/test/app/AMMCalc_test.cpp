@@ -20,6 +20,7 @@
 
 #include <cstdint>
 #include <exception>
+#include <format>
 #include <iostream>
 #include <map>
 #include <optional>
@@ -31,7 +32,8 @@
 
 namespace xrpl::test {
 
-/** AMM Calculator. Uses AMM formulas to simulate the payment engine
+/**
+ * AMM Calculator. Uses AMM formulas to simulate the payment engine
  * expected results. Assuming the formulas are correct some unit-tests can
  * be verified. Currently supported operations are:
  *  - swapIn, find out given in. in can flow through multiple AMM/Offer steps.
@@ -43,15 +45,15 @@ namespace xrpl::test {
  */
 class AMMCalc_test : public beast::unit_test::Suite
 {
-    using token_iter = boost::sregex_token_iterator;
-    using steps = std::vector<std::pair<Amounts, bool>>;
-    using transfer_rates = std::map<std::string, std::uint32_t>;
-    using swapargs = std::tuple<steps, STAmount, transfer_rates, std::uint32_t>;
+    using TokenIter = boost::sregex_token_iterator;
+    using Steps = std::vector<std::pair<Amounts, bool>>;
+    using TransferRates = std::map<std::string, std::uint32_t>;
+    using SwapArgs = std::tuple<Steps, STAmount, TransferRates, std::uint32_t>;
     jtx::Account const gw_{jtx::Account("gw")};
-    token_iter const end_;
+    TokenIter const end_;
 
     std::optional<STAmount>
-    getAmt(token_iter const& p, bool* delimited = nullptr)
+    getAmt(TokenIter const& p, bool* delimited = nullptr)
     {
         using namespace jtx;
         if (p == end_)
@@ -80,7 +82,7 @@ class AMMCalc_test : public beast::unit_test::Suite
     }
 
     std::optional<std::tuple<std::string, std::uint32_t, bool>>
-    getRate(token_iter const& p)
+    getRate(TokenIter const& p)
     {
         if (p == end_)
             return std::nullopt;
@@ -101,7 +103,7 @@ class AMMCalc_test : public beast::unit_test::Suite
     }
 
     std::uint32_t
-    getFee(token_iter const& p)
+    getFee(TokenIter const& p)
     {
         if (p != end_)
         {
@@ -112,7 +114,7 @@ class AMMCalc_test : public beast::unit_test::Suite
     }
 
     std::optional<std::pair<Amounts, bool>>
-    getAmounts(token_iter& p)
+    getAmounts(TokenIter& p)
     {
         if (p == end_)
             return std::nullopt;
@@ -127,10 +129,10 @@ class AMMCalc_test : public beast::unit_test::Suite
         return {{{*a1, *a2}, amm}};
     }
 
-    std::optional<transfer_rates>
-    getTransferRate(token_iter& p)
+    std::optional<TransferRates>
+    getTransferRate(TokenIter& p)
     {
-        transfer_rates rates{};
+        TransferRates rates{};
         if (p == end_)
             return rates;
         std::string str = *p;
@@ -154,11 +156,11 @@ class AMMCalc_test : public beast::unit_test::Suite
         return rates;
     }
 
-    std::optional<swapargs>
-    getSwap(token_iter& p)
+    std::optional<SwapArgs>
+    getSwap(TokenIter& p)
     {
         // pairs of amm pool or offer
-        steps pairs;
+        Steps pairs;
         // either amm pool or offer
         auto isPair = [](auto const& p) {
             std::string const s = *p;
@@ -187,8 +189,7 @@ class AMMCalc_test : public beast::unit_test::Suite
     static std::string
     toString(STAmount const& a)
     {
-        return (boost::format("%s/%s") % a.getText() % ::xrpl::to_string(a.get<Issue>().currency))
-            .str();
+        return std::format("{}/{}", a.getText(), ::xrpl::to_string(a.get<Issue>().currency));
     }
 
     static STAmount
@@ -202,12 +203,12 @@ class AMMCalc_test : public beast::unit_test::Suite
     }
 
     static void
-    swapOut(swapargs const& args)
+    swapOut(SwapArgs const& args)
     {
-        auto const vp = std::get<steps>(args);
+        auto const vp = std::get<Steps>(args);
         STAmount sout = std::get<STAmount>(args);
         auto const fee = std::get<std::uint32_t>(args);
-        auto const rates = std::get<transfer_rates>(args);
+        auto const rates = std::get<TransferRates>(args);
         STAmount resultOut = sout;
         STAmount resultIn{};
         STAmount sin{};
@@ -265,12 +266,12 @@ class AMMCalc_test : public beast::unit_test::Suite
     }
 
     static void
-    swapIn(swapargs const& args)
+    swapIn(SwapArgs const& args)
     {
-        auto const vp = std::get<steps>(args);
+        auto const vp = std::get<Steps>(args);
         STAmount sin = std::get<STAmount>(args);
         auto const fee = std::get<std::uint32_t>(args);
-        auto const rates = std::get<transfer_rates>(args);
+        auto const rates = std::get<TransferRates>(args);
         STAmount resultIn = sin;
         STAmount resultOut{};
         STAmount sout{};
@@ -333,7 +334,7 @@ class AMMCalc_test : public beast::unit_test::Suite
         using namespace jtx;
         auto const a = arg();
         boost::regex const re(",");
-        token_iter p(a.begin(), a.end(), re, -1);
+        TokenIter p(a.begin(), a.end(), re, -1);
         // Token is denoted as CUR(xxx), where CUR is the currency code
         //    and xxx is the amount, for instance: XRP(100) or USD(11.5)
         // AMM is denoted as A(CUR1(xxx1),CUR2(xxx2)), for instance:

@@ -1,9 +1,12 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
 #include <test/jtx/domain.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/paths.h>
@@ -27,14 +30,19 @@
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/server/LoadFeeTrack.h>
@@ -648,6 +656,42 @@ public:
         for (auto const& nonArray : nonArrays)
         {
             json::Value jv;
+            jv[jss::mpt_issuances] = nonArray;
+            auto jr = wsc->invoke(method, jv)[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
+        }
+
+        {
+            json::Value jv;
+            jv[jss::mpt_issuances] = json::ValueType::Array;
+            jv[jss::mpt_issuances][0u] = 1;
+            auto jr = wsc->invoke(method, jv)[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
+        }
+
+        {
+            json::Value jv;
+            jv[jss::mpt_issuances] = json::ValueType::Array;
+            jv[jss::mpt_issuances][0u] = "not-an-mpt-issuance-id";
+            auto jr = wsc->invoke(method, jv)[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
+        }
+
+        {
+            json::Value jv;
+            jv[jss::mpt_issuances] = json::ValueType::Array;
+            jv[jss::mpt_issuances][0u] = "0123456789ABCDEF";
+            auto jr = wsc->invoke(method, jv)[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
+        }
+
+        for (auto const& nonArray : nonArrays)
+        {
+            json::Value jv;
             jv[jss::books] = nonArray;
             auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
@@ -955,7 +999,7 @@ public:
             if (sizeCompare && accountVec.size() != (txHistoryVec.size()))
                 return false;
 
-            hash_map<std::string, int> txHistoryMap;
+            HashMap<std::string, int> txHistoryMap;
             for (auto const& tx : txHistoryVec)
             {
                 txHistoryMap.emplace(std::get<1>(tx), std::get<0>(tx));
@@ -1388,9 +1432,9 @@ public:
         // Verify `nftoken_id` value equals to the NFTokenID that was
         // changed in the most recent NFTokenMint or NFTokenAcceptOffer
         // transaction
-        auto verifyNFTokenID = [&](uint256 const& actualNftID) {
+        auto verifyNFTokenID = [&](UInt256 const& actualNftID) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                uint256 nftID;
+                UInt256 nftID;
                 BEAST_EXPECT(nftID.parseHex(jv[jss::meta][jss::nftoken_id].asString()));
                 return nftID == actualNftID;
             }));
@@ -1398,15 +1442,15 @@ public:
 
         // Verify `nftoken_ids` value equals to the NFTokenIDs that were
         // changed in the most recent NFTokenCancelOffer transaction
-        auto verifyNFTokenIDsInCancelOffer = [&](std::vector<uint256> actualNftIDs) {
+        auto verifyNFTokenIDsInCancelOffer = [&](std::vector<UInt256> actualNftIDs) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                std::vector<uint256> metaIDs;
+                std::vector<UInt256> metaIDs;
                 std::transform(
                     jv[jss::meta][jss::nftoken_ids].begin(),
                     jv[jss::meta][jss::nftoken_ids].end(),
                     std::back_inserter(metaIDs),
                     [this](json::Value id) {
-                        uint256 nftID;
+                        UInt256 nftID;
                         BEAST_EXPECT(nftID.parseHex(id.asString()));
                         return nftID;
                     });
@@ -1427,9 +1471,9 @@ public:
 
         // Verify `offer_id` value equals to the offerID that was
         // changed in the most recent NFTokenCreateOffer tx
-        auto verifyNFTokenOfferID = [&](uint256 const& offerID) {
+        auto verifyNFTokenOfferID = [&](UInt256 const& offerID) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                uint256 metaOfferID;
+                UInt256 metaOfferID;
                 BEAST_EXPECT(metaOfferID.parseHex(jv[jss::meta][jss::offer_id].asString()));
                 return metaOfferID == offerID;
             }));
@@ -1439,12 +1483,12 @@ public:
         {
             // Alice mints 2 NFTs
             // Verify the NFTokenIDs are correct in the NFTokenMint tx meta
-            uint256 const nftId1{token::getNextID(env, alice, 0u, tfTransferable)};
+            UInt256 const nftId1{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), Txflags(tfTransferable));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId1);
 
-            uint256 const nftId2{token::getNextID(env, alice, 0u, tfTransferable)};
+            UInt256 const nftId2{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), Txflags(tfTransferable));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId2);
@@ -1452,12 +1496,14 @@ public:
             // Alice creates one sell offer for each NFT
             // Verify the offer indexes are correct in the NFTokenCreateOffer tx
             // meta
-            uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
+            UInt256 const aliceOfferIndex1 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId1, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.seq(alice)).key;
+            UInt256 const aliceOfferIndex2 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId2, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex2);
@@ -1471,7 +1517,8 @@ public:
 
             // Bobs creates a buy offer for nftId1
             // Verify the offer id is correct in the NFTokenCreateOffer tx meta
-            auto const bobBuyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
+            auto const bobBuyOfferIndex =
+                keylet::nftokenOffer(bob, SeqProxy::rawSequence(env.seq(bob))).key;
             env(token::createOffer(bob, nftId1, drops(1)), token::Owner(alice));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(bobBuyOfferIndex);
@@ -1486,13 +1533,14 @@ public:
         // Check `nftoken_ids` in brokered mode
         {
             // Alice mints a NFT
-            uint256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
+            UInt256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), Txflags(tfTransferable));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId);
 
             // Alice creates sell offer and set broker as destination
-            uint256 const offerAliceToBroker = keylet::nftoffer(alice, env.seq(alice)).key;
+            UInt256 const offerAliceToBroker =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId, drops(1)),
                 token::Destination(broker),
                 Txflags(tfSellNFToken));
@@ -1500,7 +1548,8 @@ public:
             verifyNFTokenOfferID(offerAliceToBroker);
 
             // Bob creates buy offer
-            uint256 const offerBobToBroker = keylet::nftoffer(bob, env.seq(bob)).key;
+            UInt256 const offerBobToBroker =
+                keylet::nftokenOffer(bob, SeqProxy::rawSequence(env.seq(bob))).key;
             env(token::createOffer(bob, nftId, drops(1)), token::Owner(alice));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(offerBobToBroker);
@@ -1515,18 +1564,20 @@ public:
         // multiple offers are cancelled for the same NFT
         {
             // Alice mints a NFT
-            uint256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
+            UInt256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), Txflags(tfTransferable));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId);
 
             // Alice creates 2 sell offers for the same NFT
-            uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
+            UInt256 const aliceOfferIndex1 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.seq(alice)).key;
+            UInt256 const aliceOfferIndex2 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex2);
@@ -1540,11 +1591,863 @@ public:
 
         if (features[featureNFTokenMintOffer])
         {
-            uint256 const aliceMintWithOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
+            UInt256 const aliceMintWithOfferIndex1 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::mint(alice), token::Amount(XRP(0)));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceMintWithOfferIndex1);
         }
+    }
+
+    // ----- Subscription limit / teardown verification ----------------------
+    //
+    // The helpers and tests below exercise:
+    //   * the per-connection subscription cap + proportional charge enforced
+    //     in doSubscribe (Subscribe.cpp), and
+    //   * the asynchronous, chunked teardown of a disconnecting connection's
+    //     account subscriptions (~InfoSub -> scheduleAccountCleanup -> JobQueue).
+    //
+    // The cap-exceeded error is rpcINVALID_PARAMS with the message "Too many
+    // subscriptions for this connection."; the tests assert that exactly.
+    //
+    // There is no public accessor for the server-side per-connection count, so
+    // the async cleanup is verified behaviorally: publishing still flows to a
+    // live subscriber, rather than by reading a count to zero.
+
+    // Build `count` distinct, valid, base58-encoded account strings cheaply by
+    // incrementing an AccountID. parseAccountIds dedups into a HashSet, so the
+    // strings MUST be distinct for the cap arithmetic to be exact; incrementing
+    // guarantees distinctness without deriving `count` keypairs.
+    static std::vector<std::string>
+    makeAccountStrings(std::size_t count, std::uint32_t seed = 1)
+    {
+        std::vector<std::string> out;
+        out.reserve(count);
+        // Start at `seed` so separate calls produce non-overlapping ranges,
+        // letting a test subscribe disjoint batches across requests.
+        AccountID id{static_cast<std::uint64_t>(seed)};
+        for (std::size_t i = 0; i < count; ++i)
+        {
+            out.push_back(toBase58(id));
+            ++id;
+        }
+        return out;
+    }
+
+    // Append the given account strings as a jss::accounts array onto a fresh
+    // subscribe request object.
+    static json::Value
+    accountsRequest(std::vector<std::string> const& accts)
+    {
+        json::Value jv{json::ValueType::Object};
+        jv[jss::accounts] = json::ValueType::Array;
+        for (auto const& a : accts)
+            jv[jss::accounts].append(a);
+        return jv;
+    }
+
+    // Append the given account strings as a jss::accounts_proposed array onto a
+    // fresh subscribe request object.
+    static json::Value
+    accountsProposedRequest(std::vector<std::string> const& accts)
+    {
+        json::Value jv{json::ValueType::Object};
+        jv[jss::accounts_proposed] = json::ValueType::Array;
+        for (auto const& a : accts)
+            jv[jss::accounts_proposed].append(a);
+        return jv;
+    }
+
+    // Build `count` distinct, valid MPT issuance id strings the same cheap way
+    // as makeAccountStrings: by incrementing an MPTID. doSubscribe only parses
+    // these (it does not require the issuances to exist in the ledger), and
+    // parseMPTIssuanceIDs dedups into a HashSet, so distinctness is what makes
+    // the cap arithmetic exact.
+    static std::vector<std::string>
+    makeMPTIssuanceStrings(std::size_t count, std::uint32_t seed = 1)
+    {
+        std::vector<std::string> out;
+        out.reserve(count);
+        // Start at `seed` so separate calls produce non-overlapping ranges.
+        MPTID id{static_cast<std::uint64_t>(seed)};
+        for (std::size_t i = 0; i < count; ++i)
+        {
+            out.push_back(to_string(id));
+            ++id;
+        }
+        return out;
+    }
+
+    // Append the given issuance ids as a jss::mpt_issuances array onto a fresh
+    // subscribe request object.
+    static json::Value
+    mptIssuancesRequest(std::vector<std::string> const& mptIDs)
+    {
+        json::Value jv{json::ValueType::Object};
+        jv[jss::mpt_issuances] = json::ValueType::Array;
+        for (auto const& id : mptIDs)
+            jv[jss::mpt_issuances].append(id);
+        return jv;
+    }
+
+    // A single, valid XRP/USD order book request, as one entry of a
+    // jss::books array.
+    static json::Value
+    oneBookRequest()
+    {
+        using namespace jtx;
+        json::Value jv{json::ValueType::Object};
+        jv[jss::books] = json::ValueType::Array;
+        json::Value& book = jv[jss::books][0u];
+        book[jss::taker_gets] = json::ValueType::Object;
+        book[jss::taker_gets][jss::currency] = "XRP";
+        book[jss::taker_pays] = json::ValueType::Object;
+        book[jss::taker_pays][jss::currency] = "USD";
+        book[jss::taker_pays][jss::issuer] = Account("alice").human();
+        return jv;
+    }
+
+    // A single account_history_tx_stream subscribe request for `acct`.
+    static json::Value
+    accountHistoryRequest(std::string const& acct)
+    {
+        json::Value jv{json::ValueType::Object};
+        jv[jss::account_history_tx_stream] = json::ValueType::Object;
+        jv[jss::account_history_tx_stream][jss::account] = acct;
+        return jv;
+    }
+
+    // An envconfig modifier that lowers the per-connection subscription cap to
+    // `cap`, so the cap logic in doSubscribe can be driven without subscribing
+    // the production default (100'000) entries. (Env is non-movable, so this
+    // returns the config modifier rather than a ready-made Env.)
+    static auto
+    cappedConfig(std::size_t cap)
+    {
+        return [cap](std::unique_ptr<Config> cfg) {
+            cfg->maxSubscriptionsPerConnection = cap;
+            return jtx::singleThreadIo(std::move(cfg));
+        };
+    }
+
+    void
+    testSubscriptionCapRejects()
+    {
+        // A request that alone exceeds the cap is rejected with the exact
+        // cap error, before any state is recorded. Baseline negative path.
+        testcase("subscription cap rejects an over-cap request");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        auto wsc = makeWSClient(env.app().config());
+
+        // Six accounts against a cap of five: rejected.
+        auto const jr =
+            wsc->invoke("subscribe", accountsRequest(makeAccountStrings(6)))[jss::result];
+        BEAST_EXPECT(jr[jss::error] == "invalidParams");
+        BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+    }
+
+    void
+    testReSubscribeNotOvercounted()
+    {
+        // Re-subscribing accounts already held by this connection adds no new
+        // tracked state, so it must be admitted even at the cap. The cap check
+        // must count only NET-NEW accounts, not the raw request size.
+        testcase("re-subscribe at the cap is not over-counted");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        auto wsc = makeWSClient(env.app().config());
+
+        // Fill the cap exactly with five distinct accounts.
+        auto const five = makeAccountStrings(5);
+        {
+            auto const r = wsc->invoke("subscribe", accountsRequest(five));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // Re-subscribe the same five: net-new is zero, so it stays within the
+        // cap and must succeed. (Pre-fix this was wrongly rejected.)
+        {
+            auto const r = wsc->invoke("subscribe", accountsRequest(five));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+    }
+
+    void
+    testBooksCapIndependentOfAccounts()
+    {
+        // Book subscriptions are tracked separately (OrderBookDB) and are not
+        // part of totalSubscriptionCount(). An account set at the cap must not
+        // block an unrelated book subscription.
+        testcase("books cap is independent of account count");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        BEAST_EXPECT(env.syncClose());
+
+        auto wsc = makeWSClient(env.app().config());
+
+        // Fill the account cap exactly.
+        {
+            auto const r = wsc->invoke("subscribe", accountsRequest(makeAccountStrings(5)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // A single book subscription must still be admitted: it does not count
+        // against the account cap. (Pre-fix this was wrongly rejected.)
+        {
+            auto const r = wsc->invoke("subscribe", oneBookRequest());
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+    }
+
+    void
+    testMultiFieldNoPartialSubscribe()
+    {
+        // A single request mixing fields must be all-or-nothing: if a later
+        // field trips the cap, an earlier field must NOT have subscribed. The
+        // leak is detected through the cap arithmetic itself - a follow-up
+        // request succeeds only if no state leaked from the rejected one.
+        testcase("multi-field subscribe does not partially subscribe");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        auto wsc = makeWSClient(env.app().config());
+
+        // accounts_proposed (3, evaluated first, would subscribe) +
+        // accounts (3): combined 6 exceeds the cap of 5, so the request is
+        // rejected. The proposed branch must not have leaked its 3 entries.
+        json::Value req = accountsProposedRequest(makeAccountStrings(3, 1));
+        for (auto const& a : makeAccountStrings(3, 100))
+            req[jss::accounts].append(a);
+        {
+            auto const jr = wsc->invoke("subscribe", req)[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+        }
+
+        // If the rejected request leaked its 3 proposed subscriptions, the
+        // connection's count is already 3 and this 3-account request would be
+        // rejected (3 + 3 > 5). With no leak the count is 0 and it succeeds.
+        {
+            auto const r = wsc->invoke("subscribe", accountsRequest(makeAccountStrings(3, 200)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+    }
+
+    void
+    testHistoryReSubscribeNotOvercounted()
+    {
+        // An account_history_tx_stream subscribe is charged against the cap only
+        // when it is net-new, matching the account branches. Re-subscribing an
+        // account-history already held on this connection adds no tracked entry,
+        // so it must NOT be rejected at the cap. The two rejection causes are
+        // told apart by their exact error_message: the cap check yields "Too
+        // many subscriptions for this connection."; a duplicate that gets past
+        // the cap and is rejected downstream by subAccountHistory yields the
+        // generic "Invalid parameters.".
+        testcase("account_history re-subscribe at the cap is not over-counted");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(1))};
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        BEAST_EXPECT(env.syncClose());
+
+        auto wsc = makeWSClient(env.app().config());
+
+        // First account-history subscribe is net-new: charge 1 fills the cap of
+        // 1 exactly, so it is admitted. Positive path.
+        {
+            auto const r = wsc->invoke("subscribe", accountHistoryRequest(alice.human()));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // Re-subscribe the same account-history while sitting exactly at the
+        // cap. Net-new is zero, so the cap check must pass; the request is then
+        // rejected by subAccountHistory as a duplicate, NOT by the cap. Proven
+        // by the exact message: it is the duplicate error, not the cap error.
+        // (Pre-fix, the flat charge of 1 made the cap check reject this with the
+        // cap message instead.)
+        {
+            auto const jr =
+                wsc->invoke("subscribe", accountHistoryRequest(alice.human()))[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
+            BEAST_EXPECT(jr[jss::error_message] != "Too many subscriptions for this connection.");
+        }
+    }
+
+    void
+    testHistoryCapRejectsNetNew()
+    {
+        // A genuinely net-new account-history subscribe on a connection already
+        // at the cap IS rejected, with the cap error. Negative path, and the
+        // counterpart to testHistoryReSubscribeNotOvercounted: it confirms the
+        // net-new charge still rejects when the entry really is new.
+        testcase("account_history net-new subscribe is rejected at the cap");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(1))};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        BEAST_EXPECT(env.syncClose());
+
+        auto wsc = makeWSClient(env.app().config());
+
+        // Fill the cap of 1 with alice's account-history.
+        {
+            auto const r = wsc->invoke("subscribe", accountHistoryRequest(alice.human()));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // A different account-history (bob) is net-new: charge 1 over a cap of 1
+        // already full, so it is rejected with the cap error.
+        {
+            auto const jr =
+                wsc->invoke("subscribe", accountHistoryRequest(bob.human()))[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+        }
+    }
+
+    void
+    testMPTCapRejects()
+    {
+        // MPT issuance subscriptions are per-connection tracked state, so they
+        // are bounded by the same cap as the account branches. A request that
+        // alone exceeds the cap is rejected with the cap error, and nothing is
+        // recorded. (Pre-fix the mpt_issuances branch skipped the cap check
+        // entirely, so a client could hold unbounded issuance subscriptions.)
+        testcase("mpt_issuances cap rejects an over-cap request");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        auto wsc = makeWSClient(env.app().config());
+
+        // Six issuances against a cap of five: rejected.
+        {
+            auto const jr = wsc->invoke(
+                "subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(6)))[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+        }
+
+        // The rejected request reserved nothing: a five-issuance request (the
+        // cap exactly) still fits. If the rejected one had leaked entries this
+        // would be rejected too.
+        {
+            auto const r = wsc->invoke("subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(5)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+    }
+
+    void
+    testMPTReSubscribeNotOvercounted()
+    {
+        // Like the account branches, the MPT charge counts only NET-NEW
+        // issuances: re-subscribing issuances already held adds no tracked
+        // state, so it must be admitted even sitting exactly at the cap.
+        testcase("mpt_issuances re-subscribe at the cap is not over-counted");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        auto wsc = makeWSClient(env.app().config());
+
+        // Fill the cap exactly with five distinct issuances.
+        auto const five = makeMPTIssuanceStrings(5);
+        {
+            auto const r = wsc->invoke("subscribe", mptIssuancesRequest(five));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // Re-subscribe the same five: net-new is zero, so it stays within the
+        // cap and must succeed.
+        {
+            auto const r = wsc->invoke("subscribe", mptIssuancesRequest(five));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // A single net-new issuance on top of a full cap IS rejected.
+        {
+            auto const jr = wsc->invoke(
+                "subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(1, 100)))[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+        }
+    }
+
+    void
+    testMPTSharesCapWithAccounts()
+    {
+        // The cap is one budget over all tracked kinds, so MPT issuances and
+        // accounts consume the same allowance in either order.
+        testcase("mpt_issuances and accounts share one cap");
+
+        using namespace jtx;
+
+        // Accounts first, then MPTs: 3 + 3 over a cap of 5 is rejected.
+        {
+            Env env{*this, envconfig(cappedConfig(5))};
+            auto wsc = makeWSClient(env.app().config());
+
+            auto const r = wsc->invoke("subscribe", accountsRequest(makeAccountStrings(3)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+
+            auto const jr = wsc->invoke(
+                "subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(3)))[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+
+            // Two more issuances do fit the remaining allowance.
+            auto const r2 =
+                wsc->invoke("subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(2)));
+            BEAST_EXPECTS(r2[jss::status] == "success", to_string(r2));
+        }
+
+        // MPTs first, then accounts: the tally MPTs contribute is what rejects
+        // the accounts, proving mptSubscriptions_ is part of the count and not
+        // just checked against it.
+        {
+            Env env{*this, envconfig(cappedConfig(5))};
+            auto wsc = makeWSClient(env.app().config());
+
+            auto const r = wsc->invoke("subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(5)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+
+            auto const jr =
+                wsc->invoke("subscribe", accountsRequest(makeAccountStrings(1)))[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+        }
+    }
+
+    void
+    testMPTUnsubscribeFreesCap()
+    {
+        // Unsubscribing releases the allowance: after dropping the issuances,
+        // the same connection can subscribe a fresh batch. Guards against a
+        // reserve that is never given back (which would turn the cap into a
+        // permanent per-connection budget).
+        testcase("mpt_issuances unsubscribe frees cap allowance");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        auto wsc = makeWSClient(env.app().config());
+
+        auto const five = makeMPTIssuanceStrings(5);
+        {
+            auto const r = wsc->invoke("subscribe", mptIssuancesRequest(five));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        {
+            auto const r = wsc->invoke("unsubscribe", mptIssuancesRequest(five));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // The cap is free again, so a disjoint batch of five is admitted.
+        {
+            auto const r =
+                wsc->invoke("subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(5, 100)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+    }
+
+    void
+    testAsyncTeardownDoesNotStall()
+    {
+        // Test C (core regression): disconnecting a connection with many
+        // account subscriptions must NOT block subsequent operations or
+        // publishing. The teardown is now posted to a JobQueue job
+        // (scheduleAccountCleanup), so it runs off the disconnect thread.
+        testcase("async teardown does not stall publishing");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env{*this, singleThreadIo(envconfig())};
+
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        BEAST_EXPECT(env.syncClose());
+
+        // A second, long-lived subscriber to alice that must keep receiving
+        // publishes after the first connection disconnects.
+        auto wscLive = makeWSClient(env.app().config());
+        {
+            json::Value jv{json::ValueType::Object};
+            jv[jss::accounts] = json::ValueType::Array;
+            jv[jss::accounts].append(alice.human());
+            auto const r = wscLive->invoke("subscribe", jv);
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // A connection that subscribes to many accounts, then disconnects. A
+        // few thousand entries is enough to be a real teardown while still
+        // running fast in CI.
+        constexpr std::size_t kBulk = 3000;
+        {
+            auto wscBulk = makeWSClient(env.app().config());
+            auto const r =
+                wscBulk->invoke("subscribe", accountsRequest(makeAccountStrings(kBulk, 10)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+            // Destroying the client closes the WS connection, which destroys
+            // the server-side InfoSub and posts the chunked async cleanup job.
+            // WSClient exposes no explicit close(); resetting the owning
+            // unique_ptr is the disconnect path.
+            wscBulk.reset();
+        }
+
+        // Immediately after the disconnect, an unrelated operation completes
+        // promptly (it would block for seconds with inline teardown). This is a
+        // cheap liveness check; the publish assertion below is the real proof.
+        {
+            auto const info = env.app().getOPs().getServerInfo(false, true, false);
+            BEAST_EXPECT(info.isMember(jss::server_state));
+        }
+
+        // The live subscriber still receives a published transaction for alice
+        // within a short timeout, proving account-publishing was not stalled by
+        // the concurrent teardown.
+        {
+            env(pay(env.master, alice, XRP(100)));
+            BEAST_EXPECT(env.syncClose());
+            BEAST_EXPECT(wscLive->findMsg(5s, [&](auto const& jv) {
+                return jv.isMember(jss::transaction) &&
+                    jv[jss::transaction][jss::TransactionType] == jss::Payment &&
+                    jv[jss::transaction][jss::Destination] == alice.human();
+            }));
+        }
+
+        wscLive->invoke("unsubscribe", accountsRequest({alice.human()}));
+    }
+
+    void
+    testResubscribeAfterDisconnect()
+    {
+        // Test D (Phase 3 correctness): connection A subscribes to account X
+        // and disconnects (async cleanup pending, keyed on A's seq). A new
+        // connection B subscribes to X and MUST still receive publishes for X -
+        // A's deferred, seq-keyed cleanup must not remove B's subscription.
+        testcase("re-subscribe after disconnect still delivers");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env{*this, singleThreadIo(envconfig())};
+
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        BEAST_EXPECT(env.syncClose());
+
+        // Connection A subscribes to alice, then disconnects. A also subscribes
+        // to a bulk set so its deferred cleanup is non-trivial and races with B.
+        {
+            auto wscA = makeWSClient(env.app().config());
+            auto bulk = makeAccountStrings(2000, 10);
+            bulk.push_back(alice.human());
+            auto const r = wscA->invoke("subscribe", accountsRequest(bulk));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+            // Disconnect A by destroying its client (no explicit close()).
+            wscA.reset();
+        }
+
+        // Connection B (a new InfoSub with a distinct seq) subscribes to alice.
+        auto wscB = makeWSClient(env.app().config());
+        {
+            json::Value jv{json::ValueType::Object};
+            jv[jss::accounts] = json::ValueType::Array;
+            jv[jss::accounts].append(alice.human());
+            auto const r = wscB->invoke("subscribe", jv);
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // A publish for alice must reach B. If A's seq-keyed cleanup had wrongly
+        // removed the shared alice entry, B would receive nothing.
+        {
+            env(pay(env.master, alice, XRP(100)));
+            BEAST_EXPECT(env.syncClose());
+            BEAST_EXPECT(wscB->findMsg(5s, [&](auto const& jv) {
+                return jv.isMember(jss::transaction) &&
+                    jv[jss::transaction][jss::TransactionType] == jss::Payment &&
+                    jv[jss::transaction][jss::Destination] == alice.human();
+            }));
+        }
+
+        wscB->invoke("unsubscribe", accountsRequest({alice.human()}));
+    }
+
+    void
+    testSubMPT()
+    {
+        // subscribe to multiple MPTs
+        testcase("SubMPT");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env(*this);
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dan{"dan"};
+
+        auto wsc = makeWSClient(env.app().config());
+
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+        MPTTester mptCarol(env, carol, {.holders = {dan}});
+
+        // Transfer fee is 10%
+        mptAlice.create(
+            {.transferFee = 10'000, .ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock});
+        mptCarol.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
+
+        json::Value stream;
+        stream = json::ValueType::Object;
+        stream[jss::mpt_issuances] = json::ValueType::Array;
+        stream[jss::mpt_issuances].append(to_string(mptAlice.issuanceID()));
+        stream[jss::mpt_issuances].append(to_string(mptCarol.issuanceID()));
+        auto jv = wsc->invoke("subscribe", stream);
+        BEAST_EXPECT(jv[jss::status] == "success");
+
+        // bob create MPToken
+        mptAlice.authorize({.account = bob});
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == bob.human() &&
+                jv[jss::transaction][jss::Flags] == 0 &&
+                jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::TransactionType] == "MPTokenAuthorize" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // dan create MPToken
+        mptCarol.authorize({.account = dan});
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == dan.human() &&
+                jv[jss::transaction][jss::Flags] == 0 &&
+                jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
+                to_string(mptCarol.issuanceID()) &&
+                jv[jss::transaction][jss::Sequence] == 5 &&
+                jv[jss::transaction][jss::TransactionType] == "MPTokenAuthorize" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // subscribe stream sees alice's MPT
+        mptAlice.pay(alice, bob, 2000);
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == alice.human() &&
+                jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::Amount][jss::value] == "2000" &&
+                jv[jss::transaction][jss::DeliverMax][jss::mpt_issuance_id] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::DeliverMax][jss::value] == "2000" &&
+                jv[jss::transaction][jss::Destination] == bob.human() &&
+                jv[jss::transaction][jss::Flags] == tfFullyCanonicalSig &&
+                jv[jss::transaction][jss::TransactionType] == "Payment" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // subscribe stream sees carol's MPT
+        mptCarol.pay(carol, dan, 1000);
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == carol.human() &&
+                jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
+                to_string(mptCarol.issuanceID()) &&
+                jv[jss::transaction][jss::Amount][jss::value] == "1000" &&
+                jv[jss::transaction][jss::DeliverMax][jss::mpt_issuance_id] ==
+                to_string(mptCarol.issuanceID()) &&
+                jv[jss::transaction][jss::DeliverMax][jss::value] == "1000" &&
+                jv[jss::transaction][jss::Destination] == dan.human() &&
+                jv[jss::transaction][jss::Flags] == tfFullyCanonicalSig &&
+                jv[jss::transaction][jss::Sequence] == 6 &&
+                jv[jss::transaction][jss::TransactionType] == "Payment" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // subscribe stream sees alice's MPT lock
+        mptAlice.set({.account = alice, .flags = tfMPTLock});
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == alice.human() &&
+                jv[jss::transaction][jss::Flags] == tfMPTLock &&
+                jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::TransactionType] == "MPTokenIssuanceSet" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // subscribe stream sees alice's MPT unlock
+        mptAlice.set({.account = alice, .flags = tfMPTUnlock});
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == alice.human() &&
+                jv[jss::transaction][jss::Flags] == tfMPTUnlock &&
+                jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::TransactionType] == "MPTokenIssuanceSet" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // unsub alice's MPT from the stream
+        json::Value unsubStream;
+        unsubStream = json::ValueType::Object;
+        unsubStream[jss::mpt_issuances] = json::ValueType::Array;
+        unsubStream[jss::mpt_issuances].append(to_string(mptAlice.issuanceID()));
+        auto unsubJv = wsc->invoke("unsubscribe", unsubStream);
+        BEAST_EXPECT(unsubJv[jss::status] == "success");
+
+        // bob pays alice, this txn should no longer be sent by the stream
+        mptAlice.pay(bob, alice, 500);
+
+        // we don't expect to find alice's mpt in the stream
+        BEAST_EXPECT(!wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::Amount][jss::value] == "500";
+        }));
+
+        // this txn should be seen
+        mptCarol.pay(dan, carol, 100);
+
+        // only carol's MPT txn will be seen
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == dan.human() &&
+                jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
+                to_string(mptCarol.issuanceID()) &&
+                jv[jss::transaction][jss::Amount][jss::value] == "100" &&
+                jv[jss::transaction][jss::DeliverMax][jss::mpt_issuance_id] ==
+                to_string(mptCarol.issuanceID()) &&
+                jv[jss::transaction][jss::DeliverMax][jss::value] == "100" &&
+                jv[jss::transaction][jss::Destination] == carol.human() &&
+                jv[jss::transaction][jss::Flags] == tfFullyCanonicalSig &&
+                jv[jss::transaction][jss::TransactionType] == "Payment" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+    }
+
+    void
+    testSubMPTBatch()
+    {
+        // MPTs destroyed by the inner transactions of a Batch are still seen by
+        // the stream. An MPTokenIssuance entry does not carry its own issuance
+        // id, so this exercises deriving the id from the metadata.
+        testcase("SubMPT batch");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env(*this);
+
+        Account const alice{"alice"};
+
+        auto wsc = makeWSClient(env.app().config());
+
+        // A Batch requires at least two inner transactions, so destroy two
+        // issuances at once.
+        MPTTester mptAlice1(env, alice, MPTInit{});
+        mptAlice1.create({.ownerCount = 1});
+        auto const mptID1 = mptAlice1.issuanceID();
+
+        MPTTester mptAlice2(env, alice, MPTInit{.fund = false});
+        mptAlice2.create({.ownerCount = 2});
+        auto const mptID2 = mptAlice2.issuanceID();
+
+        json::Value stream;
+        stream = json::ValueType::Object;
+        stream[jss::mpt_issuances] = json::ValueType::Array;
+        stream[jss::mpt_issuances].append(to_string(mptID1));
+        stream[jss::mpt_issuances].append(to_string(mptID2));
+        auto const jv = wsc->invoke("subscribe", stream);
+        BEAST_EXPECT(jv[jss::status] == "success");
+
+        // destroy both issuances from inside a Batch
+        auto const seq = env.seq(alice);
+        auto const batchFee = batch::calcBatchFee(env, 0, 2);
+        env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+            batch::Inner(mptAlice1.destroyJV({.issuer = alice, .id = mptID1}), seq + 1),
+            batch::Inner(mptAlice2.destroyJV({.issuer = alice, .id = mptID2}), seq + 2));
+        env.close();
+
+        // each inner transaction is published on the stream for its own issuance
+        for (auto const& mptID : {mptID1, mptID2})
+        {
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+                return jv[jss::engine_result] == "tesSUCCESS" &&
+                    jv[jss::transaction][jss::Account] == alice.human() &&
+                    jv[jss::transaction][sfMPTokenIssuanceID.jsonName] == to_string(mptID) &&
+                    jv[jss::transaction][jss::TransactionType] == "MPTokenIssuanceDestroy" &&
+                    jv[jss::type] == "mptTransaction";
+            }));
+        }
+
+        // the outer Batch transaction is not itself published on the stream;
+        // only the inner transactions touch the issuances
+        BEAST_EXPECT(!wsc->findMsg(1s, [](auto const& jv) {
+            return jv[jss::transaction][jss::TransactionType] == "Batch";
+        }));
+
+        json::Value unsubStream;
+        unsubStream = json::ValueType::Object;
+        unsubStream[jss::mpt_issuances] = json::ValueType::Array;
+        unsubStream[jss::mpt_issuances].append(to_string(mptID1));
+        unsubStream[jss::mpt_issuances].append(to_string(mptID2));
+        BEAST_EXPECT(wsc->invoke("unsubscribe", unsubStream)[jss::status] == "success");
+    }
+
+    void
+    testSubMPTAmountFields()
+    {
+        testcase("SubMPT amount fields");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+
+        MPTTester mpt(env, alice, {.holders = {bob, carol}});
+        mpt.create({.pay = {{{bob}, 100}}, .flags = kMptDexFlags | tfMPTCanEscrow});
+
+        auto wsc = makeWSClient(env.app().config());
+        auto const subscribed =
+            wsc->invoke("subscribe", mptIssuancesRequest({to_string(mpt.issuanceID())}));
+        BEAST_EXPECT(subscribed[jss::status] == "success");
+
+        auto expectTransaction = [&](std::string const& type) {
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+                return jv[jss::engine_result] == "tesSUCCESS" &&
+                    jv[jss::transaction][jss::TransactionType] == type &&
+                    jv[jss::type] == "mptTransaction";
+            }));
+        };
+
+        // Created offers carry the issuance only inside their amount fields.
+        env(offer(bob, XRP(10), mpt(10)));
+        env.close();
+        expectTransaction("OfferCreate");
+
+        env(offer(carol, mpt(5), XRP(10)));
+        env.close();
+        expectTransaction("OfferCreate");
+
+        // Escrow entries similarly carry the issuance in sfAmount.
+        auto const baseFee = env.current()->fees().base;
+        env(escrow::create(bob, carol, mpt(10)),
+            escrow::kFinishTime(env.now() + 1s),
+            Fee(baseFee * 150));
+        env.close();
+        expectTransaction("EscrowCreate");
     }
 
     void
@@ -1568,6 +2471,21 @@ public:
         testSubBookChanges();
         testNFToken(all);
         testNFToken(all - featureNFTokenMintOffer);
+        testSubMPT();
+        testSubMPTBatch();
+        testSubMPTAmountFields();
+        testAsyncTeardownDoesNotStall();
+        testResubscribeAfterDisconnect();
+        testSubscriptionCapRejects();
+        testReSubscribeNotOvercounted();
+        testBooksCapIndependentOfAccounts();
+        testMultiFieldNoPartialSubscribe();
+        testHistoryReSubscribeNotOvercounted();
+        testHistoryCapRejectsNetNew();
+        testMPTCapRejects();
+        testMPTReSubscribeNotOvercounted();
+        testMPTSharesCapWithAccounts();
+        testMPTUnsubscribeFreesCap();
     }
 };
 

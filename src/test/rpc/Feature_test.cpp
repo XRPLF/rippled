@@ -121,7 +121,7 @@ class Feature_test : public beast::unit_test::Suite
         }
 
         // Test an arbitrary unknown feature
-        uint256 const zero{0};
+        UInt256 const zero{0};
         BEAST_EXPECT(featureToName(zero) == to_string(zero));
         BEAST_EXPECT(
             featureToName(zero) ==
@@ -134,7 +134,7 @@ class Feature_test : public beast::unit_test::Suite
         // or removed, swap out for any other feature.
         BEAST_EXPECT(
             featureToName(fixRemoveNFTokenAutoTrustLine) == "fixRemoveNFTokenAutoTrustLine");
-        BEAST_EXPECT(featureToName(featureBatch) == "Batch");
+        BEAST_EXPECT(featureToName(featureBatchV1_1) == "BatchV1_1");
         BEAST_EXPECT(featureToName(featureDID) == "DID");
         BEAST_EXPECT(featureToName(fixIncludeKeyletFields) == "fixIncludeKeyletFields");
         BEAST_EXPECT(featureToName(featureTokenEscrow) == "TokenEscrow");
@@ -187,13 +187,13 @@ class Feature_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env{*this};
 
-        std::string const name = "fixAMMOverflowOffer";
+        std::string const name = "fixCleanup3_1_3";
         auto jrr = env.rpc("feature", name)[jss::result];
         BEAST_EXPECTS(jrr[jss::status] == jss::success, "status");
         jrr.removeMember(jss::status);
         BEAST_EXPECT(jrr.size() == 1);
         auto const expected = to_string(sha512Half(Slice(name.data(), name.size())));
-        char const sha[] = "12523DF04B553A0B1AD74F42DDB741DE8DC06A03FC089A0EF197E2A87F1D8107";
+        char const sha[] = "303ACB16CF8DBD3B5C34F131A9D19A7DE01AE05F480A8A682B869D1B4AAC8CFC";
         BEAST_EXPECT(expected == sha);
         BEAST_EXPECT(jrr.isMember(expected));
         auto feature = *(jrr.begin());
@@ -291,7 +291,7 @@ class Feature_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::features].size() >= 50);
             for (auto it = result[jss::features].begin(); it != result[jss::features].end(); ++it)
             {
-                uint256 id;
+                UInt256 id;
                 (void)id.parseHex(it.key().asString().c_str());
                 if (!BEAST_EXPECT((*it).isMember(jss::name)))
                     return;
@@ -352,7 +352,7 @@ class Feature_test : public beast::unit_test::Suite
             return;
         for (auto it = jrr[jss::features].begin(); it != jrr[jss::features].end(); ++it)
         {
-            uint256 id;
+            UInt256 id;
             (void)id.parseHex(it.key().asString().c_str());
             if (!BEAST_EXPECT((*it).isMember(jss::name)))
                 return;
@@ -475,7 +475,7 @@ class Feature_test : public beast::unit_test::Suite
 
         using namespace test::jtx;
         Env env{*this, FeatureBitset{featurePriceOracle}};
-        static constexpr char const* kFeatureName = "fixAMMOverflowOffer";
+        static constexpr char const* kFeatureName = "fixCleanup3_1_3";
 
         auto jrr = env.rpc("feature", kFeatureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
@@ -506,7 +506,18 @@ class Feature_test : public beast::unit_test::Suite
         feature = *(jrr.begin());
         BEAST_EXPECTS(feature[jss::name] == kFeatureName, "name");
         BEAST_EXPECTS(feature[jss::vetoed].isBool() && !feature[jss::vetoed].asBool(), "vetoed");
+        auto testInvalidVetoed = [&](auto const& vetoed) {
+            json::Value params;
+            params[jss::feature] = kFeatureName;
+            params[jss::vetoed] = vetoed;
 
+            auto const result = env.rpc("json", "feature", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
+        };
+
+        testInvalidVetoed("false");
+        testInvalidVetoed(json::Value(json::ValueType::Null));
         // anything other than accept or reject is an error
         jrr = env.rpc("feature", kFeatureName, "maybe");
         BEAST_EXPECT(jrr[jss::error] == "invalidParams");

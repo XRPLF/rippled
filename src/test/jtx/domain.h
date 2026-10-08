@@ -1,17 +1,22 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+
+#include <xrpl/basics/base_uint.h>
 
 namespace xrpl::test::jtx {
 
-/** Set the domain on a JTx. */
+/**
+ * Set the domain on a JTx.
+ */
 class Domain
 {
 private:
-    uint256 v_;
+    UInt256 v_;
 
 public:
-    explicit Domain(uint256 const& v) : v_(v)
+    explicit Domain(UInt256 const& v) : v_(v)
     {
     }
 

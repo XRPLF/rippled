@@ -195,9 +195,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountID, beast::Jou
         }
     }
 
-    XRPL_ASSERT(
-        !ctx.view().rules().enabled(fixInnerObjTemplate) || ammSle->isFieldPresent(sfAuctionSlot),
-        "xrpl::applyVote : has auction slot");
+    XRPL_ASSERT(ammSle->isFieldPresent(sfAuctionSlot), "xrpl::applyVote : has auction slot");
 
     // Update the vote entries and the trading/discounted fee.
     ammSle->setFieldArray(sfVoteSlots, updatedVoteSlots);
@@ -248,7 +246,7 @@ AMMVote::doApply()
 }
 
 void
-AMMVote::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMVote::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

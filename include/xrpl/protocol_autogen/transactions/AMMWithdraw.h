@@ -21,7 +21,7 @@ class AMMWithdrawBuilder;
  * Type: ttAMM_WITHDRAW (37)
  * Delegable: Delegation::Delegable
  * Amendment: featureAMM
- * Privileges: MayDeleteAcct | MayAuthorizeMpt
+ * Privileges: Privilege::MayDeleteAcct | Privilege::MayAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMWithdrawBuilder to construct new transactions.
@@ -220,7 +220,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfAsset (SoeRequired)

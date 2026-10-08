@@ -1,19 +1,28 @@
+#pragma once
+
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/StringUtilities.h>
-#include <xrpl/basics/strHex.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/core/LexicalCast.h>
-#include <xrpl/json/json_errors.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <expected>
-#include <functional>
+#include <initializer_list>
+#include <optional>
+#include <stdexcept>
+#include <string>
 
-namespace xrpl::LedgerEntryHelpers {
+namespace xrpl::ledger_entry_helpers {
 
 inline std::unexpected<json::Value>
 missingFieldError(json::StaticString const field, std::optional<std::string> err = std::nullopt)
@@ -21,7 +30,7 @@ missingFieldError(json::StaticString const field, std::optional<std::string> err
     json::Value json = json::ValueType::Object;
     json[jss::error] = err.value_or("malformedRequest");
     json[jss::error_code] = RpcInvalidParams;
-    json[jss::error_message] = RPC::missingFieldMessage(std::string(field.cStr()));
+    json[jss::error_message] = rpc::missingFieldMessage(std::string(field.cStr()));
     return std::unexpected(json);
 }
 
@@ -31,7 +40,7 @@ invalidFieldError(std::string const& err, json::StaticString const field, std::s
     json::Value json = json::ValueType::Object;
     json[jss::error] = err;
     json[jss::error_code] = RpcInvalidParams;
-    json[jss::error_message] = RPC::expectedFieldMessage(field, type);
+    json[jss::error_message] = rpc::expectedFieldMessage(field, type);
     return std::unexpected(json);
 }
 
@@ -167,10 +176,10 @@ requiredUInt32(
 }
 
 template <>
-inline std::optional<uint256>
+inline std::optional<UInt256>
 parse(json::Value const& param)
 {
-    uint256 uNodeIndex;
+    UInt256 uNodeIndex;
     if (!param.isString() || !uNodeIndex.parseHex(param.asString()))
     {
         return std::nullopt;
@@ -179,20 +188,20 @@ parse(json::Value const& param)
     return uNodeIndex;
 }
 
-inline std::expected<uint256, json::Value>
+inline std::expected<UInt256, json::Value>
 requiredUInt256(
     json::Value const& params,
     json::StaticString const fieldName,
     std::string const& err)
 {
-    return required<uint256>(params, fieldName, err, "Hash256");
+    return required<UInt256>(params, fieldName, err, "Hash256");
 }
 
 template <>
-inline std::optional<uint192>
+inline std::optional<UInt192>
 parse(json::Value const& param)
 {
-    uint192 field;
+    UInt192 field;
     if (!param.isString() || !field.parseHex(param.asString()))
     {
         return std::nullopt;
@@ -201,13 +210,13 @@ parse(json::Value const& param)
     return field;
 }
 
-inline std::expected<uint192, json::Value>
+inline std::expected<UInt192, json::Value>
 requiredUInt192(
     json::Value const& params,
     json::StaticString const fieldName,
     std::string const& err)
 {
-    return required<uint192>(params, fieldName, err, "Hash192");
+    return required<UInt192>(params, fieldName, err, "Hash192");
 }
 
 template <>
@@ -282,4 +291,4 @@ parseBridgeFields(json::Value const& params)
         *lockingChainDoor, lockingChainIssue, *issuingChainDoor, issuingChainIssue);
 }
 
-}  // namespace xrpl::LedgerEntryHelpers
+}  // namespace xrpl::ledger_entry_helpers

@@ -1,14 +1,15 @@
 #pragma once
 
-#include <xrpl/basics/contract.h>
 #include <xrpl/protocol/detail/token_errors.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <optional>
 #include <span>
 #include <string>
 #include <string_view>
+#include <system_error>
 
 namespace xrpl {
 
@@ -34,17 +35,18 @@ template <class T>
 [[nodiscard]] std::optional<T>
 parseBase58(TokenType type, std::string const& s);
 
-/** Encode data in Base58Check format using XRPL alphabet
-
-    For details on the format see
-    https://xrpl.org/base58-encodings.html#base58-encodings
-
-    @param type The type of token to encode.
-    @param token Pointer to the data to encode.
-    @param size The size of the data to encode.
-
-    @return the encoded token.
-*/
+/**
+ * Encode data in Base58Check format using XRPL alphabet
+ *
+ * For details on the format see
+ * https://xrpl.org/base58-encodings.html#base58-encodings
+ *
+ * @param type The type of token to encode.
+ * @param token Pointer to the data to encode.
+ * @param size The size of the data to encode.
+ *
+ * @return the encoded token.
+ */
 [[nodiscard]] std::string
 encodeBase58Token(TokenType type, void const* token, std::size_t size);
 

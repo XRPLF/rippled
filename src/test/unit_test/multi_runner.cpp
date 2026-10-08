@@ -7,7 +7,6 @@
 #include <boost/interprocess/creation_tags.hpp>
 #include <boost/interprocess/detail/os_file_functions.hpp>
 #include <boost/interprocess/shared_memory_object.hpp>
-#include <boost/lexical_cast.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -31,12 +30,12 @@ namespace xrpl {
 namespace detail {
 
 std::string
-fmtdur(typename clock_type::duration const& d)
+fmtdur(typename ClockType::duration const& d)
 {
     using namespace std::chrono;
     auto const ms = duration_cast<milliseconds>(d);
     if (ms < seconds{1})
-        return boost::lexical_cast<std::string>(ms.count()) + "ms";
+        return std::to_string(ms.count()) + "ms";
     std::stringstream ss;
     ss << std::fixed << std::setprecision(1) << (ms.count() / 1000.) << "s";
     return ss.str();
@@ -61,15 +60,12 @@ Results::add(SuiteResults const& r)
     total += r.total;
     cases += r.cases;
     failed += r.failed;
-    auto const elapsed = clock_type::now() - r.start;
+    auto const elapsed = ClockType::now() - r.start;
     if (elapsed >= std::chrono::seconds{1})
     {
         // NOLINTNEXTLINE(modernize-use-ranges)
         auto const iter = std::lower_bound(
-            top.begin(),
-            top.end(),
-            elapsed,
-            [](run_time const& t1, typename clock_type::duration const& t2) {
+            top.begin(), top.end(), elapsed, [](RunTime const& t1, ClockType::duration const& t2) {
                 return t1.second > t2;
             });
 
@@ -78,18 +74,18 @@ Results::add(SuiteResults const& r)
             if (top.size() == kMaxTop && iter == top.end() - 1)
             {
                 // avoid invalidating the iterator
-                *iter = run_time{static_string{static_string::string_view_type{r.name}}, elapsed};
+                *iter = RunTime{StaticString{StaticString::string_view_type{r.name}}, elapsed};
             }
             else
             {
                 if (top.size() == kMaxTop)
                     top.resize(top.size() - 1);
-                top.emplace(iter, static_string{static_string::string_view_type{r.name}}, elapsed);
+                top.emplace(iter, StaticString{StaticString::string_view_type{r.name}}, elapsed);
             }
         }
         else if (top.size() < kMaxTop)
         {
-            top.emplace_back(static_string{static_string::string_view_type{r.name}}, elapsed);
+            top.emplace_back(StaticString{StaticString::string_view_type{r.name}}, elapsed);
         }
     }
 }
@@ -103,9 +99,9 @@ Results::merge(Results const& r)
     failed += r.failed;
 
     // combine the two top collections
-    boost::container::static_vector<run_time, 2 * kMaxTop> topResult;
+    boost::container::static_vector<RunTime, 2 * kMaxTop> topResult;
     topResult.resize(top.size() + r.top.size());
-    std::ranges::merge(top, r.top, topResult.begin(), [](run_time const& t1, run_time const& t2) {
+    std::ranges::merge(top, r.top, topResult.begin(), [](RunTime const& t1, RunTime const& t2) {
         return t1.second > t2.second;
     });
 
@@ -128,7 +124,7 @@ Results::print(S& s)
             s << std::setw(8) << fmtdur(dur) << " " << name << '\n';
     }
 
-    auto const elapsed = clock_type::now() - start;
+    auto const elapsed = ClockType::now() - start;
     s << fmtdur(elapsed) << ", " << Amount{suites, "suite"} << ", " << Amount{cases, "case"} << ", "
       << Amount{total, "test"} << " total, " << Amount{failed, "failure"} << std::endl;
 }

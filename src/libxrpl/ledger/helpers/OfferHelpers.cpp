@@ -6,7 +6,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -15,7 +15,7 @@
 namespace xrpl {
 
 TER
-offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j)
+offerDelete(ApplyView& view, SLE::Ref sle, beast::Journal j)
 {
     if (!sle)
         return tesSUCCESS;
@@ -23,7 +23,7 @@ offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j)
     auto owner = sle->getAccountID(sfAccount);
 
     // Detect legacy directories.
-    uint256 const uDirectory = sle->getFieldH256(sfBookDirectory);
+    UInt256 const uDirectory = sle->getFieldH256(sfBookDirectory);
 
     if (!view.dirRemove(keylet::ownerDir(owner), sle->getFieldU64(sfOwnerNode), offerIndex, false))
     {
@@ -55,7 +55,7 @@ offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j)
         }
     }
 
-    adjustOwnerCount(view, view.peek(keylet::account(owner)), -1, j);
+    decreaseOwnerCountForObject(view, owner, sle, 1, j);
 
     view.erase(sle);
 

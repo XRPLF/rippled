@@ -8,7 +8,6 @@
 #include <xrpld/app/misc/detail/WorkSSL.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/SlabAllocator.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -93,7 +92,7 @@ ValidatorSite::Site::Site(std::string uri)
     : loadedResource{std::make_shared<Resource>(std::move(uri))}
     , startingResource{loadedResource}
     , refreshInterval{kDefaultRefreshInterval}
-    , nextRefresh{clock_type::now()}
+    , nextRefresh{ClockType::now()}
 
 {
 }
@@ -115,7 +114,7 @@ ValidatorSite::ValidatorSite(
 ValidatorSite::~ValidatorSite()
 {
     std::unique_lock<std::mutex> lock{stateMutex_};
-    if (timer_.expiry() > clock_type::time_point{})
+    if (timer_.expiry() > ClockType::time_point{})
     {
         if (!stopping_)
         {
@@ -180,7 +179,7 @@ ValidatorSite::start()
 {
     std::scoped_lock const l0{sitesMutex_};
     std::scoped_lock const l1{stateMutex_};
-    if (timer_.expiry() == clock_type::time_point{})
+    if (timer_.expiry() == ClockType::time_point{})
         setTimer(l0, l1);
 }
 
@@ -227,7 +226,7 @@ ValidatorSite::setTimer(
 
     if (next != sites_.end())
     {
-        pending_ = next->nextRefresh <= clock_type::now();
+        pending_ = next->nextRefresh <= ClockType::now();
         cv_.notify_all();
         timer_.expires_at(next->nextRefresh);
         auto idx = std::distance(sites_.begin(), next);
@@ -257,16 +256,15 @@ ValidatorSite::makeRequest(
         {
         }
     };
-    auto onFetch = [this, siteIdx, timeoutCancel](
-                       error_code const& err,
-                       endpoint_type const& endpoint,
-                       detail::response_type const& resp) {
-        timeoutCancel();
-        onSiteFetch(err, endpoint, resp, siteIdx);
-    };
+    auto onFetch =
+        [this, siteIdx, timeoutCancel](
+            ErrorCode const& err, EndpointType const& endpoint, detail::ResponseType const& resp) {
+            timeoutCancel();
+            onSiteFetch(err, endpoint, resp, siteIdx);
+        };
 
     auto onFetchFile = [this, siteIdx, timeoutCancel](
-                           error_code const& err, std::string const& resp) {
+                           ErrorCode const& err, std::string const& resp) {
         timeoutCancel();
         onTextFetch(err, resp, siteIdx);
     };
@@ -320,7 +318,7 @@ ValidatorSite::makeRequest(
 }
 
 void
-ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
+ValidatorSite::onRequestTimeout(std::size_t siteIdx, ErrorCode const& ec)
 {
     if (ec)
         return;
@@ -339,8 +337,10 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
             JLOG(j_.warn()) << "Request for " << site.activeResource->uri << " took too long";
         }
         else
+        {
             JLOG(j_.error()) << "Request took too long, but a response has "
                                 "already been processed";
+        }
     }
 
     std::scoped_lock const lockState{stateMutex_};
@@ -349,21 +349,21 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
 }
 
 void
-ValidatorSite::onTimer(std::size_t siteIdx, error_code const& ec)
+ValidatorSite::onTimer(std::size_t siteIdx, ErrorCode const& ec)
 {
     if (ec)
     {
         // Restart the timer if any errors are encountered, unless the error
         // is from the wait operation being aborted due to a shutdown request.
         if (ec != boost::asio::error::operation_aborted)
-            onSiteFetch(ec, {}, detail::response_type{}, siteIdx);
+            onSiteFetch(ec, {}, detail::ResponseType{}, siteIdx);
         return;
     }
 
     try
     {
         std::scoped_lock const lock{sitesMutex_};
-        sites_[siteIdx].nextRefresh = clock_type::now() + sites_[siteIdx].refreshInterval;
+        sites_[siteIdx].nextRefresh = ClockType::now() + sites_[siteIdx].refreshInterval;
         sites_[siteIdx].redirCount = 0;
         // the WorkSSL client ctor can throw if SSL init fails
         makeRequest(sites_[siteIdx].startingResource, siteIdx, lock);
@@ -374,7 +374,7 @@ ValidatorSite::onTimer(std::size_t siteIdx, error_code const& ec)
         onSiteFetch(
             boost::system::error_code{-1, boost::system::generic_category()},
             {},
-            detail::response_type{},
+            detail::ResponseType{},
             siteIdx);
     }
 }
@@ -388,7 +388,7 @@ ValidatorSite::parseJsonResponse(
     json::Value const body = [&res, siteIdx, this]() {
         json::Reader r;
         json::Value body;
-        if (!r.parse(res.data(), body))
+        if (!r.parse(res, body))
         {
             JLOG(j_.warn()) << "Unable to parse JSON response from  "
                             << sites_[siteIdx].activeResource->uri;
@@ -439,7 +439,7 @@ ValidatorSite::parseJsonResponse(
 
     sites_[siteIdx].lastRefreshStatus.emplace(
         Site::Status{
-            .refreshed = clock_type::now(),
+            .refreshed = ClockType::now(),
             .disposition = applyResult.bestDisposition(),
             .message = ""});
 
@@ -493,13 +493,13 @@ ValidatorSite::parseJsonResponse(
             1min,
             std::chrono::minutes{24h});
         sites_[siteIdx].refreshInterval = refresh;
-        sites_[siteIdx].nextRefresh = clock_type::now() + sites_[siteIdx].refreshInterval;
+        sites_[siteIdx].nextRefresh = ClockType::now() + sites_[siteIdx].refreshInterval;
     }
 }
 
 std::shared_ptr<ValidatorSite::Site::Resource>
 ValidatorSite::processRedirect(
-    detail::response_type const& res,
+    detail::ResponseType const& res,
     std::size_t siteIdx,
     std::scoped_lock<std::mutex> const& sitesLock)
 {
@@ -541,24 +541,24 @@ ValidatorSite::processRedirect(
 void
 ValidatorSite::onSiteFetch(
     boost::system::error_code const& ec,
-    endpoint_type const& endpoint,
-    detail::response_type const& res,
+    EndpointType const& endpoint,
+    detail::ResponseType const& res,
     std::size_t siteIdx)
 {
     std::scoped_lock lockSites{sitesMutex_};
     {
-        if (endpoint != endpoint_type{})
+        if (endpoint != EndpointType{})
             sites_[siteIdx].lastRequestEndpoint = endpoint;
         JLOG(j_.debug()) << "Got completion for " << sites_[siteIdx].activeResource->uri << " "
                          << endpoint;
         auto onError = [&](std::string const& errMsg, bool retry) {
             sites_[siteIdx].lastRefreshStatus.emplace(
                 Site::Status{
-                    .refreshed = clock_type::now(),
+                    .refreshed = ClockType::now(),
                     .disposition = ListDisposition::Invalid,
                     .message = errMsg});
             if (retry)
-                sites_[siteIdx].nextRefresh = clock_type::now() + kErrorRetryInterval;
+                sites_[siteIdx].nextRefresh = ClockType::now() + kErrorRetryInterval;
 
             // See if there's a copy saved locally from last time we
             // saw the list.
@@ -650,7 +650,7 @@ ValidatorSite::onTextFetch(
             JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
             sites_[siteIdx].lastRefreshStatus.emplace(
                 Site::Status{
-                    .refreshed = clock_type::now(),
+                    .refreshed = ClockType::now(),
                     .disposition = ListDisposition::Invalid,
                     .message = ex.what()});
         }

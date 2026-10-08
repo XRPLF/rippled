@@ -4,6 +4,7 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -36,12 +37,12 @@ namespace xrpl {
 //     state:        array of state nodes
 //     marker:       resume point, if any
 json::Value
-doLedgerData(RPC::JsonContext& context)
+doLedgerData(rpc::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
     auto const& params = context.params;
 
-    auto jvResult = RPC::lookupLedger(lpLedger, context);
+    auto jvResult = rpc::lookupLedger(lpLedger, context);
     if (!lpLedger)
         return jvResult;
 
@@ -51,14 +52,14 @@ doLedgerData(RPC::JsonContext& context)
     {
         json::Value const& jMarker = params[jss::marker];
         if (!(jMarker.isString() && key.parseHex(jMarker.asString())))
-            return RPC::expectedFieldError(jss::marker, "valid");
+            return rpc::expectedFieldError(jss::marker, "valid");
     }
 
     bool isBinary = false;
     if (params.isMember(jss::binary))
     {
         if (!params[jss::binary].isBool())
-            return RPC::expectedFieldError(jss::binary, "boolean");
+            return rpc::expectedFieldError(jss::binary, "boolean");
         isBinary = params[jss::binary].asBool();
     }
 
@@ -67,12 +68,12 @@ doLedgerData(RPC::JsonContext& context)
     {
         json::Value const& jLimit = params[jss::limit];
         if (!jLimit.isIntegral())
-            return RPC::expectedFieldError(jss::limit, "integer");
+            return rpc::expectedFieldError(jss::limit, "integer");
 
         limit = jLimit.asInt();
     }
 
-    auto maxLimit = RPC::Tuning::pageLength(isBinary);
+    auto maxLimit = rpc::tuning::pageLength(isBinary);
     if ((limit < 0) || ((limit > maxLimit) && (!isUnlimited(context.role))))
         limit = maxLimit;
 
@@ -86,11 +87,11 @@ doLedgerData(RPC::JsonContext& context)
             *lpLedger, &context, isBinary ? static_cast<int>(LedgerFill::Options::Binary) : 0));
     }
 
-    auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
+    auto [rpcStatus, type] = rpc::chooseLedgerEntryType(params);
     if (rpcStatus)
     {
         jvResult.clear();
-        rpcStatus.inject(jvResult);
+        rpc::injectSpecError(jvResult, rpcStatus);
         return jvResult;
     }
     json::Value& nodes = jvResult[jss::state];
@@ -131,29 +132,29 @@ doLedgerData(RPC::JsonContext& context)
 }
 
 std::pair<org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status>
-doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context)
+doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context)
 {
     org::xrpl::rpc::v1::GetLedgerDataRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerDataResponse response;
     grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (auto status = RPC::ledgerFromRequest(ledger, context))
+    if (auto status = rpc::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
-        if (status.toErrorCode() == RpcInvalidParams)
+        if (status == RpcInvalidParams)
         {
-            errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message);
         }
         else
         {
-            errorStatus = grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::NOT_FOUND, status.message);
         }
         return {response, errorStatus};
     }
 
-    uint256 startKey;
-    if (auto key = uint256::fromVoidChecked(request.marker()))
+    UInt256 startKey;
+    if (auto key = UInt256::fromVoidChecked(request.marker()))
     {
         startKey = *key;
     }
@@ -166,7 +167,7 @@ doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
     auto e = ledger->sles.end();
     if (!request.end_marker().empty())
     {
-        auto const key = uint256::fromVoidChecked(request.end_marker());
+        auto const key = UInt256::fromVoidChecked(request.end_marker());
 
         if (!key)
             return {response, {grpc::StatusCode::INVALID_ARGUMENT, "end marker malformed"}};
@@ -177,7 +178,7 @@ doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
         e = ledger->sles.upperBound(*key);
     }
 
-    int maxLimit = RPC::Tuning::pageLength(true);
+    int maxLimit = rpc::tuning::pageLength(true);
 
     for (auto i = ledger->sles.upperBound(startKey); i != e; ++i)
     {

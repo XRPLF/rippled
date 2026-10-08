@@ -139,14 +139,15 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
         // Use small Number mantissas for the life of this test.
         NumberMantissaScaleGuard const sg{xrpl::MantissaRange::MantissaScale::Small};
 
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas
-        Env env{
-            *this,
-            features - featureSingleAssetVault - featureLendingProtocol,
-            arg.noLog ? std::make_unique<CaptureLogs>(&logs) : nullptr};
-
         auto const [asset1, asset2] = arg.pool ? *arg.pool : std::make_pair(XRP(10000), USD(10000));
+
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas. MPTokensV2 enables them too, so keep it for MPT pools
+        // only, which require it.
+        auto envFeatures = features - featureSingleAssetVault - featureLendingProtocol;
+        if (!asset1.holds<MPTIssue>() && !asset2.holds<MPTIssue>())
+            envFeatures = envFeatures - featureMPTokensV2;
+        Env env{*this, envFeatures, arg.noLog ? std::make_unique<CaptureLogs>(&logs) : nullptr};
         auto toFund = [&](STAmount const& a) -> STAmount {
             if (a.native())
             {
@@ -197,7 +198,7 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
 XRPAmount
 AMMTest::reserve(jtx::Env& env, std::uint32_t count)
 {
-    return env.current()->fees().accountReserve(count);
+    return env.current()->fees().accountReserve(count, 1);
 }
 
 XRPAmount

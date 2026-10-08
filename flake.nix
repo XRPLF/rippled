@@ -10,12 +10,25 @@
       url = "github:NixOS/nixpkgs/9cd98386a38891d1074fc18036b842dc4416f562";
       flake = false;
     };
+    # Pinned Rust toolchains, delivered from the Nix store. Lets the Nix CI
+    # image and dev shell honour the single `rust-toolchain.toml` pin (shared
+    # with the rustup-based non-Nix runners) while staying hermetic — the
+    # toolchain lands in the image's Nix closure and is locked by flake.lock.
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
-    { nixpkgs, nixpkgs-custom-glibc, ... }:
+    {
+      nixpkgs,
+      nixpkgs-custom-glibc,
+      rust-overlay,
+      ...
+    }:
     let
-      forEachSystem = import ./nix/utils.nix { inherit nixpkgs nixpkgs-custom-glibc; };
+      forEachSystem = import ./nix/utils.nix { inherit nixpkgs nixpkgs-custom-glibc rust-overlay; };
     in
     {
       devShells = forEachSystem (import ./nix/devshell.nix);

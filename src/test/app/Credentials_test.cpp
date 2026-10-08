@@ -14,6 +14,7 @@
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/vault.h>
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -24,6 +25,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -425,7 +427,6 @@ struct Credentials_test : public beast::unit_test::Suite
         Account const subject{"subject"};
 
         {
-            using namespace jtx;
             Env env{*this, features};
 
             env.fund(XRP(5000), subject, issuer);
@@ -566,10 +567,27 @@ struct Credentials_test : public beast::unit_test::Suite
                 // End test
                 env.close();
             }
+
+            {
+                testcase("Credentials fail, subject is a pseudo-account.");
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create({.owner = subject, .asset = xrpIssue()});
+                env(tx);
+                env.close();
+
+                auto const sleVault = env.le(keylet);
+                if (!BEAST_EXPECT(sleVault))
+                    return;
+                Account const vaultPseudo{"vault", sleVault->at(sfAccount)};
+                auto const expectedResult =
+                    features[fixCleanup3_3_0] ? Ter(tecPSEUDO_ACCOUNT) : Ter(tesSUCCESS);
+
+                env(credentials::create(vaultPseudo, issuer, credType), expectedResult);
+                env.close();
+            }
         }
 
         {
-            using namespace jtx;
             Env env{*this, features};
 
             env.fund(XRP(5000), issuer);
@@ -583,7 +601,6 @@ struct Credentials_test : public beast::unit_test::Suite
         }
 
         {
-            using namespace jtx;
             Env env{*this, features};
 
             auto const reserve = drops(env.current()->fees().reserve);
@@ -638,8 +655,8 @@ struct Credentials_test : public beast::unit_test::Suite
         {
             Env env{*this, features};
 
-            env.fund(drops(env.current()->fees().accountReserve(1)), issuer);
-            env.fund(drops(env.current()->fees().accountReserve(0)), subject);
+            env.fund(drops(env.current()->fees().accountReserve(1, 1)), issuer);
+            env.fund(drops(env.current()->fees().accountReserve(0, 1)), subject);
             env.close();
 
             {
@@ -1157,6 +1174,7 @@ struct Credentials_test : public beast::unit_test::Suite
         testCredentialsDelete(all);
         testCreateFailed(all);
         testCreateFailed(all - fixDirectoryLimit);
+        testCreateFailed(all - fixCleanup3_3_0);
         testAcceptFailed(all);
         testDeleteFailed(all);
         testFeatureFailed(all - featureCredentials);

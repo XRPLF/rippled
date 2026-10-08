@@ -2,9 +2,13 @@
 
 #include <xrpl/beast/insight/Collector.h>
 
+#include <memory>
+
 namespace beast::insight {
 
-/** A Collector which does not collect metrics. */
+/**
+ * A Collector which does not collect metrics.
+ */
 class NullCollector : public Collector
 {
 public:

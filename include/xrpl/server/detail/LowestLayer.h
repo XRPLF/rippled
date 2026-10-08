@@ -1,23 +1,14 @@
 #pragma once
 
-#if BOOST_VERSION >= 107000
 #include <boost/beast/core/stream_traits.hpp>
-#else
-#include <boost/beast/core/type_traits.hpp>
-#endif
 
 namespace xrpl {
 
-// Before boost 1.70, get_lowest_layer required an explicit template parameter
 template <class T>
 decltype(auto)
 getLowestLayer(T& t) noexcept
 {
-#if BOOST_VERSION >= 107000
     return boost::beast::get_lowest_layer(t);
-#else
-    return t.lowest_layer();
-#endif
 }
 
 }  // namespace xrpl

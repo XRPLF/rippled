@@ -7,6 +7,7 @@
 
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
+#include <soci/boost-optional.h>  // IWYU pragma: keep
 #include <soci/into.h>
 #include <soci/session.h>
 #include <soci/use.h>

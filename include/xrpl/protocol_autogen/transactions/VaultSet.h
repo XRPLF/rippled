@@ -21,7 +21,7 @@ class VaultSetBuilder;
  * Type: ttVAULT_SET (66)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: MustModifyVault
+ * Privileges: Privilege::MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultSetBuilder to construct new transactions.
@@ -177,7 +177,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfVaultID (SoeRequired)

@@ -5,6 +5,7 @@
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
@@ -19,6 +20,8 @@
 #include <test/jtx/require.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
@@ -60,8 +63,7 @@ namespace xrpl::test {
 
 class TxQPosNegFlows_test : public beast::unit_test::Suite
 {
-    // Same as corresponding values from TxQ.h
-    static constexpr FeeLevel64 kBaseFeeLevel{256};
+    static constexpr FeeLevel64 kBaseFeeLevel{TxQ::kBaseLevel};
     static constexpr FeeLevel64 kMinEscalationFeeLevel = kBaseFeeLevel * 500;
 
     static void
@@ -406,11 +408,11 @@ public:
 
         env(noop(alice), ticket::Use(tkt1 - 2), Ter(tefNO_TICKET));
         env(noop(alice), ticket::Use(tkt1 - 1), Ter(terPRE_TICKET));
-        env.require(Owners(alice, 0), tickets(alice, 0));
+        env.require(Owners(alice, 0), Tickets(alice, 0));
         checkMetrics(*this, env, 1, std::nullopt, 4, 3);
 
         env.close();
-        env.require(Owners(alice, 250), tickets(alice, 250));
+        env.require(Owners(alice, 250), Tickets(alice, 250));
         checkMetrics(*this, env, 0, 8, 1, 4);
         BEAST_EXPECT(env.seq(alice) == tkt1 + 250);
 
@@ -443,7 +445,7 @@ public:
         //  o Get tefNO_TICKET if the ticket has already been used.
         //  o Get telCAN_NOT_QUEUE_FEE if the transaction is still in the queue.
         env.close();
-        env.require(Owners(alice, 240), tickets(alice, 240));
+        env.require(Owners(alice, 240), Tickets(alice, 240));
 
         // These 4 went straight to the ledger:
         env(noop(alice), ticket::Use(tkt1 + 1), Ter(tefNO_TICKET));
@@ -508,7 +510,7 @@ public:
         //  o Get telCAN_NOT_QUEUE_FEE if the transaction is still in
         //    the queue.
         env.close();
-        env.require(Owners(alice, 237), tickets(alice, 237));
+        env.require(Owners(alice, 237), Tickets(alice, 237));
 
         // The four ticket-based transactions went out first, since
         // they paid the highest fee.
@@ -549,7 +551,7 @@ public:
         checkMetrics(*this, env, 10, 12, 7, 6);
 
         env.close();
-        env.require(Owners(alice, 231), tickets(alice, 231));
+        env.require(Owners(alice, 231), Tickets(alice, 231));
 
         // These three ticket-based transactions escaped the queue.
         env(noop(alice), ticket::Use(tkt1 + 14), Ter(tefNO_TICKET));
@@ -599,7 +601,7 @@ public:
         env(noop(alice), ticket::Use(tkt250 - 4), Fee((baseFee * 2.2 * 1.25) + 1), queued);
 
         env.close();
-        env.require(Owners(alice, 227), tickets(alice, 227));
+        env.require(Owners(alice, 227), Tickets(alice, 227));
 
         // Verify that all remaining transactions made it out of the TxQ.
         env(noop(alice), ticket::Use(tkt1 + 18), Ter(tefNO_TICKET));
@@ -1176,7 +1178,7 @@ public:
         // bankrupt Alice. Fails, because an account can't have
         // more than the minimum reserve in flight before the
         // last queued transaction
-        aliceFee = env.le(alice)->getFieldAmount(sfBalance).xrp().drops() - (62);
+        aliceFee = env.le(alice)->getFieldAmount(sfBalance).xrp().drops() - 62;
         env(noop(alice), Seq(aliceSeq), Fee(aliceFee), Ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(*this, env, 4, 10, 6, 5);
 
@@ -1666,7 +1668,7 @@ public:
         // up to Alice's reserve.
         env(offer(bob, drops(5000), usd(5000)),
             Fee(openLedgerCost(env)),
-            Require(Balance(alice, drops(250)), Owners(alice, 1), lines(alice, 1)));
+            Require(Balance(alice, drops(250)), Owners(alice, 1), Lines(alice, 1)));
         checkMetrics(*this, env, 4, 6, 5, 3);
 
         // Try adding a new transaction.
@@ -2336,6 +2338,79 @@ public:
     }
 
     void
+    testSponsorTxCannotQueue()
+    {
+        using namespace jtx;
+        testcase("disallow sponsored transaction from being queued");
+
+        Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
+
+        auto sponsor = Account("sponsor");
+        auto sponsee = Account("sponsee");
+        auto filler = Account("filler");
+
+        env.fund(XRP(50000), noripple(sponsor, sponsee));
+        env.close();
+        env.fund(XRP(50000), noripple(filler));
+        env.close();
+
+        fillQueue(env, filler);
+        checkMetrics(*this, env, 0, 6, 4, 3);
+
+        // Sponsored transactions are not allowed to be queued.
+        env(noop(sponsee),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(telCAN_NOT_QUEUE));
+        checkMetrics(*this, env, 0, 6, 4, 3);
+
+        // Sponsored transactions may still apply directly if they pay the
+        // open ledger fee. They just cannot be held in the queue.
+        env(noop(sponsee),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Fee(openLedgerCost(env)),
+            Ter(tesSUCCESS));
+        checkMetrics(*this, env, 0, 6, 5, 3);
+    }
+
+    void
+    testDelegateTxCannotQueue()
+    {
+        using namespace jtx;
+        testcase("disallow delegate transaction from being queued");
+
+        Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+
+        env.fund(XRP(50000), alice, bob);
+        env.close();
+        env.fund(XRP(50000), carol);
+        env.close();
+
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+
+        fillQueue(env, alice);
+        checkMetrics(*this, env, 0, 8, 5, 4);
+
+        // Delegated transactions are not allowed to be queued.
+        env(pay(alice, carol, drops(1)), delegate::As(bob), Ter(telCAN_NOT_QUEUE));
+        checkMetrics(*this, env, 0, 8, 5, 4);
+
+        // Delegated transactions may still apply directly if they pay the
+        // open ledger fee. They just cannot be held in the queue.
+        env(pay(alice, carol, drops(1)),
+            delegate::As(bob),
+            Fee(openLedgerCost(env)),
+            Ter(tesSUCCESS));
+        checkMetrics(*this, env, 0, 8, 6, 4);
+    }
+
+    void
     testConsequences()
     {
         using namespace jtx;
@@ -2496,7 +2571,7 @@ public:
         auto fee = env.rpc("fee");
 
         if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-            BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+            BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
         {
             auto const& result = fee[jss::result];
             BEAST_EXPECT(
@@ -2525,7 +2600,7 @@ public:
         fee = env.rpc("fee");
 
         if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-            BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+            BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
         {
             auto const& result = fee[jss::result];
             BEAST_EXPECT(
@@ -2814,7 +2889,7 @@ public:
         checkMetrics(*this, env, 5, std::nullopt, 7, 6);
         {
             auto aliceStat = txQ.getAccountTxs(alice.id());
-            SeqProxy seq = SeqProxy::sequence(aliceSeq);
+            SeqProxy seq = SeqProxy::rawSequence(aliceSeq);
             BEAST_EXPECT(aliceStat.size() == 5);
             for (auto const& tx : aliceStat)
             {
@@ -3150,7 +3225,7 @@ public:
 
         {
             auto const info = env.rpc("json", "account_info", to_string(prevLedgerWithQueue));
-            BEAST_EXPECT(info.isMember(jss::result) && RPC::containsError(info[jss::result]));
+            BEAST_EXPECT(info.isMember(jss::result) && rpc::containsError(info[jss::result]));
         }
 
         env.close();
@@ -3679,7 +3754,7 @@ public:
             checkMetrics(*this, env, 2, 24, 16, 12);
             auto const aliceQueue = env.app().getTxQ().getAccountTxs(alice.id());
             BEAST_EXPECT(aliceQueue.size() == 2);
-            SeqProxy seq = SeqProxy::sequence(aliceSeq);
+            SeqProxy seq = SeqProxy::rawSequence(aliceSeq);
             for (auto const& tx : aliceQueue)
             {
                 BEAST_EXPECT(tx.seqProxy == seq);
@@ -4555,7 +4630,7 @@ public:
             auto const fee = env.rpc("fee");
 
             if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-                BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+                BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
 
@@ -4613,7 +4688,7 @@ public:
             auto const fee = env.rpc("fee");
 
             if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-                BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+                BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
 
@@ -4662,6 +4737,8 @@ public:
         testBlockersSeq();
         testBlockersTicket();
         testInFlightBalance();
+        testSponsorTxCannotQueue();
+        testDelegateTxCannotQueue();
         testConsequences();
     }
 

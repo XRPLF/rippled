@@ -14,11 +14,9 @@
 include_guard(GLOBAL)
 include(CompilationEnv)
 
-if(NOT DEFINED SANITIZERS)
-    set(SANITIZERS_ENABLED FALSE)
+if(NOT SANITIZERS_ENABLED)
     return()
 endif()
-set(SANITIZERS_ENABLED TRUE)
 
 message(STATUS "=== Configuring Sanitizers ===")
 message(STATUS "  SANITIZERS: ${SANITIZERS}")
@@ -79,19 +77,24 @@ if(is_clang)
     message(STATUS "  Ignorelist: ${ignorelist_path}")
 endif()
 
-# Define SANITIZERS macro for BuildInfo.cpp
+# Define the SANITIZERS macro for BuildInfo.cpp, plus one of XRPL_ASAN,
+# XRPL_TSAN and XRPL_UBSAN per active sanitizer, so that code can test for a
+# specific one with #ifdef instead of parsing the dot-joined SANITIZERS string.
 set(sanitizers_list)
 if(SANITIZERS MATCHES "address")
     set(enable_asan ON)
     list(APPEND sanitizers_list "ASAN")
+    target_compile_definitions(common INTERFACE XRPL_ASAN)
 endif()
 if(SANITIZERS MATCHES "thread")
     set(enable_tsan ON)
     list(APPEND sanitizers_list "TSAN")
+    target_compile_definitions(common INTERFACE XRPL_TSAN)
 endif()
 if(SANITIZERS MATCHES "undefinedbehavior")
     set(enable_ubsan ON)
     list(APPEND sanitizers_list "UBSAN")
+    target_compile_definitions(common INTERFACE XRPL_UBSAN)
 endif()
 
 if(sanitizers_list)

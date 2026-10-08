@@ -1,6 +1,17 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -25,34 +36,37 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     static TER
     defaultLoan(
         ApplyView& view,
-        SLE::ref loanSle,
-        SLE::ref brokerSle,
-        SLE::ref vaultSle,
+        SLE::Ref loanSle,
+        SLE::Ref brokerSle,
+        SLE::Ref vaultSle,
         Asset const& vaultAsset,
         beast::Journal j);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     static TER
     impairLoan(
         ApplyView& view,
-        SLE::ref loanSle,
-        SLE::ref vaultSle,
+        SLE::Ref loanSle,
+        SLE::Ref vaultSle,
         Asset const& vaultAsset,
         beast::Journal j);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     [[nodiscard]] static TER
     unimpairLoan(
         ApplyView& view,
-        SLE::ref loanSle,
-        SLE::ref vaultSle,
+        SLE::Ref loanSle,
+        SLE::Ref vaultSle,
         Asset const& vaultAsset,
         beast::Journal j);
 
@@ -60,7 +74,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

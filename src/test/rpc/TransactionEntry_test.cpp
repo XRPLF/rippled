@@ -17,7 +17,6 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -61,11 +60,34 @@ class TransactionEntry_test : public beast::unit_test::Suite
         }
 
         {
+            // No ledger selects the current one, not any ledger.
+            json::Value params{json::ValueType::Object};
+            params[jss::tx_hash] =
+                "E2FE8D4AF3FCC3944DDF6CD8CDDC5E3F0AD50863EF8919AFEF10CB6408CD4D05";
+            auto const result = env.client().invoke("transaction_entry", params)[jss::result];
+            BEAST_EXPECT(result[jss::error] == "notYetImplemented");
+            BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result.isMember(jss::ledger_current_index));
+            BEAST_EXPECT(!result.isMember(jss::ledger_hash));
+            BEAST_EXPECT(result[jss::validated] == false);
+        }
+
+        {
             json::Value params{json::ValueType::Object};
             params[jss::ledger] = "closed";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
             BEAST_EXPECT(!result[jss::ledger_hash].asString().empty());
+            BEAST_EXPECT(result[jss::error] == "malformedRequest");
+            BEAST_EXPECT(result[jss::status] == "error");
+        }
+
+        for (auto const type : {json::ValueType::Object, json::ValueType::Array})
+        {
+            json::Value params{json::ValueType::Object};
+            params[jss::ledger] = "closed";
+            params[jss::tx_hash] = json::Value{type};
+            auto const result = env.client().invoke("transaction_entry", params)[jss::result];
             BEAST_EXPECT(result[jss::error] == "malformedRequest");
             BEAST_EXPECT(result[jss::status] == "error");
         }
@@ -184,7 +206,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
             {
                 json::Value expected;
                 json::Reader().parse(expectedJson, expected);
-                if (RPC::containsError(expected))
+                if (rpc::containsError(expected))
                     Throw<std::runtime_error>("Internal JSONRPC_test error.  Bad test JSON.");
 
                 for (auto memberIt = expected.begin(); memberIt != expected.end(); memberIt++)
@@ -353,7 +375,7 @@ public:
     run() override
     {
         testBadInput();
-        forAllApiVersions(std::bind_front(&TransactionEntry_test::testRequest, this));
+        forAllApiVersions([this](unsigned apiVersion) { testRequest(apiVersion); });
     }
 };
 

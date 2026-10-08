@@ -4,32 +4,41 @@
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Scheduler.h>
 
-#include <nudb/store.hpp>
+#include <nudb/context.hpp>
+
+#include <cstddef>
+#include <memory>
+#include <string>
 
 namespace xrpl {
 class Section;
 }  // namespace xrpl
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
-/** Base class for backend factories. */
+/**
+ * Base class for backend factories.
+ */
 class Factory
 {
 public:
     virtual ~Factory() = default;
 
-    /** Retrieve the name of this factory. */
+    /**
+     * Retrieve the name of this factory.
+     */
     [[nodiscard]] virtual std::string
     getName() const = 0;
 
-    /** Create an instance of this factory's backend.
-
-        @param keyBytes The fixed number of bytes per key.
-        @param parameters A set of key/value configuration pairs.
-        @param burstSize Backend burst size in bytes.
-        @param scheduler The scheduler to use for running tasks.
-        @return A pointer to the Backend object.
-    */
+    /**
+     * Create an instance of this factory's backend.
+     *
+     * @param keyBytes The fixed number of bytes per key.
+     * @param parameters A set of key/value configuration pairs.
+     * @param burstSize Backend burst size in bytes.
+     * @param scheduler The scheduler to use for running tasks.
+     * @return A pointer to the Backend object.
+     */
     virtual std::unique_ptr<Backend>
     createInstance(
         size_t keyBytes,
@@ -38,15 +47,16 @@ public:
         Scheduler& scheduler,
         beast::Journal journal) = 0;
 
-    /** Create an instance of this factory's backend.
-
-        @param keyBytes The fixed number of bytes per key.
-        @param parameters A set of key/value configuration pairs.
-        @param burstSize Backend burst size in bytes.
-        @param scheduler The scheduler to use for running tasks.
-        @param context The context used by database.
-        @return A pointer to the Backend object.
-    */
+    /**
+     * Create an instance of this factory's backend.
+     *
+     * @param keyBytes The fixed number of bytes per key.
+     * @param parameters A set of key/value configuration pairs.
+     * @param burstSize Backend burst size in bytes.
+     * @param scheduler The scheduler to use for running tasks.
+     * @param context The context used by database.
+     * @return A pointer to the Backend object.
+     */
     virtual std::unique_ptr<Backend>
     createInstance(
         size_t keyBytes,
@@ -60,4 +70,4 @@ public:
     }
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

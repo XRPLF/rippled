@@ -67,7 +67,7 @@ SetRegularKey::doApply()
     else
     {
         // Account has disabled master key and no multi-signer signer list.
-        if (sle->isFlag(lsfDisableMaster) && !view().peek(keylet::signers(accountID_)))
+        if (sle->isFlag(lsfDisableMaster) && !view().peek(keylet::signerList(accountID_)))
             return tecNO_ALTERNATIVE_KEY;
 
         sle->makeFieldAbsent(sfRegularKey);
@@ -79,7 +79,7 @@ SetRegularKey::doApply()
 }
 
 void
-SetRegularKey::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+SetRegularKey::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -8,8 +8,10 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/entries/AmendmentsEntry.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
+#include <xrpl/ledger/entries/NegativeUNLEntry.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
@@ -25,7 +27,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
-#include <memory>
 
 namespace xrpl {
 
@@ -123,6 +124,12 @@ Change::preclaim(PreclaimContext const& ctx)
                     ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temDISABLED;
             }
+            // The ttFEE transaction format defines these fields as optional,
+            // but they are unconditionally forbidden until FeeVoteImpl is
+            // updated to populate them (SmartEscrow behavioral port).
+            if (ctx.tx.isFieldPresent(sfGasLimit) || ctx.tx.isFieldPresent(sfBytecodeSizeLimit) ||
+                ctx.tx.isFieldPresent(sfGasPrice))
+                return temDISABLED;
             return tesSUCCESS;
         case ttAMENDMENT:
         case ttUNL_MODIFY:
@@ -160,16 +167,14 @@ Change::preCompute()
 TER
 Change::applyAmendment()
 {
-    uint256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
+    UInt256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
 
-    auto const k = keylet::amendments();
-
-    SLE::pointer amendmentObject = view().peek(k);
+    AmendmentsEntryW amendmentObject(view(), j_);
 
     if (!amendmentObject)
     {
-        amendmentObject = std::make_shared<SLE>(k);
-        view().insert(amendmentObject);
+        amendmentObject.newSLE();
+        amendmentObject.insert();
     }
 
     STVector256 amendments = amendmentObject->getFieldV256(sfAmendments);
@@ -246,7 +251,7 @@ Change::applyAmendment()
         amendmentObject->setFieldArray(sfMajorities, newMajorities);
     }
 
-    view().update(amendmentObject);
+    amendmentObject.update();
 
     return tesSUCCESS;
 }
@@ -254,16 +259,14 @@ Change::applyAmendment()
 TER
 Change::applyFee()
 {
-    auto const k = keylet::fees();
-
-    SLE::pointer feeObject = view().peek(k);
+    FeeSettingsEntryW feeObject(view());
 
     if (!feeObject)
     {
-        feeObject = std::make_shared<SLE>(k);
-        view().insert(feeObject);
+        feeObject.newSLE();
+        feeObject.insert();
     }
-    auto set = [](SLE::pointer& feeObject, STTx const& tx, auto const& field) {
+    auto set = [](FeeSettingsEntryW& feeObject, STTx const& tx, auto const& field) {
         feeObject->at(field) = tx[field];
     };
     if (view().rules().enabled(featureXRPFees))
@@ -285,7 +288,7 @@ Change::applyFee()
         set(feeObject, ctx_.tx, sfReserveIncrement);
     }
 
-    view().update(feeObject);
+    feeObject.update();
 
     JLOG(j_.warn()) << "Fees have been changed";
     return tesSUCCESS;
@@ -326,12 +329,11 @@ Change::applyUNLModify()
     JLOG(j_.info()) << "N-UNL: applyUNLModify, " << (disabling ? "ToDisable" : "ToReEnable")
                     << " seq=" << seq << " validator data:" << strHex(validator);
 
-    auto const k = keylet::negativeUNL();
-    SLE::pointer negUnlObject = view().peek(k);
+    NegativeUNLEntryW negUnlObject(view(), j_);
     if (!negUnlObject)
     {
-        negUnlObject = std::make_shared<SLE>(k);
-        view().insert(negUnlObject);
+        negUnlObject.newSLE();
+        negUnlObject.insert();
     }
 
     bool const found = [&] {
@@ -404,12 +406,12 @@ Change::applyUNLModify()
         negUnlObject->setFieldVL(sfValidatorToReEnable, validator);
     }
 
-    view().update(negUnlObject);
+    negUnlObject.update();
     return tesSUCCESS;
 }
 
 void
-Change::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+Change::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
