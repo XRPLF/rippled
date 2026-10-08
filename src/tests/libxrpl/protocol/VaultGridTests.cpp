@@ -1,15 +1,11 @@
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STIssue.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
@@ -17,34 +13,15 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
+#include <protocol/VaultTestHelpers.h>
 
-#include <cstdint>
 #include <memory>
 #include <optional>
-#include <utility>
 
 namespace xrpl {
 namespace {
 
-std::shared_ptr<SLE>
-makeVault(
-    Asset const& asset,
-    Number const& assetsTotal,
-    std::optional<VaultVersion> version,
-    std::uint8_t scaleValue = kVaultDefaultIouScale)
-{
-    auto vault = std::make_shared<SLE>(keylet::vault(uint256(1)));
-    vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
-    vault->at(sfAssetsTotal) = assetsTotal;
-    if (!asset.integral())
-        vault->at(sfScale) = scaleValue;
-    if (version)
-        vault->at(sfLEVersion) = std::to_underlying(*version);
-    associateAsset(*vault, asset);
-    return vault;
-}
-
-TEST(VaultGrid, BaseAndLiveScale)
+TEST(VaultGrid, base_and_live_scale)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -66,7 +43,7 @@ TEST(VaultGrid, BaseAndLiveScale)
     EXPECT_EQ(getVaultBaseScale(coarsened), -6);
 }
 
-TEST(VaultGrid, PreV12BehaviorIsPreserved)
+TEST(VaultGrid, pre_v12_behavior_is_preserved)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -78,8 +55,7 @@ TEST(VaultGrid, PreV12BehaviorIsPreserved)
 
     auto const legacy = makeVault(iou, assetsTotal, VaultVersion::Legacy);
     int const expectedLive = getVaultScale(legacy);
-    int const expectedPosterior = getPosteriorVaultScale(legacy, onGrid);
-    STAmount const expectedLiveRound = roundToVaultScale(legacy, onGrid, downward);
+    int const expectedPosterior = detail::getPosteriorVaultScale(legacy, onGrid);
     STAmount const expectedPosteriorRound = roundToPosteriorVaultScale(legacy, dust, downward);
 
     for (auto const version :
@@ -90,14 +66,13 @@ TEST(VaultGrid, PreV12BehaviorIsPreserved)
         auto const vault = makeVault(iou, assetsTotal, version);
         EXPECT_EQ(getVaultScale(vault), expectedLive);
         EXPECT_EQ(getVaultBaseScale(vault), expectedLive);
-        EXPECT_EQ(getPosteriorVaultScale(vault, onGrid), expectedPosterior);
-        EXPECT_EQ(roundToVaultScale(vault, onGrid, downward), expectedLiveRound);
+        EXPECT_EQ(detail::getPosteriorVaultScale(vault, onGrid), expectedPosterior);
         EXPECT_EQ(roundToPosteriorVaultScale(vault, dust, downward), expectedPosteriorRound);
         EXPECT_EQ(checkOptionalVaultInflow(vault, overOpen), tesSUCCESS);
     }
 }
 
-TEST(VaultGrid, PreV12CreditClampFloorsPosteriorTotal)
+TEST(VaultGrid, pre_v12_credit_clamp_floors_posterior_total)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -116,18 +91,18 @@ TEST(VaultGrid, PreV12CreditClampFloorsPosteriorTotal)
     }
 }
 
-TEST(VaultGrid, IntegralScaleIsZero)
+TEST(VaultGrid, integral_scale_is_zero)
 {
     auto const vault = makeVault(xrpIssue(), Number{1'000}, VaultVersion::FixedPrecision, 0);
     STAmount const delta{xrpIssue(), 7};
 
     EXPECT_EQ(getVaultScale(vault), 0);
     EXPECT_EQ(getVaultBaseScale(vault), 0);
-    EXPECT_EQ(getPosteriorVaultScale(vault, delta), 0);
+    EXPECT_EQ(detail::getPosteriorVaultScale(vault, delta), 0);
     EXPECT_EQ(roundToPosteriorVaultScale(vault, delta, Number::RoundingMode::TowardsZero), delta);
 }
 
-TEST(VaultGrid, PosteriorScaleRoundsDelta)
+TEST(VaultGrid, posterior_scale_rounds_delta)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -136,14 +111,13 @@ TEST(VaultGrid, PosteriorScaleRoundsDelta)
     STAmount const delta{iou, Number{21, -6}};
 
     EXPECT_EQ(getVaultScale(vault), -6);
-    EXPECT_EQ(getPosteriorVaultScale(vault, delta), -5);
-    EXPECT_EQ(roundToVaultScale(vault, delta, Number::RoundingMode::TowardsZero), delta);
+    EXPECT_EQ(detail::getPosteriorVaultScale(vault, delta), -5);
     EXPECT_EQ(
         roundToPosteriorVaultScale(vault, delta, Number::RoundingMode::TowardsZero),
         STAmount(iou, Number{20, -6}));
 }
 
-TEST(VaultGrid, PosteriorScaleRejectsDustAtCallSite)
+TEST(VaultGrid, posterior_scale_rejects_dust_at_call_site)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -154,7 +128,7 @@ TEST(VaultGrid, PosteriorScaleRejectsDustAtCallSite)
         roundToPosteriorVaultScale(vault, dust, Number::RoundingMode::TowardsZero), beast::kZero);
 }
 
-TEST(VaultGrid, PosteriorOutflowCanRefineScale)
+TEST(VaultGrid, posterior_outflow_can_refine_scale)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -163,11 +137,11 @@ TEST(VaultGrid, PosteriorOutflowCanRefineScale)
     STAmount const delta{iou, -Number{11, -6}};
 
     EXPECT_EQ(getVaultScale(vault), -5);
-    EXPECT_EQ(getPosteriorVaultScale(vault, delta), -6);
+    EXPECT_EQ(detail::getPosteriorVaultScale(vault, delta), -6);
     EXPECT_EQ(roundToPosteriorVaultScale(vault, delta, Number::RoundingMode::TowardsZero), delta);
 }
 
-TEST(VaultGrid, OptionalInflowCapacityBoundaries)
+TEST(VaultGrid, optional_inflow_capacity_boundaries)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
@@ -193,7 +167,7 @@ TEST(VaultGrid, OptionalInflowCapacityBoundaries)
     EXPECT_EQ(checkOptionalVaultInflow(coarsening, coarseningDelta), tecLIMIT_EXCEEDED);
 }
 
-TEST(VaultGrid, OptionalInflowIncludesYieldUnrealized)
+TEST(VaultGrid, optional_inflow_includes_yield_unrealized)
 {
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};

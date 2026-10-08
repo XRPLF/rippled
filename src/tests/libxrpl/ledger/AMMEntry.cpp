@@ -10,7 +10,7 @@
 
 namespace xrpl::test {
 
-TEST(AMMEntryTests, Constructors)
+TEST(AMMEntryTests, constructors)
 {
     EntryTestEnv e;
 
@@ -19,7 +19,7 @@ TEST(AMMEntryTests, Constructors)
 
     expectKeylet<AMMEntry>(e, keylet::amm(xrp, usd), "amm(asset, asset)", xrp, usd);
 
-    expectKeylet<AMMEntry>(e, keylet::amm(e.someID()), "amm(uint256)", e.someID());
+    expectKeylet<AMMEntry>(e, keylet::amm(e.someID()), "amm(UInt256)", e.someID());
 }
 
 }  // namespace xrpl::test

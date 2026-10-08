@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
@@ -83,7 +84,7 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-std::expected<uint256, TER>
+std::expected<UInt256, TER>
 determineBrokerID(ReadView const& view, STTx const& tx)
 {
     // If the broker ID was provided in the transaction, that's all we
@@ -158,10 +159,10 @@ determineAsset(
 
 std::expected<STAmount, TER>
 determineClawAmount(
-    SLE const& sleBroker,
+    SLE::ConstRef sleBroker,
     Asset const& vaultAsset,
     std::optional<STAmount> const& amount,
-    SLE::const_ref vaultSle,
+    SLE::ConstRef vaultSle,
     Rules const& rules)
 {
     auto const maxClawAmount = [&]() {
@@ -169,17 +170,19 @@ determineClawAmount(
             if (rules.enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(
-                    sleBroker[sfDebtTotal], TenthBips32(sleBroker[sfCoverRateMinimum]), vaultSle);
+                    sleBroker->at(sfDebtTotal),
+                    TenthBips32(sleBroker->at(sfCoverRateMinimum)),
+                    vaultSle);
             }
 
             // Always round the minimum required up
             NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
             return tenthBipsOfValue(
-                sleBroker[sfDebtTotal], TenthBips32(sleBroker[sfCoverRateMinimum]));
+                sleBroker->at(sfDebtTotal), TenthBips32(sleBroker->at(sfCoverRateMinimum)));
         }();
         // The subtraction probably won't round, but round down if it does.
         NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
-        return sleBroker[sfCoverAvailable] - minRequiredCover;
+        return sleBroker->at(sfCoverAvailable) - minRequiredCover;
     }();
     if (maxClawAmount <= beast::kZero)
         return std::unexpected(tecINSUFFICIENT_FUNDS);
@@ -187,12 +190,23 @@ determineClawAmount(
     // Use the vaultAsset here, because it will be the right type in all
     // circumstances. The amount may be an IOU indicating the pseudo-account's
     // asset, which is correct, but not what is needed here.
-    if (!amount || *amount == beast::kZero)
-        return STAmount{vaultAsset, maxClawAmount};
-    Number const magnitude{*amount};
-    if (magnitude > maxClawAmount)
-        return STAmount{vaultAsset, maxClawAmount};
-    return STAmount{vaultAsset, magnitude};
+    STAmount requested = [&] {
+        if (!amount || *amount == beast::kZero)
+            return STAmount{vaultAsset, maxClawAmount};
+        Number const magnitude{*amount};
+        if (magnitude > maxClawAmount)
+            return STAmount{vaultAsset, maxClawAmount};
+        return STAmount{vaultAsset, magnitude};
+    }();
+
+    if (getVaultVersion(vaultSle) != VaultVersion::FixedPrecision)
+        return requested;
+
+    STAmount rounded = debitToPosteriorBrokerCoverScale(
+        vaultSle, sleBroker, requested, Number::RoundingMode::TowardsZero);
+    if (rounded == beast::kZero)
+        return std::unexpected(tecPRECISION_LOSS);
+    return rounded;
 }
 
 template <ValidIssueType T>
@@ -294,7 +308,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     }
 
     auto const findClawAmount =
-        determineClawAmount(*sleBroker, vaultAsset, amount, vault, ctx.view.rules());
+        determineClawAmount(sleBroker, vaultAsset, amount, vault, ctx.view.rules());
     if (!findClawAmount)
     {
         JLOG(ctx.j.warn()) << "LoanBroker cover is already at minimum.";
@@ -302,9 +316,15 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     }
     STAmount const& clawAmount = *findClawAmount;
 
-    if (auto const ret = canApplyToBrokerCover(
-            ctx.view, sleBroker, vaultAsset, clawAmount, ctx.j, "LoanBrokerCoverClawback"))
-        return ret;
+    // FixedPrecision outflows already rounded at the posterior exponent; the
+    // live CoverAvailable scale used by canApplyToBrokerCover would reject a
+    // re-fining clawback as sub-ULP.
+    if (getVaultVersion(vault) != VaultVersion::FixedPrecision)
+    {
+        if (auto const ret = canApplyToBrokerCover(
+                ctx.view, sleBroker, vaultAsset, clawAmount, ctx.j, "LoanBrokerCoverClawback"))
+            return ret;
+    }
 
     // Explicitly check the balance of the trust line / MPT to make sure the
     // balance is actually there. It should always match `sfCoverAvailable`, so
@@ -357,7 +377,7 @@ LoanBrokerCoverClawback::doApply()
     auto const vaultAsset = vault->at(sfAsset);
 
     auto const findClawAmount =
-        determineClawAmount(*sleBroker, vaultAsset, amount, vault, view().rules());
+        determineClawAmount(sleBroker, vaultAsset, amount, vault, view().rules());
     if (!findClawAmount)
         return tecINTERNAL;  // LCOV_EXCL_LINE
     STAmount const& clawAmount = *findClawAmount;
@@ -376,7 +396,7 @@ LoanBrokerCoverClawback::doApply()
 }
 
 void
-LoanBrokerCoverClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanBrokerCoverClawback::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -79,7 +79,7 @@ loadByIndex(
  */
 std::shared_ptr<Ledger>
 loadByHash(
-    uint256 const& ledgerHash,
+    UInt256 const& ledgerHash,
     Rules const& rules,
     Fees const& fees,
     ServiceRegistry& registry,
@@ -93,7 +93,7 @@ loadByHash(
  * @param registry Service registry for dependency injection.
  * @return Tuple of (ledger, sequence, hash), or empty if not found.
  */
-std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
+std::tuple<std::shared_ptr<Ledger>, std::uint32_t, UInt256>
 getLatestLedger(Rules const& rules, Fees const& fees, ServiceRegistry& registry);
 
 }  // namespace xrpl

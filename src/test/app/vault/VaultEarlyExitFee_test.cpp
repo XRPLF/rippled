@@ -95,7 +95,7 @@ class VaultEarlyExitFee_test : public VaultTestBase
     void
     enterInvestment(test::jtx::Env& env, Setup const& s)
     {
-        closeToTime(env, tp{d{s.sub}} + getLedgerTimeResolution(env));
+        closeToTime(env, Tp{D{s.sub}} + getLedgerTimeResolution(env));
     }
 
     // env.balance(account, mptIssue) cannot resolve the vault pseudo-account
@@ -434,16 +434,16 @@ class VaultEarlyExitFee_test : public VaultTestBase
             switch (at)
             {
                 case At::Subscription:
-                    closeToTime(env, tp{d{s.sub}});
+                    closeToTime(env, Tp{D{s.sub}});
                     break;
                 case At::AfterSubscription:
-                    closeToTime(env, tp{d{s.sub}} + resolution);
+                    closeToTime(env, Tp{D{s.sub}} + resolution);
                     break;
                 case At::BeforeRedemption:
-                    closeToTime(env, tp{d{s.red}} - resolution);
+                    closeToTime(env, Tp{D{s.red}} - resolution);
                     break;
                 case At::Redemption:
-                    closeToTime(env, tp{d{s.red}});
+                    closeToTime(env, Tp{D{s.red}});
                     break;
             }
 

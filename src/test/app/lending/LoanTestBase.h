@@ -67,6 +67,101 @@
 
 namespace xrpl::test {
 
+// FixedPrecision-only: asserts, on the given vault, that:
+//  - AssetsDeployed exactly equals the sum of the given loans'
+//    PrincipalOutstanding, and (when brokerKeylets is non-empty) also
+//    exactly equals the sum of the given brokers' DebtTotal;
+//  - stored AssetsTotal <= derived getAssetsTotal, with the gap under one
+//    live unit (equal below coarsening), since the stored field is a
+//    Downward-rounded cache;
+//  - AssetsAvailable <= stored AssetsTotal;
+//  - AssetsAvailable exactly equals the vault pseudo-account's real balance
+//    of the underlying asset.
+// No-op on non-FixedPrecision vaults. Call after every vault-touching step
+// (LoanSet, LoanPay, LoanManage, VaultDeposit/Withdraw/Clawback) in a
+// FixedPrecision scenario to catch a single-writer drift between the
+// vault's own bookkeeping fields and the ledger's real balances.
+//
+// A free function (not a LoanTestBase member) so it is usable from any
+// beast::unit_test::Suite, including suites in this family that do not
+// derive from LoanTestBase (e.g. LoanBroker_test, VaultFixedPrecision_test).
+// Pass an empty brokerKeylets when the broker-sum cross-check does not apply;
+// it is then skipped.
+inline void
+checkFixedPrecisionVaultAssetsDeployed(
+    beast::unit_test::Suite& suite,
+    jtx::Env& env,
+    Keylet const& vaultKeylet,
+    std::vector<Keylet> const& brokerKeylets,
+    std::vector<Keylet> const& loanKeylets,
+    std::string const& label = {})
+{
+    auto const vaultSle = env.le(vaultKeylet);
+    if (!suite.expect(static_cast<bool>(vaultSle)))
+        return;
+    if (getVaultVersion(vaultSle) != VaultVersion::FixedPrecision)
+        return;
+
+    Number const vaultAssetsDeployed = vaultSle->at(sfAssetsDeployed);
+
+    Number principalSum{0};
+    for (auto const& loanKeylet : loanKeylets)
+    {
+        if (auto const loanSle = env.le(loanKeylet))
+            principalSum += loanSle->at(sfPrincipalOutstanding);
+    }
+    suite.expect(
+        vaultAssetsDeployed == principalSum,
+        (label.empty() ? "" : label + ": ") +
+            std::string{"AssetsDeployed vs PrincipalOutstanding sum mismatch"});
+
+    if (!brokerKeylets.empty())
+    {
+        Number brokerDebtSum{0};
+        for (auto const& brokerKeylet : brokerKeylets)
+        {
+            if (auto const brokerSle = env.le(brokerKeylet))
+                brokerDebtSum += brokerSle->at(sfDebtTotal);
+        }
+        suite.expect(
+            vaultAssetsDeployed == brokerDebtSum,
+            (label.empty() ? "" : label + ": ") +
+                std::string{"AssetsDeployed vs broker DebtTotal sum mismatch"});
+    }
+
+    bool const coarsened = getVaultScale(vaultSle) > getVaultBaseScale(vaultSle);
+    Number const liveUnit{1, getVaultScale(vaultSle)};
+    Number const derived = getAssetsTotal(vaultSle);
+    Number const stored = vaultSle->at(sfAssetsTotal);
+    suite.expect(
+        stored <= derived,
+        (label.empty() ? "" : label + ": ") +
+            std::string{"stored AssetsTotal must not exceed derived AssetsTotal"});
+    Number const atGap = derived - stored;
+    suite.expect(
+        coarsened ? atGap < liveUnit : atGap == beast::kZero,
+        (label.empty() ? "" : label + ": ") +
+            std::string{"AssetsTotal cache gap exceeds one live unit"});
+
+    suite.expect(
+        Number(vaultSle->at(sfAssetsAvailable)) <= stored,
+        (label.empty() ? "" : label + ": ") +
+            std::string{"AssetsAvailable must not exceed stored AssetsTotal"});
+
+    // AssetsAvailable must exactly track the vault pseudo-account's real
+    // balance: adjustVaultBalances applies the same arithmetic the ledger
+    // uses for the transfer, so the two never drift apart.
+    jtx::Account const vaultAccount("vault", vaultSle->at(sfAccount));
+    env.memoize(vaultAccount);
+    Asset const vaultAsset = vaultSle->at(sfAsset);
+    Number const pseudoBalance = env.balance(vaultAccount, vaultAsset).value();
+    Number const assetsAvailable = vaultSle->at(sfAssetsAvailable);
+    suite.expect(
+        assetsAvailable == pseudoBalance,
+        (label.empty() ? "" : label + ": ") +
+            std::string{"AssetsAvailable vs pseudo-account balance mismatch"});
+}
+
 /**
  * Shared base for the Loan*_test family under src/test/app/lending/.
  *
@@ -152,8 +247,8 @@ protected:
     struct BrokerInfo
     {
         jtx::PrettyAsset asset;
-        uint256 brokerID;
-        uint256 vaultID;
+        UInt256 brokerID;
+        UInt256 vaultID;
         BrokerParameters params;
         // Absolute dates resolved by createVaultAndBroker when params.vaultKind
         // is ClosedEnded; std::nullopt for open-ended vaults.
@@ -192,7 +287,7 @@ protected:
             using namespace jtx;
 
             auto const vaultSle = env.le(keylet::vault(vaultID));
-            return getAssetsTotalScale(vaultSle);
+            return getVaultScale(vaultSle);
         }
     };
 
@@ -555,9 +650,9 @@ protected:
         // run in the Investment phase (unless the caller explicitly asked to stay in Subscription).
         if (subscriptionDate && !params.skipPhaseAdvance)
         {
-            using d = NetClock::duration;
-            using tp = NetClock::time_point;
-            env.close(tp{d{*subscriptionDate + 1}});
+            using D = NetClock::duration;
+            using Tp = NetClock::time_point;
+            env.close(Tp{D{*subscriptionDate + 1}});
         }
 
         auto const keylet = keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
@@ -584,15 +679,15 @@ protected:
     LoanState
     getCurrentState(jtx::Env const& env, BrokerInfo const& broker, Keylet const& loanKeylet)
     {
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
 
         // Lookup the current loan state
         if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
             return LoanState{
                 .previousPaymentDate = loan->at(sfPreviousPaymentDueDate),
-                .startDate = tp{d{loan->at(sfStartDate)}},
+                .startDate = Tp{D{loan->at(sfStartDate)}},
                 .nextPaymentDate = loan->at(sfNextPaymentDueDate),
                 .paymentRemaining = loan->at(sfPaymentRemaining),
                 .loanScale = loan->at(sfLoanScale),
@@ -620,12 +715,12 @@ protected:
         VerifyLoanStatus const& verifyLoanStatus)
     {
         using namespace std::chrono_literals;
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
 
         auto const state = getCurrentState(env, broker, loanKeylet);
         BEAST_EXPECT(state.previousPaymentDate == 0);
-        BEAST_EXPECT(tp{d{state.nextPaymentDate}} == state.startDate + 600s);
+        BEAST_EXPECT(Tp{D{state.nextPaymentDate}} == state.startDate + 600s);
         BEAST_EXPECT(state.paymentRemaining == 12);
         BEAST_EXPECT(state.principalOutstanding == broker.asset(1000).value());
         BEAST_EXPECT(
@@ -874,17 +969,6 @@ protected:
             total,
             feeRate,
             asset(brokerParams.vaultDeposit).number().exponent());
-        log << "Loan properties:\n"
-            << "\tPrincipal: " << principal << std::endl
-            << "\tInterest rate: " << interest << std::endl
-            << "\tPayment interval: " << interval << std::endl
-            << "\tManagement Fee Rate: " << feeRate << std::endl
-            << "\tTotal Payments: " << total << std::endl
-            << "\tPeriodic Payment: " << props.periodicPayment << std::endl
-            << "\tTotal Value: " << props.loanState.valueOutstanding << std::endl
-            << "\tManagement Fee: " << props.loanState.managementFeeDue << std::endl
-            << "\tLoan Scale: " << props.loanScale << std::endl
-            << "\tFirst payment principal: " << props.firstPaymentPrincipal << std::endl;
 
         // checkGuards returns a TER, so success is 0
         BEAST_EXPECT(!checkLoanGuards(
@@ -1022,7 +1106,7 @@ protected:
         using namespace jtx;
         using namespace jtx::loan;
         using namespace std::chrono_literals;
-        using d = NetClock::duration;
+        using D = NetClock::duration;
 
         bool const showStepBalances = paymentParams.showStepBalances;
 
@@ -1228,7 +1312,7 @@ protected:
             // Make the payment
             env(pay(borrower, loanKeylet.key, transactionAmount, paymentParams.flags));
 
-            env.close(d{state.paymentInterval / 2});
+            env.close(D{state.paymentInterval / 2});
 
             if (paymentParams.validateBalances)
             {
@@ -1761,8 +1845,8 @@ protected:
 
         using namespace loan;
         using namespace std::chrono_literals;
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
 
         Account const issuer{"issuer"};
         // For simplicity, lender will be the sole actor for the vault &
@@ -2165,7 +2249,7 @@ protected:
 
         // Finally! Create a loan
 
-        auto coverAvailable = [&env, this](uint256 const& brokerID, Number const& expected) {
+        auto coverAvailable = [&env, this](UInt256 const& brokerID, Number const& expected) {
             if (auto const brokerSle = env.le(keylet::loanBroker(brokerID));
                 BEAST_EXPECT(brokerSle))
             {
@@ -2254,7 +2338,7 @@ protected:
                     verifyLoanStatus(state);
                 }
 
-                auto const nextDueDate = tp{d{state.nextPaymentDate}};
+                auto const nextDueDate = Tp{D{state.nextPaymentDate}};
 
                 // Can't default the loan yet. The grace period hasn't
                 // expired
@@ -2302,7 +2386,7 @@ protected:
             verifyLoanStatus(state);
 
             // Send some bogus pay transactions
-            env(pay(borrower, keylet::loan(uint256(0)).key, broker.asset(10), txFlags),
+            env(pay(borrower, keylet::loan(UInt256(0)).key, broker.asset(10), txFlags),
                 Ter(temINVALID));
             // broker.asset(80) is less than a single payment, but all these
             // checks fail before that matters
@@ -2969,13 +3053,13 @@ protected:
             if (!BEAST_EXPECT(timed))
                 return;
 
-            using clock_type = std::chrono::steady_clock;
-            using duration_type = std::chrono::milliseconds;
+            using ClockType = std::chrono::steady_clock;
+            using DurationType = std::chrono::milliseconds;
 
-            auto const start = clock_type::now();
+            auto const start = ClockType::now();
             timed();
             auto const duration =
-                std::chrono::duration_cast<duration_type>(clock_type::now() - start);
+                std::chrono::duration_cast<DurationType>(ClockType::now() - start);
 
             log << label << " took " << duration.count() << "ms" << std::endl;
 

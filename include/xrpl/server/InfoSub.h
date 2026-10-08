@@ -7,6 +7,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/Manifest.h>
 
@@ -26,11 +27,11 @@ namespace xrpl {
 /**
  * Maximum number of subscriptions a single client connection may hold at once.
  *
- * Applies to the account, real-time account, and account-history subscriptions
- * tracked on one InfoSub (the sets counted by totalSubscriptionCount), bounding
- * the disconnect-time cleanup of those sets. Book subscriptions are tracked
- * separately (OrderBookDB) and are not counted here. Generous enough for
- * legitimate power users such as block explorers.
+ * Applies to the account, real-time account, account-history, and MPT issuance
+ * subscriptions tracked on one InfoSub (the sets counted by
+ * totalSubscriptionCount), bounding the disconnect-time cleanup of those sets.
+ * Book subscriptions are tracked separately (OrderBookDB) and are not counted
+ * here. Generous enough for legitimate power users such as block explorers.
  */
 constexpr std::size_t kMaxSubscriptionsPerConnection = 100'000;
 
@@ -92,9 +93,9 @@ public:
 
     // VFALCO TODO Standardize on the names of weak / strong pointer type
     // aliases.
-    using wptr = std::weak_ptr<InfoSub>;
+    using Wptr = std::weak_ptr<InfoSub>;
 
-    using ref = std::shared_ptr<InfoSub> const&;
+    using Ref = std::shared_ptr<InfoSub> const&;
 
     using Consumer = resource::Consumer;
 
@@ -112,18 +113,18 @@ public:
         // you get transactions as they occur or once their
         // results are confirmed
         virtual void
-        subAccount(ref ispListener, hash_set<AccountID> const& vnaAccountIDs, bool realTime) = 0;
+        subAccount(Ref ispListener, HashSet<AccountID> const& vnaAccountIDs, bool realTime) = 0;
 
         // for normal use, removes from InfoSub and server
         virtual void
-        unsubAccount(ref isplistener, hash_set<AccountID> const& vnaAccountIDs, bool realTime) = 0;
+        unsubAccount(Ref isplistener, HashSet<AccountID> const& vnaAccountIDs, bool realTime) = 0;
 
         // for use during InfoSub destruction
         // Removes only from the server
         virtual void
         unsubAccountInternal(
             std::uint64_t uListener,
-            hash_set<AccountID> const& vnaAccountIDs,
+            HashSet<AccountID> const& vnaAccountIDs,
             bool realTime) = 0;
 
         /**
@@ -132,7 +133,7 @@ public:
          * @return rpcSUCCESS if successful, otherwise an error code
          */
         virtual ErrorCodeI
-        subAccountHistory(ref ispListener, AccountID const& account) = 0;
+        subAccountHistory(Ref ispListener, AccountID const& account) = 0;
 
         /**
          * unsubscribe an account's transactions
@@ -143,13 +144,28 @@ public:
          * transactions.
          */
         virtual void
-        unsubAccountHistory(ref ispListener, AccountID const& account, bool historyOnly) = 0;
+        unsubAccountHistory(Ref ispListener, AccountID const& account, bool historyOnly) = 0;
 
         virtual void
         unsubAccountHistoryInternal(
             std::uint64_t uListener,
             AccountID const& account,
             bool historyOnly) = 0;
+
+        /**
+         * Remove an MPT issuance subscription during InfoSub teardown.
+         *
+         * Removes only the server-side entry from subMPT_. Does NOT touch
+         * InfoSub::mptSubscriptions_ because the InfoSub is being destroyed.
+         * Called by ~InfoSub() for each issuance in mptSubscriptions_.
+         *
+         * @param uListener The sequence number of the subscriber being torn down.
+         * @param mptID     The MPT issuance to remove.
+         *
+         * @note Thread-safety: acquires mptLock_ internally.
+         */
+        virtual void
+        unsubMPTInternal(std::uint64_t uListener, MPTID const& mptID) = 0;
 
         /**
          * Schedule the server-side teardown of a disconnecting connection's
@@ -175,35 +191,35 @@ public:
         virtual void
         scheduleAccountCleanup(
             std::uint64_t seq,
-            hash_set<AccountID> rtAccounts,
-            hash_set<AccountID> normalAccounts,
-            hash_set<AccountID> historyAccounts) = 0;
+            HashSet<AccountID> rtAccounts,
+            HashSet<AccountID> normalAccounts,
+            HashSet<AccountID> historyAccounts) = 0;
 
         // VFALCO TODO Document the bool return value
         virtual bool
-        subLedger(ref ispListener, json::Value& jvResult) = 0;
+        subLedger(Ref ispListener, json::Value& jvResult) = 0;
         virtual bool
         unsubLedger(std::uint64_t uListener) = 0;
 
         virtual bool
-        subBookChanges(ref ispListener) = 0;
+        subBookChanges(Ref ispListener) = 0;
         virtual bool
         unsubBookChanges(std::uint64_t uListener) = 0;
 
         virtual bool
-        subManifests(ref ispListener) = 0;
+        subManifests(Ref ispListener) = 0;
         virtual bool
         unsubManifests(std::uint64_t uListener) = 0;
         virtual void
         pubManifest(Manifest const&) = 0;
 
         virtual bool
-        subServer(ref ispListener, json::Value& jvResult, bool admin) = 0;
+        subServer(Ref ispListener, json::Value& jvResult, bool admin) = 0;
         virtual bool
         unsubServer(std::uint64_t uListener) = 0;
 
         virtual bool
-        subBook(ref ispListener, Book const&) = 0;
+        subBook(Ref ispListener, Book const&) = 0;
 
         /**
          * Remove a book subscription for a live subscriber.
@@ -223,7 +239,7 @@ public:
          * partially-destroyed object.
          */
         virtual bool
-        unsubBook(ref ispListener, Book const&) = 0;
+        unsubBook(Ref ispListener, Book const&) = 0;
 
         /**
          * Remove a book subscription during InfoSub teardown.
@@ -243,22 +259,22 @@ public:
         unsubBookInternal(std::uint64_t uListener, Book const&) = 0;
 
         virtual bool
-        subTransactions(ref ispListener) = 0;
+        subTransactions(Ref ispListener) = 0;
         virtual bool
         unsubTransactions(std::uint64_t uListener) = 0;
 
         virtual bool
-        subRTTransactions(ref ispListener) = 0;
+        subRTTransactions(Ref ispListener) = 0;
         virtual bool
         unsubRTTransactions(std::uint64_t uListener) = 0;
 
         virtual bool
-        subValidations(ref ispListener) = 0;
+        subValidations(Ref ispListener) = 0;
         virtual bool
         unsubValidations(std::uint64_t uListener) = 0;
 
         virtual bool
-        subPeerStatus(ref ispListener) = 0;
+        subPeerStatus(Ref ispListener) = 0;
 
         virtual bool
         unsubPeerStatus(std::uint64_t uListener) = 0;
@@ -266,9 +282,14 @@ public:
         pubPeerStatus(std::function<json::Value(void)> const&) = 0;
 
         virtual bool
-        subConsensus(ref ispListener) = 0;
+        subConsensus(Ref ispListener) = 0;
         virtual bool
         unsubConsensus(std::uint64_t uListener) = 0;
+
+        virtual void
+        subMPT(InfoSub::Ref ispListener, HashSet<MPTID> const& mptIDs) = 0;
+        virtual void
+        unsubMPT(InfoSub::Ref ispListener, HashSet<MPTID> const& mptIDs) = 0;
 
         // VFALCO TODO Remove
         //             This was added for one particular partner, it
@@ -277,7 +298,7 @@ public:
         virtual pointer
         findRpcSub(std::string const& strUrl) = 0;
         virtual pointer
-        addRpcSub(std::string const& strUrl, ref rspEntry) = 0;
+        addRpcSub(std::string const& strUrl, Ref rspEntry) = 0;
         virtual bool
         tryRemoveRpcSub(std::string const& strUrl) = 0;
 
@@ -309,9 +330,9 @@ public:
      * Return the number of subscriptions currently tracked on this
      * connection.
      *
-     * The combined size of the per-connection account, real-time account, and
-     * account-history subscription sets. `doSubscribe` reads this to enforce
-     * the per-connection subscription cap before admitting more.
+     * The combined size of the per-connection account, real-time account,
+     * account-history, and MPT issuance subscription sets. `doSubscribe` reads
+     * this to enforce the per-connection subscription cap before admitting more.
      *
      * @return The total tracked subscription count for this connection.
      *
@@ -338,9 +359,28 @@ public:
      */
     [[nodiscard]] bool
     tryReserveAccountSubscriptions(
-        hash_set<AccountID> const& proposedAccounts,
-        hash_set<AccountID> const& normalAccounts,
+        HashSet<AccountID> const& proposedAccounts,
+        HashSet<AccountID> const& normalAccounts,
         std::size_t cap);
+
+    /**
+     * Enforce the cap and reserve a request's net-new MPT issuances, atomically.
+     *
+     * The MPT analogue of tryReserveAccountSubscriptions: under one hold of
+     * `lock_`, count the net-new issuances, check the total against @p cap, and
+     * insert them only if it fits. All-or-nothing, so a rejected request records
+     * nothing. Doing check and insert together stops two concurrent requests
+     * sharing an InfoSub (the admin subscribe-by-url path) from both passing the
+     * check before either records its issuances. The server-side map is
+     * populated afterwards by subMPT, whose re-insert is a no-op.
+     *
+     * @param mptIDs The MPT issuance ids to reserve.
+     * @param cap    The effective per-connection cap.
+     * @return true if reserved; false if the request must be rejected.
+     * @note Thread-safe: takes `lock_`.
+     */
+    [[nodiscard]] bool
+    tryReserveMPTSubscriptions(HashSet<MPTID> const& mptIDs, std::size_t cap);
 
     /**
      * Whether this connection already tracks an account-history for @p account.
@@ -413,20 +453,38 @@ public:
     [[nodiscard]] unsigned int
     getApiVersion() const noexcept;
 
+    void
+    insertSubMPTInfo(MPTID const& mptID);
+
+    void
+    deleteSubMPTInfo(MPTID const& mptID);
+
 protected:
     // Mutable so the read-only totalSubscriptionCount() accessor can lock it
     // from a const method; locking semantics are otherwise unchanged.
     mutable std::mutex lock_;
 
 private:
+    // The lock type guarding this instance's subscription sets.
+    using ScopedLock = std::scoped_lock<decltype(lock_)>;
+
+    /**
+     * The combined tally the per-connection cap is enforced against.
+     *
+     * @param lock Proof that `lock_` is held; unused otherwise.
+     */
+    [[nodiscard]] std::size_t
+    subscriptionCount(ScopedLock const& lock) const;
+
     Consumer consumer_;
     Source& source_;
-    hash_set<AccountID> realTimeSubscriptions_;
-    hash_set<AccountID> normalSubscriptions_;
+    HashSet<AccountID> realTimeSubscriptions_;
+    HashSet<AccountID> normalSubscriptions_;
     std::shared_ptr<InfoSubRequest> request_;
     std::uint64_t seq_;
-    hash_set<AccountID> accountHistorySubscriptions_;
-    hash_set<Book> bookSubscriptions_;
+    HashSet<AccountID> accountHistorySubscriptions_;
+    HashSet<Book> bookSubscriptions_;
+    HashSet<MPTID> mptSubscriptions_;
     unsigned int apiVersion_ = 0;
 
     static int

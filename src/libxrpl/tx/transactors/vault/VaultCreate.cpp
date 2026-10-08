@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/vault/VaultCreate.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -46,7 +47,6 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
         return false;
 
     if (!ctx.rules.enabled(featureLendingProtocolV1_1) &&
-        !ctx.rules.enabled(featureLendingProtocolV1_2) &&
         (ctx.tx.isFieldPresent(sfVaultKind) || ctx.tx.isFieldPresent(sfSubscriptionDate) ||
          ctx.tx.isFieldPresent(sfRedemptionDate)))
         return false;
@@ -106,8 +106,8 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
             return temMALFORMED;
 
-        auto const maximumScale = ctx.rules.enabled(featureLendingProtocolV1_2)
-            ? kVaultMaximumFixedIouScale
+        auto const maximumScale = vaultVersionFor(ctx.rules) == VaultVersion::FixedPrecision
+            ? kVaultMaximumFixedPrecisionIouScale
             : kVaultMaximumLegacyIouScale;
         if (scale > maximumScale)
             return temMALFORMED;
@@ -186,6 +186,21 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
         hasExpired(ctx.view, ctx.tx[~sfRedemptionDate]))
         return tecEXPIRED;
 
+    // FixedPrecision: AssetsMaximum must be exactly representable on the Vault's base grid,
+    // otherwise associateAsset would silently round the cap the owner asked for.
+    if (auto const assetMax = ctx.tx[~sfAssetsMaximum];
+        assetMax && ctx.view.rules().enabled(featureLendingProtocolV1_2))
+    {
+        int const baseScale =
+            vaultBaseScale(vaultAsset, ctx.tx[~sfScale].value_or(kVaultDefaultIouScale));
+        if (!isOnVaultBaseGrid(vaultAsset, *assetMax, baseScale))
+        {
+            JLOG(ctx.j.debug()) << "VaultCreate: AssetsMaximum " << *assetMax
+                                << " is not representable at the Vault scale.";
+            return tecPRECISION_LOSS;
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -241,7 +256,7 @@ VaultCreate::doApply()
     // Post-fixCleanup3_2_0: surface the vault pseudo's holding (MPToken
     // for MPT, RippleState for IOU) on the share via sfReferenceHolding.
     // XRP underlyings leave it unset.
-    auto const referenceHolding = [&]() -> std::optional<uint256> {
+    auto const referenceHolding = [&]() -> std::optional<UInt256> {
         if (!view().rules().enabled(fixCleanup3_2_0) || asset.native())
             return std::nullopt;
         return asset.holds<MPTIssue>()
@@ -291,23 +306,19 @@ VaultCreate::doApply()
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
-    // Treat featureLendingProtocolV1_2 as implying V1.1 when creating a vault;
-    // there is no FeatureBitset-level dependency lock. YieldUnrealized is
-    // SoeDefault, so writing zero stores the field as absent, matching
-    // LossUnrealized.
-    bool const fixedPrecision = view().rules().enabled(featureLendingProtocolV1_2);
-    bool const cashBasis = view().rules().enabled(featureLendingProtocolV1_1) || fixedPrecision;
-    if (fixedPrecision)
+    VaultVersion const version = vaultVersionFor(view().rules());
+    if (version == VaultVersion::FixedPrecision)
     {
         vault->at(sfLEVersion) = std::to_underlying(VaultVersion::FixedPrecision);
         vault->at(sfYieldUnrealized) = Number(0);
+        vault->at(sfAssetsDeployed) = Number(0);
     }
-    else if (cashBasis)
+    else if (version == VaultVersion::CashBasis)
     {
         vault->at(sfLEVersion) = std::to_underlying(VaultVersion::CashBasis);
     }
 
-    if (fixedPrecision || cashBasis)
+    if (version != VaultVersion::Legacy)
     {
         auto const kind = getVaultKind(tx);
         vault->at(sfVaultKind) = std::to_underlying(kind);
@@ -350,7 +361,7 @@ VaultCreate::doApply()
 }
 
 void
-VaultCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

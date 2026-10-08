@@ -13,7 +13,7 @@
 
 namespace xrpl::test {
 
-TEST(XChainOwnedCreateAccountClaimIDEntryTests, Constructors)
+TEST(XChainOwnedCreateAccountClaimIDEntryTests, constructors)
 {
     EntryTestEnv e;
 

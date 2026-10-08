@@ -229,7 +229,7 @@ MPTokenIssuanceCreate::doApply()
 }
 
 void
-MPTokenIssuanceCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+MPTokenIssuanceCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

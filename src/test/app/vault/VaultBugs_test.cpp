@@ -815,7 +815,7 @@ private:
     }
 
     // Scale 15 seed + deposit 5: pre-fix credited > paid; post-fix credited <= paid.
-    // fixCleanup3_2_0 is off so roundToVaultScale does not shrink the deposit first.
+    // fixCleanup3_2_0 is off so the deposit is not rounded down to the live scale first.
     void
     testBugVaultDepositOvercreditsAcrossScaleBoundary()
     {
@@ -2437,7 +2437,7 @@ private:
 
             // Inclusive SubscriptionDate boundary: still Subscription, so an
             // ordinary withdrawal is allowed.
-            closeToTime(env, tp{d{subscriptionDate}});
+            closeToTime(env, Tp{D{subscriptionDate}});
 
             auto const vaultBefore = env.le(vaultKeylet);
             if (!BEAST_EXPECT(vaultBefore))

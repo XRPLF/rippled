@@ -322,14 +322,7 @@ constexpr std::uint8_t kVaultMaximumLegacyIouScale = 18;
 /**
  * Maximum Scale for a Vault created under featureLendingProtocolV1_2.
  */
-constexpr std::uint8_t kVaultMaximumFixedIouScale = 10;
-
-/**
- * @deprecated Use kVaultMaximumFixedIouScale for V1.2 vaults, or
- * kVaultMaximumLegacyIouScale for pre-V1.2 vaults.
- */
-[[deprecated("Use kVaultMaximumFixedIouScale or kVaultMaximumLegacyIouScale")]]
-constexpr std::uint8_t kVaultMaximumIouScale = kVaultMaximumLegacyIouScale;
+constexpr std::uint8_t kVaultMaximumFixedPrecisionIouScale = 10;
 
 /**
  * The maximum early-exit fee rate of a closed-ended vault in 1/10 bips.
@@ -360,6 +353,12 @@ enum class VaultVersion : uint8_t {
     CashBasis,
     FixedPrecision,
 };
+
+// Code compares VaultVersion values with < and >= (e.g. "CashBasis or later"),
+// so each later version must stay numerically larger than the one before.
+static_assert(
+    VaultVersion::Legacy < VaultVersion::CashBasis &&
+    VaultVersion::CashBasis < VaultVersion::FixedPrecision);
 
 /**
  * Vault kind. Distinguishes closed-ended vaults from the default open-ended
@@ -432,7 +431,7 @@ isFlagLedger(LedgerIndex seq);
  * The value is computed as the hash of the
  * canonicalized, serialized transaction object.
  */
-using TxID = uint256;
+using TxID = UInt256;
 
 /**
  * The maximum number of trustlines to delete as part of AMM account
@@ -571,6 +570,11 @@ constexpr std::size_t kEcConvertBackProofLength =
  * Length of the ZKProof for ConfidentialMPTClawback.
  */
 constexpr std::size_t kEcClawbackProofLength = SECP256K1_COMPACT_CLAWBACK_PROOF_SIZE;
+
+/**
+ * Length of compact equality proof.
+ */
+constexpr std::size_t kEcEqualityProofLength = 128;
 
 /**
  * Extra base fee multiplier charged to confidential MPT transactions.

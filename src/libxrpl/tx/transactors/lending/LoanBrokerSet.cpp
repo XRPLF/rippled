@@ -14,6 +14,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STTakesAsset.h>
@@ -174,7 +175,10 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     // type. This is mostly only relevant for integral (non-IOU) types
     for (auto const& field : getValueFields())
     {
-        if (auto const value = tx[field]; value && STAmount{asset, *value} != *value)
+        if (auto const value = tx[field]; value &&
+            (STAmount{asset, *value} != *value ||
+             (getVaultVersion(sleVault) == VaultVersion::FixedPrecision &&
+              !isOnVaultBaseGrid(asset, *value, getVaultBaseScale(sleVault)))))
         {
             JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value
                                << ") can not be represented as a(n) " << to_string(asset) << ".";
@@ -295,7 +299,7 @@ LoanBrokerSet::doApply()
 }
 
 void
-LoanBrokerSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanBrokerSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
