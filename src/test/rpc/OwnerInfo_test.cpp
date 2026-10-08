@@ -37,6 +37,24 @@ class OwnerInfo_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::error_message] == "Missing field 'account'.");
         }
 
+        {
+            // non-string account
+            json::Value params;
+            params[jss::account] = 123;
+            auto const result = env.rpc("json", "owner_info", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'account'.");
+        }
+
+        {
+            // non-string ident
+            json::Value params;
+            params[jss::ident] = 123;
+            auto const result = env.rpc("json", "owner_info", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'ident'.");
+        }
+
         {  // ask for empty account
             json::Value params;
             params[jss::account] = "";
