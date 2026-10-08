@@ -7,7 +7,6 @@ Checks: "-*,
   -bugprone-narrowing-conversions,
   -bugprone-signed-bitwise,
   -bugprone-throwing-static-initialization,
-  -bugprone-unhandled-code-paths,
 
   cppcoreguidelines-*,
   -cppcoreguidelines-avoid-c-arrays,
