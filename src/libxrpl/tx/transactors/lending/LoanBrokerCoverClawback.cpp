@@ -311,7 +311,9 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
         determineClawAmount(sleBroker, vaultAsset, amount, vault, ctx.view.rules());
     if (!findClawAmount)
     {
-        JLOG(ctx.j.warn()) << "LoanBroker cover is already at minimum.";
+        JLOG(ctx.j.warn()) << "LoanBroker cover is already at minimum, or the claw amount "
+                              "rounds to zero: "
+                           << transToken(findClawAmount.error());
         return findClawAmount.error();
     }
     STAmount const& clawAmount = *findClawAmount;

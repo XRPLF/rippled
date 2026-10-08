@@ -5,13 +5,12 @@ on:
     branches:
       - develop
     paths:
-      - ".github/workflows/build-packaging-images.yml"
-      - "bin/install-packaging-tools.sh"
+      - "bin/install/packaging-tools.sh"
       - "package/images/packaging/**"
   pull_request:
     paths:
       - ".github/workflows/build-packaging-images.yml"
-      - "bin/install-packaging-tools.sh"
+      - "bin/install/packaging-tools.sh"
       - "package/images/packaging/**"
   workflow_dispatch:
 
