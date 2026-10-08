@@ -139,8 +139,6 @@ ValidLoan::finalize(
             bool const wasPending = before->isFlag(lsfLoanPending);
             bool const isPending = after->isFlag(lsfLoanPending);
 
-            // LoanAccept may only finalise a pending loan, and only while its
-            // StartDate is still in the future.
             if (txType == ttLOAN_ACCEPT)
             {
                 // LoanAccept may only process a loan that was pending.

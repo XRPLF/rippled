@@ -52,13 +52,10 @@ reversePendingLoan(
     Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
     auto const state = constructLoanState(loanSle);
 
-    // Reverse exactly the accounting the proposal recognised. A pending loan
-    // booked no interest into the vault on any version (LoanAccept does that),
-    // so AssetsTotal is left alone and only the broker debt is unwound.
+    // Reverse exactly the accounting the proposal recognised.
     auto const debtTotalDelta =
         loanOriginationDeltas(vaultSle, principalOutstanding, state.interestDue).debtTotalDelta;
 
-    // Reverse the vault bookkeeping from the proposal.
     if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
     {
         auto const principalRequested = STAmount{vaultAsset, principalOutstanding};

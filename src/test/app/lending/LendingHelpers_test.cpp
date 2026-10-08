@@ -1936,20 +1936,14 @@ public:
              Number{15, -7}));
     }
 
-    // Covers the accountSendMulti failure branch of disburseLoan
-    // (the final `return ter;` in LendingHelpers.cpp). In production this
-    // line is unreachable: LoanSet::preclaim verifies
-    // Vault.AssetsAvailable >= principalRequested, and ValidVault keeps
-    // AssetsAvailable in sync with the vault pseudo-account's actual XRP
-    // holding. To reach it we drive the helper directly from a synthetic
-    // ApplyContext (same pattern as LoanBroker_test's
-    // testLoanBrokerCoverDepositNullVault), drain the pseudo-account's
-    // sfBalance on the scratch view, and observe disburseLoan surface the
-    // tec that accountSendMultiIOU returns for a native-asset transfer
-    // whose sender balance is insufficient. Bypassing LoanSet's own
-    // preclaim/doApply means the AssetsAvailable guard is skipped; the
-    // mutation lives on a cloned OpenView, so nothing commits back to the
-    // real ledger and no invariant fires.
+    // disburseLoan is asked to pay out a loan, but the vault
+    // pseudo-account does not hold enough of the asset to cover the
+    // transfer, so the inner accountSendMulti call fails. This exercises
+    // the final `return ter;` in disburseLoan. Normal transaction flow
+    // cannot reach it: LoanSet::preclaim checks that
+    // Vault.AssetsAvailable >= principalRequested, and the ValidVault
+    // invariant keeps AssetsAvailable in step with the pseudo-account's
+    // real XRP balance.
     void
     testDisburseLoanTransferFailure()
     {

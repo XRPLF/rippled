@@ -49,9 +49,10 @@ namespace xrpl {
  * - vault withdrawal may not succeed when the vault phase is Investment
  * - closed-ended loan origination (ttLOAN_SET) may only succeed when the
  *   vault phase is Investment
- * - loan accept leaves assets available and assets total unchanged, does not
- *   increase assets reserved, and releases from assets reserved at least the
- *   assets disbursed from the vault
+ * - loan accept leaves assets available unchanged, does not increase assets
+ *   reserved, and releases from assets reserved at least the assets disbursed
+ *   from the vault; assets total may only grow on a Legacy vault (where the
+ *   loan's interest is recognised on acceptance) and must not change otherwise
  * - deleting a pending loan credits assets available by no more than it
  *   releases from assets reserved
  * - FixedPrecision only: AssetsDeployed is non-negative and exactly
@@ -241,9 +242,11 @@ private:
      * @brief Invariant check for @c ttLOAN_ACCEPT.
      *
      * Accepting a pending loan disburses the principal held in @c AssetsReserved from the vault
-     * pseudo-account. @c AssetsAvailable and @c AssetsTotal were settled when the pending loan was
-     * created and must not change; @c AssetsReserved must not increase, and must release at least
-     * what left the pseudo-account.
+     * pseudo-account. @c AssetsAvailable was settled when the pending loan was created and must not
+     * change. The proposal booked no interest, so acceptance is where a Legacy (instant
+     * recognition) vault recognises the loan's interest into @c AssetsTotal, which may therefore
+     * grow but not shrink; on cash-basis and FixedPrecision vaults @c AssetsTotal must not change.
+     * @c AssetsReserved must not increase, and must release at least what left the pseudo-account.
      */
     [[nodiscard]] bool
     finalizeLoanAccept(ReadView const& view, beast::Journal const& j) const;

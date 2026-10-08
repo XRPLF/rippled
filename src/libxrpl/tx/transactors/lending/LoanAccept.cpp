@@ -92,10 +92,7 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     auto const vaultPseudo = vaultSle->at(sfAccount);
 
     // Closed-ended vault gate: acceptance is only meaningful during the
-    // Investment phase. If the vault is still in Subscription, the loan is
-    // being accepted before its funds are formally in the investment pool;
-    // if it has entered Redemption, the vault is winding down and can no
-    // longer hand principal out to a borrower.
+    // Investment phase.
     switch (getVaultPhase(ctx.view, vaultSle))
     {
         case VaultPhase::Subscription:

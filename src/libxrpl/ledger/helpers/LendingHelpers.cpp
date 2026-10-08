@@ -2484,21 +2484,17 @@ checkLoanFreeze(
     AccountID const& brokerOwner,
     beast::Journal j)
 {
-    // Run canAddHolding only when disburseLoan may have to create a
-    // holding: always before fixCleanup3_4_0, and after it only when the
-    // borrower has no holding, or a nonzero origination fee is due and the
-    // broker owner has no holding.
-    //
     // canAddHolding is an issuer-level check (DefaultRipple for IOU,
-    // lsfMPTCanTransfer for MPT). It never looks at the destination, so run
-    // unconditionally it would also reject an account that already holds
-    // the asset and needs no new holding. After the amendment
-    // addEmptyHolding short-circuits an existing holding to tecDUPLICATE,
-    // which disburseLoan ignores, so the check is only needed when a holding
-    // is missing. Before the amendment IOU addEmptyHolding tests
-    // DefaultRipple ahead of the existing-line case and fails with
-    // tecINTERNAL, so preclaim must always run the check to return
-    // terNO_RIPPLE instead.
+    // lsfMPTCanTransfer for MPT); neither overload looks at the
+    // destination, so the holdingExists() clauses only decide whether a
+    // create path is reachable at all. It always runs before
+    // fixCleanup3_4_0: IOU addEmptyHolding checks DefaultRipple ahead of
+    // the existing-line case, so only preclaim can turn an existing line
+    // under a cleared DefaultRipple into terNO_RIPPLE rather than
+    // tecINTERNAL. After the amendment an existing line short-circuits to
+    // tecDUPLICATE, which doApply ignores, so run the check only when the
+    // borrower lacks a holding, or the origination fee is nonzero and the
+    // broker owner lacks one.
     if (!view.rules().enabled(fixCleanup3_4_0) || !holdingExists(view, borrower, asset) ||
         (originationFee != beast::kZero && !holdingExists(view, brokerOwner, asset)))
     {
