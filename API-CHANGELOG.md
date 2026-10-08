@@ -36,6 +36,10 @@ Version 3.5.0 is not yet released.
 - `channel_authorize`: The `channel_id` field now returns an `invalidParams` error if the value is not a string. [#7582](https://github.com/XRPLF/rippled/pull/7582)
 - `channel_verify`: The `channel_id` and `signature` fields now return an `invalidParams` error if the value is not a string. [#7582](https://github.com/XRPLF/rippled/pull/7582)
 
+### Bugfixes in 3.5.0
+
+- `feature`: The admin-only `vetoed` field now returns `invalidParams` unless its value is a boolean. [#7583](https://github.com/XRPLF/rippled/pull/7583)
+
 ## XRP Ledger server version 3.4.0
 
 Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta releases.
@@ -56,6 +60,7 @@ Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta
 - `account_lines`: The `peer` field now returns an error if the value is not a string. [#7728](https://github.com/XRPLF/rippled/pull/7728)
 - `ledger`: `delivered_amount` is now included in the metadata of successful `AccountDelete` transactions when transactions are expanded (`expand`, or admin-only `full`). Previously it was only added for `Payment` and `CheckCash`, which made `ledger` inconsistent with `tx` and `account_tx`. [#5706](https://github.com/XRPLF/rippled/pull/5706)
 - `noripple_check`: The `transactions` field is no longer included in error responses; it is still returned (possibly as an empty array) whenever `transactions` is `true` and the request succeeds. A malformed `account` is now rejected before the ledger is looked up, so that error response no longer carries the `ledger_hash`, `ledger_index`, and `validated` fields ([#6303](https://github.com/XRPLF/rippled/pull/6303)).
+- `transaction_entry`: An object or an array in `tx_hash` now returns `malformedRequest`, like any other value that is not a hex hash, instead of an `internal` error.
 
 ## XRP Ledger server version 3.3.0
 

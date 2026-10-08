@@ -11,7 +11,7 @@
 # update moves the GCC runtime to a new store path, so a cached binary has to
 # get by with the pinned glibc alone. See docs/build/nix.md.
 #
-# Usage: bin/check-build-context-runtime.sh <graph.json>
+# Usage: bin/nix/check-build-context-runtime.sh <graph.json>
 #   <graph.json> is the output of `conan install --format=json`.
 
 set -euo pipefail

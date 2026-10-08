@@ -5,8 +5,8 @@ Core build tools:
      cmake version 4.4.3
      /nix/store/jcvvpih1046akxcwh9hdiak5q24jqcf0-cmake-4.4.3/bin/cmake
   ✅ conan
-     Conan version 2.32.0
-     /nix/store/q0g5grbh7zm8gfhhnq5h6fm1rbs9yv3n-conan-2.32.0/bin/conan
+     Conan version 2.33.0
+     /nix/store/b4lnzrqc60glhl9al1nakfc0vd20kdna-conan-2.33.0/bin/conan
   ✅ git
      git version 2.55.0
      /nix/store/lg46w7hrjx7kylsh6645c9l975i8h43b-git-2.55.0/bin/git
@@ -19,17 +19,17 @@ Development tooling:
      ccache version 4.13.6
      /nix/store/p1a1s700dqsw1b3b8d2ba64nqw68zgpy-ccache-4.13.6/bin/ccache
   ✅ clang
-     clang version 22.1.8
-     /nix/store/dggxva67vs7virgsmd6xkwd6p7zsc5pn-clang-wrapper-22.1.8/bin/clang
-  ✅ clang-22
-     clang version 22.1.8
-     /nix/store/ckz6y10v5dbyswpf9f6hd8kjfv84f920-clang-22/bin/clang-22
+     clang version 23.1.0
+     /nix/store/mlqh1xrp0zi3i5g9b0zjcz6zlbbzdgb8-clang-wrapper-23.1.0/bin/clang
+  ✅ clang-23
+     clang version 23.1.0
+     /nix/store/xgi7q1bady9dk89zvjmiicjzzp1gvm7x-clang-23/bin/clang-23
   ✅ clang++
-     clang version 22.1.8
-     /nix/store/dggxva67vs7virgsmd6xkwd6p7zsc5pn-clang-wrapper-22.1.8/bin/clang++
-  ✅ clang++-22
-     clang version 22.1.8
-     /nix/store/lsishk8fwbdmlwr5fbwyd3yhhjsm67qr-clang++-22/bin/clang++-22
+     clang version 23.1.0
+     /nix/store/mlqh1xrp0zi3i5g9b0zjcz6zlbbzdgb8-clang-wrapper-23.1.0/bin/clang++
+  ✅ clang++-23
+     clang version 23.1.0
+     /nix/store/4slsaz29v72xgc4g36cp94f0p41a81pv-clang++-23/bin/clang++-23
   ✅ ClangBuildAnalyzer
      ClangBuildAnalyzer 1.6.0
      /nix/store/gvx8im1c89vspwb8ixa91lr1dagbi241-clangbuildanalyzer-1.6.0/bin/ClangBuildAnalyzer
@@ -67,23 +67,23 @@ Development tooling:
      Zip 3.0
      /nix/store/5ypvkry3qra47dylc9kfk36r1q9vha80-zip-3.0/bin/zip
   ✅ clang-apply-replacements
-     clang-apply-replacements version 22.1.8
-     /nix/store/37jhp4j3y339zmkx09qbr3fpfy3q0kl0-clang-tools-22.1.8/bin/clang-apply-replacements
-  ✅ clang-apply-replacements-22
-     clang-apply-replacements version 22.1.8
-     /nix/store/qg0b99zn522gl3vz9hx9ni9ianb11d1r-clang-apply-replacements-22/bin/clang-apply-replacements-22
+     clang-apply-replacements version 23.1.0
+     /nix/store/ipnj8b3s6f00ngi26fi7p5h9lxv6a3s3-clang-tools-23.1.0/bin/clang-apply-replacements
+  ✅ clang-apply-replacements-23
+     clang-apply-replacements version 23.1.0
+     /nix/store/lbyc9hrkkymybah7b6n8c7sijlgldfz0-clang-apply-replacements-23/bin/clang-apply-replacements-23
   ✅ clang-format
-     clang-format version 22.1.8
-     /nix/store/37jhp4j3y339zmkx09qbr3fpfy3q0kl0-clang-tools-22.1.8/bin/clang-format
-  ✅ clang-format-22
-     clang-format version 22.1.8
-     /nix/store/m1al4bygpn7i13q1kalavybwh9ldg6rz-clang-format-22/bin/clang-format-22
+     clang-format version 23.1.0
+     /nix/store/ipnj8b3s6f00ngi26fi7p5h9lxv6a3s3-clang-tools-23.1.0/bin/clang-format
+  ✅ clang-format-23
+     clang-format version 23.1.0
+     /nix/store/40w351b7i7aqhpl5wmicfnp2ij8k12g9-clang-format-23/bin/clang-format-23
   ✅ clang-tidy
-     LLVM version 22.1.8
-     /nix/store/37jhp4j3y339zmkx09qbr3fpfy3q0kl0-clang-tools-22.1.8/bin/clang-tidy
-  ✅ clang-tidy-22
-     LLVM version 22.1.8
-     /nix/store/h51xrqf8xgx4zil2rm1ydp909858y4xm-clang-tidy-22/bin/clang-tidy-22
+     LLVM version 23.1.0
+     /nix/store/ipnj8b3s6f00ngi26fi7p5h9lxv6a3s3-clang-tools-23.1.0/bin/clang-tidy
+  ✅ clang-tidy-23
+     LLVM version 23.1.0
+     /nix/store/40rj38k5ygq7sawkiv0cdaljclbspwz9-clang-tidy-23/bin/clang-tidy-23
   ✅ dot
      dot - graphviz version 15.1.1 (0)
      /nix/store/f7r47nc0d13xa4c2xaaxa6dp3pzm9sp1-graphviz-15.1.1/bin/dot
@@ -110,10 +110,10 @@ Development tooling:
      /nix/store/6blf72f7sdmlrqjggxvk5ij4cxb7fk4c-pre-commit-4.6.2/bin/pre-commit
   ✅ run-clang-tidy
      usage: run-clang-tidy [-h] [-allow-enabling-alpha-checkers]
-     /nix/store/a760dc8nldq1715410384bkk83idmm00-run-clang-tidy/bin/run-clang-tidy
-  ✅ run-clang-tidy-22
+     /nix/store/y7isn3dr8bildnp78vk5nhcav63g80dz-run-clang-tidy/bin/run-clang-tidy
+  ✅ run-clang-tidy-23
      usage: run-clang-tidy [-h] [-allow-enabling-alpha-checkers]
-     /nix/store/xwh85m9sa5h8fnpnlmqwfnf2sz9l59mm-run-clang-tidy-22/bin/run-clang-tidy-22
+     /nix/store/pm5a8465hs9zb5i116b39i0y3xfpw6n3-run-clang-tidy-23/bin/run-clang-tidy-23
 
 Rust toolchain:
   ✅ cargo

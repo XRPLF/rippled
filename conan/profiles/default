@@ -29,9 +29,9 @@ os.version={{ min_macos_version }}
 [conf]
 {# The Boost recipe builds with b2, which doesn't use Conan's toolchain files. #}
 {# Instead it hand-rolls the compiler for user-config.jam, #}
-{# and its fallback probes a version-suffixed binary (e.g. `g++-15`) before plain `g++`. #}
-{# Inside the Nix shell the wrapper only provides `g++`/`gcc` (no `-15` suffix), #}
-{# so on a host that also has a system `g++-15` the probe escapes Nix #}
+{# and its fallback probes a version-suffixed binary (e.g. `g++-<major>`) before plain `g++`. #}
+{# Inside the Nix shell the wrapper only provides `g++`/`gcc` (no `-<major>` suffix), #}
+{# so on a host that also has a system `g++-<major>` the probe escapes Nix #}
 {# and picks the system compiler, which is mismatched with the Nix libraries #}
 {# and breaks the build (e.g. Boost.Stacktrace link checks fail). #}
 {# Pinning the executables here short-circuits that probe so Boost (and the rest of the toolchain) #}
