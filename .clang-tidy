@@ -6,7 +6,6 @@ Checks: "-*,
   -bugprone-implicit-widening-of-multiplication-result,
   -bugprone-narrowing-conversions,
   -bugprone-signed-bitwise,
-  -bugprone-std-exception-baseclass,
   -bugprone-throwing-static-initialization,
   -bugprone-unhandled-code-paths,
 
