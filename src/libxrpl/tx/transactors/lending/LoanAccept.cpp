@@ -109,23 +109,28 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
             break;
     }
 
-    // On a FixedPrecision vault the proposal booked no yield (see
-    // LoanSet::createLoan): the interest only lands in YieldUnrealized here.
-    // LoanSet's Open-zone guard passed at proposal time, but loans originated
-    // since then do not see the pending interest and may have used up the
-    // headroom it relied on, so re-run the guard against the vault as it
-    // stands now.
+    // The proposal booked no interest (see LoanSet::createLoan): it only
+    // lands in the vault here, in AssetsTotal under instant recognition or in
+    // YieldUnrealized on a FixedPrecision vault. LoanSet's capacity guards
+    // passed at proposal time, but loans originated since then do not see the
+    // pending interest and may have used up the headroom they relied on, so
+    // re-run the guards against the vault as it stands now.
+    auto const vaultVersion = getVaultVersion(vaultSle);
+    auto const state = constructLoanState(loanSle);
+    if (vaultVersion == VaultVersion::Legacy &&
+        loanOriginationExceedsVaultMaximum(
+            vaultSle, vaultSle->at(sfAssetsTotal), state.interestDue))
+    {
+        JLOG(ctx.j.warn()) << "Loan interest would exceed the maximum assets of the vault.";
+        return tecLIMIT_EXCEEDED;
+    }
     // A coarsened vault fails this check too: its AssetsTotal is at least
     // 10^(16 + baseScale), above the Open limit of 9 * 10^(15 + baseScale).
-    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+    if (vaultVersion == VaultVersion::FixedPrecision &&
+        vaultOpenZoneCapacity(vaultSle, state.interestDue) > getVaultOpenLimit(vaultSle))
     {
-        auto const state = constructLoanState(loanSle);
-        if (vaultOpenZoneCapacity(vaultSle, state.interestDue) > getVaultOpenLimit(vaultSle))
-        {
-            JLOG(ctx.j.warn())
-                << "Loan interest would exceed the FixedPrecision Vault's Open zone.";
-            return tecLIMIT_EXCEEDED;
-        }
+        JLOG(ctx.j.warn()) << "Loan interest would exceed the FixedPrecision Vault's Open zone.";
+        return tecLIMIT_EXCEEDED;
     }
 
     if (auto const ter = checkLoanFreeze(
@@ -220,6 +225,13 @@ LoanAccept::doApply()
     }
     else
     {
+        // Book the interest the proposal deferred. The dispatcher yields a
+        // zero delta on a cash-basis vault, which recognizes interest only as
+        // it is paid.
+        auto const assetsTotalDelta =
+            loanOriginationDeltas(vaultSle, principalOutstanding, state.interestDue)
+                .assetsTotalDelta;
+        vaultSle->at(sfAssetsTotal) += assetsTotalDelta;
         vaultSle->at(sfAssetsReserved) -= principalOutstanding;
     }
     view.update(vaultSle);

@@ -52,12 +52,11 @@ reversePendingLoan(
     Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
     auto const state = constructLoanState(loanSle);
 
-    // Reverse exactly the accounting the proposal recognised: dispatch through
-    // loanOriginationDeltas so cash-basis vaults (which never accrued the
-    // interest at proposal time) do not have a phantom interestDue subtracted
-    // here.
-    auto const [assetsTotalDelta, debtTotalDelta] =
-        loanOriginationDeltas(vaultSle, principalOutstanding, state.interestDue);
+    // Reverse exactly the accounting the proposal recognised. A pending loan
+    // booked no interest into the vault on any version (LoanAccept does that),
+    // so AssetsTotal is left alone and only the broker debt is unwound.
+    auto const debtTotalDelta =
+        loanOriginationDeltas(vaultSle, principalOutstanding, state.interestDue).debtTotalDelta;
 
     // Reverse the vault bookkeeping from the proposal.
     if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
@@ -80,7 +79,6 @@ reversePendingLoan(
     {
         vaultSle->at(sfAssetsAvailable) += principalOutstanding;
         vaultSle->at(sfAssetsReserved) -= principalOutstanding;
-        vaultSle->at(sfAssetsTotal) -= assetsTotalDelta;
     }
     view.update(vaultSle);
 

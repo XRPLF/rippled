@@ -161,8 +161,10 @@ private:
     }
 
     // The accounting model a vault version uses, for test case names.
-    // Legacy recognises interest at proposal; CashBasis and FixedPrecision
-    // recognise it as payments arrive.
+    // Legacy recognises the full scheduled interest when the loan is
+    // accepted; CashBasis and FixedPrecision recognise it as payments arrive.
+    // No version recognises interest at proposal: a proposal can be deleted
+    // at any time at no cost, so it must not move the share price.
     static char const*
     getVersionName(VaultVersion version)
     {
@@ -273,7 +275,7 @@ private:
         // vault, the default once V1.2 is enabled) and accrual (a Legacy
         // vault, via makeVaultInstantRecognition). Cash-basis recognises
         // interest into Vault.AssetsTotal as payments arrive; accrual
-        // recognises it at proposal time.
+        // recognises it when the loan is accepted.
         for (auto const vaultVersion : {VaultVersion::FixedPrecision, VaultVersion::Legacy})
         {
             for (auto const assetType : {AssetType::XRP, AssetType::IOU, AssetType::MPT})
@@ -325,30 +327,31 @@ private:
                 BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0 + 1);
                 BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners0);
 
-                // Vault bookkeeping: Available -= P, Reserved += P. Total
-                // grows by InterestDue under accrual and is unchanged under
-                // cash-basis.
+                // Vault bookkeeping: Available -= P, Reserved += P. Total is
+                // unchanged under both models: a proposal books no interest,
+                // so deleting it cannot move the share price.
                 auto const vault1 = readVault(env, broker);
                 BEAST_EXPECT(vault1.available == vault0.available - principal);
                 BEAST_EXPECT(vault1.reserved == vault0.reserved + principal);
+                BEAST_EXPECT(vault1.total == vault0.total);
                 // The Vault version must be unchanged by the proposal.
                 if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
                     BEAST_EXPECT(getVaultVersion(v) == vaultVersion);
-                Number interestDue{};
+
+                // Broker bookkeeping: DebtTotal += P + InterestDue (InterestDue
+                // is zero under cash-basis), OwnerCount += 1, CoverAvailable
+                // unchanged.
+                auto const broker1 = readBroker(env, broker);
+                BEAST_EXPECT(broker1.debtTotal >= broker0.debtTotal + principal);
+                Number const interestDue = broker1.debtTotal - broker0.debtTotal - principal;
                 if (vaultVersion == VaultVersion::Legacy)
                 {
-                    BEAST_EXPECT(vault1.total > vault0.total);
-                    interestDue = vault1.total - vault0.total;
+                    BEAST_EXPECT(interestDue > beast::kZero);
                 }
                 else
                 {
-                    BEAST_EXPECT(vault1.total == vault0.total);
+                    BEAST_EXPECT(interestDue == beast::kZero);
                 }
-
-                // Broker bookkeeping: DebtTotal += P + InterestDue, OwnerCount
-                // += 1, CoverAvailable unchanged.
-                auto const broker1 = readBroker(env, broker);
-                BEAST_EXPECT(broker1.debtTotal == broker0.debtTotal + principal + interestDue);
                 BEAST_EXPECT(broker1.ownerCount == broker0.ownerCount + 1);
                 BEAST_EXPECT(broker1.coverAvailable == broker0.coverAvailable);
 
@@ -377,8 +380,9 @@ private:
                 BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0);
                 BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners0 + 1);
 
-                // Reserved principal is released; Available and Total are
-                // unchanged from the proposal.
+                // Reserved principal is released; Available is unchanged from
+                // the proposal. Total grows by InterestDue under accrual, now
+                // that the loan is active, and is unchanged under cash-basis.
                 auto const vault2 = readVault(env, broker);
                 BEAST_EXPECT(vault2.reserved == vault0.reserved);
                 BEAST_EXPECT(vault2.available == vault0.available - principal);
@@ -1954,9 +1958,9 @@ private:
     }
 
     // On a Legacy (accrual) vault, a rejected LoanAccept must leave the
-    // proposal-time bookkeeping intact, including the interest recognised
-    // into Vault.AssetsTotal at proposal, and deleting the pending loan must
-    // reverse exactly that recognition.
+    // proposal-time bookkeeping intact, with the interest carried only in
+    // LoanBroker.DebtTotal and not yet in Vault.AssetsTotal, and deleting
+    // the pending loan must reverse exactly that bookkeeping.
     void
     testTwoStepLegacyVault()
     {
@@ -1987,14 +1991,16 @@ private:
             auto const loanKeylet = nextLoanKeylet(env, broker);
             propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
 
-            // Interest is recognised at proposal under Legacy accounting.
+            // Under Legacy accounting the broker debt carries the interest
+            // from proposal, but the vault does not recognise it until the
+            // loan is accepted.
             auto const vault1 = readVault(env, broker);
             auto const broker1 = readBroker(env, broker);
             BEAST_EXPECT(vault1.available == vault0.available - principal);
             BEAST_EXPECT(vault1.reserved == vault0.reserved + principal);
-            BEAST_EXPECT(vault1.total > vault0.total);
-            Number const interestDue = vault1.total - vault0.total;
-            BEAST_EXPECT(broker1.debtTotal == broker0.debtTotal + principal + interestDue);
+            BEAST_EXPECT(vault1.total == vault0.total);
+            Number const interestDue = broker1.debtTotal - broker0.debtTotal - principal;
+            BEAST_EXPECT(interestDue > beast::kZero);
             BEAST_EXPECT(broker1.ownerCount == broker0.ownerCount + 1);
             BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0 + 1);
 
@@ -2029,9 +2035,9 @@ private:
             env(accept(borrower_, loanKeylet.key), Ter(expected));
             expectStillPending(env, loanKeylet);
 
-            // The rejected acceptance changed nothing: the recognised
-            // interest is still in AssetsTotal and DebtTotal, and the owner
-            // reserve is still on the broker owner.
+            // The rejected acceptance changed nothing: the interest is still
+            // only in DebtTotal, not AssetsTotal, and the owner reserve is
+            // still on the broker owner.
             auto const vault2 = readVault(env, broker);
             BEAST_EXPECT(vault2.available == vault1.available);
             BEAST_EXPECT(vault2.reserved == vault1.reserved);
@@ -2042,9 +2048,8 @@ private:
             BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0 + 1);
             BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners0);
 
-            // Deleting the pending loan reverses the proposal exactly. For a
-            // Legacy vault that means AssetsTotal drops by the interest
-            // recognised at proposal, back to its pre-proposal value.
+            // Deleting the pending loan reverses the proposal exactly. The
+            // proposal never touched AssetsTotal, so neither does the delete.
             env(del(lender_, loanKeylet.key));
             BEAST_EXPECT(!env.le(loanKeylet));
 
@@ -2058,6 +2063,129 @@ private:
             BEAST_EXPECT(broker3.coverAvailable == broker0.coverAvailable);
             BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0);
             BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners0);
+        }
+    }
+
+    // On a Legacy (instant recognition) vault a pending loan's interest only
+    // lands in AssetsTotal at acceptance. LoanSet's AssetsMaximum guard
+    // passed at proposal, but another loan originated in between does not
+    // see the pending interest and may use up the headroom that guard relied
+    // on. LoanAccept must re-run the guard rather than push the vault past
+    // AssetsMaximum. The whole scenario runs without a ledger close, because
+    // the Legacy LEVersion rewrite does not survive one.
+    void
+    testTwoStepLegacyAssetsMaximum()
+    {
+        using namespace jtx;
+        using namespace jtx::loan;
+        using namespace std::chrono_literals;
+
+        for (bool const fillHeadroom : {false, true})
+        {
+            testcase << "Two-step: LoanAccept re-checks AssetsMaximum (accrual, "
+                     << (fillHeadroom ? "headroom taken by a second loan" : "headroom intact")
+                     << ")";
+
+            Env env(*this, features_);
+            auto const broker = makeBroker(env, AssetType::XRP);
+            makeVaultInstantRecognition(env, broker);
+            if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+                BEAST_EXPECT(getVaultVersion(v) == VaultVersion::Legacy);
+
+            Number const principal = broker.asset(200).number();
+            auto const vault0 = readVault(env, broker);
+            auto const broker0 = readBroker(env, broker);
+
+            // Propose, and read the interest the proposal carries off the
+            // broker debt. The vault total is untouched by the proposal.
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            propose(env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
+            expectStillPending(env, loanKeylet);
+            auto const broker1 = readBroker(env, broker);
+            Number const interestDue = broker1.debtTotal - broker0.debtTotal - principal;
+            BEAST_EXPECT(interestDue > beast::kZero);
+            BEAST_EXPECT(readVault(env, broker).total == vault0.total);
+
+            // Leave room for one and a half loans' worth of interest: the
+            // pending loan and one more immediately active loan each fit on
+            // their own, but not both. The cap must sit on the asset grid.
+            {
+                Number assetsMaximum = vault0.total + interestDue + interestDue / 2;
+                roundToAsset(broker.asset.raw(), assetsMaximum);
+                Vault const vault{env};
+                auto tx = vault.set({.owner = lender_, .id = broker.vaultID});
+                tx[sfAssetsMaximum] = assetsMaximum;
+                env(tx);
+            }
+
+            if (fillHeadroom)
+            {
+                // A second, immediately active loan on the same terms. Its
+                // AssetsMaximum guard does not count the pending interest, so
+                // it takes the headroom and books its own interest into
+                // AssetsTotal.
+                auto const secondKeylet = nextLoanKeylet(env, broker);
+                env(set(borrower_, broker.brokerID, principal),
+                    kInterestRate(interest_),
+                    kPaymentTotal(payTotal_),
+                    kPaymentInterval(payInterval_),
+                    Sig(sfCounterpartySignature, lender_),
+                    Fee(env.current()->fees().base * 2));
+                if (auto const second = env.le(secondKeylet); BEAST_EXPECT(second))
+                    BEAST_EXPECT(!second->isFlag(lsfLoanPending));
+                BEAST_EXPECT(readVault(env, broker).total == vault0.total + interestDue);
+            }
+
+            auto const vault1 = readVault(env, broker);
+            auto const broker2 = readBroker(env, broker);
+            auto const lenderOwners1 = env.ownerCount(lender_);
+            auto const borrowerOwners1 = env.ownerCount(borrower_);
+
+            if (fillHeadroom)
+            {
+                // Accepting now would push AssetsTotal past AssetsMaximum.
+                // Nothing changes.
+                env(accept(borrower_, loanKeylet.key), Ter(tecLIMIT_EXCEEDED));
+                expectStillPending(env, loanKeylet);
+
+                auto const vault2 = readVault(env, broker);
+                BEAST_EXPECT(vault2.available == vault1.available);
+                BEAST_EXPECT(vault2.reserved == vault1.reserved);
+                BEAST_EXPECT(vault2.total == vault1.total);
+                auto const broker3 = readBroker(env, broker);
+                BEAST_EXPECT(broker3.debtTotal == broker2.debtTotal);
+                BEAST_EXPECT(broker3.ownerCount == broker2.ownerCount);
+                BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners1);
+                BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners1);
+
+                // Deleting the proposal leaves AssetsTotal where the active
+                // loan put it: there is no interest to unwind.
+                env(del(lender_, loanKeylet.key));
+                BEAST_EXPECT(!env.le(loanKeylet));
+                auto const vault3 = readVault(env, broker);
+                BEAST_EXPECT(vault3.available == vault1.available + principal);
+                BEAST_EXPECT(vault3.reserved == vault1.reserved - principal);
+                BEAST_EXPECT(vault3.total == vault1.total);
+            }
+            else
+            {
+                // With the headroom intact the acceptance books the interest
+                // into AssetsTotal and stays under AssetsMaximum.
+                env(accept(borrower_, loanKeylet.key));
+                if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+                    BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
+
+                auto const vault2 = readVault(env, broker);
+                BEAST_EXPECT(vault2.available == vault1.available);
+                BEAST_EXPECT(vault2.reserved == vault1.reserved - principal);
+                BEAST_EXPECT(vault2.total == vault1.total + interestDue);
+                if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+                    BEAST_EXPECT(vault2.total <= v->at(sfAssetsMaximum));
+                auto const broker3 = readBroker(env, broker);
+                BEAST_EXPECT(broker3.debtTotal == broker2.debtTotal);
+                BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners1 - 1);
+                BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners1 + 1);
+            }
         }
     }
 
@@ -2220,6 +2348,7 @@ private:
         testTwoStepFreeze();
         testTwoStepPendingLifecycle();
         testTwoStepLegacyVault();
+        testTwoStepLegacyAssetsMaximum();
         testTwoStepEdgeCases();
         testTwoStepFixedPrecisionOpenZone();
     }

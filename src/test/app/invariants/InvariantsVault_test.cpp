@@ -2027,6 +2027,19 @@ class InvariantsVault_test : public InvariantsBase
                 },
                 "loan delete must not credit assets available by more than the assets "
                 "reserved released");
+
+            // A pending loan booked no interest, so there is nothing to unwind
+            // from assets outstanding on delete.
+            testLoanVaultUpdate(
+                deleteTx,
+                LoanAction::Delete,
+                [&](SLE::pointer const& sleVault,
+                    SLE::pointer const& slePseudo,
+                    SLE::pointer const& sleBorrower) {
+                    deleteVault(sleVault, slePseudo, sleBorrower);
+                    sleVault->at(sfAssetsTotal) -= Number(1);
+                },
+                "loan delete must not change assets outstanding");
         }
 
         // LoanSet creation: a Loan created by LoanSet must be consistent with

@@ -426,17 +426,29 @@ ValidVault::finalizeLoanAccept(ReadView const& view, beast::Journal const& j) co
 
     // Accepting a pending loan disburses the principal held back in assets
     // reserved from the vault pseudo-account (to the borrower and, for the
-    // origination fee, to the broker owner). Assets available and assets
-    // outstanding were already settled when the pending loan was created, so
-    // they must not move now. LoanAccept writes neither field, so they are
-    // compared exactly.
+    // origination fee, to the broker owner). Assets available were already
+    // settled when the pending loan was created, so they must not move now.
+    // LoanAccept does not write the field, so it is compared exactly.
     if (afterVault.assetsAvailable != beforeVault.assetsAvailable)
     {
         JLOG(j.fatal()) << "Invariant failed: loan accept must not change assets available";
         result = false;
     }
 
-    if (afterVault.assetsTotal != beforeVault.assetsTotal)
+    // The proposal booked no interest, so that deleting it cannot move the
+    // share price. Acceptance is where a Legacy (instant recognition) vault
+    // recognizes the loan's interest into assets outstanding, so the field
+    // may grow there. Cash-basis and FixedPrecision vaults never book
+    // interest into assets outstanding at origination, so it must not move.
+    if (afterVault.version == VaultVersion::Legacy)
+    {
+        if (afterVault.assetsTotal < beforeVault.assetsTotal)
+        {
+            JLOG(j.fatal()) << "Invariant failed: loan accept must not reduce assets outstanding";
+            result = false;
+        }
+    }
+    else if (afterVault.assetsTotal != beforeVault.assetsTotal)
     {
         JLOG(j.fatal()) << "Invariant failed: loan accept must not change assets outstanding";
         result = false;
@@ -543,6 +555,8 @@ ValidVault::finalizeLoanDelete(beast::Journal const& j) const
     auto const& afterVault = afterVault_[0];
     auto const& beforeVault = beforeVault_[0];
 
+    bool result = true;
+
     // Only the deletion of a pending loan touches the vault: it returns the
     // principal held back in assets reserved to the available pool. It must
     // not credit assets available by more than it releases from assets
@@ -555,10 +569,20 @@ ValidVault::finalizeLoanDelete(beast::Journal const& j) const
     {
         JLOG(j.fatal()) << "Invariant failed: loan delete must not credit assets available "
                            "by more than the assets reserved released";
-        return false;
+        result = false;
     }
 
-    return true;
+    // A pending loan books no interest into the vault until it is accepted,
+    // so deleting one has nothing to unwind in assets outstanding. Either
+    // party can delete a proposal at any time at no cost, so any movement
+    // here would let a share holder move the share price for free.
+    if (afterVault.assetsTotal != beforeVault.assetsTotal)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan delete must not change assets outstanding";
+        result = false;
+    }
+
+    return result;
 }
 
 bool

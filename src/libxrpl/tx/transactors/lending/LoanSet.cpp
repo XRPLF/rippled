@@ -546,8 +546,9 @@ createLoan(
     else
     {
         auto const assetReserved = pending == IsLoanPending::Yes ? plan.principalRequested : 0;
+        auto const assetsTotalDelta = pending == IsLoanPending::No ? plan.assetsTotalDelta : 0;
         vaultAvailableProxy -= plan.principalRequested;
-        vaultTotalProxy += plan.assetsTotalDelta;
+        vaultTotalProxy += assetsTotalDelta;
         vaultReservedProxy += assetReserved;
     }
 
