@@ -4,6 +4,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
@@ -79,7 +80,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Trying to withdraw into a pseudo-account.";
         return tecPSEUDO_ACCOUNT;
     }
-    auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
+    LoanBrokerEntryR const sleBroker(brokerID, ctx.view);
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -214,7 +215,7 @@ LoanBrokerCoverWithdraw::doApply()
     auto const amount = tx[sfAmount];
     auto const dstAcct = tx[~sfDestination].value_or(accountID_);
 
-    auto broker = view().peek(keylet::loanBroker(brokerID));
+    LoanBrokerEntryW broker(brokerID, view());
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -228,7 +229,7 @@ LoanBrokerCoverWithdraw::doApply()
 
     // Decrease the LoanBroker's CoverAvailable by Amount
     broker->at(sfCoverAvailable) -= amount;
-    view().update(broker);
+    broker.update();
 
     associateAsset(*broker, vaultAsset);
 
