@@ -122,13 +122,90 @@ backend=sqlite
     return std::format(kConfigContentsTemplate, dbPathSection, valFileSection);
 }
 
+// setenv and unsetenv are POSIX only, and MSVC does not have them.
+#ifndef _MSC_VER
+
+/**
+ * Read an environment variable into a value the caller owns.
+ *
+ * The value is copied, because POSIX allows a later `setenv` to release the
+ * string `getenv` returned.
+ *
+ * @param name Name of the environment variable to read.
+ * @return The value, or std::nullopt when the variable is not set.
+ */
+[[nodiscard]] std::optional<std::string>
+envVar(char const* name)
+{
+    if (char const* const value = std::getenv(name); value != nullptr)
+        return std::string{value};
+
+    return std::nullopt;
+}
+
+/**
+ * Set an environment variable and restore its previous value when done.
+ */
+class EnvVarGuard
+{
+private:
+    std::string const name_;
+    std::optional<std::string> const saved_;
+
+    /**
+     * Give an environment variable a value, or remove it.
+     *
+     * @param name Name of the environment variable to write.
+     * @param value Value to set, or std::nullopt to remove the variable.
+     */
+    static void
+    apply(char const* name, std::optional<std::string> const& value) noexcept
+    {
+        if (value)
+        {
+            setenv(name, value->c_str(), 1);
+        }
+        else
+        {
+            unsetenv(name);
+        }
+    }
+
+public:
+    /**
+     * Save the variable's current value, then write the given one.
+     *
+     * @param name Name of the environment variable to set.
+     * @param value Value to set, or std::nullopt to remove the variable.
+     */
+    [[nodiscard]] EnvVarGuard(char const* name, std::optional<std::string> const& value)
+        : name_(name), saved_(envVar(name))
+    {
+        apply(name_.c_str(), value);
+    }
+
+    EnvVarGuard(EnvVarGuard const&) = delete;
+    EnvVarGuard&
+    operator=(EnvVarGuard const&) = delete;
+
+    /**
+     * Restore the value the variable held before construction.
+     */
+    ~EnvVarGuard()
+    {
+        apply(name_.c_str(), saved_);
+    }
+};
+
+#endif  // _MSC_VER
+
 /**
  * Write an xrpld config file and remove when done.
  */
 class FileCfgGuard : public xrpl::detail::FileDirGuard
 {
 private:
-    path dataDir_;
+    Path dataDir_;
 
     bool rmDataDir_{false};
 
@@ -137,10 +214,10 @@ private:
 public:
     FileCfgGuard(
         beast::unit_test::Suite& test,
-        path subDir,
-        path const& dbPath,
-        path const& configFile,
-        path const& validatorsFile,
+        Path subDir,
+        Path const& dbPath,
+        Path const& configFile,
+        Path const& validatorsFile,
         bool useCounter = true,
         std::string confContents = "")
         : FileDirGuard(
@@ -153,7 +230,7 @@ public:
         , dataDir_(dbPath)
     {
         if (dbPath.empty())
-            dataDir_ = subdir() / path(Config::kDatabaseDirName);
+            dataDir_ = subdir() / Path(Config::kDatabaseDirName);
 
         rmDataDir_ = !exists(dataDir_);
         config_.setup(
@@ -241,13 +318,13 @@ class ValidatorsTxtGuard : public detail::FileDirGuard
 public:
     ValidatorsTxtGuard(
         beast::unit_test::Suite& test,
-        path subDir,
-        path const& validatorsFileName,
+        Path subDir,
+        Path const& validatorsFileName,
         bool useCounter = true)
         : FileDirGuard(
               test,
               std::move(subDir),
-              path(validatorsFileName.empty() ? Config::kValidatorsFileName : validatorsFileName),
+              Path(validatorsFileName.empty() ? Config::kValidatorsFileName : validatorsFileName),
               valFileContents(),
               useCounter)
     {
@@ -272,7 +349,7 @@ public:
 class Config_test final : public TestSuite
 {
 private:
-    using path = std::filesystem::path;
+    using Path = std::filesystem::path;
 
 public:
     void
@@ -320,7 +397,7 @@ port_wss_admin
             // Use a temporary directory for testing.
             TempDir const td;
             current_path(td.path());
-            path const f = td.file(std::string{configFile});
+            Path const f = td.file(std::string{configFile});
             std::ofstream o(f.string());
             o << detail::configContents("", "");
             o.close();
@@ -335,7 +412,11 @@ port_wss_admin
         }
 
         // Config file in HOME or XDG_CONFIG_HOME directory.
-#if BOOST_OS_LINUX || BOOST_OS_MACOS
+#ifndef _MSC_VER
+        // Save the values the guards below must put back.
+        auto const home = detail::envVar("HOME");
+        auto const xdgConfigHome = detail::envVar("XDG_CONFIG_HOME");
+
         for (auto const& configFile : configFiles)
         {
             // Point the current working directory to a temporary directory, so
@@ -348,16 +429,14 @@ port_wss_admin
             {
                 TempDir const tc;
 
-                // Set the HOME and XDG_CONFIG_HOME environment variables. The
-                // HOME variable is not used when XDG_CONFIG_HOME is set, but
-                // must be set.
-                char const* h = getenv("HOME");
-                setenv("HOME", tc.path().c_str(), 1);
-                char const* x = getenv("XDG_CONFIG_HOME");
-                setenv("XDG_CONFIG_HOME", tc.path().c_str(), 1);
+                // The HOME variable is not used when XDG_CONFIG_HOME is set,
+                // but must be set. Both guards are declared after tc, so they
+                // restore before it is removed.
+                detail::EnvVarGuard const homeGuard("HOME", tc.path());
+                detail::EnvVarGuard const xdgGuard("XDG_CONFIG_HOME", tc.path());
 
                 // Create the config file in '${XDG_CONFIG_HOME}/[systemName]'.
-                path p = tc.file(systemName());
+                Path p = tc.file(systemName());
                 create_directory(p);
                 p = tc.file(systemName() + "/" + std::string{configFile});
                 std::ofstream o(p.string());
@@ -371,26 +450,25 @@ port_wss_admin
                 BEAST_EXPECT(
                     c.section(Sections::kDebugLogfile).values()[0] ==
                     "/Users/dummy/xrpld/config/log/debug.log");
-
-                // Restore the environment variables.
-                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
-                (x != nullptr) ? setenv("XDG_CONFIG_HOME", x, 1) : unsetenv("XDG_CONFIG_HOME");
             }
+
+            // Both guards are gone: both variables must hold their old values.
+            BEAST_EXPECT(detail::envVar("HOME") == home);
+            BEAST_EXPECT(detail::envVar("XDG_CONFIG_HOME") == xdgConfigHome);
 
             // The XDG config directory is not set: the config file must be in a
             // subdirectory named .config followed by the system name.
             {
                 TempDir const tc;
 
-                // Set only the HOME environment variable.
-                char const* h = getenv("HOME");
-                setenv("HOME", tc.path().c_str(), 1);
-                char const* x = getenv("XDG_CONFIG_HOME");
-                unsetenv("XDG_CONFIG_HOME");
+                // Both guards are declared after tc, so they restore before it
+                // is removed.
+                detail::EnvVarGuard const homeGuard("HOME", tc.path());
+                detail::EnvVarGuard const xdgGuard("XDG_CONFIG_HOME", std::nullopt);
 
                 // Create the config file in '${HOME}/.config/[systemName]'.
                 std::string s = ".config";
-                path p = tc.file(s);
+                Path p = tc.file(s);
                 create_directory(p);
                 s += "/" + systemName();
                 p = tc.file(s);
@@ -407,14 +485,13 @@ port_wss_admin
                 BEAST_EXPECT(
                     c.section(Sections::kDebugLogfile).values()[0] ==
                     "/Users/dummy/xrpld/config/log/debug.log");
-
-                // Restore the environment variables.
-                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
-                if (x != nullptr)
-                    setenv("XDG_CONFIG_HOME", x, 1);
             }
+
+            // Both guards are gone: both variables must hold their old values.
+            BEAST_EXPECT(detail::envVar("HOME") == home);
+            BEAST_EXPECT(detail::envVar("XDG_CONFIG_HOME") == xdgConfigHome);
         }
-#endif
+#endif  // _MSC_VER
 
         // Restore the current working directory.
         current_path(cwd);
@@ -429,8 +506,8 @@ port_wss_admin
             constexpr char const* cc = "[database_path]\n{}\n";
 
             auto const cwd = current_path();
-            path const dataDirRel("test_data_dir");
-            path const dataDirAbs(cwd / dataDirRel);
+            Path const dataDirRel("test_data_dir");
+            Path const dataDirAbs(cwd / dataDirRel);
             {
                 // Dummy test - do we get back what we put in
                 Config c;
@@ -456,8 +533,8 @@ port_wss_admin
             // read from file absolute path
             auto const cwd = current_path();
             detail::DirGuard const g0(*this, "test_db");
-            path const dataDirRel("test_data_dir");
-            path const dataDirAbs(cwd / g0.subdir() / dataDirRel);
+            Path const dataDirRel("test_data_dir");
+            Path const dataDirAbs(cwd / g0.subdir() / dataDirRel);
             detail::FileCfgGuard const g(
                 *this, g0.subdir(), dataDirAbs, Config::kConfigFileName, "", false);
             auto const& c(g.config());
@@ -470,7 +547,7 @@ port_wss_admin
             std::string const dbPath("my_db");
             detail::FileCfgGuard const g(*this, "test_db", dbPath, Config::kConfigFileName, "");
             auto const& c(g.config());
-            std::string const nativeDbPath = absolute(path(dbPath)).string();
+            std::string const nativeDbPath = absolute(Path(dbPath)).string();
             BEAST_EXPECT(g.dataDirExists());
             BEAST_EXPECT(g.configFileExists());
             BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == nativeDbPath);
@@ -480,7 +557,7 @@ port_wss_admin
             detail::FileCfgGuard const g(*this, "test_db", "", Config::kConfigFileName, "");
             auto const& c(g.config());
             std::string const nativeDbPath =
-                absolute(g.subdir() / path(Config::kDatabaseDirName)).string();
+                absolute(g.subdir() / Path(Config::kDatabaseDirName)).string();
             BEAST_EXPECT(g.dataDirExists());
             BEAST_EXPECT(g.configFileExists());
             BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == nativeDbPath);
@@ -622,7 +699,7 @@ main
         {
             // load should throw for invalid [validators_file]
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
-            path const invalidFile = current_path() / vtg.subdir();
+            Path const invalidFile = current_path() / vtg.subdir();
             constexpr char const* cc = "[validators_file]\n{}\n";
             std::string error;
             auto const expectedError =

@@ -4,6 +4,7 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -90,7 +91,7 @@ doLedgerData(rpc::JsonContext& context)
     if (rpcStatus)
     {
         jvResult.clear();
-        rpcStatus.inject(jvResult);
+        rpc::injectSpecError(jvResult, rpcStatus);
         return jvResult;
     }
     json::Value& nodes = jvResult[jss::state];
@@ -141,19 +142,19 @@ doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
     if (auto status = rpc::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
-        if (status.toErrorCode() == RpcInvalidParams)
+        if (status == RpcInvalidParams)
         {
-            errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message);
         }
         else
         {
-            errorStatus = grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::NOT_FOUND, status.message);
         }
         return {response, errorStatus};
     }
 
-    uint256 startKey;
-    if (auto key = uint256::fromVoidChecked(request.marker()))
+    UInt256 startKey;
+    if (auto key = UInt256::fromVoidChecked(request.marker()))
     {
         startKey = *key;
     }
@@ -166,7 +167,7 @@ doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
     auto e = ledger->sles.end();
     if (!request.end_marker().empty())
     {
-        auto const key = uint256::fromVoidChecked(request.end_marker());
+        auto const key = UInt256::fromVoidChecked(request.end_marker());
 
         if (!key)
             return {response, {grpc::StatusCode::INVALID_ARGUMENT, "end marker malformed"}};

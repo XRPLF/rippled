@@ -59,9 +59,8 @@ getTxFormat(TxType type)
 
     if (format == nullptr)
     {
-        Throw<std::runtime_error>(
-            "Invalid transaction type " +
-            std::to_string(safeCast<std::underlying_type_t<TxType>>(type)));
+        Throw<std::runtime_error>(std::format(
+            "Invalid transaction type {}", safeCast<std::underlying_type_t<TxType>>(type)));
     }
 
     return format;
@@ -168,15 +167,15 @@ STTx::getMentionedAccounts() const
 }
 
 static Blob
-getSigningData(STTx const& that)
+getSigningData(STTx const& that, HashPrefix prefix)
 {
     Serializer s;
-    s.add32(HashPrefix::TxSign);
+    s.add32(prefix);
     that.addWithoutSigningFields(s);
     return s.getData();
 }
 
-uint256
+UInt256
 STTx::getSigningHash() const
 {
     return STObject::getSigningHash(HashPrefix::TxSign);
@@ -213,29 +212,41 @@ STTx::getSeqProxy() const
 }
 
 void
+STTx::sign(PublicKey const& publicKey, SecretKey const& secretKey)
+{
+    // The account's own signature always covers the plain transaction prefix;
+    // see signingPrefix for the role signatures that do not.
+    auto const data = getSigningData(*this, HashPrefix::TxSign);
+
+    setFieldVL(sfTxnSignature, xrpl::sign(publicKey, secretKey, makeSlice(data)));
+    tid_ = getHash(HashPrefix::TransactionId);
+}
+
+void
 STTx::sign(
     PublicKey const& publicKey,
     SecretKey const& secretKey,
-    std::optional<std::reference_wrapper<SField const>> signatureTarget)
+    SignatureRole role,
+    Rules const& rules)
 {
-    auto const data = getSigningData(*this);
+    auto const data = getSigningData(*this, signingPrefix(role, false, rules));
 
     auto const sig = xrpl::sign(publicKey, secretKey, makeSlice(data));
 
-    if (signatureTarget)
+    if (auto const target = signatureField(role))
     {
-        auto& target = peekFieldObject(*signatureTarget);
-        target.setFieldVL(sfTxnSignature, sig);
+        peekFieldObject(*target).setFieldVL(sfTxnSignature, sig);
     }
     else
     {
         setFieldVL(sfTxnSignature, sig);
     }
+
     tid_ = getHash(HashPrefix::TransactionId);
 }
 
 std::expected<void, std::string>
-STTx::checkSign(Rules const& rules, STObject const& sigObject) const
+STTx::checkSign(Rules const& rules, STObject const& sigObject, SignatureRole role) const
 {
     try
     {
@@ -244,8 +255,10 @@ STTx::checkSign(Rules const& rules, STObject const& sigObject) const
         // multi-signing.  Otherwise we're single-signing.
 
         Blob const& signingPubKey = sigObject.getFieldVL(sfSigningPubKey);
-        return signingPubKey.empty() ? checkMultiSign(rules, sigObject)
-                                     : checkSingleSign(sigObject);
+        bool const multiSigning = signingPubKey.empty();
+        auto const prefix = signingPrefix(role, multiSigning, rules);
+        return multiSigning ? checkMultiSign(sigObject, prefix)
+                            : checkSingleSign(sigObject, prefix);
     }
     catch (...)
     {
@@ -256,20 +269,20 @@ STTx::checkSign(Rules const& rules, STObject const& sigObject) const
 std::expected<void, std::string>
 STTx::checkSign(Rules const& rules) const
 {
-    if (auto const ret = checkSign(rules, *this); !ret)
+    if (auto const ret = checkSign(rules, *this, SignatureRole::Transaction); !ret)
         return ret;
 
     if (isFieldPresent(sfCounterpartySignature))
     {
         auto const counterSig = getFieldObject(sfCounterpartySignature);
-        if (auto const ret = checkSign(rules, counterSig); !ret)
+        if (auto const ret = checkSign(rules, counterSig, SignatureRole::Counterparty); !ret)
             return std::unexpected("Counterparty: " + ret.error());
     }
 
     if (isFieldPresent(sfSponsorSignature))
     {
         auto const sponsorSignatureObj = getFieldObject(sfSponsorSignature);
-        if (auto const ret = checkSign(rules, sponsorSignatureObj); !ret)
+        if (auto const ret = checkSign(rules, sponsorSignatureObj, SignatureRole::Sponsor); !ret)
             return std::unexpected("Sponsor: " + ret.error());
     }
 
@@ -277,14 +290,14 @@ STTx::checkSign(Rules const& rules) const
     // of signature checking.
     if (isFieldPresent(sfBatchSigners))
     {
-        if (auto const ret = checkBatchSign(rules); !ret)
+        if (auto const ret = checkBatchSign(); !ret)
             return ret;
     }
     return {};
 }
 
 std::expected<void, std::string>
-STTx::checkBatchSign(Rules const& rules) const
+STTx::checkBatchSign() const
 {
     try
     {
@@ -318,7 +331,7 @@ STTx::checkBatchSign(Rules const& rules) const
         for (auto const& signer : signers)
         {
             Blob const& signingPubKey = signer.getFieldVL(sfSigningPubKey);
-            auto const result = signingPubKey.empty() ? checkBatchMultiSign(signer, rules, txIds)
+            auto const result = signingPubKey.empty() ? checkBatchMultiSign(signer, txIds)
                                                       : checkBatchSingleSign(signer, txIds);
 
             if (!result)
@@ -447,14 +460,14 @@ singleSignHelper(STObject const& sigObject, Slice const& data)
 }
 
 std::expected<void, std::string>
-STTx::checkSingleSign(STObject const& sigObject) const
+STTx::checkSingleSign(STObject const& sigObject, HashPrefix prefix) const
 {
-    auto const data = getSigningData(*this);
+    auto const data = getSigningData(*this, prefix);
     return singleSignHelper(sigObject, makeSlice(data));
 }
 
 std::expected<void, std::string>
-STTx::checkBatchSingleSign(STObject const& batchSigner, std::vector<uint256> const& txIds) const
+STTx::checkBatchSingleSign(STObject const& batchSigner, std::vector<UInt256> const& txIds) const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSingleSign : batch transaction");
     Serializer msg;
@@ -467,8 +480,7 @@ std::expected<void, std::string>
 multiSignHelper(
     STObject const& sigObject,
     std::optional<AccountID> txnAccountID,
-    std::function<Serializer(AccountID const&)> makeMsg,
-    Rules const& rules)
+    std::function<Serializer(AccountID const&)> makeMsg)
 {
     // Make sure the MultiSigners are present.  Otherwise they are not
     // attempting multi-signing and we just have a bad SigningPubKey.
@@ -541,10 +553,7 @@ multiSignHelper(
 }
 
 std::expected<void, std::string>
-STTx::checkBatchMultiSign(
-    STObject const& batchSigner,
-    Rules const& rules,
-    std::vector<uint256> const& txIds) const
+STTx::checkBatchMultiSign(STObject const& batchSigner, std::vector<UInt256> const& txIds) const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchMultiSign : batch transaction");
     // We can ease the computational load inside the loop a bit by
@@ -555,18 +564,15 @@ STTx::checkBatchMultiSign(
     serializeBatch(dataStart, getAccountID(sfAccount), getSeqProxy().value(), getFlags(), txIds);
     dataStart.addBitString(batchSignerAccount);
     return multiSignHelper(
-        batchSigner,
-        batchSignerAccount,
-        [&dataStart](AccountID const& accountID) -> Serializer {
+        batchSigner, batchSignerAccount, [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
             return s;
-        },
-        rules);
+        });
 }
 
 std::expected<void, std::string>
-STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
+STTx::checkMultiSign(STObject const& sigObject, HashPrefix prefix) const
 {
     // Used inside the loop in multiSignHelper to enforce that
     // the account owner may not multisign for themselves.
@@ -578,16 +584,13 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
     // with the stuff that stays constant from signature to signature.
-    Serializer dataStart = startMultiSigningData(*this);
+    Serializer dataStart = startMultiSigningData(*this, prefix);
     return multiSignHelper(
-        sigObject,
-        txnAccountID,
-        [&dataStart](AccountID const& accountID) -> Serializer {
+        sigObject, txnAccountID, [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
             return s;
-        },
-        rules);
+        });
 }
 
 void
@@ -630,11 +633,11 @@ STTx::buildBatchTxns()
     }
 }
 
-std::vector<uint256>
+std::vector<UInt256>
 STTx::getBatchTransactionIDs() const
 {
     auto const& txns = getBatchTransactions();
-    std::vector<uint256> ids;
+    std::vector<UInt256> ids;
     ids.reserve(txns.size());
     for (auto const& stx : txns)
         ids.push_back(stx->getTransactionID());

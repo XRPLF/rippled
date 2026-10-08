@@ -33,6 +33,7 @@ VaultDelete::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfMemoData) && !ctx.rules.enabled(featureLendingProtocolV1_1))
         return temDISABLED;
 
+    // The sfMemoData field is an optional field used to record the deletion reason.
     if (!validDataLength(ctx.tx[~sfMemoData], kMaxDataPayloadLength))
         return temMALFORMED;
 
@@ -222,7 +223,7 @@ VaultDelete::doApply()
 }
 
 void
-VaultDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

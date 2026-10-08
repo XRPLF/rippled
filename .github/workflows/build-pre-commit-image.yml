@@ -5,7 +5,6 @@ on:
     branches:
       - develop
     paths:
-      - ".github/workflows/build-pre-commit-image.yml"
       - "bin/pre-commit/Dockerfile"
       - "rust-toolchain.toml"
   pull_request:
@@ -30,7 +29,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@65d5a0bd72be4ecea95cff0673a6e0672ab5243a
+    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@696384b292577293292daed06af0306d1b83bd7d
     with:
       image_name: xrpld/pre-commit
       dockerfile: bin/pre-commit/Dockerfile
