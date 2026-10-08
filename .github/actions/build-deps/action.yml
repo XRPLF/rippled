@@ -52,4 +52,4 @@ runs:
     - name: Check build-context packages for Nix store dependencies (Linux)
       if: ${{ runner.os == 'Linux' }}
       shell: bash
-      run: ./bin/check-build-context-runtime.sh "${RUNNER_TEMP}/conan-graph.json"
+      run: ./bin/nix/check-build-context-runtime.sh "${RUNNER_TEMP}/conan-graph.json"
