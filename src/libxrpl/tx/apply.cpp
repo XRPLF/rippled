@@ -291,14 +291,13 @@ applyBatchTransactions(
         }
         catch (std::exception const& ex)
         {
-            // Returning false here means the whole-batch view is discarded and never
-            // reaches the ledger, so the results already pushed for earlier inner
-            // transactions in this batch must not claim they were applied.
+            // Drop this batch's results before the exception unwinds: the whole-batch
+            // view never reaches the ledger and the outer Batch is reported as failed.
             JLOG(j.warn()) << "BatchTrace[" << parentBatchId << "]: " << stx->getTransactionID()
                            << " throws: " << ex.what();
             if (innerResults != nullptr)
                 innerResults->resize(firstResult);
-            return false;
+            throw;
         }
     }
 
