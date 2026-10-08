@@ -2932,7 +2932,7 @@ class InvariantsVault_test : public InvariantsBase
                 // Create the loan broker; LoanBrokerSet has no phase gate.
                 closedEndedBrokerKeylet =
                     keylet::loanBroker(a1.id(), SeqProxy::rawSequence(env.seq(a1)));
-                env(loan_broker::set(a1, keylet.key));
+                env(loan_broker::set(a1), loan_broker::kVaultId(keylet.key));
 
                 // Advance parent close time into Investment so
                 // ValidVault::finalizeLoanSet is satisfied.
@@ -2987,7 +2987,8 @@ class InvariantsVault_test : public InvariantsBase
 
         {
             using namespace loan_broker;
-            env(set(owner, vaultKeylet.key),
+            env(set(owner),
+                loan_broker::kVaultId(vaultKeylet.key),
                 kCoverRateMinimum(percentageToTenthBips(1)),
                 kCoverRateLiquidation(xrpl::lending::kMaxCoverRate),
                 Fee(env.current()->fees().base * 2));

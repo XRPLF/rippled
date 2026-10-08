@@ -3061,7 +3061,10 @@ class Delegate_test : public beast::unit_test::Suite
                 auto [createTx, keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
                 env(createTx);
 
-                env(loan_broker::set(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
+                env(loan_broker::set(alice),
+                    loan_broker::kVaultId(keylet.key),
+                    delegate::As(bob),
+                    Ter(temINVALID));
                 env(loan_broker::del(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
                 env(loan_broker::coverDeposit(alice, keylet.key, XRP(1)),
                     delegate::As(bob),

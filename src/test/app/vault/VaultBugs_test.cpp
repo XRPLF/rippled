@@ -535,7 +535,7 @@ private:
             // a single payment, one year out.
             auto const brokerKeylet =
                 keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
-            env(set(alice, vaultKeylet.key));
+            env(set(alice), loan_broker::kVaultId(vaultKeylet.key));
             env.close();
 
             auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
@@ -1180,7 +1180,7 @@ private:
         // entire deposit at 40% interest, one payment, one year out.
         auto const brokerKeylet =
             keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-        env(set(owner, vaultKeylet.key));
+        env(set(owner), loan_broker::kVaultId(vaultKeylet.key));
         env.close();
 
         auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
@@ -1428,7 +1428,7 @@ private:
 
         auto const brokerKeylet =
             keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-        env(set(owner, vaultKeylet.key));
+        env(set(owner), loan_broker::kVaultId(vaultKeylet.key));
         env.close();
 
         auto const sleBroker = env.le(brokerKeylet);
@@ -1652,7 +1652,7 @@ private:
 
             auto const brokerKeylet =
                 keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-            env(set(owner, vaultKeylet.key));
+            env(set(owner), loan_broker::kVaultId(vaultKeylet.key));
             env.close();
 
             auto const sleBroker = env.le(brokerKeylet);
@@ -1853,7 +1853,7 @@ private:
 
         auto const brokerKeylet =
             keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-        env(set(owner, vaultKeylet.key));
+        env(set(owner), loan_broker::kVaultId(vaultKeylet.key));
         env.close();
 
         auto const sleBroker = env.le(brokerKeylet);
@@ -1971,7 +1971,7 @@ private:
 
             auto const brokerKeylet =
                 keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-            env(set(owner, vaultKeylet.key));
+            env(set(owner), loan_broker::kVaultId(vaultKeylet.key));
             env.close();
 
             auto const sleBroker = env.le(brokerKeylet);
@@ -2214,7 +2214,7 @@ private:
 
             auto const brokerKeylet =
                 keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
-            env(set(alice, vaultKeylet.key));
+            env(set(alice), loan_broker::kVaultId(vaultKeylet.key));
             env.close();
             env(coverDeposit(alice, brokerKeylet.key, usd(100).value()));
             env.close();
@@ -2275,7 +2275,7 @@ private:
 
             auto const brokerKeylet =
                 keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
-            env(set(alice, vaultKeylet.key));
+            env(set(alice), loan_broker::kVaultId(vaultKeylet.key));
             env.close();
             env(coverDeposit(alice, brokerKeylet.key, usd(100).value()));
             env.close();

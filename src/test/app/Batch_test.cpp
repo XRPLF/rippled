@@ -3184,7 +3184,8 @@ class Batch_test : public beast::unit_test::Suite
 
         {
             using namespace loan_broker;
-            env(set(lender, vaultKeylet.key),
+            env(set(lender),
+                kVaultId(vaultKeylet.key),
                 kManagementFeeRate(TenthBips16(100)),
                 kDebtMaximum(debtMaximumValue),
                 kCoverRateMinimum(TenthBips32(percentageToTenthBips(10))),

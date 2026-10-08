@@ -564,7 +564,7 @@ private:
 
             auto const brokerKeylet =
                 keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-            env(loan_broker::set(owner, vaultKeylet.key), Ter(expected));
+            env(loan_broker::set(owner), loan_broker::kVaultId(vaultKeylet.key), Ter(expected));
             env.close();
 
             // The create-path gate is the only new check; updates to an
@@ -573,7 +573,8 @@ private:
             // succeeded (so there is a broker to update).
             if (updateExpected && expected == tesSUCCESS)
             {
-                env(loan_broker::set(owner, vaultKeylet.key),
+                // all_ includes LP V1.2, which forbids VaultID on update.
+                env(loan_broker::set(owner),
                     loan_broker::kLoanBrokerId(brokerKeylet.key),
                     loan_broker::kDebtMaximum(XRP(1'000).value()),
                     Ter(*updateExpected));

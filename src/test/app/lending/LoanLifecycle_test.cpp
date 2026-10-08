@@ -368,7 +368,7 @@ private:
             auto const brokerKeylet =
                 keylet::loanBroker(broker.id(), SeqProxy::rawSequence(env.seq(broker)));
 
-            env(loan_broker::set(broker, vaultKeylet.key), txFee);
+            env(loan_broker::set(broker), loan_broker::kVaultId(vaultKeylet.key), txFee);
             env.close();
 
             auto const serviceFee = 101;
