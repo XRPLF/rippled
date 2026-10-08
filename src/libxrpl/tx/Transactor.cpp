@@ -761,8 +761,9 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
         // may consume it, so unrelated activity cannot invalidate the
         // proposal while signatures are being collected (On-Chain Cosigner spec §4.2.1).
         // Cancelling the proposal frees the Ticket, so this is a retry, not
-        // a final failure.
-        if (!proposal::canConsumeTicket(view, tx))
+        // a final failure. No proposal can exist before the Cosign amendment,
+        // so the gate only makes that dependency explicit.
+        if (view.rules().enabled(featureCosign) && !proposal::canConsumeTicket(view, tx))
         {
             JLOG(j.trace()) << "applyTransaction: ticket " << tSeqProx << " is reserved";
             return terTICKET_RESERVED;
@@ -889,11 +890,15 @@ Transactor::ticketDelete(
     // The reservation check in checkSeqProxy means this is reached only by
     // the proposal's own proposed transaction executing (or failing with a
     // claimed-fee tec), or by AccountDelete sweeping the target account's
-    // Tickets.
-    if (auto const sleProposal = view.peek(keylet::txProposal(account, ticketSeq)))
+    // Tickets. No proposal can exist before the Cosign amendment, so the gate
+    // only makes that dependency explicit.
+    if (view.rules().enabled(featureCosign))
     {
-        if (TER const ter = proposal::deleteProposal(view, sleProposal, j); !isTesSuccess(ter))
-            return ter;  // LCOV_EXCL_LINE
+        if (auto const sleProposal = view.peek(keylet::txProposal(account, ticketSeq)))
+        {
+            if (TER const ter = proposal::deleteProposal(view, sleProposal, j); !isTesSuccess(ter))
+                return ter;  // LCOV_EXCL_LINE
+        }
     }
 
     return tesSUCCESS;
