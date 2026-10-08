@@ -430,14 +430,13 @@ InboundLedger::done()
             ledger_->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger_),
             "xrpl::InboundLedger::done : valid ledger fees");
         ledger_->setImmutable();
-        switch (reason_)
+        if (reason_ == Reason::HISTORY)
         {
-            case Reason::HISTORY:
-                app_.getInboundLedgers().onLedgerFetched();
-                break;
-            default:
-                app_.getLedgerMaster().storeLedger(ledger_);
-                break;
+            app_.getInboundLedgers().onLedgerFetched();
+        }
+        else
+        {
+            app_.getLedgerMaster().storeLedger(ledger_);
         }
     }
 

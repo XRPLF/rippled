@@ -75,7 +75,6 @@ Checks: "-*,
   -readability-redundant-qualified-alias,
   -readability-static-accessed-through-instance,
   -readability-trailing-comma,
-  -readability-trivial-switch,
   -readability-uppercase-literal-suffix
   "
 # ---
