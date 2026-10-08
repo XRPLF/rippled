@@ -482,6 +482,84 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
     // A proposal that could never be completed must not be stored, and a
     // target-and-ticket pair may hold at most one proposal.
+    // Each signature slot must belong to a distinct account.
+    void
+    testDuplicateSigningAccounts(FeatureBitset features)
+    {
+        testcase("reject the same account in more than one signing role");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const target{"target"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        env.fund(XRP(10000), target, bob, carol);
+        env.close();
+
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+        std::uint32_t const expiration = proposal::expiration(env, 100s);
+
+        auto loanSet = [&]() {
+            return proposal::unsignedPayload(env, loan::set(target, UInt256{1}, 1'000), ticketSeq);
+        };
+        auto payment = [&]() {
+            return proposal::unsignedPayload(env, pay(target, carol, XRP(1)), ticketSeq);
+        };
+        auto sponsoredBy = [](json::Value& tx, Account const& sponsor) {
+            tx[sfSponsor.jsonName] = sponsor.human();
+            tx[sfSponsorFlags.jsonName] = spfSponsorFee;
+        };
+
+        // target's own Ticket is the only thing it owns throughout.
+        auto reject = [&](json::Value const& proposedTx) {
+            env(proposal::create(target, proposedTx, expiration),
+                Ter(temBAD_SIGNER),
+                proposal::verify::create());
+            env.close();
+            BEAST_EXPECT(ownerCount(env, target) == 1);
+            BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+        };
+
+        // No Counterparty: a proposed LoanSet must name it.
+        reject(loanSet());
+
+        // Counterparty == Account.
+        {
+            json::Value tx = loanSet();
+            tx[sfCounterparty.jsonName] = target.human();
+            reject(tx);
+        }
+
+        // Counterparty == Sponsor.
+        {
+            json::Value tx = loanSet();
+            tx[sfCounterparty.jsonName] = bob.human();
+            sponsoredBy(tx, bob);
+            reject(tx);
+        }
+
+        // Delegate == Sponsor.
+        {
+            json::Value tx = payment();
+            tx[sfDelegate.jsonName] = bob.human();
+            sponsoredBy(tx, bob);
+            reject(tx);
+        }
+
+        // Distinct Counterparty and Sponsor are accepted.
+        {
+            json::Value tx = loanSet();
+            tx[sfCounterparty.jsonName] = bob.human();
+            sponsoredBy(tx, carol);
+            env(proposal::create(target, tx, expiration), proposal::verify::create());
+            env.close();
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+        }
+    }
+
     void
     testPreclaim(FeatureBitset features)
     {
@@ -1223,8 +1301,9 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         {
             std::uint32_t const ticketSeq = proposal::createTicket(env, borrower);
 
-            json::Value const tx =
-                proposal::unsignedPayload(env, loan::set(borrower, UInt256{1}, 1'000), ticketSeq);
+            json::Value tx = loan::set(borrower, UInt256{1}, 1'000);
+            tx[sfCounterparty.jsonName] = bob.human();
+            tx = proposal::unsignedPayload(env, tx, ticketSeq);
 
             env(proposal::create(borrower, tx, expiration), proposal::verify::create());
             env.close();
@@ -1636,6 +1715,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         testDisabled(all);
         testRejectedPayload(all);
         testRejectedSignatureFields(all);
+        testDuplicateSigningAccounts(all);
 
         // Preclaim
         testPreclaim(all);

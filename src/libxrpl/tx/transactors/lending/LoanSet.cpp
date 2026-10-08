@@ -82,6 +82,14 @@ LoanSet::preflight(PreflightContext const& ctx)
         return temBAD_SIGNER;
     }
 
+    // Likewise for a proposed LoanSet, so every account it collects a
+    // signature from is named in the payload.
+    if ((ctx.flags & TapProposal) != 0 && !tx.isFieldPresent(sfCounterparty))
+    {
+        JLOG(ctx.j.debug()) << "LoanSet: no Counterparty for proposed LoanSet transaction.";
+        return temBAD_SIGNER;
+    }
+
     // These extra hoops are because STObjects cannot be Proxy'd from STObject.
     auto const counterPartySig = [&tx]() -> std::optional<STObject const> {
         if (tx.isFieldPresent(sfCounterpartySignature))

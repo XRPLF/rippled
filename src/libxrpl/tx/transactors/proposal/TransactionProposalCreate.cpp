@@ -91,6 +91,15 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
         return temINVALID;
     }
 
+    // Each signature slot must belong to a distinct account.
+    if (proposal::hasDuplicateSigningAccounts(proposedTx))
+    {
+        JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
+                               "names the same account in more than one "
+                               "signing role.";
+        return temBAD_SIGNER;
+    }
+
     // The proposed transaction is stored in its unsigned canonical form; the
     // ledger populates its signature fields as contributions arrive.
     if (proposal::hasSignatureField(proposedTx))

@@ -1,5 +1,6 @@
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
 
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>
@@ -8,6 +9,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <utility>
 
@@ -111,6 +113,38 @@ TEST(ProposalHelpers, batch_with_pseudo_inner_is_rejected)
 TEST(ProposalHelpers, batch_without_raw_transactions_is_valid)
 {
     EXPECT_TRUE(proposal::isValidProposal(txOfType(ttBATCH)));
+}
+
+// Distinct accounts are accepted; absent fields are skipped.
+TEST(ProposalHelpers, distinct_signing_accounts_are_accepted)
+{
+    STObject tx = txOfType(ttLOAN_SET);
+    tx.setAccountID(sfAccount, AccountID{1});
+    EXPECT_FALSE(proposal::hasDuplicateSigningAccounts(tx));
+
+    std::uint64_t id = 0;
+    for (auto const* field : proposal::kSigningAccountFields)
+        tx.setAccountID(*field, AccountID{++id});
+    EXPECT_FALSE(proposal::hasDuplicateSigningAccounts(tx));
+}
+
+// Any two fields naming the same account are rejected.
+TEST(ProposalHelpers, duplicate_signing_accounts_are_rejected)
+{
+    auto const& fields = proposal::kSigningAccountFields;
+    for (std::size_t i = 0; i < fields.size(); ++i)
+    {
+        for (std::size_t j = i + 1; j < fields.size(); ++j)
+        {
+            STObject tx = txOfType(ttLOAN_SET);
+            std::uint64_t id = 0;
+            for (auto const* field : fields)
+                tx.setAccountID(*field, AccountID{++id});
+            tx.setAccountID(*fields[j], tx.getAccountID(*fields[i]));
+            EXPECT_TRUE(proposal::hasDuplicateSigningAccounts(tx))
+                << fields[i]->getName() << " == " << fields[j]->getName();
+        }
+    }
 }
 
 }  // namespace xrpl::test
