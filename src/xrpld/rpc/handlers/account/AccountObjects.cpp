@@ -1,6 +1,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -340,7 +341,7 @@ doAccountObjects(rpc::JsonContext& context)
         if (rpcStatus)
         {
             result.clear();
-            rpcStatus.inject(result);
+            rpc::injectSpecError(result, rpcStatus);
             return result;
         }
         if (type != ltANY)

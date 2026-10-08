@@ -104,7 +104,8 @@ private:
             Number::RoundingMode::ToNearest,
             Number::RoundingMode::Downward,
             Number::RoundingMode::Upward,
-            Number::RoundingMode::TowardsZero};
+            Number::RoundingMode::TowardsZero,
+        };
 
         for (auto const& c : cases)
         {
