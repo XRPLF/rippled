@@ -71,6 +71,7 @@ test.app > xrpld.app
 test.app > xrpld.core
 test.app > xrpld.overlay
 test.app > xrpld.rpc
+test.app > xrpld.shamap
 test.app > xrpl.json
 test.app > xrpl.ledger
 test.app > xrpl.nodestore
