@@ -24,7 +24,7 @@ namespace xrpl::test::csf {
 
 namespace {
 
-beast::Journal
+[[nodiscard]] beast::Journal
 journal()
 {
     return beast::Journal{TestSink::instance()};
@@ -38,12 +38,12 @@ expireValidations(ValidationStore& validations)
     validations.expire(j);
 }
 
-using clock_type = beast::AbstractClock<std::chrono::steady_clock> const;
+using ClockType = beast::AbstractClock<std::chrono::steady_clock> const;
 
 // Helper to convert steady_clock to a reasonable NetClock
 // This allows a single manual clock in the unit tests
-NetClock::time_point
-toNetClock(clock_type const& c)
+[[nodiscard]] NetClock::time_point
+toNetClock(ClockType const& c)
 {
     // We don't care about the actual epochs, but do want the
     // generated NetClock time to be well past its epoch to ensure
@@ -56,14 +56,14 @@ toNetClock(clock_type const& c)
 // Represents a node that can issue validations
 class Node
 {
-    clock_type const& c_;
+    ClockType const& c_;
     PeerID nodeID_;
     bool trusted_ = true;
     std::size_t signIdx_{1};
     std::optional<std::uint32_t> loadFee_;
 
 public:
-    Node(PeerID nodeID, clock_type const& c) : c_(c), nodeID_(nodeID)
+    Node(PeerID nodeID, ClockType const& c) : c_(c), nodeID_(nodeID)
     {
     }
 
@@ -155,7 +155,7 @@ public:
 // Generic Validations adaptor
 class Adaptor
 {
-    clock_type& c_;
+    ClockType& c_;
     LedgerOracle& oracle_;
 
 public:
@@ -176,7 +176,7 @@ public:
     using Validation = csf::Validation;
     using Ledger = csf::Ledger;
 
-    Adaptor(clock_type& c, LedgerOracle& o) : c_{c}, oracle_{o}
+    Adaptor(ClockType& c, LedgerOracle& o) : c_{c}, oracle_{o}
     {
     }
 
@@ -186,7 +186,7 @@ public:
         return toNetClock(c_);
     }
 
-    std::optional<Ledger>
+    [[nodiscard]] std::optional<Ledger>
     acquire(Ledger::ID const& id)
     {
         return oracle_.lookup(id);
@@ -210,31 +210,31 @@ public:
     {
     }
 
-    ValStatus
+    [[nodiscard]] ValStatus
     add(Validation const& v)
     {
         return tv_.add(v.nodeID(), v);
     }
 
-    TestValidations&
+    [[nodiscard]] TestValidations&
     vals()
     {
         return tv_;
     }
 
-    Node
+    [[nodiscard]] Node
     makeNode()
     {
         return Node(nextNodeId_++, clock_);
     }
 
-    ValidationParms
+    [[nodiscard]] ValidationParms
     parms() const
     {
         return p_;
     }
 
-    auto&
+    [[nodiscard]] auto&
     clock()
     {
         return clock_;
@@ -245,11 +245,8 @@ Ledger const kGenesisLedger{Ledger::MakeGenesis{}};
 
 }  // namespace
 
-TEST(ValidationsTest, add_validation)
+struct AddValidationTest : public ::testing::Test
 {
-    using namespace std::chrono_literals;
-
-    SCOPED_TRACE("Add validation");
     LedgerHistoryHelper h;
     Ledger const ledgerA = h["a"];
     Ledger ledgerAB = h["ab"];
@@ -257,119 +254,131 @@ TEST(ValidationsTest, add_validation)
     Ledger ledgerABC = h["abc"];
     Ledger const ledgerABCD = h["abcd"];
     Ledger const ledgerABCDE = h["abcde"];
+};
 
+TEST_F(AddValidationTest, sequencing_key_rotation_and_out_of_order_arrival)
+{
+    using namespace std::chrono_literals;
+
+    TestHarness harness(h.oracle);
+    Node n = harness.makeNode();
+
+    auto const v = n.validate(ledgerA);
+
+    // Add a current validation
+    EXPECT_TRUE(ValStatus::Current == harness.add(v));
+
+    // Re-adding violates the increasing seq requirement for full
+    // validations
+    EXPECT_TRUE(ValStatus::BadSeq == harness.add(v));
+
+    harness.clock().advance(1s);
+
+    EXPECT_TRUE(ValStatus::Current == harness.add(n.validate(ledgerAB)));
+
+    // Test the node changing signing key
+
+    // Confirm old ledger on hand, but not new ledger
+    EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerAB.id()) == 1);
+    EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerABC.id()) == 0);
+
+    // Rotate signing keys
+    n.advanceKey();
+
+    harness.clock().advance(1s);
+
+    // Cannot re-do the same full validation sequence
+    EXPECT_TRUE(ValStatus::Conflicting == harness.add(n.validate(ledgerAB)));
+    // Cannot send the same partial validation sequence
+    EXPECT_TRUE(ValStatus::Conflicting == harness.add(n.partial(ledgerAB)));
+
+    // Now trusts the newest ledger too
+    harness.clock().advance(1s);
+    EXPECT_TRUE(ValStatus::Current == harness.add(n.validate(ledgerABC)));
+    EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerAB.id()) == 1);
+    EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerABC.id()) == 1);
+
+    // Processing validations out of order should ignore the older
+    // validation
+    harness.clock().advance(2s);
+    auto const valABCDE = n.validate(ledgerABCDE);
+
+    harness.clock().advance(4s);
+    auto const valABCD = n.validate(ledgerABCD);
+
+    EXPECT_TRUE(ValStatus::Current == harness.add(valABCD));
+
+    EXPECT_TRUE(ValStatus::Stale == harness.add(valABCDE));
+}
+
+TEST_F(AddValidationTest, validations_arriving_out_of_order_with_shifted_times)
+{
+    using namespace std::chrono_literals;
+
+    // Process validations out of order with shifted times
+
+    TestHarness harness(h.oracle);
+    Node const n = harness.makeNode();
+
+    // Establish a new current validation
+    EXPECT_TRUE(ValStatus::Current == harness.add(n.validate(ledgerA)));
+
+    // Process a validation that has "later" seq but early sign time
+    EXPECT_TRUE(ValStatus::Stale == harness.add(n.validate(ledgerAB, -1s, -1s)));
+
+    // Process a validation that has a later seq and later sign
+    // time
+    EXPECT_TRUE(ValStatus::Current == harness.add(n.validate(ledgerABC, 1s, 1s)));
+}
+
+TEST_F(AddValidationTest, validations_that_are_stale_on_arrival)
+{
+    using namespace std::chrono_literals;
+
+    // Test stale on arrival validations
+    TestHarness harness(h.oracle);
+    Node const n = harness.makeNode();
+
+    EXPECT_TRUE(
+        ValStatus::Stale ==
+        harness.add(n.validate(ledgerA, -harness.parms().validationCurrentEarly, 0s)));
+
+    EXPECT_TRUE(
+        ValStatus::Stale ==
+        harness.add(n.validate(ledgerA, harness.parms().validationCurrentWall, 0s)));
+
+    EXPECT_TRUE(
+        ValStatus::Stale ==
+        harness.add(n.validate(ledgerA, 0s, harness.parms().validationCurrentLocal)));
+}
+
+TEST_F(AddValidationTest, older_sequence_numbers_are_rejected_until_the_set_expires)
+{
+    using namespace std::chrono_literals;
+
+    // Test that full or partials cannot be sent for older sequence
+    // numbers, unless time-out has happened
+    for (bool doFull : {true, false})
     {
         TestHarness harness(h.oracle);
         Node n = harness.makeNode();
 
-        auto const v = n.validate(ledgerA);
+        auto process = [&](Ledger& lgr) {
+            if (doFull)
+                return harness.add(n.validate(lgr));
+            return harness.add(n.partial(lgr));
+        };
 
-        // Add a current validation
-        EXPECT_TRUE(ValStatus::Current == harness.add(v));
-
-        // Re-adding violates the increasing seq requirement for full
-        // validations
-        EXPECT_TRUE(ValStatus::BadSeq == harness.add(v));
-
+        EXPECT_TRUE(ValStatus::Current == process(ledgerABC));
         harness.clock().advance(1s);
+        EXPECT_TRUE(ledgerAB.seq() < ledgerABC.seq());
+        EXPECT_TRUE(ValStatus::BadSeq == process(ledgerAB));
 
-        EXPECT_TRUE(ValStatus::Current == harness.add(n.validate(ledgerAB)));
-
-        // Test the node changing signing key
-
-        // Confirm old ledger on hand, but not new ledger
-        EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerAB.id()) == 1);
-        EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerABC.id()) == 0);
-
-        // Rotate signing keys
-        n.advanceKey();
-
-        harness.clock().advance(1s);
-
-        // Cannot re-do the same full validation sequence
-        EXPECT_TRUE(ValStatus::Conflicting == harness.add(n.validate(ledgerAB)));
-        // Cannot send the same partial validation sequence
-        EXPECT_TRUE(ValStatus::Conflicting == harness.add(n.partial(ledgerAB)));
-
-        // Now trusts the newest ledger too
-        harness.clock().advance(1s);
-        EXPECT_TRUE(ValStatus::Current == harness.add(n.validate(ledgerABC)));
-        EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerAB.id()) == 1);
-        EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerABC.id()) == 1);
-
-        // Processing validations out of order should ignore the older
-        // validation
-        harness.clock().advance(2s);
-        auto const valABCDE = n.validate(ledgerABCDE);
-
-        harness.clock().advance(4s);
-        auto const valABCD = n.validate(ledgerABCD);
-
-        EXPECT_TRUE(ValStatus::Current == harness.add(valABCD));
-
-        EXPECT_TRUE(ValStatus::Stale == harness.add(valABCDE));
-    }
-
-    {
-        // Process validations out of order with shifted times
-
-        TestHarness harness(h.oracle);
-        Node const n = harness.makeNode();
-
-        // Establish a new current validation
-        EXPECT_TRUE(ValStatus::Current == harness.add(n.validate(ledgerA)));
-
-        // Process a validation that has "later" seq but early sign time
-        EXPECT_TRUE(ValStatus::Stale == harness.add(n.validate(ledgerAB, -1s, -1s)));
-
-        // Process a validation that has a later seq and later sign
-        // time
-        EXPECT_TRUE(ValStatus::Current == harness.add(n.validate(ledgerABC, 1s, 1s)));
-    }
-
-    {
-        // Test stale on arrival validations
-        TestHarness harness(h.oracle);
-        Node const n = harness.makeNode();
-
-        EXPECT_TRUE(
-            ValStatus::Stale ==
-            harness.add(n.validate(ledgerA, -harness.parms().validationCurrentEarly, 0s)));
-
-        EXPECT_TRUE(
-            ValStatus::Stale ==
-            harness.add(n.validate(ledgerA, harness.parms().validationCurrentWall, 0s)));
-
-        EXPECT_TRUE(
-            ValStatus::Stale ==
-            harness.add(n.validate(ledgerA, 0s, harness.parms().validationCurrentLocal)));
-    }
-
-    {
-        // Test that full or partials cannot be sent for older sequence
-        // numbers, unless time-out has happened
-        for (bool doFull : {true, false})
-        {
-            TestHarness harness(h.oracle);
-            Node n = harness.makeNode();
-
-            auto process = [&](Ledger& lgr) {
-                if (doFull)
-                    return harness.add(n.validate(lgr));
-                return harness.add(n.partial(lgr));
-            };
-
-            EXPECT_TRUE(ValStatus::Current == process(ledgerABC));
-            harness.clock().advance(1s);
-            EXPECT_TRUE(ledgerAB.seq() < ledgerABC.seq());
-            EXPECT_TRUE(ValStatus::BadSeq == process(ledgerAB));
-
-            // If we advance far enough for AB to expire, we can fully
-            // validate or partially validate that sequence number again
-            EXPECT_TRUE(ValStatus::Conflicting == process(ledgerAZ));
-            harness.clock().advance(harness.parms().validationSetExpires + 1ms);
-            EXPECT_TRUE(ValStatus::Current == process(ledgerAZ));
-        }
+        // If we advance far enough for AB to expire, we can fully
+        // validate or partially validate that sequence number again
+        EXPECT_TRUE(ValStatus::Conflicting == process(ledgerAZ));
+        harness.clock().advance(harness.parms().validationSetExpires + 1ms);
+        EXPECT_TRUE(ValStatus::Current == process(ledgerAZ));
     }
 }
 
@@ -515,7 +524,7 @@ TEST(ValidationsTest, get_current_public_keys)
         EXPECT_TRUE(ValStatus::Current == harness.add(node.validate(ledgerA)));
 
     {
-        hash_set<PeerID> const expectedKeys = {a.nodeID(), b.nodeID()};
+        HashSet<PeerID> const expectedKeys = {a.nodeID(), b.nodeID()};
         EXPECT_TRUE(harness.vals().getCurrentNodeIDs() == expectedKeys);
     }
 
@@ -529,7 +538,7 @@ TEST(ValidationsTest, get_current_public_keys)
         EXPECT_TRUE(ValStatus::Current == harness.add(node.partial(ledgerAC)));
 
     {
-        hash_set<PeerID> const expectedKeys = {a.nodeID(), b.nodeID()};
+        HashSet<PeerID> const expectedKeys = {a.nodeID(), b.nodeID()};
         EXPECT_TRUE(harness.vals().getCurrentNodeIDs() == expectedKeys);
     }
 
@@ -563,7 +572,7 @@ TEST(ValidationsTest, trusted_by_ledger_functions)
     c.setLoadFee(12);
     e.setLoadFee(12);
 
-    hash_map<std::pair<Ledger::ID, Ledger::Seq>, std::vector<Validation>> trustedValidations;
+    HashMap<std::pair<Ledger::ID, Ledger::Seq>, std::vector<Validation>> trustedValidations;
 
     //----------------------------------------------------------------------
     // checkers
@@ -709,7 +718,7 @@ TEST(ValidationsTest, flush)
     Ledger const ledgerA = h["a"];
     Ledger const ledgerAB = h["ab"];
 
-    hash_map<PeerID, Validation> expected;
+    HashMap<PeerID, Validation> expected;
     for (auto const& node : {trustedNode1, trustedNode2, notTrustedNode})
     {
         auto const val = node.validate(ledgerA);
@@ -808,7 +817,7 @@ TEST(ValidationsTest, get_preferred_lcl)
     using ID = Ledger::ID;
     using Seq = Ledger::Seq;
 
-    hash_map<ID, std::uint32_t> peerCounts;
+    HashMap<ID, std::uint32_t> peerCounts;
 
     // No trusted validations or counts sticks with current ledger
     EXPECT_TRUE(harness.vals().getPreferredLCL(ledgerA, Seq{0}, peerCounts) == ledgerA.id());
@@ -942,7 +951,7 @@ TEST(ValidationsTest, trust_changed)
     using namespace std::chrono;
 
     auto checker = [&](TestValidations& vals,
-                       hash_set<PeerID> const& listed,
+                       HashSet<PeerID> const& listed,
                        std::vector<Validation> const& trustedVals) {
         Ledger::ID const testID =
             trustedVals.empty() ? kGenesisLedger.id() : trustedVals[0].ledgerID();
@@ -972,7 +981,7 @@ TEST(ValidationsTest, trust_changed)
         Validation const v = a.validate(ledgerAB);
         EXPECT_TRUE(ValStatus::Current == harness.add(v));
 
-        hash_set<PeerID> const listed({a.nodeID()});
+        HashSet<PeerID> const listed({a.nodeID()});
         std::vector<Validation> trustedVals({v});
         checker(harness.vals(), listed, trustedVals);
 
@@ -991,7 +1000,7 @@ TEST(ValidationsTest, trust_changed)
         Validation const v = a.validate(ledgerAB);
         EXPECT_TRUE(ValStatus::Current == harness.add(v));
 
-        hash_set<PeerID> const listed({a.nodeID()});
+        HashSet<PeerID> const listed({a.nodeID()});
         std::vector<Validation> trustedVals;
         checker(harness.vals(), listed, trustedVals);
 
@@ -1008,7 +1017,7 @@ TEST(ValidationsTest, trust_changed)
         Validation const v = a.validate(Ledger::ID{2}, Ledger::Seq{2}, 0s, 0s, true);
         EXPECT_TRUE(ValStatus::Current == harness.add(v));
 
-        hash_set<PeerID> const listed({a.nodeID()});
+        HashSet<PeerID> const listed({a.nodeID()});
         std::vector<Validation> trustedVals({v});
         auto& vals = harness.vals();
         EXPECT_TRUE(vals.currentTrusted() == trustedVals);

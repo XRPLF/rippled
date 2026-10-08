@@ -18,8 +18,10 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -326,7 +328,7 @@ getLineIfUsable(
 static STAmount
 getTrustLineBalance(
     ReadView const& view,
-    SLE::const_ref sle,
+    SLE::ConstRef sle,
     AccountID const& account,
     Currency const& currency,
     AccountID const& issuer,
@@ -687,7 +689,7 @@ directSendNoFeeIOU(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     bool bCheckIssuer,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     beast::Journal j)
 {
     AccountID const& issuer = saAmount.getIssuer();
@@ -841,7 +843,7 @@ directSendNoLimitIOU(
     STAmount const& saAmount,
     STAmount& saActual,
     beast::Journal j,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     WaiveTransferFee waiveFee)
 {
     auto const& issuer = saAmount.getIssuer();
@@ -967,7 +969,7 @@ accountSendIOU(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     WaiveTransferFee waiveFee)
 {
     if (view.rules().enabled(fixAMMv1_1))
@@ -1337,9 +1339,26 @@ directSendNoLimitMPT(
     }
 
     // Sending 3rd party MPTs: transit.
-    saActual = (waiveFee == WaiveTransferFee::Yes)
-        ? saAmount
-        : multiply(saAmount, transferRate(view, saAmount.get<MPTIssue>().getMptID()));
+    if (waiveFee == WaiveTransferFee::Yes)
+    {
+        saActual = saAmount;
+    }
+    else
+    {
+        auto const rate = transferRate(view, saAmount.get<MPTIssue>().getMptID());
+        if (view.rules().enabled(fixCleanup3_5_0))
+        {
+            // Number math loses precision on large MPT amounts, which can
+            // overcharge the sender. MPTs are integral, so compute the cost
+            // exactly and round it up, matching the payment engine.
+            auto const cost = mulRatio(saAmount.mpt(), rate.value, QUALITY_ONE, true);
+            saActual = STAmount(saAmount.asset(), cost.value());
+        }
+        else
+        {
+            saActual = multiply(saAmount, rate);
+        }
+    }
 
     JLOG(j.debug()) << "directSendNoLimitMPT> " << to_string(uSenderID) << " - > "
                     << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
@@ -1448,9 +1467,23 @@ directSendNoLimitMultiMPT(
         }
 
         // Sending 3rd party MPTs: transit.
-        STAmount const actualSend = (waiveFee == WaiveTransferFee::Yes)
-            ? amount
-            : multiply(amount, transferRate(view, amount.get<MPTIssue>().getMptID()));
+        STAmount actualSend = amount;
+        if (waiveFee != WaiveTransferFee::Yes)
+        {
+            auto const rate = transferRate(view, amount.get<MPTIssue>().getMptID());
+            if (view.rules().enabled(fixCleanup3_5_0))
+            {
+                // Number math loses precision on large MPT amounts, which can
+                // overcharge the sender. MPTs are integral, so compute the
+                // cost exactly and round it up, matching the payment engine.
+                auto const cost = mulRatio(amount.mpt(), rate.value, QUALITY_ONE, true);
+                actualSend = STAmount(amount.asset(), cost.value());
+            }
+            else
+            {
+                actualSend = multiply(amount, rate);
+            }
+        }
         actual += actualSend;
         takeFromSender += actualSend;
 
@@ -1544,7 +1577,7 @@ accountSend(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     WaiveTransferFee waiveFee,
     AllowMPTOverflow allowOverflow)
 {

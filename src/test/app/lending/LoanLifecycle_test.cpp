@@ -30,11 +30,8 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/system/Batch.h>
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -274,7 +271,7 @@ private:
 
             return loan["index"].asString();
         }();
-        auto const loanKeylet{keylet::loan(uint256{std::string_view(loanID)})};
+        auto const loanKeylet{keylet::loan(UInt256{std::string_view(loanID)})};
 
         env.close(startDate);
 
@@ -498,8 +495,7 @@ private:
         // From FIND-001
         testcase << "Batch Bypass Counterparty";
 
-        bool const lendingBatchEnabled = !std::ranges::any_of(
-            Batch::kDisabledTxTypes, [](auto const& disabled) { return disabled == ttLOAN_SET; });
+        bool const lendingBatchEnabled = features[featureLendingProtocolV1_2];
 
         using namespace jtx;
         using namespace std::chrono_literals;

@@ -21,7 +21,7 @@
  *     struct TxSettings
  *     {
  *         Delegation delegable{Delegation::NotDelegable};
- *         uint256 amendment{};
+ *         UInt256 amendment{};
  *         Privilege privileges{Privilege::NoPriv};
  *     };
  *
@@ -1147,12 +1147,27 @@ TRANSACTION(ttCONFIDENTIAL_MPT_MIRROR_UPDATE, 92, ConfidentialMPTMirrorUpdate,
     {sfZKProof, SoeRequired},
 }))
 
+/** This transaction rotates or recovers a confidential MPT holder's ElGamal encryption key,
+    or cancels a recovery. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTHolderKeyUpdate.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, 93, ConfidentialMPTHolderKeyUpdate,
+    ({.amendment = featureConfidentialMPTKeyRotation}),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfHolderEncryptionKey, SoeOptional},
+    {sfConfidentialBalanceSpending, SoeOptional},
+    {sfConfidentialBalanceInbox, SoeOptional},
+    {sfZKProof, SoeOptional},
+}))
+
 /** This transaction posts an unsigned transaction on-ledger as a
     TransactionProposal, pending multi-signature collection. */
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/proposal/TransactionProposalCreate.h>
 #endif
-TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 93, TransactionProposalCreate,
+TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 95, TransactionProposalCreate,
     ({.amendment = featureCosign}),
     ({
     {sfProposedTransaction, SoeRequired},

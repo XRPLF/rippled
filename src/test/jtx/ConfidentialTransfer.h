@@ -20,6 +20,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -188,6 +189,17 @@ protected:
     // Proof layout: [compact_sigma | bulletproof]
     static constexpr size_t kBulletproofOffset = kEcSendProofLength - kEcDoubleBulletproofLength;
 
+    // Decrypts holder's current spending/inbox balances under currentKey and
+    // re-encrypts them under newKey, returning {spendingCiphertext,
+    // inboxCiphertext}. Returns std::nullopt if either balance is missing or
+    // fails to decrypt.
+    static std::optional<std::pair<Buffer, Buffer>>
+    reencryptHolderBalances(
+        test::jtx::MPTTester& mpt,
+        test::jtx::Account const& holder,
+        test::jtx::Account const& currentKey,
+        test::jtx::Account const& newKey);
+
     // Generate a forged aggregated bulletproof (double bulletproof) for
     // the given values and blinding factors. Used to test that splicing
     // a bulletproof claiming a different remaining balance is rejected.
@@ -195,7 +207,7 @@ protected:
     getForgedBulletproof(
         std::array<uint64_t, 2> const& values,
         std::array<Buffer, 2> const& blindingFactors,
-        uint256 const& contextHash);
+        UInt256 const& contextHash);
 
     // Generate a forged single bulletproof for a single value and blinding factor.
     // Used to test ConvertBack overdraft prevention via bulletproof verification.
@@ -203,7 +215,7 @@ protected:
     getForgedSingleBulletproof(
         uint64_t value,
         Buffer const& blindingFactor,
-        uint256 const& contextHash);
+        UInt256 const& contextHash);
 
     // Forges a ConvertBack proof (compact sigma + single bulletproof) whose
     // sigma component claims claimedBalance (which may be wrong) while binding
@@ -222,7 +234,7 @@ protected:
         Buffer const& pedersenCommitment,
         Buffer const& encryptedSpendingBalance,
         Buffer const& pcBlindingFactor,
-        uint256 const& contextHash);
+        UInt256 const& contextHash);
 
     // Forges a ConfidentialMPTSend proof (compact sigma + double bulletproof)
     // for setup.sendAmount against setup's real balance commitment/ciphertext.

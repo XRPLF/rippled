@@ -121,7 +121,7 @@ class Feature_test : public beast::unit_test::Suite
         }
 
         // Test an arbitrary unknown feature
-        uint256 const zero{0};
+        UInt256 const zero{0};
         BEAST_EXPECT(featureToName(zero) == to_string(zero));
         BEAST_EXPECT(
             featureToName(zero) ==
@@ -291,7 +291,7 @@ class Feature_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::features].size() >= 50);
             for (auto it = result[jss::features].begin(); it != result[jss::features].end(); ++it)
             {
-                uint256 id;
+                UInt256 id;
                 (void)id.parseHex(it.key().asString().c_str());
                 if (!BEAST_EXPECT((*it).isMember(jss::name)))
                     return;
@@ -352,7 +352,7 @@ class Feature_test : public beast::unit_test::Suite
             return;
         for (auto it = jrr[jss::features].begin(); it != jrr[jss::features].end(); ++it)
         {
-            uint256 id;
+            UInt256 id;
             (void)id.parseHex(it.key().asString().c_str());
             if (!BEAST_EXPECT((*it).isMember(jss::name)))
                 return;
@@ -506,7 +506,18 @@ class Feature_test : public beast::unit_test::Suite
         feature = *(jrr.begin());
         BEAST_EXPECTS(feature[jss::name] == kFeatureName, "name");
         BEAST_EXPECTS(feature[jss::vetoed].isBool() && !feature[jss::vetoed].asBool(), "vetoed");
+        auto testInvalidVetoed = [&](auto const& vetoed) {
+            json::Value params;
+            params[jss::feature] = kFeatureName;
+            params[jss::vetoed] = vetoed;
 
+            auto const result = env.rpc("json", "feature", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
+        };
+
+        testInvalidVetoed("false");
+        testInvalidVetoed(json::Value(json::ValueType::Null));
         // anything other than accept or reject is an error
         jrr = env.rpc("feature", kFeatureName, "maybe");
         BEAST_EXPECT(jrr[jss::error] == "invalidParams");
