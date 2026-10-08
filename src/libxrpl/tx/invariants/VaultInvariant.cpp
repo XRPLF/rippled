@@ -1207,11 +1207,11 @@ ValidVault::finalize(
                 // must not increase" and "the destination balance must not decrease", so a zero
                 // payout is legitimate in any vault. An early exit at a 100% fee burns shares and
                 // pays out nothing.
-                bool const zeroDeltaIsLegitimate = !maybeVaultDeltaAssets &&
+                bool const allowZeroVaultDelta = !maybeVaultDeltaAssets &&
                     (lendingV12Enabled ||
                      (fix340Enabled && beforeVault.assetsTotal == beforeVault.lossUnrealized));
 
-                if (!maybeVaultDeltaAssets && !zeroDeltaIsLegitimate)
+                if (!maybeVaultDeltaAssets && !allowZeroVaultDelta)
                 {
                     JLOG(j.fatal()) << "Invariant failed: withdrawal must change vault balance";
                     return false;  // That's all we can do
@@ -1238,7 +1238,7 @@ ValidVault::finalize(
 
                 bool const vaultBalanceInvalid =
                     isFixedPrecision ? signCheckDeltaAssets > kZero : signCheckDeltaAssets >= kZero;
-                if (!zeroDeltaIsLegitimate && vaultBalanceInvalid)
+                if (!allowZeroVaultDelta && vaultBalanceInvalid)
                 {
                     JLOG(j.fatal()) << "Invariant failed: withdrawal must decrease vault balance";
                     result = false;
@@ -1287,7 +1287,7 @@ ValidVault::finalize(
                         // A legitimate zero-value withdrawal moves nothing to
                         // the recipient either; there is nothing left to
                         // cross-check.
-                        if (!zeroDeltaIsLegitimate)
+                        if (!allowZeroVaultDelta)
                         {
                             JLOG(j.fatal()) <<  //
                                 "Invariant failed: withdrawal must change one destination balance";

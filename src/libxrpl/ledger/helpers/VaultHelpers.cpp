@@ -552,13 +552,12 @@ clampToAssetsTotalScale(SLE::ConstRef vault, STAmount const& delta)
 }
 
 [[nodiscard]] TenthBips32
-getApplicableEarlyExitFeeRate(ReadView const& view, SLE::ConstRef vault, bool isFinalWithdrawal)
+getEarlyExitFeeRate(ReadView const& view, SLE::ConstRef vault)
 {
     XRPL_ASSERT(
-        vault && vault->getType() == ltVAULT,
-        "xrpl::getApplicableEarlyExitFeeRate : valid Vault sle");
+        vault && vault->getType() == ltVAULT, "xrpl::getEarlyExitFeeRate : valid Vault sle");
 
-    if (!view.rules().enabled(featureLendingProtocolV1_2) || isFinalWithdrawal)
+    if (!view.rules().enabled(featureLendingProtocolV1_2))
         return TenthBips32{0};
 
     auto const feeRate = vault->at(~sfEarlyExitFeeRate);
@@ -568,48 +567,58 @@ getApplicableEarlyExitFeeRate(ReadView const& view, SLE::ConstRef vault, bool is
     return TenthBips32{*feeRate};
 }
 
-[[nodiscard]] std::expected<STAmount, TER>
-calculateEarlyExitFee(SLE::ConstRef vault, STAmount const& assets, TenthBips32 rate)
+[[nodiscard]] STAmount
+calculateEarlyExitFee(SLE::ConstRef vault, STAmount const& amount, TenthBips32 rate)
 {
     XRPL_ASSERT(
         vault && vault->getType() == ltVAULT, "xrpl::calculateEarlyExitFee : valid Vault sle");
     XRPL_ASSERT(
-        assets.asset() == vault->at(sfAsset),
+        amount.asset() == vault->at(sfAsset),
         "xrpl::calculateEarlyExitFee : assets and Vault asset match");
-    XRPL_ASSERT(!assets.negative(), "xrpl::calculateEarlyExitFee : non-negative assets");
+    XRPL_ASSERT(!amount.negative(), "xrpl::calculateEarlyExitFee : non-negative assets");
     XRPL_ASSERT(rate <= kMaxEarlyExitFeeRate, "xrpl::calculateEarlyExitFee : valid fee rate");
 
-    if (rate == TenthBips32{0} || assets == beast::kZero)
-        return STAmount{assets.asset()};
+    if (rate == TenthBips32{0} || amount == beast::kZero)
+        return STAmount{amount.asset()};
 
     // At 100% the whole withdrawal is retained and nothing leaves the vault.
     if (rate == kMaxEarlyExitFeeRate)
-        return assets;
+        return amount;
 
     // Round the post-fee payout down on the grid AssetsAvailable will land on.
     STAmount const payout = [&] {
         // Build the exact payout under Downward so the 16-digit STAmount
         // conversion can never nudge it above the exact value.
         NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
-        return STAmount{assets.asset(), Number{assets} - tenthBipsOfValue(Number{assets}, rate)};
+        return STAmount{amount.asset(), Number{amount} - tenthBipsOfValue(Number{amount}, rate)};
     }();
 
-    // Below 100%, a fee that consumes the whole withdrawal is a rounding
-    // artefact; refuse rather than burn shares for nothing. This check also
-    // covers integral assets, which clampVaultOutflow passes through as is.
-    if (payout <= beast::kZero)
-        return std::unexpected(tecPRECISION_LOSS);
+    // A withdrawal too small to leave anything behind at the asset's own
+    // precision is retained in full, the same outcome as a 100% rate. Return
+    // before the clamp, which requires a strictly negative delta.
+    if (payout == beast::kZero)
+        return amount;
 
+    // The clamp rejects a payout that rounds to zero on the AssetsAvailable
+    // grid, which is the only way it can fail. That too means the fee retains
+    // the whole withdrawal.
     auto const clampedPayout = clampVaultOutflow(vault, -payout);
     if (!clampedPayout)
-        return std::unexpected(clampedPayout.error());
+        return amount;
 
     // The clamped payout lies below the exact payout and strictly below
-    // assets, so the fee is at least one unit and never exceeds assets.
-    STAmount fee = assets - *clampedPayout;
+    // amount, so the fee is at least one unit and never exceeds amount.
+    STAmount fee = amount - *clampedPayout;
     XRPL_ASSERT(
-        fee > beast::kZero && fee <= assets,
-        "xrpl::calculateEarlyExitFee : fee is positive and does not exceed assets");
+        fee > beast::kZero && fee < amount,
+        "xrpl::calculateEarlyExitFee : fee is positive and below amount");
+
+    // Release builds skip the assert, so keep the fee within [0, amount] even
+    // if the clamp ever returns a payout outside its contract.
+    if (fee > amount)
+        return amount;  // LCOV_EXCL_LINE
+    if (fee < beast::kZero)
+        return STAmount{amount.asset()};  // LCOV_EXCL_LINE
     return fee;
 }
 

@@ -361,10 +361,35 @@ class VaultEarlyExitFee_test : public VaultTestBase
             env(s.vault.withdraw({.depositor = bob, .id = s.keylet.key, .amount = drops(1'000)}));
             env.close();
             BEAST_EXPECT(env.balance(bob).value().xrp() == before + XRPAmount{999} - baseFee);
+        }
 
-            testcase("fee consuming the whole withdrawal below 100% is rejected");
-            env(s.vault.withdraw({.depositor = bob, .id = s.keylet.key, .amount = drops(1)}),
-                Ter{tecPRECISION_LOSS});
+        // A fresh vault keeps the exchange rate at 1:1, so the single unit
+        // redeems exactly one share rather than truncating to zero shares.
+        testcase("fee consuming the whole withdrawal below 100% pays nothing");
+        {
+            Env env{*this, features()};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), owner, alice, bob);
+            env.close();
+            XRPAmount const baseFee = env.current()->fees().base;
+
+            // 0.001%: the exact payout on 1 drop is 0.99999 drops, which
+            // rounds down to zero, so the whole drop is retained as the fee.
+            auto const s = makeVault(env, owner, xrpIssue(), 1u);
+            env(s.vault.deposit({.depositor = alice, .id = s.keylet.key, .amount = XRP(900)}));
+            env(s.vault.deposit({.depositor = bob, .id = s.keylet.key, .amount = XRP(100)}));
+            env.close();
+            enterInvestment(env, s);
+
+            auto const before = env.balance(bob).value().xrp();
+            env(s.vault.withdraw({.depositor = bob, .id = s.keylet.key, .amount = drops(1)}));
+            env.close();
+            BEAST_EXPECT(env.balance(bob).value().xrp() == before - baseFee);
+            BEAST_EXPECT(sharesOf(env, s, bob) == 99'999'999);
+            BEAST_EXPECT(sharesOutstanding(env, s) == 999'999'999);
+            expectTotals(env, s, XRP(1000).value(), XRP(1000).value());
         }
 
         testcase("IOU fee rounds up at the posterior live scale");
@@ -396,11 +421,38 @@ class VaultEarlyExitFee_test : public VaultTestBase
             BEAST_EXPECT(env.balance(bob, iou) == iou(Number{901'234'554, -6}));
             STAmount const total = iou(Number{1'098'765'446, -6});
             expectTotals(env, s, total, total);
+        }
 
-            // One unit at scale 6 carries a one-unit fee.
+        testcase("IOU fee consuming the whole withdrawal below 100% pays nothing");
+        {
+            Env env{*this, features()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), issuer, owner, alice, bob);
+            env.close();
+            PrettyAsset const iou = issuer[iouCurrency_];
+            env.trust(iou(10'000), alice, bob);
+            env(pay(issuer, alice, iou(1'000)));
+            env(pay(issuer, bob, iou(1'000)));
+            env.close();
+
+            auto const s = makeVault(env, owner, iou, 1u);
+            env(s.vault.deposit({.depositor = alice, .id = s.keylet.key, .amount = iou(1'000)}));
+            env(s.vault.deposit({.depositor = bob, .id = s.keylet.key, .amount = iou(100)}));
+            env.close();
+            enterInvestment(env, s);
+
+            // One unit at scale 6 leaves a payout below the grid, which rounds
+            // to zero, so the unit is retained as the fee.
             env(s.vault.withdraw(
-                    {.depositor = bob, .id = s.keylet.key, .amount = iou(Number{1, -6})}),
-                Ter{tecPRECISION_LOSS});
+                {.depositor = bob, .id = s.keylet.key, .amount = iou(Number{1, -6})}));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, iou) == iou(900));
+            BEAST_EXPECT(sharesOf(env, s, bob) == 99'999'999);
+            BEAST_EXPECT(sharesOutstanding(env, s) == 1'099'999'999);
+            expectTotals(env, s, iou(1'100).value(), iou(1'100).value());
         }
     }
 

@@ -349,36 +349,37 @@ checkAssetsMaximum(SLE::ConstRef vault, Number const& amount);
 /**
  * Returns the early-exit fee rate that applies to a withdrawal from `vault`.
  * The rate is zero when no fee applies: before featureLendingProtocolV1_2,
- * on a vault without sfEarlyExitFeeRate, outside the Investment phase, or
- * when the withdrawal burns every outstanding share (a retained fee would be
- * left behind in a vault with no shares).
+ * on a vault without sfEarlyExitFeeRate, or outside the Investment phase.
+ * The caller must not charge the fee on a withdrawal that burns every
+ * outstanding share, since the retained fee would be left behind in a vault
+ * with no shares.
  *
  * @param view The ledger view whose parent close time is used as the clock.
  * @param vault The vault SLE.
- * @param isFinalWithdrawal Whether the withdrawal burns every outstanding share.
  */
 [[nodiscard]] TenthBips32
-getApplicableEarlyExitFeeRate(ReadView const& view, SLE::ConstRef vault, bool isFinalWithdrawal);
+getEarlyExitFeeRate(ReadView const& view, SLE::ConstRef vault);
 
 /**
  * Computes the early-exit fee charged on a withdrawal from a closed-ended
- * vault during its Investment phase: `assets * rate`, rounded up on the grid
+ * vault during its Investment phase: `amount * rate`, rounded up on the grid
  * the post-fee payout leaves AssetsAvailable on (see clampVaultOutflow). The
- * payout, `assets` minus the fee, therefore needs no further rounding. A
+ * payout, `amount` minus the fee, therefore needs no further rounding. A
  * non-zero rate always keeps at least one unit behind (one drop for XRP, one
- * unit for MPT). A zero rate or zero assets yields zero; a 100% rate yields
- * `assets`.
+ * unit for MPT). A zero rate or zero amount yields zero; a 100% rate yields
+ * `amount`. A withdrawal so small that the post-fee payout rounds to zero is
+ * retained in full, so the fee equals `amount` and the caller pays nothing
+ * out, just as at 100%.
  *
  * @param vault The vault ledger entry.
- * @param assets The pre-fee withdrawal amount, already clamped by
+ * @param amount The pre-fee withdrawal amount, already clamped by
  *               clampVaultOutflow.
  * @param rate The vault's sfEarlyExitFeeRate, in 1/10 bips.
  *
- * @return The fee, never greater than `assets`, or tecPRECISION_LOSS if a
- *         rate below 100% would leave no payout at all.
+ * @return The fee, never greater than `amount`.
  */
-[[nodiscard]] std::expected<STAmount, TER>
-calculateEarlyExitFee(SLE::ConstRef vault, STAmount const& assets, TenthBips32 rate);
+[[nodiscard]] STAmount
+calculateEarlyExitFee(SLE::ConstRef vault, STAmount const& amount, TenthBips32 rate);
 
 /**
  * Controls whether to truncate shares instead of rounding.

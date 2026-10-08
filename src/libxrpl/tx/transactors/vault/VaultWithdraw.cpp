@@ -406,17 +406,6 @@ VaultWithdraw::doApply()
     Number const assetsTotal = getAssetsTotal(vault);
     auto const lossUnrealized = vault->at(sfLossUnrealized);
 
-    // Shares are burned against the pre-fee amount while only the post-fee
-    // payout leaves the vault; the fee stays behind and accrues to the
-    // remaining shareholders.
-    TenthBips32 const feeRate = getApplicableEarlyExitFeeRate(view(), vault, isFinalWithdrawal);
-    bool const chargesFee = feeRate > TenthBips32{0};
-    // sfEarlyExitFeeRate is only set under featureLendingProtocolV1_2, which creates
-    // FixedPrecision vaults, so the fee is always computed in the rounding block below.
-    XRPL_ASSERT(
-        !chargesFee || getVaultVersion(vault) == VaultVersion::FixedPrecision,
-        "xrpl::VaultWithdraw::doApply : early-exit fee requires a FixedPrecision vault");
-
     if (fix340Enabled && !isFinalWithdrawal)
     {
         // Fixed-shares path: a small share count can round to zero assets even though the vault has
@@ -484,6 +473,12 @@ VaultWithdraw::doApply()
     // the final-withdrawal path, which overwrites assetsWithdrawn with sfAssetsAvailable below.
     if (fix340Enabled && !isFinalWithdrawal && assetsWithdrawn > beast::kZero)
     {
+        // Shares are burned against the pre-fee amount while only the post-fee
+        // payout leaves the vault; the fee stays behind and accrues to the
+        // remaining shareholders. A final withdrawal never reaches this block,
+        // so no fee can be left behind in a vault with no shares.
+        TenthBips32 const feeRate = getEarlyExitFeeRate(view(), vault);
+
         // Check availability against the unclamped amount first, so a withdrawal that is both
         // over the vault's available balance and sub-ULP at the posterior sfAssetsTotal scale
         // reports tecINSUFFICIENT_FUNDS rather than tecPRECISION_LOSS. The clamp below only ever
@@ -492,7 +487,7 @@ VaultWithdraw::doApply()
         //
         // With an early-exit fee only the post-fee payout leaves the vault, so availability is
         // checked against it below instead.
-        if (!chargesFee && *assetsAvailable < assetsWithdrawn)
+        if (feeRate == TenthBips32{0} && *assetsAvailable < assetsWithdrawn)
         {
             JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
             return tecINSUFFICIENT_FUNDS;
@@ -510,26 +505,11 @@ VaultWithdraw::doApply()
             if (!maybeClamped)
                 return maybeClamped.error();  // LCOV_EXCL_LINE
 
-            if (chargesFee)
-            {
-                // The fee is rounded up on the grid the post-fee payout leaves
-                // AssetsAvailable on, so the payout needs no further rounding.
-                auto const maybeFee = calculateEarlyExitFee(vault, *maybeClamped, feeRate);
-                if (!maybeFee)
-                {
-                    JLOG(j_.debug()) << "VaultWithdraw: early-exit fee consumes the withdrawal";
-                    return maybeFee.error();
-                }
-
-                assetsWithdrawn = *maybeClamped - *maybeFee;
-
-                JLOG(j_.trace()) << "VaultWithdraw: early-exit fee=" << maybeFee->getText()
-                                 << " payout=" << assetsWithdrawn.getText();
-            }
-            else
-            {
-                assetsWithdrawn = *maybeClamped;
-            }
+            // The fee is rounded up on the grid the post-fee payout leaves
+            // AssetsAvailable on, so the payout needs no further rounding. A
+            // withdrawal too small to leave anything behind is retained in full
+            // and pays nothing out, as at a 100% rate.
+            assetsWithdrawn = *maybeClamped - calculateEarlyExitFee(vault, *maybeClamped, feeRate);
         }
         // LCOV_EXCL_START
         catch (std::overflow_error const&)
