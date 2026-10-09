@@ -10,6 +10,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 
 #include <cstdint>
 #include <expected>
@@ -360,6 +361,41 @@ isOnVaultBaseGrid(Asset const& asset, Number const& value, int baseScale);
  */
 [[nodiscard]] TER
 checkAssetsMaximum(SLE::ConstRef vault, Number const& amount);
+
+/**
+ * Returns the early-exit fee rate that applies to a withdrawal from `vault`.
+ * The rate is zero when no fee applies: before featureLendingProtocolV1_2,
+ * on a vault without sfEarlyExitFeeRate, or outside the Investment phase.
+ * The caller must not charge the fee on a withdrawal that burns every
+ * outstanding share, since the retained fee would be left behind in a vault
+ * with no shares.
+ *
+ * @param view The ledger view whose parent close time is used as the clock.
+ * @param vault The vault SLE.
+ */
+[[nodiscard]] TenthBips32
+getEarlyExitFeeRate(ReadView const& view, SLE::ConstRef vault);
+
+/**
+ * Computes the early-exit fee charged on a withdrawal from a closed-ended
+ * vault during its Investment phase: `amount * rate`, rounded up on the grid
+ * the post-fee payout leaves AssetsAvailable on (see clampVaultOutflow). The
+ * payout, `amount` minus the fee, therefore needs no further rounding. A
+ * non-zero rate always keeps at least one unit behind (one drop for XRP, one
+ * unit for MPT). A zero rate or zero amount yields zero; a 100% rate yields
+ * `amount`. A withdrawal so small that the post-fee payout rounds to zero is
+ * retained in full, so the fee equals `amount` and the caller pays nothing
+ * out, just as at 100%.
+ *
+ * @param vault The vault ledger entry.
+ * @param amount The pre-fee withdrawal amount, already clamped by
+ *               clampVaultOutflow.
+ * @param rate The vault's sfEarlyExitFeeRate, in 1/10 bips.
+ *
+ * @return The fee, never greater than `amount`.
+ */
+[[nodiscard]] STAmount
+calculateEarlyExitFee(SLE::ConstRef vault, STAmount const& amount, TenthBips32 rate);
 
 /**
  * Controls whether to truncate shares instead of rounding.

@@ -788,6 +788,7 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
     {sfVaultKind, SoeOptional},
     {sfSubscriptionDate, SoeOptional},
     {sfRedemptionDate, SoeOptional},
+    {sfEarlyExitFeeRate, SoeOptional},
 }))
 
 /** This transaction updates a single asset vault. */

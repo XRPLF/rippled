@@ -325,6 +325,15 @@ constexpr std::uint8_t kVaultMaximumLegacyIouScale = 18;
 constexpr std::uint8_t kVaultMaximumFixedPrecisionIouScale = 10;
 
 /**
+ * The maximum early-exit fee rate of a closed-ended vault in 1/10 bips.
+ *
+ * Valid values are between 0 and 100% inclusive. At 100% an early exit burns
+ * shares and transfers no assets.
+ */
+constexpr TenthBips32 kMaxEarlyExitFeeRate = percentageToTenthBips(100);
+static_assert(kMaxEarlyExitFeeRate == TenthBips32(100'000u));
+
+/**
  * Vault ledger-entry schema versions, persisted as sfLEVersion.
  *
  * LEVersion records which protocol a Vault was created under so later

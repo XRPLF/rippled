@@ -25,6 +25,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
@@ -48,6 +49,9 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureLendingProtocolV1_1) &&
         (ctx.tx.isFieldPresent(sfVaultKind) || ctx.tx.isFieldPresent(sfSubscriptionDate) ||
          ctx.tx.isFieldPresent(sfRedemptionDate)))
+        return false;
+
+    if (ctx.tx.isFieldPresent(sfEarlyExitFeeRate) && !ctx.rules.enabled(featureLendingProtocolV1_2))
         return false;
 
     return true;
@@ -122,6 +126,16 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (!hasSubscription || !hasRedemption)
             return temMALFORMED;
         if (!isValidClosedEndedGap(ctx.tx[sfSubscriptionDate], ctx.tx[sfRedemptionDate]))
+            return temMALFORMED;
+    }
+
+    // An early-exit fee only lifts the Investment-phase withdrawal gate, which
+    // exists only on closed-ended vaults. A rate of zero is still a rate.
+    if (auto const feeRate = ctx.tx[~sfEarlyExitFeeRate])
+    {
+        if (!isClosedEnded)
+            return temMALFORMED;
+        if (TenthBips32{*feeRate} > kMaxEarlyExitFeeRate)
             return temMALFORMED;
     }
 
@@ -312,6 +326,10 @@ VaultCreate::doApply()
         {
             vault->at(sfSubscriptionDate) = tx[sfSubscriptionDate];
             vault->at(sfRedemptionDate) = tx[sfRedemptionDate];
+            // Stored as submitted, including zero: an absent field forbids early
+            // exit, while zero permits it free of charge.
+            if (auto const feeRate = tx[~sfEarlyExitFeeRate])
+                vault->at(sfEarlyExitFeeRate) = *feeRate;
         }
     }
     view().insert(vault);
