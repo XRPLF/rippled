@@ -2370,7 +2370,7 @@ class LoanBroker_test : public beast::unit_test::Suite
 
         // Cleanup3.5 rejects the payout in preclaim. Before it, the enforcing
         // ValidMPTTransfer invariant of Cleanup3.4 is the only thing that catches it.
-        TER const expected = [&]() -> TER {
+        TER const expected = [&] -> TER {
             if (features[fixCleanup3_5_0])
                 return tecNO_AUTH;
             if (features[fixCleanup3_4_0])
