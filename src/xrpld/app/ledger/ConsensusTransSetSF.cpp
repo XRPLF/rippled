@@ -59,7 +59,7 @@ ConsensusTransSetSF::gotNode(
                 "match");
             auto const pap = &app_;
             app_.getJobQueue().addJob(
-                JtTransaction, "TxsToTxn", [pap, stx]() { pap->getOPs().submitTransaction(stx); });
+                JtTransaction, "TxsToTxn", [pap, stx] { pap->getOPs().submitTransaction(stx); });
         }
         catch (std::exception const& ex)
         {

@@ -30,11 +30,8 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/system/Batch.h>
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -236,7 +233,7 @@ private:
                 BEAST_EXPECT(types[type] == 1);
             }
         }
-        auto const loanID = [&]() {
+        auto const loanID = [&] {
             json::Value params(json::ValueType::Object);
             params[jss::account] = lender.human();
             params[jss::type] = "Loan";
@@ -398,7 +395,7 @@ private:
                 env.close();
                 if (auto const vaultSle = env.le(vaultKeylet); BEAST_EXPECT(vaultSle))
                 {
-                    auto const expected = [&]() {
+                    auto const expected = [&] {
                         // The service fee is transferred to the broker if
                         // a borrower is not the broker
                         if (borrower != broker)
@@ -498,8 +495,7 @@ private:
         // From FIND-001
         testcase << "Batch Bypass Counterparty";
 
-        bool const lendingBatchEnabled = !std::ranges::any_of(
-            Batch::kDisabledTxTypes, [](auto const& disabled) { return disabled == ttLOAN_SET; });
+        bool const lendingBatchEnabled = features[featureLendingProtocolV1_2];
 
         using namespace jtx;
         using namespace std::chrono_literals;

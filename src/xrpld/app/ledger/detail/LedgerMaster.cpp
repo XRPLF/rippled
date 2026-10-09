@@ -125,7 +125,7 @@ shouldAcquire(
     std::uint32_t const candidateLedger,
     beast::Journal j)
 {
-    bool const ret = [&]() {
+    bool const ret = [&] {
         // Fetch ledger if it may be the current ledger
         if (candidateLedger >= currentLedger)
             return true;
@@ -489,7 +489,7 @@ LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 void
 LedgerMaster::applyHeldTransactions()
 {
-    CanonicalTXSet const set = [this]() {
+    CanonicalTXSet const set = [this] {
         std::scoped_lock const sl(mutex_);
         // VFALCO NOTE The hash for an open ledger is undefined so we use
         // something that is a reasonable substitute.
@@ -1406,7 +1406,7 @@ LedgerMaster::tryAdvance()
     if (!advanceThread_ && !validLedger_.empty())
     {
         advanceThread_ = true;
-        app_.getJobQueue().addJob(JtAdvance, "AdvanceLedger", [this]() {
+        app_.getJobQueue().addJob(JtAdvance, "AdvanceLedger", [this] {
             std::unique_lock sl(mutex_);
 
             XRPL_ASSERT(
@@ -1573,7 +1573,7 @@ LedgerMaster::newPFWork(char const* name, std::unique_lock<std::recursive_mutex>
     if (!app_.isStopping() && pathFindThread_ < 2 && app_.getPathRequestManager().requestsPending())
     {
         JLOG(journal_.debug()) << "newPFWork: Creating job. path find threads: " << pathFindThread_;
-        if (app_.getJobQueue().addJob(JtUpdatePf, name, [this]() { updatePaths(); }))
+        if (app_.getJobQueue().addJob(JtUpdatePf, name, [this] { updatePaths(); }))
         {
             ++pathFindThread_;
         }
@@ -1908,7 +1908,7 @@ LedgerMaster::fetchForHistory(
                     fillInProgress_ = seq;
                 }
                 app_.getJobQueue().addJob(
-                    JtAdvance, "TryFill", [this, ledger]() { tryFill(ledger); });
+                    JtAdvance, "TryFill", [this, ledger] { tryFill(ledger); });
             }
             progress = true;
         }
@@ -2067,7 +2067,7 @@ LedgerMaster::gotFetchPack(bool progress, std::uint32_t seq)
 {
     if (!gotFetchPackThread_.test_and_set(std::memory_order_acquire))
     {
-        app_.getJobQueue().addJob(JtLedgerData, "GotFetchPack", [&]() {
+        app_.getJobQueue().addJob(JtLedgerData, "GotFetchPack", [&] {
             app_.getInboundLedgers().gotFetchPack();
             gotFetchPackThread_.clear(std::memory_order_release);
         });

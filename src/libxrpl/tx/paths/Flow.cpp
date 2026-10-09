@@ -57,7 +57,7 @@ flow(
     beast::Journal j,
     path::detail::FlowDebugInfo* flowDebugInfo)
 {
-    Asset const srcAsset = [&]() -> Asset {
+    Asset const srcAsset = [&] -> Asset {
         if (sendMax)
             return sendMax->asset();
         return deliver.asset().visit(

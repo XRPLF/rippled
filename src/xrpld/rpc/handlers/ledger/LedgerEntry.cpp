@@ -180,7 +180,23 @@ parseCheck(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const account =
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
+    if (!account)
+        return std::unexpected(account.error());
+
+    auto const sequence =
+        ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!sequence)
+        return std::unexpected(sequence.error());
+
+    auto const seqProxy = SeqProxy::rawSequence(*sequence);
+    return keylet::check(*account, seqProxy).key;
 }
 
 static std::expected<UInt256, json::Value>
@@ -570,7 +586,23 @@ parseNFTokenOffer(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const owner =
+        ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    if (!owner)
+        return std::unexpected(owner.error());
+
+    auto const sequence =
+        ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!sequence)
+        return std::unexpected(sequence.error());
+
+    auto const seqProxy = SeqProxy::rawSequence(*sequence);
+    return keylet::nftokenOffer(*owner, seqProxy).key;
 }
 
 static std::expected<UInt256, json::Value>
@@ -638,7 +670,28 @@ parsePayChannel(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const account =
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
+    if (!account)
+        return std::unexpected(account.error());
+
+    auto const destination =
+        ledger_entry_helpers::requiredAccountID(params, jss::destination, "malformedAddress");
+    if (!destination)
+        return std::unexpected(destination.error());
+
+    auto const sequence =
+        ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!sequence)
+        return std::unexpected(sequence.error());
+
+    auto const seqProxy = SeqProxy::rawSequence(*sequence);
+    return keylet::payChannel(*account, *destination, seqProxy).key;
 }
 
 static std::expected<UInt256, json::Value>
@@ -726,7 +779,17 @@ parseSignerList(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const id =
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
+    if (!id)
+        return std::unexpected(id.error());
+
+    return keylet::signerList(*id).key;
 }
 
 static std::expected<UInt256, json::Value>
@@ -917,7 +980,7 @@ doLedgerEntry(rpc::JsonContext& context)
          .expectedType = ltRIPPLE_STATE},
     });
 
-    auto const hasMoreThanOneMember = [&]() {
+    auto const hasMoreThanOneMember = [&] {
         int count = 0;
 
         for (auto const& ledgerEntry : kLedgerEntryParsers)
@@ -1048,13 +1111,13 @@ doLedgerEntryGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& c
     if (auto status = rpc::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
-        if (status.toErrorCode() == RpcInvalidParams)
+        if (status == RpcInvalidParams)
         {
-            errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message);
         }
         else
         {
-            errorStatus = grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::NOT_FOUND, status.message);
         }
         return {response, errorStatus};
     }
@@ -1079,7 +1142,7 @@ doLedgerEntryGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& c
     auto& stateObject = *response.mutable_ledger_object();
     stateObject.set_data(s.peekData().data(), s.getLength());
     stateObject.set_key(request.key());
-    *(response.mutable_ledger()) = request.ledger();
+    *response.mutable_ledger() = request.ledger();
     return {response, status};
 }
 }  // namespace xrpl

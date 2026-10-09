@@ -482,7 +482,7 @@ private:
             , targetTxnCount_(
                   setup.targetTxnInLedger < minimumTxnCount_ ? minimumTxnCount_
                                                              : setup.targetTxnInLedger)
-            , maximumTxnCount_([&]() -> std::optional<std::size_t> {
+            , maximumTxnCount_([&] -> std::optional<std::size_t> {
                 if (!setup.maximumTxnInLedger)
                     return std::nullopt;
                 return *setup.maximumTxnInLedger < targetTxnCount_ ? targetTxnCount_
