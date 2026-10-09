@@ -305,7 +305,8 @@ MPTTester::MPTTester(MPTInitDef const& arg, std::source_location const& loc)
               .close = arg.close,
               .create = makeMPTCreate(arg),
           },
-          loc}
+          loc,
+      }
 {
 }
 

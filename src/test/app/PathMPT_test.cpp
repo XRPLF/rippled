@@ -134,6 +134,7 @@ public:
                 .apiVersion = rpc::kApiVersionIfUnspecified,
             },
             {},
+            // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
             {},
         };
         json::Value result;

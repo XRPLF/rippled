@@ -562,9 +562,11 @@ static RPCCallTestData const kRpcCallTestArray[] = {
     {
         "account_lines: peer.",
         __LINE__,
-        {"account_lines",
-         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"},
+        {
+            "account_lines",
+            "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+            "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        },
         RPCCallTestData::Exception::NoException,
         R"({
     "method" : "account_lines",
@@ -1257,12 +1259,14 @@ static RPCCallTestData const kRpcCallTestArray[] = {
     {
         "account_tx: ledger_index plus trailing params.",
         __LINE__,
-        {"account_tx",
-         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "707",
-         "descending",
-         "binary",
-         "count"},
+        {
+            "account_tx",
+            "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+            "707",
+            "descending",
+            "binary",
+            "count",
+        },
         RPCCallTestData::Exception::NoException,
         R"({
     "method" : "account_tx",

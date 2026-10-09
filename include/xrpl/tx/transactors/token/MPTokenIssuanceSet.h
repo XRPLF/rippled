@@ -37,9 +37,11 @@ public:
 
     static constexpr std::array<FlagMapping, 7> flagMapping = {
         {
-            {.setFlag = tfMPTSetCanLock,
-             .immutableFlag = lsifMPTCanLock,
-             .ledgerFlag = lsfMPTCanLock},
+            {
+                .setFlag = tfMPTSetCanLock,
+                .immutableFlag = lsifMPTCanLock,
+                .ledgerFlag = lsfMPTCanLock,
+            },
             {
                 .setFlag = tfMPTSetRequireAuth,
                 .immutableFlag = lsifMPTRequireAuth,

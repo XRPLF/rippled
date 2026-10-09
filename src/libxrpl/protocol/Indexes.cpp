@@ -39,12 +39,16 @@ namespace xrpl {
 std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets{
     {
         {.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
-        {.function = &keylet::ownerDir,
-         .expectedLEName = jss::DirectoryNode,
-         .includeInTests = true},
-        {.function = &keylet::signerList,
-         .expectedLEName = jss::SignerList,
-         .includeInTests = true},
+        {
+            .function = &keylet::ownerDir,
+            .expectedLEName = jss::DirectoryNode,
+            .includeInTests = true,
+        },
+        {
+            .function = &keylet::signerList,
+            .expectedLEName = jss::SignerList,
+            .includeInTests = true,
+        },
         // It's normally impossible to create an item at nftpage_min, but
         // test it anyway, since the invariant checks for it.
         {

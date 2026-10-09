@@ -166,36 +166,46 @@ class LoanPermissionedDomain_test : public LoanTestBase
         };
 
         std::vector<Step> const steps{
-            {.name = "DomainID set",
-             .changeState = {},
-             .expectedDomainId = domainId,
-             .memberResult = tesSUCCESS,
-             .nonMemberResult = tecNO_AUTH},
-            {.name = "DomainID unset",
-             .changeState = [&] { setBrokerDomain(beast::kZero); },
-             .expectedDomainId = std::nullopt,
-             .memberResult = tecNO_AUTH,
-             .nonMemberResult = tecNO_AUTH},
-            {.name = "DomainID set again",
-             .changeState = [&] { setBrokerDomain(domainId); },
-             .expectedDomainId = domainId,
-             .memberResult = tesSUCCESS,
-             .nonMemberResult = tecNO_AUTH},
-            {.name = "Domain deleted while the broker still refers to it",
-             .changeState =
-                 [&] {
-                     env(pdomain::deleteTx(credIssuer, domainId));
-                     env.close();
-                     BEAST_EXPECT(!env.le(keylet::permissionedDomain(domainId)));
-                 },
-             .expectedDomainId = domainId,
-             .memberResult = tecOBJECT_NOT_FOUND,
-             .nonMemberResult = tecOBJECT_NOT_FOUND},
-            {.name = "Stale DomainID cleared by the broker owner",
-             .changeState = [&] { setBrokerDomain(beast::kZero); },
-             .expectedDomainId = std::nullopt,
-             .memberResult = tecNO_AUTH,
-             .nonMemberResult = tecNO_AUTH},
+            {
+                .name = "DomainID set",
+                .changeState = {},
+                .expectedDomainId = domainId,
+                .memberResult = tesSUCCESS,
+                .nonMemberResult = tecNO_AUTH,
+            },
+            {
+                .name = "DomainID unset",
+                .changeState = [&] { setBrokerDomain(beast::kZero); },
+                .expectedDomainId = std::nullopt,
+                .memberResult = tecNO_AUTH,
+                .nonMemberResult = tecNO_AUTH,
+            },
+            {
+                .name = "DomainID set again",
+                .changeState = [&] { setBrokerDomain(domainId); },
+                .expectedDomainId = domainId,
+                .memberResult = tesSUCCESS,
+                .nonMemberResult = tecNO_AUTH,
+            },
+            {
+                .name = "Domain deleted while the broker still refers to it",
+                .changeState =
+                    [&] {
+                        env(pdomain::deleteTx(credIssuer, domainId));
+                        env.close();
+                        BEAST_EXPECT(!env.le(keylet::permissionedDomain(domainId)));
+                    },
+                .expectedDomainId = domainId,
+                .memberResult = tecOBJECT_NOT_FOUND,
+                .nonMemberResult = tecOBJECT_NOT_FOUND,
+            },
+            {
+                .name = "Stale DomainID cleared by the broker owner",
+                .changeState = [&] { setBrokerDomain(beast::kZero); },
+                .expectedDomainId = std::nullopt,
+                .memberResult = tecNO_AUTH,
+                .nonMemberResult = tecNO_AUTH,
+            },
         };
 
         // Submits a LoanSet for `borrower` and checks a loan is created only

@@ -26,6 +26,7 @@ class STTx;
  * greater than the maximum value of uint16.
  */
 // Macro-generated, complex
+// NOLINTBEGIN(readability-trailing-comma) the macro supplies the trailing comma
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum GranularPermissionType : std::uint32_t {
 #pragma push_macro("GRANULAR_PERMISSION")
@@ -36,8 +37,9 @@ enum GranularPermissionType : std::uint32_t {
 #include <xrpl/protocol/detail/permissions.macro>
 
 #undef GRANULAR_PERMISSION
-#pragma pop_macro("GRANULAR_PERMISSION"),
+#pragma pop_macro("GRANULAR_PERMISSION")
 };
+// NOLINTEND(readability-trailing-comma)
 
 class Permission
 {

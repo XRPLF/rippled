@@ -1644,6 +1644,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 .apiVersion = rpc::kApiVersionIfUnspecified,
             },
             {},
+            // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
             {},
         };
         json::Value params;
@@ -1714,6 +1715,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 .apiVersion = rpc::kApiVersionIfUnspecified,
             },
             {},
+            // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
             {},
         };
         json::Value params;
