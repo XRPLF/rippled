@@ -93,6 +93,9 @@ class Parser
         std::size_t count{};
     };
 
+    // A real, if empty, buffer to offer Boost in place of a null pointer.
+    static constexpr char kEmpty{};
+
     std::tuple<Visitor*...> visitors_;
     Errors errors_;
 
@@ -199,7 +202,7 @@ public:
      */
     // clang-format on
     bool
-    parse(std::string document);
+    parse(std::string_view document);
 
     // clang-format off
     /**
@@ -328,6 +331,12 @@ private:
 template <typename... Visitor>
 class Parser<Visitor...>::Handler
 {
+    using ErrorCode = boost::system::error_code;
+    // The text of a key, string, number, or comment, as Boost presents it.
+    using Text = boost::json::string_view;
+
+    static constexpr auto kUnlimited = std::numeric_limits<std::size_t>::max();
+
     Parser& parser_;
 
 public:
@@ -347,16 +356,15 @@ public:
 
     // The members below are Boost.JSON's handler interface, whose names
     // basic_parser requires exactly as written.
-    // NOLINTBEGIN(readability-identifier-naming)
 
     // The Parser enforces its own runtime limits, so Boost's are left open.
-    static constexpr std::size_t max_object_size = std::numeric_limits<std::size_t>::max();
-    static constexpr std::size_t max_array_size = std::numeric_limits<std::size_t>::max();
-    static constexpr std::size_t max_key_size = std::numeric_limits<std::size_t>::max();
-    static constexpr std::size_t max_string_size = std::numeric_limits<std::size_t>::max();
+    static constexpr auto max_object_size = kUnlimited;  // NOLINT(readability-identifier-naming)
+    static constexpr auto max_array_size = kUnlimited;   // NOLINT(readability-identifier-naming)
+    static constexpr auto max_key_size = kUnlimited;     // NOLINT(readability-identifier-naming)
+    static constexpr auto max_string_size = kUnlimited;  // NOLINT(readability-identifier-naming)
 
     bool
-    on_document_begin(boost::system::error_code& ec)
+    on_document_begin(ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onDocumentBegin(), ec);
     }
@@ -364,112 +372,110 @@ public:
     // The Parser reports the end of the document itself, once it knows any
     // trailing comments were accepted.
     static bool
-    on_document_end(boost::system::error_code&)
+    on_document_end(ErrorCode&)  // NOLINT(readability-identifier-naming)
     {
         return true;
     }
 
     bool
-    on_object_begin(boost::system::error_code& ec)
+    on_object_begin(ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onObjectBegin(), ec);
     }
 
     bool
-    on_object_end(std::size_t, boost::system::error_code& ec)
+    on_object_end(std::size_t, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onObjectEnd(), ec);
     }
 
     bool
-    on_array_begin(boost::system::error_code& ec)
+    on_array_begin(ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onArrayBegin(), ec);
     }
 
     bool
-    on_array_end(std::size_t, boost::system::error_code& ec)
+    on_array_end(std::size_t, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onArrayEnd(), ec);
     }
 
     bool
-    on_key_part(boost::json::string_view s, std::size_t, boost::system::error_code& ec)
+    on_key_part(Text s, std::size_t, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onKeyPart(view(s)), ec);
     }
 
     bool
-    on_key(boost::json::string_view s, std::size_t, boost::system::error_code& ec)
+    on_key(Text s, std::size_t, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onKey(view(s)), ec);
     }
 
     bool
-    on_string_part(boost::json::string_view s, std::size_t, boost::system::error_code& ec)
+    on_string_part(Text s, std::size_t, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onStringPart(view(s)), ec);
     }
 
     bool
-    on_string(boost::json::string_view s, std::size_t, boost::system::error_code& ec)
+    on_string(Text s, std::size_t, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onString(view(s)), ec);
     }
 
     bool
-    on_number_part(boost::json::string_view s, boost::system::error_code& ec)
+    on_number_part(Text s, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onNumberPart(view(s)), ec);
     }
 
     bool
-    on_int64(std::int64_t i, boost::json::string_view s, boost::system::error_code& ec)
+    on_int64(std::int64_t i, Text s, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onInteger(i, view(s)), ec);
     }
 
     bool
-    on_uint64(std::uint64_t u, boost::json::string_view s, boost::system::error_code& ec)
+    on_uint64(std::uint64_t u, Text s, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onUnsigned(u, view(s)), ec);
     }
 
     bool
-    on_double(double d, boost::json::string_view s, boost::system::error_code& ec)
+    on_double(double d, Text s, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onDouble(d, view(s)), ec);
     }
 
     bool
-    on_bool(bool b, boost::system::error_code& ec)
+    on_bool(bool b, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onBool(b), ec);
     }
 
     bool
-    on_null(boost::system::error_code& ec)
+    on_null(ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onNull(), ec);
     }
 
     bool
-    on_comment_part(boost::json::string_view s, boost::system::error_code& ec)
+    on_comment_part(Text s, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onCommentPart(view(s)), ec);
     }
 
     bool
-    on_comment(boost::json::string_view s, boost::system::error_code& ec)
+    on_comment(Text s, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
         return check(parser_.onComment(view(s)), ec);
     }
 
-    // NOLINTEND(readability-identifier-naming)
-
 private:
     static std::string_view
-    view(boost::json::string_view s)
+    view(Text s)
     {
         return {s.data(), s.size()};
     }
@@ -477,7 +483,7 @@ private:
     // Boost stops the parse when a handler returns false, but only reports it
     // as an error if the error code is set.
     static bool
-    check(bool ok, boost::system::error_code& ec)
+    check(bool ok, ErrorCode& ec)
     {
         if (!ok)
         {
@@ -490,7 +496,7 @@ private:
 
 template <typename... Visitor>
 bool
-Parser<Visitor...>::parse(std::string document)
+Parser<Visitor...>::parse(std::string_view document)
 {
     return parse(document.data(), document.data() + document.size());
 }
@@ -541,6 +547,14 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::parse(char const* beginDoc, char const* endDoc)
 {
+    // An empty range may be two null pointers, for example from an empty
+    // std::vector<char>.
+    if (beginDoc == endDoc)
+    {
+        beginDoc = &kEmpty;
+        endDoc = beginDoc;
+    }
+
     auto const documentSize = static_cast<std::size_t>(endDoc - beginDoc);
 
     if (documentSize > documentSizeLimit)
@@ -596,12 +610,13 @@ Parser<Visitor...>::start()
     column_ = 1;
     afterCarriageReturn_ = false;
 
-    auto options = boost::json::parse_options{};
-    options.allow_comments = true;
-    options.allow_trailing_commas = false;
-    options.allow_invalid_utf8 = false;
-    options.allow_invalid_utf16 = false;
-    options.numbers = boost::json::number_precision::precise;
+    auto options = boost::json::parse_options{
+        .allow_comments = true,
+        .allow_trailing_commas = false,
+        .allow_invalid_utf8 = false,
+        .allow_invalid_utf16 = false,
+        .numbers = boost::json::number_precision::precise,
+    };
     // Boost counts only containers, and depthLimit allows one more container
     // than that when the innermost is empty (see beginValue). Leaving Boost
     // two levels of headroom lets depthLimit be the one that applies.
@@ -619,6 +634,12 @@ Parser<Visitor...>::feed(BasicParser& parser, char const* data, std::size_t size
     if (stopped_)
     {
         return;
+    }
+
+    // An empty buffer in a sequence may have a null data pointer.
+    if (data == nullptr)
+    {
+        data = &kEmpty;
     }
 
     auto ec = boost::system::error_code{};
@@ -651,10 +672,8 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::finish(BasicParser& parser, std::size_t documentSize)
 {
-    // Tells Boost the document is complete. A real, if empty, range keeps the
-    // pointer arithmetic in a resumed parse well defined.
-    static constexpr char kNothing{};
-    feed(parser, &kNothing, 0, false);
+    // Tells Boost the document is complete.
+    feed(parser, &kEmpty, 0, false);
 
     if (!errors_.empty())
     {

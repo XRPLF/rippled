@@ -30,12 +30,6 @@ public:
      * for parsing.
      */
     Reader();
-
-    /**
-     * @brief Readers are movable but not copyable: parser_ reports into
-     * builder_, so a compiler-generated copy would write into the original's
-     * builder. The move operations rebind it.
-     */
     Reader(Reader const&) = delete;
     Reader&
     operator=(Reader const&) = delete;
