@@ -136,7 +136,13 @@ private:
         using LedgersByHash = TaggedCache<LedgerHash, Ledger const>;
 
         std::unique_ptr<LedgersByHash> byHash;
-        std::map<LedgerIndex, LedgerHash> byIndex;  // validated ledgers
+
+        // Validated ledgers, seq -> hash. A cache over the ledger database:
+        // every consumer falls back to the database on a miss. Pruned only by
+        // clearLedgerCachePrior() on online_delete rotation. On nodes without
+        // online_delete it grows for the life of the process
+        // (~65 bytes per validated ledger).
+        std::map<LedgerIndex, LedgerHash> byIndex;
     };
 
     // No lock site re-enters ledgerMaps_: getLedgerBySeq, clearLedgerCachePrior
