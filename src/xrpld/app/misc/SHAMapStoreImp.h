@@ -122,7 +122,7 @@ private:
      * again later. This value represents the number of ledgers that must be validated without
      * making rotation progress before the process is aborted.
      */
-    std::uint32_t maxWaitingLedgers_ = deleteBatch_;
+    std::uint32_t maxWaitingLedgers_;
 
     // these do not exist upon SHAMapStore creation, but do exist
     // as of run() or before

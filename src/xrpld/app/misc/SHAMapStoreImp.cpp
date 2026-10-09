@@ -291,6 +291,11 @@ SHAMapStoreImp::rescueNode(SHAMapTreeNode const& node, std::optional<NodeObjectT
     // directly into the writable backend so it survives this rotation
     // instead of later surfacing as an unresolvable SHAMapMissingNode.
 
+    // Note that this functions is only intended to be called for AccountState nodes. Transaction
+    // nodes and Inner (unknown) nodes are not expected to be present in the SHAMap or TreeNodeCache
+    // which are used to find missing nodes, and do not need to be rescued. The check below will
+    // prevent writing them if they are encountered, but it is not expected to happen in practice.
+
     auto const nodeType = node.getType();
     auto const objectType = std::invoke([nodeType, expectedType] {
         switch (nodeType)
@@ -548,7 +553,7 @@ SHAMapStoreImp::run()
                 << "FINISHED ROTATION: validatedSeq: " << validatedSeq
                 << ", lastRotated: " << lastRotated << " diff " << diff
                 << ". Updated validated seq is " << currentValidatedSeq << ", " << processingDiff
-                << " ledgers were validated during the rotation processs. Complete ledgers: "
+                << " ledgers were validated during the rotation process. Complete ledgers: "
                 << ledgerMaster_->getCompleteLedgers();
         }
     }
