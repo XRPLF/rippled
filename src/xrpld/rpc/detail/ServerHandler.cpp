@@ -193,7 +193,7 @@ ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoin
 {
     auto const& port = session.port();
 
-    auto const c = [this, &port]() {
+    auto const c = [this, &port] {
         std::scoped_lock const lock(mutex_);
         return ++count_[port];
     }();
@@ -396,7 +396,7 @@ void
 logDuration(json::Value const& request, T const& duration, beast::Journal& journal)
 {
     using namespace std::chrono_literals;
-    auto const level = [&]() {
+    auto const level = [&] {
         if (duration >= 10s)
             return journal.error();
         if (duration >= 1s)
@@ -971,7 +971,7 @@ ServerHandler::processRequest(
     }
 
     // If we're returning an error_code, use that to determine the HTTP status.
-    int const httpStatus = [&reply]() {
+    int const httpStatus = [&reply] {
         // This feature is enabled with ripplerpc version 3.0 and above.
         // Before ripplerpc version 3.0 always return 200.
         if (reply.isMember(jss::ripplerpc) && reply[jss::ripplerpc].isString() &&

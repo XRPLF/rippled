@@ -832,7 +832,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&)
 {
-    return std::thread([&, this]() {
+    return std::thread([&, this] {
         int cacheRemovals = 0;
         int mapRemovals = 0;
 
@@ -912,7 +912,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&)
 {
-    return std::thread([&, this]() {
+    return std::thread([&, this] {
         // NOLINTBEGIN https://github.com/XRPLF/rippled/issues/7056
         int cacheRemovals = 0;
         int mapRemovals = 0;

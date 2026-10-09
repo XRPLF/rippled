@@ -206,7 +206,7 @@ NegativeUNLVote::buildScoreTable(
 
     // Return false if the validation message history or local node's
     // participation in the history is not good.
-    auto const myValidationCount = [&]() -> std::uint32_t {
+    auto const myValidationCount = [&] -> std::uint32_t {
         if (auto const it = scoreTable.find(myId_); it != scoreTable.end())
             return it->second;
         return 0;
@@ -239,7 +239,7 @@ NegativeUNLVote::findAllCandidates(
     HashMap<NodeID, std::uint32_t> const& scoreTable)
 {
     // Compute if need to find more validators to disable
-    auto const canAdd = [&]() -> bool {
+    auto const canAdd = [&] -> bool {
         auto const maxNegativeListed =
             static_cast<std::size_t>(std::ceil(unl.size() * kNegativeUnlMaxListed));
         std::size_t negativeListed = 0;
