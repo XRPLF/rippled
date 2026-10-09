@@ -210,6 +210,9 @@ XRPNotCreated::finalize(
     ReadView const&,
     beast::Journal const& j) const
 {
+    // drops_ is a full-width running total, so a value that would have wrapped a
+    // 64-bit accumulator is caught here.
+
     // The net change should never be positive, as this would mean that the
     // transaction created XRP out of thin air. That's not possible.
     if (drops_ > 0)
