@@ -3,13 +3,13 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -103,6 +103,8 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         // Post-fixCleanup3_5_0: apply the cover-withdraw transfer and authorization checks too.
         if (ctx.view.rules().enabled(fixCleanup3_5_0))
         {
+            // Like a cover withdrawal, the payout skips the lsfMPTCanTransfer check so that an
+            // issuer cannot trap the broker's cover.
             if (auto const ret = canTransfer(
                     ctx.view, asset, brokerPseudo, brokerOwner, WaiveMPTCanTransfer::Yes))
                 return ret;
@@ -172,7 +174,7 @@ LoanBrokerDelete::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     // Pre-fixCleanup3_5_0: the owner count drops after the pseudo-account is erased.
-    // Post-fixCleanup3_5_0: it drops first, so the owner's MPToken below can use the
+    // Post-fixCleanup3_5_0: it drops first, so the owner's holding created below can use the
     // reserve that the broker frees.
     bool const fix350Enabled = view().rules().enabled(fixCleanup3_5_0);
     if (fix350Enabled)
@@ -185,19 +187,34 @@ LoanBrokerDelete::doApply()
     {
         auto const coverAvailable = STAmount{vaultAsset, broker->at(sfCoverAvailable)};
 
-        // Pre-fixCleanup3_5_0: an MPT payout to an owner with no MPToken fails with tecNO_AUTH.
-        // Post-fixCleanup3_5_0: the owner's MPToken is created first, as a withdrawal to self does.
-        if (fix350Enabled && coverAvailable > beast::kZero && vaultAsset.holds<MPTIssue>())
+        // Pre-fixCleanup3_5_0: the cover goes straight to accountSend, so an MPT payout to an
+        // owner with no MPToken fails with tecNO_AUTH.
+        // Post-fixCleanup3_5_0: the cover is paid out as a withdrawal to self, which first creates
+        // the owner's holding.
+        if (fix350Enabled)
         {
-            if (auto const ter = addEmptyHolding(
-                    ctx_.getApplyViewContext(), accountID_, preFeeBalance_, vaultAsset, j_);
-                !isTesSuccess(ter) && ter != tecDUPLICATE)
+            if (auto const ter = doWithdraw(
+                    ctx_.getApplyViewContext(),
+                    accountID_,
+                    accountID_,
+                    brokerPseudoID,
+                    preFeeBalance_,
+                    coverAvailable,
+                    j_))
                 return ter;
         }
-
-        if (auto const ter = accountSend(
-                view(), brokerPseudoID, accountID_, coverAvailable, j_, {}, WaiveTransferFee::Yes))
-            return ter;
+        else
+        {
+            if (auto const ter = accountSend(
+                    view(),
+                    brokerPseudoID,
+                    accountID_,
+                    coverAvailable,
+                    j_,
+                    {},
+                    WaiveTransferFee::Yes))
+                return ter;
+        }
     }
 
     if (auto ter = removeEmptyHolding(ctx_.getApplyViewContext(), brokerPseudoID, vaultAsset, j_))
