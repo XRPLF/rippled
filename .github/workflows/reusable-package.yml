@@ -112,7 +112,7 @@ jobs:
         env:
           PACKAGE_TYPE: ${{ matrix.package_type }}
           PACKAGE_VARIANT: ${{ matrix.package_variant }}
-          PKG_RELEASE: ${{ steps.release_info.outputs.pkg_release }}
+          PKG_RELEASE: ${{ startsWith(github.ref, 'refs/tags/') && '2' || steps.release_info.outputs.pkg_release }}
           CHANNEL: ${{ steps.release_info.outputs.channel }}
         run: |
           ./package/build_pkg.py \
