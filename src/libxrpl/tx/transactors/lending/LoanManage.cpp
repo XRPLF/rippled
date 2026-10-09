@@ -93,7 +93,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
     if (!(loanSle->isFlag(lsfLoanImpaired) || loanSle->isFlag(lsfLoanDefault)) &&
-        (tx.isFlag(tfLoanUnimpair)))
+        tx.isFlag(tfLoanUnimpair))
     {
         JLOG(ctx.j.warn()) << "Loan is unimpaired. Can not be unimpaired again.";
         return tecNO_PERMISSION;

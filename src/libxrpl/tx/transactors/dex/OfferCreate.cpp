@@ -585,7 +585,7 @@ std::string
 OfferCreate::formatAmount(STAmount const& amount)
 {
     std::string txt = amount.getText();
-    txt += "/";
+    txt += '/';
     amount.asset().visit(
         [&](Issue const& issue) { txt += to_string(issue.currency); },
         [&](MPTIssue const& issue) { txt += to_string(issue); });
