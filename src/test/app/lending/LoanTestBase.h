@@ -12,6 +12,7 @@
 #include <test/jtx/mpt.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
@@ -101,6 +102,10 @@ protected:
         TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
         std::string data = {};  // NOLINT(readability-redundant-member-init)
         std::uint32_t flags = 0;
+        // If set, passed to LoanBrokerSet as sfDomainID. Only valid together
+        // with tfLoanBrokerPrivate in `flags`.
+        std::optional<uint256> domainID =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
         // VaultCreate flags (e.g. tfVaultPrivate). Distinct from `flags`,
         // which are passed to LoanBrokerSet.
         std::optional<std::uint32_t> vaultFlags =
@@ -150,8 +155,8 @@ protected:
     struct BrokerInfo
     {
         jtx::PrettyAsset asset;
-        uint256 brokerID;
-        uint256 vaultID;
+        UInt256 brokerID;
+        UInt256 vaultID;
         BrokerParameters params;
         // Absolute dates resolved by createVaultAndBroker when params.vaultKind
         // is ClosedEnded; std::nullopt for open-ended vaults.
@@ -553,15 +558,18 @@ protected:
         // run in the Investment phase (unless the caller explicitly asked to stay in Subscription).
         if (subscriptionDate && !params.skipPhaseAdvance)
         {
-            using d = NetClock::duration;
-            using tp = NetClock::time_point;
-            env.close(tp{d{*subscriptionDate + 1}});
+            using D = NetClock::duration;
+            using Tp = NetClock::time_point;
+            env.close(Tp{D{*subscriptionDate + 1}});
         }
 
         auto const keylet = keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
 
         using namespace loan_broker;
-        env(set(lender, vaultKeylet.key, params.flags),
+        auto brokerSetTx = set(lender, vaultKeylet.key, params.flags);
+        if (params.domainID)
+            brokerSetTx[sfDomainID] = to_string(*params.domainID);
+        env(brokerSetTx,
             kData(params.data),
             kManagementFeeRate(params.managementFeeRate),
             kDebtMaximum(debtMaximumValue),
@@ -576,21 +584,41 @@ protected:
         return {asset, keylet, vaultKeylet, params, subscriptionDate, redemptionDate};
     }
 
+    // Creates a permissioned domain owned by `owner` that accepts credentials
+    // of `credType` issued by `credIssuer`, and returns its ID.
+    uint256
+    createDomain(
+        jtx::Env& env,
+        jtx::Account const& owner,
+        jtx::Account const& credIssuer,
+        std::string const& credType)
+    {
+        using namespace jtx;
+
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
+        env(pdomain::setTx(owner, credentials));
+        env.close();
+
+        auto const domainID = pdomain::getNewDomain(env.meta());
+        BEAST_EXPECT(domainID != beast::kZero);
+        return domainID;
+    }
+
     /**
      * Get the state without checking anything
      */
     LoanState
     getCurrentState(jtx::Env const& env, BrokerInfo const& broker, Keylet const& loanKeylet)
     {
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
 
         // Lookup the current loan state
         if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
             return LoanState{
                 .previousPaymentDate = loan->at(sfPreviousPaymentDueDate),
-                .startDate = tp{d{loan->at(sfStartDate)}},
+                .startDate = Tp{D{loan->at(sfStartDate)}},
                 .nextPaymentDate = loan->at(sfNextPaymentDueDate),
                 .paymentRemaining = loan->at(sfPaymentRemaining),
                 .loanScale = loan->at(sfLoanScale),
@@ -618,12 +646,12 @@ protected:
         VerifyLoanStatus const& verifyLoanStatus)
     {
         using namespace std::chrono_literals;
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
 
         auto const state = getCurrentState(env, broker, loanKeylet);
         BEAST_EXPECT(state.previousPaymentDate == 0);
-        BEAST_EXPECT(tp{d{state.nextPaymentDate}} == state.startDate + 600s);
+        BEAST_EXPECT(Tp{D{state.nextPaymentDate}} == state.startDate + 600s);
         BEAST_EXPECT(state.paymentRemaining == 12);
         BEAST_EXPECT(state.principalOutstanding == broker.asset(1000).value());
         BEAST_EXPECT(
@@ -1020,7 +1048,7 @@ protected:
         using namespace jtx;
         using namespace jtx::loan;
         using namespace std::chrono_literals;
-        using d = NetClock::duration;
+        using D = NetClock::duration;
 
         bool const showStepBalances = paymentParams.showStepBalances;
 
@@ -1226,7 +1254,7 @@ protected:
             // Make the payment
             env(pay(borrower, loanKeylet.key, transactionAmount, paymentParams.flags));
 
-            env.close(d{state.paymentInterval / 2});
+            env.close(D{state.paymentInterval / 2});
 
             if (paymentParams.validateBalances)
             {
@@ -1759,8 +1787,8 @@ protected:
 
         using namespace loan;
         using namespace std::chrono_literals;
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
 
         Account const issuer{"issuer"};
         // For simplicity, lender will be the sole actor for the vault &
@@ -2163,7 +2191,7 @@ protected:
 
         // Finally! Create a loan
 
-        auto coverAvailable = [&env, this](uint256 const& brokerID, Number const& expected) {
+        auto coverAvailable = [&env, this](UInt256 const& brokerID, Number const& expected) {
             if (auto const brokerSle = env.le(keylet::loanBroker(brokerID));
                 BEAST_EXPECT(brokerSle))
             {
@@ -2252,7 +2280,7 @@ protected:
                     verifyLoanStatus(state);
                 }
 
-                auto const nextDueDate = tp{d{state.nextPaymentDate}};
+                auto const nextDueDate = Tp{D{state.nextPaymentDate}};
 
                 // Can't default the loan yet. The grace period hasn't
                 // expired
@@ -2300,7 +2328,7 @@ protected:
             verifyLoanStatus(state);
 
             // Send some bogus pay transactions
-            env(pay(borrower, keylet::loan(uint256(0)).key, broker.asset(10), txFlags),
+            env(pay(borrower, keylet::loan(UInt256(0)).key, broker.asset(10), txFlags),
                 Ter(temINVALID));
             // broker.asset(80) is less than a single payment, but all these
             // checks fail before that matters
@@ -2967,13 +2995,13 @@ protected:
             if (!BEAST_EXPECT(timed))
                 return;
 
-            using clock_type = std::chrono::steady_clock;
-            using duration_type = std::chrono::milliseconds;
+            using ClockType = std::chrono::steady_clock;
+            using DurationType = std::chrono::milliseconds;
 
-            auto const start = clock_type::now();
+            auto const start = ClockType::now();
             timed();
             auto const duration =
-                std::chrono::duration_cast<duration_type>(clock_type::now() - start);
+                std::chrono::duration_cast<DurationType>(ClockType::now() - start);
 
             log << label << " took " << duration.count() << "ms" << std::endl;
 

@@ -5,7 +5,10 @@ Checks: "-*,
   -bugprone-exception-escape,
   -bugprone-implicit-widening-of-multiplication-result,
   -bugprone-narrowing-conversions,
+  -bugprone-signed-bitwise,
+  -bugprone-std-exception-baseclass,
   -bugprone-throwing-static-initialization,
+  -bugprone-unhandled-code-paths,
 
   cppcoreguidelines-*,
   -cppcoreguidelines-avoid-c-arrays,
@@ -14,6 +17,7 @@ Checks: "-*,
   -cppcoreguidelines-avoid-magic-numbers,
   -cppcoreguidelines-avoid-non-const-global-variables,
   -cppcoreguidelines-c-copy-assignment-signature,
+  -cppcoreguidelines-explicit-constructor,
   -cppcoreguidelines-interfaces-global-init,
   -cppcoreguidelines-macro-usage,
   -cppcoreguidelines-missing-std-forward,
@@ -32,6 +36,7 @@ Checks: "-*,
   llvm-namespace-comment,
 
   misc-*,
+  -misc-explicit-constructor,
   -misc-multiple-inheritance,
   -misc-no-recursion,
   -misc-non-private-member-variables-in-classes,
@@ -45,6 +50,8 @@ Checks: "-*,
   -modernize-avoid-c-style-cast,
   -modernize-return-braced-init-list,
   -modernize-use-integer-sign-comparison,
+  -modernize-use-string-view,
+  -modernize-use-structured-binding,
   -modernize-use-trailing-return-type,
 
   performance-*,
@@ -53,6 +60,7 @@ Checks: "-*,
   -performance-noexcept-move-constructor,
   -performance-unnecessary-copy-initialization,
   -performance-unnecessary-value-param,
+  -performance-use-std-move,
 
   readability-*,
   -readability-avoid-const-params-in-decls,
@@ -65,7 +73,12 @@ Checks: "-*,
   -readability-named-parameter,
   -readability-qualified-auto,
   -readability-redundant-access-specifiers,
+  -readability-redundant-lambda-parameter-list,
+  -readability-redundant-nested-if,
+  -readability-redundant-qualified-alias,
   -readability-static-accessed-through-instance,
+  -readability-trailing-comma,
+  -readability-trivial-switch,
   -readability-uppercase-literal-suffix
   "
 # ---
@@ -81,6 +94,10 @@ CheckOptions:
   bugprone-unsafe-functions.ReportMoreUnsafeFunctions: true
   bugprone-unused-return-value.CheckedReturnTypes: ::std::error_code;::std::error_condition;::std::errc
 
+  # New in clang-tidy 23; disabled until the code is updated
+  misc-const-correctness.AnalyzeAutoVariables: false
+  misc-const-correctness.AnalyzeLambdas: false
+  misc-const-correctness.AnalyzeParameters: false
   misc-include-cleaner.IgnoreHeaders: ".*/(detail|impl)/.*;.*fwd\\.h(pp)?;time.h;stdlib.h;sqlite3.h;netinet/in\\.h;sys/resource\\.h;sys/sysinfo\\.h;linux/sysinfo\\.h;__chrono/.*;bits/.*;_abort\\.h;boost/.*;openssl/obj_mac\\.h"
 
   readability-braces-around-statements.ShortStatementLines: 2
@@ -90,6 +107,13 @@ CheckOptions:
   readability-identifier-naming.ClassCase: CamelCase
   readability-identifier-naming.StructCase: CamelCase
   readability-identifier-naming.UnionCase: CamelCase
+  readability-identifier-naming.TypeAliasCase: CamelCase
+  readability-identifier-naming.TypedefCase: CamelCase
+  # Member type names mandated by std/Boost concepts. Subtrees that need more
+  # than these carry their own .clang-tidy (include/xrpl/{beast,basics,protocol,
+  # peerfinder}, src/test/beast); one-off cases use an inline NOLINT.
+  readability-identifier-naming.TypeAliasIgnoredRegexp: "^(const_iterator|const_reference|difference_type|duration|iterator|iterator_category|key_type|mapped_type|period|pointer|reference|rep|result_type|size_type|time_point|value_type)$"
+  readability-identifier-naming.TypedefIgnoredRegexp: "^(const_iterator|const_reference|difference_type|duration|iterator|iterator_category|key_type|mapped_type|period|pointer|reference|rep|result_type|size_type|time_point|value_type)$"
   readability-identifier-naming.EnumCase: CamelCase
   readability-identifier-naming.EnumConstantCase: CamelCase
   readability-identifier-naming.ScopedEnumConstantCase: CamelCase
@@ -122,5 +146,5 @@ CheckOptions:
   readability-identifier-naming.GlobalFunctionIgnoredRegexp: "^(to_string|hash_append|tuple_hash)$"
 
 HeaderFilterRegex: '^.*/(tests?|xrpl|xrpld)/.*\.(h|hpp|ipp)$'
-ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$'
+ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$|^.*\.pb\.h$'
 WarningsAsErrors: "*"

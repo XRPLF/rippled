@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
@@ -253,11 +254,11 @@ Batch::preflight(PreflightContext const& ctx)
     }
 
     // Validation Inner Batch Txns
-    std::unordered_set<uint256> uniqueHashes;
+    std::unordered_set<UInt256> uniqueHashes;
     std::unordered_map<AccountID, std::unordered_set<std::uint32_t>> accountSeqTicket;
     auto checkSignatureFields =
         [&parentBatchId, &j = ctx.j](
-            STObject const& sig, uint256 const& hash, char const* label = "") -> NotTEC {
+            STObject const& sig, UInt256 const& hash, char const* label = "") -> NotTEC {
         if (sig.isFieldPresent(sfTxnSignature))
         {
             JLOG(j.debug()) << "BatchTrace[" << parentBatchId << "]: "
@@ -297,11 +298,13 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         auto const txType = stx.getFieldU16(sfTransactionType);
-        if (std::ranges::any_of(
-                kDisabledTxTypes, [txType](auto const& disabled) { return txType == disabled; }))
-        {
+        // Pre-LendingProtocolV1_2: SAV and Lending transactions cannot be Batch inners.
+        // Post-LendingProtocolV1_2: they continue through the normal Batch checks.
+        bool const rejectedPreV12 = !ctx.rules.enabled(featureLendingProtocolV1_2) &&
+            std::ranges::any_of(
+                kDisabledTxTypes, [txType](auto const& disabled) { return txType == disabled; });
+        if (rejectedPreV12)
             return temINVALID_INNER_BATCH;
-        }
 
         if (!stx.isFlag(tfInnerBatchTxn))
         {
@@ -348,8 +351,20 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID_FLAG;
 
         auto const innerAccount = stx.getAccountID(sfAccount);
+        // TransactionProposalCreate preflights a proposed Batch with
+        // TapDryRun | TapProposal so signature-presence checks are deferred
+        // to collection time (On-Chain Cosigner spec §5.3.1.2). Inner
+        // preflight used to pass only TapBatch, so those bits never reached
+        // the inners: an unsigned account-reserve SponsorshipTransfer then
+        // demanded sfSponsorSignature and the Create failed with
+        // temINVALID_INNER_BATCH. Spec §6.1.1 names an inner Sponsor as a
+        // collectable slot, so forward TapProposal/TapDryRun. Always OR in
+        // TapBatch — PreflightContext with a parentBatchId requires it.
+        // LoanSet already short-circuits on tfInnerBatchTxn; it is also in
+        // kDisabledTxTypes, so it never reaches this call.
+        ApplyFlags const innerFlags = TapBatch | (ctx.flags & (TapProposal | TapDryRun));
         if (auto const preflightResult =
-                xrpl::preflight(ctx.registry, ctx.rules, parentBatchId, stx, TapBatch, ctx.j);
+                xrpl::preflight(ctx.registry, ctx.rules, parentBatchId, stx, innerFlags, ctx.j);
             !isTesSuccess(preflightResult.ter))
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
@@ -415,6 +430,13 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
 {
     XRPL_ASSERT(
         ctx.tx.getTxnType() == ttBATCH, "xrpl::Batch::preflightSigValidated : batch transaction");
+
+    // A proposed Batch is stored unsigned; its BatchSigners are collected
+    // on-ledger afterward, so the signer-presence match belongs to submission
+    // time, not proposal creation (On-Chain Cosigner spec §5.3.1.2).
+    if ((ctx.flags & TapProposal) != 0)
+        return tesSUCCESS;
+
     auto const parentBatchId = ctx.tx.getTransactionID();
     auto const outerAccount = ctx.tx.getAccountID(sfAccount);
     // Accounts that must sign the batch: each inner authorizer and counterparty
@@ -580,7 +602,7 @@ Batch::doApply()
 }
 
 void
-Batch::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+Batch::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

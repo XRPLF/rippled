@@ -44,10 +44,10 @@ class PathRequest final : public InfoSubRequest,
                           public CountedObject<PathRequest>
 {
 public:
-    using wptr = std::weak_ptr<PathRequest>;
+    using Wptr = std::weak_ptr<PathRequest>;
     using pointer = std::shared_ptr<PathRequest>;
-    using ref = pointer const&;
-    using wref = wptr const&;
+    using Ref = pointer const&;
+    using Wref = Wptr const&;
 
 public:
     // path_find semantics
@@ -63,7 +63,7 @@ public:
     // Completion function is called after path update is complete
     PathRequest(
         Application& app,
-        std::function<void(void)> completion,
+        std::function<void()> completion,
         resource::Consumer& consumer,
         int id,
         PathRequestManager&,
@@ -95,7 +95,7 @@ public:
     doUpdate(
         std::shared_ptr<AssetCache> const&,
         bool fast,
-        std::function<bool(void)> const& continueCallback = {});
+        std::function<bool()> const& continueCallback = {});
     InfoSub::pointer
     getSubscriber() const;
     bool
@@ -108,11 +108,11 @@ private:
     std::unique_ptr<Pathfinder> const&
     getPathFinder(
         std::shared_ptr<AssetCache> const&,
-        hash_map<PathAsset, std::unique_ptr<Pathfinder>>&,
+        HashMap<PathAsset, std::unique_ptr<Pathfinder>>&,
         PathAsset const&,
         STAmount const&,
         int const,
-        std::function<bool(void)> const&);
+        std::function<bool()> const&);
 
     /**
      * Finds and sets a PathSet in the JSON argument.
@@ -123,7 +123,7 @@ private:
         std::shared_ptr<AssetCache> const&,
         int const,
         json::Value&,
-        std::function<bool(void)> const&);
+        std::function<bool()> const&);
 
     int
     parseJson(json::Value const&);
@@ -136,7 +136,7 @@ private:
     PathRequestManager& owner_;
 
     std::weak_ptr<InfoSub> wpSubscriber_;  // Who this request came from
-    std::function<void(void)> fCompletion_;
+    std::function<void()> fCompletion_;
     resource::Consumer& consumer_;  // Charge according to source currencies
 
     json::Value jvId_;
@@ -151,7 +151,7 @@ private:
     std::set<Asset> sciSourceAssets_;
     std::map<Asset, STPathSet> context_;
 
-    std::optional<uint256> domain_;
+    std::optional<UInt256> domain_;
 
     bool convertAll_{};
 

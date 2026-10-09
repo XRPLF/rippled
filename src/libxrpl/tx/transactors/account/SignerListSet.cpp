@@ -363,7 +363,7 @@ SignerListSet::destroySignerList()
     if (!ledgerEntry)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if ((ledgerEntry->isFlag(lsfDisableMaster)) && (!ledgerEntry->isFieldPresent(sfRegularKey)))
+    if (ledgerEntry->isFlag(lsfDisableMaster) && (!ledgerEntry->isFieldPresent(sfRegularKey)))
         return tecNO_ALTERNATIVE_KEY;
 
     auto const ownerDirKeylet = keylet::ownerDir(accountID_);
@@ -398,7 +398,7 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
         // This is a defensive check to make absolutely sure we will never write
         // a tag into the ledger.
         if (entry.tag)
-            obj.setFieldH256(sfWalletLocator, *(entry.tag));
+            obj.setFieldH256(sfWalletLocator, *entry.tag);
     }
 
     // Assign the SignerEntries.
@@ -406,7 +406,7 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
 }
 
 void
-SignerListSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+SignerListSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

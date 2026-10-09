@@ -47,7 +47,7 @@ public:
         std::optional<AccountID> const& uSrcIssuer,
         STAmount const& dstAmount,
         std::optional<STAmount> const& srcAmount,
-        std::optional<uint256> const& domain,
+        std::optional<UInt256> const& domain,
         Application& app);
     Pathfinder(Pathfinder const&) = delete;
     Pathfinder&
@@ -58,13 +58,13 @@ public:
     initPathTable();
 
     bool
-    findPaths(int searchLevel, std::function<bool(void)> const& continueCallback = {});
+    findPaths(int searchLevel, std::function<bool()> const& continueCallback = {});
 
     /**
      * Compute the rankings of the paths.
      */
     void
-    computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback = {});
+    computePathRanks(int maxPaths, std::function<bool()> const& continueCallback = {});
 
     /* Get the best paths, up to maxPaths in number, from completePaths_.
 
@@ -77,7 +77,7 @@ public:
         STPath& fullLiquidityPath,
         STPathSet const& extraPaths,
         AccountID const& srcIssuer,
-        std::function<bool(void)> const& continueCallback = {});
+        std::function<bool()> const& continueCallback = {});
 
     enum class NodeType {
         Source,      // The source account: with an issuer account, if needed.
@@ -132,7 +132,7 @@ private:
 
     // Add all paths of one type to completePaths_.
     STPathSet&
-    addPathsForType(PathType const& type, std::function<bool(void)> const& continueCallback);
+    addPathsForType(PathType const& type, std::function<bool()> const& continueCallback);
 
     bool
     issueMatchesOrigin(Asset const&);
@@ -144,14 +144,14 @@ private:
         LineDirection direction,
         bool isDestPathAsset,
         AccountID const& dest,
-        std::function<bool(void)> const& continueCallback);
+        std::function<bool()> const& continueCallback);
 
     void
     addLink(
         STPath const& currentPath,
         STPathSet& incompletePaths,
         int addFlags,
-        std::function<bool(void)> const& continueCallback);
+        std::function<bool()> const& continueCallback);
 
     // Call addLink() for each path in currentPaths.
     void
@@ -159,7 +159,7 @@ private:
         STPathSet const& currentPaths,
         STPathSet& incompletePaths,
         int addFlags,
-        std::function<bool(void)> const& continueCallback);
+        std::function<bool()> const& continueCallback);
 
     // Compute the liquidity for a path.  Return tesSUCCESS if it has enough
     // liquidity to be worth keeping, otherwise an error.
@@ -185,7 +185,7 @@ private:
         int maxPaths,
         STPathSet const& paths,
         std::vector<PathRank>& rankedPaths,
-        std::function<bool(void)> const& continueCallback);
+        std::function<bool()> const& continueCallback);
 
     AccountID srcAccount_;
     AccountID dstAccount_;
@@ -200,7 +200,7 @@ private:
      */
     STAmount remainingAmount_;
     bool convertAll_;
-    std::optional<uint256> domain_;
+    std::optional<UInt256> domain_;
 
     std::shared_ptr<ReadView const> ledger_;
     std::unique_ptr<LoadEvent> loadEvent_;
@@ -211,7 +211,7 @@ private:
     std::vector<PathRank> pathRanks_;
     std::map<PathType, STPathSet> paths_;
 
-    hash_map<Asset, int> pathsOutCountMap_;
+    HashMap<Asset, int> pathsOutCountMap_;
 
     Application& app_;
     beast::Journal const j_;

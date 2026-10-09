@@ -72,7 +72,7 @@ PathRequest::PathRequest(
 
 PathRequest::PathRequest(
     Application& app,
-    std::function<void(void)> completion,
+    std::function<void()> completion,
     resource::Consumer& consumer,
     int id,
     PathRequestManager& owner,
@@ -170,7 +170,7 @@ PathRequest::updateComplete()
     if (fCompletion_)
     {
         fCompletion_();
-        fCompletion_ = std::function<void(void)>();
+        fCompletion_ = std::function<void()>();
     }
 }
 
@@ -259,6 +259,7 @@ PathRequest::doCreate(std::shared_ptr<AssetCache> const& cache, json::Value cons
     {
         if (valid)
         {
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access) isValid() ensures it is set
             stream << iIdentifier_ << " valid: " << toBase58(*raSrcAccount_);
             stream << iIdentifier_ << " deliver: " << saDstAmount_.getFullText();
         }
@@ -375,7 +376,7 @@ PathRequest::parseJson(json::Value const& jvParams)
             }
             else
             {
-                uint192 u;
+                UInt192 u;
                 if (!c[jss::mpt_issuance_id].isString() ||
                     !u.parseHex(c[jss::mpt_issuance_id].asString()))
                 {
@@ -470,7 +471,7 @@ PathRequest::parseJson(json::Value const& jvParams)
 
     if (jvParams.isMember(jss::domain))
     {
-        uint256 num;
+        UInt256 num;
         if (!jvParams[jss::domain].isString() || !num.parseHex(jvParams[jss::domain].asString()))
         {
             jvStatus_ = rpcError(RpcDomainMalformed);
@@ -509,11 +510,11 @@ PathRequest::doAborting() const
 std::unique_ptr<Pathfinder> const&
 PathRequest::getPathFinder(
     std::shared_ptr<AssetCache> const& cache,
-    hash_map<PathAsset, std::unique_ptr<Pathfinder>>& currencyMap,
+    HashMap<PathAsset, std::unique_ptr<Pathfinder>>& currencyMap,
     PathAsset const& currency,
     STAmount const& dstAmount,
     int const level,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     auto i = currencyMap.find(currency);
     if (i != currencyMap.end())
@@ -546,7 +547,7 @@ PathRequest::findPaths(
     std::shared_ptr<AssetCache> const& cache,
     int const level,
     json::Value& jvArray,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     auto sourceAssets = sciSourceAssets_;
     if (sourceAssets.empty() && saSendMax_)
@@ -587,7 +588,7 @@ PathRequest::findPaths(
     }
 
     auto const dstAmount = convertAmount(saDstAmount_, convertAll_);
-    hash_map<PathAsset, std::unique_ptr<Pathfinder>> currencyMap;
+    HashMap<PathAsset, std::unique_ptr<Pathfinder>> currencyMap;
     for (auto const& asset : sourceAssets)
     {
         if (continueCallback && !continueCallback())
@@ -722,7 +723,7 @@ json::Value
 PathRequest::doUpdate(
     std::shared_ptr<AssetCache> const& cache,
     bool fast,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     using namespace std::chrono;
     JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal");

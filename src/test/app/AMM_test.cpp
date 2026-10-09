@@ -11,6 +11,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/paychan.h>
 #include <test/jtx/rate.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
@@ -84,12 +85,13 @@ private:
     {
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
-        return jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol;
+        return jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol -
+            featureMPTokensV2;
     }
 
     // Seed from the local testableAmendments() which strips SAV and Lending.
     static std::vector<FeatureBitset>
-    amendmentCombinations(std::initializer_list<uint256> features)
+    amendmentCombinations(std::initializer_list<UInt256> features)
     {
         return jtx::amendmentCombinations(features, testableAmendments());
     }
@@ -3810,7 +3812,7 @@ private:
                     BEAST_EXPECT(amm.expectBalances(XRP(1'000), USD(500), amm.tokens()));
                     BEAST_EXPECT(expectOffers(env, carol_, 1, {{Amounts{XRP(100), USD(55)}}}));
                 }
-                else if (!features[featureMPTokensV2])
+                else
                 {
                     BEAST_EXPECT(amm.expectBalances(
                         XRPAmount(909'090'909),
@@ -3824,30 +3826,6 @@ private:
                     BEAST_EXPECT(
                         env.balance(carol_, USD) ==
                         STAmount(USD, UINT64_C(29'949'94999999494), -11));
-                }
-                else
-                {
-                    // Post-amendment the transfer fee is taken into account
-                    // when calculating the limit out based on limitQuality.
-                    // This increases the limitQuality and decreases
-                    // the limit out. Consequently, AMM offer size is decreased,
-                    // and the quality is increased, matching the overall
-                    // quality.
-                    // AMM offer ~50USD/91XRP
-                    BEAST_EXPECT(amm.expectBalances(
-                        XRPAmount(909'090'910),
-                        STAmount{USD, UINT64_C(549'99999945), -8},
-                        amm.tokens()));
-                    // Offer ~91XRP/50USD
-                    BEAST_EXPECT(expectOffers(
-                        env,
-                        carol_,
-                        1,
-                        {{Amounts{XRPAmount{9'090'910}, STAmount{USD, 5'0000005, -7}}}}));
-                    // Carol pays 0.1% fee on ~50USD =~ 0.05USD
-                    BEAST_EXPECT(
-                        env.balance(carol_, USD) ==
-                        STAmount(USD, UINT64_C(29'949'95000060055), -11));
                 }
             },
             {{XRP(1'000), USD(500)}},
@@ -6112,7 +6090,7 @@ private:
             double const rateGH = 0.0;
         };
 
-        using uint64_t = std::uint64_t;
+        using Uint64T = std::uint64_t;
 
         for (auto const& input : {
                  InputSet{
@@ -6120,15 +6098,15 @@ private:
                      .poolUsdBIT = 3,                                         //
                      .poolUsdGH = 273,                                        //
                      .sendMaxUsdBIT{usdBIT(50)},                              //
-                     .sendUsdGH{usdGH, uint64_t(272'455089820359), -12},      //
+                     .sendUsdGH{usdGH, Uint64T(272'455089820359), -12},       //
                      .failUsdGH = STAmount{0},                                //
                      .failUsdGHr = STAmount{0},                               //
-                     .failUsdBIT{usdBIT, uint64_t(46'47826086956522), -14},   //
-                     .failUsdBITr{usdBIT, uint64_t(46'47826086956521), -14},  //
-                     .goodUsdGH{usdGH, uint64_t(96'7543114220382), -13},      //
-                     .goodUsdGHr{usdGH, uint64_t(96'7543114222965), -13},     //
-                     .goodUsdBIT{usdBIT, uint64_t(8'464739069120721), -15},   //
-                     .goodUsdBITr{usdBIT, uint64_t(8'464739069098152), -15},  //
+                     .failUsdBIT{usdBIT, Uint64T(46'47826086956522), -14},    //
+                     .failUsdBITr{usdBIT, Uint64T(46'47826086956521), -14},   //
+                     .goodUsdGH{usdGH, Uint64T(96'7543114220382), -13},       //
+                     .goodUsdGHr{usdGH, Uint64T(96'7543114222965), -13},      //
+                     .goodUsdBIT{usdBIT, Uint64T(8'464739069120721), -15},    //
+                     .goodUsdBITr{usdBIT, Uint64T(8'464739069098152), -15},   //
                      .lpTokenBalance = {28'61817604250837, -14},              //
                      .lpTokenBalanceAlt = IOUAmount{28'61817604250836, -14},  //
                      .offer1BtcGH = 0.1,                                      //
@@ -6138,104 +6116,20 @@ private:
                      .rateGH = 1.2,                                           //
                  },
                  InputSet{
-                     .testCase = "Overflow test {1, 100, 0.111}",           //
-                     .poolUsdBIT = 1,                                       //
-                     .poolUsdGH = 100,                                      //
-                     .sendMaxUsdBIT{usdBIT(0.111)},                         //
-                     .sendUsdGH{usdGH, 100},                                //
-                     .failUsdGH = STAmount{0},                              //
-                     .failUsdGHr = STAmount{0},                             //
-                     .failUsdBIT{usdBIT, uint64_t(1'111), -3},              //
-                     .failUsdBITr{usdBIT, uint64_t(1'111), -3},             //
-                     .goodUsdGH{usdGH, uint64_t(90'04347888284115), -14},   //
-                     .goodUsdGHr{usdGH, uint64_t(90'04347888284201), -14},  //
-                     .goodUsdBIT{usdBIT, uint64_t(1'111), -3},              //
-                     .goodUsdBITr{usdBIT, uint64_t(1'111), -3},             //
-                     .lpTokenBalance{10, 0},                                //
-                     .offer1BtcGH = 1e-5,                                   //
-                     .offer2BtcGH = 1,                                      //
-                     .offer2UsdGH = 1e-5,                                   //
-                     .rateBIT = 0,                                          //
-                     .rateGH = 0,                                           //
-                 },
-                 InputSet{
-                     .testCase = "Overflow test {1, 100, 1.00}",            //
-                     .poolUsdBIT = 1,                                       //
-                     .poolUsdGH = 100,                                      //
-                     .sendMaxUsdBIT{usdBIT(1.00)},                          //
-                     .sendUsdGH{usdGH, 100},                                //
-                     .failUsdGH = STAmount{0},                              //
-                     .failUsdGHr = STAmount{0},                             //
-                     .failUsdBIT{usdBIT, uint64_t(2), 0},                   //
-                     .failUsdBITr{usdBIT, uint64_t(2), 0},                  //
-                     .goodUsdGH{usdGH, uint64_t(52'94379354424079), -14},   //
-                     .goodUsdGHr{usdGH, uint64_t(52'94379354424135), -14},  //
-                     .goodUsdBIT{usdBIT, uint64_t(2), 0},                   //
-                     .goodUsdBITr{usdBIT, uint64_t(2), 0},                  //
-                     .lpTokenBalance{10, 0},                                //
-                     .offer1BtcGH = 1e-5,                                   //
-                     .offer2BtcGH = 1,                                      //
-                     .offer2UsdGH = 1e-5,                                   //
-                     .rateBIT = 0,                                          //
-                     .rateGH = 0,                                           //
-                 },
-                 InputSet{
-                     .testCase = "Overflow test {1, 100, 4.6432}",            //
-                     .poolUsdBIT = 1,                                         //
-                     .poolUsdGH = 100,                                        //
-                     .sendMaxUsdBIT{usdBIT(4.6432)},                          //
-                     .sendUsdGH{usdGH, 100},                                  //
-                     .failUsdGH = STAmount{0},                                //
-                     .failUsdGHr = STAmount{0},                               //
-                     .failUsdBIT{usdBIT, uint64_t(5'6432), -4},               //
-                     .failUsdBITr{usdBIT, uint64_t(5'6432), -4},              //
-                     .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},     //
-                     .goodUsdGHr{usdGH, uint64_t(35'44113971506987), -14},    //
-                     .goodUsdBIT{usdBIT, uint64_t(2'821579689703915), -15},   //
-                     .goodUsdBITr{usdBIT, uint64_t(2'821579689703954), -15},  //
-                     .lpTokenBalance{10, 0},                                  //
-                     .offer1BtcGH = 1e-5,                                     //
-                     .offer2BtcGH = 1,                                        //
-                     .offer2UsdGH = 1e-5,                                     //
-                     .rateBIT = 0,                                            //
-                     .rateGH = 0,                                             //
-                 },
-                 InputSet{
-                     .testCase = "Overflow test {1, 100, 10}",                //
-                     .poolUsdBIT = 1,                                         //
-                     .poolUsdGH = 100,                                        //
-                     .sendMaxUsdBIT{usdBIT(10)},                              //
-                     .sendUsdGH{usdGH, 100},                                  //
-                     .failUsdGH = STAmount{0},                                //
-                     .failUsdGHr = STAmount{0},                               //
-                     .failUsdBIT{usdBIT, uint64_t(11), 0},                    //
-                     .failUsdBITr{usdBIT, uint64_t(11), 0},                   //
-                     .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},     //
-                     .goodUsdGHr{usdGH, uint64_t(35'44113971506987), -14},    //
-                     .goodUsdBIT{usdBIT, uint64_t(2'821579689703915), -15},   //
-                     .goodUsdBITr{usdBIT, uint64_t(2'821579689703954), -15},  //
-                     .lpTokenBalance{10, 0},                                  //
-                     .offer1BtcGH = 1e-5,                                     //
-                     .offer2BtcGH = 1,                                        //
-                     .offer2UsdGH = 1e-5,                                     //
-                     .rateBIT = 0,                                            //
-                     .rateGH = 0,                                             //
-                 },
-                 InputSet{
-                     .testCase = "Overflow test {50, 100, 5.55}",          //
-                     .poolUsdBIT = 50,                                     //
+                     .testCase = "Overflow test {1, 100, 0.111}",          //
+                     .poolUsdBIT = 1,                                      //
                      .poolUsdGH = 100,                                     //
-                     .sendMaxUsdBIT{usdBIT(5.55)},                         //
+                     .sendMaxUsdBIT{usdBIT(0.111)},                        //
                      .sendUsdGH{usdGH, 100},                               //
                      .failUsdGH = STAmount{0},                             //
                      .failUsdGHr = STAmount{0},                            //
-                     .failUsdBIT{usdBIT, uint64_t(55'55), -2},             //
-                     .failUsdBITr{usdBIT, uint64_t(55'55), -2},            //
-                     .goodUsdGH{usdGH, uint64_t(90'04347888284113), -14},  //
-                     .goodUsdGHr{usdGH, uint64_t(90'0434788828413), -13},  //
-                     .goodUsdBIT{usdBIT, uint64_t(55'55), -2},             //
-                     .goodUsdBITr{usdBIT, uint64_t(55'55), -2},            //
-                     .lpTokenBalance{uint64_t(70'71067811865475), -14},    //
+                     .failUsdBIT{usdBIT, Uint64T(1'111), -3},              //
+                     .failUsdBITr{usdBIT, Uint64T(1'111), -3},             //
+                     .goodUsdGH{usdGH, Uint64T(90'04347888284115), -14},   //
+                     .goodUsdGHr{usdGH, Uint64T(90'04347888284201), -14},  //
+                     .goodUsdBIT{usdBIT, Uint64T(1'111), -3},              //
+                     .goodUsdBITr{usdBIT, Uint64T(1'111), -3},             //
+                     .lpTokenBalance{10, 0},                               //
                      .offer1BtcGH = 1e-5,                                  //
                      .offer2BtcGH = 1,                                     //
                      .offer2UsdGH = 1e-5,                                  //
@@ -6243,67 +6137,151 @@ private:
                      .rateGH = 0,                                          //
                  },
                  InputSet{
-                     .testCase = "Overflow test {50, 100, 50.00}",          //
-                     .poolUsdBIT = 50,                                      //
-                     .poolUsdGH = 100,                                      //
-                     .sendMaxUsdBIT{usdBIT(50.00)},                         //
-                     .sendUsdGH{usdGH, 100},                                //
-                     .failUsdGH{usdGH, uint64_t(52'94379354424081), -14},   //
-                     .failUsdGHr{usdGH, uint64_t(52'94379354424092), -14},  //
-                     .failUsdBIT{usdBIT, uint64_t(100), 0},                 //
-                     .failUsdBITr{usdBIT, uint64_t(100), 0},                //
-                     .goodUsdGH{usdGH, uint64_t(52'94379354424081), -14},   //
-                     .goodUsdGHr{usdGH, uint64_t(52'94379354424092), -14},  //
-                     .goodUsdBIT{usdBIT, uint64_t(100), 0},                 //
-                     .goodUsdBITr{usdBIT, uint64_t(100), 0},                //
-                     .lpTokenBalance{uint64_t(70'71067811865475), -14},     //
-                     .offer1BtcGH = 1e-5,                                   //
-                     .offer2BtcGH = 1,                                      //
-                     .offer2UsdGH = 1e-5,                                   //
-                     .rateBIT = 0,                                          //
-                     .rateGH = 0,                                           //
+                     .testCase = "Overflow test {1, 100, 1.00}",           //
+                     .poolUsdBIT = 1,                                      //
+                     .poolUsdGH = 100,                                     //
+                     .sendMaxUsdBIT{usdBIT(1.00)},                         //
+                     .sendUsdGH{usdGH, 100},                               //
+                     .failUsdGH = STAmount{0},                             //
+                     .failUsdGHr = STAmount{0},                            //
+                     .failUsdBIT{usdBIT, Uint64T(2), 0},                   //
+                     .failUsdBITr{usdBIT, Uint64T(2), 0},                  //
+                     .goodUsdGH{usdGH, Uint64T(52'94379354424079), -14},   //
+                     .goodUsdGHr{usdGH, Uint64T(52'94379354424135), -14},  //
+                     .goodUsdBIT{usdBIT, Uint64T(2), 0},                   //
+                     .goodUsdBITr{usdBIT, Uint64T(2), 0},                  //
+                     .lpTokenBalance{10, 0},                               //
+                     .offer1BtcGH = 1e-5,                                  //
+                     .offer2BtcGH = 1,                                     //
+                     .offer2UsdGH = 1e-5,                                  //
+                     .rateBIT = 0,                                         //
+                     .rateGH = 0,                                          //
                  },
                  InputSet{
-                     .testCase = "Overflow test {50, 100, 232.16}",           //
-                     .poolUsdBIT = 50,                                        //
-                     .poolUsdGH = 100,                                        //
-                     .sendMaxUsdBIT{usdBIT(232.16)},                          //
-                     .sendUsdGH{usdGH, 100},                                  //
-                     .failUsdGH = STAmount{0},                                //
-                     .failUsdGHr = STAmount{0},                               //
-                     .failUsdBIT{usdBIT, uint64_t(282'16), -2},               //
-                     .failUsdBITr{usdBIT, uint64_t(282'16), -2},              //
-                     .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},     //
-                     .goodUsdGHr{usdGH, uint64_t(35'44113971506987), -14},    //
-                     .goodUsdBIT{usdBIT, uint64_t(141'0789844851958), -13},   //
-                     .goodUsdBITr{usdBIT, uint64_t(141'0789844851962), -13},  //
-                     .lpTokenBalance{70'71067811865475, -14},                 //
-                     .offer1BtcGH = 1e-5,                                     //
-                     .offer2BtcGH = 1,                                        //
-                     .offer2UsdGH = 1e-5,                                     //
-                     .rateBIT = 0,                                            //
-                     .rateGH = 0,                                             //
+                     .testCase = "Overflow test {1, 100, 4.6432}",           //
+                     .poolUsdBIT = 1,                                        //
+                     .poolUsdGH = 100,                                       //
+                     .sendMaxUsdBIT{usdBIT(4.6432)},                         //
+                     .sendUsdGH{usdGH, 100},                                 //
+                     .failUsdGH = STAmount{0},                               //
+                     .failUsdGHr = STAmount{0},                              //
+                     .failUsdBIT{usdBIT, Uint64T(5'6432), -4},               //
+                     .failUsdBITr{usdBIT, Uint64T(5'6432), -4},              //
+                     .goodUsdGH{usdGH, Uint64T(35'44113971506987), -14},     //
+                     .goodUsdGHr{usdGH, Uint64T(35'44113971506987), -14},    //
+                     .goodUsdBIT{usdBIT, Uint64T(2'821579689703915), -15},   //
+                     .goodUsdBITr{usdBIT, Uint64T(2'821579689703954), -15},  //
+                     .lpTokenBalance{10, 0},                                 //
+                     .offer1BtcGH = 1e-5,                                    //
+                     .offer2BtcGH = 1,                                       //
+                     .offer2UsdGH = 1e-5,                                    //
+                     .rateBIT = 0,                                           //
+                     .rateGH = 0,                                            //
                  },
                  InputSet{
-                     .testCase = "Overflow test {50, 100, 500}",              //
-                     .poolUsdBIT = 50,                                        //
-                     .poolUsdGH = 100,                                        //
-                     .sendMaxUsdBIT{usdBIT(500)},                             //
-                     .sendUsdGH{usdGH, 100},                                  //
-                     .failUsdGH = STAmount{0},                                //
-                     .failUsdGHr = STAmount{0},                               //
-                     .failUsdBIT{usdBIT, uint64_t(550), 0},                   //
-                     .failUsdBITr{usdBIT, uint64_t(550), 0},                  //
-                     .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},     //
-                     .goodUsdGHr{usdGH, uint64_t(35'44113971506987), -14},    //
-                     .goodUsdBIT{usdBIT, uint64_t(141'0789844851958), -13},   //
-                     .goodUsdBITr{usdBIT, uint64_t(141'0789844851962), -13},  //
-                     .lpTokenBalance{70'71067811865475, -14},                 //
-                     .offer1BtcGH = 1e-5,                                     //
-                     .offer2BtcGH = 1,                                        //
-                     .offer2UsdGH = 1e-5,                                     //
-                     .rateBIT = 0,                                            //
-                     .rateGH = 0,                                             //
+                     .testCase = "Overflow test {1, 100, 10}",               //
+                     .poolUsdBIT = 1,                                        //
+                     .poolUsdGH = 100,                                       //
+                     .sendMaxUsdBIT{usdBIT(10)},                             //
+                     .sendUsdGH{usdGH, 100},                                 //
+                     .failUsdGH = STAmount{0},                               //
+                     .failUsdGHr = STAmount{0},                              //
+                     .failUsdBIT{usdBIT, Uint64T(11), 0},                    //
+                     .failUsdBITr{usdBIT, Uint64T(11), 0},                   //
+                     .goodUsdGH{usdGH, Uint64T(35'44113971506987), -14},     //
+                     .goodUsdGHr{usdGH, Uint64T(35'44113971506987), -14},    //
+                     .goodUsdBIT{usdBIT, Uint64T(2'821579689703915), -15},   //
+                     .goodUsdBITr{usdBIT, Uint64T(2'821579689703954), -15},  //
+                     .lpTokenBalance{10, 0},                                 //
+                     .offer1BtcGH = 1e-5,                                    //
+                     .offer2BtcGH = 1,                                       //
+                     .offer2UsdGH = 1e-5,                                    //
+                     .rateBIT = 0,                                           //
+                     .rateGH = 0,                                            //
+                 },
+                 InputSet{
+                     .testCase = "Overflow test {50, 100, 5.55}",         //
+                     .poolUsdBIT = 50,                                    //
+                     .poolUsdGH = 100,                                    //
+                     .sendMaxUsdBIT{usdBIT(5.55)},                        //
+                     .sendUsdGH{usdGH, 100},                              //
+                     .failUsdGH = STAmount{0},                            //
+                     .failUsdGHr = STAmount{0},                           //
+                     .failUsdBIT{usdBIT, Uint64T(55'55), -2},             //
+                     .failUsdBITr{usdBIT, Uint64T(55'55), -2},            //
+                     .goodUsdGH{usdGH, Uint64T(90'04347888284113), -14},  //
+                     .goodUsdGHr{usdGH, Uint64T(90'0434788828413), -13},  //
+                     .goodUsdBIT{usdBIT, Uint64T(55'55), -2},             //
+                     .goodUsdBITr{usdBIT, Uint64T(55'55), -2},            //
+                     .lpTokenBalance{Uint64T(70'71067811865475), -14},    //
+                     .offer1BtcGH = 1e-5,                                 //
+                     .offer2BtcGH = 1,                                    //
+                     .offer2UsdGH = 1e-5,                                 //
+                     .rateBIT = 0,                                        //
+                     .rateGH = 0,                                         //
+                 },
+                 InputSet{
+                     .testCase = "Overflow test {50, 100, 50.00}",         //
+                     .poolUsdBIT = 50,                                     //
+                     .poolUsdGH = 100,                                     //
+                     .sendMaxUsdBIT{usdBIT(50.00)},                        //
+                     .sendUsdGH{usdGH, 100},                               //
+                     .failUsdGH{usdGH, Uint64T(52'94379354424081), -14},   //
+                     .failUsdGHr{usdGH, Uint64T(52'94379354424092), -14},  //
+                     .failUsdBIT{usdBIT, Uint64T(100), 0},                 //
+                     .failUsdBITr{usdBIT, Uint64T(100), 0},                //
+                     .goodUsdGH{usdGH, Uint64T(52'94379354424081), -14},   //
+                     .goodUsdGHr{usdGH, Uint64T(52'94379354424092), -14},  //
+                     .goodUsdBIT{usdBIT, Uint64T(100), 0},                 //
+                     .goodUsdBITr{usdBIT, Uint64T(100), 0},                //
+                     .lpTokenBalance{Uint64T(70'71067811865475), -14},     //
+                     .offer1BtcGH = 1e-5,                                  //
+                     .offer2BtcGH = 1,                                     //
+                     .offer2UsdGH = 1e-5,                                  //
+                     .rateBIT = 0,                                         //
+                     .rateGH = 0,                                          //
+                 },
+                 InputSet{
+                     .testCase = "Overflow test {50, 100, 232.16}",          //
+                     .poolUsdBIT = 50,                                       //
+                     .poolUsdGH = 100,                                       //
+                     .sendMaxUsdBIT{usdBIT(232.16)},                         //
+                     .sendUsdGH{usdGH, 100},                                 //
+                     .failUsdGH = STAmount{0},                               //
+                     .failUsdGHr = STAmount{0},                              //
+                     .failUsdBIT{usdBIT, Uint64T(282'16), -2},               //
+                     .failUsdBITr{usdBIT, Uint64T(282'16), -2},              //
+                     .goodUsdGH{usdGH, Uint64T(35'44113971506987), -14},     //
+                     .goodUsdGHr{usdGH, Uint64T(35'44113971506987), -14},    //
+                     .goodUsdBIT{usdBIT, Uint64T(141'0789844851958), -13},   //
+                     .goodUsdBITr{usdBIT, Uint64T(141'0789844851962), -13},  //
+                     .lpTokenBalance{70'71067811865475, -14},                //
+                     .offer1BtcGH = 1e-5,                                    //
+                     .offer2BtcGH = 1,                                       //
+                     .offer2UsdGH = 1e-5,                                    //
+                     .rateBIT = 0,                                           //
+                     .rateGH = 0,                                            //
+                 },
+                 InputSet{
+                     .testCase = "Overflow test {50, 100, 500}",             //
+                     .poolUsdBIT = 50,                                       //
+                     .poolUsdGH = 100,                                       //
+                     .sendMaxUsdBIT{usdBIT(500)},                            //
+                     .sendUsdGH{usdGH, 100},                                 //
+                     .failUsdGH = STAmount{0},                               //
+                     .failUsdGHr = STAmount{0},                              //
+                     .failUsdBIT{usdBIT, Uint64T(550), 0},                   //
+                     .failUsdBITr{usdBIT, Uint64T(550), 0},                  //
+                     .goodUsdGH{usdGH, Uint64T(35'44113971506987), -14},     //
+                     .goodUsdGHr{usdGH, Uint64T(35'44113971506987), -14},    //
+                     .goodUsdBIT{usdBIT, Uint64T(141'0789844851958), -13},   //
+                     .goodUsdBITr{usdBIT, Uint64T(141'0789844851962), -13},  //
+                     .lpTokenBalance{70'71067811865475, -14},                //
+                     .offer1BtcGH = 1e-5,                                    //
+                     .offer2BtcGH = 1,                                       //
+                     .offer2UsdGH = 1e-5,                                    //
+                     .rateBIT = 0,                                           //
+                     .rateGH = 0,                                            //
                  },
              })
         {
@@ -6498,7 +6476,7 @@ private:
                 BEAST_EXPECT(expectOffers(env, bob_, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
                 BEAST_EXPECT(expectOffers(env, carol_, 1, {{Amounts{XRP(100), USD(55)}}}));
             }
-            else if (!features[featureMPTokensV2])
+            else
             {
                 BEAST_EXPECT(amm.expectBalances(
                     XRPAmount(909'090'909),
@@ -6509,19 +6487,6 @@ private:
                     carol_,
                     1,
                     {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
-                BEAST_EXPECT(expectOffers(env, bob_, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
-            }
-            else
-            {
-                BEAST_EXPECT(amm.expectBalances(
-                    XRPAmount(909'090'910),
-                    STAmount{USD, UINT64_C(549'99999945), -8},
-                    amm.tokens()));
-                BEAST_EXPECT(expectOffers(
-                    env,
-                    carol_,
-                    1,
-                    {{Amounts{XRPAmount{9'090'910}, STAmount{USD, 5'0000005, -7}}}}));
                 BEAST_EXPECT(expectOffers(env, bob_, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
             }
         }
@@ -6535,30 +6500,10 @@ private:
             AMM const amm(env, alice_, XRP(1'000), USD(500));
             env(offer(carol_, XRP(100), USD(55)));
             env.close();
-            if (!features[featureMPTokensV2])
-            {
-                BEAST_EXPECT(amm.expectBalances(
-                    XRPAmount(909'090'909),
-                    STAmount{USD, UINT64_C(550'000000055), -9},
-                    amm.tokens()));
-                BEAST_EXPECT(expectOffers(
-                    env,
-                    carol_,
-                    1,
-                    {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
-            }
-            else
-            {
-                BEAST_EXPECT(amm.expectBalances(
-                    XRPAmount(909'090'910),
-                    STAmount{USD, UINT64_C(549'99999945), -8},
-                    amm.tokens()));
-                BEAST_EXPECT(expectOffers(
-                    env,
-                    carol_,
-                    1,
-                    {{Amounts{XRPAmount{9'090'910}, STAmount{USD, 5'0000005, -7}}}}));
-            }
+            BEAST_EXPECT(amm.expectBalances(
+                XRPAmount(909'090'909), STAmount{USD, UINT64_C(550'000000055), -9}, amm.tokens()));
+            BEAST_EXPECT(expectOffers(
+                env, carol_, 1, {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
         }
     }
 
@@ -6899,14 +6844,14 @@ private:
                 auto const [amount, amount2, lptAMM] = amm.balances(XRP, xpm);
                 auto const withdraw = STAmount{xpm, 1, -5};
                 amm.withdraw(WithdrawArg{.asset1Out = STAmount{xpm, 1, -5}});
-                auto const [amount_, amount2_, lptAMM_] = amm.balances(XRP, xpm);
+                auto const [amountAfter, amount2After, lptAMMAfter] = amm.balances(XRP, xpm);
                 if (!env.enabled(fixAMMv1_3))
                 {
-                    BEAST_EXPECT((amount2 - amount2_) > withdraw);
+                    BEAST_EXPECT((amount2 - amount2After) > withdraw);
                 }
                 else
                 {
-                    BEAST_EXPECT((amount2 - amount2_) <= withdraw);
+                    BEAST_EXPECT((amount2 - amount2After) <= withdraw);
                 }
             },
             0);
@@ -7448,8 +7393,6 @@ private:
                     .err = Ter(tecAMM_BALANCE)});
         };
 
-        // Bound holds regardless of the deposit-side fix amendment.
-        test(all - featureMPTokensV2);
         test(all);
     }
 
@@ -7481,7 +7424,6 @@ private:
         testFlags();
         testRippling();
         testAMMAndCLOB(all);
-        testAMMAndCLOB(all - featureMPTokensV2);
         testAMMAndCLOB(all - fixAMMv1_1 - fixAMMv1_3);
         testTradingFee(all);
         testTradingFee(all - fixAMMv1_3);
@@ -7501,10 +7443,8 @@ private:
         testOverflowOffer(all - fixAMMv1_1 - fixAMMv1_3);
         testSwapRounding();
         testFixChangeSpotPriceQuality(all);
-        testFixChangeSpotPriceQuality(all - featureMPTokensV2);
         testFixChangeSpotPriceQuality(all - fixAMMv1_1 - fixAMMv1_3);
         testFixAMMOfferBlockedByLOB(all);
-        testFixAMMOfferBlockedByLOB(all - featureMPTokensV2);
         testFixAMMOfferBlockedByLOB(all - fixAMMv1_1 - fixAMMv1_3);
         testLPTokenBalance(all);
         testLPTokenBalance(all - fixAMMv1_3);

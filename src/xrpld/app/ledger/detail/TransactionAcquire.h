@@ -9,6 +9,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <cstddef>
@@ -27,7 +28,7 @@ class TransactionAcquire final : public TimeoutCounter,
 public:
     using pointer = std::shared_ptr<TransactionAcquire>;
 
-    TransactionAcquire(Application& app, uint256 const& hash, std::unique_ptr<PeerSet> peerSet);
+    TransactionAcquire(Application& app, UInt256 const& hash, std::unique_ptr<PeerSet> peerSet);
     ~TransactionAcquire() override = default;
 
     SHAMapAddNode

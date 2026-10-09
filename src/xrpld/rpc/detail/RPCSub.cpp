@@ -53,7 +53,7 @@ public:
         {
             Throw<std::runtime_error>("Failed to parse url.");
         }
-        else if (pUrl.scheme == "https")
+        if (pUrl.scheme == "https")
         {
             ssl_ = true;
         }

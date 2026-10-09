@@ -10,14 +10,15 @@ This document explains how to set one up.
 support it — see [compiler support for C++23][cpp23-support].
 The versions currently tested in CI are:
 
-| Compiler    | Version            |
-| ----------- | ------------------ |
-| GCC         | 15.2               |
-| Clang       | 22                 |
-| Apple Clang | 21                 |
-| MSVC        | Visual Studio 2026 |
+| Compiler    | Version                         |
+| ----------- | ------------------------------- |
+| GCC         | `gccVersion` in [packages.nix]  |
+| Clang       | `llvmVersion` in [packages.nix] |
+| Apple Clang | 21                              |
+| MSVC        | Visual Studio 2026              |
 
-LLVM tools (`clang-tidy` and `clang-format`) are also pinned to version 22.
+LLVM tools (`clang-tidy` and `clang-format`)
+come from the same LLVM release as Clang.
 
 ### Older compilers
 
@@ -156,3 +157,4 @@ version out of the box — run it via `run-clang-tidy`. No separate installation
 is needed.
 
 [cpp23-support]: https://en.cppreference.com/w/cpp/compiler_support/23
+[packages.nix]: ../../nix/packages.nix

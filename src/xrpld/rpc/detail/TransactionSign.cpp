@@ -191,7 +191,7 @@ acctMatchesPubKey(
     }
 
     // The last gasp is that we have public Regular key.
-    if ((sle.isFieldPresent(sfRegularKey)) && (publicKeyAcctID == sle.getAccountID(sfRegularKey)))
+    if (sle.isFieldPresent(sfRegularKey) && (publicKeyAcctID == sle.getAccountID(sfRegularKey)))
     {
         return RpcSuccess;
     }
@@ -259,10 +259,10 @@ checkPayment(
             RpcInvalidParams, "Cannot specify both 'tx_json.Paths' and 'build_path'");
     }
 
-    std::optional<uint256> domain;
+    std::optional<UInt256> domain;
     if (txJson.isMember(sfDomainID.jsonName))
     {
-        uint256 num;
+        UInt256 num;
         if (!txJson[sfDomainID.jsonName].isString() ||
             !num.parseHex(txJson[sfDomainID.jsonName].asString()))
         {

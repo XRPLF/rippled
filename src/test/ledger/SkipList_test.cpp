@@ -26,7 +26,7 @@ class SkipList_test : public beast::unit_test::Suite
                 kCreateGenesis,
                 Rules{config.features},
                 config.fees.toFees(),
-                std::vector<uint256>{},
+                std::vector<UInt256>{},
                 env.app().getNodeFamily());
             history.push_back(prev);
             for (auto i = 0; i < 1023; ++i)
@@ -39,7 +39,7 @@ class SkipList_test : public beast::unit_test::Suite
         }
 
         {
-            auto l = *(std::next(std::begin(history)));
+            auto l = *std::next(std::begin(history));
             BEAST_EXPECT((*std::begin(history))->header().seq < l->header().seq);
             BEAST_EXPECT(!hashOfSeq(*l, l->header().seq + 1, env.journal).has_value());
             BEAST_EXPECT(hashOfSeq(*l, l->header().seq, env.journal) == l->header().hash);
