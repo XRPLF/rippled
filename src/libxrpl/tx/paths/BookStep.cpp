@@ -1504,7 +1504,7 @@ BookStep<TIn, TOut, TDerived>::checkMPTDEX(ReadView const& view, AccountID const
 
     if (book_.in.holds<MPTIssue>())
     {
-        auto ret = [&]() {
+        auto ret = [&] {
             auto const& asset = book_.in;
             // Strand's source is an issuer
             if (!prevStep_)

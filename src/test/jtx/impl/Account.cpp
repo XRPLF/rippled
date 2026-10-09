@@ -48,7 +48,7 @@ Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
     if (iter != cache.end())
         return iter->second;
 
-    auto const keys = [stringType, &name, type]() {
+    auto const keys = [stringType, &name, type] {
         // Special handling for base58Seeds.
         if (stringType == AcctStringType::Base58Seed)
         {

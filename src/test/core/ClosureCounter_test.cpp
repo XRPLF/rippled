@@ -32,7 +32,7 @@ class ClosureCounter_test : public beast::unit_test::Suite
 
             int evidence = 0;
             // Make sure voidCounter.wrap works with an rvalue closure.
-            auto wrapped = voidCounter.wrap([&evidence]() { ++evidence; });
+            auto wrapped = voidCounter.wrap([&evidence] { ++evidence; });
             BEAST_EXPECT(voidCounter.count() == 1);
             BEAST_EXPECT(evidence == 0);
             BEAST_EXPECT(wrapped);
@@ -234,7 +234,7 @@ class ClosureCounter_test : public beast::unit_test::Suite
         ClosureCounter<void> voidCounter;
         BEAST_EXPECT(voidCounter.count() == 0);
         {
-            auto wrapped1 = voidCounter.wrap([]() {});
+            auto wrapped1 = voidCounter.wrap([] {});
             BEAST_EXPECT(voidCounter.count() == 1);
             {
                 // Copy should increase reference count.
@@ -246,7 +246,7 @@ class ClosureCounter_test : public beast::unit_test::Suite
                     BEAST_EXPECT(voidCounter.count() == 3);
                     {
                         // An additional closure also increases count.
-                        auto wrapped4 = voidCounter.wrap([]() {});
+                        auto wrapped4 = voidCounter.wrap([] {});
                         BEAST_EXPECT(voidCounter.count() == 4);
                     }
                     BEAST_EXPECT(voidCounter.count() == 3);
@@ -272,12 +272,12 @@ class ClosureCounter_test : public beast::unit_test::Suite
         ClosureCounter<void> voidCounter;
         BEAST_EXPECT(voidCounter.count() == 0);
 
-        auto wrapped = (voidCounter.wrap([]() {}));
+        auto wrapped = (voidCounter.wrap([] {}));
         BEAST_EXPECT(voidCounter.count() == 1);
 
         // Calling join() now should stall, so do it on a different thread.
         std::atomic<bool> threadExited{false};
-        std::thread localThread([&voidCounter, &threadExited, this]() {
+        std::thread localThread([&voidCounter, &threadExited, this] {
             // Should stall after calling join.
             using namespace std::chrono_literals;
             voidCounter.join("testWaitOnJoin", 1ms, j_);

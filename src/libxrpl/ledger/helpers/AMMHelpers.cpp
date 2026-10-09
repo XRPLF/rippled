@@ -451,7 +451,7 @@ ammHolds(
     AuthHandling authHandling,
     beast::Journal const j)
 {
-    auto const assets = [&]() -> std::optional<std::pair<Asset, Asset>> {
+    auto const assets = [&] -> std::optional<std::pair<Asset, Asset>> {
         auto const asset1 = ammSle[sfAsset];
         auto const asset2 = ammSle[sfAsset2];
         if (optAsset1 && optAsset2)

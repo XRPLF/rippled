@@ -1081,7 +1081,7 @@ struct PayChan_test : public beast::unit_test::Suite
         using namespace std::literals;
 
         auto const alice = Account("alice");
-        auto const bobs = []() -> std::vector<Account> {
+        auto const bobs = [] -> std::vector<Account> {
             int const n = 10;
             std::vector<Account> r;
             r.reserve(n);
@@ -1134,7 +1134,7 @@ struct PayChan_test : public beast::unit_test::Suite
             BEAST_EXPECT(r[jss::channels].size() == bobs.size());
         }
 
-        auto const bobsB58 = [&bobs]() -> std::set<std::string> {
+        auto const bobsB58 = [&bobs] -> std::set<std::string> {
             std::set<std::string> r;
             for (auto const& a : bobs)
                 r.insert(a.human());
