@@ -13,6 +13,8 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
@@ -128,6 +130,15 @@ public:
         // Verify newer entries are still present in by_index
         BEAST_EXPECT(lh.getLedgerHash(ledger2->header().seq) == ledger2->header().hash);
         BEAST_EXPECT(lh.getLedgerHash(ledger3->header().seq) == ledger3->header().hash);
+
+        // The by_hash cache must be pruned to the same cutoff. A cache hit
+        // hands back the very object that was inserted, so identity tells a
+        // hit from a miss. (A null check would not: ledger1 is a transaction-
+        // free successor of genesis and therefore has the same hash as the
+        // Env's own ledger 2, which getLedgerByHash can reload from SQL.)
+        BEAST_EXPECT(lh.getLedgerByHash(ledger2->header().hash).get() == ledger2.get());
+        BEAST_EXPECT(lh.getLedgerByHash(ledger3->header().hash).get() == ledger3.get());
+        BEAST_EXPECT(lh.getLedgerByHash(ledger1->header().hash).get() != ledger1.get());
 
         // Verify newer entries remain retrievable and consistent
         // getLedgerBySeq uses by_index first, then falls back to DB if needed
@@ -248,6 +259,43 @@ public:
             UInt256 const dummyTxHash{1};
             lh.validatedLedger(ledgerB, dummyTxHash);
             lh.builtLedger(ledgerA, dummyTxHash, {});
+
+            BEAST_EXPECT(found);
+        }
+
+        // The consensus JSON is captured inside the cache lock and handed to
+        // handleMismatch after it is released. The payload must survive that
+        // hand-off whichever side reports first: builtLedger passes its own
+        // argument, validatedLedger the copy stored in the cache entry.
+        for (bool const builtFirst : {true, false})
+        {
+            bool found = false;
+            // handleMismatch logs the consensus data at debug level, so raise
+            // the Env's log threshold (it defaults to Error) to capture it.
+            Env env{
+                *this,
+                envconfig(),
+                std::make_unique<CheckMessageLogs>("consensus-payload-marker", &found),
+                beast::Severity::Debug};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
+            auto const genesis = makeLedger({}, env, lh, 0s);
+            auto const ledgerA = makeLedger(genesis, env, lh, 4s);
+            auto const ledgerB = makeLedger(genesis, env, lh, 40s);
+
+            json::Value consensus{json::ValueType::Object};
+            consensus["marker"] = "consensus-payload-marker";
+
+            UInt256 const dummyTxHash{1};
+            if (builtFirst)
+            {
+                lh.builtLedger(ledgerA, dummyTxHash, consensus);
+                lh.validatedLedger(ledgerB, dummyTxHash);
+            }
+            else
+            {
+                lh.validatedLedger(ledgerB, dummyTxHash);
+                lh.builtLedger(ledgerA, dummyTxHash, consensus);
+            }
 
             BEAST_EXPECT(found);
         }

@@ -15,7 +15,6 @@
 
 #include <map>
 #include <memory>
-#include <mutex>
 #include <optional>
 
 namespace xrpl {
@@ -140,7 +139,14 @@ private:
         std::map<LedgerIndex, LedgerHash> byIndex;  // validated ledgers
     };
 
-    xrpl::Mutex<LedgerMaps, std::recursive_mutex> ledgerMaps_;
+    // No lock site re-enters ledgerMaps_: getLedgerBySeq, clearLedgerCachePrior
+    // and sweep release it before calling back into LedgerHistory, and the
+    // only work done under it is TaggedCache/std::map bookkeeping. A plain
+    // std::mutex is therefore sufficient, and any future re-entry deadlocks
+    // deterministically instead of silently relying on recursion. Do not
+    // fetch SHAMap nodes or load ledgers while holding it: both can call
+    // back into LedgerHistory through NodeFamily::missingNodeAcquireBySeq.
+    xrpl::Mutex<LedgerMaps> ledgerMaps_;
 
     // Maps ledger indexes to the corresponding hashes
     // For debug and logging purposes

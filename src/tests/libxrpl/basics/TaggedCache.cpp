@@ -289,6 +289,47 @@ TEST_F(IntrusiveTaggedCacheTest, sweep_empties_the_cache_once_nothing_is_held)
     EXPECT_EQ(intrPtrCache.size(), 0);
 }
 
+TEST_F(TaggedCacheTest, fetch_and_modify_revives_a_swept_entry)
+{
+    cache.fetchAndModify(1, [](std::string& v) { v = "one"; });
+    auto const held = cache.fetch(1);
+    ASSERT_NE(held, nullptr);
+
+    ++clock;
+    cache.sweep();
+    EXPECT_EQ(cache.getCacheSize(), 0);  // demoted to weak
+    EXPECT_EQ(cache.getTrackSize(), 1);  // still tracked while `held` is alive
+
+    cache.fetchAndModify(1, [](std::string& v) { v += "_modified"; });
+    EXPECT_EQ(*held, "one_modified");    // the same object was mutated
+    EXPECT_EQ(cache.getCacheSize(), 1);  // and promoted back to strong
+    EXPECT_EQ(cache.getTrackSize(), 1);
+    EXPECT_EQ(cache.fetch(1).get(), held.get());
+}
+
+TEST_F(TaggedCacheTest, fetch_and_modify_replaces_an_expired_entry)
+{
+    cache.fetchAndModify(1, [](std::string& v) { v = "one"; });
+    {
+        auto const held = cache.fetch(1);
+        ASSERT_NE(held, nullptr);
+        ++clock;
+        cache.sweep();
+        EXPECT_EQ(cache.getCacheSize(), 0);
+        EXPECT_EQ(cache.getTrackSize(), 1);
+    }
+    // The weak entry is now expired but has not been erased by a sweep yet.
+    std::string observed = "unset";
+    cache.fetchAndModify(1, [&observed](std::string& v) {
+        observed = v;
+        v = "two";
+    });
+    EXPECT_EQ(observed, "");  // a fresh, default-constructed object
+    EXPECT_EQ(cache.getCacheSize(), 1);
+    EXPECT_EQ(cache.getTrackSize(), 1);
+    EXPECT_EQ(*cache.fetch(1), "two");
+}
+
 TEST_F(IntrusiveTaggedCacheTest, fetch_and_modify_supports_intrusive_pointers)
 {
     // Miss: the placeholder is built with intr_ptr::makeShared and installed.

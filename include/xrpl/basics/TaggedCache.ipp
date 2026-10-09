@@ -741,9 +741,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             return intr_ptr::makeShared<T>();
         }
     }();
-    canonicalizeImpl(lock, key, entry, detail::ReplaceDynamically{}, [](SharedPointerType const&) {
-        return false;
-    });
+    canonicalizeImpl(lock, key, entry, detail::ReplaceClient{});
 
     ALWAYS(
         entry != nullptr, "xrpl::TaggedCache::fetchAndModify : entry present after canonicalize");
