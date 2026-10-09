@@ -49,6 +49,12 @@ namespace xrpl {
 
 class VaultScale_test : public VaultTestBase
 {
+    // The IOU precision-boundary bugs in this suite probe the STAmount
+    // 16-digit mantissa cliff (~1e16). FixedPrecision's Open-zone cap
+    // (9e(15-Scale)) makes that value unreachable at any Scale, so these
+    // scenarios cannot be reproduced under V1.2 by construction.
+    FeatureBitset const cashBasisAll_{all_ - featureLendingProtocolV1_2};
+
 private:
     void
     testScaleIOU()
@@ -77,7 +83,7 @@ private:
             // attaching a loan broker). featureLendingProtocolV1_1 adds a
             // closed-ended vault gate on LoanBrokerSet::preclaim and is
             // orthogonal to what this suite asserts, so strip it here.
-            Env env{*this, all_ - featureLendingProtocolV1_1};
+            Env env{*this, cashBasisAll_ - featureLendingProtocolV1_1};
             Account const owner{"owner"};
             Account const issuer{"issuer"};
             Account const depositor{"depositor"};
@@ -1018,7 +1024,7 @@ private:
 
         using namespace test::jtx;
 
-        Env env{*this, all_};
+        Env env{*this, cashBasisAll_};
         Account const owner{"owner"};
         Account const issuer{"issuer"};
 
