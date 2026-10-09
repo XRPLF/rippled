@@ -18,7 +18,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/UintTypes.h>
 
