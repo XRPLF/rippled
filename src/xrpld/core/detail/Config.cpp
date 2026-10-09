@@ -47,6 +47,36 @@
 #include <utility>
 #include <vector>
 
+namespace xrpl::detail {
+
+std::string
+decodeMountinfoPath(std::string_view escaped)
+{
+    // A backslash and three octal digits, the first at most 3, encode one byte.
+    auto const octal = [](char c, char max = '7') { return c >= '0' && c <= max; };
+
+    std::string path;
+    path.reserve(escaped.size());
+    for (std::size_t i = 0; i < escaped.size(); ++i)
+    {
+        if (escaped[i] == '\\' && i + 3 < escaped.size() && octal(escaped[i + 1], '3') &&
+            octal(escaped[i + 2]) && octal(escaped[i + 3]))
+        {
+            int const byte = ((escaped[i + 1] - '0') << 6) | ((escaped[i + 2] - '0') << 3) |
+                (escaped[i + 3] - '0');
+            path.push_back(static_cast<char>(byte));
+            i += 3;
+        }
+        else
+        {
+            path.push_back(escaped[i]);
+        }
+    }
+    return path;
+}
+
+}  // namespace xrpl::detail
+
 #if BOOST_OS_WINDOWS
 #include <sysinfoapi.h>
 
@@ -175,7 +205,8 @@ minCgroupLimit(std::string const& mount, std::string path, char const* file)
 // rather than a fixed path, since a container runtime or an init system can
 // mount either hierarchy somewhere other than /sys/fs/cgroup. Field 5, the
 // mount point, is already expressed relative to this process's own root
-// (man 5 proc), so no further namespace translation is needed.
+// (man 5 proc), so no further namespace translation is needed; its octal
+// escapes are decoded so the path opens as the kernel names it.
 [[nodiscard]] std::string
 findCgroupMount(std::string_view controller)
 {
@@ -199,7 +230,7 @@ findCgroupMount(std::string_view controller)
         if (controller.empty())
         {
             if (fsType == "cgroup2")
-                return mountPoint;
+                return decodeMountinfoPath(mountPoint);
             continue;
         }
 
@@ -211,7 +242,7 @@ findCgroupMount(std::string_view controller)
         while (std::getline(opts, opt, ','))
         {
             if (opt == controller)
-                return mountPoint;
+                return decodeMountinfoPath(mountPoint);
         }
     }
 

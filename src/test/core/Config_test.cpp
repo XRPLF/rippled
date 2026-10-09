@@ -677,6 +677,27 @@ main
     }
 
     void
+    testMountinfoPath()
+    {
+        testcase("mountinfo path");
+
+        using detail::decodeMountinfoPath;
+
+        // The kernel escapes space, tab, newline and backslash as octal.
+        BEAST_EXPECT(decodeMountinfoPath("/sys/fs/cgroup") == "/sys/fs/cgroup");
+        BEAST_EXPECT(decodeMountinfoPath("/var/lib/cgroup\\040mounts") == "/var/lib/cgroup mounts");
+        BEAST_EXPECT(decodeMountinfoPath("a\\011b\\012c\\134d") == "a\tb\nc\\d");
+        BEAST_EXPECT(decodeMountinfoPath("\\040\\040") == "  ");
+
+        // Anything that is not a backslash and three octal digits is kept.
+        BEAST_EXPECT(decodeMountinfoPath("\\04") == "\\04");
+        BEAST_EXPECT(decodeMountinfoPath("\\") == "\\");
+        BEAST_EXPECT(decodeMountinfoPath("\\0x0") == "\\0x0");
+        BEAST_EXPECT(decodeMountinfoPath("\\400") == "\\400");
+        BEAST_EXPECT(decodeMountinfoPath("") == "");
+    }
+
+    void
     testValidatorsFile()
     {
         testcase("validators_file");
@@ -1758,6 +1779,7 @@ r.ripple.com:51235
         testOverlay();
         testNetworkID();
         testMemoryLimit();
+        testMountinfoPath();
     }
 };
 

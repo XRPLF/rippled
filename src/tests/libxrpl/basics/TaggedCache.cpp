@@ -15,6 +15,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -462,6 +463,75 @@ TEST(TaggedCacheTest, byte_budget_enforced_on_insert)
     EXPECT_LE(capped.getCacheBytes(), std::size_t{4096});
     EXPECT_GT(capped.getCacheSize(), 0);
     EXPECT_LT(capped.getCacheSize(), 50);
+}
+
+// A key the cache can hash, compare and partition on but not default
+// construct. The requirements TaggedCache places on key_type are those
+// three; the eviction path must not add a fourth.
+struct ExplicitKey
+{
+    std::size_t value;
+
+    explicit ExplicitKey(std::size_t v) : value(v)
+    {
+    }
+
+    operator std::size_t() const
+    {
+        return value;
+    }
+
+    bool
+    operator==(ExplicitKey const&) const = default;
+};
+static_assert(!std::is_default_constructible_v<ExplicitKey>);
+
+struct ExplicitKeyHash
+{
+    std::size_t
+    operator()(ExplicitKey const& key) const
+    {
+        return key.value;
+    }
+};
+
+TEST(TaggedCacheTest, hard_cap_with_non_default_constructible_key)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Value = std::string;
+    using Cache = TaggedCache<
+        ExplicitKey,
+        Value,
+        /*IsKeyCache*/ false,
+        SharedWeakCachePointer<Value>,
+        std::shared_ptr<Value>,
+        ExplicitKeyHash>;
+
+    int const cap = 100;
+    Cache capped(
+        "capped-explicit-key",
+        1'000'000,
+        3600s,
+        clock,
+        journal,
+        beast::insight::NullCollector::make(),
+        cap);
+
+    bool everExceeded = false;
+    for (std::size_t k = 1; k <= 1000; ++k)
+    {
+        capped.insert(ExplicitKey{k}, "v");
+        if (capped.getCacheSize() > cap)
+            everExceeded = true;
+    }
+    EXPECT_FALSE(everExceeded);
+    EXPECT_LE(capped.getCacheSize(), cap);
+    EXPECT_GT(capped.getCacheSize(), 0);
 }
 
 }  // namespace xrpl

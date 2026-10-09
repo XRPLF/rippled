@@ -354,9 +354,9 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
                 int sampled = 0;
                 std::size_t bucketsWalked = 0;
-                key_type oldestKey{};
-                bool haveOldest = false;
-                ClockType::time_point oldestAccess{};
+                // std::unordered_map keeps element addresses stable, so the
+                // victim is held by pointer across the walk.
+                typename CacheType::value_type* oldest = nullptr;
 
                 // Bounded by bucketCount, not a fixed window: a partition
                 // that grew large and was since mostly vacated can leave its
@@ -373,12 +373,8 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                     {
                         if ((isHome && lit->first == keepKey) || lit->second.isWeak())
                             continue;
-                        if (!haveOldest || lit->second.lastAccess < oldestAccess)
-                        {
-                            oldestAccess = lit->second.lastAccess;
-                            oldestKey = lit->first;
-                            haveOldest = true;
-                        }
+                        if (!oldest || lit->second.lastAccess < oldest->second.lastAccess)
+                            oldest = &*lit;
                         if (++sampled >= kEvictSampleBudget)
                             break;
                     }
@@ -388,19 +384,14 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                 if (isHome)
                     evictHand_ = b;  // resume the home scan here on the next call
 
-                if (!haveOldest)
+                if (!oldest)
                     continue;  // nothing demotable sampled here; try the next partition
-
-                auto oldest = partition.find(oldestKey);
-                if (oldest == partition.end() || (isHome && oldest->first == keepKey) ||
-                    oldest->second.isWeak())
-                    continue;
 
                 dischargeEntry(oldest->second);
                 if (oldest->second.ptr.useCount() == 1)
                 {
                     // Sole owner: release entirely.
-                    partition.erase(oldest);
+                    partition.erase(partition.find(oldest->first));
                 }
                 else
                 {
