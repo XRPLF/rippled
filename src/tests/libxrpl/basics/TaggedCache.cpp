@@ -289,6 +289,24 @@ TEST_F(IntrusiveTaggedCacheTest, sweep_empties_the_cache_once_nothing_is_held)
     EXPECT_EQ(intrPtrCache.size(), 0);
 }
 
+TEST_F(IntrusiveTaggedCacheTest, fetch_and_modify_supports_intrusive_pointers)
+{
+    // Miss: the placeholder is built with intr_ptr::makeShared and installed.
+    intrPtrCache.fetchAndModify(1, [](TestRefCountObject& v) { v.data = "one"; });
+    EXPECT_EQ(intrPtrCache.getCacheSize(), 1);
+    EXPECT_EQ(intrPtrCache.getTrackSize(), 1);
+
+    auto const held = intrPtrCache.fetch(1);
+    ASSERT_NE(held, nullptr);
+    EXPECT_EQ(*held, "one");
+
+    // Hit: the cached object is mutated in place, no new entry.
+    intrPtrCache.fetchAndModify(1, [](TestRefCountObject& v) { v.data += "_modified"; });
+    EXPECT_EQ(*held, "one_modified");
+    EXPECT_EQ(intrPtrCache.getCacheSize(), 1);
+    EXPECT_EQ(intrPtrCache.fetch(1).get(), held.get());
+}
+
 TEST_F(TaggedCacheTest, fetch_and_modify)
 {
     using namespace std::chrono_literals;

@@ -722,10 +722,21 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 {
     static_assert(
         !IsKeyCache, "fetchAndModify is only supported for value caches, not key-only caches");
+    static_assert(
+        std::is_same_v<std::shared_ptr<T>, SharedPointerType> ||
+            std::is_same_v<intr_ptr::SharedPtr<T>, SharedPointerType>,
+        "fetchAndModify requires std::shared_ptr<T> or intr_ptr::SharedPtr<T>");
 
     std::scoped_lock<MutexType> const lock(mutex_);
 
-    auto entry = std::make_shared<T>();
+    // Same pointer-type dispatch as insert(): the placeholder must have exactly
+    // SharedPointerType so canonicalizeImpl can write the cached pointer back.
+    SharedPointerType entry = [] {
+        if constexpr (std::is_same_v<std::shared_ptr<T>, SharedPointerType>)
+            return std::make_shared<T>();
+        else
+            return intr_ptr::makeShared<T>();
+    }();
     canonicalizeImpl(lock, key, entry, detail::ReplaceDynamically{}, [](SharedPointerType const&) {
         return false;
     });

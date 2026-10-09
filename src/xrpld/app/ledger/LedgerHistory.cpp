@@ -568,10 +568,15 @@ LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
     std::size_t cacheSize = 0;
     std::size_t indexSize = 0;
 
-    std::vector<LedgerHash> const keys = [this] {
+    // Snapshot the keys outside ledgerMaps_: getKeys() releases the cache
+    // mutex around its allocation, and holding the outer lock across that
+    // would block every other LedgerHistory call for the duration. byHash is
+    // assigned once in the constructor and never reset (see sweep()).
+    auto* const byHash = [this] {
         auto lockedMaps = ledgerMaps_.lock();
-        return lockedMaps->byHash->getKeys();
+        return lockedMaps->byHash.get();
     }();
+    std::vector<LedgerHash> const keys = byHash->getKeys();
 
     for (LedgerHash const& it : keys)
     {
