@@ -151,6 +151,26 @@ struct RejectComment
 };
 
 /**
+ * A visitor that rejects the end of every object and array.
+ */
+struct RejectContainerEnd
+{
+    using ReturnType = std::expected<void, std::string>;
+
+    static ReturnType
+    onObjectEnd(std::size_t)
+    {
+        return std::unexpected("rejected object end");
+    }
+
+    static ReturnType
+    onArrayEnd(std::size_t)
+    {
+        return std::unexpected("rejected array end");
+    }
+};
+
+/**
  * Counts how many events it saw, to prove short-circuiting.
  */
 struct CountKeys
@@ -338,6 +358,26 @@ TEST(JsonParser, earlier_visitors_still_see_the_event)
 
     EXPECT_FALSE(parser.parse(std::string{R"JSON({"a":1})JSON"}));
     EXPECT_EQ(counter.keys, 1u);
+}
+
+TEST(JsonParser, a_rejected_container_end_is_located_at_the_closing_token)
+{
+    // Empty and non-empty containers reach onObjectEnd / onArrayEnd along
+    // different paths; both must point at the closing bracket, not the opening.
+    for (auto const& [document, location] : {
+             std::pair{R"JSON({   })JSON", "* Line 1, Column 5\n"},
+             std::pair{R"JSON({"a":1   })JSON", "* Line 1, Column 10\n"},
+             std::pair{R"JSON([   ])JSON", "* Line 1, Column 5\n"},
+             std::pair{R"JSON([1   ])JSON", "* Line 1, Column 6\n"},
+         })
+    {
+        auto reject = RejectContainerEnd{};
+        auto parser = json::Parser{reject};
+
+        EXPECT_FALSE(parser.parse(std::string{document})) << document;
+        EXPECT_EQ(parser.getFormattedErrorMessages().find(location), 0u)
+            << document << ": " << parser.getFormattedErrorMessages();
+    }
 }
 
 TEST(JsonParser, int_and_uint_split_at_the_signed_boundary)
