@@ -684,7 +684,7 @@ private:
         auto const broker = createVaultAndBroker(env, xrpAsset, lender);
 
         Number const principalRequest{1, 3};
-        auto createNewLoan = [&]() {
+        auto createNewLoan = [&] {
             auto const sleBroker = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(sleBroker))
                 return keylet::loan(UInt256{});

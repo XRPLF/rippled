@@ -984,7 +984,7 @@ doLedgerEntry(rpc::JsonContext& context)
         },
     });
 
-    auto const hasMoreThanOneMember = [&]() {
+    auto const hasMoreThanOneMember = [&] {
         int count = 0;
 
         for (auto const& ledgerEntry : kLedgerEntryParsers)

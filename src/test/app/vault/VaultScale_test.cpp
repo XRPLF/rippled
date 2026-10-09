@@ -1160,7 +1160,7 @@ private:
         {
             testcase("Assets Maximum: MPT");
 
-            PrettyAsset const mptAsset = [&]() {
+            PrettyAsset const mptAsset = [&] {
                 MPTTester mptt{env, issuer, kMptInitNoFund};
                 mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
                 env.close();

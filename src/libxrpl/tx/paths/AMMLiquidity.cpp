@@ -157,7 +157,7 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
         return std::nullopt;
     }
 
-    auto offer = [&]() -> std::optional<AMMOffer<TIn, TOut>> {
+    auto offer = [&] -> std::optional<AMMOffer<TIn, TOut>> {
         try
         {
             if (ammContext_.multiPath())

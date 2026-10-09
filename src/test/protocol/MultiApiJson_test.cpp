@@ -148,7 +148,7 @@ struct MultiApiJson_test : beast::unit_test::Suite
                 return !requires {
                     forAllApiVersions(
                         std::forward<decltype(v)>(v).visit(),  //
-                        []() {});                              // missing parameters
+                        [] {});                                // missing parameters
                 };
             }(std::as_const(s1)));
             static_assert([](auto&& v) {
@@ -571,8 +571,8 @@ struct MultiApiJson_test : beast::unit_test::Suite
                 return !requires {
                     v.kVisitor(
                         v,
-                        1,         //
-                        []() {});  // missing parameter
+                        1,       //
+                        [] {});  // missing parameter
                 };
             }(s1));
 
@@ -903,10 +903,10 @@ struct MultiApiJson_test : beast::unit_test::Suite
 
             // Missing parameter
             static_assert([](auto&& v) {
-                return !requires { std::forward<decltype(v)>(v).visit(1, []() {}); };
+                return !requires { std::forward<decltype(v)>(v).visit(1, [] {}); };
             }(s1));
             static_assert([](auto&& v) {
-                return !requires { std::forward<decltype(v)>(v).visit()(1, []() {}); };
+                return !requires { std::forward<decltype(v)>(v).visit()(1, [] {}); };
             }(s1));
 
             // Sanity checks

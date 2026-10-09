@@ -713,7 +713,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     clearSql(
         lastRotated,
         "Ledgers",
-        [&db]() -> std::optional<LedgerIndex> { return db.getMinLedgerSeq(); },
+        [&db] -> std::optional<LedgerIndex> { return db.getMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteBeforeLedgerSeq(min); });
     if (healthWait() != HealthResult::KeepGoing)
         return;
@@ -724,7 +724,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     clearSql(
         lastRotated,
         "Transactions",
-        [&db]() -> std::optional<LedgerIndex> { return db.getTransactionsMinLedgerSeq(); },
+        [&db] -> std::optional<LedgerIndex> { return db.getTransactionsMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteTransactionsBeforeLedgerSeq(min); });
     if (healthWait() != HealthResult::KeepGoing)
         return;
@@ -732,7 +732,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     clearSql(
         lastRotated,
         "AccountTransactions",
-        [&db]() -> std::optional<LedgerIndex> { return db.getAccountTransactionsMinLedgerSeq(); },
+        [&db] -> std::optional<LedgerIndex> { return db.getAccountTransactionsMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteAccountTransactionsBeforeLedgerSeq(min); });
     if (healthWait() != HealthResult::KeepGoing)
         return;
@@ -845,7 +845,7 @@ SHAMapStoreImp::healthWait()
             index > lastLedger, "SHAMapStoreImp::healthWait : validated ledger index changed");
     }
 
-    auto const result = std::invoke([index, circuitBreaker, this]() -> HealthResult {
+    auto const result = std::invoke([index, circuitBreaker, this] -> HealthResult {
         if (stop_)
             return HealthResult::Stopping;
         if (index < circuitBreaker)

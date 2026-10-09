@@ -987,7 +987,7 @@ class InvariantsMisc_test : public InvariantsBase
                     // The check reads the broker's vault asset to decide
                     // whether the rounding tolerance applies, so both
                     // branches need a real broker over the relevant asset.
-                    auto const asset = [&]() -> PrettyAsset {
+                    auto const asset = [&] -> PrettyAsset {
                         if (integralAsset)
                             return PrettyAsset{xrpIssue(), 1'000'000};
                         PrettyAsset const iouAsset = issuer["IOU"];

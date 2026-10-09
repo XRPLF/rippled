@@ -637,7 +637,7 @@ class View_test : public beast::unit_test::Suite
             env.app().getNodeFamily());
         auto const ledger =
             std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
-        auto setup123 = [&ledger, this]() {
+        auto setup123 = [&ledger, this] {
             // erase middle element
             wipe(*ledger);
             ledger->rawInsert(sle(1));

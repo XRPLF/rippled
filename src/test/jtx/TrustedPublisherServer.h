@@ -180,7 +180,7 @@ public:
 
         std::vector<BlobInfo> blobInfo;
         blobInfo.reserve(futures.size() + 1);
-        auto const [data, blob] = [&]() -> std::pair<std::string, std::string> {
+        auto const [data, blob] = [&] -> std::pair<std::string, std::string> {
             // Builds the validator list, then encodes it into a blob.
             std::string data = "{\"sequence\":" + std::to_string(sequence) +
                 ",\"expiration\":" + std::to_string(validUntil.time_since_epoch().count()) +

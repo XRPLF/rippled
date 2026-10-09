@@ -442,7 +442,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
                     SLE::const_pointer const usdOffer = env.le(bobUsdOffer);
                     if (BEAST_EXPECT(usdOffer))
                     {
-                        std::uint64_t const bookRate = [&usdOffer]() {
+                        std::uint64_t const bookRate = [&usdOffer] {
                             // Extract the least significant 64
                             // bits from the book page.  That's
                             // where the quality is stored.
@@ -591,7 +591,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
                 // bob's USD balance is 42USD. USD/EUR offer is 32USD/32EUR.
                 // bob pays 25% on 32EUR -> 7EUR if MPT, 6.4EUR if IOU,
                 // therefore carl gets 25EUR if MPT, 25.6EUR if IOU.
-                auto const carolEUR = [&]() {
+                auto const carolEUR = [&] {
                     if constexpr (std::is_same_v<TEur, IOU>)
                     {
                         return eur(25.6);

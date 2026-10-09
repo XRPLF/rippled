@@ -534,7 +534,7 @@ Pathfinder::rankPaths(
     rankedPaths.clear();
     rankedPaths.reserve(paths.size());
 
-    auto const saMinDstAmount = [&]() -> STAmount {
+    auto const saMinDstAmount = [&] -> STAmount {
         if (!convertAll_)
         {
             // Ignore paths that move only very small amounts.
@@ -768,12 +768,12 @@ Pathfinder::getPathsOut(
         return 0;
 
     auto const aFlags = sleAccount->getFieldU32(sfFlags);
-    bool const bAuthRequired = [&]() {
+    bool const bAuthRequired = [&] {
         if (pathAsset.holds<Currency>())
             return (aFlags & lsfRequireAuth) != 0;
         return !isTesSuccess(requireAuth(*ledger_, asset.get<MPTIssue>(), account));
     }();
-    bool const bFrozen = [&]() {
+    bool const bFrozen = [&] {
         if (pathAsset.holds<Currency>())
             return (aFlags & lsfGlobalFreeze) != 0;
         return isGlobalFrozen(*ledger_, asset.get<MPTIssue>());
@@ -1019,14 +1019,14 @@ Pathfinder::addLink(
                     {
                         if (continueCallback && !continueCallback())
                             return;
-                        auto const& acct = [&]() constexpr {
+                        auto const& acct = [&] constexpr {
                             if constexpr (kIsLine)
                                 return asset.getAccountIDPeer();
                             // Unlike trustline, MPT is not bidirectional
                             if constexpr (kIsMpt)
                                 return getMPTIssuer(asset);
                         }();
-                        auto const direction = [&]() constexpr -> LineDirection {
+                        auto const direction = [&] constexpr -> LineDirection {
                             if constexpr (kIsLine)
                                 return asset.getDirectionPeer();
                             // incoming for MPT since MPT doesn't support
@@ -1047,7 +1047,7 @@ Pathfinder::addLink(
                             continue;
                         }
 
-                        auto const correctAsset = [&]() {
+                        auto const correctAsset = [&] {
                             if constexpr (kIsLine)
                             {
                                 return uEndPathAsset.get<Currency>() ==
@@ -1058,7 +1058,7 @@ Pathfinder::addLink(
                                 return uEndPathAsset.get<MPTID>() == asset.getMptID();
                             }
                         }();
-                        auto checkAsset = [&]() {
+                        auto checkAsset = [&] {
                             if constexpr (kIsLine)
                             {
                                 return (

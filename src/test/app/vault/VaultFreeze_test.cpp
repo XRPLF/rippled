@@ -59,7 +59,7 @@ private:
         env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(100)}));
         env.close();
 
-        auto runTests = [&]() {
+        auto runTests = [&] {
             auto const fix330Enabled = env.current()->rules().enabled(fixCleanup3_3_0);
 
             // Global freeze
@@ -95,7 +95,7 @@ private:
             //          check triggers → tecLOCKED
             {
                 testcase("VaultDeposit IOU pseudo-account freeze");
-                auto trustSet = [&]() {
+                auto trustSet = [&] {
                     json::Value jv;
                     jv[jss::Account] = issuer.human();
                     {
@@ -123,7 +123,7 @@ private:
             // Vault-account deep freeze
             {
                 testcase("VaultDeposit IOU pseudo-account deep freeze");
-                auto trustSet = [&]() {
+                auto trustSet = [&] {
                     json::Value jv;
                     jv[jss::Account] = issuer.human();
                     {
@@ -201,7 +201,7 @@ private:
 
         // For MPT isDeepFrozen == isFrozen, so all locks block in
         // both pre- and post-fix.
-        auto runTests = [&]() {
+        auto runTests = [&] {
             // Global lock
             {
                 testcase("VaultDeposit MPT global lock");
@@ -287,7 +287,7 @@ private:
         env.trust(asset(1'000'000), charlie);
         env.close();
 
-        auto runTests = [&]() {
+        auto runTests = [&] {
             auto const fix330Enabled = env.current()->rules().enabled(fixCleanup3_3_0);
             // Global freeze → self-withdraw
             {
@@ -308,7 +308,7 @@ private:
             // Vault-account freeze
             {
                 testcase("VaultWithdraw IOU pseudo-account freeze");
-                auto trustSet = [&]() {
+                auto trustSet = [&] {
                     json::Value jv;
                     jv[jss::Account] = issuer.human();
                     {
@@ -488,7 +488,7 @@ private:
         mptt.authorize({.account = issuer, .holder = charlie});
         env.close();
 
-        auto runTests = [&]() {
+        auto runTests = [&] {
             auto const fix330Enabled = env.current()->rules().enabled(fixCleanup3_3_0);
 
             // Global lock
@@ -641,7 +641,7 @@ private:
         env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(10)}));
         env.close();
 
-        auto runTests = [&]() {
+        auto runTests = [&] {
             auto const fix330Enabled = env.current()->rules().enabled(fixCleanup3_3_0);
 
             // Set an individual freeze on the owner's IOU trustline.

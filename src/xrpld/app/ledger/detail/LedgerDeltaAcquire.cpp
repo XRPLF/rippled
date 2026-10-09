@@ -236,7 +236,7 @@ LedgerDeltaAcquire::onLedgerBuilt(ScopedLockType& sl, std::optional<InboundLedge
         firstTime = false;
     }
     app_.getJobQueue().addJob(
-        JtReplayTask, "OnLedBuilt", [=, ledger = this->fullLedger_, &app = this->app_]() {
+        JtReplayTask, "OnLedBuilt", [=, ledger = this->fullLedger_, &app = this->app_] {
             for (auto reason : reasons)
             {
                 switch (reason)

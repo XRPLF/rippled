@@ -189,7 +189,7 @@ public:
     {
         assert(!has(SB::Last));
 
-        auto const acc = [&]() -> std::optional<AccountID> {
+        auto const acc = [&] -> std::optional<AccountID> {
             if (!has(SB::Acc))
                 return std::nullopt;
             if (has(SB::RootAcc))
@@ -198,7 +198,7 @@ public:
                 return existingAcc;
             return accF().id();
         }();
-        auto const iss = [&]() -> std::optional<AccountID> {
+        auto const iss = [&] -> std::optional<AccountID> {
             if (!has(SB::Iss))
                 return std::nullopt;
             if (has(SB::RootIss))
@@ -209,7 +209,7 @@ public:
                 return existingIss;
             return issF().id();
         }();
-        auto const cur = [&]() -> std::optional<Currency> {
+        auto const cur = [&] -> std::optional<Currency> {
             if (!has(SB::Cur))
                 return std::nullopt;
             if (has(SB::Xrp))

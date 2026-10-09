@@ -1114,7 +1114,7 @@ private:
         // Another vault over the same asset supplies the destination. Its
         // pseudo-account holds a trust line for the asset from creation, so
         // the payout is refused for being a pseudo-account and nothing else.
-        auto const pseudoDestination = [&]() {
+        auto const pseudoDestination = [&] {
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
@@ -1146,7 +1146,7 @@ private:
         }
 
         {
-            auto const domainId = [&]() {
+            auto const domainId = [&] {
                 pdomain::Credentials const credentials{
                     {.issuer = credIssuer, .credType = credType},
                 };

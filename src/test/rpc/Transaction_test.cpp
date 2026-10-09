@@ -780,7 +780,7 @@ class Transaction_test : public beast::unit_test::Suite
         }
 
         json::Value const result = {
-            [&env, txn, apiVersion]() {
+            [&env, txn, apiVersion] {
                 json::Value params{json::ValueType::Object};
                 params[jss::transaction] = to_string(txn->getTransactionID());
                 params[jss::binary] = false;
@@ -848,7 +848,7 @@ class Transaction_test : public beast::unit_test::Suite
         std::string const expectedTxBlob = serializeHex(*txn);
         std::string const expectedMetaBlob = serializeHex(*meta);
 
-        json::Value const result = [&env, txn, apiVersion]() {
+        json::Value const result = [&env, txn, apiVersion] {
             json::Value params{json::ValueType::Object};
             params[jss::transaction] = to_string(txn->getTransactionID());
             params[jss::binary] = true;

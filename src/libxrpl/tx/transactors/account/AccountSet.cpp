@@ -244,7 +244,7 @@ AccountSet::doApply()
     bool const bClearDisallowXRP{tx.isFlag(tfAllowXRP) || (uClearFlag == asfDisallowXRP)};
 
     bool const sigWithMaster{
-        [&tx, &acct = accountID_]() {
+        [&tx, &acct = accountID_] {
             auto const spk = tx.getSigningPubKey();
 
             if (publicKeyType(makeSlice(spk)))

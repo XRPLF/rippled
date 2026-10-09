@@ -2541,7 +2541,7 @@ public:
             }
             std::uint32_t const acctOfferSeq = env.seq(acct) - 1;
 
-            auto const expBalanceUsd = [&]() {
+            auto const expBalanceUsd = [&] {
                 if (t.scale == 1)
                     return t.balanceUsd;
                 // crossed offer has XRP available balance of 1 fee
@@ -4916,7 +4916,7 @@ public:
         {
             // The ledger sequence needs to far enough ahead of the account
             // sequence before the account can be deleted.
-            int const delta = [&env, &gw, openLedgerSeq = env.current()->seq()]() -> int {
+            int const delta = [&env, &gw, openLedgerSeq = env.current()->seq()] -> int {
                 std::uint32_t const gwSeq{env.seq(gw)};
                 if (gwSeq + 255 > openLedgerSeq)
                     return gwSeq - openLedgerSeq + 255;

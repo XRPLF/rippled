@@ -445,7 +445,7 @@ parseSubUnsubJson(
     beast::Journal j)
 {
     auto const& jv = params[name];
-    auto const [issuerError, assetError] = [&]() {
+    auto const [issuerError, assetError] = [&] {
         if (name == jss::taker_pays)
             return std::make_pair(RpcSrcIsrMalformed, RpcSrcCurMalformed);
         return std::make_pair(RpcDstIsrMalformed, RpcDstAmtMalformed);

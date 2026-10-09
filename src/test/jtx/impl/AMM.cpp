@@ -799,7 +799,7 @@ AMM::bid(BidArg const& arg)
 void
 AMM::clawback(ClawbackArg const& arg)
 {
-    auto const& [asset, asset2] = [&]() {
+    auto const& [asset, asset2] = [&] {
         if (arg.assets)
             return *arg.assets;
         return std::make_pair(asset1_.asset(), asset2_.asset());

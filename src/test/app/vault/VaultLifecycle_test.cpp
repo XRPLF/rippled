@@ -74,7 +74,7 @@ private:
             std::uint64_t const scale = asset.raw().holds<MPTIssue>() ? 1 : 1e6;
 
             auto const [share, vaultAccount] =
-                [&env, keylet = keylet, asset, this]() -> std::tuple<PrettyAsset, Account> {
+                [&env, keylet = keylet, asset, this] -> std::tuple<PrettyAsset, Account> {
                 auto const vault = env.le(keylet);
                 BEAST_EXPECT(vault != nullptr);
                 if (!asset.integral())
@@ -881,7 +881,7 @@ private:
             redeemAllNoAssetMpt(tecINVARIANT_FAILED),
             {.requireAuth = false, .features = testableAmendments() - fixCleanup3_4_0});
 
-        auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
+        auto const [acctReserve, incReserve] = [this] -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
                 env.current()->fees().accountReserve(0, 1).drops() / kDropsPerXrp.drops(),
@@ -1185,7 +1185,7 @@ private:
             env(tx1);
             env.close();
 
-            auto const shares = [&env, keylet = k1, this]() -> Asset {
+            auto const shares = [&env, keylet = k1, this] -> Asset {
                 auto const vault = env.le(keylet);
                 BEAST_EXPECT(vault != nullptr);
                 return MPTIssue(vault->at(sfShareMPTID));
@@ -1228,7 +1228,7 @@ private:
             env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
             env.close();
 
-            auto const shares = [&]() -> PrettyAsset {
+            auto const shares = [&] -> PrettyAsset {
                 auto const sle = env.le(keylet);
                 BEAST_EXPECT(sle != nullptr);
                 return MPTIssue(sle->at(sfShareMPTID));
@@ -1305,7 +1305,7 @@ private:
             env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(5'000)}));
             env.close();
 
-            auto const shares = [&]() -> PrettyAsset {
+            auto const shares = [&] -> PrettyAsset {
                 auto const sle = env.le(keylet);
                 BEAST_EXPECT(sle != nullptr);
                 return MPTIssue(sle->at(sfShareMPTID));
@@ -1463,7 +1463,7 @@ private:
 
             {
                 // Cannot create new trustline to a vault
-                auto tx = [&, account = vaultAccount(keylet)]() {
+                auto tx = [&, account = vaultAccount(keylet)] {
                     json::Value jv;
                     jv[jss::Account] = issuer.human();
                     {
@@ -1765,7 +1765,7 @@ private:
             },
             {.initialIOU = Number(11875, -2)});
 
-        auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
+        auto const [acctReserve, incReserve] = [this] -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
                 env.current()->fees().accountReserve(0, 1).drops() / kDropsPerXrp.drops(),

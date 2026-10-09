@@ -297,7 +297,7 @@ std::optional<ValidVault::DeltaInfo>
 ValidVault::deltaShares(AccountID const& id) const
 {
     auto const& afterVault = afterVault_[0];
-    auto const it = [&]() {
+    auto const it = [&] {
         if (id == afterVault.pseudoId)
             return deltas_.find(keylet::mptokenIssuance(afterVault.shareMPTID).key);
         return deltas_.find(keylet::mptoken(afterVault.shareMPTID, id).key);
@@ -479,7 +479,7 @@ ValidVault::finalize(
         // At this moment we only know a vault is being deleted and there
         // might be some MPTokenIssuance objects which are deleted in the
         // same transaction. Find the one matching this vault.
-        auto const deletedShares = [&]() -> std::optional<Shares> {
+        auto const deletedShares = [&] -> std::optional<Shares> {
             for (auto const& e : beforeMPTs_)
             {
                 if (e.share.getMptID() == beforeVault.shareMPTID)
@@ -532,7 +532,7 @@ ValidVault::finalize(
         beforeVault_.empty() || beforeVault_[0].key == afterVault.key,
         "xrpl::ValidVault::finalize : single vault operation");
 
-    auto const updatedShares = [&]() -> std::optional<Shares> {
+    auto const updatedShares = [&] -> std::optional<Shares> {
         // At this moment we only know that a vault is being updated and there
         // might be some MPTokenIssuance objects which are also updated in the
         // same transaction. Find the one matching the shares to this vault.
@@ -671,7 +671,7 @@ ValidVault::finalize(
     // Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced by
     // NoModifiedUnmodifiableFields in InvariantCheck.cpp.
 
-    auto const beforeShares = [&]() -> std::optional<Shares> {
+    auto const beforeShares = [&] -> std::optional<Shares> {
         if (beforeVault_.empty())
             return std::nullopt;
         auto const& beforeVault = beforeVault_[0];
@@ -701,7 +701,7 @@ ValidVault::finalize(
     // convenient thanks to early "return false"; the not-so-nice
     // alternatives are several layers of nested if/else or more complex
     // (i.e. brittle) if statements.
-    result &= [&]() {
+    result &= [&] {
         switch (txnType)
         {
             case ttVAULT_CREATE: {
@@ -889,7 +889,7 @@ ValidVault::finalize(
 
                 // Any payments (including deposits) made by the issuer
                 // do not change their balance, but create funds instead.
-                bool const issuerDeposit = [&]() -> bool {
+                bool const issuerDeposit = [&] -> bool {
                     if (vaultAsset.native())
                         return false;
                     return tx[sfAccount] == vaultAsset.getIssuer();
@@ -1062,7 +1062,7 @@ ValidVault::finalize(
 
                 // Any payments (including withdrawal) going to the issuer
                 // do not change their balance, but destroy funds instead.
-                bool const issuerWithdrawal = [&]() -> bool {
+                bool const issuerWithdrawal = [&] -> bool {
                     if (vaultAsset.native())
                         return false;
                     auto const destination = tx[~sfDestination].value_or(tx[sfAccount]);

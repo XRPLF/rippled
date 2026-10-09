@@ -114,7 +114,7 @@ doAccountLines(rpc::JsonContext& context)
         strPeer = params[jss::peer].asString();
     }
 
-    auto const raPeerAccount = [&]() -> std::optional<AccountID> {
+    auto const raPeerAccount = [&] -> std::optional<AccountID> {
         return strPeer.empty() ? std::nullopt : parseBase58<AccountID>(strPeer);
     }();
     if (!strPeer.empty() && !raPeerAccount)

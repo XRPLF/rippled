@@ -2103,7 +2103,7 @@ TEST(NumberTest, relationals)
                 }
             };
 
-            auto const intNums = []() {
+            auto const intNums = [] {
                 // Inequality test cases are built from a list of sorted integers
                 auto const values =
                     std::to_array<int>({-100, -50, -20, -10, -1, 0, 1, 10, 20, 50, 100});
@@ -2816,7 +2816,7 @@ TEST(NumberTest, subtraction_rounding)
 
             BigInt const exact = bigA + bigB;
 
-            auto const sums = [&]() {
+            auto const sums = [&] {
                 std::map<Number::RoundingMode, std::pair<BigInt, Number>> r;
                 r.emplace(construct(Number::RoundingMode::TowardsZero));
                 r.emplace(construct(Number::RoundingMode::Upward));
@@ -3258,7 +3258,7 @@ TEST(NumberTest, number_cusp_rounding_with_fractional_parts)
             {
                 NumberRoundModeGuard const rg{mode};
 
-                auto const expectedValue = [&]() {
+                auto const expectedValue = [&] {
                     // Returns "above" by default. The checks here are for exceptions.
                     if (scale >= MantissaRange::MantissaScale::Large330)
                     {
@@ -3327,7 +3327,7 @@ TEST(NumberTest, number_cusp_rounding_with_fractional_parts)
             {
                 NumberRoundModeGuard const rg{mode};
 
-                auto const expectedValue = [&]() {
+                auto const expectedValue = [&] {
                     if (scale >= MantissaRange::MantissaScale::Large330)
                     {
                         if (mode == Number::RoundingMode::ToNearest && operand > onePointFive)

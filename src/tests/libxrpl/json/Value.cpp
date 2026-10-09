@@ -271,7 +271,7 @@ TEST(JsonValue, compare_strings)
     json::Value const boolT{true};
     json::Value const array0{json::ValueType::Array};
     json::Value const array1{
-        []() {
+        [] {
             json::Value array1;
             array1[0u] = 1;
             return array1;
@@ -279,7 +279,7 @@ TEST(JsonValue, compare_strings)
     };
     json::Value const obj0{json::ValueType::Object};
     json::Value const obj1{
-        []() {
+        [] {
             json::Value obj1;
             obj1["one"] = 1;
             return obj1;
@@ -1346,7 +1346,7 @@ TEST(JsonValue, iterator)
     {
         // Iterating a const object.
         json::Value const obj{
-            []() {
+            [] {
                 json::Value obj{json::ValueType::Object};
                 obj["0"] = 0;
                 obj["1"] = 1;

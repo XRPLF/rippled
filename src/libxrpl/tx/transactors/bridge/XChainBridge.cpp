@@ -438,7 +438,7 @@ transferHelper(
         {
             auto const reserve = accountReserve(psb, sleSrc, j);
 
-            auto const availableBalance = [&]() -> STAmount {
+            auto const availableBalance = [&] -> STAmount {
                 STAmount curBal = (*sleSrc)[sfBalance];
                 // Checking that account == src and postFeeBalance == curBal is
                 // not strictly necessary, but helps protect against future
@@ -656,7 +656,7 @@ finalizeClaimHelper(
         }
 
         // handle the reward pool
-        result.rewardTer = [&]() -> TER {
+        result.rewardTer = [&] -> TER {
             if (rewardAccounts.empty())
                 return tesSUCCESS;
 
@@ -854,7 +854,7 @@ applyClaimAttestations(
         AccountID cidOwner;
     };
 
-    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
+    auto const scopeResult = [&] -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -974,7 +974,7 @@ applyCreateAccountAttestations(
 
     PaymentSandbox psb(&view);
 
-    auto const claimCountResult = [&]() -> std::expected<std::uint64_t, TER> {
+    auto const claimCountResult = [&] -> std::expected<std::uint64_t, TER> {
         auto const sleBridge = psb.peek(bridgeK);
         if (!sleBridge)
             return std::unexpected(tecINTERNAL);
@@ -1019,7 +1019,7 @@ applyCreateAccountAttestations(
         XChainCreateAccountAttestations curAtts;
     };
 
-    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
+    auto const scopeResult = [&] -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -1259,7 +1259,7 @@ attestationDoApply(ApplyContext& ctx)
         Keylet bridgeK;
     };
 
-    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
+    auto const scopeResult = [&] -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -1682,7 +1682,7 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
-    auto const otherChainAmount = [&]() -> STAmount {
+    auto const otherChainAmount = [&] -> STAmount {
         STAmount r(thisChainAmount);
         if (isLockingChain)
         {
@@ -1736,7 +1736,7 @@ XChainClaim::doApply()
         STAmount signatureReward;
     };
 
-    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
+    auto const scopeResult = [&] -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -1768,7 +1768,7 @@ XChainClaim::doApply()
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
 
-        auto const sendingAmount = [&]() -> STAmount {
+        auto const sendingAmount = [&] -> STAmount {
             STAmount r(thisChainAmount);
             r.setIssue(bridgeSpec.issue(srcChain));
             return r;

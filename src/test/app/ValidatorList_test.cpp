@@ -620,7 +620,7 @@ private:
 
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
-        std::map<std::size_t, std::vector<Validator>> const lists = []() {
+        std::map<std::size_t, std::vector<Validator>> const lists = [] {
             static constexpr auto kListSize = 20;
             static constexpr auto kNumLists = 9;
             std::map<std::size_t, std::vector<Validator>> lists;
@@ -1039,7 +1039,7 @@ private:
 
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
-        std::vector<Validator> const list = []() {
+        std::vector<Validator> const list = [] {
             static constexpr auto kListSize = 20;
             std::vector<Validator> list;
             list.reserve(kListSize);
@@ -1958,7 +1958,7 @@ private:
             };
 
             using namespace std::chrono_literals;
-            auto addPublishedList = [this, &env, &trustedKeys, &validators]() {
+            auto addPublishedList = [this, &env, &trustedKeys, &validators] {
                 auto const publisherSecret = randomSecretKey();
                 auto const publisherPublic = derivePublicKey(KeyType::Ed25519, publisherSecret);
                 auto const pubSigningKeys = randomKeyPair(KeyType::Secp256k1);
@@ -2413,7 +2413,7 @@ private:
         std::string const manifest = "This is not a manifest";
         std::uint32_t const version = 2;
         // Mutable so items can be removed in later tests.
-        auto const blobInfos = [manifestCutoff = manifestCutoff]() {
+        auto const blobInfos = [manifestCutoff = manifestCutoff] {
             std::map<std::size_t, ValidatorBlobInfo> bis;
 
             for (auto seq : {5, 6, 7, 10, 12})

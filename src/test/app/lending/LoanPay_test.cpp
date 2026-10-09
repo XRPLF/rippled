@@ -316,7 +316,7 @@ private:
         env(createJson, Sig(sfCounterpartySignature, lender));
         env.close();
 
-        auto const roundedPayment = [&]() {
+        auto const roundedPayment = [&] {
             auto const stateBefore = getCurrentState(env, broker, keylet);
             BEAST_EXPECT(stateBefore.paymentRemaining == 3239184);
             BEAST_EXPECT(stateBefore.paymentRemaining > kLoanMaximumPaymentsPerTransaction);
@@ -531,7 +531,7 @@ private:
         constexpr TimeType kMaxTime = std::numeric_limits<TimeType>::max();
         static_assert(kMaxTime == 4'294'967'295);
 
-        auto const baseJson = [&]() {
+        auto const baseJson = [&] {
             auto createJson = env.json(
                 set(borrower, broker.brokerID, Number{55524'81, -2}),
                 Fee(loanSetFee),
@@ -550,10 +550,10 @@ private:
 
         auto const baseFee = env.current()->fees().base;
 
-        auto parentCloseTime = [&]() {
+        auto parentCloseTime = [&] {
             return env.current()->parentCloseTime().time_since_epoch().count();
         };
-        auto maxLoanTime = [&]() {
+        auto maxLoanTime = [&] {
             auto const startDate = parentCloseTime();
 
             BEAST_EXPECT(startDate >= 50);
@@ -685,7 +685,7 @@ private:
             auto const closeStartDate = ((parentCloseTime() / 10) + 1) * 10;
             auto const grace = 5'000;
             auto const maxLoanTime = kMaxTime - closeStartDate - grace;
-            auto const total = [&]() {
+            auto const total = [&] {
                 if (maxLoanTime % 5 == 0)
                     return 5;
                 if (maxLoanTime % 3 == 0)
@@ -777,7 +777,7 @@ private:
             // unauthorized payee is the broker's pseudo-account.
             bool const expectSuccess = pseudoExempt || payee == UnauthorizedPayee::VaultAuthorized;
 
-            auto const payeeLabel = [payee]() -> char const* {
+            auto const payeeLabel = [payee] -> char const* {
                 switch (payee)
                 {
                     case UnauthorizedPayee::Vault:
@@ -880,7 +880,7 @@ private:
             // Repayment turns an outstanding loan back into cash the vault can
             // lend again, so AssetsAvailable is what moves. AssetsTotal already
             // counted the loan.
-            auto const assetsAvailable = [&]() -> Number {
+            auto const assetsAvailable = [&] -> Number {
                 auto const sle = env.le(broker.vaultKeylet());
                 if (!BEAST_EXPECT(sle))
                     return Number{};
@@ -973,7 +973,7 @@ private:
             return;
         auto const& [broker, loanKeylet, brokerPseudo] = *loanOpt;
 
-        auto const vaultPseudo = [&]() {
+        auto const vaultPseudo = [&] {
             auto const vaultSle = env.le(keylet::vault(broker.vaultID));
             if (!BEAST_EXPECT(vaultSle))
                 return AccountID{};
