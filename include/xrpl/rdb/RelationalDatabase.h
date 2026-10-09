@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/BatchInnerResult.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
@@ -211,6 +212,18 @@ public:
      */
     virtual std::optional<LedgerIndex>
     getAccountTransactionsMinLedgerSeq() = 0;
+
+    /**
+     * @brief getBatchInnerResults Returns the recorded inner-transaction outcomes of a
+     *        Batch this node applied while building a validated ledger.
+     * @param parentBatchId Hash of the outer Batch transaction.
+     * @param ledgerSeq Ledger sequence the outer Batch transaction is validated in; rows
+     *        recorded for any other sequence are not this ledger's and are excluded.
+     * @return Outcomes in RawTransactions order; empty if the tx tables are disabled or
+     *         nothing was recorded (a ledger acquired from the network records nothing).
+     */
+    virtual std::vector<BatchInnerResult>
+    getBatchInnerResults(uint256 const& parentBatchId, LedgerIndex ledgerSeq) = 0;
 
     /**
      * @brief deleteTransactionByLedgerSeq Deletes transactions from the ledger

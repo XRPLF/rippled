@@ -75,6 +75,7 @@ test.app > xrpl.json
 test.app > xrpl.ledger
 test.app > xrpl.nodestore
 test.app > xrpl.protocol
+test.app > xrpl.rdb
 test.app > xrpl.resource
 test.app > xrpl.server
 test.app > xrpl.shamap

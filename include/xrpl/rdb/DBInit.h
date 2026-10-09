@@ -72,7 +72,7 @@ inline constexpr std::array<char const*, 5> kLgrDbInit{
 // Transaction database holds transactions and public keys
 inline constexpr auto kTxDbName{"transaction.db"};
 
-inline constexpr std::array<char const*, 8> kTxDbInit{
+inline constexpr std::array<char const*, 10> kTxDbInit{
     {"BEGIN TRANSACTION;",
 
      "CREATE TABLE IF NOT EXISTS Transactions (          \
@@ -100,6 +100,21 @@ inline constexpr std::array<char const*, 8> kTxDbInit{
         AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);",
      "CREATE INDEX IF NOT EXISTS AcctLgrIndex ON         \
         AccountTransactions(LedgerSeq, Account, TransID);",
+
+     // Outcome of each inner transaction of a Batch this node applied while building a
+     // validated ledger. Inner transactions that failed are not in the ledger, so this is
+     // the only record of them. See BatchInnerResult.
+     "CREATE TABLE IF NOT EXISTS BatchInnerResults (     \
+        ParentBatchID CHARACTER(64) NOT NULL,           \
+        InnerTxnID    CHARACTER(64) NOT NULL,           \
+        TxnIndex      INTEGER NOT NULL,                 \
+        LedgerSeq     BIGINT UNSIGNED NOT NULL,         \
+        TERResult     INTEGER NOT NULL,                 \
+        Applied       INTEGER NOT NULL,                 \
+        PRIMARY KEY (ParentBatchID, InnerTxnID)         \
+    );",
+     "CREATE INDEX IF NOT EXISTS BatchInnerLgrIndex ON   \
+        BatchInnerResults(LedgerSeq);",
 
      "END TRANSACTION;"}};
 
