@@ -168,7 +168,7 @@ ServerHandler::setup(Setup const& setup, beast::Journal journal)
                 (port.protocol.contains("http") || port.protocol.contains("https")))
                 setup_.client.port = endpointPort;
 
-            if ((setup_.overlay.port() == 0u) && (port.protocol.contains("peer")))
+            if ((setup_.overlay.port() == 0u) && port.protocol.contains("peer"))
                 setup_.overlay.port(endpointPort);
         }
     }

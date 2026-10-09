@@ -126,7 +126,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
         if (timeouts_ != 0)
             tmGL.set_querytype(protocol::qtINDIRECT);
 
-        *(tmGL.add_nodeids()) = SHAMapNodeID().getRawString();
+        *tmGL.add_nodeids() = SHAMapNodeID().getRawString();
         peerSet_->sendRequest(tmGL, peer);
     }
     else if (!map_->isValid())
