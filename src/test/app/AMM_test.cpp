@@ -4396,7 +4396,7 @@ private:
                 auto const tokensFee =
                     ammAlice.withdraw(carol_, USD(100), std::nullopt, IOUAmount{520, 0});
                 // carol_ withdraws ~1,443.44USD
-                auto const balanceAfterWithdraw = [&]() {
+                auto const balanceAfterWithdraw = [&] {
                     if (!features[fixAMMv1_3])
                     {
                         return STAmount(USD, UINT64_C(30'443'43891402714), -11);
@@ -5440,7 +5440,7 @@ private:
                 // case.
                 if (status == Fail && quality != Quality{0})
                 {
-                    auto tinyOffer = [&]() {
+                    auto tinyOffer = [&] {
                         if (isXRP(poolIn))
                         {
                             auto const takerPays = STAmount{xrpIssue(), 1};

@@ -331,7 +331,7 @@ changeSpotPriceQuality(
     std::uint16_t tfee,
     beast::Journal j)
 {
-    auto amounts = [&]() {
+    auto amounts = [&] {
         bool const inIntegral = getAsset(pool.in).integral();
         bool const outIntegral = getAsset(pool.out).integral();
 

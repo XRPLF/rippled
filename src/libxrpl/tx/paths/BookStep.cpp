@@ -867,7 +867,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
         // If offer crossing then use either LOB quality or nullopt
         // to prevent AMM being blocked by a lower quality LOB.
-        auto const qualityThreshold = [&]() -> std::optional<Quality> {
+        auto const qualityThreshold = [&] -> std::optional<Quality> {
             if (lobQuality)
                 return static_cast<TDerived const*>(this)->qualityThreshold(*lobQuality);
             return lobQuality;
@@ -997,7 +997,7 @@ BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
     // on offer crossing but AMM can't generate the offer at this quality,
     // as the result a LOB offer is partially crossed, and it might take a few
     // iterations to fully cross the offer.
-    auto const qualityThreshold = [&]() -> std::optional<Quality> {
+    auto const qualityThreshold = [&] -> std::optional<Quality> {
         if (lobQuality)
             return static_cast<TDerived const*>(this)->qualityThreshold(*lobQuality);
         return std::nullopt;
