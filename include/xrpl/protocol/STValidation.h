@@ -188,7 +188,7 @@ private:
 template <class LookupNodeID>
 STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, DeserializeOptions options)
     : STObject(validationFormat(), sit, sfValidation, options.requireCanonicalOrder)
-    , signingPubKey_([this]() {
+    , signingPubKey_([this] {
         auto const spk = getFieldVL(sfSigningPubKey);
 
         if (publicKeyType(makeSlice(spk)) != KeyType::Secp256k1)

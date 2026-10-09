@@ -742,7 +742,7 @@ ValidConfidentialMPToken::finalize(
     for (auto const& [id, checks] : changes_)
     {
         // Find the MPTokenIssuance
-        auto const issuance = [&]() -> std::shared_ptr<SLE const> {
+        auto const issuance = [&] -> std::shared_ptr<SLE const> {
             if (checks.issuance)
                 return checks.issuance;
             return view.read(keylet::mptokenIssuance(id));

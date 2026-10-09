@@ -475,8 +475,7 @@ transactionPreProcessImpl(
 
     bool const verify = !(params.isMember(jss::offline) && params[jss::offline].asBool());
 
-    auto const signatureTarget =
-        [&params]() -> std::optional<std::reference_wrapper<SField const>> {
+    auto const signatureTarget = [&params] -> std::optional<std::reference_wrapper<SField const>> {
         if (params.isMember(jss::signature_target))
             return SField::getField(params[jss::signature_target].asString());
         return std::nullopt;
@@ -1257,7 +1256,7 @@ transactionSignFor(
         signer.setFieldVL(sfTxnSignature, signForParams.getSignature());
         signer.setFieldVL(sfSigningPubKey, signForParams.getPublicKey().slice());
 
-        STObject& sigTarget = [&]() -> STObject& {
+        STObject& sigTarget = [&] -> STObject& {
             auto const target = signForParams.getSignatureTarget();
             if (target)
                 return sttx->peekFieldObject(*target);

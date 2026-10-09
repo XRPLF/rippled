@@ -1151,7 +1151,7 @@ NetworkOPsImp::getHostId(bool forAdmin)
 
     // For non-admin uses hash the node public key into a
     // single RFC1751 word:
-    static std::string const kShroudedHostId = [this]() {
+    static std::string const kShroudedHostId = [this] {
         auto const& id = registry_.get().getApp().nodeIdentity();
 
         return RFC1751::getWordFromBlob(id.first.data(), id.first.size());
@@ -1206,10 +1206,8 @@ NetworkOPsImp::setHeartbeatTimer()
     setTimer(
         heartbeatTimer_,
         consensus_.parms().ledgerGRANULARITY,
-        [this]() {
-            jobQueue_.addJob(JtNetopTimer, "NetHeart", [this]() { processHeartbeatTimer(); });
-        },
-        [this]() { setHeartbeatTimer(); });
+        [this] { jobQueue_.addJob(JtNetopTimer, "NetHeart", [this] { processHeartbeatTimer(); }); },
+        [this] { setHeartbeatTimer(); });
 }
 
 void
@@ -1220,10 +1218,10 @@ NetworkOPsImp::setClusterTimer()
     setTimer(
         clusterTimer_,
         10s,
-        [this]() {
-            jobQueue_.addJob(JtNetopCluster, "NetCluster", [this]() { processClusterTimer(); });
+        [this] {
+            jobQueue_.addJob(JtNetopCluster, "NetCluster", [this] { processClusterTimer(); });
         },
-        [this]() { setClusterTimer(); });
+        [this] { setClusterTimer(); });
 }
 
 void
@@ -1235,8 +1233,8 @@ NetworkOPsImp::setAccountHistoryJobTimer(SubAccountHistoryInfoWeak subInfo)
     setTimer(
         accountHistoryTxTimer_,
         4s,
-        [this, subInfo]() { addAccountHistoryJob(subInfo); },
-        [this, subInfo]() { setAccountHistoryJobTimer(subInfo); });
+        [this, subInfo] { addAccountHistoryJob(subInfo); },
+        [this, subInfo] { setAccountHistoryJobTimer(subInfo); });
 }
 
 void
@@ -1438,7 +1436,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
     auto tx = std::make_shared<Transaction>(trans, reason, registry_.get().getApp());
 
-    jobQueue_.addJob(JtTransaction, "SubmitTxn", [this, tx]() {
+    jobQueue_.addJob(JtTransaction, "SubmitTxn", [this, tx] {
         auto t = tx;
         processTransaction(t, false, false, FailHard::No);
     });
@@ -1548,7 +1546,7 @@ NetworkOPsImp::doTransactionAsync(
     transaction->setApplying();
 
     if ((dispatchState_ == DispatchState::None) &&
-        jobQueue_.addJob(JtBatch, "TxBatchAsync", [this]() { transactionBatch(); }))
+        jobQueue_.addJob(JtBatch, "TxBatchAsync", [this] { transactionBatch(); }))
     {
         dispatchState_ = DispatchState::Scheduled;
     }
@@ -1589,10 +1587,9 @@ NetworkOPsImp::doTransactionSyncBatch(
         {
             apply(lock);
 
-            if ((!transactions_.empty()) &&
-                jobQueue_.addJob(JtBatch, "TxBatchSync", [this]() { transactionBatch(); }))
-
             // More transactions need to be applied, but by another job.
+            if ((!transactions_.empty()) &&
+                jobQueue_.addJob(JtBatch, "TxBatchSync", [this] { transactionBatch(); }))
             {
                 dispatchState_ = DispatchState::Scheduled;
             }
@@ -2802,7 +2799,7 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
 
     pubValidation(val);
 
-    JLOG(journal_.debug()) << [this, &val]() -> auto {
+    JLOG(journal_.debug()) << [this, &val] -> auto {
         std::stringstream ss;
         ss << "VALIDATION: " << val->render() << " master_key: ";
         auto master = registry_.get().getValidators().getTrustedKey(val->getSignerPublic());
@@ -3447,14 +3444,14 @@ NetworkOPsImp::reportFeeChange()
     // only schedule the job if something has changed
     if (f != lastFeeSummary_)
     {
-        jobQueue_.addJob(JtClientFeeChange, "PubFee", [this]() { pubServer(); });
+        jobQueue_.addJob(JtClientFeeChange, "PubFee", [this] { pubServer(); });
     }
 }
 
 void
 NetworkOPsImp::reportConsensusStateChange(ConsensusPhase phase)
 {
-    jobQueue_.addJob(JtClientConsensus, "PubCons", [this, phase]() { pubConsensus(phase); });
+    jobQueue_.addJob(JtClientConsensus, "PubCons", [this, phase] { pubConsensus(phase); });
 }
 
 inline void
@@ -4122,7 +4119,7 @@ NetworkOPsImp::scheduleAccountCleanup(
          seq,
          rt = std::move(rtAccounts),
          normal = std::move(normalAccounts),
-         history = std::move(historyAccounts)]() noexcept {
+         history = std::move(historyAccounts)] noexcept {
             try
             {
                 cleanupAccountSubscriptions(seq, rt, subRTAccount_);
@@ -4265,7 +4262,7 @@ NetworkOPsImp::unsubMPTInternal(std::uint64_t uSeq, MPTID const& mptID)
 void
 NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 {
-    registry_.get().getJobQueue().addJob(JtClientAcctHist, "HistTxStream", [this, subInfo]() {
+    registry_.get().getJobQueue().addJob(JtClientAcctHist, "HistTxStream", [this, subInfo] {
         auto const& accountId = subInfo.index->accountId;
         auto& lastLedgerSeq = subInfo.index->historyLastLedgerSeq;
         auto& txHistoryIndex = subInfo.index->historyTxIndex;
@@ -4373,7 +4370,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 << "AccountHistory job for account " << toBase58(accountId)
                 << ", working on ledger range [" << startLedgerSeq << "," << lastLedgerSeq << "]";
 
-            auto haveRange = [&]() -> bool {
+            auto haveRange = [&] -> bool {
                 std::uint32_t validatedMin = UINT_MAX;
                 std::uint32_t validatedMax = 0;
                 auto haveSomeValidatedLedgers =
@@ -5006,7 +5003,7 @@ NetworkOPsImp::getBookPage(
                 auto const& saTakerPays = sleOffer->getFieldAmount(sfTakerPays);
                 STAmount saOwnerFunds;
                 bool firstOwnerOffer(true);
-                auto foundBalance = [&]() {
+                auto foundBalance = [&] {
                     auto umBalanceEntry = umBalance.find(uOfferOwnerID);
                     if (umBalanceEntry == umBalance.end())
                         return false;
@@ -5129,7 +5126,7 @@ NetworkOPsImp::getBookPage(
                 // to nearest and would leave one unit per offer over-reported
                 // to the next offer. Can't overflow: saTakerGetsFunded <=
                 // floor(saOwnerFunds / offerRate).
-                auto const grossed = [&]() {
+                auto const grossed = [&] {
                     return saOwnerFunds.asset().visit(
                         [&](MPTIssue const&) {
                             auto const mpt = mulRatio(

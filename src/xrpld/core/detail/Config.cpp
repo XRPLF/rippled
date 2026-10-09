@@ -138,7 +138,7 @@ kSizedItems
 // Ensure that the order of entries in the table corresponds to the
 // order of entries in the enum:
 static_assert(
-    []() constexpr -> bool {
+    [] constexpr -> bool {
         std::underlying_type_t<SizedItem> idx = 0;
 
         for (auto const& i : kSizedItems)
@@ -1104,7 +1104,7 @@ Config::loadFromString(std::string const& fileContents)
             }
         }
 
-        validatorListThreshold = [&]() -> std::optional<std::size_t> {
+        validatorListThreshold = [&] -> std::optional<std::size_t> {
             auto const& listThreshold = section(Sections::kValidatorListThreshold);
             if (listThreshold.lines().empty())
             {

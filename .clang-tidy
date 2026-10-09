@@ -69,7 +69,6 @@ Checks: "-*,
   -readability-named-parameter,
   -readability-qualified-auto,
   -readability-redundant-access-specifiers,
-  -readability-redundant-lambda-parameter-list,
   -readability-static-accessed-through-instance,
   -readability-trailing-comma,
   -readability-uppercase-literal-suffix

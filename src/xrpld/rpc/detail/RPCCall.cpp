@@ -1076,7 +1076,7 @@ private:
         json::Reader reader;
         bool const bOffline = jvParams.size() >= 3 && jvParams[2u].asString() == "offline";
         std::optional<std::string> const field = [&jvParams,
-                                                  bOffline]() -> std::optional<std::string> {
+                                                  bOffline] -> std::optional<std::string> {
             if (jvParams.size() < 3)
                 return std::nullopt;
             if (jvParams.size() < 4 && bOffline)
@@ -2028,7 +2028,7 @@ rpcClient(
                     setup.client.password,
                     "",
                     // Allow parser to rewrite method.
-                    [&]() -> std::string {
+                    [&] -> std::string {
                         if (jvRequest.isMember(jss::method))
                             return jvRequest[jss::method].asString();
                         return jvRequest.isArray() ? "batch" : args[0];

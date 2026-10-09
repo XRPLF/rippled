@@ -441,7 +441,7 @@ InboundLedger::done()
     }
 
     // We hold the PeerSet lock, so must dispatch
-    app_.getJobQueue().addJob(JtLedgerData, "AcqDone", [self = shared_from_this()]() {
+    app_.getJobQueue().addJob(JtLedgerData, "AcqDone", [self = shared_from_this()] {
         if (self->complete_ && !self->failed_)
         {
             self->app_.getLedgerMaster().checkAccept(self->getLedger());
@@ -848,7 +848,7 @@ InboundLedger::receiveNode(
     }
 
     auto [map, rootHash, filter] =
-        [&]() -> std::tuple<SHAMap&, SHAMapHash, std::unique_ptr<SHAMapSyncFilter>> {
+        [&] -> std::tuple<SHAMap&, SHAMapHash, std::unique_ptr<SHAMapSyncFilter>> {
         if (packet.type() == protocol::liTX_NODE)
         {
             return {

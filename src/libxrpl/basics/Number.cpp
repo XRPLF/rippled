@@ -1560,7 +1560,7 @@ root(Number f, unsigned d)
     // Scale f into the range (0, 1) such that f's exponent is a multiple of d
     auto e = f.exponent_ + Number::mantissaLog() + 1;
     auto const di = static_cast<int>(d);
-    auto ex = [e = e, di = di]()  // Euclidean remainder of e/d
+    auto ex = [e = e, di = di]  // Euclidean remainder of e/d
     {
         int const k = (e >= 0 ? e : e - (di - 1)) / di;
         int const k2 = e - (k * di);

@@ -254,7 +254,7 @@ verifyHandshake(
 
     if (auto const iter = headers.find("Network-Time"); iter != headers.end())
     {
-        auto const netTime = [str = iter->value()]() -> TimeKeeper::time_point {
+        auto const netTime = [str = iter->value()] -> TimeKeeper::time_point {
             TimeKeeper::duration::rep val = 0;
 
             if (beast::lexicalCastChecked(val, str))

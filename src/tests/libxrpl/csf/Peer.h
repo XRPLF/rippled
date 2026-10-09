@@ -474,13 +474,13 @@ struct Peer
             minDuration = std::min(minDuration, link.data.delay);
 
             // Send a message to neighbors to find the ledger
-            net.send(this, link.target, [to = link.target, from = this, ledgerID]() {
+            net.send(this, link.target, [to = link.target, from = this, ledgerID] {
                 if (auto it = to->ledgers.find(ledgerID); it != to->ledgers.end())
                 {
                     // if the ledger is found, send it back to the original
                     // requesting peer where it is added to the available
                     // ledgers
-                    to->net.send(to, from, [from, ledger = it->second]() {
+                    to->net.send(to, from, [from, ledger = it->second] {
                         from->acquiringLedgers.erase(ledger.id());
                         from->ledgers.emplace(ledger.id(), ledger);
                     });
@@ -515,13 +515,13 @@ struct Peer
         {
             minDuration = std::min(minDuration, link.data.delay);
             // Send a message to neighbors to find the tx set
-            net.send(this, link.target, [to = link.target, from = this, setId]() {
+            net.send(this, link.target, [to = link.target, from = this, setId] {
                 if (auto it = to->txSets.find(setId); it != to->txSets.end())
                 {
                     // If the txSet is found, send it back to the original
                     // requesting peer, where it is handled like a TxSet
                     // that was broadcast over the network
-                    to->net.send(to, from, [from, txSet = it->second]() {
+                    to->net.send(to, from, [from, txSet = it->second] {
                         from->acquiringTxSets.erase(txSet.id());
                         from->handle(txSet);
                     });
@@ -584,7 +584,7 @@ struct Peer
         json::Value const& consensusJson,
         bool const validating)
     {
-        schedule(delays.ledgerAccept, [mode, result, prevLedger, closeResolution, this]() {
+        schedule(delays.ledgerAccept, [mode, result, prevLedger, closeResolution, this] {
             bool const proposing = mode == ConsensusMode::Proposing;
             bool const consensusFail = result.state == ConsensusState::MovedOn;
 
@@ -929,7 +929,7 @@ struct Peer
         consensus.timerEntry(now());
         // only reschedule if not completed
         if (completedLedgers < targetLedgers)
-            scheduler.in(parms().ledgerGRANULARITY, [this]() { timerEntry(); });
+            scheduler.in(parms().ledgerGRANULARITY, [this] { timerEntry(); });
     }
 
     // Called to begin the next round
@@ -957,7 +957,7 @@ struct Peer
     {
         // TODO: Expire validations less frequently?
         validations.expire(j);
-        scheduler.in(parms().ledgerGRANULARITY, [&]() { timerEntry(); });
+        scheduler.in(parms().ledgerGRANULARITY, [&] { timerEntry(); });
         startRound();
     }
 
