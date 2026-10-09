@@ -47,8 +47,12 @@ namespace json {
  *     ReturnType onDocumentBegin();
  *     ReturnType onDocumentEnd(std::size_t documentSize);
  *     ReturnType onKey(std::string_view value);
+ *     ReturnType onKeyPart(std::string_view value, std::size_t n);
  *     ReturnType onString(std::string_view value);
+ *     ReturnType onStringPart(std::string_view value, std::size_t n);
  *     ReturnType onComment(std::string_view value);
+ *     ReturnType OnCommentPart(std::string_view value);
+ *     ReturnType OnNumberPart(std::string_view value);
  *     ReturnType onInt(Value::Int value);
  *     ReturnType onUInt(Value::UInt value);
  *     ReturnType onDouble(double value);
@@ -63,9 +67,11 @@ namespace json {
  */
 // clang-format on
 
-// Offers CALL to every visitor that declares it, in order, stopping at the
-// first one that rejects it. Evaluates to false if any visitor rejected the
-// event, with that visitor's message left in pendingError_.
+/**
+ * Offers CALL to every visitor that declares it, in order, stopping at the
+ * first one that rejects it. Evaluates to false if any visitor rejected the
+ * event, with that visitor's message left in pendingError_.
+ */
 #define DISPATCH_VISITORS(CALL)                                                              \
     dispatch([&](auto* dispatchVisitorsVisitor) -> decltype(dispatchVisitorsVisitor->CALL) { \
         return dispatchVisitorsVisitor->CALL;                                                \
@@ -74,11 +80,8 @@ namespace json {
 template <typename... Visitor>
 class Parser
 {
-    class ErrorInfo
+    struct ErrorInfo
     {
-    public:
-        explicit ErrorInfo() = default;
-
         std::int64_t line{};
         std::int64_t column{};
         std::string message;
@@ -86,39 +89,47 @@ class Parser
 
     using Errors = std::vector<ErrorInfo>;
 
-    // An object or array that has been opened and not yet closed.
+    /** An object or array that has been opened and not yet closed. */
     struct Container
     {
         bool isObject{};
         std::size_t count{};
     };
 
-    // A real, if empty, buffer to offer Boost in place of a null pointer.
+    /** A real, if empty, buffer to offer Boost in place of a null pointer. */
     static constexpr char kEmpty{};
 
     std::tuple<Visitor*...> visitors_;
-    Errors errors_;
 
-    // Scratch state for the parse in progress.
-    std::vector<Container> containers_;
-    // The key, string, or number being assembled from Boost's partial events.
-    std::string text_;
-    bool inText_{};
-    std::string comment_;
-    // Set once the root value is complete; nothing after it is examined.
-    bool rootComplete_{};
-    // Set when the Parser, rather than Boost, stopped the parse.
-    bool rejected_{};
-    std::string pendingError_;
-    // Set once nothing more is to be offered to Boost: after the final write,
-    // an error, or text following the root value.
-    bool stopped_{};
-    // The line and column (both from 1) of the next character to be fed.
-    std::int64_t line_{1};
-    std::int64_t column_{1};
-    // Whether the last character fed was '\r', so that a '\n' following it,
-    // possibly in the next buffer, does not start another line.
-    bool afterCarriageReturn_{};
+    struct State
+    {
+        Errors errors;
+        /** Scratch state for the parse in progress. */
+        std::vector<Container> containers;
+        /** The key, string, or number being assembled from Boost's partial events. */
+        std::string text;
+        bool inText{};
+        std::string comment;
+        /** Set once the root value is complete; nothing after it is examined. */
+        bool rootComplete{};
+        /** Set when the Parser, rather than Boost, stopped the parse. */
+        bool rejected{};
+        std::string pendingError;
+        /**
+         * Set once nothing more is to be offered to Boost: after the final write,
+         * an error, or text following the root value.
+         */
+        bool stopped{};
+        /** The line and column (both from 1) of the next character to be fed. */
+        std::int64_t line{1};
+        std::int64_t column{1};
+        /**
+         * Whether the last character fed was '\r', so that a '\n' following it,
+         * possibly in the next buffer, does not start another line.
+         */
+        bool afterCarriageReturn{};
+    };
+    State state_;
 
 public:
     using Char = char;
@@ -252,8 +263,10 @@ public:
     getFormattedErrorMessages() const;
 
 private:
-    // Receives Boost.JSON's SAX events and forwards each one to the Parser,
-    // which applies the limits and offers the event to the visitors.
+    /**
+     * Receives Boost.JSON's SAX events and forwards each one to the Parser,
+     * which applies the limits and offers the event to the visitors.
+     */
     class Handler;
 
     using BasicParser = boost::json::basic_parser<Handler>;
@@ -280,11 +293,11 @@ private:
     bool
     onArrayEnd();
     bool
-    onKeyPart(std::string_view part);
+    onKeyPart(std::string_view part, std::size_t n);
     bool
     onKey(std::string_view part);
     bool
-    onStringPart(std::string_view part);
+    onStringPart(std::string_view part, std::size_t n);
     bool
     onString(std::string_view part);
     bool
@@ -303,6 +316,15 @@ private:
     onCommentPart(std::string_view part);
     bool
     onComment(std::string_view part);
+
+    bool
+    updateKeyPart(std::string_view part);
+    bool
+    updateStringPart(std::string_view part);
+    bool
+    updateNumberPart(std::string_view part);
+    bool
+    updateCommentPart(std::string_view part);
 
     bool
     beginText(bool isKey);
@@ -332,7 +354,6 @@ template <typename... Visitor>
 class Parser<Visitor...>::Handler
 {
     using ErrorCode = boost::system::error_code;
-    // The text of a key, string, number, or comment, as Boost presents it.
     using Text = boost::json::string_view;
 
     static constexpr auto kUnlimited = std::numeric_limits<std::size_t>::max();
@@ -340,8 +361,6 @@ class Parser<Visitor...>::Handler
     Parser& parser_;
 
 public:
-    // Holds a reference to its Parser, so it can be neither defaulted,
-    // copied, nor moved. basic_parser constructs it in place.
     Handler() = delete;
     Handler(Handler const&) = delete;
     Handler&
@@ -354,10 +373,7 @@ public:
     {
     }
 
-    // The members below are Boost.JSON's handler interface, whose names
-    // basic_parser requires exactly as written.
-
-    // The Parser enforces its own runtime limits, so Boost's are left open.
+    /** The Parser enforces its own runtime limits, so Boost's are left open. */
     static constexpr auto max_object_size = kUnlimited;  // NOLINT(readability-identifier-naming)
     static constexpr auto max_array_size = kUnlimited;   // NOLINT(readability-identifier-naming)
     static constexpr auto max_key_size = kUnlimited;     // NOLINT(readability-identifier-naming)
@@ -369,8 +385,6 @@ public:
         return check(parser_.onDocumentBegin(), ec);
     }
 
-    // The Parser reports the end of the document itself, once it knows any
-    // trailing comments were accepted.
     static bool
     on_document_end(ErrorCode&)  // NOLINT(readability-identifier-naming)
     {
@@ -402,9 +416,9 @@ public:
     }
 
     bool
-    on_key_part(Text s, std::size_t, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
+    on_key_part(Text s, std::size_t n, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
-        return check(parser_.onKeyPart(view(s)), ec);
+        return check(parser_.onKeyPart(view(s), n), ec);
     }
 
     bool
@@ -414,9 +428,9 @@ public:
     }
 
     bool
-    on_string_part(Text s, std::size_t, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
+    on_string_part(Text s, std::size_t n, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
-        return check(parser_.onStringPart(view(s)), ec);
+        return check(parser_.onStringPart(view(s), n), ec);
     }
 
     bool
@@ -480,8 +494,10 @@ private:
         return {s.data(), s.size()};
     }
 
-    // Boost stops the parse when a handler returns false, but only reports it
-    // as an error if the error code is set.
+    /**
+     * Boost stops the parse when a handler returns false, but only reports it
+     * as an error if the error code is set.
+     */
     static bool
     check(bool ok, ErrorCode& ec)
     {
@@ -597,32 +613,21 @@ template <typename... Visitor>
 Parser<Visitor...>::BasicParser
 Parser<Visitor...>::start()
 {
-    errors_.clear();
-    containers_.clear();
-    text_.clear();
-    inText_ = false;
-    comment_.clear();
-    rootComplete_ = false;
-    rejected_ = false;
-    pendingError_.clear();
-    stopped_ = false;
-    line_ = 1;
-    column_ = 1;
-    afterCarriageReturn_ = false;
+    state_ = {};
 
-    auto options = boost::json::parse_options{
+    auto const options = boost::json::parse_options{
+        // Boost counts only containers, and depthLimit allows one more container
+        // than that when the innermost is empty (see beginValue). Leaving Boost
+        // two levels of headroom lets depthLimit be the one that applies.
+        .max_depth = depthLimit < std::numeric_limits<std::size_t>::max() - 2
+            ? depthLimit + 2
+            : std::numeric_limits<std::size_t>::max(),
+        .numbers = boost::json::number_precision::precise,
         .allow_comments = true,
         .allow_trailing_commas = false,
         .allow_invalid_utf8 = false,
         .allow_invalid_utf16 = false,
-        .numbers = boost::json::number_precision::precise,
     };
-    // Boost counts only containers, and depthLimit allows one more container
-    // than that when the innermost is empty (see beginValue). Leaving Boost
-    // two levels of headroom lets depthLimit be the one that applies.
-    options.max_depth = depthLimit < std::numeric_limits<std::size_t>::max() - 2
-        ? depthLimit + 2
-        : std::numeric_limits<std::size_t>::max();
 
     return BasicParser{options, *this};
 }
@@ -631,7 +636,7 @@ template <typename... Visitor>
 void
 Parser<Visitor...>::feed(BasicParser& parser, char const* data, std::size_t size, bool more)
 {
-    if (stopped_)
+    if (state_.stopped)
     {
         return;
     }
@@ -647,7 +652,7 @@ Parser<Visitor...>::feed(BasicParser& parser, char const* data, std::size_t size
 
     // Boost stops short of the input only once the root value is complete and
     // something other than whitespace or a comment follows it.
-    stopped_ = !more || ec || consumed < size;
+    state_.stopped = !more || ec || consumed < size;
     advance({data, consumed});
 
     if (!ec)
@@ -655,11 +660,11 @@ Parser<Visitor...>::feed(BasicParser& parser, char const* data, std::size_t size
         return;
     }
 
-    if (rejected_)
+    if (state_.rejected)
     {
-        addError(pendingError_);
+        addError(state_.pendingError);
     }
-    else if (!rootComplete_)
+    else if (!state_.rootComplete)
     {
         addError(ec.message());
     }
@@ -675,7 +680,7 @@ Parser<Visitor...>::finish(BasicParser& parser, std::size_t documentSize)
     // Tells Boost the document is complete.
     feed(parser, &kEmpty, 0, false);
 
-    if (!errors_.empty())
+    if (!state_.errors.empty())
     {
         return false;
     }
@@ -684,7 +689,7 @@ Parser<Visitor...>::finish(BasicParser& parser, std::size_t documentSize)
     // the start rather than at wherever parsing stopped.
     if (!DISPATCH_VISITORS(onDocumentEnd(documentSize)))
     {
-        return addError(pendingError_, 1, 1);
+        return addError(state_.pendingError, 1, 1);
     }
 
     return true;
@@ -694,7 +699,7 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::documentTooLarge()
 {
-    errors_.clear();
+    state_.errors.clear();
     return addError(
         std::format(
             "Syntax error: document size exceeds the maximum allowed size of {} bytes",
@@ -711,24 +716,24 @@ Parser<Visitor...>::advance(std::string_view consumed)
     {
         if (c == '\r')
         {
-            ++line_;
-            column_ = 1;
-            afterCarriageReturn_ = true;
+            ++state_.line;
+            state_.column = 1;
+            state_.afterCarriageReturn = true;
         }
         else if (c == '\n')
         {
-            if (!afterCarriageReturn_)
+            if (!state_.afterCarriageReturn)
             {
-                ++line_;
-                column_ = 1;
+                ++state_.line;
+                state_.column = 1;
             }
 
-            afterCarriageReturn_ = false;
+            state_.afterCarriageReturn = false;
         }
         else
         {
-            ++column_;
-            afterCarriageReturn_ = false;
+            ++state_.column;
+            state_.afterCarriageReturn = false;
         }
     }
 }
@@ -747,7 +752,7 @@ Parser<Visitor...>::dispatch(Call const& call)
                 {
                     if (auto result = call(visitor); !result.has_value())
                     {
-                        pendingError_ = std::move(result.error());
+                        state_.pendingError = std::move(result.error());
                         ok = false;
                     }
                 }
@@ -759,7 +764,7 @@ Parser<Visitor...>::dispatch(Call const& call)
 
     if (!ok)
     {
-        rejected_ = true;
+        state_.rejected = true;
     }
 
     return ok;
@@ -769,8 +774,8 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::reject(std::string message)
 {
-    pendingError_ = std::move(message);
-    rejected_ = true;
+    state_.pendingError = std::move(message);
+    state_.rejected = true;
     return false;
 }
 
@@ -780,9 +785,9 @@ Parser<Visitor...>::beginValue()
 {
     // Checked before the value is parsed, so a container at its limit costs
     // no more work and visitors never see an element that cannot be accepted.
-    if (!containers_.empty() && !containers_.back().isObject)
+    if (!state_.containers.empty() && !state_.containers.back().isObject)
     {
-        auto& array = containers_.back();
+        auto& array = state_.containers.back();
 
         if (array.count >= arrayElementsLimit)
         {
@@ -799,7 +804,7 @@ Parser<Visitor...>::beginValue()
     // The root value is depth 0 and every value inside a container is one
     // deeper, so a scalar in the innermost container counts as a level while
     // an empty innermost container adds none.
-    if (containers_.size() > depthLimit)
+    if (state_.containers.size() > depthLimit)
     {
         return reject("Syntax error: maximum nesting depth exceeded");
     }
@@ -811,9 +816,9 @@ template <typename... Visitor>
 void
 Parser<Visitor...>::endValue()
 {
-    if (containers_.empty())
+    if (state_.containers.empty())
     {
-        rootComplete_ = true;
+        state_.rootComplete = true;
     }
 }
 
@@ -833,7 +838,7 @@ Parser<Visitor...>::onObjectBegin()
         return false;
     }
 
-    containers_.push_back({.isObject = true});
+    state_.containers.push_back({.isObject = true});
     return true;
 }
 
@@ -841,8 +846,8 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::onObjectEnd()
 {
-    auto const memberCount = containers_.back().count;
-    containers_.pop_back();
+    auto const memberCount = state_.containers.back().count;
+    state_.containers.pop_back();
 
     if (!DISPATCH_VISITORS(onObjectEnd(memberCount)))
     {
@@ -862,7 +867,7 @@ Parser<Visitor...>::onArrayBegin()
         return false;
     }
 
-    containers_.push_back({.isObject = false});
+    state_.containers.push_back({.isObject = false});
     return true;
 }
 
@@ -870,8 +875,8 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::onArrayEnd()
 {
-    auto const elementCount = containers_.back().count;
-    containers_.pop_back();
+    auto const elementCount = state_.containers.back().count;
+    state_.containers.pop_back();
 
     if (!DISPATCH_VISITORS(onArrayEnd(elementCount)))
     {
@@ -886,13 +891,13 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::beginText(bool isKey)
 {
-    if (inText_)
+    if (state_.inText)
     {
         return true;
     }
 
-    inText_ = true;
-    text_.clear();
+    state_.inText = true;
+    state_.text.clear();
 
     if (!isKey)
     {
@@ -901,7 +906,7 @@ Parser<Visitor...>::beginText(bool isKey)
 
     // Checked before the member is dispatched, so visitors never see a member
     // that cannot be accepted.
-    auto& object = containers_.back();
+    auto& object = state_.containers.back();
 
     if (object.count >= objectMembersLimit)
     {
@@ -920,9 +925,7 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::appendText(std::string_view part, std::size_t sizeLimit, std::string_view what)
 {
-    // Boost delivers keys and strings already decoded, so the limit applies to
-    // the decoded size, and is checked as each part arrives.
-    if (part.size() > sizeLimit - std::min(sizeLimit, text_.size()))
+    if (part.size() > sizeLimit - std::min(sizeLimit, state_.text.size()))
     {
         return reject(
             std::format(
@@ -931,49 +934,63 @@ Parser<Visitor...>::appendText(std::string_view part, std::size_t sizeLimit, std
                 sizeLimit));
     }
 
-    text_.append(part);
+    state_.text.append(part);
     return true;
 }
 
 template <typename... Visitor>
 bool
-Parser<Visitor...>::onKeyPart(std::string_view part)
+Parser<Visitor...>::updateKeyPart(std::string_view part)
 {
     return beginText(true) && appendText(part, keySizeLimit, "key");
 }
 
 template <typename... Visitor>
 bool
-Parser<Visitor...>::onKey(std::string_view part)
+Parser<Visitor...>::onKeyPart(std::string_view part, std::size_t n)
 {
-    if (!onKeyPart(part))
-    {
-        return false;
-    }
-
-    inText_ = false;
-    return DISPATCH_VISITORS(onKey(std::string_view{text_}));
+    return updateKeyPart(part) && DISPATCH_VISITORS(onKeyPart(part, n));
 }
 
 template <typename... Visitor>
 bool
-Parser<Visitor...>::onStringPart(std::string_view part)
+Parser<Visitor...>::onKey(std::string_view part)
+{
+    if (!updateKeyPart(part))
+    {
+        return false;
+    }
+
+    state_.inText = false;
+    return DISPATCH_VISITORS(onKey(std::string_view{state_.text}));
+}
+
+template <typename... Visitor>
+bool
+Parser<Visitor...>::updateStringPart(std::string_view part)
 {
     return beginText(false) && appendText(part, stringSizeLimit, "string");
 }
 
 template <typename... Visitor>
 bool
+Parser<Visitor...>::onStringPart(std::string_view part, std::size_t n)
+{
+    return updateStringPart(part) && DISPATCH_VISITORS(onStringPart(part, n));
+}
+
+template <typename... Visitor>
+bool
 Parser<Visitor...>::onString(std::string_view part)
 {
-    if (!onStringPart(part))
+    if (!updateStringPart(part))
     {
         return false;
     }
 
-    inText_ = false;
+    state_.inText = false;
 
-    if (!DISPATCH_VISITORS(onString(std::string_view{text_})))
+    if (!DISPATCH_VISITORS(onString(std::string_view{state_.text})))
     {
         return false;
     }
@@ -984,15 +1001,16 @@ Parser<Visitor...>::onString(std::string_view part)
 
 template <typename... Visitor>
 bool
+Parser<Visitor...>::updateNumberPart(std::string_view part)
+{
+    return static_cast<bool>(beginText(false));
+}
+
+template <typename... Visitor>
+bool
 Parser<Visitor...>::onNumberPart(std::string_view part)
 {
-    if (!beginText(false))
-    {
-        return false;
-    }
-
-    text_.append(part);
-    return true;
+    return updateNumberPart(part) && DISPATCH_VISITORS(onNumberPart(part));
 }
 
 template <typename... Visitor>
@@ -1003,7 +1021,7 @@ Parser<Visitor...>::dispatchInteger(std::int64_t value)
     // than a promotion to double. Values that fit an Int are reported as one.
     if (value < Value::kMinInt || value > static_cast<std::int64_t>(Value::kMaxUInt))
     {
-        return reject(std::format("'{}' exceeds the allowable range.", text_));
+        return reject(std::format("'{}' exceeds the allowable range.", state_.text));
     }
 
     auto const ok = value <= Value::kMaxInt
@@ -1023,12 +1041,12 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::onInteger(std::int64_t value, std::string_view part)
 {
-    if (!onNumberPart(part))
+    if (!updateNumberPart(part))
     {
         return false;
     }
 
-    inText_ = false;
+    state_.inText = false;
     return dispatchInteger(value);
 }
 
@@ -1036,16 +1054,16 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::onUnsigned(std::uint64_t value, std::string_view part)
 {
-    if (!onNumberPart(part))
+    if (!updateNumberPart(part))
     {
         return false;
     }
 
-    inText_ = false;
+    state_.inText = false;
 
     if (value > Value::kMaxUInt)
     {
-        return reject(std::format("'{}' exceeds the allowable range.", text_));
+        return reject(std::format("'{}' exceeds the allowable range.", state_.text));
     }
 
     return dispatchInteger(static_cast<std::int64_t>(value));
@@ -1055,33 +1073,34 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::onDouble(double value, std::string_view part)
 {
-    if (!onNumberPart(part))
+    if (!updateNumberPart(part))
     {
         return false;
     }
 
-    inText_ = false;
+    state_.inText = false;
 
     // Boost reports an integer as a double when it does not fit 64 bits, and
     // reports -0 as a double to keep its sign. Both were written as integers.
-    if (text_.find_first_of(".eE") == std::string::npos)
+    if (state_.text.find_first_of(".eE") == std::string::npos)
     {
         if (value == 0)
         {
             return dispatchInteger(0);
         }
 
-        return reject(std::format("'{}' exceeds the allowable range.", text_));
+        return reject(std::format("'{}' exceeds the allowable range.", state_.text));
     }
 
     // Too large a magnitude arrives as infinity. Too small a magnitude arrives
     // as zero, which is only correct if every significant digit was zero.
-    auto const significand = std::string_view{text_}.substr(0, text_.find_first_of("eE"));
+    auto const significand =
+        std::string_view{state_.text}.substr(0, state_.text.find_first_of("eE"));
 
     if (!std::isfinite(value) ||
         (value == 0 && significand.find_first_of("123456789") != std::string_view::npos))
     {
-        return reject(std::format("'{}' is not a number.", text_));
+        return reject(std::format("'{}' is not a number.", state_.text));
     }
 
     if (!DISPATCH_VISITORS(onDouble(value)))
@@ -1121,29 +1140,34 @@ Parser<Visitor...>::onNull()
 
 template <typename... Visitor>
 bool
-Parser<Visitor...>::onCommentPart(std::string_view part)
+Parser<Visitor...>::updateCommentPart(std::string_view part)
 {
     // When a buffer ends just after a comment's opening '/', Boost.JSON resumes
     // in the next buffer without having reported that '/'. Every comment opens
     // with "//" or "/*", so a first part that does not is missing exactly it.
-    if (comment_.empty() && !part.starts_with("//") && !part.starts_with("/*"))
+    if (state_.comment.empty() && !part.starts_with("//") && !part.starts_with("/*"))
     {
-        comment_.push_back('/');
+        state_.comment.push_back('/');
     }
 
-    comment_.append(part);
+    state_.comment.append(part);
     return true;
+}
+
+template <typename... Visitor>
+bool
+Parser<Visitor...>::onCommentPart(std::string_view part)
+{
+    return updateCommentPart(part) && DISPATCH_VISITORS(onCommentPart(part));
 }
 
 template <typename... Visitor>
 bool
 Parser<Visitor...>::onComment(std::string_view part)
 {
-    // Only a complete comment reaches the visitors; the parts of a malformed
-    // one are dropped with it.
-    onCommentPart(part);
-    auto const ok = DISPATCH_VISITORS(onComment(std::string_view{comment_}));
-    comment_.clear();
+    auto const ok =
+        updateCommentPart(part) && DISPATCH_VISITORS(onComment(std::string_view{state_.comment}));
+    state_.comment.clear();
     return ok;
 }
 
@@ -1151,15 +1175,15 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::addError(std::string message)
 {
-    return addError(std::move(message), line_, column_);
+    return addError(std::move(message), state_.line, state_.column);
 }
 
 template <typename... Visitor>
 bool
 Parser<Visitor...>::addError(std::string message, std::int64_t line, std::int64_t column)
 {
-    errors_.emplace_back();
-    auto& info = errors_.back();
+    state_.errors.emplace_back();
+    auto& info = state_.errors.back();
     info.line = line;
     info.column = column;
     info.message = std::move(message);
@@ -1172,7 +1196,7 @@ Parser<Visitor...>::getFormattedErrorMessages() const
 {
     auto formattedMessage = std::string{};
 
-    for (auto const& error : errors_)
+    for (auto const& error : state_.errors)
     {
         formattedMessage +=
             std::format("* Line {}, Column {}\n  {}\n", error.line, error.column, error.message);

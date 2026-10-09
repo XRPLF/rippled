@@ -13,9 +13,6 @@
 
 namespace json {
 
-// Class Reader::ValueBuilder
-// //////////////////////////////////////////////////////////////////
-
 void
 Reader::ValueBuilder::target(Value& root)
 {
@@ -159,9 +156,6 @@ Reader::ValueBuilder::place()
 
     return parent[parent.size()];
 }
-
-// Class Reader
-// //////////////////////////////////////////////////////////////////
 
 Reader::Reader()
 {

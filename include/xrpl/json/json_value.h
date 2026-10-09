@@ -26,7 +26,7 @@ enum class ValueType {
     String,    ///< UTF-8 string value
     Boolean,   ///< bool value
     Array,     ///< array value (ordered list)
-    Object,    ///< object value (collection of name/value pairs).
+    Object     ///< object value (collection of name/value pairs).
 };
 
 /**
@@ -51,7 +51,7 @@ public:
     {
     }
 
-    constexpr explicit
+    constexpr
     operator char const*() const
     {
         return str_;
@@ -136,7 +136,7 @@ private:
     public:
         enum class DuplicationPolicy { NoDuplication = 0, Duplicate, DuplicateOnCopy };
 
-        explicit CZString(int index);
+        CZString(int index);
         CZString(char const* cstr, DuplicationPolicy allocate);
         CZString(CZString const& other);
         ~CZString();
@@ -178,12 +178,12 @@ public:
      * json::Value obj_value(json::ValueType::Object); // {}
      * @endcode
      */
-    explicit Value(ValueType type = ValueType::Null);
-    explicit Value(Int value);
-    explicit Value(UInt value);
-    explicit Value(double value);
-    explicit Value(char const* value);
-    explicit Value(xrpl::Number const& value);
+    Value(ValueType type = ValueType::Null);
+    Value(Int value);
+    Value(UInt value);
+    Value(double value);
+    Value(char const* value);
+    Value(xrpl::Number const& value);
     /**
      * @brief Constructs a value from a static string.
      *
@@ -196,9 +196,9 @@ public:
      * json::Value aValue( StaticString("some text") );
      * @endcode
      */
-    explicit Value(StaticString const& value);
-    explicit Value(std::string const& value);
-    explicit Value(bool value);
+    Value(StaticString const& value);
+    Value(std::string const& value);
+    Value(bool value);
     Value(Value const& other);
     ~Value();
 
@@ -666,7 +666,7 @@ public:
     using SelfType = ValueIterator;
 
     ValueIterator() = default;
-    explicit ValueIterator(ValueConstIterator const& other);
+    ValueIterator(ValueConstIterator const& other);
     ValueIterator(ValueIterator const& other);
 
 private:
