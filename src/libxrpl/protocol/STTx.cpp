@@ -59,9 +59,8 @@ getTxFormat(TxType type)
 
     if (format == nullptr)
     {
-        Throw<std::runtime_error>(
-            "Invalid transaction type " +
-            std::to_string(safeCast<std::underlying_type_t<TxType>>(type)));
+        Throw<std::runtime_error>(std::format(
+            "Invalid transaction type {}", safeCast<std::underlying_type_t<TxType>>(type)));
     }
 
     return format;
@@ -139,7 +138,7 @@ STTx::getFullText() const
     ret += to_string(getTransactionID());
     ret += "\" = {";
     ret += STObject::getFullText();
-    ret += "}";
+    ret += '}';
     return ret;
 }
 

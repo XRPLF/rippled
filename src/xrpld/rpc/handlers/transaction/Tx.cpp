@@ -5,8 +5,8 @@
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
-#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/Blob.h>
@@ -26,6 +26,8 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/server/NetworkOPs.h>
+
+#include <rpcspec/Errors.hpp>
 
 #include <cstdint>
 #include <memory>
@@ -68,7 +70,7 @@ struct TxArgs
     std::optional<std::pair<uint32_t, uint32_t>> ledgerRange;
 };
 
-std::pair<TxResult, rpc::Status>
+std::pair<TxResult, ::rpc::Status>
 doTxHelp(rpc::Context& context, TxArgs args)
 {
     TxResult result;
@@ -109,11 +111,11 @@ doTxHelp(rpc::Context& context, TxArgs args)
 
     if (args.ledgerRange)
     {
-        v = context.app.getMasterTransaction().fetch(*(args.hash), range, ec);
+        v = context.app.getMasterTransaction().fetch(*args.hash, range, ec);
     }
     else
     {
-        v = context.app.getMasterTransaction().fetch(*(args.hash), ec);
+        v = context.app.getMasterTransaction().fetch(*args.hash, ec);
     }
 
     if (auto e = std::get_if<TxSearched>(&v))
@@ -178,25 +180,25 @@ doTxHelp(rpc::Context& context, TxArgs args)
 
 json::Value
 populateJsonResponse(
-    std::pair<TxResult, rpc::Status> const& res,
+    std::pair<TxResult, ::rpc::Status> const& res,
     TxArgs const& args,
     rpc::JsonContext const& context)
 {
     json::Value response;
-    rpc::Status const& error = res.second;
+    ::rpc::Status const& error = res.second;
     TxResult const& result = res.first;
     // handle errors
-    if (error.toErrorCode() != RpcSuccess)
+    if (error != RpcSuccess)
     {
-        if (error.toErrorCode() == RpcTxnNotFound && result.searchedAll != TxSearched::Unknown)
+        if (error == RpcTxnNotFound && result.searchedAll != TxSearched::Unknown)
         {
             response = json::Value(json::ValueType::Object);
             response[jss::searched_all] = (result.searchedAll == TxSearched::All);
-            error.inject(response);
+            rpc::injectSpecError(response, error);
         }
         else
         {
-            error.inject(response);
+            rpc::injectSpecError(response, error);
         }
     }
     // no errors
@@ -259,7 +261,7 @@ populateJsonResponse(
         response[jss::validated] = result.validated;
 
         if (result.ctid)
-            response[jss::ctid] = *(result.ctid);
+            response[jss::ctid] = *result.ctid;
     }
     return response;
 }
@@ -293,16 +295,16 @@ doTxJson(rpc::JsonContext& context)
         if (!ctid)
             return rpcError(RpcInvalidParams);
 
-        auto const [lgr_seq, txn_idx, net_id] = *ctid;
-        if (net_id != context.app.getNetworkIDService().getNetworkID())
+        auto const [lgrSeq, txnIdx, netId] = *ctid;
+        if (netId != context.app.getNetworkIDService().getNetworkID())
         {
             std::stringstream out;
             out << "Wrong network. You should submit this request to a node "
                    "running on NetworkID: "
-                << net_id;
+                << netId;
             return rpc::makeError(RpcWrongNetwork, out.str());
         }
-        args.ctid = {lgr_seq, txn_idx};
+        args.ctid = {lgrSeq, txnIdx};
     }
     else
     {
@@ -325,7 +327,7 @@ doTxJson(rpc::JsonContext& context)
         }
     }
 
-    std::pair<TxResult, rpc::Status> const res = doTxHelp(context, args);
+    std::pair<TxResult, ::rpc::Status> const res = doTxHelp(context, args);
     return populateJsonResponse(res, args, context);
 }
 

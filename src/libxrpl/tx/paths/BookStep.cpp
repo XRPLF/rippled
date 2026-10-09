@@ -607,8 +607,8 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(ReadView const& v, DebtDirection p
     // CLOB
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
         v,
-        *(res->quality()),  // NOLINT(bugprone-unchecked-optional-access) CLOB QualityFunction
-                            // always has quality set
+        *res->quality(),  // NOLINT(bugprone-unchecked-optional-access) CLOB QualityFunction
+                          // always has quality set
         prevStepDir,
         WaiveTransferFee::No,
         OfferType::Clob);
