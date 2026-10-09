@@ -37,6 +37,7 @@
 #include <string>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -1129,17 +1130,45 @@ private:
         }
     }
 
-    // The vault's pseudo-account issues the shares, so it never holds any, and naming it as Holder
-    // asks for a clawback that cannot move anything. Before the rule an implicit amount resolved to
-    // zero shares and ended in tecPRECISION_LOSS, while an explicit one debited the vault first and
-    // was caught by the invariant that shares must move.
+    // A clawback naming a holder that cannot hold vault shares must leave the vault untouched,
+    // whether it is refused in preclaim (with the fix) or fails later (without it).
     void
-    testClawbackPseudoAccountHolder()
+    testClawbackInvalidHolder()
     {
         using namespace test::jtx;
 
-        auto const runScenario = [this](FeatureBitset features, std::string const& prefix) {
-            bool const guarded = features[fixCleanup3_4_0];
+        struct Case
+        {
+            std::string name;
+            bool pseudoAccount;  // otherwise the holder has no AccountRoot
+            uint256 fix;
+            TER guarded;
+            TER legacyImplicit;
+            TER legacyExplicit;
+        };
+
+        // Pre-fixCleanup3_4_0 an explicit amount from a pseudo-account debits the vault and trips
+        // the "shares must move" invariant. Pre-fixCleanup3_5_0 a missing holder fails in doApply.
+        std::vector<Case> const cases{
+            {.name = "pseudo-account",
+             .pseudoAccount = true,
+             .fix = fixCleanup3_4_0,
+             .guarded = tecPSEUDO_ACCOUNT,
+             .legacyImplicit = tecPRECISION_LOSS,
+             .legacyExplicit = tecINVARIANT_FAILED},
+            {.name = "nonexistent",
+             .pseudoAccount = false,
+             .fix = fixCleanup3_5_0,
+             .guarded = terNO_ACCOUNT,
+             .legacyImplicit = tecPRECISION_LOSS,
+             .legacyExplicit = tecNO_AUTH},
+        };
+
+        auto const runScenario = [this](
+                                     Case const& c,
+                                     FeatureBitset features,
+                                     std::string const& prefix) {
+            bool const guarded = features[c.fix];
             Env env{*this, features};
 
             Account const owner{"owner"};
@@ -1166,8 +1195,10 @@ private:
             auto const vaultSle = env.le(keylet);
             if (!BEAST_EXPECT(vaultSle))
                 return;
-            Account const pseudo{"vault pseudo-account", vaultSle->at(sfAccount)};
-            env.memoize(pseudo);
+            Account const holder = c.pseudoAccount
+                ? Account{"vault pseudo-account", vaultSle->at(sfAccount)}
+                : Account{"ghost"};
+            env.memoize(holder);
 
             env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
             env.close();
@@ -1180,25 +1211,25 @@ private:
             }();
 
             {
-                testcase("VaultClawback - " + prefix + " pseudo-account holder, implicit amount");
+                testcase("VaultClawback - " + prefix + " " + c.name + " holder, implicit amount");
                 env(vault.clawback({
                         .issuer = issuer,
                         .id = keylet.key,
-                        .holder = pseudo,
+                        .holder = holder,
                     }),
-                    Ter(guarded ? TER{tecPSEUDO_ACCOUNT} : TER{tecPRECISION_LOSS}));
+                    Ter(guarded ? c.guarded : c.legacyImplicit));
                 env.close();
             }
 
             {
-                testcase("VaultClawback - " + prefix + " pseudo-account holder, explicit amount");
+                testcase("VaultClawback - " + prefix + " " + c.name + " holder, explicit amount");
                 env(vault.clawback({
                         .issuer = issuer,
                         .id = keylet.key,
-                        .holder = pseudo,
+                        .holder = holder,
                         .amount = asset(10).value(),
                     }),
-                    Ter(guarded ? TER{tecPSEUDO_ACCOUNT} : TER{tecINVARIANT_FAILED}));
+                    Ter(guarded ? c.guarded : c.legacyExplicit));
                 env.close();
             }
 
@@ -1207,8 +1238,11 @@ private:
             BEAST_EXPECT(sleAfter && sleAfter->at(sfAssetsTotal) == assetsBefore);
         };
 
-        runScenario(all_, "post-rule");
-        runScenario(all_ - fixCleanup3_4_0, "pre-rule");
+        for (auto const& c : cases)
+        {
+            runScenario(c, all_, "post-rule");
+            runScenario(c, all_ - c.fix, "pre-rule");
+        }
     }
 
 public:
@@ -1217,7 +1251,7 @@ public:
     {
         testVaultClawbackBurnShares();
         testVaultClawbackAssets();
-        testClawbackPseudoAccountHolder();
+        testClawbackInvalidHolder();
         testVaultEscrowedMPT();
     }
 };
