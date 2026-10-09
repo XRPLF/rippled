@@ -329,18 +329,22 @@ template <typename... Visitor>
 class Parser<Visitor...>::Handler
 {
 public:
+    // The members below are Boost.JSON's handler interface, whose names
+    // basic_parser requires exactly as written.
+    // NOLINTBEGIN(readability-identifier-naming)
+
     // The Parser enforces its own runtime limits, so Boost's are left open.
-    static constexpr std::size_t maxObjectSize = std::numeric_limits<std::size_t>::max();
-    static constexpr std::size_t maxArraySize = std::numeric_limits<std::size_t>::max();
-    static constexpr std::size_t maxKeySize = std::numeric_limits<std::size_t>::max();
-    static constexpr std::size_t maxStringSize = std::numeric_limits<std::size_t>::max();
+    static constexpr std::size_t max_object_size = std::numeric_limits<std::size_t>::max();
+    static constexpr std::size_t max_array_size = std::numeric_limits<std::size_t>::max();
+    static constexpr std::size_t max_key_size = std::numeric_limits<std::size_t>::max();
+    static constexpr std::size_t max_string_size = std::numeric_limits<std::size_t>::max();
 
     explicit Handler(Parser& parser) : parser_{parser}
     {
     }
 
     bool
-    onDocumentBegin(boost::system::error_code& ec)
+    on_document_begin(boost::system::error_code& ec)
     {
         return check(parser_.onDocumentBegin(), ec);
     }
@@ -348,106 +352,108 @@ public:
     // The Parser reports the end of the document itself, once it knows any
     // trailing comments were accepted.
     static bool
-    onDocumentEnd(boost::system::error_code&)
+    on_document_end(boost::system::error_code&)
     {
         return true;
     }
 
     bool
-    onObjectBegin(boost::system::error_code& ec)
+    on_object_begin(boost::system::error_code& ec)
     {
         return check(parser_.onObjectBegin(), ec);
     }
 
     bool
-    onObjectEnd(std::size_t, boost::system::error_code& ec)
+    on_object_end(std::size_t, boost::system::error_code& ec)
     {
         return check(parser_.onObjectEnd(), ec);
     }
 
     bool
-    onArrayBegin(boost::system::error_code& ec)
+    on_array_begin(boost::system::error_code& ec)
     {
         return check(parser_.onArrayBegin(), ec);
     }
 
     bool
-    onArrayEnd(std::size_t, boost::system::error_code& ec)
+    on_array_end(std::size_t, boost::system::error_code& ec)
     {
         return check(parser_.onArrayEnd(), ec);
     }
 
     bool
-    onKeyPart(boost::json::string_view s, std::size_t, boost::system::error_code& ec)
+    on_key_part(boost::json::string_view s, std::size_t, boost::system::error_code& ec)
     {
         return check(parser_.onKeyPart(view(s)), ec);
     }
 
     bool
-    onKey(boost::json::string_view s, std::size_t, boost::system::error_code& ec)
+    on_key(boost::json::string_view s, std::size_t, boost::system::error_code& ec)
     {
         return check(parser_.onKey(view(s)), ec);
     }
 
     bool
-    onStringPart(boost::json::string_view s, std::size_t, boost::system::error_code& ec)
+    on_string_part(boost::json::string_view s, std::size_t, boost::system::error_code& ec)
     {
         return check(parser_.onStringPart(view(s)), ec);
     }
 
     bool
-    onString(boost::json::string_view s, std::size_t, boost::system::error_code& ec)
+    on_string(boost::json::string_view s, std::size_t, boost::system::error_code& ec)
     {
         return check(parser_.onString(view(s)), ec);
     }
 
     bool
-    onNumberPart(boost::json::string_view s, boost::system::error_code& ec)
+    on_number_part(boost::json::string_view s, boost::system::error_code& ec)
     {
         return check(parser_.onNumberPart(view(s)), ec);
     }
 
     bool
-    onInt64(std::int64_t i, boost::json::string_view s, boost::system::error_code& ec)
+    on_int64(std::int64_t i, boost::json::string_view s, boost::system::error_code& ec)
     {
         return check(parser_.onInteger(i, view(s)), ec);
     }
 
     bool
-    onUint64(std::uint64_t u, boost::json::string_view s, boost::system::error_code& ec)
+    on_uint64(std::uint64_t u, boost::json::string_view s, boost::system::error_code& ec)
     {
         return check(parser_.onUnsigned(u, view(s)), ec);
     }
 
     bool
-    onDouble(double d, boost::json::string_view s, boost::system::error_code& ec)
+    on_double(double d, boost::json::string_view s, boost::system::error_code& ec)
     {
         return check(parser_.onDouble(d, view(s)), ec);
     }
 
     bool
-    onBool(bool b, boost::system::error_code& ec)
+    on_bool(bool b, boost::system::error_code& ec)
     {
         return check(parser_.onBool(b), ec);
     }
 
     bool
-    onNull(boost::system::error_code& ec)
+    on_null(boost::system::error_code& ec)
     {
         return check(parser_.onNull(), ec);
     }
 
     bool
-    onCommentPart(boost::json::string_view s, boost::system::error_code& ec)
+    on_comment_part(boost::json::string_view s, boost::system::error_code& ec)
     {
         return check(parser_.onCommentPart(view(s)), ec);
     }
 
     bool
-    onComment(boost::json::string_view s, boost::system::error_code& ec)
+    on_comment(boost::json::string_view s, boost::system::error_code& ec)
     {
         return check(parser_.onComment(view(s)), ec);
     }
+
+    // NOLINTEND(readability-identifier-naming)
 
 private:
     static std::string_view
