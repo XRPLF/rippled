@@ -24,9 +24,9 @@
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -948,18 +948,6 @@ parseLeaf(
             try
             {
                 ret = detail::makeStvar<STIssue>(issueFromJson(field, value));
-            }
-            catch (std::exception const&)
-            {
-                error = invalidData(jsonName, fieldName);
-                return ret;
-            }
-            break;
-
-        case STI_XCHAIN_BRIDGE:
-            try
-            {
-                ret = detail::makeStvar<STXChainBridge>(STXChainBridge(field, value));
             }
             catch (std::exception const&)
             {

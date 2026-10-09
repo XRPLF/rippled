@@ -26,6 +26,10 @@ This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-R
 
 Version 3.5.0 is not yet released.
 
+### Breaking changes in 3.5.0
+
+- The `XChainBridge` amendment and its ledger entries and transactions are removed. `XChainBridge` and `fixXChainRewardRounding` are now obsolete and can no longer be voted for; neither was ever enabled on Mainnet. `ledger_entry` no longer accepts `bridge`, `xchain_owned_claim_id`, or `xchain_owned_create_account_claim_id`; `account_objects` no longer accepts those values in `type`; and `server_definitions` no longer lists the removed ledger entry types, transaction types, fields, and the `XChainBridge` serialized type.
+
 ### Additions in 3.5.0
 
 - `subscribe`, `unsubscribe`: Added an optional `mpt_issuances` request field, an array of MPT issuance IDs (hex strings). Subscribers receive a message with `type` `mptTransaction` for each validated transaction whose metadata affects a subscribed issuance; the message has the same fields as the `transactions` stream. MPT issuance subscriptions count toward the per-connection subscription limit. An empty array, a non-array value, or an invalid ID returns `invalidParams`. ([#5671](https://github.com/XRPLF/rippled/pull/5671))
