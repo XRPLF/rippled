@@ -581,7 +581,7 @@ struct Credentials_test : public beast::unit_test::Suite
                 Account const vaultPseudo{"vault", sleVault->at(sfAccount)};
                 // Without the CredentialCreate guard, the ownership invariant
                 // is the backstop that rejects the pin.
-                auto const expectedResult = [&]() -> TER {
+                auto const expectedResult = [&] -> TER {
                     if (features[fixCleanup3_3_0])
                         return tecPSEUDO_ACCOUNT;
                     if (features[fixCleanup3_5_0])
