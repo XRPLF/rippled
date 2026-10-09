@@ -877,19 +877,19 @@ public:
     }
 
     // The constraint prevents erase (reverse_iterator pos) from compiling
-    template <bool IsConst, class Iterator>
-    beast::detail::AgedContainerIterator<false, Iterator>
-    erase(beast::detail::AgedContainerIterator<IsConst, Iterator> pos)
-        requires(!IsBoostReverseIterator<Iterator>::value);
+    template <bool IsConst, class OtherIterator>
+    beast::detail::AgedContainerIterator<false, OtherIterator>
+    erase(beast::detail::AgedContainerIterator<IsConst, OtherIterator> pos)
+        requires(!IsBoostReverseIterator<OtherIterator>::value);
 
     // The constraint prevents erase (reverse_iterator first, reverse_iterator last)
     // from compiling
-    template <bool IsConst, class Iterator>
-    beast::detail::AgedContainerIterator<false, Iterator>
+    template <bool IsConst, class OtherIterator>
+    beast::detail::AgedContainerIterator<false, OtherIterator>
     erase(
-        beast::detail::AgedContainerIterator<IsConst, Iterator> first,
-        beast::detail::AgedContainerIterator<IsConst, Iterator> last)
-        requires(!IsBoostReverseIterator<Iterator>::value);
+        beast::detail::AgedContainerIterator<IsConst, OtherIterator> first,
+        beast::detail::AgedContainerIterator<IsConst, OtherIterator> last)
+        requires(!IsBoostReverseIterator<OtherIterator>::value);
 
     template <class K>
     auto
@@ -901,10 +901,10 @@ public:
     //--------------------------------------------------------------------------
 
     // The constraint prevents touch (reverse_iterator pos) from compiling
-    template <bool IsConst, class Iterator>
+    template <bool IsConst, class OtherIterator>
     void
-    touch(beast::detail::AgedContainerIterator<IsConst, Iterator> pos)
-        requires(!IsBoostReverseIterator<Iterator>::value)
+    touch(beast::detail::AgedContainerIterator<IsConst, OtherIterator> pos)
+        requires(!IsBoostReverseIterator<OtherIterator>::value)
     {
         touch(pos, clock().now());
     }
@@ -1117,12 +1117,12 @@ public:
 
 private:
     // The constraint prevents erase (reverse_iterator pos, now) from compiling
-    template <bool IsConst, class Iterator>
+    template <bool IsConst, class OtherIterator>
     void
     touch(
-        beast::detail::AgedContainerIterator<IsConst, Iterator> pos,
+        beast::detail::AgedContainerIterator<IsConst, OtherIterator> pos,
         ClockType::time_point const& now)
-        requires(!IsBoostReverseIterator<Iterator>::value);
+        requires(!IsBoostReverseIterator<OtherIterator>::value);
 
     template <
         bool MaybePropagate = std::allocator_traits<Allocator>::propagate_on_container_swap::value>
@@ -1598,28 +1598,28 @@ AgedOrderedContainer<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::emplace
 }
 
 template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
-template <bool IsConst, class Iterator>
-beast::detail::AgedContainerIterator<false, Iterator>
+template <bool IsConst, class OtherIterator>
+beast::detail::AgedContainerIterator<false, OtherIterator>
 AgedOrderedContainer<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::erase(
-    beast::detail::AgedContainerIterator<IsConst, Iterator> pos)
-    requires(!IsBoostReverseIterator<Iterator>::value)
+    beast::detail::AgedContainerIterator<IsConst, OtherIterator> pos)
+    requires(!IsBoostReverseIterator<OtherIterator>::value)
 {
     unlinkAndDeleteElement(&*(pos++).iterator());
-    return beast::detail::AgedContainerIterator<false, Iterator>(pos.iterator());
+    return beast::detail::AgedContainerIterator<false, OtherIterator>(pos.iterator());
 }
 
 template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
-template <bool IsConst, class Iterator>
-beast::detail::AgedContainerIterator<false, Iterator>
+template <bool IsConst, class OtherIterator>
+beast::detail::AgedContainerIterator<false, OtherIterator>
 AgedOrderedContainer<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::erase(
-    beast::detail::AgedContainerIterator<IsConst, Iterator> first,
-    beast::detail::AgedContainerIterator<IsConst, Iterator> last)
-    requires(!IsBoostReverseIterator<Iterator>::value)
+    beast::detail::AgedContainerIterator<IsConst, OtherIterator> first,
+    beast::detail::AgedContainerIterator<IsConst, OtherIterator> last)
+    requires(!IsBoostReverseIterator<OtherIterator>::value)
 {
     for (; first != last;)
         unlinkAndDeleteElement(&*(first++).iterator());
 
-    return beast::detail::AgedContainerIterator<false, Iterator>(first.iterator());
+    return beast::detail::AgedContainerIterator<false, OtherIterator>(first.iterator());
 }
 
 template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
@@ -1717,12 +1717,12 @@ AgedOrderedContainer<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::operato
 //------------------------------------------------------------------------------
 
 template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
-template <bool IsConst, class Iterator>
+template <bool IsConst, class OtherIterator>
 void
 AgedOrderedContainer<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::touch(
-    beast::detail::AgedContainerIterator<IsConst, Iterator> pos,
+    beast::detail::AgedContainerIterator<IsConst, OtherIterator> pos,
     ClockType::time_point const& now)
-    requires(!IsBoostReverseIterator<Iterator>::value)
+    requires(!IsBoostReverseIterator<OtherIterator>::value)
 {
     auto& e(*pos.iterator());
     e.when = now;
