@@ -12,12 +12,15 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
@@ -47,6 +50,26 @@ shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::Const
     return view.rules().enabled(fixCleanup3_2_0) && isSoleShareholder(view, account, issuance)
         ? WaiveUnrealizedLoss::Yes
         : WaiveUnrealizedLoss::No;
+}
+
+static Rate
+withdrawalTransferRate(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& destination,
+    Asset const& asset)
+{
+    // Pre-fixCleanup3_5_0: every vault withdrawal waives the transfer fee.
+    // Post-fixCleanup3_5_0: the fee applies only when a holder other than the issuer withdraws to
+    // another such holder.
+    if (!view.rules().enabled(fixCleanup3_5_0))
+        return kParityRate;
+
+    if (asset.native() || destination == account || account == asset.getIssuer() ||
+        destination == asset.getIssuer())
+        return kParityRate;
+
+    return transferRate(view, asset);
 }
 
 NotTEC
@@ -170,11 +193,13 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
             if (!maybeAssets)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
+            auto const rate = withdrawalTransferRate(ctx.view, account, dstAcct, vaultAsset);
+            auto const amountToReceive = subtractTransferFee(*maybeAssets, rate);
             if (auto const ret = canWithdraw(
                     ctx.view,
                     account,
                     dstAcct,
-                    *maybeAssets,
+                    amountToReceive,
                     ctx.tx.isFieldPresent(sfDestinationTag),
                     ctx.tx[~sfCredentialIDs]))
                 return ret;
@@ -302,6 +327,8 @@ VaultWithdraw::doApply()
 
     auto const amount = ctx_.tx[sfAmount];
     Asset const vaultAsset = vault->at(sfAsset);
+    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
+    auto const rate = withdrawalTransferRate(view(), accountID_, dstAcct, vaultAsset);
 
     MPTIssue const share{mptIssuanceID};
     STAmount sharesRedeemed = {share};
@@ -330,7 +357,11 @@ VaultWithdraw::doApply()
                 view().rules().enabled(fixCleanup3_4_0) ? TruncateShares::Yes : TruncateShares::No;
             {
                 auto const maybeShares = assetsToSharesWithdraw(
-                    vault, sleIssuance, amount, truncate, waiveUnrealizedLoss);
+                    vault,
+                    sleIssuance,
+                    addTransferFee(amount, rate),
+                    truncate,
+                    waiveUnrealizedLoss);
                 if (!maybeShares)
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 sharesRedeemed = *maybeShares;
@@ -531,7 +562,17 @@ VaultWithdraw::doApply()
                 << " assetsAvailable=" << allAvailable.getText();
         }
         assetsWithdrawn = allAvailable;
+    }
 
+    auto const assetsDelivered = subtractTransferFee(assetsWithdrawn, rate);
+    if (assetsWithdrawn > beast::kZero && assetsDelivered == beast::kZero)
+    {
+        JLOG(j_.debug()) << "VaultWithdraw: transfer fee reduces the payout to zero";
+        return tecPRECISION_LOSS;
+    }
+
+    if (isFinalWithdrawal)
+    {
         // Do not let dust accumulate in the Vault.
         assetsTotal = 0;
         assetsAvailable = 0;
@@ -583,9 +624,15 @@ VaultWithdraw::doApply()
 
     associateAsset(*vault, vaultAsset);
 
-    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
     return doWithdraw(
-        applyViewContext, accountID_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
+        applyViewContext,
+        accountID_,
+        dstAcct,
+        vaultAccount,
+        preFeeBalance_,
+        assetsDelivered,
+        assetsWithdrawn,
+        j_);
 }
 
 void

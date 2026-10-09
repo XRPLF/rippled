@@ -1735,6 +1735,24 @@ divRoundStrict(STAmount const& num, STAmount const& den, Asset const& asset, boo
     return divRoundImpl<NumberRoundModeGuard>(num, den, asset, roundUp);
 }
 
+STAmount
+mulRatio(STAmount const& amt, std::uint32_t num, std::uint32_t den, Number::RoundingMode rounding)
+{
+    XRPL_ASSERT(
+        rounding == Number::RoundingMode::Upward || rounding == Number::RoundingMode::Downward,
+        "xrpl::mulRatio(STAmount) : rounding is Upward or Downward");
+    bool const roundUp = rounding == Number::RoundingMode::Upward;
+    return amt.asset().visit(
+        [&](Issue const& issue) -> STAmount {
+            if (amt.native())
+                return mulRatio(amt.xrp(), num, den, roundUp);
+            return {mulRatio(amt.iou(), num, den, roundUp), issue};
+        },
+        [&](MPTIssue const& issue) -> STAmount {
+            return {mulRatio(amt.mpt(), num, den, roundUp), issue};
+        });
+}
+
 [[nodiscard]] bool
 STAmount::isZeroAtScale(int scale) const
 {
