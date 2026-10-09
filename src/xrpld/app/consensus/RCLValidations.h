@@ -270,7 +270,8 @@ using RCLValidations = Validations<RCLValidationsAdaptor>;
  * Handle a new validation
  *
  * Also sets the trust status of a validation based on the validating node's
- * public key and this node's current UNL.
+ * public key and this node's current UNL, and sets its NodeID to the one it
+ * is stored under, from the master key a manifest now maps its signer to.
  *
  * @param app Application object containing validations and ledgerMaster
  * @param val The validation to add

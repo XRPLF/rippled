@@ -172,8 +172,11 @@ handleNewValidation(
 
     auto& validations = app.getValidations();
 
-    // masterKey is seated only if validator is trusted or listed
-    auto const outcome = validations.add(calcNodeID(masterKey.value_or(signingKey)), val);
+    // masterKey is seated only if validator is trusted or listed; a manifest
+    // applied since deserialization can change the NodeID set then
+    auto const nodeID = calcNodeID(masterKey.value_or(signingKey));
+    val->setNodeID(nodeID);
+    auto const outcome = validations.add(nodeID, val);
 
     if (outcome == ValStatus::Current)
     {

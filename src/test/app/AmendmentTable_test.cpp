@@ -3,9 +3,11 @@
 #include <test/jtx/envconfig.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/base_uint.h>
@@ -15,6 +17,7 @@
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
@@ -25,6 +28,7 @@
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
@@ -1239,6 +1243,38 @@ public:
         json = tally(std::chrono::hours(30), {validation(signingKeys2, false)});
         BEAST_EXPECT(json[jss::validations].asInt() == 1);
         BEAST_EXPECT(json[jss::count].asInt() == 0);
+
+        // A validation received before its manifest is applied and handled after it
+        // carries the master key's NodeID and counts
+        auto const signingKeys3 = randomKeyPair(KeyType::Secp256k1);
+        auto const closed = env.closed();
+        auto const blob =
+            std::make_shared<STValidation>(
+                env.app().getTimeKeeper().closeTime(),
+                signingKeys3.first,
+                signingKeys3.second,
+                calcNodeID(masterKeys.first),
+                [&amendment, &closed](STValidation& v) {
+                    v.setFieldV256(
+                        sfAmendments, STVector256(sfAmendments, std::vector<UInt256>{amendment}));
+                    v.setFieldH256(sfLedgerHash, closed->header().hash);
+                    v.setFieldU32(sfLedgerSequence, closed->seq());
+                })
+                ->getSerialized();
+        SerialIter sit(makeSlice(blob));
+        auto const received = std::make_shared<STValidation>(
+            sit,
+            [](PublicKey const& pk) { return calcNodeID(pk); },
+            STValidation::DeserializeOptions{
+                .checkSignature = true, .requireCanonicalOrder = true});
+        BEAST_EXPECT(received->getNodeID() == calcNodeID(signingKeys3.first));
+        rotate(signingKeys3, 3);
+        handleNewValidation(env.app(), received, "test", BypassAccept::Yes, env.journal);
+        BEAST_EXPECT(received->isTrusted());
+        BEAST_EXPECT(received->getNodeID() == calcNodeID(masterKeys.first));
+        json = tally(std::chrono::hours(31), {received});
+        BEAST_EXPECT(json[jss::validations].asInt() == 1);
+        BEAST_EXPECT(json[jss::count].asInt() == 1);
     }
 
     void

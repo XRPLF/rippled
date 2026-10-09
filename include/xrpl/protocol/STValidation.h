@@ -48,8 +48,9 @@ class STValidation final : public STObject, public CountedObject<STValidation>
     PublicKey const signingPubKey_;
 
     // The ID of the validator that issued this validation. For validators
-    // that use manifests this will be derived from the master public key.
-    NodeID const nodeID_;
+    // that use manifests this will be derived from the master public key,
+    // and is set again where the validation's trust is decided.
+    NodeID nodeID_;
 
     NetClock::time_point seenTime_;
 
@@ -151,6 +152,9 @@ public:
 
     void
     setSeen(NetClock::time_point s);
+
+    void
+    setNodeID(NodeID const& nodeID);
 
     [[nodiscard]] Blob
     getSerialized() const;
@@ -294,6 +298,13 @@ inline void
 STValidation::setSeen(NetClock::time_point s)
 {
     seenTime_ = s;
+}
+
+inline void
+STValidation::setNodeID(NodeID const& nodeID)
+{
+    XRPL_ASSERT(nodeID.isNonZero(), "xrpl::STValidation::setNodeID : nonzero node");
+    nodeID_ = nodeID;
 }
 
 }  // namespace xrpl
