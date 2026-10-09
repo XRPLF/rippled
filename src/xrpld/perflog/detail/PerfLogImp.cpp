@@ -208,7 +208,7 @@ PerfLogImp::Counters::currentJson() const
         for (auto const& m : this->methods)
             methods.push_back(m.second);
     }
-    for (auto const m : methods)
+    for (auto const& m : methods)
     {
         json::Value methodobj(json::ValueType::Object);
         // A key of rpc, per methods' declaration, so borrowed as above.

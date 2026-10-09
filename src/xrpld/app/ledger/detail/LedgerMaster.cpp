@@ -626,7 +626,7 @@ LedgerMaster::getValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal)
             ++minVal;
 
         // Best effort for remaining exclusions
-        for (auto const v : pendingSaves)
+        for (auto const& v : pendingSaves)
         {
             if ((v.first >= minVal) && (v.first <= maxVal))
             {

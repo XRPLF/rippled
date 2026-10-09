@@ -460,7 +460,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 [&](Account const&, Account const&, ApplyContext& ac) {
                     if (loanBrokerKeylet.type != ltLOAN_BROKER)
                         return false;
-                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    auto const sleBroker = ac.view().peek(loanBrokerKeylet);
                     if (!sleBroker)
                         return false;
                     // Set DomainID without lsfLoanBrokerPrivate flag
@@ -479,7 +479,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 [&](Account const&, Account const&, ApplyContext& ac) {
                     if (loanBrokerKeylet.type != ltLOAN_BROKER)
                         return false;
-                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    auto const sleBroker = ac.view().peek(loanBrokerKeylet);
                     if (!sleBroker)
                         return false;
                     // Private broker with a zero DomainID
@@ -502,7 +502,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 [&](Account const&, Account const&, ApplyContext& ac) {
                     if (loanBrokerKeylet.type != ltLOAN_BROKER)
                         return false;
-                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    auto const sleBroker = ac.view().peek(loanBrokerKeylet);
                     if (!sleBroker)
                         return false;
                     // Public broker with an unknown flag
@@ -520,7 +520,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 [&](Account const&, Account const&, ApplyContext& ac) {
                     if (loanBrokerKeylet.type != ltLOAN_BROKER)
                         return false;
-                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    auto const sleBroker = ac.view().peek(loanBrokerKeylet);
                     if (!sleBroker)
                         return false;
                     // Private broker with a valid DomainID and an unknown flag
