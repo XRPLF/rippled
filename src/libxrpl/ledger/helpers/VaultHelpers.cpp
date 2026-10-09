@@ -587,10 +587,17 @@ calculateEarlyExitFee(SLE::ConstRef vault, STAmount const& amount, TenthBips32 r
 
     // Round the post-fee payout down on the grid AssetsAvailable will land on.
     STAmount const payout = [&] {
-        // Build the exact payout under Downward so the 16-digit STAmount
-        // conversion can never nudge it above the exact value.
+        // amount * rate can need more digits than Number keeps, so round the
+        // fee up first: rounding it down would lift the payout above its exact
+        // value, and the clamp below cannot always pull it back onto the grid.
+        Number const feeRoundedUp = [&] {
+            NumberRoundModeGuard const rg(Number::RoundingMode::Upward);
+            return tenthBipsOfValue(Number{amount}, rate);
+        }();
+        // Subtract and convert under Downward so the 16-digit STAmount can
+        // never nudge the payout above the exact value.
         NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
-        return STAmount{amount.asset(), Number{amount} - tenthBipsOfValue(Number{amount}, rate)};
+        return STAmount{amount.asset(), Number{amount} - feeRoundedUp};
     }();
 
     // A withdrawal too small to leave anything behind at the asset's own

@@ -2763,9 +2763,12 @@ class InvariantsVault_test : public InvariantsBase
         // Preclose that creates a closed-ended vault (in Subscription), optionally seeds it with
         // three deposits (so a1/a2/a3 hold a share MPToken that kAdjust can then adjust), and
         // optionally advances parent close time past SubscriptionDate. A negative @p advanceBySub
-        // leaves the vault in Subscription.
-        auto const precloseClosedEnded = [&](std::int32_t advanceBySub, bool doDeposit) {
-            return [&, advanceBySub, doDeposit](
+        // leaves the vault in Subscription. @p earlyExitFeeRate, when set, is stored on the vault.
+        auto const precloseClosedEnded = [&](std::int32_t advanceBySub,
+                                             bool doDeposit,
+                                             std::optional<std::uint32_t> earlyExitFeeRate =
+                                                 std::nullopt) {
+            return [&, advanceBySub, doDeposit, earlyExitFeeRate](
                        Account const& a1, Account const& a2, Env& env) -> bool {
                 env.fund(XRP(1000), a3, a4);
                 auto const sub = env.now().time_since_epoch().count() + 60;
@@ -2776,7 +2779,8 @@ class InvariantsVault_test : public InvariantsBase
                      .asset = xrpIssue(),
                      .vaultKind = closedEnded,
                      .subscriptionDate = sub,
-                     .redemptionDate = red});
+                     .redemptionDate = red,
+                     .earlyExitFeeRate = earlyExitFeeRate});
                 env(tx);
                 closedEndedKeylet = keylet;
                 if (doDeposit)
@@ -3016,6 +3020,63 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseClosedEnded(/*advanceBySub=*/1, /*doDeposit=*/true),
             TxAccount::A2);
+
+        testcase << "Vault set early-exit fee rate immutable";
+
+        // featureLendingProtocolV1_2 adds sfEarlyExitFeeRate to NoModifiedUnmodifiableFields.
+        // Only VaultCreate may set it, so adding, changing and removing it on an existing vault
+        // must each fail. The vault is closed-ended with LEVersion >= CashBasis so the placement
+        // invariant in ValidVault stays quiet and only the immutability check fires.
+
+        // Adding the field to a vault created without it.
+        doInvariantCheck(
+            {"changed an unchangeable field"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto sleVault = ac.view().peek(closedEndedKeylet);
+                if (!sleVault || sleVault->isFieldPresent(sfEarlyExitFeeRate))
+                    return false;
+                sleVault->at(sfEarlyExitFeeRate) = 1;
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseClosedEnded(/*advanceBySub=*/-1, /*doDeposit=*/false));
+
+        // Changing the value on a vault created with it.
+        doInvariantCheck(
+            {"changed an unchangeable field"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto sleVault = ac.view().peek(closedEndedKeylet);
+                if (!sleVault || !sleVault->isFieldPresent(sfEarlyExitFeeRate))
+                    return false;
+                sleVault->at(sfEarlyExitFeeRate) = sleVault->at(sfEarlyExitFeeRate) + 1;
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseClosedEnded(
+                /*advanceBySub=*/-1, /*doDeposit=*/false, /*earlyExitFeeRate=*/1'000));
+
+        // Removing the field from a vault created with it.
+        doInvariantCheck(
+            {"changed an unchangeable field"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto sleVault = ac.view().peek(closedEndedKeylet);
+                if (!sleVault || !sleVault->isFieldPresent(sfEarlyExitFeeRate))
+                    return false;
+                sleVault->makeFieldAbsent(sfEarlyExitFeeRate);
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseClosedEnded(
+                /*advanceBySub=*/-1, /*doDeposit=*/false, /*earlyExitFeeRate=*/1'000));
 
         testcase << "Vault loan set";
 

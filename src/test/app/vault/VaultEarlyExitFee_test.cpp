@@ -423,6 +423,44 @@ class VaultEarlyExitFee_test : public VaultTestBase
             expectTotals(env, s, total, total);
         }
 
+        // The exact fee 965,408,809.7121080004 needs more digits than Number
+        // keeps. Rounding the product down would pay 6,854,832,662.236924 and
+        // charge one unit below ceil(amount * rate); rounding it up charges
+        // 965,408,809.712109 and pays 6,854,832,662.236923.
+        testcase("IOU fee at an odd rate rounds up when the product exceeds 16 digits");
+        {
+            Env env{*this, features()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), issuer, owner, alice, bob);
+            env.close();
+            PrettyAsset const iou = issuer[iouCurrency_];
+            env.trust(iou(10'000'000'000), alice, bob);
+            env(pay(issuer, alice, iou(1'000)));
+            env(pay(issuer, bob, iou(8'000'000'000)));
+            env.close();
+
+            // 12.345%
+            auto const s = makeVault(env, owner, iou, 12'345u);
+            env(s.vault.deposit({.depositor = alice, .id = s.keylet.key, .amount = iou(1'000)}));
+            env(s.vault.deposit(
+                {.depositor = bob, .id = s.keylet.key, .amount = iou(8'000'000'000)}));
+            env.close();
+            enterInvestment(env, s);
+
+            env(s.vault.withdraw(
+                {.depositor = bob,
+                 .id = s.keylet.key,
+                 .amount = iou(Number{7'820'241'471'949'032, -6})}));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, iou) == iou(Number{6'854'832'662'236'923, -6}));
+            BEAST_EXPECT(sharesOf(env, s, bob) == 179'758'528'050'968);
+            STAmount const total = iou(Number{1'145'168'337'763'077, -6});
+            expectTotals(env, s, total, total);
+        }
+
         testcase("IOU fee consuming the whole withdrawal below 100% pays nothing");
         {
             Env env{*this, features()};
