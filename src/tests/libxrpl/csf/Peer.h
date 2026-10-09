@@ -455,7 +455,7 @@ struct Peer
     {
         if (auto it = ledgers.find(ledgerID); it != ledgers.end())
         {
-            return &(it->second);
+            return &it->second;
         }
 
         // No peers
@@ -500,7 +500,7 @@ struct Peer
     {
         if (auto it = txSets.find(setId); it != txSets.end())
         {
-            return &(it->second);
+            return &it->second;
         }
 
         // No peers

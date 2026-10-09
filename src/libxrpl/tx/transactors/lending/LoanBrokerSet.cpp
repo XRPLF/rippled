@@ -12,6 +12,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -20,9 +21,11 @@
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -31,6 +34,8 @@ namespace xrpl {
 bool
 LoanBrokerSet::checkExtraFeatures(PreflightContext const& ctx)
 {
+    if (!ctx.rules.enabled(featureLendingProtocolV1_2) && ctx.tx.isFieldPresent(sfDomainID))
+        return false;
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
@@ -54,6 +59,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
 
     if (tx.isFieldPresent(sfLoanBrokerID))
     {
+        // We're modifying an existing LoanBroker.
         // Fixed fields can not be specified if we're modifying an existing
         // LoanBroker Object
         if (tx.isFieldPresent(sfManagementFeeRate) || tx.isFieldPresent(sfCoverRateMinimum) ||
@@ -62,6 +68,29 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
 
         if (tx[sfLoanBrokerID] == beast::kZero)
             return temINVALID;
+
+        // Cannot change private flag on existing broker
+        if (tx.isFlag(tfLoanBrokerPrivate))
+        {
+            return temINVALID;
+        }
+    }
+    else
+    {
+        // We're creating a new LoanBroker.
+        if (auto const domainID = tx[~sfDomainID])
+        {
+            if (*domainID == beast::kZero)
+            {
+                // DomainID must not be zero if provided
+                return temMALFORMED;
+            }
+            if (!tx.isFlag(tfLoanBrokerPrivate))
+            {
+                // Public brokers cannot have a DomainID
+                return temINVALID;
+            }
+        }
     }
 
     if (auto const vaultID = tx.at(~sfVaultID))
@@ -89,6 +118,16 @@ LoanBrokerSet::getValueFields()
     static std::vector<OptionaledField<STNumber>> const kValueFields{~sfDebtMaximum};
 
     return kValueFields;
+}
+
+std::uint32_t
+LoanBrokerSet::getFlagsMask(PreflightContext const& ctx)
+{
+    if (ctx.rules.enabled(featureLendingProtocolV1_2))
+    {
+        return tfLoanBrokerSetMask;
+    }
+    return tfUniversalMask;
 }
 
 TER
@@ -144,6 +183,9 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
                 return tecLIMIT_EXCEEDED;
             }
         }
+
+        if (!sleBroker->isFlag(lsfLoanBrokerPrivate) && tx.isFieldPresent(sfDomainID))
+            return tecNO_PERMISSION;
     }
     else
     {
@@ -168,6 +210,15 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
         {
             JLOG(ctx.j.warn()) << "Vault pseudo-account is frozen.";
             return ter;
+        }
+    }
+
+    if (auto const domainID = tx[~sfDomainID]; domainID && *domainID != beast::kZero)
+    {
+        if (!ctx.view.exists(keylet::permissionedDomain(*domainID)))
+        {
+            JLOG(ctx.j.warn()) << "Domain does not exist.";
+            return tecOBJECT_NOT_FOUND;
         }
     }
 
@@ -218,6 +269,18 @@ LoanBrokerSet::doApply()
             broker->at(sfData) = *data;
         if (auto const debtMax = tx[~sfDebtMaximum])
             broker->at(sfDebtMaximum) = *debtMax;
+
+        if (auto const domainID = tx[~sfDomainID])
+        {
+            if (*domainID != beast::kZero)
+            {
+                broker->setFieldH256(sfDomainID, *domainID);
+            }
+            else if (broker->isFieldPresent(sfDomainID))
+            {
+                broker->makeFieldAbsent(sfDomainID);
+            }
+        }
 
         view.update(broker);
 
@@ -289,6 +352,13 @@ LoanBrokerSet::doApply()
             broker->at(sfCoverRateMinimum) = *coverMin;
         if (auto const coverLiq = tx[~sfCoverRateLiquidation])
             broker->at(sfCoverRateLiquidation) = *coverLiq;
+
+        if (tx.isFlag(tfLoanBrokerPrivate))
+        {
+            broker->setFlag(lsfLoanBrokerPrivate);
+            if (auto const domainID = tx[~sfDomainID])
+                broker->setFieldH256(sfDomainID, *domainID);
+        }
 
         view.insert(broker);
 

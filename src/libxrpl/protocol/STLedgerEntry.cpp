@@ -84,7 +84,7 @@ STLedgerEntry::getFullText() const
     ret += format->getName();
     ret += ", ";
     ret += STObject::getFullText();
-    ret += "}";
+    ret += '}';
     return ret;
 }
 
