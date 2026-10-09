@@ -2,9 +2,6 @@
 
 #include <xrpld/app/main/Application.h>  // IWYU pragma: keep
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/MethodNames.h>
-#include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
@@ -14,7 +11,6 @@
 #include <cstdint>
 #include <expected>
 #include <functional>
-#include <string_view>
 
 namespace xrpl::rpc {
 
@@ -45,18 +41,6 @@ public:
     {
         setVersion(obj, output.apiVersion, output.betaEnabled);
     }
-
-    // NOLINTBEGIN(readability-identifier-naming)
-    static constexpr std::string_view name = method::kVersion;
-
-    static constexpr unsigned minApiVer = rpc::kApiMinimumSupportedVersion;
-
-    static constexpr unsigned maxApiVer = rpc::kApiMaximumValidVersion;
-
-    static constexpr Role role = Role::USER;
-
-    static constexpr Condition condition = Condition::NoCondition;
-    // NOLINTEND(readability-identifier-naming)
 
 private:
     std::reference_wrapper<JsonContext> context_;
