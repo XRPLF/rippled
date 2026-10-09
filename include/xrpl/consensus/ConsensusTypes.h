@@ -137,8 +137,8 @@ to_string(ConsensusPhase p)
  */
 class ConsensusTimer
 {
-    using time_point = std::chrono::steady_clock::time_point;
-    time_point start_;
+    using TimePoint = std::chrono::steady_clock::time_point;
+    TimePoint start_;
     std::chrono::milliseconds dur_{};
 
 public:
@@ -155,14 +155,14 @@ public:
     }
 
     void
-    reset(time_point tp)
+    reset(TimePoint tp)
     {
         start_ = tp;
         dur_ = std::chrono::milliseconds{0};
     }
 
     void
-    tick(time_point tp)
+    tick(TimePoint tp)
     {
         using namespace std::chrono;
         dur_ = duration_cast<milliseconds>(tp - start_);
@@ -183,12 +183,12 @@ struct ConsensusCloseTimes
     /**
      * Close time estimates, keep ordered for predictable traverse
      */
-    std::map<NetClock::time_point, int> peers;
+    std::map<NetClock::TimePoint, int> peers;
 
     /**
      * Our close time estimate
      */
-    NetClock::time_point self;
+    NetClock::TimePoint self;
 };
 
 /**
@@ -208,7 +208,7 @@ inline std::chrono::seconds
 medianCloseOffset(ConsensusCloseTimes const& times)
 {
     using namespace std::chrono;
-    using time_point = NetClock::time_point;
+    using TimePoint = NetClock::TimePoint;
 
     std::int64_t totalWeight = 1;
     for (auto const& [_, w] : times.peers)
@@ -216,13 +216,13 @@ medianCloseOffset(ConsensusCloseTimes const& times)
 
     std::int64_t const halfWeight = (totalWeight + 1) / 2;
 
-    std::optional<time_point> median{};
+    std::optional<TimePoint> median{};
     std::int64_t tally = 0;
     bool selfPlaced = false;
 
     // Accumulate weight in time order; the first bin to reach halfWeight is
     // the (lower) weighted median. Returns true once that bin is found.
-    auto step = [&](time_point t, std::int64_t w) {
+    auto step = [&](TimePoint t, std::int64_t w) {
         XRPL_ASSERT(tally < halfWeight, "xrpl::medianCloseOffset::step : median not yet found");
         tally += w;
         if (tally >= halfWeight)

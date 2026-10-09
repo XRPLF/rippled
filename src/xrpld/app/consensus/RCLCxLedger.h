@@ -79,7 +79,7 @@ public:
     /**
      * Resolution used when calculating this ledger's close time.
      */
-    [[nodiscard]] NetClock::duration
+    [[nodiscard]] NetClock::Duration
     closeTimeResolution() const
     {
         return ledger->header().closeTimeResolution;
@@ -97,7 +97,7 @@ public:
     /**
      * The close time of this ledger
      */
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     closeTime() const
     {
         return ledger->header().closeTime;
@@ -106,7 +106,7 @@ public:
     /**
      * The close time of this ledger's parent.
      */
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     parentCloseTime() const
     {
         return ledger->header().parentCloseTime;

@@ -139,8 +139,7 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, mptIssue, account); !isTesSuccess(ter))
         return ter;
 
-    auto const mptAmount =
-        STAmount(MPTAmount{static_cast<MPTAmount::value_type>(amount)}, mptIssue);
+    auto const mptAmount = STAmount(MPTAmount{static_cast<MPTAmount::ValueType>(amount)}, mptIssue);
     if (accountHolds(
             ctx.view,
             account,

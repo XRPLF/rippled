@@ -92,14 +92,22 @@ public:
 class ManualClock
 {
 public:
-    using rep = uint64_t;
-    using period = std::milli;
-    using duration = std::chrono::duration<std::uint32_t, period>;
-    using time_point = std::chrono::time_point<ManualClock>;
+    using Rep = uint64_t;
+    using Period = std::milli;
+    using Duration = std::chrono::duration<std::uint32_t, Period>;
+    using TimePoint = std::chrono::time_point<ManualClock, Duration>;
+
+    // Required by the std Clock contract.
+    // NOLINTBEGIN(readability-identifier-naming)
+    using rep = Rep;
+    using period = Period;
+    using duration = Duration;
+    using time_point = TimePoint;
+    // NOLINTEND(readability-identifier-naming)
     inline static bool const is_steady = false;  // NOLINT(readability-identifier-naming)
 
     static void
-    advance(duration d) noexcept
+    advance(Duration d) noexcept
     {
         kNow += d;
     }
@@ -113,25 +121,25 @@ public:
     static void
     reset() noexcept
     {
-        kNow = time_point(seconds(0));
+        kNow = TimePoint(seconds(0));
     }
 
-    static time_point
+    static TimePoint
     now() noexcept
     {
         return kNow;
     }
 
-    static duration
+    static Duration
     randDuration(milliseconds min, milliseconds max)
     {
-        return duration(milliseconds(randInt(min.count(), max.count())));
+        return Duration(milliseconds(randInt(min.count(), max.count())));
     }
 
     explicit ManualClock() = default;
 
 private:
-    inline static time_point kNow = time_point(seconds(0));
+    inline static TimePoint kNow = TimePoint(seconds(0));
 };
 
 /**
@@ -823,7 +831,7 @@ protected:
         Peer::ID peer{};
         std::uint16_t validator{};
         std::optional<PublicKey> key;
-        time_point<ManualClock> time;
+        ManualClock::TimePoint time;
         bool handled = false;
     };
 
@@ -836,7 +844,7 @@ protected:
     {
         std::unordered_map<EventType, Event> events{
             {EventType::LinkDown, {}}, {EventType::PeerDisconnected, {}}};
-        time_point<ManualClock> lastCheck = ManualClock::now();
+        ManualClock::TimePoint lastCheck = ManualClock::now();
 
         network_.reset();
         network_.propagate([&](Link& link, MessageSPtr m) {

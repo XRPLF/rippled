@@ -18,7 +18,7 @@ private:
     Currency currency_;
 
 public:
-    using value_type = Currency;
+    using ValueType = Currency;
 
     STCurrency() = default;
 

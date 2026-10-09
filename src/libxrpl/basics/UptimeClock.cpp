@@ -7,7 +7,7 @@
 
 namespace xrpl {
 
-std::atomic<UptimeClock::rep> UptimeClock::kNow{0};  // seconds since start
+std::atomic<UptimeClock::Rep> UptimeClock::kNow{0};  // seconds since start
 std::atomic<bool> UptimeClock::kStop{false};         // stop update thread
 
 // On xrpld shutdown, cancel and wait for the update thread
@@ -45,7 +45,7 @@ UptimeClock::startClock()
 // However the difference between these two epochs is a small fraction of a
 // second and unimportant.
 
-UptimeClock::time_point
+UptimeClock::TimePoint
 UptimeClock::now()
 {
     // start the update thread on first use

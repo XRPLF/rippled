@@ -811,7 +811,7 @@ ValidNewAccountRoot::finalize(
 
 static std::optional<STAmount>
 clawbackTrustLineBalanceInHolderTerms(
-    SLE::const_pointer const& sle,
+    SLE::ConstPointer const& sle,
     AccountID const& holder,
     AccountID const& issuer,
     Currency const& currency)

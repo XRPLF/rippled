@@ -104,8 +104,8 @@ private:
         if (!BEAST_EXPECT(state1.paymentRemaining > 1))
             return;
 
-        using D = NetClock::duration;
-        using Tp = NetClock::time_point;
+        using D = NetClock::Duration;
+        using Tp = NetClock::TimePoint;
         auto const overdueClose = Tp{D{state1.nextPaymentDate + state1.paymentInterval}};
         env.close(overdueClose);
 
@@ -526,7 +526,7 @@ private:
 
         auto const loanSetFee = Fee(env.current()->fees().base * 2);
 
-        using TimeType = decltype(sfNextPaymentDueDate)::type::value_type;
+        using TimeType = decltype(sfNextPaymentDueDate)::Type::ValueType;
         static_assert(std::is_same_v<TimeType, std::uint32_t>);
         constexpr TimeType kMaxTime = std::numeric_limits<TimeType>::max();
         static_assert(kMaxTime == 4'294'967'295);

@@ -33,7 +33,7 @@ public:
      * @brief Construct a TransactionProposal ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit TransactionProposal(SLE::const_pointer sle)
+    explicit TransactionProposal(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -61,7 +61,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -72,7 +72,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getOwner() const
     {
         return this->sle_->at(sfOwner);
@@ -95,7 +95,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getExpiration() const
     {
         return this->sle_->at(sfExpiration);
@@ -106,7 +106,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getOwnerNode() const
     {
         return this->sle_->at(sfOwnerNode);
@@ -132,7 +132,7 @@ public:
      * @param expiration The sfExpiration field value.
      * @param ownerNode The sfOwnerNode field value.
      */
-    TransactionProposalBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,STObject const& proposedTransaction,std::decay_t<typename SF_UINT32::type::value_type> const& expiration,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode)
+    TransactionProposalBuilder(std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq,std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& owner,STObject const& proposedTransaction,std::decay_t<typename SF_UINT32::Type::ValueType> const& expiration,std::decay_t<typename SF_UINT64::Type::ValueType> const& ownerNode)
         : LedgerEntryBuilderBase<TransactionProposalBuilder>(ltTRANSACTION_PROPOSAL)
     {
         setPreviousTxnID(previousTxnID);
@@ -148,7 +148,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    TransactionProposalBuilder(SLE::const_pointer sle)
+    TransactionProposalBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltTRANSACTION_PROPOSAL)
         {
@@ -166,7 +166,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     TransactionProposalBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -177,7 +177,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     TransactionProposalBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;
@@ -188,7 +188,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     TransactionProposalBuilder&
-    setOwner(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setOwner(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfOwner] = value;
         return *this;
@@ -210,7 +210,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     TransactionProposalBuilder&
-    setExpiration(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setExpiration(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfExpiration] = value;
         return *this;
@@ -221,7 +221,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     TransactionProposalBuilder&
-    setOwnerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setOwnerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfOwnerNode] = value;
         return *this;

@@ -33,7 +33,7 @@ struct Context
     resource::Consumer& consumer;
     Role role;
     std::shared_ptr<JobQueue::Coro> coro;
-    InfoSub::pointer infoSub;
+    InfoSub::Pointer infoSub;
     unsigned int apiVersion;
 };
 

@@ -252,7 +252,7 @@ checkConsensus(
  *     // Called when ledger is accepted by consensus
  *     void onAccept(Result const & result,
  *       RCLCxLedger const & prevLedger,
- *       NetClock::duration closeResolution,
+ *       NetClock::Duration closeResolution,
  *       CloseTimes const & rawCloseTimes,
  *       Mode const & mode);
  *
@@ -260,7 +260,7 @@ checkConsensus(
  *     // function.
  *     void onForceAccept(Result const & result,
  *       RCLCxLedger const & prevLedger,
- *       NetClock::duration closeResolution,
+ *       NetClock::Duration closeResolution,
  *       CloseTimes const & rawCloseTimes,
  *       Mode const & mode);
  *
@@ -356,7 +356,7 @@ public:
      */
     void
     startRound(
-        NetClock::time_point const& now,
+        NetClock::TimePoint const& now,
         LedgerT::ID const& prevLedgerID,
         LedgerT prevLedger,
         HashSet<NodeIDT> const& nowUntrusted,
@@ -371,7 +371,7 @@ public:
      * @return Whether we should do delayed relay of this proposal.
      */
     bool
-    peerProposal(NetClock::time_point const& now, PeerPositionT const& newProposal);
+    peerProposal(NetClock::TimePoint const& now, PeerPositionT const& newProposal);
 
     /**
      * Call periodically to drive consensus forward.
@@ -380,9 +380,7 @@ public:
      * @param clog log object to which to append
      */
     void
-    timerEntry(
-        NetClock::time_point const& now,
-        std::unique_ptr<std::stringstream> const& clog = {});
+    timerEntry(NetClock::TimePoint const& now, std::unique_ptr<std::stringstream> const& clog = {});
 
     /**
      * Process a transaction set acquired from the network
@@ -391,7 +389,7 @@ public:
      * @param txSet the transaction set
      */
     void
-    gotTxSet(NetClock::time_point const& now, TxSetT const& txSet);
+    gotTxSet(NetClock::TimePoint const& now, TxSetT const& txSet);
 
     /**
      * Simulate the consensus process without any network traffic.
@@ -412,7 +410,7 @@ public:
      */
     void
     simulate(
-        NetClock::time_point const& now,
+        NetClock::TimePoint const& now,
         std::optional<std::chrono::milliseconds> consensusDelay);
 
     /**
@@ -449,7 +447,7 @@ public:
 private:
     void
     startRoundInternal(
-        NetClock::time_point const& now,
+        NetClock::TimePoint const& now,
         LedgerT::ID const& prevLedgerID,
         LedgerT const& prevLedger,
         ConsensusMode mode,
@@ -479,7 +477,7 @@ private:
      * Handle a replayed or a new peer proposal.
      */
     bool
-    peerProposalInternal(NetClock::time_point const& now, PeerPositionT const& newProposal);
+    peerProposalInternal(NetClock::TimePoint const& now, PeerPositionT const& newProposal);
 
     /**
      * Handle pre-close phase.
@@ -555,8 +553,8 @@ private:
     leaveConsensus(std::unique_ptr<std::stringstream> const& clog);
 
     // The rounded or effective close time estimate from a proposer
-    [[nodiscard]] NetClock::time_point
-    asCloseTime(NetClock::time_point raw) const;
+    [[nodiscard]] NetClock::TimePoint
+    asCloseTime(NetClock::TimePoint raw) const;
 
 private:
     Adaptor& adaptor_;
@@ -575,7 +573,7 @@ private:
     // How long has this round been open
     ConsensusTimer openTime_;
 
-    NetClock::duration closeResolution_ = kLedgerDefaultTimeResolution;
+    NetClock::Duration closeResolution_ = kLedgerDefaultTimeResolution;
 
     ConsensusParms::AvalancheState closeTimeAvalancheState_ = ConsensusParms::AvalancheState::Init;
 
@@ -587,8 +585,8 @@ private:
 
     // The current network adjusted time.  This is the network time the
     // ledger would close if it closed now
-    NetClock::time_point now_;
-    NetClock::time_point prevCloseTime_;
+    NetClock::TimePoint now_;
+    NetClock::TimePoint prevCloseTime_;
 
     //-------------------------------------------------------------------------
     // Non-peer (self) consensus data
@@ -641,7 +639,7 @@ Consensus<Adaptor>::Consensus(ClockType const& clock, Adaptor& adaptor, beast::J
 template <class Adaptor>
 void
 Consensus<Adaptor>::startRound(
-    NetClock::time_point const& now,
+    NetClock::TimePoint const& now,
     LedgerT::ID const& prevLedgerID,
     LedgerT prevLedger,
     HashSet<NodeIDT> const& nowUntrusted,
@@ -686,7 +684,7 @@ Consensus<Adaptor>::startRound(
 template <class Adaptor>
 void
 Consensus<Adaptor>::startRoundInternal(
-    NetClock::time_point const& now,
+    NetClock::TimePoint const& now,
     LedgerT::ID const& prevLedgerID,
     LedgerT const& prevLedger,
     ConsensusMode mode,
@@ -731,7 +729,7 @@ Consensus<Adaptor>::startRoundInternal(
 
 template <class Adaptor>
 bool
-Consensus<Adaptor>::peerProposal(NetClock::time_point const& now, PeerPositionT const& newPeerPos)
+Consensus<Adaptor>::peerProposal(NetClock::TimePoint const& now, PeerPositionT const& newPeerPos)
 {
     JLOG(j_.debug()) << "PROPOSAL " << newPeerPos.render();
     auto const& peerID = newPeerPos.proposal().nodeID();
@@ -751,7 +749,7 @@ Consensus<Adaptor>::peerProposal(NetClock::time_point const& now, PeerPositionT 
 template <class Adaptor>
 bool
 Consensus<Adaptor>::peerProposalInternal(
-    NetClock::time_point const& now,
+    NetClock::TimePoint const& now,
     PeerPositionT const& newPeerPos)
 {
     // Nothing to do for now if we are currently working on a ledger
@@ -853,7 +851,7 @@ Consensus<Adaptor>::peerProposalInternal(
 template <class Adaptor>
 void
 Consensus<Adaptor>::timerEntry(
-    NetClock::time_point const& now,
+    NetClock::TimePoint const& now,
     std::unique_ptr<std::stringstream> const& clog)
 {
     CLOG(clog) << "Consensus<Adaptor>::timerEntry. ";
@@ -889,7 +887,7 @@ Consensus<Adaptor>::timerEntry(
 
 template <class Adaptor>
 void
-Consensus<Adaptor>::gotTxSet(NetClock::time_point const& now, TxSetT const& txSet)
+Consensus<Adaptor>::gotTxSet(NetClock::TimePoint const& now, TxSetT const& txSet)
 {
     // Nothing to do if we've finished work on a ledger
     if (phase_ == ConsensusPhase::Accepted)
@@ -935,7 +933,7 @@ Consensus<Adaptor>::gotTxSet(NetClock::time_point const& now, TxSetT const& txSe
 template <class Adaptor>
 void
 Consensus<Adaptor>::simulate(
-    NetClock::time_point const& now,
+    NetClock::TimePoint const& now,
     std::optional<std::chrono::milliseconds> consensusDelay)
 {
     using namespace std::chrono_literals;
@@ -1486,7 +1484,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
                << to_string(ourCutoff) << ". ";
 
     // Verify freshness of peer positions and compute close times
-    std::map<NetClock::time_point, int> closeTimeVotes;
+    std::map<NetClock::TimePoint, int> closeTimeVotes;
     {
         auto it = currPeerPositions_.begin();
         while (it != currPeerPositions_.end())
@@ -1543,7 +1541,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
             ourNewSet.emplace(std::move(*mutableSet));
     }
 
-    NetClock::time_point consensusCloseTime = {};
+    NetClock::TimePoint consensusCloseTime = {};
     haveCloseTimeConsensus_ = false;
 
     if (currPeerPositions_.empty())
@@ -1879,8 +1877,8 @@ Consensus<Adaptor>::updateDisputes(NodeIDT const& node, TxSetT const& other)
 }
 
 template <class Adaptor>
-NetClock::time_point
-Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
+NetClock::TimePoint
+Consensus<Adaptor>::asCloseTime(NetClock::TimePoint raw) const
 {
     return roundCloseTime(raw, closeResolution_);
 }

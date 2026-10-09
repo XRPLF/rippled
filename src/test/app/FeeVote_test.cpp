@@ -248,7 +248,7 @@ class FeeVote_test : public beast::unit_test::Suite
         }
         {
             auto const big64 = std::to_string(
-                static_cast<std::uint64_t>(std::numeric_limits<XRPAmount::value_type>::max()) + 1);
+                static_cast<std::uint64_t>(std::numeric_limits<XRPAmount::ValueType>::max()) + 1);
             Section config;
             config.append(
                 {"reference_fee = " + big64,

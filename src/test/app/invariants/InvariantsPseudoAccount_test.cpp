@@ -87,44 +87,44 @@ class InvariantsPseudoAccount_test : public InvariantsBase
         struct Mod
         {
             std::string expectedFailure;
-            std::function<void(SLE::pointer&)> func;
+            std::function<void(SLE::Pointer&)> func;
         };
         auto const mods = std::to_array<Mod>({
             {
                 .expectedFailure = "pseudo-account has 0 pseudo-account fields set",
                 .func =
-                    [this](SLE::pointer& sle) {
+                    [this](SLE::Pointer& sle) {
                         BEAST_EXPECT(sle->at(~sfVaultID));
                         sle->at(~sfVaultID) = std::nullopt;
                     },
             },
             {
                 .expectedFailure = "pseudo-account sequence changed",
-                .func = [](SLE::pointer& sle) { sle->at(sfSequence) = 12345; },
+                .func = [](SLE::Pointer& sle) { sle->at(sfSequence) = 12345; },
             },
             {
                 .expectedFailure = "pseudo-account flags are not set",
-                .func = [](SLE::pointer& sle) { sle->at(sfFlags) = lsfNoFreeze; },
+                .func = [](SLE::Pointer& sle) { sle->at(sfFlags) = lsfNoFreeze; },
             },
             {
                 .expectedFailure = "pseudo-account has a regular key",
-                .func = [](SLE::pointer& sle) { sle->at(sfRegularKey) = Account("regular").id(); },
+                .func = [](SLE::Pointer& sle) { sle->at(sfRegularKey) = Account("regular").id(); },
             },
             {
                 .expectedFailure = "pseudo-account has a sponsorship field",
-                .func = [](SLE::pointer& sle) { sle->at(sfSponsoredOwnerCount) = 1; },
+                .func = [](SLE::Pointer& sle) { sle->at(sfSponsoredOwnerCount) = 1; },
             },
             {
                 .expectedFailure = "pseudo-account has a sponsorship field",
-                .func = [](SLE::pointer& sle) { sle->at(sfSponsoringOwnerCount) = 1; },
+                .func = [](SLE::Pointer& sle) { sle->at(sfSponsoringOwnerCount) = 1; },
             },
             {
                 .expectedFailure = "pseudo-account has a sponsorship field",
-                .func = [](SLE::pointer& sle) { sle->at(sfSponsoringAccountCount) = 1; },
+                .func = [](SLE::Pointer& sle) { sle->at(sfSponsoringAccountCount) = 1; },
             },
             {
                 .expectedFailure = "pseudo-account has a sponsorship field",
-                .func = [](SLE::pointer& sle) { sle->at(sfSponsor) = Account("sponsor").id(); },
+                .func = [](SLE::Pointer& sle) { sle->at(sfSponsor) = Account("sponsor").id(); },
             },
         });
 
@@ -239,7 +239,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
             // will need to recompute any of these values it needs for itself
             // rather than trying to return a bunch of items
             auto setupTest = [&, this](Account const& a1, Account const&, ApplyContext& ac)
-                -> std::optional<std::pair<SLE::pointer, SLE::pointer>> {
+                -> std::optional<std::pair<SLE::Pointer, SLE::Pointer>> {
                 if (loanBrokerKeylet.type != ltLOAN_BROKER)
                     return {};
                 auto sleBroker = ac.view().peek(loanBrokerKeylet);

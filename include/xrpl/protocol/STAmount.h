@@ -47,7 +47,7 @@ class STAmount final : public STBase, public CountedObject<STAmount>
 public:
     using MantissaType = std::uint64_t;
     using ExponentType = int;
-    using rep = std::pair<MantissaType, ExponentType>;
+    using Rep = std::pair<MantissaType, ExponentType>;
 
 private:
     Asset asset_;
@@ -56,7 +56,7 @@ private:
     bool isNegative_{};
 
 public:
-    using value_type = STAmount;
+    using ValueType = STAmount;
 
     static constexpr int kMinOffset = -96;
     static constexpr int kMaxOffset = 80;

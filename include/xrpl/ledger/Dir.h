@@ -31,12 +31,12 @@ class Dir
 private:
     ReadView const* view_ = nullptr;
     Keylet root_;
-    SLE::const_pointer sle_;
+    SLE::ConstPointer sle_;
     STVector256 const* indexes_ = nullptr;
 
 public:
     class ConstIterator;
-    using value_type = SLE::const_pointer;
+    using ValueType = SLE::ConstPointer;
 
     Dir(ReadView const&, Keylet const&);
 
@@ -50,19 +50,26 @@ public:
 class Dir::ConstIterator
 {
 public:
-    using value_type = Dir::value_type;
-    using pointer = value_type const*;
-    using reference = value_type const&;
-    using difference_type = std::ptrdiff_t;
-    using iterator_category = std::forward_iterator_tag;
+    using ValueType = Dir::ValueType;
+    using Pointer = ValueType const*;
+    using Reference = ValueType const&;
+    using DifferenceType = std::ptrdiff_t;
+    using IteratorCategory = std::forward_iterator_tag;
+
+    // Required by std::iterator_traits.
+    // NOLINTBEGIN(readability-identifier-naming)
+    using value_type = ValueType;
+    using difference_type = DifferenceType;
+    using iterator_category = IteratorCategory;
+    // NOLINTEND(readability-identifier-naming)
 
     bool
     operator==(ConstIterator const& other) const;
 
-    reference
+    Reference
     operator*() const;
 
-    pointer
+    Pointer
     operator->() const
     {
         return &**this;
@@ -105,7 +112,7 @@ private:
     Keylet page_;
     UInt256 index_;
     std::optional<value_type> mutable cache_;
-    SLE::const_pointer sle_;
+    SLE::ConstPointer sle_;
     STVector256 const* indexes_ = nullptr;
     std::vector<UInt256>::const_iterator it_;
 };

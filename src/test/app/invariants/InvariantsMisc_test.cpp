@@ -728,19 +728,19 @@ class InvariantsMisc_test : public InvariantsBase
         };
 
         {
-            auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
-                [](SLE::pointer& sle) { sle->at(sfSequence) += 1; },
-                [](SLE::pointer& sle) { sle->at(sfOwnerNode) += 1; },
-                [](SLE::pointer& sle) { sle->at(sfVaultNode) += 1; },
-                [](SLE::pointer& sle) { sle->at(sfVaultID) = UInt256(1u); },
-                [](SLE::pointer& sle) { sle->at(sfAccount) = sle->at(sfOwner); },
-                [](SLE::pointer& sle) { sle->at(sfOwner) = sle->at(sfAccount); },
-                [](SLE::pointer& sle) { sle->at(sfManagementFeeRate) += 1; },
-                [](SLE::pointer& sle) { sle->at(sfCoverRateMinimum) += 1; },
-                [](SLE::pointer& sle) { sle->at(sfCoverRateLiquidation) += 1; },
-                [](SLE::pointer& sle) { sle->setFlag(lsfLoanBrokerPrivate); },
-                [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
-                [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = sle->at(sfVaultID).value(); },
+            auto const mods = std::to_array<std::function<void(SLE::Pointer&)>>({
+                [](SLE::Pointer& sle) { sle->at(sfSequence) += 1; },
+                [](SLE::Pointer& sle) { sle->at(sfOwnerNode) += 1; },
+                [](SLE::Pointer& sle) { sle->at(sfVaultNode) += 1; },
+                [](SLE::Pointer& sle) { sle->at(sfVaultID) = UInt256(1u); },
+                [](SLE::Pointer& sle) { sle->at(sfAccount) = sle->at(sfOwner); },
+                [](SLE::Pointer& sle) { sle->at(sfOwner) = sle->at(sfAccount); },
+                [](SLE::Pointer& sle) { sle->at(sfManagementFeeRate) += 1; },
+                [](SLE::Pointer& sle) { sle->at(sfCoverRateMinimum) += 1; },
+                [](SLE::Pointer& sle) { sle->at(sfCoverRateLiquidation) += 1; },
+                [](SLE::Pointer& sle) { sle->setFlag(lsfLoanBrokerPrivate); },
+                [](SLE::Pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
+                [](SLE::Pointer& sle) { sle->at(sfLedgerIndex) = sle->at(sfVaultID).value(); },
             });
 
             for (auto const& mod : mods)
@@ -1055,10 +1055,10 @@ class InvariantsMisc_test : public InvariantsBase
             // Each mutation must keep the vault otherwise valid so that only the immutability check
             // fires. Shifting both dates by the same offset preserves the gap; bumping sfVaultKind
             // stays within the recognised range.
-            auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
-                [](SLE::pointer& sle) { sle->at(sfVaultKind) += 1; },
-                [](SLE::pointer& sle) { sle->at(sfSubscriptionDate) += 1; },
-                [](SLE::pointer& sle) { sle->at(sfRedemptionDate) += 1; },
+            auto const mods = std::to_array<std::function<void(SLE::Pointer&)>>({
+                [](SLE::Pointer& sle) { sle->at(sfVaultKind) += 1; },
+                [](SLE::Pointer& sle) { sle->at(sfSubscriptionDate) += 1; },
+                [](SLE::Pointer& sle) { sle->at(sfRedemptionDate) += 1; },
             });
 
             for (auto const& mod : mods)
@@ -1081,9 +1081,9 @@ class InvariantsMisc_test : public InvariantsBase
         }
 
         {
-            auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
-                [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
-                [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = UInt256(1u); },
+            auto const mods = std::to_array<std::function<void(SLE::Pointer&)>>({
+                [](SLE::Pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
+                [](SLE::Pointer& sle) { sle->at(sfLedgerIndex) = UInt256(1u); },
             });
 
             for (auto const& mod : mods)

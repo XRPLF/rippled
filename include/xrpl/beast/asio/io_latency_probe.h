@@ -21,19 +21,19 @@ template <class Clock>
 class IOLatencyProbe
 {
 private:
-    using duration = Clock::duration;
-    using time_point = Clock::time_point;
+    using Duration = Clock::duration;
+    using TimePoint = Clock::time_point;
 
     std::recursive_mutex mutex_;
     std::condition_variable_any cond_;
     std::size_t count_{1};
-    duration const period_;
+    Duration const period_;
     boost::asio::io_context& ios_;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
     bool cancel_{false};
 
 public:
-    IOLatencyProbe(duration const& period, boost::asio::io_context& ios)
+    IOLatencyProbe(Duration const& period, boost::asio::io_context& ios)
         : period_(period), ios_(ios), timer_(ios_)
     {
     }
@@ -146,15 +146,11 @@ private:
     struct SampleOp
     {
         Handler handler;
-        time_point start;
+        TimePoint start;
         bool repeat;
         IOLatencyProbe* probe;
 
-        SampleOp(
-            Handler const& handler,
-            time_point const& start,
-            bool repeat,
-            IOLatencyProbe* probe)
+        SampleOp(Handler const& handler, TimePoint const& start, bool repeat, IOLatencyProbe* probe)
             : handler(handler), start(start), repeat(repeat), probe(probe)
         {
             XRPL_ASSERT(

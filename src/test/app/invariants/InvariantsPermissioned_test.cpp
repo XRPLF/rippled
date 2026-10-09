@@ -882,7 +882,7 @@ class InvariantsPermissioned_test : public InvariantsBase
         }
     }
 
-    static SLE::pointer
+    static SLE::Pointer
     createPermissionedDomain(
         ApplyContext& ac,
         test::jtx::Account const& a1,

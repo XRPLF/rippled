@@ -320,13 +320,13 @@ public:
      * @param duration The amount of time to advance.
      */
     void
-    advanceTime(NetClock::duration duration);
+    advanceTime(NetClock::Duration duration);
 
     /**
      * @brief Get the current ledger close time.
      * @return The current close time.
      */
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     getCloseTime() const;
 
     /**
@@ -368,7 +368,7 @@ private:
     /**
      * Current time (can be advanced arbitrarily for testing).
      */
-    NetClock::time_point now_;
+    NetClock::TimePoint now_;
 };
 
 }  // namespace xrpl::test

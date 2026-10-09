@@ -636,7 +636,7 @@ private:
             makeList(lists.at(1), sequence1, env.timeKeeper().now().time_since_epoch().count());
         auto const expiredSig = signList(expiredblob, pubSigningKeys1);
 
-        NetClock::time_point const validUntil = env.timeKeeper().now() + 3600s;
+        NetClock::TimePoint const validUntil = env.timeKeeper().now() + 3600s;
         auto const sequence2 = 2;
         auto const blob2 = makeList(lists.at(2), sequence2, validUntil.time_since_epoch().count());
         auto const sig2 = signList(blob2, pubSigningKeys1);
@@ -1023,7 +1023,7 @@ private:
 
         // Process a list
         env.timeKeeper().set(env.timeKeeper().now() + 1s);
-        NetClock::time_point const validUntil = env.timeKeeper().now() + 3600s;
+        NetClock::TimePoint const validUntil = env.timeKeeper().now() + 3600s;
         auto const blob = makeList(list, 1, validUntil.time_since_epoch().count());
         auto const sig = signList(blob, pubSigningKeys1);
 
@@ -1439,7 +1439,7 @@ private:
             auto const version = 1;
             auto const sequence = 1;
             using namespace std::chrono_literals;
-            NetClock::time_point const validUntil = env.timeKeeper().now() + 60s;
+            NetClock::TimePoint const validUntil = env.timeKeeper().now() + 60s;
             auto const blob = makeList(list, sequence, validUntil.time_since_epoch().count());
             auto const sig = signList(blob, pubSigningKeys);
 
@@ -1480,7 +1480,7 @@ private:
             std::vector<Validator> list2({list[0], randomValidator()});
             activeValidators.insert(calcNodeID(list2[1].masterPublic));
             auto const sequence2 = 2;
-            NetClock::time_point const expiration2 = env.timeKeeper().now() + 60s;
+            NetClock::TimePoint const expiration2 = env.timeKeeper().now() + 60s;
             auto const blob2 = makeList(list2, sequence2, expiration2.time_since_epoch().count());
             auto const sig2 = signList(blob2, pubSigningKeys);
 
@@ -1642,7 +1642,7 @@ private:
                 auto const version = 1;
                 auto const sequence = 1;
                 using namespace std::chrono_literals;
-                NetClock::time_point const validUntil = env.timeKeeper().now() + 3600s;
+                NetClock::TimePoint const validUntil = env.timeKeeper().now() + 3600s;
                 std::vector<Validator> const localKeys{locals[i].first, locals[i].second};
                 auto const blob =
                     makeList(localKeys, sequence, validUntil.time_since_epoch().count());
@@ -1714,7 +1714,7 @@ private:
 
             auto addPublishedList =
                 [&, this](
-                    int i, NetClock::time_point& validUntil1, NetClock::time_point& validUntil2) {
+                    int i, NetClock::TimePoint& validUntil1, NetClock::TimePoint& validUntil2) {
                     auto const publisherSecret = randomSecretKey();
                     auto const publisherPublic = derivePublicKey(KeyType::Ed25519, publisherSecret);
                     auto const pubSigningKeys = randomKeyPair(KeyType::Secp256k1);
@@ -1747,7 +1747,7 @@ private:
                     {
                         duration = 3600s;
                     }
-                    NetClock::time_point const validUntil = env.timeKeeper().now() + duration;
+                    NetClock::TimePoint const validUntil = env.timeKeeper().now() + duration;
                     if (i == 1)
                     {
                         validUntil1 = validUntil;
@@ -1769,7 +1769,7 @@ private:
 
             // Apply multiple published lists
             // validUntil1 is expiration time for locals[1]
-            NetClock::time_point validUntil1, validUntil2;
+            NetClock::TimePoint validUntil1, validUntil2;
             for (auto i = 0; i < kPublishers; ++i)
                 addPublishedList(i, validUntil1, validUntil2);
             BEAST_EXPECT(trustedKeys->getListThreshold() == 2);
@@ -1902,7 +1902,7 @@ private:
             trustedKeys->load({}, {toStr(localCfgListed)}, {});
             BEAST_EXPECT(
                 trustedKeys->expires() &&
-                trustedKeys->expires().value() == NetClock::time_point::max());
+                trustedKeys->expires().value() == NetClock::TimePoint::max());
             BEAST_EXPECT(trustedKeys->listed(localCfgListed));
         }
 
@@ -1927,7 +1927,7 @@ private:
                 std::string manifest;
                 std::vector<ValidatorBlobInfo> blobs;
                 int version;
-                std::vector<NetClock::time_point> expirations;
+                std::vector<NetClock::TimePoint> expirations;
             };
 
             using namespace std::chrono_literals;
@@ -1949,13 +1949,13 @@ private:
 
                 auto const version = 2;
                 auto const sequence1 = 1;
-                NetClock::time_point const expiration1 = env.timeKeeper().now() + 1800s;
+                NetClock::TimePoint const expiration1 = env.timeKeeper().now() + 1800s;
                 auto const blob1 =
                     makeList(validators, sequence1, expiration1.time_since_epoch().count());
                 auto const sig1 = signList(blob1, pubSigningKeys);
 
-                NetClock::time_point const effective2 = expiration1 - 300s;
-                NetClock::time_point const expiration2 = effective2 + 1800s;
+                NetClock::TimePoint const effective2 = expiration1 - 300s;
+                NetClock::TimePoint const expiration2 = effective2 + 1800s;
                 auto const sequence2 = 2;
                 auto const blob2 = makeList(
                     validators,
@@ -2504,7 +2504,7 @@ private:
             PublicKey pubKey;
             std::pair<PublicKey, SecretKey> signingKeys;
             std::string manifest;
-            NetClock::time_point expiry = {};  // NOLINT(readability-redundant-member-init)
+            NetClock::TimePoint expiry = {};  // NOLINT(readability-redundant-member-init)
         };
 
         // Create ValidatorList with a set of countTotal publishers, of which

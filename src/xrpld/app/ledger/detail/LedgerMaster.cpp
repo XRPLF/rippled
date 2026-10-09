@@ -278,7 +278,7 @@ LedgerMaster::isCaughtUp(std::string& reason)
 void
 LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
 {
-    std::vector<NetClock::time_point> times;
+    std::vector<NetClock::TimePoint> times;
     std::optional<UInt256> consensusHash;
 
     if (!standalone_)
@@ -293,7 +293,7 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
             consensusHash = validations.front()->getConsensusHash();
     }
 
-    NetClock::time_point signTime;
+    NetClock::TimePoint signTime;
 
     if (!times.empty() && times.size() >= app_.getValidators().quorum())
     {
@@ -1655,14 +1655,14 @@ LedgerMaster::missingFromCompleteLedgerRange(LedgerIndex first, LedgerIndex last
     return boost::icl::size(missing);
 }
 
-std::optional<NetClock::time_point>
+std::optional<NetClock::TimePoint>
 LedgerMaster::getCloseTimeBySeq(LedgerIndex ledgerIndex)
 {
     UInt256 const hash = getHashBySeq(ledgerIndex);
     return hash.isNonZero() ? getCloseTimeByHash(hash, ledgerIndex) : std::nullopt;
 }
 
-std::optional<NetClock::time_point>
+std::optional<NetClock::TimePoint>
 LedgerMaster::getCloseTimeByHash(LedgerHash const& ledgerHash, std::uint32_t index)
 {
     auto nodeObject = app_.getNodeStore().fetchNodeObject(ledgerHash, index);
@@ -1674,7 +1674,7 @@ LedgerMaster::getCloseTimeByHash(LedgerHash const& ledgerHash, std::uint32_t ind
             it.skip(
                 4 + 8 + 32 +   // seq drops parentHash
                 32 + 32 + 4);  // txHash acctHash parentClose
-            return NetClock::time_point{NetClock::duration{it.get32()}};
+            return NetClock::TimePoint{NetClock::Duration{it.get32()}};
         }
     }
 
@@ -2136,7 +2136,7 @@ LedgerMaster::makeFetchPack(
     std::weak_ptr<Peer> const& wPeer,
     std::shared_ptr<protocol::TMGetObjectByHash> const& request,
     UInt256 haveLedgerHash,
-    UptimeClock::time_point uptime)
+    UptimeClock::TimePoint uptime)
 {
     using namespace std::chrono_literals;
     if (UptimeClock::now() > uptime + 1s)

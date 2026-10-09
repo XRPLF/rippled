@@ -38,9 +38,9 @@ template <class ApplyTxs>
 std::shared_ptr<Ledger>
 buildLedgerImpl(
     std::shared_ptr<Ledger const> const& parent,
-    NetClock::time_point closeTime,
+    NetClock::TimePoint closeTime,
     bool const closeTimeCorrect,
-    NetClock::duration closeResolution,
+    NetClock::Duration closeResolution,
     Application& app,
     beast::Journal j,
     ApplyTxs&& applyTxs)
@@ -175,9 +175,9 @@ applyTransactions(
 std::shared_ptr<Ledger>
 buildLedger(
     std::shared_ptr<Ledger const> const& parent,
-    NetClock::time_point closeTime,
+    NetClock::TimePoint closeTime,
     bool const closeTimeCorrect,
-    NetClock::duration closeResolution,
+    NetClock::Duration closeResolution,
     Application& app,
     CanonicalTXSet& txns,
     std::set<TxID>& failedTxns,

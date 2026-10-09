@@ -21,7 +21,7 @@ private:
     std::array<uint8_t, 16> buf_{};
 
 public:
-    using const_iterator = std::array<uint8_t, 16>::const_iterator;
+    using ConstIterator = std::array<uint8_t, 16>::const_iterator;
 
     Seed() = delete;
 
@@ -55,25 +55,25 @@ public:
         return buf_.size();
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const noexcept
     {
         return buf_.begin();
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cbegin() const noexcept
     {
         return buf_.cbegin();
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const noexcept
     {
         return buf_.end();
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cend() const noexcept
     {
         return buf_.cend();

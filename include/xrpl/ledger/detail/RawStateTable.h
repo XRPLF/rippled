@@ -23,7 +23,7 @@ namespace xrpl::detail {
 class RawStateTable
 {
 public:
-    using key_type = ReadView::key_type;
+    using Key = ReadView::Key;
     // Initial size for the monotonic_buffer_resource used for allocations
     // The size was chosen from the old `qalloc` code (which this replaces).
     // It is unclear how the size initially chosen in qalloc.
@@ -53,8 +53,8 @@ public:
     [[nodiscard]] bool
     exists(ReadView const& base, Keylet const& k) const;
 
-    [[nodiscard]] std::optional<key_type>
-    succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last) const;
+    [[nodiscard]] std::optional<Key>
+    succ(ReadView const& base, Key const& key, std::optional<Key> const& last) const;
 
     void
     erase(SLE::Ref sle);
@@ -65,7 +65,7 @@ public:
     void
     replace(SLE::Ref sle);
 
-    [[nodiscard]] SLE::const_pointer
+    [[nodiscard]] SLE::ConstPointer
     read(ReadView const& base, Keylet const& k) const;
 
     void
@@ -92,10 +92,10 @@ private:
     struct SleAction
     {
         Action action;
-        SLE::pointer sle;
+        SLE::Pointer sle;
 
         // Constructor needed for emplacement in std::map
-        SleAction(Action action, SLE::pointer sle) : action(action), sle(std::move(sle))
+        SleAction(Action action, SLE::Pointer sle) : action(action), sle(std::move(sle))
         {
         }
     };
@@ -103,10 +103,10 @@ private:
     // Use boost::pmr functionality instead of the std::pmr
     // functions b/c clang does not support pmr yet (as-of 9/2020)
     using ItemsT = std::map<
-        key_type,
+        Key,
         SleAction,
         std::less<>,
-        boost::container::pmr::polymorphic_allocator<std::pair<key_type const, SleAction>>>;
+        boost::container::pmr::polymorphic_allocator<std::pair<Key const, SleAction>>>;
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.
     std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> monotonicResource_;

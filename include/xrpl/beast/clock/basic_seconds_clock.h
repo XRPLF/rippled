@@ -21,15 +21,15 @@ public:
 
     explicit BasicSecondsClock() = default;
 
-    using rep = Clock::rep;
-    using period = Clock::period;
-    using duration = Clock::duration;
-    using time_point = Clock::time_point;
+    using Rep = Clock::rep;
+    using Period = Clock::period;
+    using Duration = Clock::duration;
+    using TimePoint = Clock::time_point;
 
     static bool const is_steady =  // NOLINT(readability-identifier-naming)
         Clock::is_steady;
 
-    static time_point
+    static TimePoint
     now();
 };
 

@@ -13,7 +13,7 @@
 
 namespace xrpl {
 
-using const_iterator = Dir::ConstIterator;
+using ConstIterator = Dir::ConstIterator;
 
 Dir::Dir(ReadView const& view, Keylet const& key)
     : view_(&view), root_(key), sle_(view_->read(root_))
@@ -47,7 +47,7 @@ Dir::end() const -> ConstIterator
 }
 
 bool
-const_iterator::operator==(ConstIterator const& other) const
+ConstIterator::operator==(ConstIterator const& other) const
 {
     if (view_ == nullptr || other.view_ == nullptr)
         return false;
@@ -58,8 +58,8 @@ const_iterator::operator==(ConstIterator const& other) const
     return page_.key == other.page_.key && index_ == other.index_;
 }
 
-const_iterator::reference
-const_iterator::operator*() const
+ConstIterator::Reference
+ConstIterator::operator*() const
 {
     XRPL_ASSERT(index_ != beast::kZero, "xrpl::Dir::ConstIterator::operator* : nonzero index");
     if (!cache_)
@@ -67,8 +67,8 @@ const_iterator::operator*() const
     return *cache_;
 }
 
-const_iterator&
-const_iterator::operator++()
+ConstIterator&
+ConstIterator::operator++()
 {
     XRPL_ASSERT(index_ != beast::kZero, "xrpl::Dir::ConstIterator::operator++ : nonzero index");
     if (++it_ != std::end(*indexes_))
@@ -81,8 +81,8 @@ const_iterator::operator++()
     return nextPage();
 }
 
-const_iterator
-const_iterator::operator++(int)
+ConstIterator
+ConstIterator::operator++(int)
 {
     XRPL_ASSERT(
         index_ != beast::kZero, "xrpl::Dir::ConstIterator::operator++(int) : nonzero index");
@@ -91,8 +91,8 @@ const_iterator::operator++(int)
     return tmp;
 }
 
-const_iterator&
-const_iterator::nextPage()
+ConstIterator&
+ConstIterator::nextPage()
 {
     auto const next = sle_->getFieldU64(sfIndexNext);
     if (next == 0)
@@ -121,7 +121,7 @@ const_iterator::nextPage()
 }
 
 std::size_t
-const_iterator::pageSize()
+ConstIterator::pageSize()
 {
     return indexes_->size();
 }

@@ -209,7 +209,7 @@ InvariantsBase::createLoanBroker(
     return loanBrokerKeylet;
 }
 
-SLE::pointer
+SLE::Pointer
 InvariantsBase::makeLoanSle(
     UInt256 const& loanBrokerID,
     std::uint32_t loanSeq,

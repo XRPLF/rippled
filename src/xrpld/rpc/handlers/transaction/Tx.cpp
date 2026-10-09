@@ -53,11 +53,11 @@ isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, UInt256 const& hash)
 
 struct TxResult
 {
-    Transaction::pointer txn;
+    Transaction::Pointer txn;
     std::variant<std::shared_ptr<TxMeta>, Blob> meta;
     bool validated = false;
     std::optional<std::string> ctid;
-    std::optional<NetClock::time_point> closeTime;
+    std::optional<NetClock::TimePoint> closeTime;
     std::optional<UInt256> ledgerHash;
     TxSearched searchedAll = TxSearched::Unknown;
 };

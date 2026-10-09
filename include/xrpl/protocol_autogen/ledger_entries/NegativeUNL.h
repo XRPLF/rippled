@@ -33,7 +33,7 @@ public:
      * @brief Construct a NegativeUNL ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit NegativeUNL(SLE::const_pointer sle)
+    explicit NegativeUNL(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -75,7 +75,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getValidatorToDisable() const
     {
         if (hasValidatorToDisable())
@@ -99,7 +99,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getValidatorToReEnable() const
     {
         if (hasValidatorToReEnable())
@@ -123,7 +123,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getPreviousTxnID() const
     {
         if (hasPreviousTxnID())
@@ -147,7 +147,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getPreviousTxnLgrSeq() const
     {
         if (hasPreviousTxnLgrSeq())
@@ -190,7 +190,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    NegativeUNLBuilder(SLE::const_pointer sle)
+    NegativeUNLBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltNEGATIVE_UNL)
         {
@@ -219,7 +219,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NegativeUNLBuilder&
-    setValidatorToDisable(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setValidatorToDisable(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfValidatorToDisable] = value;
         return *this;
@@ -230,7 +230,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NegativeUNLBuilder&
-    setValidatorToReEnable(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setValidatorToReEnable(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfValidatorToReEnable] = value;
         return *this;
@@ -241,7 +241,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NegativeUNLBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -252,7 +252,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NegativeUNLBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;

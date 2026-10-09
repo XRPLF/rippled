@@ -158,8 +158,8 @@ public:
     TrustedPublisherServer(
         boost::asio::io_context& ioc,
         std::vector<Validator> const& validators,
-        NetClock::time_point validUntil,
-        std::vector<std::pair<NetClock::time_point, NetClock::time_point>> const& futures,
+        NetClock::TimePoint validUntil,
+        std::vector<std::pair<NetClock::TimePoint, NetClock::TimePoint>> const& futures,
         bool useSSL = false,
         int version = 1,
         bool immediateStart = true,
@@ -702,8 +702,8 @@ inline std::shared_ptr<TrustedPublisherServer>
 makeTrustedPublisherServer(
     boost::asio::io_context& ioc,
     std::vector<TrustedPublisherServer::Validator> const& validators,
-    NetClock::time_point validUntil,
-    std::vector<std::pair<NetClock::time_point, NetClock::time_point>> const& futures,
+    NetClock::TimePoint validUntil,
+    std::vector<std::pair<NetClock::TimePoint, NetClock::TimePoint>> const& futures,
     bool useSSL = false,
     int version = 1,
     bool immediateStart = true,

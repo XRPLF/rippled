@@ -33,8 +33,8 @@ class Validation
     Ledger::ID ledgerID_{0};
     Ledger::Seq seq_{0};
 
-    NetClock::time_point signTime_;
-    NetClock::time_point seenTime_;
+    NetClock::TimePoint signTime_;
+    NetClock::TimePoint seenTime_;
     PeerKey key_;
     PeerID nodeID_{0};
     bool trusted_ = false;
@@ -49,8 +49,8 @@ public:
     Validation(
         Ledger::ID id,
         Ledger::Seq seq,
-        NetClock::time_point sign,
-        NetClock::time_point seen,
+        NetClock::TimePoint sign,
+        NetClock::TimePoint seen,
         PeerKey key,
         PeerID nodeID,
         bool full,
@@ -80,13 +80,13 @@ public:
         return seq_;
     }
 
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     signTime() const
     {
         return signTime_;
     }
 
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     seenTime() const
     {
         return seenTime_;
@@ -168,7 +168,7 @@ public:
     }
 
     void
-    setSeen(NetClock::time_point seen)
+    setSeen(NetClock::TimePoint seen)
     {
         seenTime_ = seen;
     }

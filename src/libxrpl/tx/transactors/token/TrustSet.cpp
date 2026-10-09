@@ -322,7 +322,7 @@ TrustSet::doApply()
     auto const sponsorSle = *sponsorExp;
 
     auto getSponsor = [&sponsorSle, this](AccountID const& account) {
-        return (sponsorSle && account == accountID_) ? sponsorSle : SLE::pointer();
+        return (sponsorSle && account == accountID_) ? sponsorSle : SLE::Pointer();
     };
 
     // The "free-tier" shortcut (ownerCount < 2) only applies when there is no sponsor.
@@ -350,7 +350,7 @@ TrustSet::doApply()
 
     auto viewJ = ctx_.registry.get().getJournal("View");
 
-    SLE::pointer const sleDst = view().peek(keylet::account(uDstAccountID));
+    SLE::Pointer const sleDst = view().peek(keylet::account(uDstAccountID));
 
     if (!sleDst)
     {
@@ -361,7 +361,7 @@ TrustSet::doApply()
     STAmount saLimitAllow = saLimitAmount;
     saLimitAllow.get<Issue>().account = accountID_;
 
-    SLE::pointer const sleRippleState =
+    SLE::Pointer const sleRippleState =
         view().peek(keylet::trustLine(accountID_, uDstAccountID, currency));
 
     if (sleRippleState)
@@ -530,7 +530,7 @@ TrustSet::doApply()
 
         if (bLowReserveSet && !bLowReserved)
         {
-            SLE::pointer const lowSponsor = getSponsor(uLowAccountID);
+            SLE::Pointer const lowSponsor = getSponsor(uLowAccountID);
 
             if (view().rules().enabled(featureSponsor))
             {
@@ -569,7 +569,7 @@ TrustSet::doApply()
 
         if (bHighReserveSet && !bHighReserved)
         {
-            SLE::pointer const highSponsor = getSponsor(uHighAccountID);
+            SLE::Pointer const highSponsor = getSponsor(uHighAccountID);
 
             // should be checked PreFunded Sponsor before increaseOwnerCount()
             // For PreFunded sponsors, we need to check if there are sufficient reserves before

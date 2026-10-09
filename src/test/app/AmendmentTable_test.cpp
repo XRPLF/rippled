@@ -50,7 +50,7 @@ private:
         Sha256Hasher h;
         using beast::hash_append;
         hash_append(h, in);
-        auto const d = static_cast<Sha256Hasher::result_type>(h);
+        auto const d = static_cast<Sha256Hasher::ResultType>(h);
         UInt256 result;
         std::memcpy(result.data(), d.data(), d.size());
         return result;
@@ -478,10 +478,10 @@ public:
         return ret;
     }
 
-    static NetClock::time_point
+    static NetClock::TimePoint
     hourTime(std::chrono::hours h)
     {
-        return NetClock::time_point{h};
+        return NetClock::TimePoint{h};
     }
 
     // Execute a pretend consensus round for a flag ledger
@@ -529,7 +529,7 @@ public:
             }
 
             auto v = std::make_shared<STValidation>(
-                xrpl::NetClock::time_point{}, pub, sec, calcNodeID(pub), [&field](STValidation& v) {
+                xrpl::NetClock::TimePoint{}, pub, sec, calcNodeID(pub), [&field](STValidation& v) {
                     if (!field.empty())
                         v.setFieldV256(sfAmendments, STVector256(sfAmendments, field));
                     v.setFieldU32(sfLedgerSequence, 6180339);
@@ -1181,16 +1181,16 @@ public:
         BEAST_EXPECT(table->hasUnsupportedEnabled());
         BEAST_EXPECT(!table->firstUnsupportedExpected());
 
-        NetClock::duration t{1000s};
+        NetClock::Duration t{1000s};
         std::ranges::for_each(unsupportedMajority_, [&majority, &t](auto const& s) {
-            majority[amendmentId(s)] = NetClock::time_point{--t};
+            majority[amendmentId(s)] = NetClock::TimePoint{--t};
         });
 
         table->doValidatedLedger(1, enabled, majority);
         BEAST_EXPECT(table->hasUnsupportedEnabled());
         BEAST_EXPECT(
             table->firstUnsupportedExpected() &&
-            *table->firstUnsupportedExpected() == NetClock::time_point{t} + kW);
+            *table->firstUnsupportedExpected() == NetClock::TimePoint{t} + kW);
 
         // Make sure the table knows when it needs an update.
         BEAST_EXPECT(!table->needValidatedLedger(256));

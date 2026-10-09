@@ -197,7 +197,7 @@ TEST_F(SLEBaseTests, adopt_sle)
 
     // Adopting a null SLE is allowed: the assert only fires on a
     // type mismatch, and a null pointer has no type to mismatch.
-    AccountRootEntryR const empty(SLE::const_pointer{}, env_.getClosedLedger());
+    AccountRootEntryR const empty(SLE::ConstPointer{}, env_.getClosedLedger());
     EXPECT_FALSE(empty.exists());
     EXPECT_EQ(empty.type(), ltACCOUNT_ROOT);
 
@@ -209,7 +209,7 @@ TEST_F(SLEBaseTests, adopt_sle)
 
     // There is deliberately no writable equivalent.
     static_assert(
-        !std::is_constructible_v<AccountRootEntryW, SLE::pointer, ApplyView&>,
+        !std::is_constructible_v<AccountRootEntryW, SLE::Pointer, ApplyView&>,
         "writable entries must not be constructible from a bare SLE");
 }
 

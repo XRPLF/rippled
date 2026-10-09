@@ -19,7 +19,7 @@ namespace beast::insight {
 class Counter final
 {
 public:
-    using value_type = CounterImpl::value_type;
+    using ValueType = CounterImpl::ValueType;
 
     /**
      * Create a null metric.
@@ -42,21 +42,21 @@ public:
      */
     /** @{ */
     void
-    increment(value_type amount) const
+    increment(ValueType amount) const
     {
         if (impl_)
             impl_->increment(amount);
     }
 
     Counter const&
-    operator+=(value_type amount) const
+    operator+=(ValueType amount) const
     {
         increment(amount);
         return *this;
     }
 
     Counter const&
-    operator-=(value_type amount) const
+    operator-=(ValueType amount) const
     {
         increment(-amount);
         return *this;

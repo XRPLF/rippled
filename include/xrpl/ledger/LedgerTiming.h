@@ -122,8 +122,8 @@ roundCloseTime(
     std::chrono::time_point<Clock, Duration> closeTime,
     std::chrono::duration<Rep, Period> closeResolution)
 {
-    using time_point = decltype(closeTime);
-    if (closeTime == time_point{})
+    using TimePoint = decltype(closeTime);
+    if (closeTime == TimePoint{})
         return closeTime;
 
     closeTime += (closeResolution / 2);
@@ -148,12 +148,12 @@ effCloseTime(
     std::chrono::time_point<Clock, Duration> priorCloseTime)
 {
     using namespace std::chrono_literals;
-    using time_point = decltype(closeTime);
+    using TimePoint = decltype(closeTime);
 
-    if (closeTime == time_point{})
+    if (closeTime == TimePoint{})
         return closeTime;
 
-    return std::max<time_point>(roundCloseTime(closeTime, resolution), (priorCloseTime + 1s));
+    return std::max<TimePoint>(roundCloseTime(closeTime, resolution), (priorCloseTime + 1s));
 }
 
 }  // namespace xrpl

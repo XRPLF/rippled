@@ -129,7 +129,7 @@ static_assert(
  */
 struct MantissaRange final
 {
-    using rep = std::uint64_t;
+    using Rep = std::uint64_t;
 
     // NOLINTBEGIN(readability-enum-initial-value)
     // The values don't matter, except for Large
@@ -170,8 +170,8 @@ struct MantissaRange final
 
     MantissaScale const scale;
     int const log{getExponent(scale)};
-    rep const min{getMin(scale, log)};
-    rep const max{(min * 10) - 1};
+    Rep const min{getMin(scale, log)};
+    Rep const max{(min * 10) - 1};
     CuspRoundingFix const cuspRoundingFix{isCuspFixEnabled(scale)};
 
     static std::set<MantissaScale> const&
@@ -217,7 +217,7 @@ private:
 
     // Keep this function for future use with different ways to compute
     // the ranges.
-    static constexpr rep
+    static constexpr Rep
     getMin(MantissaScale scale, int exponent)
     {
         if (exponent < 0 || exponent >= kPowerOfTen.size())
@@ -349,8 +349,8 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
  */
 class Number final
 {
-    using rep = std::int64_t;
-    using InternalRep = MantissaRange::rep;
+    using Rep = std::int64_t;
+    using InternalRep = MantissaRange::Rep;
 
     bool negative_{false};
     InternalRep mantissa_{0};
@@ -361,9 +361,9 @@ public:
     static constexpr int kMinExponent = -32768;
     static constexpr int kMaxExponent = 32768;
 
-    static constexpr InternalRep kMaxRep = std::numeric_limits<rep>::max();
+    static constexpr InternalRep kMaxRep = std::numeric_limits<Rep>::max();
     static_assert(kMaxRep == 9'223'372'036'854'775'807);
-    static_assert(-kMaxRep == std::numeric_limits<rep>::min() + 1);
+    static_assert(-kMaxRep == std::numeric_limits<Rep>::min() + 1);
     static constexpr InternalRep kMaxRepUp = ((kMaxRep / 10) + 1) * 10;
     static_assert(kMaxRepUp == 9'223'372'036'854'775'810ULL);
 
@@ -384,8 +384,8 @@ public:
 
     explicit constexpr Number() = default;
 
-    Number(rep mantissa);
-    explicit Number(rep mantissa, int exponent);
+    Number(Rep mantissa);
+    explicit Number(Rep mantissa, int exponent);
     explicit constexpr Number(
         bool negative,
         InternalRep mantissa,
@@ -398,7 +398,7 @@ public:
     // Assume unsigned values are... unsigned. i.e. positive
     explicit Number(InternalRep mantissa, int exponent, Normalized);
 
-    [[nodiscard]] constexpr rep
+    [[nodiscard]] constexpr Rep
     mantissa() const noexcept;
     [[nodiscard]] constexpr int
     exponent() const noexcept;
@@ -440,7 +440,7 @@ public:
      * "mixed mode" more convenient, e.g. MPTAmount + Number.
      */
     explicit
-    operator rep() const;  // round to nearest, even on tie
+    operator Rep() const;  // round to nearest, even on tie
 
     friend constexpr bool
     operator==(Number const& x, Number const& y) noexcept
@@ -592,7 +592,7 @@ public:
     // because converting std::numeric_limits<std::int64_t>::min() flirts with
     // UB, and can vary across compilers.
     static InternalRep
-    externalToInternal(rep mantissa);
+    externalToInternal(Rep mantissa);
 
 private:
     static thread_local RoundingMode mode;
@@ -635,8 +635,8 @@ private:
         bool& negative,
         T& mantissa,
         int& exponent,
-        MantissaRange::rep const& minMantissa,
-        MantissaRange::rep const& maxMantissa,
+        MantissaRange::Rep const& minMantissa,
+        MantissaRange::Rep const& maxMantissa,
         MantissaRange::CuspRoundingFix cuspRoundingFix,
         bool dropped);
 
@@ -673,12 +673,12 @@ inline Number::Number(InternalRep mantissa, int exponent, Normalized)
 {
 }
 
-inline Number::Number(rep mantissa, int exponent)
+inline Number::Number(Rep mantissa, int exponent)
     : Number(mantissa < 0, externalToInternal(mantissa), exponent, Normalized{})
 {
 }
 
-inline Number::Number(rep mantissa) : Number{mantissa, 0}
+inline Number::Number(Rep mantissa) : Number{mantissa, 0}
 {
 }
 
@@ -688,7 +688,7 @@ inline Number::Number(rep mantissa) : Number{mantissa, 0}
  * Please see the "---- External Interface ----" section of the class
  * documentation for an explanation of why the internal value may be modified.
  */
-constexpr Number::rep
+constexpr Number::Rep
 Number::mantissa() const noexcept
 {
     auto m = mantissa_;
@@ -701,7 +701,7 @@ Number::mantissa() const noexcept
         m /= 10;
     }
     auto const sign = negative_ ? -1 : 1;
-    return sign * static_cast<Number::rep>(m);
+    return sign * static_cast<Number::Rep>(m);
 }
 
 /**

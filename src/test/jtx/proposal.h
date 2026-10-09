@@ -177,15 +177,15 @@ createTicket(Env& env, Account const& account, std::uint32_t count = 1);
  * @c expiration(env, 0s) is an expiration that has already passed.
  */
 std::uint32_t
-expiration(Env& env, NetClock::duration delta);
+expiration(Env& env, NetClock::Duration delta);
 
 /**
  * @brief The proposal stored against a target account's ticket.
  * @return empty if no such proposal exists.
  */
-[[nodiscard]] SLE::const_pointer
+[[nodiscard]] SLE::ConstPointer
 entry(Env const& env, AccountID const& target, std::uint32_t ticketSeq);
-[[nodiscard]] SLE::const_pointer
+[[nodiscard]] SLE::ConstPointer
 entry(Env const& env, Account const& target, std::uint32_t ticketSeq);
 
 }  // namespace xrpl::test::jtx::proposal

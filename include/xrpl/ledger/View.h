@@ -118,7 +118,7 @@ canTransferLPToken(
 getEnabledAmendments(ReadView const& view);
 
 // Return a map of amendments that have achieved majority
-using MajorityAmendmentsT = std::map<UInt256, NetClock::time_point>;
+using MajorityAmendmentsT = std::map<UInt256, NetClock::TimePoint>;
 [[nodiscard]] MajorityAmendmentsT
 getMajorityAmendments(ReadView const& view);
 
@@ -185,7 +185,7 @@ areCompatible(
 dirLink(
     ApplyView& view,
     AccountID const& owner,
-    SLE::pointer& object,
+    SLE::Pointer& object,
     SF_UINT64 const& node = sfOwnerNode);
 
 /**
@@ -281,7 +281,7 @@ doWithdraw(
  * is always tesSUCCESS if the entry should be skipped.
  */
 using EntryDeleter =
-    std::function<std::pair<TER, SkipEntry>(LedgerEntryType, UInt256 const&, SLE::pointer&)>;
+    std::function<std::pair<TER, SkipEntry>(LedgerEntryType, UInt256 const&, SLE::Pointer&)>;
 /**
  * Cleanup owner directory entries on account delete.
  * Used for a regular and AMM accounts deletion. The caller
@@ -306,6 +306,6 @@ cleanupOnAccountDelete(
  * @return true if \a now refers to a time strictly after \a mark, else false.
  */
 bool
-after(NetClock::time_point now, std::uint32_t mark);
+after(NetClock::TimePoint now, std::uint32_t mark);
 
 }  // namespace xrpl

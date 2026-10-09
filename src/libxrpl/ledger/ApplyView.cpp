@@ -105,7 +105,7 @@ std::optional<std::uint64_t>
 insertPage(
     ApplyView& view,
     std::uint64_t page,
-    SLE::pointer node,
+    SLE::Pointer node,
     std::uint64_t nextPage,
     SLE::Ref next,
     UInt256 const& key,

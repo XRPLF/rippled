@@ -4302,7 +4302,7 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 auto const pk = carol_.pk();
                 auto const settleDelay = 10s;
-                NetClock::time_point const cancelAfter =
+                NetClock::TimePoint const cancelAfter =
                     env.current()->header().parentCloseTime + 20s;
                 env(create(
                         carol_,

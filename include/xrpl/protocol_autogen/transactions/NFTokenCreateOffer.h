@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getNFTokenID() const
     {
         return this->tx_->at(sfNFTokenID);
@@ -63,7 +63,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getAmount() const
     {
         return this->tx_->at(sfAmount);
@@ -74,7 +74,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getDestination() const
     {
         if (hasDestination())
@@ -100,7 +100,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getOwner() const
     {
         if (hasOwner())
@@ -126,7 +126,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getExpiration() const
     {
         if (hasExpiration())
@@ -166,9 +166,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    NFTokenCreateOfferBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    NFTokenCreateOfferBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT256::Type::ValueType> const& nFTokenID,                     std::decay_t<typename SF_AMOUNT::Type::ValueType> const& amount,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<NFTokenCreateOfferBuilder>(ttNFTOKEN_CREATE_OFFER, account, sequence, fee)
     {
@@ -199,7 +199,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenCreateOfferBuilder&
-    setNFTokenID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setNFTokenID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfNFTokenID] = value;
         return *this;
@@ -210,7 +210,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenCreateOfferBuilder&
-    setAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setAmount(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfAmount] = value;
         return *this;
@@ -221,7 +221,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenCreateOfferBuilder&
-    setDestination(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setDestination(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfDestination] = value;
         return *this;
@@ -232,7 +232,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenCreateOfferBuilder&
-    setOwner(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setOwner(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfOwner] = value;
         return *this;
@@ -243,7 +243,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenCreateOfferBuilder&
-    setExpiration(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setExpiration(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfExpiration] = value;
         return *this;

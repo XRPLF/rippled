@@ -53,7 +53,7 @@ namespace detail {
  *       are skipped in ApplyStateTable::apply(), ::visit() and in metadata
  *       generation -- but it does cost one deep SLE copy on first touch.
  */
-inline SLE::const_pointer
+inline SLE::ConstPointer
 resolveEntry(ReadView const& view, Keylet const& key)
 {
     // Safe only for a view that is not itself a const object -- see the
@@ -99,7 +99,7 @@ public:
     static constexpr bool kIsTyped = (EntryType != ltANY);
 
     // SLE pointer type: mutable for writable views, const for read-only
-    using SlePtrType = std::conditional_t<kIsWritable, SLE::pointer, SLE::const_pointer>;
+    using SlePtrType = std::conditional_t<kIsWritable, SLE::Pointer, SLE::ConstPointer>;
 
     // View reference type: ApplyView& for writable, ReadView const& for
     // read-only
@@ -138,7 +138,7 @@ public:
      * and that cannot be recovered from a null SLE.
      */
     explicit SLEBase(
-        SLE::const_pointer sle,
+        SLE::ConstPointer sle,
         ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         requires(!kIsWritable)
@@ -244,7 +244,7 @@ public:
      * Prefer operator-> / operator* for field access; this is for the call
      * sites that need the shared_ptr itself.
      */
-    [[nodiscard]] SLE::const_pointer
+    [[nodiscard]] SLE::ConstPointer
     rawSle() const
     {
         return sle_;
@@ -490,7 +490,7 @@ protected:
  * otherwise prefer the per-type entries (e.g. AccountRootEntry.h), which
  * additionally enforce the entry type at compile time.
  *
- *   SLE::const_pointer / SLE::ConstRef  ->  ReadOnlySLE
+ *   SLE::ConstPointer / SLE::ConstRef  ->  ReadOnlySLE
  *   SLE::pointer       / SLE::Ref        ->  WritableSLE
  */
 using ReadOnlySLE = SLEBase<ReadView>;

@@ -212,11 +212,18 @@ class ListIterator
     boost::string_ref value_;
 
 public:
-    using value_type = boost::string_ref;
-    using pointer = value_type const*;
-    using reference = value_type const&;
-    using difference_type = std::ptrdiff_t;
-    using iterator_category = std::forward_iterator_tag;
+    using ValueType = boost::string_ref;
+    using Pointer = ValueType const*;
+    using Reference = ValueType const&;
+    using DifferenceType = std::ptrdiff_t;
+    using IteratorCategory = std::forward_iterator_tag;
+
+    // Required by std::iterator_traits and boost::iterator_range.
+    // NOLINTBEGIN(readability-identifier-naming)
+    using value_type = ValueType;
+    using difference_type = DifferenceType;
+    using iterator_category = IteratorCategory;
+    // NOLINTEND(readability-identifier-naming)
 
     ListIterator(IterType begin, IterType end) : it_(begin), end_(end)
     {
@@ -230,13 +237,13 @@ public:
         return other.it_ == it_ && other.end_ == end_ && other.value_.size() == value_.size();
     }
 
-    reference
+    Reference
     operator*() const
     {
         return value_;
     }
 
-    pointer
+    Pointer
     operator->() const
     {
         return &*(*this);

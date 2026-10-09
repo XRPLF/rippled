@@ -339,7 +339,7 @@ trustDelete(
 static bool
 updateTrustLine(
     ApplyView& view,
-    SLE::pointer state,
+    SLE::Pointer state,
     bool bSenderHigh,
     AccountID const& sender,
     STAmount const& before,
@@ -795,7 +795,7 @@ removeEmptyHolding(
 TER
 deleteAMMTrustLine(
     ApplyView& view,
-    SLE::pointer sleState,
+    SLE::Pointer sleState,
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j)
 {
@@ -846,7 +846,7 @@ deleteAMMTrustLine(
 TER
 deleteAMMMPToken(
     ApplyView& view,
-    SLE::pointer sleMpt,
+    SLE::Pointer sleMpt,
     AccountID const& ammAccountID,
     beast::Journal j)
 {

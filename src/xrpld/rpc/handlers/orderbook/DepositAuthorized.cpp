@@ -90,7 +90,7 @@ doDepositAuthorized(rpc::JsonContext& context)
     bool const credentialsPresent = params.isMember(jss::credentials);
 
     std::set<std::pair<AccountID, Slice>> sorted;
-    std::vector<SLE::const_pointer> lifeExtender;
+    std::vector<SLE::ConstPointer> lifeExtender;
     if (credentialsPresent)
     {
         auto const& creds(params[jss::credentials]);
@@ -128,7 +128,7 @@ doDepositAuthorized(rpc::JsonContext& context)
                         jss::credentials, "an array of CredentialID(hash256)"));
             }
 
-            SLE::const_pointer sleCred = ledger->read(keylet::credential(credH));
+            SLE::ConstPointer sleCred = ledger->read(keylet::credential(credH));
             if (!sleCred)
             {
                 rpc::injectError(RpcBadCredentials, "credentials don't exist", result);

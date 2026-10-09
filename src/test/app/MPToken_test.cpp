@@ -2138,7 +2138,7 @@ class MPToken_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         Account const gw{"gw"};
 
-        using MPTValue = MPTAmount::value_type;
+        using MPTValue = MPTAmount::ValueType;
         MPTValue const mptMin = std::numeric_limits<MPTValue>::min();
         MPTValue const mptMax = std::numeric_limits<MPTValue>::max();
         std::uint64_t const u64Max = std::numeric_limits<std::uint64_t>::max();

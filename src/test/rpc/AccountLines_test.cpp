@@ -607,7 +607,7 @@ public:
         auto payChan = [](Account const& account,
                           Account const& to,
                           STAmount const& amount,
-                          NetClock::duration const& settleDelay,
+                          NetClock::Duration const& settleDelay,
                           PublicKey const& pk) {
             json::Value jv;
             jv[jss::TransactionType] = jss::PaymentChannelCreate;

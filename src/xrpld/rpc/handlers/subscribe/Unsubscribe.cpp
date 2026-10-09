@@ -20,7 +20,7 @@ namespace xrpl {
 json::Value
 doUnsubscribe(rpc::JsonContext& context)
 {
-    InfoSub::pointer ispSub;
+    InfoSub::Pointer ispSub;
     json::Value jvResult(json::ValueType::Object);
     bool removeUrl{false};
 

@@ -23,8 +23,8 @@ namespace xrpl::path::detail {
 struct FlowDebugInfo
 {
     using Clock = std::chrono::high_resolution_clock;
-    using time_point = Clock::time_point;
-    boost::container::flat_map<std::string, std::pair<time_point, time_point>> timePoints;
+    using TimePoint = Clock::time_point;
+    boost::container::flat_map<std::string, std::pair<TimePoint, TimePoint>> timePoints;
     boost::container::flat_map<std::string, std::size_t> counts;
 
     struct PassInfo

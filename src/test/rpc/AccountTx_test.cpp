@@ -558,7 +558,7 @@ class AccountTx_test : public beast::unit_test::Suite
                 return escrow;
             };
 
-            NetClock::time_point const nextTime{env.now() + 2s};
+            NetClock::TimePoint const nextTime{env.now() + 2s};
 
             json::Value escrowWithFinish{escrow(alice, alice, XRP(500))};
             escrowWithFinish[sfFinishAfter.jsonName] = nextTime.time_since_epoch().count();
@@ -601,7 +601,7 @@ class AccountTx_test : public beast::unit_test::Suite
             payChanCreate[jss::Account] = alice.human();
             payChanCreate[jss::Destination] = gw.human();
             payChanCreate[jss::Amount] = XRP(500).value().getJson(JsonOptions::Values::None);
-            payChanCreate[sfSettleDelay.jsonName] = NetClock::duration{100s}.count();
+            payChanCreate[sfSettleDelay.jsonName] = NetClock::Duration{100s}.count();
             payChanCreate[sfPublicKey.jsonName] = strHex(alice.pk().slice());
             env(payChanCreate, Sig(alie));
             env.close();

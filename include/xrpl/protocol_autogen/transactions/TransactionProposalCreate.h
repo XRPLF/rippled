@@ -63,7 +63,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getExpiration() const
     {
         return this->tx_->at(sfExpiration);
@@ -88,9 +88,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    TransactionProposalCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     STObject const& proposedTransaction,                     std::decay_t<typename SF_UINT32::type::value_type> const& expiration,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    TransactionProposalCreateBuilder(SF_ACCOUNT::Type::ValueType account,
+                     STObject const& proposedTransaction,                     std::decay_t<typename SF_UINT32::Type::ValueType> const& expiration,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<TransactionProposalCreateBuilder>(ttTRANSACTION_PROPOSAL_CREATE, account, sequence, fee)
     {
@@ -132,7 +132,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     TransactionProposalCreateBuilder&
-    setExpiration(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setExpiration(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfExpiration] = value;
         return *this;

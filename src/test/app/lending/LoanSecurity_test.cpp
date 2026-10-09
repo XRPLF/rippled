@@ -331,8 +331,8 @@ private:
         auto broker = std::get<BrokerInfo>(*loanResult);
         auto loanKeylet = std::get<Keylet>(*loanResult);
 
-        using Tp = NetClock::time_point;
-        using D = NetClock::duration;
+        using Tp = NetClock::TimePoint;
+        using D = NetClock::Duration;
 
         auto state = getCurrentState(env, broker, loanKeylet);
         if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
@@ -623,7 +623,7 @@ private:
             BEAST_EXPECT(loan->at(sfNextPaymentDueDate) == originalNextDueDate);
         }
 
-        env.close(NetClock::time_point{NetClock::duration{originalNextDueDate}} + 1s);
+        env.close(NetClock::TimePoint{NetClock::Duration{originalNextDueDate}} + 1s);
 
         // 2. Impairment succeeds when payment is late
         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
@@ -696,7 +696,7 @@ private:
         // Default + delete a loan and replenish first-loss capital so the
         // broker is ready for the next loan.
         auto cleanupLoan = [&](Keylet const& loanKeylet, std::uint32_t dueDate) {
-            env.close(NetClock::time_point{NetClock::duration{dueDate + 60}} + 1s);
+            env.close(NetClock::TimePoint{NetClock::Duration{dueDate + 60}} + 1s);
             env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
             env.close();
 
@@ -767,7 +767,7 @@ private:
 
             env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
 
-            env.close(NetClock::time_point{NetClock::duration{originalNextDueDate}} + 10s);
+            env.close(NetClock::TimePoint{NetClock::Duration{originalNextDueDate}} + 10s);
 
             auto const timeBeforeUnimpair =
                 env.current()->header().parentCloseTime.time_since_epoch().count();
@@ -840,7 +840,7 @@ private:
 
         // Advance past the due date so the loan is overdue, then impair it
         // (impairment is only allowed once the payment is late).
-        env.close(NetClock::time_point{NetClock::duration{originalNextDueDate}} + 1s);
+        env.close(NetClock::TimePoint{NetClock::Duration{originalNextDueDate}} + 1s);
         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
         env.close();
 
@@ -941,7 +941,7 @@ private:
         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
         env.close();
 
-        env.close(NetClock::time_point{NetClock::duration{originalNextDueDate}} + 1s);
+        env.close(NetClock::TimePoint{NetClock::Duration{originalNextDueDate}} + 1s);
 
         {
             auto const loan = env.le(loanKeylet);

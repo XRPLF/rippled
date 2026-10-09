@@ -85,7 +85,7 @@ private:
     accountKey(AccountID const& account);
 
 public:
-    using const_iterator = std::map<Key, std::shared_ptr<STTx const>>::const_iterator;
+    using ConstIterator = std::map<Key, std::shared_ptr<STTx const>>::const_iterator;
 
 public:
     explicit CanonicalTXSet(LedgerHash const& saltHash) : salt_(saltHash)
@@ -112,19 +112,19 @@ public:
         map_.clear();
     }
 
-    const_iterator
-    erase(const_iterator const& it)
+    ConstIterator
+    erase(ConstIterator const& it)
     {
         return map_.erase(it);
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const
     {
         return map_.begin();
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const
     {
         return map_.end();

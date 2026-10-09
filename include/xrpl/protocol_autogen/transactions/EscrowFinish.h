@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getOwner() const
     {
         return this->tx_->at(sfOwner);
@@ -63,7 +63,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getOfferSequence() const
     {
         return this->tx_->at(sfOfferSequence);
@@ -74,7 +74,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getFulfillment() const
     {
         if (hasFulfillment())
@@ -100,7 +100,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getCondition() const
     {
         if (hasCondition())
@@ -126,7 +126,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VECTOR256::type::value_type>
+    protocol_autogen::Optional<SF_VECTOR256::Type::ValueType>
     getCredentialIDs() const
     {
         if (hasCredentialIDs())
@@ -152,7 +152,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getGas() const
     {
         if (hasGas())
@@ -192,9 +192,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    EscrowFinishBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,                     std::decay_t<typename SF_UINT32::type::value_type> const& offerSequence,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    EscrowFinishBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& owner,                     std::decay_t<typename SF_UINT32::Type::ValueType> const& offerSequence,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<EscrowFinishBuilder>(ttESCROW_FINISH, account, sequence, fee)
     {
@@ -225,7 +225,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowFinishBuilder&
-    setOwner(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setOwner(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfOwner] = value;
         return *this;
@@ -236,7 +236,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowFinishBuilder&
-    setOfferSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setOfferSequence(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfOfferSequence] = value;
         return *this;
@@ -247,7 +247,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowFinishBuilder&
-    setFulfillment(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setFulfillment(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfFulfillment] = value;
         return *this;
@@ -258,7 +258,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowFinishBuilder&
-    setCondition(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setCondition(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfCondition] = value;
         return *this;
@@ -269,7 +269,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowFinishBuilder&
-    setCredentialIDs(std::decay_t<typename SF_VECTOR256::type::value_type> const& value)
+    setCredentialIDs(std::decay_t<typename SF_VECTOR256::Type::ValueType> const& value)
     {
         object_[sfCredentialIDs] = value;
         return *this;
@@ -280,7 +280,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowFinishBuilder&
-    setGas(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setGas(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfGas] = value;
         return *this;

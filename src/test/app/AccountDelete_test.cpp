@@ -104,8 +104,8 @@ private:
         jtx::Account const& account,
         jtx::Account const& to,
         STAmount const& amount,
-        NetClock::duration const& settleDelay,
-        NetClock::time_point const& cancelAfter,
+        NetClock::Duration const& settleDelay,
+        NetClock::TimePoint const& cancelAfter,
         PublicKey const& pk)
     {
         json::Value jv;

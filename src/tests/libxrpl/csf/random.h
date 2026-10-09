@@ -46,10 +46,10 @@ randomWeightedShuffle(std::vector<T> v, std::vector<double> w, G& g)
  * @return vector of samples
  */
 template <class RandomNumberDistribution, class Generator>
-std::vector<typename RandomNumberDistribution::result_type>
+std::vector<typename RandomNumberDistribution::ResultType>
 sample(std::size_t size, RandomNumberDistribution dist, Generator& g)
 {
-    std::vector<typename RandomNumberDistribution::result_type> res(size);
+    std::vector<typename RandomNumberDistribution::ResultType> res(size);
     std::ranges::generate(res, [&dist, &g] { return dist(g); });
     return res;
 }
@@ -140,7 +140,7 @@ class PowerLawDistribution
     std::uniform_real_distribution<double> uf_{0, 1};
 
 public:
-    using result_type = double;
+    using ResultType = double;
 
     PowerLawDistribution(double xmin, double a) : xmin_{xmin}, a_{a}
     {

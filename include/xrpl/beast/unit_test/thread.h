@@ -25,7 +25,7 @@ private:
 
 public:
     using Id = std::thread::id;
-    using native_handle_type = std::thread::native_handle_type;
+    using NativeHandleType = std::thread::native_handle_type;
 
     Thread() = default;
     Thread(Thread const&) = delete;

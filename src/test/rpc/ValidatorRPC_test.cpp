@@ -104,7 +104,7 @@ public:
             auto const jrr = env.rpc("server_state")[jss::result];
             BEAST_EXPECT(
                 jrr[jss::state][jss::validator_list_expires].asUInt() ==
-                NetClock::time_point::max().time_since_epoch().count());
+                NetClock::TimePoint::max().time_since_epoch().count());
         }
         // All our keys are in the response
         {
@@ -178,9 +178,9 @@ public:
         // Manage single-thread io_context for server.
         BasicApp worker{1};
         using namespace std::chrono_literals;
-        NetClock::time_point const validUntil{3600s};
-        NetClock::time_point const validFrom2{validUntil - 60s};
-        NetClock::time_point const validUntil2{validFrom2 + 3600s};
+        NetClock::TimePoint const validUntil{3600s};
+        NetClock::TimePoint const validFrom2{validUntil - 60s};
+        NetClock::TimePoint const validUntil2{validFrom2 + 3600s};
         auto server = makeTrustedPublisherServer(
             worker.getIoContext(),
             validators,

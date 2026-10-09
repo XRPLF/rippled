@@ -270,7 +270,7 @@ removeEmptyHolding(
 [[nodiscard]] TER
 deleteAMMTrustLine(
     ApplyView& view,
-    SLE::pointer sleState,
+    SLE::Pointer sleState,
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j);
 
@@ -281,7 +281,7 @@ deleteAMMTrustLine(
 [[nodiscard]] TER
 deleteAMMMPToken(
     ApplyView& view,
-    SLE::pointer sleMPT,
+    SLE::Pointer sleMPT,
     AccountID const& ammAccountID,
     beast::Journal j);
 

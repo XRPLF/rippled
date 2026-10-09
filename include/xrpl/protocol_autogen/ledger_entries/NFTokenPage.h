@@ -33,7 +33,7 @@ public:
      * @brief Construct a NFTokenPage ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit NFTokenPage(SLE::const_pointer sle)
+    explicit NFTokenPage(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getPreviousPageMin() const
     {
         if (hasPreviousPageMin())
@@ -74,7 +74,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getNextPageMin() const
     {
         if (hasNextPageMin())
@@ -110,7 +110,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -121,7 +121,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -144,7 +144,7 @@ public:
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    NFTokenPageBuilder(STArray const& nFTokens,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    NFTokenPageBuilder(STArray const& nFTokens,std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<NFTokenPageBuilder>(ltNFTOKEN_PAGE)
     {
         setNFTokens(nFTokens);
@@ -157,7 +157,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    NFTokenPageBuilder(SLE::const_pointer sle)
+    NFTokenPageBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltNFTOKEN_PAGE)
         {
@@ -175,7 +175,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenPageBuilder&
-    setPreviousPageMin(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousPageMin(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousPageMin] = value;
         return *this;
@@ -186,7 +186,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenPageBuilder&
-    setNextPageMin(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setNextPageMin(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfNextPageMin] = value;
         return *this;
@@ -208,7 +208,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenPageBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -219,7 +219,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenPageBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;

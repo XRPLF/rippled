@@ -52,7 +52,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getNFTokenBuyOffer() const
     {
         if (hasNFTokenBuyOffer())
@@ -78,7 +78,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getNFTokenSellOffer() const
     {
         if (hasNFTokenSellOffer())
@@ -104,7 +104,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getNFTokenBrokerFee() const
     {
         if (hasNFTokenBrokerFee())
@@ -142,9 +142,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    NFTokenAcceptOfferBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    NFTokenAcceptOfferBuilder(SF_ACCOUNT::Type::ValueType account,
+                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<NFTokenAcceptOfferBuilder>(ttNFTOKEN_ACCEPT_OFFER, account, sequence, fee)
     {
@@ -173,7 +173,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenAcceptOfferBuilder&
-    setNFTokenBuyOffer(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setNFTokenBuyOffer(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfNFTokenBuyOffer] = value;
         return *this;
@@ -184,7 +184,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenAcceptOfferBuilder&
-    setNFTokenSellOffer(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setNFTokenSellOffer(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfNFTokenSellOffer] = value;
         return *this;
@@ -195,7 +195,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenAcceptOfferBuilder&
-    setNFTokenBrokerFee(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setNFTokenBrokerFee(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfNFTokenBrokerFee] = value;
         return *this;

@@ -53,8 +53,8 @@ hasExpired(
     std::optional<std::uint32_t> const& exp,
     ExpiryComparison comparison)
 {
-    using D = NetClock::duration;
-    using Tp = NetClock::time_point;
+    using D = NetClock::Duration;
+    using Tp = NetClock::TimePoint;
 
     if (!exp)
         return false;
@@ -381,7 +381,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 //------------------------------------------------------------------------------
 
 TER
-dirLink(ApplyView& view, AccountID const& owner, SLE::pointer& object, SF_UINT64 const& node)
+dirLink(ApplyView& view, AccountID const& owner, SLE::Pointer& object, SF_UINT64 const& node)
 {
     auto const page =
         view.dirInsert(keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
@@ -573,7 +573,7 @@ cleanupOnAccountDelete(
     std::optional<uint16_t> maxNodesToDelete)
 {
     // Delete all the entries in the account directory.
-    SLE::pointer sleDirNode{};
+    SLE::Pointer sleDirNode{};
     unsigned int uDirEntry{0};
     UInt256 dirEntry{beast::kZero};
     std::uint32_t deleted = 0;
@@ -641,7 +641,7 @@ cleanupOnAccountDelete(
 }
 
 bool
-after(NetClock::time_point now, std::uint32_t mark)
+after(NetClock::TimePoint now, std::uint32_t mark)
 {
     return now.time_since_epoch().count() > mark;
 }

@@ -23,8 +23,8 @@ public:
     LedgerEntryBuilderBase() = default;
 
     LedgerEntryBuilderBase(
-        SF_UINT16::type::value_type ledgerEntryType,
-        SF_UINT32::type::value_type flags = 0)
+        SF_UINT16::Type::ValueType ledgerEntryType,
+        SF_UINT32::Type::ValueType flags = 0)
     {
         // Don't call object_.set(soTemplate) - keep object_ as a free object.
         // This avoids creating STBase placeholders for soeDEFAULT fields,

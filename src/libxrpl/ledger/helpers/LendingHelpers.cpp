@@ -511,7 +511,7 @@ Number
 loanLatePaymentInterest(
     Number const& principalOutstanding,
     TenthBips32 lateInterestRate,
-    NetClock::time_point parentCloseTime,
+    NetClock::TimePoint parentCloseTime,
     std::uint32_t nextPaymentDueDate)
 {
     if (principalOutstanding == beast::kZero)
@@ -544,7 +544,7 @@ Number
 loanAccruedInterest(
     Number const& principalOutstanding,
     Number const& periodicRate,
-    NetClock::time_point parentCloseTime,
+    NetClock::TimePoint parentCloseTime,
     std::uint32_t startDate,
     std::uint32_t prevPaymentDate,
     std::uint32_t paymentInterval)
@@ -1969,7 +1969,7 @@ Number
 computeFullPaymentInterest(
     Number const& theoreticalPrincipalOutstanding,
     Number const& periodicRate,
-    NetClock::time_point parentCloseTime,
+    NetClock::TimePoint parentCloseTime,
     std::uint32_t paymentInterval,
     std::uint32_t prevPaymentDate,
     std::uint32_t startDate,

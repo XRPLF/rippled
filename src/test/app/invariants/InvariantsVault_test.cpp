@@ -2665,8 +2665,8 @@ class InvariantsVault_test : public InvariantsBase
         // dates and satisfy the redemption-buffer gap), deposit only in Subscription / NoPhase,
         // withdraw not in Investment, loan origination only in Investment.
 
-        using D = NetClock::duration;
-        using Tp = NetClock::time_point;
+        using D = NetClock::Duration;
+        using Tp = NetClock::TimePoint;
 
         auto const closedEnded = std::to_underlying(VaultKind::ClosedEnded);
 
@@ -3029,7 +3029,7 @@ class InvariantsVault_test : public InvariantsBase
                     return vaultKeylet;
                 std::uint32_t const dueDate = loanSle->at(sfNextPaymentDueDate);
                 env.close(
-                    NetClock::time_point{NetClock::duration{dueDate}} + std::chrono::seconds{1});
+                    NetClock::TimePoint{NetClock::Duration{dueDate}} + std::chrono::seconds{1});
             }
 
             env(manage(owner, loanKeylet.key, tfLoanImpair));

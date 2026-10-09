@@ -358,7 +358,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                 // Set AMM flag on AMM trustline
                 if (!isXRP(amount))
                 {
-                    SLE::pointer const sleRippleState =
+                    SLE::Pointer const sleRippleState =
                         sb.peek(keylet::trustLine(accountId, issue));
                     if (!sleRippleState)
                     {

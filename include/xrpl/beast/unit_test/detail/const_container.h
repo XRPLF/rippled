@@ -33,11 +33,11 @@ protected:
     }
 
 public:
-    using value_type = ContType::value_type;
-    using size_type = ContType::size_type;
-    using difference_type = ContType::difference_type;
-    using iterator = ContType::const_iterator;
-    using const_iterator = ContType::const_iterator;
+    using ValueType = ContType::value_type;
+    using SizeType = ContType::size_type;
+    using DifferenceType = ContType::difference_type;
+    using Iterator = ContType::const_iterator;
+    using ConstIterator = ContType::const_iterator;
 
     /**
      * Returns `true` if the container is empty.
@@ -51,7 +51,7 @@ public:
     /**
      * Returns the number of items in the container.
      */
-    [[nodiscard]] size_type
+    [[nodiscard]] SizeType
     size() const
     {
         return cont_.size();
@@ -61,25 +61,25 @@ public:
      * Returns forward iterators for traversal.
      */
     /** @{ */
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const
     {
         return cont_.cbegin();
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cbegin() const
     {
         return cont_.cbegin();
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const
     {
         return cont_.cend();
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cend() const
     {
         return cont_.cend();

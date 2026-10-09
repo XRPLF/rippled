@@ -246,7 +246,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         //     startDate + (paymentInterval * paymentTotal) + gracePeriod.
         // If that value is larger than "maxTime", the value
         // overflows, and we kill the transaction.
-        using TimeType = decltype(sfNextPaymentDueDate)::type::value_type;
+        using TimeType = decltype(sfNextPaymentDueDate)::Type::ValueType;
         static_assert(std::is_same_v<TimeType, std::uint32_t>);
         constexpr TimeType kMaxTime = std::numeric_limits<TimeType>::max();
         static_assert(kMaxTime == 4'294'967'295);

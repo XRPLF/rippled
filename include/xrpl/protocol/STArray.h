@@ -24,10 +24,12 @@ private:
     ListType v_;
 
 public:
+    // Required by std::back_insert_iterator.
+    // NOLINTNEXTLINE(readability-identifier-naming)
     using value_type = STObject;
-    using size_type = ListType::size_type;
-    using iterator = ListType::iterator;
-    using const_iterator = ListType::const_iterator;
+    using SizeType = ListType::size_type;
+    using Iterator = ListType::iterator;
+    using ConstIterator = ListType::const_iterator;
 
     STArray() = default;
     STArray(STArray const&) = default;
@@ -88,19 +90,19 @@ public:
         pushBack(std::move(object));
     }
 
-    iterator
+    Iterator
     begin();
 
-    iterator
+    Iterator
     end();
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const;
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const;
 
-    [[nodiscard]] size_type
+    [[nodiscard]] SizeType
     size() const;
 
     [[nodiscard]] bool
@@ -133,17 +135,17 @@ public:
     bool
     operator==(STArray const& s) const;
 
-    iterator
-    erase(iterator pos);
+    Iterator
+    erase(Iterator pos);
 
-    iterator
-    erase(const_iterator pos);
+    Iterator
+    erase(ConstIterator pos);
 
-    iterator
-    erase(iterator first, iterator last);
+    Iterator
+    erase(Iterator first, Iterator last);
 
-    iterator
-    erase(const_iterator first, const_iterator last);
+    Iterator
+    erase(ConstIterator first, ConstIterator last);
 
     [[nodiscard]] SerializedTypeID
     getSType() const override;
@@ -220,31 +222,31 @@ STArray::pushBack(STObject&& object)
     v_.push_back(std::move(object));
 }
 
-inline STArray::iterator
+inline STArray::Iterator
 STArray::begin()
 {
     return v_.begin();
 }
 
-inline STArray::iterator
+inline STArray::Iterator
 STArray::end()
 {
     return v_.end();
 }
 
-inline STArray::const_iterator
+inline STArray::ConstIterator
 STArray::begin() const
 {
     return v_.begin();
 }
 
-inline STArray::const_iterator
+inline STArray::ConstIterator
 STArray::end() const
 {
     return v_.end();
 }
 
-inline STArray::size_type
+inline STArray::SizeType
 STArray::size() const
 {
     return v_.size();
@@ -280,26 +282,26 @@ STArray::operator==(STArray const& s) const
     return v_ == s.v_;
 }
 
-inline STArray::iterator
-STArray::erase(iterator pos)
+inline STArray::Iterator
+STArray::erase(Iterator pos)
 {
     return v_.erase(pos);
 }
 
-inline STArray::iterator
-STArray::erase(const_iterator pos)
+inline STArray::Iterator
+STArray::erase(ConstIterator pos)
 {
     return v_.erase(pos);
 }
 
-inline STArray::iterator
-STArray::erase(iterator first, iterator last)
+inline STArray::Iterator
+STArray::erase(Iterator first, Iterator last)
 {
     return v_.erase(first, last);
 }
 
-inline STArray::iterator
-STArray::erase(const_iterator first, const_iterator last)
+inline STArray::Iterator
+STArray::erase(ConstIterator first, ConstIterator last)
 {
     return v_.erase(first, last);
 }

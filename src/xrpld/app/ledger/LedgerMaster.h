@@ -433,7 +433,7 @@ public:
      * @return Its close time, or nullopt when the hash or the stored header
      * cannot be found.
      */
-    std::optional<NetClock::time_point>
+    std::optional<NetClock::TimePoint>
     getCloseTimeBySeq(LedgerIndex ledgerIndex);
 
     /**
@@ -444,7 +444,7 @@ public:
      * @return Its close time, or nullopt when the object is absent, too short,
      * or not a ledger header.
      */
-    std::optional<NetClock::time_point>
+    std::optional<NetClock::TimePoint>
     getCloseTimeByHash(LedgerHash const& ledgerHash, LedgerIndex ledgerIndex);
 
     /**
@@ -710,7 +710,7 @@ public:
         std::weak_ptr<Peer> const& wPeer,
         std::shared_ptr<protocol::TMGetObjectByHash> const& request,
         UInt256 haveLedgerHash,
-        UptimeClock::time_point uptime);
+        UptimeClock::TimePoint uptime);
 
     /**
      * @return Number of nodes currently held in the fetch-pack cache.

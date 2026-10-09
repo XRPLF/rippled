@@ -44,7 +44,7 @@ Vault::create(CreateArgs const& args) const
     return {jv, keylet};
 }
 
-std::tuple<json::Value, Keylet, NetClock::time_point>
+std::tuple<json::Value, Keylet, NetClock::TimePoint>
 Vault::createClosedEnded(CreateClosedEndedArgs const& args) const
 {
     auto const sub = env.now() + args.subscriptionOffset;
@@ -60,7 +60,7 @@ Vault::createClosedEnded(CreateClosedEndedArgs const& args) const
 }
 
 void
-Vault::closePastSubscription(NetClock::time_point subscriptionDate) const
+Vault::closePastSubscription(NetClock::TimePoint subscriptionDate) const
 {
     env.close(subscriptionDate + std::chrono::seconds{1});
 }

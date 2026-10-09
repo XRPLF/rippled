@@ -33,7 +33,7 @@ public:
      * @brief Construct a XChainOwnedClaimID ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit XChainOwnedClaimID(SLE::const_pointer sle)
+    explicit XChainOwnedClaimID(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getAccount() const
     {
         return this->sle_->at(sfAccount);
@@ -61,7 +61,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_XCHAIN_BRIDGE::type::value_type
+    SF_XCHAIN_BRIDGE::Type::ValueType
     getXChainBridge() const
     {
         return this->sle_->at(sfXChainBridge);
@@ -72,7 +72,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getXChainClaimID() const
     {
         return this->sle_->at(sfXChainClaimID);
@@ -83,7 +83,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getOtherChainSource() const
     {
         return this->sle_->at(sfOtherChainSource);
@@ -106,7 +106,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getSignatureReward() const
     {
         return this->sle_->at(sfSignatureReward);
@@ -117,7 +117,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getOwnerNode() const
     {
         return this->sle_->at(sfOwnerNode);
@@ -128,7 +128,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -139,7 +139,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -168,7 +168,7 @@ public:
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    XChainOwnedClaimIDBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource,STArray const& xChainClaimAttestations,std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    XChainOwnedClaimIDBuilder(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& account,std::decay_t<typename SF_XCHAIN_BRIDGE::Type::ValueType> const& xChainBridge,std::decay_t<typename SF_UINT64::Type::ValueType> const& xChainClaimID,std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& otherChainSource,STArray const& xChainClaimAttestations,std::decay_t<typename SF_AMOUNT::Type::ValueType> const& signatureReward,std::decay_t<typename SF_UINT64::Type::ValueType> const& ownerNode,std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<XChainOwnedClaimIDBuilder>(ltXCHAIN_OWNED_CLAIM_ID)
     {
         setAccount(account);
@@ -187,7 +187,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    XChainOwnedClaimIDBuilder(SLE::const_pointer sle)
+    XChainOwnedClaimIDBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltXCHAIN_OWNED_CLAIM_ID)
         {
@@ -205,7 +205,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
-    setAccount(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setAccount(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfAccount] = value;
         return *this;
@@ -216,7 +216,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
-    setXChainBridge(std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& value)
+    setXChainBridge(std::decay_t<typename SF_XCHAIN_BRIDGE::Type::ValueType> const& value)
     {
         object_[sfXChainBridge] = value;
         return *this;
@@ -227,7 +227,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
-    setXChainClaimID(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setXChainClaimID(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfXChainClaimID] = value;
         return *this;
@@ -238,7 +238,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
-    setOtherChainSource(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setOtherChainSource(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfOtherChainSource] = value;
         return *this;
@@ -260,7 +260,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
-    setSignatureReward(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setSignatureReward(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfSignatureReward] = value;
         return *this;
@@ -271,7 +271,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
-    setOwnerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setOwnerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfOwnerNode] = value;
         return *this;
@@ -282,7 +282,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -293,7 +293,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;

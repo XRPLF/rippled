@@ -46,10 +46,16 @@ struct IsContiguousContainer<
     Container,
     std::void_t<
         decltype(std::declval<Container const>().size()),
-        decltype(std::declval<Container const>().data()),
-        typename Container::value_type>> : std::true_type
+        decltype(std::declval<Container const>().data())>> : std::true_type
 {
 };
+
+/**
+ * The element type of a contiguous container, taken from data() rather than
+ * from a value_type member, so Slice and BaseUInt need not spell one.
+ */
+template <class Container>
+using ContainerElement = std::remove_cvref_t<decltype(*std::declval<Container const&>().data())>;
 
 template <>
 struct IsContiguousContainer<Slice> : std::true_type
@@ -100,56 +106,57 @@ public:
     static constexpr std::size_t kBytes = Bits / 8;
     static_assert(sizeof(data_) == kBytes);
 
-    using size_type = std::size_t;
-    using difference_type = std::ptrdiff_t;
-    using value_type = unsigned char;
-    using pointer = value_type*;
-    using reference = value_type&;
-    using const_pointer = value_type const*;
-    using const_reference = value_type const&;
-    using iterator = pointer;
-    using const_iterator = const_pointer;
-    using reverse_iterator = std::reverse_iterator<iterator>;
-    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+    using ValueType = unsigned char;
+
+    using SizeType = std::size_t;
+    using DifferenceType = std::ptrdiff_t;
+    using Pointer = ValueType*;
+    using Reference = ValueType&;
+    using ConstPointer = ValueType const*;
+    using ConstReference = ValueType const&;
+    using Iterator = Pointer;
+    using ConstIterator = ConstPointer;
+    using ReverseIterator = std::reverse_iterator<Iterator>;
+    using ConstReverseIterator = std::reverse_iterator<ConstIterator>;
     using TagType = Tag;
 
-    pointer
+    Pointer
     data()
     {
-        return reinterpret_cast<pointer>(data_.data());
+        return reinterpret_cast<Pointer>(data_.data());
     }
-    [[nodiscard]] const_pointer
+    [[nodiscard]] ConstPointer
     data() const
     {
-        return reinterpret_cast<const_pointer>(data_.data());
+        return reinterpret_cast<ConstPointer>(data_.data());
     }
 
-    iterator
+    Iterator
     begin()
     {
         return data();
     }
-    iterator
+    Iterator
     end()
     {
         return data() + kBytes;
     }
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const
     {
         return data();
     }
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const
     {
         return data() + kBytes;
     }
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cbegin() const
     {
         return data();
     }
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cend() const
     {
         return data() + kBytes;
@@ -160,7 +167,7 @@ public:
      *  The seed prevents crafted inputs from causing degenerate parent
      * containers.
      */
-    using hasher = HardenedHash<>;
+    using Hasher = HardenedHash<>;
 
     //--------------------------------------------------------------------------
 
@@ -287,7 +294,7 @@ public:
     explicit BaseUInt(Container const& c)
         requires(
             detail::IsContiguousContainer<Container>::value &&
-            std::is_trivially_copyable_v<typename Container::value_type>)
+            std::is_trivially_copyable_v<detail::ContainerElement<Container>>)
     {
         // Use AlwaysFalseT so the static_assert condition is dependent
         // and only triggers when this constructor template is instantiated.
@@ -302,14 +309,14 @@ public:
     fromRaw(Container const& c)
         requires(
             detail::IsContiguousContainer<Container>::value &&
-            std::is_trivially_copyable_v<typename Container::value_type>)
+            std::is_trivially_copyable_v<detail::ContainerElement<Container>>)
     {
         BaseUInt result;
         XRPL_ASSERT(
-            c.size() * sizeof(typename Container::value_type) == size(),
+            c.size() * sizeof(detail::ContainerElement<Container>) == size(),
             "xrpl::BaseUInt::fromRaw(Container auto) : input size match");
         std::size_t const canCopy =
-            std::min(size(), c.size() * sizeof(typename Container::value_type));
+            std::min(size(), c.size() * sizeof(detail::ContainerElement<Container>));
         std::memcpy(result.data_.data(), c.data(), canCopy);
         return result;
     }
@@ -319,13 +326,13 @@ public:
     operator=(Container const& c)
         requires(
             detail::IsContiguousContainer<Container>::value &&
-            std::is_trivially_copyable_v<typename Container::value_type>)
+            std::is_trivially_copyable_v<detail::ContainerElement<Container>>)
     {
         XRPL_ASSERT(
-            c.size() * sizeof(typename Container::value_type) == size(),
+            c.size() * sizeof(detail::ContainerElement<Container>) == size(),
             "xrpl::BaseUInt::operator=(Container auto) : input size match");
         std::size_t const canCopy =
-            std::min(size(), c.size() * sizeof(typename Container::value_type));
+            std::min(size(), c.size() * sizeof(detail::ContainerElement<Container>));
         if (canCopy < size())
             *this = beast::kZero;
         std::memcpy(data_.data(), c.data(), canCopy);

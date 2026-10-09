@@ -265,7 +265,7 @@ private:
         using namespace jtx;
         using namespace loan;
         using namespace std::chrono_literals;
-        using Tp = NetClock::time_point;
+        using Tp = NetClock::TimePoint;
 
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
         BrokerParameters const brokerParams{
@@ -1085,13 +1085,13 @@ private:
         // payment is late. After the earlier LoanPay the due date advanced by
         // one interval, so use the current due date rather than startDate.
         std::uint32_t const dueDateBeforeImpair = loanBeforeImpair->at(sfNextPaymentDueDate);
-        env.close(NetClock::time_point{NetClock::duration{dueDateBeforeImpair}} + 1s);
+        env.close(NetClock::TimePoint{NetClock::Duration{dueDateBeforeImpair}} + 1s);
 
         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
         env.close();
 
         env.close(
-            NetClock::time_point{NetClock::duration{dueDateBeforeImpair}} +
+            NetClock::TimePoint{NetClock::Duration{dueDateBeforeImpair}} +
             std::chrono::seconds(gracePeriod) + 60s);
 
         auto const vaultBeforeDefault = env.le(broker.vaultKeylet());

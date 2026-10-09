@@ -18,7 +18,7 @@ namespace beast::insight {
 class Meter final
 {
 public:
-    using value_type = MeterImpl::value_type;
+    using ValueType = MeterImpl::ValueType;
 
     /**
      * Create a null metric.
@@ -41,14 +41,14 @@ public:
      */
     /** @{ */
     void
-    increment(value_type amount) const
+    increment(ValueType amount) const
     {
         if (impl_)
             impl_->increment(amount);
     }
 
     Meter const&
-    operator+=(value_type amount) const
+    operator+=(ValueType amount) const
     {
         increment(amount);
         return *this;

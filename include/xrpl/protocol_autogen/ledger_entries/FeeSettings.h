@@ -33,7 +33,7 @@ public:
      * @brief Construct a FeeSettings ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit FeeSettings(SLE::const_pointer sle)
+    explicit FeeSettings(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getBaseFee() const
     {
         if (hasBaseFee())
@@ -74,7 +74,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getReferenceFeeUnits() const
     {
         if (hasReferenceFeeUnits())
@@ -98,7 +98,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getReserveBase() const
     {
         if (hasReserveBase())
@@ -122,7 +122,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getReserveIncrement() const
     {
         if (hasReserveIncrement())
@@ -146,7 +146,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getBaseFeeDrops() const
     {
         if (hasBaseFeeDrops())
@@ -170,7 +170,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getReserveBaseDrops() const
     {
         if (hasReserveBaseDrops())
@@ -194,7 +194,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getReserveIncrementDrops() const
     {
         if (hasReserveIncrementDrops())
@@ -218,7 +218,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getGasLimit() const
     {
         if (hasGasLimit())
@@ -242,7 +242,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getBytecodeSizeLimit() const
     {
         if (hasBytecodeSizeLimit())
@@ -266,7 +266,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getGasPrice() const
     {
         if (hasGasPrice())
@@ -290,7 +290,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getPreviousTxnID() const
     {
         if (hasPreviousTxnID())
@@ -314,7 +314,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getPreviousTxnLgrSeq() const
     {
         if (hasPreviousTxnLgrSeq())
@@ -357,7 +357,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    FeeSettingsBuilder(SLE::const_pointer sle)
+    FeeSettingsBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltFEE_SETTINGS)
         {
@@ -375,7 +375,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
-    setBaseFee(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setBaseFee(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfBaseFee] = value;
         return *this;
@@ -386,7 +386,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
-    setReferenceFeeUnits(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setReferenceFeeUnits(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfReferenceFeeUnits] = value;
         return *this;
@@ -397,7 +397,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
-    setReserveBase(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setReserveBase(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfReserveBase] = value;
         return *this;
@@ -408,7 +408,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
-    setReserveIncrement(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setReserveIncrement(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfReserveIncrement] = value;
         return *this;
@@ -419,7 +419,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
-    setBaseFeeDrops(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setBaseFeeDrops(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfBaseFeeDrops] = value;
         return *this;
@@ -430,7 +430,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
-    setReserveBaseDrops(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setReserveBaseDrops(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfReserveBaseDrops] = value;
         return *this;
@@ -441,7 +441,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
-    setReserveIncrementDrops(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setReserveIncrementDrops(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfReserveIncrementDrops] = value;
         return *this;
@@ -452,7 +452,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
-    setGasLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setGasLimit(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfGasLimit] = value;
         return *this;
@@ -463,7 +463,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
-    setBytecodeSizeLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setBytecodeSizeLimit(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfBytecodeSizeLimit] = value;
         return *this;
@@ -474,7 +474,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
-    setGasPrice(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setGasPrice(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfGasPrice] = value;
         return *this;
@@ -485,7 +485,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -496,7 +496,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;

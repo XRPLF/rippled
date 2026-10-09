@@ -303,12 +303,10 @@ ApplyStateTable::exists(ReadView const& base, Keylet const& k) const
 }
 
 auto
-ApplyStateTable::succ(
-    ReadView const& base,
-    key_type const& key,
-    std::optional<key_type> const& last) const -> std::optional<key_type>
+ApplyStateTable::succ(ReadView const& base, Key const& key, std::optional<Key> const& last) const
+    -> std::optional<Key>
 {
-    std::optional<key_type> next = key;
+    std::optional<Key> next = key;
     ItemsT::const_iterator iter;
     // Find base successor that is
     // not also deleted in our list
@@ -337,7 +335,7 @@ ApplyStateTable::succ(
     return next;
 }
 
-SLE::const_pointer
+SLE::ConstPointer
 ApplyStateTable::read(ReadView const& base, Keylet const& k) const
 {
     auto const iter = items_.find(k.key);
@@ -359,7 +357,7 @@ ApplyStateTable::read(ReadView const& base, Keylet const& k) const
     return sle;
 }
 
-SLE::pointer
+SLE::Pointer
 ApplyStateTable::peek(ReadView const& base, Keylet const& k)
 {
     auto iter = items_.lower_bound(k.key);
@@ -536,7 +534,7 @@ ApplyStateTable::destroyXRP(XRPAmount const& fee)
 void
 ApplyStateTable::threadItem(TxMeta& meta, SLE::Ref sle)
 {
-    key_type prevTxID;
+    Key prevTxID;
     LedgerIndex prevLgrID = 0;
 
     if (!sle->thread(meta.getTxID(), meta.getLgrSeq(), prevTxID, prevLgrID))
@@ -566,8 +564,8 @@ ApplyStateTable::threadItem(TxMeta& meta, SLE::Ref sle)
     }
 }
 
-SLE::pointer
-ApplyStateTable::getForMod(ReadView const& base, key_type const& key, Mods& mods, beast::Journal j)
+SLE::Pointer
+ApplyStateTable::getForMod(ReadView const& base, Key const& key, Mods& mods, beast::Journal j)
 {
     {
         auto miter = mods.find(key);

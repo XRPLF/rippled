@@ -870,7 +870,7 @@ AMMWithdraw::equalWithdrawTokens(
 std::pair<TER, bool>
 AMMWithdraw::deleteAMMAccountIfEmpty(
     Sandbox& sb,
-    SLE::pointer const ammSle,
+    SLE::Pointer const ammSle,
     STAmount const& lpTokenBalance,
     Asset const& asset1,
     Asset const& asset2,

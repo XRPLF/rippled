@@ -431,13 +431,13 @@ public:
     Disposition
     charge(Entry& entry, Charge const& fee, std::string context = {})
     {
-        static constexpr Charge::value_type kFeeLogAsWarn = 3000;
-        static constexpr Charge::value_type kFeeLogAsInfo = 1000;
-        static constexpr Charge::value_type kFeeLogAsDebug = 100;
+        static constexpr Charge::ValueType kFeeLogAsWarn = 3000;
+        static constexpr Charge::ValueType kFeeLogAsInfo = 1000;
+        static constexpr Charge::ValueType kFeeLogAsDebug = 100;
         static_assert(
             kFeeLogAsWarn > kFeeLogAsInfo && kFeeLogAsInfo > kFeeLogAsDebug && kFeeLogAsDebug > 10);
 
-        static auto kGetStream = [](resource::Charge::value_type cost, beast::Journal& journal) {
+        static auto kGetStream = [](resource::Charge::ValueType cost, beast::Journal& journal) {
             if (cost >= kFeeLogAsWarn)
                 return journal.warn();
             if (cost >= kFeeLogAsInfo)
