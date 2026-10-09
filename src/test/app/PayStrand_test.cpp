@@ -166,7 +166,7 @@ public:
     bool
     next()
     {
-        if (!(has(SB::Last)))
+        if (!has(SB::Last))
         {
             do
             {

@@ -205,7 +205,7 @@ preclaimHelper<Issue>(PreclaimContext const& ctx, SLE const& sleIssuer, STAmount
 {
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (!(sleIssuer.isFlag(lsfAllowTrustLineClawback)) || (sleIssuer.isFlag(lsfNoFreeze)))
+    if (!sleIssuer.isFlag(lsfAllowTrustLineClawback) || sleIssuer.isFlag(lsfNoFreeze))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
