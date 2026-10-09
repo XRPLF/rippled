@@ -236,7 +236,6 @@ to_string(ValStatus m)
  * struct Validation
  * {
  *     using NodeID = ...;
- *     using NodeKey = ...;
  *
  *     // Ledger ID associated with this validation
  *     Ledger::ID ledgerID() const;
@@ -249,9 +248,6 @@ to_string(ValStatus m)
  *
  *     // When the validation was first observed by this node
  *     NetClock::time_point seenTime() const;
- *
- *     // Signing key of node that published the validation
- *     NodeKey key() const;
  *
  *     // Whether the publishing node was trusted at the time the validation
  *     // arrived
