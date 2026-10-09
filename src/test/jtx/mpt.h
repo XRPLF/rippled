@@ -434,7 +434,7 @@ struct MPTConfidentialRecover
     std::optional<Account> account = std::nullopt;
     std::optional<Account> holder = std::nullopt;
     std::optional<MPTID> id = std::nullopt;
-    std::optional<Buffer> recoveryPrivKey = std::nullopt;
+    std::optional<Buffer> spendingCiphertext = std::nullopt;
     std::optional<std::string> proof = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
     std::optional<std::uint32_t> ticketSeq = std::nullopt;
@@ -818,9 +818,6 @@ public:
     // at, leaving the earlier ones retrievable.
     std::uint32_t
     generateKeyPair(Account const& account);
-
-    [[nodiscard]] static std::pair<Buffer, Buffer>
-    generateKeyPair();
 
     // Returns the account's public key at the given key epoch, or its latest key when
     // no epoch is given.

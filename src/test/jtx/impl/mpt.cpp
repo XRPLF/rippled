@@ -1891,27 +1891,6 @@ MPTTester::generateKeyPair(Account const& account)
     return static_cast<std::uint32_t>(pubKeyEpochs.size() - 1);
 }
 
-std::pair<Buffer, Buffer>
-MPTTester::generateKeyPair()
-{
-    unsigned char privKey[kEcPrivKeyLength];
-    secp256k1_pubkey pubKey;
-    if (secp256k1_elgamal_generate_keypair(secp256k1Context(), privKey, &pubKey) == 0)
-        Throw<std::runtime_error>("failed to generate key pair");
-
-    // Serialize public key to compressed format (33 bytes)
-    unsigned char compressedPubKey[kEcPubKeyLength];
-    size_t outLen = kEcPubKeyLength;
-    if (secp256k1_ec_pubkey_serialize(
-            secp256k1Context(), compressedPubKey, &outLen, &pubKey, SECP256K1_EC_COMPRESSED) != 1 ||
-        outLen != kEcPubKeyLength)
-    {
-        Throw<std::runtime_error>("failed to serialize public key");
-    }
-
-    return {Buffer{compressedPubKey, kEcPubKeyLength}, Buffer{privKey, kEcPrivKeyLength}};
-}
-
 std::optional<Buffer>
 MPTTester::getPubKey(Account const& account, std::optional<std::uint32_t> epoch) const
 {
@@ -2385,7 +2364,6 @@ void
 MPTTester::recoverBalance(MPTConfidentialRecover const& arg, std::source_location const& loc)
 {
     json::Value jv;
-
     auto const account = arg.account ? *arg.account : issuer_;
     jv[sfAccount] = account.human();
 
@@ -2395,68 +2373,8 @@ MPTTester::recoverBalance(MPTConfidentialRecover const& arg, std::source_locatio
     jv[jss::TransactionType] = jss::ConfidentialMPTRecoverBalance;
     setIssuanceIdField(jv, arg.id);
 
-    // Get the holder's issuer mirror (encrypted balance)
-    auto const& issuance = arg.id ? *arg.id : issuanceID();
-    auto const sleHolder =
-        env_.le(keylet::mptoken(issuance, requireValue(arg.holder, "holder").id()));
-    if (!sleHolder)
-        Throw<std::runtime_error>("Holder MPToken not found");
-
-    if (!sleHolder->isFieldPresent(sfIssuerEncryptedBalance))
-        Throw<std::runtime_error>("sfIssuerEncryptedBalance not present");
-
-    auto const issuerEncryptedBalanceBlob = sleHolder->getFieldVL(sfIssuerEncryptedBalance);
-    Buffer const issuerEncryptedBalance(
-        issuerEncryptedBalanceBlob.data(), issuerEncryptedBalanceBlob.size());
-
-    // Get issuer's private key to decrypt the mirror
-    auto const issuerPrivKey = getPrivKey(account);
-    if (!issuerPrivKey || issuerPrivKey->size() != kEcPrivKeyLength)
-        Throw<std::runtime_error>("Failed to get issuer private key");
-
-    // Decrypt the balance using issuer's key
-    auto const decryptedBalance = decryptAmount(*issuerPrivKey, issuerEncryptedBalance);
-    if (!decryptedBalance)
-        Throw<std::runtime_error>("Failed to decrypt holder's balance");
-
-    // Get recovery public key (or use provided recovery key)
-    Buffer recoveryPubKey;
-    if (arg.recoveryPrivKey)
-    {
-        if (arg.recoveryPrivKey->size() != kEcPrivKeyLength)
-            Throw<std::runtime_error>("Invalid recovery private key length");
-
-        // Derive public key from private key
-        secp256k1_pubkey pubKey;
-        if (secp256k1_ec_pubkey_create(secp256k1Context(), &pubKey, arg.recoveryPrivKey->data()) ==
-            0)
-        {
-            Throw<std::runtime_error>("Failed to derive recovery public key from private key");
-        }
-
-        // Serialize public key
-        unsigned char compressedPubKey[kEcPubKeyLength];
-        size_t outLen = kEcPubKeyLength;
-        if (secp256k1_ec_pubkey_serialize(
-                secp256k1Context(), compressedPubKey, &outLen, &pubKey, SECP256K1_EC_COMPRESSED) !=
-                1 ||
-            outLen != kEcPubKeyLength)
-        {
-            Throw<std::runtime_error>("Failed to serialize recovery public key");
-        }
-        recoveryPubKey = Buffer{compressedPubKey, kEcPubKeyLength};
-    }
-    else
-    {
-        Throw<std::runtime_error>("Recovery private key not specified");
-    }
-
-    // Re-encrypt the balance under recovery key
-    auto const blindingFactor = generateBlindingFactor();
-    auto const newCiphertext =
-        encryptAmountWithPubKey(recoveryPubKey, *decryptedBalance, blindingFactor);
-
-    jv[sfConfidentialBalanceSpending] = strHex(newCiphertext);
+    if (arg.spendingCiphertext)
+        jv[sfConfidentialBalanceSpending] = strHex(*arg.spendingCiphertext);
 
     if (arg.proof)
     {
