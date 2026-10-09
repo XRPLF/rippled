@@ -15,13 +15,16 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -697,6 +700,98 @@ private:
         }
     }
 
+    // Regression test: a Legacy Vault's broker DebtTotal must be rounded at
+    // the Vault scale captured *before* this origination's AssetsTotal
+    // update, not after. Origination credits AssetsTotal with the loan's
+    // InterestDue; when AssetsTotal is already at its 16-digit precision
+    // limit, adding InterestDue can carry into a new integer digit, which
+    // forces the stored value to drop a decimal digit to stay within 16
+    // significant digits (e.g. 999999.9999999999 at 10 decimal places plus
+    // a positive InterestDue becomes a value with only 9 decimal places).
+    // If DebtTotal were rounded at that *new*, coarser scale instead of the
+    // scale the Vault had before this transaction, it would disagree with
+    // develop by a unit of the old grid. This test deliberately engineers
+    // that crossing and checks DebtTotal against the pre-update scale.
+    void
+    testLegacyDebtTotalRoundsAtPreUpdateVaultScale()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        testcase("LoanSet: Legacy broker DebtTotal rounds at pre-update Vault scale");
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        // 999999.9999 is just below 1,000,000; an IOU STAmount this close to
+        // a power of ten always canonicalizes to a 16-digit mantissa at
+        // exponent -10, so adding any positive InterestDue forces
+        // AssetsTotal's integer part to grow past 1,000,000 and its stored
+        // scale to drop.
+        BrokerParameters const brokerParams{
+            .vaultDeposit = Number{9'999'999'999LL, -4},
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0}};
+        LoanParameters const loanParams{
+            .account = borrower,
+            .counter = lender,
+            .principalRequest = Number{1'000},
+            .interest = TenthBips32{percentageToTenthBips(10)},
+            .payTotal = std::uint32_t{1},
+            .payInterval = std::uint32_t{30 * 24 * 60 * 60}};
+
+        Env env{*this, all_};
+
+        auto const assetsTotalBefore = brokerParams.vaultDeposit;
+        auto const scaleBefore = scale(assetsTotalBefore, Asset{issuer["IOU"]});
+        // scale() returns the STAmount exponent, which is negative for a
+        // fractional value; -10 means 10 digits after the decimal point.
+        BEAST_EXPECT(scaleBefore == -10);
+
+        auto loanResult =
+            createLoan(env, AssetType::IOU, brokerParams, loanParams, issuer, lender, borrower);
+        if (!BEAST_EXPECT(loanResult.has_value()) || !loanResult)
+            return;
+        auto const& [broker, loanKeylet, pseudoAcct] = *loanResult;
+
+        auto const vaultSle = env.le(broker.vaultKeylet());
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        auto const loanSle = env.le(loanKeylet);
+        if (!BEAST_EXPECT(vaultSle && brokerSle && loanSle))
+            return;
+
+        Number const assetsTotalAfter = vaultSle->at(sfAssetsTotal);
+        auto const scaleAfter = scale(assetsTotalAfter, broker.asset.raw());
+        // The crossing actually happened: AssetsTotal's stored scale got
+        // coarser (its exponent moved toward zero, e.g. -10 -> -9), which is
+        // the precondition for this regression to be meaningful.
+        BEAST_EXPECT(assetsTotalAfter > Number{1'000'000});
+        BEAST_EXPECT(scaleAfter > scaleBefore);
+
+        // sfTotalValueOutstanding is stored at full precision (it is not
+        // rounded to the vault's asset scale), so it carries the exact
+        // interestDue the production code added to AssetsTotal -- unlike
+        // reading AssetsTotal back and subtracting, which would already have
+        // lost precision to the very rounding this test is checking.
+        Number const totalValueOutstanding = loanSle->at(sfTotalValueOutstanding);
+        Number const debtTotalDelta = totalValueOutstanding;
+        BEAST_EXPECT(debtTotalDelta > loanParams.principalRequest);
+
+        Number const expectedAtPreUpdateScale =
+            roundToAsset(broker.asset.raw(), debtTotalDelta, scaleBefore);
+        Number const wouldBeAtPostUpdateScale =
+            roundToAsset(broker.asset.raw(), debtTotalDelta, scaleAfter);
+
+        // The two roundings must actually disagree, or this test would pass
+        // even with the bug (reading the scale after the AssetsTotal update)
+        // reinstated.
+        BEAST_EXPECT(expectedAtPreUpdateScale != wouldBeAtPostUpdateScale);
+        BEAST_EXPECT(brokerSle->at(sfDebtTotal) == expectedAtPreUpdateScale);
+    }
+
     // LoanSet in a closed-ended vault — phase gating and maturity bound.
     void
     testLoanSetClosedEnded()
@@ -928,6 +1023,125 @@ private:
         run(all_, tesSUCCESS);
     }
 
+    void
+    testFixedPrecisionLoanSet()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        testcase("FixedPrecision LoanSet");
+
+        FeatureBitset const features{
+            all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2};
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        Env env{*this, features};
+        env.fund(XRP(100'000), issuer, lender, borrower);
+        env.close();
+
+        PrettyAsset const iou = issuer["IOU"];
+        Number const trustLimit{10, 10};
+        env(trust(lender, iou(trustLimit)));
+        env(trust(borrower, iou(trustLimit)));
+
+        Number const openLimit{9, 9};
+        env(pay(issuer, lender, iou(openLimit)));
+
+        Vault const vault{env};
+        auto [createTx, vaultKeylet, subscriptionDate] =
+            vault.createClosedEnded({.owner = lender, .asset = iou});
+        std::uint8_t const vaultScale{6};
+        createTx[sfScale] = vaultScale;
+        env(createTx);
+
+        Number const principal{100};
+        TenthBips32 const interestRate{100'000};
+        constexpr std::uint32_t paymentTotal = 2;
+        constexpr std::uint32_t paymentInterval = 24 * 60 * 60;
+        // The loan's scale mirrors the vault's: 6 fractional digits, expressed
+        // as a negative exponent.
+        std::int32_t const loanScale{-6};
+        auto const properties = computeLoanProperties(
+            env.current()->rules(),
+            iou.raw(),
+            principal,
+            interestRate,
+            paymentInterval,
+            paymentTotal,
+            TenthBips16{0},
+            loanScale);
+        Number const interestDue = properties.loanState.interestDue;
+        BEAST_EXPECT(interestDue > beast::kZero);
+        BEAST_EXPECT(properties.loanScale == loanScale);
+
+        Number const deposit = openLimit - interestDue;
+        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = iou(deposit)}));
+        vault.closePastSubscription(subscriptionDate);
+
+        auto const brokerKeylet =
+            keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
+        env(loan_broker::set(lender, vaultKeylet.key));
+        env.close();
+
+        auto const fee = Fee(env.current()->fees().base * 2);
+        Number const offGrid{1, -7};
+        auto const rejectedOffGrid = [&](auto const& field) {
+            env(set(borrower, brokerKeylet.key, principal),
+                field(offGrid),
+                Sig(sfCounterpartySignature, lender),
+                fee,
+                Ter(tecPRECISION_LOSS));
+        };
+
+        env(set(borrower, brokerKeylet.key, offGrid),
+            Sig(sfCounterpartySignature, lender),
+            fee,
+            Ter(tecPRECISION_LOSS));
+        rejectedOffGrid(kLoanOriginationFee);
+        rejectedOffGrid(kLoanServiceFee);
+        rejectedOffGrid(kLatePaymentFee);
+        rejectedOffGrid(kClosePaymentFee);
+
+        auto const makeLoan = [&](TER expected) {
+            env(set(borrower, brokerKeylet.key, principal),
+                kInterestRate(interestRate),
+                kPaymentTotal(paymentTotal),
+                kPaymentInterval(paymentInterval),
+                Sig(sfCounterpartySignature, lender),
+                fee,
+                Ter(expected));
+            env.close();
+        };
+
+        makeLoan(tesSUCCESS);
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+        {
+            auto const loan = env.le(loanKeylet);
+            BEAST_EXPECT(loan);
+            if (loan)
+            {
+                BEAST_EXPECT(loan->at(sfLoanScale) == loanScale);
+                BEAST_EXPECT(loan->at(sfPeriodicPayment) == properties.periodicPayment);
+            }
+        }
+        {
+            auto const vaultSle = env.le(vaultKeylet);
+            BEAST_EXPECT(vaultSle);
+            if (vaultSle)
+            {
+                BEAST_EXPECT(vaultSle->at(sfAssetsTotal) == deposit);
+                BEAST_EXPECT(vaultSle->at(sfYieldUnrealized) == interestDue);
+            }
+        }
+        checkFixedPrecisionVaultAssetsDeployed(
+            *this, env, vaultKeylet, {brokerKeylet}, {loanKeylet}, "after LoanSet origination");
+
+        // The first LoanSet puts AssetsTotal + YieldUnrealized exactly at the
+        // Open-zone ceiling. A second loan's InterestDue is therefore rejected.
+        makeLoan(tecLIMIT_EXCEEDED);
+    }
+
 public:
     void
     run() override
@@ -937,9 +1151,11 @@ public:
             testLoanSet(features);
 
         testLoanSetClosedEnded();
+        testFixedPrecisionLoanSet();
         testLoanSetExistingLineAfterIssuerClearsDefaultRipple();
         testLoanSetOriginationFeeTwoMptCreates(all_);
         testLoanSetOriginationFeeTwoMptCreates(all_ - fixCleanup3_4_0);
+        testLegacyDebtTotalRoundsAtPreUpdateVaultScale();
     }
 };
 

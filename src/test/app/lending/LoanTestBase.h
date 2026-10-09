@@ -448,7 +448,7 @@ protected:
                 {
                     auto const expectedDebt =
                         env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                            getVaultVersion(vaultSle) == VaultVersion::CashBasis
+                            getVaultVersion(vaultSle) >= VaultVersion::CashBasis
                         ? principalOutstanding
                         : principalOutstanding + interestOwed;
                     env.test.BEAST_EXPECT(brokerDebt == expectedDebt);
@@ -553,7 +553,7 @@ protected:
                             env.test.BEAST_EXPECT(
                                 vaultSle->at(sfLossUnrealized) ==
                                 (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                                         getVaultVersion(vaultSle) == VaultVersion::CashBasis
+                                         getVaultVersion(vaultSle) >= VaultVersion::CashBasis
                                      ? principalOutstanding
                                      : totalValue - managementFeeOutstanding));
                         }
@@ -791,7 +791,7 @@ protected:
                     vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable);
                 auto const unrealizedLoss = vaultSle->at(sfLossUnrealized) +
                     (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                             getVaultVersion(vaultSle) == VaultVersion::CashBasis
+                             getVaultVersion(vaultSle) >= VaultVersion::CashBasis
                          ? state.principalOutstanding
                          : state.totalValue - state.managementFeeOutstanding);
 
@@ -997,17 +997,6 @@ protected:
             total,
             feeRate,
             asset(brokerParams.vaultDeposit).number().exponent());
-        log << "Loan properties:\n"
-            << "\tPrincipal: " << principal << std::endl
-            << "\tInterest rate: " << interest << std::endl
-            << "\tPayment interval: " << interval << std::endl
-            << "\tManagement Fee Rate: " << feeRate << std::endl
-            << "\tTotal Payments: " << total << std::endl
-            << "\tPeriodic Payment: " << props.periodicPayment << std::endl
-            << "\tTotal Value: " << props.loanState.valueOutstanding << std::endl
-            << "\tManagement Fee: " << props.loanState.managementFeeDue << std::endl
-            << "\tLoan Scale: " << props.loanScale << std::endl
-            << "\tFirst payment principal: " << props.firstPaymentPrincipal << std::endl;
 
         // checkGuards returns a TER, so success is 0
         BEAST_EXPECT(!checkLoanGuards(
