@@ -4188,14 +4188,9 @@ NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson cons
     if (notify.empty())
         return;
 
-    // Reuse the transaction JSON built by pubValidatedTransaction; only the
-    // message type differs for this stream.
-    MultiApiJson jvMPT = jvObj;
-    jvMPT.set(jss::type, "mptTransaction");
-
     for (InfoSub::Ref isrListener : notify)
     {
-        jvMPT.visit(isrListener->getApiVersion(), [&](json::Value const& jv) {
+        jvObj.visit(isrListener->getApiVersion(), [&](json::Value const& jv) {
             isrListener->send(jv, true);
         });
     }
