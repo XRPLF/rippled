@@ -62,10 +62,7 @@ namespace xrpl::test {
 
 class InvariantsVault_test : public InvariantsBase
 {
-    FeatureBitset const all_{test::jtx::testableAmendments()};
-    // testableAmendments() leaves featureLendingProtocolV1_2 off until the
-    // LoanManage PR; enable it explicitly for FixedPrecision rows.
-    FeatureBitset const fixedPrecision_{all_ | featureLendingProtocolV1_2};
+    FeatureBitset const all_{test::jtx::testableAmendments() | featureLendingProtocolV1_2};
 
     void
     testVault()  // NOLINT(readability-function-size)
@@ -988,8 +985,11 @@ class InvariantsVault_test : public InvariantsBase
         // circuits and returns success without inspecting the loan or the
         // vault. The same state that trips the principal-outstanding check
         // under V1_1 must be silently accepted here.
+        //
+        // V1_2 is disabled too: it alone makes VaultCreate pick FixedPrecision,
+        // whose AssetsTotal-sync invariant would fire on this scenario.
         doInvariantCheck(
-            makeEnv(all_ - featureLendingProtocolV1_1),
+            makeEnv(all_ - featureLendingProtocolV1_1 - featureLendingProtocolV1_2),
             {},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
@@ -1391,8 +1391,12 @@ class InvariantsVault_test : public InvariantsBase
         // valid positive dust while moving the posterior AssetsTotal to a much
         // finer scale. The dust must be bounded by the former scale rather than
         // compared with one unit at the posterior scale.
+        //
+        // CashBasis, not FixedPrecision: AssetsTotal is set independently of
+        // AssetsAvailable plus the vault's AssetsDeployed, which the FixedPrecision
+        // sync invariant rejects.
         {
-            Env env{*this, all_ | featureLendingProtocolV1_1};
+            Env env{*this, (all_ | featureLendingProtocolV1_1) - featureLendingProtocolV1_2};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
             Account const borrower{"borrower"};
@@ -1883,7 +1887,6 @@ class InvariantsVault_test : public InvariantsBase
 
         // FixedPrecision-only: a new vault must have AssetsDeployed == 0.
         doInvariantCheck(
-            makeEnv(fixedPrecision_),
             {
                 "created vault must be empty",
                 "updated zero sized vault must have no AssetsDeployed",
@@ -1910,7 +1913,6 @@ class InvariantsVault_test : public InvariantsBase
 
         // FixedPrecision-only: a new vault must have YieldUnrealized == 0.
         doInvariantCheck(
-            makeEnv(fixedPrecision_),
             {
                 "created vault must be empty",
                 "create operation must not have updated a vault",
@@ -2237,7 +2239,8 @@ class InvariantsVault_test : public InvariantsBase
             {"deposit must increase vault balance",
              "deposit must decrease depositor balance",
              "deposit must change vault and depositor balance by equal amount",
-             "deposit and assets outstanding must add up",
+             // FixedPrecision: only AssetsAvailable's delta is compared; the
+             // stored AssetsTotal is a derived cache.
              "deposit and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
@@ -2329,7 +2332,10 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
+        // AssetsTotal alone is wrong. FixedPrecision does not compare it per
+        // transaction, so this exercises the Legacy/CashBasis path.
         doInvariantCheck(
+            makeEnv(all_ - featureLendingProtocolV1_2),
             {"deposit and assets outstanding must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto sleA3 = ac.view().peek(keylet::account(a3.id()));
@@ -2354,8 +2360,8 @@ class InvariantsVault_test : public InvariantsBase
             TxAccount::A2);
 
         doInvariantCheck(
-            {"deposit and assets outstanding must add up",
-             "deposit and assets available must add up"},
+            // FixedPrecision does not compare AssetsTotal's delta.
+            {"deposit and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
@@ -2420,7 +2426,7 @@ class InvariantsVault_test : public InvariantsBase
                 "withdrawal must change vault and destination balance by equal amount",
                 "withdrawal must decrease vault balance",
                 "withdrawal must increase destination balance",
-                "withdrawal and assets outstanding must add up",
+                // FixedPrecision does not compare AssetsTotal's delta.
                 "withdrawal and assets available must add up",
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -2511,8 +2517,8 @@ class InvariantsVault_test : public InvariantsBase
             TxAccount::A2);
 
         doInvariantCheck(
-            {"withdrawal and assets outstanding must add up",
-             "withdrawal and assets available must add up"},
+            // FixedPrecision does not compare AssetsTotal's delta.
+            {"withdrawal and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
@@ -2526,7 +2532,10 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
+        // AssetsTotal alone is wrong. FixedPrecision does not compare it per
+        // transaction, so this exercises the Legacy/CashBasis path.
         doInvariantCheck(
+            makeEnv(all_ - featureLendingProtocolV1_2),
             {"withdrawal and assets outstanding must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto sleA3 = ac.view().peek(keylet::account(a3.id()));
@@ -2695,7 +2704,7 @@ class InvariantsVault_test : public InvariantsBase
 
         doInvariantCheck(
             {"clawback must change holder and vault shares by equal amount",
-             "clawback and assets outstanding must add up",
+             // FixedPrecision does not compare AssetsTotal's delta.
              "clawback and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet =
@@ -3326,6 +3335,70 @@ class InvariantsVault_test : public InvariantsBase
         }
     }
 
+    // Closed-ended FixedPrecision vault with one open loan. Closed-ended
+    // because LoanBrokerSet::preclaim only accepts those under
+    // featureLendingProtocolV1_1.
+    static Keylet
+    makeFixedPrecisionVaultWithLoan(
+        test::jtx::Account const& owner,
+        test::jtx::Account const& borrower,
+        test::jtx::Account const& issuer,
+        test::jtx::Env& env)
+    {
+        using namespace test::jtx;
+
+        env.fund(XRP(1'000'000), issuer, borrower);
+        env.close();
+
+        PrettyAsset const usd = issuer["USD"];
+        env(trust(owner, usd(1'000'000)));
+        env(trust(borrower, usd(1'000'000)));
+        env.close();
+
+        env(pay(issuer, owner, usd(100'000)));
+        env(pay(issuer, borrower, usd(1'000)));
+        env.close();
+
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+            {.owner = owner,
+             .asset = usd,
+             .subscriptionOffset = std::chrono::seconds{60},
+             .investmentWindow = std::chrono::seconds{10ull * 365ull * 24ull * 60ull * 60ull}});
+        env(vaultTx);
+        env.close();
+
+        env(vault.deposit(
+            {.depositor = owner, .id = vaultKeylet.key, .amount = usd(1'000).value()}));
+        env.close();
+
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        {
+            using namespace loan_broker;
+            env(set(owner, vaultKeylet.key), Fee(env.current()->fees().base * 2));
+            env.close();
+        }
+
+        // LoanSet is gated on Investment; advance out of Subscription.
+        vault.closePastSubscription(subscriptionDate);
+
+        {
+            using namespace loan;
+            env(set(borrower, brokerKeylet.key, usd(100).value()),
+                kCounterparty(owner),
+                kInterestRate(TenthBips32{0}),
+                kPaymentTotal(3),
+                kPaymentInterval(86400u),
+                kGracePeriod(3600u),
+                Sig(sfCounterpartySignature, owner),
+                Fee(env.current()->fees().base * 2));
+            env.close();
+        }
+
+        return vaultKeylet;
+    }
+
     static void
     addToVaultField(std::shared_ptr<SLE> const& sle, SF_NUMBER const& field, Number const& delta)
     {
@@ -3345,6 +3418,48 @@ class InvariantsVault_test : public InvariantsBase
         bool withVaultId = false;
         TER secondTer = tecINVARIANT_FAILED;
     };
+
+    void
+    checkLoanVaultRow(AssetsDeployedRow const& row)
+    {
+        using namespace test::jtx;
+
+        testcase(row.name);
+
+        Keylet vaultKeylet = keylet::vault(uint256{});
+        Account const issuer{"issuer"};
+        Account const borrower{"borrower"};
+
+        auto preclose = [&](Account const& owner, Account const&, Env& env) -> bool {
+            vaultKeylet = makeFixedPrecisionVaultWithLoan(owner, borrower, issuer, env);
+            return BEAST_EXPECT(env.le(vaultKeylet));
+        };
+
+        doInvariantCheck(
+            makeEnv(all_),
+            row.logs,
+            [&](Account const&, Account const&, ApplyContext& ac) -> bool {
+                auto sle = ac.view().peek(vaultKeylet);
+                if (!sle || !row.mutate(ac, sle))
+                {
+                    return false;
+                }
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{
+                row.txType,
+                [&](STObject& tx) {
+                    if (row.withVaultId)
+                    {
+                        tx.setFieldH256(sfVaultID, vaultKeylet.key);
+                    }
+                }},
+            {tecINVARIANT_FAILED, row.secondTer},
+            preclose,
+            TxAccount::A1);
+    }
 
     void
     checkXrpVaultRow(AssetsDeployedRow const& row)
@@ -3367,7 +3482,7 @@ class InvariantsVault_test : public InvariantsBase
         };
 
         doInvariantCheck(
-            makeEnv(fixedPrecision_),
+            makeEnv(all_),
             row.logs,
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 auto sle =
@@ -3389,6 +3504,72 @@ class InvariantsVault_test : public InvariantsBase
     void
     testVaultAssetsDeployedInvariants()
     {
+        // ttLOAN_PAY and ttLOAN_MANAGE may change AssetsDeployed and LossUnrealized
+        // respectively, which isolates each check from the "vault transaction
+        // must not change ..." checks.
+        AssetsDeployedRow const loanRows[] = {
+            {.name = "FixedPrecision vault: AssetsDeployed drift from AssetsTotal",
+             .logs = {"stored AssetsTotal must equal AssetsAvailable plus AssetsDeployed, rounded "
+                      "Downward"},
+             .mutate =
+                 [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                     addToVaultField(sle, sfAssetsDeployed, Number{1});
+                     return true;
+                 },
+             .txType = ttLOAN_PAY},
+            {.name = "FixedPrecision vault: stored AssetsTotal != Downward16(AA + AD)",
+             .logs = {"stored AssetsTotal must equal AssetsAvailable plus AssetsDeployed, rounded "
+                      "Downward"},
+             .mutate =
+                 [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                     addToVaultField(sle, sfAssetsTotal, Number{1});
+                     return true;
+                 },
+             .txType = ttLOAN_PAY},
+            // FixedPrecision compares LU with AssetsDeployed directly; the message
+            // is shared with the Legacy/CashBasis "LU <= AT - AA" check.
+            {.name = "FixedPrecision vault: LossUnrealized exceeds AssetsDeployed",
+             .logs = {"loss unrealized must not exceed the difference between assets "
+                      "outstanding and available"},
+             .mutate =
+                 [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                     Number const assetsDeployed = sle->at(sfAssetsDeployed);
+                     (*sle)[sfLossUnrealized] = assetsDeployed + Number{1};
+                     return true;
+                 },
+             .txType = ttLOAN_MANAGE},
+            // AssetsTotal moves too so the sync check stays quiet.
+            {.name = "FixedPrecision vault: AssetsDeployed changed by a non-lending transaction",
+             .logs = {"vault transaction must not change AssetsDeployed"},
+             .mutate =
+                 [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                     addToVaultField(sle, sfAssetsDeployed, Number{1});
+                     addToVaultField(sle, sfAssetsTotal, Number{1});
+                     return true;
+                 },
+             .withVaultId = true},
+            // On-ledger mirror of VaultWithdraw's tecHAS_OBLIGATIONS guard.
+            {.name = "FixedPrecision vault: non-zero AssetsDeployed after shares return to zero",
+             .logs = {"updated zero sized vault must have no AssetsDeployed"},
+             .mutate =
+                 [](ApplyContext& ac, std::shared_ptr<SLE> const& sle) {
+                     auto issuance = ac.view().peek(keylet::mptokenIssuance(sle->at(sfShareMPTID)));
+                     if (!issuance)
+                     {
+                         return false;
+                     }
+                     issuance->setFieldU64(sfOutstandingAmount, 0);
+                     ac.view().update(issuance);
+                     return true;
+                 },
+             .withVaultId = true,
+             .secondTer = tefINVARIANT_FAILED},
+        };
+        for (auto const& row : loanRows)
+        {
+            checkLoanVaultRow(row);
+        }
+
         AssetsDeployedRow const xrpRows[] = {
             {.name = "FixedPrecision vault: negative AssetsDeployed",
              .logs =
@@ -3474,7 +3655,7 @@ class InvariantsVault_test : public InvariantsBase
         };
 
         doInvariantCheck(
-            makeEnv(fixedPrecision_),
+            makeEnv(all_),
             {"withdrawal and assets available must add up"},
             [&vaultKeylet](Account const& a1, Account const&, ApplyContext& ac) -> bool {
                 auto sleVault = ac.view().peek(vaultKeylet);
