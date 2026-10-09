@@ -1918,6 +1918,20 @@ MPTTester::encryptAmount(Account const& account, uint64_t const amt, Buffer cons
     return gMakeZeroBuffer(kEcGamalEncryptedTotalLength);
 }
 
+Buffer
+MPTTester::encryptAmountWithPubKey(
+    Buffer const& pubKey,
+    uint64_t const amt,
+    Buffer const& blindingFactor)
+{
+    if (auto const result = xrpl::encryptAmount(amt, pubKey, blindingFactor))
+        return *result;
+
+    // Return a dummy buffer on failure to allow testing of
+    // failures that occur prior to encryption.
+    return gMakeZeroBuffer(kEcGamalEncryptedTotalLength);
+}
+
 std::optional<uint64_t>
 MPTTester::decryptAmount(
     Account const& account,
@@ -1942,6 +1956,35 @@ MPTTester::decryptAmount(
             &pair->c1,
             &pair->c2,
             privKey->data(),
+            kElGamalDecryptRangeLow,
+            kElGamalDecryptRangeHigh) == 0)
+    {
+        return std::nullopt;
+    }
+
+    return decryptedAmt;
+}
+
+std::optional<uint64_t>
+MPTTester::decryptAmount(Buffer const& privKey, Buffer const& amt)
+{
+    if (amt.size() != kEcGamalEncryptedTotalLength)
+        return std::nullopt;
+
+    auto const pair = makeEcPair(amt);
+    if (!pair)
+        return std::nullopt;
+
+    if (privKey.size() != kEcPrivKeyLength)
+        return std::nullopt;
+
+    uint64_t decryptedAmt = 0;
+    if (secp256k1_elgamal_decrypt(
+            secp256k1Context(),
+            &decryptedAmt,
+            &pair->c1,
+            &pair->c2,
+            privKey.data(),
             kElGamalDecryptRangeLow,
             kElGamalDecryptRangeHigh) == 0)
     {
@@ -1981,6 +2024,22 @@ MPTTester::getDecryptedBalance(Account const& account, EncryptedBalanceType bala
     }
 
     return decryptAmount(decryptor, *encryptedAmt, epoch);
+}
+
+std::optional<uint64_t>
+MPTTester::getDecryptedBalance(
+    Account const& account,
+    EncryptedBalanceType balanceType,
+    Buffer const& privKey) const
+{
+    auto const encryptedAmt = getEncryptedBalance(account, balanceType);
+
+    // Return zero to test cases like Feature Disabled, where the ledger object
+    // does not exist.
+    if (!encryptedAmt)
+        return 0;
+
+    return decryptAmount(privKey, *encryptedAmt);
 }
 
 json::Value
@@ -2297,6 +2356,34 @@ MPTTester::holderKeyUpdate(MPTHolderKeyUpdate const& arg, std::source_location c
         jv[sfConfidentialBalanceInbox.jsonName] = strHex(*arg.inboxCiphertext);
     if (arg.proof)
         jv[sfZKProof.jsonName] = strHex(*arg.proof);
+
+    submit(arg, {jv, loc});
+}
+
+void
+MPTTester::recoverBalance(MPTConfidentialRecover const& arg, std::source_location const& loc)
+{
+    json::Value jv;
+    auto const account = arg.account ? *arg.account : issuer_;
+    jv[sfAccount] = account.human();
+
+    Account const& holder = requireValue(arg.holder, "holder");
+    jv[sfHolder] = holder.human();
+
+    jv[jss::TransactionType] = jss::ConfidentialMPTRecoverBalance;
+    setIssuanceIdField(jv, arg.id);
+
+    if (arg.spendingCiphertext)
+        jv[sfConfidentialBalanceSpending] = strHex(*arg.spendingCiphertext);
+
+    if (arg.proof)
+    {
+        jv[sfZKProof] = *arg.proof;
+    }
+    else
+    {
+        jv[sfZKProof] = strHex(gMakeZeroBuffer(kEcEqualityProofLength));
+    }
 
     submit(arg, {jv, loc});
 }

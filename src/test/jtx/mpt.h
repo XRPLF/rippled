@@ -427,6 +427,25 @@ struct MPTHolderKeyUpdate
 };
 
 /**
+ * @brief Arguments for building a ConfidentialMPTRecoverBalance test transaction.
+ */
+struct MPTConfidentialRecover
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<Account> holder = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<Buffer> spendingCiphertext = std::nullopt;
+    std::optional<std::string> proof = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+/**
  * @brief Stores the parameters that are exclusively used to generate a
  * Pedersen linkage proof.
  */
@@ -682,6 +701,11 @@ public:
         MPTHolderKeyUpdate const& arg = MPTHolderKeyUpdate{},
         std::source_location const& loc = std::source_location::current());
 
+    void
+    recoverBalance(
+        MPTConfidentialRecover const& arg = MPTConfidentialRecover{},
+        std::source_location const& loc = std::source_location::current());
+
     [[nodiscard]] bool
     checkDomainID(std::optional<UInt256> expected) const;
 
@@ -808,6 +832,9 @@ public:
     [[nodiscard]] Buffer
     encryptAmount(Account const& account, uint64_t const amt, Buffer const& blindingFactor) const;
 
+    [[nodiscard]] static Buffer
+    encryptAmountWithPubKey(Buffer const& pubKey, uint64_t const amt, Buffer const& blindingFactor);
+
     // Decrypts with the account's key at the given key epoch, or its latest key
     // when no epoch is given.
     [[nodiscard]] std::optional<uint64_t>
@@ -816,8 +843,17 @@ public:
         Buffer const& amt,
         std::optional<std::uint32_t> epoch = std::nullopt) const;
 
+    [[nodiscard]] static std::optional<uint64_t>
+    decryptAmount(Buffer const& privKey, Buffer const& amt);
+
     [[nodiscard]] std::optional<uint64_t>
     getDecryptedBalance(Account const& account, EncryptedBalanceType balanceType) const;
+
+    [[nodiscard]] std::optional<uint64_t>
+    getDecryptedBalance(
+        Account const& account,
+        EncryptedBalanceType balanceType,
+        Buffer const& privKey) const;
 
     [[nodiscard]] std::optional<std::int64_t>
     getIssuanceOutstandingBalance() const;

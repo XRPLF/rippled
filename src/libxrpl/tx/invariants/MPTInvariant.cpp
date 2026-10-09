@@ -42,6 +42,7 @@ constexpr auto kConfidentialMptTxTypes = std::to_array<TxType>({
     ttCONFIDENTIAL_MPT_CLAWBACK,
     ttCONFIDENTIAL_MPT_MIRROR_UPDATE,
     ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE,
+    ttCONFIDENTIAL_MPT_RECOVER_BALANCE,
 });
 
 // Clamp to the cap (== INT64_MAX) before the signed conversion. Invariant
@@ -843,9 +844,9 @@ ValidConfidentialMPToken::finalize(
                 return false;
             }
 
-            // Reaching here means this confidential MPT transaction left coaDelta
-            // unmodified (e.g. ConfidentialMPTSend, ConfidentialMPTMergeInbox, or
-            // ConfidentialMPTHolderKeyUpdate/ConfidentialMPTMirrorUpdate, none of which touch
+            // Reaching here means this confidential MPT transaction left coaDelta unmodified
+            // (ConfidentialMPTSend, ConfidentialMPTMergeInbox, ConfidentialMPTMirrorUpdate,
+            // ConfidentialMPTHolderKeyUpdate, or ConfidentialMPTRecoverBalance, none of which touch
             // sfConfidentialOutstandingAmount), so it must not modify sfOutstandingAmount either.
             if (checks.outstandingDelta != 0)
             {
