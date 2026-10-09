@@ -1200,11 +1200,11 @@ trust-these-validators.gov
         if (!BEAST_EXPECT(conf.exists(Sections::kPortWssAdmin)))
             return;
         ParsedPort rpc;
-        if (!unexcept([&]() { parsePort(rpc, conf[Sections::kPortRpc], log); }))
+        if (!unexcept([&] { parsePort(rpc, conf[Sections::kPortRpc], log); }))
             return;
         BEAST_EXPECT(rpc.adminNetsV4.size() + rpc.adminNetsV6.size() == 2);
         ParsedPort wss;
-        if (!unexcept([&]() { parsePort(wss, conf[Sections::kPortWssAdmin], log); }))
+        if (!unexcept([&] { parsePort(wss, conf[Sections::kPortWssAdmin], log); }))
             return;
         BEAST_EXPECT(wss.adminNetsV4.size() + wss.adminNetsV6.size() == 1);
     }

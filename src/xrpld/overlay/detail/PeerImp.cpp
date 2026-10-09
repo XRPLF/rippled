@@ -252,7 +252,7 @@ stringIsUInt256Sized(std::string const& pBuffStr)
 void
 PeerImp::run()
 {
-    dispatch(strand_, [self = shared_from_this()]() {
+    dispatch(strand_, [self = shared_from_this()] {
         auto parseLedgerHash = [](std::string_view value) -> std::optional<UInt256> {
             if (UInt256 ret; ret.parseHex(value))
                 return ret;
@@ -310,7 +310,7 @@ PeerImp::run()
 void
 PeerImp::stop()
 {
-    dispatch(strand_, [self = shared_from_this()]() {
+    dispatch(strand_, [self = shared_from_this()] {
         if (!self->socket_.is_open())
             return;
 
@@ -323,7 +323,7 @@ PeerImp::stop()
 void
 PeerImp::send(std::shared_ptr<Message> const& m)
 {
-    dispatch(strand_, [self = shared_from_this(), m]() {
+    dispatch(strand_, [self = shared_from_this(), m] {
         if (self->gracefulClose_)
             return;
         if (self->detaching_)
@@ -384,7 +384,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
 void
 PeerImp::sendTxQueue()
 {
-    dispatch(strand_, [self = shared_from_this()]() {
+    dispatch(strand_, [self = shared_from_this()] {
         if (!self->txQueue_.empty())
         {
             protocol::TMHaveTransactions ht;
@@ -400,7 +400,7 @@ PeerImp::sendTxQueue()
 void
 PeerImp::addTxQueue(UInt256 const& hash)
 {
-    dispatch(strand_, [self = shared_from_this(), hash]() {
+    dispatch(strand_, [self = shared_from_this(), hash] {
         if (self->txQueue_.size() == reduce_relay::kMaxTxQueueSize)
         {
             JLOG(self->pJournal_.warn()) << "addTxQueue exceeds the cap";
@@ -415,7 +415,7 @@ PeerImp::addTxQueue(UInt256 const& hash)
 void
 PeerImp::removeTxQueue(UInt256 const& hash)
 {
-    dispatch(strand_, [self = shared_from_this(), hash]() {
+    dispatch(strand_, [self = shared_from_this(), hash] {
         auto removed = self->txQueue_.erase(hash);
         JLOG(self->pJournal_.trace()) << "removeTxQueue " << removed;
     });
@@ -424,7 +424,7 @@ PeerImp::removeTxQueue(UInt256 const& hash)
 void
 PeerImp::charge(resource::Charge const& fee, std::string const& context)
 {
-    dispatch(strand_, [self = shared_from_this(), fee, context]() {
+    dispatch(strand_, [self = shared_from_this(), fee, context] {
         if ((self->usage_.charge(fee, context) == resource::Disposition::Drop) &&
             self->usage_.disconnect(self->pJournal_))
         {
@@ -668,7 +668,7 @@ PeerImp::close()
 void
 PeerImp::fail(std::string const& reason)
 {
-    dispatch(strand_, [self = shared_from_this(), reason]() {
+    dispatch(strand_, [self = shared_from_this(), reason] {
         if (self->journal_.active(beast::Severity::Warning) && self->socket_.is_open())
         {
             std::string const n = self->name();
@@ -1000,7 +1000,7 @@ PeerImp::onReadMessage(ErrorCode ec, std::size_t bytesTransferred)
 
         using namespace std::chrono_literals;
         std::tie(bytesConsumed, ec) = perf::measureDurationAndLog(
-            [&]() { return invokeProtocolMessage(readBuffer_.data(), *this, hint); },
+            [&] { return invokeProtocolMessage(readBuffer_.data(), *this, hint); },
             "invokeProtocolMessage",
             350ms,
             journal_);
@@ -1155,7 +1155,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMManifests> const& m)
     // OverlayImpl::onManifests bounds the untrusted work and charges the fee
     // if the untrusted count exceeds the per-message cap; trusted manifests
     // are always processed and not counted against it.
-    app_.getJobQueue().addJob(JtManifest, "RcvManifests", [this, that = shared_from_this(), m]() {
+    app_.getJobQueue().addJob(JtManifest, "RcvManifests", [this, that = shared_from_this(), m] {
         overlay_.onManifests(m, that);
     });
 }
@@ -1453,7 +1453,7 @@ PeerImp::handleTransaction(
                  flags,
                  checkSignature,
                  batch,
-                 stx]() {
+                 stx] {
                     if (auto peer = weak.lock())
                         peer->checkTransaction(flags, checkSignature, stx, batch);
                 });
@@ -1486,7 +1486,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
         return;
     }
 
-    auto const ltype = [&m]() -> std::optional<::protocol::TMLedgerType> {
+    auto const ltype = [&m] -> std::optional<::protocol::TMLedgerType> {
         if (m->has_ltype())
             return m->ltype();
         return std::nullopt;
@@ -1574,7 +1574,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 
     // Queue a job to process the request.
     std::weak_ptr<PeerImp> const weak = shared_from_this();
-    app_.getJobQueue().addJob(JtLedgerReq, "RcvGetLedger", [weak, m, itype]() {
+    app_.getJobQueue().addJob(JtLedgerReq, "RcvGetLedger", [weak, m, itype] {
         auto peer = weak.lock();
         if (!peer)
             return;
@@ -1638,7 +1638,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
 
     fee_.update(resource::kFeeModerateBurdenPeer, "received a proof path request");
     std::weak_ptr<PeerImp> const weak = shared_from_this();
-    app_.getJobQueue().addJob(JtReplayReq, "RcvProofPReq", [weak, m]() {
+    app_.getJobQueue().addJob(JtReplayReq, "RcvProofPReq", [weak, m] {
         if (auto peer = weak.lock())
         {
             auto reply = peer->ledgerReplayMsgHandler_.processProofPathRequest(m);
@@ -1695,7 +1695,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
 
     fee_.fee = resource::kFeeModerateBurdenPeer;
     std::weak_ptr<PeerImp> const weak = shared_from_this();
-    app_.getJobQueue().addJob(JtReplayReq, "RcvReplDReq", [weak, m]() {
+    app_.getJobQueue().addJob(JtReplayReq, "RcvReplDReq", [weak, m] {
         if (auto peer = weak.lock())
         {
             auto reply = peer->ledgerReplayMsgHandler_.processReplayDeltaRequest(m);
@@ -1929,7 +1929,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     if (m->type() == protocol::liTS_CANDIDATE)
     {
         std::weak_ptr<PeerImp> const weak{shared_from_this()};
-        app_.getJobQueue().addJob(JtTxnData, "RcvPeerData", [weak, ledgerHash, m]() {
+        app_.getJobQueue().addJob(JtTxnData, "RcvPeerData", [weak, ledgerHash, m] {
             if (auto peer = weak.lock())
             {
                 peer->app_.getInboundTransactions().gotData(ledgerHash, peer, m);
@@ -2041,7 +2041,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 
     std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(
-        isTrusted ? JtProposalT : JtProposalUt, "checkPropose", [weak, isTrusted, m, proposal]() {
+        isTrusted ? JtProposalT : JtProposalUt, "checkPropose", [weak, isTrusted, m, proposal] {
             if (auto peer = weak.lock())
                 peer->checkPropose(isTrusted, m, proposal);
         });
@@ -2146,7 +2146,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
         checkTracking(m->ledgerseq(), app_.getLedgerMaster().getValidLedgerIndex());
     }
 
-    app_.getOPs().pubPeerStatus([m, this]() -> json::Value {
+    app_.getOPs().pubPeerStatus([m, this] -> json::Value {
         json::Value j = json::ValueType::Object;
 
         if (m->has_newstatus())
@@ -2604,7 +2604,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
             std::weak_ptr<PeerImp> const weak = shared_from_this();
             app_.getJobQueue().addJob(
-                isTrusted ? JtValidationT : JtValidationUt, name, [weak, val, m, key]() {
+                isTrusted ? JtValidationT : JtValidationUt, name, [weak, val, m, key] {
                     if (auto peer = weak.lock())
                         peer->checkValidation(val, key, m);
                 });
@@ -2655,7 +2655,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
             }
 
             std::weak_ptr<PeerImp> const weak = shared_from_this();
-            app_.getJobQueue().addJob(JtRequestedTxn, "DoTxs", [weak, m]() {
+            app_.getJobQueue().addJob(JtRequestedTxn, "DoTxs", [weak, m] {
                 if (auto peer = weak.lock())
                     peer->doTransactions(m);
             });
@@ -2687,7 +2687,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
         // I/O strand and onto the bounded job queue, mirroring the pattern
         // used by processLedgerRequest.
         std::weak_ptr<PeerImp> const weak = shared_from_this();
-        bool const queued = app_.getJobQueue().addJob(JtLedgerReq, "RcvGetObjByHash", [weak, m]() {
+        bool const queued = app_.getJobQueue().addJob(JtLedgerReq, "RcvGetObjByHash", [weak, m] {
             auto peer = weak.lock();
             if (!peer)
                 return;
@@ -2888,7 +2888,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactions> const& m)
     }
 
     std::weak_ptr<PeerImp> const weak = shared_from_this();
-    app_.getJobQueue().addJob(JtMissingTxn, "HandleHaveTxs", [weak, m]() {
+    app_.getJobQueue().addJob(JtMissingTxn, "HandleHaveTxs", [weak, m] {
         if (auto peer = weak.lock())
             peer->handleHaveTransactions(m);
     });
@@ -2974,7 +2974,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMTransactions> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
 {
-    dispatch(strand_, [self = shared_from_this(), m]() {
+    dispatch(strand_, [self = shared_from_this(), m] {
         if (!m->has_validatorpubkey())
         {
             self->fee_.update(resource::kFeeInvalidData, "squelch no pubkey");
@@ -3055,7 +3055,7 @@ PeerImp::doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
     std::weak_ptr<PeerImp> const weak = shared_from_this();
     auto elapsed = UptimeClock::now();
     auto const pap = &app_;
-    app_.getJobQueue().addJob(JtPack, "MakeFetchPack", [pap, weak, packet, hash, elapsed]() {
+    app_.getJobQueue().addJob(JtPack, "MakeFetchPack", [pap, weak, packet, hash, elapsed] {
         pap->getLedgerMaster().makeFetchPack(weak, packet, hash, elapsed);
     });
 }

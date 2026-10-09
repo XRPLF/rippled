@@ -259,7 +259,7 @@ Logs::format(
 
     output = xrpl::to_string(std::chrono::system_clock::now());
 
-    output += " ";
+    output += ' ';
     if (!partition.empty())
         output += partition + ":";
 

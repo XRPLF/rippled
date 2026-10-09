@@ -130,7 +130,7 @@ negotiateProtocolVersion(std::string_view versions)
 std::string const&
 supportedProtocolVersions()
 {
-    static std::string const kSupported = []() {
+    static std::string const kSupported = [] {
         std::string ret;
         for (auto const& v : kSupportedProtocolList)
         {

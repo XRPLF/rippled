@@ -249,7 +249,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             }
 
             // Verify that all the NFTs are owned by buyer.
-            json::Value buyerNFTs = [&env, &buyer]() {
+            json::Value buyerNFTs = [&env, &buyer] {
                 json::Value params;
                 params[jss::account] = buyer.human();
                 params[jss::type] = "state";
@@ -459,7 +459,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             }
 
             // Verify that all the NFTs are owned by buyer.
-            json::Value buyerNFTs = [&env, &buyer]() {
+            json::Value buyerNFTs = [&env, &buyer] {
                 json::Value params;
                 params[jss::account] = buyer.human();
                 params[jss::type] = "state";
@@ -700,7 +700,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         }
 
         // Verify that all the NFTs are owned by buyer.
-        json::Value buyerNFTs = [&env, &buyer]() {
+        json::Value buyerNFTs = [&env, &buyer] {
             json::Value params;
             params[jss::account] = buyer.human();
             params[jss::type] = "state";
@@ -905,7 +905,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             std::string marker;
             do
             {
-                json::Value buyerOffers = [&env, &buyer, &marker]() {
+                json::Value buyerOffers = [&env, &buyer, &marker] {
                     json::Value params;
                     params[jss::account] = buyer.human();
                     params[jss::type] = jss::nft_offer;
@@ -959,7 +959,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             }
 
             // account_objects should no longer return any "nft_offer"s.
-            json::Value remainingOffers = [&env, &buyer]() {
+            json::Value remainingOffers = [&env, &buyer] {
                 json::Value params;
                 params[jss::account] = buyer.human();
                 params[jss::type] = jss::nft_offer;
@@ -978,7 +978,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         std::string marker;
         do
         {
-            json::Value buyerNFTs = [&env, &buyer, &marker]() {
+            json::Value buyerNFTs = [&env, &buyer, &marker] {
                 json::Value params;
                 params[jss::account] = buyer.human();
                 params[jss::type] = "state";

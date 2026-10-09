@@ -159,7 +159,7 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
             // Tell the ledger acquire system that we need the consensus ledger
             acquiringLedger_ = hash;
 
-            app_.getJobQueue().addJob(JtAdvance, "GetConsL1", [id = hash, &app = app_, this]() {
+            app_.getJobQueue().addJob(JtAdvance, "GetConsL1", [id = hash, &app = app_, this] {
                 JLOG(j_.debug()) << "JOB advanceLedger getConsensusLedger1 started";
                 app.getInboundLedgers().acquireAsync(id, 0, InboundLedger::Reason::CONSENSUS);
             });
@@ -439,7 +439,7 @@ RCLConsensus::Adaptor::onAccept(
         JtAccept,
         "AcceptLedger",
         // NOLINTNEXTLINE(cppcoreguidelines-misleading-capture-default-by-value)
-        [=, this, cj = std::move(consensusJson)]() mutable {
+        [=, this, cj = std::move(consensusJson)] mutable {
             // Note that no lock is held or acquired during this job.
             // This is because generic Consensus guarantees that once a ledger
             // is accepted, the consensus results and capture by reference state
@@ -754,7 +754,7 @@ RCLConsensus::Adaptor::buildLCL(
     std::chrono::milliseconds roundTime,
     std::set<TxID>& failedTxs)
 {
-    std::shared_ptr<Ledger> built = [&]() {
+    std::shared_ptr<Ledger> built = [&] {
         if (auto const replayData = ledgerMaster_.releaseReplay())
         {
             XRPL_ASSERT(

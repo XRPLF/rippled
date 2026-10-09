@@ -693,7 +693,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
         LedgerIndex maxSeq = env.closed()->header().seq;
         // Close one ledger, carrying a transaction so that the sequence has rows
         // in all three of the tables clearSql() works through.
-        auto closeOne = [&]() -> bool {
+        auto closeOne = [&] -> bool {
             env(noop(alice));
             env.close();
             ++maxSeq;

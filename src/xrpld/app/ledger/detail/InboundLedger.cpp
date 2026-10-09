@@ -471,7 +471,7 @@ InboundLedger::done()
     }
 
     // We hold the PeerSet lock, so must dispatch
-    app_.getJobQueue().addJob(JtLedgerData, "AcqDone", [self = shared_from_this()]() {
+    app_.getJobQueue().addJob(JtLedgerData, "AcqDone", [self = shared_from_this()] {
         if (self->complete_ && !self->failed_)
         {
             self->app_.getLedgerMaster().checkAccept(self->getLedger());
@@ -674,7 +674,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                         tmGL.set_itype(protocol::liAS_NODE);
                         for (auto const& id : nodes)
                         {
-                            *(tmGL.add_nodeids()) = id.first.getRawString();
+                            *tmGL.add_nodeids() = id.first.getRawString();
                         }
 
                         JLOG(journal_.trace()) << "Sending AS node request (" << nodes.size()
@@ -704,7 +704,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         {
             // we need the root node
             tmGL.set_itype(protocol::liTX_NODE);
-            *(tmGL.add_nodeids()) = SHAMapNodeID().getRawString();
+            *tmGL.add_nodeids() = SHAMapNodeID().getRawString();
             JLOG(journal_.trace())
                 << "Sending TX root request to " << (peer ? "selected peer" : "all peers");
             peerSet_->sendRequest(tmGL, peer);
@@ -739,7 +739,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                     tmGL.set_itype(protocol::liTX_NODE);
                     for (auto const& n : nodes)
                     {
-                        *(tmGL.add_nodeids()) = n.first.getRawString();
+                        *tmGL.add_nodeids() = n.first.getRawString();
                     }
                     JLOG(journal_.trace()) << "Sending TX node request (" << nodes.size() << ") to "
                                            << (peer ? "selected peer" : "all peers");
@@ -878,7 +878,7 @@ InboundLedger::receiveNode(
     }
 
     auto [map, rootHash, filter] =
-        [&]() -> std::tuple<SHAMap&, SHAMapHash, std::unique_ptr<SHAMapSyncFilter>> {
+        [&] -> std::tuple<SHAMap&, SHAMapHash, std::unique_ptr<SHAMapSyncFilter>> {
         if (packet.type() == protocol::liTX_NODE)
         {
             return {
@@ -1311,7 +1311,7 @@ InboundLedger::runData()
         {
             if (auto peer = entry.first.lock())
             {
-                int const count = processData(peer, *(entry.second));
+                int const count = processData(peer, *entry.second);
                 dataCounts.update(std::move(peer), count);
             }
         }

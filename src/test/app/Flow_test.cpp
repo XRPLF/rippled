@@ -575,7 +575,7 @@ struct Flow_test : public beast::unit_test::Suite
                 SLE::const_pointer const usdOffer = env.le(bobUsdOffer);
                 if (BEAST_EXPECT(usdOffer))
                 {
-                    std::uint64_t const bookRate = [&usdOffer]() {
+                    std::uint64_t const bookRate = [&usdOffer] {
                         // Extract the least significant 64 bits from the
                         // book page.  That's where the quality is stored.
                         std::string bookDirStr = to_string(usdOffer->at(sfBookDirectory));
