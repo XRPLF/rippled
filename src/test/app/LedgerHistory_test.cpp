@@ -13,6 +13,8 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
@@ -77,6 +79,76 @@ public:
             true /* close time correct*/);
         lh.insert(res, false);
         return res;
+    }
+
+    void
+    testHashIndexInvariant()
+    {
+        testcase("LedgerHistory hash/index invariant");
+        using namespace jtx;
+        using namespace std::chrono;
+
+        Env env{*this};
+        LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
+
+        // Create and insert validated ledgers
+        auto const genesis = makeLedger({}, env, lh, 0s);
+        auto const ledger1 = makeLedger(genesis, env, lh, 4s);
+        auto const ledger2 = makeLedger(ledger1, env, lh, 4s);
+        auto const ledger3 = makeLedger(ledger2, env, lh, 4s);
+
+        // Insert as validated (so they go into by_index)
+        lh.insert(genesis, true);
+        lh.insert(ledger1, true);
+        lh.insert(ledger2, true);
+        lh.insert(ledger3, true);
+
+        // Verify the hash/index invariant holds
+        // Can retrieve by sequence and get correct hash
+        BEAST_EXPECT(lh.getLedgerHash(genesis->header().seq) == genesis->header().hash);
+        BEAST_EXPECT(lh.getLedgerHash(ledger1->header().seq) == ledger1->header().hash);
+        BEAST_EXPECT(lh.getLedgerHash(ledger2->header().seq) == ledger2->header().hash);
+        BEAST_EXPECT(lh.getLedgerHash(ledger3->header().seq) == ledger3->header().hash);
+
+        // Can retrieve by sequence and get correct ledger
+        auto fetched1 = lh.getLedgerBySeq(ledger1->header().seq);
+        if (BEAST_EXPECT(fetched1 != nullptr))
+            BEAST_EXPECT(fetched1->header().hash == ledger1->header().hash);
+
+        auto fetched2 = lh.getLedgerBySeq(ledger2->header().seq);
+        if (BEAST_EXPECT(fetched2 != nullptr))
+            BEAST_EXPECT(fetched2->header().hash == ledger2->header().hash);
+
+        // Clear ledgers prior to ledger2's sequence
+        lh.clearLedgerCachePrior(ledger2->header().seq);
+
+        // Verify old entries are gone from the in-memory by_index map
+        // Note: getLedgerHash checks by_index directly without DB fallback
+        BEAST_EXPECT(lh.getLedgerHash(genesis->header().seq).isZero());
+        BEAST_EXPECT(lh.getLedgerHash(ledger1->header().seq).isZero());
+
+        // Verify newer entries are still present in by_index
+        BEAST_EXPECT(lh.getLedgerHash(ledger2->header().seq) == ledger2->header().hash);
+        BEAST_EXPECT(lh.getLedgerHash(ledger3->header().seq) == ledger3->header().hash);
+
+        // The by_hash cache must be pruned to the same cutoff. A cache hit
+        // hands back the very object that was inserted, so identity tells a
+        // hit from a miss. (A null check would not: ledger1 is a transaction-
+        // free successor of genesis and therefore has the same hash as the
+        // Env's own ledger 2, which getLedgerByHash can reload from SQL.)
+        BEAST_EXPECT(lh.getLedgerByHash(ledger2->header().hash).get() == ledger2.get());
+        BEAST_EXPECT(lh.getLedgerByHash(ledger3->header().hash).get() == ledger3.get());
+        BEAST_EXPECT(lh.getLedgerByHash(ledger1->header().hash).get() != ledger1.get());
+
+        // Verify newer entries remain retrievable and consistent
+        // getLedgerBySeq uses by_index first, then falls back to DB if needed
+        auto fetched2After = lh.getLedgerBySeq(ledger2->header().seq);
+        if (BEAST_EXPECT(fetched2After != nullptr))
+            BEAST_EXPECT(fetched2After->header().hash == ledger2->header().hash);
+
+        auto fetched3After = lh.getLedgerBySeq(ledger3->header().seq);
+        if (BEAST_EXPECT(fetched3After != nullptr))
+            BEAST_EXPECT(fetched3After->header().hash == ledger3->header().hash);
     }
 
     void
@@ -170,12 +242,97 @@ public:
 
             BEAST_EXPECT(found);
         }
+
+        // Reverse order: validatedLedger arrives first, then builtLedger
+        // detects the mismatch. Covers the mismatch branch in builtLedger.
+        {
+            bool found = false;
+            Env env{
+                *this,
+                envconfig(),
+                std::make_unique<CheckMessageLogs>("MISMATCH on close time", &found)};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
+            auto const genesis = makeLedger({}, env, lh, 0s);
+            auto const ledgerA = makeLedger(genesis, env, lh, 4s);
+            auto const ledgerB = makeLedger(genesis, env, lh, 40s);
+
+            UInt256 const dummyTxHash{1};
+            lh.validatedLedger(ledgerB, dummyTxHash);
+            lh.builtLedger(ledgerA, dummyTxHash, {});
+
+            BEAST_EXPECT(found);
+        }
+
+        // The consensus JSON is captured inside the cache lock and handed to
+        // handleMismatch after it is released. The payload must survive that
+        // hand-off whichever side reports first: builtLedger passes its own
+        // argument, validatedLedger the copy stored in the cache entry.
+        for (bool const builtFirst : {true, false})
+        {
+            bool found = false;
+            // handleMismatch logs the consensus data at debug level, so raise
+            // the Env's log threshold (it defaults to Error) to capture it.
+            Env env{
+                *this,
+                envconfig(),
+                std::make_unique<CheckMessageLogs>("consensus-payload-marker", &found),
+                beast::Severity::Debug};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
+            auto const genesis = makeLedger({}, env, lh, 0s);
+            auto const ledgerA = makeLedger(genesis, env, lh, 4s);
+            auto const ledgerB = makeLedger(genesis, env, lh, 40s);
+
+            json::Value consensus{json::ValueType::Object};
+            consensus["marker"] = "consensus-payload-marker";
+
+            UInt256 const dummyTxHash{1};
+            if (builtFirst)
+            {
+                lh.builtLedger(ledgerA, dummyTxHash, consensus);
+                lh.validatedLedger(ledgerB, dummyTxHash);
+            }
+            else
+            {
+                lh.validatedLedger(ledgerB, dummyTxHash);
+                lh.builtLedger(ledgerA, dummyTxHash, consensus);
+            }
+
+            BEAST_EXPECT(found);
+        }
+    }
+
+    void
+    testFixIndex()
+    {
+        testcase("LedgerHistory fixIndex");
+        using namespace jtx;
+        using namespace std::chrono;
+
+        Env env{*this};
+        LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
+
+        auto const genesis = makeLedger({}, env, lh, 0s);
+        auto const ledger1 = makeLedger(genesis, env, lh, 4s);
+        lh.insert(ledger1, true);
+
+        // Unknown index: returns true, no repair.
+        BEAST_EXPECT(lh.fixIndex(999, ledger1->header().hash));
+
+        // Known index with the same hash: returns true, no repair.
+        BEAST_EXPECT(lh.fixIndex(ledger1->header().seq, ledger1->header().hash));
+
+        // Known index with a different hash: returns false and repairs.
+        UInt256 const bogusHash{42};
+        BEAST_EXPECT(!lh.fixIndex(ledger1->header().seq, bogusHash));
+        BEAST_EXPECT(lh.getLedgerHash(ledger1->header().seq) == bogusHash);
     }
 
     void
     run() override
     {
+        testHashIndexInvariant();
         testHandleMismatch();
+        testFixIndex();
     }
 };
 

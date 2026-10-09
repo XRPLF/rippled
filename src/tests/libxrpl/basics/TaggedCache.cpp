@@ -289,4 +289,124 @@ TEST_F(IntrusiveTaggedCacheTest, sweep_empties_the_cache_once_nothing_is_held)
     EXPECT_EQ(intrPtrCache.size(), 0);
 }
 
+TEST_F(TaggedCacheTest, fetch_and_modify_revives_a_swept_entry)
+{
+    cache.fetchAndModify(1, [](std::string& v) { v = "one"; });
+    auto const held = cache.fetch(1);
+    ASSERT_NE(held, nullptr);
+
+    ++clock;
+    cache.sweep();
+    EXPECT_EQ(cache.getCacheSize(), 0);  // demoted to weak
+    EXPECT_EQ(cache.getTrackSize(), 1);  // still tracked while `held` is alive
+
+    cache.fetchAndModify(1, [](std::string& v) { v += "_modified"; });
+    EXPECT_EQ(*held, "one_modified");    // the same object was mutated
+    EXPECT_EQ(cache.getCacheSize(), 1);  // and promoted back to strong
+    EXPECT_EQ(cache.getTrackSize(), 1);
+    EXPECT_EQ(cache.fetch(1).get(), held.get());
+}
+
+TEST_F(TaggedCacheTest, fetch_and_modify_replaces_an_expired_entry)
+{
+    cache.fetchAndModify(1, [](std::string& v) { v = "one"; });
+    {
+        auto const held = cache.fetch(1);
+        ASSERT_NE(held, nullptr);
+        ++clock;
+        cache.sweep();
+        EXPECT_EQ(cache.getCacheSize(), 0);
+        EXPECT_EQ(cache.getTrackSize(), 1);
+    }
+    // The weak entry is now expired but has not been erased by a sweep yet.
+    std::string observed = "unset";
+    cache.fetchAndModify(1, [&observed](std::string& v) {
+        observed = v;
+        v = "two";
+    });
+    EXPECT_EQ(observed, "");  // a fresh, default-constructed object
+    EXPECT_EQ(cache.getCacheSize(), 1);
+    EXPECT_EQ(cache.getTrackSize(), 1);
+    EXPECT_EQ(*cache.fetch(1), "two");
+}
+
+TEST_F(IntrusiveTaggedCacheTest, fetch_and_modify_supports_intrusive_pointers)
+{
+    // Miss: the placeholder is built with intr_ptr::makeShared and installed.
+    intrPtrCache.fetchAndModify(1, [](TestRefCountObject& v) { v.data = "one"; });
+    EXPECT_EQ(intrPtrCache.getCacheSize(), 1);
+    EXPECT_EQ(intrPtrCache.getTrackSize(), 1);
+
+    auto const held = intrPtrCache.fetch(1);
+    ASSERT_NE(held, nullptr);
+    EXPECT_EQ(*held, "one");
+
+    // Hit: the cached object is mutated in place, no new entry.
+    intrPtrCache.fetchAndModify(1, [](TestRefCountObject& v) { v.data += "_modified"; });
+    EXPECT_EQ(*held, "one_modified");
+    EXPECT_EQ(intrPtrCache.getCacheSize(), 1);
+    EXPECT_EQ(intrPtrCache.fetch(1).get(), held.get());
+}
+
+TEST_F(TaggedCacheTest, fetch_and_modify)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+
+    TestStopwatch clock;
+    clock.set(0);
+
+    struct MutableValue
+    {
+        int counter = 0;
+        std::string name;
+    };
+
+    using Key = LedgerIndex;
+    using MutCache = TaggedCache<Key, MutableValue>;
+
+    MutCache mc("mutable_test", 2, 2s, clock, journal);
+
+    // A. Insert on miss: fetchAndModify creates entry and mutates it.
+    mc.fetchAndModify(5, [](MutableValue& v) {
+        v.counter = 42;
+        v.name = "initial";
+    });
+
+    EXPECT_EQ(mc.getCacheSize(), 1);
+    EXPECT_EQ(mc.getTrackSize(), 1);
+
+    // Verify the mutation persisted.
+    auto p1 = mc.fetch(5);
+    ASSERT_NE(p1, nullptr);
+    EXPECT_EQ(p1->counter, 42);
+    EXPECT_EQ(p1->name, "initial");
+
+    // Keep a second strong pointer to verify in-place modification.
+    auto p2 = mc.fetch(5);
+    ASSERT_NE(p2, nullptr);
+    EXPECT_EQ(p1.get(), p2.get());  // Same object
+
+    // B. Modify existing object on hit.
+    mc.fetchAndModify(5, [](MutableValue& v) {
+        v.counter += 10;
+        v.name = "modified";
+    });
+
+    // No new entry was created.
+    EXPECT_EQ(mc.getCacheSize(), 1);
+    EXPECT_EQ(mc.getTrackSize(), 1);
+
+    // The same object was mutated (both strong pointers see the change).
+    EXPECT_EQ(p1->counter, 52);
+    EXPECT_EQ(p1->name, "modified");
+    EXPECT_EQ(p2->counter, 52);
+
+    // Fresh fetch returns the same object identity.
+    auto p3 = mc.fetch(5);
+    ASSERT_NE(p3, nullptr);
+    EXPECT_EQ(p3.get(), p1.get());
+    EXPECT_EQ(p3->counter, 52);
+}
+
 }  // namespace xrpl
