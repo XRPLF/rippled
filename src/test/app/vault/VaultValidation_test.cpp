@@ -369,7 +369,8 @@ private:
                     BEAST_EXPECT(sleVault);
                     BEAST_EXPECT((*sleVault)[sfScale] == 6);
                 }
-            });
+            },
+            {.features = testableAmendments() - featureLendingProtocolV1_2});
 
         testCase(
             [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
@@ -1003,8 +1004,9 @@ private:
 
         {
             testcase("VaultCreate LEVersion: featureLendingProtocolV1_1 disabled, field absent");
-            Env env{*this};
-            env.disableFeature(featureLendingProtocolV1_1);
+            Env env{
+                *this,
+                testableAmendments() - featureLendingProtocolV1_1 - featureLendingProtocolV1_2};
             env.fund(XRP(1'000'000), owner);
             env.close();
 
@@ -1022,7 +1024,7 @@ private:
             testcase(
                 "VaultCreate LEVersion: featureLendingProtocolV1_1 enabled, LEVersion == "
                 "VaultVersion::CashBasis");
-            Env env{*this};
+            Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
             env.fund(XRP(1'000'000), owner);
             env.close();
 

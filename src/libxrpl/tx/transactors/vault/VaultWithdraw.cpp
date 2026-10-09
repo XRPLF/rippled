@@ -384,10 +384,20 @@ VaultWithdraw::doApply()
     bool const isFinalWithdrawal =
         sharesRedeemed == STAmount{share, sleIssuance->at(sfOutstandingAmount)};
 
-    auto assetsAvailable = vault->at(sfAssetsAvailable);
-    auto assetsTotal = vault->at(sfAssetsTotal);
-    auto const lossUnrealized = vault->at(sfLossUnrealized);
+    // FixedPrecision: a final withdrawal must not leave AssetsDeployed behind
+    // with no shares to back it. A final withdrawal pays out AssetsAvailable
+    // + AssetsDeployed, rounded to 16 digits; on a coarsened vault, an
+    // AssetsDeployed below half a unit of AssetsAvailable's grid rounds
+    // away, so the payout equals AssetsAvailable exactly and the vault would
+    // be left with no shares and no cash but a non-zero AssetsDeployed.
+    if (isFinalWithdrawal && getVaultVersion(vault) == VaultVersion::FixedPrecision &&
+        Number(vault->at(sfAssetsDeployed)) != beast::kZero)
+    {
+        JLOG(j_.debug()) << "VaultWithdraw: cannot empty vault while AssetsDeployed is non-zero";
+        return tecHAS_OBLIGATIONS;
+    }
 
+    auto const assetsAvailable = vault->at(sfAssetsAvailable);
     if (fix340Enabled && !isFinalWithdrawal)
     {
         // Fixed-shares path: a small share count can round to zero assets even though the vault has
@@ -400,34 +410,11 @@ VaultWithdraw::doApply()
             return tecPRECISION_LOSS;
         }
 
-        // Number arithmetic can throw overflow_error when Scale and totals are large.
-        try
-        {
-            // A non-zero payout can be too small to change the stored sfAssetsTotal at
-            // STAmount's precision. Shares would still be burned, reject it instead.
-            if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsWithdrawn))
-            {
-                JLOG(j_.debug()) << "VaultWithdraw: withdrawal amount too small to change stored"
-                                    " vault balance";
-                return tecPRECISION_LOSS;
-            }
-        }
-        // LCOV_EXCL_START
-        catch (std::overflow_error const&)
-        {
-            // It's easy to hit this exception from Number with large enough Scale
-            // so we avoid spamming the log and only use debug here.
-            JLOG(j_.debug())  //
-                << "VaultWithdraw: overflow error with"
-                << " scale=" << (int)vault->at(sfScale).value()  //
-                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
-                << ", amount=" << amount.value();
-            // Overflow means this transaction cannot apply, but ledger state is still consistent.
-            // Return tecPATH_DRY rather than a hard internal error.
-            return tecPATH_DRY;
-        }
-        // LCOV_EXCL_STOP
+        // A non-zero payout can be too small to change the stored balance at
+        // STAmount's precision. Shares would still be burned, reject it instead.
+        if (auto const ter = checkDebitNotDust(vault, assetsWithdrawn, j_, "VaultWithdraw");
+            !isTesSuccess(ter))
+            return ter;
     }
 
     // Post-fixCleanup3_3_0: preclaim already validated all freeze conditions
@@ -466,10 +453,12 @@ VaultWithdraw::doApply()
         // Number arithmetic can throw overflow_error when Scale and totals are large.
         try
         {
-            // Round down at the posterior sfAssetsTotal scale so the payout never exceeds the
-            // value represented by the redeemed shares. sharesRedeemed is intentionally not
+            // Round down at the posterior scale of the balance the payout actually
+            // leaves -- AssetsAvailable on FixedPrecision, the AssetsTotal cache on
+            // Legacy/CashBasis -- so the payout never exceeds the value represented
+            // by the redeemed shares. sharesRedeemed is intentionally not
             // re-derived: any trimmed residue stays with remaining shareholders.
-            auto const maybeClamped = clampToAssetsTotalScale(vault, -assetsWithdrawn);
+            auto const maybeClamped = clampVaultOutflow(vault, -assetsWithdrawn);
             if (!maybeClamped)
                 return maybeClamped.error();  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeClamped;
@@ -503,14 +492,15 @@ VaultWithdraw::doApply()
     // unrealized loss. Otherwise the resulting (shares == 0, assetsTotal > 0) state would violate
     // the zero-sized-vault invariant.
     //
-    // The payout is set to the remaining sfAssetsAvailable. The helper result should already
+    // The payout is set to the remaining AssetsAvailable. The helper result should already
     // equal that value in a clean vault; any mismatch is a rounding artifact and is logged.
-    if (view().rules().enabled(fixCleanup3_2_0) && isFinalWithdrawal)
+    bool const finalPayout = view().rules().enabled(fixCleanup3_2_0) && isFinalWithdrawal;
+    if (finalPayout)
     {
         // Unreachable: a final withdrawal with lossUnrealized > 0 has
         // assetsWithdrawn == assetsTotal > assetsAvailable, which the
         // insufficient-funds guard above already rejected.
-        if (*lossUnrealized != beast::kZero)
+        if (*vault->at(sfLossUnrealized) != beast::kZero)
         {
             // LCOV_EXCL_START
             UNREACHABLE(
@@ -531,17 +521,17 @@ VaultWithdraw::doApply()
                 << " assetsAvailable=" << allAvailable.getText();
         }
         assetsWithdrawn = allAvailable;
-
-        // Do not let dust accumulate in the Vault.
-        assetsTotal = 0;
-        assetsAvailable = 0;
     }
-    else
+
+    if (finalPayout && getVaultVersion(vault) != VaultVersion::FixedPrecision)
     {
-        // Debit both rails by the same delta so sfAssetsTotal and sfAssetsAvailable stay in step,
-        // as required by the ValidVault invariant.
-        assetsTotal -= assetsWithdrawn;
-        assetsAvailable -= assetsWithdrawn;
+        // Do not let dust accumulate in the Vault.
+        vault->at(sfAssetsTotal) = 0;
+        vault->at(sfAssetsAvailable) = 0;
+    }
+    else if (auto const ter = adjustVaultCash(vault, -assetsWithdrawn, j_); !isTesSuccess(ter))
+    {
+        return ter;
     }
     view().update(vault);
 

@@ -745,7 +745,9 @@ class InvariantsMisc_test : public InvariantsBase
 
             for (auto const& mod : mods)
             {
+                // lsfLoanBrokerPrivate requires featureLendingProtocolV1_2.
                 doInvariantCheck(
+                    makeEnv(test::jtx::testableAmendments() | featureLendingProtocolV1_2),
                     {{"changed an unchangeable field"}},
                     [&](Account const& a1, Account const&, ApplyContext& ac) {
                         auto sle = ac.view().peek(loanBrokerKeylet);

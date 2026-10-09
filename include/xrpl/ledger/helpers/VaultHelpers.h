@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <string_view>
 
 namespace xrpl {
 
@@ -79,6 +80,21 @@ struct VaultBalanceChange
  */
 [[nodiscard]] TER
 adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Journal j);
+
+/**
+ * @brief Apply a signed cash movement to a Vault of any version. FixedPrecision
+ * Vaults go through adjustVaultBalances; Legacy and CashBasis Vaults add the
+ * amount to both AssetsTotal and AssetsAvailable.
+ *
+ * @param vault The vault SLE.
+ * @param delta Signed change to AssetsAvailable; the exact amount moved on the
+ *              Vault pseudo-account.
+ * @param j Journal passed through to adjustVaultBalances.
+ *
+ * @return tesSUCCESS, or the adjustVaultBalances error for FixedPrecision Vaults.
+ */
+[[nodiscard]] TER
+adjustVaultCash(SLE::Ref vault, STAmount const& delta, beast::Journal j);
 
 /**
  * Return the Vault's current live exponent.
@@ -333,6 +349,18 @@ vaultBaseScale(Asset const& asset, std::uint8_t scale);
 isOnVaultBaseGrid(Asset const& asset, Number const& value, int baseScale);
 
 /**
+ * Checks that a requested AssetsMaximum is exactly representable on the
+ * Vault's base grid, otherwise associateAsset would silently round the cap
+ * the owner asked for. Used by VaultSet::preclaim on an existing Vault.
+ *
+ * @param vault The vault ledger entry.
+ * @param amount The requested AssetsMaximum.
+ * @return tesSUCCESS, or tecPRECISION_LOSS if amount is not representable.
+ */
+[[nodiscard]] TER
+checkAssetsMaximum(SLE::ConstRef vault, Number const& amount);
+
+/**
  * Controls whether to truncate shares instead of rounding.
  */
 enum class TruncateShares : bool { No = false, Yes = true };
@@ -359,35 +387,24 @@ enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
 assetsTotalForWithdrawal(SLE::ConstRef vault, WaiveUnrealizedLoss waive);
 
 /**
- * Returns true if debiting amount from total (the current value of a
- * vault's sfAssetsTotal or sfAssetsAvailable) would canonicalize to the
- * same STAmount value. This happens when amount is non-zero but too small
- * to change the stored total at STAmount's precision. Shares would still
- * move, so the ValidVault invariant would fail after apply; callers use
- * this to reject the transaction upfront instead.
- *
- * @param asset The vault's underlying asset, used to canonicalize both
- *              sides the same way the ledger will when the field is stored.
- * @param total The field's current value.
- * @param amount The amount to debit. Zero always returns false; that case
- *               is rejected separately.
- */
-[[nodiscard]] bool
-debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount);
-
-/**
- * Returns the reference balance a cash outflow's dust check
- * (debitIsNonZeroDust) should compare against: FixedPrecision Vaults use
- * AssetsAvailable, the balance the cash actually leaves; Legacy/CashBasis
- * Vaults use the given AssetsTotal. Shared by VaultWithdraw and
- * VaultClawback.
+ * Reject a cash outflow that is dust (see debitIsNonZeroDust) or whose check
+ * overflows Number, which is easy to hit with a large Scale.
  *
  * @param vault The vault SLE.
- * @param assetsTotal The vault's current AssetsTotal, as already read by the
- *                     caller.
+ * @param amount The amount to debit.
+ * @param j Journal for the debug log.
+ * @param name Transaction name used as the log prefix.
+ *
+ * @return tesSUCCESS; tecPRECISION_LOSS if amount is dust; tecPATH_DRY if the
+ *         check overflows. Overflow means the transaction cannot apply, but
+ *         ledger state is still consistent.
  */
-[[nodiscard]] Number
-vaultDebitDustReference(SLE::ConstRef vault, Number const& assetsTotal);
+[[nodiscard]] TER
+checkDebitNotDust(
+    SLE::ConstRef vault,
+    Number const& amount,
+    beast::Journal j,
+    std::string_view name);
 
 /**
  * From the perspective of a vault, return the number of shares to demand from
@@ -482,8 +499,9 @@ decodeVaultVersion(std::optional<std::uint8_t> leVersion);
  *
  * @param rules The active ledger rules.
  *
- * @return VaultVersion::FixedPrecision once featureLendingProtocolV1_2,
- * fixCleanup3_2_0 and fixCleanup3_4_0 are all enabled; VaultVersion::CashBasis
+ * @return VaultVersion::FixedPrecision once featureLendingProtocolV1_1,
+ * featureLendingProtocolV1_2 and fixCleanup3_4_0 are all enabled;
+ * VaultVersion::CashBasis
  * once featureLendingProtocolV1_1 is enabled; VaultVersion::Legacy otherwise.
  */
 [[nodiscard]] VaultVersion

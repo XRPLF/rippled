@@ -25,6 +25,8 @@
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <stdexcept>
+#include <string_view>
 #include <utility>
 
 namespace xrpl {
@@ -134,6 +136,18 @@ syncAssetsTotal(SLE::Ref vault)
     vault->at(sfAssetsTotal) = STAmount{asset, getAssetsTotal(vault)};
 }
 
+[[nodiscard]] bool
+debitIsNonZeroDust(SLE::ConstRef vault, Number const& amount)
+{
+    if (amount == 0)
+        return false;
+
+    auto const total = getVaultVersion(vault) == VaultVersion::FixedPrecision
+        ? vault->at(sfAssetsAvailable)
+        : getAssetsTotal(vault);
+    auto const asset = vault->at(sfAsset);
+    return STAmount{asset, total - amount} == STAmount{asset, total};
+}
 }  // namespace
 
 namespace detail {
@@ -302,6 +316,17 @@ adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Jou
     return tesSUCCESS;
 }
 
+[[nodiscard]] TER
+adjustVaultCash(SLE::Ref vault, STAmount const& delta, beast::Journal j)
+{
+    if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+        return adjustVaultBalances(vault, {.cash = delta}, j);
+
+    vault->at(sfAssetsTotal) += delta;
+    vault->at(sfAssetsAvailable) += delta;
+    return tesSUCCESS;
+}
+
 [[nodiscard]] int
 getVaultScale(SLE::ConstRef vault)
 {
@@ -426,6 +451,36 @@ vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount)
         "xrpl::vaultOpenZoneCapacity : FixedPrecision Vault");
     NumberRoundModeGuard const rg(Number::RoundingMode::TowardsZero);
     return getAssetsTotal(vault) + vault->at(sfYieldUnrealized) + roundedAmount;
+}
+
+[[nodiscard]] TER
+checkDebitNotDust(
+    SLE::ConstRef vault,
+    Number const& amount,
+    beast::Journal j,
+    std::string_view name)
+{
+    try
+    {
+        if (debitIsNonZeroDust(vault, amount))
+        {
+            JLOG(j.debug()) << name << ": amount too small to change stored vault balance";
+            return tecPRECISION_LOSS;
+        }
+    }
+    // LCOV_EXCL_START
+    catch (std::overflow_error const&)
+    {
+        // It's easy to hit this exception from Number with large enough Scale
+        // so we avoid spamming the log and only use debug here.
+        JLOG(j.debug())  //
+            << name << ": overflow error with"
+            << " scale=" << (int)vault->at(sfScale)  //
+            << ", assetsTotal=" << vault->at(sfAssetsTotal) << ", amount=" << amount;
+        return tecPATH_DRY;
+    }
+    // LCOV_EXCL_STOP
+    return tesSUCCESS;
 }
 
 [[nodiscard]] std::optional<STAmount>
@@ -573,6 +628,14 @@ isOnVaultBaseGrid(Asset const& asset, Number const& value, int baseScale)
         roundToAsset(asset, value, baseScale, Number::RoundingMode::TowardsZero) == value;
 }
 
+[[nodiscard]] TER
+checkAssetsMaximum(SLE::ConstRef vault, Number const& amount)
+{
+    return isOnVaultBaseGrid(vault->at(sfAsset), amount, getVaultBaseScale(vault))
+        ? TER{tesSUCCESS}
+        : TER{tecPRECISION_LOSS};
+}
+
 [[nodiscard]] Number
 assetsTotalForWithdrawal(SLE::ConstRef vault, WaiveUnrealizedLoss waive)
 {
@@ -580,22 +643,6 @@ assetsTotalForWithdrawal(SLE::ConstRef vault, WaiveUnrealizedLoss waive)
     if (waive == WaiveUnrealizedLoss::No)
         assetTotal -= vault->at(sfLossUnrealized);
     return assetTotal;
-}
-
-[[nodiscard]] bool
-debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount)
-{
-    if (amount == 0)
-        return false;
-    return STAmount{asset, total - amount} == STAmount{asset, total};
-}
-
-[[nodiscard]] Number
-vaultDebitDustReference(SLE::ConstRef vault, Number const& assetsTotal)
-{
-    return getVaultVersion(vault) == VaultVersion::FixedPrecision
-        ? Number(vault->at(sfAssetsAvailable))
-        : assetsTotal;
 }
 
 [[nodiscard]] std::optional<STAmount>
@@ -693,9 +740,10 @@ getVaultVersion(SLE::ConstRef vault)
 [[nodiscard]] VaultVersion
 vaultVersionFor(Rules const& rules)
 {
-    // FixedPrecision requires both cleanups, so a FixedPrecision Vault always
-    // sees them enabled.
-    if (rules.enabled(featureLendingProtocolV1_2) && rules.enabled(fixCleanup3_2_0) &&
+    // FixedPrecision requires featureLendingProtocolV1_1 (closed-ended Vaults and
+    // cash-basis accounting) and fixCleanup3_4_0, so a FixedPrecision Vault always
+    // sees both enabled. fixCleanup3_2_0 is already enabled on the network.
+    if (rules.enabled(featureLendingProtocolV1_1) && rules.enabled(featureLendingProtocolV1_2) &&
         rules.enabled(fixCleanup3_4_0))
         return VaultVersion::FixedPrecision;
     if (rules.enabled(featureLendingProtocolV1_1))
