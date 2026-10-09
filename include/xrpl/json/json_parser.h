@@ -258,6 +258,13 @@ private:
         TokenType type{};
         Location start{};
         Location end{};
+
+        // The characters of the token as written in the document.
+        [[nodiscard]] std::string_view
+        text() const
+        {
+            return {start, static_cast<std::size_t>(end - start)};
+        }
     };
 
     class ErrorInfo
@@ -1037,9 +1044,7 @@ Parser<Visitor...>::decodeNumber(Token& token)
 
     if (current == token.end)
     {
-        return addError(
-            std::format("'{}' is not a valid number.", std::string_view(token.start, token.end)),
-            token);
+        return addError(std::format("'{}' is not a valid number.", token.text()), token);
     }
 
     // The existing Json integers are 32-bit so using a 64-bit value here avoids
@@ -1056,9 +1061,7 @@ Parser<Visitor...>::decodeNumber(Token& token)
 
         if (c < '0' || c > '9')
         {
-            return addError(
-                std::format("'{}' is not a number.", std::string_view(token.start, token.end)),
-                token);
+            return addError(std::format("'{}' is not a number.", token.text()), token);
         }
 
         value = (value * kDecimalBase) + (c - '0');
@@ -1067,10 +1070,7 @@ Parser<Visitor...>::decodeNumber(Token& token)
     // More tokens left -> input is larger than largest possible return value
     if (current != token.end)
     {
-        return addError(
-            std::format(
-                "'{}' exceeds the allowable range.", std::string_view(token.start, token.end)),
-            token);
+        return addError(std::format("'{}' exceeds the allowable range.", token.text()), token);
     }
 
     if (isNegative)
@@ -1079,10 +1079,7 @@ Parser<Visitor...>::decodeNumber(Token& token)
 
         if (value < Value::kMinInt || value > Value::kMaxInt)
         {
-            return addError(
-                std::format(
-                    "'{}' exceeds the allowable range.", std::string_view(token.start, token.end)),
-                token);
+            return addError(std::format("'{}' exceeds the allowable range.", token.text()), token);
         }
 
         DISPATCH_VISITORS(token, onInt(static_cast<Value::Int>(value)));
@@ -1091,10 +1088,7 @@ Parser<Visitor...>::decodeNumber(Token& token)
     {
         if (value > Value::kMaxUInt)
         {
-            return addError(
-                std::format(
-                    "'{}' exceeds the allowable range.", std::string_view(token.start, token.end)),
-                token);
+            return addError(std::format("'{}' exceeds the allowable range.", token.text()), token);
         }
 
         // If it's representable as a signed integer, construct it as one.
@@ -1132,8 +1126,7 @@ Parser<Visitor...>::decodeDouble(Token& token)
     //     but from_chars() will stop at the first character it cannot parse.
     if (ec != std::errc{} || ptr != token.end)
     {
-        return addError(
-            std::format("'{}' is not a number.", std::string_view(token.start, token.end)), token);
+        return addError(std::format("'{}' is not a number.", token.text()), token);
     }
 
     DISPATCH_VISITORS(token, onDouble(value));
