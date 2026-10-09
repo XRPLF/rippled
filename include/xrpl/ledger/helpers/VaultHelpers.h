@@ -72,12 +72,11 @@ struct VaultBalanceChange
  *
  * @param vault The vault SLE. Must be FixedPrecision.
  * @param change The balance change to apply.
- * @param j Journal for logging the fatal (tefBAD_LEDGER) and warning
- *          (YieldUnrealized clamp) cases.
+ * @param j Journal for logging the fatal (tefBAD_LEDGER) case.
  *
  * @return tesSUCCESS; tecLIMIT_EXCEEDED if LossUnrealized would exceed
- *         AssetsDeployed; tefBAD_LEDGER if AssetsAvailable, AssetsDeployed or
- *         LossUnrealized would become negative.
+ *         AssetsDeployed; tefBAD_LEDGER if AssetsAvailable, AssetsDeployed,
+ *         LossUnrealized or YieldUnrealized would become negative.
  */
 [[nodiscard]] TER
 adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Journal j);
