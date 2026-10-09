@@ -339,6 +339,7 @@ ValidMPTIssuance::finalize(
                 // Cap on MPToken creates and deletes while featureLendingProtocol is enabled.
                 // - LoanSet: at most two creates and no deletes.
                 // - VaultWithdraw: at most one create and one delete.
+                // - LoanBrokerDelete (post-fixCleanup3_5_0): at most one create and one delete.
                 // - Other MayAuthorizeMpt types: created + deleted <= 1.
                 // - MustAuthorizeMpt still requires exactly one create or delete below.
                 auto const mptokensExceedAuthorizeCap = [&] {
@@ -351,6 +352,10 @@ ValidMPTIssuance::finalize(
                         if (txnType == ttVAULT_WITHDRAW)
                             return mptokensCreated_ > 1 || mptokensDeleted_ > 1;
                     }
+                    // The cover payout may create the owner's MPToken while the
+                    // pseudo-account's MPToken is deleted.
+                    if (rules.enabled(fixCleanup3_5_0) && txnType == ttLOAN_BROKER_DELETE)
+                        return mptokensCreated_ > 1 || mptokensDeleted_ > 1;
                     return (mptokensCreated_ + mptokensDeleted_) > 1;
                 };
                 if (mptokensExceedAuthorizeCap())

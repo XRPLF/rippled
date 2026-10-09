@@ -10,6 +10,7 @@
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/seq.h>
@@ -32,6 +33,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -1895,6 +1897,99 @@ class LoanBroker_test : public beast::unit_test::Suite
         }
     }
 
+    // Alice creates a vault over `asset`, deposits 10'000 into it and creates a broker for it.
+    // A nonzero `cover` also goes into the broker as first-loss cover.
+    static Keylet
+    createBroker(
+        jtx::Env& env,
+        jtx::Account const& alice,
+        jtx::PrettyAsset const& asset,
+        std::int64_t cover)
+    {
+        using namespace jtx;
+        using namespace loan_broker;
+
+        Vault const vault{env};
+        auto const [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(tx);
+        env.close();
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(10'000)}));
+        env.close();
+
+        auto const brokerKeylet =
+            keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+        env(set(alice, vaultKeylet.key));
+        env.close();
+
+        if (cover != 0)
+        {
+            env(coverDeposit(alice, brokerKeylet.key, asset(cover).value()));
+            env.close();
+        }
+        return brokerKeylet;
+    }
+
+    // Leaves alice `incrementsShort` owner reserve increments below her current reserve.
+    // Fees can be paid out of the reserve, which is how she gets below it.
+    static void
+    leaveBelowReserve(
+        jtx::Env& env,
+        jtx::Account const& alice,
+        jtx::Account const& sink,
+        int incrementsShort)
+    {
+        using namespace jtx;
+
+        auto const fee = env.current()->fees().base;
+        env(pay(
+            alice,
+            sink,
+            env.balance(alice) - accountReserve(*env.current(), alice.id(), env.journal) - fee));
+        if (incrementsShort > 0)
+            env(noop(alice), Fee(env.current()->fees().increment * incrementsShort));
+        env.close();
+    }
+
+    // Alice deletes her broker. On success she gets the remaining cover, in a holding that is
+    // created if needed. On failure her broker, balance, holding and owner count stay as they were.
+    void
+    deleteBrokerAndCheck(
+        jtx::Env& env,
+        jtx::Account const& alice,
+        jtx::PrettyAsset const& asset,
+        Keylet const& brokerKeylet,
+        TER expected)
+    {
+        using namespace jtx;
+
+        auto const broker = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(broker))
+            return;
+        STAmount const cover{asset.raw(), broker->at(sfCoverAvailable)};
+        STAmount const balanceBefore = env.balance(alice, asset);
+        auto const ownerCountBefore = env.ownerCount(alice);
+        bool const hadHolding = holdingExists(*env.current(), alice.id(), asset);
+
+        env(loan_broker::del(alice, brokerKeylet.key), Ter(expected));
+        env.close();
+
+        if (isTesSuccess(expected))
+        {
+            BEAST_EXPECT(!env.le(brokerKeylet));
+            BEAST_EXPECT(env.balance(alice, asset) == balanceBefore + cover);
+            BEAST_EXPECT(holdingExists(*env.current(), alice.id(), asset));
+            // The broker and its pseudo-account are released, a new holding is counted.
+            BEAST_EXPECT(env.ownerCount(alice) == ownerCountBefore - 2 + (hadHolding ? 0 : 1));
+        }
+        else
+        {
+            BEAST_EXPECT(env.le(brokerKeylet));
+            BEAST_EXPECT(env.balance(alice, asset) == balanceBefore);
+            BEAST_EXPECT(holdingExists(*env.current(), alice.id(), asset) == hadHolding);
+            BEAST_EXPECT(env.ownerCount(alice) == ownerCountBefore);
+        }
+    }
+
     void
     testLoanBrokerDeleteFrozenIOU(FeatureBitset features)
     {
@@ -1919,25 +2014,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env(pay(issuer, alice, iou(100'000)));
         env.close();
 
-        // Create vault
-        Vault const vault{env};
-        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = iou.asset()});
-        env(tx);
-        env.close();
-
-        // Deposit into vault
-        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = iou(10'000)}));
-        env.close();
-
-        // Create loan broker
-        auto const brokerKeylet =
-            keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
-        env(set(alice, vaultKeylet.key));
-        env.close();
-
-        // Deposit cover
-        env(coverDeposit(alice, brokerKeylet.key, iou(5'000)));
-        env.close();
+        auto const brokerKeylet = createBroker(env, alice, iou, 5'000);
 
         // Verify cover is deposited
         auto const broker = env.le(brokerKeylet);
@@ -1981,6 +2058,152 @@ class LoanBroker_test : public beast::unit_test::Suite
         BEAST_EXPECT(aliceBalanceAfter == aliceBalanceBefore);
     }
 
+    // Alice puts all her IOU into a vault and the cover of her broker, changes something about the
+    // line the cover would be paid to, and deletes the broker.
+    void
+    testLoanBrokerDeleteCoverPayoutIOU()
+    {
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        auto const iou = issuer["IOU"];
+
+        using Step = std::function<void(Env&, Keylet const& broker)>;
+        struct Case
+        {
+            std::string name;
+            bool requireAuth = false;
+            bool defaultRipple = true;
+            Step beforeCover = {};          // NOLINT(readability-redundant-member-init)
+            Step beforeDelete = {};         // NOLINT(readability-redundant-member-init)
+            TER expectedPost = tesSUCCESS;  // with fixCleanup3_5_0
+            TER expectedPre = tesSUCCESS;   // without fixCleanup3_5_0
+            Step afterDelete = {};          // NOLINT(readability-redundant-member-init)
+        };
+
+        // Alice spent her whole balance, so zeroing the limit deletes her line.
+        // The cover payout would have to recreate it.
+        auto const deleteOwnerLine = [&](Env& env, Keylet const&) {
+            env(trust(alice, iou(0)));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::trustLine(alice.id(), iou.issue())));
+        };
+
+        std::vector<Case> const cases{
+            {.name = "non-rippling owner line",
+             .defaultRipple = false,
+             // Rippling can be blocked on the pseudo-account line only while it is empty.
+             .beforeCover =
+                 [&](Env& env, Keylet const& broker) {
+                     Account const brokerPseudo{"BrokerPseudo", env.le(broker)->at(sfAccount)};
+                     env(trust(issuer, brokerPseudo["IOU"](0), tfSetNoRipple));
+                     env.close();
+                 },
+             .beforeDelete =
+                 [&](Env& env, Keylet const&) {
+                     env(trust(issuer, alice["IOU"](0), tfSetNoRipple));
+                     env.close();
+                 },
+             .expectedPost = terNO_RIPPLE},
+            {.name = "owner line deleted",
+             .beforeDelete =
+                 [&](Env& env, Keylet const& broker) {
+                     deleteOwnerLine(env, broker);
+                     env(fset(alice, asfDefaultRipple));
+                     env.close();
+                 },
+             // Pre-Cleanup3.5 the recreated line takes NoRipple from alice's DefaultRipple.
+             // Post-Cleanup3.5 it always has NoRipple, as on a withdrawal to self.
+             .afterDelete =
+                 [&](Env& env, Keylet const&) {
+                     auto const line = env.le(keylet::trustLine(alice.id(), iou.issue()));
+                     if (!BEAST_EXPECT(line))
+                         return;
+                     auto const noRipple =
+                         alice.id() > issuer.id() ? lsfHighNoRipple : lsfLowNoRipple;
+                     BEAST_EXPECT(
+                         line->isFlag(noRipple) == env.current()->rules().enabled(fixCleanup3_5_0));
+                 }},
+            {.name = "owner line deleted, issuer clears DefaultRipple",
+             .beforeDelete =
+                 [&](Env& env, Keylet const& broker) {
+                     deleteOwnerLine(env, broker);
+                     env(fclear(issuer, asfDefaultRipple));
+                     env.close();
+                 },
+             .expectedPost = terNO_RIPPLE},
+            {.name = "owner line deleted, owner below reserve",
+             .beforeDelete =
+                 [&](Env& env, Keylet const& broker) {
+                     deleteOwnerLine(env, broker);
+                     // Still short after the broker's reserve is released.
+                     leaveBelowReserve(env, alice, issuer, 2);
+                 },
+             .expectedPost = tecNO_LINE_INSUF_RESERVE},
+            {.name = "owner line deleted, issuer requires auth",
+             .requireAuth = true,
+             .beforeDelete = deleteOwnerLine,
+             .expectedPost = tecNO_LINE},
+            // The issuer cannot revoke IOU authorization, but a recreated line starts unauthorized.
+            {.name = "owner line recreated unauthorized",
+             .requireAuth = true,
+             .beforeDelete =
+                 [&](Env& env, Keylet const& broker) {
+                     deleteOwnerLine(env, broker);
+                     env(trust(alice, iou(10'000)));
+                     env.close();
+                     auto const line = env.le(keylet::trustLine(alice.id(), iou.issue()));
+                     if (BEAST_EXPECT(line))
+                     {
+                         BEAST_EXPECT(
+                             !line->isFlag(alice.id() > issuer.id() ? lsfLowAuth : lsfHighAuth));
+                     }
+                 },
+             .expectedPost = tecNO_AUTH},
+        };
+
+        for (auto const& c : cases)
+        {
+            for (bool const withFix : {true, false})
+            {
+                testcase << "LoanBrokerDelete - IOU " << c.name << ", "
+                         << (withFix ? "post-Cleanup3.5" : "pre-Cleanup3.5");
+
+                Env env(*this, withFix ? all_ : all_ - fixCleanup3_5_0);
+                env.fund(XRP(100'000), issuer, alice);
+                env.close();
+
+                // With DefaultRipple set, canTransfer passes and only authorization decides.
+                if (c.requireAuth)
+                    env(fset(issuer, asfRequireAuth));
+                if (c.defaultRipple)
+                    env(fset(issuer, asfDefaultRipple));
+                env.close();
+                if (c.requireAuth)
+                    env(trust(issuer, iou(0), alice, tfSetfAuth));
+                env(trust(alice, iou(15'000)));
+                env.close();
+                env(pay(issuer, alice, iou(15'000)));
+                env.close();
+
+                auto const broker = createBroker(env, alice, iou, 0);
+                if (c.beforeCover)
+                    c.beforeCover(env, broker);
+                env(loan_broker::coverDeposit(alice, broker.key, iou(5'000)));
+                env.close();
+                BEAST_EXPECT(env.balance(alice, iou) == beast::kZero);
+
+                if (c.beforeDelete)
+                    c.beforeDelete(env, broker);
+                deleteBrokerAndCheck(
+                    env, alice, iou, broker, withFix ? c.expectedPost : c.expectedPre);
+                if (c.afterDelete)
+                    c.afterDelete(env, broker);
+            }
+        }
+    }
+
     void
     testLoanBrokerDeleteRequireAuthMPT(FeatureBitset features)
     {
@@ -2011,25 +2234,7 @@ class LoanBroker_test : public beast::unit_test::Suite
 
         PrettyAsset const mpt{tester.issuanceID()};
 
-        // Create vault
-        Vault const vault{env};
-        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = mpt});
-        env(tx);
-        env.close();
-
-        // Deposit into vault
-        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = mpt(10'000)}));
-        env.close();
-
-        // Create loan broker
-        auto const brokerKeylet =
-            keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
-        env(set(alice, vaultKeylet.key));
-        env.close();
-
-        // Deposit cover
-        env(coverDeposit(alice, brokerKeylet.key, mpt(5'000).value()));
-        env.close();
+        auto const brokerKeylet = createBroker(env, alice, mpt, 5'000);
 
         // Verify cover is deposited
         auto const broker = env.le(brokerKeylet);
@@ -2069,6 +2274,131 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Alice received the cover
         auto const aliceBalanceAfter = env.balance(alice, mpt);
         BEAST_EXPECT(aliceBalanceAfter > aliceBalanceBefore);
+    }
+
+    // Alice puts all her MPT into a vault and 5'000 of cover for her broker, changes something
+    // about her MPToken or her reserve, and deletes the broker.
+    void
+    testLoanBrokerDeleteCoverPayoutMPT()
+    {
+        using namespace jtx;
+
+        Account const issuer("issuer");
+        Account const alice("alice");
+
+        using Step = std::function<void(Env&, MPTTester&, Keylet const& broker)>;
+        struct Case
+        {
+            std::string name;
+            std::uint32_t flags = tfMPTCanTransfer;
+            Step beforeDelete;
+            TER expectedPost;  // with fixCleanup3_5_0
+            TER expectedPre;   // without fixCleanup3_5_0
+            // Without fixCleanup3_4_0 as well; that run is skipped when unset.
+            std::optional<TER> expectedPreCleanup34 = std::nullopt;
+        };
+
+        auto const unauthorizeOwner = [&](Env&, MPTTester& mpt, Keylet const&) {
+            mpt.authorize({.account = issuer, .holder = alice, .flags = tfMPTUnauthorize});
+        };
+        // Alice spent her whole balance, so she can delete her MPToken.
+        auto const deleteOwnerMPToken = [&](Env& env, MPTTester& mpt, Keylet const&) {
+            mpt.authorize({.account = alice, .flags = tfMPTUnauthorize});
+            BEAST_EXPECT(!env.le(keylet::mptoken(mpt.issuanceID(), alice.id())));
+        };
+
+        std::vector<Case> const cases{
+            // Cleanup3.5 rejects the payout in preclaim. Before it, the enforcing
+            // ValidMPTTransfer invariant of Cleanup3.4 is the only thing that catches it.
+            {.name = "owner unauthorized",
+             .flags = tfMPTRequireAuth | tfMPTCanTransfer,
+             .beforeDelete = unauthorizeOwner,
+             .expectedPost = tecNO_AUTH,
+             .expectedPre = tecINVARIANT_FAILED,
+             .expectedPreCleanup34 = tesSUCCESS},
+            // Nothing is paid out, so the owner's authorization does not matter.
+            {.name = "owner unauthorized, zero cover",
+             .flags = tfMPTRequireAuth | tfMPTCanTransfer | tfMPTCanClawback,
+             .beforeDelete =
+                 [&](Env& env, MPTTester& mpt, Keylet const& broker) {
+                     unauthorizeOwner(env, mpt, broker);
+                     env(loan_broker::coverClawback(issuer),
+                         loan_broker::kLoanBrokerId(broker.key),
+                         kAmount(PrettyAsset{mpt.issuanceID()}(5'000)));
+                     env.close();
+                     BEAST_EXPECT(env.le(broker)->at(sfCoverAvailable) == beast::kZero);
+                 },
+             .expectedPost = tesSUCCESS,
+             .expectedPre = tesSUCCESS},
+            // Pre-Cleanup3.5 the payout fails, and alice has to authorize the MPT again first.
+            // Post-Cleanup3.5 the payout creates her MPToken.
+            {.name = "owner MPToken deleted",
+             .beforeDelete = deleteOwnerMPToken,
+             .expectedPost = tesSUCCESS,
+             .expectedPre = tecNO_AUTH},
+            // The new MPToken fits only because the broker's reserve is released before it is
+            // created.
+            {.name = "owner MPToken deleted, owner at reserve",
+             .beforeDelete =
+                 [&](Env& env, MPTTester& mpt, Keylet const& broker) {
+                     deleteOwnerMPToken(env, mpt, broker);
+                     leaveBelowReserve(env, alice, issuer, 0);
+                 },
+             .expectedPost = tesSUCCESS,
+             .expectedPre = tecNO_AUTH},
+            {.name = "owner MPToken deleted, owner below reserve",
+             .beforeDelete =
+                 [&](Env& env, MPTTester& mpt, Keylet const& broker) {
+                     deleteOwnerMPToken(env, mpt, broker);
+                     // Still short after the broker's reserve is released.
+                     leaveBelowReserve(env, alice, issuer, 2);
+                 },
+             .expectedPost = tecINSUFFICIENT_RESERVE,
+             .expectedPre = tecNO_AUTH},
+        };
+
+        // featureMPTokensV2 independently makes ValidMPTTransfer enforcing,
+        // but it is not enabled on real networks. Exclude it so Cleanup3.4
+        // alone determines whether the invariant rejects the transfer.
+        auto const features = all_ - featureMPTokensV2;
+
+        for (auto const& c : cases)
+        {
+            std::vector<std::tuple<char const*, FeatureBitset, TER>> runs{
+                {"post-Cleanup3.5", features, c.expectedPost},
+                {"pre-Cleanup3.5", features - fixCleanup3_5_0, c.expectedPre}};
+            if (c.expectedPreCleanup34)
+            {
+                runs.emplace_back(
+                    "pre-Cleanup3.4",
+                    features - fixCleanup3_5_0 - fixCleanup3_4_0,
+                    *c.expectedPreCleanup34);
+            }
+
+            for (auto const& [amendments, runFeatures, expected] : runs)
+            {
+                testcase << "LoanBrokerDelete - MPT " << c.name << ", " << amendments;
+
+                // Hides the expected invariant failure from the log.
+                std::string logs;
+                Env env(*this, runFeatures, std::make_unique<CaptureLogs>(&logs));
+                env.fund(XRP(100'000), issuer, alice);
+                env.close();
+
+                MPTTester mpt(
+                    {.env = env,
+                     .issuer = issuer,
+                     .holders = {alice},
+                     .pay = 15'000,
+                     .flags = c.flags,
+                     .authHolder = (c.flags & tfMPTRequireAuth) != 0});
+                PrettyAsset const asset{mpt.issuanceID()};
+
+                auto const broker = createBroker(env, alice, asset, 5'000);
+                c.beforeDelete(env, mpt, broker);
+                deleteBrokerAndCheck(env, alice, asset, broker, expected);
+            }
+        }
     }
 
     void
@@ -3399,15 +3729,20 @@ public:
 
         testPrivateLoanBroker();
         testPrivateLoanBrokerModify();
+
+        testLoanBrokerDeleteCoverPayoutIOU();
+
         testLoanBrokerDeleteConfidentialCOA(all_);
         testLoanBrokerDeleteConfidentialCOA(all_ - fixCleanup3_5_0);
 
         // featureMPTokensV2 independently makes ValidMPTTransfer enforcing,
-        // but it's Supported::No (never enabled on real networks); exclude
-        // it here so fixCleanup3_4_0 alone is the deciding amendment, as it
-        // would be on mainnet.
+        // but it is not enabled on real networks. Exclude it so Cleanup3.4
+        // alone determines whether the invariant rejects the transfer.
         testLoanBrokerDeleteRequireAuthMPT(all_ - featureMPTokensV2);
         testLoanBrokerDeleteRequireAuthMPT(all_ - featureMPTokensV2 - fixCleanup3_4_0);
+
+        testLoanBrokerDeleteCoverPayoutMPT();
+
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.
     }
