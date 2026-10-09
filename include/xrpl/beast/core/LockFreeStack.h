@@ -18,12 +18,12 @@ protected:
 
 public:
     using IteratorCategory = std::forward_iterator_tag;
-    using ValueType = Container::value_type;
-    using DifferenceType = Container::difference_type;
+    using ValueType = Container::ValueType;
+    using DifferenceType = Container::DifferenceType;
     using Pointer =
-        std::conditional_t<IsConst, typename Container::const_pointer, typename Container::pointer>;
+        std::conditional_t<IsConst, typename Container::ConstPointer, typename Container::Pointer>;
     using Reference = std::
-        conditional_t<IsConst, typename Container::const_reference, typename Container::reference>;
+        conditional_t<IsConst, typename Container::ConstReference, typename Container::Reference>;
 
     LockFreeStackIterator() = default;
 
