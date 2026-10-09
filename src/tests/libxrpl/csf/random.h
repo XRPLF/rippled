@@ -50,7 +50,7 @@ std::vector<typename RandomNumberDistribution::ResultType>
 sample(std::size_t size, RandomNumberDistribution dist, Generator& g)
 {
     std::vector<typename RandomNumberDistribution::ResultType> res(size);
-    std::ranges::generate(res, [&dist, &g]() { return dist(g); });
+    std::ranges::generate(res, [&dist, &g] { return dist(g); });
     return res;
 }
 

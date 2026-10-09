@@ -122,7 +122,7 @@ getDeliveredAmount(
     if (canHaveDeliveredAmount(serializedTx, transactionMeta))
     {
         auto const getCloseTime = [&context,
-                                   &getLedgerIndex]() -> std::optional<NetClock::TimePoint> {
+                                   &getLedgerIndex] -> std::optional<NetClock::TimePoint> {
             return context.ledgerMaster.getCloseTimeBySeq(getLedgerIndex());
         };
         return getDeliveredAmount(getLedgerIndex, getCloseTime, serializedTx, transactionMeta);
@@ -139,7 +139,7 @@ getDeliveredAmount(
     LedgerIndex const& ledgerIndex)
 {
     return getDeliveredAmount(
-        context, serializedTx, transactionMeta, [&ledgerIndex]() { return ledgerIndex; });
+        context, serializedTx, transactionMeta, [&ledgerIndex] { return ledgerIndex; });
 }
 
 void
@@ -161,7 +161,7 @@ insertDeliveredAmount(
 {
     if (canHaveDeliveredAmount(transaction, transactionMeta))
     {
-        auto amt = getDeliveredAmount(context, transaction, transactionMeta, [&transactionMeta]() {
+        auto amt = getDeliveredAmount(context, transaction, transactionMeta, [&transactionMeta] {
             return transactionMeta.getLgrSeq();
         });
 

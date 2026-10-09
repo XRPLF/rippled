@@ -172,7 +172,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
                            std::string const expectedLedgerHash = "",
                            std::string const closeTimeIso = "") {
             // first request using ledger_index to lookup
-            json::Value const resIndex{[&env, index, &txhash, apiVersion]() {
+            json::Value const resIndex{[&env, index, &txhash, apiVersion] {
                 json::Value params{json::ValueType::Object};
                 params[jss::ledger_index] = index;
                 params[jss::tx_hash] = txhash;

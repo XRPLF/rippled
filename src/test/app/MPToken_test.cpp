@@ -253,7 +253,7 @@ class MPToken_test : public beast::unit_test::Suite
                 env.fund(XRP(1000), credIssuer1);
 
                 env(pdomain::setTx(credIssuer1, credentials1));
-                auto const domainId1 = [&]() {
+                auto const domainId1 = [&] {
                     auto tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
@@ -828,7 +828,7 @@ class MPToken_test : public beast::unit_test::Suite
             // Test setting and resetting domain ID
             Env env{*this, features};
 
-            auto const domainId1 = [&]() {
+            auto const domainId1 = [&] {
                 Account const credIssuer1{"credIssuer1"};
                 env.fund(XRP(1000), credIssuer1);
 
@@ -836,13 +836,13 @@ class MPToken_test : public beast::unit_test::Suite
                     {.issuer = credIssuer1, .credType = credType}};
 
                 env(pdomain::setTx(credIssuer1, credentials1));
-                return [&]() {
+                return [&] {
                     auto tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
             }();
 
-            auto const domainId2 = [&]() {
+            auto const domainId2 = [&] {
                 Account const credIssuer2{"credIssuer2"};
                 env.fund(XRP(1000), credIssuer2);
 
@@ -850,7 +850,7 @@ class MPToken_test : public beast::unit_test::Suite
                     {.issuer = credIssuer2, .credType = credType}};
 
                 env(pdomain::setTx(credIssuer2, credentials2));
-                return [&]() {
+                return [&] {
                     auto tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
@@ -1108,12 +1108,12 @@ class MPToken_test : public beast::unit_test::Suite
                 Account const credIssuer1{"credIssuer1"};
                 env.fund(XRP(1000), credIssuer1, bob);
 
-                auto const domainId1 = [&]() {
+                auto const domainId1 = [&] {
                     pdomain::Credentials const credentials1{
                         {.issuer = credIssuer1, .credType = credType}};
 
                     env(pdomain::setTx(credIssuer1, credentials1));
-                    return [&]() {
+                    return [&] {
                         auto tx = env.tx()->getJson(JsonOptions::Values::None);
                         return pdomain::getNewDomain(env.meta());
                     }();
@@ -1150,12 +1150,12 @@ class MPToken_test : public beast::unit_test::Suite
                 Account const credIssuer1{"credIssuer1"};
                 env.fund(XRP(1000), credIssuer1, bob);
 
-                auto const domainId1 = [&]() {
+                auto const domainId1 = [&] {
                     pdomain::Credentials const credentials1{
                         {.issuer = credIssuer1, .credType = credType}};
 
                     env(pdomain::setTx(credIssuer1, credentials1));
-                    return [&]() {
+                    return [&] {
                         auto tx = env.tx()->getJson(JsonOptions::Values::None);
                         return pdomain::getNewDomain(env.meta());
                     }();
@@ -1207,24 +1207,24 @@ class MPToken_test : public beast::unit_test::Suite
                 Account const credIssuer2{"credIssuer2"};
                 env.fund(XRP(1000), credIssuer1, credIssuer2, bob, carol);
 
-                auto const domainId1 = [&]() {
+                auto const domainId1 = [&] {
                     pdomain::Credentials const credentials{
                         {.issuer = credIssuer1, .credType = credType}};
 
                     env(pdomain::setTx(credIssuer1, credentials));
-                    return [&]() {
+                    return [&] {
                         auto tx = env.tx()->getJson(JsonOptions::Values::None);
                         return pdomain::getNewDomain(env.meta());
                     }();
                 }();
 
-                auto const domainId2 = [&]() {
+                auto const domainId2 = [&] {
                     pdomain::Credentials const credentials{
                         {.issuer = credIssuer1, .credType = credType},
                         {.issuer = credIssuer2, .credType = credType}};
 
                     env(pdomain::setTx(credIssuer2, credentials));
-                    return [&]() {
+                    return [&] {
                         auto tx = env.tx()->getJson(JsonOptions::Values::None);
                         return pdomain::getNewDomain(env.meta());
                     }();
@@ -4202,7 +4202,7 @@ class MPToken_test : public beast::unit_test::Suite
                             return tesSUCCESS;
                         return err;
                     };
-                    auto const [errBuy, errSell] = [&]() -> std::pair<TER, TER> {
+                    auto const [errBuy, errSell] = [&] -> std::pair<TER, TER> {
                         // Global lock
                         if (lockMPTIssue)
                             return std::make_pair(tecLOCKED, tecLOCKED);
@@ -5827,7 +5827,7 @@ class MPToken_test : public beast::unit_test::Suite
                 XRP(1'000),
                 {usd(1'000), eur(1'000), crn(2'000), yan(1'000)});
 
-            auto createMPT = [&]() -> std::pair<MPTTester, MPT> {
+            auto createMPT = [&] -> std::pair<MPTTester, MPT> {
                 MPTTester mptTester(env, gw, {.fund = false});
                 mptTester.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
                 mptTester.authorize({.account = alice});
@@ -5869,7 +5869,7 @@ class MPToken_test : public beast::unit_test::Suite
 
             fund(env, gw, {alice, carol, bob}, XRP(1'000), {usd(1'000), eur(1'000), crn(2'000)});
 
-            auto createMPT = [&]() -> std::pair<MPTTester, MPT> {
+            auto createMPT = [&] -> std::pair<MPTTester, MPT> {
                 MPTTester mptTester(env, gw, {.fund = false});
                 mptTester.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
                 mptTester.authorize({.account = alice});

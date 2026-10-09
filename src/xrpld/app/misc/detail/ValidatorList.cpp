@@ -1217,7 +1217,7 @@ ValidatorList::loadLists()
         if (ec)
             continue;
 
-        std::string const prefix = [&fullPath]() {
+        std::string const prefix = [&fullPath] {
 #if _MSC_VER  // MSVC: Windows paths need a leading / added
             {
                 return fullPath.root_path() == "/"s ? "file://" : "file:///";

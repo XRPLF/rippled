@@ -99,7 +99,7 @@ doAccountChannels(rpc::JsonContext& context)
         strDst = params[jss::destination_account].asString();
     }
 
-    auto const raDstAccount = [&]() -> std::optional<AccountID> {
+    auto const raDstAccount = [&] -> std::optional<AccountID> {
         return strDst.empty() ? std::nullopt : parseBase58<AccountID>(strDst);
     }();
     if (!strDst.empty() && !raDstAccount)

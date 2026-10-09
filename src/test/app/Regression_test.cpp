@@ -295,7 +295,7 @@ struct Regression_test : public beast::unit_test::Suite
         {
             auto const bobIndex = keylet::account(bob).key;
 
-            auto const digest = [&]() -> std::optional<UInt256> {
+            auto const digest = [&] -> std::optional<UInt256> {
                 auto const& state = env.app().getLedgerMaster().getClosedLedger()->stateMap();
                 SHAMapHash digest;
                 if (!state.peekItem(bobIndex, digest))

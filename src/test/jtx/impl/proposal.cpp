@@ -84,7 +84,7 @@ unsignedBatch(
     // Each inner account other than the outer one will contribute one
     // BatchSigners entry once the signatures are collected, and the outer fee
     // has to cover them from the start (Batch::calculateBaseFee).
-    std::uint32_t const signers = numSigners ? *numSigners : [&]() {
+    std::uint32_t const signers = numSigners ? *numSigners : [&] {
         std::set<std::string> participants;
         for (auto const& inner : inners)
         {

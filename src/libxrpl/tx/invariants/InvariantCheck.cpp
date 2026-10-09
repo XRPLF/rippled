@@ -1018,7 +1018,7 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstR
 
     if (after && after->getType() == ltACCOUNT_ROOT)
     {
-        bool const isPseudo = [&]() {
+        bool const isPseudo = [&] {
             // isPseudoAccount checks that any of the pseudo-account fields are
             // set.
             if (isPseudoAccount(after))

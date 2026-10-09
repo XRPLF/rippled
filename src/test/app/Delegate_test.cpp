@@ -2709,7 +2709,7 @@ class Delegate_test : public beast::unit_test::Suite
         auto const baseFee = env.current()->fees().base;
 
         auto const sendAmt = 1'000'000;
-        auto makeDelegateTx = [&]() -> json::Value {
+        auto makeDelegateTx = [&] -> json::Value {
             json::Value jv;
             jv[jss::tx_json][jss::Account] = alice.human();
             jv[jss::tx_json][sfDelegate.jsonName] = bob.human();

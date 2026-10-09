@@ -915,7 +915,7 @@ public:
                 waitHandlerCounter_.wrap([this](boost::system::error_code const& e) {
                     if (e.value() == boost::system::errc::success)
                     {
-                        jobQueue_->addJob(JtSweep, "sweep", [this]() { doSweep(); });
+                        jobQueue_->addJob(JtSweep, "sweep", [this] { doSweep(); });
                     }
                     // Recover as best we can if an unexpected error occurs.
                     if (e.value() != boost::system::errc::success &&
@@ -1232,7 +1232,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     // Configure the amendments the server supports
     {
-        auto const supported = []() {
+        auto const supported = [] {
             auto const& amendments = detail::supportedAmendments();
             std::vector<AmendmentTable::FeatureInfo> supported;
             supported.reserve(amendments.size());

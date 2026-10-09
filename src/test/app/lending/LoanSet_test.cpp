@@ -205,7 +205,7 @@ private:
             },
             CaseArgs{.requireAuth = true});
 
-        auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
+        auto const [acctReserve, incReserve] = [this] -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
                 env.current()->fees().accountReserve(0, 1).drops() / kDropsPerXrp.drops(),
@@ -839,7 +839,7 @@ private:
             BEAST_EXPECT(broker.redemptionDate.has_value());
 
             auto const red = *broker.redemptionDate;
-            auto const startDate = [&]() { return env.now().time_since_epoch().count(); };
+            auto const startDate = [&] { return env.now().time_since_epoch().count(); };
             auto const minLoan = [&](TER expected) {
                 env(set(lender, broker.brokerID, broker.asset(100).value()),
                     kCounterparty(borrower),

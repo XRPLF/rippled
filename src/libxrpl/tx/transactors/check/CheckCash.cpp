@@ -383,7 +383,7 @@ CheckCash::doApply()
             // higher than any real delivery as the request. MPTs are
             // bounded integral amounts, so use the maximum output the check
             // can actually deliver without exceeding SendMax.
-            auto const maxDeliverMin = [&]() {
+            auto const maxDeliverMin = [&] {
                 return optDeliverMin->asset().visit(
                     [&](Issue const&) {
                         return STAmount(
@@ -414,7 +414,7 @@ CheckCash::doApply()
 
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
-            auto checkDstReserve = [&]() -> SLE::Pointer {
+            auto checkDstReserve = [&] -> SLE::Pointer {
                 auto sleDst = psb.peek(keylet::account(accountID_));
 
                 // Can the account cover the trust line's or MPT reserve?
@@ -550,7 +550,7 @@ CheckCash::doApply()
                 return *err;
             // Make sure the tweaked limits are restored when we leave
             // scope.
-            ScopeExit const fixup([&psb, &trustLineKey, destLow, &savedLimit]() {
+            ScopeExit const fixup([&psb, &trustLineKey, destLow, &savedLimit] {
                 if (trustLineKey)
                 {
                     SF_AMOUNT const& tweakedLimit = destLow ? sfLowLimit : sfHighLimit;
