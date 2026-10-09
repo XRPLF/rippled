@@ -240,8 +240,7 @@ skip(LedgerIndex ledger) noexcept
 {
     return {
         ltLEDGER_HASHES,
-        indexHash(
-            LedgerNameSpace::SkipList, std::uint32_t(static_cast<std::uint32_t>(ledger) >> 16))};
+        indexHash(LedgerNameSpace::SkipList, static_cast<std::uint32_t>(ledger) >> 16)};
 }
 
 Keylet const&
