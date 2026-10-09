@@ -586,6 +586,194 @@ createLoan(
 
     return tesSUCCESS;
 }
+
+/**
+ * Rejects a loan whose schedule would overflow the protocol time type. The
+ * Grace Period for the last payment ends at:
+ *     startDate + (paymentInterval * paymentTotal) + gracePeriod.
+ * If that value is larger than the maximum time, the transaction is killed.
+ */
+TER
+checkScheduleFitsProtocolTime(STTx const& tx, std::uint32_t startDate, beast::Journal const& j)
+{
+    using TimeType = decltype(sfNextPaymentDueDate)::type::value_type;
+    static_assert(std::is_same_v<TimeType, std::uint32_t>);
+    constexpr TimeType kMaxTime = std::numeric_limits<TimeType>::max();
+    static_assert(kMaxTime == 4'294'967'295);
+
+    auto const interval = tx.at(~sfPaymentInterval).value_or(LoanSet::kDefaultPaymentInterval);
+    auto const total = tx.at(~sfPaymentTotal).value_or(LoanSet::kDefaultPaymentTotal);
+    auto const grace = tx.at(~sfGracePeriod).value_or(LoanSet::kDefaultGracePeriod);
+    auto const timeAvailable = kMaxTime - startDate;
+
+    // The grace period can't be larger than the interval. Check it first,
+    // mostly so that unit tests can test that specific case.
+    if (grace > timeAvailable)
+    {
+        JLOG(j.warn()) << "Grace period exceeds protocol time limit.";
+        return tecKILLED;
+    }
+
+    if (interval > timeAvailable)
+    {
+        JLOG(j.warn()) << "Payment interval exceeds protocol time limit.";
+        return tecKILLED;
+    }
+
+    if (total > timeAvailable)
+    {
+        JLOG(j.warn()) << "Payment total exceeds protocol time limit.";
+        return tecKILLED;
+    }
+
+    auto const timeLastPayment = timeAvailable - grace;
+
+    if (timeLastPayment / interval < total)
+    {
+        JLOG(j.warn()) << "Last payment due date, or grace period for "
+                          "last payment exceeds protocol time limit.";
+        return tecKILLED;
+    }
+
+    return tesSUCCESS;
+}
+
+/**
+ * One-step preclaim checks. Either the Borrower or the LoanBroker owner may
+ * submit, with the other acting as the counterparty.
+ *
+ * @return The borrower on success, or the TER describing the failure.
+ */
+std::expected<AccountID, TER>
+preclaimOneStep(PreclaimContext const& ctx, SLE::ConstRef brokerSle)
+{
+    auto const account = ctx.tx[sfAccount];
+    auto const brokerOwner = brokerSle->at(sfOwner);
+    auto const participants = resolveParticipants(ctx.tx, brokerSle, account, LoanFlow::OneStep);
+
+    if (account != brokerOwner && participants.counterparty != brokerOwner)
+    {
+        JLOG(ctx.j.warn()) << "Neither Account nor Counterparty is the owner of the LoanBroker.";
+        return std::unexpected(tecNO_PERMISSION);
+    }
+
+    // The Borrower signs in the one-step flow, so checkSign has already
+    // rejected a missing account.
+    if (!ctx.view.exists(keylet::account(participants.borrower)))
+    {
+        JLOG(ctx.j.warn()) << "Borrower does not exist.";
+        return std::unexpected(terNO_ACCOUNT);
+    }
+
+    return participants.borrower;
+}
+
+/**
+ * Two-step preclaim checks. The LoanBroker owner proposes the loan on behalf
+ * of the named Borrower, who must later sign a LoanAccept.
+ *
+ * @return The borrower on success, or the TER describing the failure.
+ */
+std::expected<AccountID, TER>
+preclaimTwoStep(PreclaimContext const& ctx, SLE::ConstRef brokerSle)
+{
+    if (hasExpired(ctx.view, ctx.tx[~sfStartDate]))
+    {
+        JLOG(ctx.j.warn()) << "Start date is in the past.";
+        return std::unexpected(tecEXPIRED);
+    }
+
+    if (ctx.tx[sfAccount] != brokerSle->at(sfOwner))
+    {
+        JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
+        return std::unexpected(tecNO_PERMISSION);
+    }
+
+    // The Borrower is a passive field here, so treat a missing account like
+    // any other missing destination.
+    auto const borrower = ctx.tx[sfBorrower];
+    auto const borrowerSle = ctx.view.read(keylet::account(borrower));
+    if (!borrowerSle)
+    {
+        JLOG(ctx.j.warn()) << "Borrower does not exist.";
+        return std::unexpected(tecNO_DST);
+    }
+
+    // A pseudo-account can never sign the LoanAccept, so it cannot be named
+    // as the Borrower.
+    if (isPseudoAccount(borrowerSle))
+    {
+        JLOG(ctx.j.warn()) << "Borrower is a pseudo-account.";
+        return std::unexpected(tecNO_PERMISSION);
+    }
+
+    return borrower;
+}
+
+/**
+ * Rejects origination if the Vault cannot take this loan: wrong phase, final
+ * payment too close to the redemption date, at its assets limit, or coarsened.
+ */
+TER
+checkVaultAcceptsLoan(
+    ReadView const& view,
+    SLE::ConstRef vault,
+    std::uint32_t startDate,
+    std::uint32_t interval,
+    std::uint32_t total,
+    beast::Journal const& j)
+{
+    if (view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        auto const phase = getVaultPhase(view, vault);
+        if (phase == VaultPhase::Subscription)
+        {
+            JLOG(j.warn()) << "Vault is still in the subscription phase.";
+            return tecTOO_SOON;
+        }
+        if (phase == VaultPhase::Redemption)
+        {
+            JLOG(j.warn()) << "Vault has entered the redemption phase.";
+            return tecEXPIRED;
+        }
+        if (phase == VaultPhase::Investment)
+        {
+            auto const finalPayment = std::uint64_t{startDate} + (std::uint64_t{interval} * total);
+            if (finalPayment + kLoanRedemptionBuffer > vault->at(sfRedemptionDate))
+            {
+                JLOG(j.warn()) << "Final loan payment date is fewer than " << kLoanRedemptionBuffer
+                               << " seconds before the vault's redemption date.";
+                return tecNO_PERMISSION;
+            }
+        }
+    }
+
+    auto const vaultVersion = getVaultVersion(vault);
+
+    // Instant interest recognition credits interestDue into AssetsTotal, so a vault
+    // already at AssetsMaximum cannot take another loan. Cash-basis origination
+    // does not change AssetsTotal (see cash_basis::loanOriginationDeltas), so
+    // this leftover instant-recognition gate must not apply there.
+    if (vaultVersion < VaultVersion::CashBasis && vault->at(sfAssetsMaximum) != 0 &&
+        vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
+    {
+        JLOG(j.warn()) << "Vault at maximum assets limit. Can't add another loan.";
+        return tecLIMIT_EXCEEDED;
+    }
+
+    if (vaultVersion == VaultVersion::FixedPrecision)
+    {
+        // Reject origination if the Vault is already coarsened.
+        if (getVaultScale(vault) != getVaultBaseScale(vault))
+        {
+            JLOG(j.warn()) << "FixedPrecision Vault is already coarsened; no further loans can "
+                              "be originated until it returns to its base scale.";
+            return tecLIMIT_EXCEEDED;
+        }
+    }
+
+    return tesSUCCESS;
+}
 }  // namespace
 
 // StartDate is strictly after SubscriptionDate. A min-gap vault must still
@@ -807,106 +995,26 @@ TER
 LoanSet::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
-    auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
-    auto const total = ctx.tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
     auto const flow = getLoanFlow(tx, ctx.flags, ctx.view.rules());
-    bool const twoStepFlow = flow == LoanFlow::TwoStep;
+    XRPL_ASSERT(
+        flow != LoanFlow::Invalid, "xrpl::LoanSet::preclaim : flow validated in preflight");
     auto const startDate = getStartDate(ctx.view, tx, flow);
 
-    {
-        // Check for numeric overflow of the schedule before we load any
-        // objects. The Grace Period for the last payment ends at:
-        //     startDate + (paymentInterval * paymentTotal) + gracePeriod.
-        // If that value is larger than "maxTime", the value
-        // overflows, and we kill the transaction.
-        using TimeType = decltype(sfNextPaymentDueDate)::type::value_type;
-        static_assert(std::is_same_v<TimeType, std::uint32_t>);
-        constexpr TimeType kMaxTime = std::numeric_limits<TimeType>::max();
-        static_assert(kMaxTime == 4'294'967'295);
+    // Check for numeric overflow of the schedule before we load any objects.
+    if (auto const ter = checkScheduleFitsProtocolTime(tx, startDate, ctx.j))
+        return ter;
 
-        auto const timeAvailable = kMaxTime - startDate;
-        auto const grace = ctx.tx.at(~sfGracePeriod).value_or(kDefaultGracePeriod);
-
-        // The grace period can't be larger than the interval. Check it first,
-        // mostly so that unit tests can test that specific case.
-        if (grace > timeAvailable)
-        {
-            JLOG(ctx.j.warn()) << "Grace period exceeds protocol time limit.";
-            return tecKILLED;
-        }
-
-        if (interval > timeAvailable)
-        {
-            JLOG(ctx.j.warn()) << "Payment interval exceeds protocol time limit.";
-            return tecKILLED;
-        }
-
-        if (total > timeAvailable)
-        {
-            JLOG(ctx.j.warn()) << "Payment total exceeds protocol time limit.";
-            return tecKILLED;
-        }
-
-        auto const timeLastPayment = timeAvailable - grace;
-
-        if (timeLastPayment / interval < total)
-        {
-            JLOG(ctx.j.warn()) << "Last payment due date, or grace period for "
-                                  "last payment exceeds protocol time limit.";
-            return tecKILLED;
-        }
-    }
-
-    auto const account = tx[sfAccount];
-    auto const brokerID = tx[sfLoanBrokerID];
-
-    auto const brokerSle = ctx.view.read(keylet::loanBroker(brokerID));
+    auto const brokerSle = ctx.view.read(keylet::loanBroker(tx[sfLoanBrokerID]));
     if (!brokerSle)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
         return tecNO_ENTRY;
     }
-    auto const brokerOwner = brokerSle->at(sfOwner);
-    auto const participants = resolveParticipants(tx, brokerSle, account, flow);
 
-    // Validate the submitter's permission. In the two-step flow the LoanBroker
-    // owner proposes the loan on behalf of the named Borrower, so the submitter
-    // must be the owner. In the immediate flow either the Borrower or the
-    // LoanBroker owner may submit, with the other acting as the counterparty.
-    if (account != brokerOwner)
-    {
-        if (twoStepFlow)
-        {
-            JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
-            return tecNO_PERMISSION;
-        }
-
-        if (participants.counterparty != brokerOwner)
-        {
-            JLOG(ctx.j.warn()) << "Neither Account nor Counterparty are the owner "
-                                  "of the LoanBroker.";
-            return tecNO_PERMISSION;
-        }
-    }
-
-    auto const borrower = participants.borrower;
-    auto const brokerPseudo = brokerSle->at(sfAccount);
-    auto const borrowerSle = ctx.view.read(keylet::account(borrower));
-    if (!borrowerSle)
-    {
-        JLOG(ctx.j.warn()) << "Borrower does not exist.";
-        // In the two-step flow the Borrower is a passive field, so treat a
-        // missing account like any other missing destination. In the one-step
-        // flow the Borrower signs, and checkSign has already rejected it.
-        return twoStepFlow ? TER{tecNO_DST} : TER{terNO_ACCOUNT};
-    }
-    if (twoStepFlow && isPseudoAccount(borrowerSle))
-    {
-        // A pseudo-account can never sign the LoanAccept, so it cannot be
-        // named as the Borrower.
-        JLOG(ctx.j.warn()) << "Borrower is a pseudo-account.";
-        return tecNO_PERMISSION;
-    }
+    auto const borrower = flow == LoanFlow::TwoStep ? preclaimTwoStep(ctx, brokerSle)
+                                                    : preclaimOneStep(ctx, brokerSle);
+    if (!borrower)
+        return borrower.error();
 
     auto const vault = ctx.view.read(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vault)
@@ -915,59 +1023,12 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
-    auto const vaultVersion = getVaultVersion(vault);
-
-    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
-    {
-        auto const phase = getVaultPhase(ctx.view, vault);
-        if (phase == VaultPhase::Subscription)
-        {
-            JLOG(ctx.j.warn()) << "Vault is still in the subscription phase.";
-            return tecTOO_SOON;
-        }
-        if (phase == VaultPhase::Redemption)
-        {
-            JLOG(ctx.j.warn()) << "Vault has entered the redemption phase.";
-            return tecEXPIRED;
-        }
-        if (phase == VaultPhase::Investment)
-        {
-            auto const finalPayment = std::uint64_t{startDate} + (std::uint64_t{interval} * total);
-            if (finalPayment + kLoanRedemptionBuffer > vault->at(sfRedemptionDate))
-            {
-                JLOG(ctx.j.warn())
-                    << "Final loan payment date is fewer than " << kLoanRedemptionBuffer
-                    << " seconds before the vault's redemption date.";
-                return tecNO_PERMISSION;
-            }
-        }
-    }
-
-    // Instant interest recognition credits interestDue into AssetsTotal, so a vault
-    // already at AssetsMaximum cannot take another loan. Cash-basis origination
-    // does not change AssetsTotal (see cash_basis::loanOriginationDeltas), so
-    // this leftover instant-recognition gate must not apply there.
-    if (vaultVersion < VaultVersion::CashBasis && vault->at(sfAssetsMaximum) != 0 &&
-        vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
-    {
-        JLOG(ctx.j.warn()) << "Vault at maximum assets limit. Can't add another loan.";
-        return tecLIMIT_EXCEEDED;
-    }
-
-    if (vaultVersion == VaultVersion::FixedPrecision)
-    {
-        // Reject origination if the Vault is already coarsened.
-        if (getVaultScale(vault) != getVaultBaseScale(vault))
-        {
-            JLOG(ctx.j.warn()) << "FixedPrecision Vault is already coarsened; no further loans can "
-                                  "be originated until it returns to its base scale.";
-            return tecLIMIT_EXCEEDED;
-        }
-    }
+    auto const interval = tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
+    auto const total = tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
+    if (auto const ter = checkVaultAcceptsLoan(ctx.view, vault, startDate, interval, total, ctx.j))
+        return ter;
 
     Asset const asset = vault->at(sfAsset);
-
-    auto const vaultPseudo = vault->at(sfAccount);
 
     // Check that relevant values can be represented as the vault asset type.
     // This check is almost duplicated in doApply, but that check is done after
@@ -983,32 +1044,23 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    auto const brokerOwner = brokerSle->at(sfOwner);
     if (auto const ter = checkLoanFreeze(
             ctx.view,
             asset,
             tx[~sfLoanOriginationFee].value_or(0),
-            vaultPseudo,
-            brokerPseudo,
-            borrower,
+            vault->at(sfAccount),
+            brokerSle->at(sfAccount),
+            *borrower,
             brokerOwner,
             ctx.j))
         return ter;
 
-    if (twoStepFlow)
-    {
-        // Reject a pending loan up front if a disbursement recipient is not
-        // authorised to hold the vault asset, rather than creating a loan that
-        // can never be disbursed by LoanAccept. LoanAccept re-checks at
-        // acceptance.
-        if (auto const ter = checkLoanRecipientAuth(ctx.view, asset, borrower, brokerOwner))
-            return ter;
-
-        if (hasExpired(ctx.view, tx[~sfStartDate]))
-        {
-            JLOG(ctx.j.warn()) << "Start date is in the past.";
-            return tecEXPIRED;
-        }
-    }
+    // Reject a pending loan up front if a disbursement recipient is not
+    // authorised to hold the vault asset, rather than creating a loan that can
+    // never be disbursed by LoanAccept. LoanAccept re-checks at acceptance.
+    if (flow == LoanFlow::TwoStep)
+        return checkLoanRecipientAuth(ctx.view, asset, *borrower, brokerOwner);
 
     return tesSUCCESS;
 }
