@@ -219,7 +219,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getDomainID() const
     {
         if (hasDomainID())
@@ -367,7 +367,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
-    setDomainID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setDomainID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfDomainID] = value;
         return *this;
