@@ -838,6 +838,7 @@ private:
 
             Env legacyEnv(*this, all_);
             legacyEnv.disableFeature(fixCleanup3_1_3);
+            legacyEnv.disableFeature(featureLendingProtocolV1_2);
             legacyEnv.fund(XRP(10000), issuer, owner, depositor);
             legacyEnv.close();
 

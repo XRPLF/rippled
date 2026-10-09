@@ -183,9 +183,7 @@ protected:
     // most of this file's tests assert instant-interest-recognition-specific expected values
     // for those fields. Tests that specifically exercise the amendment opt
     // it back in explicitly (e.g. `all_ | featureLendingProtocolV1_1`).
-    // featureLendingProtocolV1_2 is also excluded: it changes vault precision.
-    FeatureBitset const all_{
-        jtx::testableAmendments() - featureLendingProtocolV1_1 - featureLendingProtocolV1_2};
+    FeatureBitset const all_{jtx::testableAmendments() - featureLendingProtocolV1_1};
     std::string const iouCurrency_{"IOU"};
 
     struct BrokerParameters
