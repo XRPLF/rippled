@@ -456,6 +456,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 createLoanBroker);
 
             doInvariantCheck(
+                makeEnv(test::jtx::testableAmendments() | featureLendingProtocolV1_2),
                 {{"DomainID is set on public Loan Broker"}},
                 [&](Account const&, Account const&, ApplyContext& ac) {
                     if (loanBrokerKeylet.type != ltLOAN_BROKER)
@@ -475,6 +476,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 createLoanBroker);
 
             doInvariantCheck(
+                makeEnv(test::jtx::testableAmendments() | featureLendingProtocolV1_2),
                 {{"Loan Broker DomainID is zero"}},
                 [&](Account const&, Account const&, ApplyContext& ac) {
                     if (loanBrokerKeylet.type != ltLOAN_BROKER)
@@ -498,6 +500,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
             std::uint32_t constexpr unknownFlag = 0x80000000;
 
             doInvariantCheck(
+                makeEnv(test::jtx::testableAmendments() | featureLendingProtocolV1_2),
                 {{"Loan Broker contains an unknown flag"}},
                 [&](Account const&, Account const&, ApplyContext& ac) {
                     if (loanBrokerKeylet.type != ltLOAN_BROKER)
@@ -516,6 +519,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 createLoanBroker);
 
             doInvariantCheck(
+                makeEnv(test::jtx::testableAmendments() | featureLendingProtocolV1_2),
                 {{"Loan Broker contains an unknown flag"}},
                 [&](Account const&, Account const&, ApplyContext& ac) {
                     if (loanBrokerKeylet.type != ltLOAN_BROKER)
