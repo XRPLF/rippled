@@ -754,7 +754,7 @@ public:
         // the supported amendments list and tests that it can be
         // enabled explicitly
 
-        auto const neverSupportedFeat = [&]() -> std::optional<UInt256> {
+        auto const neverSupportedFeat = [&] -> std::optional<UInt256> {
             auto const n = supported.size();
             for (size_t i = 0; i < n; ++i)
             {
@@ -773,7 +773,7 @@ public:
         }
 
         auto hasFeature = [](Env& env, UInt256 const& f) {
-            return (env.app().config().features.contains(f));
+            return env.app().config().features.contains(f);
         };
 
         {

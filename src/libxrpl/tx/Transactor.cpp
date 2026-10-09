@@ -1646,7 +1646,7 @@ Transactor::operator()()
         }
         else if (
             (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
-            (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
+            (result == tecEXPIRED) || isTecClaimHardFail(result, view().flags()))
         {
             // This is and must remain the only place where `canApplyTmp` can change from false to
             // true. Changing from true to false is no problem.
