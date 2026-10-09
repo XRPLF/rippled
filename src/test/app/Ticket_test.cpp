@@ -661,7 +661,7 @@ class Ticket_test : public beast::unit_test::Suite
         env.close();
 
         // Lambda that returns the hash of the most recent transaction.
-        auto const getTxID = [&env, this]() -> UInt256 {
+        auto const getTxID = [&env, this] -> UInt256 {
             std::shared_ptr<STTx const> const tx{env.tx()};
             if (!BEAST_EXPECTS(tx, "Transaction not found"))
                 Throw<std::invalid_argument>("Invalid transaction ID");

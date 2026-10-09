@@ -1272,7 +1272,7 @@ public:
             env.trust(usdA(20000), carol);
             BEAST_EXPECT(env.syncClose());
 
-            auto const mixedPayments = [&]() -> int {
+            auto const mixedPayments = [&] -> int {
                 sendPayments(env, alice, carol, 1, 0);
                 env(pay(alice, carol, usdA(100)));
                 BEAST_EXPECT(env.syncClose());

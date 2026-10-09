@@ -959,7 +959,7 @@ protected:
 
         BrokerInfo const broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
-        auto const pseudoAcctOpt = [&]() -> std::optional<Account> {
+        auto const pseudoAcctOpt = [&] -> std::optional<Account> {
             auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return std::nullopt;
@@ -970,7 +970,7 @@ protected:
             return std::nullopt;
         Account const& pseudoAcct = *pseudoAcctOpt;
 
-        auto const loanKeyletOpt = [&]() -> std::optional<Keylet> {
+        auto const loanKeyletOpt = [&] -> std::optional<Keylet> {
             auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return std::nullopt;
@@ -1147,7 +1147,7 @@ protected:
             state.paymentRemaining,
             broker.params.managementFeeRate);
 
-        auto const validateBorrowerBalance = [&]() {
+        auto const validateBorrowerBalance = [&] {
             if (borrower == issuer || !paymentParams.validateBalances)
                 return;
             auto const totalSpent =
@@ -1214,7 +1214,7 @@ protected:
                     << ", " << paymentComponents.trackedValueDelta << ", "
                     << paymentComponents.trackedPrincipalDelta << ", "
                     << paymentComponents.trackedInterestPart() << ", "
-                    << paymentComponents.trackedManagementFeeDelta << ", " << [&]() -> char const* {
+                    << paymentComponents.trackedManagementFeeDelta << ", " << [&] -> char const* {
                     if (paymentComponents.specialCase == ::xrpl::detail::PaymentSpecialCase::Final)
                         return "final";
                     if (paymentComponents.specialCase == ::xrpl::detail::PaymentSpecialCase::Extra)
@@ -1445,7 +1445,7 @@ protected:
         std::function<void(Keylet const& loanKeylet, VerifyLoanStatus const& verifyLoanStatus)>
             toEndOfLife)
     {
-        auto const [keylet, loanSequence] = [&]() {
+        auto const [keylet, loanSequence] = [&] {
             auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
             {
@@ -1778,7 +1778,7 @@ protected:
 
         auto const& asset = broker.asset.raw();
         auto const currencyLabel = getCurrencyLabel(asset);
-        auto const caseLabel = [&]() {
+        auto const caseLabel = [&] {
             std::stringstream ss;
             ss << "Lifecycle: " << loanAmount << " " << currencyLabel
                << " Scale interest to: " << interestExponent << " ";
@@ -2073,7 +2073,7 @@ protected:
             if (!BEAST_EXPECT(brokerSle))
                 return;
 
-            auto const vaultPseudo = [&]() {
+            auto const vaultPseudo = [&] {
                 auto const vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
                 if (!BEAST_EXPECT(vaultSle))
                 {
@@ -2084,11 +2084,11 @@ protected:
             }();
 
             auto const [freeze, deepfreeze, unfreeze, expectedResult] =
-                [&]() -> std::tuple<
-                          std::function<void(Account const& holder)>,
-                          std::function<void(Account const& holder)>,
-                          std::function<void(Account const& holder)>,
-                          TER> {
+                [&] -> std::tuple<
+                        std::function<void(Account const& holder)>,
+                        std::function<void(Account const& holder)>,
+                        std::function<void(Account const& holder)>,
+                        TER> {
                 // Freeze / lock the asset
                 std::function<void(Account const& holder)> const empty;
                 if (broker.asset.native())
@@ -2525,7 +2525,7 @@ protected:
                     // Make all the payments in one transaction
                     // service fee is 2
                     auto const startingPayments = state.paymentRemaining;
-                    STAmount const payoffAmount = [&]() {
+                    STAmount const payoffAmount = [&] {
                         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
                         auto const rawPayoff =
                             startingPayments * (state.periodicPayment + broker.asset(2).value());
@@ -2829,7 +2829,7 @@ protected:
                              << ", " << paymentComponents.trackedPrincipalDelta << ", "
                              << paymentComponents.trackedInterestPart() << ", "
                              << paymentComponents.trackedManagementFeeDelta << ", "
-                             << [&]() -> char const* {
+                             << [&] -> char const* {
                         if (paymentComponents.specialCase ==
                             ::xrpl::detail::PaymentSpecialCase::Final)
                             return "final";

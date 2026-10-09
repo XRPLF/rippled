@@ -1511,7 +1511,7 @@ private:
                 auto const carolUSD = env.balance(carol_, usd);
 
                 ammAlice.deposit(carol_, 100, usd(205));
-                auto const deltaUSD = [&]() {
+                auto const deltaUSD = [&] {
                     if constexpr (std::is_same_v<MPT, std::decay_t<decltype(usd)>>)
                         return usd(202);
                     return usd(201);

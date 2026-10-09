@@ -111,7 +111,7 @@ Value::CZString::CZString(CZString const& other)
                   other.cstr_ != nullptr
               ? valueAllocator()->makeMemberName(other.cstr_)
               : other.cstr_)
-    , index_([&]() -> int {
+    , index_([&] -> int {
         if (!other.cstr_)
             return other.index_;
         return other.index_ == static_cast<int>(DuplicationPolicy::NoDuplication)

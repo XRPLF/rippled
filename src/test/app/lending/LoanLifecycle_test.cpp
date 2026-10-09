@@ -233,7 +233,7 @@ private:
                 BEAST_EXPECT(types[type] == 1);
             }
         }
-        auto const loanID = [&]() {
+        auto const loanID = [&] {
             json::Value params(json::ValueType::Object);
             params[jss::account] = lender.human();
             params[jss::type] = "Loan";
@@ -395,7 +395,7 @@ private:
                 env.close();
                 if (auto const vaultSle = env.le(vaultKeylet); BEAST_EXPECT(vaultSle))
                 {
-                    auto const expected = [&]() {
+                    auto const expected = [&] {
                         // The service fee is transferred to the broker if
                         // a borrower is not the broker
                         if (borrower != broker)

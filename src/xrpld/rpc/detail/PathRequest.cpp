@@ -619,7 +619,7 @@ PathRequest::findPaths(
             return *raSrcAccount_;
         }();
 
-        STAmount const saMaxAmount = [&]() {
+        STAmount const saMaxAmount = [&] {
             if (saSendMax_)
                 return *saSendMax_;
             return asset.visit(

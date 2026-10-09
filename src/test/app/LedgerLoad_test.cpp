@@ -100,7 +100,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
         }();
 
         BEAST_EXPECT(retval.hashes.size() == 41);
-        retval.trapTxHash = [&]() {
+        retval.trapTxHash = [&] {
             auto const txs = env.rpc(
                 "ledger", std::to_string(41), "tx")[jss::result][jss::ledger][jss::transactions];
             BEAST_EXPECT(txs.isArray() && txs.size() > 0);

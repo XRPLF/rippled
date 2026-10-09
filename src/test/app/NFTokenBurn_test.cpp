@@ -314,7 +314,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             // Decide which of the accounts should burn the nft.  If the
             // owner is becky then any of the three accounts can burn.
             // Otherwise either alice or minter can burn.
-            AcctStat const& burner = [&]() -> AcctStat& {
+            AcctStat const& burner = [&] -> AcctStat& {
                 if (owner.acct == becky.acct)
                     return *stats[acctDist(engine)];
                 return mintDist(engine) ? alice : minter;
@@ -365,7 +365,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
 
         // A lambda that generates 96 nfts packed into three pages of 32 each.
         // Returns a sorted vector of the NFTokenIDs packed into the pages.
-        auto const genPackedTokens = [this, &env, &alice]() {
+        auto const genPackedTokens = [this, &env, &alice] {
             std::vector<UInt256> nfts;
             nfts.reserve(96);
 
@@ -449,7 +449,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         }
 
         // A lambda verifies that the ledger no longer contains any NFT pages.
-        auto const checkNoTokenPages = [this, &env]() {
+        auto const checkNoTokenPages = [this, &env] {
             json::Value jvParams;
             jvParams[jss::ledger_index] = "current";
             jvParams[jss::binary] = false;
@@ -1012,7 +1012,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
 
         // A lambda that generates 96 nfts packed into three pages of 32 each.
         // Returns a sorted vector of the NFTokenIDs packed into the pages.
-        auto const genPackedTokens = [this, &env, &alice, &minter]() {
+        auto const genPackedTokens = [this, &env, &alice, &minter] {
             std::vector<UInt256> nfts;
             nfts.reserve(96);
 
@@ -1170,7 +1170,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         {
             // Try the account_objects RPC command.  Alice's account only shows
             // two NFT pages even though she owns more.
-            json::Value acctObjs = [&env, &alice]() {
+            json::Value acctObjs = [&env, &alice] {
                 json::Value params;
                 params[jss::account] = alice.human();
                 return env.rpc("json", "account_objects", to_string(params));
@@ -1181,7 +1181,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         {
             // Try the account_nfts RPC command.  It only returns 64 NFTs
             // although alice owns 96.
-            json::Value aliceNFTs = [&env, &alice]() {
+            json::Value aliceNFTs = [&env, &alice] {
                 json::Value params;
                 params[jss::account] = alice.human();
                 params[jss::type] = "state";

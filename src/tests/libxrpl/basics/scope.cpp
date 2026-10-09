@@ -12,21 +12,21 @@ TEST(Scope, scope_exit)
     // unless release() is called
     int i = 0;
     {
-        ScopeExit const x{[&i]() { i = 1; }};
+        ScopeExit const x{[&i] { i = 1; }};
     }
     EXPECT_EQ(i, 1);
     {
-        ScopeExit x{[&i]() { i = 2; }};
+        ScopeExit x{[&i] { i = 2; }};
         x.release();
     }
     EXPECT_EQ(i, 1);
     {
-        ScopeExit x{[&i]() { i += 2; }};
+        ScopeExit x{[&i] { i += 2; }};
         auto const x2 = std::move(x);
     }
     EXPECT_EQ(i, 3);
     {
-        ScopeExit x{[&i]() { i = 4; }};
+        ScopeExit x{[&i] { i = 4; }};
         x.release();
         auto const x2 = std::move(x);
     }
@@ -34,7 +34,7 @@ TEST(Scope, scope_exit)
     {
         try
         {
-            ScopeExit const x{[&i]() { i = 5; }};
+            ScopeExit const x{[&i] { i = 5; }};
             throw 1;
         }
         catch (...)  // NOLINT(bugprone-empty-catch)
@@ -45,7 +45,7 @@ TEST(Scope, scope_exit)
     {
         try
         {
-            ScopeExit x{[&i]() { i = 6; }};
+            ScopeExit x{[&i] { i = 6; }};
             x.release();
             throw 1;
         }
@@ -62,21 +62,21 @@ TEST(Scope, scope_fail)
     // if an exception is unwinding, unless release() is called
     int i = 0;
     {
-        ScopeFail const x{[&i]() { i = 1; }};
+        ScopeFail const x{[&i] { i = 1; }};
     }
     EXPECT_EQ(i, 0);
     {
-        ScopeFail x{[&i]() { i = 2; }};
+        ScopeFail x{[&i] { i = 2; }};
         x.release();
     }
     EXPECT_EQ(i, 0);
     {
-        ScopeFail x{[&i]() { i = 3; }};
+        ScopeFail x{[&i] { i = 3; }};
         auto const x2 = std::move(x);
     }
     EXPECT_EQ(i, 0);
     {
-        ScopeFail x{[&i]() { i = 4; }};
+        ScopeFail x{[&i] { i = 4; }};
         x.release();
         auto const x2 = std::move(x);
     }
@@ -84,7 +84,7 @@ TEST(Scope, scope_fail)
     {
         try
         {
-            ScopeFail const x{[&i]() { i = 5; }};
+            ScopeFail const x{[&i] { i = 5; }};
             throw 1;
         }
         catch (...)  // NOLINT(bugprone-empty-catch)
@@ -95,7 +95,7 @@ TEST(Scope, scope_fail)
     {
         try
         {
-            ScopeFail x{[&i]() { i = 6; }};
+            ScopeFail x{[&i] { i = 6; }};
             x.release();
             throw 1;
         }
@@ -112,21 +112,21 @@ TEST(Scope, scope_success)
     // if an exception is not unwinding, unless release() is called
     int i = 0;
     {
-        ScopeSuccess const x{[&i]() { i = 1; }};
+        ScopeSuccess const x{[&i] { i = 1; }};
     }
     EXPECT_EQ(i, 1);
     {
-        ScopeSuccess x{[&i]() { i = 2; }};
+        ScopeSuccess x{[&i] { i = 2; }};
         x.release();
     }
     EXPECT_EQ(i, 1);
     {
-        ScopeSuccess x{[&i]() { i += 2; }};
+        ScopeSuccess x{[&i] { i += 2; }};
         auto const x2 = std::move(x);
     }
     EXPECT_EQ(i, 3);
     {
-        ScopeSuccess x{[&i]() { i = 4; }};
+        ScopeSuccess x{[&i] { i = 4; }};
         x.release();
         auto const x2 = std::move(x);
     }
@@ -134,7 +134,7 @@ TEST(Scope, scope_success)
     {
         try
         {
-            ScopeSuccess const x{[&i]() { i = 5; }};
+            ScopeSuccess const x{[&i] { i = 5; }};
             throw 1;
         }
         catch (...)  // NOLINT(bugprone-empty-catch)
@@ -145,7 +145,7 @@ TEST(Scope, scope_success)
     {
         try
         {
-            ScopeSuccess x{[&i]() { i = 6; }};
+            ScopeSuccess x{[&i] { i = 6; }};
             x.release();
             throw 1;
         }

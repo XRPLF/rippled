@@ -479,7 +479,7 @@ struct LedgerServer
         int r = ledgerMaster.getClosedLedger()->seq() * 7;
         int fromIdx = 0;
         int toIdx = 0;
-        auto const updateIdx = [&]() {
+        auto const updateIdx = [&] {
             assert(fundedAccounts > senders.size());
             fromIdx = (fromIdx + r) % fundedAccounts;
             while (senders.contains(fromIdx))
@@ -1263,7 +1263,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
         // the timer job that drove the task to completion. If sweep() runs before
         // that thread unwinds, the weak_ptr is still lockable and the map entry
         // is not removed. We retry until the worker thread finishes.
-        auto const waitForSweep = [&net]() {
+        auto const waitForSweep = [&net] {
             for (auto numAttempts = 0; numAttempts < 20; ++numAttempts)
             {
                 net.client.replayer.sweep();

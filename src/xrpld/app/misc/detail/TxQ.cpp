@@ -66,12 +66,12 @@ getFeeLevelPaid(ReadView const& view, STTx const& tx)
     if (!computedBaseFee)
         return std::unexpected(computedBaseFee.error());
 
-    auto const [baseFee, effectiveFeePaid] = [&view, &tx, fee = *computedBaseFee]() {
+    auto const [baseFee, effectiveFeePaid] = [&view, &tx, fee = *computedBaseFee] {
         XRPAmount const feePaid = tx[sfFee].xrp();
 
         // If baseFee is 0 then the cost of a basic transaction is free, but we
         // need the effective fee level to be non-zero.
-        XRPAmount const mod = [&view, &tx, fee]() {
+        XRPAmount const mod = [&view, &tx, fee] {
             if (fee.signum() > 0)
                 return XRPAmount{0};
             auto const def = calculateDefaultBaseFee(view, tx);
@@ -837,7 +837,7 @@ TxQ::apply(
     };
 
     std::optional<TxIter> const txIter =
-        [accountIter, accountIsInQueue, acctSeqProx]() -> std::optional<TxIter> {
+        [accountIter, accountIsInQueue, acctSeqProx] -> std::optional<TxIter> {
         if (!accountIsInQueue)
             return {};
 
@@ -884,9 +884,8 @@ TxQ::apply(
 
     // If the transaction is intending to replace a transaction in the queue
     // identify the one that might be replaced.
-    auto replacedTxIter = [accountIsInQueue,
-                           &accountIter,
-                           txSeqProx]() -> std::optional<TxQAccount::TxMap::iterator> {
+    auto replacedTxIter =
+        [accountIsInQueue, &accountIter, txSeqProx] -> std::optional<TxQAccount::TxMap::iterator> {
         if (accountIsInQueue)
         {
             TxQAccount& txQAcct = accountIter->second;
@@ -1282,7 +1281,7 @@ TxQ::apply(
             return {telCAN_NOT_QUEUE_FULL, false};
         }
         auto const& endAccount = byAccount_.at(lastRIter->account);
-        auto const endEffectiveFeeLevel = [&]() {
+        auto const endEffectiveFeeLevel = [&] {
             // Compute the average of all the txs for the endAccount,
             // but only if the last tx in the queue has a lower fee
             // level than this candidate tx.
@@ -1706,7 +1705,7 @@ TxQ::tryDirectApply(
     if (txSeqProx.isSeq() && txSeqProx != acctSeqProx)
         return {};
 
-    FeeLevel64 const requiredFeeLevel = [this, &view, flags]() {
+    FeeLevel64 const requiredFeeLevel = [this, &view, flags] {
         std::scoped_lock const lock(mutex_);
         return getRequiredFeeLevel(view, flags, feeMetrics_.getSnapshot(), lock);
     }();
@@ -1898,7 +1897,7 @@ TxQ::doRPC(Application& app) const
     // If the base fee is 0 drops, but escalation has kicked in, treat the
     // base fee as if it is 1 drop, which makes the rest of the math
     // work.
-    auto const effectiveBaseFee = [&baseFee, &metrics]() {
+    auto const effectiveBaseFee = [&baseFee, &metrics] {
         if (!baseFee && metrics.openLedgerFeeLevel != metrics.referenceFeeLevel)
             return XRPAmount{1};
         return baseFee;

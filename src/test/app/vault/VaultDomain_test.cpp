@@ -106,7 +106,7 @@ private:
                     {.issuer = credIssuer1, .credType = credType}};
 
                 env(pdomain::setTx(pdOwner, credentials1));
-                auto const domainId1 = [&]() {
+                auto const domainId1 = [&] {
                     auto const tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
@@ -127,7 +127,7 @@ private:
                     {.issuer = credIssuer2, .credType = credType}};
 
                 env(pdomain::setTx(pdOwner, credentials));
-                auto const domainId = [&]() {
+                auto const domainId = [&] {
                     auto const tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
@@ -188,7 +188,7 @@ private:
             env.close();
         }
 
-        auto const shares = [&env, keylet = keylet, this]() -> Asset {
+        auto const shares = [&env, keylet = keylet, this] -> Asset {
             auto const vault = env.le(keylet);
             BEAST_EXPECT(vault != nullptr);
             return MPTIssue(vault->at(sfShareMPTID));
@@ -339,7 +339,7 @@ private:
 
         pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
         env(pdomain::setTx(pdOwner, credentials));
-        auto const domainId = [&]() {
+        auto const domainId = [&] {
             auto const tx = env.tx()->getJson(JsonOptions::Values::None);
             return pdomain::getNewDomain(env.meta());
         }();
@@ -362,7 +362,7 @@ private:
         env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)}));
         env.close();
 
-        auto const shares = [&env, keylet = keylet, this]() -> PrettyAsset {
+        auto const shares = [&env, keylet = keylet, this] -> PrettyAsset {
             auto const sle = env.le(keylet);
             BEAST_EXPECT(sle != nullptr);
             return MPTIssue(sle->at(sfShareMPTID));
@@ -435,7 +435,7 @@ private:
 
         pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
         env(pdomain::setTx(pdOwner, credentials));
-        auto const domainId = [&]() {
+        auto const domainId = [&] {
             auto const tx = env.tx()->getJson(JsonOptions::Values::None);
             return pdomain::getNewDomain(env.meta());
         }();
@@ -453,7 +453,7 @@ private:
         env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)}));
         env.close();
 
-        auto const shares = [&env, keylet = keylet, this]() -> PrettyAsset {
+        auto const shares = [&env, keylet = keylet, this] -> PrettyAsset {
             auto const sle = env.le(keylet);
             BEAST_EXPECT(sle != nullptr);
             return MPTIssue(sle->at(sfShareMPTID));
@@ -497,7 +497,7 @@ private:
         env.close();
 
         auto const [vaultAccount, issuanceId] =
-            [&env, keylet = keylet, this]() -> std::tuple<AccountID, UInt192> {
+            [&env, keylet = keylet, this] -> std::tuple<AccountID, UInt192> {
             auto const vault = env.le(keylet);
             BEAST_EXPECT(vault != nullptr);
             return {vault->at(sfAccount), vault->at(sfShareMPTID)};
@@ -531,7 +531,7 @@ private:
             pdomain::Credentials const credentials{{.issuer = owner, .credType = credType}};
 
             env(pdomain::setTx(owner, credentials));
-            auto const domainId = [&]() {
+            auto const domainId = [&] {
                 auto const tx = env.tx()->getJson(JsonOptions::Values::None);
                 return pdomain::getNewDomain(env.meta());
             }();
@@ -615,7 +615,7 @@ private:
         }
         env.close();
 
-        auto const domainId = [&]() {
+        auto const domainId = [&] {
             pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
             env(pdomain::setTx(pdOwner, credentials));
             env.close();
@@ -795,7 +795,7 @@ private:
         env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
         env.close();
 
-        auto const withdrawToDest = [&]() {
+        auto const withdrawToDest = [&] {
             auto wtx =
                 vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(10)});
             wtx[sfDestination] = dest.human();

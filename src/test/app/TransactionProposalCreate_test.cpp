@@ -117,7 +117,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         std::uint32_t const expiration = proposal::expiration(env, 100s);
 
         // A payload that is accepted as-is; every case starts from this.
-        auto const payload = [&]() {
+        auto const payload = [&] {
             return proposal::unsignedPayload(env, pay(target, bob, XRP(1)), targetTicketSeq);
         };
 
@@ -302,10 +302,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // rather than judged again — so each call pays a different amount.
         // Nothing here turns on the amount.
         std::uint32_t paid = 0;
-        auto const payment = [&]() {
+        auto const payment = [&] {
             return proposal::unsignedPayload(env, pay(target, bob, drops(++paid)), targetTicketSeq);
         };
-        auto const sponsoredPayment = [&]() {
+        auto const sponsoredPayment = [&] {
             // bob is just standing in for an arbitrary sponsor here; every case
             // is rejected for carrying a signature field before the sponsor
             // itself is ever examined.
@@ -314,12 +314,12 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             tx[sfSponsorFlags.getJsonName()] = spfSponsorFee;
             return proposal::unsignedPayload(env, tx, targetTicketSeq);
         };
-        auto const loanSet = [&]() {
+        auto const loanSet = [&] {
             json::Value tx = loan::set(target, UInt256{1}, 1'000 + ++paid);
             tx[sfCounterparty.getJsonName()] = bob.human();
             return proposal::unsignedPayload(env, tx, targetTicketSeq);
         };
-        auto const batchTx = [&]() {
+        auto const batchTx = [&] {
             return proposal::unsignedBatch(
                 env,
                 target,

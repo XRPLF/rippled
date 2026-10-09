@@ -66,7 +66,7 @@ LedgerReplayMsgHandler::processProofPathRequest(
         return reply;
     }
 
-    auto const path = [&]() -> std::optional<std::vector<Blob>> {
+    auto const path = [&] -> std::optional<std::vector<Blob>> {
         switch (packet.type())
         {
             case protocol::lmACCOUNT_STATE:

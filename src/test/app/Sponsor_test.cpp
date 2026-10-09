@@ -2964,7 +2964,7 @@ public:
                 1,
                 tecNO_LINE_INSUF_RESERVE,
                 [&](Env& env, auto const& submit) { submit(check::cash(bob, keylet.key, usd(1))); },
-                [&]() {
+                [&] {
                     BEAST_EXPECT(ownerCount(env, alice) == 1);  // RippleState
                     BEAST_EXPECT(ownerCount(env, bob) == 1);    // RippleState
                     BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
@@ -3033,7 +3033,7 @@ public:
                 [&](Env& env, auto const& submit) {
                     submit(check::cash(bob, checkKeylet.key, mpt(1)));
                 },
-                [&]() {
+                [&] {
                     BEAST_EXPECT(ownerCount(env, bob) == 1);  // MPToken
                     BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
                     BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
@@ -3678,7 +3678,7 @@ public:
                 1,
                 tecNO_LINE_INSUF_RESERVE,
                 [&](Env& env, auto const& submit) { submit(escrow::cancel(alice, alice, seq)); },
-                [&]() {
+                [&] {
                     BEAST_EXPECT(!env.le(keylet::escrow(alice, SeqProxy::rawSequence(seq))));
                     auto const trustSle = env.le(keylet::trustLine(alice, gw, usd.currency));
                     BEAST_EXPECT(trustSle);

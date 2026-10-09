@@ -380,7 +380,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto dispatchToWithdraw = [&,
                                &amountBalance = amountBalance,
                                &amount2Balance = amount2Balance,
-                               &lptAMMBalance = lptAMMBalance]() -> std::pair<TER, STAmount> {
+                               &lptAMMBalance = lptAMMBalance] -> std::pair<TER, STAmount> {
         if (subTxType & tfTwoAsset)
         {
             return equalWithdrawLimit(
@@ -436,7 +436,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         // LCOV_EXCL_STOP
     };
 
-    auto const [result, newLPTokenBalance] = [&]() -> std::pair<TER, STAmount> {
+    auto const [result, newLPTokenBalance] = [&] -> std::pair<TER, STAmount> {
         try
         {
             return dispatchToWithdraw();
@@ -566,7 +566,7 @@ AMMWithdraw::withdraw(
     (void)_;
 
     auto const [amountWithdrawActual, amount2WithdrawActual, lpTokensWithdrawActual] =
-        [&]() -> std::tuple<STAmount, std::optional<STAmount>, STAmount> {
+        [&] -> std::tuple<STAmount, std::optional<STAmount>, STAmount> {
         if (withdrawAll == WithdrawAll::No)
         {
             return adjustAmountsByLPTokens(
@@ -646,7 +646,7 @@ AMMWithdraw::withdraw(
         bool const newLPTokensZero = (lpTokensAMMBalance - lpTokensWithdrawActual) == beast::kZero;
         // newBalance2Zero can be zero if that side of the pool is frozen.
         // ignore newBalance2Zero if one-sided withdrawal.
-        bool const valid = [&]() {
+        bool const valid = [&] {
             if (!amount2WithdrawActual)
                 return newBalanceZero == newLPTokensZero;
             return newBalanceZero == newBalance2Zero && newBalance2Zero == newLPTokensZero;

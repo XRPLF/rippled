@@ -3110,7 +3110,7 @@ private:
         env.close();
 
         // None of the following payments should succeed.
-        auto const failedMptPayments = [this, &env, &btc]() {
+        auto const failedMptPayments = [this, &env, &btc] {
             env.require(Flags(bob_, asfDepositAuth));
 
             // Capture bob's balances before hand to confirm they don't

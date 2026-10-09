@@ -261,7 +261,7 @@ private:
             using namespace std::chrono;
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-            auto const closeTime = [&]() {
+            auto const closeTime = [&] {
                 return duration_cast<seconds>(
                            env.current()->header().closeTime.time_since_epoch() - 10'000s)
                     .count();

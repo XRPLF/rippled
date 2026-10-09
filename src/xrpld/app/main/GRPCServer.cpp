@@ -783,7 +783,7 @@ GRPCServer::start()
     // Start the server and setup listeners
     if (running_ = impl_.start(); running_)
     {
-        thread_ = std::thread([this]() {
+        thread_ = std::thread([this] {
             // Start the event loop and begin handling requests
             beast::setCurrentThreadName("xrpld: grpc");
             this->impl_.handleRpcs();

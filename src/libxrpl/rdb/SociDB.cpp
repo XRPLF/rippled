@@ -260,7 +260,7 @@ public:
                 // There is a separate check in `checkpoint` for a valid
                 // connection in the rare case when the DatabaseCon is destroyed
                 // after locking this weak_ptr
-                [wp = std::weak_ptr<Checkpointer>{shared_from_this()}]() {
+                [wp = std::weak_ptr<Checkpointer>{shared_from_this()}] {
                     if (auto const self = wp.lock())
                         self->checkpoint();
                 }))

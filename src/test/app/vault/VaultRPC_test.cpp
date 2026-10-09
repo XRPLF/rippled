@@ -69,7 +69,7 @@ private:
             env.close();
         }
 
-        auto const sleVault = [&env, keylet = keylet, this]() {
+        auto const sleVault = [&env, keylet = keylet, this] {
             auto const vault = env.le(keylet);
             BEAST_EXPECT(vault != nullptr);
             return vault;

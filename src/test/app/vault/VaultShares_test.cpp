@@ -94,7 +94,7 @@ private:
         }
 
         auto const vaultAccount =  //
-            [&env, key = keylet.key, this]() -> AccountID {
+            [&env, key = keylet.key, this] -> AccountID {
             auto jvVault = env.rpc("vault_info", strHex(key));
 
             BEAST_EXPECT(jvVault[jss::result][jss::vault][sfAssetsTotal] == "100");

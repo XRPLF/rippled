@@ -80,7 +80,7 @@ private:
 
         auto broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
-        auto const loanKeyletOpt = [&]() -> std::optional<Keylet> {
+        auto const loanKeyletOpt = [&] -> std::optional<Keylet> {
             auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return std::nullopt;
@@ -297,7 +297,7 @@ private:
                 .debtMax = Number{100'000'000},
                 .coverDeposit = 500'000,
             });
-        auto const [currentSeq, vaultKeylet] = [&]() {
+        auto const [currentSeq, vaultKeylet] = [&] {
             auto const brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return std::make_tuple(0u, keylet::unchecked(beast::kZero));
@@ -323,12 +323,12 @@ private:
 
         // --- RETRIEVE OBJECTS & SETUP ATTACK ---
 
-        auto const borrowerBalance = [&]() { return env.balance(borrower, iou); };
+        auto const borrowerBalance = [&] { return env.balance(borrower, iou); };
         auto const borrowerScale = static_cast<STAmount const&>(borrowerBalance()).exponent();
 
         auto const loanKeylet =
             keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(currentSeq));
-        auto const maybePeriodicPayment = [&]() -> std::optional<STAmount> {
+        auto const maybePeriodicPayment = [&] -> std::optional<STAmount> {
             auto const loanSle = env.le(loanKeylet);
             if (!BEAST_EXPECT(loanSle))
                 return std::nullopt;
@@ -345,7 +345,7 @@ private:
         STAmount const paymentBuffer{iou, Number(1, -9)};
         STAmount const attackPayment = periodicPayment + paymentBuffer;
 
-        auto const maybeInitialVaultAssets = [&]() -> std::optional<Number> {
+        auto const maybeInitialVaultAssets = [&] -> std::optional<Number> {
             auto const vault = env.le(vaultKeylet);
             if (!BEAST_EXPECT(vault))
                 return std::nullopt;
@@ -1031,7 +1031,7 @@ private:
             // Env::balance can't be used for shares: it resolves the issuer
             // name, and the share issuer is the vault pseudo-account, which
             // Env doesn't know.
-            auto const lenderShares = [&]() -> std::uint64_t {
+            auto const lenderShares = [&] -> std::uint64_t {
                 auto const sle = env.le(keylet::mptoken(iouShareAsset, iouLender.id()));
                 return sle ? sle->at(sfMPTAmount) : 0;
             };

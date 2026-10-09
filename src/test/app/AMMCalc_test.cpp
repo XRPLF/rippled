@@ -351,7 +351,7 @@ class AMMCalc_test : public beast::unit_test::Suite
         //   the transfer rate is optional
         // AMM trading fee is an integer in {0,1000}, 1000 represents 1%
         //   the trading fee is optional
-        auto const exec = [&]() -> bool {
+        auto const exec = [&] -> bool {
             if (p == end_)
                 return true;
             // Swap in to the steps. Execute steps in forward direction first.

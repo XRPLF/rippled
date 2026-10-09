@@ -525,7 +525,7 @@ public:
         std::uint32_t aliceSeq = 0;
 
         // these represent oft-repeated setup for input json below
-        auto const setupTx = [&]() -> json::Value {
+        auto const setupTx = [&] -> json::Value {
             json::Value jv;
             jv[jss::tx_json][jss::Account] = alice.human();
             jv[jss::tx_json][jss::TransactionType] = jss::AccountSet;

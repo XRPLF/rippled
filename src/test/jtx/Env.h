@@ -904,7 +904,7 @@ private:
     {
         auto const barrier = std::make_shared<std::promise<void>>();
         auto const future = barrier->get_future();
-        boost::asio::post(app().getIOContext(), [barrier]() { barrier->set_value(); });
+        boost::asio::post(app().getIOContext(), [barrier] { barrier->set_value(); });
         return future.wait_for(timeout) == std::future_status::ready;
     }
 

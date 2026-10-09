@@ -65,7 +65,7 @@ fund(
         int i = 0;
         for (auto const& amt : amts)
         {
-            auto const amount = [&]() {
+            auto const amount = [&] {
                 if (amtsOut.size() == amts.size())
                 {
                     return amtsOut[i++];

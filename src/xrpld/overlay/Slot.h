@@ -634,7 +634,7 @@ public:
         ID id,
         protocol::MessageType type)
     {
-        updateSlotAndSquelch(key, validator, id, type, []() {});
+        updateSlotAndSquelch(key, validator, id, type, [] {});
     }
 
     /**

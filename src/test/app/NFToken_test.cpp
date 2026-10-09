@@ -2521,7 +2521,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // lambda that returns a randomly generated string which fits
         // the constraints of a URI.  Empty strings may be returned.
         // In the empty string case do not add the URI to the nft.
-        auto const randURI = []() {
+        auto const randURI = [] {
             std::string ret;
 
             // About 20% of the returned strings should be empty
@@ -2567,7 +2567,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         }
 
         // Recover alice's nfts from the ledger.
-        json::Value aliceNFTs = [&env, &alice]() {
+        json::Value aliceNFTs = [&env, &alice] {
             json::Value params;
             params[jss::account] = alice.human();
             params[jss::type] = "state";
@@ -4634,7 +4634,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             // The do/while collects results until no marker is returned.
             do
             {
-                json::Value nftOffers = [&env, &nftID, &request, &marker]() {
+                json::Value nftOffers = [&env, &nftID, &request, &marker] {
                     json::Value params;
                     params[jss::nft_id] = to_string(nftID);
 
@@ -5025,7 +5025,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             env.close();
 
             auto expectInitialState =
-                [this, &env, &buyer, &minter, &secondarySeller, &broker, &gw, &gwXAU, &gwXPB]() {
+                [this, &env, &buyer, &minter, &secondarySeller, &broker, &gw, &gwXAU, &gwXPB] {
                     // Buyer should have XAU 1000, XPB 0
                     // Minter should have XAU 0, XPB 0
                     // Secondary seller should have XAU 0, XPB 0
@@ -5056,7 +5056,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                                                         &broker,
                                                         &gw,
                                                         &gwXAU,
-                                                        &gwXPB]() {
+                                                        &gwXPB] {
                 if (auto const difference = gwXAU(1000) - env.balance(buyer, gwXAU);
                     difference > gwXAU(0))
                     env(pay(gw, buyer, difference));
@@ -5681,7 +5681,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // Close the ledger until the ledger sequence is large enough to delete
         // the account (no longer within <Sequence + 256>)
         auto const incLgrSeqForAcctDel = [&](Env& env, Account const& acct) {
-            int const delta = [&]() -> int {
+            int const delta = [&] -> int {
                 if (env.seq(acct) + 255 > openLedgerSeq(env))
                     return env.seq(acct) - openLedgerSeq(env) + 255;
                 return 0;

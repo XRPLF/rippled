@@ -47,7 +47,7 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
 
     std::scoped_lock const sl(lock_);
 
-    auto [it, inserted] = [&]() {
+    auto [it, inserted] = [&] {
         if (auto const otheriter = lines_.find(otherkey); otheriter != lines_.end())
         {
             // The whole point of using the direction flag is to reduce the

@@ -80,7 +80,7 @@ class TxQPosNegFlows_test : public beast::unit_test::Suite
         using namespace jtx;
 
         auto const& view = *env.current();
-        auto const base = [&view]() {
+        auto const base = [&view] {
             auto base = view.fees().base;
             if (!base)
                 base += 1;
@@ -1394,7 +1394,7 @@ public:
         //++gwenSeq;
         ++hankSeq;
 
-        auto const getTxsQueued = [&]() {
+        auto const getTxsQueued = [&] {
             auto const txs = env.app().getTxQ().getTxs();
             std::map<AccountID, std::size_t> result;
             for (auto const& tx : txs)
