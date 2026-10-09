@@ -301,7 +301,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         {
             // Pick an account to burn an nft.  If there are no nfts left
             // pick again.
-            AcctStat& owner = *(stats[acctDist(engine)]);
+            AcctStat& owner = *stats[acctDist(engine)];
             if (owner.nfts.empty())
                 continue;
 
@@ -316,7 +316,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             // Otherwise either alice or minter can burn.
             AcctStat const& burner = [&]() -> AcctStat& {
                 if (owner.acct == becky.acct)
-                    return *(stats[acctDist(engine)]);
+                    return *stats[acctDist(engine)];
                 return mintDist(engine) ? alice : minter;
             }();
 

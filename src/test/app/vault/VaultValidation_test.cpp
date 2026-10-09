@@ -264,7 +264,7 @@ private:
                     env(tx, Ter{temDISABLED});
                 }
             },
-            {.features = (testableAmendments()) - featurePermissionedDomains});
+            {.features = testableAmendments() - featurePermissionedDomains});
 
         testCase([&](Env& env,
                      Account const& issuer,

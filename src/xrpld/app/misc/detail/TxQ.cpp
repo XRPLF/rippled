@@ -1483,7 +1483,7 @@ TxQ::accept(Application& app, OpenView& view)
             JLOG(j_.trace()) << "Applying queued transaction " << candidateIter->txID
                              << " to open ledger.";
 
-            auto const [txnResult, didApply, _metadata] = candidateIter->apply(app, view, j_);
+            auto const [txnResult, didApply, metadata] = candidateIter->apply(app, view, j_);
 
             if (didApply)
             {

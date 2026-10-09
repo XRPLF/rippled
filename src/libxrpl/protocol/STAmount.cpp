@@ -864,7 +864,7 @@ STAmount::canonicalize()
         {
             Throw<std::runtime_error>("Native currency amount out of range");
         }
-        else if (!native() && value_ > kMaxMpTokenAmount)
+        if (!native() && value_ > kMaxMpTokenAmount)
         {
             Throw<std::runtime_error>("MPT amount out of range");
         }
@@ -927,7 +927,7 @@ amountFromJson(SField const& name, json::Value const& v)
     {
         Throw<std::runtime_error>("XRP may not be specified with a null Json value");
     }
-    else if (v.isObject())
+    if (v.isObject())
     {
         if (!validJSONAsset(v))
             Throw<std::runtime_error>("Invalid Asset's Json specification");
