@@ -733,9 +733,13 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     // SharedPointerType so canonicalizeImpl can write the cached pointer back.
     SharedPointerType entry = [] {
         if constexpr (std::is_same_v<std::shared_ptr<T>, SharedPointerType>)
+        {
             return std::make_shared<T>();
+        }
         else
+        {
             return intr_ptr::makeShared<T>();
+        }
     }();
     canonicalizeImpl(lock, key, entry, detail::ReplaceDynamically{}, [](SharedPointerType const&) {
         return false;
