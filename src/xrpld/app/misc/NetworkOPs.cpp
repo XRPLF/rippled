@@ -645,7 +645,7 @@ public:
     bool
     unsubPeerStatus(std::uint64_t uListener) override;
     void
-    pubPeerStatus(std::function<json::Value(void)> const&) override;
+    pubPeerStatus(std::function<json::Value()> const&) override;
 
     bool
     subConsensus(InfoSub::Ref ispListener) override;
@@ -1876,12 +1876,12 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             {
                 auto const toSkip =
                     registry_.get().getHashRouter().shouldRelay(e.transaction->getID());
-                if (auto const sttx = *(e.transaction->getSTransaction()); toSkip &&
+                if (auto const sttx = *e.transaction->getSTransaction(); toSkip &&
                     // Skip relaying if it's an inner batch txn. The flag should
                     // only be set if the Batch feature is enabled. If Batch is
                     // not enabled, the flag is always invalid, so don't relay
                     // it regardless.
-                    !(sttx.isFlag(tfInnerBatchTxn)))
+                    !sttx.isFlag(tfInnerBatchTxn))
                 {
                     protocol::TMTransaction tx;
                     Serializer s;
@@ -2702,7 +2702,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 }
 
 void
-NetworkOPsImp::pubPeerStatus(std::function<json::Value(void)> const& func)
+NetworkOPsImp::pubPeerStatus(std::function<json::Value()> const& func)
 {
     // Hold each locked subscriber alive until after streamLock_ is released; a
     // last-reference ~InfoSub would otherwise re-acquire this non-recursive
@@ -4190,14 +4190,9 @@ NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson cons
     if (notify.empty())
         return;
 
-    // Reuse the transaction JSON built by pubValidatedTransaction; only the
-    // message type differs for this stream.
-    MultiApiJson jvMPT = jvObj;
-    jvMPT.set(jss::type, "mptTransaction");
-
     for (InfoSub::Ref isrListener : notify)
     {
-        jvMPT.visit(isrListener->getApiVersion(), [&](json::Value const& jv) {
+        jvObj.visit(isrListener->getApiVersion(), [&](json::Value const& jv) {
             isrListener->send(jv, true);
         });
     }

@@ -2406,7 +2406,7 @@ beast::detail::AgedContainerIterator<false, Iterator>
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::erase(
     beast::detail::AgedContainerIterator<IsConst, Iterator> pos)
 {
-    unlinkAndDeleteElement(&*((pos++).iterator()));
+    unlinkAndDeleteElement(&*(pos++).iterator());
     return beast::detail::AgedContainerIterator<false, Iterator>(pos.iterator());
 }
 
@@ -2426,7 +2426,7 @@ AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>
     beast::detail::AgedContainerIterator<IsConst, Iterator> last)
 {
     for (; first != last;)
-        unlinkAndDeleteElement(&*((first++).iterator()));
+        unlinkAndDeleteElement(&*(first++).iterator());
 
     return beast::detail::AgedContainerIterator<false, Iterator>(first.iterator());
 }

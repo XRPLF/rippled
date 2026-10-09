@@ -191,7 +191,7 @@ acctMatchesPubKey(
     }
 
     // The last gasp is that we have public Regular key.
-    if ((sle.isFieldPresent(sfRegularKey)) && (publicKeyAcctID == sle.getAccountID(sfRegularKey)))
+    if (sle.isFieldPresent(sfRegularKey) && (publicKeyAcctID == sle.getAccountID(sfRegularKey)))
     {
         return RpcSuccess;
     }

@@ -12,6 +12,7 @@
 #include <test/jtx/mpt.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
@@ -101,6 +102,10 @@ protected:
         TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
         std::string data = {};  // NOLINT(readability-redundant-member-init)
         std::uint32_t flags = 0;
+        // If set, passed to LoanBrokerSet as sfDomainID. Only valid together
+        // with tfLoanBrokerPrivate in `flags`.
+        std::optional<uint256> domainID =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
         // VaultCreate flags (e.g. tfVaultPrivate). Distinct from `flags`,
         // which are passed to LoanBrokerSet.
         std::optional<std::uint32_t> vaultFlags =
@@ -561,7 +566,10 @@ protected:
         auto const keylet = keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
 
         using namespace loan_broker;
-        env(set(lender, vaultKeylet.key, params.flags),
+        auto brokerSetTx = set(lender, vaultKeylet.key, params.flags);
+        if (params.domainID)
+            brokerSetTx[sfDomainID] = to_string(*params.domainID);
+        env(brokerSetTx,
             kData(params.data),
             kManagementFeeRate(params.managementFeeRate),
             kDebtMaximum(debtMaximumValue),
@@ -574,6 +582,26 @@ protected:
         env.close();
 
         return {asset, keylet, vaultKeylet, params, subscriptionDate, redemptionDate};
+    }
+
+    // Creates a permissioned domain owned by `owner` that accepts credentials
+    // of `credType` issued by `credIssuer`, and returns its ID.
+    uint256
+    createDomain(
+        jtx::Env& env,
+        jtx::Account const& owner,
+        jtx::Account const& credIssuer,
+        std::string const& credType)
+    {
+        using namespace jtx;
+
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
+        env(pdomain::setTx(owner, credentials));
+        env.close();
+
+        auto const domainID = pdomain::getNewDomain(env.meta());
+        BEAST_EXPECT(domainID != beast::kZero);
+        return domainID;
     }
 
     /**

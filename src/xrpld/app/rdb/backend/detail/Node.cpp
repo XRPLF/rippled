@@ -350,11 +350,11 @@ saveValidatedLedger(
                         sql += toBase58(account);
                         sql += "',";
                         sql += ledgerSeq;
-                        sql += ",";
+                        sql += ',';
                         sql += txnSeq;
-                        sql += ")";
+                        sql += ')';
                     }
-                    sql += ";";
+                    sql += ';';
                     JLOG(j.trace()) << "ActTx: " << sql;
                     *db << sql;
                 }

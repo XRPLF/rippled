@@ -453,7 +453,7 @@ Slot<ClockType>::deletePeer(PublicKey const& validator, ID id, bool erase)
 
         JLOG(journal_.trace()) << "deletePeer: " << Slice(validator) << " " << id << " selected "
                                << (it->second.state == PeerState::Selected) << " considered "
-                               << (considered_.contains(id)) << " erase " << erase;
+                               << considered_.contains(id) << " erase " << erase;
         auto now = ClockType::now();
         if (it->second.state == PeerState::Selected)
         {

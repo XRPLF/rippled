@@ -4089,7 +4089,7 @@ private:
             {
                 size_t const signerIdx = (rnd + i) % kNumSigners;
 
-                if (!(cr_.attested[signerIdx]))
+                if (!cr_.attested[signerIdx])
                 {
                     // enqueue one attestation for this signer
                     cr_.attested[signerIdx] = true;
@@ -4245,7 +4245,7 @@ private:
             for (size_t i = 0; i < kNumSigners; ++i)
             {
                 size_t const signerIdx = (rnd + i) % kNumSigners;
-                if (!(xfer_.attested[signerIdx]))
+                if (!xfer_.attested[signerIdx])
                 {
                     // enqueue one attestation for this signer
                     xfer_.attested[signerIdx] = true;

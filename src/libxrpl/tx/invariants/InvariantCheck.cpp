@@ -558,10 +558,9 @@ AccountRootsDeletedClean::finalize(
                 return false;
         }
         // Simple types
-        for (auto const& [keyletfunc, _1, _2] : kDirectAccountKeylets)
+        for (auto const& keyletDesc : kDirectAccountKeylets)
         {
-            // TODO: use '_' for both unused variables above once we are in C++26
-            if (objectExists(std::invoke(keyletfunc, accountID)) && enforce)
+            if (objectExists(std::invoke(keyletDesc.function, accountID)) && enforce)
                 return false;
         }
 
@@ -1159,6 +1158,10 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfManagementFeeRate) ||
                     kFieldChanged(before, after, sfCoverRateMinimum) ||
                     kFieldChanged(before, after, sfCoverRateLiquidation);
+                // LoanBroker flags (lsfLoanBrokerPrivate) only exist from
+                // featureLendingProtocolV1_2 onwards and are set at creation.
+                if (view.rules().enabled(featureLendingProtocolV1_2))
+                    bad = bad || kFieldChanged(before, after, sfFlags);
                 break;
             case ltLOAN:
                 bad = bad || kFieldChanged(before, after, sfSequence) ||

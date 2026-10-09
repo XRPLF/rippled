@@ -177,6 +177,7 @@ ValidatorSite::load(
 void
 ValidatorSite::start()
 {
+    // NOLINTNEXTLINE(modernize-use-scoped-lock) setTimer() takes each lock separately
     std::scoped_lock const l0{sitesMutex_};
     std::scoped_lock const l1{stateMutex_};
     if (timer_.expiry() == ClockType::time_point{})

@@ -2349,7 +2349,7 @@ public:
             BEAST_EXPECT(acctOffers.size() == t.offers);
             if (!acctOffers.empty() && (t.offers != 0))
             {
-                auto const& acctOffer = *(acctOffers.front());
+                auto const& acctOffer = *acctOffers.front();
 
                 auto const leftover = t.offerAmount - t.bookAmount;
                 BEAST_EXPECT(acctOffer[sfTakerGets] == XRP(leftover));
@@ -2448,7 +2448,7 @@ public:
         {
             auto const bobOffers = offersOnAccount(env, bob);
             BEAST_EXPECT(bobOffers.size() == 1);
-            auto const& bobOffer = *(bobOffers.front());
+            auto const& bobOffer = *bobOffers.front();
 
             BEAST_EXPECT(bobOffer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(bobOffer[sfTakerGets] == usd(1));
@@ -2532,7 +2532,7 @@ public:
             auto bobOffers = offersOnAccount(env, bob);
             if (BEAST_EXPECT(bobOffers.size() == 1))
             {
-                auto const& bobOffer = *(bobOffers.front());
+                auto const& bobOffer = *bobOffers.front();
 
                 BEAST_EXPECT(bobOffer[sfTakerGets] == usd(1));
                 BEAST_EXPECT(bobOffer[sfTakerPays] == eur(1));
@@ -2626,7 +2626,7 @@ public:
         {
             auto const aliceOffers = offersOnAccount(env, alice);
             BEAST_EXPECT(aliceOffers.size() == 1);
-            auto const& aliceOffer = *(aliceOffers.front());
+            auto const& aliceOffer = *aliceOffers.front();
 
             BEAST_EXPECT(aliceOffer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(aliceOffer[sfTakerGets] == usd(600));
@@ -2635,7 +2635,7 @@ public:
         {
             auto const bobOffers = offersOnAccount(env, bob);
             BEAST_EXPECT(bobOffers.size() == 1);
-            auto const& bobOffer = *(bobOffers.front());
+            auto const& bobOffer = *bobOffers.front();
 
             BEAST_EXPECT(bobOffer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(bobOffer[sfTakerGets] == XRP(600));
@@ -2661,7 +2661,7 @@ public:
         if (!aliceOffers.empty())
         {
             BEAST_EXPECT(aliceOffers.size() == 1);
-            auto const& aliceOffer = *(aliceOffers.front());
+            auto const& aliceOffer = *aliceOffers.front();
 
             BEAST_EXPECT(aliceOffer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(aliceOffer[sfTakerGets] == usd(0));
@@ -2841,7 +2841,7 @@ public:
                 if (!acctOffers.empty())
                 {
                     BEAST_EXPECT(acctOffers.size() == 1);
-                    auto const& acctOffer = *(acctOffers.front());
+                    auto const& acctOffer = *acctOffers.front();
 
                     BEAST_EXPECT(acctOffer[sfLedgerEntryType] == ltOFFER);
                     BEAST_EXPECT(acctOffer[sfTakerGets] == t.takerGets);
@@ -3052,7 +3052,7 @@ public:
             BEAST_EXPECT(evesOffers.size() == 1);
             if (!evesOffers.empty())
             {
-                auto const& evesOffer = *(evesOffers.front());
+                auto const& evesOffer = *evesOffers.front();
                 BEAST_EXPECT(evesOffer[sfLedgerEntryType] == ltOFFER);
                 BEAST_EXPECT(evesOffer[sfTakerGets] == XRP(2000));
                 BEAST_EXPECT(evesOffer[sfTakerPays] == usd(5));
@@ -3229,7 +3229,7 @@ public:
             if (!ovasOffers.empty())
             {
                 BEAST_EXPECT(ovasOffers.size() == 1);
-                auto const& ovasOffer = *(ovasOffers.front());
+                auto const& ovasOffer = *ovasOffers.front();
 
                 BEAST_EXPECT(ovasOffer[sfLedgerEntryType] == ltOFFER);
                 BEAST_EXPECT(ovasOffer[sfTakerGets] == usd(0));

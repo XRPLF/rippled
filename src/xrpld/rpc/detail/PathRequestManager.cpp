@@ -253,7 +253,7 @@ PathRequestManager::makePathRequest(
 json::Value
 PathRequestManager::makeLegacyPathRequest(
     PathRequest::Pointer& req,
-    std::function<void(void)> completion,
+    std::function<void()> completion,
     resource::Consumer& consumer,
     std::shared_ptr<ReadView const> const& inLedger,
     json::Value const& request)
