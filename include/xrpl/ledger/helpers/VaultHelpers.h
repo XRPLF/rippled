@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <string_view>
 
 namespace xrpl {
 
@@ -24,8 +25,8 @@ class STTx;
  *
  * FixedPrecision Vaults return AssetsAvailable plus AssetsDeployed, with no
  * rounding to the asset's 16-digit precision: the sum is exact at Number's
- * active 19-digit mantissa width (guaranteed once fixCleanup3_2_0 is
- * enabled, which FixedPrecision requires), rounds Downward regardless of the
+ * active 19-digit mantissa width (the large mantissa range, enabled by
+ * featureSingleAssetVault or featureLendingProtocol), rounds Downward regardless of the
  * caller's ambient mode beyond that, and is not rounded to match the cached
  * sfAssetsTotal field. Legacy and CashBasis Vaults return the stored
  * AssetsTotal.
@@ -85,6 +86,21 @@ struct VaultBalanceChange
  */
 [[nodiscard]] TER
 adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Journal j);
+
+/**
+ * @brief Apply a signed cash movement to a Vault of any version. FixedPrecision
+ * Vaults go through adjustVaultBalances; Legacy and CashBasis Vaults add the
+ * amount to both AssetsTotal and AssetsAvailable.
+ *
+ * @param vault The vault SLE.
+ * @param delta Signed change to AssetsAvailable; the exact amount moved on the
+ *              Vault pseudo-account.
+ * @param j Journal passed through to adjustVaultBalances.
+ *
+ * @return tesSUCCESS, or the adjustVaultBalances error for FixedPrecision Vaults.
+ */
+[[nodiscard]] TER
+adjustVaultCash(SLE::Ref vault, STAmount const& delta, beast::Journal j);
 
 /**
  * Return the Vault's current live exponent.
@@ -393,35 +409,24 @@ enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
 assetsTotalForWithdrawal(SLE::ConstRef vault, WaiveUnrealizedLoss waive);
 
 /**
- * Returns true if debiting amount from total (the current value of a
- * vault's sfAssetsTotal or sfAssetsAvailable) would canonicalize to the
- * same STAmount value. This happens when amount is non-zero but too small
- * to change the stored total at STAmount's precision. Shares would still
- * move, so the ValidVault invariant would fail after apply; callers use
- * this to reject the transaction upfront instead.
- *
- * @param asset The vault's underlying asset, used to canonicalize both
- *              sides the same way the ledger will when the field is stored.
- * @param total The field's current value.
- * @param amount The amount to debit. Zero always returns false; that case
- *               is rejected separately.
- */
-[[nodiscard]] bool
-debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount);
-
-/**
- * Returns the reference balance a cash outflow's dust check
- * (debitIsNonZeroDust) should compare against: FixedPrecision Vaults use
- * AssetsAvailable, the balance the cash actually leaves; Legacy/CashBasis
- * Vaults use the given AssetsTotal. Shared by VaultWithdraw and
- * VaultClawback.
+ * Reject a cash outflow that is dust (see debitIsNonZeroDust) or whose check
+ * overflows Number, which is easy to hit with a large Scale.
  *
  * @param vault The vault SLE.
- * @param assetsTotal The vault's current AssetsTotal, as already read by the
- *                     caller.
+ * @param amount The amount to debit.
+ * @param j Journal for the debug log.
+ * @param name Transaction name used as the log prefix.
+ *
+ * @return tesSUCCESS; tecPRECISION_LOSS if amount is dust; tecPATH_DRY if the
+ *         check overflows. Overflow means the transaction cannot apply, but
+ *         ledger state is still consistent.
  */
-[[nodiscard]] Number
-vaultDebitDustReference(SLE::ConstRef vault, Number const& assetsTotal);
+[[nodiscard]] TER
+checkDebitNotDust(
+    SLE::ConstRef vault,
+    Number const& amount,
+    beast::Journal j,
+    std::string_view name);
 
 /**
  * From the perspective of a vault, return the number of shares to demand from

@@ -14,7 +14,7 @@
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/ledger/entries/LedgerHashesEntry.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/SField.h>
@@ -36,7 +36,7 @@ RCLValidatedLedger::RCLValidatedLedger(
     beast::Journal j)
     : ledgerID_{ledger->header().hash}, ledgerSeq_{ledger->seq()}, j_{j}
 {
-    auto const hashIndex = ledger->read(keylet::skip());
+    LedgerHashesEntryR const hashIndex(*ledger, j_);
     if (hashIndex)
     {
         XRPL_ASSERT(

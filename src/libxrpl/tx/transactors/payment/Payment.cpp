@@ -18,6 +18,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Quality.h>
@@ -715,22 +716,55 @@ Payment::doApply()
 
         // Amount to deliver.
         STAmount amountDeliver = dstAmount;
-        // Factor in the transfer rate.
-        // No rounding. It'll change once MPT integrated into DEX.
-        STAmount requiredMaxSourceAmount = multiply(dstAmount, rate);
+        // True if the sender would pay more than SendMax.
+        bool exceedsSendMax = false;
 
-        // Send more than the account wants to pay or less than
-        // the account wants to deliver (if no SendMax).
-        // Adjust the amount to deliver.
-        if (partialPaymentAllowed && requiredMaxSourceAmount > maxSourceAmount)
+        if (view().rules().enabled(fixCleanup3_5_0))
         {
-            requiredMaxSourceAmount = maxSourceAmount;
+            // The legacy multiply() and divide() can overflow on large MPT
+            // amounts, and Number rounding can charge more than SendMax.
+            // MPTs are integral, so use exact integer arithmetic. The cost
+            // is rounded up, matching the transfer fee that accountSend
+            // charges. If the cost overflows, it exceeds any SendMax.
+            auto const requiredMaxSourceAmount =
+                tryMulRatio(dstAmount.mpt(), rate.value, QUALITY_ONE, true);
+            exceedsSendMax =
+                !requiredMaxSourceAmount || maxSourceAmount.mpt() < *requiredMaxSourceAmount;
+
+            // Send more than the account wants to pay or less than
+            // the account wants to deliver (if no SendMax).
+            // Adjust the amount to deliver.
+            if (partialPaymentAllowed && exceedsSendMax)
+            {
+                // Round the delivered amount down so that the sender is
+                // never charged more than SendMax.
+                auto const delivered =
+                    mulRatio(maxSourceAmount.mpt(), QUALITY_ONE, rate.value, false);
+                amountDeliver = STAmount(maxSourceAmount.asset(), delivered.value());
+                if (amountDeliver <= beast::kZero)
+                    return tecPATH_PARTIAL;
+                exceedsSendMax = false;
+            }
+        }
+        else
+        {
+            // Factor in the transfer rate.
             // No rounding. It'll change once MPT integrated into DEX.
-            amountDeliver = divide(maxSourceAmount, rate);
+            STAmount requiredMaxSourceAmount = multiply(dstAmount, rate);
+
+            // Send more than the account wants to pay or less than
+            // the account wants to deliver (if no SendMax).
+            // Adjust the amount to deliver.
+            if (partialPaymentAllowed && requiredMaxSourceAmount > maxSourceAmount)
+            {
+                requiredMaxSourceAmount = maxSourceAmount;
+                // No rounding. It'll change once MPT integrated into DEX.
+                amountDeliver = divide(maxSourceAmount, rate);
+            }
+            exceedsSendMax = requiredMaxSourceAmount > maxSourceAmount;
         }
 
-        if (requiredMaxSourceAmount > maxSourceAmount ||
-            (deliverMin && amountDeliver < *deliverMin))
+        if (exceedsSendMax || (deliverMin && amountDeliver < *deliverMin))
             return tecPATH_PARTIAL;
 
         PaymentSandbox pv(&view());

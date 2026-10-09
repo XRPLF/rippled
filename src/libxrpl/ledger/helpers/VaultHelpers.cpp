@@ -26,6 +26,8 @@
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <stdexcept>
+#include <string_view>
 #include <utility>
 
 namespace xrpl {
@@ -135,6 +137,18 @@ syncAssetsTotal(SLE::Ref vault)
     vault->at(sfAssetsTotal) = STAmount{asset, getAssetsTotal(vault)};
 }
 
+[[nodiscard]] bool
+debitIsNonZeroDust(SLE::ConstRef vault, Number const& amount)
+{
+    if (amount == 0)
+        return false;
+
+    auto const total = getVaultVersion(vault) == VaultVersion::FixedPrecision
+        ? vault->at(sfAssetsAvailable)
+        : getAssetsTotal(vault);
+    auto const asset = vault->at(sfAsset);
+    return STAmount{asset, total - amount} == STAmount{asset, total};
+}
 }  // namespace
 
 namespace detail {
@@ -190,12 +204,13 @@ creditToPosteriorScale(
     // creditToPosteriorAvailableScale's doc: a delta floored on its own grid
     // can still leave a 17-digit sum once the reference has crossed a power
     // of ten.
-    Number const flooredSum = roundToAsset(asset, reference + raw, atScale, roundingMode);
-    // flooredSum - reference can carry 17 significant digits (the sum is on
-    // the posterior grid, the reference on the finer one); build the
-    // STAmount under roundingMode, not the caller's ambient mode, so the
-    // credit this returns never exceeds raw.
+    //
+    // Both reference + raw and flooredSum - reference can carry more digits
+    // than Number holds (the sum is on the posterior grid, the reference on
+    // the finer one). Compute both under roundingMode, not the caller's
+    // ambient mode, so the credit this returns never exceeds raw.
     NumberRoundModeGuard const rg(roundingMode);
+    Number const flooredSum = roundToAsset(asset, reference + raw, atScale, roundingMode);
     return STAmount{asset, flooredSum - reference};
 }
 
@@ -258,18 +273,23 @@ adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Jou
     Number const assetsDeployedAfter = Number(vault->at(sfAssetsDeployed)) + change.deployed;
     Number const lossUnrealizedAfter = Number(vault->at(sfLossUnrealized)) + change.loss;
     Number const assetsReservedAfter = Number(vault->at(sfAssetsReserved)) + change.reserved;
-
-    Number yieldUnrealizedAfter = Number(vault->at(sfYieldUnrealized)) + change.yield;
+    // LoanSet, LoanPay and default each move YieldUnrealized by the change in
+    // the Loan's own TotalValueOutstanding - PrincipalOutstanding -
+    // ManagementFeeOutstanding, so it always equals that sum over the
+    // Vault's Loans and cannot go negative.
+    Number const yieldUnrealizedAfter = Number(vault->at(sfYieldUnrealized)) + change.yield;
 
     if (availableAfter < beast::kZero || assetsDeployedAfter < beast::kZero ||
-        lossUnrealizedAfter < beast::kZero || assetsReservedAfter < beast::kZero)
+        lossUnrealizedAfter < beast::kZero || yieldUnrealizedAfter < beast::kZero ||
+        assetsReservedAfter < beast::kZero)
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "adjustVaultBalances: a balance would become negative."
                         << " AssetsAvailable: " << Number(availableAfter)
                         << ", AssetsDeployed: " << assetsDeployedAfter
                         << ", LossUnrealized: " << lossUnrealizedAfter
-                        << ", AssetsReserved: " << assetsReservedAfter;
+                        << ", AssetsReserved: " << assetsReservedAfter
+                        << ", YieldUnrealized: " << yieldUnrealizedAfter;
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
@@ -278,13 +298,6 @@ adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Jou
     // still owes. Reachable only through LoanManage's impair.
     if (lossUnrealizedAfter > assetsDeployedAfter)
         return tecLIMIT_EXCEEDED;
-
-    if (yieldUnrealizedAfter < beast::kZero)
-    {
-        JLOG(j.warn()) << "adjustVaultBalances: YieldUnrealized would become negative: "
-                       << yieldUnrealizedAfter << "; clamping to zero.";
-        yieldUnrealizedAfter = kNumZero;
-    }
 
     // Every caller derives principal from a Loan's own PrincipalOutstanding so the new total must
     // stay representable at the asset's own 16-digit precision too.
@@ -308,6 +321,17 @@ adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Jou
     vault->at(sfAssetsReserved) = assetsReservedAfter;
     syncAssetsTotal(vault);
 
+    return tesSUCCESS;
+}
+
+[[nodiscard]] TER
+adjustVaultCash(SLE::Ref vault, STAmount const& delta, beast::Journal j)
+{
+    if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+        return adjustVaultBalances(vault, {.cash = delta}, j);
+
+    vault->at(sfAssetsTotal) += delta;
+    vault->at(sfAssetsAvailable) += delta;
     return tesSUCCESS;
 }
 
@@ -448,6 +472,36 @@ getVaultAssetsLentOut(
     if (rules.enabled(featureLendingProtocolV1_2))
         lentOut -= assetsReserved;
     return lentOut;
+}
+
+[[nodiscard]] TER
+checkDebitNotDust(
+    SLE::ConstRef vault,
+    Number const& amount,
+    beast::Journal j,
+    std::string_view name)
+{
+    try
+    {
+        if (debitIsNonZeroDust(vault, amount))
+        {
+            JLOG(j.debug()) << name << ": amount too small to change stored vault balance";
+            return tecPRECISION_LOSS;
+        }
+    }
+    // LCOV_EXCL_START
+    catch (std::overflow_error const&)
+    {
+        // It's easy to hit this exception from Number with large enough Scale
+        // so we avoid spamming the log and only use debug here.
+        JLOG(j.debug())  //
+            << name << ": overflow error with"
+            << " scale=" << (int)vault->at(sfScale)  //
+            << ", assetsTotal=" << vault->at(sfAssetsTotal) << ", amount=" << amount;
+        return tecPATH_DRY;
+    }
+    // LCOV_EXCL_STOP
+    return tesSUCCESS;
 }
 
 [[nodiscard]] std::optional<STAmount>
@@ -610,22 +664,6 @@ assetsTotalForWithdrawal(SLE::ConstRef vault, WaiveUnrealizedLoss waive)
     if (waive == WaiveUnrealizedLoss::No)
         assetTotal -= vault->at(sfLossUnrealized);
     return assetTotal;
-}
-
-[[nodiscard]] bool
-debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount)
-{
-    if (amount == 0)
-        return false;
-    return STAmount{asset, total - amount} == STAmount{asset, total};
-}
-
-[[nodiscard]] Number
-vaultDebitDustReference(SLE::ConstRef vault, Number const& assetsTotal)
-{
-    return getVaultVersion(vault) == VaultVersion::FixedPrecision
-        ? Number(vault->at(sfAssetsAvailable))
-        : assetsTotal;
 }
 
 [[nodiscard]] std::optional<STAmount>
