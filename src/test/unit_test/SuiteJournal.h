@@ -52,7 +52,7 @@ SuiteJournalSink::writeAlways(beast::Severity level, std::string const& text)
 {
     using beast::Severity;
 
-    char const* const s = [level]() {
+    char const* const s = [level] {
         switch (level)
         {
             case Severity::Trace:

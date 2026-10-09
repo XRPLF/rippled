@@ -353,7 +353,7 @@ changeSpotPriceQuality(
         }
         if (auto const nTakerPaysPropose = (-b + root2(res)) / (2 * a); nTakerPaysPropose > 0)
         {
-            auto const nTakerPays = [&]() {
+            auto const nTakerPays = [&] {
                 // The fee might make the AMM offer quality less than CLOB
                 // quality. Therefore, AMM offer has to satisfy this constraint:
                 // o / i >= q. Substituting o with swapAssetIn() gives: i <= O /
@@ -372,8 +372,8 @@ changeSpotPriceQuality(
             auto const takerPays =
                 toAmount<TIn>(getAsset(pool.in), nTakerPays, Number::RoundingMode::Upward);
             // should not fail
-            if (auto amounts = TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
-                Quality{amounts} < quality &&
+            auto amounts = TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
+            if (Quality{amounts} < quality &&
                 !withinRelativeDistance(Quality{amounts}, quality, Number(1, -7)))
             {
                 JLOG(j.error()) << "changeSpotPriceQuality failed: " << to_string(pool.in) << " "
@@ -382,21 +382,19 @@ changeSpotPriceQuality(
                                 << " " << to_string(amounts.out);
                 Throw<std::runtime_error>("changeSpotPriceQuality failed");
             }
-            else
-            {
-                JLOG(j.trace()) << "changeSpotPriceQuality succeeded: " << to_string(pool.in) << " "
-                                << to_string(pool.out) << " "
-                                << " " << quality << " " << tfee << " " << to_string(amounts.in)
-                                << " " << to_string(amounts.out);
-                return amounts;
-            }
+
+            JLOG(j.trace()) << "changeSpotPriceQuality succeeded: " << to_string(pool.in) << " "
+                            << to_string(pool.out) << " "
+                            << " " << quality << " " << tfee << " " << to_string(amounts.in) << " "
+                            << to_string(amounts.out);
+            return amounts;
         }
         JLOG(j.trace()) << "changeSpotPriceQuality calc failed: " << to_string(pool.in) << " "
                         << to_string(pool.out) << " " << quality << " " << tfee;
         return std::nullopt;
     }
 
-    auto amounts = [&]() {
+    auto amounts = [&] {
         bool const inIntegral = getAsset(pool.in).integral();
         bool const outIntegral = getAsset(pool.out).integral();
 

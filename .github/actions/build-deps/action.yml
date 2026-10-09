@@ -15,9 +15,9 @@ inputs:
     required: false
     default: "false"
   log_verbosity:
-    description: "The logging verbosity."
+    description: 'The logging verbosity ("quiet", "verbose"), or empty to use the Conan defaults.'
     required: false
-    default: "verbose"
+    default: ""
   sanitizers:
     description: "The sanitizers to enable."
     required: false
@@ -35,6 +35,16 @@ runs:
         LOG_VERBOSITY: ${{ inputs.log_verbosity }}
         SANITIZERS: ${{ inputs.sanitizers }}
       run: |
+        # By default, leave the verbosity unset, so CMake configure output is
+        # shown, but compile commands and Boost's b2 debug output (~85k lines
+        # when "verbose") are not.
+        VERBOSITY_ARGS=()
+        if [[ -n "${LOG_VERBOSITY}" ]]; then
+            VERBOSITY_ARGS=(
+                --conf:all tools.build:verbosity="${LOG_VERBOSITY}"
+                --conf:all tools.compilation:verbosity="${LOG_VERBOSITY}"
+            )
+        fi
         conan install \
             --profile:all ci \
             --build="${BUILD_OPTION}" \
@@ -42,8 +52,7 @@ runs:
             --options:host='&:xrpld=True' \
             --settings:all build_type="${BUILD_TYPE}" \
             --conf:all tools.build:jobs=${BUILD_NPROC} \
-            --conf:all tools.build:verbosity="${LOG_VERBOSITY}" \
-            --conf:all tools.compilation:verbosity="${LOG_VERBOSITY}" \
+            "${VERBOSITY_ARGS[@]}" \
             --format=json \
             . >"${RUNNER_TEMP}/conan-graph.json"
 
@@ -52,4 +61,4 @@ runs:
     - name: Check build-context packages for Nix store dependencies (Linux)
       if: ${{ runner.os == 'Linux' }}
       shell: bash
-      run: ./bin/check-build-context-runtime.sh "${RUNNER_TEMP}/conan-graph.json"
+      run: ./bin/nix/check-build-context-runtime.sh "${RUNNER_TEMP}/conan-graph.json"

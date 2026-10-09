@@ -148,10 +148,12 @@ payloadMatches(STObject const& proposedTx, STObject const& tx)
         proposedTx.isFieldPresent(sfTransactionType) && tx.isFieldPresent(sfTransactionType),
         "xrpl::proposal::payloadMatches : transaction-shaped inputs");
 
-    // The signing-payload serialization omits exactly the signature
-    // containers a proposal lets evolve (TxnSignature, Signers, BatchSigners,
-    // CounterpartySignature, SponsorSignature), so it is the field set fixed
-    // at creation — except SigningPubKey, which signing payloads include but
+    // The signing-payload serialization omits every kNotSigning field: the
+    // signature containers a proposal lets evolve (TxnSignature, Signers,
+    // BatchSigners, CounterpartySignature, SponsorSignature) plus Signature
+    // and MasterSignature, which the account's own signature does not cover
+    // either (see the header). What remains is the field set fixed at
+    // creation — except SigningPubKey, which signing payloads include but
     // which is also mutable here (stored empty, filled if the target signs
     // with its own key). Neutralize it on both sides before comparing.
     auto const payloadBytes = [](STObject const& obj) {

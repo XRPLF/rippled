@@ -103,7 +103,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
             if (request)
             {
-                auto continueCallback = [&getSubscriber, &request]() {
+                auto continueCallback = [&getSubscriber, &request] {
                     // This callback is used by doUpdate to determine whether to
                     // continue working. If getSubscriber returns null, that
                     // indicates that this request is no longer relevant.
@@ -253,7 +253,7 @@ PathRequestManager::makePathRequest(
 json::Value
 PathRequestManager::makeLegacyPathRequest(
     PathRequest::pointer& req,
-    std::function<void(void)> completion,
+    std::function<void()> completion,
     resource::Consumer& consumer,
     std::shared_ptr<ReadView const> const& inLedger,
     json::Value const& request)

@@ -11,6 +11,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/paychan.h>
 #include <test/jtx/rate.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
@@ -4696,7 +4697,7 @@ private:
                 auto const tokensFee =
                     ammAlice.withdraw(carol_, USD(100), std::nullopt, IOUAmount{520, 0});
                 // carol_ withdraws ~1,443.44USD
-                auto const balanceAfterWithdraw = [&]() {
+                auto const balanceAfterWithdraw = [&] {
                     if (!features[fixAMMv1_1] && !features[fixAMMv1_3])
                     {
                         return STAmount(USD, UINT64_C(30'443'43891402715), -11);
@@ -5942,7 +5943,7 @@ private:
                     // no offer is generated in this case.
                     if (status == Fail && quality != Quality{0})
                     {
-                        auto tinyOffer = [&]() {
+                        auto tinyOffer = [&] {
                             if (isXRP(poolIn))
                             {
                                 auto const takerPays = STAmount{xrpIssue(), 1};
@@ -6843,14 +6844,14 @@ private:
                 auto const [amount, amount2, lptAMM] = amm.balances(XRP, xpm);
                 auto const withdraw = STAmount{xpm, 1, -5};
                 amm.withdraw(WithdrawArg{.asset1Out = STAmount{xpm, 1, -5}});
-                auto const [amount_, amount2_, lptAMM_] = amm.balances(XRP, xpm);
+                auto const [amountAfter, amount2After, lptAMMAfter] = amm.balances(XRP, xpm);
                 if (!env.enabled(fixAMMv1_3))
                 {
-                    BEAST_EXPECT((amount2 - amount2_) > withdraw);
+                    BEAST_EXPECT((amount2 - amount2After) > withdraw);
                 }
                 else
                 {
-                    BEAST_EXPECT((amount2 - amount2_) <= withdraw);
+                    BEAST_EXPECT((amount2 - amount2After) <= withdraw);
                 }
             },
             0);
