@@ -185,7 +185,7 @@ private:
                 set(borrower, brokerInfo.brokerID, debtMaximumRequest),
                 Sig(sfCounterpartySignature, lender),
                 loanSetFee);
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             auto counterpartySig = local.getFieldObject(sfCounterpartySignature);
             auto badPubKey = counterpartySig.getFieldVL(sfSigningPubKey);
             badPubKey[20] ^= 0xAA;

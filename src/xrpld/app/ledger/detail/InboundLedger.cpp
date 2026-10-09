@@ -649,7 +649,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                         tmGL.set_itype(protocol::liAS_NODE);
                         for (auto const& id : nodes)
                         {
-                            *(tmGL.add_nodeids()) = id.first.getRawString();
+                            *tmGL.add_nodeids() = id.first.getRawString();
                         }
 
                         JLOG(journal_.trace()) << "Sending AS node request (" << nodes.size()
@@ -679,7 +679,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         {
             // we need the root node
             tmGL.set_itype(protocol::liTX_NODE);
-            *(tmGL.add_nodeids()) = SHAMapNodeID().getRawString();
+            *tmGL.add_nodeids() = SHAMapNodeID().getRawString();
             JLOG(journal_.trace())
                 << "Sending TX root request to " << (peer ? "selected peer" : "all peers");
             peerSet_->sendRequest(tmGL, peer);
@@ -714,7 +714,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                     tmGL.set_itype(protocol::liTX_NODE);
                     for (auto const& n : nodes)
                     {
-                        *(tmGL.add_nodeids()) = n.first.getRawString();
+                        *tmGL.add_nodeids() = n.first.getRawString();
                     }
                     JLOG(journal_.trace()) << "Sending TX node request (" << nodes.size() << ") to "
                                            << (peer ? "selected peer" : "all peers");
@@ -1286,7 +1286,7 @@ InboundLedger::runData()
         {
             if (auto peer = entry.first.lock())
             {
-                int const count = processData(peer, *(entry.second));
+                int const count = processData(peer, *entry.second);
                 dataCounts.update(std::move(peer), count);
             }
         }

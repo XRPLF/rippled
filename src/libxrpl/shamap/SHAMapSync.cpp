@@ -77,7 +77,7 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
                 else
                 {
                     // If there are no more children, don't push this node
-                    while ((pos != kBranchFactor - 1u) && (node->isEmptyBranch(pos + 1)))
+                    while ((pos != kBranchFactor - 1u) && node->isEmptyBranch(pos + 1))
                         ++pos;
 
                     if (pos != kBranchFactor - 1u)
@@ -299,7 +299,7 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
             // with the parent of this node
             mn.resumes[parent] = parentID;
         }
-        else if ((mn.max > 0) && (mn.missingHashes.insert(nodeHash).second))
+        else if ((mn.max > 0) && mn.missingHashes.insert(nodeHash).second)
         {
             mn.missingNodes.emplace_back(parentID.getChildNodeID(branch), nodeHash.asUInt256());
             --mn.max;
@@ -746,7 +746,7 @@ SHAMap::hasInnerNode(SHAMapNodeID const& targetNodeID, SHAMapHash const& targetN
         nodeID = nodeID.getChildNodeID(branch);
     }
 
-    return (node->isInner()) && (node->getHash() == targetNodeHash);
+    return node->isInner() && (node->getHash() == targetNodeHash);
 }
 
 /**
