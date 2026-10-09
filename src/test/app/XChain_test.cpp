@@ -281,7 +281,7 @@ struct BalanceTransfer
         : from(env, fromAcct)
         , to(env, toAcct)
         , payer(env, payer)
-        , rewardAccounts([&]() {
+        , rewardAccounts([&] {
             std::vector<BalanceType> r;
             r.reserve(numPayees);
             for (size_t i = 0; i < numPayees; ++i)
@@ -350,7 +350,7 @@ struct BridgeDef
     {
         jvb = bridge(doorA, issueA, doorB, issueB);
 
-        auto const optAccountCreate = [&]() -> std::optional<STAmount> {
+        auto const optAccountCreate = [&] -> std::optional<STAmount> {
             if (issueA != xrpIssue() || issueB != xrpIssue())
                 return {};
             return minAccountCreate;
@@ -4089,7 +4089,7 @@ private:
             {
                 size_t const signerIdx = (rnd + i) % kNumSigners;
 
-                if (!(cr_.attested[signerIdx]))
+                if (!cr_.attested[signerIdx])
                 {
                     // enqueue one attestation for this signer
                     cr_.attested[signerIdx] = true;
@@ -4245,7 +4245,7 @@ private:
             for (size_t i = 0; i < kNumSigners; ++i)
             {
                 size_t const signerIdx = (rnd + i) % kNumSigners;
-                if (!(xfer_.attested[signerIdx]))
+                if (!xfer_.attested[signerIdx])
                 {
                     // enqueue one attestation for this signer
                     xfer_.attested[signerIdx] = true;
@@ -4421,7 +4421,7 @@ public:
             doorUSDIssuing("doorUSDIssuing");
 
         static constexpr size_t kNumAcct = 10;
-        auto a = [&doorXRPLocking, &doorUSDLocking, &doorUSDIssuing]() {
+        auto a = [&doorXRPLocking, &doorUSDLocking, &doorUSDIssuing] {
             using namespace std::literals;
             std::vector<Account> result;
             result.reserve(kNumAcct);
@@ -4473,7 +4473,7 @@ public:
 
         // also create some unfunded accounts
         static constexpr size_t kNumUa = 20;
-        auto ua = []() {
+        auto ua = [] {
             using namespace std::literals;
             std::vector<Account> result;
             result.reserve(kNumUa);

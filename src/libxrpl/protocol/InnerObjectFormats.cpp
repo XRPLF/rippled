@@ -182,7 +182,7 @@ InnerObjectFormats::findSOTemplateBySField(SField const& sField) const
 {
     auto itemPtr = findByType(sField.getCode());
     if (itemPtr != nullptr)
-        return &(itemPtr->getSOTemplate());
+        return &itemPtr->getSOTemplate();
 
     return nullptr;
 }

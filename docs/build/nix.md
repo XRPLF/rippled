@@ -183,24 +183,36 @@ at link or run time.
 > configuration CI covers, and no dependency binaries are published for it.
 
 This is checked rather than assumed.
-[`bin/check-nix-store-refs.sh`](../../bin/check-nix-store-refs.sh) takes one file
-or directory and fails if a binary under it resolves a store path at run time.
+[`bin/nix/check-nix-store-refs.sh`](../../bin/nix/check-nix-store-refs.sh) takes one
+file or directory and fails if a binary under it resolves a store path at run time.
 CI runs it over the build output and the Conan cache, and again in the upload job
 before anything is published. You can run it yourself:
 
 ```bash
-bin/check-nix-store-refs.sh build
-bin/check-nix-store-refs.sh ~/.conan2-nix
+bin/nix/check-nix-store-refs.sh build
+bin/nix/check-nix-store-refs.sh ~/.conan2-nix
 ```
 
 It works on Linux too, but asserts something narrower there: the toolchain always
-writes the store into `PT_INTERP` and `RUNPATH`, and CI builds inside an image
-whose store is fixed for its lifetime, so that is fine. Only the binaries
-[`PatchNixBinary.cmake`](../../cmake/PatchNixBinary.cmake) retargets to the
-system loader have to be clean, and those are what CI checks:
+writes the store into `PT_INTERP` and `RUNPATH`. That is fine for the pinned
+glibc, whose path does not move, but not for the GCC runtime, which moves with
+every GCC update. So [`conan/profiles/default`](../../conan/profiles/default)
+links build-context packages, whose executables run during the build, with
+`-static-libstdc++ -static-libgcc -Wl,--as-needed`, and
+[`conan/profiles/sanitizers`](../../conan/profiles/sanitizers) does not
+instrument them. CI checks that they load nothing from the store but glibc, from
+the graph `conan install --format=json` writes:
 
 ```bash
-bin/check-nix-store-refs.sh build/xrpld
+bin/nix/check-build-context-runtime.sh graph.json
+```
+
+Only the binaries [`PatchNixBinary.cmake`](../../cmake/PatchNixBinary.cmake)
+retargets to the system loader have to be fully clean, and those are what CI
+checks:
+
+```bash
+bin/nix/check-nix-store-refs.sh build/xrpld
 ```
 
 ### The libresolv stub

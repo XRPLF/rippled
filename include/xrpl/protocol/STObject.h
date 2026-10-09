@@ -457,9 +457,7 @@ private:
     // The remove_cv and remove_reference are necessitated by the STBitString
     // types.  Their value() returns by const ref.  We return those types
     // by value.
-    template <
-        typename T,
-        typename V = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<T>().value())>>>
+    template <typename T, typename V = std::remove_cvref_t<decltype(std::declval<T>().value())>>
     V
     getFieldByValue(SField const& field) const;
 
