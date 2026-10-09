@@ -364,13 +364,13 @@ public:
  * unique to pseudo-accounts. Check that all pseudo-accounts are following the
  * rules, and that only pseudo-accounts look like pseudo-accounts.
  *
- * Post-fixCleanup3_5_0, a pseudo-account also owns only the object types its
- * kind expects:
- * - AMM: the AMM entry, trust lines (IOU pool assets and LP tokens), and
- *   MPToken holdings (MPT pool assets),
- * - Vault: the share MPTokenIssuance, the asset holding (MPToken or trust
- *   line), and the LoanBrokers operating on the vault,
- * - LoanBroker: its Loans and the cover holding (MPToken or trust line).
+ * Post-fixCleanup3_5_0, a pseudo-account also owns only entries that belong
+ * to its own AMM, Vault or LoanBroker:
+ * - AMM: its AMM entry, its holdings of the two pool assets, and the trust
+ *   lines of its LP token,
+ * - Vault: its share MPTokenIssuance, its holding of the vault asset, and the
+ *   LoanBrokers operating on this vault,
+ * - LoanBroker: its Loans and its holding of the vault asset (the cover).
  *
  * A pseudo-account cannot sign transactions, so it could never accept or
  * remove any other object linked into its owner directory. Such an object
