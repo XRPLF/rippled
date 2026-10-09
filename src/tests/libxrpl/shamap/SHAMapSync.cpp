@@ -581,6 +581,29 @@ TEST_F(SHAMapSyncTest, snapshot_of_invalid_map_stays_invalid)
 // get_missing_nodes_rejects_inner_node_at_leaf_depth.
 TEST_F(SHAMapSyncTest, get_missing_nodes_refuses_invalid_map)
 {
+    // The lookups are counted because the result alone cannot tell the refusal from a walk that
+    // reaches the same verdict: the loop discards what it collected once the map is invalid.
+    struct CountingFilter : ChainFilter
+    {
+        using ChainFilter::ChainFilter;
+
+        // How many times the walk asked for a node.
+        mutable std::size_t lookups = 0;
+
+        /**
+         * Serve a node as ChainFilter does, and count the request.
+         *
+         * @param hash The hash of the node asked for.
+         * @return The node's prefixed form, or nullopt when it is not served.
+         */
+        [[nodiscard]] std::optional<Blob>
+        getNode(SHAMapHash const& hash) const override
+        {
+            ++lookups;
+            return ChainFilter::getNode(hash);
+        }
+    };
+
     TestNodeFamily f{j_};
     DeepChain const chain;
 
@@ -596,9 +619,10 @@ TEST_F(SHAMapSyncTest, get_missing_nodes_refuses_invalid_map)
     ASSERT_FALSE(map.isValid());
 
     // Only the node the map rejected, offered back as a fetch pack does.
-    ChainFilter const filter{chain, SHAMap::kLeafDepth, SHAMap::kLeafDepth};
+    CountingFilter const filter{chain, SHAMap::kLeafDepth, SHAMap::kLeafDepth};
 
     EXPECT_TRUE(map.getMissingNodes(kMaxNodesPerRequest, &filter).empty());
+    EXPECT_EQ(filter.lookups, 0u);
     EXPECT_FALSE(map.isValid());
     EXPECT_FALSE(map.setImmutable());
 }
@@ -724,6 +748,28 @@ TEST_F(SHAMapSyncTest, get_missing_nodes_accepts_inner_node_above_leaf_depth)
     EXPECT_TRUE(map.isValid());
 }
 
+// The negative control for the depth verdict: a real leaf at kLeafDepth is what belongs there, so a
+// walk that resolves one through the filter completes the map and leaves it valid.
+TEST_F(SHAMapSyncTest, get_missing_nodes_accepts_leaf_at_leaf_depth)
+{
+    TestNodeFamily f{j_};
+    auto const chain = DeepChain::toLeaf(SHAMap::kLeafDepth);
+
+    SHAMap map{SHAMapType::FREE, f};
+    map.setUnbacked();
+    map.setSynching();
+
+    ASSERT_TRUE(map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+
+    // Every node is served, the leaf included, so nothing is left to fetch.
+    ChainFilter const filter{chain};
+
+    EXPECT_TRUE(map.getMissingNodes(kMaxNodesPerRequest, &filter).empty());
+    EXPECT_TRUE(map.isValid());
+    EXPECT_FALSE(map.isSynching());
+    EXPECT_TRUE(map.setImmutable());
+}
+
 // The clearSynching() call site in addRootNode() needs a leaf root, and so a zero root hash. An
 // invalid map always has an inner root with a non-zero hash, so the root is treated as a duplicate
 // and the flag stands.
@@ -809,8 +855,8 @@ TEST_F(SHAMapSyncTest, invalid_state_survives_concurrent_set_immutable)
 
 // A map marked complete in the database withdraws that claim the first time a read misses, and
 // reports the miss once so the ledger can be re-acquired. Sixteen unresolvable branches are posted
-// in one pass, so with four reader threads finishFetch() runs concurrently for one map. The nightly
-// ThreadSanitizer job covers the ordering.
+// in one pass, so with four reader threads finishFetch() runs concurrently for one map. Only a
+// ThreadSanitizer build observes the ordering.
 TEST_F(SHAMapSyncTest, full_flag_is_withdrawn_once_by_concurrent_readers)
 {
     static constexpr auto kRounds = 8uz;
@@ -892,8 +938,8 @@ TEST_F(SHAMapSyncTest, sync_filter_is_told_the_ledger_sequence)
 // Ledger::setFull() publishes each map's ledger sequence alongside the flag that lets the first
 // nodestore miss report a gap. The sequence is what the lookup resolving that gap reads.
 //
-// This pins that setFull() sets the sequence. The nightly ThreadSanitizer job that PR 8245
-// adds covers the order of the two stores.
+// This pins that setFull() sets the sequence. Only a ThreadSanitizer build observes the order of
+// the two stores.
 TEST_F(SHAMapSyncTest, ledger_set_full_publishes_the_ledger_sequence)
 {
     static constexpr std::uint32_t kLedgerSeq = 7;
