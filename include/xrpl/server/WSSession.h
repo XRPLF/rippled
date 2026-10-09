@@ -47,7 +47,7 @@ public:
      * empty vector.
      */
     virtual std::pair<boost::tribool, std::vector<boost::asio::const_buffer>>
-    prepare(std::size_t bytes, std::function<void(void)> resume) = 0;
+    prepare(std::size_t bytes, std::function<void()> resume) = 0;
 };
 
 template <class Streambuf>
@@ -62,7 +62,7 @@ public:
     }
 
     std::pair<boost::tribool, std::vector<boost::asio::const_buffer>>
-    prepare(std::size_t bytes, std::function<void(void)>) override
+    prepare(std::size_t bytes, std::function<void()>) override
     {
         if (sb_.size() == 0)
             return {true, {}};

@@ -170,7 +170,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                 auto eur = issue2({.env = env, .token = "EUR", .issuer = gw, .limit = 1'000});
                 using TEur = std::decay_t<decltype(eur)>;
 
-                auto const err = [&]() {
+                auto const err = [&] {
                     if constexpr (std::is_same_v<TUsd, MPT>)
                     {
                         return tecNO_AUTH;

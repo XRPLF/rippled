@@ -126,7 +126,7 @@ class Handler_test : public beast::unit_test::Suite
                 }
                 dummy = dummy + i + (int)d->role;
             },
-            [&]() -> std::size_t { return distr(prng); });
+            [&] -> std::size_t { return distr(prng); });
 
         std::cout << "mean=" << mean << " stdev=" << stdev << " N=" << n << '\n';
 

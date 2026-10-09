@@ -168,7 +168,7 @@ class AccountTx_test : public beast::unit_test::Suite
                     {
                         auto const& payment = j[jss::result][jss::transactions][1u];
 
-                        return (payment.isMember(jss::tx_json)) &&
+                        return payment.isMember(jss::tx_json) &&
                             (payment[jss::tx_json][jss::TransactionType] == jss::Payment) &&
                             (payment[jss::tx_json][jss::DeliverMax] == "10000000010") &&
                             (!payment[jss::tx_json].isMember(jss::Amount)) &&
@@ -183,10 +183,7 @@ class AccountTx_test : public beast::unit_test::Suite
                              "580A5AFDD727E33") &&
                             (payment[jss::close_time_iso] == "2000-01-01T00:00:10Z");
                     }
-                    else
-                    {
-                        return false;
-                    }
+                    return false;
 
                 default:
                     return false;
@@ -317,6 +314,22 @@ class AccountTx_test : public beast::unit_test::Suite
 
             p[jss::ledger_index] = env.current()->header().seq + 1;
             BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), RpcLgrNotFound));
+        }
+
+        {
+            json::Value p{jParams};
+
+            p[jss::ledger_index] = "validated";
+            BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+
+            p[jss::ledger_index] = "closed";
+            BEAST_EXPECT(hasTxs(env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+
+            p[jss::ledger_index] = "current";
+            BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), RpcLgrNotValidated));
+
+            p[jss::ledger_index] = "";
+            BEAST_EXPECT(isErr(env.rpc("json", "account_tx", to_string(p)), RpcLgrNotValidated));
         }
 
         // Ledger Hash
