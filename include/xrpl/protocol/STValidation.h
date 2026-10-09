@@ -47,9 +47,9 @@ class STValidation final : public STObject, public CountedObject<STValidation>
     // The public key associated with the key used to sign this validation
     PublicKey const signingPubKey_;
 
-    // The ID of the validator that issued this validation. For validators
-    // that use manifests this will be derived from the master public key,
-    // and is set again where the validation's trust is decided.
+    // The ID of the validator that issued this validation. handleNewValidation
+    // derives it from the master public key when the signer is trusted or
+    // listed, and from the signing key otherwise.
     NodeID nodeID_;
 
     NetClock::time_point seenTime_;
