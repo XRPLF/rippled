@@ -836,19 +836,23 @@ public:
     {
         // Batch rejects Vault and Lending inners before LendingProtocolV1_2.
         FeatureBitset const lendingBatch{all_ | featureLendingProtocolV1_2};
-        for (auto const& features : {lendingBatch, lendingBatch | featureLendingProtocolV1_1})
-        {
-            testVaultLifecycle(features);
-            testArbitrage(features);
-            testArbitrageRollback(features);
-            testImpairAndCoverDeposit(features);
-            testDefaultAndCoverWithdraw(features);
-            testIndependentVaultChain(features);
-            testIndependentLoanChain(features);
-        }
-        testClosedEndedVaultLifecycle(lendingBatch | featureLendingProtocolV1_1);
+        testVaultLifecycle(lendingBatch);
+        testArbitrage(lendingBatch);
+        testArbitrageRollback(lendingBatch);
+        testImpairAndCoverDeposit(lendingBatch);
+        testDefaultAndCoverWithdraw(lendingBatch);
+        testIndependentVaultChain(lendingBatch);
+        testIndependentLoanChain(lendingBatch);
         testLoanLifecycleOpenEndedVault(lendingBatch);
-        testLoanLifecycleClosedEndedVault(lendingBatch | featureLendingProtocolV1_1);
+
+        // Temporary while the FixedPrecision Vault stack lands: with
+        // featureLendingProtocolV1_1 these Vaults are FixedPrecision, whose
+        // lending transactions are enabled in later PRs. Only the Vault-only
+        // cases run here; the rest are restored in the LoanManage PR.
+        FeatureBitset const fixedPrecision{lendingBatch | featureLendingProtocolV1_1};
+        testVaultLifecycle(fixedPrecision);
+        testIndependentVaultChain(fixedPrecision);
+        testClosedEndedVaultLifecycle(fixedPrecision);
     }
 };
 
