@@ -74,9 +74,59 @@ namespace json {
 template <typename... Visitor>
 class Parser
 {
+    class ErrorInfo
+    {
+    public:
+        explicit ErrorInfo() = default;
+
+        std::int64_t line{};
+        std::int64_t column{};
+        std::string message;
+    };
+
+    using Errors = std::vector<ErrorInfo>;
+
+    // An object or array that has been opened and not yet closed.
+    struct Container
+    {
+        bool isObject{};
+        std::size_t count{};
+    };
+
+    std::tuple<Visitor*...> visitors_;
+    Errors errors_;
+
+    // Scratch state for the parse in progress.
+    std::vector<Container> containers_;
+    // The key, string, or number being assembled from Boost's partial events.
+    std::string text_;
+    bool inText_{};
+    std::string comment_;
+    // Set once the root value is complete; nothing after it is examined.
+    bool rootComplete_{};
+    // Set when the Parser, rather than Boost, stopped the parse.
+    bool rejected_{};
+    std::string pendingError_;
+    // Set once nothing more is to be offered to Boost: after the final write,
+    // an error, or text following the root value.
+    bool stopped_{};
+    // The line and column (both from 1) of the next character to be fed.
+    std::int64_t line_{1};
+    std::int64_t column_{1};
+    // Whether the last character fed was '\r', so that a '\n' following it,
+    // possibly in the next buffer, does not start another line.
+    bool afterCarriageReturn_{};
+
 public:
     using Char = char;
     using Location = Char const*;
+
+    Parser(Parser const&) = delete;
+    Parser&
+    operator=(Parser const&) = delete;
+    Parser(Parser&& other) noexcept = default;
+    Parser&
+    operator=(Parser&& other) noexcept = default;
 
     // clang-format off
     /**
@@ -89,13 +139,6 @@ public:
     explicit Parser(Visitor&... visitors) : visitors_{&visitors...}
     {
     }
-
-    Parser(Parser const&) = delete;
-    Parser&
-    operator=(Parser const&) = delete;
-    Parser(Parser&& other) noexcept = default;
-    Parser&
-    operator=(Parser&& other) noexcept = default;
 
     /**
      * @brief The default for depthLimit.
@@ -212,25 +255,6 @@ private:
 
     using BasicParser = boost::json::basic_parser<Handler>;
 
-    class ErrorInfo
-    {
-    public:
-        explicit ErrorInfo() = default;
-
-        std::int64_t line{};
-        std::int64_t column{};
-        std::string message;
-    };
-
-    using Errors = std::vector<ErrorInfo>;
-
-    // An object or array that has been opened and not yet closed.
-    struct Container
-    {
-        bool isObject{};
-        std::size_t count{};
-    };
-
     template <class Call>
     bool
     dispatch(Call const& call);
@@ -299,36 +323,28 @@ private:
     addError(std::string message);
     bool
     addError(std::string message, std::int64_t line, std::int64_t column);
-
-    std::tuple<Visitor*...> visitors_;
-    Errors errors_;
-
-    // Scratch state for the parse in progress.
-    std::vector<Container> containers_;
-    // The key, string, or number being assembled from Boost's partial events.
-    std::string text_;
-    bool inText_{};
-    std::string comment_;
-    // Set once the root value is complete; nothing after it is examined.
-    bool rootComplete_{};
-    // Set when the Parser, rather than Boost, stopped the parse.
-    bool rejected_{};
-    std::string pendingError_;
-    // Set once nothing more is to be offered to Boost: after the final write,
-    // an error, or text following the root value.
-    bool stopped_{};
-    // The line and column (both from 1) of the next character to be fed.
-    std::int64_t line_{1};
-    std::int64_t column_{1};
-    // Whether the last character fed was '\r', so that a '\n' following it,
-    // possibly in the next buffer, does not start another line.
-    bool afterCarriageReturn_{};
 };
 
 template <typename... Visitor>
 class Parser<Visitor...>::Handler
 {
+    Parser& parser_;
+
 public:
+    // Holds a reference to its Parser, so it can be neither defaulted,
+    // copied, nor moved. basic_parser constructs it in place.
+    Handler() = delete;
+    Handler(Handler const&) = delete;
+    Handler&
+    operator=(Handler const&) = delete;
+    Handler(Handler&&) = delete;
+    Handler&
+    operator=(Handler&&) = delete;
+
+    explicit Handler(Parser& parser) : parser_{parser}
+    {
+    }
+
     // The members below are Boost.JSON's handler interface, whose names
     // basic_parser requires exactly as written.
     // NOLINTBEGIN(readability-identifier-naming)
@@ -338,10 +354,6 @@ public:
     static constexpr std::size_t max_array_size = std::numeric_limits<std::size_t>::max();
     static constexpr std::size_t max_key_size = std::numeric_limits<std::size_t>::max();
     static constexpr std::size_t max_string_size = std::numeric_limits<std::size_t>::max();
-
-    explicit Handler(Parser& parser) : parser_{parser}
-    {
-    }
 
     bool
     on_document_begin(boost::system::error_code& ec)
@@ -474,8 +486,6 @@ private:
 
         return ok;
     }
-
-    Parser& parser_;
 };
 
 template <typename... Visitor>

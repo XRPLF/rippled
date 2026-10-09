@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/CheckEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -25,7 +26,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -201,8 +201,9 @@ CheckCreate::doApply()
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
     auto const seq = ctx_.tx.getSeqProxy();
-    Keylet const checkKeylet = keylet::check(accountID_, seq);
-    auto sleCheck = std::make_shared<SLE>(checkKeylet);
+    CheckEntryW sleCheck(accountID_, seq, view(), j_);
+    Keylet const checkKeylet = sleCheck.keylet();
+    sleCheck.newSLE();
 
     sleCheck->setAccountID(sfAccount, accountID_);
     AccountID const dstAccountId = ctx_.tx[sfDestination];
@@ -218,7 +219,7 @@ CheckCreate::doApply()
     if (auto const expiry = ctx_.tx[~sfExpiration])
         sleCheck->setFieldU32(sfExpiration, *expiry);
 
-    view().insert(sleCheck);
+    sleCheck.insert();
 
     auto viewJ = ctx_.registry.get().getJournal("View");
     // If it's not a self-send (and it shouldn't be), add Check to the
@@ -252,12 +253,12 @@ CheckCreate::doApply()
     // If we succeeded, the new entry counts against the creator's reserve.
 
     increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, viewJ);
-    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCheck);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCheck.mutableRawSle());
     return tesSUCCESS;
 }
 
 void
-CheckCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+CheckCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

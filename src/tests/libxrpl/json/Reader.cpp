@@ -217,10 +217,6 @@ TEST(JsonReader, stream_extraction_throws_on_bad_input)
     EXPECT_ANY_THROW(bad >> other);
 }
 
-// ---------------------------------------------------------------------------
-// Invariants inherited from the pre-Parser reader
-// ---------------------------------------------------------------------------
-
 namespace {
 
 std::string
