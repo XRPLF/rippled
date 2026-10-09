@@ -822,6 +822,36 @@ MPTTester::checkEncryptionKeys(
     });
 }
 
+bool
+MPTTester::checkEncryptionKey(
+    std::optional<Buffer> const& expected,
+    SF_VL const& field,
+    std::optional<Account> const& holder) const
+{
+    return forObject(
+        [&](SLEP const& sle) -> bool {
+            auto const initialKey = (*sle)[~field];
+            if (!expected)
+                return !initialKey;
+            return initialKey && Slice(*initialKey) == Slice(*expected);
+        },
+        holder);
+}
+
+bool
+MPTTester::checkInitialIssuerKey(std::optional<Buffer> const& expected) const
+{
+    return checkEncryptionKey(expected, sfInitialIssuerEncryptionKey);
+}
+
+bool
+MPTTester::checkIssuerMirrorEncryptionKey(
+    std::optional<Buffer> const& expected,
+    Account const& holder) const
+{
+    return checkEncryptionKey(expected, sfIssuerMirrorEncryptionKey, holder);
+}
+
 void
 MPTTester::pay(
     Account const& src,

@@ -1,7 +1,7 @@
 #include <test/jtx/Account.h>
-#include <test/jtx/ConfidentialTransfer.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/confidential_transfer.h>
 #include <test/jtx/mpt.h>
 
 #include <xrpl/basics/Buffer.h>
@@ -3153,6 +3153,174 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         }
     }
 
+    void
+    testInitialIssuerEncryptionKey(FeatureBitset features)
+    {
+        testcase("MPTokenIssuanceSet initial issuer encryption key");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const auditor("auditor");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
+        });
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(auditor);
+
+        // First-time registration of both keys is not a rotation, so no
+        // initial issuer key is captured.
+        mptAlice.set({
+            .account = alice,
+            .issuerPubKey = mptAlice.getPubKey(alice),
+            .auditorPubKey = mptAlice.getPubKey(auditor),
+        });
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(std::nullopt, std::nullopt));
+        BEAST_EXPECT(mptAlice.checkInitialIssuerKey(std::nullopt));
+
+        // Rotating the auditor key alone must not capture an initial issuer
+        // key: only an issuer key rotation writes sfInitialIssuerEncryptionKey.
+        mptAlice.generateKeyPair(auditor);
+        mptAlice.set({.account = alice, .auditorPubKey = mptAlice.getPubKey(auditor)});
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(std::nullopt, 1u));
+        BEAST_EXPECT(mptAlice.checkInitialIssuerKey(std::nullopt));
+
+        // The first issuer rotation preserves the epoch 0 issuer key (alice's)
+        // as sfInitialIssuerEncryptionKey and bumps the issuer epoch to 1.
+        mptAlice.generateKeyPair(alice);
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(1u, 1u));
+        BEAST_EXPECT(mptAlice.checkInitialIssuerKey(mptAlice.getPubKey(alice, 0)));
+
+        // A second issuer rotation bumps the epoch again but leaves the initial
+        // issuer key unchanged: it remains alice's epoch 0 key.
+        mptAlice.generateKeyPair(alice);
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(2u, 1u));
+        BEAST_EXPECT(mptAlice.checkInitialIssuerKey(mptAlice.getPubKey(alice, 0)));
+
+        // Rotating both keys in one transaction bumps both epochs, and the
+        // initial issuer key still remains alice's epoch 0 key.
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(auditor);
+        mptAlice.set({
+            .account = alice,
+            .issuerPubKey = mptAlice.getPubKey(alice),
+            .auditorPubKey = mptAlice.getPubKey(auditor),
+        });
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(3u, 2u));
+        BEAST_EXPECT(mptAlice.checkInitialIssuerKey(mptAlice.getPubKey(alice, 0)));
+    }
+
+    void
+    testIssuerMirrorEncryptionKey(FeatureBitset features)
+    {
+        testcase("ConfidentialMPT issuer mirror encryption key");
+        using namespace test::jtx;
+
+        std::uint64_t const amount = 100;
+
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const auditor("auditor");
+
+        // Convert path: setIssuerMirrorCurrent runs inside ConfidentialMPTConvert.
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}, .auditor = auditor});
+            setupConfidentialIssuance(mptAlice, alice, {bob, carol}, {auditor});
+
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+                .auditorPubKey = mptAlice.getPubKey(auditor),
+            });
+
+            // bob converts while the issuer key sits at epoch 0, so his issuer
+            // mirror epoch and key are both left absent.
+            mptAlice.convert({
+                .account = bob,
+                .amt = 50,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+            BEAST_EXPECT(mptAlice.checkMirrorEpochs(bob, std::nullopt, std::nullopt));
+            BEAST_EXPECT(mptAlice.checkIssuerMirrorEncryptionKey(std::nullopt, bob));
+
+            // Rotate the issuer key to epoch 3, then carol converts: her issuer
+            // mirror is stamped at epoch 3 under the issuance's current issuer
+            // key.
+            for (int i = 0; i < 3; ++i)
+            {
+                mptAlice.generateKeyPair(alice);
+                mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+            }
+            BEAST_EXPECT(mptAlice.checkKeyEpochs(3u, std::nullopt));
+
+            mptAlice.convert({
+                .account = carol,
+                .amt = 50,
+                .holderPubKey = mptAlice.getPubKey(carol),
+            });
+            BEAST_EXPECT(mptAlice.checkMirrorEpochs(carol, 3u, std::nullopt));
+            BEAST_EXPECT(mptAlice.checkIssuerMirrorEncryptionKey(mptAlice.getPubKey(alice), carol));
+        }
+
+        // Migration path: setIssuerMirrorCurrent runs inside
+        // ConfidentialMPTMirrorUpdate, refreshing the mirror key on each
+        // migration to the issuance's then-current issuer key.
+        {
+            Env env{*this, features};
+            ConfidentialEnv ct{
+                env,
+                alice,
+                {{.account = bob}},
+                tfMPTCanHoldConfidentialBalance | tfMPTCanTransfer,
+                auditor};
+
+            // bob converted at issuer epoch 0 during setup, so his issuer
+            // mirror key starts absent.
+            BEAST_EXPECT(ct.mpt.checkMirrorEpochs(bob, std::nullopt, std::nullopt));
+            BEAST_EXPECT(ct.mpt.checkIssuerMirrorEncryptionKey(std::nullopt, bob));
+
+            // Rotate the issuer key twice (epoch 0 -> 2), leaving bob stale.
+            for (int i = 0; i < 2; ++i)
+            {
+                ct.mpt.generateKeyPair(alice);
+                ct.mpt.set({.account = alice, .issuerPubKey = ct.mpt.getPubKey(alice)});
+            }
+
+            // Migrate bob's issuer mirror to epoch 2 under alice's epoch 2 key.
+            Buffer const cipher2 = ct.mpt.encryptAmount(alice, amount, generateBlindingFactor());
+            ct.mpt.mirrorUpdate({
+                .account = alice,
+                .holder = bob,
+                .issuerEncryptedAmount = cipher2,
+            });
+            BEAST_EXPECT(ct.mpt.checkMirrorEpochs(bob, 2u, std::nullopt));
+            BEAST_EXPECT(ct.mpt.checkIssuerMirrorEncryptionKey(ct.mpt.getPubKey(alice, 2), bob));
+
+            // Rotate once more (epoch 3) and migrate again: the mirror key
+            // refreshes to the new issuance issuer key.
+            ct.mpt.generateKeyPair(alice);
+            ct.mpt.set({.account = alice, .issuerPubKey = ct.mpt.getPubKey(alice)});
+
+            Buffer const cipher3 = ct.mpt.encryptAmount(alice, amount, generateBlindingFactor());
+            ct.mpt.mirrorUpdate({
+                .account = alice,
+                .holder = bob,
+                .issuerEncryptedAmount = cipher3,
+            });
+            BEAST_EXPECT(ct.mpt.checkMirrorEpochs(bob, 3u, std::nullopt));
+            BEAST_EXPECT(ct.mpt.checkIssuerMirrorEncryptionKey(ct.mpt.getPubKey(alice, 3), bob));
+        }
+    }
+
 public:
     void
     testMPTokenIssuanceSetWithFeats(FeatureBitset features)
@@ -3175,6 +3343,9 @@ public:
 
         testMPTokenIssuanceSetWithFeats(all);
         testMPTokenIssuanceSetWithFeats(all - featureConfidentialMPTKeyRotation);
+
+        testInitialIssuerEncryptionKey(all);
+        testIssuerMirrorEncryptionKey(all);
 
         testConfidentialMPTConvertEpoch(all);
         testConfidentialMPTConvertEpoch(all - featureConfidentialMPTKeyRotation);

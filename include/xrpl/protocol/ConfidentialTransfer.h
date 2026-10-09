@@ -348,16 +348,19 @@ isAuditorMirrorCurrent(SLE const& issuance, SLE const& mptoken);
 areMirrorsCurrent(SLE const& issuance, SLE const& mptoken);
 
 /**
- * @brief Set the holder's issuer mirror epoch to match the issuance's current issuer key epoch.
+ * @brief Set the holder's issuer mirror epoch, and the issuer mirror key, to match the issuance's
+ * current key.
  *
  * Call this after writing the issuer mirror ciphertext under the issuance's
  * currently registered issuer key, so that the mirror reads as current afterwards.
+ * Also records sfIssuerMirrorEncryptionKey as the issuance's current issuer key
+ * (both fields stay absent at epoch 0, where the original issuer key applies).
  *
  * @param issuance The MPTokenIssuance ledger object.
  * @param mptoken  The holder's MPToken ledger entry to update.
  */
 void
-setIssuerMirrorEpoch(SLE const& issuance, SLE& mptoken);
+setIssuerMirrorCurrent(SLE const& issuance, SLE& mptoken);
 
 /**
  * @brief Set the holder's auditor mirror epoch to match the issuance's current auditor key epoch.
@@ -369,19 +372,21 @@ setIssuerMirrorEpoch(SLE const& issuance, SLE& mptoken);
  * @param mptoken  The holder's MPToken ledger entry to update.
  */
 void
-setAuditorMirrorEpoch(SLE const& issuance, SLE& mptoken);
+setAuditorMirrorCurrent(SLE const& issuance, SLE& mptoken);
 
 /**
- * @brief Set the holder's MPToken mirror epochs to match the issuance's current key epochs.
+ * @brief Set the holder's MPToken mirror epochs, and the issuer mirror key, to match the issuance's
+ * current keys.
  *
  * Call this after writing mirror ciphertexts under the issuance's currently
- * registered keys, so that the mirrors read as current afterwards.
+ * registered keys, so that the mirrors read as current afterwards. Also records
+ * sfIssuerMirrorEncryptionKey via setIssuerMirrorCurrent.
  *
  * @param issuance The MPTokenIssuance ledger object.
  * @param mptoken  The holder's MPToken ledger entry to update.
  */
 void
-setMirrorEpochs(SLE const& issuance, SLE& mptoken);
+setMirrorsCurrent(SLE const& issuance, SLE& mptoken);
 
 /**
  * @brief Verifies revealed amount encryptions for all recipients.

@@ -1,4 +1,4 @@
-#include <test/jtx/ConfidentialTransfer.h>
+#include <test/jtx/confidential_transfer.h>
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
