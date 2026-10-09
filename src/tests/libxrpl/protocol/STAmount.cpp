@@ -1,5 +1,6 @@
 #include <xrpl/protocol/STAmount.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -29,39 +30,55 @@ TEST(STAmount, mul_ratio_iou)
 {
     Issue const usd{toCurrency("USD"), kIssuer};
 
-    EXPECT_EQ(mulRatio(STAmount{usd, 100}, QUALITY_ONE, kRate125, false), STAmount(usd, 80));
-    EXPECT_EQ(mulRatio(STAmount{usd, 80}, kRate125, QUALITY_ONE, true), STAmount(usd, 100));
+    EXPECT_EQ(
+        mulRatio(STAmount{usd, 100}, QUALITY_ONE, kRate125, Number::RoundingMode::Downward),
+        STAmount(usd, 80));
+    EXPECT_EQ(
+        mulRatio(STAmount{usd, 80}, kRate125, QUALITY_ONE, Number::RoundingMode::Upward),
+        STAmount(usd, 100));
 
     // 1 / 1.7 does not fit in a 16-digit mantissa, so the rounding direction
     // decides the last digit.
     STAmount const one{usd, 1};
     EXPECT_LT(
-        mulRatio(one, QUALITY_ONE, 1'700'000'000, false),
-        mulRatio(one, QUALITY_ONE, 1'700'000'000, true));
+        mulRatio(one, QUALITY_ONE, 1'700'000'000, Number::RoundingMode::Downward),
+        mulRatio(one, QUALITY_ONE, 1'700'000'000, Number::RoundingMode::Upward));
 
     STAmount const full{usd, std::uint64_t{9'999'999'999'999'999}, -5};
-    EXPECT_EQ(mulRatio(full, QUALITY_ONE, QUALITY_ONE, false), full);
+    EXPECT_EQ(mulRatio(full, QUALITY_ONE, QUALITY_ONE, Number::RoundingMode::Downward), full);
 }
 
 TEST(STAmount, mul_ratio_mpt)
 {
     MPTIssue const mpt{makeMptID(1, kIssuer)};
 
-    EXPECT_EQ(mulRatio(STAmount{mpt, 31}, QUALITY_ONE, kRate125, false), STAmount(mpt, 24));
-    EXPECT_EQ(mulRatio(STAmount{mpt, 31}, QUALITY_ONE, kRate125, true), STAmount(mpt, 25));
-    EXPECT_EQ(mulRatio(STAmount{mpt, 1}, QUALITY_ONE, kRate125, false), STAmount(mpt));
-    EXPECT_EQ(mulRatio(STAmount{mpt, 1}, QUALITY_ONE, kRate125, true), STAmount(mpt, 1));
+    EXPECT_EQ(
+        mulRatio(STAmount{mpt, 31}, QUALITY_ONE, kRate125, Number::RoundingMode::Downward),
+        STAmount(mpt, 24));
+    EXPECT_EQ(
+        mulRatio(STAmount{mpt, 31}, QUALITY_ONE, kRate125, Number::RoundingMode::Upward),
+        STAmount(mpt, 25));
+    EXPECT_EQ(
+        mulRatio(STAmount{mpt, 1}, QUALITY_ONE, kRate125, Number::RoundingMode::Downward),
+        STAmount(mpt));
+    EXPECT_EQ(
+        mulRatio(STAmount{mpt, 1}, QUALITY_ONE, kRate125, Number::RoundingMode::Upward),
+        STAmount(mpt, 1));
 
     STAmount const max{mpt, kMaxMpTokenAmount};
-    EXPECT_EQ(mulRatio(max, QUALITY_ONE, QUALITY_ONE, false), max);
-    EXPECT_NO_THROW((void)mulRatio(max, QUALITY_ONE, kRate125, false));
-    EXPECT_THROW((void)mulRatio(max, kRate125, QUALITY_ONE, true), std::overflow_error);
+    EXPECT_EQ(mulRatio(max, QUALITY_ONE, QUALITY_ONE, Number::RoundingMode::Downward), max);
+    EXPECT_NO_THROW((void)mulRatio(max, QUALITY_ONE, kRate125, Number::RoundingMode::Downward));
+    EXPECT_THROW(
+        (void)mulRatio(max, kRate125, QUALITY_ONE, Number::RoundingMode::Upward),
+        std::overflow_error);
 }
 
 TEST(STAmount, mul_ratio_xrp)
 {
     EXPECT_EQ(
-        mulRatio(STAmount{XRPAmount{31}}, QUALITY_ONE, kRate125, false), STAmount{XRPAmount{24}});
+        mulRatio(STAmount{XRPAmount{31}}, QUALITY_ONE, kRate125, Number::RoundingMode::Downward),
+        STAmount{XRPAmount{24}});
     EXPECT_EQ(
-        mulRatio(STAmount{XRPAmount{31}}, QUALITY_ONE, kRate125, true), STAmount{XRPAmount{25}});
+        mulRatio(STAmount{XRPAmount{31}}, QUALITY_ONE, kRate125, Number::RoundingMode::Upward),
+        STAmount{XRPAmount{25}});
 }

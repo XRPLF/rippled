@@ -14,7 +14,6 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -1156,11 +1155,8 @@ ValidVault::finalize(
                         if (feeAdjustedWithdrawal)
                         {
                             expectedDestinationDelta =
-                                mulRatio(
-                                    STAmount{vaultAsset, expectedDestinationDelta},
-                                    QUALITY_ONE,
-                                    rate.value,
-                                    false)
+                                subtractTransferFee(
+                                    STAmount{vaultAsset, expectedDestinationDelta}, rate)
                                     .value();
                         }
                         // For IOU assets near a precision boundary the destination's STAmount

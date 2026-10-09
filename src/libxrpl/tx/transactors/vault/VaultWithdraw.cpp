@@ -18,7 +18,6 @@
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -195,7 +194,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
             auto const rate = withdrawalTransferRate(ctx.view, account, dstAcct, vaultAsset);
-            auto const amountToReceive = mulRatio(*maybeAssets, QUALITY_ONE, rate.value, false);
+            auto const amountToReceive = subtractTransferFee(*maybeAssets, rate);
             if (auto const ret = canWithdraw(
                     ctx.view,
                     account,
@@ -357,10 +356,12 @@ VaultWithdraw::doApply()
             auto const truncate =
                 view().rules().enabled(fixCleanup3_4_0) ? TruncateShares::Yes : TruncateShares::No;
             {
-                auto const sourceAmount =
-                    rate == kParityRate ? amount : mulRatio(amount, rate.value, QUALITY_ONE, true);
                 auto const maybeShares = assetsToSharesWithdraw(
-                    vault, sleIssuance, sourceAmount, truncate, waiveUnrealizedLoss);
+                    vault,
+                    sleIssuance,
+                    addTransferFee(amount, rate),
+                    truncate,
+                    waiveUnrealizedLoss);
                 if (!maybeShares)
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 sharesRedeemed = *maybeShares;
@@ -563,7 +564,7 @@ VaultWithdraw::doApply()
         assetsWithdrawn = allAvailable;
     }
 
-    auto const assetsDelivered = mulRatio(assetsWithdrawn, QUALITY_ONE, rate.value, false);
+    auto const assetsDelivered = subtractTransferFee(assetsWithdrawn, rate);
     if (assetsWithdrawn > beast::kZero && assetsDelivered == beast::kZero)
     {
         JLOG(j_.debug()) << "VaultWithdraw: transfer fee reduces the payout to zero";
