@@ -35,10 +35,19 @@ template <class Clock>
 class AbstractClock
 {
 public:
-    using rep = Clock::rep;
-    using period = Clock::period;
-    using duration = Clock::duration;
-    using time_point = Clock::time_point;
+    using Rep = Clock::rep;
+    using Period = Clock::period;
+    using Duration = Clock::duration;
+    using TimePoint = Clock::time_point;
+
+    // Required by the std Clock contract.
+    // NOLINTBEGIN(readability-identifier-naming)
+    using rep = Rep;
+    using period = Period;
+    using duration = Duration;
+    using time_point = TimePoint;
+    // NOLINTEND(readability-identifier-naming)
+
     using ClockType = Clock;
 
     static bool const is_steady = Clock::is_steady;  // NOLINT(readability-identifier-naming)

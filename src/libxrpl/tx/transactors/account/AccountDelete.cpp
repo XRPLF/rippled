@@ -310,7 +310,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (dirIsEmpty(ctx.view, ownerDirKeylet))
         return tesSUCCESS;
 
-    SLE::const_pointer sleDirNode{};
+    SLE::ConstPointer sleDirNode{};
     unsigned int uDirEntry{0};
     UInt256 dirEntry{beast::kZero};
 
@@ -377,7 +377,7 @@ AccountDelete::doApply()
         ownerDirKeylet,
         [&](LedgerEntryType nodeType,
             UInt256 const& dirEntry,
-            SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
+            SLE::Pointer& sleItem) -> std::pair<TER, SkipEntry> {
             if (auto deleter = nonObligationDeleter(nodeType))
             {
                 TER const result{deleter(ctx_.registry, view(), accountID_, dirEntry, sleItem, j_)};

@@ -468,7 +468,7 @@ private:
         env(tx);
         env.close();
 
-        auto const checkPhaseAt = [&](NetClock::time_point at) {
+        auto const checkPhaseAt = [&](NetClock::TimePoint at) {
             closeToTime(env, at);
             auto const sle = env.le(keylet);
             if (!BEAST_EXPECT(sle))

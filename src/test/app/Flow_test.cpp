@@ -572,7 +572,7 @@ struct Flow_test : public beast::unit_test::Suite
                 env.require(Balance(bob, eur(999)));
 
                 // Show that bob's USD offer is now a blocker.
-                SLE::const_pointer const usdOffer = env.le(bobUsdOffer);
+                SLE::ConstPointer const usdOffer = env.le(bobUsdOffer);
                 if (BEAST_EXPECT(usdOffer))
                 {
                     std::uint64_t const bookRate = [&usdOffer]() {
@@ -711,10 +711,10 @@ struct Flow_test : public beast::unit_test::Suite
     }
 
     // Helper function that returns the Offers on an account.
-    static std::vector<SLE::const_pointer>
+    static std::vector<SLE::ConstPointer>
     offersOnAccount(jtx::Env& env, jtx::Account account)
     {
-        std::vector<SLE::const_pointer> result;
+        std::vector<SLE::ConstPointer> result;
         forEachItem(*env.current(), account, [&result](SLE::ConstRef sle) {
             if (sle->getType() == ltOFFER)
                 result.push_back(sle);

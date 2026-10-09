@@ -63,7 +63,7 @@ using namespace jtx::paychan;
 
 struct PayChan_test : public beast::unit_test::Suite
 {
-    static std::pair<UInt256, SLE::const_pointer>
+    static std::pair<UInt256, SLE::ConstPointer>
     channelKeyAndSle(ReadView const& view, jtx::Account const& account, jtx::Account const& dst)
     {
         auto const sle = view.read(keylet::account(account));
@@ -320,8 +320,7 @@ struct PayChan_test : public beast::unit_test::Suite
             env.fund(XRP(10000), alice, bob);
             auto const pk = alice.pk();
             auto const settleDelay = 100s;
-            NetClock::time_point const cancelAfter =
-                env.current()->header().parentCloseTime + 3600s;
+            NetClock::TimePoint const cancelAfter = env.current()->header().parentCloseTime + 3600s;
             auto const channelFunds = XRP(1000);
             auto const chan = channel(alice, bob, env.seq(alice));
             env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
@@ -351,8 +350,7 @@ struct PayChan_test : public beast::unit_test::Suite
             env.fund(XRP(10000), alice, bob, carol);
             auto const pk = alice.pk();
             auto const settleDelay = 100s;
-            NetClock::time_point const cancelAfter =
-                env.current()->header().parentCloseTime + 3600s;
+            NetClock::TimePoint const cancelAfter = env.current()->header().parentCloseTime + 3600s;
             auto const channelFunds = XRP(1000);
             auto const chan = channel(alice, bob, env.seq(alice));
             env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
@@ -380,7 +378,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 auto const pk = alice.pk();
                 auto const settleDelay = 100s;
                 auto const channelFunds = XRP(1000);
-                NetClock::time_point const cancelAfter =
+                NetClock::TimePoint const cancelAfter =
                     env.current()->header().parentCloseTime - 1s;
                 auto const txResult = withFixPayChan ? Ter(tecEXPIRED) : Ter(tesSUCCESS);
                 env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter), txResult);
@@ -399,7 +397,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 auto const pk = alice.pk();
                 auto const settleDelay = 100s;
                 auto const channelFunds = XRP(1000);
-                NetClock::time_point const cancelAfter = env.current()->header().parentCloseTime;
+                NetClock::TimePoint const cancelAfter = env.current()->header().parentCloseTime;
                 env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter),
                     Ter(tesSUCCESS));
             }
@@ -421,7 +419,7 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const settleDelay = 3600s;
         auto const closeTime = env.current()->header().parentCloseTime;
         auto const minExpiration = closeTime + settleDelay;
-        NetClock::time_point const cancelAfter = closeTime + 7200s;
+        NetClock::TimePoint const cancelAfter = closeTime + 7200s;
         auto const channelFunds = XRP(1000);
         auto const chan = channel(alice, bob, env.seq(alice));
         env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
@@ -433,15 +431,15 @@ struct PayChan_test : public beast::unit_test::Suite
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration));
         // increase the expiration time
-        env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration + 100s}));
+        env(fund(alice, chan, XRP(1), NetClock::TimePoint{minExpiration + 100s}));
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration) + 100);
         // decrease the expiration, but still above minExpiration
-        env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration + 50s}));
+        env(fund(alice, chan, XRP(1), NetClock::TimePoint{minExpiration + 50s}));
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration) + 50);
         // decrease the expiration below minExpiration
-        env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration - 50s}),
+        env(fund(alice, chan, XRP(1), NetClock::TimePoint{minExpiration - 50s}),
             Ter(temBAD_EXPIRATION));
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration) + 50);
@@ -451,13 +449,13 @@ struct PayChan_test : public beast::unit_test::Suite
         env(claim(alice, chan), Txflags(tfRenew));
         BEAST_EXPECT(!channelExpiration(*env.current(), chan));
         // decrease the expiration below minExpiration
-        env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration - 50s}),
+        env(fund(alice, chan, XRP(1), NetClock::TimePoint{minExpiration - 50s}),
             Ter(temBAD_EXPIRATION));
         BEAST_EXPECT(!channelExpiration(*env.current(), chan));
-        env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration}));
+        env(fund(alice, chan, XRP(1), NetClock::TimePoint{minExpiration}));
         env.close(minExpiration);
         // Try to extend the expiration after the expiration has already passed
-        env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration + 1000s}));
+        env(fund(alice, chan, XRP(1), NetClock::TimePoint{minExpiration + 1000s}));
         BEAST_EXPECT(!channelExists(*env.current(), chan));
     }
 
@@ -473,7 +471,7 @@ struct PayChan_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice, bob);
         auto const pk = alice.pk();
         auto const settleDelay = 3600s;
-        NetClock::time_point const settleTimepoint =
+        NetClock::TimePoint const settleTimepoint =
             env.current()->header().parentCloseTime + settleDelay;
         auto const channelFunds = XRP(1000);
         auto const chan = channel(alice, bob, env.seq(alice));
@@ -1577,7 +1575,7 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const settleDelay = 3600s;
         auto const channelFunds = XRP(1000);
 
-        std::optional<NetClock::time_point> const cancelAfter;
+        std::optional<NetClock::TimePoint> const cancelAfter;
 
         {
             auto const chan = to_string(channel(alice, bob, env.seq(alice)));

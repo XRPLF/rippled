@@ -109,6 +109,8 @@ public:
     template <class T>
     struct AllocT
     {
+        // Required by std::allocator_traits.
+        // NOLINTNEXTLINE(readability-identifier-naming)
         using value_type = T;
 
         // using std::true_type::type = propagate_on_container_swap :;
@@ -116,7 +118,7 @@ public:
         template <class U>
         struct Rebind
         {
-            using other = AllocT<U>;
+            using Other = AllocT<U>;
         };
 
         explicit AllocT(int)
@@ -668,10 +670,10 @@ AgedAssociativeContainerTestBase::checkUnorderedContentsRefRef(C&& c, Values con
     using Cont = std::remove_reference_t<C>;
     using Traits =
         TestTraits<Cont::IsUnorderedType::value, Cont::IsMultiType::value, Cont::IsMapType::value>;
-    using size_type = Cont::size_type;
+    using SizeType = Cont::SizeType;
     auto const hash(c.hashFunction());
     auto const keyEq(c.keyEq());
-    for (size_type i(0); i < c.bucketCount(); ++i)
+    for (SizeType i(0); i < c.bucketCount(); ++i)
     {
         auto const last(c.end(i));
         for (auto iter(c.begin(i)); iter != last; ++iter)
@@ -691,19 +693,19 @@ void
 AgedAssociativeContainerTestBase::checkContentsRefRef(C&& c, Values const& v)
 {
     using Cont = std::remove_reference_t<C>;
-    using size_type = Cont::size_type;
+    using SizeType = Cont::SizeType;
 
     BEAST_EXPECT(c.size() == v.size());
-    BEAST_EXPECT(size_type(std::distance(c.begin(), c.end())) == v.size());
-    BEAST_EXPECT(size_type(std::distance(c.cbegin(), c.cend())) == v.size());
+    BEAST_EXPECT(SizeType(std::distance(c.begin(), c.end())) == v.size());
+    BEAST_EXPECT(SizeType(std::distance(c.cbegin(), c.cend())) == v.size());
     BEAST_EXPECT(
-        size_type(std::distance(c.chronological.begin(), c.chronological.end())) == v.size());
+        SizeType(std::distance(c.chronological.begin(), c.chronological.end())) == v.size());
     BEAST_EXPECT(
-        size_type(std::distance(c.chronological.cbegin(), c.chronological.cend())) == v.size());
+        SizeType(std::distance(c.chronological.cbegin(), c.chronological.cend())) == v.size());
     BEAST_EXPECT(
-        size_type(std::distance(c.chronological.rbegin(), c.chronological.rend())) == v.size());
+        SizeType(std::distance(c.chronological.rbegin(), c.chronological.rend())) == v.size());
     BEAST_EXPECT(
-        size_type(std::distance(c.chronological.crbegin(), c.chronological.crend())) == v.size());
+        SizeType(std::distance(c.chronological.crbegin(), c.chronological.crend())) == v.size());
 
     checkUnorderedContentsRefRef(c, v);
 }
@@ -1066,23 +1068,23 @@ AgedAssociativeContainerTestBase::testIterator()
 
     typename Traits::template Cont<> c{clock};
 
-    using iterator = decltype(c.begin());
-    using const_iterator = decltype(c.cbegin());
+    using Iterator = decltype(c.begin());
+    using ConstIterator = decltype(c.cbegin());
 
     // Should be able to construct or assign an iterator from an iterator.
-    iterator const nnIt0{c.begin()};
-    iterator const nnIt1{nnIt0};
+    Iterator const nnIt0{c.begin()};
+    Iterator const nnIt1{nnIt0};
     BEAST_EXPECT(nnIt0 == nnIt1);
-    iterator nnIt2;
+    Iterator nnIt2;
     nnIt2 = nnIt1;
     BEAST_EXPECT(nnIt1 == nnIt2);
 
     // Should be able to construct or assign a const_iterator from a
     // const_iterator.
-    const_iterator const ccIt0{c.cbegin()};
-    const_iterator const ccIt1{ccIt0};
+    ConstIterator const ccIt0{c.cbegin()};
+    ConstIterator const ccIt1{ccIt0};
     BEAST_EXPECT(ccIt0 == ccIt1);
-    const_iterator ccIt2;
+    ConstIterator ccIt2;
     ccIt2 = ccIt1;
     BEAST_EXPECT(ccIt1 == ccIt2);
 
@@ -1091,10 +1093,10 @@ AgedAssociativeContainerTestBase::testIterator()
     BEAST_EXPECT(ccIt1 == nnIt1);
 
     // Should be able to construct a const_iterator from an iterator.
-    const_iterator const ncIt3{c.begin()};
-    const_iterator const ncIt4{nnIt0};
+    ConstIterator const ncIt3{c.begin()};
+    ConstIterator const ncIt4{nnIt0};
     BEAST_EXPECT(ncIt3 == ncIt4);
-    const_iterator ncIt5;
+    ConstIterator ncIt5;
     ncIt5 = nnIt2;
     BEAST_EXPECT(ncIt5 == ncIt4);
 
@@ -1123,9 +1125,9 @@ AgedAssociativeContainerTestBase::testReverseIterator()
 
     typename Traits::template Cont<> c{clock};
 
-    using iterator = decltype(c.begin());
-    using reverse_iterator = decltype(c.rbegin());
-    using const_reverse_iterator = decltype(c.crbegin());
+    using Iterator = decltype(c.begin());
+    using ReverseIterator = decltype(c.rbegin());
+    using ConstReverseIterator = decltype(c.crbegin());
 
     // Naming decoder ring
     //       constructed from ------+ +----- constructed type
@@ -1136,19 +1138,19 @@ AgedAssociativeContainerTestBase::testReverseIterator()
 
     // Should be able to construct or assign a reverse_iterator from a
     // reverse_iterator.
-    reverse_iterator const rNrNit0{c.rbegin()};
-    reverse_iterator const rNrNit1{rNrNit0};
+    ReverseIterator const rNrNit0{c.rbegin()};
+    ReverseIterator const rNrNit1{rNrNit0};
     BEAST_EXPECT(rNrNit0 == rNrNit1);
-    reverse_iterator xXrNit2;
+    ReverseIterator xXrNit2;
     xXrNit2 = rNrNit1;
     BEAST_EXPECT(rNrNit1 == xXrNit2);
 
     // Should be able to construct or assign a const_reverse_iterator from a
     // const_reverse_iterator
-    const_reverse_iterator const rCrCit0{c.crbegin()};
-    const_reverse_iterator const rCrCit1{rCrCit0};
+    ConstReverseIterator const rCrCit0{c.crbegin()};
+    ConstReverseIterator const rCrCit1{rCrCit0};
     BEAST_EXPECT(rCrCit0 == rCrCit1);
-    const_reverse_iterator xXrCit2;
+    ConstReverseIterator xXrCit2;
     xXrCit2 = rCrCit1;
     BEAST_EXPECT(rCrCit1 == xXrCit2);
 
@@ -1158,8 +1160,8 @@ AgedAssociativeContainerTestBase::testReverseIterator()
 
     // Should be able to construct or assign a const_reverse_iterator from a
     // reverse_iterator
-    const_reverse_iterator const rNrCit0{c.rbegin()};
-    const_reverse_iterator const rNrCit1{rNrNit0};
+    ConstReverseIterator const rNrCit0{c.rbegin()};
+    ConstReverseIterator const rNrCit1{rNrNit0};
     BEAST_EXPECT(rNrCit0 == rNrCit1);
     xXrCit2 = rNrNit1;
     BEAST_EXPECT(rNrCit1 == xXrCit2);
@@ -1170,10 +1172,10 @@ AgedAssociativeContainerTestBase::testReverseIterator()
     //  const_iterator.
     // Should be able to construct or assign reverse_iterators from
     // non-reverse iterators.
-    reverse_iterator const fNrNit0{c.begin()};
-    const_reverse_iterator const fNrCit0{c.begin()};
+    ReverseIterator const fNrNit0{c.begin()};
+    ConstReverseIterator const fNrCit0{c.begin()};
     BEAST_EXPECT(fNrNit0 == fNrCit0);
-    const_reverse_iterator const fCrCit0{c.cbegin()};
+    ConstReverseIterator const fCrCit0{c.cbegin()};
     BEAST_EXPECT(fNrCit0 == fCrCit0);
 
     // None of these should compile because they construct a non-reverse
@@ -1184,7 +1186,7 @@ AgedAssociativeContainerTestBase::testReverseIterator()
 
     // You should not be able to assign an iterator to a reverse_iterator or
     // vise-versa.  So the following lines should not compile.
-    iterator const xXfNit0;
+    Iterator const xXfNit0;
     //  xXfNit_0 = xXrNit_2;
     //  xXrNit_2 = xXfNit_0;
 }
@@ -1328,8 +1330,8 @@ AgedAssociativeContainerTestBase::testChronological()
     // Test touch() with a non-const iterator.
     for (auto iter(v.crbegin()); iter != v.crend(); ++iter)
     {
-        using iterator = decltype(c)::iterator;
-        iterator const found(c.find(Traits::extract(*iter)));
+        using Iterator = decltype(c)::Iterator;
+        Iterator const found(c.find(Traits::extract(*iter)));
 
         BEAST_EXPECT(found != c.cend());
         if (found == c.cend())
@@ -1348,8 +1350,8 @@ AgedAssociativeContainerTestBase::testChronological()
     // Test touch() with a const_iterator
     for (auto iter(v.cbegin()); iter != v.cend(); ++iter)
     {
-        using const_iterator = decltype(c)::const_iterator;
-        const_iterator const found(c.find(Traits::extract(*iter)));
+        using ConstIterator = decltype(c)::ConstIterator;
+        ConstIterator const found(c.find(Traits::extract(*iter)));
 
         BEAST_EXPECT(found != c.cend());
         if (found == c.cend())

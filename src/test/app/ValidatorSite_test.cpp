@@ -183,9 +183,9 @@ private:
             while (item.list.size() < kListSize)
                 item.list.push_back(TrustedPublisherServer::randomValidator());
 
-            NetClock::time_point const expires = env.timeKeeper().now() + cfg.expiresFromNow;
-            NetClock::time_point const effective2 = expires - cfg.effectiveOverlap;
-            NetClock::time_point const expires2 = effective2 + cfg.expiresFromNow;
+            NetClock::TimePoint const expires = env.timeKeeper().now() + cfg.expiresFromNow;
+            NetClock::TimePoint const effective2 = expires - cfg.effectiveOverlap;
+            NetClock::TimePoint const expires2 = effective2 + cfg.expiresFromNow;
             item.server = makeTrustedPublisherServer(
                 env.app().getIOContext(),
                 item.list,

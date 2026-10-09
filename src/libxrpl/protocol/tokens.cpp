@@ -136,16 +136,16 @@ static constexpr std::array<int, 256> const kAlphabetReverse = []() {
 }();
 
 template <class Hasher>
-static Hasher::result_type
+static Hasher::ResultType
 digest(void const* data, std::size_t size) noexcept
 {
     Hasher h;
     h(data, size);
-    return static_cast<Hasher::result_type>(h);
+    return static_cast<Hasher::ResultType>(h);
 }
 
 template <class Hasher, class T, std::size_t N>
-static Hasher::result_type
+static Hasher::ResultType
 digest(std::array<T, N> const& v)
     requires(sizeof(T) == 1)
 {
@@ -154,7 +154,7 @@ digest(std::array<T, N> const& v)
 
 // Computes a double digest (e.g. digest of the digest)
 template <class Hasher, class... Args>
-static Hasher::result_type
+static Hasher::ResultType
 digest2(Args const&... args)
 {
     return digest<Hasher>(digest<Hasher>(args...));

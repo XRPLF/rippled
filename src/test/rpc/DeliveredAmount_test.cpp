@@ -212,7 +212,7 @@ class DeliveredAmount_test : public beast::unit_test::Suite
             env.trust(usd(1000), alice, bob, carol);
             if (afterSwitchTime)
             {
-                env.close(NetClock::time_point{446000000s});
+                env.close(NetClock::TimePoint{446000000s});
             }
             else
             {
@@ -303,7 +303,7 @@ class DeliveredAmount_test : public beast::unit_test::Suite
             env.trust(usd(1000), alice, bob, carol);
             if (afterSwitchTime)
             {
-                env.close(NetClock::time_point{446000000s});
+                env.close(NetClock::TimePoint{446000000s});
             }
             else
             {

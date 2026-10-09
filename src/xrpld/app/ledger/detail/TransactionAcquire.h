@@ -26,7 +26,7 @@ class TransactionAcquire final : public TimeoutCounter,
                                  public CountedObject<TransactionAcquire>
 {
 public:
-    using pointer = std::shared_ptr<TransactionAcquire>;
+    using Pointer = std::shared_ptr<TransactionAcquire>;
 
     TransactionAcquire(Application& app, UInt256 const& hash, std::unique_ptr<PeerSet> peerSet);
     ~TransactionAcquire() override = default;

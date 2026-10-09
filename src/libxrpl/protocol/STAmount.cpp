@@ -274,7 +274,7 @@ STAmount::xrp() const
     if (!native())
         Throw<std::logic_error>("Cannot return non-native STAmount as XRPAmount");
 
-    auto drops = static_cast<XRPAmount::value_type>(value_);
+    auto drops = static_cast<XRPAmount::ValueType>(value_);
     XRPL_ASSERT(offset_ == 0, "xrpl::STAmount::xrp : amount is canonical");
 
     if (isNegative_)
@@ -304,7 +304,7 @@ STAmount::mpt() const
     if (!holds<MPTIssue>())
         Throw<std::logic_error>("Cannot return STAmount as MPTAmount");
 
-    auto value = static_cast<MPTAmount::value_type>(value_);
+    auto value = static_cast<MPTAmount::ValueType>(value_);
     XRPL_ASSERT(offset_ == 0, "xrpl::STAmount::mpt : amount is canonical");
 
     if (isNegative_)
@@ -480,9 +480,9 @@ canAdd(STAmount const& a, STAmount const& b)
 
         return !(
             (bVal > XRPAmount{0} &&
-             aVal > XRPAmount{std::numeric_limits<XRPAmount::value_type>::max()} - bVal) ||
+             aVal > XRPAmount{std::numeric_limits<XRPAmount::ValueType>::max()} - bVal) ||
             (bVal < XRPAmount{0} &&
-             aVal < XRPAmount{std::numeric_limits<XRPAmount::value_type>::min()} - bVal));
+             aVal < XRPAmount{std::numeric_limits<XRPAmount::ValueType>::min()} - bVal));
     }
 
     // IOU case (precision check)
@@ -505,9 +505,9 @@ canAdd(STAmount const& a, STAmount const& b)
                 MPTAmount const bVal = b.mpt();
                 return !(
                     (bVal > MPTAmount{0} &&
-                     aVal > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} - bVal) ||
+                     aVal > MPTAmount{std::numeric_limits<MPTAmount::ValueType>::max()} - bVal) ||
                     (bVal < MPTAmount{0} &&
-                     aVal < MPTAmount{std::numeric_limits<MPTAmount::value_type>::min()} - bVal));
+                     aVal < MPTAmount{std::numeric_limits<MPTAmount::ValueType>::min()} - bVal));
             }
             return std::nullopt;
         },
@@ -560,7 +560,7 @@ canSubtract(STAmount const& a, STAmount const& b)
 
         // Check for overflow
         if (bVal < XRPAmount{0} &&
-            aVal > XRPAmount{std::numeric_limits<XRPAmount::value_type>::max()} + bVal)
+            aVal > XRPAmount{std::numeric_limits<XRPAmount::ValueType>::max()} + bVal)
             return false;
 
         return true;
@@ -587,7 +587,7 @@ canSubtract(STAmount const& a, STAmount const& b)
 
                 // Overflow check
                 if (bVal < MPTAmount{0} &&
-                    aVal > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} + bVal)
+                    aVal > MPTAmount{std::numeric_limits<MPTAmount::ValueType>::max()} + bVal)
                     return false;
                 return true;
             }

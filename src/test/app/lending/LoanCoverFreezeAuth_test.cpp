@@ -400,8 +400,8 @@ private:
 
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
 
-        using Tp = NetClock::time_point;
-        using D = NetClock::duration;
+        using Tp = NetClock::TimePoint;
+        using D = NetClock::Duration;
 
         // Get past the grace period so the loan is defaultable.
         if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
@@ -476,8 +476,8 @@ private:
         env(pay(borrower, loanKeylet.key, debtMaximumRequest), Ter(tecLOCKED));
         env.close();
 
-        using Tp = NetClock::time_point;
-        using D = NetClock::duration;
+        using Tp = NetClock::TimePoint;
+        using D = NetClock::Duration;
         if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
             env.close(Tp{D{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
@@ -525,8 +525,8 @@ private:
 
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
 
-        using Tp = NetClock::time_point;
-        using D = NetClock::duration;
+        using Tp = NetClock::TimePoint;
+        using D = NetClock::Duration;
 
         // Get past the grace period so the loan is defaultable.
         if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))

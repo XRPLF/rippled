@@ -18,12 +18,20 @@ namespace xrpl {
 class UptimeClock
 {
 public:
-    using rep = int;
-    using period = std::ratio<1>;
-    using duration = std::chrono::duration<rep, period>;
-    using time_point = std::chrono::time_point<UptimeClock>;
-    static constexpr bool is_steady =  // NOLINT(readability-identifier-naming)
-        std::chrono::system_clock::is_steady;
+    using Rep = int;
+    using Period = std::ratio<1>;
+    using Duration = std::chrono::duration<Rep, Period>;
+    using TimePoint = std::chrono::time_point<UptimeClock, Duration>;
+
+    // Required by the std Clock contract.
+    // NOLINTBEGIN(readability-identifier-naming)
+    using rep = Rep;
+    using period = Period;
+    using duration = Duration;
+    using time_point = TimePoint;
+
+    static constexpr bool is_steady = std::chrono::system_clock::is_steady;
+    // NOLINTEND(readability-identifier-naming)
 
     explicit UptimeClock() = default;
 

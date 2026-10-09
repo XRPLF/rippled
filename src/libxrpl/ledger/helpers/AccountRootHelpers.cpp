@@ -335,7 +335,7 @@ increaseOwnerCount(ApplyViewContext ctx, SLE::Ref accountSle, std::uint32_t coun
     XRPL_ASSERT(
         sponsorExp.has_value(), "xrpl::increaseOwnerCount : sponsor validated before mutation");
 
-    increaseOwnerCount(ctx.view, accountSle, sponsorExp ? *sponsorExp : SLE::pointer(), count, j);
+    increaseOwnerCount(ctx.view, accountSle, sponsorExp ? *sponsorExp : SLE::Pointer(), count, j);
 }
 
 void
@@ -506,7 +506,7 @@ pseudoAccountAddress(ReadView const& view, UInt256 const& pseudoOwnerKey)
         RipeshaHasher rsh;
         auto const hash = sha512Half(i, view.header().parentHash, pseudoOwnerKey);
         rsh(hash.data(), hash.size());
-        AccountID const ret = AccountID::fromRaw(static_cast<RipeshaHasher::result_type>(rsh));
+        AccountID const ret = AccountID::fromRaw(static_cast<RipeshaHasher::ResultType>(rsh));
         if (!view.read(keylet::account(ret)))
             return ret;
     }
@@ -546,7 +546,7 @@ getPseudoAccountFields()
 }
 
 [[nodiscard]] bool
-isPseudoAccount(SLE::const_pointer sleAcct)
+isPseudoAccount(SLE::ConstPointer sleAcct)
 {
     // Intentionally use defensive coding here because it's cheap and makes the
     // semantics of true return value clean.
@@ -556,7 +556,7 @@ isPseudoAccount(SLE::const_pointer sleAcct)
            });
 }
 
-std::expected<SLE::pointer, TER>
+std::expected<SLE::Pointer, TER>
 createPseudoAccount(ApplyView& view, UInt256 const& pseudoOwnerKey, SField const& ownerField)
 {
     [[maybe_unused]]

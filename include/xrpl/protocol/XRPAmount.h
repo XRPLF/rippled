@@ -28,10 +28,10 @@ class XRPAmount : private boost::totally_ordered<XRPAmount>,
 {
 public:
     using UnitType = unit::dropTag;
-    using value_type = std::int64_t;
+    using ValueType = std::int64_t;
 
 private:
-    value_type drops_;
+    ValueType drops_;
 
 public:
     XRPAmount() = default;
@@ -40,7 +40,7 @@ public:
     operator=(XRPAmount const& other) = default;
 
     // Round to nearest, even on tie.
-    explicit XRPAmount(Number const& x) : XRPAmount(static_cast<value_type>(x))
+    explicit XRPAmount(Number const& x) : XRPAmount(static_cast<ValueType>(x))
     {
     }
 
@@ -55,25 +55,25 @@ public:
         return *this;
     }
 
-    constexpr explicit XRPAmount(value_type drops) : drops_(drops)
+    constexpr explicit XRPAmount(ValueType drops) : drops_(drops)
     {
     }
 
     XRPAmount&
-    operator=(value_type drops)
+    operator=(ValueType drops)
     {
         drops_ = drops;
         return *this;
     }
 
     constexpr XRPAmount
-    operator*(value_type const& rhs) const
+    operator*(ValueType const& rhs) const
     {
         return XRPAmount{drops_ * rhs};
     }
 
     friend constexpr XRPAmount
-    operator*(value_type lhs, XRPAmount const& rhs)
+    operator*(ValueType lhs, XRPAmount const& rhs)
     {
         // multiplication is commutative
         return rhs * lhs;
@@ -94,21 +94,21 @@ public:
     }
 
     XRPAmount&
-    operator+=(value_type const& rhs)
+    operator+=(ValueType const& rhs)
     {
         drops_ += rhs;
         return *this;
     }
 
     XRPAmount&
-    operator-=(value_type const& rhs)
+    operator-=(ValueType const& rhs)
     {
         drops_ -= rhs;
         return *this;
     }
 
     XRPAmount&
-    operator*=(value_type const& rhs)
+    operator*=(ValueType const& rhs)
     {
         drops_ *= rhs;
         return *this;
@@ -127,7 +127,7 @@ public:
     }
 
     bool
-    operator==(value_type other) const
+    operator==(ValueType other) const
     {
         return drops_ == other;
     }
@@ -166,7 +166,7 @@ public:
     /**
      * Returns the number of drops
      */
-    [[nodiscard]] constexpr value_type
+    [[nodiscard]] constexpr ValueType
     drops() const
     {
         return drops_;
@@ -210,7 +210,7 @@ public:
     jsonClipped() const
     {
         static_assert(
-            std::is_signed_v<value_type> && std::is_integral_v<value_type>,
+            std::is_signed_v<ValueType> && std::is_integral_v<ValueType>,
             "Expected XRPAmount to be a signed integral type");
 
         constexpr auto kMin = std::numeric_limits<json::Int>::min();
@@ -228,7 +228,7 @@ public:
      * function unless the type has been abstracted away,
      * e.g. in a templated function.
      */
-    [[nodiscard]] constexpr value_type
+    [[nodiscard]] constexpr ValueType
     value() const
     {
         return drops_;
@@ -292,9 +292,9 @@ mulRatio(XRPAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
         if (neg && !roundUp)
             r -= 1;
     }
-    if (r > std::numeric_limits<XRPAmount::value_type>::max())
+    if (r > std::numeric_limits<XRPAmount::ValueType>::max())
         Throw<std::overflow_error>("XRP mulRatio overflow");
-    return XRPAmount(r.convert_to<XRPAmount::value_type>());
+    return XRPAmount(r.convert_to<XRPAmount::ValueType>());
 }
 
 }  // namespace xrpl

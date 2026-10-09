@@ -33,7 +33,7 @@ public:
      * @brief Construct a Offer ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Offer(SLE::const_pointer sle)
+    explicit Offer(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getAccount() const
     {
         return this->sle_->at(sfAccount);
@@ -61,7 +61,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getSequence() const
     {
         return this->sle_->at(sfSequence);
@@ -72,7 +72,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getTakerPays() const
     {
         return this->sle_->at(sfTakerPays);
@@ -83,7 +83,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getTakerGets() const
     {
         return this->sle_->at(sfTakerGets);
@@ -94,7 +94,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getBookDirectory() const
     {
         return this->sle_->at(sfBookDirectory);
@@ -105,7 +105,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getBookNode() const
     {
         return this->sle_->at(sfBookNode);
@@ -116,7 +116,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getOwnerNode() const
     {
         return this->sle_->at(sfOwnerNode);
@@ -127,7 +127,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -138,7 +138,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -149,7 +149,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getExpiration() const
     {
         if (hasExpiration())
@@ -173,7 +173,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getDomainID() const
     {
         if (hasDomainID())
@@ -240,7 +240,7 @@ public:
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    OfferBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_AMOUNT::type::value_type> const& takerPays,std::decay_t<typename SF_AMOUNT::type::value_type> const& takerGets,std::decay_t<typename SF_UINT256::type::value_type> const& bookDirectory,std::decay_t<typename SF_UINT64::type::value_type> const& bookNode,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    OfferBuilder(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& account,std::decay_t<typename SF_UINT32::Type::ValueType> const& sequence,std::decay_t<typename SF_AMOUNT::Type::ValueType> const& takerPays,std::decay_t<typename SF_AMOUNT::Type::ValueType> const& takerGets,std::decay_t<typename SF_UINT256::Type::ValueType> const& bookDirectory,std::decay_t<typename SF_UINT64::Type::ValueType> const& bookNode,std::decay_t<typename SF_UINT64::Type::ValueType> const& ownerNode,std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<OfferBuilder>(ltOFFER)
     {
         setAccount(account);
@@ -259,7 +259,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    OfferBuilder(SLE::const_pointer sle)
+    OfferBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltOFFER)
         {
@@ -277,7 +277,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
-    setAccount(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setAccount(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfAccount] = value;
         return *this;
@@ -288,7 +288,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
-    setSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setSequence(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfSequence] = value;
         return *this;
@@ -299,7 +299,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
-    setTakerPays(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setTakerPays(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfTakerPays] = value;
         return *this;
@@ -310,7 +310,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
-    setTakerGets(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setTakerGets(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfTakerGets] = value;
         return *this;
@@ -321,7 +321,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
-    setBookDirectory(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setBookDirectory(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfBookDirectory] = value;
         return *this;
@@ -332,7 +332,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
-    setBookNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setBookNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfBookNode] = value;
         return *this;
@@ -343,7 +343,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
-    setOwnerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setOwnerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfOwnerNode] = value;
         return *this;
@@ -354,7 +354,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -365,7 +365,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;
@@ -376,7 +376,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
-    setExpiration(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setExpiration(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfExpiration] = value;
         return *this;
@@ -387,7 +387,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
-    setDomainID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setDomainID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfDomainID] = value;
         return *this;

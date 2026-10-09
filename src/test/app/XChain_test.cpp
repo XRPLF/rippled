@@ -150,18 +150,18 @@ struct SEnv
         return env.current()->fees().base;
     }
 
-    SLE::const_pointer
+    SLE::ConstPointer
     account(jtx::Account const& account)
     {
         return env.le(account);
     }
 
-    SLE::const_pointer
+    SLE::ConstPointer
     bridge(json::Value const& jvb)
     {
         STXChainBridge const b(jvb);
 
-        auto tryGet = [&](STXChainBridge::ChainType ct) -> SLE::const_pointer {
+        auto tryGet = [&](STXChainBridge::ChainType ct) -> SLE::ConstPointer {
             if (auto r = env.le(keylet::bridge(b, ct)))
             {
                 if ((*r)[sfXChainBridge] == b)
@@ -186,13 +186,13 @@ struct SEnv
         return (*bridge(jvb))[sfXChainClaimID];
     }
 
-    SLE::const_pointer
+    SLE::ConstPointer
     claimID(json::Value const& jvb, std::uint64_t seq)
     {
         return env.le(keylet::xChainClaimID(STXChainBridge(jvb), seq));
     }
 
-    SLE::const_pointer
+    SLE::ConstPointer
     caClaimID(json::Value const& jvb, std::uint64_t seq)
     {
         return env.le(keylet::xChainCreateAccountClaimID(STXChainBridge(jvb), seq));

@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getLedgerSequence() const
     {
         return this->tx_->at(sfLedgerSequence);
@@ -63,7 +63,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getAmendment() const
     {
         return this->tx_->at(sfAmendment);
@@ -88,9 +88,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    EnableAmendmentBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& ledgerSequence,                     std::decay_t<typename SF_UINT256::type::value_type> const& amendment,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    EnableAmendmentBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT32::Type::ValueType> const& ledgerSequence,                     std::decay_t<typename SF_UINT256::Type::ValueType> const& amendment,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<EnableAmendmentBuilder>(ttAMENDMENT, account, sequence, fee)
     {
@@ -121,7 +121,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EnableAmendmentBuilder&
-    setLedgerSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setLedgerSequence(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfLedgerSequence] = value;
         return *this;
@@ -132,7 +132,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EnableAmendmentBuilder&
-    setAmendment(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setAmendment(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfAmendment] = value;
         return *this;

@@ -452,8 +452,8 @@ getLedgerInfo(soci::session& session, std::string const& sqlSuffix, beast::Journ
         return {};
     }
 
-    using time_point = NetClock::time_point;
-    using duration = NetClock::duration;
+    using TimePoint = NetClock::TimePoint;
+    using Duration = NetClock::Duration;
 
     LedgerHeader info;
 
@@ -483,10 +483,10 @@ getLedgerInfo(soci::session& session, std::string const& sqlSuffix, beast::Journ
 
     info.seq = rangeCheckedCast<std::uint32_t>(seq.value_or(0));
     info.drops = drops.value_or(0);
-    info.closeTime = time_point{duration{closeTime.value_or(0)}};
-    info.parentCloseTime = time_point{duration{parentCloseTime.value_or(0)}};
+    info.closeTime = TimePoint{Duration{closeTime.value_or(0)}};
+    info.parentCloseTime = TimePoint{Duration{parentCloseTime.value_or(0)}};
     info.closeFlags = closeFlags.value_or(0);
-    info.closeTimeResolution = duration{closeTimeResolution.value_or(0)};
+    info.closeTimeResolution = Duration{closeTimeResolution.value_or(0)};
 
     return info;
 }

@@ -1275,7 +1275,7 @@ class Simulate_test : public beast::unit_test::Suite
         env.close();
         // deliver_amount is unavailable in the metadata before 2014-02-01
         // so proceed to 2014-02-01
-        env.close(NetClock::time_point{446000000s});
+        env.close(NetClock::TimePoint{446000000s});
 
         {
             auto validateOutput = [&](json::Value const& resp,

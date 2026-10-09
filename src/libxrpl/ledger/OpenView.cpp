@@ -57,10 +57,10 @@ public:
         ++iter_;
     }
 
-    [[nodiscard]] value_type
+    [[nodiscard]] ValueType
     dereference() const override
     {
-        value_type result;
+        ValueType result;
         {
             SerialIter sit(iter_->second.txn->slice());
             result.first = std::make_shared<STTx const>(sit);
@@ -158,13 +158,12 @@ OpenView::exists(Keylet const& k) const
 }
 
 auto
-OpenView::succ(key_type const& key, std::optional<key_type> const& last) const
-    -> std::optional<key_type>
+OpenView::succ(Key const& key, std::optional<Key> const& last) const -> std::optional<Key>
 {
     return items_.succ(*base_, key, last);
 }
 
-SLE::const_pointer
+SLE::ConstPointer
 OpenView::read(Keylet const& k) const
 {
     return items_.read(*base_, k);
@@ -201,13 +200,13 @@ OpenView::txsEnd() const -> std::unique_ptr<TxsType::IterBase>
 }
 
 bool
-OpenView::txExists(key_type const& key) const
+OpenView::txExists(Key const& key) const
 {
     return txs_.contains(key);
 }
 
 auto
-OpenView::txRead(key_type const& key) const -> TxType
+OpenView::txRead(Key const& key) const -> TxType
 {
     auto const iter = txs_.find(key);
     if (iter == txs_.end())
@@ -258,7 +257,7 @@ OpenView::rawDestroyXRP(XRPAmount const& fee)
 
 void
 OpenView::rawTxInsert(
-    key_type const& key,
+    Key const& key,
     std::shared_ptr<Serializer const> const& txn,
     std::shared_ptr<Serializer const> const& metaData)
 {

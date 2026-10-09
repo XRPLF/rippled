@@ -36,20 +36,20 @@ namespace detail {
 class VotableValue
 {
 private:
-    using value_type = XRPAmount;
-    value_type const current_;  // The current setting
-    value_type const target_;   // The setting we want
-    std::map<value_type, int> voteMap_;
+    using ValueType = XRPAmount;
+    ValueType const current_;  // The current setting
+    ValueType const target_;   // The setting we want
+    std::map<ValueType, int> voteMap_;
 
 public:
-    VotableValue(value_type current, value_type target) : current_(current), target_(target)
+    VotableValue(ValueType current, ValueType target) : current_(current), target_(target)
     {
         // Add our vote
         ++voteMap_[target_];
     }
 
     void
-    addVote(value_type vote)
+    addVote(ValueType vote)
     {
         ++voteMap_[vote];
     }
@@ -60,20 +60,20 @@ public:
         addVote(current_);
     }
 
-    [[nodiscard]] value_type
+    [[nodiscard]] ValueType
     current() const
     {
         return current_;
     }
 
-    [[nodiscard]] std::pair<value_type, bool>
+    [[nodiscard]] std::pair<ValueType, bool>
     getVotes() const;
 };
 
 auto
-VotableValue::getVotes() const -> std::pair<value_type, bool>
+VotableValue::getVotes() const -> std::pair<ValueType, bool>
 {
-    value_type ourVote = current_;
+    ValueType ourVote = current_;
     int weight = 0;
     for (auto const& [key, val] : voteMap_)
     {
@@ -228,7 +228,7 @@ FeeVoteImpl::doVoting(
                          auto const& valueField) {
             if (auto const field = val->at(~valueField))
             {
-                using XRPType = XRPAmount::value_type;
+                using XRPType = XRPAmount::ValueType;
                 auto const vote = *field;
                 if (vote <= std::numeric_limits<XRPType>::max() &&
                     isLegalAmountSigned(XRPAmount{unsafeCast<XRPType>(vote)}))

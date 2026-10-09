@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getSubject() const
     {
         return this->tx_->at(sfSubject);
@@ -63,7 +63,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getCredentialType() const
     {
         return this->tx_->at(sfCredentialType);
@@ -74,7 +74,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getExpiration() const
     {
         if (hasExpiration())
@@ -100,7 +100,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getURI() const
     {
         if (hasURI())
@@ -140,9 +140,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    CredentialCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& subject,                     std::decay_t<typename SF_VL::type::value_type> const& credentialType,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    CredentialCreateBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& subject,                     std::decay_t<typename SF_VL::Type::ValueType> const& credentialType,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<CredentialCreateBuilder>(ttCREDENTIAL_CREATE, account, sequence, fee)
     {
@@ -173,7 +173,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialCreateBuilder&
-    setSubject(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setSubject(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfSubject] = value;
         return *this;
@@ -184,7 +184,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialCreateBuilder&
-    setCredentialType(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setCredentialType(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfCredentialType] = value;
         return *this;
@@ -195,7 +195,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialCreateBuilder&
-    setExpiration(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setExpiration(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfExpiration] = value;
         return *this;
@@ -206,7 +206,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialCreateBuilder&
-    setURI(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setURI(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfURI] = value;
         return *this;

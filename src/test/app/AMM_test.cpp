@@ -3344,7 +3344,7 @@ private:
         testAMM([&](AMM& ammAlice, Env& env) {
             auto const pk = carol_.pk();
             auto const settleDelay = 100s;
-            NetClock::time_point const cancelAfter = env.current()->header().parentCloseTime + 200s;
+            NetClock::TimePoint const cancelAfter = env.current()->header().parentCloseTime + 200s;
             env(paychan::create(
                     carol_, ammAlice.ammAccount(), XRP(1'000), settleDelay, pk, cancelAfter),
                 Ter(tecNO_PERMISSION));

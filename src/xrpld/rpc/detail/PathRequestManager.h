@@ -63,7 +63,7 @@ public:
     // the path engine
     json::Value
     makeLegacyPathRequest(
-        PathRequest::pointer& req,
+        PathRequest::Pointer& req,
         std::function<void(void)> completion,
         resource::Consumer& consumer,
         std::shared_ptr<ReadView const> const& inLedger,
@@ -91,7 +91,7 @@ public:
 
 private:
     void
-    insertPathRequest(PathRequest::pointer const&);
+    insertPathRequest(PathRequest::Pointer const&);
 
     Application& app_;
     beast::Journal journal_;

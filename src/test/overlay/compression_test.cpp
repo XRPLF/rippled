@@ -242,8 +242,8 @@ public:
         ledgerData->mutable_nodes()->Reserve(n);
         UInt256 parentHash(0);
 
-        NetClock::duration const resolution{10};
-        NetClock::time_point ct{resolution};
+        NetClock::Duration const resolution{10};
+        NetClock::TimePoint ct{resolution};
 
         for (int i = 0; i < n; i++)
         {

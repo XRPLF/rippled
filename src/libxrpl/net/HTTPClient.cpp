@@ -499,7 +499,7 @@ public:
     }
 
 private:
-    using pointer = std::shared_ptr<HTTPClient>;
+    using Pointer = std::shared_ptr<HTTPClient>;
 
     bool ssl_{};
     AutoSocket socket_;

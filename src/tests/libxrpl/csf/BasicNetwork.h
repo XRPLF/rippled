@@ -66,17 +66,17 @@ class BasicNetwork
 
     using ClockType = Scheduler::ClockType;
 
-    using duration = ClockType::duration;
+    using Duration = ClockType::duration;
 
-    using time_point = ClockType::time_point;
+    using TimePoint = ClockType::time_point;
 
     struct LinkType
     {
         bool inbound = false;
-        duration delay{};
-        time_point established;
+        Duration delay{};
+        TimePoint established;
         LinkType() = default;
-        LinkType(bool inbound, duration delay, time_point established)
+        LinkType(bool inbound, Duration delay, TimePoint established)
             : inbound(inbound), delay(delay), established(established)
         {
         }
@@ -116,7 +116,7 @@ public:
      * @return `true` if a new connection was established
      */
     bool
-    connect(Peer const& from, Peer const& to, duration const& delay = std::chrono::seconds{0});
+    connect(Peer const& from, Peer const& to, Duration const& delay = std::chrono::seconds{0});
 
     /**
      * Break a link.
@@ -185,11 +185,11 @@ BasicNetwork<Peer>::BasicNetwork(Scheduler& s) : scheduler_(s)
 
 template <class Peer>
 inline bool
-BasicNetwork<Peer>::connect(Peer const& from, Peer const& to, duration const& delay)
+BasicNetwork<Peer>::connect(Peer const& from, Peer const& to, Duration const& delay)
 {
     if (to == from)
         return false;
-    time_point const now = scheduler_.now();
+    TimePoint const now = scheduler_.now();
     if (!links_.connect(from, to, LinkType{false, delay, now}))
         return false;
     auto const result = links_.connect(to, from, LinkType{true, delay, now});
@@ -218,7 +218,7 @@ BasicNetwork<Peer>::send(Peer const& from, Peer const& to, Function&& f)
     auto link = links_.edge(from, to);
     if (!link)
         return;
-    time_point const sent = scheduler_.now();
+    TimePoint const sent = scheduler_.now();
     scheduler_.in(link->delay, [from, to, sent, f = std::forward<Function>(f), this] {
         // only process if still connected and connection was
         // not broken since the message was sent

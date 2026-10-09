@@ -1800,7 +1800,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
             if (ledger.get().isMember("close_time"))
             {
-                using Tp = NetClock::time_point;
+                using Tp = NetClock::TimePoint;
                 using D = Tp::duration;
                 closeTime = Tp{D{ledger.get()["close_time"].asUInt()}};
             }
@@ -1990,7 +1990,7 @@ ApplicationImp::loadOldLedger(
         }
         using namespace std::chrono_literals;
         using namespace date;
-        static constexpr NetClock::time_point kLedgerWarnTimePoint{
+        static constexpr NetClock::TimePoint kLedgerWarnTimePoint{
             sys_days{January / 1 / 2018} - sys_days{January / 1 / 2000}};
         if (loadLedger->header().closeTime < kLedgerWarnTimePoint)
         {

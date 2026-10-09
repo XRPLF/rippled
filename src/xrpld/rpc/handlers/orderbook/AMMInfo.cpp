@@ -50,7 +50,7 @@ getAsset(json::Value const& v, beast::Journal j)
 }
 
 std::string
-toIso8601(NetClock::time_point tp)
+toIso8601(NetClock::TimePoint tp)
 {
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     using namespace std::chrono;
@@ -76,7 +76,7 @@ doAMMInfo(rpc::JsonContext& context)
         std::optional<AccountID> accountID;
         Asset asset1;
         Asset asset2;
-        SLE::const_pointer amm;
+        SLE::ConstPointer amm;
     };
 
     auto getValuesFromContextParams = [&]() -> std::expected<ValuesFromContextParams, ErrorCodeI> {
@@ -228,7 +228,7 @@ doAMMInfo(rpc::JsonContext& context)
             auction[jss::discounted_fee] = auctionSlot[sfDiscountedFee];
             auction[jss::account] = to_string(auctionSlot.getAccountID(sfAccount));
             auction[jss::expiration] =
-                toIso8601(NetClock::time_point{NetClock::duration{auctionSlot[sfExpiration]}});
+                toIso8601(NetClock::TimePoint{NetClock::Duration{auctionSlot[sfExpiration]}});
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
             {
                 json::Value auth;

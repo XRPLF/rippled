@@ -848,14 +848,14 @@ public:
 
         // Overflow check for max XRP amounts
         {
-            STAmount const amt1(std::numeric_limits<XRPAmount::value_type>::max());
+            STAmount const amt1(std::numeric_limits<XRPAmount::ValueType>::max());
             STAmount const amt2(XRPAmount(1));
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
 
         // Overflow check for min XRP amounts
         {
-            STAmount amt1(std::numeric_limits<XRPAmount::value_type>::max());
+            STAmount amt1(std::numeric_limits<XRPAmount::ValueType>::max());
             amt1 += XRPAmount(1);
             STAmount const amt2(XRPAmount(-1));
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
@@ -965,7 +965,7 @@ public:
 
         // Overflow check for max MPT amounts
         {
-            STAmount const amt1(mpt, std::numeric_limits<MPTAmount::value_type>::max());
+            STAmount const amt1(mpt, std::numeric_limits<MPTAmount::ValueType>::max());
             STAmount const amt2(mpt, 1);
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
@@ -1116,7 +1116,7 @@ public:
 
         // Underflow check for min XRP amounts
         {
-            STAmount amt1(std::numeric_limits<XRPAmount::value_type>::max());
+            STAmount amt1(std::numeric_limits<XRPAmount::ValueType>::max());
             amt1 += XRPAmount(1);
             STAmount const amt2(XRPAmount(1));
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
@@ -1124,7 +1124,7 @@ public:
 
         // Overflow check for max XRP amounts
         {
-            STAmount const amt1(std::numeric_limits<XRPAmount::value_type>::max());
+            STAmount const amt1(std::numeric_limits<XRPAmount::ValueType>::max());
             STAmount const amt2(XRPAmount(-1));
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
@@ -1215,7 +1215,7 @@ public:
 
         // Overflow check for max positive MPT amounts (should fail)
         {
-            STAmount const amt1(mpt, std::numeric_limits<MPTAmount::value_type>::max());
+            STAmount const amt1(mpt, std::numeric_limits<MPTAmount::ValueType>::max());
             STAmount const amt2(mpt, -2);
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }

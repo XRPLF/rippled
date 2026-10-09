@@ -862,7 +862,7 @@ public:
     }
 
 private:
-    using SLEP = SLE::const_pointer;
+    using SLEP = SLE::ConstPointer;
     bool
     forObject(
         std::function<bool(SLEP const& sle)> const& cb,

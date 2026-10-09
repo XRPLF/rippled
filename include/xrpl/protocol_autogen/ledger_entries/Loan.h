@@ -33,7 +33,7 @@ public:
      * @brief Construct a Loan ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Loan(SLE::const_pointer sle)
+    explicit Loan(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -61,7 +61,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -72,7 +72,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getOwnerNode() const
     {
         return this->sle_->at(sfOwnerNode);
@@ -83,7 +83,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getLoanBrokerNode() const
     {
         return this->sle_->at(sfLoanBrokerNode);
@@ -94,7 +94,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getLoanBrokerID() const
     {
         return this->sle_->at(sfLoanBrokerID);
@@ -105,7 +105,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getLoanSequence() const
     {
         return this->sle_->at(sfLoanSequence);
@@ -116,7 +116,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getBorrower() const
     {
         return this->sle_->at(sfBorrower);
@@ -127,7 +127,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    protocol_autogen::Optional<SF_NUMBER::Type::ValueType>
     getLoanOriginationFee() const
     {
         if (hasLoanOriginationFee())
@@ -151,7 +151,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    protocol_autogen::Optional<SF_NUMBER::Type::ValueType>
     getLoanServiceFee() const
     {
         if (hasLoanServiceFee())
@@ -175,7 +175,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    protocol_autogen::Optional<SF_NUMBER::Type::ValueType>
     getLatePaymentFee() const
     {
         if (hasLatePaymentFee())
@@ -199,7 +199,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    protocol_autogen::Optional<SF_NUMBER::Type::ValueType>
     getClosePaymentFee() const
     {
         if (hasClosePaymentFee())
@@ -223,7 +223,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getOverpaymentFee() const
     {
         if (hasOverpaymentFee())
@@ -247,7 +247,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getInterestRate() const
     {
         if (hasInterestRate())
@@ -271,7 +271,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getLateInterestRate() const
     {
         if (hasLateInterestRate())
@@ -295,7 +295,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getCloseInterestRate() const
     {
         if (hasCloseInterestRate())
@@ -319,7 +319,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getOverpaymentInterestRate() const
     {
         if (hasOverpaymentInterestRate())
@@ -343,7 +343,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getStartDate() const
     {
         return this->sle_->at(sfStartDate);
@@ -354,7 +354,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPaymentInterval() const
     {
         return this->sle_->at(sfPaymentInterval);
@@ -365,7 +365,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getGracePeriod() const
     {
         if (hasGracePeriod())
@@ -389,7 +389,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getPreviousPaymentDueDate() const
     {
         if (hasPreviousPaymentDueDate())
@@ -413,7 +413,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getNextPaymentDueDate() const
     {
         if (hasNextPaymentDueDate())
@@ -437,7 +437,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getPaymentRemaining() const
     {
         if (hasPaymentRemaining())
@@ -461,7 +461,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_NUMBER::type::value_type
+    SF_NUMBER::Type::ValueType
     getPeriodicPayment() const
     {
         return this->sle_->at(sfPeriodicPayment);
@@ -472,7 +472,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    protocol_autogen::Optional<SF_NUMBER::Type::ValueType>
     getPrincipalOutstanding() const
     {
         if (hasPrincipalOutstanding())
@@ -496,7 +496,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    protocol_autogen::Optional<SF_NUMBER::Type::ValueType>
     getTotalValueOutstanding() const
     {
         if (hasTotalValueOutstanding())
@@ -520,7 +520,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    protocol_autogen::Optional<SF_NUMBER::Type::ValueType>
     getManagementFeeOutstanding() const
     {
         if (hasManagementFeeOutstanding())
@@ -544,7 +544,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_INT32::type::value_type>
+    protocol_autogen::Optional<SF_INT32::Type::ValueType>
     getLoanScale() const
     {
         if (hasLoanScale())
@@ -587,7 +587,7 @@ public:
      * @param paymentInterval The sfPaymentInterval field value.
      * @param periodicPayment The sfPeriodicPayment field value.
      */
-    LoanBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& loanBrokerNode,std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID,std::decay_t<typename SF_UINT32::type::value_type> const& loanSequence,std::decay_t<typename SF_ACCOUNT::type::value_type> const& borrower,std::decay_t<typename SF_UINT32::type::value_type> const& startDate,std::decay_t<typename SF_UINT32::type::value_type> const& paymentInterval,std::decay_t<typename SF_NUMBER::type::value_type> const& periodicPayment)
+    LoanBuilder(std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq,std::decay_t<typename SF_UINT64::Type::ValueType> const& ownerNode,std::decay_t<typename SF_UINT64::Type::ValueType> const& loanBrokerNode,std::decay_t<typename SF_UINT256::Type::ValueType> const& loanBrokerID,std::decay_t<typename SF_UINT32::Type::ValueType> const& loanSequence,std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& borrower,std::decay_t<typename SF_UINT32::Type::ValueType> const& startDate,std::decay_t<typename SF_UINT32::Type::ValueType> const& paymentInterval,std::decay_t<typename SF_NUMBER::Type::ValueType> const& periodicPayment)
         : LedgerEntryBuilderBase<LoanBuilder>(ltLOAN)
     {
         setPreviousTxnID(previousTxnID);
@@ -607,7 +607,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    LoanBuilder(SLE::const_pointer sle)
+    LoanBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltLOAN)
         {
@@ -625,7 +625,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -636,7 +636,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;
@@ -647,7 +647,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setOwnerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setOwnerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfOwnerNode] = value;
         return *this;
@@ -658,7 +658,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setLoanBrokerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setLoanBrokerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfLoanBrokerNode] = value;
         return *this;
@@ -669,7 +669,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setLoanBrokerID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setLoanBrokerID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfLoanBrokerID] = value;
         return *this;
@@ -680,7 +680,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setLoanSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setLoanSequence(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfLoanSequence] = value;
         return *this;
@@ -691,7 +691,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setBorrower(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setBorrower(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfBorrower] = value;
         return *this;
@@ -702,7 +702,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setLoanOriginationFee(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    setLoanOriginationFee(std::decay_t<typename SF_NUMBER::Type::ValueType> const& value)
     {
         object_[sfLoanOriginationFee] = value;
         return *this;
@@ -713,7 +713,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setLoanServiceFee(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    setLoanServiceFee(std::decay_t<typename SF_NUMBER::Type::ValueType> const& value)
     {
         object_[sfLoanServiceFee] = value;
         return *this;
@@ -724,7 +724,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setLatePaymentFee(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    setLatePaymentFee(std::decay_t<typename SF_NUMBER::Type::ValueType> const& value)
     {
         object_[sfLatePaymentFee] = value;
         return *this;
@@ -735,7 +735,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setClosePaymentFee(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    setClosePaymentFee(std::decay_t<typename SF_NUMBER::Type::ValueType> const& value)
     {
         object_[sfClosePaymentFee] = value;
         return *this;
@@ -746,7 +746,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setOverpaymentFee(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setOverpaymentFee(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfOverpaymentFee] = value;
         return *this;
@@ -757,7 +757,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setInterestRate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setInterestRate(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfInterestRate] = value;
         return *this;
@@ -768,7 +768,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setLateInterestRate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setLateInterestRate(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfLateInterestRate] = value;
         return *this;
@@ -779,7 +779,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setCloseInterestRate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setCloseInterestRate(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfCloseInterestRate] = value;
         return *this;
@@ -790,7 +790,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setOverpaymentInterestRate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setOverpaymentInterestRate(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfOverpaymentInterestRate] = value;
         return *this;
@@ -801,7 +801,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setStartDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setStartDate(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfStartDate] = value;
         return *this;
@@ -812,7 +812,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setPaymentInterval(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPaymentInterval(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPaymentInterval] = value;
         return *this;
@@ -823,7 +823,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setGracePeriod(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setGracePeriod(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfGracePeriod] = value;
         return *this;
@@ -834,7 +834,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setPreviousPaymentDueDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousPaymentDueDate(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousPaymentDueDate] = value;
         return *this;
@@ -845,7 +845,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setNextPaymentDueDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setNextPaymentDueDate(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfNextPaymentDueDate] = value;
         return *this;
@@ -856,7 +856,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setPaymentRemaining(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPaymentRemaining(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPaymentRemaining] = value;
         return *this;
@@ -867,7 +867,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setPeriodicPayment(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    setPeriodicPayment(std::decay_t<typename SF_NUMBER::Type::ValueType> const& value)
     {
         object_[sfPeriodicPayment] = value;
         return *this;
@@ -878,7 +878,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setPrincipalOutstanding(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    setPrincipalOutstanding(std::decay_t<typename SF_NUMBER::Type::ValueType> const& value)
     {
         object_[sfPrincipalOutstanding] = value;
         return *this;
@@ -889,7 +889,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setTotalValueOutstanding(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    setTotalValueOutstanding(std::decay_t<typename SF_NUMBER::Type::ValueType> const& value)
     {
         object_[sfTotalValueOutstanding] = value;
         return *this;
@@ -900,7 +900,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setManagementFeeOutstanding(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    setManagementFeeOutstanding(std::decay_t<typename SF_NUMBER::Type::ValueType> const& value)
     {
         object_[sfManagementFeeOutstanding] = value;
         return *this;
@@ -911,7 +911,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
-    setLoanScale(std::decay_t<typename SF_INT32::type::value_type> const& value)
+    setLoanScale(std::decay_t<typename SF_INT32::Type::ValueType> const& value)
     {
         object_[sfLoanScale] = value;
         return *this;

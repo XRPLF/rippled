@@ -29,9 +29,9 @@ class Scheduler
 public:
     using ClockType = beast::ManualClock<std::chrono::steady_clock>;
 
-    using duration = ClockType::duration;
+    using Duration = ClockType::duration;
 
-    using time_point = ClockType::time_point;
+    using TimePoint = ClockType::time_point;
 
 private:
     using ByWhenHook =
@@ -39,7 +39,7 @@ private:
 
     struct Event : ByWhenHook
     {
-        time_point when;
+        TimePoint when;
 
         Event(Event const&) = delete;
         Event&
@@ -51,7 +51,7 @@ private:
         virtual void
         operator()() const = 0;
 
-        Event(time_point when) : when(when)
+        Event(TimePoint when) : when(when)
         {
         }
 
@@ -74,7 +74,7 @@ private:
         operator=(EventImpl const&) = delete;
 
         template <class DeducedHandler>
-        EventImpl(time_point when, DeducedHandler&& h)
+        EventImpl(TimePoint when, DeducedHandler&& h)
             : Event(when), h_(std::forward<DeducedHandler>(h))
         {
         }
@@ -96,7 +96,7 @@ private:
         ByWhenSet byWhen_;
 
     public:
-        using iterator = ByWhenSet::iterator;
+        using Iterator = ByWhenSet::iterator;
 
         QueueType(QueueType const&) = delete;
         QueueType&
@@ -109,18 +109,18 @@ private:
         [[nodiscard]] bool
         empty() const;
 
-        iterator
+        Iterator
         begin();
 
-        iterator
+        Iterator
         end();
 
         template <class Handler>
         ByWhenSet::iterator
-        emplace(time_point when, Handler&& h);
+        emplace(TimePoint when, Handler&& h);
 
-        iterator
-        erase(iterator iter);
+        Iterator
+        erase(Iterator iter);
     };
 
     boost::container::pmr::monotonic_buffer_resource alloc_{kilobytes(256)};
@@ -147,7 +147,7 @@ public:
      *
      * @note The epoch is unspecified
      */
-    time_point
+    TimePoint
     now() const;
 
     // Used to cancel timers
@@ -164,7 +164,7 @@ public:
      */
     template <class Function>
     CancelToken
-    at(time_point const& when, Function&& f);
+    at(TimePoint const& when, Function&& f);
 
     /**
      * Schedule an event after a specified duration passes
@@ -177,7 +177,7 @@ public:
      */
     template <class Function>
     CancelToken
-    in(duration const& delay, Function&& f);
+    in(Duration const& delay, Function&& f);
 
     /**
      * Cancel a timer.
@@ -245,7 +245,7 @@ public:
      * @return `true` if any event remain.
      */
     bool
-    stepUntil(time_point const& until);
+    stepUntil(TimePoint const& until);
 
     /**
      * Run the scheduler until time has elapsed.
@@ -287,20 +287,20 @@ Scheduler::QueueType::empty() const
 }
 
 inline auto
-Scheduler::QueueType::begin() -> iterator
+Scheduler::QueueType::begin() -> Iterator
 {
     return byWhen_.begin();
 }
 
 inline auto
-Scheduler::QueueType::end() -> iterator
+Scheduler::QueueType::end() -> Iterator
 {
     return byWhen_.end();
 }
 
 template <class Handler>
 inline auto
-Scheduler::QueueType::emplace(time_point when, Handler&& h) -> ByWhenSet::iterator
+Scheduler::QueueType::emplace(TimePoint when, Handler&& h) -> ByWhenSet::iterator
 {
     using EventType = EventImpl<std::decay_t<Handler>>;
     auto const p = alloc_->allocate(sizeof(EventType));
@@ -309,7 +309,7 @@ Scheduler::QueueType::emplace(time_point when, Handler&& h) -> ByWhenSet::iterat
 }
 
 inline auto
-Scheduler::QueueType::erase(iterator iter) -> ByWhenSet::iterator
+Scheduler::QueueType::erase(Iterator iter) -> ByWhenSet::iterator
 {
     auto& e = *iter;
     auto next = byWhen_.erase(iter);
@@ -322,7 +322,7 @@ Scheduler::QueueType::erase(iterator iter) -> ByWhenSet::iterator
 struct Scheduler::CancelToken
 {
 private:
-    QueueType::iterator iter_;
+    QueueType::Iterator iter_;
 
 public:
     CancelToken() = delete;
@@ -332,7 +332,7 @@ public:
 
 private:
     friend class Scheduler;
-    CancelToken(QueueType::iterator iter) : iter_(iter)
+    CancelToken(QueueType::Iterator iter) : iter_(iter)
     {
     }
 };
@@ -349,21 +349,21 @@ Scheduler::clock() const -> ClockType&
 }
 
 inline auto
-Scheduler::now() const -> time_point
+Scheduler::now() const -> TimePoint
 {
     return clock_.now();
 }
 
 template <class Function>
 inline auto
-Scheduler::at(time_point const& when, Function&& f) -> CancelToken
+Scheduler::at(TimePoint const& when, Function&& f) -> CancelToken
 {
     return queue_.emplace(when, std::forward<Function>(f));
 }
 
 template <class Function>
 inline auto
-Scheduler::in(duration const& delay, Function&& f) -> CancelToken
+Scheduler::in(Duration const& delay, Function&& f) -> CancelToken
 {
     return at(clock_.now() + delay, std::forward<Function>(f));
 }
@@ -410,7 +410,7 @@ Scheduler::stepWhile(Function&& f)
 }
 
 inline bool
-Scheduler::stepUntil(time_point const& until)
+Scheduler::stepUntil(TimePoint const& until)
 {
     // VFALCO This routine needs optimizing
     if (queue_.empty())

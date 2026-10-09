@@ -149,7 +149,7 @@ private:
             if (!BEAST_EXPECT(loanSle))
                 return f;
             std::uint32_t const dueDate = loanSle->at(sfNextPaymentDueDate);
-            env.close(NetClock::time_point{NetClock::duration{dueDate}} + 1s);
+            env.close(NetClock::TimePoint{NetClock::Duration{dueDate}} + 1s);
 
             env(manage(f.lender, f.loanKeylet->key, tfLoanImpair), Ter(tesSUCCESS));
             env.close();

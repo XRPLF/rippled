@@ -29,112 +29,112 @@ namespace xrpl {
 
 // Typed field canonical values
 
-using UInt8Value = std::decay_t<typename SF_UINT8::type::value_type>;
+using UInt8Value = std::decay_t<typename SF_UINT8::Type::ValueType>;
 inline UInt8Value
 canonical_UINT8()
 {
     return UInt8Value{1};
 }
 
-using UInt16Value = std::decay_t<typename SF_UINT16::type::value_type>;
+using UInt16Value = std::decay_t<typename SF_UINT16::Type::ValueType>;
 inline UInt16Value
 canonical_UINT16()
 {
     return UInt16Value{1};
 }
 
-using UInt32Value = std::decay_t<typename SF_UINT32::type::value_type>;
+using UInt32Value = std::decay_t<typename SF_UINT32::Type::ValueType>;
 inline UInt32Value
 canonical_UINT32()
 {
     return UInt32Value{1};
 }
 
-using UInt64Value = std::decay_t<typename SF_UINT64::type::value_type>;
+using UInt64Value = std::decay_t<typename SF_UINT64::Type::ValueType>;
 inline UInt64Value
 canonical_UINT64()
 {
     return UInt64Value{1};
 }
 
-using UInt128Value = std::decay_t<typename SF_UINT128::type::value_type>;
+using UInt128Value = std::decay_t<typename SF_UINT128::Type::ValueType>;
 inline UInt128Value
 canonical_UINT128()
 {
     return UInt128Value{1};
 }
 
-using UInt160Value = std::decay_t<typename SF_UINT160::type::value_type>;
+using UInt160Value = std::decay_t<typename SF_UINT160::Type::ValueType>;
 inline UInt160Value
 canonical_UINT160()
 {
     return UInt160Value{1};
 }
 
-using UInt192Value = std::decay_t<typename SF_UINT192::type::value_type>;
+using UInt192Value = std::decay_t<typename SF_UINT192::Type::ValueType>;
 inline UInt192Value
 canonical_UINT192()
 {
     return UInt192Value{1};
 }
 
-using UInt256Value = std::decay_t<typename SF_UINT256::type::value_type>;
+using UInt256Value = std::decay_t<typename SF_UINT256::Type::ValueType>;
 inline UInt256Value
 canonical_UINT256()
 {
     return UInt256Value{1};
 }
 
-using Int32Value = std::decay_t<typename SF_INT32::type::value_type>;
+using Int32Value = std::decay_t<typename SF_INT32::Type::ValueType>;
 inline Int32Value
 canonical_INT32()
 {
     return Int32Value{42};
 }
 
-using NumberValue = std::decay_t<typename SF_NUMBER::type::value_type>;
+using NumberValue = std::decay_t<typename SF_NUMBER::Type::ValueType>;
 inline NumberValue
 canonical_NUMBER()
 {
     return NumberValue{123};
 }
 
-using AmountValue = std::decay_t<typename SF_AMOUNT::type::value_type>;
+using AmountValue = std::decay_t<typename SF_AMOUNT::Type::ValueType>;
 inline AmountValue
 canonical_AMOUNT()
 {
     return AmountValue{XRPAmount{1}};
 }
 
-using AccountValue = std::decay_t<typename SF_ACCOUNT::type::value_type>;
+using AccountValue = std::decay_t<typename SF_ACCOUNT::Type::ValueType>;
 inline AccountValue
 canonical_ACCOUNT()
 {
     return xrpAccount();
 }
 
-using CurrencyValue = std::decay_t<typename SF_CURRENCY::type::value_type>;
+using CurrencyValue = std::decay_t<typename SF_CURRENCY::Type::ValueType>;
 inline CurrencyValue
 canonical_CURRENCY()
 {
     return xrpCurrency();
 }
 
-using IssueValue = std::decay_t<typename SF_ISSUE::type::value_type>;
+using IssueValue = std::decay_t<typename SF_ISSUE::Type::ValueType>;
 inline IssueValue
 canonical_ISSUE()
 {
     return IssueValue{xrpIssue()};
 }
 
-using Vector256Value = std::decay_t<typename SF_VECTOR256::type::value_type>;
+using Vector256Value = std::decay_t<typename SF_VECTOR256::Type::ValueType>;
 inline Vector256Value
 canonical_VECTOR256()
 {
     return Vector256Value{UInt256{1}};
 }
 
-using BlobValue = std::decay_t<typename SF_VL::type::value_type>;
+using BlobValue = std::decay_t<typename SF_VL::Type::ValueType>;
 inline BlobValue
 canonical_VL()
 {
@@ -142,7 +142,7 @@ canonical_VL()
     return BlobValue{data.data(), data.size()};
 }
 
-using XChainBridgeValue = std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type>;
+using XChainBridgeValue = std::decay_t<typename SF_XCHAIN_BRIDGE::Type::ValueType>;
 inline XChainBridgeValue
 canonical_XCHAIN_BRIDGE()
 {

@@ -165,7 +165,7 @@ public:
 
 static ErrorCodeI
 acctMatchesPubKey(
-    SLE::const_pointer accountState,
+    SLE::ConstPointer accountState,
     AccountID const& accountID,
     PublicKey const& publicKey)
 {
@@ -523,7 +523,7 @@ transactionPreProcessImpl(
     if (!verify && !txJson.isMember(jss::Sequence))
         return rpc::missingFieldError("tx_json.Sequence");
 
-    SLE::const_pointer sle;
+    SLE::ConstPointer sle;
     if (verify)
         sle = app.getOpenLedger().current()->read(keylet::account(srcAddressID));
 
@@ -706,16 +706,16 @@ transactionPreProcessImpl(
     return TransactionPreProcessResult{std::move(stTx)};
 }
 
-static std::pair<json::Value, Transaction::pointer>
+static std::pair<json::Value, Transaction::Pointer>
 transactionConstructImpl(
     std::shared_ptr<STTx const> const& stTx,
     Rules const& rules,
     Application& app)
 {
-    std::pair<json::Value, Transaction::pointer> ret;
+    std::pair<json::Value, Transaction::Pointer> ret;
 
     // Turn the passed in STTx into a Transaction.
-    Transaction::pointer tpTrans;
+    Transaction::Pointer tpTrans;
     {
         std::string reason;
         tpTrans = std::make_shared<Transaction>(stTx, reason, app);
@@ -779,7 +779,7 @@ transactionConstructImpl(
 }
 
 static json::Value
-transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
+transactionFormatResultImpl(Transaction::Pointer tpTrans, unsigned apiVersion)
 {
     json::Value jvResult;
     try
@@ -1030,7 +1030,7 @@ transactionSign(
         return preprocResult.first;
 
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<json::Value, Transaction::pointer> const txn =
+    std::pair<json::Value, Transaction::Pointer> const txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
 
     if (!txn.second)
@@ -1067,7 +1067,7 @@ transactionSubmit(
         return preprocResult.first;
 
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<json::Value, Transaction::pointer> txn =
+    std::pair<json::Value, Transaction::Pointer> txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
 
     if (!txn.second)
@@ -1238,7 +1238,7 @@ transactionSignFor(
         signForParams.validMultiSign(), "xrpl::rpc::transactionSignFor : valid multi-signature");
 
     {
-        SLE::const_pointer const accountState = ledger->read(keylet::account(*signerAccountID));
+        SLE::ConstPointer const accountState = ledger->read(keylet::account(*signerAccountID));
         // Make sure the account and secret belong together.
         auto const err =
             acctMatchesPubKey(accountState, *signerAccountID, signForParams.getPublicKey());
@@ -1278,7 +1278,7 @@ transactionSignFor(
     }
 
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<json::Value, Transaction::pointer> const txn =
+    std::pair<json::Value, Transaction::Pointer> const txn =
         transactionConstructImpl(sttx, ledger->rules(), app);
 
     if (!txn.second)
@@ -1327,7 +1327,7 @@ transactionSubmitMultiSigned(
     if (rpc::containsError(txJsonResult))
         return std::move(txJsonResult);
 
-    SLE::const_pointer const sle = ledger->read(keylet::account(srcAddressID));
+    SLE::ConstPointer const sle = ledger->read(keylet::account(srcAddressID));
 
     if (!sle)
     {
@@ -1448,7 +1448,7 @@ transactionSubmitMultiSigned(
         return err;
 
     // Make sure the SerializedTransaction makes a legitimate Transaction.
-    std::pair<json::Value, Transaction::pointer> txn =
+    std::pair<json::Value, Transaction::Pointer> txn =
         transactionConstructImpl(stTx, ledger->rules(), app);
 
     if (!txn.second)

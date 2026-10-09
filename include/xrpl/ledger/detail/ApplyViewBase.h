@@ -47,10 +47,10 @@ public:
     [[nodiscard]] bool
     exists(Keylet const& k) const override;
 
-    [[nodiscard]] std::optional<key_type>
-    succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override;
+    [[nodiscard]] std::optional<Key>
+    succ(Key const& key, std::optional<Key> const& last = std::nullopt) const override;
 
-    [[nodiscard]] SLE::const_pointer
+    [[nodiscard]] SLE::ConstPointer
     read(Keylet const& k) const override;
 
     [[nodiscard]] std::unique_ptr<SlesType::IterBase>
@@ -69,17 +69,17 @@ public:
     txsEnd() const override;
 
     [[nodiscard]] bool
-    txExists(key_type const& key) const override;
+    txExists(Key const& key) const override;
 
     [[nodiscard]] TxType
-    txRead(key_type const& key) const override;
+    txRead(Key const& key) const override;
 
     // ApplyView
 
     [[nodiscard]] ApplyFlags
     flags() const override;
 
-    SLE::pointer
+    SLE::Pointer
     peek(Keylet const& k) override;
 
     void

@@ -805,21 +805,21 @@ readOrpeekBridge(F&& getter, STXChainBridge const& bridgeSpec)
     return tryGet(STXChainBridge::ChainType::Issuing);
 }
 
-SLE::pointer
+SLE::Pointer
 peekBridge(ApplyView& v, STXChainBridge const& bridgeSpec)
 {
     return readOrpeekBridge<SLE>(
-        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::pointer {
+        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::Pointer {
             return v.peek(keylet::bridge(b, ct));
         },
         bridgeSpec);
 }
 
-SLE::const_pointer
+SLE::ConstPointer
 readBridge(ReadView const& v, STXChainBridge const& bridgeSpec)
 {
     return readOrpeekBridge<SLE const>(
-        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::const_pointer {
+        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::ConstPointer {
             return v.read(keylet::bridge(b, ct));
         },
         bridgeSpec);

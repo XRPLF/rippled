@@ -873,7 +873,7 @@ deleteAMMAccount(Sandbox& view, Asset const& asset, Asset const& asset2, beast::
 void
 initializeFeeAuctionVote(
     ApplyView& view,
-    SLE::pointer& ammSle,
+    SLE::Pointer& ammSle,
     AccountID const& account,
     Asset const& lptAsset,
     std::uint16_t tfee);
@@ -895,7 +895,7 @@ std::expected<bool, TER>
 verifyAndAdjustLPTokenBalance(
     Sandbox& sb,
     STAmount const& lpTokens,
-    SLE::pointer& ammSle,
+    SLE::Pointer& ammSle,
     AccountID const& account);
 
 }  // namespace xrpl

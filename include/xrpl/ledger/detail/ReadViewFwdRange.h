@@ -14,13 +14,13 @@ namespace detail {
 
 // A type-erased ForwardIterator
 //
-template <class ValueType>
+template <class T>
 class ReadViewFwdIter
 {
 public:
     using BaseType = ReadViewFwdIter;
 
-    using value_type = ValueType;
+    using ValueType = T;
 
     ReadViewFwdIter() = default;
     ReadViewFwdIter(ReadViewFwdIter const&) = default;
@@ -38,35 +38,38 @@ public:
     virtual void
     increment() = 0;
 
-    [[nodiscard]] virtual value_type
+    [[nodiscard]] virtual ValueType
     dereference() const = 0;
 };
 
 // A range using type-erased ForwardIterator
 //
-template <class ValueType>
+template <class T>
 class ReadViewFwdRange
 {
 public:
-    using IterBase = ReadViewFwdIter<ValueType>;
+    using IterBase = ReadViewFwdIter<T>;
 
     static_assert(
-        std::is_nothrow_move_constructible<ValueType>{},
+        std::is_nothrow_move_constructible<T>{},
         "ReadViewFwdRange move and move assign constructors should be "
         "noexcept");
 
     class Iterator
     {
     public:
+        using ValueType = T;
+        using Pointer = ValueType const*;
+        using Reference = ValueType const&;
+        using DifferenceType = std::ptrdiff_t;
+        using IteratorCategory = std::forward_iterator_tag;
+
+        // Required by std::iterator_traits.
+        // NOLINTBEGIN(readability-identifier-naming)
         using value_type = ValueType;
-
-        using pointer = value_type const*;
-
-        using reference = value_type const&;
-
-        using difference_type = std::ptrdiff_t;
-
-        using iterator_category = std::forward_iterator_tag;
+        using difference_type = DifferenceType;
+        using iterator_category = IteratorCategory;
+        // NOLINTEND(readability-identifier-naming)
 
         Iterator() = default;
 
@@ -86,11 +89,11 @@ public:
         operator==(Iterator const& other) const;
 
         // Can throw
-        reference
+        Reference
         operator*() const;
 
         // Can throw
-        pointer
+        Pointer
         operator->() const;
 
         Iterator&
@@ -108,9 +111,11 @@ public:
     static_assert(std::is_nothrow_move_constructible<Iterator>{});
     static_assert(std::is_nothrow_move_assignable<Iterator>{});
 
+    // Required by boost::range_const_iterator.
+    // NOLINTNEXTLINE(readability-identifier-naming)
     using const_iterator = Iterator;
 
-    using value_type = ValueType;
+    using ValueType = T;
 
     ReadViewFwdRange() = delete;
     ReadViewFwdRange(ReadViewFwdRange const&) = default;

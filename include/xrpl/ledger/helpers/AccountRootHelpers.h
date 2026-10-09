@@ -212,7 +212,7 @@ increaseOwnerCount(
     increaseOwnerCount(
         view,
         view.peek(keylet::account(account)),
-        sponsor ? view.peek(keylet::account(*sponsor)) : SLE::pointer(),
+        sponsor ? view.peek(keylet::account(*sponsor)) : SLE::Pointer(),
         count,
         j);
 }
@@ -259,7 +259,7 @@ decreaseOwnerCount(
     decreaseOwnerCount(
         view,
         view.peek(keylet::account(account)),
-        sponsor ? view.peek(keylet::account(*sponsor)) : SLE::pointer(),
+        sponsor ? view.peek(keylet::account(*sponsor)) : SLE::Pointer(),
         count,
         j);
 }
@@ -367,7 +367,7 @@ getPseudoAccountFields();
  * - null pointer
  */
 [[nodiscard]] bool
-isPseudoAccount(SLE::const_pointer sleAcct);
+isPseudoAccount(SLE::ConstPointer sleAcct);
 
 /**
  * Convenience overload that reads the account from the view.
@@ -386,7 +386,7 @@ isPseudoAccount(ReadView const& view, AccountID const& accountId)
  * before using a field. The amendment check is **not** performed in
  * createPseudoAccount.
  */
-[[nodiscard]] std::expected<SLE::pointer, TER>
+[[nodiscard]] std::expected<SLE::Pointer, TER>
 createPseudoAccount(ApplyView& view, UInt256 const& pseudoOwnerKey, SField const& ownerField);
 
 /**

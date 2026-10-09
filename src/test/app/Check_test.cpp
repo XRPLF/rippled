@@ -58,10 +58,10 @@ class Check_test : public beast::unit_test::Suite
     }
 
     // Helper function that returns the Checks on an account.
-    static std::vector<SLE::const_pointer>
+    static std::vector<SLE::ConstPointer>
     checksOnAccount(test::jtx::Env& env, test::jtx::Account account)
     {
-        std::vector<SLE::const_pointer> result;
+        std::vector<SLE::ConstPointer> result;
         forEachItem(*env.current(), account, [&result](SLE::ConstRef sle) {
             if (sle && sle->getType() == ltCHECK)
                 result.push_back(sle);
@@ -358,7 +358,7 @@ class Check_test : public beast::unit_test::Suite
 
         // Bad expiration.
         env(check::create(alice, bob, usd(50)),
-            Expiration(NetClock::time_point{}),
+            Expiration(NetClock::TimePoint{}),
             Ter(temBAD_EXPIRATION));
         env.close();
 

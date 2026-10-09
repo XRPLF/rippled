@@ -519,7 +519,7 @@ protected:
         ReadView const& view,
         AccountID const& idSigner,
         AccountID const& idAccount,
-        SLE::const_pointer sleAccount,
+        SLE::ConstPointer sleAccount,
         beast::Journal const j);
 
     static NotTEC
@@ -541,7 +541,7 @@ private:
     reset(XRPAmount fee);
 
     TER
-    consumeSeqProxy(SLE::pointer const& sleAccount);
+    consumeSeqProxy(SLE::Pointer const& sleAccount);
     TER
     payFee();
 

@@ -41,24 +41,24 @@ class PartitionedUnorderedMap
     std::size_t partitions_;
 
 public:
-    using key_type = Key;
-    using mapped_type = Value;
-    using value_type = std::pair<Key const, mapped_type>;
-    using size_type = std::size_t;
-    using difference_type = std::size_t;
-    using hasher = Hash;
-    using key_equal = Pred;
-    using allocator_type = Alloc;
-    using reference = value_type&;
-    using const_reference = value_type const&;
-    using pointer = value_type*;
-    using const_pointer = value_type const*;
-    using MapType = std::unordered_map<key_type, mapped_type, hasher, key_equal, allocator_type>;
+    using KeyType = Key;
+    using MappedType = Value;
+    using ValueType = std::pair<Key const, MappedType>;
+    using SizeType = std::size_t;
+    using DifferenceType = std::size_t;
+    using Hasher = Hash;
+    using KeyEqual = Pred;
+    using AllocatorType = Alloc;
+    using Reference = ValueType&;
+    using ConstReference = ValueType const&;
+    using Pointer = ValueType*;
+    using ConstPointer = ValueType const*;
+    using MapType = std::unordered_map<KeyType, MappedType, Hasher, KeyEqual, AllocatorType>;
     using PartitionMapType = std::vector<MapType>;
 
     struct Iterator
     {
-        using iterator_category = std::forward_iterator_tag;
+        using IteratorCategory = std::forward_iterator_tag;
         PartitionMapType* map{nullptr};
         PartitionMapType::iterator ait{};
         MapType::iterator mit;
@@ -69,13 +69,13 @@ public:
         {
         }
 
-        reference
+        Reference
         operator*() const
         {
             return *mit;
         }
 
-        pointer
+        Pointer
         operator->() const
         {
             return &(*mit);
@@ -120,7 +120,7 @@ public:
 
     struct ConstIterator
     {
-        using iterator_category = std::forward_iterator_tag;
+        using IteratorCategory = std::forward_iterator_tag;
 
         PartitionMapType* map{nullptr};
         PartitionMapType::iterator ait{};
@@ -136,13 +136,13 @@ public:
         {
         }
 
-        const_reference
+        ConstReference
         operator*() const
         {
             return *mit;
         }
 
-        const_pointer
+        ConstPointer
         operator->() const
         {
             return &(*mit);
@@ -287,7 +287,7 @@ public:
 private:
     template <class T>
     void
-    find(key_type const& key, T& it) const
+    find(KeyType const& key, T& it) const
     {
         it.ait = it.map->begin() + partitioner(key);
         it.mit = it.ait->find(key);
@@ -297,7 +297,7 @@ private:
 
 public:
     Iterator
-    find(key_type const& key)
+    find(KeyType const& key)
     {
         Iterator it(&map_);
         find(key, it);
@@ -305,7 +305,7 @@ public:
     }
 
     ConstIterator
-    find(key_type const& key) const
+    find(KeyType const& key) const
     {
         ConstIterator it(&map_);
         find(key, it);

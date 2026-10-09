@@ -92,14 +92,22 @@ public:
 class ManualClock
 {
 public:
-    using rep = uint64_t;
-    using period = std::milli;
-    using duration = std::chrono::duration<std::uint32_t, period>;
-    using time_point = std::chrono::time_point<ManualClock>;
+    using Rep = uint64_t;
+    using Period = std::milli;
+    using Duration = std::chrono::duration<std::uint32_t, Period>;
+    using TimePoint = std::chrono::time_point<ManualClock, Duration>;
+
+    // Required by the std Clock contract.
+    // NOLINTBEGIN(readability-identifier-naming)
+    using rep = Rep;
+    using period = Period;
+    using duration = Duration;
+    using time_point = TimePoint;
+    // NOLINTEND(readability-identifier-naming)
     inline static bool const is_steady = false;  // NOLINT(readability-identifier-naming)
 
     static void
-    advance(duration d) noexcept
+    advance(Duration d) noexcept
     {
         kNow += d;
     }
@@ -113,25 +121,25 @@ public:
     static void
     reset() noexcept
     {
-        kNow = time_point(seconds(0));
+        kNow = TimePoint(seconds(0));
     }
 
-    static time_point
+    static TimePoint
     now() noexcept
     {
         return kNow;
     }
 
-    static duration
+    static Duration
     randDuration(milliseconds min, milliseconds max)
     {
-        return duration(milliseconds(randInt(min.count(), max.count())));
+        return Duration(milliseconds(randInt(min.count(), max.count())));
     }
 
     explicit ManualClock() = default;
 
 private:
-    inline static time_point kNow = time_point(seconds(0));
+    inline static TimePoint kNow = TimePoint(seconds(0));
 };
 
 /**
@@ -788,20 +796,20 @@ protected:
     }
 
     /**
-     * Send squelch (if duration is set) or unsquelch (if duration not set)
+     * Send squelch (if Duration is set) or unsquelch (if Duration not set)
      */
     static Peer::ID
     sendSquelch(
         PublicKey const& validator,
         PeerWPtr const& peerPtr,
-        std::optional<std::uint32_t> duration)
+        std::optional<std::uint32_t> Duration)
     {
         protocol::TMSquelch squelch;
-        bool const res = static_cast<bool>(duration);
+        bool const res = static_cast<bool>(Duration);
         squelch.set_squelch(res);
         squelch.set_validatorpubkey(validator.data(), validator.size());
         if (res)
-            squelch.set_squelchduration(*duration);
+            squelch.set_squelchduration(*Duration);
         auto sp = peerPtr.lock();
         assert(sp);
         std::dynamic_pointer_cast<PeerSim>(sp)->send(squelch);
@@ -823,7 +831,7 @@ protected:
         Peer::ID peer{};
         std::uint16_t validator{};
         std::optional<PublicKey> key;
-        time_point<ManualClock> time;
+        ManualClock::TimePoint time;
         bool handled = false;
     };
 
@@ -836,7 +844,7 @@ protected:
     {
         std::unordered_map<EventType, Event> events{
             {EventType::LinkDown, {}}, {EventType::PeerDisconnected, {}}};
-        time_point<ManualClock> lastCheck = ManualClock::now();
+        ManualClock::TimePoint lastCheck = ManualClock::now();
 
         network_.reset();
         network_.propagate([&](Link& link, MessageSPtr m) {
@@ -847,9 +855,9 @@ protected:
             std::stringstream str;
 
             link.send(
-                m, [&](PublicKey const& key, PeerWPtr const& peerPtr, std::uint32_t duration) {
+                m, [&](PublicKey const& key, PeerWPtr const& peerPtr, std::uint32_t Duration) {
                     assert(key == validator);
-                    auto p = sendSquelch(key, peerPtr, duration);
+                    auto p = sendSquelch(key, peerPtr, Duration);
                     squelched = true;
                     str << p << " ";
                 });
@@ -1055,9 +1063,9 @@ protected:
                 std::uint16_t squelched = 0;
                 link.send(
                     message,
-                    [&](PublicKey const& key, PeerWPtr const& peerPtr, std::uint32_t duration) {
+                    [&](PublicKey const& key, PeerWPtr const& peerPtr, std::uint32_t Duration) {
                         squelched++;
-                        sendSquelch(key, peerPtr, duration);
+                        sendSquelch(key, peerPtr, Duration);
                     });
                 if (squelched)
                 {
@@ -1095,7 +1103,7 @@ protected:
             [&](Link& link, MessageSPtr message) {
                 link.send(
                     message,
-                    [&](PublicKey const& key, PeerWPtr const& peerPtr, std::uint32_t duration) {
+                    [&](PublicKey const& key, PeerWPtr const& peerPtr, std::uint32_t Duration) {
                         squelched = true;
                         BEAST_EXPECT(false);
                     });
@@ -1389,9 +1397,9 @@ vp_base_squelch_max_selected_peers=2
     {
         Handler() = default;
         void
-        squelch(PublicKey const&, Peer::ID, std::uint32_t duration) const override
+        squelch(PublicKey const&, Peer::ID, std::uint32_t Duration) const override
         {
-            maxDuration = std::max<uint32_t>(duration, maxDuration);
+            maxDuration = std::max<uint32_t>(Duration, maxDuration);
         }
         void
         unsquelch(PublicKey const&, Peer::ID) const override
@@ -1431,7 +1439,7 @@ vp_base_squelch_max_selected_peers=2
             };
 
             using namespace reduce_relay;
-            // expect max duration less than kMaxUnsquelchExpireDefault with
+            // expect max Duration less than kMaxUnsquelchExpireDefault with
             // less than or equal to 60 peers
             run(20);
             BEAST_EXPECT(
@@ -1441,12 +1449,12 @@ vp_base_squelch_max_selected_peers=2
             BEAST_EXPECT(
                 handler.maxDuration >= kMinUnsquelchExpire.count() &&
                 handler.maxDuration <= kMaxUnsquelchExpireDefault.count());
-            // expect max duration greater than kMinUnsquelchExpire and less
+            // expect max Duration greater than kMinUnsquelchExpire and less
             // than kMaxUnsquelchExpirePeers with peers greater than 60
             // and less than 360
             run(350);
             // can't make this condition stronger. squelch
-            // duration is probabilistic and max condition may still fail.
+            // Duration is probabilistic and max condition may still fail.
             // log when the value is low
             BEAST_EXPECT(
                 handler.maxDuration >= kMinUnsquelchExpire.count() &&
@@ -1454,7 +1462,7 @@ vp_base_squelch_max_selected_peers=2
             using namespace beast::unit_test::detail;
             if (handler.maxDuration <= kMaxUnsquelchExpireDefault.count())
             {
-                log << makeReason("warning: squelch duration is low", __FILE__, __LINE__)
+                log << makeReason("warning: squelch Duration is low", __FILE__, __LINE__)
                     << std::endl
                     << std::flush;
             }
@@ -1465,7 +1473,7 @@ vp_base_squelch_max_selected_peers=2
                 handler.maxDuration <= kMaxUnsquelchExpirePeers.count());
             if (handler.maxDuration <= kMaxUnsquelchExpireDefault.count())
             {
-                log << makeReason("warning: squelch duration is low", __FILE__, __LINE__)
+                log << makeReason("warning: squelch Duration is low", __FILE__, __LINE__)
                     << std::endl
                     << std::flush;
             }

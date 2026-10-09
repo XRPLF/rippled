@@ -11,7 +11,7 @@ template <bool IsConst, class T>
 struct MaybeConst
 {
     explicit MaybeConst() = default;
-    using type = std::
+    using Type = std::
         conditional_t<IsConst, typename std::remove_const<T>::type const, std::remove_const_t<T>>;
 };
 

@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_XCHAIN_BRIDGE::type::value_type
+    SF_XCHAIN_BRIDGE::Type::ValueType
     getXChainBridge() const
     {
         return this->tx_->at(sfXChainBridge);
@@ -63,7 +63,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getSignatureReward() const
     {
         return this->tx_->at(sfSignatureReward);
@@ -74,7 +74,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getOtherChainSource() const
     {
         return this->tx_->at(sfOtherChainSource);
@@ -100,9 +100,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    XChainCreateClaimIDBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    XChainCreateClaimIDBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_XCHAIN_BRIDGE::Type::ValueType> const& xChainBridge,                     std::decay_t<typename SF_AMOUNT::Type::ValueType> const& signatureReward,                     std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& otherChainSource,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<XChainCreateClaimIDBuilder>(ttXCHAIN_CREATE_CLAIM_ID, account, sequence, fee)
     {
@@ -134,7 +134,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainCreateClaimIDBuilder&
-    setXChainBridge(std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& value)
+    setXChainBridge(std::decay_t<typename SF_XCHAIN_BRIDGE::Type::ValueType> const& value)
     {
         object_[sfXChainBridge] = value;
         return *this;
@@ -145,7 +145,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainCreateClaimIDBuilder&
-    setSignatureReward(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setSignatureReward(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfSignatureReward] = value;
         return *this;
@@ -156,7 +156,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainCreateClaimIDBuilder&
-    setOtherChainSource(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setOtherChainSource(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfOtherChainSource] = value;
         return *this;

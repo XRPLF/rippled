@@ -53,7 +53,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
+    SF_ISSUE::Type::ValueType
     getAsset() const
     {
         return this->tx_->at(sfAsset);
@@ -64,7 +64,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    protocol_autogen::Optional<SF_NUMBER::Type::ValueType>
     getAssetsMaximum() const
     {
         if (hasAssetsMaximum())
@@ -90,7 +90,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getMPTokenMetadata() const
     {
         if (hasMPTokenMetadata())
@@ -116,7 +116,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getDomainID() const
     {
         if (hasDomainID())
@@ -142,7 +142,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    protocol_autogen::Optional<SF_UINT8::Type::ValueType>
     getWithdrawalPolicy() const
     {
         if (hasWithdrawalPolicy())
@@ -168,7 +168,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getData() const
     {
         if (hasData())
@@ -194,7 +194,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    protocol_autogen::Optional<SF_UINT8::Type::ValueType>
     getScale() const
     {
         if (hasScale())
@@ -220,7 +220,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    protocol_autogen::Optional<SF_UINT8::Type::ValueType>
     getVaultKind() const
     {
         if (hasVaultKind())
@@ -246,7 +246,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getSubscriptionDate() const
     {
         if (hasSubscriptionDate())
@@ -272,7 +272,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getRedemptionDate() const
     {
         if (hasRedemptionDate())
@@ -311,9 +311,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    VaultCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    VaultCreateBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_ISSUE::Type::ValueType> const& asset,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<VaultCreateBuilder>(ttVAULT_CREATE, account, sequence, fee)
     {
@@ -344,7 +344,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
-    setAsset(std::decay_t<typename SF_ISSUE::type::value_type> const& value)
+    setAsset(std::decay_t<typename SF_ISSUE::Type::ValueType> const& value)
     {
         object_[sfAsset] = STIssue(sfAsset, value);
         return *this;
@@ -355,7 +355,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
-    setAssetsMaximum(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    setAssetsMaximum(std::decay_t<typename SF_NUMBER::Type::ValueType> const& value)
     {
         object_[sfAssetsMaximum] = value;
         return *this;
@@ -366,7 +366,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
-    setMPTokenMetadata(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setMPTokenMetadata(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfMPTokenMetadata] = value;
         return *this;
@@ -377,7 +377,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
-    setDomainID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setDomainID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfDomainID] = value;
         return *this;
@@ -388,7 +388,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
-    setWithdrawalPolicy(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    setWithdrawalPolicy(std::decay_t<typename SF_UINT8::Type::ValueType> const& value)
     {
         object_[sfWithdrawalPolicy] = value;
         return *this;
@@ -399,7 +399,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
-    setData(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setData(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfData] = value;
         return *this;
@@ -410,7 +410,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
-    setScale(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    setScale(std::decay_t<typename SF_UINT8::Type::ValueType> const& value)
     {
         object_[sfScale] = value;
         return *this;
@@ -421,7 +421,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
-    setVaultKind(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    setVaultKind(std::decay_t<typename SF_UINT8::Type::ValueType> const& value)
     {
         object_[sfVaultKind] = value;
         return *this;
@@ -432,7 +432,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
-    setSubscriptionDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setSubscriptionDate(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfSubscriptionDate] = value;
         return *this;
@@ -443,7 +443,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
-    setRedemptionDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setRedemptionDate(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfRedemptionDate] = value;
         return *this;

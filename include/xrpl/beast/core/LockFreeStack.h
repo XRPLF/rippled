@@ -17,12 +17,12 @@ protected:
     using NodePtr = std::conditional_t<IsConst, Node const*, Node*>;
 
 public:
-    using iterator_category = std::forward_iterator_tag;
-    using value_type = Container::value_type;
-    using difference_type = Container::difference_type;
-    using pointer =
+    using IteratorCategory = std::forward_iterator_tag;
+    using ValueType = Container::value_type;
+    using DifferenceType = Container::difference_type;
+    using Pointer =
         std::conditional_t<IsConst, typename Container::const_pointer, typename Container::pointer>;
-    using reference = std::
+    using Reference = std::
         conditional_t<IsConst, typename Container::const_reference, typename Container::reference>;
 
     LockFreeStackIterator() = default;
@@ -65,16 +65,16 @@ public:
         return node_;
     }
 
-    reference
+    Reference
     operator*() const
     {
         return *this->operator->();
     }
 
-    pointer
+    Pointer
     operator->() const
     {
-        return static_cast<pointer>(node_);
+        return static_cast<Pointer>(node_);
     }
 
 private:
@@ -145,15 +145,15 @@ public:
     };
 
 public:
-    using value_type = Element;
-    using pointer = Element*;
-    using reference = Element&;
-    using const_pointer = Element const*;
-    using const_reference = Element const&;
-    using size_type = std::size_t;
-    using difference_type = std::ptrdiff_t;
-    using iterator = LockFreeStackIterator<LockFreeStack<Element, Tag>, false>;
-    using const_iterator = LockFreeStackIterator<LockFreeStack<Element, Tag>, true>;
+    using ValueType = Element;
+    using Pointer = Element*;
+    using Reference = Element&;
+    using ConstPointer = Element const*;
+    using ConstReference = Element const&;
+    using SizeType = std::size_t;
+    using DifferenceType = std::ptrdiff_t;
+    using Iterator = LockFreeStackIterator<LockFreeStack<Element, Tag>, false>;
+    using ConstIterator = LockFreeStackIterator<LockFreeStack<Element, Tag>, true>;
 
     LockFreeStack() : end_(nullptr), head_(&end_)
     {
@@ -232,40 +232,40 @@ public:
      *     Caller is responsible for synchronization.
      */
     /** @{ */
-    iterator
+    Iterator
     begin()
     {
-        return iterator(head_.load());
+        return Iterator(head_.load());
     }
 
-    iterator
+    Iterator
     end()
     {
-        return iterator(&end_);
+        return Iterator(&end_);
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const
     {
-        return const_iterator(head_.load());
+        return ConstIterator(head_.load());
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const
     {
-        return const_iterator(&end_);
+        return ConstIterator(&end_);
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cbegin() const
     {
-        return const_iterator(head_.load());
+        return ConstIterator(head_.load());
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cend() const
     {
-        return const_iterator(&end_);
+        return ConstIterator(&end_);
     }
     /** @} */
 

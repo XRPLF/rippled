@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT192::type::value_type
+    SF_UINT192::Type::ValueType
     getMPTokenIssuanceID() const
     {
         return this->tx_->at(sfMPTokenIssuanceID);
@@ -63,7 +63,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getHolder() const
     {
         if (hasHolder())
@@ -89,7 +89,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getDomainID() const
     {
         if (hasDomainID())
@@ -115,7 +115,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getMPTokenMetadata() const
     {
         if (hasMPTokenMetadata())
@@ -141,7 +141,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT16::type::value_type>
+    protocol_autogen::Optional<SF_UINT16::Type::ValueType>
     getTransferFee() const
     {
         if (hasTransferFee())
@@ -167,7 +167,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getImmutableFlags() const
     {
         if (hasImmutableFlags())
@@ -193,7 +193,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getIssuerEncryptionKey() const
     {
         if (hasIssuerEncryptionKey())
@@ -219,7 +219,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getAuditorEncryptionKey() const
     {
         if (hasAuditorEncryptionKey())
@@ -258,9 +258,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    MPTokenIssuanceSetBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    MPTokenIssuanceSetBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT192::Type::ValueType> const& mPTokenIssuanceID,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<MPTokenIssuanceSetBuilder>(ttMPTOKEN_ISSUANCE_SET, account, sequence, fee)
     {
@@ -290,7 +290,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
-    setMPTokenIssuanceID(std::decay_t<typename SF_UINT192::type::value_type> const& value)
+    setMPTokenIssuanceID(std::decay_t<typename SF_UINT192::Type::ValueType> const& value)
     {
         object_[sfMPTokenIssuanceID] = value;
         return *this;
@@ -301,7 +301,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
-    setHolder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setHolder(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfHolder] = value;
         return *this;
@@ -312,7 +312,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
-    setDomainID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setDomainID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfDomainID] = value;
         return *this;
@@ -323,7 +323,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
-    setMPTokenMetadata(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setMPTokenMetadata(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfMPTokenMetadata] = value;
         return *this;
@@ -334,7 +334,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
-    setTransferFee(std::decay_t<typename SF_UINT16::type::value_type> const& value)
+    setTransferFee(std::decay_t<typename SF_UINT16::Type::ValueType> const& value)
     {
         object_[sfTransferFee] = value;
         return *this;
@@ -345,7 +345,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
-    setImmutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setImmutableFlags(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfImmutableFlags] = value;
         return *this;
@@ -356,7 +356,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
-    setIssuerEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setIssuerEncryptionKey(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfIssuerEncryptionKey] = value;
         return *this;
@@ -367,7 +367,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
-    setAuditorEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setAuditorEncryptionKey(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfAuditorEncryptionKey] = value;
         return *this;

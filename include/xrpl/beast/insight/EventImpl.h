@@ -10,11 +10,11 @@ class Event;
 class EventImpl : public std::enable_shared_from_this<EventImpl>
 {
 public:
-    using value_type = std::chrono::milliseconds;
+    using ValueType = std::chrono::milliseconds;
 
     virtual ~EventImpl() = 0;
     virtual void
-    notify(value_type const& value) = 0;
+    notify(ValueType const& value) = 0;
 };
 
 }  // namespace beast::insight

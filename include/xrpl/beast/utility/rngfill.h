@@ -10,8 +10,8 @@ template <class Generator>
 void
 rngfill(void* const buffer, std::size_t const bytes, Generator& g)
 {
-    using result_type = Generator::result_type;
-    constexpr std::size_t kResultSize = sizeof(result_type);
+    using ResultType = Generator::result_type;
+    constexpr std::size_t kResultSize = sizeof(ResultType);
 
     auto* const bufferStart = static_cast<std::uint8_t*>(buffer);
     std::size_t const completeIterations = bytes / kResultSize;
@@ -19,14 +19,14 @@ rngfill(void* const buffer, std::size_t const bytes, Generator& g)
 
     for (std::size_t count = 0; count < completeIterations; ++count)
     {
-        result_type const v = g();
+        ResultType const v = g();
         std::size_t const offset = count * kResultSize;
         std::memcpy(bufferStart + offset, &v, kResultSize);
     }
 
     if (bytesRemaining > 0)
     {
-        result_type const v = g();
+        ResultType const v = g();
         std::size_t const offset = completeIterations * kResultSize;
         std::memcpy(bufferStart + offset, &v, bytesRemaining);
     }
@@ -37,9 +37,9 @@ void
 rngfill(std::array<std::uint8_t, N>& a, Generator& g)
     requires(N % sizeof(typename Generator::result_type) == 0)
 {
-    using result_type = Generator::result_type;
-    auto i = N / sizeof(result_type);
-    auto* p = reinterpret_cast<result_type*>(a.data());
+    using ResultType = Generator::result_type;
+    auto i = N / sizeof(ResultType);
+    auto* p = reinterpret_cast<ResultType*>(a.data());
     while (i--)
         *p++ = g();
 }

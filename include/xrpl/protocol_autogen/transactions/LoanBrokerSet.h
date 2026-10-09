@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getVaultID() const
     {
         return this->tx_->at(sfVaultID);
@@ -63,7 +63,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getLoanBrokerID() const
     {
         if (hasLoanBrokerID())
@@ -89,7 +89,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getData() const
     {
         if (hasData())
@@ -115,7 +115,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT16::type::value_type>
+    protocol_autogen::Optional<SF_UINT16::Type::ValueType>
     getManagementFeeRate() const
     {
         if (hasManagementFeeRate())
@@ -141,7 +141,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    protocol_autogen::Optional<SF_NUMBER::Type::ValueType>
     getDebtMaximum() const
     {
         if (hasDebtMaximum())
@@ -167,7 +167,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getCoverRateMinimum() const
     {
         if (hasCoverRateMinimum())
@@ -193,7 +193,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getCoverRateLiquidation() const
     {
         if (hasCoverRateLiquidation())
@@ -232,9 +232,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    LoanBrokerSetBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    LoanBrokerSetBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT256::Type::ValueType> const& vaultID,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<LoanBrokerSetBuilder>(ttLOAN_BROKER_SET, account, sequence, fee)
     {
@@ -264,7 +264,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
-    setVaultID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setVaultID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfVaultID] = value;
         return *this;
@@ -275,7 +275,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
-    setLoanBrokerID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setLoanBrokerID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfLoanBrokerID] = value;
         return *this;
@@ -286,7 +286,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
-    setData(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setData(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfData] = value;
         return *this;
@@ -297,7 +297,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
-    setManagementFeeRate(std::decay_t<typename SF_UINT16::type::value_type> const& value)
+    setManagementFeeRate(std::decay_t<typename SF_UINT16::Type::ValueType> const& value)
     {
         object_[sfManagementFeeRate] = value;
         return *this;
@@ -308,7 +308,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
-    setDebtMaximum(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    setDebtMaximum(std::decay_t<typename SF_NUMBER::Type::ValueType> const& value)
     {
         object_[sfDebtMaximum] = value;
         return *this;
@@ -319,7 +319,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
-    setCoverRateMinimum(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setCoverRateMinimum(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfCoverRateMinimum] = value;
         return *this;
@@ -330,7 +330,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
-    setCoverRateLiquidation(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setCoverRateLiquidation(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfCoverRateLiquidation] = value;
         return *this;

@@ -671,7 +671,7 @@ deleteAMMTrustLines(
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
             UInt256 const&,
-            SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
+            SLE::Pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM and MPToken
             if (nodeType == ltAMM || nodeType == ltMPTOKEN)
                 return {tesSUCCESS, SkipEntry::Yes};
@@ -707,7 +707,7 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
             UInt256 const&,
-            SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
+            SLE::Pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM
             if (nodeType == ltAMM)
                 return {tesSUCCESS, SkipEntry::Yes};
@@ -803,7 +803,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
 void
 initializeFeeAuctionVote(
     ApplyView& view,
-    SLE::pointer& ammSle,
+    SLE::Pointer& ammSle,
     AccountID const& account,
     Asset const& lptAsset,
     std::uint16_t tfee)
@@ -961,7 +961,7 @@ std::expected<bool, TER>
 verifyAndAdjustLPTokenBalance(
     Sandbox& sb,
     STAmount const& lpTokens,
-    SLE::pointer& ammSle,
+    SLE::Pointer& ammSle,
     AccountID const& account)
 {
     auto const res = isOnlyLiquidityProvider(sb, lpTokens.get<Issue>(), account);

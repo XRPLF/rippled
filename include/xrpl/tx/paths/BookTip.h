@@ -25,7 +25,7 @@ private:
     UInt256 end_;
     UInt256 dir_;
     UInt256 index_;
-    SLE::pointer entry_;
+    SLE::Pointer entry_;
     Quality quality_{};
 
 public:
@@ -52,7 +52,7 @@ public:
         return quality_;
     }
 
-    [[nodiscard]] SLE::pointer const&
+    [[nodiscard]] SLE::Pointer const&
     entry() const noexcept
     {
         return entry_;

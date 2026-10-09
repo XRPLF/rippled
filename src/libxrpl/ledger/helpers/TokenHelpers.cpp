@@ -267,7 +267,7 @@ checkDepositFreeze(
 //
 //------------------------------------------------------------------------------
 
-static SLE::const_pointer
+static SLE::ConstPointer
 getLineIfUsable(
     ReadView const& view,
     AccountID const& account,
@@ -388,8 +388,7 @@ accountHolds(
     }
 
     // IOU: Return balance on trust line modulo freeze
-    SLE::const_pointer const sle =
-        getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
+    SLE::ConstPointer const sle = getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
 
     return getTrustLineBalance(view, sle, account, currency, issuer, returnSpendable, j);
 }
@@ -1012,10 +1011,10 @@ accountSendIOU(
      */
     TER terResult(tesSUCCESS);
 
-    SLE::pointer const sender =
-        uSenderID != beast::kZero ? view.peek(keylet::account(uSenderID)) : SLE::pointer();
-    SLE::pointer const receiver =
-        uReceiverID != beast::kZero ? view.peek(keylet::account(uReceiverID)) : SLE::pointer();
+    SLE::Pointer const sender =
+        uSenderID != beast::kZero ? view.peek(keylet::account(uSenderID)) : SLE::Pointer();
+    SLE::Pointer const receiver =
+        uReceiverID != beast::kZero ? view.peek(keylet::account(uReceiverID)) : SLE::Pointer();
 
     if (auto stream = j.trace())
     {
@@ -1108,8 +1107,8 @@ accountSendMultiIOU(
      * ensure that transfers are balanced.
      */
 
-    SLE::pointer const sender =
-        senderID != beast::kZero ? view.peek(keylet::account(senderID)) : SLE::pointer();
+    SLE::Pointer const sender =
+        senderID != beast::kZero ? view.peek(keylet::account(senderID)) : SLE::Pointer();
 
     if (auto stream = j.trace())
     {
@@ -1140,8 +1139,8 @@ accountSendMultiIOU(
         if (!amount || (senderID == receiverID))
             continue;
 
-        SLE::pointer const receiver =
-            receiverID != beast::kZero ? view.peek(keylet::account(receiverID)) : SLE::pointer();
+        SLE::Pointer const receiver =
+            receiverID != beast::kZero ? view.peek(keylet::account(receiverID)) : SLE::Pointer();
 
         if (auto stream = j.trace())
         {
@@ -1624,8 +1623,8 @@ transferXRP(
     XRPL_ASSERT(from != to, "xrpl::transferXRP : sender is not receiver");
     XRPL_ASSERT(amount.native(), "xrpl::transferXRP : amount is XRP");
 
-    SLE::pointer const sender = view.peek(keylet::account(from));
-    SLE::pointer const receiver = view.peek(keylet::account(to));
+    SLE::Pointer const sender = view.peek(keylet::account(from));
+    SLE::Pointer const receiver = view.peek(keylet::account(to));
     if (!sender || !receiver)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

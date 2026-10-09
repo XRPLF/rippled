@@ -42,15 +42,15 @@ using ClockType = beast::AbstractClock<std::chrono::steady_clock> const;
 
 // Helper to convert steady_clock to a reasonable NetClock
 // This allows a single manual clock in the unit tests
-[[nodiscard]] NetClock::time_point
+[[nodiscard]] NetClock::TimePoint
 toNetClock(ClockType const& c)
 {
     // We don't care about the actual epochs, but do want the
     // generated NetClock time to be well past its epoch to ensure
     // any subtractions are positive
     using namespace std::chrono;
-    return NetClock::time_point(
-        duration_cast<NetClock::duration>(c.now().time_since_epoch() + 86400s));
+    return NetClock::TimePoint(
+        duration_cast<NetClock::Duration>(c.now().time_since_epoch() + 86400s));
 }
 
 // Represents a node that can issue validations
@@ -108,7 +108,7 @@ public:
     {
         return std::make_pair(nodeID_, 0);
     }
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     now() const
     {
         return toNetClock(c_);
@@ -120,8 +120,8 @@ public:
     validate(
         Ledger::ID id,
         Ledger::Seq seq,
-        NetClock::duration signOffset,
-        NetClock::duration seenOffset,
+        NetClock::Duration signOffset,
+        NetClock::Duration seenOffset,
         bool full) const
     {
         Validation v{
@@ -132,7 +132,7 @@ public:
     }
 
     [[nodiscard]] Validation
-    validate(Ledger ledger, NetClock::duration signOffset, NetClock::duration seenOffset) const
+    validate(Ledger ledger, NetClock::Duration signOffset, NetClock::Duration seenOffset) const
     {
         return validate(ledger.id(), ledger.seq(), signOffset, seenOffset, true);
     }
@@ -141,14 +141,14 @@ public:
     validate(Ledger ledger) const
     {
         return validate(
-            ledger.id(), ledger.seq(), NetClock::duration{0}, NetClock::duration{0}, true);
+            ledger.id(), ledger.seq(), NetClock::Duration{0}, NetClock::Duration{0}, true);
     }
 
     [[nodiscard]] Validation
     partial(Ledger ledger) const
     {
         return validate(
-            ledger.id(), ledger.seq(), NetClock::duration{0}, NetClock::duration{0}, false);
+            ledger.id(), ledger.seq(), NetClock::Duration{0}, NetClock::Duration{0}, false);
     }
 };
 
@@ -180,7 +180,7 @@ public:
     {
     }
 
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     now() const
     {
         return toNetClock(c_);

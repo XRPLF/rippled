@@ -89,13 +89,13 @@ STValidation::getConsensusHash() const
     return getFieldH256(sfConsensusHash);
 }
 
-NetClock::time_point
+NetClock::TimePoint
 STValidation::getSignTime() const
 {
-    return NetClock::time_point{NetClock::duration{getFieldU32(sfSigningTime)}};
+    return NetClock::TimePoint{NetClock::Duration{getFieldU32(sfSigningTime)}};
 }
 
-NetClock::time_point
+NetClock::TimePoint
 STValidation::getSeenTime() const noexcept
 {
     return seenTime_;

@@ -57,14 +57,14 @@ public:
      *
      * @return a map of amendment to the time majority was reached.
      */
-    [[nodiscard]] std::map<UInt256, NetClock::time_point>
+    [[nodiscard]] std::map<UInt256, NetClock::TimePoint>
     majorityAmendments() const
     {
-        std::map<UInt256, NetClock::time_point> ret;
+        std::map<UInt256, NetClock::TimePoint> ret;
 
         if (this->exists() && (*this)->isFieldPresent(sfMajorities))
         {
-            using TimePoint = NetClock::time_point;
+            using TimePoint = NetClock::TimePoint;
             using Duration = TimePoint::duration;
 
             auto const majorities = (*this)->getFieldArray(sfMajorities);

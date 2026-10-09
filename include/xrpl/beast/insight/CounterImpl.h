@@ -10,11 +10,11 @@ class Counter;
 class CounterImpl : public std::enable_shared_from_this<CounterImpl>
 {
 public:
-    using value_type = std::int64_t;
+    using ValueType = std::int64_t;
 
     virtual ~CounterImpl() = 0;
     virtual void
-    increment(value_type amount) = 0;
+    increment(ValueType amount) = 0;
 };
 
 }  // namespace beast::insight

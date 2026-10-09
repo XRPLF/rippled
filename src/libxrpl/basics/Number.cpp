@@ -104,7 +104,7 @@ MantissaRange::Access::mantissaRange(MantissaScale scale)
     // LargeLegacy
     static_assert(isPowerOfTen(kLegacy.min));
     static_assert(kLegacy.min == 1'000'000'000'000'000'000ULL);
-    static_assert(kLegacy.max == rep(9'999'999'999'999'999'999ULL));
+    static_assert(kLegacy.max == Rep(9'999'999'999'999'999'999ULL));
     static_assert(kLegacy.log == 18);
     static_assert(kLegacy.min < Number::kMaxRep);
     static_assert(kLegacy.max > Number::kMaxRep);
@@ -113,7 +113,7 @@ MantissaRange::Access::mantissaRange(MantissaScale scale)
     // Large320
     static_assert(isPowerOfTen(kLarge320.min));
     static_assert(kLarge320.min == 1'000'000'000'000'000'000ULL);
-    static_assert(kLarge320.max == rep(9'999'999'999'999'999'999ULL));
+    static_assert(kLarge320.max == Rep(9'999'999'999'999'999'999ULL));
     static_assert(kLarge320.log == 18);
     static_assert(kLarge320.min < Number::kMaxRep);
     static_assert(kLarge320.max > Number::kMaxRep);
@@ -122,7 +122,7 @@ MantissaRange::Access::mantissaRange(MantissaScale scale)
     // Large330
     static_assert(isPowerOfTen(kLarge330.min));
     static_assert(kLarge330.min == 1'000'000'000'000'000'000ULL);
-    static_assert(kLarge330.max == rep(9'999'999'999'999'999'999ULL));
+    static_assert(kLarge330.max == Rep(9'999'999'999'999'999'999ULL));
     static_assert(kLarge330.log == 18);
     static_assert(kLarge330.min < Number::kMaxRep);
     static_assert(kLarge330.max > Number::kMaxRep);
@@ -305,7 +305,7 @@ public:
 
     // Modify the result to the correctly rounded value
     void
-    doRound(rep& drops, std::string location) const;
+    doRound(Rep& drops, std::string location) const;
 
 private:
     template <UnsignedMantissa T>
@@ -689,7 +689,7 @@ Number::Guard::doRoundDown(bool& negative, T& mantissa, int& exponent) const
 
 // Modify the result to the correctly rounded value
 void
-Number::Guard::doRound(rep& drops, std::string location) const
+Number::Guard::doRound(Rep& drops, std::string location) const
 {
     // Do not pushOverflow here.
 
@@ -698,7 +698,7 @@ Number::Guard::doRound(rep& drops, std::string location) const
     {
         if (drops >= kMaxRep)
         {
-            static_assert(sizeof(InternalRep) == sizeof(rep));
+            static_assert(sizeof(InternalRep) == sizeof(Rep));
             // This should be impossible, because it's impossible to represent
             // "kMaxRep + 0.6" in Number, regardless of the scale. There aren't
             // enough digits available. You'd either get a mantissa of "kMaxRep"
@@ -722,14 +722,14 @@ Number::Guard::doRound(rep& drops, std::string location) const
 // converting std::numeric_limits<std::int64_t>::min() flirts with UB, and can
 // vary across compilers.
 Number::InternalRep
-Number::externalToInternal(rep mantissa)
+Number::externalToInternal(Rep mantissa)
 {
     // If the mantissa is already positive, just return it
     if (mantissa >= 0)
         return mantissa;
     // If the mantissa is negative, but fits within the positive range of rep,
     // return it negated
-    if (mantissa >= -std::numeric_limits<rep>::max())
+    if (mantissa >= -std::numeric_limits<Rep>::max())
         return -mantissa;
 
     // If the mantissa doesn't fit within the positive range, convert to
@@ -753,8 +753,8 @@ doNormalize(
     bool& negative,
     T& mantissa,
     int& exponent,
-    MantissaRange::rep const& minMantissa,
-    MantissaRange::rep const& maxMantissa,
+    MantissaRange::Rep const& minMantissa,
+    MantissaRange::Rep const& maxMantissa,
     MantissaRange::CuspRoundingFix cuspRoundingFix,
     bool dropped)
 {
@@ -1363,9 +1363,9 @@ Number::operator/=(Number const& y)
 }
 
 Number::
-operator rep() const
+operator Rep() const
 {
-    rep drops = mantissa();
+    Rep drops = mantissa();
     int offset = exponent();
     Guard g(kRange);
     if (drops != 0)
@@ -1401,7 +1401,7 @@ Number::truncate() const noexcept
     while (ret.exponent_ < 0 && ret.mantissa_ != 0)
     {
         ret.exponent_ += 1;
-        ret.mantissa_ /= rep(10);
+        ret.mantissa_ /= Rep(10);
     }
     // We are guaranteed that normalize() will never throw an exception
     // because exponent is either negative or zero at this point.

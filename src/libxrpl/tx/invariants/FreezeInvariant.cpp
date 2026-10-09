@@ -198,7 +198,7 @@ TransfersNotFrozen::recordBalanceChanges(SLE::ConstRef after, STAmount const& ba
         {.line = after, .balanceChangeSign = -balanceChangeSign});
 }
 
-SLE::const_pointer
+SLE::ConstPointer
 TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 {
     if (auto it = possibleIssuers_.find(issuerID); it != possibleIssuers_.end())

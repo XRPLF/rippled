@@ -41,7 +41,7 @@ public:
         std::shared_ptr<Ledger const> const& prev,
         jtx::Env& env,
         LedgerHistory& lh,
-        NetClock::duration closeOffset,
+        NetClock::Duration closeOffset,
         std::shared_ptr<STTx const> stx = {})
     {
         if (!prev)

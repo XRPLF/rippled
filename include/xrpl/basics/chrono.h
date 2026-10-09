@@ -42,10 +42,18 @@ class NetClock
 public:
     explicit NetClock() = default;
 
-    using rep = std::uint32_t;
-    using period = std::ratio<1>;
-    using duration = std::chrono::duration<rep, period>;
-    using time_point = std::chrono::time_point<NetClock>;
+    using Rep = std::uint32_t;
+    using Period = std::ratio<1>;
+    using Duration = std::chrono::duration<Rep, Period>;
+    using TimePoint = std::chrono::time_point<NetClock, Duration>;
+
+    // Required by the std Clock contract.
+    // NOLINTBEGIN(readability-identifier-naming)
+    using rep = Rep;
+    using period = Period;
+    using duration = Duration;
+    using time_point = TimePoint;
+    // NOLINTEND(readability-identifier-naming)
 
     static bool const is_steady = false;  // NOLINT(readability-identifier-naming)
 };
@@ -58,7 +66,7 @@ to_string(date::sys_time<Duration> tp)
 }
 
 inline std::string
-to_string(NetClock::time_point tp)
+to_string(NetClock::TimePoint tp)
 {
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     using namespace std::chrono;
@@ -74,12 +82,12 @@ toStringIso(date::sys_time<Duration> tp)
 }
 
 inline std::string
-toStringIso(NetClock::time_point tp)
+toStringIso(NetClock::TimePoint tp)
 {
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
-    // Note, NetClock::duration is seconds, as checked by static_assert
-    static_assert(std::is_same_v<NetClock::duration::period, std::ratio<1>>);
-    return toStringIso(date::sys_time<NetClock::duration>{tp.time_since_epoch() + kEpochOffset});
+    // Note, NetClock::Duration is seconds, as checked by static_assert
+    static_assert(std::is_same_v<NetClock::Duration::period, std::ratio<1>>);
+    return toStringIso(date::sys_time<NetClock::Duration>{tp.time_since_epoch() + kEpochOffset});
 }
 
 /**

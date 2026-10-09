@@ -37,12 +37,12 @@ class io_latency_probe_test : public beast::unit_test::Suite, public beast::test
     template <class Clock, class MeasureClock = std::chrono::high_resolution_clock>
     struct MeasureAsioTimers
     {
-        using duration = Clock::duration;
-        using rep = MeasureClock::duration::rep;
+        using Duration = Clock::duration;
+        using Rep = MeasureClock::duration::rep;
 
-        std::vector<duration> elapsedTimes;
+        std::vector<Duration> elapsedTimes;
 
-        MeasureAsioTimers(duration interval = 100ms, size_t numSamples = 50)
+        MeasureAsioTimers(Duration interval = 100ms, size_t numSamples = 50)
         {
             using namespace std::chrono;
             boost::asio::io_context ios;

@@ -17,7 +17,7 @@ namespace xrpl::reduce_relay {
 template <typename ClockType>
 class Squelch
 {
-    using time_point = ClockType::time_point;
+    using TimePoint = ClockType::time_point;
 
 public:
     explicit Squelch(beast::Journal journal) : journal_(journal)
@@ -54,7 +54,7 @@ private:
      * Maintains the list of squelched relaying to downstream peers.
      * Expiration time is included in the TMSquelch message.
      */
-    HashMap<PublicKey, time_point> squelched_;
+    HashMap<PublicKey, TimePoint> squelched_;
     beast::Journal const journal_;
 };
 

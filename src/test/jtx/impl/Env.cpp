@@ -130,7 +130,7 @@ Env::closed()
 }
 
 bool
-Env::close(NetClock::time_point closeTime, std::optional<std::chrono::milliseconds> consensusDelay)
+Env::close(NetClock::TimePoint closeTime, std::optional<std::chrono::milliseconds> consensusDelay)
 {
     // Round up to next distinguishable value
     using namespace std::chrono_literals;
@@ -307,13 +307,13 @@ Env::seq(Account const& account) const
     return sle->getFieldU32(sfSequence);
 }
 
-SLE::const_pointer
+SLE::ConstPointer
 Env::le(Account const& account) const
 {
     return le(keylet::account(account.id()));
 }
 
-SLE::const_pointer
+SLE::ConstPointer
 Env::le(Keylet const& k) const
 {
     return current()->read(k);

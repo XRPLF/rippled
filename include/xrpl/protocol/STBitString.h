@@ -23,17 +23,17 @@ class STBitString final : public STBase, public CountedObject<STBitString<Bits>>
     static_assert(Bits > 0, "Number of bits must be positive");
 
 public:
-    using value_type = BaseUInt<Bits>;
+    using ValueType = BaseUInt<Bits>;
 
 private:
-    value_type value_{};
+    ValueType value_{};
 
 public:
     STBitString() = default;
 
     STBitString(SField const& n);
-    STBitString(value_type const& v);
-    STBitString(SField const& n, value_type const& v);
+    STBitString(ValueType const& v);
+    STBitString(SField const& n, ValueType const& v);
     STBitString(SerialIter& sit, SField const& name);
 
     [[nodiscard]] SerializedTypeID
@@ -55,10 +55,10 @@ public:
     void
     setValue(BaseUInt<Bits, Tag> const& v);
 
-    [[nodiscard]] value_type const&
+    [[nodiscard]] ValueType const&
     value() const;
 
-    operator value_type() const;
+    operator ValueType() const;
 
 private:
     STBase*
@@ -80,12 +80,12 @@ inline STBitString<Bits>::STBitString(SField const& n) : STBase(n)
 }
 
 template <int Bits>
-inline STBitString<Bits>::STBitString(value_type const& v) : value_(v)
+inline STBitString<Bits>::STBitString(ValueType const& v) : value_(v)
 {
 }
 
 template <int Bits>
-inline STBitString<Bits>::STBitString(SField const& n, value_type const& v) : STBase(n), value_(v)
+inline STBitString<Bits>::STBitString(SField const& n, ValueType const& v) : STBase(n), value_(v)
 {
 }
 
@@ -170,7 +170,7 @@ STBitString<Bits>::setValue(BaseUInt<Bits, Tag> const& v)
 }
 
 template <int Bits>
-STBitString<Bits>::value_type const&
+STBitString<Bits>::ValueType const&
 STBitString<Bits>::value() const
 {
     return value_;
@@ -178,7 +178,7 @@ STBitString<Bits>::value() const
 
 template <int Bits>
 STBitString<Bits>::
-operator value_type() const
+operator ValueType() const
 {
     return value_;
 }

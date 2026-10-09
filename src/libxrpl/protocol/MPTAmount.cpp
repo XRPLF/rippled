@@ -29,7 +29,7 @@ MPTAmount::operator==(MPTAmount const& other) const
 }
 
 bool
-MPTAmount::operator==(value_type other) const
+MPTAmount::operator==(ValueType other) const
 {
     return value_ == other;
 }

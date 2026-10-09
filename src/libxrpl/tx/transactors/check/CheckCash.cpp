@@ -414,7 +414,7 @@ CheckCash::doApply()
 
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
-            auto checkDstReserve = [&]() -> SLE::pointer {
+            auto checkDstReserve = [&]() -> SLE::Pointer {
                 auto sleDst = psb.peek(keylet::account(accountID_));
 
                 // Can the account cover the trust line's or MPT reserve?

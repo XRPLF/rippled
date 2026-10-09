@@ -80,7 +80,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
     int processed = 0, removed = 0;
 
-    auto getSubscriber = [](PathRequest::pointer const& request) -> InfoSub::pointer {
+    auto getSubscriber = [](PathRequest::Pointer const& request) -> InfoSub::Pointer {
         if (auto ipSub = request->getSubscriber(); ipSub && ipSub->getRequest() == request)
         {
             return ipSub;
@@ -213,7 +213,7 @@ PathRequestManager::requestsPending() const
 }
 
 void
-PathRequestManager::insertPathRequest(PathRequest::pointer const& req)
+PathRequestManager::insertPathRequest(PathRequest::Pointer const& req)
 {
     std::scoped_lock const sl(lock_);
 
@@ -252,7 +252,7 @@ PathRequestManager::makePathRequest(
 // Make an old-style ripple_path_find request
 json::Value
 PathRequestManager::makeLegacyPathRequest(
-    PathRequest::pointer& req,
+    PathRequest::Pointer& req,
     std::function<void(void)> completion,
     resource::Consumer& consumer,
     std::shared_ptr<ReadView const> const& inLedger,
