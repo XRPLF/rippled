@@ -8,19 +8,25 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/TxMeta.h>
 #include <xrpl/tx/applySteps.h>
 
 #include <exception>
+#include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -198,11 +204,22 @@ apply(
     });
 }
 
+namespace {
+
+struct BatchInnerResult
+{
+    UInt256 id;
+    TER ter;
+};
+
+}  // namespace
+
 static bool
 applyBatchTransactions(
     ServiceRegistry& registry,
     OpenView& batchView,
     STTx const& batchTxn,
+    std::vector<BatchInnerResult>& results,
     beast::Journal j)
 {
     XRPL_ASSERT(
@@ -239,6 +256,7 @@ applyBatchTransactions(
     for (auto const& stx : batchTxn.getBatchTransactions())
     {
         auto const result = applyOneTransaction(*stx);
+        results.push_back({.id = stx->getTransactionID(), .ter = result.ter});
         XRPL_ASSERT(
             result.applied == (isTesSuccess(result.ter) || isTecClaim(result.ter)),
             "Outer Batch failure, inner transaction should not be applied");
@@ -261,6 +279,46 @@ applyBatchTransactions(
     }
 
     return applied != 0;
+}
+
+/**
+ * Inserts the BatchResult record listing every inner the Batch attempted.
+ *
+ * It goes into the view the outer Batch applied to, after the batch view was
+ * committed or dropped, so it survives a rollback and takes the index after
+ * the last applied inner.
+ */
+static void
+insertBatchResult(
+    OpenView& view,
+    UInt256 const& parentBatchId,
+    std::vector<BatchInnerResult> const& results)
+{
+    XRPL_ASSERT(!view.open(), "xrpl::insertBatchResult : closed ledger view");
+
+    STArray entries(sfBatchResults, results.size());
+    for (auto const& result : results)
+    {
+        auto entry = STObject::makeInnerObject(sfBatchResult);
+        entry.setFieldH256(sfTransactionHash, result.id);
+        entry.setFieldI32(sfEngineResultCode, TERtoInt(result.ter));
+        entries.push_back(std::move(entry));
+    }
+
+    STTx const record(ttBATCH_RESULT, [&](STObject& obj) {
+        obj.setAccountID(sfAccount, AccountID());
+        obj.setFieldH256(sfParentBatchID, parentBatchId);
+        obj.setFieldArray(sfBatchResults, entries);
+    });
+
+    auto const txID = record.getTransactionID();
+    auto const sTx = std::make_shared<Serializer>();
+    record.add(*sTx);
+
+    auto const sMeta = std::make_shared<Serializer>();
+    TxMeta(txID, view.seq()).addRaw(*sMeta, tesSUCCESS, view.txCount());
+
+    view.rawTxInsert(txID, sTx, sMeta);
 }
 
 ApplyTransactionResult
@@ -291,9 +349,13 @@ applyTransaction(
             if (isTesSuccess(result.ter) && txn.getTxnType() == ttBATCH)
             {
                 OpenView wholeBatchView(kBatchView, view);
+                std::vector<BatchInnerResult> innerResults;
 
-                if (applyBatchTransactions(registry, wholeBatchView, txn, j))
+                if (applyBatchTransactions(registry, wholeBatchView, txn, innerResults, j))
                     wholeBatchView.apply(view);
+
+                if (view.rules().enabled(featureBatchV2))
+                    insertBatchResult(view, txn.getTransactionID(), innerResults);
             }
 
             return ApplyTransactionResult::Success;

@@ -37,6 +37,7 @@
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/server/Handoff.h>
 #include <xrpl/shamap/SHAMapItem.h>
 
@@ -116,7 +117,37 @@ struct LedgerReplay_test : public beast::unit_test::Suite
             batch::Inner(pay(alice, bob, XRP(2)), seq + 2),
             Ter(tesSUCCESS));
         env.close();
+        expectReplayMatches(env);
 
+        // A rolled-back tfAllOrNothing batch and a tfIndependent batch in one ledger.
+        auto const seq2 = env.seq(alice);
+        env(batch::outer(alice, seq2, batchFee, tfAllOrNothing),
+            batch::Inner(pay(alice, bob, XRP(1)), seq2 + 1),
+            // tecUNFUNDED_PAYMENT rolls the whole batch back
+            batch::Inner(pay(alice, bob, XRP(1000000)), seq2 + 2),
+            Ter(tesSUCCESS));
+        auto const seq3 = env.seq(alice);
+        env(batch::outer(alice, seq3, batchFee, tfIndependent),
+            batch::Inner(pay(alice, bob, XRP(1)), seq3 + 1),
+            batch::Inner(pay(alice, bob, XRP(2)), seq3 + 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Both batches left a BatchResult record, so the replay has to regenerate them.
+        int records = 0;
+        for (auto const& item : env.app().getLedgerMaster().getClosedLedger()->txs)
+        {
+            if (item.first->getTxnType() == ttBATCH_RESULT)
+                ++records;
+        }
+        BEAST_EXPECT(records == 2);
+        expectReplayMatches(env);
+    }
+
+    // Replaying the last closed ledger from its parent reproduces its hash.
+    void
+    expectReplayMatches(jtx::Env& env)
+    {
         LedgerMaster& ledgerMaster = env.app().getLedgerMaster();
         auto const lastClosed = ledgerMaster.getClosedLedger();
         auto const lastClosedParent = ledgerMaster.getLedgerByHash(lastClosed->header().parentHash);

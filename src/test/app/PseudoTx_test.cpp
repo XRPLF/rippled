@@ -6,14 +6,18 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/apply.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -49,6 +53,12 @@ struct PseudoTx_test : public beast::unit_test::Suite
             obj.setAccountID(sfAccount, AccountID());
             obj.setFieldH256(sfAmendment, UInt256(2));
             obj.setFieldU32(sfLedgerSequence, seq);
+        });
+
+        res.emplace_back(ttBATCH_RESULT, [&](auto& obj) {
+            obj.setAccountID(sfAccount, AccountID());
+            obj.setFieldH256(sfParentBatchID, UInt256(3));
+            obj.setFieldArray(sfBatchResults, STArray(sfBatchResults));
         });
 
         return res;
@@ -90,6 +100,26 @@ struct PseudoTx_test : public beast::unit_test::Suite
     }
 
     void
+    testBatchResultRejectedOnClosedView(FeatureBitset features)
+    {
+        using namespace jtx;
+        Env env(*this, features);
+
+        // A BatchResult placed in a proposed transaction set is applied to a closed view.
+        auto const pseudoTxs = getPseudoTxs(env.closed()->rules(), env.closed()->seq() + 1);
+        auto const record = std::ranges::find_if(
+            pseudoTxs, [](STTx const& stx) { return stx.getTxnType() == ttBATCH_RESULT; });
+        if (!BEAST_EXPECT(record != pseudoTxs.end()))
+            return;
+
+        OpenView closedView(&*env.closed());
+        BEAST_EXPECT(!closedView.open());
+        auto const result = xrpl::apply(env.app(), closedView, *record, TapNone, env.journal);
+        BEAST_EXPECT(!result.applied && result.ter == temINVALID);
+        BEAST_EXPECT(closedView.txCount() == 0);
+    }
+
+    void
     testAllowed()
     {
         for (auto const& stx : getRealTxs())
@@ -109,6 +139,8 @@ struct PseudoTx_test : public beast::unit_test::Suite
 
         testPrevented(all - featureXRPFees);
         testPrevented(all);
+        testBatchResultRejectedOnClosedView(all);
+        testBatchResultRejectedOnClosedView(all - featureBatchV2);
         testAllowed();
     }
 };
