@@ -57,7 +57,7 @@ TEST(JsonValue, different_types)
     // Exercise ValueType constructor
     static constexpr json::StaticString kStaticStr{"staticStr"};
 
-    auto testCopy = [](json::ValueType typ) {
+    auto const testCopy = [](json::ValueType typ) {
         json::Value val{typ};
         json::Value const cpy{val};
         EXPECT_EQ(val.type(), typ);
@@ -208,11 +208,11 @@ TEST(JsonValue, different_types)
 
 TEST(JsonValue, compare_strings)
 {
-    auto doCompare = [&](json::Value const& lhs,
-                         json::Value const& rhs,
-                         bool lhsEqRhs,
-                         bool lhsLtRhs,
-                         int line) {
+    auto const doCompare = [&](json::Value const& lhs,
+                               json::Value const& rhs,
+                               bool lhsEqRhs,
+                               bool lhsLtRhs,
+                               int line) {
         SCOPED_TRACE(line);
         EXPECT_EQ((lhs == rhs), lhsEqRhs);
         EXPECT_NE((lhs != rhs), lhsEqRhs);
@@ -236,17 +236,21 @@ TEST(JsonValue, compare_strings)
     json::Value const boolF{false};
     json::Value const boolT{true};
     json::Value const array0{json::ValueType::Array};
-    json::Value const array1{[]() {
-        json::Value array1;
-        array1[0u] = 1;
-        return array1;
-    }()};
+    json::Value const array1{
+        [] {
+            json::Value array1;
+            array1[0u] = 1;
+            return array1;
+        }(),
+    };
     json::Value const obj0{json::ValueType::Object};
-    json::Value const obj1{[]() {
-        json::Value obj1;
-        obj1["one"] = 1;
-        return obj1;
-    }()};
+    json::Value const obj1{
+        [] {
+            json::Value obj1;
+            obj1["one"] = 1;
+            return obj1;
+        }(),
+    };
 
 #pragma push_macro("DO_COMPARE")
     // DO_COMPARE(lhs, rhs, lhsEqualsToRhs lhsLessThanRhs)
@@ -610,13 +614,14 @@ parseValue(std::string const& doc)
 TEST(JsonValue, parse_double_valid)
 {
     // 1e300 is large but still representable, so it parses (unlike the out-of-range cases below).
-    for (auto const& [text, expected] :
-         {std::pair{"2.5", 2.5},
-          std::pair{"-3.25e2", -325.0},
-          std::pair{"0.0", 0.0},
-          std::pair{"1E3", 1000.0},
-          std::pair{"-0.5e-1", -0.05},
-          std::pair{"1e300", 1e300}})
+    for (auto const& [text, expected] : {
+             std::pair{"2.5", 2.5},
+             std::pair{"-3.25e2", -325.0},
+             std::pair{"0.0", 0.0},
+             std::pair{"1E3", 1000.0},
+             std::pair{"-0.5e-1", -0.05},
+             std::pair{"1e300", 1e300},
+         })
     {
         auto const v = parseValue(text);
         ASSERT_TRUE(v.has_value()) << text;
@@ -636,10 +641,8 @@ TEST(JsonValue, parse_double_out_of_range)
 
 TEST(JsonValue, parse_double_malformed)
 {
-    // readNumber() collects any run of digits and '.eE+-' into a single Double
-    // token, so these malformed tokens reach decodeDouble. Each has a valid
-    // leading prefix that from_chars would accept on its own; requiring the
-    // entire token be consumed rejects them instead of silently truncating.
+    // Each has a valid leading prefix that would parse as a number on its own;
+    // the text after it must fail the document rather than be dropped.
     for (char const* bad : {"1+2", "1-2", "1.2.3", "1e5e6", "1..2", "++5", "1e", "1e+", ".", "-"})
         EXPECT_FALSE(parseValue(bad).has_value()) << bad;
 }
@@ -661,7 +664,7 @@ TEST(JsonValue, edge_cases)
         json += ",\"a_uint\":" + std::to_string(aUInt);
         json += ",\"a_large_int\":" + std::to_string(aLargeInt);
         json += ",\"a_small_int\":" + std::to_string(aSmallInt);
-        json += "}";
+        json += '}';
 
         json::Value j1;
         json::Reader r1;
@@ -690,7 +693,7 @@ TEST(JsonValue, edge_cases)
     {
         std::string json = "{\"overflow\":";
         json += std::to_string(overflow);
-        json += "}";
+        json += '}';
 
         json::Value j2;
         json::Reader r2;
@@ -702,7 +705,7 @@ TEST(JsonValue, edge_cases)
     {
         std::string json = "{\"underflow\":";
         json += std::to_string(underflow);
-        json += "}";
+        json += '}';
 
         json::Value j3;
         json::Reader r3;
@@ -834,7 +837,7 @@ TEST(JsonValue, move)
 TEST(JsonValue, comparisons)
 {
     json::Value a, b;
-    auto testEquals = [&](std::string const& name) {
+    auto const testEquals = [&](std::string const& name) {
         EXPECT_TRUE(a == b);
         EXPECT_TRUE(a <= b);
         EXPECT_TRUE(a >= b);
@@ -852,7 +855,7 @@ TEST(JsonValue, comparisons)
         EXPECT_FALSE(b > a);
     };
 
-    auto testGreaterThan = [&](std::string const& name) {
+    auto const testGreaterThan = [&](std::string const& name) {
         EXPECT_FALSE(a == b);
         EXPECT_FALSE(a <= b);
         EXPECT_TRUE(a >= b);
@@ -892,7 +895,7 @@ TEST(JsonValue, compact)
     json::Reader r;
     char const* s(R"({"array":[{"12":23},{},null,false,0.5]})");
 
-    auto countLines = [](std::string const& str) {
+    auto const countLines = [](std::string const& str) {
         return 1 + std::count_if(str.begin(), str.end(), [](char c) { return c == '\n'; });
     };
 
@@ -1286,14 +1289,16 @@ TEST(JsonValue, iterator)
     }
     {
         // Iterating a const object.
-        json::Value const obj{[]() {
-            json::Value obj{json::ValueType::Object};
-            obj["0"] = 0;
-            obj["1"] = 1;
-            obj["2"] = 2;
-            obj["3"] = 3;
-            return obj;
-        }()};
+        json::Value const obj{
+            [] {
+                json::Value obj{json::ValueType::Object};
+                obj["0"] = 0;
+                obj["1"] = 1;
+                obj["2"] = 2;
+                obj["3"] = 3;
+                return obj;
+            }(),
+        };
 
         json::ValueConstIterator i1{obj.begin()};
         json::ValueConstIterator i2{obj.end()};
@@ -1335,43 +1340,43 @@ TEST(JsonValue, nest_limits)
 {
     json::Reader r;
     {
-        auto nest = [](std::uint32_t depth) -> std::string {
+        auto const nest = [](std::uint32_t depth) -> std::string {
             std::string s = "{";
             for (std::uint32_t i{1}; i <= depth; ++i)
                 s += "\"obj\":{";
             for (std::uint32_t i{1}; i <= depth; ++i)
-                s += "}";
-            s += "}";
+                s += '}';
+            s += '}';
             return s;
         };
 
         {
             // Within object nest limit
-            auto json{nest(std::min(10u, json::Reader::kNestLimit))};
+            auto const json{nest(std::min(10u, json::Reader::kNestLimit))};
             json::Value j;
             EXPECT_TRUE(r.parse(json, j));
         }
 
         {
             // Exceed object nest limit
-            auto json{nest(json::Reader::kNestLimit + 1)};
+            auto const json{nest(json::Reader::kNestLimit + 1)};
             json::Value j;
             EXPECT_FALSE(r.parse(json, j));
         }
     }
 
-    auto nest = [](std::uint32_t depth) -> std::string {
+    auto const nest = [](std::uint32_t depth) -> std::string {
         std::string s = "{";
         for (std::uint32_t i{1}; i <= depth; ++i)
             s += "\"array\":[{";
         for (std::uint32_t i{1}; i <= depth; ++i)
             s += "]}";
-        s += "}";
+        s += '}';
         return s;
     };
     {
         // Exceed array nest limit
-        auto json{nest(json::Reader::kNestLimit + 1)};
+        auto const json{nest(json::Reader::kNestLimit + 1)};
         json::Value j;
         EXPECT_FALSE(r.parse(json, j));
     }

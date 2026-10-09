@@ -297,17 +297,22 @@ TEST(JsonReader, accepts_comments)
     }
 }
 
-TEST(JsonReader, rejects_comments_in_the_two_places_it_never_allowed_them)
+TEST(JsonReader, accepts_comments_anywhere_whitespace_is_allowed)
 {
-    // Comments are skipped where a value is expected, but the member separator
-    // and the first element of an array are read without skipping them.
+    // Including between a key and its colon, and as the only content of an
+    // array, which were rejected before the parser was built on Boost.JSON.
     auto betweenKeyAndColon = json::Value{};
     auto first = json::Reader{};
-    EXPECT_FALSE(first.parse(std::string{R"JSON({"a"/*c*/:1})JSON"}, betweenKeyAndColon));
+    ASSERT_TRUE(first.parse(std::string{R"JSON({"a"/*c*/:1})JSON"}, betweenKeyAndColon))
+        << first.getFormattedErrorMessages();
+    EXPECT_EQ(betweenKeyAndColon["a"].asInt(), 1);
 
     auto commentOnlyArray = json::Value{};
     auto second = json::Reader{};
-    EXPECT_FALSE(second.parse(std::string{R"JSON([/*c*/])JSON"}, commentOnlyArray));
+    ASSERT_TRUE(second.parse(std::string{R"JSON([/*c*/])JSON"}, commentOnlyArray))
+        << second.getFormattedErrorMessages();
+    EXPECT_TRUE(commentOnlyArray.isArray());
+    EXPECT_EQ(commentOnlyArray.size(), 0u);
 }
 
 TEST(JsonReader, accepts_trailing_content_after_the_document)

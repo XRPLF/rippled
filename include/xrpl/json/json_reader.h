@@ -13,12 +13,12 @@
 
 namespace json {
 
+// clang-format off
 /**
- * clang-format off
  * @brief Unserialize a <a HREF="http://www.json.org">JSON</a> document into a
  * Value.
- * clang-format on
  */
+// clang-format on
 class Reader
 {
 public:
@@ -43,8 +43,8 @@ public:
     Reader&
     operator=(Reader&& other) noexcept;
 
+    // clang-format off
     /**
-     * clang-format off
      * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a>
      * document.
      * @param document UTF-8 encoded string containing the document to
@@ -53,13 +53,13 @@ public:
      * successfully parsed.
      * @return @c true if the document was successfully parsed, @c false if an
      * error occurred.
-     * clang-format on
      */
+    // clang-format on
     bool
     parse(std::string const& document, Value& root);
 
+    // clang-format off
     /**
-     * clang-format off
      * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a>
      * document.
      * @param document UTF-8 encoded string containing the document to
@@ -68,22 +68,22 @@ public:
      * successfully parsed.
      * @return @c true if the document was successfully parsed, @c false if an
      * error occurred.
-     * clang-format on
      */
+    // clang-format on
     bool
     parse(char const* beginDoc, char const* endDoc, Value& root);
 
+    // clang-format off
     /**
-     * clang-format off
      * @brief Parse from input stream.
      * @see json::operator>>(std::istream&, json::Value&).
-     * clang-format on
      */
+    // clang-format on
     bool
     parse(std::istream& is, Value& root);
 
+    // clang-format off
     /**
-     * clang-format off
      * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a> buffer
      * sequence.
      * @param root [out] Contains the root value of the document if it
@@ -91,35 +91,35 @@ public:
      * @param UTF-8 encoded buffer sequence.
      * @return @c true if the buffer was successfully parsed, @c false if an error
      * occurred.
-     * clang-format on
      */
+    // clang-format on
     template <class BufferSequence>
     bool
     parse(Value& root, BufferSequence const& bs);
 
+    // clang-format off
     /**
-     * clang-format off
      * @brief Returns a user friendly string that list errors in the parsed
      * document.
      * @return Formatted error message with the list of errors with
      * their location in the parsed document. An empty string is returned if no
      * error occurred during parsing.
-     * clang-format on
      */
+    // clang-format on
     [[nodiscard]] std::string
     getFormattedErrorMessages() const;
 
     static constexpr unsigned kNestLimit{25};
 
 private:
+    // clang-format off
     /**
-     * clang-format off
      * @brief A json::Parser visitor that builds a Value tree.
      *
      * Members are placed into a std::map, so the resulting tree iterates in
      * sorted key order regardless of the order they appeared in the document.
-     * clang-format on
      */
+    // clang-format on
     class ValueBuilder
     {
     public:
@@ -184,8 +184,8 @@ Reader::parse(Value& root, BufferSequence const& bs)
     return parser_.parse(bs);
 }
 
+// clang-format off
 /**
- * clang-format off
  * @brief Read from 'sin' into 'root'.
  *
  * Always keep comments from the input JSON.
@@ -209,8 +209,8 @@ Reader::parse(Value& root, BufferSequence const& bs)
  * @endverbatim
  * @throws std::exception on parse error.
  * @see json::operator<<()
- * clang-format on
  */
+// clang-format on
 std::istream&
 operator>>(std::istream&, Value&);
 
