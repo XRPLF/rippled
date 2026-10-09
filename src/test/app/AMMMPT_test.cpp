@@ -7542,9 +7542,9 @@ private:
                 .env = env,
                 .issuer = gw_,
                 .holders = {alice_},
-                .pay = 100'000'000'000'000,  // 1e14
-                .maxAmt = 1'000'000'000'000'000,
-            });  // 1e15
+                .pay = 100'000'000'000'000,       // 1e14
+                .maxAmt = 1'000'000'000'000'000,  // 1e15
+            });
             env.close();
 
             AMM amm(env, alice_, XRP(10), mpt(1));
@@ -7618,9 +7618,9 @@ private:
                 .env = env,
                 .issuer = gw_,
                 .holders = {alice_},
-                .pay = 100'000'000'000'000,  // 1e14
-                .maxAmt = 1'000'000'000'000'000,
-            });  // 1e15
+                .pay = 100'000'000'000'000,       // 1e14
+                .maxAmt = 1'000'000'000'000'000,  // 1e15
+            });
             env.close();
 
             // alice holds all LPTokens of a tiny XRP/MPT pool.

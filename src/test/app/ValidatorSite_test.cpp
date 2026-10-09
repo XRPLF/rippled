@@ -758,9 +758,9 @@ public:
                         .serverVersion = 1,
                         .expiresFromNow = detail::kDefaultExpires,
                         .effectiveOverlap = detail::kDefaultEffectiveOverlap,
-                        .expectedRefreshMin = 1,
+                        .expectedRefreshMin = 1,  // minimum of 1 minute
                     },
-                });  // minimum of 1 minute
+                });
             testFetchList(
                 good,
                 {
@@ -773,9 +773,9 @@ public:
                         .serverVersion = 1,
                         .expiresFromNow = detail::kDefaultExpires,
                         .effectiveOverlap = detail::kDefaultEffectiveOverlap,
-                        .expectedRefreshMin = 1,
+                        .expectedRefreshMin = 1,  // minimum of 1 minute
                     },
-                });  // minimum of 1 minute
+                });
             testFetchList(
                 good,
                 {
@@ -788,9 +788,9 @@ public:
                         .serverVersion = 1,
                         .expiresFromNow = detail::kDefaultExpires,
                         .effectiveOverlap = detail::kDefaultEffectiveOverlap,
-                        .expectedRefreshMin = 10,
+                        .expectedRefreshMin = 10,  // 10 minutes is fine
                     },
-                });  // 10 minutes is fine
+                });
             testFetchList(
                 good,
                 {
@@ -803,9 +803,9 @@ public:
                         .serverVersion = 1,
                         .expiresFromNow = detail::kDefaultExpires,
                         .effectiveOverlap = detail::kDefaultEffectiveOverlap,
-                        .expectedRefreshMin = 10,
+                        .expectedRefreshMin = 10,  // 10 minutes is fine
                     },
-                });  // 10 minutes is fine
+                });
             testFetchList(
                 good,
                 {
@@ -818,9 +818,9 @@ public:
                         .serverVersion = 1,
                         .expiresFromNow = detail::kDefaultExpires,
                         .effectiveOverlap = detail::kDefaultEffectiveOverlap,
-                        .expectedRefreshMin = 60 * 24,
+                        .expectedRefreshMin = 60 * 24,  // max of 24 hours
                     },
-                });  // max of 24 hours
+                });
             testFetchList(
                 good,
                 {
@@ -833,9 +833,9 @@ public:
                         .serverVersion = 1,
                         .expiresFromNow = detail::kDefaultExpires,
                         .effectiveOverlap = detail::kDefaultEffectiveOverlap,
-                        .expectedRefreshMin = 60 * 24,
+                        .expectedRefreshMin = 60 * 24,  // max of 24 hours
                     },
-                });  // max of 24 hours
+                });
         }
         using namespace std::filesystem;
         for (auto const& file : directory_iterator(good.subdir()))

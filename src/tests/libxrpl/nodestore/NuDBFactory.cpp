@@ -96,8 +96,8 @@ TEST(NuDBFactory, invalid_block_sizes)
         "-1",      // negative
         "abc",     // non-numeric
         "4k",      // invalid format
-        "4096.5",
-    };  // decimal
+        "4096.5",  // decimal
+    };
 
     for (auto const& size : kInvalidSizes)
     {
@@ -187,8 +187,8 @@ TEST(NuDBFactory, power_of_two_validation)
         {"16384", true},   // valid power of 2
         {"32768", true},   // maximum valid
         {"32769", false},  // just above maximum
-        {"65536", false},
-    };  // power of 2 but too large
+        {"65536", false},  // power of 2 but too large
+    };
 
     for (auto const& [size, shouldWork] : kCASES)
     {

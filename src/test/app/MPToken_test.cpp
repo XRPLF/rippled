@@ -4214,14 +4214,14 @@ class MPToken_test : public beast::unit_test::Suite
         auto const usd = gw["USD"];
 
         // Blocking flags
-        for (auto flags : {
-                 tfMPTCanTrade | tfMPTCanLock |
-                     tfMPTCanClawback,              // global lock - holder, issuer fail
-                 tfMPTCanTrade | tfMPTRequireAuth,  // not authorized - holder fails
-                 tfMPTCanTrade,                     // holder, issuer succeed
-                 tfMPTCanTrade | tfMPTCanLock,      // local lock - holder fails
-                 tfMPTCanTransfer,
-             })  // can't trade - holder, issuer fail
+        auto const blockingFlags = {
+            tfMPTCanTrade | tfMPTCanLock | tfMPTCanClawback,  // global lock - holder, issuer fail
+            tfMPTCanTrade | tfMPTRequireAuth,                 // not authorized - holder fails
+            tfMPTCanTrade,                                    // holder, issuer succeed
+            tfMPTCanTrade | tfMPTCanLock,                     // local lock - holder fails
+            tfMPTCanTransfer,                                 // can't trade - holder, issuer fail
+        };
+        for (auto flags : blockingFlags)
         {
             Env env{*this, features};
             env.fund(XRP(1'000), gw, alice);
