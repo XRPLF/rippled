@@ -138,7 +138,7 @@ STTx::getFullText() const
     ret += to_string(getTransactionID());
     ret += "\" = {";
     ret += STObject::getFullText();
-    ret += "}";
+    ret += '}';
     return ret;
 }
 

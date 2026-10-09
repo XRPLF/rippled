@@ -1142,7 +1142,7 @@ doLedgerEntryGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& c
     auto& stateObject = *response.mutable_ledger_object();
     stateObject.set_data(s.peekData().data(), s.getLength());
     stateObject.set_key(request.key());
-    *(response.mutable_ledger()) = request.ledger();
+    *response.mutable_ledger() = request.ledger();
     return {response, status};
 }
 }  // namespace xrpl

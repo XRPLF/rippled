@@ -6844,14 +6844,14 @@ private:
                 auto const [amount, amount2, lptAMM] = amm.balances(XRP, xpm);
                 auto const withdraw = STAmount{xpm, 1, -5};
                 amm.withdraw(WithdrawArg{.asset1Out = STAmount{xpm, 1, -5}});
-                auto const [amount_, amount2_, lptAMM_] = amm.balances(XRP, xpm);
+                auto const [amountAfter, amount2After, lptAMMAfter] = amm.balances(XRP, xpm);
                 if (!env.enabled(fixAMMv1_3))
                 {
-                    BEAST_EXPECT((amount2 - amount2_) > withdraw);
+                    BEAST_EXPECT((amount2 - amount2After) > withdraw);
                 }
                 else
                 {
-                    BEAST_EXPECT((amount2 - amount2_) <= withdraw);
+                    BEAST_EXPECT((amount2 - amount2After) <= withdraw);
                 }
             },
             0);
