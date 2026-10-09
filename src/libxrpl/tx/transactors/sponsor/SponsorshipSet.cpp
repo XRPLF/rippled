@@ -393,7 +393,9 @@ SponsorshipSet::doApply()
                 sponsorAccSle,
                 (*sponsorAccSle)[sfBalance]->xrp(),
                 *reserveSponsorAccSle,
-                {} ctx_.journal,
+                // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+                {},
+                ctx_.journal,
                 tecUNFUNDED);
             !isTesSuccess(ret))
         {

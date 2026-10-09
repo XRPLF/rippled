@@ -534,11 +534,12 @@ public:
     static constexpr auto holderEncryptedSpending = EncryptedBalanceType::HolderEncryptedSpending;
     static constexpr auto auditorEncryptedBalance = EncryptedBalanceType::AuditorEncryptedBalance;
 
+    // NOLINTBEGIN(readability-trailing-comma) fix-it drops comma after `{}`
     MPTTester(
         Env& env,
         Account issuer,
-        MPTInit const& constr = {
-        } std::source_location const& loc = std::source_location::current());
+        MPTInit const& constr = {},
+        std::source_location const& loc = std::source_location::current());
     MPTTester(
         MPTInitDef const& constr,
         std::source_location const& loc = std::source_location::current());
@@ -551,22 +552,25 @@ public:
     operator MPT() const;
 
     void
-    create(MPTCreate const& arg = MPTCreate {
-    } std::source_location const& loc = std::source_location::current());
+    create(
+        MPTCreate const& arg = MPTCreate{},
+        std::source_location const& loc = std::source_location::current());
 
     static json::Value
     createJV(MPTCreate const& arg = MPTCreate{});
 
     void
-    destroy(MPTDestroy const& arg = MPTDestroy {
-    } std::source_location const& loc = std::source_location::current());
+    destroy(
+        MPTDestroy const& arg = MPTDestroy{},
+        std::source_location const& loc = std::source_location::current());
 
     static json::Value
     destroyJV(MPTDestroy const& arg = MPTDestroy{});
 
     void
-    authorize(MPTAuthorize const& arg = MPTAuthorize {
-    } std::source_location const& loc = std::source_location::current());
+    authorize(
+        MPTAuthorize const& arg = MPTAuthorize{},
+        std::source_location const& loc = std::source_location::current());
 
     static json::Value
     authorizeJV(MPTAuthorize const& arg = MPTAuthorize{});
@@ -577,14 +581,15 @@ public:
         std::source_location const& loc = std::source_location::current());
 
     void
-    set(MPTSet const& set = {} std::source_location const& loc = std::source_location::current());
+    set(MPTSet const& set = {}, std::source_location const& loc = std::source_location::current());
 
     static json::Value
     setJV(MPTSet const& set = {});
 
     void
-    convert(MPTConvert const& arg = MPTConvert {
-    } std::source_location const& loc = std::source_location::current());
+    convert(
+        MPTConvert const& arg = MPTConvert{},
+        std::source_location const& loc = std::source_location::current());
 
     /**
      * @brief Build a confidential convert JV without submitting it.
@@ -598,15 +603,17 @@ public:
     convertJV(MPTConvert const& arg, std::uint32_t seq);
 
     void
-    mergeInbox(MPTMergeInbox const& arg = MPTMergeInbox {
-    } std::source_location const& loc = std::source_location::current());
+    mergeInbox(
+        MPTMergeInbox const& arg = MPTMergeInbox{},
+        std::source_location const& loc = std::source_location::current());
 
     [[nodiscard]] json::Value
     mergeInboxJV(MPTMergeInbox const& arg = MPTMergeInbox{}) const;
 
     void
-    send(MPTConfidentialSend const& arg = MPTConfidentialSend {
-    } std::source_location const& loc = std::source_location::current());
+    send(
+        MPTConfidentialSend const& arg = MPTConfidentialSend{},
+        std::source_location const& loc = std::source_location::current());
 
     /**
      * @brief Build a confidential send JV.
@@ -644,8 +651,9 @@ public:
     chainAfterSend(Account const& sender, std::uint64_t sendAmt, json::Value const& jv) const;
 
     void
-    convertBack(MPTConvertBack const& arg = MPTConvertBack {
-    } std::source_location const& loc = std::source_location::current());
+    convertBack(
+        MPTConvertBack const& arg = MPTConvertBack{},
+        std::source_location const& loc = std::source_location::current());
 
     /**
      * @brief Build a confidential convertBack JV without submitting it.
@@ -661,16 +669,20 @@ public:
     convertBackJV(MPTConvertBack const& arg, std::uint32_t seq);
 
     void
-    confidentialClaw(MPTConfidentialClawback const& arg = MPTConfidentialClawback {
-    } std::source_location const& loc = std::source_location::current());
+    confidentialClaw(
+        MPTConfidentialClawback const& arg = MPTConfidentialClawback{},
+        std::source_location const& loc = std::source_location::current());
 
     void
-    mirrorUpdate(MPTMirrorUpdate const& arg = MPTMirrorUpdate {
-    } std::source_location const& loc = std::source_location::current());
+    mirrorUpdate(
+        MPTMirrorUpdate const& arg = MPTMirrorUpdate{},
+        std::source_location const& loc = std::source_location::current());
 
     void
-    holderKeyUpdate(MPTHolderKeyUpdate const& arg = MPTHolderKeyUpdate {
-    } std::source_location const& loc = std::source_location::current());
+    holderKeyUpdate(
+        MPTHolderKeyUpdate const& arg = MPTHolderKeyUpdate{},
+        std::source_location const& loc = std::source_location::current());
+    // NOLINTEND(readability-trailing-comma)
 
     [[nodiscard]] bool
     checkDomainID(std::optional<UInt256> expected) const;

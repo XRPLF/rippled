@@ -19,7 +19,8 @@ setUnion(boost::container::flat_set<T>& dst, boost::container::flat_set<T> const
         return;
 
     dst.reserve(dst.size() + src.size());
-    dst.insert(boost::container::ordered_unique_range_t {} src.begin(), src.end());
+    // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+    dst.insert(boost::container::ordered_unique_range_t{}, src.begin(), src.end());
 }
 
 }  // namespace xrpl
