@@ -2352,10 +2352,11 @@ public:
             return jv;
         };
 
-        auto const first = env.rpc("json", "subscribe", to_string(subscribeUrl(3u)))[jss::result];
+        // Read through rpcPayload: the version 3 reply arrives in the specification envelope.
+        auto const first = rpcPayload(env.rpc("json", "subscribe", to_string(subscribeUrl(3u))));
         BEAST_EXPECTS(first[jss::status] == jss::success, to_string(first));
 
-        auto const second = env.rpc("json", "subscribe", to_string(subscribeUrl(1u)))[jss::result];
+        auto const second = rpcPayload(env.rpc("json", "subscribe", to_string(subscribeUrl(1u))));
         BEAST_EXPECTS(second[jss::error] == "apiVersionConflict", to_string(second));
         BEAST_EXPECT(
             second[jss::error_message] == "Subscriptions on this url are served at api_version 3.");
@@ -2369,7 +2370,7 @@ public:
         unsub[jss::streams].append("ledger");
         env.rpc("json", "unsubscribe", to_string(unsub));
 
-        auto const reused = env.rpc("json", "subscribe", to_string(subscribeUrl(1u)))[jss::result];
+        auto const reused = rpcPayload(env.rpc("json", "subscribe", to_string(subscribeUrl(1u))));
         BEAST_EXPECTS(reused[jss::status] == jss::success, to_string(reused));
     }
 

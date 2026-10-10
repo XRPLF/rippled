@@ -1,5 +1,6 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/multisign.h>
@@ -784,7 +785,7 @@ class Transaction_test : public beast::unit_test::Suite
             params[jss::transaction] = to_string(txn->getTransactionID());
             params[jss::binary] = false;
             params[jss::api_version] = apiVersion;
-            return env.client().invoke("tx", params);
+            return test::jtx::rpcLegacyReply(env.client().invoke("tx", params));
         }()};
 
         BEAST_EXPECT(result[jss::result][jss::status] == jss::success);
@@ -851,7 +852,7 @@ class Transaction_test : public beast::unit_test::Suite
             params[jss::transaction] = to_string(txn->getTransactionID());
             params[jss::binary] = true;
             params[jss::api_version] = apiVersion;
-            return env.client().invoke("tx", params);
+            return test::jtx::rpcLegacyReply(env.client().invoke("tx", params));
         }();
 
         if (BEAST_EXPECT(result[jss::status] == "success"))

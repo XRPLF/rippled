@@ -25,7 +25,9 @@ inline constexpr std::string_view kJsonRpcVersion{"2.0"};
  * The specification reserves -32768 to -32000 for the protocol and leaves
  * -32000 to -32099 of it to the implementation.
  *
- * kJsonRpcServerError is the code for an error an XRPL handler reports.
+ * kJsonRpcServerError is the code for an error an XRPL handler reports. The
+ * XRPL token and code travel in the error's `data` member, so renumbering an
+ * XRPL error cannot change a JSON-RPC code.
  *
  * The codes from kJsonRpcServerOverloaded on lie outside the
  * implementation-defined sub-range, which the specification does not allow.
