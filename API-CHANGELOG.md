@@ -10,6 +10,12 @@ The [commandline](https://xrpl.org/docs/references/http-websocket-apis/api-conve
 
 For a log of breaking changes, see the **API Version [number]** headings. In general, breaking changes are associated with a particular API Version number. For non-breaking changes, scroll to the **XRP Ledger version [x.y.z]** headings. Non-breaking changes are associated with a particular XRP Ledger (`xrpld`) release.
 
+## Unreleased
+
+### Bugfixes
+
+- HTTP batch RPC requests rejected before handler execution now mask `secret`, `seed`, `seed_hex`, and `passphrase` fields in echoed request data, including nested objects and arrays. This also prevents those echoed values from appearing in debug reply logs. ([#7461](https://github.com/XRPLF/rippled/issues/7461))
+
 ## API Version 3 (Beta)
 
 API version 3 is currently a beta API. It requires enabling `[beta_rpc_api]` in the xrpld configuration to use. See [API-VERSION-3.md](API-VERSION-3.md) for the full list of changes in API version 3.
