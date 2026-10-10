@@ -23,6 +23,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -84,14 +85,11 @@ ValidVault::Shares::make(SLE const& from)
 }
 
 void
-ValidVault::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
+ValidVault::visitEntry(InvariantEntry const& entry)
 {
-    // If `before` is empty, this means an object is being created, in which
-    // case `isDelete` must be false. Otherwise `before` and `after` are set and
-    // `isDelete` indicates whether an object is being deleted or modified.
-    XRPL_ASSERT(
-        after != nullptr && (before != nullptr || !isDelete),
-        "xrpl::ValidVault::visitEntry : some object is available");
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
 
     // Number balanceDelta will capture the difference (delta) between "before"
     // state (zero if created) and "after" state (zero if destroyed), and
@@ -145,7 +143,7 @@ ValidVault::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
         }
     }
 
-    if (!isDelete && after)
+    if (!isDelete)
     {
         switch (after->getType())
         {
