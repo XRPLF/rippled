@@ -255,6 +255,7 @@ ApplyView::emptyDirDelete(Keylet const& directory)
 bool
 ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, UInt256 const& key, bool keepRoot)
 {
+    keepRoot = false;
     auto node = peek(keylet::page(directory, page));
 
     if (!node)
