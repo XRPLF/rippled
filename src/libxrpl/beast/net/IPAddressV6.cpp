@@ -9,11 +9,18 @@ namespace beast::ip {
 bool
 isPrivate(AddressV6 const& addr)
 {
-    // fc00::/7 - Unique Local Address (ULA), covers fc00:: and fd00::
-    if ((addr.to_bytes()[0] & 0xfe) == 0xfc)
+    if (addr.is_loopback() || addr.is_unspecified())
         return true;
     if (addr.is_v4_mapped())
         return isPrivate(boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, addr));
+
+    auto const b = addr.to_bytes();
+
+    // fc00::/7 - Unique Local Address (ULA), covers fc00:: and fd00::
+    if ((b[0] & 0xfe) == 0xfc)
+        return true;
+    if (b[0] == 0xfe && (b[1] & 0xc0) == 0x80)
+        return true;
     return false;
 }
 
