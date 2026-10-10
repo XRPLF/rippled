@@ -60,11 +60,34 @@ class TransactionEntry_test : public beast::unit_test::Suite
         }
 
         {
+            // No ledger selects the current one, not any ledger.
+            json::Value params{json::ValueType::Object};
+            params[jss::tx_hash] =
+                "E2FE8D4AF3FCC3944DDF6CD8CDDC5E3F0AD50863EF8919AFEF10CB6408CD4D05";
+            auto const result = env.client().invoke("transaction_entry", params)[jss::result];
+            BEAST_EXPECT(result[jss::error] == "notYetImplemented");
+            BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result.isMember(jss::ledger_current_index));
+            BEAST_EXPECT(!result.isMember(jss::ledger_hash));
+            BEAST_EXPECT(result[jss::validated] == false);
+        }
+
+        {
             json::Value params{json::ValueType::Object};
             params[jss::ledger] = "closed";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
             BEAST_EXPECT(!result[jss::ledger_hash].asString().empty());
+            BEAST_EXPECT(result[jss::error] == "malformedRequest");
+            BEAST_EXPECT(result[jss::status] == "error");
+        }
+
+        for (auto const type : {json::ValueType::Object, json::ValueType::Array})
+        {
+            json::Value params{json::ValueType::Object};
+            params[jss::ledger] = "closed";
+            params[jss::tx_hash] = json::Value{type};
+            auto const result = env.client().invoke("transaction_entry", params)[jss::result];
             BEAST_EXPECT(result[jss::error] == "malformedRequest");
             BEAST_EXPECT(result[jss::status] == "error");
         }
@@ -149,7 +172,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
                            std::string const expectedLedgerHash = "",
                            std::string const closeTimeIso = "") {
             // first request using ledger_index to lookup
-            json::Value const resIndex{[&env, index, &txhash, apiVersion]() {
+            json::Value const resIndex{[&env, index, &txhash, apiVersion] {
                 json::Value params{json::ValueType::Object};
                 params[jss::ledger_index] = index;
                 params[jss::tx_hash] = txhash;

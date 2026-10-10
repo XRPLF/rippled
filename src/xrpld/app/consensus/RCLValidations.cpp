@@ -121,10 +121,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 {
     using namespace std::chrono_literals;
     auto ledger = perf::measureDurationAndLog(
-        [&]() { return app_.getLedgerMaster().getLedgerByHash(hash); },
-        "getLedgerByHash",
-        10ms,
-        j_);
+        [&] { return app_.getLedgerMaster().getLedgerByHash(hash); }, "getLedgerByHash", 10ms, j_);
 
     if (!ledger)
     {
@@ -204,7 +201,7 @@ handleNewValidation(
                                          : validations.adaptor().journal().info();
         ls.active())
     {
-        auto const id = [&masterKey, &signingKey]() {
+        auto const id = [&masterKey, &signingKey] {
             auto ret = toBase58(TokenType::NodePublic, signingKey);
 
             if (masterKey && masterKey != signingKey)

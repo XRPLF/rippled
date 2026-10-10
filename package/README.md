@@ -12,7 +12,7 @@ package/
   sign_rpm.py         Signs the built RPMs (called by CI when publishing)
   images/
     packaging/
-      Dockerfile        Packaging image, built by `build-packaging-images.yml`; installs its tooling with `bin/install-packaging-tools.sh`
+      Dockerfile        Packaging image, built by `build-packaging-images.yml`; installs its tooling with `bin/install/packaging-tools.sh`
       publish_pkg.py    Uploads built packages to the XRPLF Nexus repositories (called by CI, and shipped in that image)
     xrpld/
       Dockerfile        The xrpld Docker images, installing the built DEB on Ubuntu (see "Docker images")

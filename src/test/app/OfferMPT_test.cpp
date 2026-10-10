@@ -2530,7 +2530,7 @@ public:
             }
             std::uint32_t const acctOfferSeq = env.seq(acct) - 1;
 
-            auto const expBalanceUsd = [&]() {
+            auto const expBalanceUsd = [&] {
                 if (t.scale == 1)
                     return t.balanceUsd;
                 // crossed offer has XRP available balance of 1 fee
@@ -2546,7 +2546,7 @@ public:
             BEAST_EXPECT(acctOffers.size() == t.offers);
             if (!acctOffers.empty() && t.offers != 0)
             {
-                auto const& acctOffer = *(acctOffers.front());
+                auto const& acctOffer = *acctOffers.front();
 
                 auto const leftover = t.offerAmount - t.bookAmount;
                 BEAST_EXPECT(acctOffer[sfTakerGets] == XRP(leftover));
@@ -2642,7 +2642,7 @@ public:
         {
             auto const bobsOffers = offersOnAccount(env, bob);
             BEAST_EXPECT(bobsOffers.size() == 1);
-            auto const& bobsOffer = *(bobsOffers.front());
+            auto const& bobsOffer = *bobsOffers.front();
 
             BEAST_EXPECT(bobsOffer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(bobsOffer[sfTakerGets] == usd(1));
@@ -2723,7 +2723,7 @@ public:
                 auto bobsOffers = offersOnAccount(env, bob);
                 if (BEAST_EXPECT(bobsOffers.size() == 1))
                 {
-                    auto const& bobsOffer = *(bobsOffers.front());
+                    auto const& bobsOffer = *bobsOffers.front();
 
                     BEAST_EXPECT(bobsOffer[sfTakerGets] == usd(1));
                     BEAST_EXPECT(bobsOffer[sfTakerPays] == eur(1));
@@ -2831,7 +2831,7 @@ public:
             {
                 auto const aliceOffers = offersOnAccount(env, alice);
                 BEAST_EXPECT(aliceOffers.size() == 1);
-                auto const& aliceOffer = *(aliceOffers.front());
+                auto const& aliceOffer = *aliceOffers.front();
 
                 BEAST_EXPECT(aliceOffer[sfLedgerEntryType] == ltOFFER);
                 BEAST_EXPECT(aliceOffer[sfTakerGets] == usd(600));
@@ -2840,7 +2840,7 @@ public:
             {
                 auto const bobsOffers = offersOnAccount(env, bob);
                 BEAST_EXPECT(bobsOffers.size() == 1);
-                auto const& bobsOffer = *(bobsOffers.front());
+                auto const& bobsOffer = *bobsOffers.front();
 
                 BEAST_EXPECT(bobsOffer[sfLedgerEntryType] == ltOFFER);
                 BEAST_EXPECT(bobsOffer[sfTakerGets] == XRP(600));
@@ -2867,7 +2867,7 @@ public:
             if (!aliceOffers.empty())
             {
                 BEAST_EXPECT(aliceOffers.size() == 1);
-                auto const& aliceOffer = *(aliceOffers.front());
+                auto const& aliceOffer = *aliceOffers.front();
 
                 BEAST_EXPECT(aliceOffer[sfLedgerEntryType] == ltOFFER);
                 BEAST_EXPECT(aliceOffer[sfTakerGets] == usd(0));
@@ -3049,7 +3049,7 @@ public:
                 if (!acctOffers.empty())
                 {
                     BEAST_EXPECT(acctOffers.size() == 1);
-                    auto const& acctOffer = *(acctOffers.front());
+                    auto const& acctOffer = *acctOffers.front();
 
                     BEAST_EXPECT(acctOffer[sfLedgerEntryType] == ltOFFER);
                     BEAST_EXPECT(acctOffer[sfTakerGets] == t.takerGets);
@@ -3328,7 +3328,7 @@ public:
                 BEAST_EXPECT(evesOffers.size() == 1);
                 if (!evesOffers.empty())
                 {
-                    auto const& evesOffer = *(evesOffers.front());
+                    auto const& evesOffer = *evesOffers.front();
                     BEAST_EXPECT(evesOffer[sfLedgerEntryType] == ltOFFER);
                     BEAST_EXPECT(evesOffer[sfTakerGets] == XRP(2'000));
                     BEAST_EXPECT(evesOffer[sfTakerPays] == usd(500));
@@ -3463,7 +3463,7 @@ public:
                 if (!ovasOffers.empty())
                 {
                     BEAST_EXPECT(ovasOffers.size() == 1);
-                    auto const& ovasOffer = *(ovasOffers.front());
+                    auto const& ovasOffer = *ovasOffers.front();
 
                     BEAST_EXPECT(ovasOffer[sfLedgerEntryType] == ltOFFER);
                     BEAST_EXPECT(ovasOffer[sfTakerGets] == usd(0));
@@ -4902,7 +4902,7 @@ public:
         {
             // The ledger sequence needs to far enough ahead of the account
             // sequence before the account can be deleted.
-            int const delta = [&env, &gw, openLedgerSeq = env.current()->seq()]() -> int {
+            int const delta = [&env, &gw, openLedgerSeq = env.current()->seq()] -> int {
                 std::uint32_t const gwSeq{env.seq(gw)};
                 if (gwSeq + 255 > openLedgerSeq)
                     return gwSeq - openLedgerSeq + 255;
