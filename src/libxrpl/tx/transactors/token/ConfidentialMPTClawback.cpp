@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -94,7 +95,7 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     // Check holder's MPToken
-    auto const sleHolderMPToken = ctx.view.read(keylet::mptoken(mptIssuanceID, holder));
+    MPTokenEntryR const sleHolderMPToken(mptIssuanceID, holder, ctx.view);
     if (!sleHolderMPToken)
         return tecOBJECT_NOT_FOUND;
 
@@ -133,7 +134,7 @@ ConfidentialMPTClawback::doApply()
     auto const holder = ctx_.tx[sfHolder];
 
     auto sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
-    auto sleHolderMPToken = view().peek(keylet::mptoken(mptIssuanceID, holder));
+    MPTokenEntryW sleHolderMPToken(mptIssuanceID, holder, view(), j_);
 
     if (!sleIssuance || !sleHolderMPToken)
     {
@@ -228,7 +229,7 @@ ConfidentialMPTClawback::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
     (*sleIssuance)[sfOutstandingAmount] = oldOA - clawAmount;
 
-    view().update(sleHolderMPToken);
+    sleHolderMPToken.update();
     view().update(sleIssuance);
 
     return tesSUCCESS;
