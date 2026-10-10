@@ -7,7 +7,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/CredentialEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -23,7 +22,6 @@
 #include <xrpl/protocol/digest.h>
 
 #include <algorithm>
-#include <cstdint>
 #include <expected>
 #include <set>
 #include <unordered_set>
@@ -52,7 +50,7 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
         {
             JLOG(j.trace()) << "Credentials are expired. Cred: " << sleCred->getText();
             // delete expired credentials even if the transaction failed
-            auto const err = deleteSLE(view, sleCred, j);
+            auto const err = sleCred.removeFromLedger();
             if (view.rules().enabled(fixCleanup3_1_3) && !isTesSuccess(err))
                 return std::unexpected(err);
             foundExpired = true;
@@ -60,60 +58,6 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
     }
 
     return foundExpired;
-}
-
-TER
-deleteSLE(ApplyView& view, CredentialEntryW& sleCredential, beast::Journal j)
-{
-    if (!sleCredential)
-        return tecNO_ENTRY;
-
-    auto delSLE = [&view, &sleCredential, j](
-                      AccountID const& account, SField const& node, bool isOwner) -> TER {
-        auto const sleAccount = view.peek(keylet::account(account));
-        if (!sleAccount)
-        {
-            // LCOV_EXCL_START
-            JLOG(j.fatal()) << "Internal error: can't retrieve Owner account.";
-            return tecINTERNAL;
-            // LCOV_EXCL_STOP
-        }
-
-        // Remove object from owner directory
-        std::uint64_t const page = sleCredential->getFieldU64(node);
-        if (!view.dirRemove(keylet::ownerDir(account), page, sleCredential->key(), false))
-        {
-            // LCOV_EXCL_START
-            JLOG(j.fatal()) << "Unable to delete Credential from owner.";
-            return tefBAD_LEDGER;
-            // LCOV_EXCL_STOP
-        }
-
-        if (isOwner)
-            decreaseOwnerCountForObject(view, sleAccount, sleCredential.mutableRawSle(), 1, j);
-
-        return tesSUCCESS;
-    };
-
-    auto const issuer = sleCredential->getAccountID(sfIssuer);
-    auto const subject = sleCredential->getAccountID(sfSubject);
-    bool const accepted = sleCredential->isFlag(lsfAccepted);
-
-    auto err = delSLE(issuer, sfIssuerNode, !accepted || (subject == issuer));
-    if (!isTesSuccess(err))
-        return err;
-
-    if (subject != issuer)
-    {
-        err = delSLE(subject, sfSubjectNode, accepted);
-        if (!isTesSuccess(err))
-            return err;
-    }
-
-    // Remove object from ledger
-    sleCredential.erase();
-
-    return tesSUCCESS;
 }
 
 NotTEC

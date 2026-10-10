@@ -4,7 +4,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/entries/CredentialEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -22,8 +21,6 @@
 
 #include <cstdint>
 namespace xrpl {
-
-using namespace credentials;
 
 std::uint32_t
 CredentialAccept::getFlagsMask(PreflightContext const& ctx)
@@ -117,7 +114,7 @@ CredentialAccept::doApply()
     {
         JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
         // delete expired credentials even if the transaction failed
-        auto const err = credentials::deleteSLE(view(), sleCred, j_);
+        auto const err = sleCred.removeFromLedger();
         return isTesSuccess(err) ? tecEXPIRED : err;
     }
 
