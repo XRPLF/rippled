@@ -33,7 +33,7 @@ private:
     setupSQLiteConfig(BasicConfig& config, std::filesystem::path const& dbPath)
     {
         config.overwrite(Sections::kSqdb, Keys::kBackend, "sqlite");
-        auto value = dbPath.string();
+        auto const value = dbPath.string();
         if (!value.empty())
             config.legacy(Sections::kDatabasePath, value);
     }
@@ -118,7 +118,7 @@ public:
         DBConfig const sc(c, "SociTestDB");
         std::vector<std::string> const stringData({"String1", "String2", "String3"});
         std::vector<int> const intData({1, 2, 3});
-        auto checkValues = [this, &stringData, &intData](soci::session& s) {
+        auto const checkValues = [this, &stringData, &intData](soci::session& s) {
             // Check values in db
             std::vector<std::string> stringResult(20 * stringData.size());
             std::vector<int> intResult(20 * intData.size());
@@ -128,9 +128,10 @@ public:
                 stringResult.size() == stringData.size() && intResult.size() == intData.size());
             for (int i = 0; i < stringResult.size(); ++i)
             {
-                auto si = std::distance(
+                auto const si = std::distance(
                     stringData.begin(), std::ranges::find(stringData, stringResult[i]));
-                auto ii = std::distance(intData.begin(), std::ranges::find(intData, intResult[i]));
+                auto const ii =
+                    std::distance(intData.begin(), std::ranges::find(intData, intResult[i]));
                 BEAST_EXPECT(si == ii && si < stringResult.size());
             }
         };

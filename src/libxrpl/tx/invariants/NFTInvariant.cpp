@@ -34,7 +34,7 @@ ValidNFTokenPage::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef 
         (after && after->getType() != ltNFTOKEN_PAGE))
         return;
 
-    auto check = [this, isDelete](SLE::ConstRef sle) {
+    auto const check = [this, isDelete](SLE::ConstRef sle) {
         UInt256 const account = sle->key() & kAccountBits;
         UInt256 const hiLimit = sle->key() & kPageBits;
         std::optional<UInt256> const prev = (*sle)[~sfPreviousPageMin];

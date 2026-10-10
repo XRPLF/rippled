@@ -76,7 +76,7 @@ public:
     std::shared_ptr<Ledger const>
     acquire(UInt256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
     {
-        auto doAcquire = [&, seq, reason] -> std::shared_ptr<Ledger const> {
+        auto const doAcquire = [&, seq, reason] -> std::shared_ptr<Ledger const> {
             XRPL_ASSERT(
                 hash.isNonZero(), "xrpl::InboundLedgersImp::acquire::doAcquire : nonzero hash");
 
@@ -94,7 +94,7 @@ public:
                     return {};
                 }
 
-                auto it = ledgers_.find(hash);
+                auto const it = ledgers_.find(hash);
                 if (it != ledgers_.end())
                 {
                     isNew = false;
@@ -162,7 +162,7 @@ public:
         {
             ScopedLockType const sl(lock_);
 
-            auto it = ledgers_.find(hash);
+            auto const it = ledgers_.find(hash);
             if (it != ledgers_.end())
             {
                 ret = it->second;
@@ -193,7 +193,7 @@ public:
         std::shared_ptr<Peer> peer,
         std::shared_ptr<protocol::TMLedgerData> packet) override
     {
-        if (auto ledger = find(hash))
+        if (auto const ledger = find(hash))
         {
             JLOG(j_.trace()) << "Got data (" << packet->nodes().size()
                              << ") for acquiring ledger: " << hash;

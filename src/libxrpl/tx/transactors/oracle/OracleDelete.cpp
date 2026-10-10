@@ -81,7 +81,7 @@ OracleDelete::deleteOracle(
 TER
 OracleDelete::doApply()
 {
-    if (auto sle = ctx_.view().peek(keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID])))
+    if (auto const sle = ctx_.view().peek(keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID])))
         return deleteOracle(ctx_.view(), sle, accountID_, j_);
 
     return tecINTERNAL;  // LCOV_EXCL_LINE

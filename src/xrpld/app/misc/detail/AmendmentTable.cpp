@@ -668,7 +668,7 @@ AmendmentState const*
 AmendmentTableImpl::get(UInt256 const& amendmentHash, std::scoped_lock<std::mutex> const&) const
 {
     // call with the mutex held
-    auto ret = amendmentMap_.find(amendmentHash);
+    auto const ret = amendmentMap_.find(amendmentHash);
 
     if (ret == amendmentMap_.end())
         return nullptr;

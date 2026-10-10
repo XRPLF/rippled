@@ -661,7 +661,7 @@ class Ticket_test : public beast::unit_test::Suite
         env.close();
 
         // Lambda that returns the hash of the most recent transaction.
-        auto getTxID = [&env, this] -> UInt256 {
+        auto const getTxID = [&env, this] -> UInt256 {
             std::shared_ptr<STTx const> const tx{env.tx()};
             if (!BEAST_EXPECTS(tx, "Transaction not found"))
                 Throw<std::invalid_argument>("Invalid transaction ID");
@@ -718,12 +718,12 @@ class Ticket_test : public beast::unit_test::Suite
         // transactions from memory rather than from the database.
 
         // Lambda to verify a transaction pulled from the Transaction database.
-        auto checkTxFromDB = [&env, this](
-                                 UInt256 const& txID,
-                                 std::uint32_t ledgerSeq,
-                                 std::uint32_t txSeq,
-                                 std::optional<std::uint32_t> ticketSeq,
-                                 TxType txType) {
+        auto const checkTxFromDB = [&env, this](
+                                       UInt256 const& txID,
+                                       std::uint32_t ledgerSeq,
+                                       std::uint32_t txSeq,
+                                       std::optional<std::uint32_t> ticketSeq,
+                                       TxType txType) {
             ErrorCodeI txErrCode{RpcSuccess};
 
             using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;

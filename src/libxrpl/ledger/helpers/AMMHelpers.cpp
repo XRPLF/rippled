@@ -747,7 +747,7 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
 TER
 deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Journal j)
 {
-    auto ammSle = sb.peek(keylet::amm(asset, asset2));
+    auto const ammSle = sb.peek(keylet::amm(asset, asset2));
     if (!ammSle)
     {
         // LCOV_EXCL_START
@@ -757,7 +757,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
     }
 
     auto const ammAccountID = (*ammSle)[sfAccount];
-    auto sleAMMRoot = sb.peek(keylet::account(ammAccountID));
+    auto const sleAMMRoot = sb.peek(keylet::account(ammAccountID));
     if (!sleAMMRoot)
     {
         // LCOV_EXCL_START
@@ -802,8 +802,8 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
 
 void
 initializeFeeAuctionVote(
-    ApplyView& view,
-    SLE::pointer& ammSle,
+    ApplyView const& view,
+    SLE::pointer const& ammSle,
     AccountID const& account,
     Asset const& lptAsset,
     std::uint16_t tfee)
@@ -961,7 +961,7 @@ std::expected<bool, TER>
 verifyAndAdjustLPTokenBalance(
     Sandbox& sb,
     STAmount const& lpTokens,
-    SLE::pointer& ammSle,
+    SLE::pointer const& ammSle,
     AccountID const& account)
 {
     auto const res = isOnlyLiquidityProvider(sb, lpTokens.get<Issue>(), account);

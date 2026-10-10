@@ -50,7 +50,7 @@ private:
 
         Env env(*this, features);
 
-        auto lowerFee = [&] {
+        auto const lowerFee = [&] {
             // Run the local fee back down.
             while (env.app().getFeeTrack().lowerLocalFee())
                 ;
@@ -89,7 +89,7 @@ private:
             auto const jSign = env.rpc("json", "sign", to_string(signParams));
             BEAST_EXPECT(jSign.isMember(jss::result) && jSign[jss::result].isMember(jss::tx_json));
             auto txSignResult = jSign[jss::result][jss::tx_json];
-            auto txSignBlob = jSign[jss::result][jss::tx_blob].asString();
+            auto const txSignBlob = jSign[jss::result][jss::tx_blob].asString();
             txSignResult.removeMember(jss::hash);
 
             auto const jtx = env.jt(txJson, Sig(borrower));

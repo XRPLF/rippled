@@ -270,7 +270,8 @@ readAmendments(
         boost::optional<AmendmentVote> vote)> const& callback)
 {
     // lambda that converts the internally stored int to an AmendmentVote.
-    auto intToVote = [](boost::optional<int> const& dbVote) -> boost::optional<AmendmentVote> {
+    auto const intToVote =
+        [](boost::optional<int> const& dbVote) -> boost::optional<AmendmentVote> {
         return safeCast<AmendmentVote>(dbVote.value_or(1));
     };
 

@@ -512,7 +512,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         testcase("Convert proof context binding");
         using namespace test::jtx;
 
-        auto runBadProof = [&](auto makeContextHash) {
+        auto const runBadProof = [&](auto makeContextHash) {
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
@@ -3267,7 +3267,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
                 // Set lsfMPTCanHoldConfidentialBalance on the share issuance
                 // so the invariant allows encrypted fields on the MPToken
-                auto issuance =
+                auto const issuance =
                     std::const_pointer_cast<SLE>(view.read(keylet::mptokenIssuance(share)));
                 if (!issuance)
                     return false;
@@ -4191,7 +4191,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         testcase("ConfidentialMPTClawback context binding");
         using namespace test::jtx;
 
-        auto runBadProof = [&](auto makeContextHash) {
+        auto const runBadProof = [&](auto makeContextHash) {
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
@@ -4540,7 +4540,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             tfMPTCanLock | tfMPTCanHoldConfidentialBalance;
         std::string const dummyClawbackProof(kEcClawbackProofLength * 2, '0');
 
-        auto removeMPTokenField =
+        auto const removeMPTokenField =
             [&](Env& env, MPTTester const& mpt, Account const& holder, SField const& field) {
                 BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
                     auto const sle = std::const_pointer_cast<SLE>(
@@ -4717,7 +4717,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // lambda function to set up MPT with alice as issuer, bob and carol
         // as authorized holders, and fund 1000 mpt to bob and 2000 mpt to
         // carol.
-        auto setupEnv = [&](Env& env) -> MPTTester {
+        auto const setupEnv = [&](Env& env) -> MPTTester {
             MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create({
@@ -4741,7 +4741,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         // lambda function to test a set of bad clawback amounts that should
         // return tecBAD_PROOF
-        auto checkBadProofs =
+        auto const checkBadProofs =
             [&](MPTTester& mpt, Account const& holder, std::initializer_list<uint64_t> amts) {
                 for (auto const badAmt : amts)
                 {
@@ -4948,14 +4948,14 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // After clearing the confidential flag, all four public MPT operations
         // must succeed regardless of which confidential path left encrypted-zero
         // fields on bob's MPToken.
-        auto runPublicPayments = [&](MPTTester& mpt) {
+        auto const runPublicPayments = [&](MPTTester& mpt) {
             mpt.pay(bob, carol, 10);
             mpt.pay(carol, bob, 5);
             mpt.pay(alice, bob, 1);
             mpt.pay(carol, alice, 5);
         };
 
-        auto drainAndDeleteBobMPToken = [&](Env& env, MPTTester& mpt) {
+        auto const drainAndDeleteBobMPToken = [&](Env& env, MPTTester& mpt) {
             auto const bobBalance = mpt.getBalance(bob);
             BEAST_EXPECT(bobBalance > 0);
 
@@ -5123,7 +5123,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
 
             auto holderPubKeySet = false;
-            auto verifyToggle = [&](TER expectedResult, uint64_t amt) {
+            auto const verifyToggle = [&](TER expectedResult, uint64_t amt) {
                 if (!holderPubKeySet)
                 {
                     mptAlice.convert({
@@ -5527,7 +5527,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // amount to bypass the client-side check.
 
         // Generate the sigma proof manually using the lower-level secp256k1 API
-        auto* ctx = mpt_secp256k1_context();
+        auto const* ctx = mpt_secp256k1_context();
         Buffer sigmaProof(SECP256K1_COMPACT_STANDARD_PROOF_SIZE);
 
         // Parse all public keys and ciphertexts
@@ -5758,7 +5758,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             getConvertBackContextHash(bob.id(), mptAlice.issuanceID(), env.seq(bob), version);
 
         // Now manually generate the compact sigma proof for ConvertBack
-        auto* ctx = mpt_secp256k1_context();
+        auto const* ctx = mpt_secp256k1_context();
         Buffer sigmaProof(SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE);
 
         // Parse the holder's public key
@@ -5778,7 +5778,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // Parse balance ciphertext (B1, B2)
         secp256k1_pubkey b1, b2;
         x = secp256k1_ec_pubkey_parse(ctx, &b1, bobEncBalance.data(), kCompressedEcPointLength);
-        auto y = secp256k1_ec_pubkey_parse(
+        auto const y = secp256k1_ec_pubkey_parse(
             ctx, &b2, bobEncBalance.data() + kCompressedEcPointLength, kCompressedEcPointLength);
         if (!BEAST_EXPECTS(x == 1 && y == 1, "Failed to parse balance ciphertext"))
             return;
@@ -6045,7 +6045,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         testcase("ConvertBack proof context binding");
         using namespace test::jtx;
 
-        auto runBadProof = [&](auto makeContextHash) {
+        auto const runBadProof = [&](auto makeContextHash) {
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
@@ -6990,7 +6990,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // will use the same randomness and expected to succeed, this is the
         // control case that confirms the test setup itself is sound, the bad proof
         // is actually from divergent randomness, not other causes.
-        auto submitWithDivergentC1 = [&](std::optional<Participant> divergent) {
+        auto const submitWithDivergentC1 = [&](std::optional<Participant> divergent) {
             ConfidentialSendSetup setup(mptAlice, bob, carol, alice, amt, std::cref(auditor));
 
             auto const proofOpt =
@@ -7069,7 +7069,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         testcase("test confidential transactions fee");
         using namespace test::jtx;
 
-        auto setup =
+        auto const setup =
             [&](MPTTester& mpt, Account const& alice, Account const& bob, Account const& carol) {
                 mpt.create({
                     .ownerCount = 1,
@@ -7098,7 +7098,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             // lambda function to submit confidential transaction and check fee charged to the
             // account
-            auto checkFee = [&](Account const& acct, auto&& submitFn) {
+            auto const checkFee = [&](Account const& acct, auto&& submitFn) {
                 auto const before = env.balance(acct);
                 submitFn();
                 auto const after = env.balance(acct);
@@ -7398,7 +7398,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         testcase("Send proof context binding");
         using namespace test::jtx;
 
-        auto runBadProof = [&](auto makeContextHash) {
+        auto const runBadProof = [&](auto makeContextHash) {
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
@@ -7868,8 +7868,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // signature no longer covers the modified data.
         {
             auto const seq = env.seq(bob);
-            auto jv = mptAlice.sendJV({.account = bob, .dest = carol, .amt = sendAmount}, seq);
-            auto jtx = env.jt(jv);
+            auto const jv =
+                mptAlice.sendJV({.account = bob, .dest = carol, .amt = sendAmount}, seq);
+            auto const jtx = env.jt(jv);
             BEAST_EXPECT(jtx.stx);
 
             // Serialize signed tx, deserialize into mutable STObject
@@ -7964,7 +7965,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // of both compressed EC points. For secp256k1 compressed form,
         // prefix 0x02 means even-y and 0x03 means odd-y; negation
         // swaps them: -P has the same x but opposite y.
-        auto negateCiphertext = [](Buffer const& ct) -> Buffer {
+        auto const negateCiphertext = [](Buffer const& ct) -> Buffer {
             Buffer neg = ct;
             neg.data()[0] ^= 0x01;                             // negate C1
             neg.data()[kEcCiphertextComponentLength] ^= 0x01;  // negate C2
@@ -7976,8 +7977,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // Signature no longer covers the modified field.
         {
             auto const seq = env.seq(bob);
-            auto jv = mptAlice.sendJV({.account = bob, .dest = carol, .amt = sendAmount}, seq);
-            auto jtx = env.jt(jv);
+            auto const jv =
+                mptAlice.sendJV({.account = bob, .dest = carol, .amt = sendAmount}, seq);
+            auto const jtx = env.jt(jv);
             BEAST_EXPECT(jtx.stx);
 
             Serializer s;
@@ -8071,8 +8073,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // The original signature doesn't cover the combined ciphertext.
         {
             auto const seq = env.seq(bob);
-            auto jv = mptAlice.sendJV({.account = bob, .dest = carol, .amt = m1}, seq);
-            auto jtx = env.jt(jv);
+            auto const jv = mptAlice.sendJV({.account = bob, .dest = carol, .amt = m1}, seq);
+            auto const jtx = env.jt(jv);
             BEAST_EXPECT(jtx.stx);
 
             Serializer s;
@@ -8183,7 +8185,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // Helper: replace C1 in a ciphertext with C1 from another
         // ciphertext, keeping C2 unchanged. Returns a rerandomized
         // ciphertext (C1', C2).
-        auto substituteC1 = [](Buffer const& target, Buffer const& source) -> Buffer {
+        auto const substituteC1 = [](Buffer const& target, Buffer const& source) -> Buffer {
             Buffer result = target;
             // Copy C1 (the first ciphertext component) from source.
             std::memcpy(result.data(), source.data(), kEcCiphertextComponentLength);
@@ -8195,8 +8197,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // Signature no longer covers the modified ciphertext.
         {
             auto const seq = env.seq(bob);
-            auto jv = mptAlice.sendJV({.account = bob, .dest = carol, .amt = sendAmount}, seq);
-            auto jtx = env.jt(jv);
+            auto const jv =
+                mptAlice.sendJV({.account = bob, .dest = carol, .amt = sendAmount}, seq);
+            auto const jtx = env.jt(jv);
             BEAST_EXPECT(jtx.stx);
 
             Serializer s;
@@ -8279,8 +8282,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // the modified blob fails deserialization / signature check.
         {
             auto const seq = env.seq(bob);
-            auto jv = mptAlice.sendJV({.account = bob, .dest = carol, .amt = sendAmount}, seq);
-            auto jtx = env.jt(jv);
+            auto const jv =
+                mptAlice.sendJV({.account = bob, .dest = carol, .amt = sendAmount}, seq);
+            auto const jtx = env.jt(jv);
             BEAST_EXPECT(jtx.stx);
 
             // Serialize the signed transaction
@@ -8379,7 +8383,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         // Derive the deterministic canonical-zero randomness r0 used for
         // Bob's first spending balance.
-        auto getCanonicalZeroBlindingFactor = [](AccountID const& account, MPTID const& mptID) {
+        auto const getCanonicalZeroBlindingFactor = [](AccountID const& account,
+                                                       MPTID const& mptID) {
             Buffer scalar(kEcBlindingFactorLength);
             std::array<unsigned char, 51> hashInput{};
             std::memcpy(hashInput.data(), "EncZero", 7);
@@ -8409,7 +8414,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         // Pick randomness that would cancel Bob's MergeInbox C1 to infinity
         // without receiver-side re-randomization.
-        auto negateScalarSum = [](Buffer const& lhs, Buffer const& rhs) {
+        auto const negateScalarSum = [](Buffer const& lhs, Buffer const& rhs) {
             Buffer sum(kEcBlindingFactorLength);
             Buffer negated(kEcBlindingFactorLength);
             secp256k1_mpt_scalar_add(sum.data(), lhs.data(), rhs.data());

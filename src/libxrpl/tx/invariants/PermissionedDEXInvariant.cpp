@@ -26,7 +26,7 @@ ValidPermissionedDEX::visitEntry(bool isDelete, SLE::ConstRef, SLE::ConstRef aft
     if (isFeatureEnabled(fixCleanup3_4_0) && !after)
         return;
 
-    auto trackDomain = [this, isDelete](UInt256 const& domain) {
+    auto const trackDomain = [this, isDelete](UInt256 const& domain) {
         domainsOld_.insert(domain);
         if (!isDelete)
             domains_.insert(domain);

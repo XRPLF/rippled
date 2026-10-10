@@ -219,7 +219,7 @@ makeCapturePeer(
         boost::asio::ip::make_address("172.1.1.1"), detail::kCapturePeerPort);
     auto const remote = detail::nextCapturePeerRemote();
 
-    auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
+    auto const consumer = overlay.resourceManager().newInboundEndpoint(remote);
     auto [slot, _] = overlay.peerFinder().newInboundSlot(local, remote);
 
     // Unseated when the endpoint is already connected or at the per-address

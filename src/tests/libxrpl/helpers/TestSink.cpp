@@ -33,7 +33,7 @@ TestSink::write(beast::Severity level, std::string const& text)
 void
 TestSink::writeAlways(beast::Severity level, std::string const& text)
 {
-    auto supportsColor = [] {
+    auto const supportsColor = [] {
         // 1. Check for "NO_COLOR" environment variable (Standard convention)
         if (std::getenv("NO_COLOR") != nullptr)
         {

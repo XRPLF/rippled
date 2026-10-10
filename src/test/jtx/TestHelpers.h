@@ -494,7 +494,7 @@ public:
     waitFor(std::chrono::duration<Rep, Period> const& relTime)
     {
         std::unique_lock<std::mutex> lk(mutex_);
-        auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
+        auto const b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
         signaled_ = false;
         return b;
     }
@@ -551,27 +551,27 @@ xrpMinusFee(Env const& env, std::int64_t xrpAmount);
 
 bool
 expectHolding(
-    Env& env,
+    Env const& env,
     AccountID const& account,
     STAmount const& value,
     bool defaultLimits = false);
 
 template <typename... Amts>
 bool
-expectHolding(Env& env, AccountID const& account, STAmount const& value, Amts const&... amts)
+expectHolding(Env const& env, AccountID const& account, STAmount const& value, Amts const&... amts)
 {
     return expectHolding(env, account, value, false) && expectHolding(env, account, amts...);
 }
 
 bool
-expectHolding(Env& env, AccountID const& account, None const& value);
+expectHolding(Env const& env, AccountID const& account, None const& value);
 
 bool
-expectMPT(Env& env, AccountID const& account, STAmount const& value);
+expectMPT(Env const& env, AccountID const& account, STAmount const& value);
 
 bool
 expectOffers(
-    Env& env,
+    Env const& env,
     AccountID const& account,
     std::uint16_t size,
     std::vector<Amounts> const& toMatch = {});

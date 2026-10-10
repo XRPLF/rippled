@@ -358,7 +358,7 @@ RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
 
         standard(strWord);
 
-        auto v = wsrch(strWord, l < 4 ? 0 : 571, l < 4 ? 570 : 2048);
+        auto const v = wsrch(strWord, l < 4 ? 0 : 571, l < 4 ? 570 : 2048);
 
         if (v < 0)
             return 0;

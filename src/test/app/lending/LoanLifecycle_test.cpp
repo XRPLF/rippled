@@ -328,7 +328,7 @@ private:
         Account const borrower{"borrower"};
         Account const depositor{"depositor"};
 
-        auto testLoanAsset = [&](auto&& getMaxDebt, auto const& borrower) {
+        auto const testLoanAsset = [&](auto&& getMaxDebt, auto const& borrower) {
             Env env(*this);
             Vault const vault(env);
 
@@ -471,9 +471,9 @@ private:
         if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
-        auto broker = std::get<BrokerInfo>(*loanResult);
-        auto loanKeylet = std::get<Keylet>(*loanResult);
-        auto pseudoAcct = std::get<Account>(*loanResult);
+        auto const broker = std::get<BrokerInfo>(*loanResult);
+        auto const loanKeylet = std::get<Keylet>(*loanResult);
+        auto const pseudoAcct = std::get<Account>(*loanResult);
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
@@ -591,7 +591,7 @@ private:
         env(pay(issuer, borrower, iouAsset(5'000'000'000LL)));
         env.close();
 
-        auto usdBalance = [&](Account const& a) {
+        auto const usdBalance = [&](Account const& a) {
             return env.balance(a, iouAsset.raw().get<Issue>()).value();
         };
         STAmount const borrowerStartBal = usdBalance(borrower);

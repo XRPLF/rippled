@@ -15,7 +15,7 @@
 
 namespace xrpl {
 std::pair<org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status>
-doLedgerDiffGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& context)
+doLedgerDiffGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest> const& context)
 {
     org::xrpl::rpc::v1::GetLedgerDiffRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerDiffResponse response;
@@ -68,8 +68,8 @@ doLedgerDiffGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& con
     for (auto& [k, v] : differences)
     {
         auto diff = response.mutable_ledger_objects()->add_objects();
-        auto inBase = v.first;
-        auto inDesired = v.second;
+        auto const inBase = v.first;
+        auto const inDesired = v.second;
 
         // key does not exist in desired
         if (!inDesired)

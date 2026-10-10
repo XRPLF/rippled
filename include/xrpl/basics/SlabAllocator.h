@@ -340,7 +340,7 @@ public:
 
         for (auto const& c : cfg)
         {
-            auto& a = allocators_.emplace_back(c.extra_, c.alloc_, c.align_);
+            auto const& a = allocators_.emplace_back(c.extra_, c.alloc_, c.align_);
 
             if (a.size() > maxSize_)
                 maxSize_ = a.size();

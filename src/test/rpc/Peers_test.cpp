@@ -35,7 +35,8 @@ class Peers_test : public beast::unit_test::Suite
         std::unordered_map<std::string, std::string> nodes;
         for (auto i = 0; i < 3; ++i)
         {
-            auto kp = generateKeyPair(KeyType::Secp256k1, generateSeed("seed" + std::to_string(i)));
+            auto const kp =
+                generateKeyPair(KeyType::Secp256k1, generateSeed("seed" + std::to_string(i)));
 
             std::string const name = "Node " + std::to_string(i);
 
@@ -53,8 +54,8 @@ class Peers_test : public beast::unit_test::Suite
             return;
         for (auto it = peers[jss::cluster].begin(); it != peers[jss::cluster].end(); ++it)
         {
-            auto key = it.key().asString();
-            auto search = nodes.find(key);
+            auto const key = it.key().asString();
+            auto const search = nodes.find(key);
             if (!BEAST_EXPECTS(search != nodes.end(), key))
                 continue;
             if (!BEAST_EXPECT((*it).isMember(jss::tag)))

@@ -219,7 +219,8 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 
     auto const ammAccountID = ammSle->getAccountID(sfAccount);
 
-    auto checkAmount = [&](std::optional<STAmount> const& amount, auto const& balance) -> TER {
+    auto const checkAmount = [&](std::optional<STAmount> const& amount,
+                                 auto const& balance) -> TER {
         if (amount)
         {
             if (amount > balance)
@@ -667,7 +668,7 @@ AMMWithdraw::withdraw(
     // If seated after a call to sufficientReserve() then MPToken must be
     // authorized
     std::optional<Keylet> mptokenKey;
-    auto sufficientReserve = [&](Asset const& asset) -> TER {
+    auto const sufficientReserve = [&](Asset const& asset) -> TER {
         mptokenKey = std::nullopt;
         if (!enabledFixAmMv12 || isXRP(asset))
             return tesSUCCESS;
@@ -691,7 +692,7 @@ AMMWithdraw::withdraw(
                 reserveHandling == ReserveHandling::IgnoreReserve)
                 return tesSUCCESS;
 
-            auto sleAccount = view.peek(keylet::account(account));
+            auto const sleAccount = view.peek(keylet::account(account));
             if (!sleAccount)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -710,7 +711,7 @@ AMMWithdraw::withdraw(
     };
 
     // Create MPToken if it doesn't exist
-    auto createMPToken = [&](Asset const& asset) -> TER {
+    auto const createMPToken = [&](Asset const& asset) -> TER {
         // If mptoken is seated then must authorize
         if (mptokenKey && account != asset.getIssuer())
         {
@@ -1220,8 +1221,10 @@ AMMWithdraw::singleWithdrawEPrice(
     // when ePrice == lptAMMBalance*f/amountBalance
     if (view.rules().enabled(fixCleanup3_3_0) && denom == beast::kZero)
         return {tecAMM_FAILED, STAmount{}};
-    auto tokNoRoundCb = [&] { return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) / denom; };
-    auto tokProdCb = [&] { return (lptAMMBalance + ae * (f - 2)) / denom; };
+    auto const tokNoRoundCb = [&] {
+        return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) / denom;
+    };
+    auto const tokProdCb = [&] { return (lptAMMBalance + ae * (f - 2)) / denom; };
     auto const tokensAdj =
         getRoundedLPTokens(view.rules(), tokNoRoundCb, lptAMMBalance, tokProdCb, IsDeposit::No);
     if (tokensAdj <= beast::kZero)
@@ -1233,8 +1236,8 @@ AMMWithdraw::singleWithdrawEPrice(
 
         return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
-    auto amtNoRoundCb = [&] { return tokensAdj / ePrice; };
-    auto amtProdCb = [&] { return tokensAdj / ePrice; };
+    auto const amtNoRoundCb = [&] { return tokensAdj / ePrice; };
+    auto const amtProdCb = [&] { return tokensAdj / ePrice; };
     // the adjusted tokens are factored in
     auto const amountWithdraw =
         getRoundedAsset(view.rules(), amtNoRoundCb, amount, amtProdCb, IsDeposit::No);

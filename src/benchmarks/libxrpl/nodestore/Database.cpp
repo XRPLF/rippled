@@ -192,7 +192,7 @@ Workload const kWork{
 void
 registerWorkload(BackendConfig const& bc, Workload const& w)
 {
-    auto rs = std::make_shared<RunState>();
+    auto const rs = std::make_shared<RunState>();
     std::string const cfg = bc.config;
     std::string name{kNamePrefix};
     name += w.name;
@@ -206,7 +206,7 @@ registerWorkload(BackendConfig const& bc, Workload const& w)
         auto const seq = db.earliestLedgerSeq();
 
         std::size_t index = 0;
-        for (auto _ : state)
+        for (auto const _ : state)
         {
             w.iterate(
                 IterateContext{

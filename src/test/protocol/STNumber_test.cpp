@@ -206,7 +206,7 @@ struct STNumber_test : public beast::unit_test::Suite
 
             try
             {
-                auto _ = numberFromJson(
+                auto const _ = numberFromJson(
                     sfNumber,
                     "1234567890123456789012345678901234567890123456789012345678"
                     "9012345678901234567890123456789012345678901234567890123456"
@@ -221,7 +221,7 @@ struct STNumber_test : public beast::unit_test::Suite
             // We do not handle leading zeros
             try
             {
-                auto _ = numberFromJson(sfNumber, "001");
+                auto const _ = numberFromJson(sfNumber, "001");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -232,7 +232,7 @@ struct STNumber_test : public beast::unit_test::Suite
 
             try
             {
-                auto _ = numberFromJson(sfNumber, "000.0");
+                auto const _ = numberFromJson(sfNumber, "000.0");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -244,7 +244,7 @@ struct STNumber_test : public beast::unit_test::Suite
             // We do not handle dangling dot
             try
             {
-                auto _ = numberFromJson(sfNumber, ".1");
+                auto const _ = numberFromJson(sfNumber, ".1");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -255,7 +255,7 @@ struct STNumber_test : public beast::unit_test::Suite
 
             try
             {
-                auto _ = numberFromJson(sfNumber, "1.");
+                auto const _ = numberFromJson(sfNumber, "1.");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -266,7 +266,7 @@ struct STNumber_test : public beast::unit_test::Suite
 
             try
             {
-                auto _ = numberFromJson(sfNumber, "1.e3");
+                auto const _ = numberFromJson(sfNumber, "1.e3");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)

@@ -647,7 +647,7 @@ flow(
 
     // Returns std::nullopt if the aggregate overflows; callers treat that as a
     // dry path.
-    auto sum = [](auto const& col) -> std::optional<std::decay_t<decltype(*col.begin())>> {
+    auto const sum = [](auto const& col) -> std::optional<std::decay_t<decltype(*col.begin())>> {
         using TResult = std::decay_t<decltype(*col.begin())>;
         if (col.empty())
             return TResult{beast::kZero};
@@ -794,7 +794,7 @@ flow(
             setUnion(ofrsToRmOnFail, ofrsToRm);
             for (auto const& o : ofrsToRm)
             {
-                if (auto ok = sb.peek(keylet::offer(o)))
+                if (auto const ok = sb.peek(keylet::offer(o)))
                     offerDelete(sb, ok, j);
             }
         }

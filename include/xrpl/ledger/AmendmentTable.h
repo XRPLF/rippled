@@ -165,7 +165,7 @@ public:
         beast::Journal j)
     {
         // Ask implementation what to do
-        auto actions = doVoting(
+        auto const actions = doVoting(
             lastClosedLedger->rules(),
             lastClosedLedger->parentCloseTime(),
             getEnabledAmendments(*lastClosedLedger),

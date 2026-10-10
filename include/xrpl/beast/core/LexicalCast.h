@@ -68,7 +68,7 @@ struct LexicalCast<Out, std::string_view>
         if (first != last && *first == '+')
             ++first;
 
-        auto ret = std::from_chars(first, last, out);
+        auto const ret = std::from_chars(first, last, out);
 
         return ret.ec == std::errc() && ret.ptr == last;
     }

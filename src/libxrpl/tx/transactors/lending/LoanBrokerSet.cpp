@@ -9,6 +9,7 @@
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -245,7 +246,7 @@ LoanBrokerSet::doApply()
     if (auto const brokerID = tx[~sfLoanBrokerID])
     {
         // Modify an existing LoanBroker
-        auto broker = view.peek(keylet::loanBroker(*brokerID));
+        auto const broker = view.peek(keylet::loanBroker(*brokerID));
         if (!broker)
         {
             // This should be impossible
@@ -299,7 +300,7 @@ LoanBrokerSet::doApply()
         auto const vaultAsset = sleVault->at(sfAsset);
         auto const sequence = tx.getSeqProxy();
 
-        auto owner = view.peek(keylet::account(accountID_));
+        auto const owner = view.peek(keylet::account(accountID_));
         if (!owner)
         {
             // This should be impossible
@@ -308,7 +309,7 @@ LoanBrokerSet::doApply()
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
-        auto broker = std::make_shared<SLE>(keylet::loanBroker(accountID_, sequence));
+        auto const broker = std::make_shared<SLE>(keylet::loanBroker(accountID_, sequence));
 
         if (auto const ter = dirLink(view, accountID_, broker))
             return ter;  // LCOV_EXCL_LINE
@@ -324,8 +325,8 @@ LoanBrokerSet::doApply()
         auto maybePseudo = createPseudoAccount(view, broker->key(), sfLoanBrokerID);
         if (!maybePseudo)
             return maybePseudo.error();  // LCOV_EXCL_LINE
-        auto& pseudo = *maybePseudo;
-        auto pseudoId = pseudo->at(sfAccount);
+        auto const& pseudo = *maybePseudo;
+        AccountID const pseudoId = pseudo->at(sfAccount);
 
         if (auto ter = addEmptyHolding(
                 ctx_.getApplyViewContext(), pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))

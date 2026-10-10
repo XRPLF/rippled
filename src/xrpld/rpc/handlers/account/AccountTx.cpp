@@ -105,7 +105,7 @@ struct AccountTxArgs
 
 // parses args into a ledger specifier, or returns a Json object on error
 std::variant<std::optional<LedgerSpecifier>, json::Value>
-parseLedgerArgs(rpc::Context& context, json::Value const& params)
+parseLedgerArgs(rpc::Context const& context, json::Value const& params)
 {
     json::Value response;
     // if ledger_index_min or max is specified, then ledger_hash or ledger_index
@@ -556,7 +556,7 @@ doAccountTx(rpc::JsonContext& context)
         }
     }
 
-    auto res = doAccountTxHelp(context, args);
+    auto const res = doAccountTxHelp(context, args);
     JLOG(context.j.debug()) << __func__ << " populating response";
     return populateJsonResponse(res, args, context);
 }

@@ -366,7 +366,7 @@ private:
     removeTrie(std::scoped_lock<Mutex> const&, NodeID const& nodeID, Validation const& val)
     {
         {
-            auto it = acquiring_.find(std::make_pair(val.seq(), val.ledgerID()));
+            auto const it = acquiring_.find(std::make_pair(val.seq(), val.ledgerID()));
             if (it != acquiring_.end())
             {
                 it->second.erase(nodeID);
@@ -375,7 +375,7 @@ private:
             }
         }
         {
-            auto it = lastLedger_.find(nodeID);
+            auto const it = lastLedger_.find(nodeID);
             if (it != lastLedger_.end() && it->second.id() == val.ledgerID())
             {
                 trie_.remove(it->second);
@@ -443,7 +443,7 @@ private:
         // Clear any prior acquiring ledger for this node
         if (prior)
         {
-            auto it = acquiring_.find(*prior);
+            auto const it = acquiring_.find(*prior);
             if (it != acquiring_.end())
             {
                 it->second.erase(nodeID);
@@ -455,7 +455,7 @@ private:
         checkAcquired(lock);
 
         std::pair<Seq, ID> const valPair{val.seq(), val.ledgerID()};
-        auto it = acquiring_.find(valPair);
+        auto const it = acquiring_.find(valPair);
         if (it != acquiring_.end())
         {
             it->second.insert(nodeID);
@@ -529,7 +529,7 @@ private:
             }
             else
             {
-                auto cit = typename decltype(current_)::const_iterator{it};
+                auto const cit = typename decltype(current_)::const_iterator{it};
                 // contains a live record
                 f(cit->first, cit->second);
                 ++it;
@@ -554,7 +554,7 @@ private:
     void
     byLedger(std::scoped_lock<Mutex> const&, ID const& ledgerID, Pre&& pre, F&& f)
     {
-        auto it = byLedger_.find(ledgerID);
+        auto const it = byLedger_.find(ledgerID);
         if (it != byLedger_.end())
         {
             // Update set time since it is being used
@@ -857,7 +857,7 @@ public:
         if (!preferred)
         {
             // fall back to majority over acquiring ledgers
-            auto it = std::ranges::max_element(acquiring_, [](auto const& a, auto const& b) {
+            auto const it = std::ranges::max_element(acquiring_, [](auto const& a, auto const& b) {
                 std::pair<Seq, ID> const& aKey = a.first;
                 typename HashSet<NodeID>::size_type const& aSize = a.second.size();
                 std::pair<Seq, ID> const& bKey = b.first;
@@ -937,7 +937,7 @@ public:
             return (preferred->first >= minSeq) ? preferred->second : lcl.id();
 
         // Otherwise, rely on peer ledgers
-        auto it = std::ranges::max_element(peerCounts, [](auto const& a, auto const& b) {
+        auto const it = std::ranges::max_element(peerCounts, [](auto const& a, auto const& b) {
             // Prefer larger counts, then larger ids on ties
             // (max_element expects this to return true if a < b)
             return std::tie(a.second, a.first) < std::tie(b.second, b.first);

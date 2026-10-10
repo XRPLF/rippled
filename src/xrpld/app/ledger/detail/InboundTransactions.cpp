@@ -76,7 +76,7 @@ public:
         {
             std::scoped_lock const sl(lock_);
 
-            auto it = map_.find(hash);
+            auto const it = map_.find(hash);
 
             if (it != map_.end())
                 return it->second.acquire;
@@ -92,7 +92,7 @@ public:
         {
             std::scoped_lock const sl(lock_);
 
-            if (auto it = map_.find(hash); it != map_.end())
+            if (auto const it = map_.find(hash); it != map_.end())
             {
                 if (acquire)
                 {

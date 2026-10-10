@@ -32,7 +32,7 @@ AccountSet::makeTxConsequences(PreflightContext const& ctx)
 {
     // The AccountSet may be a blocker, but only if it sets or clears
     // specific account flags.
-    auto getTxConsequencesCategory = [](STTx const& tx) {
+    auto const getTxConsequencesCategory = [](STTx const& tx) {
         if (std::uint32_t const uTxFlags = tx.getFlags();
             uTxFlags & (tfRequireAuth | tfOptionalAuth))
             return TxConsequences::Category::Blocker;
@@ -131,7 +131,7 @@ AccountSet::preflight(PreflightContext const& ctx)
     // TickSize
     if (tx.isFieldPresent(sfTickSize))
     {
-        auto uTickSize = tx[sfTickSize];
+        auto const uTickSize = tx[sfTickSize];
         if ((uTickSize != 0u) &&
             ((uTickSize < Quality::kMinTickSize) || (uTickSize > Quality::kMaxTickSize)))
         {
@@ -503,7 +503,7 @@ AccountSet::doApply()
     //
     if (tx.isFieldPresent(sfTickSize))
     {
-        auto uTickSize = tx[sfTickSize];
+        auto const uTickSize = tx[sfTickSize];
         if ((uTickSize == 0) || (uTickSize == Quality::kMaxTickSize))
         {
             JLOG(j_.trace()) << "unset tick size";

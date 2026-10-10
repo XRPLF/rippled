@@ -525,7 +525,7 @@ public:
         std::uint32_t aliceSeq = 0;
 
         // these represent oft-repeated setup for input json below
-        auto setupTx = [&] -> json::Value {
+        auto const setupTx = [&] -> json::Value {
             json::Value jv;
             jv[jss::tx_json][jss::Account] = alice.human();
             jv[jss::tx_json][jss::TransactionType] = jss::AccountSet;
@@ -534,12 +534,12 @@ public:
             jv[jss::tx_json][jss::SigningPubKey] = "";
             return jv;
         };
-        auto cheriSign = [&](json::Value& jv) {
+        auto const cheriSign = [&](json::Value& jv) {
             jv[jss::account] = cheri.human();
             jv[jss::key_type] = "ed25519";
             jv[jss::passphrase] = cher.name();
         };
-        auto beckySign = [&](json::Value& jv) {
+        auto const beckySign = [&](json::Value& jv) {
             jv[jss::account] = becky.human();
             jv[jss::secret] = beck.name();
         };
@@ -1040,7 +1040,7 @@ public:
         Env env{*this, features};
 
         // lambda that submits an STTx and returns the resulting JSON.
-        auto submitSTTx = [&env](STTx const& stx) {
+        auto const submitSTTx = [&env](STTx const& stx) {
             json::Value jvResult;
             jvResult[jss::tx_blob] = strHex(stx.getSerializer().slice());
             return env.rpc("json", "submit", to_string(jvResult));

@@ -36,7 +36,7 @@ WorkSSL::WorkSSL(
           boost::asio::ssl::context::tlsv12_client)
     , stream_(socket_, context_.context())
 {
-    auto ec = context_.preConnectVerify(stream_, host_);
+    auto const ec = context_.preConnectVerify(stream_, host_);
     if (ec)
         Throw<std::runtime_error>(std::format("preConnectVerify: {}", ec.message()));
 }
@@ -44,7 +44,7 @@ WorkSSL::WorkSSL(
 void
 WorkSSL::onConnect(ErrorCode const& ec)
 {
-    auto err = ec ? ec : context_.postConnectVerify(stream_, host_);
+    auto const err = ec ? ec : context_.postConnectVerify(stream_, host_);
     if (err)
     {
         fail(err);

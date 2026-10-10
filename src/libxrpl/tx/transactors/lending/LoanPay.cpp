@@ -112,8 +112,8 @@ LoanPay::preflight(PreflightContext const& ctx)
 XRPAmount
 LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    auto fixEnabled313 = view.rules().enabled(fixCleanup3_1_3);
-    auto fixEnabled340 = view.rules().enabled(fixCleanup3_4_0);
+    auto const fixEnabled313 = view.rules().enabled(fixCleanup3_1_3);
+    auto const fixEnabled340 = view.rules().enabled(fixCleanup3_4_0);
 
     using namespace lending;
 

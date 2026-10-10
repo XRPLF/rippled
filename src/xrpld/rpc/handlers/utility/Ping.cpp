@@ -11,7 +11,7 @@ struct JsonContext;
 }  // namespace rpc
 
 json::Value
-doPing(rpc::JsonContext& context)
+doPing(rpc::JsonContext const& context)
 {
     json::Value ret(json::ValueType::Object);
     switch (context.role)

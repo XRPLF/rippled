@@ -406,10 +406,10 @@ IntrusiveRefCounts::useCount() const noexcept
 inline IntrusiveRefCounts::~IntrusiveRefCounts() noexcept
 {
 #ifndef NDEBUG
-    auto v = refCounts_.load(std::memory_order_acquire);
+    auto const v = refCounts_.load(std::memory_order_acquire);
     XRPL_ASSERT(
         (!(v & kValueMask)), "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : count must be zero");
-    auto t = v & kTagMask;
+    auto const t = v & kTagMask;
     XRPL_ASSERT((!t || t == kTagMask), "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : valid tag");
 #endif
 }

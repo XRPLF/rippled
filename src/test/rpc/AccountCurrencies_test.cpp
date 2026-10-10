@@ -51,7 +51,7 @@ class AccountCurrencies_test : public beast::unit_test::Suite
 
         {
             // test account non-string
-            auto testInvalidAccountParam = [&](auto const& param) {
+            auto const testInvalidAccountParam = [&](auto const& param) {
                 json::Value params;
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_currencies", to_string(params))[jss::result];
@@ -69,7 +69,7 @@ class AccountCurrencies_test : public beast::unit_test::Suite
 
         {
             // test ident non-string
-            auto testInvalidIdentParam = [&](auto const& param) {
+            auto const testInvalidIdentParam = [&](auto const& param) {
                 json::Value params;
                 params[jss::ident] = param;
                 auto jrr = env.rpc("json", "account_currencies", to_string(params))[jss::result];
@@ -138,9 +138,9 @@ class AccountCurrencies_test : public beast::unit_test::Suite
         params[jss::account] = alice.human();
         auto result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
 
-        auto arrayCheck = [&result](
-                              json::StaticString const& fld,
-                              std::vector<std::optional<IOU>> const& expected) -> bool {
+        auto const arrayCheck = [&result](
+                                    json::StaticString const& fld,
+                                    std::vector<std::optional<IOU>> const& expected) -> bool {
             bool stat = result.isMember(fld) && result[fld].isArray() &&
                 result[fld].size() == expected.size();
             for (size_t i = 0; stat && i < expected.size(); ++i)

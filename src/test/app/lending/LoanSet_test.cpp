@@ -875,7 +875,7 @@ private:
         using namespace jtx;
         using namespace loan;
 
-        auto run = [this](FeatureBitset features, TER expected) {
+        auto const run = [this](FeatureBitset features, TER expected) {
             testcase(
                 std::string(
                     "LoanSet existing borrower line after issuer "

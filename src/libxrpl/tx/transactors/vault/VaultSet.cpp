@@ -123,7 +123,7 @@ VaultSet::doApply()
     auto const& tx = ctx_.tx;
 
     // Update existing object.
-    auto vault = view().peek(keylet::vault(tx[sfVaultID]));
+    auto const vault = view().peek(keylet::vault(tx[sfVaultID]));
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

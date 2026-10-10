@@ -154,12 +154,12 @@ public:
         Account const becky{"becky"};
 
         // Lambda that checks the (error) result of deposit_authorized.
-        auto verifyErr = [this](
-                             json::Value const& result, char const* error, char const* errorMsg) {
-            BEAST_EXPECT(result[jss::result][jss::status] == jss::error);
-            BEAST_EXPECT(result[jss::result][jss::error] == error);
-            BEAST_EXPECT(result[jss::result][jss::error_message] == errorMsg);
-        };
+        auto const verifyErr =
+            [this](json::Value const& result, char const* error, char const* errorMsg) {
+                BEAST_EXPECT(result[jss::result][jss::status] == jss::error);
+                BEAST_EXPECT(result[jss::result][jss::error] == error);
+                BEAST_EXPECT(result[jss::result][jss::error_message] == errorMsg);
+            };
 
         Env env(*this);
         {
@@ -370,7 +370,7 @@ public:
                 "deposit_authorized with credentials failure: not a credential "
                 "index");
 
-            auto args = depositAuthArgs(
+            auto const args = depositAuthArgs(
                 alice,
                 becky,
                 "validated",

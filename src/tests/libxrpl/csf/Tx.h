@@ -116,14 +116,14 @@ public:
     [[nodiscard]] bool
     exists(Tx::ID const txId) const
     {
-        auto it = txs_.find(Tx{txId});
+        auto const it = txs_.find(Tx{txId});
         return it != txs_.end();
     }
 
     [[nodiscard]] Tx const*
     find(Tx::ID const& txId) const
     {
-        auto it = txs_.find(Tx{txId});
+        auto const it = txs_.find(Tx{txId});
         if (it != txs_.end())
             return &(*it);
         return nullptr;
@@ -151,7 +151,7 @@ public:
     {
         std::map<Tx::ID, bool> res;
 
-        auto populateDiffs = [&res](auto const& a, auto const& b, bool s) {
+        auto const populateDiffs = [&res](auto const& a, auto const& b, bool s) {
             auto populator = [&](auto const& tx) { res[tx.id()] = s; };
             std::set_difference(
                 a.begin(),

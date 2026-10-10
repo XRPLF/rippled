@@ -181,7 +181,7 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
     {
         // Whether `proposer` is `account` itself or an entry on `account`'s
         // applicable SignerList.
-        auto isAuthorizedFor = [&](AccountID const& account) -> std::expected<bool, TER> {
+        auto const isAuthorizedFor = [&](AccountID const& account) -> std::expected<bool, TER> {
             if (proposer == account)
                 return true;
 
@@ -320,14 +320,14 @@ TransactionProposalCreate::doApply()
     std::uint32_t const ticketSequence = proposedTx.getFieldU32(sfTicketSequence);
 
     Keylet const proposalKeylet = keylet::txProposal(target, ticketSequence);
-    auto sleProposal = std::make_shared<SLE>(proposalKeylet);
+    auto const sleProposal = std::make_shared<SLE>(proposalKeylet);
     sleProposal->setAccountID(sfOwner, accountID_);
     sleProposal->setFieldObject(sfProposedTransaction, proposedTx);
     sleProposal->setFieldU32(sfExpiration, ctx_.tx[sfExpiration]);
 
     view().insert(sleProposal);
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
+    auto const viewJ = ctx_.registry.get().getJournal("View");
     {
         auto const page = view().dirInsert(
             keylet::ownerDir(accountID_), proposalKeylet, describeOwnerDir(accountID_));

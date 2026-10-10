@@ -263,7 +263,7 @@ SHAMapStoreImp::rendezvous(std::optional<std::chrono::milliseconds> const& timeo
     if (!working_)
         return true;
 
-    auto notWorking = [&] { return !working_; };
+    auto const notWorking = [&] { return !working_; };
 
     std::unique_lock<std::mutex> lock(mutex_);
     if (timeout)
@@ -284,7 +284,7 @@ bool
 SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
-    auto obj = dbRotating_->fetchNodeObject(
+    auto const obj = dbRotating_->fetchNodeObject(
         node.getHash().asUInt256(), 0, node_store::FetchType::Synchronous, true);
     if (!obj)
     {
@@ -528,7 +528,7 @@ SHAMapStoreImp::dbPaths()
     SavedState state = stateDb_.getState();
 
     {
-        auto update = [&dbPath](std::string& sPath) {
+        auto const update = [&dbPath](std::string& sPath) {
             if (sPath.empty())
                 return false;
 
@@ -747,14 +747,14 @@ SHAMapStoreImp::healthWait()
     // so a false positive will be detected on the next call, and a false negative will be detected
     // in the next loop iteration. Database rotation is important, but not timely, so an extra
     // delay is fine.
-    auto readServerStatus = [this](
-                                LedgerIndex& index,
-                                bool& buildingIndex,
-                                std::chrono::seconds& age,
-                                OperatingMode& mode,
-                                std::size_t& numMissing,
-                                LedgerIndex const lowerBound,
-                                ScopeUnlock<decltype(mutex_)> const&) {
+    auto const readServerStatus = [this](
+                                      LedgerIndex& index,
+                                      bool& buildingIndex,
+                                      std::chrono::seconds& age,
+                                      OperatingMode& mode,
+                                      std::size_t& numMissing,
+                                      LedgerIndex const lowerBound,
+                                      ScopeUnlock<decltype(mutex_)> const&) {
         index = ledgerMaster_->getValidLedgerIndex();
         bool const haveIndex = ledgerMaster_->haveLedger(index);
         age = ledgerMaster_->getValidatedLedgerAge();
@@ -790,7 +790,7 @@ SHAMapStoreImp::healthWait()
     auto const lastSuccess = lastSuccessfulHealthCheck_ == 0 ? index : lastSuccessfulHealthCheck_;
     auto const circuitBreaker = lastSuccess + maxWaitingLedgers_;
 
-    auto healthy = [&] {
+    auto const healthy = [&] {
         // Special case: If the server is disconnected, it's not doing any ledger I/O, because
         // it's focused on trying to get peers. A disconnected state is should never be caused by
         // the activity of the server. It's usually limited to hardware or connectivity issues. Take

@@ -235,7 +235,7 @@ LedgerDeltaAcquire::onLedgerBuilt(ScopedLockType& sl, std::optional<InboundLedge
     }
     app_.getJobQueue().addJob(
         JtReplayTask, "OnLedBuilt", [=, ledger = this->fullLedger_, &app = this->app_] {
-            for (auto reason : reasons)
+            for (auto const reason : reasons)
             {
                 switch (reason)
                 {
@@ -262,7 +262,7 @@ LedgerDeltaAcquire::notify(ScopedLockType& sl)
     auto const good = !failed_;
     sl.unlock();
 
-    for (auto& cb : toCall)
+    for (auto const& cb : toCall)
     {
         cb(good, hash_);
     }

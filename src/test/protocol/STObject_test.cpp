@@ -47,7 +47,7 @@ public:
         unexpected(sfInvalid.isUseful(), "sfInvalid must not be useful");
         {
             // Test return of sfInvalid.
-            auto testInvalid = [this](SerializedTypeID tid, int fv) {
+            auto const testInvalid = [this](SerializedTypeID tid, int fv) {
                 SField const& shouldBeInvalid{SField::getField(tid, fv)};
                 BEAST_EXPECT(shouldBeInvalid == sfInvalid);
             };
@@ -477,7 +477,7 @@ public:
         {
             std::array<std::uint8_t, 7> const payload{{0xe9, 0x12, 0xab, 0xcd, 0x12, 0xfe, 0xdc}};
             SerialIter sit{makeSlice(payload)};
-            auto obj = std::make_shared<STArray>(sit, sfMetadata);
+            auto const obj = std::make_shared<STArray>(sit, sfMetadata);
             BEAST_EXPECT(!obj);
         }
         catch (std::exception const& e)
@@ -489,7 +489,7 @@ public:
         {
             std::array<std::uint8_t, 3> const payload{{0xe2, 0xe1, 0xe2}};
             SerialIter sit{makeSlice(payload)};
-            auto obj = std::make_shared<STObject>(sit, sfMetadata);
+            auto const obj = std::make_shared<STObject>(sit, sfMetadata);
             BEAST_EXPECT(!obj);
         }
         catch (std::exception const& e)

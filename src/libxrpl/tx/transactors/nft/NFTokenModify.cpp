@@ -19,7 +19,7 @@ namespace xrpl {
 NotTEC
 NFTokenModify::preflight(PreflightContext const& ctx)
 {
-    if (auto owner = ctx.tx[~sfOwner]; owner == ctx.tx[sfAccount])
+    if (auto const owner = ctx.tx[~sfOwner]; owner == ctx.tx[sfAccount])
         return temMALFORMED;
 
     if (auto uri = ctx.tx[~sfURI])

@@ -96,7 +96,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     }
 
     // An issuer must only be set if the tx is executed by the minter
-    if (auto iss = ctx.tx[~sfIssuer]; iss == ctx.tx[sfAccount])
+    if (auto const iss = ctx.tx[~sfIssuer]; iss == ctx.tx[sfAccount])
         return temMALFORMED;
 
     if (auto uri = ctx.tx[~sfURI])

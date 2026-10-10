@@ -89,9 +89,9 @@ public:
             //  2. Collects the results, and
             //  3. Cleans up for the next offer pair.
             // Returns 1 if the crossed offer has a bad rate for the book.
-            auto exerciseOfferPair = [this, &env, &alice, &bob](
-                                         Amounts const& inLedger,
-                                         Amounts const& newOffer) -> unsigned int {
+            auto const exerciseOfferPair = [this, &env, &alice, &bob](
+                                               Amounts const& inLedger,
+                                               Amounts const& newOffer) -> unsigned int {
                 // Put inLedger offer in the ledger so newOffer can cross it.
                 std::uint32_t const aliceOfferSeq = env.seq(alice);
                 env(offer(alice, inLedger.in, inLedger.out));
@@ -207,9 +207,9 @@ public:
             //  1. Exercises one offer pair,
             //  2. Collects the results, and
             //  3. Cleans up for the next offer pair.
-            auto exerciseOfferPair = [this, &env, &alice, &bob](
-                                         Amounts const& inLedger,
-                                         Amounts const& newOffer) -> unsigned int {
+            auto const exerciseOfferPair = [this, &env, &alice, &bob](
+                                               Amounts const& inLedger,
+                                               Amounts const& newOffer) -> unsigned int {
                 // Get the inLedger offer into the ledger so newOffer can cross
                 // it.
                 STAmount const initialRate = Quality(inLedger).rate();
@@ -454,7 +454,7 @@ public:
                 cleanupOldOffers(env, {{alice, aliceOfferSeq}, {bob, bobOfferSeq}});
 
                 // Zero out alice's and bob's IOU balances.
-                auto zeroBalance = [&env, &gw](Account const& acct, IOU const& iou) {
+                auto const zeroBalance = [&env, &gw](Account const& acct, IOU const& iou) {
                     if (STAmount const balance = env.balance(acct, iou); balance.signum() > 0)
                         env(pay(acct, gw, balance));
                 };
@@ -520,8 +520,8 @@ public:
             //  1. Exercises one offer trio,
             //  2. Collects the results, and
             //  3. Cleans up for the next offer trio.
-            auto exerciseOfferTrio = [this, &env, &alice, &bob, &carol, &usd](
-                                         Amounts const& carolOffer) -> unsigned int {
+            auto const exerciseOfferTrio = [this, &env, &alice, &bob, &carol, &usd](
+                                               Amounts const& carolOffer) -> unsigned int {
                 // alice submits an offer that may become a blocker.
                 std::uint32_t const aliceOfferSeq = env.seq(alice);
                 static Amounts const kAliceInitialOffer(usd(2), drops(3382562));

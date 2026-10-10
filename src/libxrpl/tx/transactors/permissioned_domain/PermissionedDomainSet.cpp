@@ -98,7 +98,8 @@ PermissionedDomainSet::doApply()
     if (ctx_.tx.isFieldPresent(sfDomainID))
     {
         // Modify existing permissioned domain.
-        auto slePd = view().peek(keylet::permissionedDomain(ctx_.tx.getFieldH256(sfDomainID)));
+        auto const slePd =
+            view().peek(keylet::permissionedDomain(ctx_.tx.getFieldH256(sfDomainID)));
         if (!slePd)
             return tefINTERNAL;  // LCOV_EXCL_LINE
         slePd->peekFieldArray(sfAcceptedCredentials) = std::move(sortedLE);
@@ -118,7 +119,7 @@ PermissionedDomainSet::doApply()
         auto const seq = fixEnabled ? ctx_.tx.getSeqProxy()
                                     : SeqProxy::rawSequence(ctx_.tx.getFieldU32(sfSequence));
         Keylet const pdKeylet = keylet::permissionedDomain(accountID_, seq);
-        auto slePd = std::make_shared<SLE>(pdKeylet);
+        auto const slePd = std::make_shared<SLE>(pdKeylet);
 
         slePd->setAccountID(sfOwner, accountID_);
         slePd->setFieldU32(sfSequence, seq.value());

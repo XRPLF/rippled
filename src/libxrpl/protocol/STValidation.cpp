@@ -112,7 +112,7 @@ STValidation::isValid() const noexcept
 
         // Log that the signature was never checked, so an operator does not
         // read this as a bad key. The log is guarded because it can throw too.
-        auto reportUncheckable = [this](char const* reason) noexcept {
+        auto const reportUncheckable = [this](char const* reason) noexcept {
             try
             {
                 JLOG(debugLog().error())

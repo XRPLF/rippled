@@ -100,16 +100,16 @@ PeerSetImpl::sendRequest(
     protocol::MessageType type,
     std::shared_ptr<Peer> const& peer)
 {
-    auto packet = std::make_shared<Message>(message, type);
+    auto const packet = std::make_shared<Message>(message, type);
     if (peer)
     {
         peer->send(packet);
         return;
     }
 
-    for (auto id : peers_)
+    for (auto const id : peers_)
     {
-        if (auto p = app_.getOverlay().findPeerByShortID(id))
+        if (auto const p = app_.getOverlay().findPeerByShortID(id))
             p->send(packet);
     }
 }
