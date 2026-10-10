@@ -342,7 +342,7 @@ EscrowFinish::doApply()
         decreaseOwnerCountForObject(ctx_.view(), account, escrow.mutableRawSle(), 1, ctx_.journal);
 
     // Remove escrow from ledger
-    escrow.erase();
+    escrow.eraseFromView();
     return tesSUCCESS;
 }
 

@@ -264,7 +264,7 @@ Change::applyFee()
     if (!feeObject)
     {
         feeObject.newSLE();
-        feeObject.insert();
+        feeObject.insertIntoView();
     }
     auto set = [](FeeSettingsEntryW& feeObject, STTx const& tx, auto const& field) {
         feeObject->at(field) = tx[field];
@@ -288,7 +288,7 @@ Change::applyFee()
         set(feeObject, ctx_.tx, sfReserveIncrement);
     }
 
-    feeObject.update();
+    feeObject.updateView();
 
     JLOG(j_.warn()) << "Fees have been changed";
     return tesSUCCESS;
