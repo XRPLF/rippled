@@ -123,8 +123,9 @@ class InfoSub;
  * cannot carry a notification is sent the message as the publisher built it.
  * See InfoSub::wantsNotifications.
  *
- * Every caller shapes for the one subscriber in front of it, so a stream event
- * reaching many subscribers is shaped once for each of them.
+ * This is for a message built for the one subscriber it is going to. A stream
+ * event reaching many subscribers is shaped once per version by the publisher
+ * instead, which is what NetworkOPsImp's StreamBroadcast does.
  *
  * @param subscriber Where the message is going.
  * @param apiVersion The version the subscription was registered at.

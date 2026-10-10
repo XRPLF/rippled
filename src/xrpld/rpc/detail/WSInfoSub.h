@@ -52,7 +52,7 @@ public:
     /**
      * Writes @p jv to the session as built: the shape belongs to the
      * subscription the message answers, not to the connection, so the publisher
-     * shapes it. See sendShaped.
+     * shapes it. See sendShaped and NetworkOPsImp's StreamBroadcast.
      *
      * @param jv The message, in the shape the subscriber receives.
      */
