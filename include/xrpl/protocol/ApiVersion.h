@@ -6,31 +6,21 @@
 #include <xrpl/protocol/jss.h>
 
 #include <cstddef>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
 namespace xrpl {
 
 /**
- * API version numbers used in later API versions
+ * The `api_version` numbers this server serves.
  *
- * Requests with a version number in the range
- * [apiMinimumSupportedVersion, apiMaximumSupportedVersion]
- * are supported.
+ * A request naming a version in [kApiMinimumSupportedVersion,
+ * kApiMaximumSupportedVersion] is served. With `[beta_rpc_api]` set to `1` in
+ * the config the range extends to kApiBetaVersion.
  *
- * If [beta_rpc_api] is enabled in config, the version numbers
- * in the range [apiMinimumSupportedVersion, apiBetaVersion]
- * are supported.
- *
- * Network Requests without explicit version numbers use
- * apiVersionIfUnspecified. apiVersionIfUnspecified is 1,
- * because all the RPC requests with a version >= 2 must
- * explicitly specify the version in the requests.
- * Note that apiVersionIfUnspecified will be lower than
- * apiMinimumSupportedVersion when we stop supporting API
- * version 1.
- *
- * Command line Requests use apiCommandLineVersion.
+ * A request naming no version is served at kApiVersionIfUnspecified, which is 1
+ * because a request wanting any later version states it.
  */
 
 namespace rpc {
@@ -56,6 +46,16 @@ static_assert(
 static_assert(kApiMaximumSupportedVersion >= kApiMinimumSupportedVersion);
 static_assert(kApiBetaVersion >= kApiMaximumSupportedVersion);
 static_assert(kApiMaximumValidVersion >= kApiMaximumSupportedVersion);
+
+/**
+ * Values accepted in the `ripplerpc` request field, which selects the shape of
+ * the JSON-RPC reply envelope. Distinct from `kJsonRpcVersion` in JsonRpc.h,
+ * which names the JSON-RPC protocol itself, and from the `api_version`
+ * constants above, which select the content of the response.
+ */
+inline constexpr std::string_view kRippleRpcVersion1{"1.0"};
+inline constexpr std::string_view kRippleRpcVersion2{"2.0"};
+inline constexpr std::string_view kRippleRpcVersion3{"3.0"};
 
 inline void
 setVersion(json::Value& parent, unsigned int apiVersion, bool betaEnabled)
