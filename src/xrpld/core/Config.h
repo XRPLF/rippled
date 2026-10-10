@@ -100,17 +100,21 @@ public:
     [[nodiscard]] std::filesystem::path
     getDebugLogFile() const;
 
-private:
-    std::filesystem::path configFile_;
-
 public:
     std::filesystem::path configDir;
 
 private:
     std::filesystem::path debugLogfile_;
 
+    /**
+     * Read and parse the given config file.
+     *
+     * @param configFile Path of the config file to read.
+     * @throws std::runtime_error When the file cannot be read, or its contents
+     *         are invalid.
+     */
     void
-    load();
+    load(std::filesystem::path const& configFile);
     beast::Journal const j_;
 
     bool quiet_ = false;   // Minimize logging verbosity.
@@ -335,8 +339,7 @@ public:
      *
      * When no config file is named, searches the working directory, then the XDG
      * config directory when HOME is set, then the system config directory, and
-     * takes the first holding a config file under either name. The system config
-     * directory is the default when none does.
+     * takes the first holding a config file under either name.
      *
      * Be very careful to make sure these bool params are in the right order.
      *
@@ -344,8 +347,15 @@ public:
      * @param bQuiet Whether to minimize logging verbosity.
      * @param bSilent Whether to write no console output after startup.
      * @param bStandalone Whether to operate in stand-alone mode.
+     * @return True when a config file was found and read. False means the
+     *         search found none, and writes the directories it tried to
+     *         stderr. The defaults and the SSL context are still set up; only
+     *         the data directory is skipped.
+     * @throws std::runtime_error When a config file was found but cannot be
+     *         read, when its contents are invalid, or when the data directory
+     *         cannot be created.
      */
-    void
+    [[nodiscard]] bool
     setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStandalone);
 
     void
