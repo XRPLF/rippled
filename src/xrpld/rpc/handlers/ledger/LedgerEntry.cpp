@@ -814,6 +814,51 @@ parseSponsorship(
     return keylet::sponsorship(*sponsorID, *sponseeID).key;
 }
 
+// TokenPreauth and TokenBlock entries share the same business key:
+// {holder, mpt_issuance_id}. The issuer that owns the entry is encoded in the
+// issuance ID.
+template <typename KeyletFn>
+static std::expected<UInt256, json::Value>
+parseTokenPreauthKey(json::Value const& params, json::StaticString const fieldName, KeyletFn keylet)
+{
+    if (!params.isObject())
+        return parseObjectID(params, fieldName);
+
+    auto const holder =
+        ledger_entry_helpers::requiredAccountID(params, jss::holder, "malformedHolder");
+    if (!holder)
+        return std::unexpected(holder.error());
+
+    auto const mptIssuanceID = ledger_entry_helpers::requiredUInt192(
+        params, jss::mpt_issuance_id, "malformedMPTIssuanceID");
+    if (!mptIssuanceID)
+        return std::unexpected(mptIssuanceID.error());
+
+    return keylet(*holder, *mptIssuanceID).key;
+}
+
+static std::expected<UInt256, json::Value>
+parseTokenPreauth(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    return parseTokenPreauthKey(params, fieldName, [](AccountID const& holder, MPTID const& id) {
+        return keylet::tokenPreauth(holder, id);
+    });
+}
+
+static std::expected<UInt256, json::Value>
+parseTokenBlock(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    return parseTokenPreauthKey(params, fieldName, [](AccountID const& holder, MPTID const& id) {
+        return keylet::tokenBlock(holder, id);
+    });
+}
+
 static std::expected<UInt256, json::Value>
 parseTransactionProposal(
     json::Value const& params,

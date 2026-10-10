@@ -640,6 +640,34 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     {sfLoanScale,                SoeDefault},
 }))
 
+/** A ledger object which describes an issuer's pre-authorization of one
+    holder for one of its tokens. Owned by the issuer (sfAccount).
+
+    \sa keylet::tokenPreauth
+ */
+LEDGER_ENTRY(ltTOKEN_PREAUTH, 0x0092, TokenPreauth, token_preauth, ({
+    {sfAccount,              SoeRequired},
+    {sfHolder,               SoeRequired},
+    {sfMPTokenIssuanceID,    SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+}))
+
+/** A ledger object which describes an issuer's block of one holder from one
+    of its tokens. Owned by the issuer (sfAccount).
+
+    \sa keylet::tokenBlock
+ */
+LEDGER_ENTRY(ltTOKEN_BLOCK, 0x0093, TokenBlock, token_block, ({
+    {sfAccount,              SoeRequired},
+    {sfHolder,               SoeRequired},
+    {sfMPTokenIssuanceID,    SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+}))
+
 /** A ledger object representing a sponsorship.
     \sa keylet::sponsorship
  */

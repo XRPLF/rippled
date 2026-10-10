@@ -198,6 +198,35 @@ txProposal(UInt256 const& key) noexcept
 /** @} */
 
 /**
+ * A TokenPreauth: an issuer's pre-authorization of one holder for one MPT
+ * issuance.
+ */
+/** @{ */
+Keylet
+tokenPreauth(AccountID const& holder, MPTID const& issuanceID) noexcept;
+
+inline Keylet
+tokenPreauth(UInt256 const& key) noexcept
+{
+    return {ltTOKEN_PREAUTH, key};
+}
+/** @} */
+
+/**
+ * A TokenBlock: an issuer's block of one holder from one MPT issuance.
+ */
+/** @{ */
+Keylet
+tokenBlock(AccountID const& holder, MPTID const& issuanceID) noexcept;
+
+inline Keylet
+tokenBlock(UInt256 const& key) noexcept
+{
+    return {ltTOKEN_BLOCK, key};
+}
+/** @} */
+
+/**
  * A DepositPreauth
  */
 /** @{ */
