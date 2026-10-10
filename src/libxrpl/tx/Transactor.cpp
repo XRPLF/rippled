@@ -11,6 +11,7 @@
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/TicketEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
@@ -815,8 +816,8 @@ Transactor::ticketDelete(
 {
     // Delete the Ticket, adjust the account root ticket count, and
     // reduce the owner count.
-    SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
-    if (!sleTicket)
+    TicketEntryW ticket(ticketIndex, view, j);
+    if (!ticket)
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Ticket disappeared from ledger.";
@@ -824,7 +825,7 @@ Transactor::ticketDelete(
         // LCOV_EXCL_STOP
     }
 
-    std::uint64_t const page{(*sleTicket)[sfOwnerNode]};
+    std::uint64_t const page{(*ticket)[sfOwnerNode]};
     if (!view.dirRemove(keylet::ownerDir(account), page, ticketIndex, true))
     {
         // LCOV_EXCL_START
@@ -864,10 +865,10 @@ Transactor::ticketDelete(
     }
 
     // Update the Ticket owner's reserve.
-    decreaseOwnerCountForObject(view, sleAccount, sleTicket, 1, j);
+    decreaseOwnerCountForObject(view, sleAccount, ticket.mutableRawSle(), 1, j);
 
     // Remove Ticket from ledger.
-    view.erase(sleTicket);
+    ticket.erase();
     return tesSUCCESS;
 }
 
