@@ -43,7 +43,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <string_view>
 #include <system_error>
 #include <thread>
 #include <type_traits>
@@ -363,33 +362,26 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
         // The system config directory, as a last resort.
         candidates.emplace_back("/etc/" + systemName(), "/var/lib/" + systemName());
 
-        // Take the first candidate holding a config file under either name.
-        // When none does, configFile stays unset.
+        // Take the first candidate holding a config file. When none does,
+        // configFile stays unset.
         for (auto const& candidate : candidates)
         {
             configDir = candidate.configDir;
             dataDir = candidate.dataDir;
 
-            for (std::string_view const fileName : {kConfigFileName, kConfigLegacyName})
+            auto candidateFile = configDir / kConfigFileName;
+            if (std::filesystem::exists(candidateFile))
             {
-                auto candidateFile = configDir / fileName;
-                if (std::filesystem::exists(candidateFile))
-                {
-                    configFile = std::move(candidateFile);
-                    break;
-                }
-            }
-
-            if (configFile)
+                configFile = std::move(candidateFile);
                 break;
+            }
         }
 
         if (!configFile)
         {
             // Report every directory searched, even when quiet, since this is
             // the reason for the failure.
-            std::cerr << std::format(
-                "No {} or {} found. Searched:\n", kConfigFileName, kConfigLegacyName);
+            std::cerr << std::format("No {} found. Searched:\n", kConfigFileName);
             for (auto const& candidate : candidates)
                 std::cerr << std::format("  {}\n", candidate.configDir.string());
         }
