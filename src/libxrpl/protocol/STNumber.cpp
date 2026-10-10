@@ -197,7 +197,7 @@ partsFromString(std::string const& number)
     {
         // integer and fraction
         mantissa = boost::lexical_cast<std::uint64_t>(match[2] + match[4]);
-        exponent = -(match[4].length());
+        exponent = -match[4].length();
     }
 
     if (match[5].matched)

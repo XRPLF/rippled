@@ -291,6 +291,11 @@ SHAMapStoreImp::rescueNode(SHAMapTreeNode const& node, std::optional<NodeObjectT
     // directly into the writable backend so it survives this rotation
     // instead of later surfacing as an unresolvable SHAMapMissingNode.
 
+    // Note that this functions is only intended to be called for AccountState nodes. Transaction
+    // nodes and Inner (unknown) nodes are not expected to be present in the SHAMap or TreeNodeCache
+    // which are used to find missing nodes, and do not need to be rescued. The check below will
+    // prevent writing them if they are encountered, but it is not expected to happen in practice.
+
     auto const nodeType = node.getType();
     auto const objectType = std::invoke([nodeType, expectedType] {
         switch (nodeType)
@@ -556,7 +561,7 @@ SHAMapStoreImp::run()
                 << "FINISHED ROTATION: validatedSeq: " << validatedSeq
                 << ", lastRotated: " << lastRotated << " diff " << diff
                 << ". Updated validated seq is " << currentValidatedSeq << ", " << processingDiff
-                << " ledgers were validated during the rotation processs. Complete ledgers: "
+                << " ledgers were validated during the rotation process. Complete ledgers: "
                 << ledgerMaster_->getCompleteLedgers();
         }
     }
@@ -770,7 +775,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     clearSql(
         lastRotated,
         "Ledgers",
-        [&db]() -> std::optional<LedgerIndex> { return db.getMinLedgerSeq(); },
+        [&db] -> std::optional<LedgerIndex> { return db.getMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteBeforeLedgerSeq(min); });
     if (healthWait() != HealthResult::KeepGoing)
         return;
@@ -781,7 +786,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     clearSql(
         lastRotated,
         "Transactions",
-        [&db]() -> std::optional<LedgerIndex> { return db.getTransactionsMinLedgerSeq(); },
+        [&db] -> std::optional<LedgerIndex> { return db.getTransactionsMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteTransactionsBeforeLedgerSeq(min); });
     if (healthWait() != HealthResult::KeepGoing)
         return;
@@ -789,7 +794,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     clearSql(
         lastRotated,
         "AccountTransactions",
-        [&db]() -> std::optional<LedgerIndex> { return db.getAccountTransactionsMinLedgerSeq(); },
+        [&db] -> std::optional<LedgerIndex> { return db.getAccountTransactionsMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteAccountTransactionsBeforeLedgerSeq(min); });
     if (healthWait() != HealthResult::KeepGoing)
         return;
@@ -901,7 +906,7 @@ SHAMapStoreImp::healthWait()
             index > lastLedger, "SHAMapStoreImp::healthWait : validated ledger index changed");
     }
 
-    auto const result = std::invoke([index, circuitBreaker, this]() -> HealthResult {
+    auto const result = std::invoke([index, circuitBreaker, this] -> HealthResult {
         if (stop_)
             return HealthResult::Stopping;
         if (index < circuitBreaker)

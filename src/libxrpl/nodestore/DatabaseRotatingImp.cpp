@@ -200,6 +200,13 @@ DatabaseRotatingImp::fetchNodeObject(
     // See if the node object exists in the cache
     std::shared_ptr<NodeObject> nodeObject;
 
+    // While a rotation is in flight, ordinary (duplicate == false)
+    // reads served by the archive are copied forward too: the
+    // archive is about to be deleted, and a body canonicalized
+    // into the cache after the freshen getKeys() snapshot would
+    // otherwise survive only in RAM once the archive is dropped.
+    auto const inFlight = isRotationInFlight();
+
     auto [writable, archive] = [&] {
         std::scoped_lock const lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);
@@ -214,12 +221,6 @@ DatabaseRotatingImp::fetchNodeObject(
         if (nodeObject)
         {
             // Update writable backend with data from the archive backend.
-            // While a rotation is in flight, ordinary (duplicate == false)
-            // reads served by the archive are copied forward too: the
-            // archive is about to be deleted, and a body canonicalized
-            // into the cache after the freshen getKeys() snapshot would
-            // otherwise survive only in RAM once the archive is dropped.
-            auto const inFlight = isRotationInFlight();
             if (duplicate || inFlight)
             {
                 {
