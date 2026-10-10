@@ -68,6 +68,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -594,6 +595,41 @@ makeJsonError(json::Int code, json::Value&& message)
     return r;
 }
 
+// Version of the JSON-RPC reply envelope, selected by the `ripplerpc` request parameter. It shapes
+// a completed result into a reply; no handler observes it.
+enum class RpcVersion {
+    // Errors are returned under `result`, keyed by `error_message`, and echo the (secret-masked)
+    // request. HTTP status is always 200.
+    V1,
+    // Errors are returned under `error`, keyed by `message`, and the request is not echoed. HTTP
+    // status is always 200.
+    V2,
+    // As V2, but the error code selects a 4xx/5xx HTTP status.
+    V3,
+};
+
+constexpr RpcVersion kRpcVersionIfUnspecified = RpcVersion::V1;
+
+/**
+ * Maps a `ripplerpc` value onto the envelope version it selects.
+ *
+ * The value is unauthenticated, so anything but an exact match is refused.
+ *
+ * @param value The `ripplerpc` member, as sent.
+ * @return The envelope version, or nullopt for the caller to reject.
+ */
+static std::optional<RpcVersion>
+rpcVersion(std::string_view value)
+{
+    if (value == rpc::kRippleRpcVersion1)
+        return RpcVersion::V1;
+    if (value == rpc::kRippleRpcVersion2)
+        return RpcVersion::V2;
+    if (value == rpc::kRippleRpcVersion3)
+        return RpcVersion::V3;
+    return std::nullopt;
+}
+
 /**
  * The HTTP status the `ripplerpc: "3.0"` envelope reports for @p code.
  *
@@ -617,6 +653,84 @@ legacyHttpStatus(ErrorCodeI code)
         default:
             return rpc::errorCodeHttpStatus(code);
     }
+}
+
+/**
+ * Shapes a handler @p result into the reply envelope for @p version, appending
+ * it to @p reply.
+ *
+ * @param version The envelope the reply takes.
+ * @param result A handler result, consumed.
+ * @param request The request's parameters, echoed on a version 1 error only,
+ *        and where the `jsonrpc`, `ripplerpc` and `id` members are read.
+ * @param batch Whether to append to @p reply rather than assign it.
+ * @param reply The reply this writes.
+ * @param journal Where an error is logged.
+ * @return The HTTP status the reply is sent with. Only version 3 derives it
+ *         from the error code; the others report 200. A batch discards it.
+ */
+static int
+shapeReply(
+    RpcVersion version,
+    json::Value result,
+    json::Value const& request,
+    bool batch,
+    json::Value& reply,
+    beast::Journal journal)
+{
+    json::Value r(json::ValueType::Object);
+    int status = 200;
+
+    if (!result.isMember(jss::error))
+    {
+        result[jss::status] = jss::success;
+        r[jss::result] = std::move(result);
+    }
+    else
+    {
+        // Read through a const reference: the non-const `operator[]` inserts a null member for an
+        // absent name, and the reply below is built out of `result`.
+        json::Value const& reported = result;
+
+        JLOG(journal.debug()) << "rpcError: " << reported[jss::error] << ": "
+                              << reported[jss::error_message];
+
+        if (version == RpcVersion::V3 && reported[jss::error_code].isInt())
+            status = legacyHttpStatus(static_cast<ErrorCodeI>(reported[jss::error_code].asInt()));
+
+        result[jss::status] = jss::error;
+
+        if (version == RpcVersion::V1)
+        {
+            result[jss::request] = rpc::maskSecrets(request);
+            r[jss::result] = std::move(result);
+        }
+        else
+        {
+            result[jss::code] = result[jss::error_code];
+            result[jss::message] = result[jss::error_message];
+            result.removeMember(jss::error_message);
+            r[jss::error] = std::move(result);
+        }
+    }
+
+    if (request.isMember(jss::jsonrpc))
+        r[jss::jsonrpc] = request[jss::jsonrpc];
+    if (request.isMember(jss::ripplerpc))
+        r[jss::ripplerpc] = request[jss::ripplerpc];
+    if (request.isMember(jss::id))
+        r[jss::id] = request[jss::id];
+
+    if (batch)
+    {
+        reply.append(std::move(r));
+    }
+    else
+    {
+        reply = std::move(r);
+    }
+
+    return status;
 }
 
 void
@@ -662,6 +776,9 @@ ServerHandler::processRequest(
     }
 
     json::Value reply(batch ? json::ValueType::Array : json::ValueType::Object);
+    // Only a lone request selects the HTTP status: a batch may mix versions and reports each
+    // entry's outcome in its own reply, so the batch itself always succeeds.
+    int httpStatus = 200;
     auto const start(std::chrono::high_resolution_clock::now());
     for (unsigned i = 0; i < size; ++i)
     {
@@ -837,10 +954,11 @@ ServerHandler::processRequest(
             params = jsonRPC;
         }
 
-        std::string ripplerpc = "1.0";
+        RpcVersion envelope = kRpcVersionIfUnspecified;
         if (params.isMember(jss::ripplerpc))
         {
-            // Not a method-not-found condition, but it is the code shipped versions report.
+            // A `ripplerpc` the server cannot honor is a bad parameter, so the second check reports
+            // that code. The first keeps the method-not-found code shipped versions report.
             if (!params[jss::ripplerpc].isString())
             {
                 usage.charge(resource::kFeeMalformedRpc);
@@ -848,7 +966,17 @@ ServerHandler::processRequest(
                     return;
                 continue;
             }
-            ripplerpc = params[jss::ripplerpc].asString();
+
+            auto const parsed = rpcVersion(params[jss::ripplerpc].asString());
+            if (!parsed)
+            {
+                usage.charge(resource::kFeeMalformedRpc);
+                if (!reject(
+                        400, rpc::kJsonRpcInvalidParams, "ripplerpc is not a supported version"))
+                    return;
+                continue;
+            }
+            envelope = *parsed;
         }
 
         /**
@@ -905,58 +1033,9 @@ ServerHandler::processRequest(
         if (usage.warn())
             result[jss::warning] = jss::load;
 
-        json::Value r(json::ValueType::Object);
-        if (ripplerpc >= "2.0")
-        {
-            if (result.isMember(jss::error))
-            {
-                result[jss::status] = jss::error;
-                result["code"] = result[jss::error_code];
-                result["message"] = result[jss::error_message];
-                result.removeMember(jss::error_message);
-                JLOG(journal_.debug())
-                    << "rpcError: " << result[jss::error] << ": " << result[jss::error_message];
-                r[jss::error] = std::move(result);
-            }
-            else
-            {
-                result[jss::status] = jss::success;
-                r[jss::result] = std::move(result);
-            }
-        }
-        else
-        {
-            // Always report "status".  On an error report the request as
-            // received.
-            if (result.isMember(jss::error))
-            {
-                result[jss::status] = jss::error;
-                result[jss::request] = rpc::maskSecrets(params);
-
-                JLOG(journal_.debug())
-                    << "rpcError: " << result[jss::error] << ": " << result[jss::error_message];
-            }
-            else
-            {
-                result[jss::status] = jss::success;
-            }
-            r[jss::result] = std::move(result);
-        }
-
-        if (params.isMember(jss::jsonrpc))
-            r[jss::jsonrpc] = params[jss::jsonrpc];
-        if (params.isMember(jss::ripplerpc))
-            r[jss::ripplerpc] = params[jss::ripplerpc];
-        if (params.isMember(jss::id))
-            r[jss::id] = params[jss::id];
-        if (batch)
-        {
-            reply.append(std::move(r));
-        }
-        else
-        {
-            reply = std::move(r);
-        }
+        int const status = shapeReply(envelope, std::move(result), params, batch, reply, journal_);
+        if (!batch)
+            httpStatus = status;
 
         if (reply.isMember(jss::result) && reply[jss::result].isMember(jss::result))
         {
@@ -968,25 +1047,6 @@ ServerHandler::processRequest(
             }
         }
     }
-
-    // If we're returning an error_code, use that to determine the HTTP status.
-    int const httpStatus = [&reply] {
-        // This feature is enabled with ripplerpc version 3.0 and above.
-        // Before ripplerpc version 3.0 always return 200.
-        if (reply.isMember(jss::ripplerpc) && reply[jss::ripplerpc].isString() &&
-            reply[jss::ripplerpc].asString() >= "3.0")
-        {
-            // If there's an error_code, use that to determine the HTTP Status.
-            if (reply.isMember(jss::error) && reply[jss::error].isMember(jss::error_code) &&
-                reply[jss::error][jss::error_code].isInt())
-            {
-                int const errCode = reply[jss::error][jss::error_code].asInt();
-                return legacyHttpStatus(static_cast<ErrorCodeI>(errCode));
-            }
-        }
-        // Return OK.
-        return 200;
-    }();
 
     auto response = to_string(reply);
 
