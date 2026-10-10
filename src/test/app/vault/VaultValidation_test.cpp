@@ -27,6 +27,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -35,6 +36,8 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
+#include <chrono>
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <tuple>
@@ -1177,6 +1180,463 @@ private:
         }
     }
 
+    void
+    testVaultDepositDonate()
+    {
+        using namespace test::jtx;
+        std::string const prefix = "VaultDeposit donate";
+
+        Env env{*this};
+        Vault const vault{env};
+
+        auto const vaultShareBalance = [&](Keylet const& vaultKeylet) {
+            auto const sleVault = env.le(vaultKeylet);
+            BEAST_EXPECT(sleVault != nullptr);
+
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
+            BEAST_EXPECT(sleIssuance != nullptr);
+
+            return sleIssuance->at(sfOutstandingAmount);
+        };
+
+        auto const vaultAssetBalance = [&](Keylet const& vaultKeylet) {
+            auto const sleVault = env.le(vaultKeylet);
+            BEAST_EXPECT(sleVault != nullptr);
+
+            return std::make_pair(sleVault->at(sfAssetsAvailable), sleVault->at(sfAssetsTotal));
+        };
+
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        env.fund(XRP(1'000'000), owner, depositor);
+        env.close();
+
+        auto const depositAmount = XRP(10);
+
+        auto const [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+        env(tx, Ter(tesSUCCESS));
+        env.close();
+
+        {
+            testcase(prefix + " fails with featureLendingProtocolV1_2 disabled");
+            env.disableFeature(featureLendingProtocolV1_2);
+            auto const tx = vault.deposit({
+                .depositor = owner,
+                .id = keylet.key,
+                .amount = depositAmount,
+                .flags = tfVaultDonate,
+            });
+            env(tx, Ter(temINVALID_FLAG));
+            env.enableFeature(featureLendingProtocolV1_2);
+            env.close();
+        }
+
+        {
+            testcase(prefix + " fails to an empty vault");
+            auto const tx = vault.deposit({
+                .depositor = owner,
+                .id = keylet.key,
+                .amount = depositAmount,
+                .flags = tfVaultDonate,
+            });
+            env(tx, Ter(tecNO_PERMISSION));
+            env.close();
+        }
+
+        env(vault.deposit({
+                .depositor = depositor,
+                .id = keylet.key,
+                .amount = depositAmount,
+            }),
+            Ter(tesSUCCESS));
+        env.close();
+
+        {
+            testcase(prefix + " fails by a non-owner");
+            auto const tx = vault.deposit({
+                .depositor = depositor,
+                .id = keylet.key,
+                .amount = depositAmount,
+                .flags = tfVaultDonate,
+            });
+            env(tx, Ter(tecNO_PERMISSION));
+            env.close();
+        }
+
+        {
+            testcase(prefix + " cannot exceed assets maximum");
+            auto tx = vault.set({
+                .owner = owner,
+                .id = keylet.key,
+            });
+            tx[sfAssetsMaximum] = XRP(30).number();
+            env(tx, Ter(tesSUCCESS));
+
+            tx = vault.deposit({
+                .depositor = owner,
+                .id = keylet.key,
+                .amount = depositAmount + XRP(30),
+                .flags = tfVaultDonate,
+            });
+
+            env(tx, Ter(tecLIMIT_EXCEEDED));
+            env.close();
+        }
+
+        {
+            testcase(prefix + " succeeds");
+            auto const shareBalance = vaultShareBalance(keylet);
+            auto const [assetsAvailable, assetsTotal] = vaultAssetBalance(keylet);
+
+            auto tx = vault.deposit({
+                .depositor = owner,
+                .id = keylet.key,
+                .amount = depositAmount,
+                .flags = tfVaultDonate,
+            });
+            env(tx, Ter(tesSUCCESS));
+            env.close();
+
+            auto const shareBalanceAfterDeposit = vaultShareBalance(keylet);
+            auto const [assetsAvailableAfterDeposit, assetsTotalAfterDeposit] =
+                vaultAssetBalance(keylet);
+
+            BEAST_EXPECT(shareBalance == shareBalanceAfterDeposit);
+            BEAST_EXPECT(assetsAvailable + depositAmount.number() == assetsAvailableAfterDeposit);
+            BEAST_EXPECT(assetsTotal + depositAmount.number() == assetsTotalAfterDeposit);
+
+            auto const sleVault = env.le(keylet);
+            if (!BEAST_EXPECT(sleVault))
+                return;
+
+            Asset const shareAsset(sleVault->at(sfShareMPTID));
+            tx = vault.withdraw(
+                {.depositor = depositor, .id = keylet.key, .amount = shareAsset(shareBalance)});
+            env(tx, Ter(tesSUCCESS));
+
+            auto const shareBalanceAfterWithdraw = vaultShareBalance(keylet);
+            auto const [assetsAvailableAfterWithdraw, assetsTotalAfterWithdraw] =
+                vaultAssetBalance(keylet);
+            BEAST_EXPECT(shareBalanceAfterWithdraw == 0);
+            BEAST_EXPECT(assetsAvailableAfterWithdraw == 0);
+            BEAST_EXPECT(assetsTotalAfterWithdraw == 0);
+        }
+
+        {
+            testcase(prefix + " succeeds with non-1:1 share ratio");
+
+            auto const [createTx, vk] = vault.create({.owner = owner, .asset = xrpIssue()});
+            env(createTx, Ter(tesSUCCESS));
+            env.close();
+
+            env(vault.deposit({
+                    .depositor = depositor,
+                    .id = vk.key,
+                    .amount = XRP(10),
+                }),
+                Ter(tesSUCCESS));
+            env.close();
+
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = vk.key,
+                    .amount = XRP(7),
+                    .flags = tfVaultDonate,
+                }),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const sharesAfterFirstDonate = vaultShareBalance(vk);
+            auto const [availAfterFirstDonate, totalAfterFirstDonate] = vaultAssetBalance(vk);
+
+            BEAST_EXPECT(sharesAfterFirstDonate == 10'000'000);
+            BEAST_EXPECT(availAfterFirstDonate == 17'000'000);
+            BEAST_EXPECT(totalAfterFirstDonate == 17'000'000);
+
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = vk.key,
+                    .amount = XRP(3),
+                    .flags = tfVaultDonate,
+                }),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const sharesAfterSecondDonate = vaultShareBalance(vk);
+            auto const [availAfterSecondDonate, totalAfterSecondDonate] = vaultAssetBalance(vk);
+
+            BEAST_EXPECT(sharesAfterSecondDonate == 10'000'000);
+            BEAST_EXPECT(availAfterSecondDonate == 20'000'000);
+            BEAST_EXPECT(totalAfterSecondDonate == 20'000'000);
+
+            auto const sleVault = env.le(vk);
+            if (!BEAST_EXPECT(sleVault))
+                return;
+            Asset const shareAsset(sleVault->at(sfShareMPTID));
+            env(vault.withdraw(
+                    {.depositor = depositor,
+                     .id = vk.key,
+                     .amount = shareAsset(sharesAfterSecondDonate)}),
+                Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(vaultShareBalance(vk) == 0);
+            BEAST_EXPECT(vaultAssetBalance(vk).first == 0);
+            BEAST_EXPECT(vaultAssetBalance(vk).second == 0);
+        }
+
+        {
+            testcase(prefix + " succeeds in closed-ended investment phase");
+
+            auto const [createTx, vk, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner,
+                 .asset = xrpIssue(),
+                 .subscriptionOffset = std::chrono::seconds{60}});
+            env(createTx, Ter(tesSUCCESS));
+            env.close();
+
+            env(vault.deposit({
+                    .depositor = depositor,
+                    .id = vk.key,
+                    .amount = depositAmount,
+                }),
+                Ter(tesSUCCESS));
+            env.close();
+
+            vault.closePastSubscription(subscriptionDate);
+
+            env(vault.deposit({
+                    .depositor = depositor,
+                    .id = vk.key,
+                    .amount = depositAmount,
+                }),
+                Ter(tecEXPIRED));
+
+            auto const shareBalance = vaultShareBalance(vk);
+            auto const [assetsAvailable, assetsTotal] = vaultAssetBalance(vk);
+
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = vk.key,
+                    .amount = depositAmount,
+                    .flags = tfVaultDonate,
+                }),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const [assetsAvailableAfter, assetsTotalAfter] = vaultAssetBalance(vk);
+            BEAST_EXPECT(vaultShareBalance(vk) == shareBalance);
+            BEAST_EXPECT(assetsAvailable + depositAmount.number() == assetsAvailableAfter);
+            BEAST_EXPECT(assetsTotal + depositAmount.number() == assetsTotalAfter);
+        }
+    }
+
+    void
+    testVaultDonateAssets()
+    {
+        using namespace test::jtx;
+        std::string const prefix = "VaultDeposit donate";
+
+        auto const shares = [](Env& env, Keylet const& k) {
+            auto const sleVault = env.le(k);
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
+            return sleIssuance->at(sfOutstandingAmount);
+        };
+        auto const totals = [](Env& env, Keylet const& k) {
+            auto const sleVault = env.le(k);
+            return std::make_pair(sleVault->at(sfAssetsAvailable), sleVault->at(sfAssetsTotal));
+        };
+
+        {
+            Env env{*this, all_};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(100'000), issuer, owner, depositor);
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            IOU const iou = issuer["IOU"];
+            PrettyAsset const asset = iou;
+            STAmount const bigBalance{iou.issue(), std::uint64_t{1'234'567'890'123'456}, 0, false};
+            STAmount const limit{iou.issue(), std::uint64_t{1}, 20, false};
+            env(trust(owner, limit));
+            env(trust(depositor, limit));
+            env(pay(issuer, owner, bigBalance));
+            env(pay(issuer, depositor, asset(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto const [createTx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(createTx);
+            env.close();
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            {
+                testcase(prefix + " IOU debit rounds to zero");
+                STAmount const tiny{iou.issue(), std::uint64_t{1}, -3, false};
+                auto const before = totals(env, keylet);
+                env(vault.deposit(
+                        {.depositor = owner,
+                         .id = keylet.key,
+                         .amount = tiny,
+                         .flags = tfVaultDonate}),
+                    Ter(tecPRECISION_LOSS));
+                env.close();
+                BEAST_EXPECT(totals(env, keylet) == before);
+            }
+
+            {
+                testcase(prefix + " IOU succeeds");
+                auto const shareBalance = shares(env, keylet);
+                auto const [available, total] = totals(env, keylet);
+                env(vault.deposit(
+                        {.depositor = owner,
+                         .id = keylet.key,
+                         .amount = asset(50),
+                         .flags = tfVaultDonate}),
+                    Ter(tesSUCCESS));
+                env.close();
+                auto const [availableAfter, totalAfter] = totals(env, keylet);
+                BEAST_EXPECT(shares(env, keylet) == shareBalance);
+                BEAST_EXPECT(availableAfter == available + Number(50));
+                BEAST_EXPECT(totalAfter == total + Number(50));
+            }
+        }
+
+        {
+            Env env{*this, all_};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(100'000), issuer, owner, depositor);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            env(pay(issuer, owner, asset(1'000)));
+            env(pay(issuer, depositor, asset(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto const [createTx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(createTx);
+            env.close();
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            {
+                testcase(prefix + " MPT succeeds");
+                auto const shareBalance = shares(env, keylet);
+                auto const [available, total] = totals(env, keylet);
+                env(vault.deposit(
+                        {.depositor = owner,
+                         .id = keylet.key,
+                         .amount = asset(50),
+                         .flags = tfVaultDonate}),
+                    Ter(tesSUCCESS));
+                env.close();
+                auto const [availableAfter, totalAfter] = totals(env, keylet);
+                BEAST_EXPECT(shares(env, keylet) == shareBalance);
+                BEAST_EXPECT(availableAfter == available + Number(50));
+                BEAST_EXPECT(totalAfter == total + Number(50));
+            }
+
+            {
+                testcase(prefix + " MPT locked");
+                mptt.set({.account = issuer, .holder = owner, .flags = tfMPTLock});
+                env.close();
+                env(vault.deposit(
+                        {.depositor = owner,
+                         .id = keylet.key,
+                         .amount = asset(50),
+                         .flags = tfVaultDonate}),
+                    Ter(tecLOCKED));
+                env.close();
+            }
+        }
+
+        {
+            testcase(prefix + " succeeds in redemption phase");
+            Env env{*this, all_};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(100'000), owner, depositor);
+            env.close();
+
+            Vault const vault{env};
+            auto const [createTx, keylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner,
+                 .asset = xrpIssue(),
+                 .subscriptionOffset = std::chrono::seconds{60},
+                 .investmentWindow = std::chrono::seconds{200}});
+            env(createTx);
+            env.close();
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = XRP(10)}));
+            env.close();
+
+            // Move past the redemption date.
+            env.close(subscriptionDate + std::chrono::seconds{201});
+            env.close();
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = XRP(10)}),
+                Ter(tecEXPIRED));
+
+            auto const shareBalance = shares(env, keylet);
+            auto const [available, total] = totals(env, keylet);
+            env(vault.deposit(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = XRP(10),
+                     .flags = tfVaultDonate}),
+                Ter(tesSUCCESS));
+            env.close();
+            auto const [availableAfter, totalAfter] = totals(env, keylet);
+            BEAST_EXPECT(shares(env, keylet) == shareBalance);
+            BEAST_EXPECT(availableAfter == available + XRP(10).number());
+            BEAST_EXPECT(totalAfter == total + XRP(10).number());
+
+            auto const sleVault = env.le(keylet);
+            if (!BEAST_EXPECT(sleVault))
+                return;
+            Asset const shareAsset(sleVault->at(sfShareMPTID));
+            auto const balanceBefore = env.balance(depositor);
+            env(vault.withdraw(
+                    {.depositor = depositor, .id = keylet.key, .amount = shareAsset(shareBalance)}),
+                Ter(tesSUCCESS));
+            env.close();
+            // The depositor paid 10 XRP in; the donation adds 10 more, less the fee.
+            auto const received = env.balance(depositor) - balanceBefore;
+            BEAST_EXPECT(received > XRP(10));
+        }
+    }
+
+    void
+    testVaultCreatePrivateUnderV12()
+    {
+        using namespace test::jtx;
+        testcase("VaultCreate tfVaultPrivate unaffected by tfVaultDonate bit");
+
+        Env env{*this, all_};
+        Account const owner{"owner"};
+        env.fund(XRP(10'000), owner);
+        env.close();
+
+        Vault const vault{env};
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+        tx[sfFlags] = tfVaultPrivate;
+        env(tx, Ter(tesSUCCESS));
+        env.close();
+
+        auto const sleVault = env.le(keylet);
+        if (!BEAST_EXPECT(sleVault))
+            return;
+        BEAST_EXPECT(sleVault->isFlag(lsfVaultPrivate));
+    }
+
 public:
     void
     run() override
@@ -1187,6 +1647,9 @@ public:
         testCreateFailMPT();
         testVaultDeleteMemoData();
         testVaultCreateLEVersion();
+        testVaultDepositDonate();
+        testVaultDonateAssets();
+        testVaultCreatePrivateUnderV12();
 
         testVaultWithdrawPseudoAccountDestination(all_ - fixCleanup3_4_0);
         testVaultWithdrawPseudoAccountDestination(all_);
