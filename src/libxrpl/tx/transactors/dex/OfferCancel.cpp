@@ -1,7 +1,7 @@
 #include <xrpl/tx/transactors/dex/OfferCancel.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/entries/OfferEntry.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -59,10 +59,11 @@ OfferCancel::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const seqProxy = SeqProxy::rawSequence(offerSequence);
-    if (auto sleOffer = view().peek(keylet::offer(accountID_, seqProxy)))
+    if (OfferEntryW sleOffer(accountID_, seqProxy, view(), ctx_.registry.get().getJournal("View"));
+        sleOffer)
     {
         JLOG(j_.debug()) << "Trying to cancel offer #" << offerSequence;
-        return offerDelete(view(), sleOffer, ctx_.registry.get().getJournal("View"));
+        return sleOffer.removeFromLedger();
     }
 
     JLOG(j_.debug()) << "Offer #" << offerSequence << " can't be found.";

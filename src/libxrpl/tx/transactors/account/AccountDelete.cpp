@@ -9,10 +9,10 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/OfferEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
-#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -78,12 +78,12 @@ TER
 offerDelete(
     ServiceRegistry&,
     ApplyView& view,
-    AccountID const& account,
+    AccountID const&,
     UInt256 const& delIndex,
-    SLE::Ref sleDel,
+    SLE::Ref,
     beast::Journal j)
 {
-    return offerDelete(view, sleDel, j);
+    return OfferEntryW(Keylet(ltOFFER, delIndex), view, j).removeFromLedger();
 }
 
 TER

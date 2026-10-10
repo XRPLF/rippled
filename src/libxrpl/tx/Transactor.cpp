@@ -11,11 +11,11 @@
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/OfferEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
-#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -1216,10 +1216,10 @@ removeUnfundedOffers(ApplyView& view, std::vector<UInt256> const& offers, beast:
 
     for (auto const& index : offers)
     {
-        if (auto const sleOffer = view.peek(keylet::offer(index)))
+        if (OfferEntryW sleOffer(index, view, viewJ); sleOffer)
         {
             // offer is unfunded
-            offerDelete(view, sleOffer, viewJ);
+            sleOffer.removeFromLedger();
             if (++removed == kUnfundedOfferRemoveLimit)
                 return;
         }

@@ -24,8 +24,8 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/entries/OfferEntry.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -517,8 +517,8 @@ struct Flow_test : public beast::unit_test::Suite
                 Sandbox sb(&view, TapNone);
                 for (auto const& o : flowResult.removableOffers)
                 {
-                    if (auto ok = sb.peek(keylet::offer(o)))
-                        offerDelete(sb, ok, flowJournal);
+                    if (OfferEntryW ok(o, sb, flowJournal); ok)
+                        ok.removeFromLedger();
                 }
                 sb.apply(view);
                 return true;
