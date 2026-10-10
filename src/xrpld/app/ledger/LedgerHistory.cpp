@@ -118,6 +118,12 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 }
 
 std::shared_ptr<Ledger const>
+LedgerHistory::getCachedLedgerByHash(LedgerHash const& hash)
+{
+    return ledgersByHash_.fetch(hash);
+}
+
+std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 {
     auto ret = ledgersByHash_.fetch(hash);

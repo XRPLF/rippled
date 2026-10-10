@@ -205,6 +205,7 @@ Ledger::Ledger(
 
     stateMap_.flushDirty(NodeObjectType::AccountNode);
     setImmutable();
+    setFullyWired();
 }
 
 Ledger::Ledger(
@@ -261,6 +262,9 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     , rules_(prevLedger.rules_)
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
+    // Do not inherit fullyWired_. Mutations after this snapshot are new
+    // nodes; the flag is set when the ledger is accepted (setFullLedger)
+    // or primed after inbound sync.
     header_.seq = prevLedger.header_.seq + 1;
     header_.parentCloseTime = prevLedger.header_.closeTime;
     header_.hash = prevLedger.header().hash + UInt256(1);
@@ -328,6 +332,22 @@ Ledger::setImmutable(bool rehash)
     txMap_.setImmutable();
     stateMap_.setImmutable();
     setup();
+}
+
+bool
+Ledger::fullWireForUse(beast::Journal journal, char const* context) const
+{
+    if (!stateMap_.family().isNullBackend() || isFullyWired())
+        return true;
+
+    // Do not walk the full state tree. Iterating every leaf was a prototype
+    // way to force-link via descend; on mainnet that is 70M+ leaves and
+    // longer than a consensus round. Linkage is kept by merging child
+    // pointers at SHAMap::canonicalize while the map is built. A header-only
+    // load cannot be rebuilt from the null store.
+    JLOG(journal.warn()) << context << ": ledger " << header_.seq
+                         << " is not fully wired; refusing a full state walk";
+    return false;
 }
 
 void
