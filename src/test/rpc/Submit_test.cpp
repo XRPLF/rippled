@@ -8,6 +8,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
 
@@ -87,9 +88,36 @@ public:
     }
 
     void
+    testDeliverMax()
+    {
+        testcase("DeliverMax in tx_blob response");
+        using namespace jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        forAllApiVersions([&](unsigned apiVersion) {
+            auto const jt = env.jt(pay(alice, bob, XRP(1)));
+
+            json::Value params;
+            params[jss::tx_blob] = strHex(jt.stx->getSerializer().slice());
+            params[jss::api_version] = apiVersion;
+            auto const jrr = env.rpc("json", "submit", to_string(params))[jss::result];
+            BEAST_EXPECT(jrr[jss::engine_result] == "tesSUCCESS");
+            BEAST_EXPECT(jrr[jss::tx_json][jss::DeliverMax] == "1000000");
+            BEAST_EXPECT(
+                apiVersion > 1 ? !jrr[jss::tx_json].isMember(jss::Amount)
+                               : jrr[jss::tx_json][jss::Amount] == "1000000");
+        });
+    }
+
+    void
     run() override
     {
         testFailHardValidation();
+        testDeliverMax();
     }
 };
 

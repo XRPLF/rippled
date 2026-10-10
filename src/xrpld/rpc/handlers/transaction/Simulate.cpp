@@ -1,5 +1,6 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
@@ -302,6 +303,10 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
     else
     {
         jvResult[jss::tx_json] = transaction->getJson(JsonOptions::Values::None);
+        rpc::insertDeliverMax(
+            jvResult[jss::tx_json],
+            transaction->getSTransaction()->getTxnType(),
+            context.apiVersion);
     }
 
     return jvResult;
@@ -336,6 +341,10 @@ doSimulate(rpc::JsonContext& context)
     txJson = getTxJsonFromParams(context.params);
     if (txJson.isMember(jss::error))
         return txJson;
+
+    // Fee autofill parses tx_json, so the alias is resolved first.
+    if (auto err = rpc::removeDeliverMax(txJson); err.isMember(jss::error))
+        return err;
 
     // autofill fields if they're not included (e.g. `Fee`, `Sequence`)
     if (auto error = autofillTx(txJson, context))

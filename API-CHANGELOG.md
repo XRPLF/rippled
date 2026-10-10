@@ -33,6 +33,10 @@ Version 3.5.0 is not yet released.
 
 ### Bugfixes in 3.5.0
 
+- `account_tx`, `ledger`, `sign`, `sign_for`, `submit`, `submit_multisigned`, `subscribe` (transaction streams), `transaction_entry`, `tx`, `tx_history`: A Payment inside the `RawTransactions` of a Batch now follows the same `DeliverMax` rule as any other Payment: `Amount` and `DeliverMax` in API version 1, and only `DeliverMax` in API version 2 and later. Previously an inner Payment showed only `Amount` in every API version. [#8558](https://github.com/XRPLF/rippled/pull/8558)
+- `sign`, `sign_for`, `submit`, `submit_multisigned`: An inner Payment of a Batch now accepts `DeliverMax` in place of `Amount`, as a top-level Payment already did; differing `Amount` and `DeliverMax` return `invalidParams`. Previously `DeliverMax` in an inner Payment was rejected as an unknown field. [#8558](https://github.com/XRPLF/rippled/pull/8558)
+- `simulate`: A Payment now accepts `DeliverMax` in place of `Amount`, and the returned `tx_json` follows the `DeliverMax` rule. Previously `DeliverMax` was rejected as an unknown field and the returned `tx_json` showed only `Amount`. [#8558](https://github.com/XRPLF/rippled/pull/8558)
+- `submit`: With `tx_blob`, the returned `tx_json` now follows the `DeliverMax` rule. Previously it showed only `Amount`. [#8558](https://github.com/XRPLF/rippled/pull/8558)
 - `channel_authorize`: The `channel_id` field now returns an `invalidParams` error if the value is not a string. [#7582](https://github.com/XRPLF/rippled/pull/7582)
 - `channel_verify`: The `channel_id` and `signature` fields now return an `invalidParams` error if the value is not a string. [#7582](https://github.com/XRPLF/rippled/pull/7582)
 

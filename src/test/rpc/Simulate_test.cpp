@@ -24,6 +24,7 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -1336,6 +1337,65 @@ class Simulate_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testDeliverMax()
+    {
+        testcase("DeliverMax");
+
+        using namespace jtx;
+        Env env(*this);
+        Account const alice("alice");
+        Account const becky("becky");
+        env.fund(XRP(10000), alice);
+        env.close();
+        env(signers(alice, 1, {{becky, 1}}));
+        env.close();
+
+        auto simulate = [&](json::Value const& tx, unsigned apiVersion) {
+            json::Value params;
+            params[jss::tx_json] = tx;
+            params[jss::api_version] = apiVersion;
+            return env.rpc("json", "simulate", to_string(params))[jss::result];
+        };
+
+        json::Value tx;
+        tx[jss::TransactionType] = jss::Payment;
+        tx[jss::Account] = alice.human();
+        tx[jss::Destination] = env.master.human();
+        tx[jss::DeliverMax] = "1000000";
+
+        forAllApiVersions([&](unsigned apiVersion) {
+            auto const jr = simulate(tx, apiVersion);
+            BEAST_EXPECT(jr[jss::engine_result] == "tesSUCCESS");
+            BEAST_EXPECT(jr[jss::tx_json][jss::DeliverMax] == "1000000");
+            BEAST_EXPECT(
+                apiVersion > 1 ? !jr[jss::tx_json].isMember(jss::Amount)
+                               : jr[jss::tx_json][jss::Amount] == "1000000");
+        });
+
+        {
+            auto differing = tx;
+            differing[jss::Amount] = "2000000";
+            auto const jr = simulate(differing, 2);
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                jr[jss::error_message] == "Cannot specify differing 'Amount' and 'DeliverMax'");
+        }
+
+        // The autofilled fee of a multi-signed Payment counts its signer when
+        // the amount is given as DeliverMax.
+        json::Value signer;
+        signer[jss::Account] = becky.human();
+        tx[sfSigners] = json::ValueType::Array;
+        tx[sfSigners].append(json::Value{});
+        tx[sfSigners][0u][sfSigner] = signer;
+        auto const jr = simulate(tx, 2);
+        BEAST_EXPECT(jr[jss::engine_result] == "tesSUCCESS");
+        BEAST_EXPECT(
+            jr[jss::tx_json][jss::Fee] ==
+            (env.current()->fees().base * 2).jsonClipped().asString());
+    }
+
 public:
     void
     run() override
@@ -1354,6 +1414,7 @@ public:
         testDeleteExpiredCredentials();
         testSuccessfulTransactionNetworkID();
         testSuccessfulTransactionAdditionalMetadata();
+        testDeliverMax();
     }
 };
 
