@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/NFTokenOfferEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -591,7 +592,7 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
         // deleting during iteration.
         for (int i = offerIndexes.size() - 1; i >= 0; --i)
         {
-            if (auto const offer = view.peek(keylet::nftokenOffer(offerIndexes[i])))
+            if (NFTokenOfferEntryW offer(offerIndexes[i], view); offer)
             {
                 if (deleteTokenOffer(view, offer))
                 {
@@ -613,7 +614,7 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
 }
 
 bool
-deleteTokenOffer(ApplyView& view, SLE::Ref offer)
+deleteTokenOffer(ApplyView& view, NFTokenOfferEntryW& offer)
 {
     if (offer->getType() != ltNFTOKEN_OFFER)
         return false;
@@ -635,7 +636,7 @@ deleteTokenOffer(ApplyView& view, SLE::Ref offer)
 
     decreaseOwnerCount(view, owner, {}, 1, beast::Journal{beast::Journal::getNullSink()});
 
-    view.erase(offer);
+    offer.erase();
     return true;
 }
 
@@ -942,7 +943,8 @@ tokenOfferCreateApply(
         priorBalance < accountReserve(view, acct, j, {.ownerCountDelta = 1}))
         return tecINSUFFICIENT_RESERVE;
 
-    auto const offerID = keylet::nftokenOffer(acctID, seqProxy);
+    NFTokenOfferEntryW offer(acctID, seqProxy, view, j);
+    Keylet const offerID = offer.keylet();
 
     // Create the offer:
     {
@@ -973,7 +975,7 @@ tokenOfferCreateApply(
         if (isSellOffer)
             sleFlags |= lsfSellNFToken;
 
-        auto offer = std::make_shared<SLE>(offerID);
+        offer.newSLE();
         (*offer)[sfOwner] = acctID;
         (*offer)[sfNFTokenID] = nftokenID;
         (*offer)[sfAmount] = amount;
@@ -987,7 +989,7 @@ tokenOfferCreateApply(
         if (dest)
             (*offer)[sfDestination] = *dest;
 
-        view.insert(offer);
+        offer.insert();
     }
 
     // Update owner count.
