@@ -3,6 +3,7 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/MethodNames.h>
 #include <xrpld/rpc/ServerHandler.h>
+#include <xrpld/rpc/detail/MaskSecrets.h>
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
@@ -615,20 +616,31 @@ private:
         return rpcError(RpcInvalidParams);
     }
 
-    // json <command> <json>
+    /**
+     * Parses the `json <command> <json>` form: the second argument is parsed
+     * as the request and the first becomes its `method`. The request is
+     * logged masked once parsed; the unparsed text never is.
+     *
+     * @param jvParams The command name and the JSON text.
+     * @return The request, or `invalidParams` when the text does not parse
+     *         to an object.
+     */
     json::Value
     parseJson(json::Value const& jvParams)
     {
         json::Reader reader;
         json::Value jvRequest;
 
+        // The command name cannot carry a credential, so it logs whether the JSON parses or not.
         JLOG(j_.trace()) << "RPC method: " << jvParams[0u];
-        JLOG(j_.trace()) << "RPC json: " << jvParams[1u];
 
         if (reader.parse(jvParams[1u].asString(), jvRequest))
         {
             if (!jvRequest.isObjectOrNull())
                 return rpcError(RpcInvalidParams);
+
+            // Logged only once parsed, so a signing secret among the members can be masked.
+            JLOG(j_.trace()) << "RPC json: " << rpc::loggable(jvRequest);
 
             jvRequest[jss::method] = jvParams[0u];
 
@@ -1021,7 +1033,14 @@ private:
         return jvRequest;
     }
 
-    // ripple_path_find <json> [<ledger>]
+    /**
+     * Parses the `ripple_path_find <json> [<ledger>]` form: the first
+     * argument is parsed as the request and logged masked once parsed, the
+     * optional second names the ledger.
+     *
+     * @param jvParams The JSON text and, optionally, the ledger.
+     * @return The request, or `invalidParams` when the text does not parse.
+     */
     json::Value
     parseRipplePathFind(json::Value const& jvParams)
     {
@@ -1029,10 +1048,12 @@ private:
         json::Value jvRequest{json::ValueType::Object};
         bool const bLedger = 2 == jvParams.size();
 
-        JLOG(j_.trace()) << "RPC json: " << jvParams[0u];
-
         if (reader.parse(jvParams[0u].asString(), jvRequest))
         {
+            // The JSON is logged only once parsed, so a signing secret among the named members can
+            // be masked. Unparsed it is a bare string with no members to name.
+            JLOG(j_.trace()) << "RPC json: " << rpc::loggable(jvRequest);
+
             if (bLedger)
             {
                 jvParseLedger(jvRequest, jvParams[1u].asString());
@@ -1761,11 +1782,7 @@ public:
     json::Value
     parseCommand(std::string_view strMethod, json::Value const& jvParams, bool allowAnyCommand)
     {
-        if (auto stream = j_.trace())
-        {
-            stream << "Method: '" << strMethod << "'";
-            stream << "Params: " << jvParams;
-        }
+        JLOG(j_.trace()) << "Method: '" << strMethod << "'";
 
         auto const found = std::ranges::lower_bound(kSortedCommands, strMethod, {}, &Command::name);
 
@@ -1872,15 +1889,26 @@ struct RPCCallImp
                     "process.");
             }
 
-            // Parse reply
-            JLOG(j.debug()) << "RPC reply: " << strData << std::endl;
+            // Parse reply. A plain text body is a rejection, which carries no field a credential
+            // could sit in, so it is logged as it is, capped at kMaxLoggedChars.
             if (strData.starts_with("Unable to parse request") ||
                 strData.starts_with(jss::invalid_API_version.cStr()))
+            {
+                JLOG(j.debug()) << "RPC reply: "
+                                << std::string_view{strData}.substr(0, rpc::kMaxLoggedChars);
                 Throw<RequestNotParsable>(strData);
+            }
             json::Reader reader;
             json::Value jvReply;
             if (!reader.parse(strData, jvReply))
+            {
+                JLOG(j.debug()) << "RPC reply: "
+                                << std::string_view{strData}.substr(0, rpc::kMaxLoggedChars);
                 Throw<std::runtime_error>("couldn't parse reply from server");
+            }
+            // Logged once parsed, masked: `validation_create` and `wallet_propose` answer with a
+            // private key, which the fallback scrubber in Log.cpp does not know by every name.
+            JLOG(j.debug()) << "RPC reply: " << rpc::loggable(jvReply);
 
             if (!jvReply)
                 Throw<std::runtime_error>("expected reply to have result, error and id properties");
@@ -1922,7 +1950,16 @@ commandLineMethodNames()
     return RPCParser::methodNames();
 }
 
-// Used internally by rpcClient.
+/**
+ * Translates command line arguments into the request the client sends.
+ *
+ * @param args The method name followed by its positional arguments.
+ * @param retParams Receives the arguments as `method` and `params`, the form
+ *         `rpc` echoes on an error.
+ * @param apiVersion The `api_version` stamped on each request naming none.
+ * @param j The journal the built request is logged to, masked.
+ * @return The request, an array of requests, or the parser's error object.
+ */
 json::Value
 rpcCmdToJson(
     std::vector<std::string> const& args,
@@ -1962,12 +1999,27 @@ rpcCmdToJson(
         std::for_each(jvRequest.begin(), jvRequest.end(), insertApiVersion);
     }
 
-    JLOG(j.trace()) << "RPC Request: " << jvRequest << std::endl;
+    // `sign` and `submit` put the signing secret in the request the command line built.
+    JLOG(j.trace()) << "RPC Request: " << rpc::loggable(jvRequest) << std::endl;
     return jvRequest;
 }
 
 //------------------------------------------------------------------------------
 
+/**
+ * Runs one command line command against the configured server.
+ *
+ * Builds the request, adds the admin credentials from the config, sends it
+ * over HTTP and unwraps the result. On an error the output also carries the
+ * invocation as `rpc` and the request as `request_sent`, masked.
+ *
+ * @param args The method name followed by its arguments.
+ * @param config The client configuration naming the server and credentials.
+ * @param logs The log manager.
+ * @param apiVersion The `api_version` to request.
+ * @param headers Extra HTTP headers to send.
+ * @return The exit code and the output to print.
+ */
 std::pair<int, json::Value>
 rpcClient(
     std::vector<std::string> const& args,
@@ -2079,7 +2131,9 @@ rpcClient(
             if (jvOutput.isMember(jss::error))
             {
                 jvOutput["rpc"] = jvRpc;  // How the command was seen as method + params.
-                jvOutput["request_sent"] = jvRequest;  // How the command was translated.
+                // Carries the config's `admin_password` and prints to stdout, so it is masked.
+                // `jvRpc` above is positional, so masking by member name does not reach it.
+                jvOutput["request_sent"] = rpc::maskSecrets(jvRequest);
             }
         }
 
