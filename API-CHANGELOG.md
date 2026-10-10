@@ -10,6 +10,12 @@ The [commandline](https://xrpl.org/docs/references/http-websocket-apis/api-conve
 
 For a log of breaking changes, see the **API Version [number]** headings. In general, breaking changes are associated with a particular API Version number. For non-breaking changes, scroll to the **XRP Ledger version [x.y.z]** headings. Non-breaking changes are associated with a particular XRP Ledger (`xrpld`) release.
 
+## Unreleased
+
+### Bugfixes
+
+- `account_objects`: Include `Loan` and `LoanBroker` objects when `deletion_blockers_only` is `true`, including queries filtered by `type: "loan"` or `type: "loan_broker"`. These objects prevent account deletion but were previously omitted from the response.
+
 ## API Version 3 (Beta)
 
 API version 3 is currently a beta API. It requires enabling `[beta_rpc_api]` in the xrpld configuration to use. See [API-VERSION-3.md](API-VERSION-3.md) for the full list of changes in API version 3.
