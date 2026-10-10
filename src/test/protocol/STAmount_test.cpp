@@ -14,6 +14,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -1072,6 +1073,39 @@ public:
             BEAST_EXPECT(down.signum() > 0);
             BEAST_EXPECT(up >= down);
         }
+
+        {
+            // An MPT operand with a non-MPT result. The legacy path assumes
+            // 16-digit mantissas and overflows on a 63-bit MPT mantissa; under
+            // MPTokensV2 any MPT operand, not only an MPT result, takes the
+            // Number path. This is OfferCreate::flowCross recomputing the
+            // remainder of a partially crossed large MPT offer, and
+            // Quality::ceilIn/ceilOut partially filling one.
+            Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+            STAmount const bigMpt{asset, UINT64_C(5'000'000'000'000'000'000)};
+            STAmount const milli{noIssue(), UINT64_C(1'000'000'000'000'000), -18};     // 1e-3
+            STAmount const kilo{noIssue(), UINT64_C(1'000'000'000'000'000), -12};      // 1e3
+            STAmount const tenMicro{noIssue(), UINT64_C(1'000'000'000'000'000), -20};  // 1e-5
+            STAmount const usdResult{usd, UINT64_C(5'000'000'000'000'000)};
+            XRPAmount const xrpResult{50'000'000'000'000};
+
+            {
+                CurrentTransactionRulesGuard const rg(rules(false));
+                throwsOverflow([&] { (void)mulRound(bigMpt, milli, usd, true); });
+                throwsOverflow([&] { (void)mulRound(bigMpt, tenMicro, xrpIssue(), true); });
+                throwsOverflow([&] { (void)divRound(bigMpt, kilo, usd, true); });
+                throwsOverflow([&] { (void)divRoundStrict(bigMpt, kilo, usd, false); });
+            }
+
+            {
+                CurrentTransactionRulesGuard const rg(rules(true));
+                BEAST_EXPECT(mulRound(bigMpt, milli, usd, true) == usdResult);
+                BEAST_EXPECT(mulRound(bigMpt, milli, usd, false) == usdResult);
+                BEAST_EXPECT(mulRound(bigMpt, tenMicro, xrpIssue(), true) == STAmount{xrpResult});
+                BEAST_EXPECT(divRound(bigMpt, kilo, usd, true) == usdResult);
+                BEAST_EXPECT(divRoundStrict(bigMpt, kilo, usd, false) == usdResult);
+            }
+        }
     }
 
     void
@@ -1337,6 +1371,185 @@ public:
     //--------------------------------------------------------------------------
 
     void
+    testMPTOperandIOUResult()
+    {
+        testcase("MPT operand with IOU result does not wrap negative");
+
+        // A partially funded offer selling 5e17 MPT for 1,000 USD, with the
+        // owner holding 4.8e17 MPT, is reduced by multiplying the funds by the
+        // offer's rate (2e-15 USD per MPT). The legacy 16-digit path takes the
+        // unscaled MPT mantissa: 4.8e17 * 2e15 / 1e14 = 9.6e18, which fits in
+        // uint64 but not in int64, so the IOU result wrapped to a negative
+        // amount without throwing. Under MPTokensV2 any MPT operand uses Number
+        // arithmetic.
+        MPTIssue const s{makeMptID(1, AccountID(0x4985601))};
+        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+        STAmount const funds{s, UINT64_C(480'000'000'000'000'000)};
+        STAmount const rate{noIssue(), UINT64_C(2'000'000'000'000'000), -30};
+        STAmount const invRate{noIssue(), UINT64_C(5'000'000'000'000'000), -1};
+        STAmount const expected{usd, 960};
+
+        auto rules = [](bool const mptV2) {
+            // Rules keeps a reference to the presets set, so use static
+            // storage here rather than a local temporary.
+            static std::unordered_set<UInt256, beast::Uhash<>> const kNoFeatures;
+            static std::unordered_set<UInt256, beast::Uhash<>> const kMptV2Features{
+                featureMPTokensV2};
+            return Rules{mptV2 ? kMptV2Features : kNoFeatures};
+        };
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(false));
+
+            BEAST_EXPECT(mulRoundStrict(funds, rate, usd, false).signum() < 0);
+            BEAST_EXPECT(mulRound(funds, rate, usd, false).signum() < 0);
+            BEAST_EXPECT(divRoundStrict(funds, invRate, usd, false).signum() < 0);
+        }
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(true));
+
+            for (bool const roundUp : {false, true})
+            {
+                BEAST_EXPECT(mulRoundStrict(funds, rate, usd, roundUp) == expected);
+                BEAST_EXPECT(mulRound(funds, rate, usd, roundUp) == expected);
+                BEAST_EXPECT(divRoundStrict(funds, invRate, usd, roundUp) == expected);
+                BEAST_EXPECT(divRound(funds, invRate, usd, roundUp) == expected);
+            }
+        }
+    }
+
+    void
+    testMPTGetRate()
+    {
+        testcase("getRate with a large integral numerator");
+
+        MPTIssue const asset{makeMptID(1, AccountID(0x4985601))};
+        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+
+        auto rules = [](bool const mptV2) {
+            static std::unordered_set<uint256, beast::Uhash<>> const kNoFeatures;
+            // MPTokensV2 with the large Number mantissa (SAV enables it).
+            static std::unordered_set<uint256, beast::Uhash<>> const kMptV2Features{
+                featureMPTokensV2, featureSingleAssetVault, fixCleanup3_3_0};
+            return Rules{mptV2 ? kMptV2Features : kNoFeatures};
+        };
+
+        // TakerPays / TakerGets = 184467440737095516 / 1e-7. The legacy
+        // divide() quotient is 2^64 - 11, which the signed IOU mantissa reads
+        // as -11: getRate records 1.1e6 instead of ~1.8e24.
+        STAmount const dust{usd, UINT64_C(1'000'000'000'000'000), -22};  // 1e-7
+        STAmount const largeMpt{asset, UINT64_C(184'467'440'737'095'516)};
+        STAmount const trueRate{noIssue(), Number{largeMpt} / Number{dust}};
+
+        // Quotient above 2^64: muldiv throws, so getRate returns 0
+        // pre-amendment.
+        STAmount const one{usd, UINT64_C(1'000'000'000'000'000), -15};
+        STAmount const hugeMpt{asset, UINT64_C(5'000'000'000'000'000'000)};
+        STAmount const hugeMptRate{noIssue(), UINT64_C(5'000'000'000'000'000), 3};
+
+        // Over the smallest IOU the rate is beyond the IOU exponent range, so
+        // getRate returns 0 either way.
+        STAmount const tiny{usd, STAmount::kMinValue, STAmount::kMinOffset};
+
+        // An integral result keeps every digit, so it must come out exact.
+        STAmount const maxMpt{asset, static_cast<std::uint64_t>(kMaxMpTokenAmount)};
+        STAmount const oneAndHalf{noIssue(), UINT64_C(1'500'000'000'000'000), -15};
+        STAmount const e18Mpt{asset, UINT64_C(1'000'000'000'000'000'000)};
+
+        // XRP numerator in the same band: 9.5e16 drops over a mantissa of
+        // 1e15 gives a legacy quotient of 9.5e18.
+        STAmount const hugeXrp{XRPAmount{95'000'000'000'000'000}};
+        STAmount const hugeXrpRate{noIssue(), UINT64_C(9'500'000'000'000'000), 1};
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(false));
+
+            BEAST_EXPECT(
+                amountFromQuality(getRate(dust, largeMpt)) ==
+                STAmount(noIssue(), UINT64_C(1'100'000'000'000'000), -9));
+            BEAST_EXPECT(getRate(one, hugeMpt) == 0);
+            BEAST_EXPECT(getRate(tiny, hugeMpt) == 0);
+            BEAST_EXPECT(getRate(one, hugeXrp) != 0);
+            BEAST_EXPECT(amountFromQuality(getRate(one, hugeXrp)) != hugeXrpRate);
+
+            bool threw = false;
+            try
+            {
+                (void)divide(hugeMpt, one, asset);
+            }
+            catch (std::overflow_error const&)
+            {
+                threw = true;
+            }
+            BEAST_EXPECT(threw);
+        }
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(true));
+
+            BEAST_EXPECT(amountFromQuality(getRate(dust, largeMpt)) == trueRate);
+            BEAST_EXPECT(amountFromQuality(getRate(one, hugeMpt)) == hugeMptRate);
+            BEAST_EXPECT(getRate(tiny, hugeMpt) == 0);
+            BEAST_EXPECT(amountFromQuality(getRate(one, hugeXrp)) == hugeXrpRate);
+            BEAST_EXPECT(!divide(largeMpt, dust, noIssue()).negative());
+
+            BEAST_EXPECT(divide(hugeMpt, one, asset) == hugeMpt);
+            BEAST_EXPECT(divide(maxMpt, one, asset) == maxMpt);
+            BEAST_EXPECT(
+                divide(STAmount{asset, UINT64_C(9'000'000'000'000'000'000)}, oneAndHalf, asset) ==
+                STAmount(asset, UINT64_C(6'000'000'000'000'000'000)));
+
+            // An unscaled MPT denominator no longer moves the +5 nudge into
+            // the 15th digit: 9e15 / 1e18 is exactly 0.009.
+            BEAST_EXPECT(
+                divide(STAmount{usd, UINT64_C(9'000'000'000'000'000)}, e18Mpt, noIssue()) ==
+                STAmount(noIssue(), UINT64_C(9'000'000'000'000'000), -18));
+        }
+
+        // No rules (RPC): same as post-amendment.
+        BEAST_EXPECT(amountFromQuality(getRate(dust, largeMpt)) == trueRate);
+        BEAST_EXPECT(amountFromQuality(getRate(one, hugeMpt)) == hugeMptRate);
+        BEAST_EXPECT(amountFromQuality(getRate(one, hugeXrp)) == hugeXrpRate);
+    }
+
+    void
+    testMPTRoundUpUnderflow()
+    {
+        testcase("Rounded-up MPT operand with an IOU result below the minimum");
+
+        MPTIssue const asset{makeMptID(1, AccountID(0x4985601))};
+        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+
+        auto rules = [](bool const mptV2) {
+            static std::unordered_set<uint256, beast::Uhash<>> const kNoFeatures;
+            static std::unordered_set<uint256, beast::Uhash<>> const kMptV2Features{
+                featureMPTokensV2};
+            return Rules{mptV2 ? kMptV2Features : kNoFeatures};
+        };
+
+        // 1 MPT / 1e95 = 1e-95, below the smallest IOU (1e-81). Rounding up
+        // must still give the smallest positive IOU.
+        STAmount const oneMpt{asset, 1};
+        STAmount const huge{noIssue(), STAmount::kMinValue, STAmount::kMaxOffset};  // 1e95
+        STAmount const smallestUsd{usd, STAmount::kMinValue, STAmount::kMinOffset};
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(false));
+            BEAST_EXPECT(divRound(oneMpt, huge, usd, true) == smallestUsd);
+        }
+
+        {
+            // An MPT operand now takes the Number path even though the result
+            // is an IOU. Materializing 1e-95 as an IOU flushes to zero, so
+            // roundNumberResult snaps it up to the smallest positive IOU.
+            CurrentTransactionRulesGuard const rg(rules(true));
+            BEAST_EXPECT(divRound(oneMpt, huge, usd, true) == smallestUsd);
+            BEAST_EXPECT(divRoundStrict(oneMpt, huge, usd, true) == smallestUsd);
+        }
+    }
+
+    void
     run() override
     {
         testSetValue();
@@ -1352,10 +1565,13 @@ public:
         testCanAddIOU();
         testCanAddMPT();
         testMPTRateRounding();
+        testMPTOperandIOUResult();
+        testMPTGetRate();
         testCanSubtractXRP();
         testCanSubtractIOU();
         testCanSubtractMPT();
         testIsZeroAtScale();
+        testMPTRoundUpUnderflow();
     }
 };
 

@@ -1047,6 +1047,14 @@ maxMPTAmount(SLE const& sleIssuance)
     return sleIssuance[~sfMaximumAmount].value_or(kMaxMpTokenAmount);
 }
 
+std::optional<std::int64_t>
+maxMPTAmount(ReadView const& view, MPTID const& mptID)
+{
+    if (auto const sle = view.read(keylet::mptokenIssuance(mptID)))
+        return maxMPTAmount(*sle);
+    return std::nullopt;
+}
+
 std::int64_t
 availableMPTAmount(SLE const& sleIssuance)
 {

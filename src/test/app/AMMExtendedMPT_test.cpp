@@ -2269,13 +2269,15 @@ private:
             // on 24e12GBP
             // 1,200e12 - 24e12*1.25 =~ 1,170e12GBP
             env.require(Balance(alice_, gbp(1'170'000'000'000'000)));
-            // 24e12GBP is swapped in for 28.125e12BTC
+            // 24e12GBP is swapped in for 28.125e12BTC, less one unit: the
+            // limit quality 120/90 is rounded to nearest, so a trade at
+            // exactly 4/3 is just over the limit
             BEAST_EXPECT(amm.expectBalances(
-                gbp(1'024'000'000'000'000), btc(1'171'875'000'000'000), amm.tokens()));
+                gbp(1'024'000'000'000'000), btc(1'171'875'000'000'001), amm.tokens()));
 
             // 25% on 22.5e12BTC is paid in tr fee
             // 22.5*1.25 = 28.125e12BTC
-            env.require(Balance(carol_, btc(1'222'500'000'000'000)));
+            env.require(Balance(carol_, btc(1'222'499'999'999'999)));
         }
         {
             // Payment via offer and AMM with limit quality, deliver less
