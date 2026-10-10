@@ -26,14 +26,12 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerHeader.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/Manifest.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 
 #include <boost/asio/buffer.hpp>
@@ -140,21 +138,16 @@ public:
         manifests->mutable_list()->Reserve(n);
         for (int i = 0; i < n; i++)
         {
-            auto master = randomKeyPair(KeyType::Ed25519);
-            auto signing = randomKeyPair(KeyType::Ed25519);
-            STObject st(sfGeneric);
-            st[sfSequence] = i;
-            st[sfPublicKey] = std::get<0>(master);
-            st[sfSigningPubKey] = std::get<0>(signing);
-            st[sfDomain] =
-                makeSlice(std::string("example") + std::to_string(i) + std::string(".com"));
-            sign(
-                st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(master), sfMasterSignature);
-            sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
-            Serializer s;
-            st.add(s);
-            auto* manifest = manifests->add_list();
-            manifest->set_stobject(s.data(), s.size());
+            auto const master = randomKeyPair(KeyType::Ed25519);
+            auto const signing = randomKeyPair(KeyType::Ed25519);
+            auto const manifest = makeManifest(
+                master.first,
+                master.second,
+                signing.first,
+                signing.second,
+                i,
+                "example" + std::to_string(i) + ".com");
+            manifests->add_list()->set_stobject(manifest.data(), manifest.size());
         }
         return manifests;
     }
@@ -297,26 +290,16 @@ public:
     {
         auto list = std::make_shared<protocol::TMValidatorListCollection>();
 
-        auto master = randomKeyPair(KeyType::Ed25519);
-        auto signing = randomKeyPair(KeyType::Ed25519);
-        STObject st(sfGeneric);
-        st[sfSequence] = 0;
-        st[sfPublicKey] = std::get<0>(master);
-        st[sfSigningPubKey] = std::get<0>(signing);
-        st[sfDomain] = makeSlice(std::string("example.com"));
-        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(master), sfMasterSignature);
-        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
-        Serializer s;
-        st.add(s);
-        list->set_manifest(s.data(), s.size());
+        auto const master = randomKeyPair(KeyType::Ed25519);
+        auto const signing = randomKeyPair(KeyType::Ed25519);
+        auto const manifest = makeManifest(
+            master.first, master.second, signing.first, signing.second, 0, "example.com");
+        list->set_manifest(manifest.data(), manifest.size());
         list->set_version(4);
-        STObject const signature(sfSignature);
-        xrpl::sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
-        Serializer s1;
-        st.add(s1);
+        // Bytes to compress, not a list a server would verify.
         auto& blob = *list->add_blobs();
-        blob.set_signature(s1.data(), s1.size());
-        blob.set_blob(strHex(s.slice()));
+        blob.set_signature(manifest.data(), manifest.size());
+        blob.set_blob(strHex(makeSlice(manifest)));
         return list;
     }
 

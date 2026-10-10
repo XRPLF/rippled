@@ -61,9 +61,6 @@ ${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' include/xrpl/protocol/messages.h
 ${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' BUILD.md
 ${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' BUILD.md
 
-# Restore the name of the validator keys repository.
-${SED_COMMAND} -i 's@xrpl/validator-keys-tool@ripple/validator-keys-tool@' cmake/XrplValidatorKeys.cmake
-
 # Ensure the name of the binary and config remain 'rippled' for now.
 ${SED_COMMAND} -i -E 's/xrpld(-example)?\.cfg/rippled\1.cfg/g' cmake/XrplInstall.cmake
 if grep -q '"xrpld"' cmake/XrplCore.cmake; then
