@@ -478,6 +478,13 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
         .condition = Condition::NoCondition,
     },
     {
+        .name = method::kTransactionProposal,
+        .valueMethod = Method::of<&byRef<&doTransactionProposal>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+        .hasCommandLineForm = false,
+    },
+    {
         .name = method::kTx,
         .valueMethod = Method::of<&byRef<&doTxJson>>(),
         .role = Role::USER,

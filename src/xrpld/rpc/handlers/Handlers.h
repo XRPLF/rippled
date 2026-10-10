@@ -125,6 +125,8 @@ doSubmitMultiSigned(rpc::JsonContext&);
 json::Value
 doSubscribe(rpc::JsonContext&);
 json::Value
+doTransactionProposal(rpc::JsonContext&);
+json::Value
 doTxJson(rpc::JsonContext&);
 json::Value
 doTxHistory(rpc::JsonContext&);
