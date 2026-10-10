@@ -41,7 +41,7 @@ struct SingleMetrics
      * @param val metrics value, either bytes or count
      */
     void
-    addMetrics(std::uint32_t val);
+    addMetrics(std::uint64_t val);
 };
 
 /**
@@ -61,14 +61,14 @@ struct MultipleMetrics
      * @param val2 m2 metrics value
      */
     void
-    addMetrics(std::uint32_t val2);
+    addMetrics(std::uint64_t val2);
     /**
      * Add metrics to m1 and m2.
      * @param val1 m1 metrics value
      * @param val2 m2 metrics value
      */
     void
-    addMetrics(std::uint32_t val1, std::uint32_t val2);
+    addMetrics(std::uint64_t val1, std::uint64_t val2);
 };
 
 /**
@@ -101,7 +101,7 @@ struct TxMetrics
      * @param val message size in bytes
      */
     void
-    addMetrics(protocol::MessageType type, std::uint32_t val);
+    addMetrics(protocol::MessageType type, std::uint64_t val);
     /**
      * Add peers selected for relaying and suppressed peers metrics.
      * @param selected number of selected peers to relay
