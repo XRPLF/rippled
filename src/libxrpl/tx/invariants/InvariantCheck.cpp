@@ -1235,6 +1235,22 @@ NoModifiedUnmodifiableFields::finalize(
                         kFieldChanged(before, after, sfAccount) ||
                         kFieldChanged(before, after, sfShareMPTID);
                 }
+
+                // lsfVaultPrivate and lsfVaultOwnerCanBlockDeposit are fixed at creation.
+                if (view.rules().enabled(featureLendingProtocolV1_2))
+                {
+                    constexpr std::uint32_t immutableFlags =
+                        lsfVaultPrivate | lsfVaultOwnerCanBlockDeposit;
+                    bool const flagsChanged = (before->getFlags() & immutableFlags) !=
+                        (after->getFlags() & immutableFlags);
+                    if (flagsChanged)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: vault lsfVaultPrivate or "
+                                           "lsfVaultOwnerCanBlockDeposit flag changed in "
+                                        << tx.getTransactionID();
+                    }
+                    bad = bad || flagsChanged;
+                }
                 break;
             default:
                 break;

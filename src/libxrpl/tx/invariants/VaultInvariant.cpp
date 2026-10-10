@@ -66,6 +66,7 @@ ValidVault::Vault::make(SLE const& from)
     self.vaultKind = from[~sfVaultKind];
     self.subscriptionDate = from[~sfSubscriptionDate];
     self.redemptionDate = from[~sfRedemptionDate];
+    self.flags = from.getFlags();
     return self;
 }
 
@@ -657,6 +658,27 @@ ValidVault::finalize(
             "Invariant failed: vault created by a wrong transaction type";
         XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : vault creation invariant");
         return !enforce;  // That's all we can do here
+    }
+
+    if (view.rules().enabled(featureLendingProtocolV1_2))
+    {
+        if ((afterVault.flags & lsfVaultDepositBlocked) != 0 &&
+            (afterVault.flags & lsfVaultOwnerCanBlockDeposit) == 0)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: vault deposit blocked without owner "
+                "block-deposit permission";
+            result = false;
+        }
+
+        if (!beforeVault_.empty() && txnType != ttVAULT_SET &&
+            ((beforeVault_[0].flags ^ afterVault.flags) & lsfVaultDepositBlocked) != 0)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: only VaultSet may change the deposit "
+                "blocked flag";
+            result = false;
+        }
     }
 
     if (!beforeVault_.empty() && afterVault.lossUnrealized != beforeVault_[0].lossUnrealized &&
