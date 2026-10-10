@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/NFTokenPageEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
@@ -46,9 +47,10 @@ findToken(ReadView const& view, AccountID const& owner, UInt256 const& nftokenID
 struct TokenAndPage
 {
     STObject token;
-    SLE::pointer page;
+    NFTokenPageEntryW page;
 
-    TokenAndPage(STObject token, SLE::pointer page) : token(std::move(token)), page(std::move(page))
+    TokenAndPage(STObject token, NFTokenPageEntryW page)
+        : token(std::move(token)), page(std::move(page))
     {
     }
 };
@@ -68,7 +70,11 @@ TER
 removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID);
 
 TER
-removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID, SLE::Ref page);
+removeToken(
+    ApplyView& view,
+    AccountID const& owner,
+    UInt256 const& nftokenID,
+    NFTokenPageEntryW& page);
 
 /**
  * Deletes the given token offer.
