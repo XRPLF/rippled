@@ -106,6 +106,16 @@ static constexpr ErrorInfo kUnorderedErrorInfos[]{
     {RpcDomainMalformed,                          "domainMalformed",                          "Domain is malformed.",                                                400},
     {RpcEntryNotFound,                            "entryNotFound",                            "Entry not found.",                                                    400},
     {RpcUnexpectedLedgerType,                     "unexpectedLedgerType",                     "Unexpected ledger type.",                                             400},
+    {RpcInvalidTransaction,                       "invalidTransaction",                       "Transaction is invalid.",                                             400},
+    {RpcInternalSubmit,                           "internalSubmit",                           "Internal error during submit.",                                       500},
+    {RpcInternalJson,                             "internalJson",                             "Internal error during JSON handling.",                                500},
+    {RpcInternalSimulate,                         "internalSimulate",                         "Internal error during simulate.",                                     500},
+    {RpcFieldNotFoundTransaction,                 "fieldNotFoundTransaction",                 "Missing required field.",                                             400},
+    {RpcNotYetImplemented,                        "notYetImplemented",                        "Not yet implemented.",                                                501},
+    {RpcTransactionNotFound,                      "transactionNotFound",                      "Transaction not found.",                                              404},
+    {RpcMalformedRequest,                         "malformedRequest",                         "Request is malformed.",                                               400},
+    {RpcNotStandAlone,                            "notStandAlone",                            "Server is not running stand-alone.",                                  501},
+    {RpcUnknownOption,                            "unknownOption",                            "Unknown option.",                                                     400},
 };
 // clang-format on
 

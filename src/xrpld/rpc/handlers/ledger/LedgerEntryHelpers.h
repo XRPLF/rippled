@@ -24,6 +24,9 @@
 
 namespace xrpl::ledger_entry_helpers {
 
+// These helpers name the malformed field in the `error` token and report `invalidParams` as the
+// code, whatever the token is. A client has read 31 for every one of these tokens for years, so the
+// code is deliberately not derived from the token here.
 inline std::unexpected<json::Value>
 missingFieldError(json::StaticString const field, std::optional<std::string> err = std::nullopt)
 {

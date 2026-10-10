@@ -1038,7 +1038,7 @@ doLedgerEntry(rpc::JsonContext& context)
         {
             if (context.apiVersion < 2u)
             {
-                jvResult[jss::error] = "unknownOption";
+                rpc::injectError(RpcUnknownOption, jvResult);
                 return jvResult;
             }
             return rpc::makeParamError("No ledger_entry params provided.");

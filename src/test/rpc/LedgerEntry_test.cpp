@@ -56,8 +56,10 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <source_location>
 #include <stdexcept>
 #include <string>
@@ -164,6 +166,68 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 jv[jss::error] == err,
                 "Expected error " + err + ", received " + jv[jss::error].asString() + ", at line " +
                     std::to_string(location.line()) + ", " + jv.toStyledString());
+
+            // Wire values pinned as literals: read from the error table, the expectation would
+            // agree with any change to the row that produced the reply.
+            // These are raised through injectError and carry their own code.
+            static std::map<std::string, int> const kCodes{
+                {"entryNotFound", 98},
+                {"invalidParams", 31},
+                {"lgrNotFound", 21},
+                {"unexpectedLedgerType", 99},
+                {"unknownOption", 109},
+            };
+
+            // The tokens the ledger_entry helpers name, all reporting the generic invalidParams;
+            // see LedgerEntryHelpers.h. Listed, so a misspelled token reaches the else below.
+            static std::set<std::string> const kMalformedTokens{
+                "malformedAccount",
+                "malformedAddress",
+                "malformedAuthorized",
+                "malformedAuthorizedCredentials",
+                "malformedBridgeAccount",
+                "malformedBroker",
+                "malformedCurrency",
+                "malformedDirRoot",
+                "malformedDocumentID",
+                "malformedIssue",
+                "malformedIssuingChainDoor",
+                "malformedLockingChainDoor",
+                "malformedMPTIssuanceID",
+                "malformedMPTokenIssuance",
+                "malformedOwner",
+                "malformedRequest",
+                "malformedSeq",
+                "malformedSponsee",
+                "malformedSponsor",
+                "malformedXChainOwnedClaimID",
+                "malformedXChainOwnedCreateAccountClaimID",
+            };
+
+            auto const expectCode = [&](int expected) {
+                BEAST_EXPECTS(
+                    jv[jss::error_code] == expected,
+                    "Expected error_code " + std::to_string(expected) + " for " + err +
+                        ", received " + jv[jss::error_code].toStyledString() + ", at line " +
+                        std::to_string(location.line()));
+            };
+
+            if (auto const it = kCodes.find(err); it != kCodes.end())
+            {
+                expectCode(it->second);
+            }
+            else if (kMalformedTokens.contains(err))
+            {
+                expectCode(RpcInvalidParams);
+            }
+            else
+            {
+                // A token in neither list is a typo; reporting 31 like the rest would let it pass.
+                BEAST_EXPECTS(
+                    false,
+                    "Token " + err + " names no error code, at line " +
+                        std::to_string(location.line()));
+            }
         }
         if (msg.empty())
         {
@@ -340,7 +404,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 if (apiVersion < 2u)
                 {
-                    checkErrorValue(jrr, "unknownOption", "", location);
+                    checkErrorValue(jrr, "unknownOption", "Unknown option.", location);
                 }
                 else
                 {
@@ -546,7 +610,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
                 if (apiVersion < 2u)
                 {
-                    checkErrorValue(jrr, "unknownOption", "");
+                    checkErrorValue(jrr, "unknownOption", "Unknown option.");
                 }
                 else
                 {
