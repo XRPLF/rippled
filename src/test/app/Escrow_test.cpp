@@ -941,41 +941,43 @@ struct Escrow_test : public beast::unit_test::Suite
 
             // Now, try to fulfill using the same sequence of
             // malformed conditions.
+            TER const malformedCondTer =
+                features[fixCleanup3_5_0] ? TER{temMALFORMED} : TER{tecCRYPTOCONDITION_ERROR};
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{cp, cs}),
                 escrow::kFulfillment(Slice{fp, fs}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(malformedCondTer));
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{cp, cs - 1}),
                 escrow::kFulfillment(Slice{fp, fs}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(malformedCondTer));
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{cp, cs - 2}),
                 escrow::kFulfillment(Slice{fp, fs}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(malformedCondTer));
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{cp + 1, cs - 1}),
                 escrow::kFulfillment(Slice{fp, fs}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(malformedCondTer));
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{cp + 1, cs - 3}),
                 escrow::kFulfillment(Slice{fp, fs}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(malformedCondTer));
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{cp + 2, cs - 2}),
                 escrow::kFulfillment(Slice{fp, fs}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(malformedCondTer));
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{cp + 2, cs - 3}),
                 escrow::kFulfillment(Slice{fp, fs}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(malformedCondTer));
 
             // Now, using the correct kCondition, try malformed fulfillments:
             env(escrow::finish("bob", "alice", seq),
@@ -1043,11 +1045,13 @@ struct Escrow_test : public beast::unit_test::Suite
                 escrow::kCondition(escrow::kCb3),
                 escrow::kCancelTime(env.now() + 1s));
 
+            TER const emptyCondTer =
+                features[fixCleanup3_5_0] ? TER{temMALFORMED} : TER{tecCRYPTOCONDITION_ERROR};
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{}),
                 escrow::kFulfillment(Slice{}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(emptyCondTer));
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(escrow::kCb3),
                 escrow::kFulfillment(Slice{}),
@@ -1057,7 +1061,7 @@ struct Escrow_test : public beast::unit_test::Suite
                 escrow::kCondition(Slice{}),
                 escrow::kFulfillment(escrow::kFb3),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(emptyCondTer));
 
             // Assemble finish that is missing the Condition or the Fulfillment
             // since either both must be present, or neither can:
@@ -1093,6 +1097,41 @@ struct Escrow_test : public beast::unit_test::Suite
                 escrow::kCondition(cb),
                 escrow::kCancelTime(env.now() + 1s),
                 Ter(temMALFORMED));
+        }
+        {  // Test finish with a malformed condition
+            Env env(*this, features);
+            env.fund(XRP(5000), "alice", "bob", "carol");
+            env.close();
+
+            auto const seq = env.seq("alice");
+            env(escrow::create("alice", "carol", XRP(1000)),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kCancelTime(env.now() + 100s));
+            env.close();
+
+            // Does not deserialize as a condition.
+            std::array<std::uint8_t, 3> const malformed = {{0x78, 0x78, 0x78}};
+
+            auto const baseFee = env.current()->fees().base;
+            auto const bobBalance = env.balance("bob");
+            bool const fixEnabled = features[fixCleanup3_5_0];
+            auto const jt = env.jt(
+                escrow::finish("bob", "alice", seq),
+                escrow::kCondition(malformed),
+                escrow::kFulfillment(escrow::kFb1),
+                Fee(150 * baseFee));
+            env(jt, Ter(fixEnabled ? TER{temMALFORMED} : TER{tecCRYPTOCONDITION_ERROR}));
+            // Run preflight on the same transaction again, now with the
+            // HashRouter flag cached. The result must not change.
+            auto const pf =
+                preflight(env.app(), env.current()->rules(), *jt.stx, TapNone, env.journal);
+            BEAST_EXPECT(pf.ter == (fixEnabled ? TER{temMALFORMED} : TER{tesSUCCESS}));
+            env.close();
+
+            // Before the fix, the transaction is included and charges a fee.
+            env.require(
+                Balance("bob", fixEnabled ? bobBalance : bobBalance - drops(150 * baseFee)));
+            BEAST_EXPECT(env.le(keylet::escrow(Account("alice").id(), SeqProxy::rawSequence(seq))));
         }
     }
 
@@ -1639,6 +1678,7 @@ public:
         FeatureBitset const all{testableAmendments()};
         testWithFeats(all);
         testWithFeats(all - featureTokenEscrow);
+        testWithFeats(all - fixCleanup3_5_0);
         testTags(all - fixIncludeKeyletFields);
     }
 };
