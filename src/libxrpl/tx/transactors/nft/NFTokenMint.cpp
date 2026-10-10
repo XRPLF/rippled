@@ -67,7 +67,7 @@ NFTokenMint::getFlagsMask(PreflightContext const& ctx)
     // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
     // tfTrustLine flag as a way to prevent the attack.  But until the
     // amendment passes we still need to keep the old behavior available.
-    std::uint32_t const nfTokenMintMask = [&]() -> std::uint32_t {
+    std::uint32_t const nfTokenMintMask = [&] -> std::uint32_t {
         if (ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine))
         {
             // if featureDynamicNFT enabled then new flag allowing mutable URI available
@@ -131,7 +131,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-uint256
+UInt256
 NFTokenMint::createNFTokenID(
     std::uint16_t flags,
     std::uint16_t fee,
@@ -176,7 +176,7 @@ NFTokenMint::createNFTokenID(
         std::distance(buf.data(), ptr) == buf.size(),
         "xrpl::NFTokenMint::createNFTokenID : data size matches the buffer");
 
-    return uint256::fromVoid(buf.data());
+    return UInt256::fromVoid(buf.data());
 }
 
 TER
@@ -224,7 +224,7 @@ NFTokenMint::doApply()
 {
     auto const issuer = ctx_.tx[~sfIssuer].value_or(accountID_);
 
-    auto const tokenSeq = [this, &issuer]() -> std::expected<std::uint32_t, TER> {
+    auto const tokenSeq = [this, &issuer] -> std::expected<std::uint32_t, TER> {
         auto const root = view().peek(keylet::account(issuer));
         if (root == nullptr)
         {
@@ -276,7 +276,7 @@ NFTokenMint::doApply()
     }();
 
     if (!tokenSeq.has_value())
-        return (tokenSeq.error());
+        return tokenSeq.error();
 
     std::uint32_t const ownerCountBefore =
         view().read(keylet::account(accountID_))->getFieldU32(sfOwnerCount);
@@ -346,7 +346,7 @@ NFTokenMint::doApply()
 }
 
 void
-NFTokenMint::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+NFTokenMint::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

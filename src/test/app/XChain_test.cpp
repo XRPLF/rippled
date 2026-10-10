@@ -82,14 +82,14 @@ struct SEnv
     }
 
     SEnv&
-    enableFeature(uint256 const feature)
+    enableFeature(UInt256 const feature)
     {
         env.enableFeature(feature);
         return *this;
     }
 
     SEnv&
-    disableFeature(uint256 const feature)
+    disableFeature(UInt256 const feature)
     {
         env.app().config().features.erase(feature);
         return *this;
@@ -262,12 +262,12 @@ struct Balance
 template <class T>
 struct BalanceTransfer
 {
-    using balance = Balance<T>;
+    using BalanceType = Balance<T>;
 
-    balance from;
-    balance to;
-    balance payer;                        // pays the rewards
-    std::vector<balance> rewardAccounts;  // receives the reward
+    BalanceType from;
+    BalanceType to;
+    BalanceType payer;                        // pays the rewards
+    std::vector<BalanceType> rewardAccounts;  // receives the reward
     XRPAmount txFees;
 
     BalanceTransfer(
@@ -281,8 +281,8 @@ struct BalanceTransfer
         : from(env, fromAcct)
         , to(env, toAcct)
         , payer(env, payer)
-        , rewardAccounts([&]() {
-            std::vector<balance> r;
+        , rewardAccounts([&] {
+            std::vector<BalanceType> r;
             r.reserve(numPayees);
             for (size_t i = 0; i < numPayees; ++i)
                 r.emplace_back(env, payees[i]);
@@ -307,7 +307,7 @@ struct BalanceTransfer
     payeesReceived(STAmount const& reward) const
     {
         return std::ranges::all_of(
-            rewardAccounts, [&](balance const& b) { return b.diff() == reward; });
+            rewardAccounts, [&](BalanceType const& b) { return b.diff() == reward; });
     }
 
     bool
@@ -350,7 +350,7 @@ struct BridgeDef
     {
         jvb = bridge(doorA, issueA, doorB, issueB);
 
-        auto const optAccountCreate = [&]() -> std::optional<STAmount> {
+        auto const optAccountCreate = [&] -> std::optional<STAmount> {
             if (issueA != xrpIssue() || issueB != xrpIssue())
                 return {};
             return minAccountCreate;
@@ -3931,7 +3931,7 @@ private:
 
         struct BridgeCounters
         {
-            using complete_cb = std::function<void(std::vector<size_t> const& signers)>;
+            using CompleteCb = std::function<void(std::vector<size_t> const& signers)>;
 
             uint32_t claimId{0};
             uint32_t createCount{0};  // for account create. First should be 1
@@ -3940,7 +3940,7 @@ private:
 
             uint32_t numCreateAttnSent{0};  // for current claimCount
             std::vector<size_t> signers;
-            std::vector<complete_cb> createCallbacks;
+            std::vector<CompleteCb> createCallbacks;
         };
 
         struct Claims
@@ -4089,7 +4089,7 @@ private:
             {
                 size_t const signerIdx = (rnd + i) % kNumSigners;
 
-                if (!(cr_.attested[signerIdx]))
+                if (!cr_.attested[signerIdx])
                 {
                     // enqueue one attestation for this signer
                     cr_.attested[signerIdx] = true;
@@ -4245,7 +4245,7 @@ private:
             for (size_t i = 0; i < kNumSigners; ++i)
             {
                 size_t const signerIdx = (rnd + i) % kNumSigners;
-                if (!(xfer_.attested[signerIdx]))
+                if (!xfer_.attested[signerIdx])
                 {
                     // enqueue one attestation for this signer
                     xfer_.attested[signerIdx] = true;
@@ -4421,7 +4421,7 @@ public:
             doorUSDIssuing("doorUSDIssuing");
 
         static constexpr size_t kNumAcct = 10;
-        auto a = [&doorXRPLocking, &doorUSDLocking, &doorUSDIssuing]() {
+        auto a = [&doorXRPLocking, &doorUSDLocking, &doorUSDIssuing] {
             using namespace std::literals;
             std::vector<Account> result;
             result.reserve(kNumAcct);
@@ -4473,7 +4473,7 @@ public:
 
         // also create some unfunded accounts
         static constexpr size_t kNumUa = 20;
-        auto ua = []() {
+        auto ua = [] {
             using namespace std::literals;
             std::vector<Account> result;
             result.reserve(kNumUa);

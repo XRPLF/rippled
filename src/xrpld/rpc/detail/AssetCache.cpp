@@ -47,7 +47,7 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
 
     std::scoped_lock const sl(lock_);
 
-    auto [it, inserted] = [&]() {
+    auto [it, inserted] = [&] {
         if (auto otheriter = lines_.find(otherkey); otheriter != lines_.end())
         {
             // The whole point of using the direction flag is to reduce the
@@ -124,7 +124,7 @@ AssetCache::getMPTs(xrpl::AccountID const& account)
 
     std::vector<PathFindMPT> mpts;
     // Get issued/authorized tokens
-    forEachItem(*ledger_, account, [&](SLE::const_ref sle) {
+    forEachItem(*ledger_, account, [&](SLE::ConstRef sle) {
         if (sle->getType() == ltMPTOKEN_ISSUANCE)
         {
             auto const mptID = makeMptID(sle->getFieldU32(sfSequence), account);

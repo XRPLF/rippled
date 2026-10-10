@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -76,14 +77,14 @@ LoanSet::preflight(PreflightContext const& ctx)
     if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatchV1_1) &&
         !tx.isFieldPresent(sfCounterparty))
     {
-        auto const parentBatchId = ctx.parentBatchId.value_or(uint256{0});
+        auto const parentBatchId = ctx.parentBatchId.value_or(UInt256{0});
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                             << "no Counterparty for inner LoanSet transaction.";
         return temBAD_SIGNER;
     }
 
     // These extra hoops are because STObjects cannot be Proxy'd from STObject.
-    auto const counterPartySig = [&tx]() -> std::optional<STObject const> {
+    auto const counterPartySig = [&tx] -> std::optional<STObject const> {
         if (tx.isFieldPresent(sfCounterpartySignature))
             return tx.getFieldObject(sfCounterpartySignature);
         return std::nullopt;
@@ -165,7 +166,7 @@ LoanSet::checkSign(PreclaimContext const& ctx)
     // Counter signer is optional. If it's not specified, it's assumed to be
     // `LoanBroker.Owner`. Note that we have not checked whether the
     // loanbroker exists at this point.
-    auto const counterSigner = [&]() -> std::optional<AccountID> {
+    auto const counterSigner = [&] -> std::optional<AccountID> {
         if (auto const c = ctx.tx.at(~sfCounterparty))
             return c;
 
@@ -200,7 +201,7 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
     // for the transaction. Note that unlike the base class, the single signer
     // is counted if present. It will only be absent in a batch inner
     // transaction.
-    std::size_t const signerCount = [&counterSig]() -> int {
+    std::size_t const signerCount = [&counterSig] -> int {
         // Compute defensively.
         // Assure that "tx" cannot be accessed and cause confusion or miscalculations.
         if (counterSig.isFieldPresent(sfSigners))
@@ -245,9 +246,9 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         //     startDate + (paymentInterval * paymentTotal) + gracePeriod.
         // If that value is larger than "maxTime", the value
         // overflows, and we kill the transaction.
-        using timeType = decltype(sfNextPaymentDueDate)::type::value_type;
-        static_assert(std::is_same_v<timeType, std::uint32_t>);
-        constexpr timeType kMaxTime = std::numeric_limits<timeType>::max();
+        using TimeType = decltype(sfNextPaymentDueDate)::type::value_type;
+        static_assert(std::is_same_v<TimeType, std::uint32_t>);
+        constexpr TimeType kMaxTime = std::numeric_limits<TimeType>::max();
         static_assert(kMaxTime == 4'294'967'295);
 
         auto const timeAvailable = kMaxTime - getStartDate(ctx.view);
@@ -447,7 +448,7 @@ LoanSet::doApply()
     if (!brokerOwnerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    auto const vaultSle = view.peek(keylet ::vault(brokerSle->at(sfVaultID)));
+    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultPseudo = vaultSle->at(sfAccount);
@@ -467,6 +468,26 @@ LoanSet::doApply()
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
+
+    if (brokerSle->isFlag(lsfLoanBrokerPrivate))
+    {
+        auto const domainID = brokerSle->at(~sfDomainID);
+        if (!domainID)
+        {
+            JLOG(j_.warn()) << "Private LoanBroker must have a DomainID.";
+            return tecNO_AUTH;
+        }
+        if (auto const ter = verifyValidDomain(view, borrower, *domainID, j_); !isTesSuccess(ter))
+        {
+            if (ter == tecNO_PERMISSION)
+            {
+                JLOG(j_.warn()) << "Borrower is not a member of the LoanBroker's domain.";
+                return tecNO_AUTH;
+            }
+            return ter;
+        }
+    }
+
     auto const principalRequested = tx[sfPrincipalRequested];
 
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
@@ -562,7 +583,7 @@ LoanSet::doApply()
     }
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     {
-        auto const minCover = [&]() {
+        auto const minCover = [&] {
             if (ctx_.view().rules().enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(newDebtTotal, coverRateMinimum, vaultSle);
@@ -729,7 +750,7 @@ LoanSet::doApply()
 }
 
 void
-LoanSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

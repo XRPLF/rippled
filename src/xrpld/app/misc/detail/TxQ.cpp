@@ -66,12 +66,12 @@ getFeeLevelPaid(ReadView const& view, STTx const& tx)
     if (!computedBaseFee)
         return std::unexpected(computedBaseFee.error());
 
-    auto const [baseFee, effectiveFeePaid] = [&view, &tx, fee = *computedBaseFee]() {
+    auto const [baseFee, effectiveFeePaid] = [&view, &tx, fee = *computedBaseFee] {
         XRPAmount const feePaid = tx[sfFee].xrp();
 
         // If baseFee is 0 then the cost of a basic transaction is free, but we
         // need the effective fee level to be non-zero.
-        XRPAmount const mod = [&view, &tx, fee]() {
+        XRPAmount const mod = [&view, &tx, fee] {
             if (fee.signum() > 0)
                 return XRPAmount{0};
             auto def = calculateDefaultBaseFee(view, tx);
@@ -409,7 +409,7 @@ TxQ::canBeHeld(
     STTx const& tx,
     ApplyFlags const flags,
     OpenView const& view,
-    SLE::const_ref sleAccount,
+    SLE::ConstRef sleAccount,
     AccountMap::iterator const& accountIter,
     std::optional<TxQAccount::TxMap::iterator> const& replacementIter,
     std::scoped_lock<std::mutex> const& lock)
@@ -837,7 +837,7 @@ TxQ::apply(
     };
 
     std::optional<TxIter> const txIter =
-        [accountIter, accountIsInQueue, acctSeqProx]() -> std::optional<TxIter> {
+        [accountIter, accountIsInQueue, acctSeqProx] -> std::optional<TxIter> {
         if (!accountIsInQueue)
             return {};
 
@@ -884,9 +884,8 @@ TxQ::apply(
 
     // If the transaction is intending to replace a transaction in the queue
     // identify the one that might be replaced.
-    auto replacedTxIter = [accountIsInQueue,
-                           &accountIter,
-                           txSeqProx]() -> std::optional<TxQAccount::TxMap::iterator> {
+    auto replacedTxIter =
+        [accountIsInQueue, &accountIter, txSeqProx] -> std::optional<TxQAccount::TxMap::iterator> {
         if (accountIsInQueue)
         {
             TxQAccount& txQAcct = accountIter->second;
@@ -1282,7 +1281,7 @@ TxQ::apply(
             return {telCAN_NOT_QUEUE_FULL, false};
         }
         auto const& endAccount = byAccount_.at(lastRIter->account);
-        auto endEffectiveFeeLevel = [&]() {
+        auto endEffectiveFeeLevel = [&] {
             // Compute the average of all the txs for the endAccount,
             // but only if the last tx in the queue has a lower fee
             // level than this candidate tx.
@@ -1483,7 +1482,7 @@ TxQ::accept(Application& app, OpenView& view)
             JLOG(j_.trace()) << "Applying queued transaction " << candidateIter->txID
                              << " to open ledger.";
 
-            auto const [txnResult, didApply, _metadata] = candidateIter->apply(app, view, j_);
+            auto const [txnResult, didApply, metadata] = candidateIter->apply(app, view, j_);
 
             if (didApply)
             {
@@ -1616,7 +1615,7 @@ TxQ::accept(Application& app, OpenView& view)
 //
 // Acquires a lock and calls the implementation.
 SeqProxy
-TxQ::nextQueuableSeq(SLE::const_ref sleAccount) const
+TxQ::nextQueuableSeq(SLE::ConstRef sleAccount) const
 {
     std::scoped_lock const lock(mutex_);
     return nextQueuableSeqImpl(sleAccount, lock);
@@ -1629,7 +1628,7 @@ TxQ::nextQueuableSeq(SLE::const_ref sleAccount) const
 // sequence number, that is not used by a transaction in the queue, must
 // be found and returned.
 SeqProxy
-TxQ::nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&) const
+TxQ::nextQueuableSeqImpl(SLE::ConstRef sleAccount, std::scoped_lock<std::mutex> const&) const
 {
     // If the account is not in the ledger or a non-account was passed
     // then return zero.  We have no idea.
@@ -1706,7 +1705,7 @@ TxQ::tryDirectApply(
     if (txSeqProx.isSeq() && txSeqProx != acctSeqProx)
         return {};
 
-    FeeLevel64 const requiredFeeLevel = [this, &view, flags]() {
+    FeeLevel64 const requiredFeeLevel = [this, &view, flags] {
         std::scoped_lock const lock(mutex_);
         return getRequiredFeeLevel(view, flags, feeMetrics_.getSnapshot(), lock);
     }();
@@ -1898,7 +1897,7 @@ TxQ::doRPC(Application& app) const
     // If the base fee is 0 drops, but escalation has kicked in, treat the
     // base fee as if it is 1 drop, which makes the rest of the math
     // work.
-    auto const effectiveBaseFee = [&baseFee, &metrics]() {
+    auto const effectiveBaseFee = [&baseFee, &metrics] {
         if (!baseFee && metrics.openLedgerFeeLevel != metrics.referenceFeeLevel)
             return XRPAmount{1};
         return baseFee;

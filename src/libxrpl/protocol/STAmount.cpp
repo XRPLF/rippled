@@ -38,6 +38,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <format>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -841,7 +842,7 @@ STAmount::canonicalize()
         {
             Throw<std::runtime_error>("Native currency amount out of range");
         }
-        else if (!native() && value_ > kMaxMpTokenAmount)
+        if (!native() && value_ > kMaxMpTokenAmount)
         {
             Throw<std::runtime_error>("MPT amount out of range");
         }
@@ -904,7 +905,7 @@ amountFromJson(SField const& name, json::Value const& v)
     {
         Throw<std::runtime_error>("XRP may not be specified with a null Json value");
     }
-    else if (v.isObject())
+    if (v.isObject())
     {
         if (!validJSONAsset(v))
             Throw<std::runtime_error>("Invalid Asset's Json specification");
@@ -1171,8 +1172,7 @@ muldiv(std::uint64_t multiplier, std::uint64_t multiplicand, std::uint64_t divis
     if (ret > std::numeric_limits<std::uint64_t>::max())
     {
         Throw<std::overflow_error>(
-            "overflow: (" + std::to_string(multiplier) + " * " + std::to_string(multiplicand) +
-            ") / " + std::to_string(divisor));
+            std::format("overflow: ({} * {}) / {}", multiplier, multiplicand, divisor));
     }
 
     return static_cast<uint64_t>(ret);
@@ -1193,9 +1193,8 @@ muldivRound(
 
     if (ret > std::numeric_limits<std::uint64_t>::max())
     {
-        Throw<std::overflow_error>(
-            "overflow: ((" + std::to_string(multiplier) + " * " + std::to_string(multiplicand) +
-            ") + " + std::to_string(rounding) + ") / " + std::to_string(divisor));
+        Throw<std::overflow_error>(std::format(
+            "overflow: (({} * {}) + {}) / {}", multiplier, multiplicand, rounding, divisor));
     }
 
     return static_cast<uint64_t>(ret);
@@ -1569,7 +1568,7 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
     {
         CanonicalizeFunc(asset.integral(), amount, offset, roundUp);
     }
-    STAmount result = [&]() {
+    STAmount result = [&] {
         // If appropriate, tell Number to round down.  This gives the desired
         // result from STAmount::canonicalize.
         MightSaveRound const savedRound(Number::RoundingMode::TowardsZero);
@@ -1621,7 +1620,9 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
 
     bool const resultNegative = (num.negative() != den.negative());
 
-    if (asset.holds<MPTIssue>() && isFeatureEnabled(featureMPTokensV2, false))
+    // fixCleanup3_5_0: the legacy path below overflows on large MPT amounts.
+    if (asset.holds<MPTIssue>() &&
+        (isFeatureEnabled(featureMPTokensV2, true) || isFeatureEnabled(fixCleanup3_5_0, true)))
     {
         // Match the multiply path above: Number performs the rounded
         // operation, then STAmount materializes the final MPT amount using the
@@ -1672,7 +1673,7 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
     if (resultNegative != roundUp)
         canonicalizeRound(asset.integral(), amount, offset, roundUp);
 
-    STAmount result = [&]() {
+    STAmount result = [&] {
         // If appropriate, tell Number the rounding mode we are using.
         // Note that "roundUp == true" actually means "round away from zero".
         // Otherwise, round toward zero.

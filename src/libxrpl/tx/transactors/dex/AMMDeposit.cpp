@@ -151,7 +151,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
 
     if (amount && ePrice)
     {
-        auto assets = [&]() -> std::optional<std::pair<Asset, Asset>> {
+        auto assets = [&] -> std::optional<std::pair<Asset, Asset>> {
             // don't check ePrice issue
             if (ctx.rules.enabled(featureMPTokensV2))
                 return std::nullopt;
@@ -441,7 +441,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto dispatchToDeposit = [&,
                               &amountBalance = amountBalance,
                               &amount2Balance = amount2Balance,
-                              &lptAMMBalance = lptAMMBalance]() -> std::pair<TER, STAmount> {
+                              &lptAMMBalance = lptAMMBalance] -> std::pair<TER, STAmount> {
         if (subTxType & tfTwoAsset)
         {
             return equalDepositLimit(
@@ -495,7 +495,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         // LCOV_EXCL_STOP
     };
 
-    auto const [result, newLPTokenBalance] = [&]() -> std::pair<TER, STAmount> {
+    auto const [result, newLPTokenBalance] = [&] -> std::pair<TER, STAmount> {
         try
         {
             return dispatchToDeposit();
@@ -1091,7 +1091,7 @@ AMMDeposit::equalDepositInEmptyState(
 }
 
 void
-AMMDeposit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMDeposit::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -31,7 +31,6 @@
 #include <cstdint>
 #include <iterator>
 #include <memory>
-#include <numeric>
 #include <optional>
 #include <tuple>
 #include <type_traits>
@@ -50,7 +49,7 @@ struct StrandResult
     TInAmt in = beast::kZero;                      ///< Currency amount in
     TOutAmt out = beast::kZero;                    ///< Currency amount out
     std::optional<PaymentSandbox> sandbox;         ///< Resulting Sandbox state
-    boost::container::flat_set<uint256> ofrsToRm;  ///< Offers to remove
+    boost::container::flat_set<UInt256> ofrsToRm;  ///< Offers to remove
     // Num offers consumed or partially consumed (includes expired and unfunded
     // offers)
     std::uint32_t ofrsUsed = 0;
@@ -69,7 +68,7 @@ struct StrandResult
         TInAmt const& in,
         TOutAmt const& out,
         PaymentSandbox&& sandbox,
-        boost::container::flat_set<uint256> ofrsToRemoveMember,
+        boost::container::flat_set<UInt256> ofrsToRemoveMember,
         bool inactive)
         : success(true)
         , in(in)
@@ -81,7 +80,7 @@ struct StrandResult
     {
     }
 
-    StrandResult(Strand const& strand, boost::container::flat_set<uint256> ofrsToRemoveMember)
+    StrandResult(Strand const& strand, boost::container::flat_set<UInt256> ofrsToRemoveMember)
         : ofrsToRm(std::move(ofrsToRemoveMember)), ofrsUsed(offersUsed(strand))
     {
     }
@@ -114,7 +113,7 @@ flow(
         return {};
     }
 
-    boost::container::flat_set<uint256> ofrsToRm;
+    boost::container::flat_set<UInt256> ofrsToRm;
 
     if (isDirectXrpToXrp<TInAmt, TOutAmt>(strand))
     {
@@ -308,7 +307,7 @@ struct FlowResult
     TInAmt in = beast::kZero;
     TOutAmt out = beast::kZero;
     std::optional<PaymentSandbox> sandbox;
-    boost::container::flat_set<uint256> removableOffers;
+    boost::container::flat_set<UInt256> removableOffers;
     TER ter = temUNKNOWN;
 
     FlowResult() = default;
@@ -317,7 +316,7 @@ struct FlowResult
         TInAmt const& in,
         TOutAmt const& out,
         PaymentSandbox&& sandbox,
-        boost::container::flat_set<uint256> ofrsToRm)
+        boost::container::flat_set<UInt256> ofrsToRm)
         : in(in)
         , out(out)
         , sandbox(std::move(sandbox))
@@ -326,7 +325,7 @@ struct FlowResult
     {
     }
 
-    FlowResult(TER ter, boost::container::flat_set<uint256> ofrsToRm)
+    FlowResult(TER ter, boost::container::flat_set<UInt256> ofrsToRm)
         : removableOffers(std::move(ofrsToRm)), ter(ter)
     {
     }
@@ -335,7 +334,7 @@ struct FlowResult
         TER ter,
         TInAmt const& in,
         TOutAmt const& out,
-        boost::container::flat_set<uint256> ofrsToRm)
+        boost::container::flat_set<UInt256> ofrsToRm)
         : in(in), out(out), removableOffers(std::move(ofrsToRm)), ter(ter)
     {
     }
@@ -408,7 +407,7 @@ limitOut(
     if (!qf || qf->isConst())
         return remainingOut;
 
-    auto const out = [&]() {
+    auto const out = [&] {
         auto const out = qf->outFromAvgQ(limitQuality);
         if (!out)
             return remainingOut;
@@ -646,16 +645,26 @@ flow(
     boost::container::flat_multiset<TOutAmt> savedOuts;
     savedOuts.reserve(maxTries);
 
-    auto sum = [](auto const& col) {
+    // Returns std::nullopt if the aggregate overflows; callers treat that as a
+    // dry path.
+    auto sum = [](auto const& col) -> std::optional<std::decay_t<decltype(*col.begin())>> {
         using TResult = std::decay_t<decltype(*col.begin())>;
         if (col.empty())
             return TResult{beast::kZero};
-        return std::accumulate(col.begin() + 1, col.end(), *col.begin());
+        TResult total = *col.begin();
+        for (auto it = col.begin() + 1; it != col.end(); ++it)
+        {
+            auto const next = checkedStepAddOpt(total, *it);
+            if (!next)
+                return std::nullopt;
+            total = *next;
+        }
+        return total;
     };
 
     // These offers only need to be removed if the payment is not
     // successful
-    boost::container::flat_set<uint256> ofrsToRmOnFail;
+    boost::container::flat_set<UInt256> ofrsToRmOnFail;
 
     while (remainingOut > beast::kZero && (!remainingIn || *remainingIn > beast::kZero))
     {
@@ -670,7 +679,7 @@ flow(
         ammContext.setMultiPath(activeStrands.size() > 1);
 
         // Limit only if one strand and limitQuality
-        auto const limitRemainingOut = [&]() {
+        auto const limitRemainingOut = [&] {
             if (activeStrands.size() == 1 && limitQuality)
             {
                 if (auto const strand = activeStrands.get(0))
@@ -680,7 +689,7 @@ flow(
         }();
         auto const adjustedRemOut = limitRemainingOut != remainingOut;
 
-        boost::container::flat_set<uint256> ofrsToRm;
+        boost::container::flat_set<UInt256> ofrsToRm;
         std::optional<BestStrand> best;
         if (flowDebugInfo)
             flowDebugInfo->newLiquidityPass();
@@ -749,9 +758,17 @@ flow(
         {
             savedIns.insert(best->in);
             savedOuts.insert(best->out);
-            remainingOut = outReq - sum(savedOuts);
+            auto const sumOut = sum(savedOuts);
+            if (!sumOut)
+                return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
+            remainingOut = outReq - *sumOut;
             if (sendMax)
-                remainingIn = *sendMax - sum(savedIns);
+            {
+                auto const sumIn = sum(savedIns);
+                if (!sumIn)
+                    return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
+                remainingIn = *sendMax - *sumIn;
+            }
 
             if (flowDebugInfo)
             {
@@ -786,8 +803,12 @@ flow(
             break;
     }
 
-    auto const actualOut = sum(savedOuts);
-    auto const actualIn = sum(savedIns);
+    auto const actualOutOpt = sum(savedOuts);
+    auto const actualInOpt = sum(savedIns);
+    if (!actualOutOpt || !actualInOpt)
+        return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
+    auto const actualOut = *actualOutOpt;
+    auto const actualIn = *actualInOpt;
 
     JLOG(j.trace()) << "Total flow: in: " << to_string(actualIn)
                     << " out: " << to_string(actualOut);

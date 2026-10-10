@@ -29,7 +29,7 @@ NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 
     // Zero offer IDs cannot be passed as ledger entry keys.
     if (ctx.rules.enabled(fixCleanup3_2_0) &&
-        std::ranges::any_of(offerIds, [](uint256 const& id) { return id.isZero(); }))
+        std::ranges::any_of(offerIds, [](UInt256 const& id) { return id.isZero(); }))
         return temMALFORMED;
 
     // In order to prevent unnecessarily overlarge transactions, we
@@ -49,7 +49,7 @@ NFTokenCancelOffer::preclaim(PreclaimContext const& ctx)
 
     auto const& ids = ctx.tx[sfNFTokenOffers];
 
-    auto ret = std::ranges::find_if(ids, [&ctx, &account](uint256 const& id) {
+    auto ret = std::ranges::find_if(ids, [&ctx, &account](UInt256 const& id) {
         auto const offer = ctx.view.read(keylet::child(id));
 
         // If id is not in the ledger we assume the offer was consumed
@@ -103,7 +103,7 @@ NFTokenCancelOffer::doApply()
 }
 
 void
-NFTokenCancelOffer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+NFTokenCancelOffer::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

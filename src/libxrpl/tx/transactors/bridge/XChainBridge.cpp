@@ -438,7 +438,7 @@ transferHelper(
         {
             auto const reserve = accountReserve(psb, sleSrc, j);
 
-            auto const availableBalance = [&]() -> STAmount {
+            auto const availableBalance = [&] -> STAmount {
                 STAmount curBal = (*sleSrc)[sfBalance];
                 // Checking that account == src and postFeeBalance == curBal is
                 // not strictly necessary, but helps protect against future
@@ -656,7 +656,7 @@ finalizeClaimHelper(
         }
 
         // handle the reward pool
-        result.rewardTer = [&]() -> TER {
+        result.rewardTer = [&] -> TER {
             if (rewardAccounts.empty())
                 return tesSUCCESS;
 
@@ -854,7 +854,7 @@ applyClaimAttestations(
         AccountID cidOwner;
     };
 
-    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
+    auto const scopeResult = [&] -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -971,7 +971,7 @@ applyCreateAccountAttestations(
 
     PaymentSandbox psb(&view);
 
-    auto const claimCountResult = [&]() -> std::expected<std::uint64_t, TER> {
+    auto const claimCountResult = [&] -> std::expected<std::uint64_t, TER> {
         auto const sleBridge = psb.peek(bridgeK);
         if (!sleBridge)
             return std::unexpected(tecINTERNAL);
@@ -1016,7 +1016,7 @@ applyCreateAccountAttestations(
         XChainCreateAccountAttestations curAtts;
     };
 
-    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
+    auto const scopeResult = [&] -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -1255,7 +1255,7 @@ attestationDoApply(ApplyContext& ctx)
         Keylet bridgeK;
     };
 
-    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
+    auto const scopeResult = [&] -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -1678,7 +1678,7 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
-    auto const otherChainAmount = [&]() -> STAmount {
+    auto const otherChainAmount = [&] -> STAmount {
         STAmount r(thisChainAmount);
         if (isLockingChain)
         {
@@ -1732,7 +1732,7 @@ XChainClaim::doApply()
         STAmount signatureReward;
     };
 
-    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
+    auto const scopeResult = [&] -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -1764,7 +1764,7 @@ XChainClaim::doApply()
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
 
-        auto const sendingAmount = [&]() -> STAmount {
+        auto const sendingAmount = [&] -> STAmount {
             STAmount r(thisChainAmount);
             r.setIssue(bridgeSpec.issue(srcChain));
             return r;
@@ -2235,7 +2235,7 @@ XChainCreateAccountCommit::doApply()
 }
 
 void
-XChainCreateBridge::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainCreateBridge::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2253,7 +2253,7 @@ XChainCreateBridge::finalizeInvariants(
 }
 
 void
-BridgeModify::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+BridgeModify::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2271,7 +2271,7 @@ BridgeModify::finalizeInvariants(
 }
 
 void
-XChainClaim::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainClaim::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2284,7 +2284,7 @@ XChainClaim::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, be
 }
 
 void
-XChainCommit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainCommit::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2302,7 +2302,7 @@ XChainCommit::finalizeInvariants(
 }
 
 void
-XChainCreateClaimID::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainCreateClaimID::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2320,7 +2320,7 @@ XChainCreateClaimID::finalizeInvariants(
 }
 
 void
-XChainAddClaimAttestation::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainAddClaimAttestation::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2338,7 +2338,7 @@ XChainAddClaimAttestation::finalizeInvariants(
 }
 
 void
-XChainAddAccountCreateAttestation::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainAddAccountCreateAttestation::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2356,7 +2356,7 @@ XChainAddAccountCreateAttestation::finalizeInvariants(
 }
 
 void
-XChainCreateAccountCommit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainCreateAccountCommit::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

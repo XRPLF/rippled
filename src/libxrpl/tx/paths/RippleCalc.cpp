@@ -45,7 +45,7 @@ RippleCalc::rippleCalculate(
     // explore for liquidity.
     STPathSet const& spsPaths,
 
-    std::optional<uint256> const& domainID,
+    std::optional<UInt256> const& domainID,
     ServiceRegistry& registry,
     Input const* const pInputs)
 {
@@ -58,13 +58,13 @@ RippleCalc::rippleCalculate(
 
         bool const partialPayment = (pInputs == nullptr) ? false : pInputs->partialPaymentAllowed;
 
-        auto const limitQuality = [&]() -> std::optional<Quality> {
+        auto const limitQuality = [&] -> std::optional<Quality> {
             if (pInputs && pInputs->limitQuality && saMaxAmountReq > beast::kZero)
                 return Quality{Amounts(saMaxAmountReq, saDstAmountReq)};
             return std::nullopt;
         }();
 
-        auto const sendMax = [&]() -> std::optional<STAmount> {
+        auto const sendMax = [&] -> std::optional<STAmount> {
             if (saMaxAmountReq >= beast::kZero ||
                 !equalTokens(saMaxAmountReq.asset(), saDstAmountReq.asset()) ||
                 saMaxAmountReq.getIssuer() != uSrcAccountID)

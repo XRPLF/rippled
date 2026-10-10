@@ -216,7 +216,7 @@ Pathfinder::Pathfinder(
     std::optional<AccountID> const& uSrcIssuer,
     STAmount const& saDstAmount,
     std::optional<STAmount> const& srcAmount,
-    std::optional<uint256> const& domain,
+    std::optional<UInt256> const& domain,
     Application& app)
     : srcAccount_(uSrcAccount)
     , dstAccount_(uDstAccount)
@@ -238,7 +238,7 @@ Pathfinder::Pathfinder(
 }
 
 bool
-Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continueCallback)
+Pathfinder::findPaths(int searchLevel, std::function<bool()> const& continueCallback)
 {
     JLOG(j_.trace()) << "findPaths start";
     if (dstAmount_ == beast::kZero)
@@ -448,7 +448,7 @@ Pathfinder::getPathLiquidity(
 }
 
 void
-Pathfinder::computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback)
+Pathfinder::computePathRanks(int maxPaths, std::function<bool()> const& continueCallback)
 {
     remainingAmount_ = convertAmount(dstAmount_, convertAll_);
 
@@ -527,14 +527,14 @@ Pathfinder::rankPaths(
     int maxPaths,
     STPathSet const& paths,
     std::vector<PathRank>& rankedPaths,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     JLOG(j_.trace()) << "rankPaths with " << paths.size() << " candidates, and " << maxPaths
                      << " maximum";
     rankedPaths.clear();
     rankedPaths.reserve(paths.size());
 
-    auto const saMinDstAmount = [&]() -> STAmount {
+    auto const saMinDstAmount = [&] -> STAmount {
         if (!convertAll_)
         {
             // Ignore paths that move only very small amounts.
@@ -606,7 +606,7 @@ Pathfinder::getBestPaths(
     STPath& fullLiquidityPath,
     STPathSet const& extraPaths,
     AccountID const& srcIssuer,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     JLOG(j_.debug()) << "findPaths: " << completePaths_.size() << " paths and " << extraPaths.size()
                      << " extras";
@@ -751,7 +751,7 @@ Pathfinder::getPathsOut(
     LineDirection direction,
     bool isDstAsset,
     AccountID const& dstAccount,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     Asset const asset = assetFromPathAsset(pathAsset, account);
 
@@ -767,12 +767,12 @@ Pathfinder::getPathsOut(
         return 0;
 
     auto const aFlags = sleAccount->getFieldU32(sfFlags);
-    bool const bAuthRequired = [&]() {
+    bool const bAuthRequired = [&] {
         if (pathAsset.holds<Currency>())
             return (aFlags & lsfRequireAuth) != 0;
         return !isTesSuccess(requireAuth(*ledger_, asset.get<MPTIssue>(), account));
     }();
-    bool const bFrozen = [&]() {
+    bool const bFrozen = [&] {
         if (pathAsset.holds<Currency>())
             return (aFlags & lsfGlobalFreeze) != 0;
         return isGlobalFrozen(*ledger_, asset.get<MPTIssue>());
@@ -839,7 +839,7 @@ Pathfinder::addLinks(
     STPathSet const& currentPaths,  // The paths to build from
     STPathSet& incompletePaths,     // The set of partial paths we add to
     int addFlags,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     JLOG(j_.debug()) << "addLink< on " << currentPaths.size() << " source(s), flags=" << addFlags;
     for (auto const& path : currentPaths)
@@ -851,9 +851,7 @@ Pathfinder::addLinks(
 }
 
 STPathSet&
-Pathfinder::addPathsForType(
-    PathType const& pathType,
-    std::function<bool(void)> const& continueCallback)
+Pathfinder::addPathsForType(PathType const& pathType, std::function<bool()> const& continueCallback)
 {
     JLOG(j_.debug()) << "addPathsForType " << CollectionAndDelimiter(pathType, ", ");
     // See if the set of paths for this type already exists.
@@ -965,7 +963,7 @@ Pathfinder::addLink(
     STPath const& currentPath,   // The path to build from
     STPathSet& incompletePaths,  // The set of partial paths we add to
     int addFlags,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     auto const& pathEnd = currentPath.empty() ? source_ : currentPath.back();
     auto const& uEndPathAsset = pathEnd.getPathAsset();
@@ -1020,14 +1018,14 @@ Pathfinder::addLink(
                     {
                         if (continueCallback && !continueCallback())
                             return;
-                        auto const& acct = [&]() constexpr {
+                        auto const& acct = [&] constexpr {
                             if constexpr (kIsLine)
                                 return asset.getAccountIDPeer();
                             // Unlike trustline, MPT is not bidirectional
                             if constexpr (kIsMpt)
                                 return getMPTIssuer(asset);
                         }();
-                        auto const direction = [&]() constexpr -> LineDirection {
+                        auto const direction = [&] constexpr -> LineDirection {
                             if constexpr (kIsLine)
                                 return asset.getDirectionPeer();
                             // incoming for MPT since MPT doesn't support
@@ -1048,7 +1046,7 @@ Pathfinder::addLink(
                             continue;
                         }
 
-                        auto const correctAsset = [&]() {
+                        auto const correctAsset = [&] {
                             if constexpr (kIsLine)
                             {
                                 return uEndPathAsset.get<Currency>() ==
@@ -1059,7 +1057,7 @@ Pathfinder::addLink(
                                 return uEndPathAsset.get<MPTID>() == asset.getMptID();
                             }
                         }();
-                        auto checkAsset = [&]() {
+                        auto checkAsset = [&] {
                             if constexpr (kIsLine)
                             {
                                 return (
@@ -1244,8 +1242,8 @@ Pathfinder::addLink(
                                                                        : STPathElement::TypeMpt;
                         // Don't want the book if we've already seen the issuer
                         // book -> account -> book
-                        if ((newPath.size() >= 2) && (newPath.back().isAccount()) &&
-                            (newPath[newPath.size() - 2].isOffer()))
+                        if ((newPath.size() >= 2) && newPath.back().isAccount() &&
+                            newPath[newPath.size() - 2].isOffer())
                         {
                             // replace the redundant account with the order book
                             newPath[newPath.size() - 1] = STPathElement(

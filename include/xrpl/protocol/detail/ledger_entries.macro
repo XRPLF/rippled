@@ -439,6 +439,7 @@ LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
     {sfIssuerKeyMirrorEpoch,        SoeOptional},
     {sfAuditorKeyMirrorEpoch,       SoeOptional},
     {sfHolderEncryptionKey,         SoeOptional},
+    {sfRecoveryKey,                 SoeOptional},
 }))
 
 /** A ledger object which tracks Oracle
@@ -548,6 +549,7 @@ LEDGER_ENTRY(ltLOAN_BROKER, 0x0088, LoanBroker, loan_broker, ({
     {sfCoverAvailable,       SoeDefault},
     {sfCoverRateMinimum,     SoeDefault},
     {sfCoverRateLiquidation, SoeDefault},
+    {sfDomainID,             SoeOptional},
 }))
 
 /** A ledger object representing a loan between a Borrower and a Loan Broker

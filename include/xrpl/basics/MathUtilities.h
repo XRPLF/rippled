@@ -64,6 +64,48 @@ checkedMul(std::int64_t a, std::int64_t b) noexcept
     return a * b;
 }
 
+static_assert(checkedAdd(0, 0) == 0);
+static_assert(checkedAdd(1, -1) == 0);
+static_assert(checkedAdd(-5, 2) == -3);
+static_assert(!checkedAdd(std::numeric_limits<std::int64_t>::max(), 1).has_value());
+static_assert(!checkedAdd(std::numeric_limits<std::int64_t>::min(), -1).has_value());
+static_assert(
+    checkedAdd(std::numeric_limits<std::int64_t>::max() - 1, 1) ==
+    std::numeric_limits<std::int64_t>::max());
+static_assert(
+    checkedAdd(
+        std::numeric_limits<std::int64_t>::min(),
+        std::numeric_limits<std::int64_t>::max()) == -1);
+static_assert(
+    checkedAdd(
+        std::numeric_limits<std::int64_t>::max(),
+        std::numeric_limits<std::int64_t>::min()) == -1);
+static_assert(
+    !checkedAdd(std::numeric_limits<std::int64_t>::max(), std::numeric_limits<std::int64_t>::max())
+         .has_value());
+static_assert(
+    !checkedAdd(std::numeric_limits<std::int64_t>::min(), std::numeric_limits<std::int64_t>::min())
+         .has_value());
+
+static_assert(checkedSub(0, 0) == 0);
+static_assert(checkedSub(1, 1) == 0);
+static_assert(checkedSub(-5, 2) == -7);
+static_assert(checkedSub(-5, -2) == -3);
+static_assert(!checkedSub(std::numeric_limits<std::int64_t>::min(), 1).has_value());
+static_assert(!checkedSub(std::numeric_limits<std::int64_t>::max(), -1).has_value());
+static_assert(
+    checkedSub(std::numeric_limits<std::int64_t>::min() + 1, 1) ==
+    std::numeric_limits<std::int64_t>::min());
+static_assert(
+    checkedSub(-1, std::numeric_limits<std::int64_t>::max()) ==
+    std::numeric_limits<std::int64_t>::min());
+static_assert(
+    !checkedSub(std::numeric_limits<std::int64_t>::max(), std::numeric_limits<std::int64_t>::min())
+         .has_value());
+static_assert(
+    !checkedSub(std::numeric_limits<std::int64_t>::min(), std::numeric_limits<std::int64_t>::max())
+         .has_value());
+
 /**
  * Calculate one number divided by another number in percentage.
  * The result is rounded up to the next integer, and capped in the range [0,100]

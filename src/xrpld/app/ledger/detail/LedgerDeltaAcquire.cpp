@@ -37,7 +37,7 @@ namespace xrpl {
 LedgerDeltaAcquire::LedgerDeltaAcquire(
     Application& app,
     InboundLedgers& inboundLedgers,
-    uint256 const& ledgerHash,
+    UInt256 const& ledgerHash,
     std::uint32_t ledgerSeq,
     std::unique_ptr<PeerSet> peerSet)
     : TimeoutCounter(
@@ -234,7 +234,7 @@ LedgerDeltaAcquire::onLedgerBuilt(ScopedLockType& sl, std::optional<InboundLedge
         firstTime = false;
     }
     app_.getJobQueue().addJob(
-        JtReplayTask, "OnLedBuilt", [=, ledger = this->fullLedger_, &app = this->app_]() {
+        JtReplayTask, "OnLedBuilt", [=, ledger = this->fullLedger_, &app = this->app_] {
             for (auto reason : reasons)
             {
                 switch (reason)

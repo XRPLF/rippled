@@ -79,14 +79,14 @@ class ValidatorKeys;
 class CanonicalTXSet;
 
 static bool
-isStatusRequest(http_request_type const& request)
+isStatusRequest(HttpRequestType const& request)
 {
     return request.version() >= 11 && request.target() == "/" && request.body().size() == 0 &&
         request.method() == boost::beast::http::verb::get;
 }
 
 static Handoff
-statusRequestResponse(http_request_type const& request, boost::beast::http::status status)
+statusRequestResponse(HttpRequestType const& request, boost::beast::http::status status)
 {
     using namespace boost::beast::http;
     Handoff handoff;
@@ -168,7 +168,7 @@ ServerHandler::setup(Setup const& setup, beast::Journal journal)
                 (port.protocol.contains("http") || port.protocol.contains("https")))
                 setup_.client.port = endpointPort;
 
-            if ((setup_.overlay.port() == 0u) && (port.protocol.contains("peer")))
+            if ((setup_.overlay.port() == 0u) && port.protocol.contains("peer"))
                 setup_.overlay.port(endpointPort);
         }
     }
@@ -193,7 +193,7 @@ ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoin
 {
     auto const& port = session.port();
 
-    auto const c = [this, &port]() {
+    auto const c = [this, &port] {
         std::scoped_lock const lock(mutex_);
         return ++count_[port];
     }();
@@ -210,8 +210,8 @@ ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoin
 Handoff
 ServerHandler::onHandoff(
     Session& session,
-    std::unique_ptr<stream_type>&& bundle,
-    http_request_type&& request,
+    std::unique_ptr<StreamType>&& bundle,
+    HttpRequestType&& request,
     boost::asio::ip::tcp::endpoint const& remoteAddress)
 {
     using namespace boost::beast;
@@ -396,7 +396,7 @@ void
 logDuration(json::Value const& request, T const& duration, beast::Journal& journal)
 {
     using namespace std::chrono_literals;
-    auto const level = [&]() {
+    auto const level = [&] {
         if (duration >= 10s)
             return journal.error();
         if (duration >= 1s)
@@ -971,7 +971,7 @@ ServerHandler::processRequest(
     }
 
     // If we're returning an error_code, use that to determine the HTTP status.
-    int const httpStatus = [&reply]() {
+    int const httpStatus = [&reply] {
         // This feature is enabled with ripplerpc version 3.0 and above.
         // Before ripplerpc version 3.0 always return 200.
         if (reply.isMember(jss::ripplerpc) && reply[jss::ripplerpc].isString() &&
@@ -1022,7 +1022,7 @@ ServerHandler::processRequest(
     is reported, meaning the server can accept more connections.
 */
 Handoff
-ServerHandler::statusResponse(http_request_type const& request) const
+ServerHandler::statusResponse(HttpRequestType const& request) const
 {
     using namespace boost::beast::http;
     Handoff handoff;

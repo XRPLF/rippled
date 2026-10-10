@@ -178,7 +178,7 @@ toStrand(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
-    std::optional<uint256> const& domainID,
+    std::optional<UInt256> const& domainID,
     beast::Journal j)
 {
     if (isXRP(src) || isXRP(dst) || !isConsistent(deliver) ||
@@ -237,7 +237,7 @@ toStrand(
             return {temBAD_PATH, Strand{}};
     }
 
-    Asset curAsset = [&]() -> Asset {
+    Asset curAsset = [&] -> Asset {
         auto const& asset = sendMaxAsset ? *sendMaxAsset : deliver;
         return asset.visit(
             [&](MPTIssue const& issue) -> Asset { return asset; },
@@ -262,7 +262,7 @@ toStrand(
         // The first step of a path is always implied to be the sender of the
         // transaction, as defined by the transaction's Account field. The Asset
         // is either SendMax or Deliver.
-        auto const t = [&]() {
+        auto const t = [&] {
             auto const t = STPathElement::TypeAccount | STPathElement::TypeIssuer;
             return curAsset.visit(
                 [&](MPTIssue const&) { return t | STPathElement::TypeMpt; },
@@ -505,7 +505,7 @@ toStrand(
         }
     }
 
-    auto checkStrand = [&]() -> bool {
+    auto checkStrand = [&] -> bool {
         auto stepAccts = [](Step const& s) -> std::pair<AccountID, AccountID> {
             if (auto r = s.directStepAccts())
                 return *r;
@@ -516,7 +516,7 @@ toStrand(
         };
 
         auto curAcc = src;
-        auto curAsset = [&]() -> Asset {
+        auto curAsset = [&] -> Asset {
             auto const& asset = sendMaxAsset ? *sendMaxAsset : deliver;
             return asset.visit(
                 [&](MPTIssue const&) -> Asset { return asset; },
@@ -583,7 +583,7 @@ toStrands(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
-    std::optional<uint256> const& domainID,
+    std::optional<UInt256> const& domainID,
     beast::Journal j)
 {
     std::vector<Strand> result;
@@ -699,7 +699,7 @@ StrandContext::StrandContext(
     std::array<boost::container::flat_set<Asset>, 2>& seenDirectAssets,
     boost::container::flat_set<Asset>& seenBookOuts,
     AMMContext& ammContext,
-    std::optional<uint256> const& domainId,
+    std::optional<UInt256> const& domainId,
     beast::Journal j)
     : view(view)
     , strandSrc(strandSrc)

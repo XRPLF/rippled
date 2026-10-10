@@ -41,7 +41,7 @@ class PerfLog_test : public beast::unit_test::Suite
 {
     enum class WithFile : bool { No = false, Yes = true };
 
-    using path = std::filesystem::path;
+    using Path = std::filesystem::path;
 
     // The method names to count. PerfLog treats them as opaque keys, so these are
     // made up rather than taken from the dispatch table: this test then needs no
@@ -106,14 +106,14 @@ class PerfLog_test : public beast::unit_test::Suite
             stopSignaled = true;
         }
 
-        static path
+        static Path
         logDir()
         {
             using namespace std::filesystem;
             return temp_directory_path() / "perf_log_test_dir";
         }
 
-        static path
+        static Path
         logFile()
         {
             return logDir() / "perf_log.txt";
@@ -130,7 +130,7 @@ class PerfLog_test : public beast::unit_test::Suite
         {
             perf::PerfLog::Setup const setup{
                 .perfLog = withFile == WithFile::No ? "" : logFile(), .logInterval = logInterval()};
-            return perf::makePerfLog(setup, app, kMethodNames, j, [this]() {
+            return perf::makePerfLog(setup, app, kMethodNames, j, [this] {
                 signalStop();
                 return;
             });
@@ -341,11 +341,11 @@ public:
         std::generate_n(
             std::back_inserter(ids),
             labels.size(),
-            [i = std::numeric_limits<std::uint64_t>::min()]() mutable { return i++; });
+            [i = std::numeric_limits<std::uint64_t>::min()] mutable { return i++; });
         std::generate_n(
             std::back_inserter(ids),
             labels.size(),
-            [i = std::numeric_limits<std::uint64_t>::max()]() mutable { return i--; });
+            [i = std::numeric_limits<std::uint64_t>::max()] mutable { return i--; });
         std::shuffle(ids.begin(), ids.end(), defaultPrng());
 
         // Start all of the RPC commands twice to show they can all be tracked
@@ -1046,7 +1046,7 @@ public:
         {
             std::vector<NullTerminatedView> const names{kMethodNames.begin(), kMethodNames.end()};
             perf::PerfLog::Setup const setup{.perfLog = "", .logInterval = fixture.logInterval()};
-            perfLog = perf::makePerfLog(setup, env_.app(), names, j_, []() {});
+            perfLog = perf::makePerfLog(setup, env_.app(), names, j_, [] {});
         }
 
         perfLog->start();

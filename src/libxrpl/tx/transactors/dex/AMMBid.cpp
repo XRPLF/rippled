@@ -266,7 +266,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
             // Prevent zero-fee pools from granting auction slots at zero or dust prices.
             effectivePrice = std::max(effectivePrice, ammAuctionMinSlotPrice(lptAMMBalance, 1));
         }
-        auto const payPrice = [&]() -> std::optional<Number> {
+        auto const payPrice = [&] -> std::optional<Number> {
             // Both min/max bid price are defined
             if (bidMin && bidMax)
             {
@@ -322,7 +322,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         // NOLINTBEGIN(bugprone-unchecked-optional-access)
         auto const fractionUsed = (Number(*timeSlot) + 1) / kAuctionSlotTimeIntervals;
         auto const fractionRemaining = Number(1) - fractionUsed;
-        auto const computedPrice = [&]() -> Number {
+        auto const computedPrice = [&] -> Number {
             auto const p105 = Number(105, -2);
             // First interval slot price
             if (*timeSlot == 0)
@@ -377,7 +377,7 @@ AMMBid::doApply()
 }
 
 void
-AMMBid::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMBid::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -92,6 +92,7 @@ std::vector<std::pair<json::StaticString, FieldType>> gMappings{
     {jss::authorized, FieldType::AccountField},
     {jss::credential_type, FieldType::BlobField},
     {jss::currency, FieldType::CurrencyField},
+    {jss::destination, FieldType::AccountField},
     {jss::issuer, FieldType::AccountField},
     {jss::oracle_document_id, FieldType::UInt32Field},
     {jss::owner, FieldType::AccountField},
@@ -184,13 +185,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
     static std::vector<json::Value>
     getBadValues(FieldType fieldType)
     {
-        static json::Value const kInjectObject = []() {
+        static json::Value const kInjectObject = [] {
             json::Value obj(json::ValueType::Object);
             obj[jss::account] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
             obj[jss::ledger_index] = "validated";
             return obj;
         }();
-        static json::Value const kInjectArray = []() {
+        static json::Value const kInjectArray = [] {
             json::Value arr(json::ValueType::Array);
             arr[0u] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
             arr[1u] = "validated";
@@ -278,13 +279,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
     static json::Value
     getCorrectValue(json::StaticString fieldName)
     {
-        static json::Value const kTwoAccountArray = []() {
+        static json::Value const kTwoAccountArray = [] {
             json::Value arr(json::ValueType::Array);
             arr[0u] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
             arr[1u] = "r4MrUGTdB57duTnRs6KbsRGQXgkseGb1b5";
             return arr;
         }();
-        static json::Value const kIssueObject = []() {
+        static json::Value const kIssueObject = [] {
             json::Value arr(json::ValueType::Object);
             arr[jss::currency] = "XRP";
             return arr;
@@ -675,21 +676,21 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     auto const sle = std::make_shared<SLE>(keylet);
 
                     // Create Amendments vector (enabled amendments)
-                    std::vector<uint256> enabledAmendments;
+                    std::vector<UInt256> enabledAmendments;
                     enabledAmendments.push_back(
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "42426C4D4F1009EE67080A9B7965B44656D7"
                             "714D104A72F9B4369F97ABF044EE"));
                     enabledAmendments.push_back(
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "4C97EBA926031A7CF7D7B36FDE3ED66DDA54"
                             "21192D63DE53FFB46E43B9DC8373"));
                     enabledAmendments.push_back(
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "03BDC0099C4E14163ADA272C1B6F6FABB448"
                             "CC3E51F522F978041E4B57D9158C"));
                     enabledAmendments.push_back(
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "35291ADD2D79EB6991343BDA0912269C817D"
                             "0F094B02226C1C14AD2858962ED4"));
                     sle->setFieldV256(sfAmendments, STVector256(enabledAmendments));
@@ -700,7 +701,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     auto majority1 = STObject::makeInnerObject(sfMajority);
                     majority1.setFieldH256(
                         sfAmendment,
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "7BB62DC13EC72B775091E9C71BF8CF97E122"
                             "647693B50C5E87A80DFD6FCFAC50"));
                     majority1.setFieldU32(sfCloseTime, 779561310);
@@ -709,7 +710,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     auto majority2 = STObject::makeInnerObject(sfMajority);
                     majority2.setFieldH256(
                         sfAmendment,
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "755C971C29971C9F20C6F080F2ED96F87884"
                             "E40AD19554A5EBECDCEC8A1F77FE"));
                     majority2.setFieldU32(sfCloseTime, 779561310);
@@ -813,7 +814,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        auto const checkId = keylet::check(env.master, SeqProxy::rawSequence(env.seq(env.master)));
+        auto const checkSeq = env.seq(env.master);
+        auto const checkId = keylet::check(env.master, SeqProxy::rawSequence(checkSeq));
 
         env(check::create(env.master, alice, XRP(100)));
         env.close();
@@ -828,6 +830,30 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Check);
             BEAST_EXPECT(jrr[jss::node][sfSendMax.jsonName] == "100000000");
+        }
+        {
+            // Request a check by account and seq.
+            json::Value jvParams;
+            jvParams[jss::check] = json::ValueType::Object;
+            jvParams[jss::check][jss::account] = env.master.human();
+            jvParams[jss::check][jss::seq] = checkSeq;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Check);
+            BEAST_EXPECT(jrr[jss::node][sfSendMax.jsonName] == "100000000");
+            BEAST_EXPECT(jrr[jss::index] == to_string(checkId.key));
+        }
+        {
+            // Request a non-existent check by account and seq.
+            json::Value jvParams;
+            jvParams[jss::check] = json::ValueType::Object;
+            jvParams[jss::check][jss::account] = env.master.human();
+            jvParams[jss::check][jss::seq] = checkSeq + 1000;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
         }
         {
             // Request an index that is not a check.  We'll use alice's
@@ -849,7 +875,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
         }
         {
             // Check malformed cases
-            runLedgerEntryTest(env, jss::check);
+            runLedgerEntryTest(
+                env,
+                jss::check,
+                {
+                    {.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
+                    {.fieldName = jss::seq, .malformedErrorMsg = "malformedRequest"},
+                });
         }
     }
 
@@ -1530,11 +1562,11 @@ class LedgerEntry_test : public beast::unit_test::Suite
         Account const buyer{"buyer"};
         env.fund(XRP(1000), issuer, buyer);
 
-        uint256 const nftokenID0 = token::getNextID(env, issuer, 0, tfTransferable);
+        UInt256 const nftokenID0 = token::getNextID(env, issuer, 0, tfTransferable);
         env(token::mint(issuer, 0), Txflags(tfTransferable));
         env.close();
-        uint256 const offerID =
-            keylet::nftokenOffer(issuer, SeqProxy::rawSequence(env.seq(issuer))).key;
+        std::uint32_t const offerSeq = env.seq(issuer);
+        UInt256 const offerID = keylet::nftokenOffer(issuer, SeqProxy::rawSequence(offerSeq)).key;
         env(token::createOffer(issuer, nftokenID0, drops(1)),
             token::Destination(buyer),
             Txflags(tfSellNFToken));
@@ -1549,9 +1581,39 @@ class LedgerEntry_test : public beast::unit_test::Suite
             BEAST_EXPECT(jrr[jss::node][sfNFTokenID.jsonName] == to_string(nftokenID0));
             BEAST_EXPECT(jrr[jss::node][sfAmount.jsonName] == "1");
         }
+        {
+            // Request by owner and seq.
+            json::Value jvParams;
+            jvParams[jss::nft_offer] = json::ValueType::Object;
+            jvParams[jss::nft_offer][jss::owner] = issuer.human();
+            jvParams[jss::nft_offer][jss::seq] = offerSeq;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::NFTokenOffer);
+            BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName] == issuer.human());
+            BEAST_EXPECT(jrr[jss::node][sfNFTokenID.jsonName] == to_string(nftokenID0));
+            BEAST_EXPECT(jrr[jss::node][sfAmount.jsonName] == "1");
+            BEAST_EXPECT(jrr[jss::index] == to_string(offerID));
+        }
+        {
+            // Request a non-existent offer by owner and seq.
+            json::Value jvParams;
+            jvParams[jss::nft_offer] = json::ValueType::Object;
+            jvParams[jss::nft_offer][jss::owner] = issuer.human();
+            jvParams[jss::nft_offer][jss::seq] = offerSeq + 1000;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+        }
 
         // negative tests
-        runLedgerEntryTest(env, jss::nft_offer);
+        runLedgerEntryTest(
+            env,
+            jss::nft_offer,
+            {
+                {.fieldName = jss::owner, .malformedErrorMsg = "malformedOwner"},
+                {.fieldName = jss::seq, .malformedErrorMsg = "malformedRequest"},
+            });
     }
 
     void
@@ -1613,7 +1675,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     sle->setFieldArray(sfDisabledValidators, disabledValidators);
                     sle->setFieldH256(
                         sfPreviousTxnID,
-                        uint256::fromVoid(
+                        UInt256::fromVoid(
                             "8D47FFE664BE6C335108DF689537625855A6"
                             "A95160CC6D351341B9"
                             "2624D9C5E3"));
@@ -1713,13 +1775,14 @@ class LedgerEntry_test : public beast::unit_test::Suite
             return jv;
         };
 
+        auto const payChanSeq = env.seq(alice);
         env(payChanCreate(alice, env.master, XRP(57), 18s, alice.pk()));
         env.close();
 
         std::string const ledgerHash{to_string(env.closed()->header().hash)};
 
-        uint256 const payChanIndex{
-            keylet::payChannel(alice, env.master, SeqProxy::rawSequence(env.seq(alice) - 1)).key};
+        UInt256 const payChanIndex{
+            keylet::payChannel(alice, env.master, SeqProxy::rawSequence(payChanSeq)).key};
         {
             // Request the payment channel using its index.
             json::Value jvParams;
@@ -1730,6 +1793,33 @@ class LedgerEntry_test : public beast::unit_test::Suite
             BEAST_EXPECT(jrr[jss::node][sfAmount.jsonName] == "57000000");
             BEAST_EXPECT(jrr[jss::node][sfBalance.jsonName] == "0");
             BEAST_EXPECT(jrr[jss::node][sfSettleDelay.jsonName] == 18);
+        }
+        {
+            // Request the payment channel by account, destination, and seq.
+            json::Value jvParams;
+            jvParams[jss::payment_channel] = json::ValueType::Object;
+            jvParams[jss::payment_channel][jss::account] = alice.human();
+            jvParams[jss::payment_channel][jss::destination] = env.master.human();
+            jvParams[jss::payment_channel][jss::seq] = payChanSeq;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfAmount.jsonName] == "57000000");
+            BEAST_EXPECT(jrr[jss::node][sfBalance.jsonName] == "0");
+            BEAST_EXPECT(jrr[jss::node][sfSettleDelay.jsonName] == 18);
+            BEAST_EXPECT(jrr[jss::index] == to_string(payChanIndex));
+        }
+        {
+            // Request a non-existent payment channel by account, destination, and seq.
+            json::Value jvParams;
+            jvParams[jss::payment_channel] = json::ValueType::Object;
+            jvParams[jss::payment_channel][jss::account] = alice.human();
+            jvParams[jss::payment_channel][jss::destination] = env.master.human();
+            jvParams[jss::payment_channel][jss::seq] = payChanSeq + 1000;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
         }
         {
             // Request an index that is not a payment channel.
@@ -1743,7 +1833,14 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         {
             // Malformed paychan field
-            runLedgerEntryTest(env, jss::payment_channel);
+            runLedgerEntryTest(
+                env,
+                jss::payment_channel,
+                {
+                    {.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
+                    {.fieldName = jss::destination, .malformedErrorMsg = "malformedAddress"},
+                    {.fieldName = jss::seq, .malformedErrorMsg = "malformedRequest"},
+                });
         }
     }
 
@@ -1892,7 +1989,70 @@ class LedgerEntry_test : public beast::unit_test::Suite
         testcase("Signer List");
         using namespace test::jtx;
         Env env{*this};
-        runLedgerEntryTest(env, jss::signer_list);
+        Account const alice{"alice"};
+        Account const bogie{"bogie"};
+        Account const demon{"demon"};
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        // Attach phantom signers to alice.
+        env(signers(alice, 1, {{bogie, 1}, {demon, 1}}));
+        env.close();
+
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
+        auto const signerListIndex = keylet::signerList(alice).key;
+        {
+            // Request by hash.
+            json::Value jvParams;
+            jvParams[jss::signer_list] = to_string(signerListIndex);
+            jvParams[jss::ledger_hash] = ledgerHash;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::SignerList);
+            BEAST_EXPECT(jrr[jss::node][sfSignerQuorum.jsonName] == 1);
+        }
+        {
+            // Request by account.
+            json::Value jvParams;
+            jvParams[jss::signer_list] = json::ValueType::Object;
+            jvParams[jss::signer_list][jss::account] = alice.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::SignerList);
+            BEAST_EXPECT(jrr[jss::node][sfSignerQuorum.jsonName] == 1);
+            BEAST_EXPECT(jrr[jss::index] == to_string(signerListIndex));
+        }
+        {
+            // Request a non-existent signer list by account.
+            json::Value jvParams;
+            jvParams[jss::signer_list] = json::ValueType::Object;
+            jvParams[jss::signer_list][jss::account] = env.master.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+        }
+        {
+            // Request an index that is not a signer list.
+            json::Value jvParams;
+            jvParams[jss::signer_list] = ledgerHash;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+        }
+
+        {
+            // Malformed signer_list fields
+            runLedgerEntryTest(
+                env,
+                jss::signer_list,
+                {
+                    {.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
+                });
+        }
     }
 
     void
@@ -2219,7 +2379,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         }
         for (int i = 0; i < accounts.size(); ++i)
         {
-            auto const jv = [&]() {
+            auto const jv = [&] {
                 // document id is uint32
                 if (i % 2)
                     return Oracle::ledgerEntry(env, accounts[i], oracles[i]);
@@ -2489,7 +2649,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value params;
 
                 // "field":[incorrect index hash]
-                auto const badKey = strHex(expectedKey.key + uint256{1});
+                auto const badKey = strHex(expectedKey.key + UInt256{1});
                 params[jss::ledger_index] = jss::validated;
                 params[field] = badKey;
                 auto const jv = env.rpc("json", "ledger_entry", to_string(params));
@@ -2508,7 +2668,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
             }
 
-            std::string const pdIdx = [&]() {
+            std::string const pdIdx = [&] {
                 {
                     json::Value params;
                     // Test good values
@@ -2707,7 +2867,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 // "hashes":[incorrect index hash]
                 {
                     json::Value params;
-                    auto const badKey = strHex(expectedKey.key + uint256{1});
+                    auto const badKey = strHex(expectedKey.key + UInt256{1});
                     params[jss::ledger_index] = jss::validated;
                     params[jss::hashes] = badKey;
                     auto const jv = env.rpc("json", "ledger_entry", to_string(params));

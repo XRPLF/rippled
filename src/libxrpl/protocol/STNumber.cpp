@@ -19,6 +19,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <limits>
 #include <ostream>
 #include <stdexcept>
@@ -170,7 +171,7 @@ partsFromString(std::string const& number)
     boost::smatch match;
 
     if (!boost::regex_match(number, match, kReNumber))
-        Throw<std::runtime_error>("'" + number + "' is not a number");
+        Throw<std::runtime_error>(std::format("'{}' is not a number", number));
 
     // Match fields:
     //   0 = whole input
@@ -196,7 +197,7 @@ partsFromString(std::string const& number)
     {
         // integer and fraction
         mantissa = boost::lexical_cast<std::uint64_t>(match[2] + match[4]);
-        exponent = -(match[4].length());
+        exponent = -match[4].length();
     }
 
     if (match[5].matched)

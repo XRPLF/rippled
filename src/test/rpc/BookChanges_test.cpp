@@ -110,14 +110,14 @@ public:
 
         Env env(*this, all);
         PermissionedDEX const permDex(env);
-        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] = permDex;
+        auto const& [gw, domainOwner, alice, bob, carol, usd, domainID, credType] = permDex;
 
         auto wsc = makeWSClient(env.app().config());
 
-        env(offer(alice, XRP(10), USD(10)), Domain(domainID));
+        env(offer(alice, XRP(10), usd(10)), Domain(domainID));
         env.close();
 
-        env(pay(bob, carol, USD(10)), Path(~USD), Sendmax(XRP(10)), Domain(domainID));
+        env(pay(bob, carol, usd(10)), Path(~usd), Sendmax(XRP(10)), Domain(domainID));
         env.close();
 
         std::string const txHash{
@@ -175,7 +175,7 @@ public:
 
         auto tx = std::make_shared<STTx const>(ttOFFER_CREATE, [](STObject&) {});
 
-        auto const test = [&](std::unordered_set<uint256, beast::Uhash<>> const& features) {
+        auto const test = [&](std::unordered_set<UInt256, beast::Uhash<>> const& features) {
             auto ledger = std::make_shared<Ledger>(
                 2,
                 NetClock::time_point{},
@@ -189,7 +189,7 @@ public:
             auto metaSerializer = std::make_shared<Serializer>();
             metadata->add(*metaSerializer);
 
-            ledger->rawTxInsert(uint256{1}, txSerializer, metaSerializer);
+            ledger->rawTxInsert(UInt256{1}, txSerializer, metaSerializer);
             ledger->setImmutable();
             ledger->setValidated();
 
@@ -206,8 +206,8 @@ public:
             }
         };
 
-        test(std::unordered_set<uint256, beast::Uhash<>>{});
-        test(std::unordered_set<uint256, beast::Uhash<>>{featureMPTokensV2});
+        test(std::unordered_set<UInt256, beast::Uhash<>>{});
+        test(std::unordered_set<UInt256, beast::Uhash<>>{featureMPTokensV2});
     }
 
     // Build a ledger whose transactions are OfferCreates carrying the supplied
@@ -219,7 +219,7 @@ public:
         auto ledger = std::make_shared<Ledger>(
             2,
             NetClock::time_point{},
-            Rules{std::unordered_set<uint256, beast::Uhash<>>{featureMPTokensV2}},
+            Rules{std::unordered_set<UInt256, beast::Uhash<>>{featureMPTokensV2}},
             env.current()->fees(),
             env.app().getNodeFamily());
 
@@ -257,7 +257,7 @@ public:
             auto metaSerializer = std::make_shared<Serializer>();
             metadata->add(*metaSerializer);
 
-            ledger->rawTxInsert(uint256{seq}, txSerializer, metaSerializer);
+            ledger->rawTxInsert(UInt256{seq}, txSerializer, metaSerializer);
         }
 
         ledger->setImmutable();

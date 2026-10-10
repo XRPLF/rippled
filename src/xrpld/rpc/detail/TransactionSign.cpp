@@ -191,7 +191,7 @@ acctMatchesPubKey(
     }
 
     // The last gasp is that we have public Regular key.
-    if ((sle.isFieldPresent(sfRegularKey)) && (publicKeyAcctID == sle.getAccountID(sfRegularKey)))
+    if (sle.isFieldPresent(sfRegularKey) && (publicKeyAcctID == sle.getAccountID(sfRegularKey)))
     {
         return RpcSuccess;
     }
@@ -259,10 +259,10 @@ checkPayment(
             RpcInvalidParams, "Cannot specify both 'tx_json.Paths' and 'build_path'");
     }
 
-    std::optional<uint256> domain;
+    std::optional<UInt256> domain;
     if (txJson.isMember(sfDomainID.jsonName))
     {
-        uint256 num;
+        UInt256 num;
         if (!txJson[sfDomainID.jsonName].isString() ||
             !num.parseHex(txJson[sfDomainID.jsonName].asString()))
         {
@@ -475,8 +475,7 @@ transactionPreProcessImpl(
 
     bool const verify = !(params.isMember(jss::offline) && params[jss::offline].asBool());
 
-    auto const signatureTarget =
-        [&params]() -> std::optional<std::reference_wrapper<SField const>> {
+    auto const signatureTarget = [&params] -> std::optional<std::reference_wrapper<SField const>> {
         if (params.isMember(jss::signature_target))
             return SField::getField(params[jss::signature_target].asString());
         return std::nullopt;
@@ -1256,7 +1255,7 @@ transactionSignFor(
         signer.setFieldVL(sfTxnSignature, signForParams.getSignature());
         signer.setFieldVL(sfSigningPubKey, signForParams.getPublicKey().slice());
 
-        STObject& sigTarget = [&]() -> STObject& {
+        STObject& sigTarget = [&] -> STObject& {
             auto const target = signForParams.getSignatureTarget();
             if (target)
                 return sttx->peekFieldObject(*target);

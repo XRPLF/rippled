@@ -1,4 +1,3 @@
-
 #include <test/jtx/Account.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
@@ -12,6 +11,7 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/tag.h>
@@ -128,14 +128,33 @@ class LoanBroker_test : public beast::unit_test::Suite
         failAll(all_ - featureSingleAssetVault - featureLendingProtocol);
         failAll(all_ - featureSingleAssetVault);
         failAll(all_ - featureLendingProtocol, true);
+
+        // Without featureLendingProtocolV1_2, private brokers and DomainID
+        // are rejected in preflight.
+        {
+            Env env(*this, all_ - featureLendingProtocolV1_2);
+
+            Account const alice{"alice"};
+            env.fund(XRP(10000), alice);
+
+            PrettyAsset const asset{xrpIssue(), 1'000'000};
+            Vault const vault{env};
+            auto const [tx, keylet] = vault.create({.owner = alice, .asset = asset});
+            env(tx);
+            env.close();
+
+            using namespace loan_broker;
+            env(set(alice, keylet.key, tfLoanBrokerPrivate), Ter(temINVALID_FLAG));
+            env(set(alice, keylet.key), kDomainId(uint256(1)), Ter(temDISABLED));
+        }
     }
 
     struct VaultInfo
     {
         jtx::PrettyAsset asset;
-        uint256 vaultID;
+        UInt256 vaultID;
         jtx::Account pseudoAccount;
-        VaultInfo(jtx::PrettyAsset const& asset, uint256 const& vaultId, AccountID const& pseudo)
+        VaultInfo(jtx::PrettyAsset const& asset, UInt256 const& vaultId, AccountID const& pseudo)
             : asset(asset), vaultID(vaultId), pseudoAccount("vault", pseudo)
         {
         }
@@ -152,9 +171,9 @@ class LoanBroker_test : public beast::unit_test::Suite
         VaultInfo const& vault,
         VaultInfo const& badVault,
         std::function<jtx::JTx(jtx::JTx const&)> modifyJTx,
-        std::function<void(SLE::const_ref)> checkBroker,
-        std::function<void(SLE::const_ref)> changeBroker,
-        std::function<void(SLE::const_ref)> checkChangedBroker)
+        std::function<void(SLE::ConstRef)> checkBroker,
+        std::function<void(SLE::ConstRef)> changeBroker,
+        std::function<void(SLE::ConstRef)> checkChangedBroker)
     {
         {
             auto const& asset = vault.asset.raw();
@@ -182,7 +201,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         using namespace loan_broker;
 
         // Bogus assets to use in test cases
-        static PrettyAsset const kBadMptAsset = [&]() {
+        static PrettyAsset const kBadMptAsset = [&] {
             MPTTester badMptt{env, evan, kMptInitNoFund};
             badMptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
             env.close();
@@ -197,7 +216,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
         env(set(alice, badVault.vaultID));
         env.close();
-        auto const badBrokerPseudo = [&]() {
+        auto const badBrokerPseudo = [&] {
             if (auto const le = env.le(badKeylet); BEAST_EXPECT(le))
             {
                 return Account{"Bad Broker pseudo-account", le->at(sfAccount)};
@@ -307,7 +326,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 };
 
             // Test Cover funding before allowing alterations
-            env(coverDeposit(alice, uint256(0), vault.asset(10)), Ter(temINVALID));
+            env(coverDeposit(alice, UInt256(0), vault.asset(10)), Ter(temINVALID));
             env(coverDeposit(evan, keylet.key, vault.asset(10)), Ter(tecNO_PERMISSION));
             env(coverDeposit(evan, keylet.key, vault.asset(0)), Ter(temBAD_AMOUNT));
             env(coverDeposit(evan, keylet.key, vault.asset(-10)), Ter(temBAD_AMOUNT));
@@ -318,7 +337,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             // Test cover clawback failure cases BEFORE depositing any cover
             // Need one of brokerID or amount
             env(coverClawback(alice), Ter(temINVALID));
-            env(coverClawback(alice), kLoanBrokerId(uint256(0)), Ter(temINVALID));
+            env(coverClawback(alice), kLoanBrokerId(UInt256(0)), Ter(temINVALID));
             env(coverClawback(alice), kAmount(XRP(1000)), Ter(temBAD_AMOUNT));
             env(coverClawback(alice), kAmount(vault.asset(-10)), Ter(temBAD_AMOUNT));
             // Clawbacks with an MPT need to specify the broker ID
@@ -377,7 +396,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             verifyCoverAmount(10);
 
             // Test withdrawal failure cases
-            env(coverWithdraw(alice, uint256(0), vault.asset(10)), Ter(temINVALID));
+            env(coverWithdraw(alice, UInt256(0), vault.asset(10)), Ter(temINVALID));
             env(coverWithdraw(evan, keylet.key, vault.asset(10)), Ter(tecNO_PERMISSION));
             env(coverWithdraw(evan, keylet.key, vault.asset(0)), Ter(temBAD_AMOUNT));
             env(coverWithdraw(evan, keylet.key, vault.asset(-10)), Ter(temBAD_AMOUNT));
@@ -620,7 +639,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(50)}));
             env.close();
         }
-        VaultInfo const badVault = [&]() -> VaultInfo {
+        VaultInfo const badVault = [&] -> VaultInfo {
             auto [tx, keylet] = vault.create({.owner = alice, .asset = iouAsset});
             env(tx);
             env.close();
@@ -736,7 +755,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 badVault,
                 // No modifications
                 {},
-                [&](SLE::const_ref broker) {
+                [&](SLE::ConstRef broker) {
                     // Extra checks
                     BEAST_EXPECT(!broker->isFieldPresent(sfManagementFeeRate));
                     BEAST_EXPECT(!broker->isFieldPresent(sfCoverRateMinimum));
@@ -749,7 +768,7 @@ class LoanBroker_test : public beast::unit_test::Suite
 
                     BEAST_EXPECT(env.ownerCount(alice) == aliceOriginalCount + 4);
                 },
-                [&](SLE::const_ref broker) {
+                [&](SLE::ConstRef broker) {
                     // Modifications
 
                     // Update the fields
@@ -810,7 +829,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                         kData(testData),
                         kDebtMaximum(debtMax));
                 },
-                [&](SLE::const_ref broker) {
+                [&](SLE::ConstRef broker) {
                     // Check the updated fields
                     BEAST_EXPECT(checkVL(broker->at(sfData), testData));
                     Number const expected = STAmount{vault.asset, Number(175, -1)};
@@ -841,7 +860,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                         kCoverRateMinimum(TenthBips32(100)),
                         kCoverRateLiquidation(TenthBips32(200)));
                 },
-                [&](SLE::const_ref broker) {
+                [&](SLE::ConstRef broker) {
                     // Extra checks
                     BEAST_EXPECT(broker->at(sfManagementFeeRate) == 123);
                     BEAST_EXPECT(broker->at(sfCoverRateMinimum) == 100);
@@ -849,14 +868,14 @@ class LoanBroker_test : public beast::unit_test::Suite
                     BEAST_EXPECT(broker->at(sfDebtMaximum) == Number(9));
                     BEAST_EXPECT(checkVL(broker->at(sfData), testData));
                 },
-                [&](SLE::const_ref broker) {
+                [&](SLE::ConstRef broker) {
                     // Reset Data & Debt maximum to default values
                     env(set(alice, vault.vaultID),
                         kLoanBrokerId(broker->key()),
                         kData(""),
                         kDebtMaximum(Number(0)));
                 },
-                [&](SLE::const_ref broker) {
+                [&](SLE::ConstRef broker) {
                     // Check the updated fields
                     BEAST_EXPECT(!broker->isFieldPresent(sfData));
                     BEAST_EXPECT(!broker->isFieldPresent(sfDebtMaximum));
@@ -884,7 +903,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.fund(XRP(100'000), issuer, alice);
         env.close();
 
-        PrettyAsset const asset = [&]() {
+        PrettyAsset const asset = [&] {
             if (getAsset)
                 return getAsset(env, issuer, alice);
             env(trust(alice, issuer["IOU"](1'000'000)));
@@ -899,12 +918,12 @@ class LoanBroker_test : public beast::unit_test::Suite
         env(tx);
         env.close();
         auto const le = env.le(vaultKeylet);
-        VaultInfo vaultInfo = [&]() {
+        VaultInfo vaultInfo = [&] {
             if (BEAST_EXPECT(le))
                 return VaultInfo{asset, vaultKeylet.key, le->at(sfAccount)};
             return VaultInfo{asset, {}, {}};
         }();
-        if (vaultInfo.vaultID == uint256{})
+        if (vaultInfo.vaultID == UInt256{})
             return;
 
         env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50)}));
@@ -925,7 +944,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             jv[sfLoanBrokerID] = "";
             env(jv, Ter(temINVALID));
             // zero broker ID
-            jv[sfLoanBrokerID] = to_string(uint256{});
+            jv[sfLoanBrokerID] = to_string(UInt256{});
             // needs a flag to distinguish the parsed STTx from the prior
             // test
             env(jv, Txflags(tfFullyCanonicalSig), Ter(temINVALID));
@@ -936,7 +955,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             jv[sfVaultID] = "";
             env(jv, Ter(temINVALID));
             // zero broker ID
-            jv[sfVaultID] = to_string(uint256{});
+            jv[sfVaultID] = to_string(UInt256{});
             // needs a flag to distinguish the parsed STTx from the prior
             // test
             env(jv, Txflags(tfFullyCanonicalSig), Ter(temINVALID));
@@ -945,7 +964,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         if (brokerTest == LoanBrokerTest::CoverDeposit)
         {
             // preflight: temINVALID (empty/zero broker id)
-            testZeroBrokerID([&]() { return coverDeposit(alice, brokerKeylet.key, asset(10)); });
+            testZeroBrokerID([&] { return coverDeposit(alice, brokerKeylet.key, asset(10)); });
 
             // preclaim: tecWRONG_ASSET
             env(coverDeposit(alice, brokerKeylet.key, issuer["BAD"](10)), Ter(tecWRONG_ASSET));
@@ -967,7 +986,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         if (brokerTest == LoanBrokerTest::CoverWithdraw)
         {
             // preflight: temINVALID (empty/zero broker id)
-            testZeroBrokerID([&]() { return coverWithdraw(alice, brokerKeylet.key, asset(10)); });
+            testZeroBrokerID([&] { return coverWithdraw(alice, brokerKeylet.key, asset(10)); });
 
             // preclaim: tecWRONG_ASSET
             env(coverWithdraw(alice, brokerKeylet.key, issuer["BAD"](10)), Ter(tecWRONG_ASSET));
@@ -1005,7 +1024,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         if (brokerTest == LoanBrokerTest::CoverClawback)
         {
             // preflight: temINVALID (empty/zero broker id)
-            testZeroBrokerID([&]() {
+            testZeroBrokerID([&] {
                 return env.json(
                     coverClawback(alice),
                     kLoanBrokerId(brokerKeylet.key),
@@ -1048,7 +1067,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 Fee(env.current()->fees().base * 2));
 
             // preflight: temINVALID (empty/zero broker id)
-            testZeroBrokerID([&]() { return del(alice, brokerKeylet.key); });
+            testZeroBrokerID([&] { return del(alice, brokerKeylet.key); });
 
             // preclaim: tecHAS_OBLIGATIONS
             env(del(alice, brokerKeylet.key), Ter(tecHAS_OBLIGATIONS));
@@ -1074,11 +1093,11 @@ class LoanBroker_test : public beast::unit_test::Suite
         if (brokerTest == LoanBrokerTest::Set)
         {
             // preflight: temINVALID (empty/zero broker id)
-            testZeroBrokerID([&]() {
+            testZeroBrokerID([&] {
                 return env.json(set(alice, vaultInfo.vaultID), kLoanBrokerId(brokerKeylet.key));
             });
             // preflight: temINVALID (empty/zero vault id)
-            testZeroVaultID([&]() {
+            testZeroVaultID([&] {
                 return env.json(set(alice, vaultInfo.vaultID), kLoanBrokerId(brokerKeylet.key));
             });
 
@@ -1299,12 +1318,12 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         auto const le = env.le(vaultKeylet);
-        VaultInfo vaultInfo = [&]() {
+        VaultInfo vaultInfo = [&] {
             if (BEAST_EXPECT(le))
                 return VaultInfo{asset, vaultKeylet.key, le->at(sfAccount)};
             return VaultInfo{asset, {}, {}};
         }();
-        if (vaultInfo.vaultID == uint256{})
+        if (vaultInfo.vaultID == UInt256{})
             return;
 
         // Can't unauthorize Vault pseudo-account
@@ -1389,7 +1408,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.fund(XRP(100'000), issuer, alice);
         env.close();
 
-        PrettyAsset const asset = [&]() {
+        PrettyAsset const asset = [&] {
             MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
             env.close();
@@ -1406,12 +1425,12 @@ class LoanBroker_test : public beast::unit_test::Suite
         env(tx);
         env.close();
         auto const le = env.le(vaultKeylet);
-        VaultInfo const vaultInfo = [&]() {
+        VaultInfo const vaultInfo = [&] {
             if (BEAST_EXPECT(le))
                 return VaultInfo{asset, vaultKeylet.key, le->at(sfAccount)};
             return VaultInfo{asset, {}, {}};
         }();
-        if (vaultInfo.vaultID == uint256{})
+        if (vaultInfo.vaultID == UInt256{})
             return;
 
         env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50)}));
@@ -1601,7 +1620,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 // issuer has already issued MaximumAmount. MaximumAmount is
                 // default.
                 {kMaxMpTokenAmount, std::nullopt, 250, tecINSUFFICIENT_FUNDS},
-            };
+        };
         for (auto const& [pay, max, deposit, err] : mptTests)
         {
             test([&](Env& env) -> std::tuple<MPT, PrettyAmount, TER> {
@@ -1759,6 +1778,119 @@ class LoanBroker_test : public beast::unit_test::Suite
             BEAST_EXPECT(aliceBalanceAfter > aliceBalanceBefore);
 
             // Verify the locked MPToken was deleted
+            BEAST_EXPECT(env.le(pseudoMptKey) == nullptr);
+        }
+    }
+
+    // LoanBrokerDelete should succeed even when an unrelated third party
+    // holds a confidential balance. The broker pseudo-account carries no
+    // confidential fields of its own, but pre-fixCleanup3_5_0 the erase
+    // was rejected.
+    void
+    testLoanBrokerDeleteConfidentialCOA(FeatureBitset features)
+    {
+        testcase << "LoanBrokerDelete - unrelated confidential holder";
+        using namespace jtx;
+        using namespace loan_broker;
+
+        auto const withFix = features[fixCleanup3_5_0];
+
+        Account const issuer("issuer");
+        Account const alice("alice");
+        // carol holds the same MPT but has no relationship to the vault, the
+        // broker, or alice.
+        Account const carol("carol");
+
+        for (bool const carolConverts : {false, true})
+        {
+            Env env(*this, features);
+            env.fund(XRP(100'000), issuer, alice, carol);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance});
+
+            PrettyAsset const mpt{mptt.issuanceID()};
+
+            mptt.authorize({.account = alice});
+            mptt.authorize({.account = carol});
+            env(pay(issuer, alice, mpt(100'000)));
+            env(pay(issuer, carol, mpt(100)));
+            env.close();
+
+            // The issuer must publish an encryption key before any holder can
+            // convert into confidential form.
+            mptt.generateKeyPair(issuer);
+            mptt.set({.account = issuer, .issuerPubKey = mptt.getPubKey(issuer)});
+
+            Vault const vault{env};
+            auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = mpt});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = mpt(10'000)}));
+            env.close();
+
+            auto const brokerKeylet =
+                keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+            env(set(alice, vaultKeylet.key));
+            env.close();
+
+            env(coverDeposit(alice, brokerKeylet.key, mpt(5'000).value()));
+            env.close();
+
+            auto const broker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(broker))
+                return;
+            BEAST_EXPECT(broker->at(sfCoverAvailable) > 0);
+
+            auto const brokerPseudoID = broker->at(sfAccount);
+            auto const pseudoMptKey = keylet::mptoken(mptt.issuanceID(), brokerPseudoID);
+            if (!BEAST_EXPECT(env.le(pseudoMptKey)))
+                return;
+
+            // The broker pseudo-account has no signing key, so it can never
+            // submit a confidential transaction and its MPToken holds none of
+            // the four ciphertext fields.
+            Account const brokerHolder("broker", brokerPseudoID);
+            BEAST_EXPECT(!mptt.getEncryptedBalance(brokerHolder, MPTTester::holderEncryptedInbox));
+            BEAST_EXPECT(
+                !mptt.getEncryptedBalance(brokerHolder, MPTTester::holderEncryptedSpending));
+            BEAST_EXPECT(
+                !mptt.getEncryptedBalance(brokerHolder, MPTTester::issuerEncryptedBalance));
+            BEAST_EXPECT(
+                !mptt.getEncryptedBalance(brokerHolder, MPTTester::auditorEncryptedBalance));
+
+            if (carolConverts)
+            {
+                mptt.generateKeyPair(carol);
+                mptt.convert({.account = carol, .amt = 1, .holderPubKey = mptt.getPubKey(carol)});
+            }
+
+            BEAST_EXPECT(mptt.getIssuanceConfidentialBalance() == (carolConverts ? 1 : 0));
+
+            if (carolConverts && !withFix)
+            {
+                // The cover is non-zero at the start of the transaction, so
+                // the erase is flagged and carol's COA rejects it.
+                env(del(alice, brokerKeylet.key), Ter(tecINVARIANT_FAILED));
+                env.close();
+                BEAST_EXPECT(env.le(brokerKeylet) != nullptr);
+                BEAST_EXPECT(env.le(pseudoMptKey) != nullptr);
+
+                // Draining the cover in an earlier transaction leaves the
+                // MPToken's pre-transaction balance at zero, which sidesteps
+                // the flag entirely.
+                env(coverWithdraw(alice, brokerKeylet.key, mpt(5'000).value()));
+                env.close();
+            }
+
+            // With the fix the balance is read at erase time, so returning
+            // the cover and deleting the broker in one transaction succeeds
+            // regardless of carol's confidential balance.
+            env(del(alice, brokerKeylet.key));
+            env.close();
+            BEAST_EXPECT(env.le(brokerKeylet) == nullptr);
             BEAST_EXPECT(env.le(pseudoMptKey) == nullptr);
         }
     }
@@ -1979,7 +2111,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             env(coverDeposit(alice, brokerKeylet.key, asset(10)));
             env.close();
 
-            auto runTests = [&]() {
+            auto runTests = [&] {
                 auto const fix330Enabled = env.current()->rules().enabled(fixCleanup3_3_0);
 
                 // Global freeze
@@ -2052,7 +2184,7 @@ class LoanBroker_test : public beast::unit_test::Suite
 
             // For MPT isDeepFrozen == isFrozen, so all locks block in
             // both pre- and post-fix. No behavioral difference.
-            auto runTests = [&]() {
+            auto runTests = [&] {
                 // Global lock
                 mptt.set({.flags = tfMPTLock});
                 env.close();
@@ -2126,7 +2258,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env(coverDeposit(alice, brokerKeylet.key, asset(10)));
         env.close();
 
-        auto runTests = [&]() {
+        auto runTests = [&] {
             auto const fix330Enabled = env.current()->rules().enabled(fixCleanup3_3_0);
 
             // Set a regular individual freeze on alice's IOU trustline.
@@ -2199,7 +2331,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             env.fund(XRP(1'000), dest);
             env(trust(dest, asset(1'000)));
 
-            auto runTests = [&]() {
+            auto runTests = [&] {
                 auto const fix330Enabled = env.current()->rules().enabled(fixCleanup3_3_0);
                 TER const expectedTec = fix330Enabled ? TER(tecFROZEN) : TER(tesSUCCESS);
 
@@ -2316,7 +2448,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             mptt.authorize({.account = dest});
             env.close();
 
-            auto runTests = [&]() {
+            auto runTests = [&] {
                 auto const withFix = env.current()->rules().enabled(fixCleanup3_3_0);
                 // Only submitter-to-dest differs: post-fix blocks, pre-fix
                 // doesn't (BUG). All other locks block in both because for
@@ -2532,7 +2664,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             env.fund(XRP(1'000), issuer, broker, dest);
             env.close();
 
-            auto const maybeToken = [&]() -> std::optional<MPT> {
+            auto const maybeToken = [&] -> std::optional<MPT> {
                 switch (mptState)
                 {
                     case MPTState::RequireAuth: {
@@ -2671,7 +2803,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env(loan_broker::coverDeposit(broker, brokerKeylet.key, asset(500)));
         env.close();
 
-        auto coverWithdrawToDest = [&]() {
+        auto coverWithdrawToDest = [&] {
             return loan_broker::coverWithdraw(broker, brokerKeylet.key, asset(10));
         };
 
@@ -2968,6 +3100,267 @@ class LoanBroker_test : public beast::unit_test::Suite
         runTestCases(all_ - fixCleanup3_2_0);
     }
 
+    void
+    testPrivateLoanBroker()
+    {
+        testcase("Private Loan Broker with Permissioned Domain");
+        using namespace jtx;
+        using namespace loan_broker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const credIssuer{"credIssuer"};
+        std::string const credType = "LoanCredential";
+
+        Env env{*this, all_};
+        Vault const vault{env};
+
+        env.fund(XRP(100'000), issuer, alice, credIssuer);
+        env.close();
+
+        // Create an IOU asset and vault
+        env(trust(alice, issuer["IOU"](1'000'000)));
+        env.close();
+        PrettyAsset const asset{issuer["IOU"]};
+        env(pay(issuer, alice, asset(100'000)));
+        env.close();
+
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(tx);
+        env.close();
+
+        // Create a permissioned domain
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
+        env(pdomain::setTx(credIssuer, credentials));
+        env.close();
+        auto const domainId = pdomain::getNewDomain(env.meta());
+        BEAST_EXPECT(domainId != beast::kZero);
+
+        auto const brokerKeylet =
+            keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+        {
+            testcase("Create a private loan broker with DomainID");
+            env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate), kDomainId(domainId));
+            env.close();
+        }
+
+        {
+            testcase("Verify the broker was created with the correct flags and DomainID");
+            auto const sleBroker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+            {
+                return;
+            }
+            BEAST_EXPECT(sleBroker->isFlag(lsfLoanBrokerPrivate));
+            BEAST_EXPECT(sleBroker->at(~sfDomainID) == domainId);
+        }
+
+        {
+            testcase("Cannot create public broker with DomainID");
+            // Public broker (no tfLoanBrokerPrivate) with DomainID should fail
+            env(set(alice, vaultKeylet.key), kDomainId(domainId), Ter(temINVALID));
+        }
+
+        {
+            testcase("Cannot create broker with zero DomainID");
+            env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate),
+                kDomainId(beast::kZero),
+                Ter(temMALFORMED));
+        }
+
+        {
+            testcase("Cannot create broker with non-existent DomainID");
+            uint256 fakeDomainId;
+            BEAST_EXPECT(fakeDomainId.parseHex(
+                "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF"));
+            env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate),
+                kDomainId(fakeDomainId),
+                Ter(tecOBJECT_NOT_FOUND));
+        }
+    }
+
+    void
+    testPrivateLoanBrokerModify()
+    {
+        testcase("Modify Private Loan Broker DomainID");
+        using namespace jtx;
+        using namespace loan_broker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const credIssuer{"credIssuer"};
+        std::string const credType = "LoanCredential";
+
+        Env env{*this, all_};
+        Vault const vault{env};
+
+        env.fund(XRP(100'000), issuer, alice, credIssuer);
+        env.close();
+
+        // Create an IOU asset and vault
+        env(trust(alice, issuer["IOU"](1'000'000)));
+        env.close();
+        PrettyAsset const asset{issuer["IOU"]};
+        env(pay(issuer, alice, asset(100'000)));
+        env.close();
+
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(tx);
+        env.close();
+
+        // Create two permissioned domains
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
+        env(pdomain::setTx(credIssuer, credentials));
+        env.close();
+        auto const domainId1 = pdomain::getNewDomain(env.meta());
+
+        env(pdomain::setTx(credIssuer, credentials));
+        env.close();
+        auto const domainId2 = pdomain::getNewDomain(env.meta());
+
+        // Create a private loan broker with DomainID
+        auto const brokerKeylet =
+            keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+        env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate), kDomainId(domainId1));
+        env.close();
+
+        {
+            testcase("Modify DomainID to a different domain");
+            env(set(alice, vaultKeylet.key), kLoanBrokerId(brokerKeylet.key), kDomainId(domainId2));
+            env.close();
+            auto const sleBroker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+            {
+                return;
+            }
+            BEAST_EXPECT(sleBroker->at(~sfDomainID) == domainId2);
+        }
+
+        {
+            testcase("Clear DomainID by setting to zero");
+            env(set(alice, vaultKeylet.key),
+                kLoanBrokerId(brokerKeylet.key),
+                kDomainId(beast::kZero));
+            env.close();
+            auto const sleBroker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+            {
+                return;
+            }
+            BEAST_EXPECT(!sleBroker->at(~sfDomainID));
+        }
+
+        {
+            testcase("Set DomainID back");
+            env(set(alice, vaultKeylet.key), kLoanBrokerId(brokerKeylet.key), kDomainId(domainId1));
+            env.close();
+            auto const sleBroker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+            {
+                return;
+            }
+            BEAST_EXPECT(sleBroker->at(~sfDomainID) == domainId1);
+        }
+
+        uint256 fakeDomainId;
+        BEAST_EXPECT(fakeDomainId.parseHex(
+            "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF"));
+
+        {
+            testcase("Cannot modify DomainID to a non-existent domain");
+            env(set(alice, vaultKeylet.key),
+                kLoanBrokerId(brokerKeylet.key),
+                kDomainId(fakeDomainId),
+                Ter(tecOBJECT_NOT_FOUND));
+            env.close();
+            auto const sleBroker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+            {
+                return;
+            }
+
+            // DomainID must be unchanged
+            BEAST_EXPECT(sleBroker->at(~sfDomainID) == domainId1);
+        }
+
+        {
+            testcase("Updating other fields without specifying DomainID does not affect DomainID");
+            env(set(alice, vaultKeylet.key),
+                kLoanBrokerId(brokerKeylet.key),
+                kData("test_data"),
+                kDebtMaximum(Number(1000)));
+            env.close();
+            auto const sleBroker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+            {
+                return;
+            }
+            // DomainID should be preserved
+            BEAST_EXPECT(sleBroker->at(~sfDomainID) == domainId1);
+            // Other fields should be updated
+            BEAST_EXPECT(sleBroker->isFieldPresent(sfData));
+            BEAST_EXPECT(sleBroker->at(~sfDebtMaximum) == Number(1000));
+        }
+
+        {
+            testcase("Updating only DomainID does not affect other fields");
+            env(set(alice, vaultKeylet.key), kLoanBrokerId(brokerKeylet.key), kDomainId(domainId2));
+            env.close();
+            auto const sleBroker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+            {
+                return;
+            }
+            // DomainID should be updated
+            BEAST_EXPECT(sleBroker->at(~sfDomainID) == domainId2);
+            // Other fields should be preserved
+            BEAST_EXPECT(sleBroker->isFieldPresent(sfData));
+            BEAST_EXPECT(sleBroker->at(~sfDebtMaximum) == Number(1000));
+        }
+
+        {
+            testcase("Cannot set tfLoanBrokerPrivate when modifying (flag is immutable)");
+            env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate),
+                kLoanBrokerId(brokerKeylet.key),
+                Ter(temINVALID));
+        }
+
+        auto const publicBrokerKeylet =
+            keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+        {
+            testcase("Create a public broker and try to set DomainID on it");
+            env(set(alice, vaultKeylet.key));  // No tfLoanBrokerPrivate = public
+            env.close();
+            auto const sleBroker = env.le(publicBrokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+            {
+                return;
+            }
+            BEAST_EXPECT(!sleBroker->isFlag(lsfLoanBrokerPrivate));
+        }
+
+        // Cannot set DomainID on public broker
+        env(set(alice, vaultKeylet.key),
+            kLoanBrokerId(publicBrokerKeylet.key),
+            kDomainId(domainId1),
+            Ter(tecNO_PERMISSION));
+
+        // Cannot set DomainID to even zero on public broker
+        env(set(alice, vaultKeylet.key),
+            kLoanBrokerId(publicBrokerKeylet.key),
+            kDomainId(beast::kZero),
+            Ter(tecNO_PERMISSION));
+        env.close();
+
+        // A non-existent domain on a public broker is rejected for being set on
+        // a public broker first: the broker checks precede the domain check.
+        env(set(alice, vaultKeylet.key),
+            kLoanBrokerId(publicBrokerKeylet.key),
+            kDomainId(fakeDomainId),
+            Ter(tecNO_PERMISSION));
+        env.close();
+    }
+
 public:
     void
     run() override
@@ -3003,6 +3396,11 @@ public:
 
         testLoanBrokerDeleteFrozenIOU(all_);
         testLoanBrokerDeleteFrozenIOU(all_ - fixCleanup3_2_0);
+
+        testPrivateLoanBroker();
+        testPrivateLoanBrokerModify();
+        testLoanBrokerDeleteConfidentialCOA(all_);
+        testLoanBrokerDeleteConfidentialCOA(all_ - fixCleanup3_5_0);
 
         // featureMPTokensV2 independently makes ValidMPTTransfer enforcing,
         // but it's Supported::No (never enabled on real networks); exclude

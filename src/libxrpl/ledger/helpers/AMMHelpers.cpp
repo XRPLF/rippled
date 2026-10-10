@@ -213,7 +213,7 @@ adjustAmountsByLPTokens(
 
     if (lpTokensActual < lpTokens)
     {
-        bool const ammRoundingEnabled = [&]() {
+        bool const ammRoundingEnabled = [&] {
             if (auto const& rules = getCurrentTransactionRules();
                 rules && rules->enabled(fixAMMv1_1))
                 return true;
@@ -238,7 +238,7 @@ adjustAmountsByLPTokens(
         }
 
         // Single trade
-        auto const amountActual = [&]() {
+        auto const amountActual = [&] {
             if (isDeposit == IsDeposit::Yes)
             {
                 return ammAssetIn(amountBalance, lptAMMBalance, lpTokensActual, tfee);
@@ -481,7 +481,7 @@ ammHolds(
     AuthHandling authHandling,
     beast::Journal const j)
 {
-    auto const assets = [&]() -> std::optional<std::pair<Asset, Asset>> {
+    auto const assets = [&] -> std::optional<std::pair<Asset, Asset>> {
         auto const asset1 = ammSle[sfAsset];
         auto const asset2 = ammSle[sfAsset2];
         if (optAsset1 && optAsset2)
@@ -670,7 +670,7 @@ deleteAMMTrustLines(
         sb,
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
-            uint256 const&,
+            UInt256 const&,
             SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM and MPToken
             if (nodeType == ltAMM || nodeType == ltMPTOKEN)
@@ -706,7 +706,7 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
         sb,
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
-            uint256 const&,
+            UInt256 const&,
             SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM
             if (nodeType == ltAMM)

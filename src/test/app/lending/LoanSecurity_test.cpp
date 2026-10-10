@@ -239,7 +239,7 @@ private:
                 closePaymentFee};
 
         // Collect vault NAV before closing payment
-        auto const vaultId2 = brokerSle2 ? brokerSle2->at(sfVaultID) : uint256{};
+        auto const vaultId2 = brokerSle2 ? brokerSle2->at(sfVaultID) : UInt256{};
         auto const vaultKey2 = keylet::vault(vaultId2);
         auto const vaultBefore = env.le(vaultKey2);
         BEAST_EXPECT(vaultBefore);
@@ -331,13 +331,13 @@ private:
         auto broker = std::get<BrokerInfo>(*loanResult);
         auto loanKeylet = std::get<Keylet>(*loanResult);
 
-        using tp = NetClock::time_point;
-        using d = NetClock::duration;
+        using Tp = NetClock::time_point;
+        using D = NetClock::duration;
 
         auto state = getCurrentState(env, broker, loanKeylet);
         if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
-            env.close(tp{d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
+            env.close(Tp{D{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }
 
         topUpBorrower(env, broker, issuer, borrower, state, loanParams.serviceFee);
@@ -678,10 +678,10 @@ private:
         auto const broker = createVaultAndBroker(env, xrpAsset, lender);
 
         Number const principalRequest{1, 3};
-        auto createNewLoan = [&]() {
+        auto createNewLoan = [&] {
             auto const sleBroker = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(sleBroker))
-                return keylet::loan(uint256{});
+                return keylet::loan(UInt256{});
             auto const lk =
                 keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
             env(set(borrower, broker.brokerID, broker.asset(principalRequest).value()),

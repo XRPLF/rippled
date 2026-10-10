@@ -56,7 +56,7 @@ class InvariantsAMM_test : public InvariantsBase
         STAmount const nonZeroLP{lptIssue, 1};
 
         auto const makeAMM = [](STAmount const& lptBalance) {
-            auto sleAMM = std::make_shared<SLE>(keylet::amm(uint256(1)));
+            auto sleAMM = std::make_shared<SLE>(keylet::amm(UInt256(1)));
             sleAMM->setFieldAmount(sfLPTokenBalance, lptBalance);
             return sleAMM;
         };
@@ -129,7 +129,7 @@ class InvariantsAMM_test : public InvariantsBase
         using namespace jtx;
 
         MPTID mptID{};
-        uint256 ammID{};
+        UInt256 ammID{};
         AccountID ammAccountID{};
         Account const gw{"gw"};
         Issue lptIssue{};
@@ -189,7 +189,7 @@ class InvariantsAMM_test : public InvariantsBase
                 {tecINVARIANT_FAILED, error},
                 [&](Account const&, Account const&, Env& env) {
                     env.fund(XRP(1'000), gw);
-                    poolAsset = [&]() -> PrettyAsset {
+                    poolAsset = [&] -> PrettyAsset {
                         if (isMPT)
                         {
                             MPT const mpt = MPTTester({.env = env, .issuer = gw});

@@ -77,7 +77,7 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
                 else
                 {
                     // If there are no more children, don't push this node
-                    while ((pos != kBranchFactor - 1u) && (node->isEmptyBranch(pos + 1)))
+                    while ((pos != kBranchFactor - 1u) && node->isEmptyBranch(pos + 1))
                         ++pos;
 
                     if (pos != kBranchFactor - 1u)
@@ -299,7 +299,7 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
             // with the parent of this node
             mn.resumes[parent] = parentID;
         }
-        else if ((mn.max > 0) && (mn.missingHashes.insert(nodeHash).second))
+        else if ((mn.max > 0) && mn.missingHashes.insert(nodeHash).second)
         {
             mn.missingNodes.emplace_back(parentID.getChildNodeID(branch), nodeHash.asUInt256());
             --mn.max;
@@ -316,7 +316,7 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
  * but not available locally.  The filter can hold alternate sources of
  * nodes that are not permanently stored locally
  */
-std::vector<std::pair<SHAMapNodeID, uint256>>
+std::vector<std::pair<SHAMapNodeID, UInt256>>
 SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
 {
     XRPL_ASSERT(root_->getHash().isNonZero(), "xrpl::SHAMap::getMissingNodes : nonzero root hash");
@@ -746,14 +746,14 @@ SHAMap::hasInnerNode(SHAMapNodeID const& targetNodeID, SHAMapHash const& targetN
         nodeID = nodeID.getChildNodeID(branch);
     }
 
-    return (node->isInner()) && (node->getHash() == targetNodeHash);
+    return node->isInner() && (node->getHash() == targetNodeHash);
 }
 
 /**
  * Does this map have this leaf node?
  */
 bool
-SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
+SHAMap::hasLeafNode(UInt256 const& tag, SHAMapHash const& targetNodeHash) const
 {
     auto node = root_.get();
     SHAMapNodeID nodeID;
@@ -791,7 +791,7 @@ SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
 }
 
 std::optional<std::vector<Blob>>
-SHAMap::getProofPath(uint256 const& key) const
+SHAMap::getProofPath(UInt256 const& key) const
 {
     NodePathStack stack;
     walkTowardsKey(key, &stack);
@@ -824,7 +824,7 @@ SHAMap::getProofPath(uint256 const& key) const
 }
 
 bool
-SHAMap::verifyProofPath(uint256 const& rootHash, uint256 const& key, std::vector<Blob> const& path)
+SHAMap::verifyProofPath(UInt256 const& rootHash, UInt256 const& key, std::vector<Blob> const& path)
 {
     if (path.empty() || path.size() > kLeafDepth + 1u)
         return false;
