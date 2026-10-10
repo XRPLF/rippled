@@ -598,6 +598,31 @@ constexpr json::Int kServerOverloaded = -32604;
 constexpr json::Int kForbidden = -32605;
 constexpr json::Int kWrongVersion = -32606;
 
+/**
+ * The HTTP status the `ripplerpc: "3.0"` envelope reports for @p code.
+ *
+ * The codes below answer 200, which is what a client calling `account_info`
+ * this way already reads. The list is closed: a code belongs on it only if it
+ * already answered a coded reply at this status.
+ *
+ * @param code The error code the reply reports.
+ * @return The HTTP status the reply is sent with.
+ */
+static int
+legacyHttpStatus(ErrorCodeI code)
+{
+    switch (code)
+    {
+        case RpcActMalformed:
+        case RpcActNotFound:
+        case RpcAlreadyMultisig:
+        case RpcAlreadySingleSig:
+            return 200;
+        default:
+            return rpc::errorCodeHttpStatus(code);
+    }
+}
+
 void
 ServerHandler::processRequest(
     Port const& port,
@@ -970,7 +995,7 @@ ServerHandler::processRequest(
                 reply[jss::error][jss::error_code].isInt())
             {
                 int const errCode = reply[jss::error][jss::error_code].asInt();
-                return rpc::errorCodeHttpStatus(static_cast<ErrorCodeI>(errCode));
+                return legacyHttpStatus(static_cast<ErrorCodeI>(errCode));
             }
         }
         // Return OK.
