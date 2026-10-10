@@ -1175,6 +1175,30 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 95, TransactionProposalCreate,
     {sfExpiration, SoeRequired},
 }))
 
+/** This transaction type pre-authorizes a holder for one of the issuer's
+    tokens, or removes a pre-authorization. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/TokenPreauth.h>
+#endif
+TRANSACTION(ttTOKEN_PREAUTH, 98, TokenPreauth,
+    ({.delegable = Delegation::Delegable, .amendment = featureTokenPreauth}),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfHolder, SoeRequired},
+}))
+
+/** This transaction type blocks a holder from one of the issuer's tokens, or
+    removes a block. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/TokenBlock.h>
+#endif
+TRANSACTION(ttTOKEN_BLOCK, 99, TokenBlock,
+    ({.delegable = Delegation::Delegable, .amendment = featureTokenPreauth}),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfHolder, SoeRequired},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html

@@ -72,3 +72,10 @@ GRANULAR_PERMISSION(MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET, 65547, tfUniver
 GRANULAR_PERMISSION(MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548, tfUniversal | tfMPTUnlock,
     ({{sfMPTokenIssuanceID, SoeRequired},
       {sfHolder, SoeOptional}}))
+
+/** Grants the ability to block a holder from an MPT issuance, but not to
+    remove a block. (An unblock-only permission can not be expressed: allowing
+    tfUnblock also allows the transaction without it.) */
+GRANULAR_PERMISSION(TokenBlockCreate, ttTOKEN_BLOCK, 65549, tfUniversal,
+    ({{sfMPTokenIssuanceID, SoeRequired},
+      {sfHolder, SoeRequired}}))

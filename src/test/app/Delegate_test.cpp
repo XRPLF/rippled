@@ -2867,6 +2867,8 @@ class Delegate_test : public beast::unit_test::Suite
             {"PermissionedDomainSet", featurePermissionedDomains},
             {"PermissionedDomainDelete", featurePermissionedDomains},
             {"SponsorshipSet", featureSponsor},
+            {"TokenPreauth", featureTokenPreauth},
+            {"TokenBlock", featureTokenPreauth},
         };
 
         // Can not delegate tx if any required feature disabled.
@@ -2909,9 +2911,14 @@ class Delegate_test : public beast::unit_test::Suite
         // Granular permissions also require the amendment for their underlying
         // transaction type.
         {
-            for (auto const permission : {"MPTokenIssuanceLock", "MPTokenIssuanceUnlock"})
+            std::unordered_map<std::string, uint256> const granularRequiredFeatures{
+                {"MPTokenIssuanceLock", featureMPTokensV1},
+                {"MPTokenIssuanceUnlock", featureMPTokensV1},
+                {"TokenBlockCreate", featureTokenPreauth},
+            };
+            for (auto const& [permission, feature] : granularRequiredFeatures)
             {
-                Env env(*this, features - featureMPTokensV1);
+                Env env(*this, features - feature);
 
                 Account const alice{"alice"};
                 Account const bob{"bob"};
@@ -3007,7 +3014,7 @@ class Delegate_test : public beast::unit_test::Suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        std::size_t const expectedDelegableCount = 57;
+        std::size_t const expectedDelegableCount = 59;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,

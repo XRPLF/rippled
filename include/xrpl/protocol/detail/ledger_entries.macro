@@ -645,7 +645,7 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
 
     \sa keylet::tokenPreauth
  */
-LEDGER_ENTRY(ltTOKEN_PREAUTH, 0x0092, TokenPreauth, token_preauth, ({
+LEDGER_ENTRY_DUPLICATE(ltTOKEN_PREAUTH, 0x0092, TokenPreauth, token_preauth, ({
     {sfAccount,              SoeRequired},
     {sfHolder,               SoeRequired},
     {sfMPTokenIssuanceID,    SoeRequired},
@@ -659,7 +659,7 @@ LEDGER_ENTRY(ltTOKEN_PREAUTH, 0x0092, TokenPreauth, token_preauth, ({
 
     \sa keylet::tokenBlock
  */
-LEDGER_ENTRY(ltTOKEN_BLOCK, 0x0093, TokenBlock, token_block, ({
+LEDGER_ENTRY_DUPLICATE(ltTOKEN_BLOCK, 0x0093, TokenBlock, token_block, ({
     {sfAccount,              SoeRequired},
     {sfHolder,               SoeRequired},
     {sfMPTokenIssuanceID,    SoeRequired},
