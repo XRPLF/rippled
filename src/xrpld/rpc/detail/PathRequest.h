@@ -57,7 +57,8 @@ public:
         std::shared_ptr<InfoSub> const& subscriber,
         int id,
         PathRequestManager&,
-        beast::Journal journal);
+        beast::Journal journal,
+        unsigned int apiVersion);
 
     // ripple_path_find semantics
     // Completion function is called after path update is complete
@@ -98,6 +99,19 @@ public:
         std::function<bool()> const& continueCallback = {});
     InfoSub::pointer
     getSubscriber() const;
+
+    /**
+     * The API version the `path_find create` request named, recorded for the
+     * publisher of its updates.
+     *
+     * @return The version, or zero for a `ripple_path_find` request, which
+     *         produces no update to shape.
+     */
+    [[nodiscard]] unsigned int
+    apiVersion() const noexcept
+    {
+        return apiVersion_;
+    }
     bool
     hasCompletion();
 
@@ -138,6 +152,8 @@ private:
     std::weak_ptr<InfoSub> wpSubscriber_;  // Who this request came from
     std::function<void()> fCompletion_;
     resource::Consumer& consumer_;  // Charge according to source currencies
+
+    unsigned int const apiVersion_;
 
     json::Value jvId_;
     json::Value jvStatus_;  // Last result

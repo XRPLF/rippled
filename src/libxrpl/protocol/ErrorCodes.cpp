@@ -138,6 +138,7 @@ static constexpr ErrorInfo kUnorderedErrorInfos[]{
     {RpcMalformedSponsor,                         "malformedSponsor",                         "Sponsor is malformed.",                                               400},
     {RpcMalformedXChainOwnedClaimID,              "malformedXChainOwnedClaimID",              "XChainOwnedClaimID is malformed.",                                    400},
     {RpcMalformedXChainOwnedCreateAccountClaimID, "malformedXChainOwnedCreateAccountClaimID", "XChainOwnedCreateAccountClaimID is malformed.",                       400},
+    {RpcApiVersionConflict,                       "apiVersionConflict",                       "Subscriptions on one connection must all name the same api_version.", 400},
 };
 // clang-format on
 

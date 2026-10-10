@@ -2170,6 +2170,264 @@ public:
         wscB->invoke("unsubscribe", accountsRequest({alice.human()}));
     }
 
+    /**
+     * A `subscribe` request for one stream at one API version.
+     *
+     * @param stream The stream to name.
+     * @param apiVersion The `api_version` to name.
+     * @return The request parameters.
+     */
+    static json::Value
+    streamRequest(char const* stream, unsigned apiVersion)
+    {
+        json::Value jv;
+        jv[jss::streams] = json::ValueType::Array;
+        jv[jss::streams].append(stream);
+        jv[jss::api_version] = apiVersion;
+        return jv;
+    }
+
+    /**
+     * A connection holds subscriptions at one API version only.
+     *
+     * The first `subscribe` establishes the version and a later one naming
+     * another is refused, registering nothing, so the first subscription keeps
+     * publishing in the shape it asked for. The version is never cleared, and a
+     * connection that unsubscribed everything is still held to it: the way to
+     * another version is another connection.
+     *
+     * A webhook subscriber is keyed on its `url` alone, so the refusal reaches
+     * a second caller because of a first caller's version. `unsubscribe` with
+     * that `url` evicts the subscriber, after which any version can be named
+     * again, which is the only escape hatch the rule leaves and so is the half
+     * worth pinning.
+     *
+     * Nothing else is refused. Every request names its own API version and is
+     * answered at it, so a connection subscribed at version 3 still calls
+     * `account_info` at version 1.
+     */
+    void
+    testOneApiVersionPerConnection()
+    {
+        testcase("A connection subscribes at one API version only");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+
+        Env env{*this, singleThreadIo(envconfig())};
+
+        // Two frames at two versions on one connection: the second is refused and registers
+        // nothing, and the first still publishes.
+        {
+            auto wsc = makeWSClient(env.app().config());
+
+            auto const first = wsc->invoke("subscribe", streamRequest("ledger", 3u));
+            BEAST_EXPECTS(!first.isMember(jss::error), to_string(first));
+
+            auto const second = wsc->invoke("subscribe", streamRequest("transactions", 1u));
+            BEAST_EXPECTS(second[jss::error] == "apiVersionConflict", to_string(second));
+            // `invoke` nests an error reply under `result` and hoists only the token to the top
+            // level.
+            BEAST_EXPECTS(
+                second[jss::result][jss::error_message] ==
+                    "Subscriptions on this connection are served at api_version 3; use a new "
+                    "connection.",
+                to_string(second));
+
+            env.fund(XRP(10000), Account{"alice"});
+            BEAST_EXPECT(env.syncClose());
+
+            // The subscription the first frame made still publishes: the refusal registered
+            // nothing and took nothing away. The event names its `type` here, as every version
+            // does.
+            BEAST_EXPECT(wsc->findMsg(
+                5s, [](json::Value const& jv) { return jv[jss::type] == "ledgerClosed"; }));
+
+            // The refused frame registered nothing, so no transaction event arrives.
+            BEAST_EXPECT(!wsc->findMsg(
+                1s, [](json::Value const& jv) { return jv[jss::type] == "transaction"; }));
+        }
+
+        // The version outlives an unsubscribe of everything: it is the connection's for its life.
+        // The unsubscribe names another version and is served, being an ordinary request.
+        {
+            auto wsc = makeWSClient(env.app().config());
+            BEAST_EXPECT(
+                wsc->invoke("subscribe", streamRequest("ledger", 3u))[jss::status] == jss::success);
+
+            auto const unsubscribed = wsc->invoke("unsubscribe", streamRequest("ledger", 1u));
+            BEAST_EXPECTS(unsubscribed[jss::status] == jss::success, to_string(unsubscribed));
+
+            BEAST_EXPECT(env.syncClose());
+            BEAST_EXPECT(!wsc->findMsg(
+                1s, [](json::Value const& jv) { return jv[jss::type] == "ledgerClosed"; }));
+
+            auto const again = wsc->invoke("subscribe", streamRequest("ledger", 1u));
+            BEAST_EXPECTS(again[jss::error] == "apiVersionConflict", to_string(again));
+        }
+
+        // Two streams at one version on one connection are both served: the rule is about versions,
+        // not about how many subscriptions a connection holds.
+        {
+            auto wsc = makeWSClient(env.app().config());
+            BEAST_EXPECT(
+                wsc->invoke("subscribe", streamRequest("ledger", 3u))[jss::status] == jss::success);
+            BEAST_EXPECT(
+                wsc->invoke("subscribe", streamRequest("transactions", 3u))[jss::status] ==
+                jss::success);
+        }
+
+        // An ordinary request is not refused, whatever version it names, and is answered at its
+        // own version. The version lives on the connection, so only `doSubscribe` checks it.
+        {
+            auto wsc = makeWSClient(env.app().config());
+            BEAST_EXPECT(
+                wsc->invoke("subscribe", streamRequest("ledger", 3u))[jss::status] == jss::success);
+
+            // Told apart by content: `tx_history` runs at version 1, writing `index`, and is
+            // absent from version 2, which answers `unknownCmd`.
+            auto const txHistory = [](unsigned apiVersion) {
+                json::Value jv;
+                jv[jss::start] = 0u;
+                jv[jss::api_version] = apiVersion;
+                return jv;
+            };
+            auto const atV1 = wsc->invoke("tx_history", txHistory(1u));
+            BEAST_EXPECTS(atV1[jss::status] == jss::success, to_string(atV1));
+            BEAST_EXPECTS(atV1[jss::result].isMember(jss::index), to_string(atV1));
+
+            auto const atV2 = wsc->invoke("tx_history", txHistory(2u));
+            BEAST_EXPECTS(atV2[jss::error] == "unknownCmd", to_string(atV2));
+
+            // Naming the connection's own version is answered too.
+            json::Value atV3;
+            atV3[jss::api_version] = 3u;
+            BEAST_EXPECT(wsc->invoke("ledger_closed", atV3)[jss::status] == jss::success);
+        }
+
+        // A connection holding no subscription at all is held to nothing, which is what shows the
+        // refusal is keyed on a recorded subscription rather than on the versions a connection has
+        // used.
+        {
+            auto wsc = makeWSClient(env.app().config());
+
+            json::Value atV1;
+            atV1[jss::api_version] = 1u;
+            BEAST_EXPECT(wsc->invoke("ledger_closed", atV1)[jss::status] == jss::success);
+
+            json::Value atV3;
+            atV3[jss::api_version] = 3u;
+            BEAST_EXPECT(wsc->invoke("ledger_closed", atV3)[jss::status] == jss::success);
+
+            // And it can then subscribe at either.
+            BEAST_EXPECT(
+                wsc->invoke("subscribe", streamRequest("ledger", 1u))[jss::status] == jss::success);
+        }
+    }
+
+    /**
+     * A webhook subscriber is shared by url, so its version is too.
+     *
+     * Two `subscribe` calls naming one `url` at two versions: the second is
+     * refused, and the message names the url rather than the connection, since
+     * the caller it refuses is not the caller that decided the version.
+     * `unsubscribe` with that url evicts the subscriber, and the url can then
+     * be subscribed at any version.
+     */
+    void
+    testOneApiVersionPerUrl()
+    {
+        testcase("A webhook url subscribes at one API version only");
+
+        using namespace jtx;
+
+        Env env{*this};
+
+        auto const subscribeUrl = [](unsigned apiVersion) {
+            json::Value jv;
+            jv[jss::url] = "http://localhost/events";
+            jv[jss::api_version] = apiVersion;
+            jv[jss::streams] = json::ValueType::Array;
+            jv[jss::streams].append("ledger");
+            return jv;
+        };
+
+        auto const first = env.rpc("json", "subscribe", to_string(subscribeUrl(3u)))[jss::result];
+        BEAST_EXPECTS(first[jss::status] == jss::success, to_string(first));
+
+        auto const second = env.rpc("json", "subscribe", to_string(subscribeUrl(1u)))[jss::result];
+        BEAST_EXPECTS(second[jss::error] == "apiVersionConflict", to_string(second));
+        BEAST_EXPECT(
+            second[jss::error_message] == "Subscriptions on this url are served at api_version 3.");
+
+        // Unsubscribing the url evicts the subscriber, so the version goes with it. The streams
+        // have to go too: `tryRemoveRpcSub` refuses to erase a subscriber any stream map still
+        // holds, which is why this `unsubscribe` names the streams as well as the url.
+        json::Value unsub;
+        unsub[jss::url] = "http://localhost/events";
+        unsub[jss::streams] = json::ValueType::Array;
+        unsub[jss::streams].append("ledger");
+        env.rpc("json", "unsubscribe", to_string(unsub));
+
+        auto const reused = env.rpc("json", "subscribe", to_string(subscribeUrl(1u)))[jss::result];
+        BEAST_EXPECTS(reused[jss::status] == jss::success, to_string(reused));
+    }
+
+    /**
+     * The two streams no test subscribed to, at every API version.
+     *
+     * Each records the version its subscription was registered at, like every
+     * other stream, and no other test registers either of them. Their
+     * publishers are not reached: a consensus phase change needs a consensus
+     * round and a peer status change needs a peer, and a standalone `Env` has
+     * neither. What is held here is that a subscription is accepted and that
+     * `peer_status` stays behind the admin check.
+     */
+    void
+    testSubscribeToConsensusAndPeerStatus()
+    {
+        testcase("consensus and peer_status accept a subscription at any version");
+
+        using namespace test::jtx;
+
+        for (auto const apiVersion : {1u, 2u, 3u})
+        {
+            auto const label = std::to_string(apiVersion);
+
+            // An admin connection reaches both.
+            {
+                Env env{*this, singleThreadIo(envconfig())};
+                for (auto const* stream : {"consensus", "peer_status"})
+                {
+                    auto wsc = makeWSClient(env.app().config());
+                    auto const reply = wsc->invoke("subscribe", streamRequest(stream, apiVersion));
+                    BEAST_EXPECTS(
+                        reply[jss::result][jss::status] == jss::success,
+                        std::string{stream} + " " + label + " " + to_string(reply));
+                }
+            }
+
+            // Without admin, `peer_status` is refused and `consensus` is not.
+            {
+                Env env{*this, singleThreadIo(noAdmin(envconfig()))};
+
+                auto consensus = makeWSClient(env.app().config());
+                auto const accepted =
+                    consensus->invoke("subscribe", streamRequest("consensus", apiVersion));
+                BEAST_EXPECTS(
+                    accepted[jss::result][jss::status] == jss::success,
+                    label + " " + to_string(accepted));
+
+                auto peers = makeWSClient(env.app().config());
+                auto const refused =
+                    peers->invoke("subscribe", streamRequest("peer_status", apiVersion));
+                BEAST_EXPECTS(
+                    refused[jss::result][jss::error] == "noPermission",
+                    label + " " + to_string(refused));
+            }
+        }
+    }
+
     void
     testSubMPT()
     {
@@ -2475,6 +2733,9 @@ public:
         testMPTReSubscribeNotOvercounted();
         testMPTSharesCapWithAccounts();
         testMPTUnsubscribeFreesCap();
+        testOneApiVersionPerConnection();
+        testOneApiVersionPerUrl();
+        testSubscribeToConsensusAndPeerStatus();
     }
 };
 
