@@ -84,18 +84,9 @@ isFrozen(ReadView const& view, AccountID const& account, SLE const& sle, std::ui
 
     if (sle.getType() == ltMPTOKEN)
     {
-        XRPL_ASSERT(sle[sfAccount] == account, "xrpl::isFrozen : valid MPToken holder");
-
-        MPTID const mptID = sle[sfMPTokenIssuanceID];
-        auto const issuanceSle = view.read(keylet::mptokenIssuance(mptID));
-
-        if ((issuanceSle && isGlobalFrozen(*issuanceSle)) || sle.isFlag(lsfMPTLocked))
-            return true;
-
-        if (issuanceSle)
-            return isVaultPseudoAccountFrozen(view, account, *issuanceSle, depth);
-
-        return isVaultPseudoAccountFrozen(view, account, MPTIssue{mptID}, depth);
+        // The entry needs an owning pointer, so this copies the SLE. Callers
+        // that already hold an MPTokenEntry call its isFrozen() directly.
+        return MPTokenEntryR(std::make_shared<SLE const>(sle), view).isFrozen(account, depth);
     }
 
     MPTIssue const mptIssue{sle[sfSequence], sle[sfIssuer]};
