@@ -6,6 +6,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/SignerListEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -28,7 +29,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -186,7 +186,7 @@ removeSignersFromLedger(
 {
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
-    SLE::pointer const signers = view.peek(signerListKeylet);
+    SignerListEntryW signers(signerListKeylet, view, j);
 
     // If the signer list doesn't exist we've already succeeded in deleting it.
     if (!signers)
@@ -214,9 +214,13 @@ removeSignersFromLedger(
     }
 
     decreaseOwnerCountForObject(
-        view, view.peek(accountKeylet), signers, removeFromOwnerCount, registry.getJournal("View"));
+        view,
+        view.peek(accountKeylet),
+        signers.mutableRawSle(),
+        removeFromOwnerCount,
+        registry.getJournal("View"));
 
-    view.erase(signers);
+    signers.erase();
 
     return tesSUCCESS;
 }
@@ -329,8 +333,9 @@ SignerListSet::replaceSignerList()
         return ret;
 
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.
-    auto signerList = std::make_shared<SLE>(signerListKeylet);
-    view().insert(signerList);
+    SignerListEntryW signerList(signerListKeylet, view(), j_);
+    signerList.newSLE();
+    signerList.insert();
     writeSignersToSLE(signerList, flags);
 
     auto viewJ = ctx_.registry.get().getJournal("View");
@@ -349,7 +354,7 @@ SignerListSet::replaceSignerList()
     // If we succeeded, the new entry counts against the
     // creator's reserve.
     increaseOwnerCount(ctx_.getApplyViewContext(), sle, kAddedOwnerCount, viewJ);
-    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), signerList);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), signerList.mutableRawSle());
     return tesSUCCESS;
 }
 
@@ -373,7 +378,7 @@ SignerListSet::destroySignerList()
 }
 
 void
-SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const
+SignerListSet::writeSignersToSLE(SignerListEntryW& ledgerEntry, std::uint32_t flags) const
 {
     // Assign the quorum, default SignerListID, and flags.
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))

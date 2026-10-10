@@ -11,6 +11,7 @@
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/SignerListEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
@@ -1056,7 +1057,7 @@ Transactor::checkMultiSign(
     beast::Journal const j)
 {
     // Get id's SignerList and Quorum.
-    STLedgerEntry::const_pointer const sleAccountSigners = view.read(keylet::signerList(id));
+    SignerListEntryR const sleAccountSigners(id, view);
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
