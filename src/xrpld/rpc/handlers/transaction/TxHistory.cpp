@@ -26,7 +26,14 @@ doTxHistory(rpc::JsonContext& context)
     if (!context.params.isMember(jss::start))
         return rpcError(RpcInvalidParams);
 
-    unsigned int const startIndex = context.params[jss::start].asUInt();
+    // Guard the conversion: json::Value::asUInt() throws for negative,
+    // out-of-range, non-numeric or non-scalar values, which would surface as a
+    // generic internal error instead of invalid parameters.
+    auto const& jvStart = context.params[jss::start];
+    if (!jvStart.isUInt() && (!jvStart.isInt() || jvStart.asInt() < 0))
+        return rpcError(RpcInvalidParams);
+
+    unsigned int const startIndex = jvStart.asUInt();
 
     if ((startIndex > 10000) && (!isUnlimited(context.role)))
         return rpcError(RpcNoPermission);
