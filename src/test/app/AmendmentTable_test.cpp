@@ -1,11 +1,15 @@
 #include <test/jtx/Env.h>
+#include <test/jtx/TrustedPublisherServer.h>
 #include <test/jtx/envconfig.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base64.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
@@ -13,6 +17,7 @@
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
@@ -21,10 +26,15 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
+#include <xrpl/server/Manifest.h>
 
 #include <algorithm>
 #include <cassert>
@@ -467,12 +477,12 @@ public:
     {
         std::vector<std::pair<PublicKey, SecretKey>> ret;
         ret.reserve(num);
-        HashSet<PublicKey> trustedValidators;
+        HashSet<NodeID> trustedValidators;
         trustedValidators.reserve(num);
         for (int i = 0; i < num; ++i)
         {
             auto const& back = ret.emplace_back(randomKeyPair(KeyType::Secp256k1));
-            trustedValidators.insert(back.first);
+            trustedValidators.insert(calcNodeID(back.first));
         }
         table->trustChanged(trustedValidators);
         return ret;
@@ -975,10 +985,10 @@ public:
         auto callTrustChanged = [](std::vector<std::pair<PublicKey, SecretKey>> const& validators,
                                    std::unique_ptr<AmendmentTable> const& table) {
             // We need a HashSet to pass to trustChanged.
-            HashSet<PublicKey> trustedValidators;
+            HashSet<NodeID> trustedValidators;
             trustedValidators.reserve(validators.size());
             std::ranges::for_each(validators, [&trustedValidators](auto const& val) {
-                trustedValidators.insert(val.first);
+                trustedValidators.insert(calcNodeID(val.first));
             });
 
             // Tell the AmendmentTable that the UNL changed.
@@ -1159,6 +1169,114 @@ public:
         }
     }
 
+    // A trusted validator that rotates its signing key keeps its amendment
+    // vote without a restart or a change to the trusted set.
+    void
+    testSigningKeyRotation(FeatureBitset const& feat)
+    {
+        testcase("signingKeyRotation");
+
+        auto const amendment = fixCleanup3_5_0;
+        auto const masterKeys = randomKeyPair(KeyType::Ed25519);
+        auto cfg = test::jtx::envconfig();
+        cfg->section(Sections::kValidators)
+            .append(toBase58(TokenType::NodePublic, masterKeys.first));
+        test::jtx::Env env{*this, std::move(cfg), feat - amendment};
+        auto& table = env.app().getAmendmentTable();
+
+        auto rotate = [&](std::pair<PublicKey, SecretKey> const& signingKeys, int seq) {
+            auto m = deserializeManifest(base64Decode(
+                test::TrustedPublisherServer::makeManifestString(
+                    masterKeys.first,
+                    masterKeys.second,
+                    signingKeys.first,
+                    signingKeys.second,
+                    seq)));
+            if (!BEAST_EXPECT(m))
+                return;
+            BEAST_EXPECT(
+                env.app().getValidatorManifests().applyManifest(
+                    std::move(*m), ManifestRateLimitCapPolicy::Uncapped) ==
+                ManifestDisposition::Accepted);
+            env.close();
+        };
+
+        // Tally the given validations at the given hour and report the amendment's votes
+        auto tally = [&](std::chrono::hours hour,
+                         std::vector<std::shared_ptr<STValidation>> const& validations) {
+            table.doVoting(env.current()->rules(), hourTime(hour), {}, {}, validations);
+            return table.getJson(amendment, true)[to_string(amendment)];
+        };
+
+        // A validation signed by signingKeys, carrying the master key's NodeID
+        auto validation = [&](std::pair<PublicKey, SecretKey> const& signingKeys, bool yes) {
+            return std::make_shared<STValidation>(
+                NetClock::time_point{},
+                signingKeys.first,
+                signingKeys.second,
+                calcNodeID(masterKeys.first),
+                [&amendment, yes](STValidation& v) {
+                    if (yes)
+                    {
+                        v.setFieldV256(
+                            sfAmendments,
+                            STVector256(sfAmendments, std::vector<UInt256>{amendment}));
+                    }
+                    v.setFieldU32(sfLedgerSequence, 6180339);
+                });
+        };
+
+        auto const signingKeys1 = randomKeyPair(KeyType::Secp256k1);
+        rotate(signingKeys1, 1);
+        auto json = tally(std::chrono::hours(1), {validation(signingKeys1, true)});
+        BEAST_EXPECT(json[jss::validations].asInt() == 1);
+        BEAST_EXPECT(json[jss::count].asInt() == 1);
+
+        // The recorded vote carries across a rotation
+        auto const signingKeys2 = randomKeyPair(KeyType::Secp256k1);
+        rotate(signingKeys2, 2);
+        json = tally(std::chrono::hours(2), {});
+        BEAST_EXPECT(json[jss::validations].asInt() == 1);
+        BEAST_EXPECT(json[jss::count].asInt() == 1);
+
+        // The new key's vote is recorded after the old vote would have expired
+        json = tally(std::chrono::hours(30), {validation(signingKeys2, false)});
+        BEAST_EXPECT(json[jss::validations].asInt() == 1);
+        BEAST_EXPECT(json[jss::count].asInt() == 0);
+
+        // A validation received before its manifest is applied and handled after it
+        // carries the master key's NodeID and counts
+        auto const signingKeys3 = randomKeyPair(KeyType::Secp256k1);
+        auto const closed = env.closed();
+        auto const blob =
+            std::make_shared<STValidation>(
+                env.app().getTimeKeeper().closeTime(),
+                signingKeys3.first,
+                signingKeys3.second,
+                calcNodeID(masterKeys.first),
+                [&amendment, &closed](STValidation& v) {
+                    v.setFieldV256(
+                        sfAmendments, STVector256(sfAmendments, std::vector<UInt256>{amendment}));
+                    v.setFieldH256(sfLedgerHash, closed->header().hash);
+                    v.setFieldU32(sfLedgerSequence, closed->seq());
+                })
+                ->getSerialized();
+        SerialIter sit(makeSlice(blob));
+        auto const received = std::make_shared<STValidation>(
+            sit,
+            [](PublicKey const& pk) { return calcNodeID(pk); },
+            STValidation::DeserializeOptions{
+                .checkSignature = true, .requireCanonicalOrder = true});
+        BEAST_EXPECT(received->getNodeID() == calcNodeID(signingKeys3.first));
+        rotate(signingKeys3, 3);
+        handleNewValidation(env.app(), received, "test", BypassAccept::Yes, env.journal);
+        BEAST_EXPECT(received->isTrusted());
+        BEAST_EXPECT(received->getNodeID() == calcNodeID(masterKeys.first));
+        json = tally(std::chrono::hours(31), {received});
+        BEAST_EXPECT(json[jss::validations].asInt() == 1);
+        BEAST_EXPECT(json[jss::count].asInt() == 1);
+    }
+
     void
     testHasUnsupported()
     {
@@ -1207,6 +1325,7 @@ public:
         testLostMajority(feat);
         testChangedUNL(feat);
         testValidatorFlapping(feat);
+        testSigningKeyRotation(feat);
     }
 
     void

@@ -547,6 +547,31 @@ TEST(ValidationsTest, get_current_public_keys)
     EXPECT_TRUE(harness.vals().getCurrentNodeIDs().empty());
 }
 
+TEST(ValidationsTest, laggards_after_key_rotation)
+{
+    SCOPED_TRACE("Laggards after key rotation");
+
+    LedgerHistoryHelper h;
+    Ledger const ledgerA = h["a"];
+    Ledger const ledgerAB = h["ab"];
+
+    TestHarness harness(h.oracle);
+    Node a = harness.makeNode();
+    Node const b = harness.makeNode();
+    Node const c = harness.makeNode();
+
+    // a rotates its signing key and validates behind; b is current; c is silent
+    a.advanceKey();
+    EXPECT_TRUE(ValStatus::Current == harness.add(a.validate(ledgerA)));
+    EXPECT_TRUE(ValStatus::Current == harness.add(b.validate(ledgerAB)));
+
+    HashSet<PeerID> trusted = {a.nodeID(), b.nodeID(), c.nodeID()};
+    EXPECT_TRUE(harness.vals().laggards(ledgerAB.seq(), trusted) == 1);
+
+    // Nodes heard from leave the set; the silent node stays as offline
+    EXPECT_TRUE(trusted == HashSet<PeerID>{c.nodeID()});
+}
+
 TEST(ValidationsTest, trusted_by_ledger_functions)
 {
     // Test the Validations functions that calculate a value by ledger ID

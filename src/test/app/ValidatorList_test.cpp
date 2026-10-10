@@ -1217,6 +1217,8 @@ private:
             BEAST_EXPECT(changes.added == asNodeIDs({masterPublic}));
             BEAST_EXPECT(changes.removed.empty());
             BEAST_EXPECT(trustedKeysOuter->quorum() == std::ceil((maxKeys + 1) * 0.8f));
+            BEAST_EXPECT(
+                trustedKeysOuter->getQuorumKeys().second.contains(calcNodeID(masterPublic)));
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->trusted(masterPublic));
             BEAST_EXPECT(!trustedKeysOuter->listed(signingPublic1));
@@ -1252,6 +1254,18 @@ private:
             BEAST_EXPECT(!trustedKeysOuter->listed(signingPublic1));
             BEAST_EXPECT(!trustedKeysOuter->trusted(signingPublic1));
 
+            // A signing key rotation leaves the trusted set and its NodeIDs unchanged
+            changes = trustedKeysOuter->updateTrusted(
+                activeValidatorsOuter,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().getOverlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(changes.added.empty());
+            BEAST_EXPECT(changes.removed.empty());
+            BEAST_EXPECT(
+                trustedKeysOuter->getQuorumKeys().second.contains(calcNodeID(masterPublic)));
+
             // Should not trust keys from revoked master public key
             auto const signingKeysMax = randomKeyPair(KeyType::Secp256k1);
             auto const signingPublicMax = signingKeysMax.first;
@@ -1281,6 +1295,8 @@ private:
             BEAST_EXPECT(changes.removed == asNodeIDs({masterPublic}));
             BEAST_EXPECT(changes.added.empty());
             BEAST_EXPECT(trustedKeysOuter->quorum() == std::ceil(maxKeys * 0.8f));
+            BEAST_EXPECT(
+                !trustedKeysOuter->getQuorumKeys().second.contains(calcNodeID(masterPublic)));
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(!trustedKeysOuter->trusted(masterPublic));
             BEAST_EXPECT(!trustedKeysOuter->listed(signingPublicMax));

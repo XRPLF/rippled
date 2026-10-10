@@ -259,11 +259,6 @@ class ValidatorList
     // Minimum number of lists on which a trusted validator must appear on
     std::size_t listThreshold_{1};
 
-    // The current list of trusted signing keys. For those validators using
-    // a manifest, the signing key is the ephemeral key. For the ones using
-    // a seed, the signing key is the same as the master key.
-    HashSet<PublicKey> trustedSigningKeys_;
-
     std::optional<PublicKey> localPubKey_;
 
     // The below variable contains the Publisher list specified in the local
@@ -689,18 +684,17 @@ public:
     json::Value
     getJson() const;
 
-    using QuorumKeys = std::pair<std::size_t const, HashSet<PublicKey>>;
+    using QuorumKeys = std::pair<std::size_t const, HashSet<NodeID>>;
     /**
-     * Get the quorum and all of the trusted keys.
+     * Get the quorum and the NodeIDs of all trusted validators.
      *
-     * @return quorum and keys.
+     * A NodeID derives from the master key, so a validator keeps it across
+     * signing key rotations.
+     *
+     * @return quorum and NodeIDs.
      */
     QuorumKeys
-    getQuorumKeys() const
-    {
-        SharedLock const readLock{mutex_};
-        return {quorum_, trustedSigningKeys_};
-    }
+    getQuorumKeys() const;
 
     /**
      * get the trusted master public keys

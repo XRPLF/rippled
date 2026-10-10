@@ -880,17 +880,17 @@ struct Peer
         return earliestAllowedSeq();
     }
 
-    std::pair<std::size_t, HashSet<NodeKeyT>>
+    std::pair<std::size_t, HashSet<NodeIDT>>
     getQuorumKeys()
     {
-        HashSet<NodeKeyT> keys;
+        HashSet<NodeIDT> nodes;
         for (auto const p : trustGraph.trustedPeers(this))
-            keys.insert(p->key);
-        return {quorum, keys};
+            nodes.insert(p->id);
+        return {quorum, nodes};
     }
 
     std::size_t
-    laggards(Ledger::Seq const seq, HashSet<NodeKeyT>& trusted)
+    laggards(Ledger::Seq const seq, HashSet<NodeIDT>& trusted)
     {
         return validations.laggards(seq, trusted);
     }
