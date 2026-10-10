@@ -1,4 +1,5 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
@@ -142,6 +143,10 @@ doSubmit(rpc::JsonContext& context)
     try
     {
         jvResult[jss::tx_json] = transaction->getJson(JsonOptions::Values::None);
+        rpc::insertDeliverMax(
+            jvResult[jss::tx_json],
+            transaction->getSTransaction()->getTxnType(),
+            context.apiVersion);
         jvResult[jss::tx_blob] = strHex(transaction->getSTransaction()->getSerializer().peekData());
 
         if (temUNCERTAIN != transaction->getResult())
