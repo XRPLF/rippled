@@ -196,7 +196,7 @@ class Feature_test : public beast::unit_test::Suite
         char const sha[] = "303ACB16CF8DBD3B5C34F131A9D19A7DE01AE05F480A8A682B869D1B4AAC8CFC";
         BEAST_EXPECT(expected == sha);
         BEAST_EXPECT(jrr.isMember(expected));
-        auto feature = *(jrr.begin());
+        auto feature = *jrr.begin();
 
         BEAST_EXPECTS(feature[jss::name] == name, "name");
         BEAST_EXPECTS(!feature[jss::enabled].asBool(), "enabled");
@@ -483,7 +483,7 @@ class Feature_test : public beast::unit_test::Suite
         jrr.removeMember(jss::status);
         if (!BEAST_EXPECT(jrr.size() == 1))
             return;
-        auto feature = *(jrr.begin());
+        auto feature = *jrr.begin();
         BEAST_EXPECTS(feature[jss::name] == kFeatureName, "name");
         BEAST_EXPECTS(feature[jss::vetoed].isBool() && !feature[jss::vetoed].asBool(), "vetoed");
 
@@ -493,7 +493,7 @@ class Feature_test : public beast::unit_test::Suite
         jrr.removeMember(jss::status);
         if (!BEAST_EXPECT(jrr.size() == 1))
             return;
-        feature = *(jrr.begin());
+        feature = *jrr.begin();
         BEAST_EXPECTS(feature[jss::name] == kFeatureName, "name");
         BEAST_EXPECTS(feature[jss::vetoed].isBool() && feature[jss::vetoed].asBool(), "vetoed");
 
@@ -503,7 +503,7 @@ class Feature_test : public beast::unit_test::Suite
         jrr.removeMember(jss::status);
         if (!BEAST_EXPECT(jrr.size() == 1))
             return;
-        feature = *(jrr.begin());
+        feature = *jrr.begin();
         BEAST_EXPECTS(feature[jss::name] == kFeatureName, "name");
         BEAST_EXPECTS(feature[jss::vetoed].isBool() && !feature[jss::vetoed].asBool(), "vetoed");
         auto testInvalidVetoed = [&](auto const& vetoed) {
@@ -551,7 +551,7 @@ class Feature_test : public beast::unit_test::Suite
         jrr.removeMember(jss::status);
         if (!BEAST_EXPECT(jrr.size() == 1))
             return;
-        auto feature = *(jrr.begin());
+        auto feature = *jrr.begin();
         BEAST_EXPECTS(feature[jss::name] == featureName, "name");
         BEAST_EXPECTS(
             feature[jss::vetoed].isString() && feature[jss::vetoed].asString() == "Obsolete",
@@ -563,7 +563,7 @@ class Feature_test : public beast::unit_test::Suite
         jrr.removeMember(jss::status);
         if (!BEAST_EXPECT(jrr.size() == 1))
             return;
-        feature = *(jrr.begin());
+        feature = *jrr.begin();
         BEAST_EXPECTS(feature[jss::name] == featureName, "name");
         BEAST_EXPECTS(
             feature[jss::vetoed].isString() && feature[jss::vetoed].asString() == "Obsolete",
@@ -575,7 +575,7 @@ class Feature_test : public beast::unit_test::Suite
         jrr.removeMember(jss::status);
         if (!BEAST_EXPECT(jrr.size() == 1))
             return;
-        feature = *(jrr.begin());
+        feature = *jrr.begin();
         BEAST_EXPECTS(feature[jss::name] == featureName, "name");
         BEAST_EXPECTS(
             feature[jss::vetoed].isString() && feature[jss::vetoed].asString() == "Obsolete",

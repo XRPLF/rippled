@@ -22,7 +22,7 @@ printIdentifiers(SemanticVersion::IdentifierList const& list)
     for (auto const& x : list)
     {
         if (!ret.empty())
-            ret += ".";
+            ret += '.';
         ret += x;
     }
 
@@ -219,13 +219,13 @@ SemanticVersion::print() const
 
     if (!preReleaseIdentifiers.empty())
     {
-        s += "-";
+        s += '-';
         s += printIdentifiers(preReleaseIdentifiers);
     }
 
     if (!metaData.empty())
     {
-        s += "+";
+        s += '+';
         s += printIdentifiers(metaData);
     }
 

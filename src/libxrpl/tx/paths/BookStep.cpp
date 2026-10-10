@@ -614,8 +614,8 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(ReadView const& v, DebtDirection p
     // CLOB
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
         v,
-        *(res->quality()),  // NOLINT(bugprone-unchecked-optional-access) CLOB QualityFunction
-                            // always has quality set
+        *res->quality(),  // NOLINT(bugprone-unchecked-optional-access) CLOB QualityFunction
+                          // always has quality set
         prevStepDir,
         WaiveTransferFee::No,
         OfferType::Clob,
@@ -875,7 +875,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
         // If offer crossing then use either LOB quality or nullopt
         // to prevent AMM being blocked by a lower quality LOB.
-        auto const qualityThreshold = [&]() -> std::optional<Quality> {
+        auto const qualityThreshold = [&] -> std::optional<Quality> {
             if (sb.rules().enabled(fixAMMv1_1) && lobQuality)
                 return static_cast<TDerived const*>(this)->qualityThreshold(*lobQuality);
             return lobQuality;
@@ -1005,7 +1005,7 @@ BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
     // on offer crossing but AMM can't generate the offer at this quality,
     // as the result a LOB offer is partially crossed, and it might take a few
     // iterations to fully cross the offer.
-    auto const qualityThreshold = [&]() -> std::optional<Quality> {
+    auto const qualityThreshold = [&] -> std::optional<Quality> {
         if (view.rules().enabled(fixAMMv1_1) && lobQuality)
             return static_cast<TDerived const*>(this)->qualityThreshold(*lobQuality);
         return std::nullopt;
@@ -1060,7 +1060,10 @@ sum(TCollection const& col)
     using TResult = std::decay_t<decltype(*col.begin())>;
     if (col.empty())
         return TResult{beast::kZero};
-    return std::accumulate(col.begin() + 1, col.end(), *col.begin());
+    return std::accumulate(
+        col.begin() + 1, col.end(), *col.begin(), [](TResult const& a, TResult const& b) {
+            return checkedStepAdd(a, b);
+        });
 };
 
 template <class TIn, class TOut, class TDerived>
@@ -1512,7 +1515,7 @@ BookStep<TIn, TOut, TDerived>::checkMPTDEX(ReadView const& view, AccountID const
 
     if (book_.in.holds<MPTIssue>())
     {
-        auto ret = [&]() {
+        auto ret = [&] {
             auto const& asset = book_.in;
             // Strand's source is an issuer
             if (!prevStep_)
