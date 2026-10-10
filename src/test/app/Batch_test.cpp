@@ -6283,18 +6283,19 @@ class Batch_test : public beast::unit_test::Suite
 
         // Object fields with no InnerObjectFormats template, used in place of
         // sfRawTransaction as the wrapper of each inner transaction.
-        for (SField const* wrapper :
-             {&sfRawTransaction,
-              &sfCreatedNode,
-              &sfModifiedNode,
-              &sfDeletedNode,
-              &sfTemplateEntry,
-              &sfEmitDetails,
-              &sfMemo,
-              &sfFinalFields,
-              &sfNewFields,
-              &sfPreviousFields,
-              &sfTransactionMetaData})
+        for (SField const* wrapper : {
+                 &sfRawTransaction,
+                 &sfCreatedNode,
+                 &sfModifiedNode,
+                 &sfDeletedNode,
+                 &sfTemplateEntry,
+                 &sfEmitDetails,
+                 &sfMemo,
+                 &sfFinalFields,
+                 &sfNewFields,
+                 &sfPreviousFields,
+                 &sfTransactionMetaData,
+             })
         {
             bool const poisoned = (wrapper != &sfRawTransaction);
 
