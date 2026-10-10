@@ -211,6 +211,8 @@ JSS(date);                           // out: tx/Transaction, NetworkOPs
 JSS(dbKBLedger);                     // out: getCounts
 JSS(dbKBTotal);                      // out: getCounts
 JSS(dbKBTransaction);                // out: getCounts
+JSS(debug);                          // in: Submit, Simulate
+JSS(debug_log);                      // out: Submit, Simulate
 JSS(debug_signing);                  // in: TransactionSign
 JSS(deletion_blockers_only);         // in: AccountObjects
 JSS(delivered_amount);               // out: insertDeliveredAmount
