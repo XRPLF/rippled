@@ -267,9 +267,9 @@ saveValidatedLedger(
             app.getAcceptedLedgerCache().canonicalizeReplaceClient(ledger->header().hash, aLedger);
         }
     }
-    catch (std::exception const&)
+    catch (std::exception const& e)
     {
-        JLOG(j.warn()) << "An accepted ledger was missing nodes";
+        JLOG(j.warn()) << "An accepted ledger was missing nodes " << e.what();
         app.getLedgerMaster().failedSave(seq, ledger->header().hash);
         // Clients can now trust the database for information about this
         // ledger sequence.

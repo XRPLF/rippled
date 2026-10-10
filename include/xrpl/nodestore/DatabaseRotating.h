@@ -5,6 +5,7 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Scheduler.h>
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
@@ -54,6 +55,12 @@ public:
      */
     virtual void
     setRotationInFlight(bool inFlight) = 0;
+    virtual bool
+    isRotationInFlight() const = 0;
+
+    [[nodiscard]]
+    virtual std::uint64_t
+    getAndResetDuplicationCount() = 0;
 };
 
 }  // namespace xrpl::node_store
