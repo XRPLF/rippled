@@ -24,7 +24,7 @@ enum class Error {
     DirectoryPageDuplicate,
     DirectoryPageNotFound,
     InvalidLastPage,
-    AdjustmentError
+    AdjustmentError,
 };
 
 /**

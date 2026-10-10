@@ -33,7 +33,8 @@ struct TestAMMArg
     std::vector<FeatureBitset> features = {
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
-        jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
+        jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol,
+    };
 
     bool noLog = false;
 };

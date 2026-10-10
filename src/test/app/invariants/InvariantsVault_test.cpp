@@ -242,7 +242,8 @@ class InvariantsVault_test : public InvariantsBase
                 .accountAssets =  //
                 AccountAmount{.account = id, .amount = -adjustment},
                 .accountShares =  //
-                AccountAmount{.account = id, .amount = adjustment}};
+                AccountAmount{.account = id, .amount = adjustment},
+            };
             fn(sample);
             return sample;
         };
@@ -297,8 +298,10 @@ class InvariantsVault_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {"vault updated by a wrong transaction type",
-             "deleted Vault without deleting its pseudo-account"},
+            {
+                "vault updated by a wrong transaction type",
+                "deleted Vault without deleting its pseudo-account",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -355,8 +358,10 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
         doInvariantCheck(
-            {"vault deleted by a wrong transaction type",
-             "deleted Vault without deleting its pseudo-account"},
+            {
+                "vault deleted by a wrong transaction type",
+                "deleted Vault without deleting its pseudo-account",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -376,8 +381,10 @@ class InvariantsVault_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {"vault operation updated more than single vault",
-             "deleted Vault without deleting its pseudo-account"},
+            {
+                "vault operation updated more than single vault",
+                "deleted Vault without deleting its pseudo-account",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 {
                     auto const keylet =
@@ -435,8 +442,10 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
         doInvariantCheck(
-            {"deleted vault must also delete shares",
-             "deleted Vault without deleting its pseudo-account"},
+            {
+                "deleted vault must also delete shares",
+                "deleted Vault without deleting its pseudo-account",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -456,9 +465,11 @@ class InvariantsVault_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {"deleted vault must have no shares outstanding",
-             "deleted vault must have no assets outstanding",
-             "deleted vault must have no assets available"},
+            {
+                "deleted vault must have no shares outstanding",
+                "deleted vault must have no assets outstanding",
+                "deleted vault must have no assets available",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -596,8 +607,10 @@ class InvariantsVault_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {"vault operation succeeded without updating shares",
-             "assets available must not be greater than assets outstanding"},
+            {
+                "vault operation succeeded without updating shares",
+                "assets available must not be greater than assets outstanding",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -619,13 +632,15 @@ class InvariantsVault_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {"set must not change assets outstanding",
-             "set must not change assets available",
-             "set must not change shares outstanding",
-             "set must not change vault balance",
-             "assets available must not be negative",
-             "assets available must not be greater than assets outstanding",
-             "assets outstanding must not be negative"},
+            {
+                "set must not change assets outstanding",
+                "set must not change assets available",
+                "set must not change shares outstanding",
+                "set must not change vault balance",
+                "assets available must not be negative",
+                "assets available must not be greater than assets outstanding",
+                "assets outstanding must not be negative",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -781,8 +796,10 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp);
 
         doInvariantCheck(
-            {"vault transaction must not change loss unrealized",
-             "set must not change assets outstanding"},
+            {
+                "vault transaction must not change loss unrealized",
+                "set must not change assets outstanding",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
@@ -797,9 +814,11 @@ class InvariantsVault_test : public InvariantsBase
             TxAccount::A2);
 
         doInvariantCheck(
-            {"loss unrealized must not exceed the difference "
-             "between assets outstanding and available",
-             "vault transaction must not change loss unrealized"},
+            {
+                "loss unrealized must not exceed the difference "
+                "between assets outstanding and available",
+                "vault transaction must not change loss unrealized",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 100, [&](Adjustments& sample) {
@@ -877,8 +896,10 @@ class InvariantsVault_test : public InvariantsBase
         // outstanding" check, hence two expected messages.
         Number const vaultCap = XRP(30).number();
         doInvariantCheck(
-            {"set must not change assets outstanding",
-             "set assets outstanding must not exceed assets maximum"},
+            {
+                "set must not change assets outstanding",
+                "set assets outstanding must not exceed assets maximum",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
@@ -916,9 +937,11 @@ class InvariantsVault_test : public InvariantsBase
             TxAccount::A2);
 
         doInvariantCheck(
-            {"set must not change shares outstanding",
-             "updated zero sized vault must have no assets outstanding",
-             "updated zero sized vault must have no assets available"},
+            {
+                "set must not change shares outstanding",
+                "updated zero sized vault must have no assets outstanding",
+                "updated zero sized vault must have no assets available",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -997,11 +1020,13 @@ class InvariantsVault_test : public InvariantsBase
                         .assetsAvailable = -200,
                         .vaultAssets = -200,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
-                        .createLoan = LoanParams{
-                            .principalOutstanding = 300,
-                            .totalValueOutstanding = 300,
-                            .borrower = a1.id(),
-                        }});
+                        .createLoan =
+                            LoanParams{
+                                .principalOutstanding = 300,
+                                .totalValueOutstanding = 300,
+                                .borrower = a1.id(),
+                            },
+                    });
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
@@ -1018,11 +1043,13 @@ class InvariantsVault_test : public InvariantsBase
                     ac.view(),
                     keylet,
                     Adjustments{
-                        .createLoan = LoanParams{
-                            .principalOutstanding = 100,
-                            .totalValueOutstanding = 100,
-                            .borrower = a1.id(),
-                        }});
+                        .createLoan =
+                            LoanParams{
+                                .principalOutstanding = 100,
+                                .totalValueOutstanding = 100,
+                                .borrower = a1.id(),
+                            },
+                    });
             },
             XRPAmount{},
             STTx{ttLOAN_MANAGE, [](STObject& tx) { tx.setFieldU32(sfFlags, tfLoanImpair); }},
@@ -1051,15 +1078,21 @@ class InvariantsVault_test : public InvariantsBase
                 std::string expected;
             };
             auto const cases = std::to_array<Case>({
-                {.before = 0,
-                 .after = lsfLoanImpaired,
-                 .expected = "lsfLoanImpaired changed outside LoanManage or LoanPay"},
-                {.before = lsfLoanImpaired,
-                 .after = 0,
-                 .expected = "lsfLoanImpaired changed outside LoanManage or LoanPay"},
-                {.before = 0,
-                 .after = lsfLoanDefault,
-                 .expected = "lsfLoanDefault changed outside LoanManage"},
+                {
+                    .before = 0,
+                    .after = lsfLoanImpaired,
+                    .expected = "lsfLoanImpaired changed outside LoanManage or LoanPay",
+                },
+                {
+                    .before = lsfLoanImpaired,
+                    .after = 0,
+                    .expected = "lsfLoanImpaired changed outside LoanManage or LoanPay",
+                },
+                {
+                    .before = 0,
+                    .after = lsfLoanDefault,
+                    .expected = "lsfLoanDefault changed outside LoanManage",
+                },
             });
 
             for (auto const& c : cases)
@@ -1190,11 +1223,13 @@ class InvariantsVault_test : public InvariantsBase
                         .assetsAvailable = 50,
                         .vaultAssets = 50,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = -50},
-                        .createLoan = LoanParams{
-                            .principalOutstanding = 100,
-                            .totalValueOutstanding = 100,
-                            .borrower = a1.id(),
-                        }});
+                        .createLoan =
+                            LoanParams{
+                                .principalOutstanding = 100,
+                                .totalValueOutstanding = 100,
+                                .borrower = a1.id(),
+                            },
+                    });
             },
             XRPAmount{},
             STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(50)); }},
@@ -1215,7 +1250,8 @@ class InvariantsVault_test : public InvariantsBase
                         .assetsAvailable = 100,
                         .lossUnrealized = -1,
                         .vaultAssets = 100,
-                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -100}});
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -100},
+                    });
             },
             XRPAmount{},
             STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
@@ -1240,38 +1276,50 @@ class InvariantsVault_test : public InvariantsBase
                 std::string expected;
             };
             auto const cases = std::to_array<Case>({
-                {.principal = Number(100),
-                 .totalValue = Number(150),
-                 .remaining = 1,
-                 .dueDate = 110,
-                 .expected = "loan pay must decrease PrincipalOutstanding or "
-                             "TotalValueOutstanding"},
-                {.principal = Number(110),
-                 .totalValue = Number(150),
-                 .remaining = 1,
-                 .dueDate = 110,
-                 .expected = "loan pay must not increase PrincipalOutstanding"},
-                {.principal = Number(50),
-                 .totalValue = Number(160),
-                 .remaining = 1,
-                 .dueDate = 110,
-                 .expected = "loan pay must not increase TotalValueOutstanding"},
-                {.principal = Number(50),
-                 .totalValue = Number(150),
-                 .remaining = 2,
-                 .dueDate = 110,
-                 .expected = "loan pay must decrease PaymentRemaining"},
-                {.principal = Number(50),
-                 .totalValue = Number(150),
-                 .remaining = 1,
-                 .dueDate = 100,
-                 .expected = "loan pay must advance NextPaymentDueDate"},
+                {
+                    .principal = Number(100),
+                    .totalValue = Number(150),
+                    .remaining = 1,
+                    .dueDate = 110,
+                    .expected = "loan pay must decrease PrincipalOutstanding or "
+                                "TotalValueOutstanding",
+                },
+                {
+                    .principal = Number(110),
+                    .totalValue = Number(150),
+                    .remaining = 1,
+                    .dueDate = 110,
+                    .expected = "loan pay must not increase PrincipalOutstanding",
+                },
+                {
+                    .principal = Number(50),
+                    .totalValue = Number(160),
+                    .remaining = 1,
+                    .dueDate = 110,
+                    .expected = "loan pay must not increase TotalValueOutstanding",
+                },
+                {
+                    .principal = Number(50),
+                    .totalValue = Number(150),
+                    .remaining = 2,
+                    .dueDate = 110,
+                    .expected = "loan pay must decrease PaymentRemaining",
+                },
+                {
+                    .principal = Number(50),
+                    .totalValue = Number(150),
+                    .remaining = 1,
+                    .dueDate = 100,
+                    .expected = "loan pay must advance NextPaymentDueDate",
+                },
                 // Advanced, but not by a whole number of payment intervals.
-                {.principal = Number(50),
-                 .totalValue = Number(150),
-                 .remaining = 1,
-                 .dueDate = 105,
-                 .expected = "loan pay must advance NextPaymentDueDate"},
+                {
+                    .principal = Number(50),
+                    .totalValue = Number(150),
+                    .remaining = 1,
+                    .dueDate = 105,
+                    .expected = "loan pay must advance NextPaymentDueDate",
+                },
             });
 
             for (auto const& c : cases)
@@ -1932,10 +1980,12 @@ class InvariantsVault_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {"create operation must not have updated a vault",
-             "shares issuer and vault pseudo-account must be the same",
-             "shares issuer must be a pseudo-account",
-             "shares issuer pseudo-account must point back to the vault"},
+            {
+                "create operation must not have updated a vault",
+                "shares issuer and vault pseudo-account must be the same",
+                "shares issuer must be a pseudo-account",
+                "shares issuer pseudo-account must point back to the vault",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -2018,8 +2068,10 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
         doInvariantCheck(
-            {"shares issuer and vault pseudo-account must be the same",
-             "shares issuer pseudo-account must point back to the vault"},
+            {
+                "shares issuer and vault pseudo-account must be the same",
+                "shares issuer pseudo-account must point back to the vault",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sequence = ac.view().seq();
                 auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(sequence));
@@ -2178,11 +2230,13 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp);
 
         doInvariantCheck(
-            {"deposit must increase vault balance",
-             "deposit must decrease depositor balance",
-             "deposit must change vault and depositor balance by equal amount",
-             "deposit and assets outstanding must add up",
-             "deposit and assets available must add up"},
+            {
+                "deposit must increase vault balance",
+                "deposit must decrease depositor balance",
+                "deposit must change vault and depositor balance by equal amount",
+                "deposit and assets outstanding must add up",
+                "deposit and assets available must add up",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
 
@@ -2256,10 +2310,12 @@ class InvariantsVault_test : public InvariantsBase
             TxAccount::A2);
 
         doInvariantCheck(
-            {"deposit must increase depositor shares",
-             "deposit must change depositor and vault shares by equal amount",
-             "deposit must not change vault balance by more than deposited "
-             "amount"},
+            {
+                "deposit must increase depositor shares",
+                "deposit must change depositor and vault shares by equal amount",
+                "deposit must not change vault balance by more than deposited "
+                "amount",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
@@ -2298,8 +2354,10 @@ class InvariantsVault_test : public InvariantsBase
             TxAccount::A2);
 
         doInvariantCheck(
-            {"deposit and assets outstanding must add up",
-             "deposit and assets available must add up"},
+            {
+                "deposit and assets outstanding must add up",
+                "deposit and assets available must add up",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
@@ -2438,9 +2496,11 @@ class InvariantsVault_test : public InvariantsBase
             TxAccount::A2);
 
         doInvariantCheck(
-            {"withdrawal must decrease depositor shares",
-             "withdrawal must change depositor and vault shares by equal "
-             "amount"},
+            {
+                "withdrawal must decrease depositor shares",
+                "withdrawal must change depositor and vault shares by equal "
+                "amount",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
@@ -2455,8 +2515,10 @@ class InvariantsVault_test : public InvariantsBase
             TxAccount::A2);
 
         doInvariantCheck(
-            {"withdrawal and assets outstanding must add up",
-             "withdrawal and assets available must add up"},
+            {
+                "withdrawal and assets outstanding must add up",
+                "withdrawal and assets available must add up",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
@@ -2541,9 +2603,11 @@ class InvariantsVault_test : public InvariantsBase
         };
 
         doInvariantCheck(
-            {"withdrawal must decrease depositor shares",
-             "withdrawal must change depositor and vault shares by equal "
-             "amount"},
+            {
+                "withdrawal must decrease depositor shares",
+                "withdrawal must change depositor and vault shares by equal "
+                "amount",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet =
                     keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq() - 2));
@@ -2598,9 +2662,11 @@ class InvariantsVault_test : public InvariantsBase
             precloseMpt);
 
         doInvariantCheck(
-            {"clawback must decrease vault balance",
-             "clawback must decrease holder shares",
-             "clawback must change vault shares"},
+            {
+                "clawback must decrease vault balance",
+                "clawback must decrease holder shares",
+                "clawback must change vault shares",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet =
                     keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq() - 2));
@@ -2638,9 +2704,11 @@ class InvariantsVault_test : public InvariantsBase
             precloseMpt);
 
         doInvariantCheck(
-            {"clawback must change holder and vault shares by equal amount",
-             "clawback and assets outstanding must add up",
-             "clawback and assets available must add up"},
+            {
+                "clawback must change holder and vault shares by equal amount",
+                "clawback and assets outstanding must add up",
+                "clawback and assets available must add up",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet =
                     keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq() - 2));
@@ -2685,12 +2753,13 @@ class InvariantsVault_test : public InvariantsBase
                 auto const sub = env.now().time_since_epoch().count() + 60;
                 auto const red = sub + kMinInvestmentPeriod + 1'000'000;
                 Vault const vault{env};
-                auto [tx, keylet] = vault.create(
-                    {.owner = a1,
-                     .asset = xrpIssue(),
-                     .vaultKind = closedEnded,
-                     .subscriptionDate = sub,
-                     .redemptionDate = red});
+                auto [tx, keylet] = vault.create({
+                    .owner = a1,
+                    .asset = xrpIssue(),
+                    .vaultKind = closedEnded,
+                    .subscriptionDate = sub,
+                    .redemptionDate = red,
+                });
                 env(tx);
                 closedEndedKeylet = keylet;
                 if (doDeposit)
@@ -2781,8 +2850,10 @@ class InvariantsVault_test : public InvariantsBase
         // Gap smaller than MIN_INVESTMENT_PERIOD but with RedemptionDate > SubscriptionDate;
         // exercises the sub-minimum branch of the gap check.
         doInvariantCheck(
-            {"closed-ended vault RedemptionDate - SubscriptionDate must be "
-             "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)"},
+            {
+                "closed-ended vault RedemptionDate - SubscriptionDate must be "
+                "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)",
+            },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 std::uint32_t const sub = 1'000'000'000;
                 std::uint32_t const red = sub + kMinInvestmentPeriod - 1;
@@ -2795,8 +2866,10 @@ class InvariantsVault_test : public InvariantsBase
         // RedemptionDate strictly before SubscriptionDate; the signed int64 gap is negative and
         // is caught by the sub-minimum branch of the gap check.
         doInvariantCheck(
-            {"closed-ended vault RedemptionDate - SubscriptionDate must be "
-             "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)"},
+            {
+                "closed-ended vault RedemptionDate - SubscriptionDate must be "
+                "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)",
+            },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 std::uint32_t const sub = 1'000'000'000;
                 std::uint32_t const red = sub - 1;
@@ -2808,8 +2881,10 @@ class InvariantsVault_test : public InvariantsBase
 
         // Gap exactly MAX_INVESTMENT_PERIOD is out of range (bound is half-open on the right).
         doInvariantCheck(
-            {"closed-ended vault RedemptionDate - SubscriptionDate must be "
-             "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)"},
+            {
+                "closed-ended vault RedemptionDate - SubscriptionDate must be "
+                "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)",
+            },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 std::uint32_t const sub = 1'000'000'000;
                 std::uint32_t const red = sub + kMaxInvestmentPeriod;
@@ -2879,8 +2954,10 @@ class InvariantsVault_test : public InvariantsBase
         Keylet closedEndedBrokerKeylet = keylet::amendments();
         std::uint32_t closedEndedRed = 0;
         doInvariantCheck(
-            {"closed-ended loan final payment must precede RedemptionDate by at least "
-             "kLoanRedemptionBuffer"},
+            {
+                "closed-ended loan final payment must precede RedemptionDate by at least "
+                "kLoanRedemptionBuffer",
+            },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 // Touch the vault so ValidVault::finalizeLoanSet sees an
                 // entry in afterVault_; the vault is in Investment, so
@@ -2920,12 +2997,13 @@ class InvariantsVault_test : public InvariantsBase
                 closedEndedRed = red;
 
                 Vault const vault{env};
-                auto [tx, keylet] = vault.create(
-                    {.owner = a1,
-                     .asset = xrpIssue(),
-                     .vaultKind = closedEnded,
-                     .subscriptionDate = sub,
-                     .redemptionDate = red});
+                auto [tx, keylet] = vault.create({
+                    .owner = a1,
+                    .asset = xrpIssue(),
+                    .vaultKind = closedEnded,
+                    .subscriptionDate = sub,
+                    .redemptionDate = red,
+                });
                 env(tx);
                 closedEndedKeylet = keylet;
 
@@ -2970,11 +3048,12 @@ class InvariantsVault_test : public InvariantsBase
         // covers this helper's 120 monthly payments so LoanSet's
         // RedemptionDate bound is satisfied.
         Vault const vault{env};
-        auto [vaultTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
-            {.owner = owner,
-             .asset = usd,
-             .subscriptionOffset = std::chrono::seconds{60},
-             .investmentWindow = std::chrono::seconds{10ull * 365ull * 24ull * 60ull * 60ull}});
+        auto [vaultTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded({
+            .owner = owner,
+            .asset = usd,
+            .subscriptionOffset = std::chrono::seconds{60},
+            .investmentWindow = std::chrono::seconds{10ull * 365ull * 24ull * 60ull * 60ull},
+        });
         env(vaultTx);
         env.close();
 
@@ -3054,7 +3133,8 @@ class InvariantsVault_test : public InvariantsBase
 
         auto const kExpectedLog = std::vector<std::string>{
             "loss unrealized must not exceed the difference between assets "
-            "outstanding and available"};
+            "outstanding and available",
+        };
 
         for (auto const withFix : {false, true})
         {
@@ -3179,26 +3259,32 @@ class InvariantsVault_test : public InvariantsBase
                     .name = "Mixed scales",
                     .expectedMinScale = -17,
                     .values =
-                        {makeDelta(Number{1, -2}),
-                         makeDelta(Number{5, -3}),
-                         makeDelta(Number{3, -2})},
+                        {
+                            makeDelta(Number{1, -2}),
+                            makeDelta(Number{5, -3}),
+                            makeDelta(Number{3, -2}),
+                        },
                 },
                 {
                     .name = "Equal scales",
                     .expectedMinScale = -16,
                     .values =
-                        {makeDelta(Number{1, -1}),
-                         makeDelta(Number{5, -1}),
-                         makeDelta(Number{1, -1})},
+                        {
+                            makeDelta(Number{1, -1}),
+                            makeDelta(Number{5, -1}),
+                            makeDelta(Number{1, -1}),
+                        },
                 },
                 {
                     .name = "Mixed mantissa sizes",
                     .expectedMinScale = -12,
                     .values =
-                        {makeDelta(Number{1}),
-                         makeDelta(Number{1234, -3}),
-                         makeDelta(Number{12345, -6}),
-                         makeDelta(Number{123, 1})},
+                        {
+                            makeDelta(Number{1}),
+                            makeDelta(Number{1234, -3}),
+                            makeDelta(Number{12345, -6}),
+                            makeDelta(Number{123, 1}),
+                        },
                 },
             };
 

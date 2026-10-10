@@ -271,9 +271,10 @@ public:
         using namespace test::jtx;
 
         // Make sure fixInnerObjTemplate2 doesn't break amendments.
-        for (FeatureBitset const& features :
-             {testableAmendments() - fixInnerObjTemplate2,
-              testableAmendments() | fixInnerObjTemplate2})
+        for (FeatureBitset const& features : {
+                 testableAmendments() - fixInnerObjTemplate2,
+                 testableAmendments() | fixInnerObjTemplate2,
+             })
         {
             using namespace std::chrono;
             Env env{*this, envconfig(validator, ""), features};
@@ -290,17 +291,18 @@ public:
             };
 
             // Assert that state is an empty array.
-            for (auto const& type :
-                 {jss::amendments,
-                  jss::check,
-                  jss::directory,
-                  jss::offer,
-                  jss::signer_list,
-                  jss::state,
-                  jss::ticket,
-                  jss::escrow,
-                  jss::payment_channel,
-                  jss::deposit_preauth})
+            for (auto const& type : {
+                     jss::amendments,
+                     jss::check,
+                     jss::directory,
+                     jss::offer,
+                     jss::signer_list,
+                     jss::state,
+                     jss::ticket,
+                     jss::escrow,
+                     jss::payment_channel,
+                     jss::deposit_preauth,
+                 })
             {
                 auto const jrr = makeRequest(type);
                 BEAST_EXPECT(checkArraySize(jrr[jss::state], 0));

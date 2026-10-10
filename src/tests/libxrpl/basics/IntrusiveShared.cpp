@@ -83,7 +83,7 @@ enum class TrackedState : std::uint8_t {
     PartiallyDeletedStarted,
     PartiallyDeleted,
     DeletedStarted,
-    Deleted
+    Deleted,
 };
 
 class TIBase : public IntrusiveRefCounts

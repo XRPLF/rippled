@@ -82,8 +82,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
             env(fset(bob, asfDepositAuth));
             env.close();
@@ -132,8 +134,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
             env(fset(bob, asfDepositAuth));
             env.close();
@@ -177,8 +181,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
             env(fset(bob, asfDepositAuth));
             env.close();
@@ -270,8 +276,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
             env(fset(bob, asfDepositAuth));
             env.close();
@@ -311,8 +319,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
             auto const credIdx = createExpiringCredential(env, carol);
@@ -352,8 +362,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
             env(fset(bob, asfDepositAuth));
             env.close();
@@ -409,8 +421,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
             mpt.send({
@@ -428,8 +442,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
             std::vector<std::string> tooManyCredentials;
@@ -454,8 +470,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
             env(credentials::create(carol, dpIssuer, credType));
@@ -481,8 +499,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
             std::string const fakeCredIdx = to_string(UInt256(999));
@@ -503,8 +523,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
             // Create credential for BOB (not carol)
@@ -533,8 +555,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
             // Create credential but DON'T accept it
@@ -562,8 +586,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
             auto constexpr kCredIdx =
@@ -1794,12 +1820,13 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         mptAlice.mergeInbox({.account = carol});
 
         // Dave does not have permission to send on behalf of bob.
-        mptAlice.send(
-            {.account = bob,
-             .dest = carol,
-             .amt = 10,
-             .delegate = dave,
-             .err = terNO_DELEGATE_PERMISSION});
+        mptAlice.send({
+            .account = bob,
+            .dest = carol,
+            .amt = 10,
+            .delegate = dave,
+            .err = terNO_DELEGATE_PERMISSION,
+        });
 
         // Bob delegates ConfidentialMPTSend to dave.
         env(delegate::set(bob, dave, {"ConfidentialMPTMergeInbox", "ConfidentialMPTSend"}));
@@ -1981,8 +2008,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         ConfidentialEnv const confEnv{
             env,
             alice,
-            {{.account = bob, .payAmount = 100, .convertAmount = 50},
-             {.account = carol, .payAmount = 100, .convertAmount = 100}},
+            {
+                {.account = bob, .payAmount = 100, .convertAmount = 50},
+                {.account = carol, .payAmount = 100, .convertAmount = 100},
+            },
             tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanHoldConfidentialBalance};
         auto& mptAlice = confEnv.mpt;
         env.fund(XRP(10000), dave);

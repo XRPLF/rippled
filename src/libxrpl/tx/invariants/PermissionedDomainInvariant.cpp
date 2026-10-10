@@ -36,7 +36,8 @@ ValidPermissionedDomain::visitEntry(bool isDel, SLE::ConstRef before, SLE::Const
             .credentialsSize = credentials.size(),
             .isSorted = false,
             .isUnique = !sorted.empty(),
-            .isDelete = isDel};
+            .isDelete = isDel,
+        };
 
         // If array have duplicates then all the other checks are invalid
         if (ss.isUnique)

@@ -49,30 +49,36 @@ protected:
         if (v4)
         {
             auto bytes = beast::ip::AddressV4::bytes_type{
-                {54,
-                 static_cast<std::uint8_t>((index / 256) % 256),
-                 static_cast<std::uint8_t>(index % 256),
-                 1}};
+                {
+                    54,
+                    static_cast<std::uint8_t>((index / 256) % 256),
+                    static_cast<std::uint8_t>(index % 256),
+                    1,
+                },
+            };
             return beast::ip::Endpoint{beast::ip::Address{beast::ip::AddressV4{bytes}}, port};
         }
 
         auto bytes = beast::ip::AddressV6::bytes_type{
-            {0x20,
-             0x01,
-             0x0d,
-             0xb8,
-             0,
-             0,
-             0,
-             0,
-             0,
-             0,
-             0,
-             0,
-             0,
-             static_cast<std::uint8_t>((index / 256) % 256),
-             static_cast<std::uint8_t>(index % 256),
-             1}};
+            {
+                0x20,
+                0x01,
+                0x0d,
+                0xb8,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                static_cast<std::uint8_t>((index / 256) % 256),
+                static_cast<std::uint8_t>(index % 256),
+                1,
+            },
+        };
         return beast::ip::Endpoint{beast::ip::Address{beast::ip::AddressV6{bytes}}, port};
     }
 

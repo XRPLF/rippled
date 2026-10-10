@@ -74,7 +74,8 @@ class CheckMPT_test : public beast::unit_test::Suite
     {
         // Get the hash for the most recent transaction.
         std::string const txHash{
-            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString(),
+        };
 
         // Verify DeliveredAmount and delivered_amount metadata are correct.
         env.close();
@@ -685,12 +686,13 @@ class CheckMPT_test : public beast::unit_test::Suite
             Env env(*this, features);
 
             env.fund(XRP(1000), gw, alice, bob);
-            auto usdm = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .flags = kMptDexFlags | tfMPTRequireAuth,
-                 .maxAmt = 20});
+            auto usdm = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .flags = kMptDexFlags | tfMPTRequireAuth,
+                .maxAmt = 20,
+            });
             MPT const usd = usdm;
             usdm.authorize({.holder = alice});
             env.close();
@@ -803,12 +805,13 @@ class CheckMPT_test : public beast::unit_test::Suite
         env.fund(XRP(1'000), gw, alice, bob);
 
         // Set gw's transfer rate and see the consequences when cashing a check.
-        MPT const usd = MPTTester(
-            {.env = env,
-             .issuer = gw,
-             .holders = {alice, bob},
-             .transferFee = 25'000,
-             .maxAmt = 1'000});
+        MPT const usd = MPTTester({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice, bob},
+            .transferFee = 25'000,
+            .maxAmt = 1'000,
+        });
 
         env.close();
         env(pay(gw, alice, usd(1'000)));
@@ -838,12 +841,13 @@ class CheckMPT_test : public beast::unit_test::Suite
         // With the maximum transfer fee, this is the largest output whose
         // fee-adjusted debit is still within SendMax.
         std::uint64_t constexpr maxDeliver = (kMaxMpTokenAmount / 3) * 2;
-        MPT const eur = MPTTester(
-            {.env = env,
-             .issuer = gw,
-             .holders = {alice, bob},
-             .transferFee = kMaxTransferFee,
-             .maxAmt = kMaxMpTokenAmount});
+        MPT const eur = MPTTester({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice, bob},
+            .transferFee = kMaxTransferFee,
+            .maxAmt = kMaxMpTokenAmount,
+        });
 
         env(pay(gw, alice, eur(kMaxMpTokenAmount)));
         env.close();
@@ -880,12 +884,13 @@ class CheckMPT_test : public beast::unit_test::Suite
 
         env.fund(XRP(1000), gw, alice, bob, zoe);
 
-        auto usdm = MPTTester(
-            {.env = env,
-             .issuer = gw,
-             .holders = {alice},
-             .flags = kMptDexFlags | tfMPTCanLock,
-             .maxAmt = maxAmt});
+        auto usdm = MPTTester({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice},
+            .flags = kMptDexFlags | tfMPTCanLock,
+            .maxAmt = maxAmt,
+        });
         MPT const usd = usdm;
 
         env(pay(gw, alice, usd(20)));

@@ -295,7 +295,8 @@ private:
             &sfConfidentialBalanceInbox,
             &sfConfidentialBalanceSpending,
             &sfIssuerEncryptedBalance,
-            &sfAuditorEncryptedBalance};
+            &sfAuditorEncryptedBalance,
+        };
 
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             for (auto const field : encryptedBalanceFields)

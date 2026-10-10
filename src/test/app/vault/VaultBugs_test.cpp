@@ -778,11 +778,12 @@ private:
                 PrettyAsset const usd{issuer["USD"]};
 
                 // 1 share's worth of assets: 1e-6, below AssetsTotal's storage precision.
-                env(Vault::clawback(
-                        {.issuer = issuer,
-                         .id = keylet.key,
-                         .holder = Account{"holder"},
-                         .amount = usd(Number{1, -6}).value()}),
+                env(Vault::clawback({
+                        .issuer = issuer,
+                        .id = keylet.key,
+                        .holder = Account{"holder"},
+                        .amount = usd(Number{1, -6}).value(),
+                    }),
                     Ter(expected));
                 env.close();
             };
@@ -802,10 +803,11 @@ private:
                 MPTIssue const share{env.le(keylet)->at(sfShareMPTID)};
 
                 // Redeem 1 share, worth 1e-6 assets, below AssetsTotal's storage precision.
-                env(Vault::withdraw(
-                        {.depositor = Account{"holder"},
-                         .id = keylet.key,
-                         .amount = STAmount{share, 1}}),
+                env(Vault::withdraw({
+                        .depositor = Account{"holder"},
+                        .id = keylet.key,
+                        .amount = STAmount{share, 1},
+                    }),
                     Ter(expected));
                 env.close();
             };
@@ -1089,10 +1091,11 @@ private:
             // Pre-fix: succeeds (tesSUCCESS) because the limit check was
             //   skipped for share-denominated withdrawals.
             {
-                auto withdrawTx = vault.withdraw(
-                    {.depositor = depositor,
-                     .id = keylet.key,
-                     .amount = STAmount(share, 10'000'000)});
+                auto withdrawTx = vault.withdraw({
+                    .depositor = depositor,
+                    .id = keylet.key,
+                    .amount = STAmount(share, 10'000'000),
+                });
                 withdrawTx[sfDestination] = charlie.human();
                 env(withdrawTx, Ter{withFix ? TER{tecNO_LINE} : TER{tesSUCCESS}});
                 env.close();
@@ -1224,7 +1227,8 @@ private:
             .vault = vault,
             .vaultKeylet = vaultKeylet,
             .initialAssetsTotal = initialAssetsTotal,
-            .initialAssetsAvailable = initialAssetsAvailable};
+            .initialAssetsAvailable = initialAssetsAvailable,
+        };
     }
 
     // VaultClawback::assetsToClawback converts clawbackAmount to shares
@@ -1252,11 +1256,12 @@ private:
                 return;
 
             auto const clawbackAmount = setup->usd(4);
-            env(setup->vault.clawback(
-                {.issuer = setup->issuer,
-                 .id = setup->vaultKeylet.key,
-                 .holder = setup->holder,
-                 .amount = clawbackAmount.value()}));
+            env(setup->vault.clawback({
+                .issuer = setup->issuer,
+                .id = setup->vaultKeylet.key,
+                .holder = setup->holder,
+                .amount = clawbackAmount.value(),
+            }));
 
             auto const vaultSleAfter = env.current()->read(setup->vaultKeylet);
             if (!BEAST_EXPECT(vaultSleAfter))
@@ -1316,10 +1321,11 @@ private:
                 return;
 
             auto const requested = setup->usd(4);
-            env(setup->vault.withdraw(
-                {.depositor = setup->holder,
-                 .id = setup->vaultKeylet.key,
-                 .amount = requested.value()}));
+            env(setup->vault.withdraw({
+                .depositor = setup->holder,
+                .id = setup->vaultKeylet.key,
+                .amount = requested.value(),
+            }));
 
             auto const vaultSleAfter = env.current()->read(setup->vaultKeylet);
             if (!BEAST_EXPECT(vaultSleAfter))
@@ -1474,7 +1480,8 @@ private:
             .usd = usd,
             .vault = vault,
             .vaultKeylet = vaultKeylet,
-            .shareId = shareId};
+            .shareId = shareId,
+        };
     }
 
     // Legacy clawback pricing burns every share; fixCleanup3_4_0 leaves 10%
@@ -1485,11 +1492,12 @@ private:
         using namespace test::jtx;
 
         auto clawbackHolder = [](ImpairedLoanVault const& setup, STAmount const& amount) {
-            return setup.vault.clawback(
-                {.issuer = setup.issuer,
-                 .id = setup.vaultKeylet.key,
-                 .holder = setup.holder,
-                 .amount = amount});
+            return setup.vault.clawback({
+                .issuer = setup.issuer,
+                .id = setup.vaultKeylet.key,
+                .holder = setup.holder,
+                .amount = amount,
+            });
         };
 
         auto runSole = [this, &clawbackHolder](FeatureBitset features, TER expected) {

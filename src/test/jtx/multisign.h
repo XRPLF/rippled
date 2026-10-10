@@ -84,7 +84,8 @@ public:
     explicit Msig(SField const* subField, AccountType&& a0, Accounts&&... aN)
         : Msig{
               subField,
-              std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
+              std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...},
+          }
     {
     }
 
@@ -93,7 +94,8 @@ public:
     explicit Msig(SField const& subField, AccountType&& a0, Accounts&&... aN)
         : Msig{
               &subField,
-              std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
+              std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...},
+          }
     {
     }
 
@@ -102,7 +104,8 @@ public:
     explicit Msig(AccountType&& a0, Accounts&&... aN)
         : Msig{
               kTopLevel,
-              std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
+              std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...},
+          }
     {
     }
 

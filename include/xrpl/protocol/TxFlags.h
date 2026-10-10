@@ -319,7 +319,9 @@ inline FlagMap const&
 getUniversalFlags()
 {
     static FlagMap const flags = {
-        {"tfFullyCanonicalSig", tfFullyCanonicalSig}, {"tfInnerBatchTxn", tfInnerBatchTxn}};
+        {"tfFullyCanonicalSig", tfFullyCanonicalSig},
+        {"tfInnerBatchTxn", tfInnerBatchTxn},
+    };
     return flags;
 }
 

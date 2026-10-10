@@ -519,11 +519,12 @@ private:
             }
 
             {
-                auto tx = vault.clawback(
-                    {.issuer = issuer,
-                     .id = keylet.key,
-                     .holder = owner,
-                     .amount = kNegativeAmount(asset)});
+                auto tx = vault.clawback({
+                    .issuer = issuer,
+                    .id = keylet.key,
+                    .holder = owner,
+                    .amount = kNegativeAmount(asset),
+                });
                 env(tx, Ter(temBAD_AMOUNT));
             }
         });
@@ -1147,7 +1148,8 @@ private:
         {
             auto const domainId = [&] {
                 pdomain::Credentials const credentials{
-                    {.issuer = credIssuer, .credType = credType}};
+                    {.issuer = credIssuer, .credType = credType},
+                };
                 env(pdomain::setTx(pdOwner, credentials));
                 env.close();
                 return pdomain::getNewDomain(env.meta());

@@ -112,11 +112,12 @@ public:
         int const maxConsumed = 1'000;
         int const evitaOfferCount{maxConsumed + 49};
 
-        MPT const usd = MPTTester(
-            {.env = env,
-             .issuer = gw,
-             .holders = {"bob", "alice", "carol", "evita"},
-             .maxAmt = 2'000 + evitaOfferCount + 1});
+        MPT const usd = MPTTester({
+            .env = env,
+            .issuer = gw,
+            .holders = {"bob", "alice", "carol", "evita"},
+            .maxAmt = 2'000 + evitaOfferCount + 1,
+        });
 
         env(pay(gw, "alice", usd(1000)));
         env(pay(gw, "carol", usd(1)));
@@ -193,18 +194,20 @@ public:
 
                 env.fund(XRP(100'000'000), gw, alice, bob, carol);
 
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw,
-                     .holders = {alice, carol},
-                     .limit = kMaxMpTokenAmount});
-                auto const eur = issue2(
-                    {.env = env,
-                     .token = "EUR",
-                     .issuer = gw,
-                     .holders = {bob},
-                     .limit = kMaxMpTokenAmount});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw,
+                    .holders = {alice, carol},
+                    .limit = kMaxMpTokenAmount,
+                });
+                auto const eur = issue2({
+                    .env = env,
+                    .token = "EUR",
+                    .issuer = gw,
+                    .holders = {bob},
+                    .limit = kMaxMpTokenAmount,
+                });
 
                 env(pay(gw, alice, usd(4'000)));
                 env(pay(gw, carol, usd(3)));
@@ -284,18 +287,20 @@ public:
 
                 env.fund(XRP(100'000'000), gw, alice, bob, carol);
 
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw,
-                     .holders = {alice, carol},
-                     .limit = kMaxMpTokenAmount});
-                auto const eur = issue2(
-                    {.env = env,
-                     .token = "EUR",
-                     .issuer = gw,
-                     .holders = {bob},
-                     .limit = kMaxMpTokenAmount});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw,
+                    .holders = {alice, carol},
+                    .limit = kMaxMpTokenAmount,
+                });
+                auto const eur = issue2({
+                    .env = env,
+                    .token = "EUR",
+                    .issuer = gw,
+                    .holders = {bob},
+                    .limit = kMaxMpTokenAmount,
+                });
 
                 env(pay(gw, alice, usd(4'000)));
                 env(pay(gw, carol, usd(3)));

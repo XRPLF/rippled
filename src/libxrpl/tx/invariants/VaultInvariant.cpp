@@ -1368,7 +1368,8 @@ ValidVault::DeltaInfo::makeDelta(Number const& before, Number const& after, Asse
 {
     return {
         .delta = after - before,
-        .scale = std::max(xrpl::scale(after, asset), xrpl::scale(before, asset))};
+        .scale = std::max(xrpl::scale(after, asset), xrpl::scale(before, asset)),
+    };
 }
 
 [[nodiscard]] std::int32_t

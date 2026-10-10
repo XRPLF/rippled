@@ -15,29 +15,35 @@ randomEP(bool v4 = true)
     using namespace xrpl;
     auto dv4 = [] -> AddressV4::bytes_type {
         return {
-            {static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX))}};
+            {
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+            },
+        };
     };
     auto dv6 = [] -> AddressV6::bytes_type {
         return {
-            {static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX))}};
+            {
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+                static_cast<std::uint8_t>(randInt<int>(1, UINT8_MAX)),
+            },
+        };
     };
     return Endpoint{
         v4 ? Address{AddressV4{dv4()}} : Address{AddressV6{dv6()}},

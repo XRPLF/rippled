@@ -217,7 +217,8 @@ ServerHandler::onHandoff(
     using namespace boost::beast;
     auto const& p{session.port().protocol};
     bool const isWs{
-        p.contains("ws") || p.contains("ws2") || p.contains("wss") || p.contains("wss2")};
+        p.contains("ws") || p.contains("ws2") || p.contains("wss") || p.contains("wss2"),
+    };
 
     if (websocket::is_upgrade(request))
     {
@@ -473,18 +474,21 @@ ServerHandler::processSession(
         else
         {
             rpc::JsonContext context{
-                {.j = app_.getJournal("RPCHandler"),
-                 .app = app_,
-                 .loadType = loadType,
-                 .netOps = app_.getOPs(),
-                 .ledgerMaster = app_.getLedgerMaster(),
-                 .consumer = is->getConsumer(),
-                 .role = role,
-                 .coro = coro,
-                 .infoSub = is,
-                 .apiVersion = apiVersion},
+                {
+                    .j = app_.getJournal("RPCHandler"),
+                    .app = app_,
+                    .loadType = loadType,
+                    .netOps = app_.getOPs(),
+                    .ledgerMaster = app_.getLedgerMaster(),
+                    .consumer = is->getConsumer(),
+                    .role = role,
+                    .coro = coro,
+                    .infoSub = is,
+                    .apiVersion = apiVersion,
+                },
                 jv,
-                {.user = is->user(), .forwardedFor = is->forwardedFor()}};
+                {.user = is->user(), .forwardedFor = is->forwardedFor()},
+            };
 
             auto start = std::chrono::system_clock::now();
             rpc::doCommand(context, jr[jss::result]);
@@ -854,18 +858,21 @@ ServerHandler::processRequest(
         resource::Charge loadType = resource::kFeeReferenceRpc;
 
         rpc::JsonContext context{
-            {.j = journal_,
-             .app = app_,
-             .loadType = loadType,
-             .netOps = networkOPs_,
-             .ledgerMaster = app_.getLedgerMaster(),
-             .consumer = usage,
-             .role = role,
-             .coro = coro,
-             .infoSub = InfoSub::pointer(),
-             .apiVersion = apiVersion},
+            {
+                .j = journal_,
+                .app = app_,
+                .loadType = loadType,
+                .netOps = networkOPs_,
+                .ledgerMaster = app_.getLedgerMaster(),
+                .consumer = usage,
+                .role = role,
+                .coro = coro,
+                .infoSub = InfoSub::pointer(),
+                .apiVersion = apiVersion,
+            },
             params,
-            {.user = user, .forwardedFor = forwardedFor}};
+            {.user = user, .forwardedFor = forwardedFor},
+        };
         json::Value result;
 
         auto start = std::chrono::system_clock::now();

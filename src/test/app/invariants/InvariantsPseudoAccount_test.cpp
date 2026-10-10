@@ -174,9 +174,11 @@ class InvariantsPseudoAccount_test : public InvariantsBase
         // Take one of the regular accounts and set the sequence to 0, which
         // will make it look like a pseudo-account
         doInvariantCheck(
-            {{"pseudo-account has 0 pseudo-account fields set"},
-             {"pseudo-account sequence changed"},
-             {"pseudo-account flags are not set"}},
+            {
+                {"pseudo-account has 0 pseudo-account fields set"},
+                {"pseudo-account sequence changed"},
+                {"pseudo-account flags are not set"},
+            },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 auto sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
@@ -277,8 +279,12 @@ class InvariantsPseudoAccount_test : public InvariantsBase
             };
 
             doInvariantCheck(
-                {{"Loan Broker with zero OwnerCount has multiple directory "
-                  "pages"}},
+                {
+                    {
+                        "Loan Broker with zero OwnerCount has multiple directory "
+                        "pages",
+                    },
+                },
                 [&setupTest, this](Account const& a1, Account const& a2, ApplyContext& ac) {
                     auto test = setupTest(a1, a2, ac);
                     if (!test || !test->first || !test->second)
@@ -307,8 +313,12 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 createLoanBroker);
 
             doInvariantCheck(
-                {{"Loan Broker with zero OwnerCount has multiple indexes in "
-                  "the Directory root"}},
+                {
+                    {
+                        "Loan Broker with zero OwnerCount has multiple indexes in "
+                        "the Directory root",
+                    },
+                },
                 [&setupTest](Account const& a1, Account const& a2, ApplyContext& ac) {
                     auto test = setupTest(a1, a2, ac);
                     if (!test || !test->first || !test->second)
@@ -358,8 +368,12 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 createLoanBroker);
 
             doInvariantCheck(
-                {{"Loan Broker with zero OwnerCount has an unexpected entry in "
-                  "the directory"}},
+                {
+                    {
+                        "Loan Broker with zero OwnerCount has an unexpected entry in "
+                        "the directory",
+                    },
+                },
                 [&setupTest](Account const& a1, Account const& a2, ApplyContext& ac) {
                     auto test = setupTest(a1, a2, ac);
                     if (!test || !test->first || !test->second)

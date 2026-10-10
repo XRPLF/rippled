@@ -817,7 +817,8 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             {temXCHAIN_BRIDGE_BAD_ISSUES, temXCHAIN_BRIDGE_BAD_ISSUES},
             {temXCHAIN_BRIDGE_BAD_ISSUES, temXCHAIN_BRIDGE_BAD_ISSUES},
             {temXCHAIN_BRIDGE_BAD_ISSUES, temXCHAIN_BRIDGE_BAD_ISSUES},
-            {tesSUCCESS, tesSUCCESS}};
+            {tesSUCCESS, tesSUCCESS},
+        };
 
         std::vector<std::tuple<TER, TER, bool>> testResult;
 
@@ -2325,7 +2326,8 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             .minAccountCreate = XRP(20),  // minAccountCreate
             .quorum = 4,                  // quorum
             .signers = signers,
-            .jvb = json::ValueType::Null};
+            .jvb = json::ValueType::Null,
+        };
 
         xrpB.initBridge(mcEnv, scEnv);
 
@@ -4503,7 +4505,8 @@ public:
             .minAccountCreate = XRP(20),
             .quorum = quorum,
             .signers = signers,
-            .jvb = json::ValueType::Null};
+            .jvb = json::ValueType::Null,
+        };
 
         initBridge(xrpB);
 
@@ -4518,7 +4521,8 @@ public:
             .minAccountCreate = XRP(20),
             .quorum = quorum,
             .signers = signers,
-            .jvb = json::ValueType::Null};
+            .jvb = json::ValueType::Null,
+        };
 
         initBridge(usdB);
 
@@ -4557,22 +4561,26 @@ public:
             0,
             st,
             xrpB,
-            {.from = a[0],
-             .to = a[0],
-             .finaldest = a[1],
-             .amt = XRP(6),
-             .a2b = true,
-             .withClaim = WithClaim::No});
+            {
+                .from = a[0],
+                .to = a[0],
+                .finaldest = a[1],
+                .amt = XRP(6),
+                .a2b = true,
+                .withClaim = WithClaim::No,
+            });
         xfer(
             1,
             st,
             xrpB,
-            {.from = a[0],
-             .to = a[0],
-             .finaldest = a[1],
-             .amt = XRP(8),
-             .a2b = false,
-             .withClaim = WithClaim::No});
+            {
+                .from = a[0],
+                .to = a[0],
+                .finaldest = a[1],
+                .amt = XRP(8),
+                .a2b = false,
+                .withClaim = WithClaim::No,
+            });
         xfer(
             1, st, xrpB, {.from = a[1], .to = a[1], .finaldest = a[1], .amt = XRP(1), .a2b = true});
         xfer(
@@ -4589,12 +4597,14 @@ public:
             2,
             st,
             xrpB,
-            {.from = a[0],
-             .to = a[0],
-             .finaldest = a[1],
-             .amt = XRP(7),
-             .a2b = false,
-             .withClaim = WithClaim::No});
+            {
+                .from = a[0],
+                .to = a[0],
+                .finaldest = a[1],
+                .amt = XRP(7),
+                .a2b = false,
+                .withClaim = WithClaim::No,
+            });
         xfer(
             2, st, xrpB, {.from = a[1], .to = a[1], .finaldest = a[1], .amt = XRP(9), .a2b = true});
         runSimulation(st);

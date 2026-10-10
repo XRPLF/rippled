@@ -26,7 +26,7 @@ enum class ValueType {
     String,    ///< UTF-8 string value
     Boolean,   ///< bool value
     Array,     ///< array value (ordered list)
-    Object     ///< object value (collection of name/value pairs).
+    Object,    ///< object value (collection of name/value pairs).
 };
 
 /**

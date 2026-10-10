@@ -32,7 +32,7 @@ public:
         Module,
 
         // Match nothing (used internally)
-        None
+        None,
     };
 
 private:

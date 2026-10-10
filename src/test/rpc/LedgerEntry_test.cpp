@@ -219,7 +219,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             json::ValueType::Array,   // 17
             json::ValueType::Object,  // 18
             kInjectObject,            // 19
-            kInjectArray              // 20
+            kInjectArray,             // 20
         };
 
         auto remove = [&](std::vector<std::uint8_t> indices) -> std::vector<json::Value> {
@@ -595,7 +595,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
             static constexpr char kAliceAcctRootBinary[]{
                 "1100612200800000240000000425000000032D00000000559CE54C3B934E4"
                 "73A995B477E92EC229F99CED5B62BF4D2ACE4DC42719103AE2F6240000002"
-                "540BE4008114AE123A8556F3CF91154711376AFB0F894F832B3D"};
+                "540BE4008114AE123A8556F3CF91154711376AFB0F894F832B3D",
+            };
 
             // Request alice's account root, but with binary == true;
             json::Value jvParams;
@@ -1051,9 +1052,11 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 jss::deposit_preauth,
                 {
                     {.fieldName = jss::owner, .malformedErrorMsg = "malformedOwner"},
-                    {.fieldName = jss::authorized,
-                     .malformedErrorMsg = "malformedAuthorized",
-                     .required = false},
+                    {
+                        .fieldName = jss::authorized,
+                        .malformedErrorMsg = "malformedAuthorized",
+                        .required = false,
+                    },
                 });
         }
     }
@@ -1274,7 +1277,16 @@ class LedgerEntry_test : public beast::unit_test::Suite
         {
             // Failed, authorized_credentials is too long
             static std::array<std::string_view, 9> const kCredTypes = {
-                "cred1", "cred2", "cred3", "cred4", "cred5", "cred6", "cred7", "cred8", "cred9"};
+                "cred1",
+                "cred2",
+                "cred3",
+                "cred4",
+                "cred5",
+                "cred6",
+                "cred7",
+                "cred8",
+                "cred9",
+            };
             static_assert(sizeof(kCredTypes) / sizeof(kCredTypes[0]) > kMaxCredentialsArraySize);
 
             json::Value jvParams;
@@ -1501,8 +1513,10 @@ class LedgerEntry_test : public beast::unit_test::Suite
             runLedgerEntryTest(
                 env,
                 jss::escrow,
-                {{.fieldName = jss::owner, .malformedErrorMsg = "malformedOwner"},
-                 {.fieldName = jss::seq, .malformedErrorMsg = "malformedSeq"}});
+                {
+                    {.fieldName = jss::owner, .malformedErrorMsg = "malformedOwner"},
+                    {.fieldName = jss::seq, .malformedErrorMsg = "malformedSeq"},
+                });
         }
     }
 
@@ -1742,8 +1756,10 @@ class LedgerEntry_test : public beast::unit_test::Suite
             runLedgerEntryTest(
                 env,
                 jss::offer,
-                {{.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
-                 {.fieldName = jss::seq, .malformedErrorMsg = "malformedRequest"}});
+                {
+                    {.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
+                    {.fieldName = jss::seq, .malformedErrorMsg = "malformedRequest"},
+                });
         }
     }
 
@@ -2347,8 +2363,10 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 jss::oracle,
                 {
                     {.fieldName = jss::account, .malformedErrorMsg = "malformedAccount"},
-                    {.fieldName = jss::oracle_document_id,
-                     .malformedErrorMsg = "malformedDocumentID"},
+                    {
+                        .fieldName = jss::oracle_document_id,
+                        .malformedErrorMsg = "malformedDocumentID",
+                    },
                 });
         }
     }
@@ -2408,12 +2426,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
         Account const bob("bob");
 
         MPTTester mptAlice(env, alice, {.holders = {bob}});
-        mptAlice.create(
-            {.transferFee = 10,
-             .metadata = "123",
-             .ownerCount = 1,
-             .flags = tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow | tfMPTCanTrade |
-                 tfMPTCanTransfer | tfMPTCanClawback});
+        mptAlice.create({
+            .transferFee = 10,
+            .metadata = "123",
+            .ownerCount = 1,
+            .flags = tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow | tfMPTCanTrade |
+                tfMPTCanTransfer | tfMPTCanClawback,
+        });
         mptAlice.authorize({.account = bob, .holderCount = 1});
 
         std::string const ledgerHash{to_string(env.closed()->header().hash)};

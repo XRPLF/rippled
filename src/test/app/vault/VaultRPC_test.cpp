@@ -542,12 +542,13 @@ private:
         auto const red = sub + kMinInvestmentPeriod;
 
         Vault const vault{env};
-        auto [tx, keylet] = vault.create(
-            {.owner = owner,
-             .asset = asset,
-             .vaultKind = closedEnded,
-             .subscriptionDate = sub,
-             .redemptionDate = red});
+        auto [tx, keylet] = vault.create({
+            .owner = owner,
+            .asset = asset,
+            .vaultKind = closedEnded,
+            .subscriptionDate = sub,
+            .redemptionDate = red,
+        });
         env(tx);
         env.close();
 

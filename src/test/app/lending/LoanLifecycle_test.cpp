@@ -431,11 +431,12 @@ private:
                 borrowerAcct);
             testLoanAsset(
                 [&](Env& env) -> STAmount {
-                    MPTTester const mpt(
-                        {.env = env,
-                         .issuer = issuer,
-                         .holders = {broker, depositor},
-                         .pay = 100'000'000});
+                    MPTTester const mpt({
+                        .env = env,
+                        .issuer = issuer,
+                        .holders = {broker, depositor},
+                        .pay = 100'000'000,
+                    });
                     return mpt(200'000);
                 },
                 borrowerAcct);
@@ -457,9 +458,13 @@ private:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
-            .account = lender, .counter = issuer, .principalRequest = Number{10000}};
+            .account = lender,
+            .counter = issuer,
+            .principalRequest = Number{10000},
+        };
 
         auto const assetType = AssetType::IOU;
 
@@ -602,7 +607,8 @@ private:
             .coverRateMin = TenthBips32{0},
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender, brokerParams)};
 
         auto const vaultBefore = env.le(broker.vaultKeylet());

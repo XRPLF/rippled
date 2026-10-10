@@ -73,8 +73,8 @@ class AMMExtended_test : public jtx::AMMTest
     // For now, just disable SAV entirely, which locks in the small Number
     // mantissas
     FeatureBitset const all_{
-        testableAmendments() - featureSingleAssetVault - featureLendingProtocol -
-        featureMPTokensV2};
+        testableAmendments() - featureSingleAssetVault - featureLendingProtocol - featureMPTokensV2,
+    };
 
 private:
     void

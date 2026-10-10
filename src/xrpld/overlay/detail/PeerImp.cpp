@@ -2484,7 +2484,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                         return calcNodeID(app_.getValidatorManifests().getMasterKey(pk));
                     },
                     STValidation::DeserializeOptions{
-                        .checkSignature = false, .requireCanonicalOrder = true});
+                        .checkSignature = false,
+                        .requireCanonicalOrder = true,
+                    });
             }
             catch (std::exception const& e)
             {

@@ -110,7 +110,8 @@ private:
     makeDefaultYes(UInt256 const amendment)
     {
         std::vector<AmendmentTable::FeatureInfo> result{
-            {to_string(amendment), amendment, VoteBehavior::DefaultYes}};
+            {to_string(amendment), amendment, VoteBehavior::DefaultYes},
+        };
         return result;
     }
 

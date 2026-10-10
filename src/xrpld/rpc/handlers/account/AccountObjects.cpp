@@ -307,8 +307,10 @@ doAccountObjects(rpc::JsonContext& context)
             {.name = jss::payment_channel, .type = ltPAYCHAN},
             {.name = jss::state, .type = ltRIPPLE_STATE},
             {.name = jss::xchain_owned_claim_id, .type = ltXCHAIN_OWNED_CLAIM_ID},
-            {.name = jss::xchain_owned_create_account_claim_id,
-             .type = ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
+            {
+                .name = jss::xchain_owned_create_account_claim_id,
+                .type = ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID,
+            },
             {.name = jss::bridge, .type = ltBRIDGE},
             {.name = jss::mpt_issuance, .type = ltMPTOKEN_ISSUANCE},
             {.name = jss::mptoken, .type = ltMPTOKEN},

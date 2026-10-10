@@ -59,7 +59,7 @@ enum class ConsensusMode {
      * if we entered the round observing, but is used to indicate we did
      * have the wrongLedger at some point.
      */
-    SwitchedLedger
+    SwitchedLedger,
 };
 
 inline std::string
@@ -267,7 +267,7 @@ enum class ConsensusState {
     No,       ///< We do not have consensus
     MovedOn,  ///< The network has consensus without us
     Expired,  ///< Consensus time limit has hard-expired
-    Yes       ///< We have consensus along with the network
+    Yes,      ///< We have consensus along with the network
 };
 
 /**

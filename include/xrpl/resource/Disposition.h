@@ -21,7 +21,7 @@ enum class Disposition {
      * Consumer should be disconnected for excess consumption.
      */
     ,
-    Drop
+    Drop,
 };
 
 }  // namespace xrpl::resource

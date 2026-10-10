@@ -175,11 +175,12 @@ public:
                 sponsor::SponseeAcc(alice),
                 Ter(temINVALID_FLAG));
 
-            for (auto flag :
-                 {tfSponsorshipSetRequireSignForFee,
-                  tfSponsorshipClearRequireSignForFee,
-                  tfSponsorshipSetRequireSignForReserve,
-                  tfSponsorshipClearRequireSignForReserve})
+            for (auto flag : {
+                     tfSponsorshipSetRequireSignForFee,
+                     tfSponsorshipClearRequireSignForFee,
+                     tfSponsorshipSetRequireSignForReserve,
+                     tfSponsorshipClearRequireSignForReserve,
+                 })
             {
                 env(sponsor::set(sponsor, tfDeleteObject | flag),
                     sponsor::SponseeAcc(alice),
@@ -3187,11 +3188,13 @@ public:
             env.fund(XRP(1000000), alice, sponsor);
             env.close();
             auto const authCreds = std::vector<deposit::AuthorizeCredentials>{
-                {.issuer = sponsor, .credType = credType}};
+                {.issuer = sponsor, .credType = credType},
+            };
             auto const preauthKeylet = keylet::depositPreauth(
                 alice.id(),
                 std::set<std::pair<AccountID, Slice>>{
-                    {sponsor.id(), Slice(credType.data(), credType.size())}});
+                    {sponsor.id(), Slice(credType.data(), credType.size())},
+                });
 
             // Cover DepositPreauth's sfAuthorizeCredentials sponsor-reserve branch.
             testEachSponsorship(

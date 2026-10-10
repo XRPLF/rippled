@@ -138,10 +138,12 @@ class Ticket_test : public beast::unit_test::Suite
                     {
                         // Verify the OwnerCount did the right thing.
                         std::uint32_t const prevCount = {
-                            previousFields[sfOwnerCount.jsonName].asUInt()};
+                            previousFields[sfOwnerCount.jsonName].asUInt(),
+                        };
 
                         std::uint32_t const finalCount = {
-                            finalFields[sfOwnerCount.jsonName].asUInt()};
+                            finalFields[sfOwnerCount.jsonName].asUInt(),
+                        };
 
                         BEAST_EXPECT(prevCount + count - consumedTickets == finalCount);
                     }
@@ -162,7 +164,8 @@ class Ticket_test : public beast::unit_test::Suite
                         std::uint32_t const startCount = {
                             previousFields.isMember(sfTicketCount.jsonName)
                                 ? previousFields[sfTicketCount.jsonName].asUInt()
-                                : 0u};
+                                : 0u,
+                        };
 
                         BEAST_EXPECT(
                             (startCount == 0u) ^ previousFields.isMember(sfTicketCount.jsonName));

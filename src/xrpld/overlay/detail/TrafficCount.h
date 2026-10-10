@@ -181,7 +181,7 @@ public:
         // The total p2p bytes sent and received on the wire
         Total,
 
-        Unknown  // must be last
+        Unknown,  // must be last
     };
 
     TrafficCount() = default;
@@ -314,7 +314,8 @@ public:
             {Category::ReplayDeltaResponse, "replay_delta_response"},
             {Category::HaveTransactions, "have_transactions"},
             {Category::RequestedTransactions, "requested_transactions"},
-            {Category::Total, "total"}};
+            {Category::Total, "total"},
+        };
 
         if (auto it = kCategoryMap.find(cat); it != kCategoryMap.end())
             return it->second;

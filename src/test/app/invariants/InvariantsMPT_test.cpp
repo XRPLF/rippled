@@ -832,12 +832,13 @@ class InvariantsMPT_test : public InvariantsBase
             Account const holder{"holder"};
             Account const other{"other"};
             env.fund(XRP(1'000), issuer, holder, other);
-            MPTTester const mpt(
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {holder, other},
-                 .pay = 100,
-                 .maxAmt = 200});
+            MPTTester const mpt({
+                .env = env,
+                .issuer = issuer,
+                .holders = {holder, other},
+                .pay = 100,
+                .maxAmt = 200,
+            });
             auto const id = mpt.issuanceID();
 
             doInvariantCheck(
@@ -910,7 +911,8 @@ class InvariantsMPT_test : public InvariantsBase
             std::make_pair(ttAMM_WITHDRAW, 2),
             std::make_pair(ttAMM_CLAWBACK, 2),
             std::make_pair(ttAMM_CREATE, 3),
-            std::make_pair(ttCHECK_CASH, 2)};
+            std::make_pair(ttCHECK_CASH, 2),
+        };
         for (auto const& [tx, nTokens] : tests)
         {
             doInvariantCheck(
@@ -992,7 +994,8 @@ class InvariantsMPT_test : public InvariantsBase
                 };
 
             std::array<std::pair<xrpl::TxType, std::uint8_t>, 2> const createOverCap{
-                {{ttLOAN_SET, 3}, {ttVAULT_WITHDRAW, 2}}};
+                {{ttLOAN_SET, 3}, {ttVAULT_WITHDRAW, 2}},
+            };
             for (auto const& [txnType, nTokens] : createOverCap)
             {
                 doInvariantCheck(
@@ -1014,7 +1017,8 @@ class InvariantsMPT_test : public InvariantsBase
                 return true;
             };
             std::array<std::pair<xrpl::TxType, std::uint8_t>, 2> const deleteOverCap{
-                {{ttLOAN_SET, 1}, {ttVAULT_WITHDRAW, 2}}};
+                {{ttLOAN_SET, 1}, {ttVAULT_WITHDRAW, 2}},
+            };
             for (auto const& [txnType, nTokens] : deleteOverCap)
             {
                 doInvariantCheck(
@@ -1041,8 +1045,12 @@ class InvariantsMPT_test : public InvariantsBase
         // non-VaultCreate transaction that creates an MPTokenIssuance with
         // sfReferenceHolding present must trip the invariant.
         doInvariantCheck(
-            {{"sfReferenceHolding set on a new MPTokenIssuance by a "
-              "non-VaultCreate transaction"}},
+            {
+                {
+                    "sfReferenceHolding set on a new MPTokenIssuance by a "
+                    "non-VaultCreate transaction",
+                },
+            },
             [](Account const& a1, Account const&, ApplyContext& ac) {
                 auto const sleAcct = ac.view().peek(keylet::account(a1.id()));
                 if (!sleAcct)
@@ -1064,8 +1072,12 @@ class InvariantsMPT_test : public InvariantsBase
         {
             UInt256 vaultKey;
             doInvariantCheck(
-                {{"sfReferenceHolding was modified on an existing "
-                  "MPTokenIssuance"}},
+                {
+                    {
+                        "sfReferenceHolding was modified on an existing "
+                        "MPTokenIssuance",
+                    },
+                },
                 [&](Account const&, Account const&, ApplyContext& ac) {
                     auto const sleVault = ac.view().peek(keylet::vault(vaultKey));
                     if (!sleVault)
@@ -1162,8 +1174,12 @@ class InvariantsMPT_test : public InvariantsBase
         {
             UInt256 vaultKey;
             doInvariantCheck(
-                {{"vault pseudo-account holding deleted by a "
-                  "non-VaultDelete transaction"}},
+                {
+                    {
+                        "vault pseudo-account holding deleted by a "
+                        "non-VaultDelete transaction",
+                    },
+                },
                 [&](Account const&, Account const&, ApplyContext& ac) {
                     auto const sleVault = ac.view().peek(keylet::vault(vaultKey));
                     if (!sleVault)
@@ -1205,22 +1221,25 @@ class InvariantsMPT_test : public InvariantsBase
         std::array<std::pair<TxType, bool>, 3> const invalidTransferTests = {
             std::make_pair(ttAMM_WITHDRAW, false),
             std::make_pair(ttPAYMENT, false),
-            std::make_pair(ttPAYMENT, true)};
+            std::make_pair(ttPAYMENT, true),
+        };
         // The two amendments that gate enforcement, in all four combinations.
         FeatureBitset const gatesEnabled{featureMPTokensV2, fixCleanup3_4_0};
-        for (auto const gates :
-             {gatesEnabled,
-              gatesEnabled - featureMPTokensV2,
-              gatesEnabled - fixCleanup3_4_0,
-              FeatureBitset{}})
+        for (auto const gates : {
+                 gatesEnabled,
+                 gatesEnabled - featureMPTokensV2,
+                 gatesEnabled - fixCleanup3_4_0,
+                 FeatureBitset{},
+             })
         {
             for (auto const& [tx, crossCurrencyPayment] : invalidTransferTests)
             {
-                for (auto const flag :
-                     {static_cast<std::uint32_t>(lsfMPTLocked),
-                      ~lsfMPTCanTransfer,
-                      ~lsfMPTCanTrade,
-                      0u})
+                for (auto const flag : {
+                         static_cast<std::uint32_t>(lsfMPTLocked),
+                         ~lsfMPTCanTransfer,
+                         ~lsfMPTCanTrade,
+                         0u,
+                     })
                 {
                     MPTID id{};
                     // Issuance flags cannot be cleared after creation (and
@@ -1272,12 +1291,13 @@ class InvariantsMPT_test : public InvariantsBase
                         [&](Account const& a1, Account const& a2, Env& env) {
                             Account const gw("gw");
                             env.fund(XRP(1'000), gw);
-                            MPTTester const usd(
-                                {.env = env,
-                                 .issuer = gw,
-                                 .holders = {a1, a2},
-                                 .pay = 100,
-                                 .flags = createFlags});
+                            MPTTester const usd({
+                                .env = env,
+                                .issuer = gw,
+                                .holders = {a1, a2},
+                                .pay = 100,
+                                .flags = createFlags,
+                            });
                             id = usd.issuanceID();
                             // Either gate enforces, so both must be off to stay
                             // advisory. Disable after setting up the MPT; the
@@ -1539,9 +1559,11 @@ class InvariantsMPT_test : public InvariantsBase
         };
 
         doInvariantCheck(
-            {"MPToken has encrypted fields but Issuance does not have "
-             "lsfMPTCanHoldConfidentialBalance "
-             "set"},
+            {
+                "MPToken has encrypted fields but Issuance does not have "
+                "lsfMPTCanHoldConfidentialBalance "
+                "set",
+            },
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
@@ -1598,9 +1620,11 @@ class InvariantsMPT_test : public InvariantsBase
 
         // Send/MergeInbox must not change OutstandingAmount (coaDelta == 0)
         doInvariantCheck(
-            {"Invariant failed: OutstandingAmount changed "
-             "by confidential transaction that should not "
-             "modify it for MPT"},
+            {
+                "Invariant failed: OutstandingAmount changed "
+                "by confidential transaction that should not "
+                "modify it for MPT",
+            },
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
                 if (!sleIssuance)
@@ -1618,8 +1642,10 @@ class InvariantsMPT_test : public InvariantsBase
         // Send/MergeInbox and zero-COA-delta confidential transactions must not
         // change public holder MPTAmount.
         doInvariantCheck(
-            {"Invariant failed: MPTAmount changed by confidential "
-             "transaction that should not modify this field."},
+            {
+                "Invariant failed: MPTAmount changed by confidential "
+                "transaction that should not modify this field.",
+            },
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
@@ -1637,8 +1663,11 @@ class InvariantsMPT_test : public InvariantsBase
 
         // badVersion
         doInvariantCheck(
-            {"MPToken sfConfidentialBalanceVersion not updated when sfConfidentialBalanceSpending "
-             "changed"},
+            {
+                "MPToken sfConfidentialBalanceVersion not updated when "
+                "sfConfidentialBalanceSpending "
+                "changed",
+            },
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
                 Blob const kChangedConfidentialSpending = {0xBA, 0xDD};
                 auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));

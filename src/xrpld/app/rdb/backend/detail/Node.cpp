@@ -107,16 +107,20 @@ makeLedgerDBs(
     beast::Journal j)
 {
     // ledger database
-    auto lgr{std::make_unique<DatabaseCon>(
-        setup, kLgrDbName, setup.lgrPragma, kLgrDbInit, checkpointerSetup, j)};
+    auto lgr{
+        std::make_unique<DatabaseCon>(
+            setup, kLgrDbName, setup.lgrPragma, kLgrDbInit, checkpointerSetup, j),
+    };
     lgr->getSession() << std::format(
         "PRAGMA cache_size=-{};", kilobytes(config.getValueFor(SizedItem::LgrDbCache)));
 
     if (config.useTxTables())
     {
         // transaction database
-        auto tx{std::make_unique<DatabaseCon>(
-            setup, kTxDbName, setup.txPragma, kTxDbInit, checkpointerSetup, j)};
+        auto tx{
+            std::make_unique<DatabaseCon>(
+                setup, kTxDbName, setup.txPragma, kTxDbInit, checkpointerSetup, j),
+        };
         tx->getSession() << std::format(
             "PRAGMA cache_size=-{};", kilobytes(config.getValueFor(SizedItem::TxnDbCache)));
 
@@ -142,7 +146,10 @@ makeLedgerDBs(
                 if (pk == 1)
                 {
                     return {
-                        .ledgerDb = std::move(lgr), .transactionDb = std::move(tx), .valid = false};
+                        .ledgerDb = std::move(lgr),
+                        .transactionDb = std::move(tx),
+                        .valid = false,
+                    };
                 }
             }
         }
@@ -1210,7 +1217,8 @@ accountTxPage(
                 ++fetchedRows;
                 lastScanned = {
                     .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
-                    .txnSeq = txnSeq.value_or(0)};
+                    .txnSeq = txnSeq.value_or(0),
+                };
             }
 
             if (lookingForMarker)
@@ -1233,7 +1241,8 @@ accountTxPage(
             {
                 newmarker = {
                     .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
-                    .txnSeq = txnSeq.value_or(0)};
+                    .txnSeq = txnSeq.value_or(0),
+                };
                 break;
             }
 
@@ -1297,7 +1306,8 @@ accountTxPage(
             {
                 lastEmitted = {
                     .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
-                    .txnSeq = txnSeq.value_or(0)};
+                    .txnSeq = txnSeq.value_or(0),
+                };
             }
         }
 

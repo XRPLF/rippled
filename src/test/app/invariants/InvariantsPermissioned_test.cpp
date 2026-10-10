@@ -245,14 +245,17 @@ class InvariantsPermissioned_test : public InvariantsBase
         std::initializer_list<TER> const goodTers = {tesSUCCESS, tesSUCCESS};
 
         std::vector<std::string> const badMoreThan1{
-            {"transaction affected more than 1 permissioned domain entry."}};
+            {"transaction affected more than 1 permissioned domain entry."},
+        };
         std::vector<std::string> const emptyV;
         std::vector<std::string> const badNoDomains{{"no domain objects affected by"}};
         std::vector<std::string> const badNotDeleted{
-            {"domain object modified, but not deleted by "}};
+            {"domain object modified, but not deleted by "},
+        };
         std::vector<std::string> const badDeleted{{"domain object deleted by"}};
         std::vector<std::string> const badTx{
-            {"domain object(s) affected by an unauthorized transaction."}};
+            {"domain object(s) affected by an unauthorized transaction."},
+        };
 
         {
             testcase << "PermissionedDomain set 2 domains ";

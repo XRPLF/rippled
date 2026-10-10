@@ -1356,41 +1356,58 @@ r.ripple.com:51235
         };
 
         std::array<TestCommentData, 13> const tests = {
-            {{.line = "password = aaaa\\#bbbb",
-              .field = "password",
-              .expect = "aaaa#bbbb",
-              .hadComment = false},
-             {.line = "password = aaaa#bbbb",
-              .field = "password",
-              .expect = "aaaa",
-              .hadComment = true},
-             {.line = "password = aaaa #bbbb",
-              .field = "password",
-              .expect = "aaaa",
-              .hadComment = true},
-             // since the value is all comment, this doesn't parse as k=v :
-             {.line = "password = #aaaa #bbbb",
-              .field = "",
-              .expect = "password =",
-              .hadComment = true},
-             {.line = "password = aaaa\\# #bbbb",
-              .field = "password",
-              .expect = "aaaa#",
-              .hadComment = true},
-             {.line = "password = aaaa\\##bbbb",
-              .field = "password",
-              .expect = "aaaa#",
-              .hadComment = true},
-             {.line = "aaaa#bbbb", .field = "", .expect = "aaaa", .hadComment = true},
-             {.line = "aaaa\\#bbbb", .field = "", .expect = "aaaa#bbbb", .hadComment = false},
-             {.line = "aaaa\\##bbbb", .field = "", .expect = "aaaa#", .hadComment = true},
-             {.line = "aaaa #bbbb", .field = "", .expect = "aaaa", .hadComment = true},
-             {.line = "1 #comment", .field = "", .expect = "1", .hadComment = true},
-             {.line = "#whole thing is comment", .field = "", .expect = "", .hadComment = false},
-             {.line = "  #whole comment with space",
-              .field = "",
-              .expect = "",
-              .hadComment = false}}};
+            {
+                {
+                    .line = "password = aaaa\\#bbbb",
+                    .field = "password",
+                    .expect = "aaaa#bbbb",
+                    .hadComment = false,
+                },
+                {
+                    .line = "password = aaaa#bbbb",
+                    .field = "password",
+                    .expect = "aaaa",
+                    .hadComment = true,
+                },
+                {
+                    .line = "password = aaaa #bbbb",
+                    .field = "password",
+                    .expect = "aaaa",
+                    .hadComment = true,
+                },
+                // since the value is all comment, this doesn't parse as k=v :
+                {
+                    .line = "password = #aaaa #bbbb",
+                    .field = "",
+                    .expect = "password =",
+                    .hadComment = true,
+                },
+                {
+                    .line = "password = aaaa\\# #bbbb",
+                    .field = "password",
+                    .expect = "aaaa#",
+                    .hadComment = true,
+                },
+                {
+                    .line = "password = aaaa\\##bbbb",
+                    .field = "password",
+                    .expect = "aaaa#",
+                    .hadComment = true,
+                },
+                {.line = "aaaa#bbbb", .field = "", .expect = "aaaa", .hadComment = true},
+                {.line = "aaaa\\#bbbb", .field = "", .expect = "aaaa#bbbb", .hadComment = false},
+                {.line = "aaaa\\##bbbb", .field = "", .expect = "aaaa#", .hadComment = true},
+                {.line = "aaaa #bbbb", .field = "", .expect = "aaaa", .hadComment = true},
+                {.line = "1 #comment", .field = "", .expect = "1", .hadComment = true},
+                {.line = "#whole thing is comment", .field = "", .expect = "", .hadComment = false},
+                {
+                    .line = "  #whole comment with space",
+                    .field = "",
+                    .expect = "",
+                    .hadComment = false,
+                },
+            },
+        };
 
         for (auto const& t : tests)
         {
@@ -1542,7 +1559,8 @@ r.ripple.com:51235
             {.unit = "days", .numSeconds = 86400, .configVal = 10, .shouldPass = true},
             {.unit = "weeks", .numSeconds = 604800, .configVal = 2, .shouldPass = true},
             {.unit = "months", .numSeconds = 2592000, .configVal = 1, .shouldPass = false},
-            {.unit = "years", .numSeconds = 31536000, .configVal = 1, .shouldPass = false}};
+            {.unit = "years", .numSeconds = 31536000, .configVal = 1, .shouldPass = false},
+        };
 
         std::string space;
         for (auto& [unit, sec, val, shouldPass] : units)

@@ -162,18 +162,22 @@ public:
         resource::Consumer c;
 
         rpc::JsonContext context{
-            {.j = env.journal,
-             .app = app,
-             .loadType = loadType,
-             .netOps = app.getOPs(),
-             .ledgerMaster = app.getLedgerMaster(),
-             .consumer = c,
-             .role = Role::USER,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = rpc::kApiVersionIfUnspecified},
+            {
+                .j = env.journal,
+                .app = app,
+                .loadType = loadType,
+                .netOps = app.getOPs(),
+                .ledgerMaster = app.getLedgerMaster(),
+                .consumer = c,
+                .role = Role::USER,
+                .coro = {},
+                .infoSub = {},
+                .apiVersion = rpc::kApiVersionIfUnspecified,
+            },
             {},
-            {}};
+            // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+            {},
+        };
 
         json::Value params = json::ValueType::Object;
         params[jss::command] = "ripple_path_find";
@@ -278,18 +282,22 @@ public:
         resource::Consumer c;
 
         rpc::JsonContext context{
-            {.j = env.journal,
-             .app = app,
-             .loadType = loadType,
-             .netOps = app.getOPs(),
-             .ledgerMaster = app.getLedgerMaster(),
-             .consumer = c,
-             .role = Role::USER,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = rpc::kApiVersionIfUnspecified},
+            {
+                .j = env.journal,
+                .app = app,
+                .loadType = loadType,
+                .netOps = app.getOPs(),
+                .ledgerMaster = app.getLedgerMaster(),
+                .consumer = c,
+                .role = Role::USER,
+                .coro = {},
+                .infoSub = {},
+                .apiVersion = rpc::kApiVersionIfUnspecified,
+            },
             {},
-            {}};
+            // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+            {},
+        };
         json::Value result;
         Gate g;
         // Test rpc::tuning::max_src_cur source currencies.
@@ -2157,11 +2165,15 @@ public:
 
         auto const equivalent = std::vector<std::pair<STPathElement, STPathElement>>{
             // forceAsset toggles TypeCurrency on an XRP asset.
-            {STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, true},
-             STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, false}},
+            {
+                STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, true},
+                STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, false},
+            },
             // An explicit type mask vs. one derived from the populated fields.
-            {STPathElement{STPathElement::TypeAccount, kAccount, xrpCurrency(), kIssuer},
-             STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, false}},
+            {
+                STPathElement{STPathElement::TypeAccount, kAccount, xrpCurrency(), kIssuer},
+                STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, false},
+            },
         };
 
         for (auto const& [lhs, rhs] : equivalent)

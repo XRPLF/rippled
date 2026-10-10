@@ -54,9 +54,11 @@ exceptionExpected(Env& env, json::Value const& jv)
 class PermissionedDomains_test : public beast::unit_test::Suite
 {
     FeatureBitset withFeature_{
-        (testableAmendments() | featurePermissionedDomains | featureCredentials) - fixCleanup3_1_3};
+        (testableAmendments() | featurePermissionedDomains | featureCredentials) - fixCleanup3_1_3,
+    };
     FeatureBitset withFix_{
-        testableAmendments() | featurePermissionedDomains | featureCredentials | fixCleanup3_1_3};
+        testableAmendments() | featurePermissionedDomains | featureCredentials | fixCleanup3_1_3,
+    };
 
     // Verify that each tx type can execute if the feature is enabled.
     void
@@ -138,7 +140,8 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             {.issuer = alice9, .credType = "credential8"},
             {.issuer = alice10, .credType = "credential9"},
             {.issuer = alice11, .credType = "credential10"},
-            {.issuer = alice12, .credType = "credential11"}};
+            {.issuer = alice12, .credType = "credential11"},
+        };
         BEAST_EXPECT(credentials11.size() == kMaxPermissionedDomainCredentialsArraySize + 1);
         env(pdomain::setTx(account, credentials11, domain), Ter(temARRAY_TOO_LARGE));
 
@@ -151,7 +154,8 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             {.issuer = nobody, .credType = "credential4"},
             {.issuer = alice5, .credType = "credential5"},
             {.issuer = alice6, .credType = "credential6"},
-            {.issuer = alice7, .credType = "credential7"}};
+            {.issuer = alice7, .credType = "credential7"},
+        };
         env(pdomain::setTx(account, credentialsNon, domain), Ter(tecNO_ISSUER));
 
         // Test bad fee
@@ -285,7 +289,8 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             "alice9",
             "alice10",
             "alice11",
-            "alice12"};
+            "alice12",
+        };
         std::unordered_map<std::string, Account> human2Acc;
         for (auto const& c : alice)
             human2Acc.emplace(c.human(), c);
@@ -318,7 +323,8 @@ class PermissionedDomains_test : public beast::unit_test::Suite
                 "89";
             static_assert(kLongCredentialType.size() == kMaxCredentialTypeLength);
             pdomain::Credentials const longCredentials{
-                {.issuer = alice[1], .credType = std::string(kLongCredentialType)}};
+                {.issuer = alice[1], .credType = std::string(kLongCredentialType)},
+            };
 
             env(pdomain::setTx(alice[0], longCredentials));
 

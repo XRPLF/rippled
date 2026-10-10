@@ -197,17 +197,20 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
             }
 
             rpc::GRPCContext<Request> context{
-                {app_.getJournal("gRPCServer"),
-                 app_,
-                 loadType,
-                 app_.getOPs(),
-                 app_.getLedgerMaster(),
-                 usage,
-                 role,
-                 coro,
-                 InfoSub::pointer(),
-                 kApiVersion},
-                request_};
+                {
+                    app_.getJournal("gRPCServer"),
+                    app_,
+                    loadType,
+                    app_.getOPs(),
+                    app_.getLedgerMaster(),
+                    usage,
+                    role,
+                    coro,
+                    InfoSub::pointer(),
+                    kApiVersion,
+                },
+                request_,
+            };
 
             // Make sure we can currently handle the rpc
             ErrorCodeI const conditionMetRes = rpc::conditionMet(requiredCondition_, context);

@@ -639,7 +639,8 @@ TEST_F(PeerFinderTest, preprocess_filters_invalid_duplicate_and_extra_self_endpo
         Endpoint{endpoint("10.0.0.1:10004"), 1},
         Endpoint{endpoint("65.0.0.5"), 1},
         Endpoint{endpoint("65.0.0.6:10006"), 1},
-        Endpoint{endpoint("65.0.0.6:10006"), 2}};
+        Endpoint{endpoint("65.0.0.6:10006"), 2},
+    };
 
     logic_.preprocess(slot, endpoints);
 
@@ -830,7 +831,8 @@ TEST_F(PeerFinderTest, sources_redirects_status_and_validation_paths_are_exercis
 
     std::vector<boost::asio::ip::tcp::endpoint> redirects{
         {boost::asio::ip::make_address("65.0.0.14"), 10014},
-        {boost::asio::ip::make_address("65.0.0.15"), 10015}};
+        {boost::asio::ip::make_address("65.0.0.15"), 10015},
+    };
     logic_.onRedirects(redirects.begin(), redirects.end(), redirects.front());
     EXPECT_EQ(logic_.bootcache.size(), 3u);
 
@@ -1150,88 +1152,110 @@ TEST(PeerFinderConfig, applies_legacy_and_explicit_peer_limits)
     };
 
     std::vector<ConfigCase> const cases{
-        {.name = "legacy no config",
-         .maxPeers = {},
-         .maxIn = {},
-         .maxOut = {},
-         .port = 4000,
-         .expectedOut = 10,
-         .expectedIn = 11,
-         .expectedIpLimit = 2},
-        {.name = "legacy max_peers 0",
-         .maxPeers = 0,
-         .maxIn = 100,
-         .maxOut = 10,
-         .port = 4000,
-         .expectedOut = 10,
-         .expectedIn = 11,
-         .expectedIpLimit = 2},
-        {.name = "legacy max_peers 5",
-         .maxPeers = 5,
-         .maxIn = 100,
-         .maxOut = 10,
-         .port = 4000,
-         .expectedOut = 10,
-         .expectedIn = 0,
-         .expectedIpLimit = 1},
-        {.name = "legacy max_peers 20",
-         .maxPeers = 20,
-         .maxIn = 100,
-         .maxOut = 10,
-         .port = 4000,
-         .expectedOut = 10,
-         .expectedIn = 10,
-         .expectedIpLimit = 2},
-        {.name = "legacy max_peers 100",
-         .maxPeers = 100,
-         .maxIn = 100,
-         .maxOut = 10,
-         .port = 4000,
-         .expectedOut = 15,
-         .expectedIn = 85,
-         .expectedIpLimit = 6},
-        {.name = "legacy max_peers 20, private",
-         .maxPeers = 20,
-         .maxIn = 100,
-         .maxOut = 10,
-         .port = 0,
-         .expectedOut = 20,
-         .expectedIn = 0,
-         .expectedIpLimit = 1},
-        {.name = "new in 100/out 10",
-         .maxPeers = {},
-         .maxIn = 100,
-         .maxOut = 10,
-         .port = 4000,
-         .expectedOut = 10,
-         .expectedIn = 100,
-         .expectedIpLimit = 6},
-        {.name = "new in 0/out 10",
-         .maxPeers = {},
-         .maxIn = 0,
-         .maxOut = 10,
-         .port = 4000,
-         .expectedOut = 10,
-         .expectedIn = 0,
-         .expectedIpLimit = 1},
+        {
+            .name = "legacy no config",
+            .maxPeers = {},
+            .maxIn = {},
+            .maxOut = {},
+            .port = 4000,
+            .expectedOut = 10,
+            .expectedIn = 11,
+            .expectedIpLimit = 2,
+        },
+        {
+            .name = "legacy max_peers 0",
+            .maxPeers = 0,
+            .maxIn = 100,
+            .maxOut = 10,
+            .port = 4000,
+            .expectedOut = 10,
+            .expectedIn = 11,
+            .expectedIpLimit = 2,
+        },
+        {
+            .name = "legacy max_peers 5",
+            .maxPeers = 5,
+            .maxIn = 100,
+            .maxOut = 10,
+            .port = 4000,
+            .expectedOut = 10,
+            .expectedIn = 0,
+            .expectedIpLimit = 1,
+        },
+        {
+            .name = "legacy max_peers 20",
+            .maxPeers = 20,
+            .maxIn = 100,
+            .maxOut = 10,
+            .port = 4000,
+            .expectedOut = 10,
+            .expectedIn = 10,
+            .expectedIpLimit = 2,
+        },
+        {
+            .name = "legacy max_peers 100",
+            .maxPeers = 100,
+            .maxIn = 100,
+            .maxOut = 10,
+            .port = 4000,
+            .expectedOut = 15,
+            .expectedIn = 85,
+            .expectedIpLimit = 6,
+        },
+        {
+            .name = "legacy max_peers 20, private",
+            .maxPeers = 20,
+            .maxIn = 100,
+            .maxOut = 10,
+            .port = 0,
+            .expectedOut = 20,
+            .expectedIn = 0,
+            .expectedIpLimit = 1,
+        },
+        {
+            .name = "new in 100/out 10",
+            .maxPeers = {},
+            .maxIn = 100,
+            .maxOut = 10,
+            .port = 4000,
+            .expectedOut = 10,
+            .expectedIn = 100,
+            .expectedIpLimit = 6,
+        },
+        {
+            .name = "new in 0/out 10",
+            .maxPeers = {},
+            .maxIn = 0,
+            .maxOut = 10,
+            .port = 4000,
+            .expectedOut = 10,
+            .expectedIn = 0,
+            .expectedIpLimit = 1,
+        },
         // A port of zero disables incoming connections, so the configured
         // inbound limit is dropped and the per-IP inbound limit collapses to
         // one, exactly as in the legacy private case above.
-        {.name = "new in 100/out 10, private",
-         .maxPeers = {},
-         .maxIn = 100,
-         .maxOut = 10,
-         .port = 0,
-         .expectedOut = 10,
-         .expectedIn = 0,
-         .expectedIpLimit = 1}};
+        {
+            .name = "new in 100/out 10, private",
+            .maxPeers = {},
+            .maxIn = 100,
+            .maxOut = 10,
+            .port = 0,
+            .expectedOut = 10,
+            .expectedIn = 0,
+            .expectedIpLimit = 1,
+        },
+    };
 
     for (auto const& testCase : cases)
     {
         SCOPED_TRACE(testCase.name);
 
         PeerLimitConfig const limits{
-            .maxPeers = testCase.maxPeers, .inPeers = testCase.maxIn, .outPeers = testCase.maxOut};
+            .maxPeers = testCase.maxPeers,
+            .inPeers = testCase.maxIn,
+            .outPeers = testCase.maxOut,
+        };
 
         Config const config =
             Config::makeConfig(false, false, limits, testCase.port, false, 0, true);
@@ -1267,7 +1291,8 @@ TEST(PeerFinderConfig, rejects_incomplete_or_out_of_range_peer_limits)
         {.maxPeers = {}, .inPeers = {}, .outPeers = 100},
         {.maxPeers = {}, .inPeers = 100, .outPeers = 5},
         {.maxPeers = {}, .inPeers = 1001, .outPeers = 10},
-        {.maxPeers = {}, .inPeers = 10, .outPeers = 1001}};
+        {.maxPeers = {}, .inPeers = 10, .outPeers = 1001},
+    };
 
     for (auto const& limits : configs)
     {

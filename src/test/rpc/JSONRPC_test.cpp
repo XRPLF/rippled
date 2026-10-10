@@ -74,9 +74,10 @@ struct TxnTestData
 
 static constexpr TxnTestData kTxnTestArray[] = {
 
-    {"Minimal payment, no Amount only DeliverMax",
-     __LINE__,
-     R"({
+    {
+        "Minimal payment, no Amount only DeliverMax",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -86,11 +87,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"", "", "Missing field 'account'.", "Missing field 'tx_json.Sequence'."}}},
+        {{"", "", "Missing field 'account'.", "Missing field 'tx_json.Sequence'."}},
+    },
 
-    {"Pass in Fee with minimal payment, both Amount and DeliverMax.",
-     __LINE__,
-     R"({
+    {
+        "Pass in Fee with minimal payment, both Amount and DeliverMax.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -103,11 +106,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
+        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+    },
 
-    {"Pass in Sequence, no Amount only DeliverMax",
-     __LINE__,
-     R"({
+    {
+        "Pass in Sequence, no Amount only DeliverMax",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -119,12 +124,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"", "", "Missing field 'tx_json.Fee'.", "Missing field 'tx_json.SigningPubKey'."}}},
+        {{"", "", "Missing field 'tx_json.Fee'.", "Missing field 'tx_json.SigningPubKey'."}},
+    },
 
-    {"Pass in Sequence and Fee with minimal payment, both Amount and "
-     "DeliverMax.",
-     __LINE__,
-     R"({
+    {
+        "Pass in Sequence and Fee with minimal payment, both Amount and "
+        "DeliverMax.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -138,15 +145,21 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "A Signer may not be the transaction's Account "
-       "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+        {
+            {
+                "",
+                "",
+                "A Signer may not be the transaction's Account "
+                "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+                "Missing field 'tx_json.SigningPubKey'.",
+            },
+        },
+    },
 
-    {"Add 'fee_mult_max' field.",
-     __LINE__,
-     R"({
+    {
+        "Add 'fee_mult_max' field.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -159,11 +172,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"", "", "Missing field 'tx_json.Fee'.", "Missing field 'tx_json.SigningPubKey'."}}},
+        {{"", "", "Missing field 'tx_json.Fee'.", "Missing field 'tx_json.SigningPubKey'."}},
+    },
 
-    {"Add 'fee_mult_max' and 'fee_div_max' field.",
-     __LINE__,
-     R"({
+    {
+        "Add 'fee_mult_max' and 'fee_div_max' field.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -177,11 +192,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"", "", "Missing field 'tx_json.Fee'.", "Missing field 'tx_json.SigningPubKey'."}}},
+        {{"", "", "Missing field 'tx_json.Fee'.", "Missing field 'tx_json.SigningPubKey'."}},
+    },
 
-    {"fee_mult_max is ignored if 'Fee' is present.",
-     __LINE__,
-     R"({
+    {
+        "fee_mult_max is ignored if 'Fee' is present.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -195,15 +212,21 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "A Signer may not be the transaction's Account "
-       "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+        {
+            {
+                "",
+                "",
+                "A Signer may not be the transaction's Account "
+                "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+                "Missing field 'tx_json.SigningPubKey'.",
+            },
+        },
+    },
 
-    {"fee_div_max is ignored if 'Fee' is present.",
-     __LINE__,
-     R"({
+    {
+        "fee_div_max is ignored if 'Fee' is present.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -218,15 +241,21 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "A Signer may not be the transaction's Account "
-       "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+        {
+            {
+                "",
+                "",
+                "A Signer may not be the transaction's Account "
+                "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+                "Missing field 'tx_json.SigningPubKey'.",
+            },
+        },
+    },
 
-    {"Invalid 'fee_mult_max' field.",
-     __LINE__,
-     R"({
+    {
+        "Invalid 'fee_mult_max' field.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -239,14 +268,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Invalid field 'fee_mult_max', not a positive integer.",
-       "Invalid field 'fee_mult_max', not a positive integer.",
-       "Missing field 'tx_json.Fee'.",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+        {
+            {
+                "Invalid field 'fee_mult_max', not a positive integer.",
+                "Invalid field 'fee_mult_max', not a positive integer.",
+                "Missing field 'tx_json.Fee'.",
+                "Missing field 'tx_json.SigningPubKey'.",
+            },
+        },
+    },
 
-    {"Invalid 'fee_div_max' field.",
-     __LINE__,
-     R"({
+    {
+        "Invalid 'fee_div_max' field.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -260,14 +295,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Invalid field 'fee_div_max', not a positive integer.",
-       "Invalid field 'fee_div_max', not a positive integer.",
-       "Missing field 'tx_json.Fee'.",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+        {
+            {
+                "Invalid field 'fee_div_max', not a positive integer.",
+                "Invalid field 'fee_div_max', not a positive integer.",
+                "Missing field 'tx_json.Fee'.",
+                "Missing field 'tx_json.SigningPubKey'.",
+            },
+        },
+    },
 
-    {"Invalid value for 'fee_mult_max' field.",
-     __LINE__,
-     R"({
+    {
+        "Invalid value for 'fee_mult_max' field.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -280,14 +321,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Fee of 10 exceeds the requested tx limit of 0",
-       "Fee of 10 exceeds the requested tx limit of 0",
-       "Missing field 'tx_json.Fee'.",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+        {
+            {
+                "Fee of 10 exceeds the requested tx limit of 0",
+                "Fee of 10 exceeds the requested tx limit of 0",
+                "Missing field 'tx_json.Fee'.",
+                "Missing field 'tx_json.SigningPubKey'.",
+            },
+        },
+    },
 
-    {"Invalid value for 'fee_div_max' field.",
-     __LINE__,
-     R"({
+    {
+        "Invalid value for 'fee_div_max' field.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -301,14 +348,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Fee of 10 exceeds the requested tx limit of 5",
-       "Fee of 10 exceeds the requested tx limit of 5",
-       "Missing field 'tx_json.Fee'.",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+        {
+            {
+                "Fee of 10 exceeds the requested tx limit of 5",
+                "Fee of 10 exceeds the requested tx limit of 5",
+                "Missing field 'tx_json.Fee'.",
+                "Missing field 'tx_json.SigningPubKey'.",
+            },
+        },
+    },
 
-    {"Invalid zero value for 'fee_div_max' field.",
-     __LINE__,
-     R"({
+    {
+        "Invalid zero value for 'fee_div_max' field.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -322,14 +375,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Invalid field 'fee_div_max', not a positive integer.",
-       "Invalid field 'fee_div_max', not a positive integer.",
-       "Missing field 'tx_json.Fee'.",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+        {
+            {
+                "Invalid field 'fee_div_max', not a positive integer.",
+                "Invalid field 'fee_div_max', not a positive integer.",
+                "Missing field 'tx_json.Fee'.",
+                "Missing field 'tx_json.SigningPubKey'.",
+            },
+        },
+    },
 
-    {"Missing 'Amount'.",
-     __LINE__,
-     R"({
+    {
+        "Missing 'Amount'.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -339,14 +398,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'tx_json.Amount'.",
-       "Missing field 'tx_json.Amount'.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Missing field 'tx_json.Amount'.",
+                "Missing field 'tx_json.Amount'.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"Invalid 'Amount'.",
-     __LINE__,
-     R"({
+    {
+        "Invalid 'Amount'.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -357,14 +422,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Invalid field 'tx_json.Amount'.",
-       "Invalid field 'tx_json.Amount'.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Invalid field 'tx_json.Amount'.",
+                "Invalid field 'tx_json.Amount'.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"Missing 'Destination'.",
-     __LINE__,
-     R"({
+    {
+        "Missing 'Destination'.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -374,14 +445,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'tx_json.Destination'.",
-       "Missing field 'tx_json.Destination'.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Missing field 'tx_json.Destination'.",
+                "Missing field 'tx_json.Destination'.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"Invalid 'Destination'.",
-     __LINE__,
-     R"({
+    {
+        "Invalid 'Destination'.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -392,14 +469,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Invalid field 'tx_json.Destination'.",
-       "Invalid field 'tx_json.Destination'.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Invalid field 'tx_json.Destination'.",
+                "Invalid field 'tx_json.Destination'.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"Cannot create XRP to XRP paths.",
-     __LINE__,
-     R"({
+    {
+        "Cannot create XRP to XRP paths.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -411,14 +494,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Cannot build XRP to XRP paths.",
-       "Cannot build XRP to XRP paths.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Cannot build XRP to XRP paths.",
+                "Cannot build XRP to XRP paths.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"Successful 'build_path'.",
-     __LINE__,
-     R"({
+    {
+        "Successful 'build_path'.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -434,11 +523,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
+        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+    },
 
-    {"Not valid to include both 'Paths' and 'build_path'.",
-     __LINE__,
-     R"({
+    {
+        "Not valid to include both 'Paths' and 'build_path'.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -455,14 +546,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Cannot specify both 'tx_json.Paths' and 'build_path'",
-       "Cannot specify both 'tx_json.Paths' and 'build_path'",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Cannot specify both 'tx_json.Paths' and 'build_path'",
+                "Cannot specify both 'tx_json.Paths' and 'build_path'",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"Successful 'SendMax'.",
-     __LINE__,
-     R"({
+    {
+        "Successful 'SendMax'.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -483,11 +580,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
+        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+    },
 
-    {"'Amount' may not be XRP for pathfinding, but 'SendMax' may be XRP.",
-     __LINE__,
-     R"({
+    {
+        "'Amount' may not be XRP for pathfinding, but 'SendMax' may be XRP.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -504,11 +603,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
+        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+    },
 
-    {"'secret' must be present.",
-     __LINE__,
-     R"({
+    {
+        "'secret' must be present.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "tx_json": {
@@ -518,14 +619,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"'secret' must be non-empty.",
-     __LINE__,
-     R"({
+    {
+        "'secret' must be non-empty.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "",
@@ -536,14 +643,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Invalid field 'secret'.",
-       "Invalid field 'secret'.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Invalid field 'secret'.",
+                "Invalid field 'secret'.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"Use 'seed' instead of 'secret'.",
-     __LINE__,
-     R"({
+    {
+        "Use 'seed' instead of 'secret'.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
@@ -555,11 +668,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
+        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+    },
 
-    {"Malformed 'seed'.",
-     __LINE__,
-     R"({
+    {
+        "Malformed 'seed'.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
@@ -571,14 +686,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Disallowed seed.",
-       "Disallowed seed.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Disallowed seed.",
+                "Disallowed seed.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"'tx_json' must be present.",
-     __LINE__,
-     R"({
+    {
+        "'tx_json' must be present.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -589,14 +710,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'tx_json'.",
-       "Missing field 'tx_json'.",
-       "Missing field 'tx_json'.",
-       "Missing field 'tx_json'."}}},
+        {
+            {
+                "Missing field 'tx_json'.",
+                "Missing field 'tx_json'.",
+                "Missing field 'tx_json'.",
+                "Missing field 'tx_json'.",
+            },
+        },
+    },
 
-    {"'TransactionType' must be present.",
-     __LINE__,
-     R"({
+    {
+        "'TransactionType' must be present.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -606,14 +733,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     }
 })",
-     {{"Missing field 'tx_json.TransactionType'.",
-       "Missing field 'tx_json.TransactionType'.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Missing field 'tx_json.TransactionType'.",
+                "Missing field 'tx_json.TransactionType'.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"The 'TransactionType' must be a pre-established transaction type.",
-     __LINE__,
-     R"({
+    {
+        "The 'TransactionType' must be a pre-established transaction type.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -624,14 +757,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "tt"
     }
 })",
-     {{"Field 'tx_json.TransactionType' has invalid data.",
-       "Field 'tx_json.TransactionType' has invalid data.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Field 'tx_json.TransactionType' has invalid data.",
+                "Field 'tx_json.TransactionType' has invalid data.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"The 'TransactionType' may be represented with an integer.",
-     __LINE__,
-     R"({
+    {
+        "The 'TransactionType' may be represented with an integer.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -642,11 +781,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": 0
     }
 })",
-     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
+        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+    },
 
-    {"'Account' must be present.",
-     __LINE__,
-     R"({
+    {
+        "'Account' must be present.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -656,14 +797,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'tx_json.Account'.",
-       "Missing field 'tx_json.Account'.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Missing field 'tx_json.Account'.",
+                "Missing field 'tx_json.Account'.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"'Account' must be well formed.",
-     __LINE__,
-     R"({
+    {
+        "'Account' must be well formed.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -674,14 +821,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Invalid field 'tx_json.Account'.",
-       "Invalid field 'tx_json.Account'.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Invalid field 'tx_json.Account'.",
+                "Invalid field 'tx_json.Account'.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"The 'offline' tag may be added to the transaction.",
-     __LINE__,
-     R"({
+    {
+        "The 'offline' tag may be added to the transaction.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -693,11 +846,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
+        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+    },
 
-    {"If 'offline' is true then a 'Sequence' field must be supplied.",
-     __LINE__,
-     R"({
+    {
+        "If 'offline' is true then a 'Sequence' field must be supplied.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -710,14 +865,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"If 'offline' is true then a 'Fee' field must be supplied.",
-     __LINE__,
-     R"({
+    {
+        "If 'offline' is true then a 'Fee' field must be supplied.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -730,14 +891,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'tx_json.Fee'.",
-       "Missing field 'tx_json.Fee'.",
-       "Missing field 'tx_json.Fee'.",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+        {
+            {
+                "Missing field 'tx_json.Fee'.",
+                "Missing field 'tx_json.Fee'.",
+                "Missing field 'tx_json.Fee'.",
+                "Missing field 'tx_json.SigningPubKey'.",
+            },
+        },
+    },
 
-    {"Valid transaction if 'offline' is true.",
-     __LINE__,
-     R"({
+    {
+        "Valid transaction if 'offline' is true.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -751,15 +918,21 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "A Signer may not be the transaction's Account "
-       "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+        {
+            {
+                "",
+                "",
+                "A Signer may not be the transaction's Account "
+                "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+                "Missing field 'tx_json.SigningPubKey'.",
+            },
+        },
+    },
 
-    {"'offline' and 'build_path' are mutually exclusive.",
-     __LINE__,
-     R"({
+    {
+        "'offline' and 'build_path' are mutually exclusive.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -774,14 +947,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Field 'build_path' not allowed in this context.",
-       "Field 'build_path' not allowed in this context.",
-       "Field 'build_path' not allowed in this context.",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+        {
+            {
+                "Field 'build_path' not allowed in this context.",
+                "Field 'build_path' not allowed in this context.",
+                "Field 'build_path' not allowed in this context.",
+                "Missing field 'tx_json.SigningPubKey'.",
+            },
+        },
+    },
 
-    {"A 'Flags' field may be specified.",
-     __LINE__,
-     R"({
+    {
+        "A 'Flags' field may be specified.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -793,11 +972,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
+        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+    },
 
-    {"The 'Flags' field must be numeric.",
-     __LINE__,
-     R"({
+    {
+        "The 'Flags' field must be numeric.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -809,14 +990,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Field 'tx_json.Flags' has invalid data.",
-       "Field 'tx_json.Flags' has invalid data.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Field 'tx_json.Flags' has invalid data.",
+                "Field 'tx_json.Flags' has invalid data.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"It's okay to add a 'debug_signing' field.",
-     __LINE__,
-     R"({
+    {
+        "It's okay to add a 'debug_signing' field.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -828,11 +1015,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
+        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+    },
 
-    {"Single-sign a multisigned transaction.",
-     __LINE__,
-     R"({
+    {
+        "Single-sign a multisigned transaction.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "a",
@@ -855,11 +1044,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType" : "Payment"
     }
 })",
-     {{"Already multisigned.", "Already multisigned.", "Secret does not match account.", ""}}},
+        {{"Already multisigned.", "Already multisigned.", "Secret does not match account.", ""}},
+    },
 
-    {"Minimal sign_for.",
-     __LINE__,
-     R"({
+    {
+        "Minimal sign_for.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -873,14 +1064,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Secret does not match account.",
-       "Secret does not match account.",
-       "",
-       "Missing field 'tx_json.Signers'."}}},
+        {
+            {
+                "Secret does not match account.",
+                "Secret does not match account.",
+                "",
+                "Missing field 'tx_json.Signers'.",
+            },
+        },
+    },
 
-    {"Minimal offline sign_for.",
-     __LINE__,
-     R"({
+    {
+        "Minimal offline sign_for.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -895,11 +1092,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"", "", "", "Missing field 'tx_json.Signers'."}}},
+        {{"", "", "", "Missing field 'tx_json.Signers'."}},
+    },
 
-    {"Offline sign_for using 'seed' instead of 'secret'.",
-     __LINE__,
-     R"({
+    {
+        "Offline sign_for using 'seed' instead of 'secret'.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
@@ -915,11 +1114,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"", "", "", "Missing field 'tx_json.Signers'."}}},
+        {{"", "", "", "Missing field 'tx_json.Signers'."}},
+    },
 
-    {"Malformed seed in sign_for.",
-     __LINE__,
-     R"({
+    {
+        "Malformed seed in sign_for.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
@@ -935,14 +1136,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Disallowed seed.",
-       "Disallowed seed.",
-       "Disallowed seed.",
-       "Missing field 'tx_json.Signers'."}}},
+        {
+            {
+                "Disallowed seed.",
+                "Disallowed seed.",
+                "Disallowed seed.",
+                "Missing field 'tx_json.Signers'.",
+            },
+        },
+    },
 
-    {"Missing 'Account' in sign_for.",
-     __LINE__,
-     R"({
+    {
+        "Missing 'Account' in sign_for.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -955,14 +1162,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'tx_json.Account'.",
-       "Missing field 'tx_json.Account'.",
-       "Missing field 'tx_json.Account'.",
-       "Missing field 'tx_json.Account'."}}},
+        {
+            {
+                "Missing field 'tx_json.Account'.",
+                "Missing field 'tx_json.Account'.",
+                "Missing field 'tx_json.Account'.",
+                "Missing field 'tx_json.Account'.",
+            },
+        },
+    },
 
-    {"Missing 'Amount' in sign_for.",
-     __LINE__,
-     R"({
+    {
+        "Missing 'Amount' in sign_for.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -975,14 +1188,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'tx_json.Amount'.",
-       "Missing field 'tx_json.Amount'.",
-       "Missing field 'tx_json.Amount'.",
-       "Missing field 'tx_json.Amount'."}}},
+        {
+            {
+                "Missing field 'tx_json.Amount'.",
+                "Missing field 'tx_json.Amount'.",
+                "Missing field 'tx_json.Amount'.",
+                "Missing field 'tx_json.Amount'.",
+            },
+        },
+    },
 
-    {"Missing 'Destination' in sign_for.",
-     __LINE__,
-     R"({
+    {
+        "Missing 'Destination' in sign_for.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -995,14 +1214,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'tx_json.Destination'.",
-       "Missing field 'tx_json.Destination'.",
-       "Missing field 'tx_json.Destination'.",
-       "Missing field 'tx_json.Destination'."}}},
+        {
+            {
+                "Missing field 'tx_json.Destination'.",
+                "Missing field 'tx_json.Destination'.",
+                "Missing field 'tx_json.Destination'.",
+                "Missing field 'tx_json.Destination'.",
+            },
+        },
+    },
 
-    {"Missing 'Destination' in sign_for, use DeliverMax",
-     __LINE__,
-     R"({
+    {
+        "Missing 'Destination' in sign_for, use DeliverMax",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1015,14 +1240,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'tx_json.Destination'.",
-       "Missing field 'tx_json.Destination'.",
-       "Missing field 'tx_json.Destination'.",
-       "Missing field 'tx_json.Destination'."}}},
+        {
+            {
+                "Missing field 'tx_json.Destination'.",
+                "Missing field 'tx_json.Destination'.",
+                "Missing field 'tx_json.Destination'.",
+                "Missing field 'tx_json.Destination'.",
+            },
+        },
+    },
 
-    {"Missing 'Fee' in sign_for.",
-     __LINE__,
-     R"({
+    {
+        "Missing 'Fee' in sign_for.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1035,14 +1266,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Secret does not match account.",
-       "Secret does not match account.",
-       "Missing field 'tx_json.Fee'.",
-       "Missing field 'tx_json.Fee'."}}},
+        {
+            {
+                "Secret does not match account.",
+                "Secret does not match account.",
+                "Missing field 'tx_json.Fee'.",
+                "Missing field 'tx_json.Fee'.",
+            },
+        },
+    },
 
-    {"Missing 'Sequence' in sign_for.",
-     __LINE__,
-     R"({
+    {
+        "Missing 'Sequence' in sign_for.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1055,14 +1292,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Secret does not match account.",
-       "Secret does not match account.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Secret does not match account.",
+                "Secret does not match account.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"Missing 'SigningPubKey' in sign_for is automatically filled in.",
-     __LINE__,
-     R"({
+    {
+        "Missing 'SigningPubKey' in sign_for is automatically filled in.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1075,14 +1318,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Secret does not match account.",
-       "Secret does not match account.",
-       "",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+        {
+            {
+                "Secret does not match account.",
+                "Secret does not match account.",
+                "",
+                "Missing field 'tx_json.SigningPubKey'.",
+            },
+        },
+    },
 
-    {"In sign_for, an account may not sign for itself.",
-     __LINE__,
-     R"({
+    {
+        "In sign_for, an account may not sign for itself.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "a",
@@ -1095,15 +1344,21 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "A Signer may not be the transaction's Account "
-       "(rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA).",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+        {
+            {
+                "",
+                "",
+                "A Signer may not be the transaction's Account "
+                "(rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA).",
+                "Missing field 'tx_json.SigningPubKey'.",
+            },
+        },
+    },
 
-    {"Cannot put duplicate accounts in Signers array",
-     __LINE__,
-     R"({
+    {
+        "Cannot put duplicate accounts in Signers array",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1126,15 +1381,21 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType" : "Payment"
     }
 })",
-     {{"Already multisigned.",
-       "Already multisigned.",
-       "Duplicate Signers:Signer:Account entries "
-       "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh) are not allowed.",
-       ""}}},
+        {
+            {
+                "Already multisigned.",
+                "Already multisigned.",
+                "Duplicate Signers:Signer:Account entries "
+                "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh) are not allowed.",
+                "",
+            },
+        },
+    },
 
-    {"Correctly append to pre-established Signers array",
-     __LINE__,
-     R"({
+    {
+        "Correctly append to pre-established Signers array",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "c",
@@ -1157,11 +1418,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType" : "Payment"
     }
 })",
-     {{"Already multisigned.", "Already multisigned.", "", ""}}},
+        {{"Already multisigned.", "Already multisigned.", "", ""}},
+    },
 
-    {"Append to pre-established Signers array with bad signature",
-     __LINE__,
-     R"({
+    {
+        "Append to pre-established Signers array with bad signature",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "c",
@@ -1184,14 +1447,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType" : "Payment"
     }
 })",
-     {{"Already multisigned.",
-       "Already multisigned.",
-       "Invalid signature.",
-       "Invalid signature."}}},
+        {
+            {
+                "Already multisigned.",
+                "Already multisigned.",
+                "Invalid signature.",
+                "Invalid signature.",
+            },
+        },
+    },
 
-    {"Non-empty 'SigningPubKey' in sign_for.",
-     __LINE__,
-     R"({
+    {
+        "Non-empty 'SigningPubKey' in sign_for.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1205,14 +1474,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Secret does not match account.",
-       "Secret does not match account.",
-       "When multi-signing 'tx_json.SigningPubKey' must be empty.",
-       "When multi-signing 'tx_json.SigningPubKey' must be empty."}}},
+        {
+            {
+                "Secret does not match account.",
+                "Secret does not match account.",
+                "When multi-signing 'tx_json.SigningPubKey' must be empty.",
+                "When multi-signing 'tx_json.SigningPubKey' must be empty.",
+            },
+        },
+    },
 
-    {"Missing 'TransactionType' in sign_for.",
-     __LINE__,
-     R"({
+    {
+        "Missing 'TransactionType' in sign_for.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1225,14 +1500,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "SigningPubKey": "",
     }
 })",
-     {{"Missing field 'tx_json.TransactionType'.",
-       "Missing field 'tx_json.TransactionType'.",
-       "Missing field 'tx_json.TransactionType'.",
-       "Missing field 'tx_json.TransactionType'."}}},
+        {
+            {
+                "Missing field 'tx_json.TransactionType'.",
+                "Missing field 'tx_json.TransactionType'.",
+                "Missing field 'tx_json.TransactionType'.",
+                "Missing field 'tx_json.TransactionType'.",
+            },
+        },
+    },
 
-    {"TxnSignature in sign_for.",
-     __LINE__,
-     R"({
+    {
+        "TxnSignature in sign_for.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "c",
@@ -1256,53 +1537,77 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType" : "Payment"
     }
 })",
-     {{"Already multisigned.",
-       "Already multisigned.",
-       "Already single-signed.",
-       "Signing of transaction is malformed."}}},
+        {
+            {
+                "Already multisigned.",
+                "Already multisigned.",
+                "Already single-signed.",
+                "Signing of transaction is malformed.",
+            },
+        },
+    },
 
-    {"Invalid field 'tx_json': string instead of object",
-     __LINE__,
-     R"({
+    {
+        "Invalid field 'tx_json': string instead of object",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": ""
 })",
-     {{"Invalid field 'tx_json', not object.",
-       "Invalid field 'tx_json', not object.",
-       "Invalid field 'tx_json', not object.",
-       "Invalid field 'tx_json', not object."}}},
+        {
+            {
+                "Invalid field 'tx_json', not object.",
+                "Invalid field 'tx_json', not object.",
+                "Invalid field 'tx_json', not object.",
+                "Invalid field 'tx_json', not object.",
+            },
+        },
+    },
 
-    {"Invalid field 'tx_json': integer instead of object",
-     __LINE__,
-     R"({
+    {
+        "Invalid field 'tx_json': integer instead of object",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": 20160331
 })",
-     {{"Invalid field 'tx_json', not object.",
-       "Invalid field 'tx_json', not object.",
-       "Invalid field 'tx_json', not object.",
-       "Invalid field 'tx_json', not object."}}},
+        {
+            {
+                "Invalid field 'tx_json', not object.",
+                "Invalid field 'tx_json', not object.",
+                "Invalid field 'tx_json', not object.",
+                "Invalid field 'tx_json', not object.",
+            },
+        },
+    },
 
-    {"Invalid field 'tx_json': array instead of object",
-     __LINE__,
-     R"({
+    {
+        "Invalid field 'tx_json': array instead of object",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": [ "hello", "world" ]
 })",
-     {{"Invalid field 'tx_json', not object.",
-       "Invalid field 'tx_json', not object.",
-       "Invalid field 'tx_json', not object.",
-       "Invalid field 'tx_json', not object."}}},
+        {
+            {
+                "Invalid field 'tx_json', not object.",
+                "Invalid field 'tx_json', not object.",
+                "Invalid field 'tx_json', not object.",
+                "Invalid field 'tx_json', not object.",
+            },
+        },
+    },
 
-    {"Pass in Fee with minimal payment, both Amount and DeliverMax.",
-     __LINE__,
-     R"({
+    {
+        "Pass in Fee with minimal payment, both Amount and DeliverMax.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "r9zN9x52FiCFAcicCLMQKbj1nxYhxJbbSy",
     "secret": "ssgN6zTvtM1q9XV8DvJpWm8LBYWiY",
@@ -1315,14 +1620,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Source account not found.",
-       "Source account not found.",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Source account not found.",
+                "Source account not found.",
+                "Missing field 'tx_json.Sequence'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"Minimal submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Minimal submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1343,11 +1654,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.", "Missing field 'secret'.", "Missing field 'account'.", ""}}},
+        {{"Missing field 'secret'.", "Missing field 'secret'.", "Missing field 'account'.", ""}},
+    },
 
-    {"Minimal submit_multisigned with bad signature.",
-     __LINE__,
-     R"({
+    {
+        "Minimal submit_multisigned with bad signature.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1368,14 +1681,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Invalid signature."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Invalid signature.",
+            },
+        },
+    },
 
-    {"Missing tx_json in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Missing tx_json in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "Signers": [
         {
@@ -1387,14 +1706,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         }
     ]
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Missing field 'tx_json'."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Missing field 'tx_json'.",
+            },
+        },
+    },
 
-    {"Missing sequence in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Missing sequence in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1414,14 +1739,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"Missing SigningPubKey in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Missing SigningPubKey in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1441,14 +1772,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Missing field 'tx_json.SigningPubKey'.",
+            },
+        },
+    },
 
-    {"Non-empty SigningPubKey in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Non-empty SigningPubKey in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1469,14 +1806,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "When multi-signing 'tx_json.SigningPubKey' must be empty."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "When multi-signing 'tx_json.SigningPubKey' must be empty.",
+            },
+        },
+    },
 
-    {"Missing TransactionType in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Missing TransactionType in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1496,14 +1839,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "SigningPubKey": "",
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Missing field 'tx_json.TransactionType'."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Missing field 'tx_json.TransactionType'.",
+            },
+        },
+    },
 
-    {"Missing Account in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Missing Account in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Amount": "1000000000",
@@ -1523,14 +1872,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Missing field 'tx_json.Account'."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Missing field 'tx_json.Account'.",
+            },
+        },
+    },
 
-    {"Malformed Account in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Malformed Account in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "NotAnAccount",
@@ -1551,14 +1906,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Invalid field 'tx_json.Account'."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Invalid field 'tx_json.Account'.",
+            },
+        },
+    },
 
-    {"Account not in ledger in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Account not in ledger in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
@@ -1579,14 +1940,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Source account not found."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Source account not found.",
+            },
+        },
+    },
 
-    {"Missing Fee in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Missing Fee in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1606,14 +1973,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Missing field 'tx_json.Fee'."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Missing field 'tx_json.Fee'.",
+            },
+        },
+    },
 
-    {"Non-numeric Fee in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Non-numeric Fee in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1634,14 +2007,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Field 'tx_json.Fee' has invalid data."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Field 'tx_json.Fee' has invalid data.",
+            },
+        },
+    },
 
-    {"Missing Amount in submit_multisigned Payment.",
-     __LINE__,
-     R"({
+    {
+        "Missing Amount in submit_multisigned Payment.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1661,14 +2040,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Missing field 'tx_json.Amount'."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Missing field 'tx_json.Amount'.",
+            },
+        },
+    },
 
-    {"Invalid Amount in submit_multisigned Payment.",
-     __LINE__,
-     R"({
+    {
+        "Invalid Amount in submit_multisigned Payment.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1689,14 +2074,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Invalid field 'tx_json.Amount'."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Invalid field 'tx_json.Amount'.",
+            },
+        },
+    },
 
-    {"Invalid DeliverMax in submit_multisigned Payment.",
-     __LINE__,
-     R"({
+    {
+        "Invalid DeliverMax in submit_multisigned Payment.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1717,14 +2108,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Invalid field 'tx_json.Amount'."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Invalid field 'tx_json.Amount'.",
+            },
+        },
+    },
 
-    {"No build_path in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "No build_path in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "build_path": 1,
     "tx_json": {
@@ -1746,14 +2143,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Field 'build_path' not allowed in this context."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Field 'build_path' not allowed in this context.",
+            },
+        },
+    },
 
-    {"Missing Destination in submit_multisigned Payment.",
-     __LINE__,
-     R"({
+    {
+        "Missing Destination in submit_multisigned Payment.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1773,14 +2176,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Missing field 'tx_json.Destination'."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Missing field 'tx_json.Destination'.",
+            },
+        },
+    },
 
-    {"Malformed Destination in submit_multisigned Payment.",
-     __LINE__,
-     R"({
+    {
+        "Malformed Destination in submit_multisigned Payment.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1801,14 +2210,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Invalid field 'tx_json.Destination'."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Invalid field 'tx_json.Destination'.",
+            },
+        },
+    },
 
-    {"Missing Signers field in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Missing Signers field in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1820,14 +2235,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Missing field 'tx_json.Signers'."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Missing field 'tx_json.Signers'.",
+            },
+        },
+    },
 
-    {"Signers not an array in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Signers not an array in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1844,14 +2265,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Field 'tx_json.Signers' is not a JSON array."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Field 'tx_json.Signers' is not a JSON array.",
+            },
+        },
+    },
 
-    {"Empty Signers array in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Empty Signers array in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1865,14 +2292,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "tx_json.Signers array may not be empty."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "tx_json.Signers array may not be empty.",
+            },
+        },
+    },
 
-    {"Duplicate Signer in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Duplicate Signer in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1900,15 +2333,21 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "Duplicate Signers:Signer:Account entries "
-       "(rPcNzota6B8YBokhYtcTNqQVCngtbnWfux) are not allowed."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "Duplicate Signers:Signer:Account entries "
+                "(rPcNzota6B8YBokhYtcTNqQVCngtbnWfux) are not allowed.",
+            },
+        },
+    },
 
-    {"Signer is tx_json Account in submit_multisigned.",
-     __LINE__,
-     R"({
+    {
+        "Signer is tx_json Account in submit_multisigned.",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1929,15 +2368,21 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "A Signer may not be the transaction's Account "
-       "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh)."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "A Signer may not be the transaction's Account "
+                "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+            },
+        },
+    },
 
-    {"Empty Signers array in submit_multisigned, use DeliverMax",
-     __LINE__,
-     R"({
+    {
+        "Empty Signers array in submit_multisigned, use DeliverMax",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1951,14 +2396,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "tx_json.Signers array may not be empty."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "tx_json.Signers array may not be empty.",
+            },
+        },
+    },
 
-    {"Empty Signers array in submit_multisigned, use DeliverMax and Amount",
-     __LINE__,
-     R"({
+    {
+        "Empty Signers array in submit_multisigned, use DeliverMax and Amount",
+        __LINE__,
+        R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1973,14 +2424,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       "tx_json.Signers array may not be empty."}}},
+        {
+            {
+                "Missing field 'secret'.",
+                "Missing field 'secret'.",
+                "Missing field 'account'.",
+                "tx_json.Signers array may not be empty.",
+            },
+        },
+    },
 
-    {"Payment cannot specify different DeliverMax and Amount.",
-     __LINE__,
-     R"({
+    {
+        "Payment cannot specify different DeliverMax and Amount.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1996,13 +2453,19 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Cannot specify differing 'Amount' and 'DeliverMax'",
-       "Cannot specify differing 'Amount' and 'DeliverMax'",
-       "Cannot specify differing 'Amount' and 'DeliverMax'",
-       "Cannot specify differing 'Amount' and 'DeliverMax'"}}},
-    {"Payment cannot specify bad DomainID.",
-     __LINE__,
-     R"({
+        {
+            {
+                "Cannot specify differing 'Amount' and 'DeliverMax'",
+                "Cannot specify differing 'Amount' and 'DeliverMax'",
+                "Cannot specify differing 'Amount' and 'DeliverMax'",
+                "Cannot specify differing 'Amount' and 'DeliverMax'",
+            },
+        },
+    },
+    {
+        "Payment cannot specify bad DomainID.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -2018,14 +2481,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "DomainID": "invalid",
     }
 })",
-     {{"Unable to parse 'DomainID'.",
-       "Unable to parse 'DomainID'.",
-       "Unable to parse 'DomainID'.",
-       "Unable to parse 'DomainID'."}}},
+        {
+            {
+                "Unable to parse 'DomainID'.",
+                "Unable to parse 'DomainID'.",
+                "Unable to parse 'DomainID'.",
+                "Unable to parse 'DomainID'.",
+            },
+        },
+    },
 
-    {"Minimal delegated transaction.",
-     __LINE__,
-     R"({
+    {
+        "Minimal delegated transaction.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "secret": "a",
     "tx_json": {
@@ -2036,11 +2505,13 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "Delegate": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
     }
 })",
-     {{"", "", "Missing field 'account'.", "Missing field 'tx_json.Sequence'."}}},
+        {{"", "", "Missing field 'account'.", "Missing field 'tx_json.Sequence'."}},
+    },
 
-    {"Delegate not well formed.",
-     __LINE__,
-     R"({
+    {
+        "Delegate not well formed.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "secret": "a",
     "tx_json": {
@@ -2051,14 +2522,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "Delegate": "NotAnAccount"
     }
 })",
-     {{"Invalid field 'tx_json.Delegate'.",
-       "Invalid field 'tx_json.Delegate'.",
-       "Missing field 'account'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Invalid field 'tx_json.Delegate'.",
+                "Invalid field 'tx_json.Delegate'.",
+                "Missing field 'account'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"Delegate not in ledger.",
-     __LINE__,
-     R"({
+    {
+        "Delegate not in ledger.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "secret": "a",
     "tx_json": {
@@ -2069,14 +2546,20 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "Delegate": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd"
     }
 })",
-     {{"Delegate account not found.",
-       "Delegate account not found.",
-       "Missing field 'account'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Delegate account not found.",
+                "Delegate account not found.",
+                "Missing field 'account'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
-    {"Delegate and secret not match.",
-     __LINE__,
-     R"({
+    {
+        "Delegate and secret not match.",
+        __LINE__,
+        R"({
     "command": "dummy_command",
     "secret": "aa",
     "tx_json": {
@@ -2087,10 +2570,15 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "Delegate": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
     }
 })",
-     {{"Secret does not match account.",
-       "Secret does not match account.",
-       "Missing field 'account'.",
-       "Missing field 'tx_json.Sequence'."}}},
+        {
+            {
+                "Secret does not match account.",
+                "Secret does not match account.",
+                "Missing field 'account'.",
+                "Missing field 'tx_json.Sequence'.",
+            },
+        },
+    },
 
 };
 
@@ -2782,7 +3270,8 @@ public:
             TestStuff{transactionSign, nullptr, "sign", 0},
             TestStuff{nullptr, transactionSubmit, "submit", 1},
             TestStuff{transactionSignFor, nullptr, "sign_for", 2},
-            TestStuff{nullptr, transactionSubmitMultiSigned, "submit_multisigned", 3}};
+            TestStuff{nullptr, transactionSubmitMultiSigned, "submit_multisigned", 3},
+        };
 
         for (auto testFunc : kTestFuncs)
         {
@@ -2795,7 +3284,11 @@ public:
                     Throw<std::runtime_error>("Internal JSONRPC_test error.  Bad test JSON.");
 
                 static Role const kTestedRoles[] = {
-                    Role::GUEST, Role::USER, Role::ADMIN, Role::FORBID};
+                    Role::GUEST,
+                    Role::USER,
+                    Role::ADMIN,
+                    Role::FORBID,
+                };
 
                 for (Role const testRole : kTestedRoles)
                 {

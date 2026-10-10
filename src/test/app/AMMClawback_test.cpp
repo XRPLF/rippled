@@ -2767,7 +2767,10 @@ class AMMClawback_test : public beast::unit_test::Suite
         // AMMWithdraw still enforces the reserve check.
         amm.withdraw(
             WithdrawArg{
-                .account = alice, .asset1Out = eur(1), .err = Ter(tecINSUFFICIENT_RESERVE)});
+                .account = alice,
+                .asset1Out = eur(1),
+                .err = Ter(tecINSUFFICIENT_RESERVE),
+            });
         BEAST_EXPECT(env.ownerCount(alice) == 2);
 
         if (features[fixCleanup3_4_0])
@@ -2863,17 +2866,18 @@ class AMMClawback_test : public beast::unit_test::Suite
         testInvalidRequest(all);
         testInvalidRequest(all - featureMPTokensV2);
         testFeatureDisabled(all - featureAMMClawback);
-        for (auto const& features :
-             {all - fixAMMv1_3 - fixAMMClawbackRounding - featureMPTokensV2,
-              // fixAMMv1_3 on, fixAMMClawbackRounding off, fixCleanup3_3_0 off:
-              // precision loss caught by invariant checker -> tecINVARIANT_FAILED
-              all - fixAMMClawbackRounding - fixCleanup3_3_0 - featureMPTokensV2,
-              // fixAMMv1_3 on, fixAMMClawbackRounding off, fixCleanup3_3_0 on:
-              // precision loss caught in transaction layer -> tecPRECISION_LOSS
-              all - fixAMMClawbackRounding - featureMPTokensV2,
-              all - featureMPTokensV2,
-              all - fixCleanup3_4_0,
-              all})
+        for (auto const& features : {
+                 all - fixAMMv1_3 - fixAMMClawbackRounding - featureMPTokensV2,
+                 // fixAMMv1_3 on, fixAMMClawbackRounding off, fixCleanup3_3_0 off:
+                 // precision loss caught by invariant checker -> tecINVARIANT_FAILED
+                 all - fixAMMClawbackRounding - fixCleanup3_3_0 - featureMPTokensV2,
+                 // fixAMMv1_3 on, fixAMMClawbackRounding off, fixCleanup3_3_0 on:
+                 // precision loss caught in transaction layer -> tecPRECISION_LOSS
+                 all - fixAMMClawbackRounding - featureMPTokensV2,
+                 all - featureMPTokensV2,
+                 all - fixCleanup3_4_0,
+                 all,
+             })
         {
             testAMMClawbackSpecificAmount(features);
             testAMMClawbackExceedBalance(features);

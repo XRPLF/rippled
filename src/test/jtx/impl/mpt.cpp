@@ -282,7 +282,8 @@ makeMPTCreate(MPTInitDef const& arg)
             .pay = {{arg.holders, *arg.pay}},
             .flags = arg.flags,
             .immutableFlags = arg.immutableFlags,
-            .authHolder = arg.authHolder};
+            .authHolder = arg.authHolder,
+        };
     }
     return {
         .maxAmt = arg.maxAmt,
@@ -290,7 +291,8 @@ makeMPTCreate(MPTInitDef const& arg)
         .authorize = arg.holders,
         .flags = arg.flags,
         .immutableFlags = arg.immutableFlags,
-        .authHolder = arg.authHolder};
+        .authHolder = arg.authHolder,
+    };
 }
 
 MPTTester::MPTTester(MPTInitDef const& arg, std::source_location const& loc)
@@ -303,7 +305,8 @@ MPTTester::MPTTester(MPTInitDef const& arg, std::source_location const& loc)
               .close = arg.close,
               .create = makeMPTCreate(arg),
           },
-          loc}
+          loc,
+      }
 {
 }
 
@@ -345,14 +348,15 @@ MPTTester::create(MPTCreate const& arg, std::source_location const& loc)
     if (id_)
         Throw<std::runtime_error>("MPT can't be reused");
     id_ = makeMptID(env_.seq(issuer_), issuer_);
-    json::Value const jv = createJV(
-        {.issuer = issuer_,
-         .maxAmt = arg.maxAmt,
-         .assetScale = arg.assetScale,
-         .transferFee = arg.transferFee,
-         .metadata = arg.metadata,
-         .immutableFlags = arg.immutableFlags,
-         .domainID = arg.domainID});
+    json::Value const jv = createJV({
+        .issuer = issuer_,
+        .maxAmt = arg.maxAmt,
+        .assetScale = arg.assetScale,
+        .transferFee = arg.transferFee,
+        .metadata = arg.metadata,
+        .immutableFlags = arg.immutableFlags,
+        .domainID = arg.domainID,
+    });
     if (!isTesSuccess(submit(arg, {jv, loc})))
     {
         // Verify issuance doesn't exist
@@ -578,17 +582,18 @@ MPTTester::set(MPTSet const& arg, std::source_location const& loc)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
-    json::Value const jv = setJV(
-        {.account = arg.account ? arg.account : issuer_,
-         .holder = arg.holder,
-         .id = arg.id ? arg.id : id_,
-         .immutableFlags = arg.immutableFlags,
-         .transferFee = arg.transferFee,
-         .metadata = arg.metadata,
-         .delegate = arg.delegate,
-         .domainID = arg.domainID,
-         .issuerPubKey = arg.issuerPubKey,
-         .auditorPubKey = arg.auditorPubKey});
+    json::Value const jv = setJV({
+        .account = arg.account ? arg.account : issuer_,
+        .holder = arg.holder,
+        .id = arg.id ? arg.id : id_,
+        .immutableFlags = arg.immutableFlags,
+        .transferFee = arg.transferFee,
+        .metadata = arg.metadata,
+        .delegate = arg.delegate,
+        .domainID = arg.domainID,
+        .issuerPubKey = arg.issuerPubKey,
+        .auditorPubKey = arg.auditorPubKey,
+    });
     if (submit(arg, {jv, loc}) == tesSUCCESS && arg.flags.value_or(0) != 0u)
     {
         auto require = [&](std::optional<Account> const& holder, bool unchanged) {

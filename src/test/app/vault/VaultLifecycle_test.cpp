@@ -245,11 +245,12 @@ private:
                     BEAST_EXPECT(env.balance(depositor, shares) == share(0));
 
                     {
-                        auto tx = vault.clawback(
-                            {.issuer = issuer,
-                             .id = keylet.key,
-                             .holder = depositor,
-                             .amount = asset(10)});
+                        auto tx = vault.clawback({
+                            .issuer = issuer,
+                            .id = keylet.key,
+                            .holder = depositor,
+                            .amount = asset(10),
+                        });
                         env(tx, Ter{tecPRECISION_LOSS});
                         env.close();
                     }
@@ -425,11 +426,12 @@ private:
 
                 if (!asset.raw().native())
                 {
-                    auto tx = vault.clawback(
-                        {.issuer = issuer,
-                         .id = keylet.key,
-                         .holder = depositor,
-                         .amount = asset(0)});
+                    auto tx = vault.clawback({
+                        .issuer = issuer,
+                        .id = keylet.key,
+                        .holder = depositor,
+                        .amount = asset(0),
+                    });
                     env(tx, Ter{tecPRECISION_LOSS});
                     env.close();
                 }
@@ -592,10 +594,11 @@ private:
 
             MPTTester mptt{env, issuer, kMptInitNoFund};
             auto const kNone = LedgerSpecificFlags(0);
-            mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanLock |
-                     (args.enableClawback ? tfMPTCanClawback : kNone) |
-                     (args.requireAuth ? tfMPTRequireAuth : kNone)});
+            mptt.create({
+                .flags = tfMPTCanTransfer | tfMPTCanLock |
+                    (args.enableClawback ? tfMPTCanClawback : kNone) |
+                    (args.requireAuth ? tfMPTRequireAuth : kNone),
+            });
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = depositor});
@@ -620,11 +623,12 @@ private:
                      Vault& vault,
                      MPTTester& mptt) {
             testcase("MPT nothing to clawback from");
-            auto tx = vault.clawback(
-                {.issuer = issuer,
-                 .id = keylet::skip().key,
-                 .holder = depositor,
-                 .amount = asset(10)});
+            auto tx = vault.clawback({
+                .issuer = issuer,
+                .id = keylet::skip().key,
+                .holder = depositor,
+                .amount = asset(10),
+            });
             env(tx, Ter(tecNO_ENTRY));
         });
 
@@ -748,10 +752,11 @@ private:
                 auto v = env.le(keylet);
                 BEAST_EXPECT(v);
 
-                tx = vault.deposit(
-                    {.depositor = depositor,
-                     .id = keylet.key,
-                     .amount = asset(1000)});  // all assets held by depositor
+                tx = vault.deposit({
+                    .depositor = depositor,
+                    .id = keylet.key,
+                    .amount = asset(1000),
+                });  // all assets held by depositor
                 env(tx);
                 env.close();
 
@@ -811,10 +816,11 @@ private:
                 env(tx);
                 env.close();
 
-                tx = vault.deposit(
-                    {.depositor = depositor,
-                     .id = keylet.key,
-                     .amount = asset(1000)});  // all assets held by depositor
+                tx = vault.deposit({
+                    .depositor = depositor,
+                    .id = keylet.key,
+                    .amount = asset(1000),
+                });  // all assets held by depositor
                 env(tx);
                 env.close();
 
@@ -902,10 +908,11 @@ private:
                 env(pay(depositor, owner, asset(1000)));
                 env.close();
 
-                tx = vault.deposit(
-                    {.depositor = owner,
-                     .id = keylet.key,
-                     .amount = asset(1000)});  // all assets held by owner
+                tx = vault.deposit({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = asset(1000),
+                });  // all assets held by owner
                 env(tx);
                 env.close();
 
@@ -1090,11 +1097,12 @@ private:
                 env.close();
 
                 {
-                    auto tx = vault.clawback(
-                        {.issuer = issuer,
-                         .id = keylet.key,
-                         .holder = depositor,
-                         .amount = asset(0)});
+                    auto tx = vault.clawback({
+                        .issuer = issuer,
+                        .id = keylet.key,
+                        .holder = depositor,
+                        .amount = asset(0),
+                    });
                     env(tx, Ter{tecNO_PERMISSION});
                 }
             },
@@ -1201,11 +1209,12 @@ private:
             env.close();
             Vault const vault{env};
 
-            MPTTester asset{
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {owner, alice, bob, carol},
-                 .flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock}};
+            MPTTester asset{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {owner, alice, bob, carol},
+                .flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock,
+            }};
             env(pay(issuer, alice, asset(1'000)));
             env(pay(issuer, bob, asset(1'000)));
             env.close();
@@ -1737,10 +1746,11 @@ private:
                 // Total vault balance should be 118.5 IOU. Withdraw and delete
                 // the vault to verify this exact amount was deposited and the
                 // owner has matching shares
-                env(vault.withdraw(
-                    {.depositor = owner,
-                     .id = keylet.key,
-                     .amount = asset(Number(1000 + (37 * 5), -1))}));
+                env(vault.withdraw({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = asset(Number(1000 + (37 * 5), -1)),
+                }));
 
                 {
                     BEAST_EXPECT(env.balance(owner, asset) == startingOwnerBalance.value());
