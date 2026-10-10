@@ -9,6 +9,7 @@
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/PermissionedDomainEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -245,7 +246,7 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
         if (ctx.view.rules().enabled(fixCleanup3_4_0))
         {
             auto const domainID = ctx.tx[sfDomainID];
-            auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domainID));
+            PermissionedDomainEntryR const sleDomain(domainID, ctx.view);
             if (!sleDomain)
                 return tecNO_PERMISSION;
 
@@ -257,7 +258,7 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
             {
                 // validDomain returns tecNO_AUTH when no matching credential is
                 // found. Map it to tecNO_PERMISSION to preserve existing behavior.
-                if (auto const err = credentials::validDomain(ctx.view, domainID, id);
+                if (auto const err = credentials::validDomain(sleDomain, id);
                     !isTesSuccess(err) && err != tecEXPIRED)
                     return tecNO_PERMISSION;
             }
@@ -1032,13 +1033,13 @@ OfferCreate::doApply()
     if (ctx_.tx.isFieldPresent(sfDomainID) && ctx_.view().rules().enabled(fixCleanup3_4_0))
     {
         auto const domainID = ctx_.tx[sfDomainID];
-        auto const sleDomain = ctx_.view().read(keylet::permissionedDomain(domainID));
+        PermissionedDomainEntryR const sleDomain(domainID, ctx_.view());
         if (!sleDomain)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (sleDomain->getAccountID(sfOwner) != accountID_)
         {
-            if (auto const err = verifyValidDomain(ctx_.view(), accountID_, domainID, j_);
+            if (auto const err = verifyValidDomain(ctx_.view(), accountID_, sleDomain, j_);
                 !isTesSuccess(err))
                 return err;
         }
