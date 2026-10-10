@@ -619,7 +619,7 @@ run(int argc, char** argv)
     {
         try
         {
-            auto const r = [&vm]() -> std::vector<std::uint32_t> {
+            auto const r = [&vm] -> std::vector<std::uint32_t> {
                 std::vector<std::string> strVec;
                 boost::split(
                     strVec,

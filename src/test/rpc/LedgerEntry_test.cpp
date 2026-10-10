@@ -186,13 +186,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
     static std::vector<json::Value>
     getBadValues(FieldType fieldType)
     {
-        static json::Value const kInjectObject = []() {
+        static json::Value const kInjectObject = [] {
             json::Value obj(json::ValueType::Object);
             obj[jss::account] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
             obj[jss::ledger_index] = "validated";
             return obj;
         }();
-        static json::Value const kInjectArray = []() {
+        static json::Value const kInjectArray = [] {
             json::Value arr(json::ValueType::Array);
             arr[0u] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
             arr[1u] = "validated";
@@ -280,13 +280,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
     static json::Value
     getCorrectValue(json::StaticString fieldName)
     {
-        static json::Value const kTwoAccountArray = []() {
+        static json::Value const kTwoAccountArray = [] {
             json::Value arr(json::ValueType::Array);
             arr[0u] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
             arr[1u] = "r4MrUGTdB57duTnRs6KbsRGQXgkseGb1b5";
             return arr;
         }();
-        static json::Value const kIssueObject = []() {
+        static json::Value const kIssueObject = [] {
             json::Value arr(json::ValueType::Object);
             arr[jss::currency] = "XRP";
             return arr;
@@ -2378,7 +2378,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         }
         for (int i = 0; i < accounts.size(); ++i)
         {
-            auto const jv = [&]() {
+            auto const jv = [&] {
                 // document id is uint32
                 if (i % 2)
                     return Oracle::ledgerEntry(env, accounts[i], oracles[i]);
@@ -2667,7 +2667,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
             }
 
-            std::string const pdIdx = [&]() {
+            std::string const pdIdx = [&] {
                 {
                     json::Value params;
                     // Test good values

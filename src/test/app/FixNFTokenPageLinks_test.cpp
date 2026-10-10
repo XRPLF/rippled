@@ -65,7 +65,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         // internal representation to match the passed in value.
         auto internalTaxon = [this, &env](
                                  Account const& acct, std::uint32_t taxon) -> std::uint32_t {
-            std::uint32_t tokenSeq = [this, &env, &acct]() {
+            std::uint32_t tokenSeq = [this, &env, &acct] {
                 auto const le = env.le(acct);
                 if (BEAST_EXPECT(le))
                     return le->at(~sfMintedNFTokens).value_or(0u);
@@ -275,7 +275,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, alice) == 3);
 
         // Get the index of the middle page.
-        UInt256 const aliceMiddleNFTokenPageIndex = [&env, &alice]() {
+        UInt256 const aliceMiddleNFTokenPageIndex = [&env, &alice] {
             auto lastNFTokenPage = env.le(keylet::nftokenPageMax(alice));
             return lastNFTokenPage->at(sfPreviousPageMin);
         }();
@@ -323,7 +323,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, bob) == 3);
 
         // Get the index of the middle page.
-        UInt256 const bobMiddleNFTokenPageIndex = [&env, &bob]() {
+        UInt256 const bobMiddleNFTokenPageIndex = [&env, &bob] {
             auto lastNFTokenPage = env.le(keylet::nftokenPageMax(bob));
             return lastNFTokenPage->at(sfPreviousPageMin);
         }();
@@ -366,7 +366,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, carol) == 3);
 
         // Get the index of the middle page.
-        UInt256 const carolMiddleNFTokenPageIndex = [&env, &carol]() {
+        UInt256 const carolMiddleNFTokenPageIndex = [&env, &carol] {
             auto lastNFTokenPage = env.le(keylet::nftokenPageMax(carol));
             return lastNFTokenPage->at(sfPreviousPageMin);
         }();

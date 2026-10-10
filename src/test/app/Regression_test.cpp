@@ -170,7 +170,7 @@ struct Regression_test : public beast::unit_test::Suite
             jt.jv["SigningPubKey"] = secp256r1PubKey;
 
             // Set the same key in the STTx.
-            auto secp256r1Sig = std::make_unique<STTx>(*(jt.stx));
+            auto secp256r1Sig = std::make_unique<STTx>(*jt.stx);
             auto pubKeyBlob = strUnHex(secp256r1PubKey);
             assert(pubKeyBlob);  // Hex for public key must be valid
             secp256r1Sig->setFieldVL(sfSigningPubKey, *pubKeyBlob);
@@ -298,7 +298,7 @@ struct Regression_test : public beast::unit_test::Suite
         {
             auto const bobIndex = keylet::account(bob).key;
 
-            auto const digest = [&]() -> std::optional<UInt256> {
+            auto const digest = [&] -> std::optional<UInt256> {
                 auto const& state = env.app().getLedgerMaster().getClosedLedger()->stateMap();
                 SHAMapHash digest;
                 if (!state.peekItem(bobIndex, digest))
