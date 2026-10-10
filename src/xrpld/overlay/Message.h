@@ -127,10 +127,21 @@ public:
         return validatorKey_;
     }
 
+    /**
+     * Whether this message carries consensus state (a proposal or a
+     * validation) and is sent ahead of bulk traffic on a peer connection.
+     */
+    bool
+    isPriority() const
+    {
+        return priority_;
+    }
+
 private:
     std::vector<uint8_t> buffer_;
     std::vector<uint8_t> bufferCompressed_;
     std::size_t category_;
+    bool priority_;
     std::once_flag onceFlag_;
     std::optional<PublicKey> validatorKey_;
 
