@@ -242,7 +242,12 @@ InboundLedger::tryDB(node_store::Database& srcDB)
                     << "hash " << hash_ << " seq " << std::to_string(seq_) << " cannot be a ledger";
                 ledger_.reset();
                 failed_ = true;
+                return;
             }
+
+            // A zero account hash cannot be a ledger either. The helper sets failed_ and drops the
+            // ledger, so the callers below store and publish nothing for such a header.
+            failOnZeroAccountHash();
         };
 
         // Try to fetch the ledger header from the DB
@@ -310,12 +315,6 @@ InboundLedger::tryDB(node_store::Database& srcDB)
 
     if (!haveState_)
     {
-        if (ledger_->header().accountHash.isZero())
-        {
-            JLOG(journal_.fatal()) << "We are acquiring a ledger with a zero account hash";
-            failed_ = true;
-            return;
-        }
         AccountStateSF filter(ledger_->stateMap().family().db(), app_.getLedgerMaster());
         if (ledger_->stateMap().fetchRoot(SHAMapHash{ledger_->header().accountHash}, &filter))
         {
@@ -776,15 +775,31 @@ InboundLedger::filterNodes(
         recentNodes_.insert(n.second);
 }
 
+bool
+InboundLedger::failOnZeroAccountHash()
+{
+    bool const zero = ledger_->header().accountHash.isZero();
+    SOMETIMES(zero, "xrpl::InboundLedger::failOnZeroAccountHash : zero account hash");
+    if (!zero)
+        return false;
+
+    JLOG(journal_.fatal()) << "We are acquiring a ledger with a zero account hash: " << hash_;
+    failed_ = true;
+    ledger_.reset();
+    return true;
+}
+
 /**
- * Take ledger header data
- * Call with a lock
+ * Build the ledger from a header a peer supplied. Call with mtx_ held.
+ *
+ * @param data The serialized header, without a hash prefix.
+ * @return False for a header other than the one asked for. True otherwise,
+ *         also when the header cannot name a ledger, and then failed_ is set,
+ *         ledger_ is null, haveHeader_ stays false, and the caller calls done().
  */
-// data must not have hash prefix
 bool
 InboundLedger::takeHeader(std::string_view data)
 {
-    // Return value: true=normal, false=bad data
     JLOG(journal_.trace()) << "got header acquiring ledger " << hash_;
 
     if (complete_ || failed_ || haveHeader_)
@@ -800,6 +815,12 @@ InboundLedger::takeHeader(std::string_view data)
         ledger_.reset();
         return false;
     }
+
+    // The header is the one asked for, so the peer is not charged and the caller reads failed_.
+    // The helper drops the ledger, and haveHeader_ stays false, as tryDB() leaves them.
+    if (failOnZeroAccountHash())
+        return true;
+
     if (seq_ == 0)
         seq_ = ledger_->header().seq;
     ledger_->stateMap().setLedgerSeq(seq_);
@@ -813,9 +834,6 @@ InboundLedger::takeHeader(std::string_view data)
 
     if (ledger_->header().txHash.isZero())
         haveTransactions_ = true;
-
-    if (ledger_->header().accountHash.isZero())
-        haveState_ = true;
 
     ledger_->txMap().setSynching();
     ledger_->stateMap().setSynching();
@@ -1099,6 +1117,13 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
                     JLOG(journal_.warn()) << "Got invalid header data";
                     peer->charge(resource::kFeeMalformedRequest, "ledger_data invalid header");
                     return -1;
+                }
+
+                // takeHeader() failed the acquisition. Nothing else signals that after isDone().
+                if (failed_)
+                {
+                    done();
+                    return 0;
                 }
 
                 san.incUseful();
