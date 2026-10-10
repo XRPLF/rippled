@@ -31,7 +31,6 @@
 #include <cstdint>
 #include <iterator>
 #include <memory>
-#include <numeric>
 #include <optional>
 #include <tuple>
 #include <type_traits>
@@ -646,11 +645,21 @@ flow(
     boost::container::flat_multiset<TOutAmt> savedOuts;
     savedOuts.reserve(maxTries);
 
-    auto const sum = [](auto const& col) {
+    // Returns std::nullopt if the aggregate overflows; callers treat that as a
+    // dry path.
+    auto const sum = [](auto const& col) -> std::optional<std::decay_t<decltype(*col.begin())>> {
         using TResult = std::decay_t<decltype(*col.begin())>;
         if (col.empty())
             return TResult{beast::kZero};
-        return std::accumulate(col.begin() + 1, col.end(), *col.begin());
+        TResult total = *col.begin();
+        for (auto it = col.begin() + 1; it != col.end(); ++it)
+        {
+            auto const next = checkedStepAddOpt(total, *it);
+            if (!next)
+                return std::nullopt;
+            total = *next;
+        }
+        return total;
     };
 
     // These offers only need to be removed if the payment is not
@@ -749,9 +758,17 @@ flow(
         {
             savedIns.insert(best->in);
             savedOuts.insert(best->out);
-            remainingOut = outReq - sum(savedOuts);
+            auto const sumOut = sum(savedOuts);
+            if (!sumOut)
+                return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
+            remainingOut = outReq - *sumOut;
             if (sendMax)
-                remainingIn = *sendMax - sum(savedIns);
+            {
+                auto const sumIn = sum(savedIns);
+                if (!sumIn)
+                    return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
+                remainingIn = *sendMax - *sumIn;
+            }
 
             if (flowDebugInfo)
             {
@@ -786,8 +803,12 @@ flow(
             break;
     }
 
-    auto const actualOut = sum(savedOuts);
-    auto const actualIn = sum(savedIns);
+    auto const actualOutOpt = sum(savedOuts);
+    auto const actualInOpt = sum(savedIns);
+    if (!actualOutOpt || !actualInOpt)
+        return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
+    auto const actualOut = *actualOutOpt;
+    auto const actualIn = *actualInOpt;
 
     JLOG(j.trace()) << "Total flow: in: " << to_string(actualIn)
                     << " out: " << to_string(actualOut);
