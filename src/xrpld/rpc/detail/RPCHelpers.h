@@ -4,6 +4,7 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
@@ -17,6 +18,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/server/NetworkOPs.h>
 
@@ -186,6 +188,21 @@ keypairForSignature(
     json::Value const& params,
     json::Value& error,
     unsigned int apiVersion = kApiVersionIfUnspecified);
+
+/**
+ * Serialize the payment channel claim authorization message for the `amount`
+ * of a channel_authorize or channel_verify request.
+ *
+ * @param msg Serializer the message is appended to.
+ * @param channelId The channel the claim is for.
+ * @param amount A string of drops for an XRP channel, or the transaction
+ *     Amount JSON object (currency/issuer/value or mpt_issuance_id/value) for a
+ *     token channel.
+ * @return false, with nothing appended, if `amount` is neither a string of
+ *     drops nor a valid non-negative token Amount object.
+ */
+bool
+serializeChannelAuthorization(Serializer& msg, uint256 const& channelId, json::Value const& amount);
 
 /**
  * Parse subscribe/unsubscribe parameters

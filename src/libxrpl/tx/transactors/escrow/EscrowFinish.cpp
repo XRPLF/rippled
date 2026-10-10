@@ -28,7 +28,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <system_error>
-#include <variant>
 
 namespace xrpl {
 
@@ -154,11 +153,9 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
 
         if (!isXRP(amount))
         {
-            if (auto const ret = std::visit(
-                    [&]<typename T>(T const&) {
-                        return escrowUnlockPreclaimHelper<T>(ctx.view, dest, amount);
-                    },
-                    amount.asset().value());
+            if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                    return escrowUnlockPreclaimHelper<T>(ctx.view, dest, amount);
+                });
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -305,21 +302,19 @@ EscrowFinish::doApply()
             : kParityRate;
         auto const issuer = amount.getIssuer();
         bool const createAsset = destID == accountID_;
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return escrowUnlockApplyHelper<T>(
-                        ctx_.getApplyViewContext(),
-                        lockedRate,
-                        sled,
-                        preFeeBalance_,
-                        amount,
-                        issuer,
-                        account,
-                        destID,
-                        createAsset,
-                        j_);
-                },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                return escrowUnlockApplyHelper<T>(
+                    ctx_.getApplyViewContext(),
+                    lockedRate,
+                    sled,
+                    preFeeBalance_,
+                    amount,
+                    issuer,
+                    account,
+                    destID,
+                    createAsset,
+                    j_);
+            });
             !isTesSuccess(ret))
             return ret;
 

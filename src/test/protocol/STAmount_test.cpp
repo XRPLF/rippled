@@ -997,6 +997,222 @@ public:
     }
 
     void
+    testIsExactSum()
+    {
+        testcase("is exact sum");
+
+        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+        MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+
+        // Exact IOU sum
+        {
+            STAmount const amt1(usd, 500);
+            STAmount const amt2(usd, 1500);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == true);
+        }
+
+        // Exact IOU sum with a zero operand
+        {
+            STAmount const amt1(usd, 0);
+            STAmount const amt2(usd, 15, -19);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == true);
+        }
+
+        // Exact IOU sum whose exponent exceeds both operands'
+        {
+            STAmount const amt1(usd, std::uint64_t{9999999999999999});
+            STAmount const amt2(usd, 1);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == true);
+        }
+
+        // IOU sum that drops the finer operand: 1.5e-18 + 1 rounds to 1, and
+        // 1 - 1.5e-18 rounds back to 1, so only the difference with the
+        // coarser operand exposes the loss
+        {
+            STAmount const dust(usd, 15, -19);
+            STAmount const one(usd, 1);
+            BEAST_EXPECT(isExactSum(dust, one) == false);
+            BEAST_EXPECT(isExactSum(one, dust) == false);
+        }
+
+        // IOU sum that rounds the smaller operand away entirely
+        {
+            STAmount const amt1(usd, 1, 15);
+            STAmount const amt2(usd, 1, -3);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == false);
+        }
+
+        // IOU sum that rounds to a different nonzero increase
+        {
+            STAmount const amt1(usd, std::uint64_t{1234567890123456});
+            STAmount const amt2(usd, 600025, -2);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == false);
+        }
+
+        // IOU sum past the largest IOU value: the sum throws, so it is not
+        // exact
+        {
+            STAmount const max(usd, STAmount::kMaxValue, STAmount::kMaxOffset);
+            BEAST_EXPECT(max.mantissa() == STAmount::kMaxValue);
+            BEAST_EXPECT(max.exponent() == STAmount::kMaxOffset);
+            try
+            {
+                auto _ = max + max;
+                BEAST_EXPECT(false);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECT(e.what() == std::string("value overflow"));
+            }
+            BEAST_EXPECT(isExactSum(max, max) == false);
+        }
+
+        // Exact XRP sum
+        {
+            STAmount const amt1(XRPAmount(500));
+            STAmount const amt2(XRPAmount(1500));
+            BEAST_EXPECT(isExactSum(amt1, amt2) == true);
+        }
+
+        // XRP overflow
+        {
+            STAmount const amt1(std::numeric_limits<XRPAmount::value_type>::max());
+            STAmount const amt2(XRPAmount(1));
+            BEAST_EXPECT(isExactSum(amt1, amt2) == false);
+        }
+
+        // Exact MPT sum
+        {
+            STAmount const amt1(mpt, 500);
+            STAmount const amt2(mpt, 1500);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == true);
+        }
+
+        // MPT overflow
+        {
+            STAmount const amt1(mpt, std::numeric_limits<MPTAmount::value_type>::max());
+            STAmount const amt2(mpt, 1);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == false);
+        }
+
+        // Not comparable
+        {
+            STAmount const amt1(XRPAmount(1));
+            STAmount const amt2(usd, 1);
+            BEAST_EXPECT(isExactSum(amt1, amt2) == false);
+        }
+    }
+
+    void
+    testIsExactDifference()
+    {
+        testcase("is exact difference");
+
+        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+        MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+
+        // Exact IOU difference
+        {
+            STAmount const amt1(usd, 1500);
+            STAmount const amt2(usd, 500);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == true);
+        }
+
+        // Exact IOU difference with a zero subtrahend
+        {
+            STAmount const amt1(usd, 15, -19);
+            STAmount const amt2(usd, 0);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == true);
+        }
+
+        // Exact IOU difference of equal operands
+        {
+            STAmount const amt1(usd, 4000);
+            BEAST_EXPECT(isExactDifference(amt1, amt1) == true);
+        }
+
+        // IOU difference that rounds to a different nonzero decrease
+        {
+            STAmount const amt1(usd, std::uint64_t{1234567890123456});
+            STAmount const amt2(usd, 600025, -2);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == false);
+        }
+
+        // IOU difference that drops a dust subtrahend: 1 - 1.5e-18 rounds to
+        // 1 and 1 + 1.5e-18 rounds back to 1, so only the minuend minus the
+        // difference exposes the loss
+        {
+            STAmount const amt1(usd, 1);
+            STAmount const amt2(usd, 15, -19);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == false);
+        }
+
+        // IOU difference that drops a dust minuend: 1.5e-18 - 1 rounds to -1
+        // and 1.5e-18 - (-1) rounds back to 1, so only the difference plus
+        // the subtrahend exposes the loss
+        {
+            STAmount const amt1(usd, 15, -19);
+            STAmount const amt2(usd, 1);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == false);
+        }
+
+        // IOU difference whose check overflows: max - 1.5e80 rounds half to
+        // even to 9999999999999998e80, and adding 1.5e80 back rounds past the
+        // largest IOU value, so the difference is not exact
+        {
+            STAmount const max(usd, STAmount::kMaxValue, STAmount::kMaxOffset);
+            STAmount const claw(usd, 15, 79);
+            STAmount const diff = max - claw;
+            BEAST_EXPECT(diff == STAmount(usd, std::uint64_t{9999999999999998}, 80));
+            try
+            {
+                auto _ = diff + claw;
+                BEAST_EXPECT(false);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECT(e.what() == std::string("value overflow"));
+            }
+            BEAST_EXPECT(isExactDifference(max, claw) == false);
+        }
+
+        // Exact XRP difference
+        {
+            STAmount const amt1(XRPAmount(1500));
+            STAmount const amt2(XRPAmount(500));
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == true);
+        }
+
+        // XRP underflow
+        {
+            STAmount const amt1(XRPAmount(1));
+            STAmount const amt2(XRPAmount(2));
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == false);
+        }
+
+        // Exact MPT difference
+        {
+            STAmount const amt1(mpt, 1500);
+            STAmount const amt2(mpt, 500);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == true);
+        }
+
+        // MPT underflow
+        {
+            STAmount const amt1(mpt, 1);
+            STAmount const amt2(mpt, 2);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == false);
+        }
+
+        // Not comparable
+        {
+            STAmount const amt1(XRPAmount(1));
+            STAmount const amt2(usd, 1);
+            BEAST_EXPECT(isExactDifference(amt1, amt2) == false);
+        }
+    }
+
+    void
     testMPTRateRounding()
     {
         testcase("MPT transfer rate rounding uses Number arithmetic");
@@ -1351,6 +1567,8 @@ public:
         testCanAddXRP();
         testCanAddIOU();
         testCanAddMPT();
+        testIsExactSum();
+        testIsExactDifference();
         testMPTRateRounding();
         testCanSubtractXRP();
         testCanSubtractIOU();
