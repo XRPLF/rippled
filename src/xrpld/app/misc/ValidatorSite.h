@@ -132,6 +132,12 @@ private:
     std::chrono::seconds const requestTimeout_;
 
 public:
+    /**
+     * Validate configured URIs and read local inputs without fetching remote lists.
+     */
+    static void
+    validate(std::vector<std::string> const& siteURIs);
+
     ValidatorSite(
         Application& app,
         std::optional<beast::Journal> j = std::nullopt,
