@@ -777,11 +777,10 @@ tokenOfferCreatePreflight(
         return temBAD_AMOUNT;
     }
 
-    if (rules.enabled(fixCleanup3_4_0))
+    if (rules.enabled(fixCleanup3_4_0) && (badAsset() == amount.asset()))
     {
         // We don't allow a non-native currency to use the currency code XRP.
-        if (badAsset() == amount.asset())
-            return temBAD_CURRENCY;
+        return temBAD_CURRENCY;
     }
 
     if (!isXRP(amount))
@@ -874,12 +873,12 @@ tokenOfferCreatePreclaim(
     // If this is an offer to buy the token, the account must have the
     // needed funds at hand; but note that funds aren't reserved and the
     // offer may later become unfunded.
-    if ((txFlags & tfSellNFToken) == 0)
+    if (((txFlags & tfSellNFToken) == 0) &&
+        (accountFunds(view, acctID, amount, FreezeHandling::ZeroIfFrozen, j).signum() <= 0))
     {
         // We allow an IOU issuer to make a buy offer
         // using their own currency.
-        if (accountFunds(view, acctID, amount, FreezeHandling::ZeroIfFrozen, j).signum() <= 0)
-            return tecUNFUNDED_OFFER;
+        return tecUNFUNDED_OFFER;
     }
 
     if (dest)

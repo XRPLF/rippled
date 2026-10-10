@@ -336,6 +336,7 @@ inline TaggedPointer::TaggedPointer(
                     ++srcDstIndex;
                 }
             }
+            // NOLINTNEXTLINE(readability-redundant-nested-if) keep one branch per inSrc/inDst case
             else if (!inSrc && !inDst)
             {
                 // in neither

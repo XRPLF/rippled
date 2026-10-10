@@ -797,14 +797,12 @@ invalidMPTAmountInTx(STObject const& tx)
             if (tx.isFieldPresent(e.sField()) && e.supportMPT() != SoeMptNone)
             {
                 if (auto const& field = tx.peekAtField(e.sField());
-                    (field.getSType() == STI_AMOUNT &&
-                     safeDowncast<STAmount const&>(field).holds<MPTIssue>()) ||
-                    (field.getSType() == STI_ISSUE &&
-                     safeDowncast<STIssue const&>(field).holds<MPTIssue>()))
-                {
-                    if (e.supportMPT() != SoeMptSupported)
-                        return true;
-                }
+                    ((field.getSType() == STI_AMOUNT &&
+                      safeDowncast<STAmount const&>(field).holds<MPTIssue>()) ||
+                     (field.getSType() == STI_ISSUE &&
+                      safeDowncast<STIssue const&>(field).holds<MPTIssue>())) &&
+                    (e.supportMPT() != SoeMptSupported))
+                    return true;
             }
         }
     }

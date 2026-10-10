@@ -399,20 +399,19 @@ VaultDeposit::doApply()
     // trust line into debt the exact case preclaim authorizes via SpendableHandling::FullBalance.
     // The check thus converts a preclaim- authorized deposit into tefINTERNAL after the asset
     // transfer.
-    if (!fix320Enabled)
+    if ((!fix320Enabled) &&
+        (accountHolds(
+             view(),
+             accountID_,
+             assetsDeposited.asset(),
+             FreezeHandling::IgnoreFreeze,
+             AuthHandling::IgnoreAuth,
+             j_) < beast::kZero))
+
+    // Sanity check
     {
-        // Sanity check
-        if (accountHolds(
-                view(),
-                accountID_,
-                assetsDeposited.asset(),
-                FreezeHandling::IgnoreFreeze,
-                AuthHandling::IgnoreAuth,
-                j_) < beast::kZero)
-        {
-            JLOG(j_.error()) << "VaultDeposit: negative balance of account assets.";
-            return tefINTERNAL;
-        }
+        JLOG(j_.error()) << "VaultDeposit: negative balance of account assets.";
+        return tefINTERNAL;
     }
 
     // Transfer shares from vault to depositor.

@@ -238,16 +238,14 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 
     // if credentials then postpone auth check to doApply, to check for expired
     // credentials
-    if (!ctx.tx.isFieldPresent(sfCredentialIDs))
+    if ((!ctx.tx.isFieldPresent(sfCredentialIDs)) && sleDst->isFlag(lsfDepositAuth) &&
+        (!ctx.view.exists(keylet::depositPreauth(dst, account))))
     {
         // Check whether the destination account requires deposit authorization.
         // This also checks if destination is a pseudo-account, since pseudo-accounts have the
         // lsfDepositAuth flag set by default
-        if (sleDst->isFlag(lsfDepositAuth))
-        {
-            if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
-                return tecNO_PERMISSION;
-        }
+
+        return tecNO_PERMISSION;
     }
 
     auto sleAccount = ctx.view.read(keylet::account(account));
@@ -269,11 +267,9 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (cp)
         return tecHAS_OBLIGATIONS;
 
-    if (sleAccount->isFieldPresent(sfSponsor))
-    {
-        if (dst != sleAccount->getAccountID(sfSponsor))
-            return tecNO_SPONSOR_PERMISSION;
-    }
+    if (sleAccount->isFieldPresent(sfSponsor) && (dst != sleAccount->getAccountID(sfSponsor)))
+        return tecNO_SPONSOR_PERMISSION;
+
     if (sleAccount->isFieldPresent(sfSponsoringOwnerCount) ||
         sleAccount->isFieldPresent(sfSponsoringAccountCount))
         return tecHAS_OBLIGATIONS;

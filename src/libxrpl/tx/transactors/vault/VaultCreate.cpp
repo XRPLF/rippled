@@ -136,11 +136,8 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     // Check for pseudo-account issuers - we do not want a vault to hold such
     // assets (e.g. MPT shares to other vaults or AMM LPTokens) as they would be
     // impossible to clawback (should the need arise)
-    if (!vaultAsset.native())
-    {
-        if (isPseudoAccount(ctx.view, vaultAsset.getIssuer()))
-            return tecWRONG_ASSET;
-    }
+    if ((!vaultAsset.native()) && isPseudoAccount(ctx.view, vaultAsset.getIssuer()))
+        return tecWRONG_ASSET;
 
     // Cannot create Vault for an Asset frozen for the vault owner
     if (isFrozen(ctx.view, account, vaultAsset))

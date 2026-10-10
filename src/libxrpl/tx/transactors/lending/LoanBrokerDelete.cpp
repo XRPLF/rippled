@@ -104,16 +104,13 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (ctx.view.rules().enabled(fixCleanup3_2_0))
+    if (ctx.view.rules().enabled(fixCleanup3_2_0) && (coverAvailable > beast::kZero))
     {
-        if (coverAvailable > beast::kZero)
+        auto const brokerPseudo = sleBroker->at(sfAccount);
+        if (auto const ret = checkFrozen(ctx.view, brokerPseudo, asset))
         {
-            auto const brokerPseudo = sleBroker->at(sfAccount);
-            if (auto const ret = checkFrozen(ctx.view, brokerPseudo, asset))
-            {
-                JLOG(ctx.j.warn()) << "Broker pseudo-account is frozen/locked.";
-                return ret;
-            }
+            JLOG(ctx.j.warn()) << "Broker pseudo-account is frozen/locked.";
+            return ret;
         }
     }
 

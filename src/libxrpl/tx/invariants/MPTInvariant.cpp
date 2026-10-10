@@ -720,11 +720,9 @@ ValidConfidentialMPToken::visitEntry(
         auto const versionBefore = (*before)[~sfConfidentialBalanceVersion];
         auto const versionAfter = (*after)[~sfConfidentialBalanceVersion];
 
-        if (spendingBefore.has_value() && spendingBefore != spendingAfter)
-        {
-            if (versionBefore == versionAfter)
-                changes_[id].badVersion = true;
-        }
+        if ((spendingBefore.has_value() && spendingBefore != spendingAfter) &&
+            (versionBefore == versionAfter))
+            changes_[id].badVersion = true;
     }
 }
 
@@ -768,14 +766,11 @@ ValidConfidentialMPToken::finalize(
             ? checks.deletedWithEncrypted
             : (checks.deletedWithEncrypted || checks.deletedWithBalanceBefore);
 
-        if (deletedWithEncrypted)
+        if (deletedWithEncrypted && ((*issuance)[~sfConfidentialOutstandingAmount].value_or(0) > 0))
         {
-            if ((*issuance)[~sfConfidentialOutstandingAmount].value_or(0) > 0)
-            {
-                JLOG(j.fatal())
-                    << "Invariant failed: MPToken deleted with encrypted fields while COA > 0";
-                return false;
-            }
+            JLOG(j.fatal())
+                << "Invariant failed: MPToken deleted with encrypted fields while COA > 0";
+            return false;
         }
 
         // Encrypted field existence consistency
@@ -797,15 +792,13 @@ ValidConfidentialMPToken::finalize(
         // Confidential balance fields may remain on a holder MPToken after all
         // confidential balances have returned to zero. Only creating or
         // changing those fields requires the issuance privacy flag.
-        if (checks.changesConfidentialFields)
+        if (checks.changesConfidentialFields &&
+            (!issuance->isFlag(lsfMPTCanHoldConfidentialBalance)))
         {
-            if (!issuance->isFlag(lsfMPTCanHoldConfidentialBalance))
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPToken has encrypted "
-                                   "fields but Issuance does not have "
-                                   "lsfMPTCanHoldConfidentialBalance set";
-                return false;
-            }
+            JLOG(j.fatal()) << "Invariant failed: MPToken has encrypted "
+                               "fields but Issuance does not have "
+                               "lsfMPTCanHoldConfidentialBalance set";
+            return false;
         }
 
         // We only enforce this when Confidential Outstanding Amount changes (Convert, ConvertBack,

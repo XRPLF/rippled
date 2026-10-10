@@ -226,9 +226,9 @@ private:
         std::vector<std::string> const emptyCfgKeys;
         std::vector<std::string> const emptyCfgPublishers;
 
-        auto const localSigningKeys = randomKeyPair(KeyType::Secp256k1);
-        auto const localSigningPublicOuter = localSigningKeys.first;
-        auto const localSigningSecret = localSigningKeys.second;
+        auto const [localSigningPublicOuter, localSigningSecret] =
+            randomKeyPair(KeyType::Secp256k1);
+
         auto const localMasterSecret = randomSecretKey();
         auto const localMasterPublic = derivePublicKey(KeyType::Ed25519, localMasterSecret);
 

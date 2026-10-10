@@ -18,14 +18,11 @@ BookDirs::BookDirs(ReadView const& view, Book const& book)
     , key_(view_->succ(root_, nextQuality_).value_or(beast::kZero))
 {
     XRPL_ASSERT(root_ != beast::kZero, "xrpl::BookDirs::BookDirs : nonzero root");
-    if (key_ != beast::kZero)
+    if ((key_ != beast::kZero) && (!cdirFirst(*view_, key_, sle_, entry_, index_)))
     {
-        if (!cdirFirst(*view_, key_, sle_, entry_, index_))
-        {
-            // LCOV_EXCL_START
-            UNREACHABLE("xrpl::BookDirs::BookDirs : directory is empty");
-            // LCOV_EXCL_STOP
-        }
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::BookDirs::BookDirs : directory is empty");
+        // LCOV_EXCL_STOP
     }
 }
 

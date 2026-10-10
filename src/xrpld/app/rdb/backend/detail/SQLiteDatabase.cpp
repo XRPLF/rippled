@@ -200,14 +200,11 @@ SQLiteDatabase::getLedgerCountMinMax()
 bool
 SQLiteDatabase::saveValidatedLedger(std::shared_ptr<Ledger const> const& ledger, bool current)
 {
-    if (existsLedger())
-    {
-        if (!detail::saveValidatedLedger(
-                *ledgerDb_, txdb_, registry_.get().getApp(), ledger, current))
-            return false;
-    }
+    if (!existsLedger())
+        return true;
 
-    return true;
+    return detail::saveValidatedLedger(
+        *ledgerDb_, txdb_, registry_.get().getApp(), ledger, current);
 }
 
 std::optional<LedgerHeader>

@@ -337,11 +337,10 @@ NFTokenMint::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (auto const ownerCountAfter = sleAccount->getFieldU32(sfOwnerCount);
-        ownerCountAfter > ownerCountBefore)
-    {
-        if (preFeeBalance_ < accountReserve(view(), sleAccount, j_))
-            return tecINSUFFICIENT_RESERVE;
-    }
+        (ownerCountAfter > ownerCountBefore) &&
+        (preFeeBalance_ < accountReserve(view(), sleAccount, j_)))
+        return tecINSUFFICIENT_RESERVE;
+
     return tesSUCCESS;
 }
 

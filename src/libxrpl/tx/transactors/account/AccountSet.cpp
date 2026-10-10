@@ -182,13 +182,11 @@ AccountSet::preclaim(PreclaimContext const& ctx)
     //
     // RequireAuth
     //
-    if (bSetRequireAuth && !sle->isFlag(lsfRequireAuth))
+    if ((bSetRequireAuth && !sle->isFlag(lsfRequireAuth)) &&
+        (!dirIsEmpty(ctx.view, keylet::ownerDir(id))))
     {
-        if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
-        {
-            JLOG(ctx.j.trace()) << "Retry: Owner directory not empty.";
-            return ((ctx.flags & TapRetry) != 0u) ? TER{terOWNERS} : TER{tecOWNERS};
-        }
+        JLOG(ctx.j.trace()) << "Retry: Owner directory not empty.";
+        return ((ctx.flags & TapRetry) != 0u) ? TER{terOWNERS} : TER{tecOWNERS};
     }
 
     //
@@ -208,14 +206,11 @@ AccountSet::preclaim(PreclaimContext const& ctx)
             return tecOWNERS;
         }
     }
-    else if (uSetFlag == asfNoFreeze)
+    else if ((uSetFlag == asfNoFreeze) && sle->isFlag(lsfAllowTrustLineClawback))
+    // Cannot set NoFreeze if clawback is enabled
     {
-        // Cannot set NoFreeze if clawback is enabled
-        if (sle->isFlag(lsfAllowTrustLineClawback))
-        {
-            JLOG(ctx.j.trace()) << "Can't set NoFreeze if clawback is enabled";
-            return tecNO_PERMISSION;
-        }
+        JLOG(ctx.j.trace()) << "Can't set NoFreeze if clawback is enabled";
+        return tecNO_PERMISSION;
     }
 
     return tesSUCCESS;

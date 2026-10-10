@@ -33,7 +33,7 @@
 #include <cstddef>
 #include <limits>
 #include <optional>
-#include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -80,7 +80,7 @@ struct Peer
             return proposal_.getJson();
         }
 
-        static std::string
+        static std::string_view
         render()
         {
             return "";
@@ -464,11 +464,8 @@ struct Peer
 
         // Don't retry if we already are acquiring it and haven't timed out
         auto aIt = acquiringLedgers.find(ledgerID);
-        if (aIt != acquiringLedgers.end())
-        {
-            if (scheduler.now() < aIt->second)
-                return nullptr;
-        }
+        if ((aIt != acquiringLedgers.end()) && (scheduler.now() < aIt->second))
+            return nullptr;
 
         using namespace std::chrono_literals;
         SimDuration minDuration{10s};
@@ -509,11 +506,8 @@ struct Peer
 
         // Don't retry if we already are acquiring it and haven't timed out
         auto aIt = acquiringTxSets.find(setId);
-        if (aIt != acquiringTxSets.end())
-        {
-            if (scheduler.now() < aIt->second)
-                return nullptr;
-        }
+        if ((aIt != acquiringTxSets.end()) && (scheduler.now() < aIt->second))
+            return nullptr;
 
         using namespace std::chrono_literals;
         SimDuration minDuration{10s};

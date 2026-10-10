@@ -589,10 +589,11 @@ transactionPreProcessImpl(
         // If multisigning then we need to return the public key.
         signingArgs.setPublicKey(pk);
     }
-    else if (signingArgs.isSingleSigning())
+    else if (signingArgs.isSingleSigning() && txJson.isMember(jss::Signers))
     {
-        if (txJson.isMember(jss::Signers))
+        {
             return rpcError(RpcAlreadyMultisig);
+        }
     }
 
     if (verify)

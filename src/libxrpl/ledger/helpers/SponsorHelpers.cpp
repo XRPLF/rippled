@@ -327,29 +327,26 @@ getLedgerEntryOwnerCount(SLE const& sle)
 SF_ACCOUNT const&
 getLedgerEntrySponsorField(SLE const& sle, AccountID const& owner)
 {
-    switch (sle.getType())
+    if (sle.getType() == ltRIPPLE_STATE)
     {
-        case ltRIPPLE_STATE: {
-            if (sle.isFlag(lsfHighReserve))
-            {
-                auto const highAccount = sle.getFieldAmount(sfHighLimit).getIssuer();
-                if (highAccount == owner)
-                    return sfHighSponsor;
-            }
-            if (sle.isFlag(lsfLowReserve))
-            {
-                auto const lowAccount = sle.getFieldAmount(sfLowLimit).getIssuer();
-                if (lowAccount == owner)
-                    return sfLowSponsor;
-            }
-            // LCOV_EXCL_START
-            UNREACHABLE("xrpl::getLedgerEntrySponsorField : unknown owner for RippleState");
-            return sfSponsor;
-            // LCOV_EXCL_STOP
+        if (sle.isFlag(lsfHighReserve))
+        {
+            auto const highAccount = sle.getFieldAmount(sfHighLimit).getIssuer();
+            if (highAccount == owner)
+                return sfHighSponsor;
         }
-        default:
-            return sfSponsor;
+        if (sle.isFlag(lsfLowReserve))
+        {
+            auto const lowAccount = sle.getFieldAmount(sfLowLimit).getIssuer();
+            if (lowAccount == owner)
+                return sfLowSponsor;
+        }
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::getLedgerEntrySponsorField : unknown owner for RippleState");
+        return sfSponsor;
+        // LCOV_EXCL_STOP
     }
+    return sfSponsor;
 }
 
 }  // namespace xrpl

@@ -386,11 +386,9 @@ doServerDefinitions(rpc::JsonContext& context)
     auto& params = context.params;
 
     UInt256 hash;
-    if (params.isMember(jss::hash))
-    {
-        if (!params[jss::hash].isString() || !hash.parseHex(params[jss::hash].asString()))
-            return rpc::invalidFieldError(jss::hash);
-    }
+    if (params.isMember(jss::hash) &&
+        (!params[jss::hash].isString() || !hash.parseHex(params[jss::hash].asString())))
+        return rpc::invalidFieldError(jss::hash);
 
     auto const& defs = detail::getDefinitions();
     if (defs.hashMatches(hash))

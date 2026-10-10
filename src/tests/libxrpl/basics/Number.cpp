@@ -1657,146 +1657,142 @@ TEST(NumberTest, to_string)
         test(Number(-2, 11), "-2e11", __LINE__);
         test(Number(-2, 11) - 1, "-200000000001", __LINE__);
 
-        switch (scale)
+        if (scale == MantissaRange::MantissaScale::Small)
         {
-            case MantissaRange::MantissaScale::Small:
+            test(Number::min(), "1e-32753", __LINE__);
+            test(Number::max(), "9999999999999999e32768", __LINE__);
+            test(Number::lowest(), "-9999999999999999e32768", __LINE__);
+            {
+                NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
 
-                test(Number::min(), "1e-32753", __LINE__);
-                test(Number::max(), "9999999999999999e32768", __LINE__);
-                test(Number::lowest(), "-9999999999999999e32768", __LINE__);
+                auto const maxMantissa = Number::maxMantissa();
+                EXPECT_EQ(maxMantissa, 9'999'999'999'999'999);
+                test(
+                    Number{false, (maxMantissa * 1000) + 999, -3, Number::Normalized()},
+                    "9999999999999999",
+                    __LINE__);
+                test(
+                    Number{true, (maxMantissa * 1000) + 999, -3, Number::Normalized()},
+                    "-9999999999999999",
+                    __LINE__);
+
+                test(
+                    Number{std::numeric_limits<std::int64_t>::max(), -3},
+                    "9223372036854775",
+                    __LINE__);
+                test(
+                    -(Number{std::numeric_limits<std::int64_t>::max(), -3}),
+                    "-9223372036854775",
+                    __LINE__);
+
+                test(
+                    Number{std::numeric_limits<std::int64_t>::min(), 0},
+                    "-9223372036854775e3",
+                    __LINE__);
+                test(
+                    -(Number{std::numeric_limits<std::int64_t>::min(), 0}),
+                    "9223372036854775e3",
+                    __LINE__);
+            }
+        }
+        else
+        {
+            // Test the edges
+            // ((exponent < -(28)) || (exponent > -(8)))))
+            test(Number::min(), "1e-32750", __LINE__);
+            test(Number::max(), "9223372036854775807e32768", __LINE__);
+            test(Number::lowest(), "-9223372036854775807e32768", __LINE__);
+            {
+                NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
+
+                auto const maxMantissa = Number::maxMantissa();
+                EXPECT_EQ(maxMantissa, 9'999'999'999'999'999'999ULL);
+                test(
+                    Number{false, maxMantissa, 0, Number::Normalized{}},
+                    "9999999999999999990",
+                    __LINE__);
+                test(
+                    Number{true, maxMantissa, 0, Number::Normalized{}},
+                    "-9999999999999999990",
+                    __LINE__);
+
+                test(
+                    Number{std::numeric_limits<std::int64_t>::max(), 0},
+                    "9223372036854775807",
+                    __LINE__);
+                test(
+                    -(Number{std::numeric_limits<std::int64_t>::max(), 0}),
+                    "-9223372036854775807",
+                    __LINE__);
+
+                if (scale == MantissaRange::MantissaScale::Large330)
                 {
-                    NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
-
-                    auto const maxMantissa = Number::maxMantissa();
-                    EXPECT_EQ(maxMantissa, 9'999'999'999'999'999);
-                    test(
-                        Number{false, (maxMantissa * 1000) + 999, -3, Number::Normalized()},
-                        "9999999999999999",
-                        __LINE__);
-                    test(
-                        Number{true, (maxMantissa * 1000) + 999, -3, Number::Normalized()},
-                        "-9999999999999999",
-                        __LINE__);
-
-                    test(
-                        Number{std::numeric_limits<std::int64_t>::max(), -3},
-                        "9223372036854775",
-                        __LINE__);
-                    test(
-                        -(Number{std::numeric_limits<std::int64_t>::max(), -3}),
-                        "-9223372036854775",
-                        __LINE__);
-
+                    // Because the absolute value of min() is larger than max(), it
+                    // will be rounded down toward max()
                     test(
                         Number{std::numeric_limits<std::int64_t>::min(), 0},
-                        "-9223372036854775e3",
+                        "-9223372036854775807",
                         __LINE__);
                     test(
                         -(Number{std::numeric_limits<std::int64_t>::min(), 0}),
-                        "9223372036854775e3",
-                        __LINE__);
-                }
-                break;
-            default:
-                // Test the edges
-                // ((exponent < -(28)) || (exponent > -(8)))))
-                test(Number::min(), "1e-32750", __LINE__);
-                test(Number::max(), "9223372036854775807e32768", __LINE__);
-                test(Number::lowest(), "-9223372036854775807e32768", __LINE__);
-                {
-                    NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
-
-                    auto const maxMantissa = Number::maxMantissa();
-                    EXPECT_EQ(maxMantissa, 9'999'999'999'999'999'999ULL);
-                    test(
-                        Number{false, maxMantissa, 0, Number::Normalized{}},
-                        "9999999999999999990",
-                        __LINE__);
-                    test(
-                        Number{true, maxMantissa, 0, Number::Normalized{}},
-                        "-9999999999999999990",
-                        __LINE__);
-
-                    test(
-                        Number{std::numeric_limits<std::int64_t>::max(), 0},
                         "9223372036854775807",
                         __LINE__);
-                    test(
-                        -(Number{std::numeric_limits<std::int64_t>::max(), 0}),
-                        "-9223372036854775807",
-                        __LINE__);
-
-                    switch (scale)
-                    {
-                        case MantissaRange::MantissaScale::Large330:
-                            // Because the absolute value of min() is larger than max(), it
-                            // will be rounded down toward max()
-                            test(
-                                Number{std::numeric_limits<std::int64_t>::min(), 0},
-                                "-9223372036854775807",
-                                __LINE__);
-                            test(
-                                -(Number{std::numeric_limits<std::int64_t>::min(), 0}),
-                                "9223372036854775807",
-                                __LINE__);
-                            break;
-                        default:
-                            // Because the absolute value of min() is larger than max(), it
-                            // will be scaled down to fit under max(). Since we're
-                            // rounding towards zero, the 8 at the end is dropped.
-                            test(
-                                Number{std::numeric_limits<std::int64_t>::min(), 0},
-                                "-9223372036854775800",
-                                __LINE__);
-                            test(
-                                -(Number{std::numeric_limits<std::int64_t>::min(), 0}),
-                                "9223372036854775800",
-                                __LINE__);
-                            break;
-                    }
                 }
-
-                switch (scale)
+                else
                 {
-                    case MantissaRange::MantissaScale::Large330:
-                        // Rounding to nearest, since the mantissa is below the halfway point from
-                        // kMaxRep to kMaxRepUp, it will be rounded down to kMaxRep
-                        test(
-                            Number{std::numeric_limits<std::int64_t>::max(), 0} + 1,
-                            "9223372036854775807",
-                            __LINE__);
-                        test(
-                            -(Number{std::numeric_limits<std::int64_t>::max(), 0} + 1),
-                            "-9223372036854775807",
-                            __LINE__);
-                        break;
-                    default:
-                        // Rounding to nearest, since the mantissa is bigger than kMaxRep, the 8
-                        // will be dropped, and since that is bigger than 5, the result will be
-                        // rounded up from 0 to 1.
-                        test(
-                            Number{std::numeric_limits<std::int64_t>::max(), 0} + 1,
-                            "9223372036854775810",
-                            __LINE__);
-                        test(
-                            -(Number{std::numeric_limits<std::int64_t>::max(), 0} + 1),
-                            "-9223372036854775810",
-                            __LINE__);
-                        break;
+                    // Because the absolute value of min() is larger than max(), it
+                    // will be scaled down to fit under max(). Since we're
+                    // rounding towards zero, the 8 at the end is dropped.
+                    test(
+                        Number{std::numeric_limits<std::int64_t>::min(), 0},
+                        "-9223372036854775800",
+                        __LINE__);
+                    test(
+                        -(Number{std::numeric_limits<std::int64_t>::min(), 0}),
+                        "9223372036854775800",
+                        __LINE__);
                 }
-                // Rounding to nearest, will be rounded up to kMaxRepUp, but for different reasons
-                // depending on the scale. If older than "Large", it rounds up for the same reason
-                // "+1" rounds up. For "Large", since the mantissa is above the halfway point from
-                // kMaxRep to kMaxRepUp, it will be rounded up to kMaxRepUp.
+            }
+
+            if (scale == MantissaRange::MantissaScale::Large330)
+            {
+                // Rounding to nearest, since the mantissa is below the halfway point from
+                // kMaxRep to kMaxRepUp, it will be rounded down to kMaxRep
                 test(
-                    Number{std::numeric_limits<std::int64_t>::max(), 0} + 2,
+                    Number{std::numeric_limits<std::int64_t>::max(), 0} + 1,
+                    "9223372036854775807",
+                    __LINE__);
+                test(
+                    -(Number{std::numeric_limits<std::int64_t>::max(), 0} + 1),
+                    "-9223372036854775807",
+                    __LINE__);
+            }
+            else
+            {
+                // Rounding to nearest, since the mantissa is bigger than kMaxRep, the 8
+                // will be dropped, and since that is bigger than 5, the result will be
+                // rounded up from 0 to 1.
+                test(
+                    Number{std::numeric_limits<std::int64_t>::max(), 0} + 1,
                     "9223372036854775810",
                     __LINE__);
                 test(
-                    -(Number{std::numeric_limits<std::int64_t>::max(), 0} + 2),
+                    -(Number{std::numeric_limits<std::int64_t>::max(), 0} + 1),
                     "-9223372036854775810",
                     __LINE__);
-                break;
+            }
+            // Rounding to nearest, will be rounded up to kMaxRepUp, but for different reasons
+            // depending on the scale. If older than "Large", it rounds up for the same reason
+            // "+1" rounds up. For "Large", since the mantissa is above the halfway point from
+            // kMaxRep to kMaxRepUp, it will be rounded up to kMaxRepUp.
+            test(
+                Number{std::numeric_limits<std::int64_t>::max(), 0} + 2,
+                "9223372036854775810",
+                __LINE__);
+            test(
+                -(Number{std::numeric_limits<std::int64_t>::max(), 0} + 2),
+                "-9223372036854775810",
+                __LINE__);
         }
     }
 }
@@ -2940,11 +2936,9 @@ TEST(NumberTest, number_cusp_rounding_with_fractional_parts)
                     }
                     if (scale == MantissaRange::MantissaScale::Large320)
                     {
-                        if (mode == Number::RoundingMode::ToNearest)
-                        {
-                            if (operand < zeroPointFive)
-                                return below;
-                        }
+                        if ((mode == Number::RoundingMode::ToNearest) && (operand < zeroPointFive))
+                            return below;
+
                         if (mode == Number::RoundingMode::TowardsZero ||
                             mode == Number::RoundingMode::Downward)
                         {
@@ -3009,16 +3003,13 @@ TEST(NumberTest, number_cusp_rounding_with_fractional_parts)
                     if (scale == MantissaRange::MantissaScale::LargeLegacy ||
                         scale == MantissaRange::MantissaScale::Large320)
                     {
-                        if (mode == Number::RoundingMode::ToNearest)
-                        {
-                            if (operand >= twoPointSix)
-                                return below;
-                        }
-                        if (mode == Number::RoundingMode::TowardsZero)
-                        {
-                            if (operand >= onePointFour)
-                                return below - 7;
-                        }
+                        if ((mode == Number::RoundingMode::ToNearest) && (operand >= twoPointSix))
+                            return below;
+
+                        if ((mode == Number::RoundingMode::TowardsZero) &&
+                            (operand >= onePointFour))
+                            return below - 7;
+
                         if (mode == Number::RoundingMode::Downward)
                         {
                             if (operand <= onePointSix)

@@ -4647,21 +4647,24 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                 if (expectCount == 0)
                 {
                     if (expect(
-                            nftOffers.isMember(jss::result), "expected \"result\"", __FILE__, line))
+                            nftOffers.isMember(jss::result),
+                            "expected \"result\"",
+                            __FILE__,
+                            line) &&
+                        expect(
+                            nftOffers[jss::result].isMember(jss::error),
+                            "expected \"error\"",
+                            __FILE__,
+                            line))
+
                     {
-                        if (expect(
-                                nftOffers[jss::result].isMember(jss::error),
-                                "expected \"error\"",
-                                __FILE__,
-                                line))
-                        {
-                            expect(
-                                nftOffers[jss::result][jss::error].asString() == "objectNotFound",
-                                "expected \"objectNotFound\"",
-                                __FILE__,
-                                line);
-                        }
+                        expect(
+                            nftOffers[jss::result][jss::error].asString() == "objectNotFound",
+                            "expected \"objectNotFound\"",
+                            __FILE__,
+                            line);
                     }
+
                     break;
                 }
 

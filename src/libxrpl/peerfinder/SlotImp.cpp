@@ -103,14 +103,11 @@ void
 SlotImp::RecentT::insert(beast::ip::Endpoint const& ep, std::uint32_t hops)
 {
     auto const result(cache_.emplace(ep, hops));
-    if (!result.second)
+    if ((!result.second) && (hops <= result.first->second))
+    // NOTE Other logic depends on this <= inequality.
     {
-        // NOTE Other logic depends on this <= inequality.
-        if (hops <= result.first->second)
-        {
-            result.first->second = hops;
-            cache_.touch(result.first);
-        }
+        result.first->second = hops;
+        cache_.touch(result.first);
     }
 }
 

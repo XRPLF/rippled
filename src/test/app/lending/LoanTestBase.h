@@ -61,6 +61,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -1717,13 +1718,10 @@ protected:
         env.close();
 
         PrettyAmount adjustment = broker.asset(0);
-        if (deleter == borrower)
+        if ((deleter == borrower) && broker.asset.native())
+        // Need to account for fees if the loan is in XRP
         {
-            // Need to account for fees if the loan is in XRP
-            if (broker.asset.native())
-            {
-                adjustment = env.current()->fees().base;
-            }
+            adjustment = env.current()->fees().base;
         }
 
         // No loans left
@@ -1741,7 +1739,7 @@ protected:
         }
     }
 
-    static std::string
+    static std::string_view
     getCurrencyLabel(Asset const& asset)
     {
         if (asset.native())

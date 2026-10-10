@@ -49,13 +49,11 @@ class Version_test : public beast::unit_test::Suite
         Env env{*this};
 
         auto badVersion = [](json::Value const& re) -> bool {
-            if (re.isMember("error_what"))
+            if (re.isMember("error_what") && re["error_what"].isString())
             {
-                if (re["error_what"].isString())
-                {
-                    return re["error_what"].asString().starts_with(jss::invalid_API_version.cStr());
-                }
+                return re["error_what"].asString().starts_with(jss::invalid_API_version.cStr());
             }
+
             return false;
         };
 

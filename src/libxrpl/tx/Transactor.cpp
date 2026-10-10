@@ -205,14 +205,11 @@ preflight1Sponsor(PreflightContext const& ctx)
 
         // Reserve sponsorship is only permitted for an explicit allow-list of
         // transaction types, for v1. All other tx types reject spfSponsorReserve here.
-        if (isReserveSponsored(ctx.tx))
+        if (isReserveSponsored(ctx.tx) && (!isReserveSponsorAllowed(ctx.tx.getTxnType())))
         {
-            if (!isReserveSponsorAllowed(ctx.tx.getTxnType()))
-            {
-                JLOG(ctx.j.debug())
-                    << "preflight1: spfSponsorReserve not allowed for this transaction type";
-                return temINVALID_FLAG;
-            }
+            JLOG(ctx.j.debug())
+                << "preflight1: spfSponsorReserve not allowed for this transaction type";
+            return temINVALID_FLAG;
         }
     }
 

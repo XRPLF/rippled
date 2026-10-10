@@ -73,7 +73,8 @@ Message::compress()
         if (messageBytes <= 70)
             return false;
 
-        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
+        // No default, so -Wswitch flags new message types
+        // NOLINTNEXTLINE(bugprone-switch-missing-default-case,bugprone-unhandled-code-paths)
         switch (type)
         {
             case protocol::mtMANIFESTS:

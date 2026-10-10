@@ -263,24 +263,22 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
     static constexpr std::size_t kCodecType = 1;
     auto const vn = writeVarint(vi.data(), kCodecType);
     std::pair<void const*, std::size_t> result;
-    switch (kCodecType)
+    // Codec 0 was uncompressed data; we always compress now.
+    if (kCodecType == 1)  // lz4
     {
-        // case 0 was uncompressed data; we always compress now.
-        case 1:  // lz4
-        {
-            std::uint8_t* p = nullptr;
-            auto const lzr = node_store::lz4Compress(in, inSize, [&p, &vn, &bf](std::size_t n) {
-                p = reinterpret_cast<std::uint8_t*>(bf(vn + n));
-                return p + vn;
-            });
-            std::memcpy(p, vi.data(), vn);
-            result.first = p;
-            result.second = vn + lzr.second;
-            break;
-        }
-        default:
-            Throw<std::logic_error>("nodeobject codec: unknown=" + std::to_string(kCodecType));
-    };
+        std::uint8_t* p = nullptr;
+        auto const lzr = node_store::lz4Compress(in, inSize, [&p, &vn, &bf](std::size_t n) {
+            p = reinterpret_cast<std::uint8_t*>(bf(vn + n));
+            return p + vn;
+        });
+        std::memcpy(p, vi.data(), vn);
+        result.first = p;
+        result.second = vn + lzr.second;
+    }
+    else
+    {
+        Throw<std::logic_error>("nodeobject codec: unknown=" + std::to_string(kCodecType));
+    }
     return result;
 }
 

@@ -194,15 +194,13 @@ doUnsubscribe(rpc::JsonContext& context)
             }
 
             // both_sides is deprecated.
-            if ((jv.isMember(jss::both) && jv[jss::both].asBool()) ||
-                (jv.isMember(jss::both_sides) && jv[jss::both_sides].asBool()))
+            if (((jv.isMember(jss::both) && jv[jss::both].asBool()) ||
+                 (jv.isMember(jss::both_sides) && jv[jss::both_sides].asBool())) &&
+                (!context.netOps.unsubBook(ispSub, reversed(book))))
             {
-                if (!context.netOps.unsubBook(ispSub, reversed(book)))
-                {
-                    JLOG(context.j.debug())
-                        << "doUnsubscribe: reversed book not subscribed (no-op for seq="
-                        << ispSub->getSeq() << ")";
-                }
+                JLOG(context.j.debug())
+                    << "doUnsubscribe: reversed book not subscribed (no-op for seq="
+                    << ispSub->getSeq() << ")";
             }
         }
     }

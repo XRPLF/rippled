@@ -302,11 +302,8 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
         JLOG(journal_.warn()) << "copyNode: re-stored node missing from both backends, hash="
                               << hash << " type=" << static_cast<int>(node.getType());
     }
-    if ((++nodeCount % checkHealthInterval_) == 0u)
-    {
-        if (healthWait() != HealthResult::KeepGoing)
-            return false;
-    }
+    if (((++nodeCount % checkHealthInterval_) == 0u) && (healthWait() != HealthResult::KeepGoing))
+        return false;
 
     return true;
 }

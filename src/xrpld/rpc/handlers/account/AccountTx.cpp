@@ -110,16 +110,15 @@ parseLedgerArgs(rpc::Context& context, json::Value const& params)
     json::Value response;
     // if ledger_index_min or max is specified, then ledger_hash or ledger_index
     // should not be specified. Error out if it is
-    if (context.apiVersion > 1u)
+    if ((context.apiVersion > 1u) &&
+        ((params.isMember(jss::ledger_index_min) || params.isMember(jss::ledger_index_max)) &&
+         (params.isMember(jss::ledger_hash) || params.isMember(jss::ledger_index))))
     {
-        if ((params.isMember(jss::ledger_index_min) || params.isMember(jss::ledger_index_max)) &&
-            (params.isMember(jss::ledger_hash) || params.isMember(jss::ledger_index)))
-        {
-            ::rpc::Status const status{RpcInvalidParams, "invalidParams"};
-            rpc::injectSpecError(response, status);
-            return response;
-        }
+        ::rpc::Status const status{RpcInvalidParams, "invalidParams"};
+        rpc::injectSpecError(response, status);
+        return response;
     }
+
     if (params.isMember(jss::ledger_index_min) || params.isMember(jss::ledger_index_max))
     {
         uint32_t const min =

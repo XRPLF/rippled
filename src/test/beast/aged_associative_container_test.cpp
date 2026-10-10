@@ -18,6 +18,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <type_traits>  // IWYU pragma: keep
 #include <utility>
 #include <vector>  // IWYU pragma: keep
@@ -176,7 +177,7 @@ public:
         using MyComp = CompT<typename Base::Key>;
 
     protected:
-        static std::string
+        static std::string_view
         nameOrderedPart()
         {
             return "";
@@ -194,7 +195,7 @@ public:
         using MyEqual = EqualT<typename Base::Key>;
 
     protected:
-        static std::string
+        static std::string_view
         nameOrderedPart()
         {
             return "unordered_";
@@ -207,7 +208,7 @@ public:
     {
     public:
     protected:
-        static std::string
+        static std::string_view
         nameMultiPart()
         {
             return "";
@@ -220,7 +221,7 @@ public:
     {
     public:
     protected:
-        static std::string
+        static std::string_view
         nameMultiPart()
         {
             return "multi";
@@ -256,7 +257,7 @@ public:
         }
 
     protected:
-        static std::string
+        static std::string_view
         nameMapPart()
         {
             return "set";
@@ -291,7 +292,7 @@ public:
         }
 
     protected:
-        static std::string
+        static std::string_view
         nameMapPart()
         {
             return "map";

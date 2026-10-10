@@ -384,15 +384,12 @@ checkDepositPreauth(
 
     if (sleDst && ((sleDst->getFlags() & lsfDepositAuth) != 0u))
     {
-        if (src != dst)
+        if ((src != dst) && (!view.exists(keylet::depositPreauth(dst, src))))
         {
-            if (!view.exists(keylet::depositPreauth(dst, src)))
-            {
-                return !tx.isFieldPresent(sfCredentialIDs)
-                    ? tecNO_PERMISSION
-                    : credentials::authorizedDepositPreauth(
-                          view, tx.getFieldV256(sfCredentialIDs), dst);
-            }
+            return !tx.isFieldPresent(sfCredentialIDs)
+                ? tecNO_PERMISSION
+                : credentials::authorizedDepositPreauth(
+                      view, tx.getFieldV256(sfCredentialIDs), dst);
         }
     }
 

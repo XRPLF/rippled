@@ -862,14 +862,13 @@ parseLeaf(
                             else
                             {
                                 Currency currency;
-                                if (!currency.parseHex(asset.asString()))
+                                if ((!currency.parseHex(asset.asString())) &&
+                                    (!toCurrency(currency, asset.asString())))
                                 {
-                                    if (!toCurrency(currency, asset.asString()))
-                                    {
-                                        error = invalidData(elementName, assetName.cStr());
-                                        return ret;
-                                    }
+                                    error = invalidData(elementName, assetName.cStr());
+                                    return ret;
                                 }
+
                                 uAsset = currency;
                             }
                         }

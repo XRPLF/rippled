@@ -116,6 +116,7 @@ getFieldType(json::StaticString fieldName)
     Throw<std::runtime_error>("`gMappings` is missing field " + std::string(fieldName.cStr()));
 }
 
+// NOLINTNEXTLINE(modernize-use-string-view) callers need std::string
 std::string
 getTypeName(FieldType typeID)
 {
