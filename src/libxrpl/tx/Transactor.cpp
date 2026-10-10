@@ -11,9 +11,9 @@
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/DelegateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -388,17 +388,17 @@ Transactor::checkPermission(
     if (!delegate)
         return tesSUCCESS;
 
-    auto const sle = view.read(keylet::delegate(tx[sfAccount], *delegate));
-    if (!sle)
+    DelegateEntryR const delegateEntry(tx[sfAccount], *delegate, view);
+    if (!delegateEntry)
         return terNO_DELEGATE_PERMISSION;
 
-    if (isTesSuccess(checkTxPermission(sle, tx)))
+    if (isTesSuccess(delegateEntry.checkTxPermission(tx)))
         return tesSUCCESS;
 
     if (!Permission::getInstance().hasGranularPermissions(tx.getTxnType()))
         return terNO_DELEGATE_PERMISSION;
 
-    heldGranularPermissions = getGranularPermission(sle, tx.getTxnType());
+    heldGranularPermissions = delegateEntry.granularPermission(tx.getTxnType());
     if (heldGranularPermissions.empty())
         return terNO_DELEGATE_PERMISSION;
 
