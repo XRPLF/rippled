@@ -973,8 +973,9 @@ class MPToken_test : public beast::unit_test::Suite
             test::jtx::MPT const mpT1("MPT", makeMptID(env.seq(alice) + 10, alice));
             err = !mpTokensV2 ? Ter(temMALFORMED) : Ter(tecOBJECT_NOT_FOUND);
             env(pay(alice, carol, mpT1(100)), Sendmax(mpt(100)), err);
-            // "paths" is invalid in V1
-            err = !mpTokensV2 ? Ter(temMALFORMED) : Ter(tesSUCCESS);
+            // "paths" is invalid in V1. In V2 any path from the issuer back
+            // to its own MPT is a loop, like it is for a holder.
+            err = !mpTokensV2 ? Ter(temMALFORMED) : Ter(temBAD_PATH_LOOP);
             env(pay(alice, carol, mpt(100)), Path(~usd), err);
         }
 
