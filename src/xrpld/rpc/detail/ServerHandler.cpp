@@ -747,15 +747,37 @@ ServerHandler::processRequest(
 
     json::Value jsonOrig;
     {
+        // Only a parse failure can report the reader's reason, getFormattedErrorMessages being
+        // built from what the reader recorded. The other three name their own cause.
+        if (request.size() > rpc::tuning::kMaxRequestSize)
+        {
+            httpReply(400, "Request is too large", output, rpcJ);
+            return;
+        }
+
         json::Reader reader;
-        if ((request.size() > rpc::tuning::kMaxRequestSize) || !reader.parse(request, jsonOrig) ||
-            !jsonOrig || !jsonOrig.isObject())
+        if (!reader.parse(request, jsonOrig))
         {
             httpReply(
                 400,
                 "Unable to parse request: " + reader.getFormattedErrorMessages(),
                 output,
                 rpcJ);
+            return;
+        }
+
+        if (!jsonOrig)
+        {
+            // A well-formed document that carries nothing: `{}`, `[]` or `null`.
+            httpReply(400, "Request is empty", output, rpcJ);
+            return;
+        }
+
+        if (!jsonOrig.isObject())
+        {
+            // A non-empty array, the only value the reader accepts that is neither null nor an
+            // object. A number, string or boolean is a parse failure, answered above.
+            httpReply(400, "Request is not a JSON object", output, rpcJ);
             return;
         }
     }
