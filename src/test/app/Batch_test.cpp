@@ -5968,7 +5968,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
 
-            auto wrap = [&](std::uint32_t s) {
+            auto const wrap = [&](std::uint32_t const s) {
                 json::Value inner = pay(alice, bob, XRP(1));
                 inner[jss::SigningPubKey] = "";
                 inner[jss::Sequence] = s;
@@ -5980,7 +5980,7 @@ class Batch_test : public beast::unit_test::Suite
                 return wrapped;
             };
 
-            auto submit = [&](Env& env, TER expected) {
+            auto const submit = [&](Env& env, TER const expected) {
                 env.fund(XRP(10000), alice, bob);
                 env.close();
 
