@@ -127,6 +127,30 @@ enum class Material : std::uint8_t {
 };
 
 /**
+ * An entry for @p account with nothing decided yet. Built by assignment: a
+ * designated initializer that names only some fields trips the
+ * missing-field-initializers warning, which the build treats as an error.
+ */
+AuthorizationStatus
+entryFor(std::optional<AccountID> const& account)
+{
+    AuthorizationStatus status;
+    status.account = account;
+    return status;
+}
+
+/**
+ * An entry for @p account that nothing collected can satisfy, for @p reason.
+ */
+AuthorizationStatus
+unsatisfied(std::optional<AccountID> const& account, UnsignedReason reason)
+{
+    AuthorizationStatus status = entryFor(account);
+    status.reason = reason;
+    return status;
+}
+
+/**
  * Classify a signature slot. Field presence is tested before every access, so
  * a bare object built without its template is classified rather than thrown
  * on.
@@ -241,7 +265,7 @@ evaluateDecodable(
     bool permitUncreatedAccount,
     beast::Journal j)
 {
-    AuthorizationStatus status{.account = account};
+    AuthorizationStatus status = entryFor(account);
 
     // An account that is not in the ledger cannot be authorized by anything
     // collected for it, whatever the material says; a Batch participant is the
@@ -262,7 +286,10 @@ evaluateDecodable(
             members = std::move(*entries);
             status.signers.emplace();
             for (auto const& member : *members)
-                status.signers->push_back({.account = member.account, .weight = member.weight});
+            {
+                status.signers->push_back(
+                    {.account = member.account, .weight = member.weight, .hasSigned = false});
+            }
         }
         // A list that does not deserialize is reported through the verdict
         // below, which fails on it the same way submission would.
@@ -356,7 +383,7 @@ evaluateAuthorization(
     {
         JLOG(j.warn()) << "evaluateAuthorization: cannot evaluate " << toBase58(account) << ": "
                        << e.what();
-        return {.account = account, .reason = UnsignedReason::Malformed};
+        return unsatisfied(account, UnsignedReason::Malformed);
     }
 }
 
@@ -455,7 +482,7 @@ evaluateSponsor(
     beast::Journal j)
 {
     AccountID const sponsor = sponsored.getAccountID(sfSponsor);
-    AuthorizationStatus status{.account = sponsor};
+    AuthorizationStatus status = entryFor(sponsor);
 
     auto const rule = sponsorRule(view, sponsored);
     if (rule == tefINTERNAL)
@@ -577,7 +604,7 @@ overrideEntry(
         // then the first entry, and every inner Delegate or co-signing
         // Sponsor is either it or a participant. Kept so a future delegable
         // Batch degrades to an unsatisfied entry rather than a lost verdict.
-        result.authorizations.push_back({.account = account, .reason = reason});
+        result.authorizations.push_back(unsatisfied(account, reason));
         return;
         // LCOV_EXCL_STOP
     }
@@ -868,7 +895,7 @@ evaluateProposal(ReadView const& view, SLE const& sleProposal, beast::Journal j)
             // temBAD_SIGNER whatever was collected. Reported as an entry
             // nothing can satisfy, with no account to chase.
             result.authorizations.push_back(
-                {.account = std::nullopt, .reason = UnsignedReason::CounterpartyUnresolvable});
+                unsatisfied(std::nullopt, UnsignedReason::CounterpartyUnresolvable));
         }
     }
 
@@ -1009,8 +1036,7 @@ evaluateProposal(ReadView const& view, SLE const& sleProposal, beast::Journal j)
                     (previous && *id <= *previous);
                 if (rejected)
                 {
-                    result.authorizations.push_back(
-                        {.account = id, .reason = UnsignedReason::Malformed});
+                    result.authorizations.push_back(unsatisfied(id, UnsignedReason::Malformed));
                 }
                 if (id)
                     previous = id;
