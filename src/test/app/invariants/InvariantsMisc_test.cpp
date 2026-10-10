@@ -251,7 +251,7 @@ class InvariantsMisc_test : public InvariantsBase
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
         doInvariantCheck(
-            Env{*this, FeatureBitset{featureSponsor}},
+            Env{*this, FeatureBitset{featureSponsor, featureTecInvariant}},
             {{"account deletion left behind a sponsorship field"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleA1 = ac.view().peek(keylet::account(a1.id()));

@@ -56,7 +56,9 @@ class InvariantsPermissioned_test : public InvariantsBase
     {
         using namespace test::jtx;
 
-        bool const fixEnabled = features[fixCleanup3_1_3];
+        bool const fix313Enabled = features[fixCleanup3_1_3];
+        bool const fixTecEnabled = features[featureTecInvariant];
+        bool const fixEnabled = fix313Enabled || fixTecEnabled;
         std::initializer_list<TER> const badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
         std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
 
@@ -258,7 +260,7 @@ class InvariantsPermissioned_test : public InvariantsBase
             testcase << "PermissionedDomain set 2 domains ";
             doInvariantCheck(
                 makeEnv(features),
-                fixEnabled ? badMoreThan1 : emptyV,
+                fix313Enabled ? badMoreThan1 : emptyV,
                 [](Account const& a1, Account const& a2, ApplyContext& ac) {
                     createPermissionedDomain(ac, a1, a2);
                     createPermissionedDomain(ac, a1, a2, 2, 11);
@@ -266,7 +268,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-                fixEnabled ? failTers : goodTers);
+                fix313Enabled ? failTers : goodTers);
         }
 
         {
@@ -287,7 +289,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                 std::move(env1),
                 a1,
                 a2,
-                fixEnabled ? badMoreThan1 : emptyV,
+                fix313Enabled ? badMoreThan1 : emptyV,
                 [&pd1, &pd2](Account const&, Account const&, ApplyContext& ac) {
                     auto sle1 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd1});
                     auto sle2 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd2});
@@ -297,18 +299,18 @@ class InvariantsPermissioned_test : public InvariantsBase
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_DELETE, [](STObject&) {}},
-                fixEnabled ? failTers : goodTers);
+                fix313Enabled ? failTers : goodTers);
         }
 
         {
             testcase << "PermissionedDomain set 0 domains ";
             doInvariantCheck(
                 makeEnv(features),
-                fixEnabled ? badNoDomains : emptyV,
+                fix313Enabled ? badNoDomains : emptyV,
                 [](Account const&, Account const&, ApplyContext&) { return true; },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-                fixEnabled ? badTers : goodTers);
+                fix313Enabled ? badTers : goodTers);
         }
 
         {
@@ -329,11 +331,11 @@ class InvariantsPermissioned_test : public InvariantsBase
                 std::move(env1),
                 a1,
                 a2,
-                fixEnabled ? badNoDomains : emptyV,
+                fix313Enabled ? badNoDomains : emptyV,
                 [](Account const&, Account const&, ApplyContext&) { return true; },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_DELETE, [](STObject&) {}},
-                fixEnabled ? badTers : goodTers);
+                fix313Enabled ? badTers : goodTers);
         }
 
         {
@@ -353,7 +355,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                 std::move(env1),
                 a1,
                 a2,
-                fixEnabled ? badDeleted : emptyV,
+                fix313Enabled ? badDeleted : emptyV,
                 [&pd1](Account const&, Account const&, ApplyContext& ac) {
                     auto sle1 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd1});
                     ac.view().erase(sle1);
@@ -361,28 +363,28 @@ class InvariantsPermissioned_test : public InvariantsBase
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-                fixEnabled ? failTers : goodTers);
+                fix313Enabled ? failTers : goodTers);
         }
 
         {
             testcase << "PermissionedDomain del, create domain ";
             doInvariantCheck(
                 makeEnv(features),
-                fixEnabled ? badNotDeleted : emptyV,
+                fix313Enabled ? badNotDeleted : emptyV,
                 [](Account const& a1, Account const& a2, ApplyContext& ac) {
                     createPermissionedDomain(ac, a1, a2);
                     return true;
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_DELETE, [](STObject&) {}},
-                fixEnabled ? failTers : goodTers);
+                fix313Enabled ? failTers : goodTers);
         }
 
         {
             testcase << "PermissionedDomain invalid tx";
 
             doInvariantCheck(
-                fixEnabled ? badTx : emptyV,
+                fix313Enabled ? badTx : emptyV,
                 [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                     createPermissionedDomain(ac, a1, a2);
                     return true;
@@ -398,7 +400,13 @@ class InvariantsPermissioned_test : public InvariantsBase
     {
         using namespace test::jtx;
 
-        bool const fixEnabled = features[fixCleanup3_1_3];
+        bool const fix313Enabled = features[fixCleanup3_1_3];
+        bool const fixTecEnabled = features[featureTecInvariant];
+        bool const fixEnabled = fix313Enabled || fixTecEnabled;
+
+        std::initializer_list<TER> const badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
+        std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+        std::initializer_list<TER> const goodTers = {tesSUCCESS, tesSUCCESS};
 
         testcase << "PermissionedDEX" + std::string(fixEnabled ? " fix" : "");
 
@@ -426,7 +434,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                     tx.setFieldAmount(sfTakerPays, a1["USD"](10));
                     tx.setFieldAmount(sfTakerGets, XRP(1));
                 }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixTecEnabled ? failTers : badTers);
 
         // missing domain ID in offer object
         doInvariantCheck(
@@ -448,7 +456,7 @@ class InvariantsPermissioned_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttOFFER_CREATE, [&](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixTecEnabled ? failTers : badTers);
 
         // more than one entry in sfAdditionalBooks
         {
@@ -485,7 +493,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                 },
                 XRPAmount{},
                 STTx{ttOFFER_CREATE, [&](STObject&) {}},
-                {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+                fixTecEnabled ? failTers : badTers);
         }
 
         // empty sfAdditionalBooks (size 0)
@@ -500,12 +508,20 @@ class InvariantsPermissioned_test : public InvariantsBase
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
             env1.close();
 
+            auto const expectedTers = std::invoke([&] {
+                if (!fix313Enabled)
+                    return goodTers;
+                if (fixTecEnabled)
+                    return failTers;
+                return badTers;
+            });
+
             doInvariantCheck(
                 std::move(env1),
                 a1,
                 a2,
-                fixEnabled ? std::vector<std::string>{{"hybrid offer is malformed"}}
-                           : std::vector<std::string>{},
+                fix313Enabled ? std::vector<std::string>{{"hybrid offer is malformed"}}
+                              : std::vector<std::string>{},
                 [&pd1](Account const& a1, Account const& a2, ApplyContext& ac) {
                     Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::rawSequence(10));
                     auto sleOffer = std::make_shared<SLE>(offerKey);
@@ -522,8 +538,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                 },
                 XRPAmount{},
                 STTx{ttOFFER_CREATE, [&](STObject&) {}},
-                fixEnabled ? std::initializer_list<TER>{tecINVARIANT_FAILED, tecINVARIANT_FAILED}
-                           : std::initializer_list<TER>{tesSUCCESS, tesSUCCESS});
+                expectedTers);
         }
 
         // hybrid offer missing sfAdditionalBooks
@@ -556,7 +571,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                 },
                 XRPAmount{},
                 STTx{ttOFFER_CREATE, [&](STObject&) {}},
-                {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+                fixTecEnabled ? failTers : badTers);
         }
 
         {
@@ -594,7 +609,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                         tx.setFieldAmount(sfTakerPays, a1["USD"](10));
                         tx.setFieldAmount(sfTakerGets, XRP(1));
                     }},
-                {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+                fixTecEnabled ? failTers : badTers);
         }
 
         {
@@ -631,7 +646,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                         tx.setFieldAmount(sfTakerPays, a1["USD"](10));
                         tx.setFieldAmount(sfTakerGets, XRP(1));
                     }},
-                {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+                fixTecEnabled ? failTers : badTers);
         }
     }
 
@@ -943,8 +958,13 @@ class InvariantsPermissioned_test : public InvariantsBase
     void
     run() override
     {
-        testPermissionedDomainInvariants(all_);
-        testPermissionedDomainInvariants(all_ - fixCleanup3_1_3);
+        testPermissionedDomainInvariants(all_ | fixCleanup3_1_3 | featureTecInvariant);
+        testPermissionedDomainInvariants((all_ - fixCleanup3_1_3) | featureTecInvariant);
+        // Can't test without featureTecInvariant, because the invariant will assert
+        // testPermissionedDomainInvariants((all_ | fixCleanup3_1_3) -
+        //  featureTecInvariant );
+        // testPermissionedDomainInvariants((all_ - fixCleanup3_1_3) -
+        //  featureTecInvariant);
         testPermissionedDEX(all_);
         testPermissionedDEX(all_ - fixCleanup3_1_3);
         testPermissionedDEXDeletedOfferFallback();

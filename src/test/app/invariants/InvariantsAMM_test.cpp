@@ -177,16 +177,13 @@ class InvariantsAMM_test : public InvariantsBase
             return true;
         };
 
-        auto test = [&](auto const txType,
-                        auto&& update,
-                        bool isMPT,
-                        TER error = tecINVARIANT_FAILED) {
+        auto test = [&](auto const txType, auto&& update, bool isMPT) {
             doInvariantCheck(
                 {{"AMM"}},
                 [&](Account const&, Account const&, ApplyContext& ac) { return update(ac, isMPT); },
                 XRPAmount{},
                 STTx{txType, [&](STObject& tx) {}},
-                {tecINVARIANT_FAILED, error},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 [&](Account const&, Account const&, Env& env) {
                     env.fund(XRP(1'000), gw);
                     poolAsset = [&] -> PrettyAsset {
@@ -208,18 +205,15 @@ class InvariantsAMM_test : public InvariantsBase
 
         for (bool const isMPT : {false, true})
         {
-            // Under fixCleanup3_4_0 the MPT balance invariants also fire on the
-            // second pass, so both IOU and MPT pools now escalate to tef.
-            auto const error = TER(tefINVARIANT_FAILED);
             for (auto txType : {ttAMM_CREATE, ttAMM_DEPOSIT, ttAMM_CLAWBACK, ttAMM_WITHDRAW})
             {
-                test(txType, deleteAMMAccount, isMPT, tefINVARIANT_FAILED);
+                test(txType, deleteAMMAccount, isMPT);
                 test(txType, updateLPTokensBadAmount, isMPT);
                 test(txType, updateLPTokensBadBalance, isMPT);
             }
             for (auto txType : {ttAMM_BID, ttAMM_VOTE})
             {
-                test(txType, updateAMMPool, isMPT, error);
+                test(txType, updateAMMPool, isMPT);
                 test(txType, updateLPTokensBadAmount, isMPT);
                 test(txType, updateLPTokensBadBalance, isMPT);
             }
