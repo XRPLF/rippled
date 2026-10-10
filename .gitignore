@@ -72,7 +72,7 @@ DerivedData
 /.zed/
 
 # AI tools.
-# Shared/committable AI agent config (AGENTS.md, CLAUDE.md, GEMINI.md, .claude/settings.json,
+# Shared/committable AI agent config (AGENTS.md, GEMINI.md, .claude/settings.json,
 # tool-specific rules files, etc.) should be checked in — see CONTRIBUTING.md. Only the
 # personal/local variants below are ignored.
 /.agent
