@@ -2,10 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/OracleHelpers.h>
-#include <xrpl/protocol/AccountID.h>
+#include <xrpl/ledger/entries/OracleEntry.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -13,8 +10,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-
-#include <cstdint>
 
 namespace xrpl {
 
@@ -31,7 +26,7 @@ OracleDelete::preclaim(PreclaimContext const& ctx)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
     auto const sle =
-        ctx.view.read(keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
+        OracleEntryR(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID], ctx.view);
     if (!sle)
     {
         JLOG(ctx.j.debug()) << "Oracle Delete: Oracle does not exist.";
@@ -50,39 +45,10 @@ OracleDelete::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-OracleDelete::deleteOracle(
-    ApplyView& view,
-    SLE::Ref sle,
-    AccountID const& account,
-    beast::Journal j)
-{
-    if (!sle)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    if (!view.dirRemove(keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), true))
-    {
-        // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete Oracle from owner.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    auto const sleOwner = view.peek(keylet::account(account));
-    if (!sleOwner)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    std::uint32_t const count = calculateOracleReserve(sle);
-    decreaseOwnerCountForObject(view, sleOwner, sle, count, j);
-    view.erase(sle);
-
-    return tesSUCCESS;
-}
-
-TER
 OracleDelete::doApply()
 {
-    if (auto sle = ctx_.view().peek(keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID])))
-        return deleteOracle(ctx_.view(), sle, accountID_, j_);
+    if (auto oracle = OracleEntryW(accountID_, ctx_.tx[sfOracleDocumentID], ctx_.view(), j_))
+        return oracle.removeFromLedger(accountID_);
 
     return tecINTERNAL;  // LCOV_EXCL_LINE
 }
