@@ -122,7 +122,8 @@ InvariantsBase::doInvariantCheck(
     OpenView ov{*env.current()};
     test::StreamSink sink{beast::Severity::Warning};
     beast::Journal const jlog{sink};
-    ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+    ApplyContext ac{
+        env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, ApplyFlags::None, jlog};
 
     // Invariants normally run in the Transaction's "apply" (operator()) context, and can always
     // access global Rules.

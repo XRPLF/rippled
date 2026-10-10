@@ -392,7 +392,7 @@ Pathfinder::getPathLiquidity(
     path::RippleCalc::Input rcInput;
     rcInput.defaultPathsAllowed = false;
 
-    PaymentSandbox sandbox(&*ledger_, TapNone);
+    PaymentSandbox sandbox(&*ledger_, ApplyFlags::None);
 
     try
     {
@@ -455,7 +455,7 @@ Pathfinder::computePathRanks(int maxPaths, std::function<bool()> const& continue
     // Must subtract liquidity in default path from remaining amount.
     try
     {
-        PaymentSandbox sandbox(&*ledger_, TapNone);
+        PaymentSandbox sandbox(&*ledger_, ApplyFlags::None);
 
         path::RippleCalc::Input rcInput;
         rcInput.partialPaymentAllowed = true;
@@ -946,7 +946,7 @@ Pathfinder::isNoRippleOut(STPath const& currentPath)
 
     // Last link must be an account.
     STPathElement const& endElement = currentPath.back();
-    if ((endElement.getNodeType() & STPathElement::TypeAccount) == 0u)
+    if (!endElement.isType(STPathElement::TypeAccount))
         return false;
 
     // If there's only one item in the path, return true if that item specifies

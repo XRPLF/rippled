@@ -38,7 +38,7 @@ ApplyContext::ApplyContext(
     , parentBatchId_(parentBatchId)
 {
     XRPL_ASSERT(
-        parentBatchId.has_value() == ((flags_ & TapBatch) == TapBatch),
+        parentBatchId.has_value() == ((flags_ & ApplyFlags::Batch) == ApplyFlags::Batch),
         "Parent Batch ID should be set if batch apply flag is set");
     view_.emplace(&base_, flags_);
 }
@@ -53,13 +53,14 @@ std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-    return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
+    return view_->apply(
+        base_, tx, ter, parentBatchId_, (flags_ & ApplyFlags::DryRun) != ApplyFlags::None, journal);
 }
 
 void
 ApplyContext::addOrderBook(Book const& book)
 {
-    if ((flags_ & TapDryRun) == TapNone)
+    if ((flags_ & ApplyFlags::DryRun) == ApplyFlags::None)
         registry.get().getOrderBookDB().addOrderBook(book);
 }
 

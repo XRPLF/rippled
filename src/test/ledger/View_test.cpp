@@ -189,7 +189,7 @@ class View_test : public beast::unit_test::Suite
         Env env(*this);
         wipe(env.app().getOpenLedger());
         auto const open = env.current();
-        ApplyViewImpl v(&*open, TapNone);
+        ApplyViewImpl v(&*open, ApplyFlags::None);
         succ(v, 0, std::nullopt);
         v.insert(sle(1));
         BEAST_EXPECT(v.exists(k(1)));
@@ -222,7 +222,7 @@ class View_test : public beast::unit_test::Suite
         Env env(*this);
         wipe(env.app().getOpenLedger());
         auto const open = env.current();
-        ApplyViewImpl v0(&*open, TapNone);
+        ApplyViewImpl v0(&*open, ApplyFlags::None);
         v0.insert(sle(1));
         v0.insert(sle(2));
         v0.insert(sle(4));
@@ -288,7 +288,7 @@ class View_test : public beast::unit_test::Suite
         Env env(*this);
         wipe(env.app().getOpenLedger());
         auto const open = env.current();
-        ApplyViewImpl v0(&*open, TapNone);
+        ApplyViewImpl v0(&*open, ApplyFlags::None);
         v0.rawInsert(sle(1, 1));
         v0.rawInsert(sle(2, 2));
         v0.rawInsert(sle(4, 4));
@@ -368,22 +368,22 @@ class View_test : public beast::unit_test::Suite
                 BEAST_EXPECT(v1.seq() == v0.seq());
                 BEAST_EXPECT(v1.parentCloseTime() == v1.parentCloseTime());
 
-                ApplyViewImpl v2(&v1, TapRetry);
+                ApplyViewImpl v2(&v1, ApplyFlags::Retry);
                 BEAST_EXPECT(v2.parentCloseTime() == v1.parentCloseTime());
                 BEAST_EXPECT(v2.seq() == v1.seq());
-                BEAST_EXPECT(v2.flags() == TapRetry);
+                BEAST_EXPECT(v2.flags() == ApplyFlags::Retry);
 
                 Sandbox const v3(&v2);
                 BEAST_EXPECT(v3.seq() == v2.seq());
                 BEAST_EXPECT(v3.parentCloseTime() == v2.parentCloseTime());
-                BEAST_EXPECT(v3.flags() == TapRetry);
+                BEAST_EXPECT(v3.flags() == ApplyFlags::Retry);
             }
             {
-                ApplyViewImpl v1(&v0, TapRetry);
+                ApplyViewImpl v1(&v0, ApplyFlags::Retry);
                 PaymentSandbox v2(&v1);
                 BEAST_EXPECT(v2.seq() == v0.seq());
                 BEAST_EXPECT(v2.parentCloseTime() == v0.parentCloseTime());
-                BEAST_EXPECT(v2.flags() == TapRetry);
+                BEAST_EXPECT(v2.flags() == ApplyFlags::Retry);
                 PaymentSandbox const v3(&v2);
                 BEAST_EXPECT(v3.seq() == v2.seq());
                 BEAST_EXPECT(v3.parentCloseTime() == v2.parentCloseTime());
@@ -1028,7 +1028,7 @@ class View_test : public beast::unit_test::Suite
             wipe(*ledger);
             ledger->rawInsert(sle(1));
             ReadView const& v0 = *ledger;
-            ApplyViewImpl v1(&v0, TapNone);
+            ApplyViewImpl v1(&v0, ApplyFlags::None);
             {
                 Sandbox v2(&v1);
                 v2.erase(v2.peek(k(1)));

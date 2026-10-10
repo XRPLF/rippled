@@ -247,7 +247,7 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
     // Process the transaction
     OpenView view = *context.app.getOpenLedger().current();
     auto const result = context.app.getTxQ().apply(
-        context.app, view, transaction->getSTransaction(), TapDryRun, context.j);
+        context.app, view, transaction->getSTransaction(), ApplyFlags::DryRun, context.j);
 
     jvResult[jss::applied] = result.applied;
     jvResult[jss::ledger_index] = view.seq();

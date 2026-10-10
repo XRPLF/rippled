@@ -57,10 +57,8 @@ checkNear(IOUAmount const& expected, IOUAmount const& actual)
 static bool
 isXRPAccount(STPathElement const& pe)
 {
-    if (pe.getNodeType() != STPathElement::TypeAccount)
-        return false;
-    return isXRP(pe.getAccountID());
-};
+    return pe.getNodeType() == STPathElement::TypeAccount && isXRP(pe.getAccountID());
+}
 
 static std::pair<TER, std::unique_ptr<Step>>
 toStep(
@@ -71,11 +69,8 @@ toStep(
 {
     auto& j = ctx.j;
 
-    if (ctx.isFirst && e1->isAccount() &&
-        ((e1->getNodeType() & STPathElement::TypeCurrency) != 0u) && e1->getPathAsset().isXRP())
-    {
+    if (ctx.isFirst && e1->isAccount() && e1->hasCurrency() && e1->getPathAsset().isXRP())
         return makeXrpEndpointStep(ctx, e1->getAccountID());
-    }
 
     if (ctx.isLast && isXRPAccount(*e1) && e2->isAccount())
         return makeXrpEndpointStep(ctx, e2->getAccountID());
@@ -117,15 +112,9 @@ toStep(
         // LCOV_EXCL_STOP
     }
 
-    XRPL_ASSERT(
-        (e2->getNodeType() & STPathElement::TypeAsset) ||
-            (e2->getNodeType() & STPathElement::TypeIssuer),
-        "xrpl::toStep : currency or issuer");
-    PathAsset const outAsset =
-        ((e2->getNodeType() & STPathElement::TypeAsset) != 0u) ? e2->getPathAsset() : curAsset;
-    auto const outIssuer = ((e2->getNodeType() & STPathElement::TypeIssuer) != 0u)
-        ? e2->getIssuerID()
-        : curAsset.getIssuer();
+    XRPL_ASSERT(e2->hasAsset() || e2->hasIssuer(), "xrpl::toStep : currency or issuer");
+    PathAsset const outAsset = e2->hasAsset() ? e2->getPathAsset() : curAsset;
+    auto const outIssuer = e2->hasIssuer() ? e2->getIssuerID() : curAsset.getIssuer();
 
     if (isXRP(curAsset) && outAsset.isXRP())
     {
@@ -197,16 +186,15 @@ toStrand(
     for (std::size_t i = 0; i < path.size(); ++i)
     {
         auto const& pe = path[i];
-        auto const t = pe.getNodeType();
 
-        if (((t & ~STPathElement::TypeAll) != 0u) || (t == 0u))
+        if ((pe.getNodeType() & ~STPathElement::TypeAll) != STPathElement::TypeNone || pe.isNone())
             return {temBAD_PATH, Strand{}};
 
-        bool const hasAccount = (t & STPathElement::TypeAccount) != 0u;
-        bool const hasIssuer = (t & STPathElement::TypeIssuer) != 0u;
-        bool const hasCurrency = (t & STPathElement::TypeCurrency) != 0u;
-        bool const hasMPT = (t & STPathElement::TypeMpt) != 0u;
-        bool const hasAsset = (t & STPathElement::TypeAsset) != 0u;
+        bool const hasAccount = pe.isType(STPathElement::TypeAccount);
+        bool const hasIssuer = pe.hasIssuer();
+        bool const hasCurrency = pe.hasCurrency();
+        bool const hasMPT = pe.hasMPT();
+        bool const hasAsset = pe.hasAsset();
 
         if (hasAccount && (hasIssuer || hasCurrency))
             return {temBAD_PATH, Strand{}};
@@ -250,9 +238,7 @@ toStrand(
     }();
 
     // Currency or MPT
-    auto hasAsset = [](STPathElement const pe) {
-        return pe.getNodeType() & STPathElement::TypeAsset;
-    };
+    auto hasAsset = [](STPathElement const& pe) { return pe.hasAsset(); };
 
     std::vector<STPathElement> normPath;
     // reserve enough for the path, the implied source, destination,

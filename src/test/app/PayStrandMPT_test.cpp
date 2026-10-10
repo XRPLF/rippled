@@ -572,7 +572,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
         inputs.defaultPathsAllowed = true;
         try
         {
-            PaymentSandbox sb{env.current().get(), TapNone};
+            PaymentSandbox sb{env.current().get(), ApplyFlags::None};
             {
                 auto const r = ::xrpl::path::RippleCalc::rippleCalculate(
                     sb,

@@ -252,7 +252,7 @@ class TheoreticalQuality_test : public beast::unit_test::Suite
         std::shared_ptr<ReadView const> closed,
         std::optional<Quality> const& expectedQ = {})
     {
-        PaymentSandbox const sb(closed.get(), TapNone);
+        PaymentSandbox const sb(closed.get(), ApplyFlags::None);
         AMMContext ammContext(rcp.srcAccount, false);
 
         auto const sendMaxIssue = [&rcp] -> std::optional<Asset> {
