@@ -32,8 +32,10 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/JsonRpc.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
@@ -2171,6 +2173,133 @@ public:
     }
 
     /**
+     * A reply to a request follows the specification envelope on the
+     * WebSocket transport as well, so an API version selects one shape
+     * whichever transport carries it. The reply keeps a `type` member, which
+     * is how a client tells a reply apart from the asynchronous messages a
+     * session also receives, and which the specification has no place for.
+     */
+    void
+    testWebsocketSpecEnvelope()
+    {
+        testcase("WebSocket replies conform to JSON-RPC 2.0 from API version 3");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+
+        Env env{*this, singleThreadIo(envconfig())};
+
+        // invokeRaw returns the message as it arrived, before the client normalizes it, so the
+        // envelope itself can be asserted.
+        auto const rawReply = [&](unsigned apiVersion) -> std::optional<json::Value> {
+            auto wsc = makeWSClient(env.app().config(), true, 2, {}, apiVersion);
+            json::Value req;
+            req[jss::api_version] = apiVersion;
+            return wsc->invokeRaw("ledger_closed", req);
+        };
+
+        for (auto const version : {1u, 2u})
+        {
+            auto const msg = rawReply(version);
+            if (BEAST_EXPECTS(msg.has_value(), std::to_string(version)))
+            {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access) checked above
+                json::Value const& reply = *msg;
+                BEAST_EXPECTS(reply[jss::type] == jss::response, std::to_string(version));
+                // The legacy envelope keeps `status` at the top level. It cannot be told apart by
+                // `jsonrpc`, which it echoes back from the request the client sent.
+                BEAST_EXPECTS(reply.isMember(jss::status), std::to_string(version));
+                BEAST_EXPECTS(
+                    !reply.isMember(jss::result) || !reply[jss::result].isMember(jss::error),
+                    std::to_string(version));
+            }
+        }
+
+        {
+            auto const msg = rawReply(3u);
+            if (BEAST_EXPECT(msg.has_value()))
+            {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access) checked above
+                json::Value const& reply = *msg;
+                BEAST_EXPECT(reply[jss::jsonrpc] == rpc::kJsonRpcVersion);
+                // The client sends `id: 5` in its JSON-RPC form, and the reply echoes it.
+                BEAST_EXPECT(reply.isMember(jss::id) && reply[jss::id] == 5);
+                BEAST_EXPECT(reply.isMember(jss::result));
+                // No `status` at either level: `result` versus `error` already says which it was.
+                BEAST_EXPECT(!reply.isMember(jss::status));
+                BEAST_EXPECT(!reply[jss::result].isMember(jss::status));
+                BEAST_EXPECT(reply[jss::type] == jss::response);
+            }
+        }
+
+        // The client's `command` form names no id, and the reply names a null one rather than
+        // leaving the member out.
+        {
+            auto wsc = makeWSClient(env.app().config(), true, 1, {}, 3u);
+            json::Value req;
+            req[jss::api_version] = 3u;
+            auto const msg = wsc->invokeRaw("ledger_closed", req);
+            if (BEAST_EXPECT(msg.has_value()))
+            {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access) checked above
+                json::Value const& reply = *msg;
+                BEAST_EXPECT(reply[jss::jsonrpc] == rpc::kJsonRpcVersion);
+                BEAST_EXPECT(reply.isMember(jss::id) && reply[jss::id].isNull());
+                BEAST_EXPECT(reply.isMember(jss::result));
+            }
+        }
+
+        {
+            auto wsc = makeWSClient(env.app().config(), true, 2, {}, 3u);
+            json::Value req;
+            req[jss::api_version] = 3u;
+            req[jss::account] = "bogus";
+            auto const msg = wsc->invokeRaw("account_info", req);
+            if (BEAST_EXPECT(msg.has_value()))
+            {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access) checked above
+                json::Value const& reply = *msg;
+                BEAST_EXPECT(reply[jss::jsonrpc] == rpc::kJsonRpcVersion);
+                BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcServerError);
+                BEAST_EXPECT(reply[jss::error][jss::data][jss::error] == "actMalformed");
+                BEAST_EXPECT(reply[jss::error][jss::data][jss::error_code] == RpcActMalformed);
+                BEAST_EXPECT(!reply.isMember(jss::status));
+            }
+        }
+
+        // `path_find` is the one handler that sets `status` inside its result, so it is the only
+        // command that can show the member is dropped there too.
+        {
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            auto wsc = makeWSClient(env.app().config(), true, 2, {}, 3u);
+            json::Value create;
+            create[jss::api_version] = 3u;
+            create[jss::subcommand] = "create";
+            create[jss::source_account] = alice.human();
+            create[jss::destination_account] = bob.human();
+            create[jss::destination_amount] = "100000000";
+            wsc->invokeRaw("path_find", create);
+
+            json::Value status;
+            status[jss::api_version] = 3u;
+            status[jss::subcommand] = "status";
+            auto const msg = wsc->invokeRaw("path_find", status);
+            if (BEAST_EXPECT(msg.has_value()))
+            {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access) checked above
+                json::Value const& reply = *msg;
+                BEAST_EXPECT(reply.isMember(jss::result));
+                BEAST_EXPECT(!reply.isMember(jss::status));
+                BEAST_EXPECT(!reply[jss::result].isMember(jss::status));
+            }
+        }
+    }
+
+    /**
      * A `subscribe` request for one stream at one API version.
      *
      * @param stream The stream to name.
@@ -2734,6 +2863,7 @@ public:
         testMPTReSubscribeNotOvercounted();
         testMPTSharesCapWithAccounts();
         testMPTUnsubscribeFreesCap();
+        testWebsocketSpecEnvelope();
         testOneApiVersionPerConnection();
         testOneApiVersionPerUrl();
         testSubscribeToConsensusAndPeerStatus();
