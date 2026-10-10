@@ -27,6 +27,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/resource/detail/Tuning.h>
 #include <xrpl/server/LoadFeeTrack.h>
@@ -929,6 +930,155 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         }
     }
 
+    /**
+     * A WebSocket frame the server cannot read is charged against the sender's
+     * resource entry, and a sender over the drop threshold is disconnected
+     * instead of answered.
+     *
+     * @param yield The coroutine the frames are sent on.
+     */
+    void
+    testWSUnparsableFrames(boost::asio::yield_context& yield)
+    {
+        testcase("Unparsable WS frames are charged for");
+
+        using namespace test::jtx;
+        using namespace boost::asio;
+
+        // Without admin privilege: a privileged connection is neither charged nor dropped.
+        Env env{*this, envconfig(noAdmin)};
+
+        auto const section = env.app().config().section(Sections::kPortWs);
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
+        auto const port = section.get<std::uint16_t>(Keys::kPort).value();
+        auto const ip = section.get<std::string>(Keys::kIp).value();
+        // NOLINTEND(bugprone-unchecked-optional-access)
+        boost::system::error_code ec;
+
+        io_context& ios = getIoContext();
+        ip::tcp::resolver r{ios};
+
+        auto it = r.async_resolve(ip, std::to_string(port), yield[ec]);
+        if (!BEAST_EXPECT(!ec))
+            return;
+
+        ip::tcp::socket sock{ios};
+        async_connect(sock, it, yield[ec]);
+        if (!BEAST_EXPECT(!ec))
+            return;
+
+        boost::beast::websocket::stream<boost::asio::ip::tcp::socket&> ws{sock};
+        ws.handshake(ip + ":" + std::to_string(port), "/");
+
+        auto const sendAndParse = [&](std::string const& req) -> json::Value {
+            ws.async_write_some(true, buffer(req), yield[ec]);
+            if (!BEAST_EXPECT(!ec))
+                return json::ValueType::Object;
+
+            boost::beast::multi_buffer sb;
+            ws.async_read(sb, yield[ec]);
+            if (!BEAST_EXPECT(!ec))
+                return json::ValueType::Object;
+
+            json::Value resp;
+            BEAST_EXPECT(
+                json::Reader{}.parse(
+                    boost::lexical_cast<std::string>(boost::beast::make_printable(sb.data())),
+                    resp));
+            return resp;
+        };
+
+        // The entry is keyed by address, so a frame from this client is charged against it.
+        auto usage =
+            env.app().getResourceManager().newInboundEndpoint(beast::ip::Endpoint::fromString(ip));
+        auto const before = usage.balance();
+
+        // An unreadable frame is answered and charged here; it never reaches the session where
+        // every other request is charged.
+        for (int i = 0; i < 10; ++i)
+        {
+            auto const resp = sendAndParse("NOT JSON");
+            BEAST_EXPECT(resp[jss::error] == "jsonInvalid");
+        }
+        BEAST_EXPECT(usage.balance() > before);
+
+        // Over the threshold the frame is not answered at all: the connection is closed.
+        overloadEndpoint(env, ip);
+
+        ws.async_write_some(true, buffer(std::string_view{"NOT JSON"}), yield[ec]);
+        if (BEAST_EXPECT(!ec))
+        {
+            boost::beast::multi_buffer sb;
+            ws.async_read(sb, yield[ec]);
+            BEAST_EXPECT(ec);
+        }
+    }
+
+    /**
+     * A privileged WebSocket connection is answered for every unreadable frame,
+     * its resource entry being exempt from the charge and the drop.
+     *
+     * @param yield The coroutine the frames are sent on.
+     */
+    void
+    testPrivilegedWSFramesAreExempt(boost::asio::yield_context& yield)
+    {
+        testcase("A privileged WS connection is exempt from the frame charge");
+
+        using namespace test::jtx;
+        using namespace boost::asio;
+
+        // With admin privilege, which the default configuration grants a local connection. Its
+        // resource entry is exempt from both the charge and the drop.
+        Env env{*this};
+
+        auto const section = env.app().config().section(Sections::kPortWs);
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
+        auto const port = section.get<std::uint16_t>(Keys::kPort).value();
+        auto const ip = section.get<std::string>(Keys::kIp).value();
+        // NOLINTEND(bugprone-unchecked-optional-access)
+        boost::system::error_code ec;
+
+        io_context& ios = getIoContext();
+        ip::tcp::resolver r{ios};
+
+        auto it = r.async_resolve(ip, std::to_string(port), yield[ec]);
+        if (!BEAST_EXPECTS(!ec, ec.message()))
+            return;
+
+        ip::tcp::socket sock{ios};
+        async_connect(sock, it, yield[ec]);
+        if (!BEAST_EXPECTS(!ec, ec.message()))
+            return;
+
+        boost::beast::websocket::stream<boost::asio::ip::tcp::socket&> ws{sock};
+        ws.handshake(ip + ":" + std::to_string(port), "/");
+
+        // An unprivileged connection from this address is closed instead; see
+        // testWSUnparsableFrames.
+        overloadEndpoint(env, ip);
+
+        // The privileged connection is answered every time, holding an exempt entry.
+        for (int i = 0; i < 3; ++i)
+        {
+            ws.async_write_some(true, buffer(std::string_view{"NOT JSON"}), yield[ec]);
+            if (!BEAST_EXPECTS(!ec, ec.message()))
+                return;
+
+            boost::beast::multi_buffer sb;
+            ws.async_read(sb, yield[ec]);
+            if (!BEAST_EXPECTS(!ec, ec.message()))
+                return;
+
+            json::Value resp;
+            BEAST_EXPECT(
+                json::Reader{}.parse(
+                    boost::lexical_cast<std::string>(boost::beast::make_printable(sb.data())),
+                    resp));
+            BEAST_EXPECT(resp[jss::error] == "jsonInvalid");
+        }
+    }
+
     void
     testAmendmentWarning(boost::asio::yield_context& yield)
     {
@@ -1684,6 +1834,208 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             BEAST_EXPECTS(reply[jss::error].isMember(jss::message), version);
             BEAST_EXPECTS(!reply[jss::error].isMember(jss::error_message), version);
         }
+    }
+
+    /**
+     * A batch charges for every entry and stops once the connection cannot take
+     * another. The `method: "batch"` form is uncapped, so without both one body
+     * buys around 333,000 entries' worth of work and reply.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testBatchOverload(boost::asio::yield_context& yield)
+    {
+        testcase("A batch charges every entry and stops when overloaded");
+
+        using namespace test::jtx;
+
+        // Without admin privilege, since a privileged connection is never charged and never
+        // dropped.
+        Env env{*this, envconfig(noAdmin)};
+
+        boost::system::error_code ec;
+
+        // Posts `count` copies of `entry` as one `method: "batch"` body and returns the answers.
+        auto const answers = [&](json::Value const& entry, unsigned count) -> json::Value {
+            json::Value batch;
+            batch[jss::method] = "batch";
+            batch[jss::params] = json::ValueType::Array;
+            for (unsigned i = 0; i < count; ++i)
+                batch[jss::params][i] = entry;
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(batch));
+            BEAST_EXPECT(resp.result() == kOk);
+            BEAST_EXPECT(reply.isArray());
+            return reply;
+        };
+
+        // One shape per rejection that answers an entry without dispatching it.
+        json::Value const nullMethod(json::ValueType::Object);
+        json::Value const notAnObject{7};
+        json::Value badVersion(json::ValueType::Object);
+        badVersion[jss::api_version] = 99u;
+        json::Value adminOnly(json::ValueType::Object);
+        adminOnly[jss::method] = "ledger_accept";
+
+        auto const shapes = {nullMethod, notAnObject, badVersion, adminOnly};
+        unsigned const kEntries = 10;
+
+        // The entry is keyed by address, so an entry from this client is charged against it.
+        auto usage = env.app().getResourceManager().newInboundEndpoint(
+            beast::ip::Endpoint::fromString(getEnvLocalhostAddr()));
+
+        for (auto const& entry : shapes)
+        {
+            auto const before = usage.balance();
+            auto const reply = answers(entry, kEntries);
+
+            BEAST_EXPECT(reply.size() == kEntries);
+            BEAST_EXPECT(usage.balance() > before);
+        }
+
+        // Over the threshold the batch stops at the entry it cannot serve, so the reply is shorter
+        // than the request.
+        for (auto const& entry : shapes)
+        {
+            overloadEndpoint(env, getEnvLocalhostAddr());
+
+            auto const reply = answers(entry, kEntries);
+            BEAST_EXPECT(reply.size() >= 1);
+            BEAST_EXPECT(reply.size() < kEntries);
+        }
+
+        // An entry rejected after its consumer exists reaches the drop check, so it is answered
+        // "Server is overloaded" and nothing follows.
+        {
+            overloadEndpoint(env, getEnvLocalhostAddr());
+
+            auto const reply = answers(adminOnly, kEntries);
+            BEAST_EXPECT(reply.size() == 1);
+            BEAST_EXPECT(reply[0u][jss::error][jss::error][jss::message] == "Server is overloaded");
+        }
+    }
+
+    /**
+     * A body the server rejects before it reads a request out of it costs the
+     * sender what a malformed request costs.
+     *
+     * An oversized body costs a megabyte of transfer, is refused before it is
+     * parsed and answers in a few bytes, so a client sending nothing else
+     * exhausts its allowance.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testUnreadBodiesAreCharged(boost::asio::yield_context& yield)
+    {
+        testcase("A body rejected before it is read is charged for");
+
+        using namespace test::jtx;
+
+        // Without admin privilege, since a privileged connection is never charged.
+        Env env{*this, envconfig(noAdmin)};
+
+        boost::system::error_code ec;
+
+        // The connection's resource entry, keyed by address, which is the one a body from this
+        // client is charged against.
+        auto usage = env.app().getResourceManager().newInboundEndpoint(
+            beast::ip::Endpoint::fromString(getEnvLocalhostAddr()));
+
+        // The five conditions that reject a body before any of it is read as a request. A scalar is
+        // not among them: the reader admits only null, an array or an object at the root.
+        json::Value malformedBatch(json::ValueType::Object);
+        malformedBatch[jss::method] = "batch";
+
+        struct Case
+        {
+            char const* label;
+            std::string body;
+        };
+
+        auto const cases = {
+            Case{.label = "too large", .body = std::string(rpc::tuning::kMaxRequestSize + 1, 'x')},
+            Case{.label = "unparsable", .body = "{"},
+            Case{.label = "empty document", .body = "{}"},
+            Case{.label = "not an object", .body = "[1,2,3]"},
+            Case{.label = "malformed batch", .body = to_string(malformedBatch)},
+        };
+
+        // Answers each body and returns what it cost the connection.
+        auto const costOf = [&](char const* label, std::string const& body) {
+            auto const before = usage.balance();
+
+            Response resp;
+            doHTTPRequest(env, yield, false, resp, ec, body);
+            BEAST_EXPECTS(resp.result() == kBadRequest, label);
+            return usage.balance() - before;
+        };
+
+        for (auto const& [label, body] : cases)
+            BEAST_EXPECTS(costOf(label, body) > 0, label);
+
+        // What one such body costs is the malformed-request charge and nothing else, at any load.
+        // Asking whether the connection is over the drop threshold is itself a charge, so a body
+        // answered before the entry loop must not ask, and one body cannot cost what a drop costs.
+        overloadEndpoint(env, getEnvLocalhostAddr());
+
+        for (auto const& [label, body] : cases)
+            BEAST_EXPECTS(costOf(label, body) <= resource::kFeeMalformedRpc.cost(), label);
+
+        // A lone request naming an `api_version` the server cannot serve is charged inside the
+        // entry loop, which asks about the drop threshold so a batch can stop at the entry that
+        // crossed it. A lone request has no entry after it, so asking would cost it a drop charge
+        // for nothing.
+        {
+            json::Value jv;
+            jv[jss::method] = "ping";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = json::ValueType::Object;
+            jv[jss::params][0u][jss::api_version] = 99u;
+
+            BEAST_EXPECT(
+                costOf("lone invalid api_version", to_string(jv)) <=
+                resource::kFeeMalformedRpc.cost());
+        }
+    }
+
+    /**
+     * A body a privileged connection sends is not charged for.
+     *
+     * The charge is keyed on the resource entry a request's own credentials
+     * select, so a connection the port grants admin is charged against an
+     * exempt entry.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testPrivilegedBodiesAreNotCharged(boost::asio::yield_context& yield)
+    {
+        testcase("A body a privileged connection sends is not charged for");
+
+        using namespace test::jtx;
+
+        // With admin privilege, which the default configuration grants to a local connection.
+        Env env{*this};
+
+        boost::system::error_code ec;
+
+        // The address entry, which is the one an unprivileged body is charged against. A privileged
+        // connection is charged against an exempt entry instead, so this balance must not move.
+        auto usage = env.app().getResourceManager().newInboundEndpoint(
+            beast::ip::Endpoint::fromString(getEnvLocalhostAddr()));
+        auto const before = usage.balance();
+
+        for (auto const* body : {"{", "{}", "7"})
+        {
+            Response resp;
+            doHTTPRequest(env, yield, false, resp, ec, body);
+            BEAST_EXPECTS(resp.result() == kBadRequest, body);
+        }
+
+        BEAST_EXPECT(usage.balance() == before);
     }
 
     /**
@@ -2635,6 +2987,8 @@ public:
             testWSHandoff(yield);
             testNoRPC(yield);
             testWSRequests(yield);
+            testWSUnparsableFrames(yield);
+            testPrivilegedWSFramesAreExempt(yield);
             testRPCRequests(yield);
             testMaskedCredentials(yield);
             testTheLoggedRequestIsMaskedAndCapped(yield);
@@ -2645,6 +2999,9 @@ public:
             testPrivilegedRequestIsNotShed(yield);
             testLegacyBatchEntryRejections(yield);
             testAnErrorReplyDoesNotFollowTheLogLevel(yield);
+            testBatchOverload(yield);
+            testUnreadBodiesAreCharged(yield);
+            testPrivilegedBodiesAreNotCharged(yield);
             testBatchIdentity(yield);
             testRequestForms(yield);
             testHandlerErrorsCarryCodes(yield);

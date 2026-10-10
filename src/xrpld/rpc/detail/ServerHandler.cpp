@@ -376,6 +376,16 @@ ServerHandler::onWSMessage(
     auto const size = boost::asio::buffer_size(buffers);
     if (size > rpc::tuning::kMaxRequestSize || !json::Reader{}.parse(jv, buffers) || !jv.isObject())
     {
+        // The only place that can account for an unreadable frame: it never reaches
+        // processSession, where every other request is charged.
+        auto const is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
+        is->getConsumer().charge(resource::kFeeMalformedRpc);
+        if (is->getConsumer().disconnect(journal_))
+        {
+            session->close({boost::beast::websocket::policy_error, "threshold exceeded"});
+            return;
+        }
+
         // An unparsed body cannot be masked field-wise, so its size goes instead of its content.
         // Clamped rather than narrowed: json has no integer wider than 32 bits.
         json::Value jvResult(json::ValueType::Object);
@@ -777,12 +787,47 @@ ServerHandler::processRequest(
 {
     auto rpcJ = app_.getJournal("RPC");
 
+    // What a request presents when the server cannot read what it presents: an unparsable body or a
+    // malformed entry carries no credentials to act on. A connection privileged by its address is
+    // still privileged, `requestRole` reading the port rather than the request for that.
+    static json::Value const kUnreadable(json::ValueType::Object);
+
+    // The resource entry a request is charged against before its own role is read. `Role::GUEST` is
+    // the requirement asked for, no method having been read that could ask for more.
+    auto const usageFor = [&](json::Value const& presented) {
+        return requestInboundEndpoint(
+            resourceManager_,
+            remoteIPAddress,
+            requestRole(Role::GUEST, port, presented, remoteIPAddress, user),
+            user,
+            forwardedFor);
+    };
+
+    // Whether a charge also asks if the connection is over the drop threshold.
+    enum class Threshold { Ignore, Ask };
+
+    // Charges a request rejected before its own role is read, and reports whether the connection is
+    // over the drop threshold. Only a caller that can act on the answer passes `Threshold::Ask`,
+    // since asking is itself a charge: see chargeUnreadBody below.
+    auto const chargeWithoutRole = [&](json::Value const& presented, Threshold threshold) {
+        auto usage = usageFor(presented);
+        usage.charge(resource::kFeeMalformedRpc);
+        return threshold == Threshold::Ask && usage.disconnect(journal_);
+    };
+
+    // Charges a body the server rejects before it reads a request out of it. The drop threshold is
+    // not asked about: `disconnect` is a mutator, charging the drop fee and counting a drop on
+    // every call made while the balance is at or above the drop threshold, and this rejection
+    // answers the whole body.
+    auto const chargeUnreadBody = [&] { usageFor(kUnreadable).charge(resource::kFeeMalformedRpc); };
+
     json::Value jsonOrig;
     {
         // Only a parse failure can report the reader's reason, getFormattedErrorMessages being
         // built from what the reader recorded. The other three name their own cause.
         if (request.size() > rpc::tuning::kMaxRequestSize)
         {
+            chargeUnreadBody();
             httpReply(400, "Request is too large", output, rpcJ);
             return;
         }
@@ -790,6 +835,7 @@ ServerHandler::processRequest(
         json::Reader reader;
         if (!reader.parse(request, jsonOrig))
         {
+            chargeUnreadBody();
             httpReply(
                 400,
                 "Unable to parse request: " + reader.getFormattedErrorMessages(),
@@ -801,6 +847,7 @@ ServerHandler::processRequest(
         if (!jsonOrig)
         {
             // A well-formed document that carries nothing: `{}`, `[]` or `null`.
+            chargeUnreadBody();
             httpReply(400, "Request is empty", output, rpcJ);
             return;
         }
@@ -809,6 +856,7 @@ ServerHandler::processRequest(
         {
             // A non-empty array, the only value the reader accepts that is neither null nor an
             // object. A number, string or boolean is a parse failure, answered above.
+            chargeUnreadBody();
             httpReply(400, "Request is not a JSON object", output, rpcJ);
             return;
         }
@@ -823,6 +871,7 @@ ServerHandler::processRequest(
         batch = true;
         if (!jsonOrig.isMember(jss::params) || !jsonOrig[jss::params].isArray())
         {
+            chargeUnreadBody();
             httpReply(400, "Malformed batch request", output, rpcJ);
             return;
         }
@@ -843,10 +892,17 @@ ServerHandler::processRequest(
         // under `request` whatever a caller asks for.
         if (!jsonRPC.isObject())
         {
+            // Only a batch reaches here, so the loop can act on the threshold. The entry presents
+            // no credentials, so the connection pays.
+            bool const overloaded = chargeWithoutRole(kUnreadable, Threshold::Ask);
+
             json::Value r(json::ValueType::Object);
             r[jss::request] = rpc::maskSecrets(jsonRPC);
             r[jss::error] = makeJsonError(rpc::kJsonRpcMethodNotFound, "Method not found");
             reply.append(r);
+
+            if (overloaded)
+                break;
             continue;
         }
 
@@ -886,6 +942,8 @@ ServerHandler::processRequest(
 
         if (apiVersion == rpc::kApiInvalidVersion)
         {
+            bool const overloaded = chargeWithoutRole(
+                requestParams(jsonRPC), batch ? Threshold::Ask : Threshold::Ignore);
             // An object-shaped rejection returns this entry under `request`, where a client
             // correlating by `reply[i].request` finds it.
             if (!reject(
@@ -896,6 +954,8 @@ ServerHandler::processRequest(
             {
                 return;
             }
+            if (overloaded)
+                break;
             continue;
         }
 
@@ -916,12 +976,14 @@ ServerHandler::processRequest(
             requestInboundEndpoint(resourceManager_, remoteIPAddress, role, user, forwardedFor);
 
         // An overloaded server sheds the request without charging for it; disconnect() has already
-        // accounted for the load that got it here.
+        // accounted for the load that got it here. The loop then stops: every later entry of the
+        // same body would be shed too, and answering each one is itself work an overloaded server
+        // must not do.
         if (!isUnlimited(role) && usage.disconnect(journal_))
         {
             if (!reject(503, rpc::kJsonRpcServerOverloaded, "Server is overloaded"))
                 return;
-            continue;
+            break;
         }
 
         if (role == Role::FORBID)
