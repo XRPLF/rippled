@@ -1,6 +1,7 @@
 #include <xrpl/protocol/STAmount.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/MathUtilities.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
@@ -384,10 +385,11 @@ operator+(STAmount const& v1, STAmount const& v2)
         return {v1.getFName(), v1.asset(), v2.mantissa(), v2.exponent(), v2.negative()};
     }
 
+    // XRPAmount and MPTAmount check for int64 overflow under fixCleanup3_5_0.
     if (v1.native())
-        return {v1.getFName(), getSNValue(v1) + getSNValue(v2)};
+        return {v1.getFName(), (v1.xrp() + v2.xrp()).drops()};
     if (v1.holds<MPTIssue>())
-        return {v1.asset_, v1.mpt().value() + v2.mpt().value()};
+        return {v1.asset_, (v1.mpt() + v2.mpt()).value()};
 
     auto x = v1;
     x = v1.iou() + v2.iou();
@@ -474,16 +476,7 @@ canAdd(STAmount const& a, STAmount const& b)
 
     // XRP case (overflow & underflow check)
     if (isXRP(a) && isXRP(b))
-    {
-        XRPAmount const aVal = a.xrp();
-        XRPAmount const bVal = b.xrp();
-
-        return !(
-            (bVal > XRPAmount{0} &&
-             aVal > XRPAmount{std::numeric_limits<XRPAmount::value_type>::max()} - bVal) ||
-            (bVal < XRPAmount{0} &&
-             aVal < XRPAmount{std::numeric_limits<XRPAmount::value_type>::min()} - bVal));
-    }
+        return checkedAdd(a.xrp().drops(), b.xrp().drops()).has_value();
 
     // IOU case (precision check)
     auto const ret = std::visit(
@@ -500,15 +493,7 @@ canAdd(STAmount const& a, STAmount const& b)
 
             // MPT (overflow & underflow check)
             if constexpr (kIsMptissueV<TIss1> && kIsMptissueV<TIss2>)
-            {
-                MPTAmount const aVal = a.mpt();
-                MPTAmount const bVal = b.mpt();
-                return !(
-                    (bVal > MPTAmount{0} &&
-                     aVal > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} - bVal) ||
-                    (bVal < MPTAmount{0} &&
-                     aVal < MPTAmount{std::numeric_limits<MPTAmount::value_type>::min()} - bVal));
-            }
+                return checkedAdd(a.mpt().value(), b.mpt().value()).has_value();
             return std::nullopt;
         },
         a.asset().value(),
@@ -559,11 +544,7 @@ canSubtract(STAmount const& a, STAmount const& b)
             return false;
 
         // Check for overflow
-        if (bVal < XRPAmount{0} &&
-            aVal > XRPAmount{std::numeric_limits<XRPAmount::value_type>::max()} + bVal)
-            return false;
-
-        return true;
+        return checkedSub(aVal.drops(), bVal.drops()).has_value();
     }
 
     // IOU case (no underflow)
@@ -586,10 +567,7 @@ canSubtract(STAmount const& a, STAmount const& b)
                     return false;
 
                 // Overflow check
-                if (bVal < MPTAmount{0} &&
-                    aVal > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} + bVal)
-                    return false;
-                return true;
+                return checkedSub(aVal.value(), bVal.value()).has_value();
             }
             return std::nullopt;
         },

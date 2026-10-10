@@ -39,6 +39,31 @@ checkedSub(std::int64_t a, std::int64_t b) noexcept
     return a - b;
 }
 
+/**
+ * Multiply two signed 64-bit integers, returning std::nullopt when the exact
+ * mathematical product is not representable in std::int64_t.
+ */
+[[nodiscard]] constexpr std::optional<std::int64_t>
+checkedMul(std::int64_t a, std::int64_t b) noexcept
+{
+    using L = std::numeric_limits<std::int64_t>;
+
+    if (a == 0 || b == 0)
+        return 0;
+
+    if (a > 0)
+    {
+        if (b > 0 ? a > L::max() / b : b < L::min() / a)
+            return std::nullopt;
+    }
+    else if (b > 0 ? a < L::min() / b : b < L::max() / a)
+    {
+        return std::nullopt;
+    }
+
+    return a * b;
+}
+
 static_assert(checkedAdd(0, 0) == 0);
 static_assert(checkedAdd(1, -1) == 0);
 static_assert(checkedAdd(-5, 2) == -3);
