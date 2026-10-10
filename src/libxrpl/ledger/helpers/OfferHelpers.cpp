@@ -20,7 +20,7 @@ offerDelete(ApplyView& view, SLE::Ref sle, beast::Journal j)
     if (!sle)
         return tesSUCCESS;
     auto offerIndex = sle->key();
-    auto owner = sle->getAccountID(sfAccount);
+    auto const owner = sle->getAccountID(sfAccount);
 
     // Detect legacy directories.
     UInt256 const uDirectory = sle->getFieldH256(sfBookDirectory);
