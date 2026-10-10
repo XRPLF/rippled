@@ -54,6 +54,12 @@ if(verify_headers)
     add_custom_target(verify-headers)
 endif()
 
+option(
+    formal_verification
+    "Link the Lean 4 formal verification FFI and build its cross-validation tests (requires tests)"
+    OFF
+)
+
 option(unity "Creates a build using UNITY support in cmake." OFF)
 if(unity)
     if(NOT is_ci)
