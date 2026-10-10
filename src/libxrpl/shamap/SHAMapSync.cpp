@@ -24,6 +24,7 @@
 #include <iterator>
 #include <mutex>
 #include <optional>
+#include <shared_mutex>
 #include <stack>
 #include <tuple>
 #include <utility>
@@ -112,6 +113,10 @@ SHAMap::visitDifferences(
 {
     // Visit every node in this SHAMap that is not present
     // in the specified SHAMap
+
+    // Bare-pointer walk; hold the shed guard.
+    auto const shedLock = shedReadGuard();
+
     if (!root_)
         return;
 
@@ -322,6 +327,9 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
     XRPL_ASSERT(root_->getHash().isNonZero(), "xrpl::SHAMap::getMissingNodes : nonzero root hash");
     XRPL_ASSERT(max > 0, "xrpl::SHAMap::getMissingNodes : valid max input");
 
+    // Bare-pointer walk, including the deferred reads; hold the shed guard.
+    auto const shedLock = shedReadGuard();
+
     MissingNodes mn(
         max,
         filter,
@@ -431,6 +439,9 @@ SHAMap::getNodeFat(
 {
     // Gets a node and some of its children
     // to a specified depth
+
+    // Bare-pointer walk; hold the shed guard.
+    auto const shedLock = shedReadGuard();
 
     auto node = root_.get();
     SHAMapNodeID nodeID;
