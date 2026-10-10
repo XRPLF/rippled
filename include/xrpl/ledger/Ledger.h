@@ -330,6 +330,18 @@ public:
     void
     updateSkipList();
 
+    /**
+     * Check that every node of both of this ledger's maps is available.
+     *
+     * The function walks the state map and then the transaction map, and logs
+     * what it could not read.
+     *
+     * @param j The journal to log missing nodes to.
+     * @param parallel Walk the state map on several threads. The transaction
+     *                 map is always walked on one thread.
+     * @return True when both maps are complete. False when either map is
+     *         missing a node.
+     */
     bool
     walkLedger(beast::Journal j, bool parallel = false) const;
 
