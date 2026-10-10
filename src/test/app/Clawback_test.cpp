@@ -1,4 +1,5 @@
 #include <test/jtx/Account.h>
+#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
@@ -14,13 +15,17 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <array>
 #include <cstdint>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -804,6 +809,99 @@ class Clawback_test : public beast::unit_test::Suite
     }
 
     void
+    testSubResolutionAmount(FeatureBitset features)
+    {
+        testcase("Sub-resolution amount");
+        using namespace test::jtx;
+
+        // IOU balances keep 16 significant digits. When alice claws back an
+        // amount much smaller than bob's balance, the balance changes by the
+        // rounded amount, which can be zero, less, or more than requested. The
+        // clawback invariant must accept that instead of failing the
+        // transaction under MPTokensV2 or logging a failure without it.
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        struct Case
+        {
+            std::uint64_t balanceMantissa;
+            int balanceExponent;
+            std::uint64_t clawMantissa;
+            int clawExponent;
+            std::uint64_t afterMantissa;
+            int afterExponent;
+        };
+        std::array const cases{
+            // 1e7 - 1e-10 rounds back to 1e7
+            Case{
+                .balanceMantissa = 10'000'000,
+                .balanceExponent = 0,
+                .clawMantissa = 1,
+                .clawExponent = -10,
+                .afterMantissa = 10'000'000,
+                .afterExponent = 0},
+            // 1234567890.123456 - 0.0000005 rounds back to the balance
+            Case{
+                .balanceMantissa = 1'234'567'890'123'456,
+                .balanceExponent = -6,
+                .clawMantissa = 5,
+                .clawExponent = -7,
+                .afterMantissa = 1'234'567'890'123'456,
+                .afterExponent = -6},
+            // 0.0000014 removes 0.000001
+            Case{
+                .balanceMantissa = 1'234'567'890'123'456,
+                .balanceExponent = -6,
+                .clawMantissa = 14,
+                .clawExponent = -7,
+                .afterMantissa = 1'234'567'890'123'455,
+                .afterExponent = -6},
+            // 0.0000016 removes 0.000002
+            Case{
+                .balanceMantissa = 1'234'567'890'123'456,
+                .balanceExponent = -6,
+                .clawMantissa = 16,
+                .clawExponent = -7,
+                .afterMantissa = 1'234'567'890'123'454,
+                .afterExponent = -6},
+        };
+
+        for (auto const feat : {features, features - featureMPTokensV2})
+        {
+            for (auto const& c : cases)
+            {
+                std::string logs;
+                {
+                    Env env(*this, feat, std::make_unique<test::CaptureLogs>(&logs));
+
+                    env.fund(XRP(1000), alice, bob);
+                    env.close();
+
+                    auto const usd = alice["USD"];
+
+                    env(fset(alice, asfAllowTrustLineClawback));
+                    env.close();
+
+                    env.trust(usd(10'000'000'000), bob);
+                    env(pay(
+                        alice, bob, STAmount{usd.issue(), c.balanceMantissa, c.balanceExponent}));
+                    env.close();
+
+                    env(claw(
+                        alice,
+                        STAmount{Issue{usd.currency, bob.id()}, c.clawMantissa, c.clawExponent}));
+                    env.close();
+
+                    BEAST_EXPECT(
+                        env.balance(bob, usd).value() ==
+                        STAmount(usd.issue(), c.afterMantissa, c.afterExponent));
+                }
+                BEAST_EXPECT(!logs.contains("Invariant failed"));
+            }
+        }
+    }
+
+    void
     testTickets(FeatureBitset features)
     {
         testcase("Tickets");
@@ -872,6 +970,7 @@ class Clawback_test : public beast::unit_test::Suite
         testDeleteDefaultLine(features);
         testFrozenLine(features);
         testAmountExceedsAvailable(features);
+        testSubResolutionAmount(features);
         testTickets(features);
     }
 

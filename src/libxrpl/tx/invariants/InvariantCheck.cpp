@@ -933,8 +933,12 @@ ValidClawback::finalize(
                         return !mptV2Enabled;
                     }
 
+                    // IOU balances keep 16 significant digits, so a clawback
+                    // much smaller than the balance changes it by a rounded
+                    // amount, possibly zero. Compare with the same rounded
+                    // subtraction the balance update performs.
                     if (*afterBalance > *beforeBalance ||
-                        (*beforeBalance - *afterBalance) != std::min(*beforeBalance, clawAmount))
+                        *afterBalance != *beforeBalance - std::min(*beforeBalance, clawAmount))
                     {
                         JLOG(j.fatal())
                             << "Invariant failed: trustline clawback balance change is invalid";
