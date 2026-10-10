@@ -36,7 +36,7 @@ BASE_NAME = "xrpld"
 
 # The flavours that can be built, '' being the plain xrpld package. A variant
 # needs a config in linux.json to be built by CI; see package/README.md.
-VARIANTS = ("", "assert")
+VARIANTS = ("", "assert", "supported")
 
 # Files both packaging systems consume, staged under the same names.
 STAGED_FROM_BUILD = ("xrpld", "validator-keys", "validator-keys-LICENSE")
@@ -323,8 +323,8 @@ def main() -> None:
         default="",
         choices=VARIANTS,
         help="the flavour of the package to build: 'assert' produces "
-        "xrpld-assert, which ships the same paths as xrpld and replaces it "
-        "(default: the plain xrpld package)",
+        "xrpld-assert, 'supported' xrpld-supported, each shipping the same "
+        "paths as xrpld and replacing it (default: the plain xrpld package)",
     )
     parser.add_argument(
         "--channel",
